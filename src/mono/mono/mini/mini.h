@@ -438,6 +438,7 @@ typedef struct {
 	guint32          verbose_level;
 	guint32          stack_usage;
 	guint32          param_area;
+	guint32          frame_reg;
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gpointer         debug_info;

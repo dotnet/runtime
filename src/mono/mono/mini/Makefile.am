@@ -121,6 +121,9 @@ TestDriver.dll: TestDriver.cs
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium
 
+cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
+
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
 
@@ -165,7 +168,7 @@ clean:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
-BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
+BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) inssel-x86.brg \
 	jit-icalls.c cprop.c \

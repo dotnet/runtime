@@ -3,6 +3,7 @@
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -10,19 +11,92 @@
 #include <config.h>
 #include <glib.h>
 #include <signal.h>
+#include <string.h>
 
-#include <mono/arch/x86/x86-codegen.h>
+#include <mono/arch/ppc/ppc-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
 #include "mini-ppc.h"
-#include "debug-private.h"
 
 typedef struct sigcontext MonoContext;
+
+/*
+
+struct sigcontext {
+    int      sc_onstack;     // sigstack state to restore 
+    int      sc_mask;        // signal mask to restore 
+    int      sc_ir;          // pc 
+    int      sc_psw;         // processor status word 
+    int      sc_sp;          // stack pointer if sc_regs == NULL 
+    void    *sc_regs;        // (kernel private) saved state 
+};
+
+struct ucontext {
+        int             uc_onstack;
+        sigset_t        uc_sigmask;     // signal mask used by this context 
+        stack_t         uc_stack;       // stack used by this context 
+        struct ucontext *uc_link;       // pointer to resuming context 
+        size_t          uc_mcsize;      // size of the machine context passed in 
+        mcontext_t      uc_mcontext;    // machine specific context 
+};
+
+typedef struct ppc_exception_state {
+        unsigned long dar;      // Fault registers for coredump 
+        unsigned long dsisr;
+        unsigned long exception;// number of powerpc exception taken 
+        unsigned long pad0;     // align to 16 bytes 
+
+        unsigned long pad1[4];  // space in PCB "just in case" 
+} ppc_exception_state_t;
+
+typedef struct ppc_vector_state {
+        unsigned long   save_vr[32][4];
+        unsigned long   save_vscr[4];
+        unsigned int    save_pad5[4];
+        unsigned int    save_vrvalid;                   // VRs that have been saved 
+        unsigned int    save_pad6[7];
+} ppc_vector_state_t;
+
+typedef struct ppc_float_state {
+        double  fpregs[32];
+
+        unsigned int fpscr_pad; // fpscr is 64 bits, 32 bits of rubbish 
+        unsigned int fpscr;     // floating point status register 
+} ppc_float_state_t;
+
+typedef struct ppc_thread_state {
+        unsigned int srr0;      // Instruction address register (PC) 
+        unsigned int srr1;      // Machine state register (supervisor) 
+        unsigned int r0;
+        unsigned int r1;
+        unsigned int r2;
+	... 
+        unsigned int r31;
+        unsigned int cr;        // Condition register 
+        unsigned int xer;       // User's integer exception register 
+        unsigned int lr;        // Link register 
+        unsigned int ctr;       // Count register 
+        unsigned int mq;        // MQ register (601 only) 
+
+        unsigned int vrsave;    // Vector Save Register 
+} ppc_thread_state_t;
+
+struct mcontext {
+        ppc_exception_state_t   es;
+        ppc_thread_state_t      ss;
+        ppc_float_state_t       fs;
+        ppc_vector_state_t      vs;
+};
+
+typedef struct mcontext  * mcontext_t;
+
+*/
 
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (int)ip; } while (0); 
@@ -64,21 +138,21 @@ get_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum)
 {
 	switch (dwarf_regnum) {
 	case X86_EAX:
-		return ctx->eax;
+		return ctx->SC_EAX;
 	case X86_EBX:
-		return ctx->ebx;
+		return ctx->SC_EBX;
 	case X86_ECX:
-		return ctx->ecx;
+		return ctx->SC_ECX;
 	case X86_EDX:
-		return ctx->edx;
+		return ctx->SC_EDX;
 	case X86_ESI:
-		return ctx->esi;
+		return ctx->SC_ESI;
 	case X86_EDI:
-		return ctx->edi;
+		return ctx->SC_EDI;
 	case X86_EBP:
-		return ctx->ebp;
+		return ctx->SC_EBP;
 	case X86_ESP:
-		return ctx->esp;
+		return ctx->SC_ESP;
 	default:
 		g_assert_not_reached ();
 	}
@@ -91,31 +165,31 @@ set_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum, long value)
 {
 	switch (dwarf_regnum) {
 	case X86_EAX:
-		ctx->eax = value;
+		ctx->SC_EAX = value;
 		break;
 	case X86_EBX:
-		ctx->ebx = value;
+		ctx->SC_EBX = value;
 		break;
 	case X86_ECX:
-		ctx->ecx = value;
+		ctx->SC_ECX = value;
 		break;
 	case X86_EDX:
-		ctx->edx = value;
+		ctx->SC_EDX = value;
 		break;
 	case X86_ESI:
-		ctx->esi = value;
+		ctx->SC_ESI = value;
 		break;
 	case X86_EDI:
-		ctx->edi = value;
+		ctx->SC_EDI = value;
 		break;
 	case X86_EBP:
-		ctx->ebp = value;
+		ctx->SC_EBP = value;
 		break;
 	case X86_ESP:
-		ctx->esp = value;
+		ctx->SC_ESP = value;
 		break;
 	case 8:
-		ctx->eip = value;
+		ctx->SC_EIP = value;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -160,6 +234,8 @@ init_frame_state_for (void)
 }
 
 #endif
+
+gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 
 /* mono_arch_has_unwind_info:
  *
@@ -268,7 +344,7 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 					set_sigcontext_reg (new_ctx, i, val);
 				}
 			}
-			new_ctx->esp = (long)cfa;
+			new_ctx->SC_ESP = (long)cfa;
 
 			if (res->saved [X86_EBX] == 1 &&
 			    res->saved [X86_EDI] == 1 &&
@@ -558,7 +634,7 @@ glist_to_array (GList *list)
  * start of the function or -1 if that info is not available.
  */
 static MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *ctx, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 			 gboolean *managed)
 {
@@ -598,13 +674,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 				*managed = TRUE;
 
 		if (trace) {
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				mono_debug_make_symbols ();
-
-			source_location = mono_debug_source_location_from_address (ji->method, address, NULL);
-			iloffset = mono_debug_il_offset_from_address (ji->method, address);
-			source_location = NULL;
-			iloffset = -1;
+			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, domain);
+			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
 
 			if (iloffset < 0)
 				tmpaddr = g_strdup_printf ("<0x%05x>", address);
@@ -642,10 +713,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
 		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
 #endif
-		return ji;
+		*res = *ji;
+		return res;
 #ifdef MONO_USE_EXC_TABLES
 	} else if ((ji = ppc_unwind_native_frame (domain, jit_tls, ctx, new_ctx, *lmf, trace))) {
-		return ji;
+		*res = *ji;
+		return res;
 #endif
 	} else if (*lmf) {
 		
@@ -657,8 +730,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 		if (trace)
 			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
 		
-		ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip);
-		g_assert (ji != NULL);
+		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
+			*res = *ji;
+		} else {
+			memset (res, 0, sizeof (MonoJitInfo));
+			res->method = (*lmf)->method;
+		}
 
 #if 0
 		new_ctx->SC_ESI = (*lmf)->esi;
@@ -672,7 +749,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 #endif
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji;
+		return res;
 		
 	}
 
@@ -702,14 +779,12 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		sf->method = mono_method_get_object (domain, ji->method, NULL);
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
-		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset);
-		sf->il_offset = -1;
+		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
 
 		if (need_file_info) {
 			gchar *filename;
 			
-			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line);
-			filename = NULL;
+			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
 
 			sf->filename = filename? mono_string_new (domain, filename): NULL;
 			sf->column = 0;
@@ -728,7 +803,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
 
@@ -739,13 +814,13 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
 			return;
 
-		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset);
+		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset, domain);
 
 		if (func (ji->method, native_offset, il_offset, managed, user_data))
 			return;
@@ -763,7 +838,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 
 	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
@@ -772,14 +847,17 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 
 		ctx = new_ctx;
 		
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
+		/* skip all wrappers ??*/
+		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
+		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
+		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
 			continue;
 
 		skip--;
@@ -787,14 +865,12 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	} while (skip >= 0);
 
 	*method = mono_method_get_object (domain, ji->method, NULL);
-	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset);
-	*iloffset = -1;
+	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset, domain);
 
 	if (need_file_info) {
 		gchar *filename;
 
-		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line);
-		filename = NULL;
+		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line, domain);
 
 		*file = filename? mono_string_new (domain, filename): NULL;
 		*column = 0;
@@ -817,7 +893,7 @@ gboolean
 mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	static int (*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
@@ -844,11 +920,8 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		if (mono_jit_trace_calls)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
-			if (mono_break_on_exc) {
-				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-					mono_debug_make_symbols ();
+			if (mono_break_on_exc)
 				G_BREAKPOINT ();
-			}
 			mono_unhandled_exception (obj);
 		}
 	}
@@ -857,7 +930,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext new_ctx;
 		char *trace = NULL;
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
@@ -902,30 +975,25 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							if (test_only) {
 								((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 								g_list_free (trace_ips);
+								g_free (trace);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							*((gpointer *)(MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
+							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
+							g_free (trace);
 							return 0;
 						}
-					}
-				}
-
-				/* no handler found - we need to call all finally handlers */
-				if (!test_only) {
-					for (i = 0; i < ji->num_clauses; i++) {
-						MonoJitExceptionInfo *ei = &ji->clauses [i];
-						
-						if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls)
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							call_filter (ctx, ei->handler_start, NULL);
 						}
+						
 					}
 				}
 			}
@@ -949,5 +1017,11 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	}
 
 	g_assert_not_reached ();
+}
+
+gboolean
+mono_arch_has_unwind_info (gconstpointer addr)
+{
+	return FALSE;
 }
 

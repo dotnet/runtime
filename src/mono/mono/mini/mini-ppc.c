@@ -15,7 +15,6 @@
 
 #include "mini-ppc.h"
 #include "inssel.h"
-#include "regset.h"
 #include "cpu-g4.h"
 
 int mono_exc_esp_offset = 0;
@@ -350,6 +349,19 @@ handle_enum:
 	printf ("\n");
 }
 
+/*
+ * This function returns the optimizations supported on this cpu.
+ */
+guint32
+mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+{
+	guint32 opts = 0;
+
+	/* no ppc-specific optimizations yet */
+	*exclude_mask = 0;
+	return opts;
+}
+
 static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
@@ -403,12 +415,13 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 }
 
 GList *
-mono_arch_get_global_int_regs (void)
+mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
-	int i;
-	
-	for (i = 13; i < 32; ++i)
+	int i, top = 32;
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		top = 31;
+	for (i = 13; i < top; ++i)
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 
 	return regs;
@@ -676,6 +689,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
+	int frame_reg = ppc_sp;
+ 
+	if (m->flags & MONO_CFG_HAS_ALLOCA)
+		frame_reg = ppc_r31;
+	m->frame_reg = frame_reg;
 
 	header = ((MonoMethodNormal *)m->method)->header;
 
@@ -702,10 +720,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * also note that if the function uses alloca, we use ppc_r31
 	 * to point at the local variables.
 	 */
-	offset = 12; /* linkage area */
+	offset = 24; /* linkage area */
 	/* align the offset to 16 bytes: not sure this is needed here  */
-	offset += 16 - 1;
-	offset &= ~(16 - 1);
+	//offset += 16 - 1;
+	//offset &= ~(16 - 1);
 
 	/* add parameter area size for called functions */
 	offset += m->param_area;
@@ -745,7 +763,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		offset &= ~(align - 1);
 		inst->inst_offset = offset;
 		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = ppc_sp;
+		inst->inst_basereg = frame_reg;
 		offset += size;
 		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
 	}
@@ -755,7 +773,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = ppc_sp;
+			inst->inst_basereg = frame_reg;
 			offset += sizeof (gpointer) - 1;
 			offset &= ~(sizeof (gpointer) - 1);
 			inst->inst_offset = offset;
@@ -768,7 +786,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = ppc_sp;
+			inst->inst_basereg = frame_reg;
 			size = mono_type_size (sig->params [i], &align);
 			offset += align - 1;
 			offset &= ~(align - 1);
@@ -1315,7 +1333,7 @@ get_register_force_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, in
 	/* we need to create a spill var and insert a load to sel after the current instruction */
 	MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 	load->dreg = sel;
-	load->inst_basereg = ppc_sp;
+	load->inst_basereg = cfg->frame_reg;
 	load->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (item->prev) {
 		while (ins->next != item->prev->data)
@@ -1375,7 +1393,7 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	/* we need to create a spill var and insert a load to sel after the current instruction */
 	MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 	load->dreg = sel;
-	load->inst_basereg = ppc_sp;
+	load->inst_basereg = cfg->frame_reg;
 	load->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (item->prev) {
 		while (ins->next != item->prev->data)
@@ -1596,25 +1614,27 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				DEBUG (g_print ("\tassigned hreg %s to dest R%d\n", mono_arch_regname (val), hreg));
 				rs->isymbolic [val] = hreg;
 				/* FIXME:? ins->dreg = val; */
-				if (ins->dreg == ppc_r3) {
-					if (val != ppc_r4)
-						create_copy_ins (cfg, val, ppc_r4, ins);
-				} else if (ins->dreg == ppc_r4) {
-					if (val == ppc_r3) {
+				if (ins->dreg == ppc_r4) {
+					if (val != ppc_r3)
+						create_copy_ins (cfg, val, ppc_r3, ins);
+				} else if (ins->dreg == ppc_r3) {
+					if (val == ppc_r4) {
 						/* swap */
-						g_assert_not_reached ();
+						create_copy_ins (cfg, ppc_r0, ppc_r3, ins);
+						create_copy_ins (cfg, ppc_r3, ppc_r4, ins);
+						create_copy_ins (cfg, ppc_r4, ppc_r0, ins);
 					} else {
 						/* two forced copies */
-						create_copy_ins (cfg, val, ppc_r4, ins);
-						create_copy_ins (cfg, ins->dreg, ppc_r3, ins);
+						create_copy_ins (cfg, val, ppc_r3, ins);
+						create_copy_ins (cfg, ins->dreg, ppc_r4, ins);
 					}
 				} else {
-					if (val == ppc_r4) {
-						create_copy_ins (cfg, ins->dreg, ppc_r3, ins);
+					if (val == ppc_r3) {
+						create_copy_ins (cfg, ins->dreg, ppc_r4, ins);
 					} else {
 						/* two forced copies */
-						create_copy_ins (cfg, val, ppc_r4, ins);
-						create_copy_ins (cfg, ins->dreg, ppc_r3, ins);
+						create_copy_ins (cfg, val, ppc_r3, ins);
+						create_copy_ins (cfg, ins->dreg, ppc_r4, ins);
 					}
 				}
 				if (reg_is_freeable (val) && hreg >= 0 && reginfo [hreg].born_in >= i) {
@@ -1850,11 +1870,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	cpos = bb->max_offset;
 
 	if (mono_trace_coverage) {
-		MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
-		g_assert (!mono_compile_aot);
-		cpos += 6;
-		if (bb->cil_code)
-			cov->data [bb->dfn].iloffset = bb->cil_code - cfg->cil_code;
+		//MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
+		//g_assert (!mono_compile_aot);
+		//cpos += 6;
+		//if (bb->cil_code)
+		//	cov->data [bb->dfn].iloffset = bb->cil_code - cfg->cil_code;
 		/* this is not thread save, but good enough */
 		/* fixme: howto handle overflows? */
 		//x86_inc_mem (code, &cov->data [bb->dfn].count); 
@@ -1989,8 +2009,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_ADC_IMM:
-			g_assert_not_reached ();
-			//x86_alu_reg_imm (code, X86_ADC, ins->dreg, ins->inst_imm);
+			ppc_load (code, ppc_r11, ins->inst_imm);
+			ppc_adde (code, ins->dreg, ins->sreg1, ppc_r11);
 			break;
 		case OP_SUBCC:
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -2007,8 +2027,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
 			break;
 		case OP_SBB_IMM:
-			g_assert_not_reached ();
-			//x86_alu_reg_imm (code, X86_SBB, ins->dreg, ins->inst_imm);
+			ppc_load (code, ppc_r11, ins->inst_imm);
+			ppc_subfe (code, ins->dreg, ins->sreg2, ppc_r11);
+			break;
+		case OP_PPC_SUBFIC:
+			g_assert (ppc_is_imm16 (ins->inst_imm));
+			ppc_subfic (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_PPC_SUBFZE:
+			ppc_subfze (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_AND:
 			/* FIXME: the ppc macros as inconsistent here: put dest as the first arg! */
@@ -2184,7 +2211,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOCALLOC:
 			/* keep alignment */
-#define MONO_FRAME_ALIGNMENT 16
+#define MONO_FRAME_ALIGNMENT 32
+			ppc_addi (code, ppc_r0, ins->sreg1, MONO_FRAME_ALIGNMENT-1);
+			ppc_rlwinm (code, ppc_r0, ppc_r0, 0, 0, 27);
+			ppc_lwz (code, ppc_r11, 0, ppc_sp);
+			ppc_neg (code, ppc_r0, ppc_r0);
+			ppc_stwux (code, ppc_sp, ppc_r0, ppc_sp);
+			ppc_mr (code, ins->dreg, ppc_sp);
 			g_assert_not_reached ();
 			break;
 		case CEE_RET:
@@ -2576,22 +2609,15 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_IP:
 			*((gpointer *)(ip)) = ip;
 			continue;
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
-			if (!strcmp (patch_info->data.name, "throw_exception")) {
-				target = mono_arch_get_throw_exception ();
-			} else if (!strcmp (patch_info->data.name, "throw_exception_by_name")) {
-				target = mono_arch_get_throw_exception_by_name ();
-			} else if (!strcmp (patch_info->data.name, "ldstr")) {
-				target = (gpointer)mono_ldstr;
-			} else if (!strcmp (patch_info->data.name, "domain_get")) {
-				target = (gpointer)mono_domain_get;
-			} else if (!strcmp (patch_info->data.name, "object_new")) {
-				target = (gpointer)mono_object_new;
-			} else if (!strcmp (patch_info->data.name, "get_lmf_addr")) {
-				target = (gpointer)mono_get_lmf_addr;
-			} else
+		case MONO_PATCH_INFO_INTERNAL_METHOD: {
+			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+			if (!mi) {
+				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
+			}
+			target = mi->wrapper;
 			break;
+		}
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = code;
@@ -2614,11 +2640,17 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			/* we put into the table the absolute address, no need for ppc_patch in this case */
 			continue;
 		}
+		case MONO_PATCH_INFO_METHODCONST:
 		case MONO_PATCH_INFO_CLASS:
+		case MONO_PATCH_INFO_IMAGE:
+		case MONO_PATCH_INFO_FIELD:
+			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
 			continue;
-		case MONO_PATCH_INFO_IMAGE:
-			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
+		case MONO_PATCH_INFO_R4:
+		case MONO_PATCH_INFO_R8:
+			g_assert_not_reached ();
+			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
 			continue;
 		default:
 			g_assert_not_reached ();
@@ -2630,7 +2662,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 int
 mono_arch_max_epilog_size (MonoCompile *cfg)
 {
-	int exc_count = 0, max_epilog_size = 16;
+	int exc_count = 0, max_epilog_size = 16 + 20*4;
 	MonoJumpInfo *patch_info;
 	
 	if (cfg->method->save_lmf)
@@ -2672,9 +2704,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size = 256;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	if (cfg->flags & MONO_CFG_HAS_CALLS) {
+	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 		ppc_mflr (code, ppc_r0);
 		ppc_stw (code, ppc_r0, 8, ppc_sp);
+	}
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
+		cfg->used_int_regs |= 1 << 31;
 	}
 
 	alloc_size = cfg->stack_offset;
@@ -2727,6 +2762,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->stack_usage = alloc_size;
 	if (alloc_size)
 		ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		ppc_mr (code, ppc_r31, ppc_sp);
 
         /* compute max_offset in order to use short forward jumps */
 	max_offset = 0;
@@ -2761,7 +2798,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (inst->opcode == OP_REGVAR) {
 			g_assert (!ainfo->regtype); // fine for now
 			ppc_mr (code, inst->dreg, ainfo->reg);
-			x86_mov_reg_membase (code, inst->dreg, X86_EBP, inst->inst_offset, 4);
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
@@ -2816,15 +2852,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 #endif
 	}
 
-	if (cfg->flags & MONO_CFG_HAS_CALLS) {
-		ppc_lwz (code, ppc_r0, cfg->stack_usage + 8, ppc_sp);
+	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
+		ppc_lwz (code, ppc_r0, cfg->stack_usage + 8, cfg->frame_reg);
 		ppc_mtlr (code, ppc_r0);
 	}
-	ppc_addic (code, ppc_sp, ppc_sp, cfg->stack_usage);
+	ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
 	for (i = 13; i < 32; ++i) {
 		if (cfg->used_int_regs & (1 << i)) {
 			pos += 4;
-			ppc_lwz (code, i, -pos, ppc_sp);
+			ppc_lwz (code, i, -pos, cfg->frame_reg);
 		}
 	}
 	ppc_blr (code);
