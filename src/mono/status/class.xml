@@ -1166,6 +1166,56 @@
         </maintainers>
     </class>
 
+    <class name="System.IO.FileNotFoundException">
+        <last-activity>Sept-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.FileLoadException">
+        <last-activity>Sept-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Assembly">
+        <last-activity>Sept-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>5</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.MethodBase">
+        <last-activity>Sept-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.MethodInfo">
+        <last-activity>Sept-13-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.Xml.XmlReader">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
