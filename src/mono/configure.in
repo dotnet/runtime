@@ -19,7 +19,7 @@ case "$host" in
 		AC_DEFINE(PLATFORM_WIN32)
 		CC="gcc -mno-cygwin"
 		HOST_CC="gcc"
-		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS"
+		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS -DWIN32_THREADS"
 		libdl=
 		;;
 	*-*-*bsd*)

@@ -1,3 +1,9 @@
+2003-01-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: added WIN32_THREADS flag when building under windows.
+	It seems that the header files of the gc do not always define it when
+	GC_WIN32_THREADS is defined.
+
 2003-01-26  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/index
