@@ -137,6 +137,7 @@ static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMa
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj);
+static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -396,6 +397,23 @@ my_mono_class_from_mono_type (MonoType *type) {
 }
 
 static void
+encode_generic_inst (MonoDynamicImage *assembly, MonoGenericInst *ginst, char *p, char **endbuf)
+{
+	int i;
+
+	if (!ginst) {
+		g_assert_not_reached ();
+		return;
+	}
+
+	mono_metadata_encode_value (MONO_TYPE_GENERICINST, p, &p);
+	encode_type (assembly, ginst->generic_type, p, &p);
+	mono_metadata_encode_value (ginst->type_argc, p, &p);
+	for (i = 0; i < ginst->type_argc; ++i)
+		encode_type (assembly, ginst->type_argv [i], p, &p);
+}
+
+static void
 encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 {
 	if (!type) {
@@ -456,16 +474,9 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 		mono_metadata_encode_value (0, p, &p); /* FIXME: set to 0 for now */
 		mono_metadata_encode_value (0, p, &p);
 		break;
-	case MONO_TYPE_GENERICINST: {
-		int i;
-		mono_metadata_encode_value (type->type, p, &p);
-		encode_type (assembly, type->data.generic_inst->generic_type, p, &p);
-		mono_metadata_encode_value (type->data.generic_inst->type_argc, p, &p);
-		for (i = 0; i < type->data.generic_inst->type_argc; ++i) {
-			encode_type (assembly, type->data.generic_inst->type_argv [i], p, &p);
-		}
+	case MONO_TYPE_GENERICINST:
+		encode_generic_inst (assembly, type->data.generic_inst, p, &p);
 		break;
-	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		mono_metadata_encode_value (type->type, p, &p);
@@ -1915,7 +1926,7 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 		MonoClass *k = mono_class_from_mono_type (type);
 		if (!k || !k->generic_inst)
 			return 0;
-		encode_type (assembly, k->generic_inst, p, &p);
+		encode_generic_inst (assembly, k->generic_inst, p, &p);
 		break;
 	}
 	default:
@@ -6878,6 +6889,8 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 			else
 				itype = &klass->interfaces [i]->byval_arg;
 			ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
+			if (!ginst->ifaces [i])
+				ginst->ifaces [i] = itype;
 		}
 	}
 
@@ -6898,7 +6911,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 
 		ginst->generic_type = &klass->byval_arg;
 	} else {
-		MonoGenericInst *kginst = klass->generic_inst->data.generic_inst;
+		MonoGenericInst *kginst = klass->generic_inst;
 
 		ginst->type_argc = kginst->type_argc;
 		ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
@@ -6968,7 +6981,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	}
 
 	if (method->klass->generic_inst) {
-		MonoGenericInst *kginst = method->klass->generic_inst->data.generic_inst;
+		MonoGenericInst *kginst = method->klass->generic_inst;
 
 		ginst->type_argc = kginst->type_argc;
 		ginst->type_argv = kginst->type_argv;

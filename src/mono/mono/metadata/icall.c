@@ -1614,7 +1614,7 @@ ves_icall_Type_GetGenericArguments (MonoReflectionType *type)
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_inst) {
-		MonoGenericInst *inst = klass->generic_inst->data.generic_inst;
+		MonoGenericInst *inst = klass->generic_inst;
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i) {
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
@@ -1651,7 +1651,7 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 		return type; /* check this one */
 	}
 	if (klass->generic_inst) {
-		MonoType *generic_type = klass->generic_inst->data.generic_inst->generic_type;
+		MonoType *generic_type = klass->generic_inst->generic_type;
 		MonoClass *generic_class = mono_class_from_mono_type (generic_type);
 
 		if (generic_class->wastypebuilder && generic_class->reflection_info)

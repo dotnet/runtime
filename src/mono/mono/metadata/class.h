@@ -178,7 +178,7 @@ struct _MonoClass {
 	MonoType this_arg;
 	MonoType byval_arg;
 
-	MonoType *generic_inst;
+	MonoGenericInst *generic_inst;
 	MonoGenericParam *gen_params;
 	guint16 num_gen_params;
 

@@ -392,7 +392,7 @@ class_compute_field_layout (MonoClass *class)
 		if (mono_field_is_deleted (field))
 			continue;
 		if (class->generic_inst) {
-			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst->data.generic_inst);
+			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst);
 			field->type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
@@ -1727,7 +1727,7 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 	class->image = image;
 	class->flags = gklass->flags;
 
-	class->generic_inst = gtype;
+	class->generic_inst = ginst;
 
 	class->cast_class = class->element_class = class;
 

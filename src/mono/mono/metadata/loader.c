@@ -297,7 +297,7 @@ find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 		klass = klass->parent;
 	}
 	if (sclass->generic_inst) {
-		MonoClass *gclass = mono_class_from_mono_type (sclass->generic_inst->data.generic_inst->generic_type);
+		MonoClass *gclass = mono_class_from_mono_type (sclass->generic_inst->generic_type);
 		MonoMethod *res = find_method (gclass, name, sig);
 		if (!res)
 			return NULL;
@@ -412,7 +412,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 			else if (klass->generic_inst)
-				method = mono_class_inflate_generic_method (method, klass->generic_inst->data.generic_inst);
+				method = mono_class_inflate_generic_method (method, klass->generic_inst);
 			mono_metadata_free_method_signature (sig);
 			return method;
 		}
