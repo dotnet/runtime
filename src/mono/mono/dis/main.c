@@ -1405,11 +1405,21 @@ main (int argc, char *argv [])
 
 	if (input_files == NULL)
 		usage ();
-	
-	mono_init (argv [0]);
 
-	for (l = input_files; l; l = l->next)
-		disassemble_file (l->data);
+	/*
+	 * If we just have one file, use the corlib version it requires.
+	 */
+	if (!input_files->next) {
+		char *filename = l->data;
+
+		mono_init_from_assembly (argv [0], filename);
+		disassemble_file (filename);
+	} else {
+		mono_init (argv [0]);
+
+		for (l = input_files; l; l = l->next)
+			disassemble_file (l->data);
+	}
 
 	return 0;
 }
