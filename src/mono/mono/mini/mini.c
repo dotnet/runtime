@@ -4778,12 +4778,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
-				MONO_INST_NEW (cfg, ins, mono_type_to_stind (&klass->byval_arg));
-				ins->cil_code = ip;
-				ins->inst_left = load;
-				ins->inst_right = sp [2];
-				handle_loaded_temps (cfg, bblock, stack_start, sp);
-				MONO_ADD_INS (bblock, ins);
+
+				n = mono_type_to_stind (&klass->byval_arg);
+				if (n == CEE_STOBJ)
+					handle_stobj (cfg, bblock, load, sp [2], ip, klass, FALSE, FALSE);
+				else {
+					MONO_INST_NEW (cfg, ins, n);
+					ins->cil_code = ip;
+					ins->inst_left = load;
+					ins->inst_right = sp [2];
+					handle_loaded_temps (cfg, bblock, stack_start, sp);
+					MONO_ADD_INS (bblock, ins);
+				}
 			}
 			ip += 5;
 			inline_costs += 1;
