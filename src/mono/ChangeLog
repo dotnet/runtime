@@ -1,3 +1,8 @@
+
+Fri Jan 23 21:26:01 CET 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, acconfig.h: added check for socklen_t.
+
 2004-01-22  Zoltan Varga  <vargaz@freemail.hu>
 
 	* Makefile.am: Do not install mono.pc on platforms without a JIT.

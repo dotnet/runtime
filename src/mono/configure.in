@@ -671,6 +671,21 @@ else
 	AC_CHECK_LIB(psapi, main, LIBS="$LIBS -lpsapi", AC_ERROR(bad mingw install?))
 fi
 
+dnl socklen_t check
+AC_MSG_CHECKING(for socklen_t)
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+],[
+  socklen_t foo;
+],[
+ac_cv_c_socklen_t=yes
+	AC_DEFINE(HAVE_SOCKLEN_T)
+	AC_MSG_RESULT(yes)
+],[
+	AC_MSG_RESULT(no)
+])
+
 dnl ****************************
 dnl *** Look for /dev/random ***
 dnl ****************************
