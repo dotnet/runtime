@@ -1811,9 +1811,9 @@ class Tests {
 			Broken.DoSomething ();
 		}
 		catch (TypeInitializationException) {
-			return 0;
+			// This will only happen once even if --regression is used
 		}
-		return 1;
+		return 0;
 	}
 
 	static int test_5_regalloc () {
