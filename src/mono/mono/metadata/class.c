@@ -740,6 +740,95 @@ mono_compute_relative_numbering (MonoClass *class, int *c)
 	class->diffval = *c -  class->baseval;
 }
 
+static void
+mono_class_setup_mono_type (MonoClass *class)
+{
+	const char *name = class->name;
+	const char *nspace = class->name_space;
+
+	if (!strcmp (nspace, "System")) {
+		if (!strcmp (name, "ValueType")) {
+			/*
+			 * do not set the valuetype bit for System.ValueType.
+			 * class->valuetype = 1;
+			 */
+		} else if (!strcmp (name, "Enum")) {
+			/*
+			 * do not set the valuetype bit for System.Enum.
+			 * class->valuetype = 1;
+			 */
+			class->valuetype = 0;
+			class->enumtype = 0;
+		} else if (!strcmp (name, "Object")) {
+			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;
+		} else if (!strcmp (name, "String")) {
+			class->this_arg.type = class->byval_arg.type = MONO_TYPE_STRING;
+		}
+	}
+	
+	if (class->valuetype) {
+		int t = MONO_TYPE_VALUETYPE;
+		if (!strcmp (nspace, "System")) {
+			switch (*name) {
+			case 'B':
+				if (!strcmp (name, "Boolean")) {
+					t = MONO_TYPE_BOOLEAN;
+				} else if (!strcmp(name, "Byte")) {
+					t = MONO_TYPE_U1;
+				}
+				break;
+			case 'C':
+				if (!strcmp (name, "Char")) {
+					t = MONO_TYPE_CHAR;
+				}
+				break;
+			case 'D':
+				if (!strcmp (name, "Double")) {
+					t = MONO_TYPE_R8;
+				}
+				break;
+			case 'I':
+				if (!strcmp (name, "Int32")) {
+					t = MONO_TYPE_I4;
+				} else if (!strcmp(name, "Int16")) {
+					t = MONO_TYPE_I2;
+				} else if (!strcmp(name, "Int64")) {
+					t = MONO_TYPE_I8;
+				} else if (!strcmp(name, "IntPtr")) {
+					t = MONO_TYPE_I;
+				}
+				break;
+			case 'S':
+				if (!strcmp (name, "Single")) {
+					t = MONO_TYPE_R4;
+				} else if (!strcmp(name, "SByte")) {
+					t = MONO_TYPE_I1;
+				}
+				break;
+			case 'U':
+				if (!strcmp (name, "UInt32")) {
+					t = MONO_TYPE_U4;
+				} else if (!strcmp(name, "UInt16")) {
+					t = MONO_TYPE_U2;
+				} else if (!strcmp(name, "UInt64")) {
+					t = MONO_TYPE_U8;
+				} else if (!strcmp(name, "UIntPtr")) {
+					t = MONO_TYPE_U;
+				}
+				break;
+			case 'V':
+				if (!strcmp (name, "Void")) {
+					t = MONO_TYPE_VOID;
+				}
+				break;
+			default:
+				break;
+			}
+		}
+		class->this_arg.type = class->byval_arg.type = t;
+	}
+}
+
 /**
  * @image: context where the image is created
  * @type_token:  typedef token
@@ -832,87 +921,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 	}
 
-	if (!strcmp (nspace, "System")) {
-		if (!strcmp (name, "ValueType")) {
-			/*
-			 * do not set the valuetype bit for System.ValueType.
-			 * class->valuetype = 1;
-			 */
-		} else if (!strcmp (name, "Enum")) {
-			/*
-			 * do not set the valuetype bit for System.Enum.
-			 * class->valuetype = 1;
-			 */
-			class->valuetype = 0;
-			class->enumtype = 0;
-		} else if (!strcmp (name, "Object")) {
-			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;
-		} else if (!strcmp (name, "String")) {
-			class->this_arg.type = class->byval_arg.type = MONO_TYPE_STRING;
-		}
-	}
-	
-	if (class->valuetype) {
-		int t = MONO_TYPE_VALUETYPE;
-		if (!strcmp (nspace, "System")) {
-			switch (*name) {
-			case 'B':
-				if (!strcmp (name, "Boolean")) {
-					t = MONO_TYPE_BOOLEAN;
-				} else if (!strcmp(name, "Byte")) {
-					t = MONO_TYPE_U1;
-				}
-				break;
-			case 'C':
-				if (!strcmp (name, "Char")) {
-					t = MONO_TYPE_CHAR;
-				}
-				break;
-			case 'D':
-				if (!strcmp (name, "Double")) {
-					t = MONO_TYPE_R8;
-				}
-				break;
-			case 'I':
-				if (!strcmp (name, "Int32")) {
-					t = MONO_TYPE_I4;
-				} else if (!strcmp(name, "Int16")) {
-					t = MONO_TYPE_I2;
-				} else if (!strcmp(name, "Int64")) {
-					t = MONO_TYPE_I8;
-				} else if (!strcmp(name, "IntPtr")) {
-					t = MONO_TYPE_I;
-				}
-				break;
-			case 'S':
-				if (!strcmp (name, "Single")) {
-					t = MONO_TYPE_R4;
-				} else if (!strcmp(name, "SByte")) {
-					t = MONO_TYPE_I1;
-				}
-				break;
-			case 'U':
-				if (!strcmp (name, "UInt32")) {
-					t = MONO_TYPE_U4;
-				} else if (!strcmp(name, "UInt16")) {
-					t = MONO_TYPE_U2;
-				} else if (!strcmp(name, "UInt64")) {
-					t = MONO_TYPE_U8;
-				} else if (!strcmp(name, "UIntPtr")) {
-					t = MONO_TYPE_U;
-				}
-				break;
-			case 'V':
-				if (!strcmp (name, "Void")) {
-					t = MONO_TYPE_VOID;
-				}
-				break;
-			default:
-				break;
-			}
-		}
-		class->this_arg.type = class->byval_arg.type = t;
-	}
+	mono_class_setup_mono_type (class);
 
 	/*
 	 * Compute the field and method lists
@@ -1252,7 +1261,7 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	int i;
 
 	for (i = 0; i < klass->field.count; ++i) {
-		if (strcmp (name, klass->fields->name) == 0)
+		if (strcmp (name, klass->fields [i].name) == 0)
 			return &klass->fields [i];
 	}
 	return NULL;
