@@ -5425,6 +5425,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			conv = -1;
 
+		mono_marshal_load_type_info (eklass);
+
 		if (is_string)
 			esize = sizeof (gpointer);
 		else
@@ -5493,8 +5495,23 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
 		mono_mb_emit_stloc (mb, conv_arg);
 
+		if (eklass->blittable) {
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_CONV_I);
+			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_LDLEN);
+			mono_mb_emit_icon (mb, esize);
+			mono_mb_emit_byte (mb, CEE_MUL);
+			mono_mb_emit_byte (mb, CEE_PREFIX1);
+			mono_mb_emit_byte (mb, CEE_CPBLK);			
+			break;
+		}
+
 		/* Emit marshalling loop */
-		index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);				
+		index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 		mono_mb_emit_stloc (mb, index_var);
 		label2 = mb->pos;
@@ -5519,7 +5536,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_STELEM_REF);
 		}
 		else {
-			char *msg = g_strdup ("Marshalling of non-string arrays to managed code is not implemented.");
+			char *msg = g_strdup ("Marshalling of non-string and non-blittable arrays to managed code is not implemented.");
 			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
 		}
