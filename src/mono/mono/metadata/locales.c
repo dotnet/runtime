@@ -42,8 +42,6 @@ static gint32 string_invariant_indexof (MonoString *source, gint32 sindex,
 static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 					     gint32 count, gunichar2 value,
 					     MonoBoolean first);
-static MonoString *string_invariant_tolower (MonoString *this);
-static MonoString *string_invariant_toupper (MonoString *this);
 
 static int
 culture_lcid_locator (const void *a, const void *b)
@@ -1437,15 +1435,6 @@ MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this, Mono
 	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", cult->lcid);
 #endif
 
-	if(cult->lcid==0x007F) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Invariant, using shortcut");
-#endif
-
-		return(string_invariant_tolower (this));
-	}
-
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
@@ -1506,15 +1495,6 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 	g_message (G_GNUC_PRETTY_FUNCTION ": LCID is %d", cult->lcid);
 #endif
 
-	if(cult->lcid==0x007F) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Invariant, using shortcut");
-#endif
-
-		return(string_invariant_toupper (this));
-	}
-
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
@@ -1567,11 +1547,6 @@ gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureIn
 	
 	MONO_ARCH_SAVE_REGS;
 
-	if(cult->lcid==0x007F) {
-		/* Invariant shortcut */
-		return g_unichar_toupper (c);
-	}
-
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
@@ -1598,11 +1573,6 @@ gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureIn
 	int32_t len;
 	
 	MONO_ARCH_SAVE_REGS;
-
-	if(cult->lcid==0x007F) {
-		/* Invariant shortcut */
-		return g_unichar_tolower (c);
-	}
 
 	icu_loc=mono_string_to_icu_locale (cult->icu_name);
 	if(icu_loc==NULL) {
@@ -1962,44 +1932,4 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 
 		return(-1);
 	}
-}
-
-static MonoString *string_invariant_tolower (MonoString *this)
-{
-	MonoString *ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-	gint32 i;
-
-	ret = mono_string_new_size(mono_domain_get (),
-				   mono_string_length(this));
-
-	src = mono_string_chars (this);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (this); ++i) {
-		dest[i] = g_unichar_tolower(src[i]);
-	}
-
-	return(ret);
-}
-
-static MonoString *string_invariant_toupper (MonoString *this)
-{
-	MonoString *ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-	guint32 i;
-
-	ret = mono_string_new_size(mono_domain_get (),
-				   mono_string_length(this));
-
-	src = mono_string_chars (this);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (this); ++i) {
-		dest[i] = g_unichar_toupper(src[i]);
-	}
-
-	return(ret);
 }
