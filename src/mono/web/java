@@ -39,14 +39,14 @@
 
 	This is an attempt to make the java bytecode available for the
 	.NET environment.
-	
+
 	The project attempts to generate the IL code / bytecode from the
 	compiled java class files. It has reached the stage of code-generation.
 	The issues that needs to be addressed is the mapping of java objects
 	to the IL objects, eg: java.lang.String to System.String.
-	
+
 	Gaurav Vaish and Abhaya Agarwal are currently leading this project.
-	The project is currently hosted at <a href="http://savannah.gnu.org/projects/jilc">GNU Savannah</a>.
+	The project is currently hosted at <a href="http://sourceforge.net/projects/jilc">SourceForge.Net</a>.
 	The official home page of the project is 
-	<a href="http://home.iitk.ac.in/student/gvaish/jilc">http://home.iitk.ac.in/student/gvaish/jilc</a>.
+	<a href="http://jilc.sourceforge.net">http://jilc.sourceforge.net</a>.
 
