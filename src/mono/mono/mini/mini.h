@@ -279,7 +279,6 @@ enum {
 #define inst_newa_len   data.op[0].src
 #define inst_newa_class data.op[1].klass
 
-#define inst_switch data.op[0].switch_blocks
 #define inst_var    data.op[0].var
 #define inst_vtype  data.op[1].vtype
 /* in branch instructions */
