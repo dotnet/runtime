@@ -166,6 +166,7 @@ typedef struct sigcontext MonoContext;
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_NEED_GOT_VAR 1
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
+#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
 
 #endif /* __MONO_MINI_X86_H__ */  
 
