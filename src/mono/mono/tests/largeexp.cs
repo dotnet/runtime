@@ -4,8 +4,8 @@ class Test {
 
 	private static int[] crc_lookup=new int[256];
 
-	public byte[] header_base;
-	public int header;
+	public byte[] header_base = new byte [10];
+	public int header = 0;
 
 	internal int checksum() {
 		uint crc_reg=0;
