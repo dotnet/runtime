@@ -1,48 +1,58 @@
 using System;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 
 namespace System {
 
+	// private internal call for Mono runtime
 	public class Environment {
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal extern static string internalGetGacPath ();
 	}
 
-	public class Program {
+	// private internal call for MS runtime
+	// http://msdn.microsoft.com/msdnmag/issues/04/11/NETMatters/
+	public class Guid {
 
-		static bool IsEcmaSigned ()
+		public Guid ()
 		{
-			byte[] pk = Assembly.GetExecutingAssembly ().GetName ().GetPublicKey ();
-			if ((pk != null) && (pk.Length == 16) && (pk [8] == 0x04)) {
-				int n = 0;
-				for (int i=0; i < pk.Length; i++)
-					n += pk [i];
-				if (n == 4)
-					return true;
-			}
-			return false;
 		}
 
-		static int Main ()
-		{
-			try {
-				string gac = Environment.internalGetGacPath ();
-				int ec = IsEcmaSigned () ? 0 : 1;
-				Console.WriteLine ("*{0}* internalGetGacPath: {1}", ec, gac);
-				return ec;
+		[MethodImpl (MethodImplOptions.InternalCall)]
+		internal extern bool CompleteGuid ();
+	}
+}
+
+public class Program {
+
+	static bool RunningOnMono ()
+	{
+		bool mono = (Type.GetType ("Mono.Math.BigInteger") != null); 
+		Console.WriteLine ("Running on {0} runtime...", mono ? "Mono" : "Microsoft");
+		return mono;
+	}
+
+	static int Main ()
+	{
+		try {
+			string result = null;
+			if (RunningOnMono ()) {
+				result = Environment.internalGetGacPath ();
+			} else {
+				System.Guid g = new System.Guid ();
+				result = g.CompleteGuid ().ToString ();
 			}
-			catch (SecurityException se) {
-				int ec = IsEcmaSigned () ? 1 : 0;
-				Console.WriteLine ("*{0}* Expected SecurityException\n{1}", ec, se);
-				return ec;
-			}
-			catch (Exception e) {
-				Console.WriteLine ("*2* Unexpected exception\n{0}", e);
-				return 2;
-			}
+			Console.WriteLine ("*1* Unexcepted internal call: {0}", result);
+			return 1;
+		}
+		catch (SecurityException se) {
+			Console.WriteLine ("*0* Expected SecurityException\n{0}", se);
+			return 0;
+		}
+		catch (Exception e) {
+			Console.WriteLine ("*2* Unexpected exception\n{0}", e);
+			return 2;
 		}
 	}
 }

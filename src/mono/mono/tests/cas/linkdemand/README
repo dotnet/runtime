@@ -1,6 +1,10 @@
 * LinkDemand
 
-cas1.cs		LinkDemand for SecurityPermission UnmanagedCode
+cas1.cs		LinkDemand on Main (entrypoint) is ignored
+cas2.cs		LinkDemand restricted by RequestRefuse -> Unhandled
+cas3.cs		Partial execution before (handled) exception
+cas4.cs		Reflection on a method protected by LinkDemand (granted)
+cas5.cs		Reflection on a method protected by LinkDemand (denied)
 
 This is the "common" case for LinkDemand (i.e. using user supplied declarative
 security attributes).
@@ -11,28 +15,35 @@ and now the special cases...
 
 * InternalCall
 
-icall1.cs	Define an (existing) icall and try to execute it.
-icall2.cs	Use reflection to execute an icall.
+icall1.cs	Define an (existing) private icall and try to execute it.
+icall2.cs	Use reflection to execute an private icall.
+icall3.cs	Define an (existing) public icall and try to execute it.
+icall4.cs	Like icall3.cs but use reflection to execute the public icall.
+icall5.cs	Like icall3.cs but RequestRefuse UnmanagedCode permission.
+icall6.cs	Like icall4.cs but RequestRefuse UnmanagedCode permission.
 
-Both files are compiled twice. 
-
-The first time the files are compiled without a public key (no strongname).
-This means that the security manager (if active) will not allow the direct
-execution of the icall by the code.
-
-The second compilation adds the ECMA public key (assembly is delay signed).
-Because the ECMA public key is present the execution of an internal call
-is not prohibited by the security manager.
+- Private icalls cannot be called by re-defining them (exact rule unknown,
+  it may be ECMA key related but I'm not 100% sure anymore). Trying to do so
+  throws a (catch-able) SecurityException.
+- UnmanagedCode permission has _no_ effect on executing icalls.
+- Reflection can be used to call internal calls (even when private).
 
 
 * P/Invoke
 
-pinvoke1.cs	Call getuid in libc on a class with [SUCS] attribute
-pinvoke2.cs	Call getuid in libc on a method with [SUCS] attribute
+pinvoke1.cs	Call native code in a class with [SUCS] attribute
+pinvoke2.cs	Call native code in a method with [SUCS] attribute
+pinvoke3.cs	Call native code RequestRefuse UnmanagedCode permission 
+		which results in an unhandled SecurityException
+pinvoke4.cs	Call native code RequestRefuse UnmanagedCode permission
+		which results in an SecurityException
 
 A little know fact is that P/Invoke does a LinkDemand (JIT time) and not
 only a Demand (runtime). The JIT time check isn't subject to be cancelled
 by the [SuppressUnmanagedCodeSecurity] attribute.
+
+- With Mono runtime the native function getuid is called in libc
+- With MS runtime the native function GetTickCount is called in kernel32.dll
 
 
 * [AllowPartiallyTustedCallers] a.k.a. APTC

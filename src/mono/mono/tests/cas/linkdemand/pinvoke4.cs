@@ -1,6 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
+
+[assembly: SecurityPermission (SecurityAction.RequestRefuse, UnmanagedCode=true)]
 
 public class Program {
 
@@ -19,27 +22,25 @@ public class Program {
 		return mono;
 	}
 
-	// this attribute has NO effect on LinkDemand!
-	[SuppressUnmanagedCodeSecurity]
 	static int Test ()
 	{
+		uint u = (RunningOnMono ()) ? getuid () : GetTickCount ();
+		Console.WriteLine ("*1* Unexpected P/Invoke success: {0}", u);
+		return 1;
+	}
+
+	static int Main ()
+	{
 		try {
-			uint u = (RunningOnMono ()) ? getuid () : GetTickCount ();
-			Console.WriteLine ("*0* P/Invoke: {0}", u);
-			return 0;
+			return Test ();
 		}
 		catch (SecurityException se) {
-			Console.WriteLine ("*1* Unexpected SecurityException\n{0}", se);
-			return 1;
+			Console.WriteLine ("*0* SecurityException\n{0}", se);
+			return 0;
 		}
 		catch (Exception e) {
 			Console.WriteLine ("*2* Unexpected exception\n{0}", e);
 			return 2;
 		}
-	}
-
-	static int Main ()
-	{
-		return Test ();
 	}
 }

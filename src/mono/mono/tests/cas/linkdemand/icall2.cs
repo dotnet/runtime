@@ -2,49 +2,52 @@ using System;
 using System.Reflection;
 using System.Security;
 
-namespace Test {
+public class Program {
 
-	public class Program {
+	static bool RunningOnMono ()
+	{
+		bool mono = (Type.GetType ("Mono.Math.BigInteger") != null); 
+		Console.WriteLine ("Running on {0} runtime...", mono ? "Mono" : "Microsoft");
+		return mono;
+	}
 
-		private const string icall = "internalGetGacPath";
+	static int Main ()
+	{
+		string icall = null;
+		MethodInfo mi = null;
+		bool mono = RunningOnMono ();
 
-		static bool IsEcmaSigned ()
-		{
-			byte[] pk = Assembly.GetExecutingAssembly ().GetName ().GetPublicKey ();
-			if ((pk != null) && (pk.Length == 16) && (pk [8] == 0x04)) {
-				int n = 0;
-				for (int i=0; i < pk.Length; i++)
-					n += pk [i];
-				if (n == 4)
-					return true;
-			}
-			return false;
+		if (mono) {
+			icall = "internalGetGacPath";
+			mi = typeof (System.Environment).GetMethod (icall, BindingFlags.Static | BindingFlags.NonPublic);
+		} else {
+			icall = "CompleteGuid";
+			mi = typeof (System.Guid).GetMethod (icall, BindingFlags.Instance | BindingFlags.NonPublic);
 		}
 
-		static int Main ()
-		{
-			MethodInfo mi = typeof (System.Environment).GetMethod (icall, 
-				BindingFlags.Static | BindingFlags.NonPublic);
-			if (mi == null) {
-				Console.WriteLine ("*3* Couldn't reflect on internalcall {0}", icall);
+		if (mi == null) {
+			Console.WriteLine ("*3* Couldn't reflect on internalcall {0}", icall);
 				return 3;
-			}
+		}
 
-			try {
-				string gac = (string)mi.Invoke (null, null);
-				int ec = IsEcmaSigned () ? 0 : 1;
-				Console.WriteLine ("*{0}* internalGetGacPath: {1}", ec, gac);
-				return ec;
+		try {
+			string result = null;
+			if (mono) {
+				result = (string) mi.Invoke (null, null);
+			} else {
+				System.Guid g = new System.Guid ();
+				result = ((bool) mi.Invoke (g, null)).ToString ();
 			}
-			catch (SecurityException se) {
-				int ec = IsEcmaSigned () ? 1 : 0;
-				Console.WriteLine ("*{0}* Expected SecurityException\n{1}", ec, se);
-				return ec;
-			}
-			catch (Exception e) {
-				Console.WriteLine ("*2* Unexpected exception\n{0}", e);
-				return 2;
-			}
+			Console.WriteLine ("*0* [Reflected]{0}: {1}", icall, result);
+			return 0;
+		}
+		catch (SecurityException se) {
+			Console.WriteLine ("*1* SecurityException\n{0}", se);
+			return 1;
+		}
+		catch (Exception e) {
+			Console.WriteLine ("*2* Unexpected exception\n{0}", e);
+			return 2;
 		}
 	}
 }

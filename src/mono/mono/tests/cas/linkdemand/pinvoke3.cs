@@ -1,6 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
+
+[assembly: SecurityPermission (SecurityAction.RequestRefuse, UnmanagedCode=true)]
 
 public class Program {
 
@@ -19,8 +22,6 @@ public class Program {
 		return mono;
 	}
 
-	// this attribute has NO effect on LinkDemand!
-	[SuppressUnmanagedCodeSecurity]
 	static int Test ()
 	{
 		try {
