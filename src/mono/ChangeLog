@@ -1,3 +1,30 @@
+2004-11-05  Jonathan Pryor <jonpryor@vt.edu>
+
+	* support/.cvsignore: Ignore generated files.
+	* support/Makefile.am: Add new INCLUDE directives (for glib headers),
+	  source; bump library version (so we don't clobber previous versions of
+	  libMonoPosixHelper.so).
+	* support/dirent.c: New file; <dirent.h> wrapper functions
+	* support/errno.c: New file; <errno.h> wrapper functions
+	* support/fcntl.c: New file; <fcntl.h> wrapper functions
+	* support/grp.c: New file; <grp.h> wrapper functions
+	* support/map.c: Updated macro mapping functions (more enums mapped, more
+	  error checking, etc.).
+	* support/map.h: Updated macro mapping functions
+	* support/old-map.c: Previous map.c implementation, for backward compatibility
+	* support/old-map.h: Previous map.h implementation, for backward compatibility
+	* support/mph.h: New file; Utility types, macros
+	* support/pwd.c: New file; <pwd.h> wrapper functions
+	* support/stdio.c: New file; <stdio.h> wrapper functions
+	* support/stdlib.c: New file; <stdlib.h> wrapper functions
+	* support/sys-mman.c: New file; <sys/mman.h> wrapper functions
+	* support/sys-mount.c: New file; <sys/mount.h> wrapper functions
+	* support/sys-sendfile.c: New file; <sys/sendfile.h> wrapper functions
+	* support/sys-stat.c: New file; <sys/stat.h> wrapper functions
+	* support/sys-wait.c: New file; <sys/wait.h> wrapper functions
+	* support/time.c: New file; <time.h> wrapper functions
+	* support/unistd.c: New file; <unistd.h> wrapper functions
+
 2004-10-31  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix up --with-jit=no so it actually works. Fixes 
