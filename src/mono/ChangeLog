@@ -1,3 +1,11 @@
+2005-03-23  Raja R Harinath  <rharinath@novell.com>
+
+	Allow testing of System.Drawing with a libgdiplus snapshot.
+	* configure.in (libgdiplus): New --with-libgdiplus option.  Allow
+	the location of libgdiplus to be overridden.
+	* runtime/Makefile.am (wrapper-config): Override location of
+	libgdiplus if requested.
+
 2005-03-14  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (clean_profiles): Remove.

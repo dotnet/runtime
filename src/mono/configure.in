@@ -308,6 +308,18 @@ mcs_topdir_from_srcdir='$(top_builddir)/'$mcsdir
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
+AC_ARG_WITH([libgdiplus], 
+	[  --with-libgdiplus=no|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
+	[], [with_libgdiplus=no])
+
+case $with_libgdiplus in
+no) libgdiplus_topdir= ;;
+yes|sibling) libgdiplus_topdir=`cd ../libgdiplus && pwd` ;;
+/*) libgdiplus_topdir=$with_libgdiplus ;;
+*) libgdiplus_topdir=`cd $with_libgdiplus && pwd` ;;
+esac
+AC_SUBST([libgdiplus_topdir])
+
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
@@ -1669,6 +1681,11 @@ runtime/Makefile
   echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
 )
 
+case $libgdiplus_topdir in
+'') libgdiplus_loc='installed (assumed to exist, have not checked)' ;;
+*) libgdiplus_loc=$libgdiplus_topdir ;;
+esac
+
 echo "
         mcs source:  $mcs_topdir
 	GC:	     $gc
@@ -1678,6 +1695,7 @@ echo "
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
 	JNI support: $jdk_headers_found
+	libgdiplus:  $libgdiplus_loc
 	$disabled
 
 "
