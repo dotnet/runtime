@@ -263,7 +263,9 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 			/* need to re-register links for weak refs. test if GC_realloc needs the same */
 			for (i = 0; i < array_size; ++i) {
 				if (((gulong)new_array [i]) & 0x1) { /* all and only disguised pointers have it set */
-					GC_general_register_disappearing_link (&(new_array [i]), REVEAL_POINTER (new_array [i]));
+					GC_unregister_disappearing_link (&(gc_handles [i]));
+					if (new_array [i] != (gpointer)-1)
+						GC_general_register_disappearing_link (&(new_array [i]), REVEAL_POINTER (new_array [i]));
 				}
 			}
 		}
@@ -301,7 +303,11 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 void
 ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
-	gc_handles [handle >> 2] = (gpointer)-1;
+	int idx = handle >> 2;
+	if ((handle & 0x3) > 1)
+		GC_unregister_disappearing_link (&(gc_handles [idx]));
+
+	gc_handles [idx] = (gpointer)-1;
 }
 
 gpointer
@@ -311,8 +317,11 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 
 	if (gc_handles) {
 		obj = gc_handles [handle >> 2];
-		if ((handle & 0x3) > 1)
-			return REVEAL_POINTER (obj);
+		if ((handle & 0x3) > 1) {
+			obj = REVEAL_POINTER (obj);
+			if (obj == (MonoObject *) -1)
+				return NULL;
+		}
 		return obj;
 	}
 	return NULL;
