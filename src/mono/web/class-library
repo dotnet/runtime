@@ -3,50 +3,42 @@
 	The Class Library should be compatible with Microsoft's .NET
 	implementation.  
 
-	Ideally as much code as possible should be written using C#.
-	In some cases we might either need to interface with code
-	written in C for large chunks of functionality (libart and
-	Gtk+ for example) or we would need to interface to the system
-	libraries (libc on Unix for networking functions for
-	example).  
+	We will write as much code as possible in C#. We may need to 
+	interface with code written in C to gain access to the functionality of
+        libraries like libart, Gtk+, and libc.
 
 ** Using existing components from GNOME.
 
 	Our current plan is to implement the GUI tools on top of
-	Gtk+.  The only problem is that applications from Windows
+	Gtk+.  The only obstacle here is that applications from Windows
 	might expect to be able to pull the HWND property from the
 	widgets and use PInvoke to call Windows functions.
 
 ** Class Library and Win32 dependencies.
 
 	There are a few spots where the Win32 foundation is exposed to
-	the class library (the HDC and HWND properties in the GDI+).
-	It seems from casual inspection that these can be safely
-	mapped to Gdk's GC and GdkWindow pointers without breaking anything.
+	the class library (for example, the HDC and HWND properties in
+	the GDI+). Casual inspection suggests that these can be
+	safely mapped to Gdk's GC and GdkWindow pointers without
+	breaking anything.
 
 	The only drawback is that support for PInvoke of Win32 code
-	wont be available.  If this is necessary it could be possible
-	in the future by reusing pieces of Wine, and probably using
-	Wine as our toolkit, but we think that this is not as
-	important as we will wrap GNOME elements in the meantime. 
+	won't be available.  An alternate solution would be to use
+	portions of Wine, or even to use Wine as our toolkit.
 
 *** Initial GDI+ and WinForms implementation
 
 	The initial implementation will use Gtk+ as the underlying
-	toolkit, but implementations for other windowing systems
-	should be possible (particularly thinking about PDA devices
-	here).
-
-	Since Gtk+ 2.0 has been ported to other windowing systems
-	other than X (frame buffer, Win32 and BeOS implementation
-	exist) it should cover most uses for most users.
-
+ 	toolkit. Since GTK+ has already been ported to many windowing
+	systems other than X (including frame buffer, Win32, and BeOS)
+	its use should cover most applications for most users. 
+	
 *** Database access
 
-	Implementing the ADO.NET functionality can be done through
-	reusing <a href="http://www.gnome-db.org">GNOME-DB</a> as
-	GNOME-DB was implemented precisely to provide an ADO-like
-	system for GNOME.
+	We will implement ADO.NET functionality by reusing <a
+	href="http://www.gnome-db.org">GNOME-DB</a>. This is an ideal
+	choice, since GNOME-DB was implemented precisely to provide an
+	ADO-like system for GNOME.
 
 *** Component Integration
 
@@ -65,15 +57,14 @@
 
 ** Class Library testing
 
-	We need to write regression tests that would excercise the
-	class library to verify that the class library is correct,
-	that our compiler is correct and that our JIT engine is
-	correct. 
+	We need to write regression tests that will verify
+	the correctness of the class library, compiler, and JIT
+	engine.
 
 ** Contributing
 
-	We welcome contributions to the the Class Library, you can
-	check the status page.  Our status page describes which APIs
-	are being worked on and the contact information for the
-	contributor.
+	We welcome contributions to the the Class Library.  To get
+	started, check the status page for information about which
+	APIs are being worked on, and how to get in touch with 
+	individual maintainers.
 

@@ -47,8 +47,7 @@
 
 	The JIT engine should work on Linux and Win32, although you
 	might need to install the CygWin32 development tools to get a
-	Unix-like compilation environment which is what we know how to
-	use. 
+	Unix-like compilation environment.
 
 ** Garbage Collection
 

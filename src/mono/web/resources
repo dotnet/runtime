@@ -12,7 +12,7 @@
 		* <a href="http://lightning.csse.monash.edu.au/.net/CLI">Monash University</a>
 	</ul>
 
-	Those contains specifications for the assembler, the metadata,
+	These contain specifications for the assembler, the metadata,
 	byte codes supported by the CLI virtual machine, the C#
 	language and the core class libraries.
 

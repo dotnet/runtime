@@ -1,7 +1,7 @@
 * Ideas
 
 	Here are a few ideas of tools, classes and projects that you
-	could start.
+	could start. More are forthcoming.
 
 <a name="classes">
 ** Classes
@@ -16,8 +16,6 @@
 		Camel implementation</a>
 
 ** Projects
-
-	Here are some projects you might be interested in working on:
 
 	Implement an xmlStorageSystem for the CLI:
 		<a href="http://www.soapware.org/xmlStorageSystem">

@@ -4,30 +4,29 @@
 	Pieces of Mono that have been implemented:
 
 	<ul>
-		* C# compiler: The C# parser is pretty much complete,
-		it generates a parse tree and now semantic analysis and a few
-		compiler lever optimizations need to be implemented as well as
-		code generation.
+		* C# compiler: The C# parser can now generate parse
+		trees. Next up: semantic analysis, compiler lever optimizations
+		and code generation.
 
-		* Metadata library: can currently parse and load
+		* Metadata library: Can currently parse and load
 		information from .NET modules (executables and DLL
 		files).  It has a few bugs outstanding (table
 		dimension computation is incorrect).
 
 		Parsing of Exception tables is missing. 
 
-		It lacks Token to (Table, Index) mapping, but should
-		be trivial to write. 
+		It lacks Token to (Table, Index) mapping, but this
+		should be trivial to write. 
 
-		* Disassembler: Can disassemble .NET modules;  It is
-		lacking Exception handling as well as useful debugging
+		* Disassembler: Can disassemble .NET modules. Still
+		lacking exception handling as well as useful debugging
 		tools (hex dumping, token dumping).
 
 		* Class Libraries: Only a few classes have been
 		implemented. 
 	</ul>
 
-	Tasks on the critical path that we are actively working on:
+	Tasks on the critical path:
 
 	<ul>
 		* Method and Field resolution.

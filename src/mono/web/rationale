@@ -8,35 +8,31 @@
 	desktop applications.  We also realized early on that language
 	independence was important, and that is why GNOME APIs were
 	coded using a standard that allowed the APIs to be easily
-	wrapped for other languages.  Our APIs are available on most
+	wrapped for other languages.  Our APIs are available to most
 	programming languages on Unix (Perl, Python, Scheme, C++,
 	Objective-C, Ada). 
 
 	Later on we decided to use better methods for encapsulating
 	our APIs, and we started to use CORBA to define interfaces to
-	components we complemented it with policy and a set of
-	standard GNOME interfaces for easily creating reusable and
+	components. We complemented it with policy and a set of
+	standard GNOME interfaces for easily creating reusable,
 	language independent components, controls and compound
 	documents.  This technology is known as <a
-	href="http://www.ximian.com/tech/bonobo.php3">Bonobo<a>, and
-	easy to use interfaces to Bonobo exist for C, Perl, Python,
+	href="http://www.ximian.com/tech/bonobo.php3">Bonobo<a>.
+	Interfaces to Bonobo exist for C, Perl, Python, and
 	Java.
 
 	CORBA is good when you define coarse interfaces, and most
 	Bonobo interfaces are coarse.  The only problem is that
 	Bonobo/CORBA interfaces are not good for small interfaces.
-	For example implementing an XML parser component and use it to
-	parse, create and walk an XML document would be inneficient
-	compared to a C API.
+	For example, an XML parsing Bonobo/CORBA component would be
+	inefficient compared to a C API.
 
 ** Microsoft's .NET
 
 	The Microsoft .NET initiative is confusing because it is a
 	company wide effort that ranges from development tools to end
-	user applications.  
-
-	Depending who you ask, you will probably get a different
-	answer on what .NET is, as .NET is a branding formative that
+	user applications.  .NET is a branding formative that
 	has been applied to:
 
 	<ul>
@@ -54,14 +50,12 @@
 
 	</ul>
 
-	From all the above, the one I am interested in is the new .NET
-	development platform. 
+	Mono is an implementation of the .NET development platform.
 
 ** The Common Language Infrastructure platform. 
 
 	Microsoft has created a new development platform.  The
 	highlights of this new development platform are:
-
 
 	<ul>
 		* A runtime environment that provides garbage
@@ -70,7 +64,7 @@
 
 		* A comprehensive class library.  
 
-		* A new language, C#.  Very similar to Java.  C#
+		* A new language, C#.  Very similar to Java,  C#
 		  allows programmers to use all the features available
 		  on the .NET runtime.
 
@@ -108,10 +102,10 @@
 
 ** ECMA standards.
 
-	Microsoft together with HP and Intel have submitted the
+	Microsoft, HP and Intel have submitted the
   	specifications of C#, the runtime, the metadata and the
   	other various bits of the .NET development platform to the
-  	ECMA for standarization.  
+  	ECMA for standarization.
 
 	You can get a copy of the specifications submitted to ECMA
 	from: <a href="http://www.dotnetexperts.com/ecma">http://www.dotnetexperts.com/ecma</a>

@@ -1,8 +1,8 @@
 * The GCC front-end
 
-	The GCC front-end will be a front-end that would accept as
-	input in a binary file with codes in the Common Intermediate
-	Language (CIL) that will generate native code.
+	The GCC front-end will accept input in a binary file with
+	codes in the Common Intermediate Language (CIL), and generate
+	native code.
 
 	This will allow pre-compilation and full optimization to take
 	place before a program is executed.
