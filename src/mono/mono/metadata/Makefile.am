@@ -18,21 +18,14 @@ libmetadataincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
-	blobsig.h	\
+	blob.h		\
 	cil-coff.h	\
-	eltype.h	\
 	endian.h	\
-	fieldattr.h	\
 	image.h		\
 	metadata.h	\
-	methodattr.h	\
-	methodheader.h	\
-	methodsem.h	\
-	paramattr.h	\
-	propertyattr.h	\
 	rawbuffer.h	\
-	tokentype.h	\
-	typeattr.h
+	tabledefs.h	\
+	tokentype.h
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)

@@ -11,7 +11,7 @@
 #include <stdio.h> 
 #include <glib.h>
 #include "metadata.h"
-#include "methodheader.h"
+#include "tabledefs.h"
 #include "endian.h"
 #include "cil-coff.h"
 

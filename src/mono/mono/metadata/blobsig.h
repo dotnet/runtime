@@ -1,8 +1,0 @@
-#ifndef _MONO_METADATA_BLOB_SIG_H_
-#define _MONO_METADATA_BLOB_SIG_H_
-
-#define SIGNATURE_HAS_THIS      0x20
-#define SIGNATURE_EXPLICIT_THIS 0x40
-#define SIGNATURE_VARARG        0x05
-
-#endif

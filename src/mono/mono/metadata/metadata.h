@@ -4,7 +4,7 @@
 
 #include <glib.h>
 
-#include <mono/metadata/eltype.h>
+#include <mono/metadata/blob.h>
 
 typedef struct {
 	guint32  sh_offset;
