@@ -57,6 +57,8 @@ TEST_CS_SRC=			\
 	pinvoke18.cs		\
 	invoke.cs		\
 	invoke2.cs		\
+	runtime-invoke.cs		\
+	invoke-string-ctors.cs		\
 	reinit.cs		\
 	box.cs			\
 	array.cs		\
