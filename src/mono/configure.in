@@ -508,9 +508,11 @@ fi
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
+JIT_SUPPORTED=no
+
 case "$host" in
 #mips-sgi-irix5.* | mips-sgi-irix6.*) TARGET=MIPS; ACCESS_UNALIGNED="no";;
-i*86-*-*) TARGET=X86; arch_target=x86;;
+i*86-*-*) TARGET=X86; arch_target=x86; JIT_SUPPORTED=yes;;
 sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
@@ -537,6 +539,8 @@ AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
+
+AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 
 LIBC="libc.so.6"
 AC_SUBST(LIBC)
