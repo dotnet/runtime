@@ -1,6 +1,7 @@
 <a href="#basics">Basics</a><br>
 <a href="#ximian">The Ximian Role in the Mono project</a><br>
 <a href="#gnome">Mono and GNOME</a><br>
+<a href="#gui">Building GUI applications with Mono</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
@@ -57,7 +58,7 @@ A: Mono contains a number of components useful for building new
 
 
    Windows has compilers that target the virtual machine from <a
-href="http://msdn.microsoft.com/net/thirdparty/default.asp#lang">a
+   href="http://msdn.microsoft.com/net/thirdparty/default.asp#lang">a
    number of languages:</a> Managed C++, Java Script, Eiffel,
    Component Pascal, APL, Cobol, Oberon, Perl, Python, Scheme,
    Smalltalk, Standard ML, Haskell, Mercury and Oberon.
@@ -86,9 +87,28 @@ Q: Will you implement the .NET Framework SDK class libraries?
 A: Yes, we will be implementing the APIs of the .NET Framework SDK
    class libraries. 
 
+Q: Will you offer an ECMA-compliant set of class libraries?
+
+A: Eventually we will.  Our current focus is on interoperating
+   with the Microsoft SDK, but we will also offer an ECMA compliant
+   set of libraries. 
+
 Q: What does the name "Mono" mean?
 
 A: Mono is the word for `monkey' in Spanish. We like monkeys.
+
+Q: Is Mono usable?
+
+A: The JIT engine is usable on Intel x86 machines.  An interpreter
+   can be used on other non-Intel x86 machines.  
+
+   The class libraries are not yet mature enough to run real applications,
+   but if you are interested in trying out Mono, you can definetly start
+   testing things out as many programs run.
+
+   The C# compiler has made significant progress, it can even compile
+   itself now, but it can not yet be ran with our class libraries as
+   they are missing some features. 
 
 Q: When will you ship it?
 
@@ -139,6 +159,18 @@ A: We will devote most of our resources to work on the pieces which are
    the real world, it will achieve a critical mass of developers to
    improve it further.
 
+Q: Will Ximian offer Mono commercially?
+
+A: When Mono is ready to be shipped Ximian will offer a commercial
+   support and services for Mono. 
+
+Q: Will you wait until Mono is finished?
+
+A: Mono will ship on various stages as they mature.  Some people
+   require only a subset of the technologies, those will ship first.
+
+   More advanced features will take more time to develop.  A support
+   timeline will be available in June 2002.
 
 <a name="gnome"></a> 
 ** Mono and GNOME
@@ -176,6 +208,35 @@ A: Yes, we will provide a set of classes for implementing and using
    Bonobo components from within Mono.  Mono should allow you to write
    Bonobo components more easily, just like .NET on Windows allows you
    to export .NET components to COM.
+
+Q: Does Mono depend on GNOME?
+
+A: No, Mono does not depend on GNOME.  We use a few packages produced by
+   the GNOME team like the `glib' library.  
+
+Q: But will I be able to build GNOME applications?
+
+A: Yes, we will enable people to write GNOME applications using Mono.
+
+<a name="gui"></a>
+** GUI applications
+
+Q: Will Mono enable GUI applications to be authored?
+
+A: Yes, you will be able to build GUI applications.  Indeed, that is our
+   main focus.  We will provide both the Windows.Forms API and the Gtk# AP(I.
+
+Q: What is the difference between Gtk# and System.Windows.Forms?
+
+A: Gtk# is a set of bindings for the Gtk+ toolkit for C# (and other
+   CIL-enabled languages).  System.Windows.Forms is an API defined
+   by Microsoft to build GUI applications.
+
+Q: Will I be able to run my smart clients on systems powered by Mono?
+
+A: As long as your applications are 100% .NET and do not make use
+   of P/Invoke to call Win32 functions, your smart client applications
+   will run on Mono platforms.
 
 <a name="msft"></a>
 ** Mono and Microsoft
@@ -287,9 +348,19 @@ A: Most of Mono is being written using C#, with only
 <a name="webservices"></a>
 ** Web Services
 
-Q: Is Mono just a new way of writing Web Services?
+Q: How is Mono related to Web Services?
 
-A: No.
+A: Mono is only related to Web Services in that it will implement the
+   same set of classes that have been authored in the .NET Framework
+   to simplify and streamline the process of building Web Services.
+
+   But most importantly, Mono is an Open Source implementation of the
+   .NET Framework.
+
+Q: Can I author Web Services with Mono?
+
+A: You will be able to write Web Services on .NET that run on Mono and
+   viceversa. 
 
 Q: If Mono implements the SDK classes, will I be able to write and
    execute .NET Web Services with it?
@@ -385,7 +456,10 @@ Q: Could Java target the CLI?
 
 A: Yes, Java could target the CLI.  We have details on a <a
    href="ideas.html#guavac">project</a> that someone could take on to
-   make this happen.
+   make this happen.  
+
+   Microsoft has an implemenation of the Java language called J# that
+   can target the CIL execution engine. 
 
 <a name="extending"></a>
 ** Extending Mono
@@ -406,6 +480,16 @@ A: Yes.  The Microsoft class collection is very big, but it is by no
    For more information on extending Mono, see our <a
    href="ideas.html">ideas</a> page.
 
+Q: Do you plan to Embrace and Extend .NET?
+
+A: Embracing a good technology is good.  Extending technologies in
+   incompatible ways is bad for the users, so we do not plan on 
+   extending the technologies.
+
+   If you have innovative ideas, and want to create new classes, we 
+   encourage you to make those classes operate correctly well in both
+   Mono and .NET
+
 <a name="portability"></a>
 ** Portability
 
@@ -421,7 +505,7 @@ A: Our main intention at Ximian is to be able to develop GNOME
    applications with Mono, but if you are interested in providing a
    port of the Winform classes to other platforms (frame buffer or
    MacOS X for example), we would gladly integrate them, as long
-   they are under a Free Software License. 
+   they are under an open source license.  
 
 Q: Will Mono run on Windows?
 

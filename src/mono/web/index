@@ -23,6 +23,14 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Dec 28, 2001
+
+	After a lot of work, the C# compiler can compile itself.
+	There are still errors in the generated image, but they are
+	being fixed quickly.
+
+	We will soon have the first non-Microsoft C# implementation!
+
 ** Dec 18, 2001
 
 	JIT: More work on our IO abstraction layer (Dick). 
