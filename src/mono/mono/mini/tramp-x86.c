@@ -361,3 +361,21 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 
 	return code;
 }
+
+/*
+ * This method is only called when running in the Mono Debugger.
+ */
+gpointer
+mono_debugger_create_notification_function (gpointer *notification_address)
+{
+	guint8 *ptr, *buf;
+
+	ptr = buf = g_malloc0 (16);
+	x86_breakpoint (buf);
+	if (notification_address)
+		*notification_address = buf;
+	x86_ret (buf);
+
+	return ptr;
+}
+

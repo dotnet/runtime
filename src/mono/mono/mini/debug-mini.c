@@ -9,30 +9,12 @@
 
 #include "mini.h"
 #include "jit.h"
-#include "mini-x86.h"
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 /* mono-debug-debugger.h nneds config.h to work... */
 #include "config.h"
 #include <mono/metadata/mono-debug-debugger.h>
-
-/*
- * This method is only called when running in the Mono Debugger.
- */
-gpointer
-mono_debugger_create_notification_function (gpointer *notification_address)
-{
-	guint8 *ptr, *buf;
-
-	ptr = buf = g_malloc0 (16);
-	x86_breakpoint (buf);
-	if (notification_address)
-		*notification_address = buf;
-	x86_ret (buf);
-
-	return ptr;
-}
 
 static void
 record_line_number (MonoDebugMethodJitInfo *jit, guint32 address, guint32 offset)
@@ -101,12 +83,11 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 {
 	if (inst->opcode == OP_REGVAR)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
-	else if (inst->inst_basereg != X86_EBP) {
-		g_message (G_STRLOC ": %d - %d", inst->inst_basereg, inst->inst_offset);
+	else {
+		/* the debug interface needs fixing to allow 0(%base) address */
 		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
 		var->offset = inst->inst_offset;
-	} else
-		var->offset = inst->inst_offset;
+	}
 }
 
 void
