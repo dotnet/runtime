@@ -32,6 +32,24 @@
 #define CMSG_SPACE(size)  (sizeof (struct cmsghdr) + (size))
 #endif
 
+static mono_mutex_t req_mutex;
+static mono_once_t attr_key_once = MONO_ONCE_INIT;
+static mono_mutexattr_t attr;
+
+static void attr_init (void)
+{
+	int ret;
+
+	ret = mono_mutexattr_init (&attr);
+	g_assert (ret == 0);
+
+	ret = mono_mutexattr_settype (&attr, MONO_MUTEX_RECURSIVE);
+	g_assert (ret == 0);
+
+	ret = mono_mutex_init (&req_mutex, &attr);
+	g_assert (ret == 0);
+}
+
 /* Send request on fd, wait for response (called by applications, not
  * the daemon, indirectly through _wapi_daemon_request_response and
  * _wapi_daemon_request_response_with_fds)
@@ -40,11 +58,12 @@ static void _wapi_daemon_request_response_internal (int fd,
 						    struct msghdr *msg,
 						    WapiHandleResponse *resp)
 {
-	static pthread_mutex_t req_mutex=PTHREAD_MUTEX_INITIALIZER;
 	int ret;
 #ifndef HAVE_MSG_NOSIGNAL
 	void (*old_sigpipe)(int);
 #endif
+
+	mono_once (&attr_key_once, attr_init);
 
 	/* Serialise requests to the daemon from the same process.  We
 	 * rely on request turnaround time being minimal anyway, so
