@@ -1782,6 +1782,7 @@ mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, Mono
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
 		return t1->data.klass == t2->data.klass;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
