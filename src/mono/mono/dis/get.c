@@ -2299,4 +2299,6 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "stind.i8", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stind.r4", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stind.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "to", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "value", GINT_TO_POINTER (TRUE));
 }

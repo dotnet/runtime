@@ -1007,7 +1007,7 @@ dis_type (MonoImage *m, int n)
 		nested = mono_metadata_nesting_typedef (m, n + 1, nested + 1);
 	}
 	
-	fprintf (output, "  } // end of type %s%s%s\n", nspace, *nspace? ".": "", name);
+	fprintf (output, "  } // end of class %s%s%s\n", nspace, *nspace? ".": "", name);
 	if (*nspace)
 		fprintf (output, "}\n");
 	fprintf (output, "\n");
