@@ -21,6 +21,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/rawbuffer.h>
 #include "mono/utils/mono-digest.h"
 
 gboolean dump_data = TRUE;

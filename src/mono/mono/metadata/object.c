@@ -534,12 +534,15 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 MonoVTable *
 mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 {
-	MonoVTable *vt, *pvt;
+	MonoVTable *vt, *pvt, *pvt2;
 	int i, j, vtsize, interface_vtsize = 0;
 	MonoClass* iclass = NULL;
 	MonoClass* k;
 
-	if ((pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class)))
+	mono_domain_lock (domain);
+	pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class);
+	mono_domain_unlock (domain);
+	if (pvt)
 		return pvt;
 
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -626,7 +629,19 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
+	mono_domain_lock (domain);
+
+	pvt2 = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class);
+	if (pvt2) {
+		/* Somebody got in before us */
+		mono_domain_unlock (domain);
+		g_free (pvt);
+		
+		return pvt2;
+	}
 	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
+
+	mono_domain_unlock (domain);
 
 	return pvt;
 }
