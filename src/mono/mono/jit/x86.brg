@@ -12,6 +12,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #ifndef PLATFORM_WIN32
 #include <signal.h>
 #include <sys/syscall.h>
@@ -1087,7 +1088,55 @@ reg: MUL (reg, coni4) "MB_USE_OPT1(0)" {
 	}
 
 	if (v < 0 || i == 32 || v & k) {
-		x86_imul_reg_reg_imm (s->code, tree->reg1, tree->left->reg1, tree->right->data.i);
+		switch (v) {
+		case 3:
+			/* LEA r1, [r2 + r2*2] */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 1);
+			break;
+		case 5:
+			/* LEA r1, [r2 + r2*4] */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 2);
+			break;
+		case 6:
+			/* LEA r1, [r2 + r2*2] */
+			/* ADD r1, r1          */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 1);
+			x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+			break;
+		case 9:
+			/* LEA r1, [r2 + r2*8] */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 3);
+			break;
+		case 10:
+			/* LEA r1, [r2 + r2*4] */
+			/* ADD r1, r1          */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 2);
+			x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->reg1);
+			break;
+		case 12:
+			/* LEA r1, [r2 + r2*2] */
+			/* SHL r1, 2           */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 1);
+			x86_shift_reg_imm (s->code, X86_SHL, tree->reg1, 2);
+			break;
+		case 25:
+			/* LEA r1, [r2 + r2*4] */
+			/* LEA r1, [r1 + r1*4] */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 2);
+			x86_lea_memindex (s->code, tree->reg1, tree->reg1, 0, tree->reg1, 2);
+			break;
+		case 100:
+			/* LEA r1, [r2 + r2*4] */
+			/* SHL r1, 2           */
+			/* LEA r1, [r1 + r1*4] */
+			x86_lea_memindex (s->code, tree->reg1, tree->left->reg1, 0, tree->left->reg1, 2);
+			x86_shift_reg_imm (s->code, X86_SHL, tree->reg1, 2);
+			x86_lea_memindex (s->code, tree->reg1, tree->reg1, 0, tree->reg1, 2);
+			break;
+		default:
+			x86_imul_reg_reg_imm (s->code, tree->reg1, tree->left->reg1, tree->right->data.i);
+			break;
+		}
 	} else {
 		x86_shift_reg_imm (s->code, X86_SHL, tree->left->reg1, i);
 		if (tree->reg1 != tree->left->reg1)
@@ -1166,6 +1215,63 @@ reg: DIV (reg, reg) {
 
 	mono_assert (tree->reg1 == X86_EAX &&
 		     tree->reg2 == X86_EDX);
+}
+
+reg: DIV_UN (reg, coni4) {
+	unsigned int i, j, k, v;
+	double f, r;
+
+	v = tree->right->data.i;
+	for (i = 0, j = 1, k = 0xfffffffe; i < 32; i++, j = j << 1, k = k << 1) {
+		if (v & j)
+			break;
+	}
+
+	if (i == 32 || v & k)  {
+		for (i = 32, j = 0x80000000; --i >= 0; j >>= 1) {
+			if (v & j) break;
+		}
+
+		/* k = 32 + number of significant bits in v - 1 */
+		k = 32 + i;
+
+		f = 1.0f / v;
+		for (i = 0; i < k; i++) f *= 2.0f;
+
+
+		r = f - floor(f);
+
+		if (r == 0) {
+			x86_shift_reg_imm (s->code, X86_SHR, tree->left->reg1, k - 32);
+			if (tree->reg1 != tree->left->reg1)
+				x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+		} else if (r < 0.5f) {
+			if (tree->left->reg1 != X86_EAX)
+				x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+			x86_mov_reg_imm (s->code, X86_EDX, (guint32) floor(f));
+			/* x86_inc_reg (s->code, tree->reg1); */
+			/* INC is faster but we have to check for overflow. */
+			x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, 1);
+			x86_branch8(s->code, X86_CC_C, 2, FALSE);
+			x86_mul_reg (s->code, X86_EDX, FALSE);
+			x86_shift_reg_imm (s->code, X86_SHR, X86_EDX, k - 32);
+			if (tree->reg1 != X86_EDX)
+				x86_mov_reg_reg (s->code, tree->reg1, X86_EDX, 4);
+		} else {
+			if (tree->left->reg1 != X86_EAX)
+				x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+			x86_mov_reg_imm (s->code, X86_EDX, (guint32) ceil(f));
+			x86_mul_reg (s->code, X86_EDX, FALSE);
+			x86_shift_reg_imm (s->code, X86_SHR, X86_EDX, k - 32);
+			if (tree->reg1 != X86_EDX)
+				x86_mov_reg_reg (s->code, tree->reg1, X86_EDX, 4);
+		}
+	} else {
+		x86_shift_reg_imm (s->code, X86_SHR, tree->left->reg1, i);
+		if (tree->reg1 != tree->left->reg1)
+			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	}
+
 }
 
 reg: DIV_UN (reg, reg) {
