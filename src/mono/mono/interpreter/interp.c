@@ -2338,6 +2338,7 @@ ves_exec_method (MonoInvocation *frame)
 			stackval valuetype_this;
 			stackval *endsp = sp;
 			guint32 token;
+			stackval retval;
 
 			frame->ip = ip;
 
@@ -2379,8 +2380,13 @@ ves_exec_method (MonoInvocation *frame)
 				}
 				stackval_from_data (&newobj_class->byval_arg, &valuetype_this, zero);
 			} else {
-				o = mono_object_new (domain, newobj_class);
-				child_frame.obj = o;
+				if (newobj_class != mono_defaults.string_class) {
+					o = mono_object_new (domain, newobj_class);
+					child_frame.obj = o;
+				} else {
+					vt_alloc (&mono_defaults.string_class->this_arg, &retval);
+					child_frame.retval = &retval;
+				}
 			}
 
 			if (csig->param_count) {
@@ -2415,6 +2421,8 @@ ves_exec_method (MonoInvocation *frame)
 array_constructed:
 			if (newobj_class->valuetype && !newobj_class->enumtype) {
 				*sp = valuetype_this;
+			} else if (newobj_class == mono_defaults.string_class) {
+				*sp = retval;
 			} else {
 				sp->type = VAL_OBJ;
 				sp->data.p = o;

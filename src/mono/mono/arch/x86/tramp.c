@@ -259,7 +259,10 @@ enum_marshal:
 	 * Long integers are in EAX:EDX.
 	 * FP values are on the FP stack.
 	 */
-	if (sig->ret->byref) {
+
+	if (sig->ret->byref || 
+	    (method->klass == mono_defaults.string_class &&
+	     *method->name == '.' && !strcmp (method->name, ".ctor"))) {
 		x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 		x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 	} else {
