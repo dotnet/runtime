@@ -818,21 +818,6 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	mono_raw_buffer_update (symfile->raw_contents, symfile->raw_contents_size);
 }
 
-MonoReflectionMethodBuilder *
-ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionModuleBuilder *mb, guint32 token)
-{
-	MonoArrayList *methods = mb->assemblyb->methods;
-	guint32 index = (token & 0xffffff) - 1;
-	MonoReflectionMethodBuilder *retval;
-
-	g_assert (methods != NULL);
-	g_assert (index < methods->count);
-
-	retval = mono_array_get (methods->data_array, MonoReflectionMethodBuilder *, index);
-
-	return retval;
-}
-
 gchar *
 mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset)
 {

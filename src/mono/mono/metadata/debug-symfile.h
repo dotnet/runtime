@@ -122,10 +122,6 @@ void    mono_debug_update_symbol_file (MonoDebugSymbolFile      *symbol_file,
 
 void    mono_debug_close_symbol_file  (MonoDebugSymbolFile      *symbol_file);
 
-MonoReflectionMethodBuilder *
-ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionModuleBuilder *mb,
-							       guint32 token);
-
 gchar *
 mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset);
 

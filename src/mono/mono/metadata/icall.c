@@ -2578,13 +2578,6 @@ static gconstpointer icall_map [] = {
 	"System.Environment::Exit", ves_icall_System_Environment_Exit,
 
 	/*
-	 * Mono.CSharp.Debugger
-	 */
-	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method_builder", 
-	ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token,
-
-
-	/*
 	 * System.Runtime.Remoting
 	 */	
 	"System.Runtime.Remoting.RemotingServices::InternalExecute",
