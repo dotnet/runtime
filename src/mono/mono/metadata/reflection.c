@@ -138,6 +138,8 @@ static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
+static guint32 type_get_signature_size (MonoType *type);
+
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -532,13 +534,103 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArra
 }
 
 static guint32
+generic_inst_get_signature_size (MonoGenericInst *ginst)
+{
+	guint32 size = 0;
+	int i;
+
+	if (!ginst) {
+		g_assert_not_reached ();
+		return;
+	}
+
+	size += 1 + type_get_signature_size (ginst->generic_type);
+	size += 4;
+	for (i = 0; i < ginst->type_argc; ++i)
+		size += type_get_signature_size (ginst->type_argv [i]);
+
+	return size;
+}
+
+static guint32
+type_get_signature_size (MonoType *type)
+{
+	guint32 size = 0;
+
+	if (!type) {
+		g_assert_not_reached ();
+		return;
+	}
+		
+	if (type->byref)
+		size++;
+
+	switch (type->type){
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
+		return size + 1;
+	case MONO_TYPE_PTR:
+		return size + 1 + type_get_signature_size (type->data.type);
+	case MONO_TYPE_SZARRAY:
+		return size + 1 + type_get_signature_size (&type->data.klass->byval_arg);
+
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		return size + 5;
+
+	case MONO_TYPE_ARRAY:
+		return size + 7 + type_get_signature_size (&type->data.array->eklass->byval_arg);
+	case MONO_TYPE_GENERICINST:
+		return size + generic_inst_get_signature_size (type->data.generic_inst);
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return size + 5;
+
+	default:
+		g_error ("need to encode type %x", type->type);
+	}
+}
+
+static guint32
+method_get_signature_size (MonoMethodSignature *sig)
+{
+	guint32 size;
+	int i;
+
+	size = type_get_signature_size (sig->ret);
+	for (i = 0; i < sig->param_count; i++)
+		size += type_get_signature_size (sig->params [i]);
+
+	if (sig->generic_param_count)
+		size += 4;
+
+	return size;	
+}
+
+static guint32
 method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 {
 	char *buf;
 	char *p;
 	int i;
 	guint32 nparams =  sig->param_count;
-	guint32 size = 11 + nparams * 10;
+	guint32 size = 11 + method_get_signature_size (sig);
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
