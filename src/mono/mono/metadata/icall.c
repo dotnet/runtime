@@ -873,7 +873,12 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		}
 	}
 
-	return mono_runtime_invoke (method->method, this, pa);
+	if (!strcmp (method->method->name, ".ctor")) {
+		this = mono_object_new (mono_domain_get (), method->method->klass);
+		mono_runtime_invoke (method->method, this, pa);
+		return this;
+	} else
+		return mono_runtime_invoke (method->method, this, pa);
 }
 
 static MonoObject *
@@ -1814,6 +1819,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
+	"System.Reflection.MonoCMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
 	"System.Reflection.MonoField::GetValue", ves_icall_MonoField_GetValue,
