@@ -37,6 +37,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/exception.h>
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/io-layer/io-layer.h>
 /*#include <mono/cli/types.h>*/
@@ -97,6 +98,30 @@ interp_ex_handler (MonoException *ex) {
 	frame->ex = ex;
 	longjmp (*(jmp_buf*)frame->locals, 1);
 }
+
+static void
+interp_ex_obj_init(MonoObject *obj, MonoClass *klass)
+{
+	int i;
+	MonoInvocation call;
+	MonoMethod *method = NULL;
+	
+	for (i = 0; i < klass->method.count; ++i) {
+		if (!strcmp (".ctor", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 0) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	call.obj = obj;
+
+	g_assert (method);
+	INIT_FRAME (&call, NULL, obj, NULL, NULL, method);
+
+	ves_exec_method (&call);
+}
+
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -172,43 +197,13 @@ get_virtual_method (MonoMethod *m, stackval *objs)
 }
 
 static MonoObject*
-get_named_exception (const char *name)
-{
-	MonoClass *klass;
-	MonoInvocation call;
-	MonoMethod *method = NULL;
-	MonoObject *o;
-	int i;
-
-	klass = mono_class_from_name (mono_defaults.corlib, "System", name);
-
-	o = mono_object_new (klass);
-	g_assert (o != NULL);
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 0) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
-	call.obj = o;
-
-	g_assert (method);
-	INIT_FRAME (&call, NULL, o, NULL, NULL, method);
-
-	ves_exec_method (&call);
-	return o;
-}
-
-static MonoObject*
 get_exception_divide_by_zero ()
 {
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("DivideByZeroException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "DivideByZeroException");
 	return ex;
 }
 
@@ -218,7 +213,8 @@ get_exception_security ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("SecurityException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "SecurityException");
 	return ex;
 }
 
@@ -228,7 +224,8 @@ get_exception_arithmetic ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("ArithmeticException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "ArithmeticException");
 	return ex;
 }
 
@@ -238,7 +235,8 @@ get_exception_overflow ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("OverflowException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "OverflowException");
 	return ex;
 }
 
@@ -248,7 +246,8 @@ get_exception_null_reference ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("NullReferenceException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "NullReferenceException");
 	return ex;
 }
 
@@ -258,7 +257,8 @@ get_exception_execution_engine ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("ExecutionEngineException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "ExecutionEngineException");
 	return ex;
 }
 
@@ -268,7 +268,8 @@ get_exception_invalid_cast ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("InvalidCastException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "InvalidCastException");
 	return ex;
 }
 
@@ -278,7 +279,8 @@ get_exception_index_out_of_range ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("IndexOutOfRangeException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "IndexOutOfRangeException");
 	return ex;
 }
 
@@ -288,7 +290,8 @@ get_exception_array_type_mismatch ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("ArrayTypeMismatchException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "ArrayTypeMismatchException");
 	return ex;
 }
 
@@ -298,7 +301,8 @@ get_exception_missing_method ()
 	static MonoObject *ex = NULL;
 	if (ex)
 		return ex;
-	ex = get_named_exception ("MissingMethodException");
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "MissingMethodException");
 	return ex;
 }
 
@@ -3553,7 +3557,8 @@ main (int argc, char *argv [])
 	mono_init ();
 	mono_init_icall ();
 	mono_install_handler (interp_ex_handler);
-
+	mono_exception_install_handlers(init_class, interp_ex_obj_init);
+	
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
 

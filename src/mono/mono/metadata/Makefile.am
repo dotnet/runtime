@@ -26,6 +26,8 @@ libmetadata_a_SOURCES = \
 	threads.c	\
 	threads.h	\
 	threads-types.h	\
+	exception.c	\
+	exception.h	\
 	#
 
 libmetadataincludedir = $(includedir)/mono/metadata
@@ -44,7 +46,9 @@ libmetadatainclude_HEADERS = \
 	tokentype.h	\
 	loader.h	\
 	class.h		\
-	object.h	
+	object.h	\
+	exception.h	\
+	#
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
