@@ -10,6 +10,16 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
+	MONO_ ## a = ((g-1)<<8) | i,
+
+typedef enum {
+#include "mono/cil/opcode.def"
+	MONO_CEE_LAST = MONO_CEE_UNUSED70 + 2
+} MonoOpcodeEnum;
+
+#undef OPDEF
+
 enum {
 	MONO_FLOW_NEXT,
 	MONO_FLOW_BRANCH,
