@@ -21,6 +21,11 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+/*
+ * keeps track of loaded assemblies
+ */
+static GHashTable *assemblies;
+
 /**
  * g_concat_dir_and_file:
  * @dir:  directory name
@@ -85,6 +90,14 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
+	if (assemblies == NULL)
+		assemblies = g_hash_table_new (g_str_hash, g_str_equal);
+
+	if ((ass = g_hash_table_lookup (assemblies, filename)) != NULL){
+		ass->ref_count++;
+		return ass;
+	}
+	
 	if (basename == NULL)
 		basename = filename;
 	else
@@ -118,8 +131,14 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 
 	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
+	/*
+	 * Create assembly struct, and enter it into the assembly cache
+	 */
 	ass = g_new (MonoAssembly, 1);
+	ass->name = g_strdup (filename);
 	ass->image = image;
+
+	g_hash_table_insert (assemblies, ass->name, ass);
 	
 	/*
 	 * Load any assemblies this image references
@@ -180,12 +199,19 @@ mono_assembly_close (MonoAssembly *assembly)
 	
 	g_return_if_fail (assembly != NULL);
 
+	if (--assembly->ref_count != 0)
+		return;
+	
 	image = assembly->image;
 	for (i = 0; image->references [i] != NULL; i++)
 		mono_image_close (image->references [i]->image);
 	g_free (image->references);
 	     
 	mono_image_close (assembly->image);
+
+	g_hash_table_remove (assemblies, assembly->name);
+			     
+	g_free (assembly->name);
 	g_free (assembly);
 }
 

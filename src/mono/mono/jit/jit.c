@@ -2194,7 +2194,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			/* fixme: IMO we can use the temp. variable associated
 			 * with the current slot instead of -1 
 			 */
-			if (t2 = mono_store_tree (cfg, -1, *sp, &t1))
+			if ((t2 = mono_store_tree (cfg, -1, *sp, &t1)) != NULL)
 				ADD_TREE (t2);
 
 			PUSH_TREE (t1, t1->svt);
