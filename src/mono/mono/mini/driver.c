@@ -756,6 +756,11 @@ mono_main (int argc, char* argv[])
 	if (enable_debugging)
 		mono_debug_init (domain, MONO_DEBUG_FORMAT_MONO);
 
+	/* Parse gac loading options before loading assemblies. */
+	if (mono_compile_aot || action == DO_EXEC) {
+		mono_config_parse (config_file);
+	}
+
 	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {
 		fprintf (stderr, "cannot open assembly %s\n", aname);
@@ -775,7 +780,6 @@ mono_main (int argc, char* argv[])
 	if (mono_compile_aot || action == DO_EXEC) {
 		const guchar *error;
 
-		mono_config_parse (config_file);
 		//mono_set_rootdir ();
 
 		error = mono_check_corlib_version ();
