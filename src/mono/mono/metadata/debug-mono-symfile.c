@@ -100,6 +100,17 @@ load_symfile (MonoSymbolFile *symfile)
 		if (!method)
 			continue;
 
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+			g_assert_not_reached ();
+
+		if (!((MonoMethodNormal *) method)->header) {
+			g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
+				   method->klass->name, method->name);
+			continue;
+		}
+
 		minfo = g_new0 (MonoDebugMethodInfo, 1);
 		minfo->file_offset = ((const char *) me) - start;
 		minfo->method = method;
@@ -254,7 +265,6 @@ static gchar *
 read_string (const char *ptr)
 {
 	int len = *((guint32 *) ptr)++;
-	gchar *retval;
 
 	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
@@ -484,6 +494,7 @@ write_line_numbers (gpointer key, gpointer value, gpointer user_data)
 		g_assert_not_reached ();
 
 	header = ((MonoMethodNormal *) mep->method)->header;
+	g_assert (header);
 
 	mep->entry->line_number_table_offset = lseek (priv->fd, 0, SEEK_CUR);
 	++mep->entry->num_line_numbers;
@@ -540,6 +551,17 @@ create_methods (MonoSymbolFile *symfile)
 
 		if (method->wrapper_type != MONO_WRAPPER_NONE)
 			continue;
+
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+			g_assert_not_reached ();
+
+		if (!((MonoMethodNormal *) method)->header) {
+			g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
+				   method->klass->name, method->name);
+			continue;
+		}
 
 		create_method (symfile, token, method);
 	}
