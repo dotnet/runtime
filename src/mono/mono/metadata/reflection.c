@@ -122,6 +122,7 @@ const unsigned char table_sizes [64] = {
 static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
 static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
 static guint32 mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper);
+static void    mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicAssembly *assembly);
 static guint32 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo);
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
@@ -930,28 +931,6 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 }
 
 static void
-mono_image_get_generic_method_param_info (MonoType *type, guint32 owner, guint32 index, MonoDynamicAssembly *assembly)
-{
-	MonoDynamicTable *table;
-	guint32 *values;
-	guint32 table_idx;
-	gchar *name;
-
-	table = &assembly->tables [MONO_TABLE_GENERICPARAM];
-	table_idx = table->next_idx ++;
-	values = table->values + table_idx * MONO_GENERICPARAM_SIZE;
-
-	name = g_strdup_printf ("!!%d", index);
-
-	values [MONO_GENERICPARAM_OWNER] = owner;
-	values [MONO_GENERICPARAM_FLAGS] = 0;
-	values [MONO_GENERICPARAM_NUMBER] = index;
-	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, name);
-	values [MONO_GENERICPARAM_KIND] = 0;
-	values [MONO_GENERICPARAM_DEPRECATED_CONSTRAINT] = 0;
-}
-
-static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly *assembly)
 {
 	MonoDynamicTable *table;
@@ -1034,8 +1013,8 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 		for (i = 0; i < mono_array_length (mb->generic_params); ++i) {
 			guint32 owner = MONO_TYPEORMETHOD_METHOD | (mb->table_idx << MONO_TYPEORMETHOD_BITS);
 
-			mono_image_get_generic_method_param_info (
-				mono_array_get (mb->generic_params, gpointer, i), owner, i, assembly);
+			mono_image_get_generic_param_info (
+				mono_array_get (mb->generic_params, gpointer, i), owner, assembly);
 		}
 	}
 
@@ -1550,7 +1529,7 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 	guint32 table_idx;
 
 	table = &assembly->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
-	num_constraints = mono_array_length (gparam->constraints);
+	num_constraints = gparam ? mono_array_length (gparam->constraints) : 0;
 	table->rows += num_constraints;
 	alloc_table (table, table->rows);
 
@@ -2270,6 +2249,19 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		}
 	}
 
+	/* handle generic parameters */
+	if (tb->generic_params) {
+		table = &assembly->tables [MONO_TABLE_GENERICPARAM];
+		table->rows += mono_array_length (tb->generic_params);
+		alloc_table (table, table->rows);
+		for (i = 0; i < mono_array_length (tb->generic_params); ++i) {
+			guint32 owner = MONO_TYPEORMETHOD_TYPE | (tb->table_idx << MONO_TYPEORMETHOD_BITS);
+
+			mono_image_get_generic_param_info (
+				mono_array_get (tb->generic_params, MonoReflectionGenericParam*, i), owner, assembly);
+		}
+	}
+
 	/* handle fields */
 	if (tb->fields) {
 		table = &assembly->tables [MONO_TABLE_FIELD];
@@ -2348,17 +2340,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 				ntable->next_idx, ntable->rows);*/
 			values += MONO_NESTED_CLASS_SIZE;
 			ntable->next_idx++;
-		}
-	}
-	if (tb->generic_params) {
-		table = &assembly->tables [MONO_TABLE_GENERICPARAM];
-		table->rows += mono_array_length (tb->generic_params);
-		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (tb->generic_params); ++i) {
-			guint32 owner = MONO_TYPEORMETHOD_TYPE | (tb->table_idx << MONO_TYPEORMETHOD_BITS);
-
-			mono_image_get_generic_param_info (
-				mono_array_get (tb->generic_params, MonoReflectionGenericParam*, i), owner, assembly);
 		}
 	}
 }
