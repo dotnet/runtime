@@ -23,6 +23,10 @@ namespace Test {
 			catch (EntryPointNotFoundException) {
 				/* setenv is not available on some platforms */
 			}
+			catch (DllNotFoundException) {
+				/* libc might not be accessible by that name */
+			}
+
 			return 0;
 		}
 	}
