@@ -88,7 +88,7 @@ tar xzvf glib-1.2.10.tar.gz
 		* Configure, compile and install glib, like this:
 
 <pre>
-./configure --prefix=//c/mono
+./configure --prefix=/usr/bin
 make
 make install
 </pre>
