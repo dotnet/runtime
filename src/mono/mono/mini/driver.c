@@ -584,6 +584,11 @@ mini_main (int argc, char* argv[]) {
 		}
 	}
 
+	if (!argv [i]) {
+		mini_usage ();
+		return 1;
+	}
+
 	mini_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i]);
 
