@@ -1596,7 +1596,16 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
+/* see bug#58863, but removing this code causes regressions in gtk-sharp build 
+ * (SEGV running Method::Initialize() in gapi_codegen.exe) 
+ */
+#if defined(__ppc__) || defined(__powerpc__)
+				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
+				 * stack slot and if they are of the same type. */
+				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
+#else
 				bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
+#endif
 			}
 		}
 	}
@@ -2805,6 +2814,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			bblock = tblock;
 			start_new_bblock = 0;
 			for (i = 0; i < bblock->in_scount; ++i) {
+				if (cfg->verbose_level > 3)
+					g_print ("loading %d from temp %d\n", i, bblock->in_stack [i]->inst_c0);						
 				NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 				*sp++ = ins;
 			}
@@ -2818,6 +2829,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				bblock->next_bb = tblock;
 				bblock = tblock;
 				for (i = 0; i < bblock->in_scount; ++i) {
+					if (cfg->verbose_level > 3)
+						g_print ("loading %d from temp %d\n", i, bblock->in_stack [i]->inst_c0);						
 					NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 					*sp++ = ins;
 				}
