@@ -2473,6 +2473,25 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
+static MonoObject *
+ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MonoObject *obj;
+	MonoDomain *domain;
+	
+	domain = mono_object_domain (type);
+	klass = mono_class_from_mono_type (type->type);
+
+	if (klass->rank >= 1) {
+		g_assert (klass->rank == 1);
+		obj = mono_array_new (domain, klass->element_class, 0);
+	} else {
+		obj = mono_object_new (domain, klass);
+	}
+
+	return obj;
+}
 
 /* icall map */
 
@@ -2963,6 +2982,11 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal,
 
+	/* 
+	 * System.Runtime.Serialization
+	 */
+	"System.Runtime.Serialization.FormatterServices::GetUninitializedObjectInternal",
+	ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_Internal,
 	/*
 	 * add other internal calls here
 	 */
