@@ -2967,6 +2967,16 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		mono_mb_add_local (mb, sig->ret);
 	}
 
+	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
+		/* Return type custom marshaling */
+		/*
+		 * Since we can't determine the return type of the unmanaged function,
+		 * we assume it returns a pointer, and pass that pointer to
+		 * MarshalNativeToManaged.
+		 */
+		csig->ret = &mono_defaults.int_class->byval_arg;
+	}
+
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 
@@ -3015,12 +3025,24 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_ldarg (mb, argnum);
 
 				if (t->type == MONO_TYPE_VALUETYPE) {
+					/*
+					 * Since we can't determine the type of the argument, we
+					 * will assume the unmanaged function takes a pointer.
+					 */
+					csig->params [i] = &mono_defaults.int_class->byval_arg;
+
 					mono_mb_emit_byte (mb, CEE_BOX);
 					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (t)));
 				}
 
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+
+				/*
+				 * The first 4 bytes are used by MS for something...
+				 */
+				mono_mb_emit_byte (mb, CEE_LDC_I4_4);
+				mono_mb_emit_byte (mb, CEE_ADD);
 				
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 				break;
@@ -3370,76 +3392,82 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-		
-		argnum = i + sig->hasthis;
+		MonoMarshalSpec *spec = mspecs [i + 1];
 
-		switch (t->type) {
-		case MONO_TYPE_BOOLEAN:
-			if (t->byref) {
-				g_assert (tmp_locals [i]);
-				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-			} else
-				mono_mb_emit_ldarg (mb, argnum);
-			break;
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			mono_mb_emit_ldarg (mb, argnum);
-			break;
-		case MONO_TYPE_VALUETYPE:
-			klass = sig->params [i]->data.klass;
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype) {
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+		}
+		else {
+			argnum = i + sig->hasthis;
+
+			switch (t->type) {
+			case MONO_TYPE_BOOLEAN:
+				if (t->byref) {
+					g_assert (tmp_locals [i]);
+					mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+				} else
+					mono_mb_emit_ldarg (mb, argnum);
+				break;
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
 				mono_mb_emit_ldarg (mb, argnum);
 				break;
-			}			
-			g_assert (tmp_locals [i]);
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			if (!t->byref) {
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_LDNATIVEOBJ);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-			}
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-			g_assert (tmp_locals [i]);
-			if (t->byref) 
-				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-			else
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			break;
-		case MONO_TYPE_CHAR:
-			/* fixme: dont know how to marshal that. We cant simply
-			 * convert it to a one byte UTF8 character, because an
-			 * unicode character may need more that one byte in UTF8 */
-			mono_mb_emit_ldarg (mb, argnum);
-			break;
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-			} else {
+			case MONO_TYPE_VALUETYPE:
+				klass = sig->params [i]->data.klass;
+				if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+					klass->blittable || klass->enumtype) {
+					mono_mb_emit_ldarg (mb, argnum);
+					break;
+				}			
 				g_assert (tmp_locals [i]);
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				if (!t->byref) {
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_LDNATIVEOBJ);
+					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+				}
+				break;
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+				g_assert (tmp_locals [i]);
+				if (t->byref) 
+					mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+				else
+					mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				break;
+			case MONO_TYPE_CHAR:
+				/* fixme: dont know how to marshal that. We cant simply
+				 * convert it to a one byte UTF8 character, because an
+				 * unicode character may need more that one byte in UTF8 */
+				mono_mb_emit_ldarg (mb, argnum);
+				break;
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				if (t->byref) {
+					mono_mb_emit_ldarg (mb, argnum);
+				} else {
+					g_assert (tmp_locals [i]);
+					mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				}
+				break;
+			case MONO_TYPE_TYPEDBYREF:
+			case MONO_TYPE_FNPTR:
+			default:
+				g_warning ("type 0x%02x unknown", t->type);	
+				g_assert_not_reached ();
 			}
-			break;
-		case MONO_TYPE_TYPEDBYREF:
-		case MONO_TYPE_FNPTR:
-		default:
-			g_warning ("type 0x%02x unknown", t->type);	
-			g_assert_not_reached ();
 		}
 	}			
 
@@ -3486,9 +3514,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_VALUETYPE:
 				if (type == MONO_TYPE_VALUETYPE) {
-					/* load pointer to returned value type */
-					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-					mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+					/* local 3 can't hold a pointer */
 					mono_mb_emit_byte (mb, CEE_STLOC_0);
 				}
 				else
@@ -3507,6 +3533,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
 				
+				if (type == MONO_TYPE_VALUETYPE) {
+					mono_mb_emit_byte (mb, CEE_UNBOX);
+					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->ret)));
+				}
 				mono_mb_emit_byte (mb, CEE_STLOC_3);
 				break;
 			default:
