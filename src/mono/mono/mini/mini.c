@@ -2305,7 +2305,6 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, const 
 static MonoInst *
 handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
 {
-	MonoInst *iargs [2];
 	MonoInst *dest, *vtoffset, *add, *vstore;
 	int temp;
 
