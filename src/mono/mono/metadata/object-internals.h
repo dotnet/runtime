@@ -233,7 +233,6 @@ struct _MonoThread {
 	gpointer *static_data;
 	gpointer jit_data;
 	gpointer lock_data;
-	gpointer unused1;
 	MonoAppContext *current_appcontext;
 	int stack_size;
 	MonoObject *start_obj;

@@ -160,7 +160,7 @@ mono_marshal_init (void)
 
 MonoClass *byte_array_class;
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
-static MonoMethod *method_set_context, *method_get_context, *method_reset_datastore, *method_restore_datastore;
+static MonoMethod *method_set_context, *method_get_context;
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
 
 static void
@@ -183,8 +183,6 @@ mono_remoting_marshal_init (void)
 		method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
 	
 		klass = mono_defaults.thread_class;
-		method_reset_datastore = mono_class_get_method_from_name (klass, "ResetDataStoreStatus", -1);
-		method_restore_datastore = mono_class_get_method_from_name (klass, "RestoreDataStoreStatus", -1);
 		method_get_context = mono_class_get_method_from_name (klass, "get_CurrentContext", -1);
 	
 		klass = mono_defaults.appdomain_class;
@@ -2750,7 +2748,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	MonoMethod *xdomain_method;
 	int ret_marshal_type = MONO_MARSHAL_NONE;
 	int loc_array=0, loc_serialized_data=-1, loc_real_proxy;
-	int loc_old_domainid, loc_return=0, loc_serialized_exc=0, loc_context, loc_datastore;
+	int loc_old_domainid, loc_return=0, loc_serialized_exc=0, loc_context;
 	int pos, pos_noex;
 	gboolean copy_return = FALSE;
 
@@ -2824,7 +2822,6 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	loc_old_domainid = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	loc_serialized_exc = mono_mb_add_local (mb, &byte_array_class->byval_arg);
 	loc_context = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-	loc_datastore = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
 	/* Save thread domain data */
 
@@ -2848,9 +2845,6 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 	mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
 
-	mono_mb_emit_managed_call (mb, method_reset_datastore, NULL);
-	mono_mb_emit_stloc (mb, loc_datastore);
-	
 	/* Create the array that will hold the parameters to be serialized */
 
 	if (complex_count > 0) {
@@ -2963,8 +2957,6 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	
 	mono_mb_emit_ldloc (mb, loc_context);
 	mono_mb_emit_native_call (mb, sig_context_set, mono_context_set);
-	mono_mb_emit_ldloc (mb, loc_datastore);
-	mono_mb_emit_managed_call (mb, method_restore_datastore, NULL);
 	
 	/* if (loc_serialized_exc != null) ... */
 

@@ -30,7 +30,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 33
+#define MONO_CORLIB_VERSION 34
 
 CRITICAL_SECTION mono_delegate_section;
 
