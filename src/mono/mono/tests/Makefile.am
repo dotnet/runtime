@@ -26,6 +26,8 @@ TESTSRC=			\
 	interface.cs		\
 	iface.cs		\
 	iface2.cs		\
+	iface3.cs		\
+	iface4.cs		\
 	virtual-method.cs	\
 	intptrcast.cs		\
 	indexer.cs		\
