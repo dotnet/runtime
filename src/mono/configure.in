@@ -1038,6 +1038,7 @@ case "$host" in
 		TARGET=S390;
 		arch_target=s390;
 		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
 		;;
 esac
 
