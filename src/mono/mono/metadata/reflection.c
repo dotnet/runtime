@@ -541,7 +541,6 @@ generic_inst_get_signature_size (MonoGenericInst *ginst)
 
 	if (!ginst) {
 		g_assert_not_reached ();
-		return;
 	}
 
 	size += 1 + type_get_signature_size (ginst->generic_type);
@@ -559,7 +558,6 @@ type_get_signature_size (MonoType *type)
 
 	if (!type) {
 		g_assert_not_reached ();
-		return;
 	}
 		
 	if (type->byref)
@@ -604,6 +602,7 @@ type_get_signature_size (MonoType *type)
 
 	default:
 		g_error ("need to encode type %x", type->type);
+		return size;
 	}
 }
 
@@ -7010,7 +7009,6 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericInst *ginst;
 	MonoDomain *domain;
-	int icount, i;
 
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
@@ -7179,8 +7177,10 @@ inflate_method (MonoReflectionGenericInst *type, MonoObject *obj)
 	else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
 		 !strcmp (obj->vtable->klass->name, "MonoCMethod"))
 		method = ((MonoReflectionMethod *) obj)->method;
-	else
+	else {
+		method = NULL; /* prevent compiler warning */
 		g_assert_not_reached ();
+	}
 
 	return inflate_mono_method (type, method, obj);
 }
@@ -7248,8 +7248,10 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 			field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
 		else if (!strcmp (obj->vtable->klass->name, "MonoField"))
 			field = ((MonoReflectionField *) obj)->field;
-		else
+		else {
+			field = NULL; /* prevent compiler warning */
 			g_assert_not_reached ();
+		}
 
 		dginst->fields [i] = *field;
 		dginst->fields [i].generic_type = field->type;
