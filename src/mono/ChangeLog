@@ -1,6 +1,7 @@
 2004-01-10  Jackson Harper <jackson@ximian.com>
 
-	* data/machine.config: Add trace handler (Trace.axd)
+	* data/machine.config: Add trace handler (Trace.axd) add trace
+	configuration handlers.
 	
 2004-01-06  Martin Willemoes Hansen  <mwh@sysrq.dk>
 
