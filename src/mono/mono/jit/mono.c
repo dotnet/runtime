@@ -357,7 +357,6 @@ main (int argc, char *argv [])
 			mono_jit_compile_class (assembly, tmp->data, 1, verbose);
 
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
-		printf ("RESULT: %d\n", retval);
 	}
 
 	mono_profiler_shutdown ();
