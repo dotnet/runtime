@@ -3899,7 +3899,7 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	assembly = 
 		mono_domain_try_type_resolve (
 			mono_domain_get (), fullName->str, NULL);
-	if (assembly)
+	if (assembly && (assembly->assembly->image == image))
 		type = mono_reflection_get_type_internal (assembly->assembly->image, 
 										 info, ignorecase);
 	g_string_free (fullName, TRUE);
@@ -5175,6 +5175,10 @@ ensure_runtime_vtable (MonoClass *klass)
 			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
 		}
 	}
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+		for (i = 0; i < klass->method.count; ++i)
+			klass->methods [i]->slot = i;
 
 	/* Overrides */
 	onum = 0;

@@ -624,6 +624,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			g_assert (decl->slot != -1);
 			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
 			vtable [dslot] = overrides [i*2 + 1];
+			vtable [dslot]->slot = dslot;
 			mono_g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 		}
 	}
