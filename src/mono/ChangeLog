@@ -1,3 +1,8 @@
+
+Tue Jul 1 11:27:53 CEST 2003 Paolo Molaro <lupus@ximian.com>
+
+	* acconfig.h, configure.in: added bundle support.
+
 2003-06-10  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:

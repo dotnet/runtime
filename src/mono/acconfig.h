@@ -23,3 +23,4 @@
 #undef PTHREAD_POINTER_ID
 #undef HAVE_GC_H
 #undef HAVE_GC_GCJ_MALLOC
+#undef WITH_BUNDLE

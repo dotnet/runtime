@@ -182,6 +182,14 @@ AC_SUBST(GMODULE_LIBS)
 
 AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default])
 
+# assembly bundle support, see metadata/make-bundle.pl for more info
+AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
+	BUNDLE_FILE=$with_bundle
+	AC_SUBST(BUNDLE_FILE)
+	AC_DEFINE(WITH_BUNDLE)
+],[with_bundle=no])
+AM_CONDITIONAL(WITH_BUNDLE, test x$with_bundle != xno)
+
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 libgc_dir=
@@ -635,6 +643,7 @@ mono/monograph/Makefile
 mono/io-layer/Makefile
 mono/handles/Makefile
 mono/mini/Makefile
+mono/profiler/Makefile
 runtime/Makefile
 scripts/Makefile
 man/Makefile
