@@ -19,19 +19,18 @@
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
 	do not have Bugzilla user account, it is free 
-	and easy to 
-	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+	and easy to create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
 	
 </ul>
 
 ** Current Status
 
-<ul>
-	<li>Currently, it is able to connect to Firebird and Interbase databases 
-	   and execute commands</li>
-	   
-	<li>The new data
-        provider/driver is written in C# and provides a high-performance native
+<ul>  
+	<li>Current stable version: 1.0</li>
+	
+	<li>Current developement version: 1.5</li>
+	
+	<li>The new data provider/driver is written in C# and provides a high-performance native
         implementation of the GDS32/API functions. This means that .Net developers
         will be able to access Firebird databases without the need of Firebird
         client install</li>
@@ -39,74 +38,31 @@
     <li>In support of the new module, a new mailing list
         <a href="http://lists.sourceforge.net/lists/listinfo/firebird-net-provider">firebird-net-provider</a> has 
         been created. Please use this list for any 
-        questions that you may have about the provider</li>       
-    
-	<li>Stuff that works:
-		<ul>
-			<li>Currently implemented classes: 
-					<ul>
-					<li>Connection and Connection Pooling</li> 
-					<li>Command</li>
-					<li>Transaction</li>
-					<li>CommandBuilder</li>
-					<li>DataAdapter</li>
-					<li>DataReader</li>
-					<li>Error</li>
-					<li>ErrorCollection</li>
-					<li>Exception</li>
-					<li>Parameter</li>
-					<li>ParameterCollection</li>
-					<li>Transaction</li>
-					</ul>
-			</li>		
-        </ul>
-	</li>
- 
+        questions that you may have about the provider</li>           
 </ul>   
-   
-** Action Plan
+
+** New features & enhancements in 1.5 version
 
 <ul>
-	<li>Bug fixing</li>
-	<li>Improving API reference documentation</li>
-	<li>Full testing with Firebird 1.5</li>
-	<li>Test with Mono ( http://www.go-mono.com )
-		<ul>
-			<li>Status  : Started</li>
-		</ul>
-	</li>
+	<li>Better fit to ADO.NET</li>
 	
-	<li>Support for array datatype
-		<ul>
-		<li>Status  : Started</li>
-		<li>Comments: See Interbase API reference documentation</li>
-		<li>Add new file FbArray.cs for array fields management</li>
-		</ul>
-	</li>
-
-	<li>Support for Stored Procs calls that have returns values
-		<ul>
-		<li>Status  : Pending.</li>
-		<li>Comments: Modify the isc_dsql_prepare method of GDS implementation for
-			allow to return the output parameters.</li>
-		</ul>
-	</li>
+	<li>New GDS implementation</li>
 	
-	<li>Implementation of FbClientPermission and FbClientPermissionAttribute
-		<ul>
-		<li>Status  : Pending</li>
-		<li>Comments: See if these are really needed for Firebird</li>
-		</ul>
-	</li>
-
-	<li>Improve Logger implementation
-		<ul>
-			<li>Status: Pending</li>
-		</ul>
-	</li>
-
-</ul>	
-
+	<li>Implicit transaction support</li>
+	
+	<li>Array datatype support</li>
+			
+	<li>Firebird services API support</li>
+	
+	<li>Firebird events API support</li>
+				
+	<li>Stored procedure calls using Sql Server style</li>
+	
+	<li>Support for retrieve database schema information ( FbConnection.GetDbSchema )</li>
+		
+	<li>Improved Commandbuilder implementation</li>
+</ul>
+   
 ** Testing
 
 <ul>
@@ -145,6 +101,7 @@
 	       "Password=masterkey;" +
 	       "Dialect=3;" +
 	       "Server=localhost";
+	       
        IDbConnection dbcon = new FbConnection(connectionString);
        dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
@@ -152,7 +109,7 @@
        dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
-            object dataValue = myReader.GetValue(0);
+            object dataValue = reader.GetValue(0);
             string sValue = dataValue.ToString();
             Console.WriteLine("Value: " + sValue);
        }
