@@ -3536,6 +3536,9 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 
+	if (mono_array_length (out_args) == 0)
+		return NULL;
+
 	*res = mono_array_get (out_args, MonoObject *, 0);
 
 	if (field_class->valuetype) {
@@ -3586,6 +3589,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
@@ -3595,7 +3599,10 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 
-	res = mono_array_get (out_args, MonoObject *, 0);
+	if (mono_array_length (out_args) == 0)
+		res = NULL;
+	else
+		res = mono_array_get (out_args, MonoObject *, 0);
 
 	return res;
 }
