@@ -1,6 +1,7 @@
 2004-04-26  Jackson Harper  <jackson@ximian.com>
 
 	* Makefile.am: Grab libraries from lib/default now.
+	* runtime/Makefile.am: Grab libraries from lib/default now.
 	
 2004-04-26  Bernie Solomon  <bernard@ugsolutions.com>
 
