@@ -496,7 +496,7 @@
             <type>System.Void</type>
         </types>
     </person>
-    <person email="gvaish@iitk.ac.in" name="Gurav Vanish">
+    <person email="gvaish@iitk.ac.in" name="Gurav Vaish">
         <types>
             <type>System.Web.UI.Control</type>
             <type>System.Web.UI.Pair</type>
