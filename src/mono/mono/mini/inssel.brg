@@ -1506,6 +1506,12 @@ reg: OP_STRLEN (reg) {
 				   state->left->reg1, G_STRUCT_OFFSET (MonoString, length));
 }
 
+reg: OP_GETTYPE (reg) {	
+	int vt_reg = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, vt_reg, state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOAD_MEMBASE, state->reg1, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
+}
+
 #
 # array support
 #

@@ -2297,6 +2297,11 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
  		else if (strcmp (cmethod->name, "get_Length") == 0)
  			op = OP_STRLEN;
  		else return NULL;
+	} else if (cmethod->klass == mono_defaults.object_class) {
+		if (strcmp (cmethod->name, "GetType") == 0)
+			op = OP_GETTYPE;
+		else
+			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
 		if (strcmp (cmethod->name, "get_Rank") == 0)
 			op = OP_ARRAY_RANK;
