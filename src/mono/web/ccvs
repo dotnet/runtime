@@ -3,7 +3,23 @@
 	If you are an active Mono developer, you can get a CVS account
 	that hosts the Mono source code.
 
-	Send an e-mail to miguel with your public SSH key for this purpose.
+	Send an e-mail to miguel with your public SSH key for this
+	purpose.  Please specify if the key was generated with SSH1 or SSH2.
+
+	If you are using SSH2, please generate your key using:
+
+<pre>
+	ssh-keygen -t rsa
+</pre>
+
+	And mail me the id_rsa.pub file.
+
+	If you are using SSH1, run:
+<pre>
+	ssh-keygen
+</pre>
+
+	And mail me your identity.pub file.
 
 	You will need CVS and SSH.  Windows users can get both by
 	installing Cygwin (<a

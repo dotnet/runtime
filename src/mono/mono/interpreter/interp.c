@@ -34,6 +34,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/cli/cli.h>
+#include <mono/cli/types.h>
 #include "hacks.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -45,8 +46,7 @@ enum {
 };
 #undef OPDEF
 
-/* FIXME: check in configure */
-typedef gint32 nati_t;
+static int debug_indent_level = 0;
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
@@ -318,14 +318,12 @@ static char *opcode_names[] = {
 	NULL
 };
 
-static int call_level = 0;
-
 static void
 output_indent (void)
 {
 	int h;
 
-	for (h = 0; h < call_level; h++)
+	for (h = 0; h < debug_indent_level; h++)
 		g_print ("  ");
 }
 
@@ -385,7 +383,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	ip = mm->header->code;
 
 #if DEBUG_INTERP
-	call_level++;
+	debug_indent_level++;
 	output_indent ();
 	g_print ("Entering %s\n", mh->name);
 #endif
@@ -602,7 +600,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			/* g_free (stack); */
 #if DEBUG_INTERP
-			call_level--;
+			debug_indent_level--;
 #endif
 			return;
 		CASE (CEE_BR_S)
@@ -984,7 +982,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			else if (sp->type == VAL_DOUBLE)
 				sp->data.f = - sp->data.f;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(- (nati_t)sp->data.p);
+				sp->data.p = (gpointer)(- (m_i)sp->data.p);
 			BREAK;
 		CASE (CEE_NOT)
 			++ip;
@@ -993,7 +991,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			else if (sp->type == VAL_I64)
 				sp->data.l = ~ sp->data.l;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(~ (nati_t)sp->data.p);
+				sp->data.p = (gpointer)(~ (m_i)sp->data.p);
 			BREAK;
 		CASE (CEE_CONV_I1) ves_abort(); BREAK;
 		CASE (CEE_CONV_I2) ves_abort(); BREAK;
