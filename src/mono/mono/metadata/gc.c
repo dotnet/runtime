@@ -433,18 +433,20 @@ static guint32 finalizer_thread (gpointer unused)
 	return(0);
 }
 
+/* 
+ * Enable or disable the separate finalizer thread.
+ * It's currently disabled because it still requires some
+ * work in the rest of the runtime.
+ */
+#undef ENABLE_FINALIZER_THREAD
+
 void mono_gc_init (void)
 {
 	HANDLE gc_thread;
 
 	InitializeCriticalSection (&handle_section);
 
-	/* 
-	 * A return here disables the separate finalizer thread.
-	 * It's currently disabled because it still requires some
-	 * work in the rest of the runtime.
-	 */
-	return;
+#ifdef ENABLE_FINALIZER_THREAD
 
 	if (getenv ("GC_DONT_GC"))
 		return;
@@ -465,6 +467,7 @@ void mono_gc_init (void)
 	if (gc_thread == NULL) {
 		g_assert_not_reached ();
 	}
+#endif
 }
 
 void mono_gc_cleanup (void)
@@ -473,8 +476,10 @@ void mono_gc_cleanup (void)
 	g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up finalizer");
 #endif
 
+#ifdef ENABLE_FINALIZER_THREAD
 	finished = TRUE;
 	finalize_notify ();
+#endif
 }
 
 #else
