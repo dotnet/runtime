@@ -452,6 +452,27 @@ cleanup:
 	
 	return(ret);
 }
+		
+static void process_set_name (struct _WapiHandle_process *process_handle)
+{
+	gchar *progname, *slash;
+	
+	progname=g_get_prgname ();
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": using [%s] as prog name",
+		   progname);
+#endif
+
+	if(progname!=NULL) {
+		slash=strrchr (progname, '/');
+		if(slash!=NULL) {
+			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+		} else {
+			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
+		}
+	}
+}
 
 static void process_set_current (void)
 {
@@ -462,8 +483,6 @@ static void process_set_current (void)
 	
 	handle_env=getenv ("_WAPI_PROCESS_HANDLE");
 	if(handle_env==NULL) {
-		gchar *progname, *slash;
-		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Need to create my own process handle");
@@ -490,33 +509,52 @@ static void process_set_current (void)
 		/* These seem to be the defaults on w2k */
 		process_handle->min_working_set=204800;
 		process_handle->max_working_set=1413120;
+
+		process_set_name (process_handle);
 		
-		progname=g_get_prgname ();
-
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": using [%s] as prog name",
-			   progname);
-#endif
-
-		if(progname!=NULL) {
-			slash=strrchr (progname, '/');
-			if(slash!=NULL) {
-				process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
-			} else {
-				process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
-			}
-		}
-
 		/* Make sure the new handle has a reference so it wont go away
 		 * until this process exits
 		 */
 		_wapi_handle_ref (current_process);
 	} else {
+		guchar *procname;
+		
 		current_process=GUINT_TO_POINTER (atoi (handle_env));
+
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Found my process handle: %p", current_process);
 #endif
+
+		ok=_wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
+					(gpointer *)&process_handle, NULL);
+		if(ok==FALSE) {
+			g_warning (G_GNUC_PRETTY_FUNCTION
+				   ": error looking up process handle %p",
+				   current_process);
+			return;
+		}
+
+		procname=_wapi_handle_scratch_lookup (process_handle->proc_name);
+		if(procname!=NULL) {
+			if(!strcmp (procname, "mono")) {
+				/* Set a better process name */
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": Setting better process name");
+#endif
+
+				_wapi_handle_scratch_delete (process_handle->proc_name);
+				process_set_name (process_handle);
+			} else {
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Leaving process name: %s",
+					   procname);
+#endif
+			}
+			
+			g_free (procname);
+		}
 	}
 }
 

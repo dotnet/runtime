@@ -816,7 +816,7 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 		 */
 		cmd=_wapi_handle_scratch_lookup (process_fork.cmd);
 		dir=_wapi_handle_scratch_lookup (process_fork.dir);
-		env=_wapi_handle_scratch_lookup (process_fork.env);
+		env=_wapi_handle_scratch_lookup_string_array (process_fork.env);
 		
 		ret=g_shell_parse_argv (cmd, NULL, &argv, &gerr);
 		if(ret==FALSE) {
@@ -869,6 +869,25 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 					close (i);
 				}
 			
+				/* pass process and thread handle info
+				 * to the child, so it doesn't have to
+				 * do an expensive search over the
+				 * whole list
+				 */
+				{
+					guint env_count=0;
+					
+					while(env[env_count]!=NULL) {
+						env_count++;
+					}
+
+					env=(char **)g_renew (char **, env, env_count+2);
+					
+					env[env_count]=g_strdup_printf ("_WAPI_PROCESS_HANDLE=%d", process_handle);
+					env[env_count+1]=g_strdup_printf ("_WAPI_THREAD_HANDLE=%d", process_handle);
+					env[env_count+2]=NULL;
+				}
+
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION
 					   ": exec()ing [%s] in dir [%s]",
@@ -894,20 +913,6 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 				if(chdir (dir)==-1) {
 					process_handle_data->exec_errno=errno;
 					exit (-1);
-				}
-			
-				/* pass process and thread handle info
-				 * to the child, so it doesn't have to
-				 * do an expensive search over the
-				 * whole list
-				 */
-				{
-					char *proc_env, *thr_env;
-					
-					proc_env=g_strdup_printf ("_WAPI_PROCESS_HANDLE=%d", process_handle);
-					thr_env=g_strdup_printf ("_WAPI_THREAD_HANDLE=%d", process_handle);
-					putenv (proc_env);
-					putenv (thr_env);
 				}
 				
 				/* exec */
