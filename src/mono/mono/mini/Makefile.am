@@ -133,6 +133,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(x86_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-x86.brg
+arch_built=cpu-pentium.md
 endif
 
 if POWERPC
@@ -140,6 +141,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(ppc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-ppc.brg
+arch_built=cpu-g4.md
 endif
 
 if SPARC
@@ -147,6 +149,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(sparc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-sparc.brg
+arch_built=cpu-sparc.md
 endif
 
 if S390
@@ -154,6 +157,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(s390_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-s390.brg
+arch_built=cpu-s390.md
 endif
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
@@ -231,7 +235,7 @@ clean:
 pkgconfigdir = $(libdir)/pkgconfig
 
 if JIT_SUPPORTED
-BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h cpu-s390.h
+BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES)
