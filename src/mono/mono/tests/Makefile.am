@@ -7,7 +7,7 @@ CSC=csc /unsafe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
-TESTSRC=			\
+TEST_CS_SRC=			\
 	array-init.cs		\
 	arraylist.cs		\
 	char-isnumber.cs	\
@@ -121,7 +121,9 @@ TESTSRC=			\
 	array-invoke.cs		\
 	decimal.cs		\
 	marshal1.cs		\
-	marshal2.cs		\
+	marshal2.cs
+
+TEST_IL_SRC=			\
 	cpblkTest.il		\
 	jmpTest.il		\
 	calliTest.il		\
@@ -130,11 +132,11 @@ TESTSRC=			\
 	initblkTest.il
 
 
-TESTSI_TMP=$(TESTSRC:.cs=.exe)
-TESTSI=$(TESTSI_TMP:.il=.exe)
+TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
+TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TESTSRC)
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
 
 %.exe: %.il
 	ilasm $< /OUTPUT=$@
@@ -142,11 +144,13 @@ EXTRA_DIST=test-driver $(TESTSRC)
 %.exe: %.cs
 	$(CSC) $<
 
-test: $(TEST_PROG) $(TESTSI) libtest.la
+test:	test_cs test_il
+
+test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
-	for i in $(TESTSI); do	\
+	for i in $(TESTSI_CS); do	\
 		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
@@ -154,7 +158,21 @@ test: $(TEST_PROG) $(TESTSI) libtest.la
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."
+	echo; echo ".cs: $${passed} test(s) passed. $${failed} test(s) failed."; echo
+
+test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
+	@failed=0; \
+	passed=0; \
+	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
+	for i in $(TESTSI_IL); do	\
+		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			failed=`expr $${failed} + 1`; \
+		fi \
+	done; \
+	echo; echo ".il: $${passed} test(s) passed. $${failed} test(s) failed."; echo
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
