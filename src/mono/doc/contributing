@@ -18,6 +18,15 @@
 	something that would help tremendously would be to help with
 	small duties in the project that need to be addressed. 
 
+** Bug reporting
+
+	If you find bugs in Mono, please make sure you enter a bug
+	report so we can keep track of problems in Mono.
+
+	To enter bug reports go to <a href="http://bugzilla.ximian.com">
+	http://bugzilla.ximian.com</a> and enter bug reports against
+	your favorite component (Mono, Runtime, C# compiler).
+
 ** Small tasks
 
 	A few smaller tasks are here, dropped in no particular order:
@@ -29,8 +38,6 @@
 
 		* <b>Mono/doc and web site:</b> They need to be
 		  packaged up in the official `distribution'
-
-		* <b>Enthusiasts: </b>
 	</ul>
 
 * Special note

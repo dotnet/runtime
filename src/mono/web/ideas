@@ -44,7 +44,7 @@ TODO=multimedia
 
 TODO=gtk,Gtk+ wrappers for Mono and .NET
 		* Wrap the Gtk+ API.  This is simple and can be done
-		  on Windows as Gtk+ 1.3 works on Windows.
+		  on Windows as Gtk+ 2.0 works on Windows.
 
 	 	  This work can also be used on Windows and will
 		  enable developers on Windows to use some of Gtk+'s
