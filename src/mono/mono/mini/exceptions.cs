@@ -71,7 +71,7 @@ class Tests {
 	static int test_0_byte_cast () {
 		int a;
 		long l;
-		byte b;
+		byte b = 0;
 		bool failed;
 
 		try {
@@ -85,6 +85,8 @@ class Tests {
 		}
 		if (failed)
 			return 1;
+		if (b != 255)
+			return -1;
 
 		try {
 			a = 0;
@@ -97,6 +99,8 @@ class Tests {
 		}
 		if (failed)
 			return 2;
+		if (b != 0)
+			return -2;
 
 		try {
 			a = 256;
@@ -109,6 +113,8 @@ class Tests {
 		}
 		if (failed)
 			return 3;
+		if (b != 0)
+			return -3;
 
 		try {
 			a = -1;
@@ -121,6 +127,8 @@ class Tests {
 		}
 		if (failed)
 			return 4;
+		if (b != 0)
+			return -4;
 
 		try {
 			double d = 0;
@@ -133,6 +141,8 @@ class Tests {
 		}
 		if (failed)
 			return 5;
+		if (b != 0)
+			return -5;
 		
 		try {
 			double d = -1;
@@ -145,6 +155,8 @@ class Tests {
 		}
 		if (failed)
 			return 6;
+		if (b != 0)
+			return -6;
 
 		try {
 			double d = 255;
@@ -155,9 +167,11 @@ class Tests {
 		} catch (OverflowException) {
 			failed = true;
 		}
-		
 		if (failed)
 			return 7;
+		// FIXME: we have a bug here
+		//if (b != 255)
+		//	return -7;
 
 		try {
 			double d = 256;
@@ -182,6 +196,9 @@ class Tests {
 		}
 		if (failed)
 			return 9;
+		//Console.WriteLine ((int)b);
+		if (b != 255)
+			return -9;
 
 		try {
 			l = 0;
@@ -194,6 +211,8 @@ class Tests {
 		}
 		if (failed)
 			return 10;
+		if (b != 0)
+			return -10;
 
 		try {
 			l = 256;
@@ -206,6 +225,8 @@ class Tests {
 		}
 		if (failed)
 			return 11;
+		if (b != 0)
+			return -11;
 
 		try {
 			l = -1;
@@ -218,6 +239,8 @@ class Tests {
 		}
 		if (failed)
 			return 12;
+		if (b != 0)
+			return -12;
 		
 		return 0;
 	}
