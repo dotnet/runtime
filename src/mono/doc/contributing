@@ -27,6 +27,8 @@
 
 	You can get it <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
 
+	Alternatively you can use the compilation service that was setup
+
 ** Bug reporting
 
 	If you find bugs in Mono, please make sure you enter a bug
@@ -48,6 +50,23 @@
 		* <b>Mono/doc and web site:</b> They need to be
 		  packaged up in the official `distribution'
 	</ul>
+
+* C# Compilation Service
+
+	If you are working on a class for the Mono project, but do not
+	have a C# compiler available or a Windows machine to run the
+	.NET SDK, you can use the compilation service that Derek
+	Holden setup in the following URL: <a
+	href="http://toilet.2y.net:8080/">http://toilet.2y.net:8080/</a>
+
+	The service will let you compile a source file and get back a
+	list of errors in the class file.  You will not be able to run
+	the code, but at least you can get some code written that will
+	help us further down the line.
+
+	You can contact (and thank) Derek for this service by sending
+	him nice email at <a
+	href="mailto:derek@Draper.Com">derek@draper.com</a>
 
 * Books on C#
 

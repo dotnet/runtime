@@ -23,6 +23,13 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Aug 20, 2001
+
+	A new <a href="contributing.html#compile-service">Compilation
+	service</a> has been made available by Derek to allow people
+	without access to the <a
+	href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">.NET SDK</a>
+
 ** Aug 3, 2001
 
 	Daily snapshots of mcs and mono are now available, they will
