@@ -43,6 +43,24 @@ mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, in
 	return list;
 }
 
+static gint 
+compare_by_first_use_func (gconstpointer a, gconstpointer b)
+{
+	MonoMethodVar *v1 = (MonoMethodVar*)a;
+	MonoMethodVar *v2 = (MonoMethodVar*)b;
+
+	return v1->range.first_use.abs_pos - v2->range.first_use.abs_pos;
+}
+
+GList *
+mono_varlist_sort (MonoCompile *cfg, GList *list, int sort_type)
+{
+	if (sort_type == 0)
+		return g_list_sort (list, compare_by_first_use_func);
+	else
+		g_assert_not_reached ();
+}
+
 //#define DEBUG_LSCAN
 
 void

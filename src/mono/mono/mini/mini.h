@@ -650,6 +650,7 @@ void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpI
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 MonoLMF** mono_get_lmf_addr                 (void);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end);
+GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
 void      mono_analyze_liveness             (MonoCompile *cfg);
 void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);

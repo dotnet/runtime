@@ -506,9 +506,11 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		    (ins->inst_vtype->type == MONO_TYPE_I2) || (ins->inst_vtype->type == MONO_TYPE_CHAR)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
-			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
+			vars = g_list_prepend (vars, vmv);
 		}
 	}
+
+	vars = mono_varlist_sort (cfg, vars, 0);
 
 	return vars;
 }
