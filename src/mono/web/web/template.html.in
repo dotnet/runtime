@@ -30,6 +30,10 @@
 	a.navi2:visited { color: #cccccc; }
 	a.navi2:hover { color: #ee9900; text-decoration: underline; }
 
+	a.topmenu { color: #ffffff; text-decoration: none; margin-left: 7px;}
+	a.topmenu:visited { color: #cccccc; }
+	a.topmenu:hover { color: #ee9900; text-decoration: underline; }
+
 // --> 
 </style>
 #CSS#

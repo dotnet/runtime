@@ -112,8 +112,9 @@ clean:
 
 push:
 	cp -f $(NON_HTML_SOURCES) deploy
-	echo scp -P 2200 -r deploy/* www@www.go-mono.com:/web/cvsmodules/mono
-	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . www@www.go-mono.com:/web/cvsmodules/mono )
+	#echo scp -P 2200 -r deploy/* www@www.go-mono.com:/web/cvsmodules/mono
+	#(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . www@www.go-mono.com:/web/cvsmodules/mono )
+	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh' . mono-web@www.go-mono.com:/web/cvsmodules/mono )
 
 push2: 
 	scp -r deploy/* primates:public_html/xxx

@@ -6,18 +6,21 @@
 using System;
 using System.IO;
 using System.Xml;
+using System.Text;
 using RSS;
 
 class X {
 	static RSS.RSS rss;
 	static Channel c;
 	static int item_count;
-
+	static int line;
+	
 	static void PopulateRSS (StreamReader input)
 	{
 		string s;
 		
 		while ((s = input.ReadLine ()) != null){
+			line++;
 			if (s.StartsWith ("@item "))
 				break;
 		}
@@ -52,6 +55,7 @@ class X {
 			} else {
 				description += "\n" + (s == "\n" ? "<p>" : s);
 			}
+			line++;
 		} while ((s = input.ReadLine ()) != null);
 
 		if (i != null){
@@ -76,11 +80,16 @@ class X {
 
 		using (FileStream fs = new FileStream (input, FileMode.Open)){
 			using (StreamReader input_stream = new StreamReader (fs)){
-				PopulateRSS (input_stream);
+				try {
+					PopulateRSS (input_stream);
+				} catch {
+					Console.WriteLine ("{0} failure while loading: {1}", line, input);
+					throw;
+				}
 			}
 		}
 		
-		rss.XmlDocument.Save (output);
+		rss.XmlDocument.Save (output, new UTF8Encoding (false, false));
 	}
 	
 	static int Main (string [] args)
