@@ -221,6 +221,10 @@ mono_init (const char *filename)
 	appdomain_thread_id = TlsAlloc ();
 	context_thread_id = TlsAlloc ();
 
+	mono_metadata_init ();
+	mono_images_init ();
+	mono_assemblies_init ();
+
 	// FIXME: When should we release this memory?
 	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 

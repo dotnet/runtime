@@ -7,6 +7,7 @@
 
 #define CORLIB_NAME "corlib.dll"
 
+void          mono_assemblies_init     (void);
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
 MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 

@@ -22,6 +22,7 @@
 #include "private.h"
 #include "tabledefs.h"
 #include "tokentype.h"
+#include <mono/io-layer/io-layer.h>
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -30,6 +31,8 @@
  */
 static GHashTable *loaded_images_hash;
 static GHashTable *loaded_images_guid_hash;
+
+static CRITICAL_SECTION images_mutex;
 
 guint32
 mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
@@ -64,6 +67,20 @@ mono_cli_rva_map (MonoCLIImageInfo *iinfo, guint32 addr)
 		tables++;
 	}
 	return NULL;
+}
+
+/**
+ * mono_images_init:
+ *
+ *  Initialize the global variables used by this module.
+ */
+void
+mono_images_init (void)
+{
+	InitializeCriticalSection (&images_mutex);
+
+	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 }
 
 /**
@@ -487,7 +504,7 @@ mono_image_init (MonoImage *image)
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	image->generics_cache = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
+	image->generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
 
 }
 
@@ -693,19 +710,27 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 }
 
 MonoImage *
-mono_image_loaded (const char *name) {
+mono_image_loaded (const char *name)
+{
+	MonoImage *res;
+	
 	if (strcmp (name, "mscorlib") == 0)
 		name = "corlib";
-	if (loaded_images_hash)
-		return g_hash_table_lookup (loaded_images_hash, name);
-	return NULL;
+	EnterCriticalSection (&images_mutex);
+	res = g_hash_table_lookup (loaded_images_hash, name);
+	LeaveCriticalSection (&images_mutex);
+	return res;
 }
 
 MonoImage *
-mono_image_loaded_by_guid (const char *guid) {
-	if (loaded_images_guid_hash)
-		return g_hash_table_lookup (loaded_images_guid_hash, guid);
-	return NULL;
+mono_image_loaded_by_guid (const char *guid)
+{
+	MonoImage *res;
+
+	EnterCriticalSection (&images_mutex);
+	res = g_hash_table_lookup (loaded_images_guid_hash, guid);
+	LeaveCriticalSection (&images_mutex);
+	return res;
 }
 
 MonoImage *
@@ -754,31 +779,43 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	MonoImage *image;
+	MonoImage *image, *image2;
 	
 	g_return_val_if_fail (fname != NULL, NULL);
 
-	if (loaded_images_hash){
-		image = g_hash_table_lookup (loaded_images_hash, fname);
-		if (image){
-			image->ref_count++;
-			return image;
-		}
+	/*
+	 * The easiest solution would be to do all the loading inside the mutex,
+	 * but that would lead to scalability problems. So we let the loading
+	 * happen outside the mutex, and if multiple threads happen to load
+	 * the same image, we discard all but the first copy.
+	 */
+	EnterCriticalSection (&images_mutex);
+	image = g_hash_table_lookup (loaded_images_hash, fname);
+	if (image){
+		image->ref_count++;
+		LeaveCriticalSection (&images_mutex);
+		return image;
 	}
+	LeaveCriticalSection (&images_mutex);
 
 	image = do_mono_image_open (fname, status);
 	if (image == NULL)
 		return NULL;
 
-	if (!loaded_images_hash)
-		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	EnterCriticalSection (&images_mutex);
+	image2 = g_hash_table_lookup (loaded_images_hash, fname);
+	if (image2) {
+		/* Somebody else beat us to it */
+		LeaveCriticalSection (&images_mutex);
+		mono_image_close (image);
+
+		return image2;
+	}
 	g_hash_table_insert (loaded_images_hash, image->name, image);
 	if (image->assembly_name)
-		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);
-	
-	if (!loaded_images_guid_hash)
-		loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
+		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);	
 	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
+	LeaveCriticalSection (&images_mutex);
 
 	return image;
 }
@@ -799,15 +836,25 @@ free_hash_table(gpointer key, gpointer val, gpointer user_data)
 void
 mono_image_close (MonoImage *image)
 {
+	MonoImage *image2;
+
 	g_return_if_fail (image != NULL);
 
-	if (--image->ref_count)
+	EnterCriticalSection (&images_mutex);
+	if (--image->ref_count) {
+		LeaveCriticalSection (&images_mutex);
 		return;
+	}
+	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
+	if (image == image2) {
+		/* This is not true if we are called from mono_image_open () */
+		g_hash_table_remove (loaded_images_hash, image->name);
+		if (image->assembly_name)
+			g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
+		g_hash_table_remove (loaded_images_guid_hash, image->guid);
+	}	
+	LeaveCriticalSection (&images_mutex);
 
-	if (!loaded_images_hash)
-		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
-	g_hash_table_remove (loaded_images_hash, image->name);
-	
 	if (image->f)
 		fclose (image->f);
 	if (image->raw_data_allocated)

@@ -22,6 +22,7 @@
 #ifdef WITH_BUNDLE
 #include "mono-bundle.h"
 #endif
+#include <mono/io-layer/io-layer.h>
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -31,20 +32,23 @@ default_path [] = {
 };
 
 static char **assemblies_path = NULL;
-static int env_checked = 0;
+
+/*
+ * keeps track of loaded assemblies
+ */
+static GList *loaded_assemblies = NULL;
+static MonoAssembly *corlib;
+
+/* This protects loaded_assemblies and image->references */
+static CRITICAL_SECTION assemblies_mutex;
 
 #ifdef PLATFORM_WIN32
-static gboolean path_inited = FALSE;
 
 static void
 init_default_path (void)
 {
 	int i;
 
-	if (path_inited)
-		return;
-	
-	path_inited = TRUE;
 	default_path [0] = g_strdup (MONO_ASSEMBLIES);
 	for (i = strlen (MONO_ASSEMBLIES) - 1; i >= 0; i--) {
 		if (default_path [0][i] == '/')
@@ -58,10 +62,6 @@ check_env (void) {
 	const char *path;
 	char **splitted;
 	
-	if (env_checked)
-		return;
-	env_checked = 1;
-
 	path = getenv ("MONO_PATH");
 	if (!path)
 		return;
@@ -71,12 +71,7 @@ check_env (void) {
 	assemblies_path = splitted;
 }
 
-/*
- * keeps track of loaded assemblies
- */
-static GList *loaded_assemblies = NULL;
-static MonoAssembly *corlib;
-
+/* assemblies_mutex must be held by the caller */
 static MonoAssembly*
 search_loaded (MonoAssemblyName* aname)
 {
@@ -135,19 +130,38 @@ mono_assembly_setrootdir (const char *root_dir)
 #endif
 }
 
+/**
+ * mono_assemblies_init:
+ *
+ *  Initialize global variables used by this module.
+ */
+void
+mono_assemblies_init (void)
+{
+#ifdef PLATFORM_WIN32
+	init_default_path ();
+#endif
+
+	check_env ();
+
+	InitializeCriticalSection (&assemblies_mutex);
+}
+
 void
 mono_image_load_references (MonoImage *image, MonoImageOpenStatus *status) {
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
 	int i;
+	MonoAssembly **references;
 
+	*status = MONO_IMAGE_OK;
 	if (image->references)
 		return;
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
-	image->references = g_new0 (MonoAssembly *, t->rows + 1);
+	references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	/*
 	 * Load any assemblies this image references
@@ -168,23 +182,28 @@ mono_image_load_references (MonoImage *image, MonoImageOpenStatus *status) {
 		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
 		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
-		image->references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
-
-		if (image->references [i] == NULL){
+		references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+		if (references [i] == NULL){
 			int j;
 			
 			for (j = 0; j < i; j++)
-				mono_assembly_close (image->references [j]);
-			g_free (image->references);
-			image->references = NULL;
+				mono_assembly_close (references [j]);
+			g_free (references);
 
 			g_warning ("Could not find assembly %s", aname.name);
 			*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 			return;
 		}
 	}
-	image->references [i] = NULL;
+	references [i] = NULL;
 
+	EnterCriticalSection (&assemblies_mutex);
+	if (image->references)
+		/* Somebody got in before us */
+		g_free (references);
+	else
+		image->references = references;
+	LeaveCriticalSection (&assemblies_mutex);
 }
 
 typedef struct AssemblyLoadHook AssemblyLoadHook;
@@ -333,6 +352,7 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	/* we do a very simple search for bundled assemblies: it's not a general purpouse
 	 * assembly loading mechanism.
 	 */
+	EnterCriticalSection (&assemblies_mutex);
 	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (!ass->aname.name)
@@ -342,6 +362,7 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		image = ass->image;
 		break;
 	}
+	LeaveCriticalSection (&assemblies_mutex);
 	for (i = 0; !image && bundled_assemblies [i]; ++i) {
 		if (strcmp (bundled_assemblies [i]->name, name) == 0) {
 			image = mono_image_open_from_data ((char*)bundled_assemblies [i]->data, bundled_assemblies [i]->size, FALSE, status);
@@ -470,23 +491,31 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
 		ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
 		ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
+	}
 
+	/* 
+	 * Atomically search the loaded list and add ourselves to it if necessary.
+	 */
+	EnterCriticalSection (&assemblies_mutex);
+	if (ass->aname.name)
 		/* avoid loading the same assembly twice for now... */
 		if ((ass2 = search_loaded (&ass->aname))) {
 			g_free (ass);
 			g_free (base_dir);
 			*status = MONO_IMAGE_OK;
+			LeaveCriticalSection (&assemblies_mutex);
 			return ass2;
 		}
-	}
+	/* register right away to prevent loops */
+	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	LeaveCriticalSection (&assemblies_mutex);
 
 	image->assembly = ass;
 
-	/* register right away to prevent loops */
-	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
-
 	mono_image_load_references (image, status);
 	if (*status != MONO_IMAGE_OK) {
+		/* FIXME: What happens when another thread already grabbed this
+		   assembly from the loaded_assemblies list ??? */
 		mono_assembly_close (ass);
 		return NULL;
 	}
@@ -516,9 +545,6 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	MonoAssembly *result;
 	char *fullpath, *filename;
 
-#ifdef PLATFORM_WIN32
-	init_default_path ();
-#endif
 	check_env ();
 
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
@@ -578,10 +604,13 @@ mono_assembly_close (MonoAssembly *assembly)
 	
 	g_return_if_fail (assembly != NULL);
 
-	if (--assembly->ref_count != 0)
+	EnterCriticalSection (&assemblies_mutex);
+	if (--assembly->ref_count != 0) {
+		LeaveCriticalSection (&assemblies_mutex);
 		return;
-	
+	}
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
+	LeaveCriticalSection (&assemblies_mutex);
 	image = assembly->image;
 	if (image->references) {
 		for (i = 0; image->references [i] != NULL; i++)
@@ -598,9 +627,19 @@ mono_assembly_close (MonoAssembly *assembly)
 void
 mono_assembly_foreach (GFunc func, gpointer user_data)
 {
-	/* In the future this can do locking of loaded_assemblies */
+	GList *copy;
+
+	/*
+     * We make a copy of the list to avoid calling the callback inside the 
+	 * lock, which could lead to deadlocks.
+	 */
+	EnterCriticalSection (&assemblies_mutex);
+	copy = g_list_copy (loaded_assemblies);
+	LeaveCriticalSection (&assemblies_mutex);
 
 	g_list_foreach (loaded_assemblies, func, user_data);
+
+	g_list_free (copy);
 }
 
 /* Holds the assembly of the application, for

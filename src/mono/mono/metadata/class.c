@@ -93,6 +93,9 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	}
 
 	mono_image_load_references (image, &status);
+	if (status != MONO_IMAGE_OK)
+		return NULL;
+		
 	references = image->references;
 	if (!references ||  !references [idx-1]) {
 		/* 

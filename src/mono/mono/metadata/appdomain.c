@@ -420,8 +420,9 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 	g_hash_table_insert (domain->assemblies, (gpointer) ass->aname.name, ass);
 	mono_domain_unlock (domain);
 
-	for (i = 0; ass->image->references [i] != NULL; i++)
-		add_assemblies_to_domain (domain, ass->image->references [i]);
+	if (ass->image->references)
+		for (i = 0; ass->image->references [i] != NULL; i++)
+			add_assemblies_to_domain (domain, ass->image->references [i]);
 }
 
 static void

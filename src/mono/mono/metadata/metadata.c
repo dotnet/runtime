@@ -1165,6 +1165,22 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 	return 1;
 }
 
+/**
+ * mono_metadata_init:
+ *
+ *  Initialize the global variables of this module.
+ */
+void
+mono_metadata_init (void)
+{
+	int i;
+
+	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
+
+	for (i = 0; i < NBUILTIN_TYPES (); ++i)
+		g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
+}
+
 /*
  * mono_metadata_parse_type:
  * @m: metadata context
@@ -1185,14 +1201,6 @@ MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
-
-	if (!type_cache) {
-		int i;
-		type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
-
-		for (i = 0; i < NBUILTIN_TYPES (); ++i)
-			g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
-	}
 
 	switch (mode) {
 	case MONO_PARSE_MOD_TYPE:
@@ -1253,6 +1261,8 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	}
 	if (rptr)
 		*rptr = ptr;
+
+	/* No need to use locking since nobody is modifying the hash table */
 	if (mode != MONO_PARSE_PARAM && !type->num_mods && (cached = g_hash_table_lookup (type_cache, type))) {
 		mono_metadata_free_type (type);
 		return cached;

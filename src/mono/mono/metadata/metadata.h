@@ -171,6 +171,7 @@ typedef struct {
 	} data;
 } MonoMarshalSpec;
 
+void         mono_metadata_init (void);
 
 void         mono_metadata_decode_row (MonoTableInfo         *t,
 				       int                    idx,
