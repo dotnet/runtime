@@ -88,3 +88,22 @@ dump_table_param (metadata_t *m)
 	fprintf (output, "\n");
 }
 
+void
+dump_table_field (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_FIELD];
+	int i;
+
+	fprintf (output, "Field Table (0..%d)\n", t->rows);
+	
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [3];
+
+		expand (t, i, cols, CSIZE (cols));
+		fprintf (output, "%d: 0x%02x %s\n",
+			 i,
+			 cols [0], 
+			 mono_metadata_string_heap (m, cols [1]));
+	}
+	fprintf (output, "\n");
+}

@@ -163,10 +163,8 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 	guint32 cols [3];
 	int i;
 
-	if (end > t->rows + 1){
-		fprintf (output, "ERROR index out of range in fields");
-		exit (1);
-	}
+	if (end > t->rows + 1)
+		g_error ("ERROR index out of range in fields");
 			
 	for (i = start; i < end; i++){
 		char *sig, *flags;
@@ -283,12 +281,21 @@ method_impl_flags (guint32 f)
 static void
 dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 {
+	MonoMetaMethodHeader *mh;
 	const char *ptr = cli_rva_map (ii, rva);
 
 	if (rva == 0)
 		return;
-	
-	hex_dump (ptr, 0, 64);
+
+	mh = mono_metadata_parse_mh (ptr);
+	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
+	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
+	printf ("Values Code Size=%d/0x%x\nMaxStack=%d\nLocalTok=%x",
+		mh->code_size, mh->code_size, mh->max_stack, mh->local_var_sig_tok);
+	hex_dump (mh->code, 0, mh->code_size);
+	printf ("\nAfter the code\n");
+	hex_dump (mh->code + mh->code_size, 0, 64);
+	mono_metadata_free_mh (mh);
 }
 
 typedef struct {
@@ -434,9 +441,15 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	guint32 cols [6];
 	guint32 cols_next [6];
 	const char *name;
+	gboolean next_is_valid, last;
 	
 	expand (t, n, cols, CSIZE (cols));
-	expand (t, n + 1, cols_next, CSIZE (cols_next));
+
+	if (t->rows < n+1){
+		expand (t, n + 1, cols_next, CSIZE (cols_next));
+		next_is_valid = 1;
+	} else
+		next_is_valid = 0;
 
 	fprintf (output, ".namespace %s\n{\n", mono_metadata_string_heap (m, cols [2]));
 	name = mono_metadata_string_heap (m, cols [1]);
@@ -455,11 +468,22 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	 * The value in the table is always valid, we know we have fields
 	 * if the value stored is different than the next record.
 	 */
+	if (next_is_valid)
+		last = cols_next [4] - 1;
+	else
+		last = m->tables [META_TABLE_FIELD].rows;
+			
 	if (cols [4] != cols_next [4])
-		dis_field_list (m, cols [4] - 1, cols_next [4] - 1);
+		dis_field_list (m, cols [4] - 1, last);
 	fprintf (output, "\n");
+
+	if (next_is_valid)
+		last = cols [5] - 1;
+	else
+		last = m->tables [META_TABLE_METHOD].rows;
+	
 	if (cols [4] != cols_next [5])
-		dis_method_list (m, ii, cols [5] - 1, cols_next [5] - 1);
+		dis_method_list (m, ii, cols [5] - 1, last);
 
 	fprintf (output, "  }\n}\n\n");
 }
@@ -518,6 +542,9 @@ disassemble_file (const char *file)
 		case META_TABLE_PARAM:
 			dump_table_param (m);
 			break;
+		case META_TABLE_FIELD:
+			dump_table_field (m);
+			break;
 		default:
 			g_error ("Internal error");
 		}
@@ -562,6 +589,8 @@ main (int argc, char *argv [])
 				dump_table = META_TABLE_ASSEMBLYREF;
 			else if (strcmp (argv [i], "--param") == 0)
 				dump_table = META_TABLE_PARAM;
+			else if (strcmp (argv [i], "--fields") == 0)
+				dump_table = META_TABLE_FIELD;
 		} else
 			input_files = g_list_append (input_files, argv [i]);
 	}

@@ -172,3 +172,17 @@ char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
 
 const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
 const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);
+
+typedef struct {
+	guint32     code_size;
+	const char *code;
+	short       max_stack;
+	guint32     local_var_sig_tok;
+
+	/* if local_var_sig_tok != 0, then the following apply: */
+	unsigned int init_locals : 1;
+
+} MonoMetaMethodHeader;
+
+MonoMetaMethodHeader *mono_metadata_parse_mh (const char *ptr);
+void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);

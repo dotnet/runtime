@@ -10,6 +10,8 @@
 #include <config.h>
 #include <glib.h>
 #include "metadata.h"
+#include "methodheader.h"
+#include "endian.h"
 
 /*
  * Encoding of the "description" argument:
@@ -327,6 +329,12 @@ static struct {
 	/* 2B */ { NULL,                       NULL },
 };
 
+/**
+ * mono_meta_table_name:
+ * @table: table index
+ *
+ * Returns the name for the @table index
+ */
 const char *
 mono_meta_table_name (int table)
 {
@@ -557,6 +565,13 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *res
 	return size;
 }
 
+/**
+ * mono_metadata_compute_table_bases:
+ * @meta: metadata context to compute table values
+ *
+ * Computes the table bases for the metadata structure.
+ * This is an internal function used by the image loader code.
+ */
 void
 mono_metadata_compute_table_bases (metadata_t *meta)
 {
@@ -574,7 +589,16 @@ mono_metadata_compute_table_bases (metadata_t *meta)
 		base += meta->tables [i].rows * meta->tables [i].row_size;
 	}
 }
-	
+
+/**
+ * mono_metadata_locate:
+ * @meta: metadata context
+ * @table: table code.
+ * @idx: index of element to retrieve from @table.
+ *
+ * Returns a pointer to the @idx element in the metadata table
+ * whose code is @table.
+ */
 char *
 mono_metadata_locate (metadata_t *meta, int table, int idx)
 {
@@ -589,6 +613,12 @@ mono_metadata_locate_token (metadata_t *meta, guint32 token)
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
 
+/**
+ * mono_metadata_get_table:
+ * @table: table to retrieve
+ *
+ * Returns the MonoMetaTable structure for table @table
+ */
 MonoMetaTable *
 mono_metadata_get_table (MetaTableEnum table)
 {
@@ -599,16 +629,130 @@ mono_metadata_get_table (MetaTableEnum table)
 	return tables [table].table;
 }
 
+/**
+ * mono_metadata_string_heap:
+ * @meta: metadata context
+ * @index: index into the string heap.
+ *
+ * Returns: an in-memory pointer to the @index in the string heap.
+ */
 const char *
 mono_metadata_string_heap (metadata_t *meta, guint32 index)
 {
 	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
 }
 
-
+/**
+ * mono_metadata_blob_heap:
+ * @meta: metadata context
+ * @index: index into the blob.
+ *
+ * Returns: an in-memory pointer to the @index in the Blob heap.
+ */
 const char *
 mono_metadata_blob_heap (metadata_t *meta, guint32 index)
 {
 	return meta->raw_metadata + meta->heap_blob.sh_offset + index;
 }
 
+static const char *
+dword_align (const char *ptr)
+{
+	return (const char *) (((guint32) (ptr + 3)) & ~3);
+}
+      
+MonoMetaMethodHeader *
+mono_metadata_parse_mh (const char *ptr)
+{
+	MonoMetaMethodHeader *mh;
+	unsigned char flags = *(unsigned char *) ptr;
+	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
+	guint16 fat_flags;
+	unsigned char sect_data_flags;
+	int hsize, sect_data_len;
+	
+	g_return_val_if_fail (ptr != NULL, NULL);
+	g_return_val_if_fail (mh != NULL, NULL);
+
+	mh = g_new0 (MonoMetaMethodHeader, 1);
+	switch (format){
+	case METHOD_HEADER_TINY_FORMAT:
+		ptr++;
+		mh->max_stack = 8;
+		mh->local_var_sig_tok = 0;
+		mh->code_size = flags >> 2;
+		mh->code = ptr;
+		break;
+		
+	case METHOD_HEADER_TINY_FORMAT1:
+		ptr++;
+		mh->max_stack = 8;
+		mh->local_var_sig_tok = 0;
+		mh->code_size = flags >> 3;
+		mh->code = ptr;
+		break;
+		
+	case METHOD_HEADER_FAT_FORMAT:
+		fat_flags = read16 (ptr);
+		ptr += 2;
+		hsize = (fat_flags >> 12) & 0xf;
+		mh->max_stack = *(guint16 *) ptr;
+		ptr += 2;
+		mh->code_size = *(guint32 *) ptr;
+		ptr += 4;
+		mh->local_var_sig_tok = *(guint32 *) ptr;
+		ptr += 4;
+
+		if (fat_flags & METHOD_HEADER_INIT_LOCALS)
+			mh->init_locals = 1;
+		else
+			mh->init_locals = 0;
+
+		mh->code = ptr;
+
+		if (!(fat_flags & METHOD_HEADER_MORE_SECTS))
+			return mh;
+
+		/*
+		 * There are more sections
+		 */
+		ptr = mh->code + mh->code_size;
+
+		/* align on 32-bit boundary */
+		/* FIXME: not 64-bit clean code */
+		ptr = dword_align (ptr); 
+		
+		sect_data_flags = *ptr;
+		ptr++;
+		
+		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
+			g_error ("Can not deal with more sections");
+		}
+		
+		if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
+			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
+			ptr += 3;
+		} else {
+			sect_data_len = ptr [0];
+			ptr++;
+		}
+		
+		if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
+			return mh;
+
+		ptr = dword_align (ptr);
+		
+		break;
+		
+	default:
+		return NULL;
+	}
+		       
+	return mh;
+}
+
+void
+mono_metadata_free_mh (MonoMetaMethodHeader *mh)
+{
+	g_free (mh);
+}
