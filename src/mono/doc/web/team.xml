@@ -498,4 +498,20 @@
       <task>SPARC Work</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Dick</first-name>
+      <last-name>Porter</last-name>
+    </name>
+    <e-mail>dick@ximian.com</e-mail>
+    <image>none.png</image>
+    <location>Swansea</location>
+    <organization>Ximian</organization>
+    <description>Hacker</description>
+    <tasks>
+      <task>Runtime implementation</task>
+      <task>Core class libraries</task>
+      <task>Host system integration</task>
+    </tasks>
+  </contributor>
 </contributors>
