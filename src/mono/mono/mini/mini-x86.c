@@ -27,6 +27,8 @@ static gint lmf_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
 #ifdef PLATFORM_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
 #define CALLCONV_IS_STDCALL(call_conv) (((call_conv) == MONO_CALL_STDCALL) || ((call_conv) == MONO_CALL_DEFAULT))
@@ -48,6 +50,287 @@ mono_arch_regname (int reg) {
 	case X86_ESI: return "%esi";
 	}
 	return "unknown";
+}
+
+typedef enum {
+	ArgInIReg,
+	ArgInFloatSSEReg,
+	ArgInDoubleSSEReg,
+	ArgOnStack,
+	ArgValuetypeInReg,
+	ArgOnFpStack,
+	ArgNone /* only in pair_storage */
+} ArgStorage;
+
+typedef struct {
+	gint16 offset;
+	gint8  reg;
+	ArgStorage storage;
+
+	/* Only if storage == ArgValuetypeInReg */
+	ArgStorage pair_storage [2];
+	gint8 pair_regs [2];
+} ArgInfo;
+
+typedef struct {
+	int nargs;
+	guint32 stack_usage;
+	guint32 reg_usage;
+	guint32 freg_usage;
+	gboolean need_stack_align;
+	ArgInfo ret;
+	ArgInfo sig_cookie;
+	ArgInfo args [1];
+} CallInfo;
+
+#define PARAM_REGS 0
+
+#define FLOAT_PARAM_REGS 0
+
+static X86_Reg_No param_regs [] = { };
+
+static X86_Reg_No return_regs [] = { X86_EAX, X86_EDX };
+
+static void inline
+add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
+{
+    ainfo->offset = *stack_size;
+
+    if (*gr >= PARAM_REGS) {
+		ainfo->storage = ArgOnStack;
+		(*stack_size) += sizeof (gpointer);
+    }
+    else {
+		ainfo->storage = ArgInIReg;
+		ainfo->reg = param_regs [*gr];
+		(*gr) ++;
+    }
+}
+
+static void inline
+add_general_pair (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
+{
+	ainfo->offset = *stack_size;
+
+	g_assert (PARAM_REGS == 0);
+	
+	ainfo->storage = ArgOnStack;
+	(*stack_size) += sizeof (gpointer) * 2;
+}
+
+static void inline
+add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
+{
+    ainfo->offset = *stack_size;
+
+    if (*gr >= FLOAT_PARAM_REGS) {
+		ainfo->storage = ArgOnStack;
+		(*stack_size) += sizeof (gpointer);
+    }
+    else {
+		/* A double register */
+		if (is_double)
+			ainfo->storage = ArgInDoubleSSEReg;
+		else
+			ainfo->storage = ArgInFloatSSEReg;
+		ainfo->reg = *gr;
+		(*gr) += 1;
+    }
+}
+
+
+static void
+add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+	       gboolean is_return,
+	       guint32 *gr, guint32 *fr, guint32 *stack_size)
+{
+	guint32 size;
+	MonoClass *klass;
+
+	klass = mono_class_from_mono_type (type);
+	if (sig->pinvoke) 
+		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
+	else 
+		size = mono_type_stack_size (&klass->byval_arg, NULL);
+
+	ainfo->offset = *stack_size;
+	ainfo->storage = ArgOnStack;
+	*stack_size += ALIGN_TO (size, sizeof (gpointer));
+}
+
+/*
+ * get_call_info:
+ *
+ *  Obtain information about a call according to the calling convention.
+ * For x86 ELF, see the "System V Application Binary Interface Intel386 
+ * Architecture Processor Supplment, Fourth Edition" document for more
+ * information.
+ * For x86 win32, see ???.
+ */
+static CallInfo*
+get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
+{
+	guint32 i, gr, fr;
+	MonoType *ret_type;
+	int n = sig->hasthis + sig->param_count;
+	guint32 stack_size = 0;
+	CallInfo *cinfo;
+
+	cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+
+	gr = 0;
+	fr = 0;
+
+	/* return value */
+	{
+		ret_type = mono_type_get_underlying_type (sig->ret);
+		switch (ret_type->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_STRING:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = X86_EAX;
+			break;
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = X86_EAX;
+			break;
+		case MONO_TYPE_R4:
+			cinfo->ret.storage = ArgOnFpStack;
+			break;
+		case MONO_TYPE_R8:
+			cinfo->ret.storage = ArgOnFpStack;
+			break;
+		case MONO_TYPE_VALUETYPE: {
+			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
+
+			/* FIXME: On win32, small structures are returned in registers */
+
+			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			if (cinfo->ret.storage == ArgOnStack)
+				/* The caller passes the address where the value is stored */
+				add_general (&gr, &stack_size, &cinfo->ret);
+			break;
+		}
+		case MONO_TYPE_TYPEDBYREF:
+			/* Same as a valuetype with size 24 */
+			add_general (&gr, &stack_size, &cinfo->ret);
+			;
+			break;
+		case MONO_TYPE_VOID:
+			break;
+		default:
+			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+		}
+	}
+
+	/* this */
+	if (sig->hasthis)
+		add_general (&gr, &stack_size, cinfo->args + 0);
+
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
+		gr = PARAM_REGS;
+		fr = FLOAT_PARAM_REGS;
+		
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie);
+	}
+
+	for (i = 0; i < sig->param_count; ++i) {
+		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
+		MonoType *ptype;
+
+		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			/* We allways pass the sig cookie on the stack for simplicity */
+			/* 
+			 * Prevent implicit arguments + the sig cookie from being passed 
+			 * in registers.
+			 */
+			gr = PARAM_REGS;
+			fr = FLOAT_PARAM_REGS;
+
+			/* Emit the signature cookie just before the implicit arguments */
+			add_general (&gr, &stack_size, &cinfo->sig_cookie);
+		}
+
+		if (sig->params [i]->byref) {
+			add_general (&gr, &stack_size, ainfo);
+			continue;
+		}
+		ptype = mono_type_get_underlying_type (sig->params [i]);
+		switch (ptype->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+			add_general (&gr, &stack_size, ainfo);
+			break;
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+			add_general (&gr, &stack_size, ainfo);
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+			add_general (&gr, &stack_size, ainfo);
+			break;
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+			add_general (&gr, &stack_size, ainfo);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			break;
+		case MONO_TYPE_TYPEDBYREF:
+			stack_size += sizeof (MonoTypedRef);
+			ainfo->storage = ArgOnStack;
+			break;
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			add_general_pair (&gr, &stack_size, ainfo);
+			break;
+		case MONO_TYPE_R4:
+			add_float (&fr, &stack_size, ainfo, FALSE);
+			break;
+		case MONO_TYPE_R8:
+			add_float (&fr, &stack_size, ainfo, TRUE);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {
+		gr = PARAM_REGS;
+		fr = FLOAT_PARAM_REGS;
+		
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie);
+	}
+
+	cinfo->stack_usage = stack_size;
+	cinfo->reg_usage = gr;
+	cinfo->freg_usage = fr;
+	return cinfo;
 }
 
 /*
