@@ -36,7 +36,7 @@ mono_trace_eval (MonoMethod *method)
 			if (trace_spec.assembly && (method->klass->image == mono_assembly_get_image (trace_spec.assembly)))
 				inc = 1; break;
 		case MONO_TRACEOP_METHOD:
-			if (mono_method_desc_match ((MonoMethodDesc *) op->data, method))
+			if (mono_method_desc_full_match ((MonoMethodDesc *) op->data, method))
 				inc = 1; break;
 		case MONO_TRACEOP_CLASS:
 			if (strcmp (method->klass->name_space, op->data) == 0)
