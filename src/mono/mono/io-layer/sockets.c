@@ -727,9 +727,12 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 	
 	fd=socket(domain, type, protocol);
 	if(fd==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": socket error: %s", strerror(errno));
 #endif
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 
 		return(INVALID_SOCKET);
 	}

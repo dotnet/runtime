@@ -178,7 +178,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	} else {
 		dir=g_get_current_dir ();
 	}
-	stored_dir=_wapi_handle_scratch_store (dir, strlen (dir) + 1);
+	stored_dir=_wapi_handle_scratch_store (dir, strlen (dir));
 	
 	
 	/* new_environ is a block of NULL-terminated strings, which
@@ -398,7 +398,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		full_prog=g_strdup (prog);
 	}
 	
-	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog) + 1);
+	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog));
 
 	if(startup!=NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
 		stdin_handle=startup->hStdInput;
@@ -467,9 +467,9 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 	if(progname!=NULL) {
 		slash=strrchr (progname, '/');
 		if(slash!=NULL) {
-			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1) + 1);
+			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
 		} else {
-			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname) + 1);
+			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
 		}
 	}
 }
