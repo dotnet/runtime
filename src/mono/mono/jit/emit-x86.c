@@ -125,13 +125,20 @@ arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgum
 {
 	int k, frame_size = 0;
 	int size, align, pad;
-	
-	if (csig->hasthis)
-		frame_size += sizeof (gpointer);
+	int offset = 8;
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) 
+	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
 		frame_size += sizeof (gpointer);
-	
+		offset += 4;
+	}
+
+	arg_info [0].offset = offset;
+
+	if (csig->hasthis) {
+		frame_size += sizeof (gpointer);
+		offset += 4;
+	}
+
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
@@ -146,6 +153,9 @@ arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgum
 		frame_size += size;
 		arg_info [k + 1].pad = 0;
 		arg_info [k + 1].size = size;
+		offset += pad;
+		arg_info [k + 1].offset = offset;
+		offset += size;
 	}
 
 	align = MONO_FRAME_ALIGNMENT;
@@ -161,6 +171,8 @@ enter_method (MonoMethod *method, char *ebp)
 	int i, j;
 	MonoClass *class;
 	MonoObject *o;
+	MonoJitArgumentInfo *arg_info;
+	MonoMethodSignature *sig;
 	char *fname;
 
 	fname = mono_method_full_name (method, TRUE);
@@ -171,20 +183,24 @@ enter_method (MonoMethod *method, char *ebp)
 		g_error ("unaligned stack detected (%p)", ebp);
 	}
 
-	ebp += 8;
+	sig = method->signature;
+
+	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+
+	arch_get_argument_info (sig, sig->param_count, arg_info);
 
 	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
 		g_assert (!method->signature->ret->byref);
 
-		printf ("VALUERET:%p, ", *((gpointer *)ebp));
-		ebp += sizeof (gpointer);
+		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
 	}
 
 	if (method->signature->hasthis) {
+		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
 		if (method->klass->valuetype) {
-			printf ("value:%p, ", *((gpointer *)ebp));
+			printf ("value:%p, ", *this);
 		} else {
-			o = *((MonoObject **)ebp);
+			o = *((MonoObject **)this);
 
 			if (o) {
 				class = o->vtable->klass;
@@ -197,20 +213,16 @@ enter_method (MonoMethod *method, char *ebp)
 			} else 
 				printf ("this:NULL, ");
 		}
-		ebp += sizeof (gpointer);
 	}
 
 	for (i = 0; i < method->signature->param_count; ++i) {
-		int size, align;
+		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
+		int size = arg_info [i + 1].size;
+
 		MonoType *type = method->signature->params [i];
-
-		if (method->signature->pinvoke)
-			size = mono_type_native_stack_size (type, &align);
-		else
-			size = mono_type_stack_size (type, &align);
-
+		
 		if (type->byref) {
-			printf ("[BYREF:%p], ", *((gpointer *)ebp)); 
+			printf ("[BYREF:%p], ", *cpos); 
 		} else switch (type->type) {
 			
 		case MONO_TYPE_BOOLEAN:
@@ -223,10 +235,10 @@ enter_method (MonoMethod *method, char *ebp)
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-			printf ("%d, ", *((int *)(ebp)));
+			printf ("%d, ", *((int *)(cpos)));
 			break;
 		case MONO_TYPE_STRING: {
-			MonoString *s = *((MonoString **)ebp);
+			MonoString *s = *((MonoString **)cpos);
 			if (s) {
 				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
 				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
@@ -236,7 +248,7 @@ enter_method (MonoMethod *method, char *ebp)
 		}
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT: {
-			o = *((MonoObject **)ebp);
+			o = *((MonoObject **)cpos);
 			if (o) {
 				class = o->vtable->klass;
 		    
@@ -247,7 +259,7 @@ enter_method (MonoMethod *method, char *ebp)
 				} else
 					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
 			} else {
-				printf ("%p, ", *((gpointer *)(ebp)));				
+				printf ("%p, ", *((gpointer *)(cpos)));				
 			}
 			break;
 		}
@@ -255,30 +267,26 @@ enter_method (MonoMethod *method, char *ebp)
 		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
-			printf ("%p, ", *((gpointer *)(ebp)));
+			printf ("%p, ", *((gpointer *)(cpos)));
 			break;
 		case MONO_TYPE_I8:
-			printf ("%lld, ", *((gint64 *)(ebp)));
+			printf ("%lld, ", *((gint64 *)(cpos)));
 			break;
 		case MONO_TYPE_R4:
-			printf ("%f, ", *((float *)(ebp)));
+			printf ("%f, ", *((float *)(cpos)));
 			break;
 		case MONO_TYPE_R8:
-			printf ("%f, ", *((double *)(ebp)));
+			printf ("%f, ", *((double *)(cpos)));
 			break;
 		case MONO_TYPE_VALUETYPE: 
 			printf ("[");
 			for (j = 0; j < size; j++)
-				printf ("%02x,", *((guint8*)ebp +j));
+				printf ("%02x,", *((guint8*)cpos +j));
 			printf ("], ");
 			break;
 		default:
 			printf ("XX, ");
 		}
-
-		g_assert (align == 4 || align == 8);
-		ebp += size + align - 1;
-		ebp = (gpointer)((unsigned)ebp & ~(align - 1));
 	}
 
 	printf (")\n");
@@ -638,6 +646,33 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	x86_ret (cfg->code);
 }
 
+static void
+init_varinfo (MonoFlowGraph *cfg, MonoVarInfo *vi)
+{
+	vi->range.last_use.abs_pos = 0;
+	vi->range.first_use.pos.bid = 0xffff;
+	vi->range.first_use.pos.tid = 0;	
+	vi->isvolatile = 0;
+	vi->reg = -1;
+	vi->varnum = cfg->varinfo->len;
+}
+
+int
+arch_allocate_arg (MonoFlowGraph *cfg, MonoJitArgumentInfo *info, MonoValueType type)
+{
+	MonoVarInfo vi;
+
+	mono_jit_stats.allocate_var++;
+
+	init_varinfo (cfg, &vi);
+	vi.isvolatile = 1;
+	
+	SET_VARINFO (vi, type, MONO_ARGVAR, info->offset, info->size);
+	g_array_append_val (cfg->varinfo, vi);
+
+	return cfg->varinfo->len - 1;
+}
+
 int
 arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoVarType vartype, MonoValueType type)
 {
@@ -645,46 +680,17 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoVarType vartype,
 
 	mono_jit_stats.allocate_var++;
 
-	vi.range.last_use.abs_pos = 0;
-	vi.range.first_use.pos.bid = 0xffff;
-	vi.range.first_use.pos.tid = 0;	
-	vi.isvolatile = 0;
-	vi.reg = -1;
-	vi.varnum = cfg->varinfo->len;
+	init_varinfo (cfg, &vi);
 
 	if (size != sizeof (gpointer))
 		vi.isvolatile = 1;
 	
-	switch (vartype) {
-	case MONO_TEMPVAR:
-	case MONO_LOCALVAR: {
-		cfg->locals_size += size;
-		cfg->locals_size += align - 1;
-		cfg->locals_size &= ~(align - 1);
+	cfg->locals_size += size;
+	cfg->locals_size += align - 1;
+	cfg->locals_size &= ~(align - 1);
 
-		SET_VARINFO (vi, type, vartype, - cfg->locals_size, size);
-		g_array_append_val (cfg->varinfo, vi);
-		break;
-	}
-	case MONO_ARGVAR: {
-		int arg_start = 8 + cfg->has_vtarg*4;
-		int pad;
-
-		g_assert ((align & 3) == 0);
-
-		pad = (align - ((arg_start + cfg->args_size) & (align - 1))) & (align - 1);	
-		cfg->args_size += pad;
-
-		SET_VARINFO (vi, type, vartype, arg_start + cfg->args_size, size);
-		g_array_append_val (cfg->varinfo, vi);
-		
-		cfg->args_size += size;
-
-		break;
-	}
-	default:
-		g_assert_not_reached ();
-	}
+	SET_VARINFO (vi, type, vartype, - cfg->locals_size, size);
+	g_array_append_val (cfg->varinfo, vi);
 
 	return cfg->varinfo->len - 1;
 }

@@ -88,12 +88,12 @@ typedef struct {
 } MonoLiveRange;
 
 typedef struct {
-	MonoValueType type;
-	MonoVarType vartype;
+	MonoValueType type:4;
+	MonoVarType vartype:4;
+	unsigned isvolatile:1;
 	int offset;
 	int size;
 	MonoLiveRange range;
-	unsigned isvolatile:1;
 	int reg;
 	int varnum; /* only for debugging */
 } MonoVarInfo;
@@ -154,7 +154,6 @@ typedef struct {
 
 	GArray           *varinfo;
 	gint32            locals_size;
-	gint32            args_size;
 	guint16          *intvars;
 	guint16           excvar;
 
@@ -186,6 +185,7 @@ typedef struct {
 
 typedef struct {
 	guint16 size;
+	guint16 offset;
 	guint8  pad;
 } MonoJitArgumentInfo;
 
@@ -298,6 +298,9 @@ arch_jit_compile_cfg       (MonoDomain *target_domain, MonoFlowGraph *cfg);
 
 gpointer
 arch_create_jit_trampoline (MonoMethod *method);
+
+int
+arch_allocate_arg          (MonoFlowGraph *cfg, MonoJitArgumentInfo *info, MonoValueType type);
 
 int
 arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 

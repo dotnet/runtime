@@ -1339,7 +1339,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	register const unsigned char *ip, *end;
 	GPtrArray *forest;
 	int i, j, depth, repeat_count;
-	int varnum = 0, firstarg = 0, retvtarg = 0;
+	int varnum = 0, firstarg = 0;
 	gboolean repeat, superblock_end;
 	MonoBBlock *bb, *tbb;
 	int maxstack;
@@ -1352,6 +1352,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	/* we add 10 extra slots for method inlining */
 	maxstack = header->max_stack + 10;
 	sp = stack = alloca (sizeof (MBTree *) * (maxstack + 1));
+
+	/* allocate local variables */
 
 	if (header->num_locals) {
 		int size, align;
@@ -1366,41 +1368,27 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 	}
 
-	if (MONO_TYPE_ISSTRUCT (signature->ret)) {
-		int size, align;
-
-		cfg->has_vtarg = 1;
-
-		size = mono_type_size (signature->ret, &align);
-		
-		retvtarg = varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, VAL_UNKNOWN);
-		
-		//printf ("VALUETYPE METHOD %s.%s::%s %d\n", method->klass->name_space, 
-		//method->klass->name, method->name, size);
-	}
-	
 	cfg->args_start_index = firstarg = varnum + 1;
  
-	if (signature->hasthis) {
-		int thisvar;
-		thisvar = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), MONO_ARGVAR, VAL_POINTER);
-		VARINFO (cfg, thisvar).isvolatile = 1;
-	}
+	/* allocate argument variables */
 
-	if (signature->param_count) {
-		int align, size;
+	if (signature->param_count + 1 < 10)
+		arg_info = default_arg_info;
+	else 
+		arg_info = g_new (MonoJitArgumentInfo, signature->param_count + 1);
 
-		for (i = 0; i < signature->param_count; ++i) {
-			int argvar;
-			if (signature->pinvoke)
-				size = mono_type_native_stack_size (signature->params [i], &align);
-			else
-				size = mono_type_stack_size (signature->params [i], &align);
+	arch_get_argument_info (signature, signature->param_count, arg_info);
 
-			argvar = arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
-			VARINFO (cfg, argvar).isvolatile = 1;
-		}
-	}
+	if (signature->hasthis) 
+		arch_allocate_arg (cfg, &arg_info [0], VAL_POINTER);
+	
+	if (signature->param_count)
+		for (i = 0; i < signature->param_count; ++i)
+			arch_allocate_arg (cfg, &arg_info [i + 1], VAL_UNKNOWN);
+
+	if (signature->param_count > 9)
+		g_free (arg_info);
+
 
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &header->clauses [i];		
