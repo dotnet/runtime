@@ -46,9 +46,8 @@
   		  <td>
 		    Packages are available on <a
 		    href="http://www.ximian.com/products/redcarpet/download.html">Red
-		    Carpet's</a> Mono channel. <p>
-		    Install the Red Carpet client, or wait
-		    for the Mono installer to be made available this week.
+		    Carpet's</a> Mono channel. 
+
 		  </td>
 	        </tr>
 		<tr>
@@ -56,7 +55,7 @@
                     <img src="images/windows-36.gif"><b>Windows installer</b>
 		  </td>
 		  <td>
-		    Not available yet.
+		    <a href="archive/mono-0.29-win32-1.exe">mono-0.29-win32-1.exe</a>
 		  </td>
 		</tr>
              </table>
