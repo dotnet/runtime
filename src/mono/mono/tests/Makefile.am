@@ -15,6 +15,13 @@ ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
+STRESS_TESTS_SRC=	\
+	domain-stress.cs	\
+	gchandle-stress.cs	\
+	monitor-stress.cs	\
+	thread-stress.cs	\
+	gc-stress.cs
+
 TEST_CS_SRC=			\
 	array-init.cs		\
 	arraylist.cs		\
@@ -235,8 +242,9 @@ TEST_IL_SRC=			\
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
+STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC)
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl
 
 %.exe: %.il
 	$(ILASM) -out:$@ $<
@@ -349,6 +357,24 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 		time $(JITTEST_PROG) $$i;	\
 	done
 
+stresstest: $(STRESS_TESTS)
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for i in $(STRESS_TESTS); do	\
+		if $(srcdir)/stress-runner.pl $$i ../mini/mono $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
 noinst_LTLIBRARIES = libtest.la
 
 INCLUDES = $(GLIB_CFLAGS)
@@ -363,4 +389,4 @@ endif
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS)
 
-CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) *.dll *.stdout *.exe stest.dat
+CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.exe stest.dat
