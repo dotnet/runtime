@@ -2739,9 +2739,44 @@ array_constructed:
 			BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
-		CASE (CEE_ADD_OVF_UN) ves_abort(); BREAK;
-		CASE (CEE_MUL_OVF) ves_abort(); BREAK;
-		CASE (CEE_MUL_OVF_UN) ves_abort(); BREAK;
+		CASE (CEE_ADD_OVF_UN)
+			++ip;
+			--sp;
+			/* FIXME: check overflow, make unsigned */
+			if (sp->type == VAL_I32)
+				sp [-1].data.i += GET_NATI (sp [0]);
+			else if (sp->type == VAL_I64)
+				sp [-1].data.l += sp [0].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f += sp [0].data.f;
+			else {
+				char *p = sp [-1].data.p;
+				p += GET_NATI (sp [0]);
+				sp [-1].data.p = p;
+			}
+			BREAK;
+		CASE (CEE_MUL_OVF)
+			++ip;
+			--sp;
+			/* FIXME: check overflow */
+			if (sp->type == VAL_I32)
+				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
+			else if (sp->type == VAL_I64)
+				sp [-1].data.l *= sp [0].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f *= sp [0].data.f;
+			BREAK;
+		CASE (CEE_MUL_OVF_UN)
+			++ip;
+			--sp;
+			/* FIXME: check overflow, make unsigned */
+			if (sp->type == VAL_I32)
+				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
+			else if (sp->type == VAL_I64)
+				sp [-1].data.l *= sp [0].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f *= sp [0].data.f;
+			BREAK;
 		CASE (CEE_SUB_OVF) ves_abort(); BREAK;
 		CASE (CEE_SUB_OVF_UN) ves_abort(); BREAK;
 		CASE (CEE_ENDFINALLY)

@@ -508,6 +508,8 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 			return result;
 
 	if (table != MONO_TABLE_METHOD) {
+		if (table != MONO_TABLE_MEMBERREF)
+			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
 		result = method_from_memberref (image, index);
 		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);

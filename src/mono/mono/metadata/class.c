@@ -662,7 +662,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 				break;
 			case 'V':
 				if (!strcmp (name, "Void")) {
-					t = MONO_TYPE_CHAR;
+					t = MONO_TYPE_VOID;
 				}
 				break;
 			default:

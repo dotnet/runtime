@@ -200,8 +200,43 @@ encode_type (MonoType *type, char *p, char **endbuf)
 }
 
 static guint32
-method_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
+method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig)
 {
+	char *buf;
+	char *p;
+	int i;
+	guint32 nparams =  sig->param_count;
+	guint32 size = 10 + nparams * 10;
+	guint32 idx;
+	char blob_size [6];
+	char *b = blob_size;
+	
+	p = buf = g_malloc (size);
+	/*
+	 * FIXME: vararg, explicit_this, differenc call_conv values...
+	 */
+	*p = sig->call_convention;
+	if (sig->hasthis)
+		*p |= 0x20; /* hasthis */
+	p++;
+	mono_metadata_encode_value (nparams, p, &p);
+	encode_type (sig->ret, p, &p);
+	for (i = 0; i < nparams; ++i)
+		encode_type (sig->params [i], p, &p);
+	/* store length */
+	mono_metadata_encode_value (p-buf, b, &b);
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	g_free (buf);
+	return idx;
+}
+
+static guint32
+method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
+{
+	/*
+	 * FIXME: reuse code from method_encode_signature().
+	 */
 	char *buf;
 	char *p;
 	int i;
@@ -371,7 +406,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 	}
 	values [MONO_METHOD_FLAGS] = mb->attrs;
 	values [MONO_METHOD_IMPLFLAGS] = mb->iattrs;
-	values [MONO_METHOD_SIGNATURE] = method_encode_signature (assembly, mb);
+	values [MONO_METHOD_SIGNATURE] = method_builder_encode_signature (assembly, mb);
 	values [MONO_METHOD_PARAMLIST] = 0; /* FIXME: add support later */
 	values [MONO_METHOD_RVA] = method_encode_code (assembly, mb);
 }
@@ -427,7 +462,7 @@ mono_image_get_ctor_info (MonoReflectionCtorBuilder *mb, MonoDynamicAssembly *as
 	ReflectionMethodBuilder rmb;
 
 	rmb.ilgen = mb->ilgen;
-	rmb.rtype = NULL;
+	rmb.rtype = mono_type_get_object (&mono_defaults.void_class->byval_arg);
 	rmb.parameters = mb->parameters;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
@@ -609,6 +644,45 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
+	return token;
+}
+
+static guint32
+mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 token, pclass;
+	guint32 parent;
+
+	/*
+	 * FIXME: we need to cache the token.
+	 */
+	parent = mono_image_typedef_or_ref (assembly, &method->klass->byval_arg);
+	switch (parent & TYPEDEFORREF_MASK) {
+	case TYPEDEFORREF_TYPEREF:
+		pclass = MEMBERREF_PARENT_TYPEREF;
+		break;
+	case TYPEDEFORREF_TYPESPEC:
+		pclass = MEMBERREF_PARENT_TYPESPEC;
+		break;
+	case TYPEDEFORREF_TYPEDEF:
+		/* should never get here */
+	default:
+		g_error ("unknow typeref or def token");
+	}
+	/* extract the index */
+	parent >>= TYPEDEFORREF_BITS;
+
+	table = &assembly->tables [MONO_TABLE_MEMBERREF];
+	alloc_table (table, table->rows + 1);
+	values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
+	values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
+	values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, method->name);
+	values [MONO_MEMBERREF_SIGNATURE] = method_encode_signature (assembly, method->signature);
+	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
+	table->next_idx ++;
+
 	return token;
 }
 
@@ -990,9 +1064,10 @@ guint32
 mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj)
 {
 	MonoClass *klass = obj->klass;
+	guint32 token;
 
-	g_print ("requested token for %s\n", klass->name);
-	
+	mono_image_basic_init (assembly);
+
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		return mb->table_idx | MONO_TOKEN_METHOD_DEF;
@@ -1001,6 +1076,13 @@ mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *ob
 		MonoReflectionFieldBuilder *mb = (MonoReflectionFieldBuilder *)obj;
 		return mb->table_idx | MONO_TOKEN_FIELD_DEF;
 	}
+	if (strcmp (klass->name, "MonoCMethod") == 0) {
+		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
+		token = mono_image_get_methodref_token (assembly->dynamic_assembly, m->method);
+		g_print ("got token 0x%08x for %s\n", token, m->method->name);
+		return token;
+	}
+	g_print ("requested token for %s\n", klass->name);
 	return 0;
 }
 
