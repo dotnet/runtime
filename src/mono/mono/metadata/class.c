@@ -28,6 +28,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/debug-helpers.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
 #endif
@@ -594,16 +595,20 @@ mono_class_init (MonoClass *class)
 			
 			if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
 				for (l = 0; l < ic->method.count; l++) {
+					char *msig;
 					MonoMethod *im = ic->methods [l];						
 					g_assert (io + l <= max_vtsize);
 					if (!(vtable [io + l])) {
-						printf ("no implementation for interface method %s.%s::%s in class %s.%s\n",
-							ic->name_space, ic->name, im->name, class->name_space, class->name);
-						
+						msig = mono_signature_get_desc (im->signature, FALSE);
+						printf ("no implementation for interface method %s.%s::%s(%s) in class %s.%s\n",
+							ic->name_space, ic->name, im->name, msig, class->name_space, class->name);
+						g_free (msig);
 						for (j = 0; j < class->method.count; ++j) {
 							MonoMethod *cm = class->methods [j];
+							msig = mono_signature_get_desc (cm->signature, FALSE);
 							
-							printf ("METHOD %s\n", cm->name);
+							printf ("METHOD %s(%s)\n", cm->name, msig);
+							g_free (msig);
 						}
 						g_assert_not_reached ();
 					}
@@ -1377,6 +1382,30 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	if (!class)
 		g_warning ("Could not load class from token 0x%08x in %s", type_token, image->name);
 	return class;
+}
+
+MonoClass *
+mono_class_from_name_case (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
+	guint32 cols [MONO_TYPEDEF_SIZE];
+	const char *n;
+	const char *nspace;
+	guint32 i, visib;
+
+	/* add a cache if needed */
+	for (i = 1; i <= t->rows; ++i) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
+		/* nested types are accessed from the nesting name */
+		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib < TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
+			continue;
+		n = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+		if (g_strcasecmp (n, name) == 0 && g_strcasecmp (nspace, name_space) == 0)
+			return mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
+	}
+	return NULL;
 }
 
 MonoClass *

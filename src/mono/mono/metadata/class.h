@@ -9,6 +9,9 @@
 
 extern gboolean mono_print_vtable;
 
+/* declared in marshal.h */
+typedef struct MonoMarshalType MonoMarshalType;
+
 typedef struct {
 	MonoType *type;
 	int       offset;
@@ -96,6 +99,9 @@ struct _MonoClass {
 		int count;
 	} field, method, property, event;
 
+	/* loaded on demand */
+	MonoMarshalType *marshal_info;
+
 	/*
 	 * Field information: Type and location from object base
 	 */
@@ -164,6 +170,9 @@ mono_class_setup_parent    (MonoClass *class, MonoClass *parent);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
+
+MonoClass *
+mono_class_from_name_case  (MonoImage *image, const char* name_space, const char *name);
 
 MonoClass * 
 mono_class_from_typeref    (MonoImage *image, guint32 type_token);

@@ -2911,15 +2911,13 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	GList *mod;
 	int modval;
 	
-	if (ignorecase) {
-		g_warning ("Ignore case not yet supported in GetType()");
-		return NULL;
-	}
-
 	if (!image)
 		image = mono_defaults.corlib;
 
-	klass = mono_class_from_name (image, info->name_space, info->name);
+	if (ignorecase)
+		klass = mono_class_from_name_case (image, info->name_space, info->name);
+	else
+		klass = mono_class_from_name (image, info->name_space, info->name);
 	if (!klass)
 		return NULL;
 	for (mod = info->nested; mod; mod = mod->next) {
@@ -2930,8 +2928,12 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 		klass = NULL;
 		while (nested) {
 			klass = nested->data;
-			if (strcmp (klass->name, mod->data) == 0)
-				break;
+			if (ignorecase)
+				if (g_strcasecmp (klass->name, mod->data) == 0)
+					break;
+			else
+				if (strcmp (klass->name, mod->data) == 0)
+					break;
 			klass = NULL;
 			nested = nested->next;
 		}
