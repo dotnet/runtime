@@ -528,6 +528,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	MonoClass **interfaces;
 	int i;
 
+	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
+		return class;
+
 	g_assert (mono_metadata_token_table (type_token) == MONO_TABLE_TYPEDEF);
 	
 	mono_metadata_decode_row (tt, tidx - 1, cols, CSIZE (cols));
@@ -785,6 +788,9 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	MonoType *type;
 	MonoClass *class, *eclass;
 
+	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_spec))))
+		return class;
+
 	t = &image->tables [MONO_TABLE_TYPESPEC];
 	
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
@@ -1010,18 +1016,11 @@ mono_class_get (MonoImage *image, guint32 type_token)
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		if ((class = g_hash_table_lookup (image->class_cache, 
-						  GUINT_TO_POINTER (type_token))))
-			return class;
 		class = mono_class_create_from_typedef (image, type_token);
 		break;		
 	case MONO_TOKEN_TYPE_REF:
 		return mono_class_create_from_typeref (image, type_token);
 	case MONO_TOKEN_TYPE_SPEC:
-		if ((class = g_hash_table_lookup (image->class_cache, 
-						  GUINT_TO_POINTER (type_token))))
-			return class;
-
 		class = mono_class_create_from_typespec (image, type_token);
 		break;
 	default:
@@ -1085,9 +1084,6 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		MonoClass *class;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		if ((class = g_hash_table_lookup (image->class_cache, 
-						  GUINT_TO_POINTER (token))))
-			return &class->byval_arg;
 		class = mono_class_create_from_typespec (image, token);
 		return &class->byval_arg;
 	}
