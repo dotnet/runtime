@@ -733,6 +733,10 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	WRITE_UINT32 (ptr, num_static_methods * (4 + 2 * sizeof (gpointer)) + num_static_params * sizeof (gpointer));
 	WRITE_UINT32 (ptr, num_ctors);
 	WRITE_UINT32 (ptr, num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * sizeof (gpointer));
+	if (klass->parent && (klass->parent != mono_defaults.object_class))
+		WRITE_UINT32 (ptr, write_class (table, klass->parent));
+	else
+		WRITE_UINT32 (ptr, 0);
 
 	for (i = 0; i < klass->field.count; i++) {
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
@@ -818,11 +822,6 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	}
 
 	g_ptr_array_free (ctors, FALSE);
-
-	if (klass->parent && (klass->parent != mono_defaults.object_class))
-		WRITE_UINT32 (ptr, write_class (table, klass->parent));
-	else
-		WRITE_UINT32 (ptr, 0);
 
 	if (ptr - old_ptr != data_size) {
 		g_warning (G_STRLOC ": %d,%d,%d", ptr - old_ptr, data_size, sizeof (gpointer));
