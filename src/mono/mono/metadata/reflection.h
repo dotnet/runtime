@@ -265,6 +265,8 @@ typedef struct {
 	GHashTable *handleref;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
+	char *strong_name;
+	guint32 strong_name_size;
 	MonoDynamicStream pefile;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
@@ -292,6 +294,13 @@ typedef struct {
 	MonoString *dir;
 	MonoArray *cattrs;
 	MonoArray *resources;
+	MonoString *keyfile;
+	MonoString *version;
+	MonoString *culture;
+	guint32 algid;
+	guint32 flags;
+	guint32 pekind;
+	MonoBoolean delay_sign;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

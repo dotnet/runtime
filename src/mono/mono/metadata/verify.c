@@ -2176,6 +2176,8 @@ assemblybuilder_fields[] = {
 	{"modules", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, modules)},
 	{"name", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, name)},
 	{"resources", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, resources)},
+	{"version", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, version)},
+	{"culture", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, culture)},
 	{NULL, 0}
 };
 

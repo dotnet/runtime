@@ -1210,7 +1210,7 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 		guchar pubtoken [9];
 		pubtoken [0] = 8;
 		mono_digest_get_public_token (pubtoken + 1, pubkey, publen);
-		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, 9, pubtoken);
+		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, pubtoken, 9);
 	} else {
 		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
 	}
@@ -2081,6 +2081,61 @@ assembly_add_resource (MonoDynamicAssembly *assembly, MonoReflectionResource *rs
 	table->next_idx++;
 }
 
+static void
+set_version_from_string (MonoString *version, guint32 *values)
+{
+	char *ver, *p;
+	guint32 i;
+	
+	values [MONO_ASSEMBLY_MAJOR_VERSION] = 0;
+	values [MONO_ASSEMBLY_MINOR_VERSION] = 0;
+	values [MONO_ASSEMBLY_REV_NUMBER] = 0;
+	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
+	if (!version)
+		return;
+	ver = mono_string_to_utf8 (version);
+	for (i = 0; i < 4; ++i) {
+		values [MONO_ASSEMBLY_MAJOR_VERSION + i] = strtol (ver, &p, 10);
+		switch (*p) {
+		case '.':
+			p++;
+			break;
+		case '*':
+			/* handle Revision and Build */
+			p++;
+			break;
+		}
+		ver = p;
+	}
+	g_free (ver);
+}
+
+static guint32
+load_public_key (MonoString *fname, MonoDynamicAssembly *assembly) {
+	char *name, *content;
+	gsize len;
+	guint32 token = 0;
+
+	if (!fname)
+		return token;
+	name = mono_string_to_utf8 (fname);
+	if (g_file_get_contents (name, &content, &len, NULL)) {
+		char blob_size [6];
+		char *b = blob_size;
+		/* check it's a public key or keypair */
+		mono_metadata_encode_value (len, b, &b);
+		token = mono_image_add_stream_data (&assembly->blob, blob_size, b - blob_size);
+		mono_image_add_stream_data (&assembly->blob, content, len);
+		g_free (content);
+		/* need to get the actual value from the key type... */
+		assembly->strong_name_size = 128;
+		assembly->strong_name = g_malloc0 (assembly->strong_name_size);
+	}
+	/* FIXME: how do we tell mcs if loading fails? */
+	g_free (name);
+	return token;
+}
+
 /*
  * mono_image_build_metadata() will fill the info in all the needed metadata tables
  * for the AssemblyBuilder @assemblyb: it iterates over the assembly modules
@@ -2094,7 +2149,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicTable *table;
 	MonoDynamicAssembly *assembly = assemblyb->dynamic_assembly;
-	MonoDomain *domain = ((MonoObject *)assemblyb)->vtable->domain;
+	MonoDomain *domain = mono_object_domain (assemblyb);
 	guint32 len;
 	guint32 *values;
 	char *name;
@@ -2105,17 +2160,20 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	table = &assembly->tables [MONO_TABLE_ASSEMBLY];
 	alloc_table (table, 1);
 	values = table->values + MONO_ASSEMBLY_SIZE;
-	values [MONO_ASSEMBLY_HASH_ALG] = ASSEMBLY_HASH_SHA1;
+	values [MONO_ASSEMBLY_HASH_ALG] = assemblyb->algid? assemblyb->algid: ASSEMBLY_HASH_SHA1;
 	name = mono_string_to_utf8 (assemblyb->name);
 	values [MONO_ASSEMBLY_NAME] = string_heap_insert (&assembly->sheap, name);
 	g_free (name);
-	values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, "");
-	values [MONO_ASSEMBLY_PUBLIC_KEY] = 0;
-	values [MONO_ASSEMBLY_MAJOR_VERSION] = 0;
-	values [MONO_ASSEMBLY_MINOR_VERSION] = 0;
-	values [MONO_ASSEMBLY_REV_NUMBER] = 0;
-	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
-	values [MONO_ASSEMBLY_FLAGS] = 0;
+	if (assemblyb->culture) {
+		name = mono_string_to_utf8 (assemblyb->culture);
+		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, name);
+		g_free (name);
+	} else {
+		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, "");
+	}
+	values [MONO_ASSEMBLY_PUBLIC_KEY] = load_public_key (assemblyb->keyfile, assembly);
+	values [MONO_ASSEMBLY_FLAGS] = assemblyb->flags;
+	set_version_from_string (assemblyb->version, values);
 
 	assembly->tables [MONO_TABLE_TYPEDEF].rows = 1; /* .<Module> */
 	assembly->tables [MONO_TABLE_TYPEDEF].next_idx++;
@@ -2382,7 +2440,7 @@ calc_section_size (MonoDynamicAssembly *assembly)
 	assembly->resources.index += 3;
 	assembly->resources.index &= ~3;
 
-	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index + assembly->resources.index;
+	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index + assembly->resources.index + assembly->strong_name_size;
 	assembly->sections [MONO_SECTION_TEXT].attrs = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
 	nsections++;
 
@@ -2489,10 +2547,13 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	header->coff.coff_sections = GUINT16_FROM_LE (nsections);
 	header->coff.coff_time = GUINT32_FROM_LE (time (NULL));
 	header->coff.coff_opt_header_size = GUINT16_FROM_LE (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4);
-	/* it's an exe */
-	header->coff.coff_attributes = GUINT16_FROM_LE (0x010e);
-	/* FIXME: it's a dll */
-	/*header->coff.coff_attributes = GUINT16_FROM_LE (0x210e); */
+	if (assemblyb->pekind == 1) {
+		/* it's a dll */
+		header->coff.coff_attributes = GUINT16_FROM_LE (0x210e);
+	} else {
+		/* it's an exe */
+		header->coff.coff_attributes = GUINT16_FROM_LE (0x010e);
+	}
 
 	virtual_base = 0x400000; /* FIXME: 0x10000000 if a DLL */
 
@@ -2527,7 +2588,7 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	size += VIRT_ALIGN - 1;
 	size &= ~(VIRT_ALIGN - 1);
 	header->nt.pe_image_size = GUINT32_FROM_LE (size);
-	header->nt.pe_subsys_required = GUINT16_FROM_LE (3); /* 3 -> cmdline app, 2 -> GUI app */
+	header->nt.pe_subsys_required = GUINT16_FROM_LE (assemblyb->pekind); /* 3 -> cmdline app, 2 -> GUI app */
 	header->nt.pe_stack_reserve = GUINT32_FROM_LE (0x00100000);
 	header->nt.pe_stack_commit = GUINT32_FROM_LE (0x00001000);
 	header->nt.pe_heap_reserve = GUINT32_FROM_LE (0x00100000);
@@ -2581,6 +2642,12 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	text_offset += assembly->resources.index;
 	cli_header->ch_metadata.rva = GUINT32_FROM_LE (text_offset);
 	cli_header->ch_metadata.size = GUINT32_FROM_LE (assembly->meta_size);
+	text_offset += assembly->meta_size;
+	if (assembly->strong_name_size) {
+		cli_header->ch_strong_name.rva = GUINT32_FROM_LE (text_offset);
+		cli_header->ch_strong_name.size = GUINT32_FROM_LE (assembly->strong_name_size);
+		text_offset += assembly->strong_name_size;
+	}
 
 	/* write the section tables and section content */
 	section = (MonoSectionTable*)(pefile->data + section_start);
@@ -2609,6 +2676,8 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 			memcpy (pefile->data + text_offset, assembly->resources.data, assembly->resources.index);
 			text_offset += assembly->resources.index;
 			memcpy (pefile->data + text_offset, assembly->assembly.image->raw_metadata, assembly->meta_size);
+			text_offset += assembly->meta_size;
+			memcpy (pefile->data + text_offset, assembly->strong_name, assembly->strong_name_size);
 			break;
 		case MONO_SECTION_RELOC:
 			rva = (guint32*)(pefile->data + assembly->sections [i].offset);

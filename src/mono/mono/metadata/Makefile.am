@@ -2,6 +2,8 @@ if PLATFORM_WIN32
 export HOST_CC
 endif
 
+bin_PROGRAMS = monosn
+
 noinst_PROGRAMS = pedump
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
@@ -103,4 +105,12 @@ pedump_SOURCES =		\
 
 pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
+
+monosn_LDADD = \
+	../metadata/libmetadata.la	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
+	$(GLIB_LIBS)			\
+	$(GMODULE_LIBS) 		\
+	-lm
 
