@@ -358,6 +358,11 @@ fi
 AC_ARG_WITH(sigaltstack, [  --with-sigaltstack=yes,no      enable/disable support for sigaltstack],[],[with_sigaltstack=no])
 
 AC_ARG_WITH(static_mono, [  --with-static_mono=yes,no      link mono statically to libmono (faster)],[],[with_static_mono=yes])
+
+if test "x$enable_static" = "xno"; then
+   with_static_mono=no
+fi
+
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
 
 # assembly bundle support, see metadata/make-bundle.pl for more info
