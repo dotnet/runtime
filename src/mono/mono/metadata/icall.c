@@ -844,6 +844,18 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	return intf;
 }
 
+static MonoReflectionType*
+ves_icall_MonoType_GetElementType (MonoReflectionType *type)
+{
+	MonoClass *class = mono_class_from_mono_type (type->type);
+	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
+		return mono_type_get_object (mono_object_domain (type), class->enum_basetype);
+	else if (class->element_class)
+		return mono_type_get_object (mono_object_domain (type), &class->element_class->byval_arg);
+	else
+		return NULL;
+}
+
 static void
 ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 {
@@ -2237,6 +2249,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.MonoType::getFullName", ves_icall_System_MonoType_getFullName,
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
+	"System.MonoType::GetElementType", ves_icall_MonoType_GetElementType,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
