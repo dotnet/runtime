@@ -83,7 +83,7 @@ static int pthread_mutex_timedlock(pthread_mutex_t *mutex,
 		gettimeofday(&timenow, NULL);
 		
 		if(timenow.tv_sec >= timeout->tv_sec &&
-		   timenow.tv_usec >= (timeout->tv_nsec * 1000)) {
+		   (timenow.tv_usec * 1000) >= timeout->tv_nsec) {
 			return(ETIMEDOUT);
 		}
 		
