@@ -112,3 +112,5 @@ A: Compiling MCS currently requires you to run my port of <a
    It might be simple to port Jay.cs to Windows, but I have not tried
    this. 
 
+You might also want to look at the <a href="faq.html#gcc">GCC</a>
+section on the main FAQ
