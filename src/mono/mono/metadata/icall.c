@@ -743,18 +743,19 @@ ves_icall_System_Object_GetHashCode (MonoObject *this)
 static gint32
 ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fields)
 {
-	int i;
 	MonoClass *klass;
 	MonoObject **values = NULL;
 	MonoObject *o;
 	int count = 0;
 	gint32 result = 0;
+	MonoClassField* field;
+	gpointer iter;
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = this->vtable->klass;
+	klass = mono_object_class (this);
 
-	if (klass->field.count == 0)
+	if (mono_class_num_fields (klass) == 0)
 		return ves_icall_System_Object_GetHashCode (this);
 
 	/*
@@ -762,8 +763,8 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	 * types, and return the remaining fields in an array to the managed side.
 	 * This way, we can avoid costly reflection operations in managed code.
 	 */
-	for (i = 0; i < klass->field.count; ++i) {
-		MonoClassField *field = &klass->fields [i];
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (field))
@@ -782,7 +783,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 		}
 		default:
 			if (!values)
-				values = alloca (klass->field.count * sizeof (MonoObject*));
+				values = g_newa (MonoObject*, mono_class_num_fields (klass));
 			o = mono_field_get_value_object (mono_object_domain (this), field, this);
 			values [count++] = o;
 		}
@@ -800,10 +801,11 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 static MonoBoolean
 ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray **fields)
 {
-	int i;
 	MonoClass *klass;
 	MonoObject **values = NULL;
 	MonoObject *o;
+	MonoClassField* field;
+	gpointer iter;
 	int count = 0;
 
 	MONO_ARCH_SAVE_REGS;
@@ -813,7 +815,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 	if (this->vtable != that->vtable)
 		return FALSE;
 
-	klass = this->vtable->klass;
+	klass = mono_object_class (this);
 
 	/*
 	 * Do the comparison for fields of primitive type and return a result if
@@ -822,8 +824,8 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 	 * managed code.
 	 */
 	*fields = NULL;
-	for (i = 0; i < klass->field.count; ++i) {
-		MonoClassField *field = &klass->fields [i];
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (field))
@@ -854,7 +856,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 		}
 		default:
 			if (!values)
-				values = alloca (klass->field.count * 2 * sizeof (MonoObject*));
+				values = g_newa (MonoObject*, mono_class_num_fields (klass) * 2);
 			o = mono_field_get_value_object (mono_object_domain (this), field, this);
 			values [count++] = o;
 			o = mono_field_get_value_object (mono_object_domain (this), field, that);
@@ -1565,7 +1567,9 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *iclass = mono_class_from_mono_type (iface->type);
 	MonoReflectionMethod *member;
-	int i, len, ioffset;
+	MonoMethod* method;
+	gpointer iter;
+	int i = 0, len, ioffset;
 	MonoDomain *domain;
 
 	MONO_ARCH_SAVE_REGS;
@@ -1574,17 +1578,20 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	if ((iclass->interface_id > class->max_interface_id) || !class->interface_offsets [iclass->interface_id])
 			return;
 
-	len = iclass->method.count;
+	len = mono_class_num_methods (iclass);
 	ioffset = class->interface_offsets [iclass->interface_id];
 	domain = mono_object_domain (type);
 	*targets = mono_array_new (domain, mono_defaults.method_info_class, len);
 	*methods = mono_array_new (domain, mono_defaults.method_info_class, len);
-	mono_class_setup_methods (iclass);
-	for (i = 0; i < len; ++i) {
-		member = mono_method_get_object (domain, iclass->methods [i], iclass);
+	iter = NULL;
+	iter = NULL;
+	while ((method = mono_class_get_methods (iclass, &iter))) {
+		member = mono_method_get_object (domain, method, iclass);
 		mono_array_set (*methods, gpointer, i, member);
 		member = mono_method_get_object (domain, class->vtable [i + ioffset], class);
 		mono_array_set (*targets, gpointer, i, member);
+		
+		i ++;
 	}
 }
 
@@ -2401,26 +2408,23 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 			str = mono_string_to_utf8 (name);
 		
 			do {
-				for (i = 0; i < k->field.count; i++) {
-					if (!strcmp (k->fields [i].name, str)) {
-						MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
-						if (field_klass->valuetype)
-							result = mono_value_box (domain, field_klass,
-										 (char *)this + k->fields [i].offset);
-						else 
-							result = *((gpointer *)((char *)this + k->fields [i].offset));
-					
-						g_assert (result);
-						out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-						*outArgs = out_args;
-						mono_array_set (out_args, gpointer, 0, result);
-						g_free (str);
-						return NULL;
-					}
+				MonoClassField* field = mono_class_get_field_from_name (k, str);
+				if (field) {
+					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+					if (field_klass->valuetype)
+						result = mono_value_box (domain, field_klass, (char *)this + field->offset);
+					else 
+						result = *((gpointer *)((char *)this + field->offset));
+				
+					g_assert (result);
+					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+					*outArgs = out_args;
+					mono_array_set (out_args, gpointer, 0, result);
+					g_free (str);
+					return NULL;
 				}
 				k = k->parent;
-			} 
-			while (k != NULL);
+			} while (k);
 
 			g_free (str);
 			g_assert_not_reached ();
@@ -2443,28 +2447,27 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 			str = mono_string_to_utf8 (name);
 		
 			do {
-				for (i = 0; i < k->field.count; i++) {
-					if (!strcmp (k->fields [i].name, str)) {
-						MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
-						MonoObject *val = mono_array_get (params, gpointer, 2);
-	
-						if (field_klass->valuetype) {
-							size = mono_type_size (k->fields [i].type, &align);
-							memcpy ((char *)this + k->fields [i].offset, 
-								((char *)val) + sizeof (MonoObject), size);
-						} else 
-							*(MonoObject**)((char *)this + k->fields [i].offset) = val;
-					
-						out_args = mono_array_new (domain, mono_defaults.object_class, 0);
-						*outArgs = out_args;
-	
-						g_free (str);
-						return NULL;
-					}
+				MonoClassField* field = mono_class_get_field_from_name (k, str);
+				if (field) {
+					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+					MonoObject *val = mono_array_get (params, gpointer, 2);
+
+					if (field_klass->valuetype) {
+						size = mono_type_size (field->type, &align);
+						memcpy ((char *)this + field->offset, 
+							((char *)val) + sizeof (MonoObject), size);
+					} else 
+						*(MonoObject**)((char *)this + field->offset) = val;
+				
+					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
+					*outArgs = out_args;
+
+					g_free (str);
+					return NULL;
 				}
+				
 				k = k->parent;
-			} 
-			while (k != NULL);
+			} while (k);
 
 			g_free (str);
 			g_assert_not_reached ();
@@ -2569,22 +2572,23 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 {
 	MonoDomain *domain = mono_object_domain (type); 
 	MonoClass *enumc = mono_class_from_mono_type (type->type);
-	guint i, j, nvalues, crow;
+	guint j = 0, nvalues, crow;
+	gpointer iter;
 	MonoClassField *field;
 
 	MONO_ARCH_SAVE_REGS;
 
 	info->utype = mono_type_get_object (domain, enumc->enum_basetype);
-	nvalues = enumc->field.count ? enumc->field.count - 1 : 0;
+	nvalues = mono_class_num_fields (enumc) ? mono_class_num_fields (enumc) - 1 : 0;
 	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
 	info->values = mono_array_new (domain, enumc, nvalues);
 	
 	crow = -1;
-	for (i = 0, j = 0; i < enumc->field.count; ++i) {
+	iter = NULL;
+	while ((field = mono_class_get_fields (enumc, &iter))) {
 		const char *p;
 		int len;
-
-		field = &enumc->fields [i];
+		
 		if (strcmp ("value__", field->name) == 0)
 			continue;
 		if (mono_field_is_deleted (field))
@@ -2592,7 +2596,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		mono_array_set (info->names, gpointer, j, mono_string_new (domain, field->name));
 
 		if (!field->data) {
-			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1), crow + 1);
+			crow = mono_metadata_get_constant_index (enumc->image, mono_class_get_field_token (field), crow + 1);
 			field->def_type = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_TYPE);
 			crow = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_VALUE);
 			field->data = (gpointer)mono_metadata_blob_heap (enumc->image, crow);
@@ -2649,8 +2653,9 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 {
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass;
-	int i, match;
+	int match;
 	MonoClassField *field;
+	gpointer iter;
 	char *utf8_name;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	domain = ((MonoObject *)type)->vtable->domain;
@@ -2663,10 +2668,10 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 
 	compare_func = (bflags & BFLAGS_IgnoreCase) ? g_strcasecmp : strcmp;
 
-handle_parent:	
-	for (i = 0; i < klass->field.count; ++i) {
+handle_parent:
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		match = 0;
-		field = &klass->fields [i];
 		if (mono_field_is_deleted (field))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
@@ -2716,6 +2721,7 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoArray *res;
 	MonoObject *member;
 	int i, len, match;
+	gpointer iter;
 	MonoClassField *field;
 
 	MONO_ARCH_SAVE_REGS;
@@ -2725,9 +2731,9 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	refklass = mono_class_from_mono_type (reftype->type);
 
 handle_parent:	
-	for (i = 0; i < klass->field.count; ++i) {
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		match = 0;
-		field = &klass->fields [i];
 		if (mono_field_is_deleted (field))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
@@ -2774,6 +2780,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoMethod *method;
+	gpointer iter;
 	MonoObject *member;
 	int i, len, match;
 	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -2792,10 +2799,9 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	}
 
 handle_parent:
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
-		method = klass->methods [i];
 		if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
 			continue;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
@@ -2864,17 +2870,17 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	MonoMethod *method;
 	MonoObject *member;
 	int i, len, match;
-
+	gpointer iter = NULL;
+	
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
-		method = klass->methods [i];
 		if (strcmp (method->name, ".ctor") && strcmp (method->name, ".cctor"))
 			continue;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
@@ -5452,11 +5458,12 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 
 		result = klass->vtable [method->slot];
 		if (result == NULL) {
+			MonoMethod* m;
+			gpointer iter = NULL;
 			/* It is an abstract method */
-			int i;
-			for (i=0; i<klass->method.count; i++) {
-				if (klass->methods [i]->slot == method->slot) {
-					result = klass->methods [i];
+			while ((m = mono_class_get_methods (klass, &iter))) {
+				if (m->slot == method->slot) {
+					result = m;
 					break;
 				}
 			}
@@ -5619,13 +5626,12 @@ static void
 ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType *type)
 {
 	MonoClass *klass = mono_class_from_mono_type (type->type);
-	int i;
+	MonoMethod* m;
+	gpointer iter = NULL;
 	MONO_ARCH_SAVE_REGS;
 
-	mono_class_init (klass);
-	mono_class_setup_vtable (klass);
-	for (i = 0; i < klass->method.count; ++i)
-		prelink_method (klass->methods [i]);
+	while ((m = mono_class_get_methods (klass, &iter)))
+		prelink_method (m);
 }
 
 /* These parameters are "readonly" in corlib/System/Char.cs */

@@ -7174,7 +7174,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	MonoMarshalType *info;
 	MonoClass *klass;
 	char *fname;
-	int i, match_index = -1;
+	int match_index = -1;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -7185,11 +7185,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	klass = mono_class_from_mono_type (type->type);
 
 	while (klass && match_index == -1) {
-		for (i = 0; i < klass->field.count; ++i) {
-			if (*fname == *klass->fields [i].name && strcmp (fname, klass->fields [i].name) == 0) {
+		MonoClassField* field;
+		int i = 0;
+		gpointer iter = NULL;
+		while ((field = mono_class_get_fields (klass, &iter))) {
+			if (!strcmp (fname, field->name)) {
 				match_index = i;
 				break;
 			}
+			i ++;
 		}
 
 		if (match_index == -1)
@@ -7362,8 +7366,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerIn
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
-	int i, j, count = 0, native_size = 0, min_align = 1;
+	int j, count = 0, native_size = 0, min_align = 1;
 	MonoMarshalType *info;
+	MonoClassField* field;
+	gpointer iter;
 	guint32 layout;
 
 	g_assert (klass != NULL);
@@ -7374,10 +7380,11 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 	
-	for (i = 0; i < klass->field.count; ++i) {
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
-		if (mono_field_is_deleted (&klass->fields [i]))
+		if (mono_field_is_deleted (field))
 			continue;
 		count++;
 	}
@@ -7397,23 +7404,25 @@ mono_marshal_load_type_info (MonoClass* klass)
 		native_size += parent_size;
 		info->native_size = parent_size;
 	}
- 
-	for (j = i = 0; i < klass->field.count; ++i) {
+	
+	iter = NULL;
+	j = 0;
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		int size, align;
 		
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 
-		if (mono_field_is_deleted (&klass->fields [i]))
+		if (mono_field_is_deleted (field))
 			continue;
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
-			mono_metadata_field_info (klass->image, klass->field.first + i, 
+		if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
+			mono_metadata_field_info (klass->image, mono_metadata_token_index (mono_class_get_field_token (field)) - 1, 
 						  NULL, NULL, &info->fields [j].mspec);
 
-		info->fields [j].field = &klass->fields [i];
+		info->fields [j].field = field;
 
-		if ((klass->field.count == 1) && (klass->instance_size == sizeof (MonoObject)) &&
-			(strcmp (klass->fields [i].name, "$PRIVATE$") == 0)) {
+		if ((mono_class_num_fields (klass) == 1) && (klass->instance_size == sizeof (MonoObject)) &&
+			(strcmp (field->name, "$PRIVATE$") == 0)) {
 			/* This field is a hack inserted by MCS to empty structures */
 			continue;
 		}
@@ -7421,7 +7430,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		switch (layout) {
 		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
+			size = mono_marshal_type_size (field->type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
 			align = klass->packing_size ? MIN (klass->packing_size, align): align;
 			min_align = MAX (align, min_align);
@@ -7431,11 +7440,11 @@ mono_marshal_load_type_info (MonoClass* klass)
 			info->native_size = info->fields [j].offset + size;
 			break;
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
+			size = mono_marshal_type_size (field->type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
 			align = klass->packing_size ? MIN (klass->packing_size, align): align;
 			min_align = MAX (align, min_align);
-			info->fields [j].offset = klass->fields [i].offset - sizeof (MonoObject);
+			info->fields [j].offset = field->offset - sizeof (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
 		}	
