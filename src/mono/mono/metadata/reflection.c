@@ -7239,6 +7239,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		method_aux->param_marshall = specs;
 	}
 
+	if (klass->image->dynamic && method_aux)
+		mono_g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
+
 	return m;
 }	
 
