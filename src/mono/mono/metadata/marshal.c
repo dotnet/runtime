@@ -122,13 +122,13 @@ mono_marshal_init (void)
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_string_array, "mono_marshal_string_array", "ptr object", FALSE);
 		register_icall (mono_marshal_string_array_to_unicode, "mono_marshal_string_array_to_unicode", "ptr object", FALSE);
-		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int", FALSE);
-		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int", FALSE);
+		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32", FALSE);
+		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32", FALSE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
-		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr ptr", FALSE);
-		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr ptr", FALSE);
-		register_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", "void ptr ptr ptr", FALSE);
+		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
+		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr int32", FALSE);
+		register_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", "void ptr ptr int32", FALSE);
 		register_icall (g_free, "g_free", "void ptr", FALSE);
 		register_icall (mono_object_isinst, "mono_object_isinst", "object object ptr", FALSE);
 	}
