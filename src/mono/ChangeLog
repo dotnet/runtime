@@ -1,3 +1,12 @@
+2004-04-28  Jackson Harper  <jackson@ximian.com>
+
+	* runtime/Makefile.am: libs are now in profile dependant
+	directories.
+	* runtime/net_1_1/Makefile.am: Install and Uninstall the .net 1.1
+	libs to the GAC.
+	* runtime/net_2_0/Makefile.am: Install and Uninstall the .net 2.0
+	libs to the GAC.
+	
 2004-04-28  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* configure.in: reword message re EGD support
