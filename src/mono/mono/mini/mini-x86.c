@@ -3469,36 +3469,66 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_ADD_I4: {
-			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
-			if (ins->sreg2 != ins->dreg)
+			int dreg = ins->dreg;
+
+			if (dreg == ins->inst_basereg) {
+				x86_push_reg (code, ins->sreg2);
+				dreg = ins->sreg2;
+			} 
+			
+			if (dreg != ins->sreg2)
 				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
+
+			x86_prefix (code, X86_LOCK_PREFIX);
+			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, 4);
+
+			if (dreg != ins->dreg) {
+				x86_mov_reg_reg (code, ins->dreg, dreg, 4);
+				x86_pop_reg (code, dreg);
+			}
+
 			break;
 		}
 		case OP_ATOMIC_ADD_NEW_I4: {
-			int sreg2 = ins->sreg2;
-			/* hack: limit in regalloc, dest != sreg2 */
-			if (ins->dreg == sreg2) {
-				/* select one temp reg */
-				if (sreg2 == X86_EBX && ins->inst_basereg != X86_EDI)
-					sreg2 = X86_EDI;
-				else if (ins->inst_basereg != X86_EBX) 
-					sreg2 = X86_EBX;
-				else
-					sreg2 = X86_ESI;
+			int dreg = ins->dreg;
 
-				x86_push_reg (code, sreg2);
-				x86_mov_reg_reg (code, sreg2, ins->sreg2, 4);
+			/* hack: limit in regalloc, dreg != sreg1 && dreg != sreg2 */
+			if (ins->sreg2 == dreg) {
+				if (dreg == X86_EBX) {
+					dreg = X86_EDI;
+					if (ins->inst_basereg == X86_EDI)
+						dreg = X86_ESI;
+				} else {
+					dreg = X86_EBX;
+					if (ins->inst_basereg == X86_EBX)
+						dreg = X86_EDI;
+				}
+			} else if (ins->inst_basereg == dreg) {
+				if (dreg == X86_EBX) {
+					dreg = X86_EDI;
+					if (ins->sreg2 == X86_EDI)
+						dreg = X86_ESI;
+				} else {
+					dreg = X86_EBX;
+					if (ins->sreg2 == X86_EBX)
+						dreg = X86_EDI;
+				}
+			}
+
+			if (dreg != ins->dreg) {
+				x86_push_reg (code, dreg);
+				x86_mov_reg_reg (code, dreg, ins->sreg2, 4);
 			}
 
 			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
-			if (sreg2 != ins->dreg)
-				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
-
-			x86_alu_reg_reg (code, X86_ADD, ins->dreg, sreg2);
-			if (sreg2 != ins->sreg2)
-				x86_pop_reg (code, sreg2);
+			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, 4);
+			/* dreg contains the old value, add with sreg2 value */
+			x86_alu_reg_reg (code, X86_ADD, dreg, ins->sreg2);
+			
+			if (ins->dreg != dreg) {
+				x86_mov_reg_reg (code, ins->dreg, dreg, 4);
+				x86_pop_reg (code, dreg);
+			}
 
 			break;
 		}
