@@ -78,7 +78,7 @@ strndup (const char *s, int n)
 {
   char *ns = malloc (n + 1);
   strncpy (ns, s, n);
-  ns [n + 1] = '\0';
+  ns [n] = '\0';
   return ns;
 }
 
@@ -199,13 +199,12 @@ yylex (void)
 	return COST;
       }
 
-      while (isalpha (*n) || isdigit (*n) || (*n == '_')) 
+      while (isalpha (*n) || isdigit (*n) || *n == '_') 
 	      n++;
 
       l = n - next + 1;
       yylval.text = strndup (next - 1, l);
-      next += l - 1;
-
+      next = n;
       return IDENT;
     }
     
