@@ -169,9 +169,8 @@ class Tests {
 		}
 		if (failed)
 			return 7;
-		// FIXME: we have a bug here
-		//if (b != 255)
-		//	return -7;
+		if (b != 255)
+			return -7;
 
 		try {
 			double d = 256;
@@ -184,6 +183,8 @@ class Tests {
 		}
 		if (failed)
 			return 8;
+		if (b != 255)
+			return -8;
 
 		try {
 			l = 255;
@@ -196,7 +197,6 @@ class Tests {
 		}
 		if (failed)
 			return 9;
-		//Console.WriteLine ((int)b);
 		if (b != 255)
 			return -9;
 
@@ -248,7 +248,7 @@ class Tests {
 	static int test_0_sbyte_cast () {
 		int a;
 		long l;
-		sbyte b;
+		sbyte b = 0;
 		bool failed;
 
 		try {
@@ -262,6 +262,8 @@ class Tests {
 		}
 		if (failed)
 			return 1;
+		if (b != 0)
+			return -1;
 
 		try {
 			a = 0;
@@ -274,6 +276,8 @@ class Tests {
 		}
 		if (failed)
 			return 2;
+		if (b != 0)
+			return -2;
 
 		try {
 			a = 256;
@@ -286,6 +290,8 @@ class Tests {
 		}
 		if (failed)
 			return 3;
+		if (b != 0)
+			return -3;
 
 		try {
 			a = -129;
@@ -298,6 +304,8 @@ class Tests {
 		}
 		if (failed)
 			return 4;
+		if (b != 0)
+			return -4;
 
 		try {
 			a = -1;
@@ -310,6 +318,8 @@ class Tests {
 		}
 		if (failed)
 			return 5;
+		if (b != -1)
+			return -5;
 
 		try {
 			a = -128;
@@ -322,6 +332,8 @@ class Tests {
 		}
 		if (failed)
 			return 6;
+		if (b != -128)
+			return -6;
 
 		try {
 			a = 127;
@@ -334,6 +346,8 @@ class Tests {
 		}
 		if (failed)
 			return 7;
+		if (b != 127)
+			return -7;
 
 		try {
 			a = 128;
@@ -346,6 +360,8 @@ class Tests {
 		}
 		if (failed)
 			return 8;
+		if (b != 127)
+			return -8;
 
 		try {
 			double d = 127;
@@ -358,6 +374,8 @@ class Tests {
 		}
 		if (failed)
 			return 9;
+		if (b != 127)
+			return -9;
 
 		try {
 			double d = -128;
@@ -370,6 +388,8 @@ class Tests {
 		}
 		if (failed)
 			return 10;
+		if (b != -128)
+			return -10;
 
 		try {
 			double d = 128;
@@ -382,6 +402,8 @@ class Tests {
 		}
 		if (failed)
 			return 11;
+		if (b != -128)
+			return -11;
 
 		try {
 			double d = -129;
@@ -394,6 +416,8 @@ class Tests {
 		}
 		if (failed)
 			return 12;
+		if (b != -128)
+			return -12;
 
 		try {
 			l = 255;
@@ -406,6 +430,8 @@ class Tests {
 		}
 		if (failed)
 			return 13;
+		if (b != -128)
+			return -13;
 
 		try {
 			l = 0;
@@ -418,6 +444,8 @@ class Tests {
 		}
 		if (failed)
 			return 14;
+		if (b != 0)
+			return -14;
 
 		try {
 			l = 256;
@@ -430,6 +458,8 @@ class Tests {
 		}
 		if (failed)
 			return 15;
+		if (b != 0)
+			return -15;
 
 		try {
 			l = -129;
@@ -442,6 +472,8 @@ class Tests {
 		}
 		if (failed)
 			return 16;
+		if (b != 0)
+			return -16;
 
 		try {
 			l = -1;
@@ -454,6 +486,8 @@ class Tests {
 		}
 		if (failed)
 			return 17;
+		if (b != -1)
+			return -17;
 
 		try {
 			l = -128;
@@ -466,6 +500,8 @@ class Tests {
 		}
 		if (failed)
 			return 18;
+		if (b != -128)
+			return -18;
 
 		try {
 			l = 127;
@@ -478,6 +514,8 @@ class Tests {
 		}
 		if (failed)
 			return 19;
+		if (b != 127)
+			return -19;
 
 		try {
 			l = 128;
@@ -490,6 +528,8 @@ class Tests {
 		}
 		if (failed)
 			return 20;
+		if (b != 127)
+			return -19;
 
 		return 0;
 	}
@@ -1352,5 +1392,31 @@ class Tests {
 		}
 
 		return res;
+	}
+
+	/* bug# 42190, at least mcs generates a leave for the return that
+	 * jumps out of multiple exception clauses: we used to execute just 
+	 * one enclosing finally block.
+	 */
+	static int finally_level;
+	static void do_something () {
+		int a = 0;
+		try {
+			try {
+				return;
+			} finally {
+				a = 1;
+			}
+		} finally {
+			finally_level++;
+		}
+	}
+
+	static int test_2_multiple_finally_clauses () {
+		finally_level = 0;
+		do_something ();
+		if (finally_level == 1)
+			return 2;
+		return 0;
 	}
 }
