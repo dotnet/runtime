@@ -5,7 +5,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
-
+#include <sys/types.h>
+#include <utime.h>
 #include "wrapper.h"
 
 extern char **environ;
@@ -176,4 +177,16 @@ mono_wrapper_rename (const char *src, const char *dst)
 	return 0;
 }
 
+int
+mono_wrapper_utime (const char *path, int atime, int mtime)
+{
+	struct utimbuf buf;
+
+	buf.actime = atime;
+	buf.modtime = utime;
+
+	if (utime (path, &buf) == -1)
+		return -errno;
+	return 0;
+}
 

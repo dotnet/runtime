@@ -99,6 +99,11 @@ create_func ($lib, "", "rename", "int",
 	     "string", "source",
 	     "string", "target");
 
+create_func ($lib, "", "utime",  "int",
+             "string", "path",
+	     "int",    "atime",
+	     "int",    "mtime");
+
 map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "SEEK_CUR",
 	   "int", "%d", "SEEK_END",
