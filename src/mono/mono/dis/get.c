@@ -1079,7 +1079,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("%g", * (double *) ptr);
 		
 	case MONO_TYPE_STRING: {
-		int len, i, j, e;
+		int i, j, e;
 		char *res;
 		e = len = 0;
 		for (i = 0; !ptr [i+1]; i += 2){

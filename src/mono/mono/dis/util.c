@@ -27,8 +27,7 @@ map (guint32 code, map_t *table)
 	for (i = 0; table [i].str != NULL; i++)
 		if (table [i].code == code)
 			return table [i].str;
-	g_assert_not_reached ();
-	return "";
+	return "invalid-flags";
 }
 
 /**
