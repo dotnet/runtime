@@ -25,14 +25,81 @@ LD_LIBRARY_PATH=$here/install/lib:$LD_LIBRARY_PATH
 
 # --print-ac-dir was added in 1.2h according to the ChangeLog.  This
 # should mean that any automake new enough for us has it.
-if [ -f `aclocal --print-ac-dir`/pkg.m4 ]; then
+
+function aclocal_scan () {
+    # Quietly ignore the rogue '-I' and other aclocal flags that
+    # aren't actually directories...
+    for i in `aclocal --print-ac-dir` $ACLOCAL_FLAGS
+    do
+	if [ -f $i/$1 ]; then
+	    return 0
+	fi
+    done
+
+    return 1
+}
+
+function pkgconfig_scan () {
+    module=$1
+
+    echo "Finding pkgconfig files for $module..."
+
+    # Should we use locate? or just a list of well-known directories?
+    # locate has the problem of false positives in src dirs
+    for i in /usr/lib/pkgconfig /usr/local/lib/pkgconfig
+    do
+	echo "Looking in $i..."
+	if [ -f $i/${module}.pc ]; then
+	    echo $i
+	    return
+	fi
+    done
+}
+
+function install_package() {
+    tarfile=$1
+    dirname=$2
+    name=$3
+
+    echo "Installing $name..."
+    if [ ! -f $here/$tarfile ]; then
+	wget http://www.go-mono.org/archive/$tarfile
+    fi
+
+    # Assume that the package built correctly if the dir is there
+    if [ ! -d $here/$dirname ]; then
+	# Build and install package
+	tar xzf $here/$tarfile || exit -1
+	(cd $here/$dirname; ./configure --prefix=$here/install || exit -1; make || exit -1; make install || exit -1)
+	success=$?
+	if [ $success -ne 0 ]; then
+	    echo "***** $name build failure. Run rm -rf $here/$dirname to have this script attempt to build $name again next time"
+	    exit -1
+	fi
+    fi
+}
+
+if aclocal_scan pkg.m4 ; then
     install_pkgconfig=no
-    PKG_CONFIG_PATH="$here/install/lib/pkgconfig"
 else
     install_pkgconfig=yes
-    ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
 fi
 
+if aclocal_scan glib-2.0.m4 ; then
+    install_glib=no
+    if [ $install_pkgconfig = "yes" ]; then
+	# We have to tell the newly-installed pkgconfig about the
+	# system-installed glib
+	PKG_CONFIG_PATH=`pkgconfig_scan glib-2.0`:$PKG_CONFIG_PATH
+    fi
+else
+    install_glib=yes
+    PKG_CONFIG_PATH="$here/install/lib/pkgconfig:$PKG_CONFIG_PATH"
+fi
+
+if [ $install_pkgconfig = "yes" -o $install_glib = "yes" ]; then
+    ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
+fi
 
 export PATH
 export LD_LIBRARY_PATH
@@ -41,46 +108,16 @@ export PKG_CONFIG_PATH
 
 # Grab pkg-config-0.8, glib-1.3.12 if necessary
 
-# If any more dependencies are added, it would be worth encapsulating
-# the configure; make; make install part in a shell function
-
 if [ $install_pkgconfig = "yes" ]; then
-    echo "Installing pkgconfig..."
-    if [ ! -f $here/pkgconfig-0.8.0.tar.gz ]; then
-	wget --timestamping http://www.go-mono.org/archive/pkgconfig-0.8.0.tar.gz
-    fi
-
-    # Assume that pkgconfig built correctly if the dir is there
-    if [ ! -d $here/pkgconfig-0.8.0 ]; then
-	# Build and install pkg-config
-	tar xzf $here/pkgconfig-0.8.0.tar.gz || exit -1
-	(cd $here/pkgconfig-0.8.0; ./configure --prefix=$here/install || exit -1; make || exit -1; make install || exit -1)
-	success=$?
-	if [ $success -ne 0 ]; then
-	    echo "***** pkgconfig build failure. Run rm -rf $here/pkgconfig-0.8.0 to have this script attempt to build pkgconfig again next time"
-	    exit -1
-	fi
-    fi
+    install_package pkgconfig-0.8.0.tar.gz pkgconfig-0.8.0 pkgconfig
 else
     echo "Not installing pkgconfig, you already seem to have it installed"
 fi
 
-
-echo "Installing glib..."
-if [ ! -f $here/glib-1.3.13.tar.gz ]; then
-    wget --timestamping http://www.go-mono.org/archive/glib-1.3.13.tar.gz
-fi
-
-# Assume that glib built correctly if the dir is there
-if [ ! -d $here/glib-1.3.13 ]; then
-    # Build and install glib
-    tar xzf $here/glib-1.3.13.tar.gz || exit -1
-    (cd $here/glib-1.3.13; ./configure --prefix=$here/install || exit -1; make || exit -1; make install || exit -1)
-    success=$?
-    if [ $success -ne 0 ]; then
-	echo "***** glib build failure. Run rm -rf $here/glib-1.3.13 to have this script attempt to build glib again next time"
-	exit -1
-    fi
+if [ $install_glib = "yes" ]; then
+    install_package glib-1.3.13.tar.gz glib-1.3.13 glib
+else
+    echo "Not installing glib, you already seem to have it installed"
 fi
 
 # End of build dependencies, now get the latest mono checkout and build that
@@ -100,7 +137,9 @@ if [ ${CVSROOT:0:5} = ":ext:" ]; then
     CVS_RSH=ssh
     export CVS_RSH
 elif [ ${CVSROOT:0:9} = ":pserver:" ]; then
-    if ! grep $CVSROOT ~/.cvspass > /dev/null 2>&1 ; then
+    # Chop off the trailing /mono because cvs 1.11 adds the port number
+    # into the .cvspass line
+    if ! grep ${CVSROOT%:/mono} ~/.cvspass > /dev/null 2>&1 ; then
 	echo "Logging into CVS server.  Anonymous CVS password is probably empty"
 	cvs login
     fi
