@@ -110,14 +110,14 @@
 <!-- 	            </ul> -->
 <!--  	          </td> -->
 <!--  		</tr> -->
-<!--  		<tr> -->
-<!--  		  <td bgcolor="#999999"> -->
-<!-- 		    <b>Windows Setup Wizard (NT/2000/XP)</b> -->
-<!-- 		    <ul> -->
-<!-- 	              <li><a href="archive/mono-0.21-win32-1.exe">Mono-Setup</a> -->
-<!-- 	            </ul> -->
-<!--  	          </td> -->
-<!--  		</tr> -->
+  		<tr> -->
+  		  <td bgcolor="#999999">
+ 		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+ 		    <ul>
+ 	              <li><a href="archive/mono-0.22-win32-1.exe">Mono-Setup</a>
+ 	            </ul>
+  	          </td>
+  		</tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -136,13 +136,13 @@
 	</table>
 
 
-<br>
-* Older Releases:
+
+der Releases:
 
 	We provide binaries for older releases until we have packages for the new release.
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.21</b><br>
 	      <a href="archive/mono-0.21">Release notes</a><br>
@@ -178,22 +178,22 @@
 		<tr>
 		 <td></td>
 	 	</tr>
- 		<tr>
- 		  <td bgcolor="#999999">
- 		    <b>Debian packages</b>
+		<tr>
+		  <td bgcolor="#999999">
+		    <b>Debian packages</b>
 		    <ul>
 	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a>
 	            </ul>
- 	          </td>
- 		</tr>
- 		<tr>
- 		  <td bgcolor="#999999">
+	          </td>
+		</tr>
+		<tr>
+		  <td bgcolor="#999999">
 		    <b>Windows Setup Wizard (NT/2000/XP)</b>
 		    <ul>
 	              <li><a href="archive/mono-0.21-win32-1.exe">Mono-Setup</a>
 	            </ul>
- 	          </td>
- 		</tr>
+	          </td>
+		</tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -213,7 +213,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.20</b><br>
 	      <a href="archive/mono-0.20">Release notes</a><br>
@@ -252,28 +252,28 @@
 		<tr>
 		  <td bgcolor="#999999">
 		    <b>Red Hat 8.0/x86</b>
-                    <ul>
+                <ul>
 			<li><a href="archive/redhat-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-80-i386/mono-0.20-1.i386.rpm">mono-0.20-1.i386.rpm</a>
 			<li><a href="archive/redhat-80-i386/mono-devel-0.20-1.i386.rpm">mono-devel-0.20-1.i386.rpm</a>
 		    </ul>
 	          </td>
- 		  <td bgcolor="#999999">
- 		    <b>Debian packages</b>
+		  <td bgcolor="#999999">
+		    <b>Debian packages</b>
 		    <ul>
 	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a>
 	            </ul>
- 	          </td>
+	          </td>
 	        </tr>
- 		<tr>
- 		  <td bgcolor="#999999">
+		<tr>
+		  <td bgcolor="#999999">
 		    <b>Windows Setup Wizard (NT/2000/XP)</b>
 		    <ul>
 	              <li><a href="archive/mono-0.20-stable-win32-2.exe">Mono-Setup</a>
 	            </ul>
- 	          </td>
- 		</tr>
+	          </td>
+		</tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -293,7 +293,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.19</b><br>
 	      <a href="archive/mono-0.19">Release notes</a><br>
@@ -335,7 +335,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.18</b><br>
 	      <a href="archive/mono-0.18">Release notes</a><br>
@@ -379,7 +379,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.17</b><br>
 	      <a href="archive/mono-0.17">Release notes</a><br>
@@ -434,7 +434,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.16</b><br>
 	      <a href="archive/mono-0.16">Release notes</a><br>
@@ -471,7 +471,7 @@
 		<tr>
 		  <td bgcolor="#999999">
 		    <b>Linux s390</b>
-                    <ul>
+                <ul>
 			<li><a href="archive/s390/glib2-2.0.6-13.s390.rpm">glib2-2.0.6-13.s390.rpm</a>
 			<li><a href="archive/s390/glib2-devel-2.0.6-13.s390.rpm">glib2-devel-2.0.6-13.s390.rpm</a>
 			<li><a href="archive/s390/libgc-6.1alpha5-1.s390.rpm">libgc-6.1alpha5-1.s390.rpm</a>
@@ -492,7 +492,7 @@
 
 	<table>
 	  <tbody>
- 	  <tr bgcolor="#DDDDDD">
+	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.15</b><br>
 	      <a href="archive/mono-0.15">Release notes</a><br>
@@ -536,7 +536,7 @@
 		  </td>
 		  <td bgcolor="#999999">
 		    <b>Red Hat null-8.0/x86</b>
-                    <ul>
+                <ul>
 			<li><a href="archive/redhat-null-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
 			<li><a href="archive/redhat-null-i386/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i386.rpm</a>
 			<li><a href="archive/redhat-null-i386/mono-0.15-1.i386.rpm">mono-0.15-1.i386.rpm</a>
@@ -550,7 +550,7 @@
 	  </tbody>
 	</table>
 
-** Binaries for other platforms.
+inaries for other platforms.
 
 	Already daily volunteer's made binaries:
 
@@ -559,9 +559,9 @@
 		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
 
-* Snapshots
+apshots
 
-<a name="snapshots">
+ame="snapshots">
 
 	<a href="http://www.go-mono.com/snapshots">Nightly snapshots</a> of 
 	the CVS repository are made every day at 10pm EST (Boston
@@ -571,7 +571,7 @@
 	The <a href="anoncvs.html">anoncvs</a> mirrors provided by
 	Hispalinux are updated every six hours.
 
-* Compiling the code
+mpiling the code
 
 	There are a number of ways of compiling Mono
 
@@ -585,8 +585,8 @@
 
 	(which is an easy way to get the latest CVS information)
 
-<a name="scripts">
-* Compiling with scripts
+ame="scripts">
+mpiling with scripts
 
 	There are scripts to help build mono for both Unix and Windows.  Get
 	<a href="mono-build.sh">mono-build.sh</a> for Unix, or <a
@@ -617,14 +617,14 @@
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
 
-<a name="install">
-** Building the software manually
+ame="install">
+uilding the software manually
 
 	You will need to obtain the Mono dependencies first: <a
 	href="http://www.gtk.org">glib 2.x</a> and 
 	<a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a>.
 
-*** Building on Linux
+Building on Linux
 
 	<ul>
 		Unpack the Mono runtime distribution:
@@ -666,9 +666,9 @@
 	</ul>
 
 	
-*** On Windows, to install and work on the compiler and the class libraries:
+On Windows, to install and work on the compiler and the class libraries:
 
-**** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
+ Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
 
 	<ul>
 
@@ -695,9 +695,9 @@
 		<pre>
 		make
 		</pre>
- 	</ul>
+	</ul>
 
-*** On Windows, to compile the mono runtime:
+On Windows, to compile the mono runtime:
 
 	<ul>
 		
@@ -716,7 +716,7 @@
 
 	</ul>
 
-* Software resources and notes
+ftware resources and notes
 
 		The required and additional software can be downloaded here:
 
@@ -751,7 +751,7 @@
 	</ul>
 
 
-*** Notes on compiling GLIB 2.0 and pkg-config from source:
+Notes on compiling GLIB 2.0 and pkg-config from source:
 
 
 	<ul>
@@ -761,18 +761,18 @@
 		  `make maintainer-clean' after the update).
 
 		* Download, compile and install <a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a> from source.
-                  (I had to change line 674 of
-                  <nobr><tt>pkg-config-0.8.0/glib-1.2.8/gstrfuncs.c</tt></nobr> from 
+              (I had to change line 674 of
+              <nobr><tt>pkg-config-0.8.0/glib-1.2.8/gstrfuncs.c</tt></nobr> from 
 		  <nobr><tt>extern char *strsignal (int sig);</tt></nobr> to
 		  <nobr><tt>extern const char *strsignal (int sig);</tt></nobr>.
 
-<pre>
-tar xzvf pkg-config-0.8.0.tar.gz
-cd pkg-config-0.8.0
-./configure --prefix=/usr
-make
-make install
-</pre>
+>
+xzvf pkg-config-0.8.0.tar.gz
+kg-config-0.8.0
+nfigure --prefix=/usr
+
+ install
+e>
 
 		* Download, compile and install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a> from source.<br>
 		  If you dont have MS Visual C/C++ 4.0 or 5.0 or 6.0 you can also try
@@ -780,15 +780,15 @@ make install
 		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">
 		  http://www.gimp.org/win32/libiconv-dev-20001007.zip</a>.
 
- 
+
 		* Download, compile and install the 
 		  <a href="ftp://ftp.gtk.org/pub/gtk/v2.0/glib-2.0.6.tar.gz">
 		  glib 2.0</a> from source.
 
 	</ul>
 
-<a name="upgrading">
-** Upgrading
+ame="upgrading">
+pgrading
 
 	To upgrade your Mono installation from CVS, it is very
 	important that you update your Mono and MCS modules from CVS

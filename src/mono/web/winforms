@@ -1,5 +1,8 @@
 * System.Windows.Forms
 
+	<table>
+	<tr>
+	<td>
 	System.Windows.Forms is currently being implemented using the
 	Win32 API, we will be using <a
 	href="http://www.winehq.com">WineLib</a> on Unix systems to
@@ -19,6 +22,12 @@
 	Gtk/FrameBuffer is an option.  If you have suggestions or
 	recommendations, please let us <a
 	href="mailto:mono-hackers-list@ximian.com">let us know</a>
+	</td>
+	<td>
+	<a href="images/WINESWF.JPG"><img src="images/WINESWF-mini.JPG"></a>
+	</td>
+	
+	</table>
 
 * Contributing
 
