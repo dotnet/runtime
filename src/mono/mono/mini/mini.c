@@ -2253,6 +2253,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int size = sizeof (int) * header->num_clauses;
 			filter_lengths = alloca (size);
 			memset (filter_lengths, 0, size);
+
+			cfg->spvar = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			/* prevent it from being register allocated */
+			cfg->spvar->flags |= MONO_INST_INDIRECT;
 		}
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -2262,6 +2266,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			tblock->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, bbhash, tblock, ip + clause->handler_offset);
 			tblock->real_offset = clause->handler_offset;
+
+			MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
+			MONO_ADD_INS (tblock, ins);
+
 			/*g_print ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
 			  while (p < end) {
 			  g_print ("%s", mono_disasm_code_one (NULL, method, p, &p));
@@ -2279,12 +2287,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				tblock->in_scount = 1;
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 				tblock->in_stack [0] = cfg->exvar;
+				
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					GET_BBLOCK (cfg, bbhash, tblock, ip + clause->token_or_filter);
 					tblock->real_offset = clause->token_or_filter;
 					tblock->in_scount = 1;
 					tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 					tblock->in_stack [0] = cfg->exvar;
+					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
+					MONO_ADD_INS (tblock, ins);
 				}
 			}
 		}
@@ -3904,7 +3915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (tmp = handlers; tmp; tmp = tmp->next) {
 					tblock = tmp->data;
 					link_bblock (cfg, bblock, tblock);
-					MONO_INST_NEW (cfg, ins, OP_HANDLER);
+					MONO_INST_NEW (cfg, ins, OP_CALL_HANDLER);
 					ins->cil_code = ip;
 					ins->inst_target_bb = tblock;
 					MONO_ADD_INS (bblock, ins);

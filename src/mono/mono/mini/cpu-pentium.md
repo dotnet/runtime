@@ -91,7 +91,7 @@ pop:
 jmp: len:32
 call: dest:a clob:c len:11
 calli:
-ret:
+ret: len:1
 br.s:
 brfalse.s:
 brtrue.s:
@@ -270,7 +270,7 @@ mul.ovf: dest:i src1:i src2:i clob:1 len:9
 mul.ovf.un: dest:i src1:i src2:i len:12
 sub.ovf:
 sub.ovf.un:
-endfinally: len:10
+endfinally:
 leave:
 leave.s:
 stind.i:
@@ -582,8 +582,7 @@ float_cgt_un: dest:i src1:f src2:f len:37
 float_clt: dest:i src1:f src2:f len:25
 float_clt_un: dest:i src1:f src2:f len:32
 float_conv_to_u: dest:i src1:f len:36
-handler: len:10
-op_endfilter: src1:i len:10
+call_handler: len:10
 aot_const: dest:i len:5
 x86_test_null: src1:i len:2
 x86_compare_membase_reg: src1:b src2:i len:6

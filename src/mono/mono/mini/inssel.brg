@@ -1168,15 +1168,19 @@ stmt: CEE_THROW (CEE_LDIND_REF (OP_REGVAR)) {
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->left->tree->dreg);
 }
 
-stmt: OP_HANDLER {
+stmt: OP_CALL_HANDLER {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_ENDFINALLY {
+stmt: OP_START_HANDLER "2" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_ENDFILTER (reg) "0" {
+stmt: CEE_ENDFINALLY "2" {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_ENDFILTER (reg) "2" {
 	MONO_EMIT_UNALU (s, tree, OP_ENDFILTER, -1, state->left->reg1);
 }
 

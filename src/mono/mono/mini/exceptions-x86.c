@@ -534,13 +534,14 @@ arch_get_call_filter (void)
 	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
 	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
 	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
-	/* save the ESP - this is used by endfinally */
-	x86_mov_membase_reg (code, X86_EBP, mono_exc_esp_offset, X86_ESP, 4);
+
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
+
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 	/* restore EBP */
 	x86_pop_reg (code, X86_EBP);
+
 	/* restore saved regs */
 	x86_pop_reg (code, X86_ESI);
 	x86_pop_reg (code, X86_EDI);

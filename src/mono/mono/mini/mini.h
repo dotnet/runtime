@@ -421,6 +421,7 @@ typedef struct {
 
 	MonoInst        *exvar; /* the exception object passed to catch/filter blocks */
 	MonoInst        *domainvar; /* a cache for the current domain */
+	MonoInst        *spvar; /* a place to store the stack pointer (used by handlers) */
 
 	GList           *ldstr_list; /* used by AOT */
 	

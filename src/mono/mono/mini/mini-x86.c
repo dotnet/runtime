@@ -18,8 +18,6 @@
 #include "inssel.h"
 #include "cpu-pentium.h"
 
-int mono_exc_esp_offset = 0;
-
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {
@@ -567,14 +565,24 @@ mono_arch_allocate_vars (MonoCompile *m)
 	}
 
 	offset = 0;
+
 	/* reserve space to save LMF and caller saved registers */
-	offset += sizeof (MonoLMF);
 
-	/* reserve space to store the esp */
-	offset += sizeof (gpointer);
+	if (m->method->save_lmf) {
+		offset += sizeof (MonoLMF);
+	} else {
+		if (m->used_int_regs & (1 << X86_EBX)) {
+			offset += 4;
+		}
 
-	/* this is a global constant */
-	mono_exc_esp_offset = -offset;
+		if (m->used_int_regs & (1 << X86_EDI)) {
+			offset += 4;
+		}
+
+		if (m->used_int_regs & (1 << X86_ESI)) {
+			offset += 4;
+		}
+	}
 
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
@@ -2314,23 +2322,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_call_code (code, 0);
 			break;
 		}
-		case OP_ENDFILTER:
-			if (ins->sreg1 != X86_EAX)
-				x86_mov_reg_reg (code, X86_EAX, ins->sreg1, 4);
-			x86_mov_reg_membase (code, X86_ESP, X86_EBP, mono_exc_esp_offset, 4);
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_ret (code);
-			break;
-		case CEE_ENDFINALLY:
-			/* 
-			 * restore ESP - which can be modified when we allocate value types in the filter
-			 */
-			x86_mov_reg_membase (code, X86_ESP, X86_EBP, mono_exc_esp_offset, 4);
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_ret (code);
-			break;
-		case OP_HANDLER: 
-			x86_mov_membase_reg (code, X86_EBP, mono_exc_esp_offset, X86_ESP, 4);
+		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			x86_call_imm (code, 0);
 			break;

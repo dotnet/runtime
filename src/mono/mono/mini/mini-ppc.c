@@ -2238,7 +2238,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_ENDFINALLY:
 			ppc_blr (code);
 			break;
-		case OP_HANDLER: 
+		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			ppc_bl (code, 0);
 			break;
