@@ -176,7 +176,7 @@ dwarf2_write_long (FILE *f, unsigned long value)
 static void
 dwarf2_write_address (FILE *f, void *address)
 {
-	fprintf (f, "\t.long %p\n", address);
+	fprintf (f, "\t.long 0x%lx\n", address);
 }
 
 static void
