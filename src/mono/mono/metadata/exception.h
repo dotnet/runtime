@@ -59,6 +59,9 @@ MonoException *
 mono_get_exception_argument            (const guchar *arg, const guchar *msg);
 
 MonoException *
+mono_get_exception_argument_out_of_range (const guchar *arg);
+
+MonoException *
 mono_get_exception_io                  (const guchar *msg);
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

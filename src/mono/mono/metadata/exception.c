@@ -165,6 +165,24 @@ mono_get_exception_argument (const guchar *arg, const guchar *msg)
 }
 
 MonoException *
+mono_get_exception_argument_out_of_range (const guchar *arg)
+{
+	MonoException *ex;
+	MonoDomain *domain;
+
+	ex = (MonoException *)mono_exception_from_name (
+	        mono_defaults.corlib, "System", "ArgumentOutOfRangeException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (arg)
+		((MonoArgumentException *)ex)->param_name =
+			mono_string_new (domain, arg);
+	
+	return ex;
+}
+
+MonoException *
 mono_get_exception_io (const guchar *msg)
 {
 	MonoException *ex;

@@ -31,13 +31,33 @@
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
+
+static MonoObject *
+ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
+{
+	MonoClass *ac;
+	MonoArray *ao;
+	gint32 esize;
+	gpointer *ea;
+
+	ao = (MonoArray *)this;
+	ac = (MonoClass *)ao->obj.vtable->klass;
+
+	esize = mono_array_element_size (ac);
+	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+
+	if (ac->element_class->valuetype)
+		return mono_value_box (this->vtable->domain, ac->element_class, ea);
+	else
+		return *ea;
+}
+
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 {
 	MonoClass *ac, *ic;
 	MonoArray *ao, *io;
-	gint32 i, pos, *ind, esize;
-	gpointer *ea;
+	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs);
 
@@ -62,14 +82,272 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 		pos = pos*ao->bounds [i].length + ind [i] - 
 			ao->bounds [i].lower_bound;
 
+	return ves_icall_System_Array_GetValueImpl (this, pos);
+}
+
+static void
+ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint32 pos)
+{
+	MonoArray *ao, *vo;
+	MonoClass *ac, *vc, *ec;
+	gint32 esize, vsize;
+	gpointer *ea, *va;
+
+	guint64 u64;
+	gint64 i64;
+	gdouble r64;
+
+	vo = (MonoArray *)value;
+	if (vo)
+		vc = (MonoClass *)vo->obj.vtable->klass;
+	else
+		vc = NULL;
+
+	ao = (MonoArray *)this;
+	ac = (MonoClass *)ao->obj.vtable->klass;
+	ec = ac->element_class;
+
 	esize = mono_array_element_size (ac);
 	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+	va = (gpointer*)((char*)vo + sizeof (MonoObject));
 
-	if (ac->element_class->valuetype)
-		return mono_value_box (this->vtable->domain, ac->element_class, ea);
-	else {
-		return *ea;
+	if (!vo) {
+		memset (ea, 0,  esize);
+		return;
 	}
+
+#define NO_WIDENING_CONVERSION G_STMT_START{\
+	mono_raise_exception (mono_get_exception_argument ( \
+		"value", "not a widening conversion")); \
+}G_STMT_END
+
+#define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{\
+	if (esize < vsize + ## extra) \
+		mono_raise_exception (mono_get_exception_argument ( \
+			"value", "not a widening conversion")); \
+}G_STMT_END
+
+#define INVALID_CAST G_STMT_START{\
+	mono_raise_exception (mono_get_exception_invalid_cast ()); \
+}G_STMT_END
+
+	/* Check element (destination) type. */
+	switch (ec->byval_arg.type) {
+	case MONO_TYPE_STRING:
+		switch (vc->byval_arg.type) {
+		case MONO_TYPE_STRING:
+			break;
+		default:
+			INVALID_CAST;
+		}
+		break;
+	case MONO_TYPE_BOOLEAN:
+		switch (vc->byval_arg.type) {
+		case MONO_TYPE_BOOLEAN:
+			break;
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			NO_WIDENING_CONVERSION;
+		default:
+			INVALID_CAST;
+		}
+		break;
+	}
+
+	if (!ec->valuetype) {
+		*ea = (gpointer)vo;
+		return;
+	}
+
+	if (mono_object_isinst (value, ec)) {
+		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
+		return;
+	}
+
+	if (!vc->valuetype)
+		INVALID_CAST;
+
+	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
+
+#if 0
+	g_message (G_STRLOC ": %d (%d) <= %d (%d)",
+		   ec->byval_arg.type, esize,
+		   vc->byval_arg.type, vsize);
+#endif
+
+#define ASSIGN_UNSIGNED(etype) G_STMT_START{\
+	switch (vc->byval_arg.type) { \
+	case MONO_TYPE_U1: \
+	case MONO_TYPE_U2: \
+	case MONO_TYPE_U4: \
+	case MONO_TYPE_U8: \
+	case MONO_TYPE_CHAR: \
+		CHECK_WIDENING_CONVERSION(0); \
+		*(## etype *) ea = (## etype) u64; \
+		return; \
+	/* You can't assign a signed value to an unsigned array. */ \
+	case MONO_TYPE_I1: \
+	case MONO_TYPE_I2: \
+	case MONO_TYPE_I4: \
+	case MONO_TYPE_I8: \
+	/* You can't assign a floating point number to an integer array. */ \
+	case MONO_TYPE_R4: \
+	case MONO_TYPE_R8: \
+		NO_WIDENING_CONVERSION; \
+	} \
+}G_STMT_END
+
+#define ASSIGN_SIGNED(etype) G_STMT_START{\
+	switch (vc->byval_arg.type) { \
+	case MONO_TYPE_I1: \
+	case MONO_TYPE_I2: \
+	case MONO_TYPE_I4: \
+	case MONO_TYPE_I8: \
+		CHECK_WIDENING_CONVERSION(0); \
+		*(## etype *) ea = (## etype) i64; \
+		return; \
+	/* You can assign an unsigned value to a signed array if the array's */ \
+	/* element size is larger than the value size. */ \
+	case MONO_TYPE_U1: \
+	case MONO_TYPE_U2: \
+	case MONO_TYPE_U4: \
+	case MONO_TYPE_U8: \
+	case MONO_TYPE_CHAR: \
+		CHECK_WIDENING_CONVERSION(1); \
+		*(## etype *) ea = (## etype) u64; \
+		return; \
+	/* You can't assign a floating point number to an integer array. */ \
+	case MONO_TYPE_R4: \
+	case MONO_TYPE_R8: \
+		NO_WIDENING_CONVERSION; \
+	} \
+}G_STMT_END
+
+#define ASSIGN_REAL(etype) G_STMT_START{\
+	switch (vc->byval_arg.type) { \
+	case MONO_TYPE_R4: \
+	case MONO_TYPE_R8: \
+		CHECK_WIDENING_CONVERSION(0); \
+		*(## etype *) ea = (## etype) r64; \
+		return; \
+	/* All integer values fit into a floating point array, so we don't */ \
+	/* need to CHECK_WIDENING_CONVERSION here. */ \
+	case MONO_TYPE_I1: \
+	case MONO_TYPE_I2: \
+	case MONO_TYPE_I4: \
+	case MONO_TYPE_I8: \
+		*(## etype *) ea = (## etype) i64; \
+		return; \
+	case MONO_TYPE_U1: \
+	case MONO_TYPE_U2: \
+	case MONO_TYPE_U4: \
+	case MONO_TYPE_U8: \
+	case MONO_TYPE_CHAR: \
+		*(## etype *) ea = (## etype) u64; \
+		return; \
+	} \
+}G_STMT_END
+
+	switch (vc->byval_arg.type) {
+	case MONO_TYPE_U1:
+		u64 = *(guint8 *) va;
+		break;
+	case MONO_TYPE_U2:
+		u64 = *(guint16 *) va;
+		break;
+	case MONO_TYPE_U4:
+		u64 = *(guint32 *) va;
+		break;
+	case MONO_TYPE_U8:
+		u64 = *(guint64 *) va;
+		break;
+	case MONO_TYPE_I1:
+		i64 = *(gint8 *) va;
+		break;
+	case MONO_TYPE_I2:
+		i64 = *(gint16 *) va;
+		break;
+	case MONO_TYPE_I4:
+		i64 = *(gint32 *) va;
+		break;
+	case MONO_TYPE_I8:
+		i64 = *(gint64 *) va;
+		break;
+	case MONO_TYPE_R4:
+		r64 = *(gfloat *) va;
+		break;
+	case MONO_TYPE_R8:
+		r64 = *(gdouble *) va;
+		break;
+	case MONO_TYPE_CHAR:
+		u64 = *(guint16 *) va;
+		break;
+	case MONO_TYPE_BOOLEAN:
+		/* Boolean is only compatible with itself. */
+		switch (ec->byval_arg.type) {
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			NO_WIDENING_CONVERSION;
+		default:
+			INVALID_CAST;
+		}
+		break;
+	}
+
+	/* If we can't do a direct copy, let's try a widening conversion. */
+	switch (ec->byval_arg.type) {
+	case MONO_TYPE_CHAR:
+		ASSIGN_UNSIGNED (guint16);
+	case MONO_TYPE_U1:
+		ASSIGN_UNSIGNED (guint8);
+	case MONO_TYPE_U2:
+		ASSIGN_UNSIGNED (guint16);
+	case MONO_TYPE_U4:
+		ASSIGN_UNSIGNED (guint32);
+	case MONO_TYPE_U8:
+		ASSIGN_UNSIGNED (guint64);
+	case MONO_TYPE_I1:
+		ASSIGN_SIGNED (gint8);
+	case MONO_TYPE_I2:
+		ASSIGN_SIGNED (gint16);
+	case MONO_TYPE_I4:
+		ASSIGN_SIGNED (gint32);
+	case MONO_TYPE_I8:
+		ASSIGN_SIGNED (gint64);
+	case MONO_TYPE_R4:
+		ASSIGN_REAL (gfloat);
+	case MONO_TYPE_R8:
+		ASSIGN_REAL (gdouble);
+	}
+
+	INVALID_CAST;
+	/* Not reached, INVALID_CAST does not return. Just to avoid a compiler warning ... */
+	return;
+
+#undef INVALID_CAST
+#undef NO_WIDENING_CONVERSION
+#undef CHECK_WIDENING_CONVERSION
+#undef ASSIGN_UNSIGNED
+#undef ASSIGN_SIGNED
+#undef ASSIGN_REAL
 }
 
 static void 
@@ -78,8 +356,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 {
 	MonoArray *ao, *io, *vo;
 	MonoClass *ac, *ic, *vc;
-	gint32 i, pos, *ind, esize;
-	gpointer *ea;
+	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs);
 
@@ -105,35 +382,49 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
-	if (vo && !mono_object_isinst (value, ac->element_class)) {
-		mono_raise_exception (mono_get_exception_array_type_mismatch ());
-		return;
-	}
-
 	pos = ind [0] - ao->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
 		pos = pos*ao->bounds [i].length + ind [i] - 
 			ao->bounds [i].lower_bound;
 
-	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)ao->vector + (pos * esize));
-
-	if (ac->element_class->valuetype) {
-		if (vo) {
-			g_assert (vc->valuetype);
-			memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
-		} else
-			memset (ea, 0,  esize);
-	} else
-		*ea = (gpointer)vo;
-
+	ves_icall_System_Array_SetValueImpl (this, value, pos);
 }
 
-static void
-ves_icall_System_Array_CreateInstanceImpl ()
+static MonoArray *
+ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *lengths, MonoArray *bounds)
 {
-	g_warning (G_STRLOC ": not implemented");
-	mono_raise_exception (mono_get_exception_not_implemented ());
+	MonoClass *klass;
+	MonoClass *aklass;
+	MonoArray *array;
+	gint32 *sizes, i;
+
+	MONO_CHECK_ARG_NULL (type);
+	MONO_CHECK_ARG_NULL (lengths);
+
+	MONO_CHECK_ARG (lengths, mono_array_length (lengths) > 0);
+	if (bounds)
+		MONO_CHECK_ARG (bounds, mono_array_length (lengths) == mono_array_length (bounds));
+
+	for (i = 0; i < mono_array_length (lengths); i++)
+		if (mono_array_get (lengths, gint32, i) < 0)
+			mono_raise_exception (mono_get_exception_argument_out_of_range (NULL));
+
+	klass = mono_class_from_mono_type (type->type);
+	aklass = mono_array_class_get (klass, mono_array_length (lengths));
+
+	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
+	for (i = 0; i < aklass->rank; ++i) {
+		sizes [i] = mono_array_get (lengths, gint32, i);
+		if (bounds)
+			sizes [i + aklass->rank] = mono_array_get (bounds, gint32, i);
+		else
+			sizes [i + aklass->rank] = 0;
+		sizes [i] -= sizes [i + aklass->rank];
+	}
+
+	array = mono_array_new_full (mono_domain_get (), aklass, sizes, sizes + aklass->rank);
+
+	return array;
 }
 
 static gint32 
@@ -1265,6 +1556,8 @@ static gpointer icall_map [] = {
 	 */
 	"System.Array::GetValue",         ves_icall_System_Array_GetValue,
 	"System.Array::SetValue",         ves_icall_System_Array_SetValue,
+	"System.Array::GetValueImpl",     ves_icall_System_Array_GetValueImpl,
+	"System.Array::SetValueImpl",     ves_icall_System_Array_SetValueImpl,
 	"System.Array::GetRank",          ves_icall_System_Array_GetRank,
 	"System.Array::GetLength",        ves_icall_System_Array_GetLength,
 	"System.Array::GetLowerBound",    ves_icall_System_Array_GetLowerBound,
