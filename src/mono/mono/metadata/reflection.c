@@ -352,21 +352,20 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, &type->data.klass->byval_arg, p, &p);
 		break;
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_CLASS:
-		mono_metadata_encode_value (type->type, p, &p);
-		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, type), p, &p);
-		break;
-#if 0
+
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		MonoClass *k = mono_class_from_mono_type (type);
 		mono_metadata_encode_value (type->type, p, &p);
-		/* ensure only non-byref gets passed to mono_image_typedef_or_ref() */
+		/*
+		 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
+		 * otherwise two typerefs could point to the same type, leading to
+		 * verification errors.
+		 */
 		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, &k->byval_arg), p, &p);
 		break;
 	}
-#endif
+
 	case MONO_TYPE_ARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, &type->data.array->eklass->byval_arg, p, &p);
