@@ -3736,7 +3736,9 @@ mono_thread_abort (MonoObject *obj)
 	if (jit_tls->env) {	
 		longjmp (*jit_tls->env, obj);
 	}
-	       	
+
+	G_BREAKPOINT ();
+
 	ExitThread (-1);
 }
 		

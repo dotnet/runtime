@@ -297,7 +297,6 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	if (!arch_exc_is_catched (domain, jit_tls, ip, (gpointer *)ctx->SC_EBP, obj)) {
 		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
 			mono_debug_make_symbols ();
-			G_BREAKPOINT ();
 		}
 		mono_unhandled_exception (obj);
 	}
