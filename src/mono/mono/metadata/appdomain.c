@@ -425,14 +425,25 @@ set_domain_search_path (MonoDomain *domain)
 	tmp [npaths] = NULL;
 	if (setup->application_base) {
 		*tmp = mono_string_to_utf8 (setup->application_base);
+		/* FIXME: is this needed? */
+		if (strncmp (*tmp, "file://", 7) == 0) {
+			gchar *file = *tmp;
+			*tmp = g_strdup (*tmp + 7);
+			g_free (file);
+		}
+		
 	} else {
 		*tmp = g_strdup ("");
 	}
 
-	tmp++;
-	npaths--;
-	for (i = 0; i < npaths; i++)
-		tmp [i] = pvt_split [i];
+	for (i = 1; pvt_split && i < npaths; i++) {
+		if (*tmp [0] == '\0' || g_path_is_absolute (pvt_split [i - 1])) {
+			tmp [i] = g_strdup (pvt_split [i - 1]);
+			continue;
+		}
+
+		tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
+	}
 
 	g_strfreev (pvt_split);
 }
