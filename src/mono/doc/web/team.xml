@@ -16,6 +16,35 @@
 
     <name>
 
+      <first-name>Tim</first-name>
+
+      <last-name>Haynes</last-name>
+
+    </name>
+
+    <e-mail>thaynes@openlinksw.co.uk</e-mail>
+
+    <image></image>
+
+    <location>Croydon, UK</location>
+
+    <organization>OpenLink Software</organization>
+
+    <description>http://www.openlinksw.com/</description>
+
+    <tasks>
+
+      <task>Anything related to using mono to host the CLR from other applications</task>
+
+    </tasks>
+
+  </contributor>
+
+
+  <contributor>
+
+    <name>
+
       <first-name>Duncan</first-name>
 
       <last-name>Mak</last-name>
