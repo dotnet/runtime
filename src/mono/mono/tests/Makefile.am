@@ -38,6 +38,7 @@ TEST_CS_SRC=			\
 	exception13.cs		\
 	exception14.cs		\
 	exception15.cs		\
+	exception16.cs		\
 	struct.cs		\
 	valuetype-gettype.cs	\
 	static-constructor.cs	\
