@@ -2026,7 +2026,7 @@ mono_emit_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMet
 
 inline static int
 mono_emit_native_call (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer func, MonoMethodSignature *sig,
-		       MonoInst **args, const guint8 *ip, gboolean to_end)
+		       MonoInst **args, const guint8 *ip, gboolean ret_object, gboolean to_end)
 {
 	MonoCallInst *call;
 
@@ -2034,7 +2034,7 @@ mono_emit_native_call (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer f
 
 	call = mono_emit_call_args (cfg, bblock, sig, args, FALSE, FALSE, ip, to_end);
 	call->fptr = func;
-	return mono_spill_call (cfg, bblock, call, sig, func == mono_array_new_va, ip, to_end);
+	return mono_spill_call (cfg, bblock, call, sig, ret_object, ip, to_end);
 }
 
 inline static int
@@ -2047,7 +2047,7 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 		g_assert_not_reached ();
 	}
 
-	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, args, ip, FALSE);
+	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, args, ip, FALSE, FALSE);
 }
 
 static void
@@ -2213,7 +2213,7 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 	iargs [1] = src;
 	NEW_ICONST (cfg, iargs [2], n);
 
-	mono_emit_native_call (cfg, bblock, helper_memcpy, helper_sig_memcpy, iargs, ip, to_end);
+	mono_emit_native_call (cfg, bblock, helper_memcpy, helper_sig_memcpy, iargs, ip, FALSE, to_end);
 }
 
 static void
@@ -2317,6 +2317,27 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 
 	NEW_TEMPLOAD (cfg, dest, temp);
 	return dest;
+}
+
+static int
+handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst **sp, unsigned char *ip)
+{
+	MonoMethodSignature *esig;
+	char icall_name [256];
+	MonoJitICallInfo *info;
+
+	/* Need to register the icall so it gets an icall wrapper */
+	sprintf (icall_name, "ves_array_new_va_%d", rank);
+
+	info = mono_find_jit_icall_by_name (icall_name);
+	if (info == NULL) {
+		esig = mono_get_array_new_va_signature (rank);
+		info = mono_register_jit_icall (mono_array_new_va, g_strdup (icall_name), esig, FALSE);
+	}
+
+	cfg->flags |= MONO_CFG_HAS_VARARGS;
+
+	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, TRUE, FALSE);
 }
 
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
@@ -2423,7 +2444,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		info = mono_register_jit_icall (ves_array_element_address, g_strdup (icall_name), esig, FALSE);
 	}
 
-	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE);
+	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 	NEW_TEMPLOAD (cfg, addr, temp);
@@ -4059,9 +4080,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cmethod->klass->parent == mono_defaults.array_class) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
-				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, mono_get_array_new_va_signature (fsig->param_count), sp, ip, FALSE);
-				cfg->flags |= MONO_CFG_HAS_VARARGS;
-
+				temp = handle_array_new (cfg, bblock, fsig->param_count, sp, ip);
 			} else if (cmethod->string_ctor) {
 				/* we simply pass a null pointer */
 				NEW_PCONST (cfg, *sp, NULL); 
@@ -4539,7 +4558,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
 						mono_emit_native_call (cfg, bblock, tramp, 
 											   helper_sig_class_init_trampoline,
-											   NULL, ip, FALSE);
+											   NULL, ip, FALSE, FALSE);
 						if (cfg->verbose_level > 2)
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
 					} else {
@@ -8352,10 +8371,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
-
-	/* fixme: we cant handle vararg methods this way, because the signature is not constant */
-	//mono_register_jit_icall (ves_array_element_address, "ves_array_element_address", NULL);
-	//mono_register_jit_icall (mono_array_new_va, "mono_array_new_va", NULL);
 
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
