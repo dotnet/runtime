@@ -1055,7 +1055,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	info->utype = mono_type_get_object (domain, enumc->enum_basetype);
 	nvalues = enumc->field.count - 1;
 	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
-	info->values = mono_array_new (domain, mono_class_from_mono_type (enumc->enum_basetype), nvalues);
+	info->values = mono_array_new (domain, enumc, nvalues);
 	
 	for (i = 0, j = 0; i < enumc->field.count; ++i) {
 		field = &enumc->fields [i];
@@ -1560,50 +1560,15 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 }
 
 static MonoString *
-ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
+ves_icall_System_MonoType_getFullName (MonoReflectionType *object)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	/* FIXME : real rules are more complicated (internal classes,
-	  reference types, array types, etc. */
 	MonoString *res;
-	gchar *fullname;
-	MonoClass *klass;
-	char *append = NULL;
+	gchar *name;
 
-	switch (object->type->type) {
-	case MONO_TYPE_ARRAY: {
-		int i, rank = object->type->data.array->rank;
-		char *tmp, *str = g_strdup ("[");
-		klass = mono_class_from_mono_type (object->type->data.array->type);
-		for (i = 1; i < rank; i++) {
-			tmp = g_strconcat (str, ",", NULL);
-			g_free (str);
-			str = tmp;
-		}
-		tmp = g_strconcat (str, "]", NULL);
-		g_free (str);
-		append = tmp;
-		break;
-	}
-	case MONO_TYPE_SZARRAY:
-		klass = mono_class_from_mono_type (object->type->data.type);
-		append = g_strdup ("[]");
-		break;
-	case MONO_TYPE_PTR:
-		klass = mono_class_from_mono_type (object->type->data.type);
-		append = g_strdup ("*");
-		break;
-	default:
-		klass = object->type->data.klass;
-		break;
-	}
-
-	fullname = g_strconcat (klass->name_space, ".",
-	                           klass->name, append, ",",
-	                           klass->image->assembly_name, NULL);
-	res = mono_string_new (domain, fullname);
-	g_free (fullname);
-	g_free (append);
+	name = mono_type_get_name (object->type);
+	res = mono_string_new (domain, name);
+	g_free (name);
 
 	return res;
 }
@@ -2223,7 +2188,7 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.MonoType.
 	 */
-	"System.MonoType::assQualifiedName", ves_icall_System_MonoType_assQualifiedName,
+	"System.MonoType::getFullName", ves_icall_System_MonoType_getFullName,
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
 	"System.MonoType::get_type_info", ves_icall_get_type_info,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,

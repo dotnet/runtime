@@ -2147,6 +2147,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
  * the name param will be mangled, so, make a copy before passing it to this function.
  * The fields in info will be valid until the memory pointed to by name is valid.
  * Returns 0 on parse error.
+ * See also mono_type_get_name () below.
  */
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
@@ -2260,6 +2261,60 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		return 0;
 	/* add other consistency checks */
 	return 1;
+}
+
+static void
+mono_type_get_name_recurse (MonoType *type, GString *str)
+{
+	MonoClass *klass;
+	
+	switch (type->type) {
+	case MONO_TYPE_ARRAY: {
+		int i, rank = type->data.array->rank;
+
+		mono_type_get_name_recurse (type->data.array->type, str);
+		g_string_append_c (str, '[');
+		for (i = 1; i < rank; i++)
+			g_string_append_c (str, ',');
+		g_string_append_c (str, ']');
+		break;
+	}
+	case MONO_TYPE_SZARRAY:
+		mono_type_get_name_recurse (type->data.type, str);
+		g_string_append (str, "[]");
+		break;
+	case MONO_TYPE_PTR:
+		mono_type_get_name_recurse (type->data.type, str);
+		g_string_append_c (str, '*');
+		break;
+	default:
+		klass = mono_class_from_mono_type (type);
+		if (klass->nested_in) {
+			mono_type_get_name_recurse (&klass->nested_in->byval_arg, str);
+			g_string_append_c (str, '+');
+		}
+		if (*klass->name_space) {
+			g_string_append (str, klass->name_space);
+			g_string_append_c (str, '.');
+		}
+		g_string_append (str, klass->name);
+		break;
+	}
+}
+
+/*
+ * The inverse of mono_reflection_parse_type ().
+ */
+char*
+mono_type_get_name (MonoType *type)
+{
+	GString* result = g_string_new ("");
+	mono_type_get_name_recurse (type, result);
+
+	if (type->byref)
+		g_string_append_c (result, '&');
+
+	return g_string_free (result, FALSE);
 }
 
 MonoType*
