@@ -645,8 +645,6 @@ tree_allocate_regs (MonoFlowGraph *cfg, MBTree *tree, int goal, MonoRegSet *rs,
 	if (nts [0]) {
 		if (nts [1]) { /* two kids */
 			MonoRegSet saved_rs;
-			if (nts [2]) /* we cant handle three kids */
-				g_assert_not_reached ();
 
 			if (!tree_allocate_regs (cfg, kids [0], nts [0], rs, left_exclude_mask, spillcount))
 				return FALSE;
@@ -690,6 +688,15 @@ tree_allocate_regs (MonoFlowGraph *cfg, MBTree *tree, int goal, MonoRegSet *rs,
 #ifdef DEBUG_REGALLOC
 				printf ("tree_allocate_regs try 2 succesfull\n");
 #endif
+			}
+
+			if (nts [2]) {
+				if (nts [3]) /* we cant handle four kids */
+					g_assert_not_reached ();
+
+				if (!tree_allocate_regs (cfg, kids [2], nts [2], rs, right_exclude_mask, spillcount))
+					return FALSE;
+				
 			}
 
 		} else { /* one kid */
@@ -863,9 +870,6 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree, int *spillcount)
 		if (nts [1]) {
 			int spilloffset1, spilloffset2, spilloffset3;
 			
-			if (nts [2])
-				g_assert_not_reached ();
-
 			tree_emit (nts [0], cfg, kids [0], spillcount);
 
 			if (kids [0]->spilled) {
@@ -918,6 +922,11 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree, int *spillcount)
 				if (kids [0]->reg1 != -1) 
 					x86_mov_reg_membase (cfg->code, kids [0]->reg1, X86_EBP, 
 							     spilloffset1, 4);
+			}
+
+			if (nts [2]) {
+				g_assert (!nts [3]);
+				tree_emit (nts [2], cfg, kids [2], spillcount);
 			}
 		} else {
 			tree_emit (nts [0], cfg, kids [0], spillcount);

@@ -138,8 +138,8 @@ arch_get_call_finally (void)
  * stack_trace String. 
  */
 static gboolean
-arch_exc_is_catched (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip, 
-		     gpointer *bp, gpointer obj)
+arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip, 
+		    gpointer *bp, gpointer obj)
 {
 	MonoJitInfo *ji;
 	gpointer *end_of_stack;
@@ -294,7 +294,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 	cleanup = jit_tls->abort_func;
 
-	if (!arch_exc_is_catched (domain, jit_tls, ip, (gpointer *)ctx->SC_EBP, obj)) {
+	if (!arch_exc_is_caught (domain, jit_tls, ip, (gpointer *)ctx->SC_EBP, obj)) {
 		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
 			mono_debug_make_symbols ();
 		}

@@ -285,6 +285,7 @@ map_stind_type (MonoType *type)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
+
 		return MB_TERM_STIND_I1;	
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
@@ -2348,7 +2349,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 			sp -= 2;
 
-			t1 = mono_ctree_new (mp, MB_TERM_CPOBJ, sp [0], sp [1]);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.i = mono_class_value_size (class, NULL);			
+			t1 = mono_ctree_new (mp, MB_TERM_CPSRC, sp [1], t1);
+			t1 = mono_ctree_new (mp, MB_TERM_CPBLK, sp [0], t1);
 			ADD_TREE (t1, cli_addr);
 			
 			break;
@@ -3470,6 +3474,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.i = mono_type_size (type, &align);
 				mono_metadata_free_type (type);
 				PUSH_TREE (t1, VAL_I32);
+				break;
+			}
+			case CEE_CPBLK: {
+				++ip;
+				sp -= 3;
+
+				t1 = mono_ctree_new (mp, MB_TERM_CPSRC, sp [1], sp [2]);
+				t1 = mono_ctree_new (mp, MB_TERM_CPBLK, sp [0], t1);
+				ADD_TREE (t1, cli_addr);
 				break;
 			}
 			case CEE_UNALIGNED_: {

@@ -222,7 +222,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term COMPARE CBRANCH BRTRUE BRFALSE CSET
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U1 CONV_U2 CONV_U4 CONV_U8 CONV_R4 CONV_R8 CONV_R_UN
-%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWARR_SPEC NEWOBJ NEWOBJ_SPEC NEWSTRUCT CPOBJ POP INITOBJ
+%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWARR_SPEC NEWOBJ NEWOBJ_SPEC NEWSTRUCT CPBLK CPSRC POP INITOBJ
 %term ISINST CASTCLASS UNBOX
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
@@ -1964,6 +1964,19 @@ stmt: INITOBJ (reg) {
 		x86_pop_reg (s->code, X86_EDI);
 	
 	x86_pop_reg (s->code, X86_EAX);
+}
+
+stmt: CPBLK (reg, CPSRC (reg, reg)) {
+	int dest_reg = tree->left->reg1;
+	int source_reg = tree->right->left->reg1;
+	int size_reg = tree->right->right->reg1;
+
+	x86_push_reg (s->code, size_reg);
+	x86_push_reg (s->code, source_reg);
+	x86_push_reg (s->code, dest_reg);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memcpy);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 }
 
 stmt: NOP
