@@ -623,7 +623,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_byte (mb, CEE_STIND_I1);
 		break;
 	case MONO_MARSHAL_CONV_ARRAY_BYVALARRAY: {
-		MonoClass *eclass;
+		MonoClass *eclass = NULL;
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
@@ -801,7 +801,7 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALARRAY: {
-		MonoClass *eclass;
+		MonoClass *eclass = NULL;
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
@@ -1989,10 +1989,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
-	MonoClass *klass;
+	MonoClass *klass = NULL;
 	MonoMethod *res;
 	GHashTable *cache;
-	int i, pos, sigsize, *tmp_locals;
+	int i, pos = 0, sigsize, *tmp_locals;
 	static MonoMethodSignature *alloc_sig = NULL;
 	int retobj_var = 0;
 
@@ -2077,6 +2077,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			MonoClass *mklass;
 			MonoMethod *marshal_native_to_managed;
 			MonoMethod *get_instance;
+
+			/* FIXME: Call CleanUpNativeData after the call */
 
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
 			g_assert (mtype != NULL);
@@ -2491,7 +2493,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	MonoClass *klass;
 	static GHashTable *ldfld_hash = NULL; 
 	char *name;
-	int t, pos0, pos1;
+	int t, pos0, pos1 = 0;
 
 	t = type->type;
 
@@ -2956,6 +2958,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			MonoMethod *marshal_managed_to_native;
 			MonoMethod *get_instance;
 
+			/* FIXME: Call CleanUpNativeData after the call */
+
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
 			g_assert (mtype != NULL);
 			mklass = mono_class_from_mono_type (mtype);
@@ -2972,6 +2976,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_VALUETYPE:
 				if (t->byref)
 					break;
 
@@ -2983,12 +2988,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
 				
 				mono_mb_emit_ldarg (mb, argnum);
-				
+
+				if (t->type == MONO_TYPE_VALUETYPE) {
+					mono_mb_emit_byte (mb, CEE_BOX);
+					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (t)));
+				}
+
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
 				
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 				break;
+
 			default:
 				g_warning ("custom marshalling of type %x is currently not supported", t->type);
 				g_assert_not_reached ();
