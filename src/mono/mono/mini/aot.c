@@ -57,18 +57,10 @@
 
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 
-typedef struct MonoAotMethod {
-	MonoJitInfo *info;
-	MonoJumpInfo *patch_info;
-	MonoDomain *domain;
-} MonoAotMethod;
-
 typedef struct MonoAotModule {
 	char *aot_name;
 	/* Optimization flags used to compile the module */
 	guint32 opts;
-	/* Maps MonoMethods to MonoAotMethodInfos */
-	GHashTable *methods;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	guint32 got_size;
@@ -442,7 +434,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	info = g_new0 (MonoAotModule, 1);
 	info->aot_name = aot_name;
-	info->methods = g_hash_table_new (NULL, NULL);
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	info->got = got;
 	info->got_size = *got_size_ptr;
@@ -542,8 +533,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	guint8 *code = NULL;
 	guint8 *info;
 	MonoAotModule *aot_module;
-	MonoAotMethod *minfo;
-	MonoJitInfo *jinfo;
 
 	if (!module)
 		return NULL;
@@ -567,18 +556,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	if ((domain != mono_get_root_domain ()) && (!(aot_module->opts & MONO_OPT_SHARED)))
 		/* Non shared AOT code can't be used in other appdomains */
 		return NULL;
-
-	minfo = g_hash_table_lookup (aot_module->methods, method);
-	/* Can't use code from non-root domains since they can be unloaded */
-	if (minfo && (minfo->domain == mono_get_root_domain ())) {
-		/* This method was already loaded in another appdomain */
-
-		/* Duplicate jinfo */
-		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (minfo->info->num_clauses * sizeof (MonoJitExceptionInfo)));
-		memcpy (jinfo, minfo->info, sizeof (MonoJitInfo) + (minfo->info->num_clauses * sizeof (MonoJitExceptionInfo)));
-
-		return jinfo;
-	}
 
 	if (aot_module->out_of_date)
 		return NULL;
@@ -612,7 +589,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	MonoClass *klass = method->klass;
 	MonoJumpInfo *patch_info = NULL;
 	guint code_len, used_int_regs, used_strings;
-	MonoAotMethod *minfo;
 	MonoJitInfo *jinfo;
 	MonoMemPool *mp;
 	GPtrArray *patches;
@@ -620,10 +596,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	gboolean non_got_patches, keep_patches = TRUE;
 	gboolean has_clauses;
 	char *p;
-
-	minfo = g_new0 (MonoAotMethod, 1);
-
-	minfo->domain = domain;
 
 	p = (char*)info;
 	code_len = decode_value (p, &p);
@@ -950,9 +922,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 #else
 		jinfo->domain_neutral = (aot_module->opts & MONO_OPT_SHARED) != 0;
 #endif
-
-		minfo->info = jinfo;
-		g_hash_table_insert (aot_module->methods, method, minfo);
 
 		return jinfo;
 	}
