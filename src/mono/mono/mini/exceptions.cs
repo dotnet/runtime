@@ -1515,5 +1515,26 @@ class Tests {
 			return 1;
 		return 2;
 	}
+
+	static int test_0_long_add_ovf () {
+		long l;
+		bool failed = true;
+
+		try {
+			l = 999999999999999999;
+			
+			checked {
+				l = l * 10;
+			}
+			
+		} catch (OverflowException) {
+			failed = false;
+		}
+
+		if (failed)
+			return 1;
+
+		return 0;
+	}
 }
 

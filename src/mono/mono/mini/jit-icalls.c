@@ -182,6 +182,9 @@ mono_llmult_ovf (guint32 al, gint32 ah, guint32 bl, gint32 bh)
 
 	res += t1;
 
+	if (res < 0)
+		goto raise_exception;
+
 	if (sign < 0)
 		return -res;
 	else
