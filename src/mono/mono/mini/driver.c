@@ -141,7 +141,7 @@ parse_optimizations (const char* p)
 				if (invert)
 					opt = 0;
 				else
-					opt = ~(MONO_OPT_SHARED | MONO_OPT_PRECOMP | exclude);
+					opt = ~(MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_ABCREM | exclude);
 				p += 3;
 				if (*p == ',')
 					p++;
