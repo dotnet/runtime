@@ -4,23 +4,24 @@ CC=$(CC_FOR_BUILD)
 #noinst_PROGRAMS = sample
 
 #sample_SOURCES = sample.c
+bdir=$(top_builddir)/$(subdir)
 
-parser.c:  monoburg.y
-	bison monoburg.y -o parser.c
+$(bdir)/parser.c:  $(srcdir)/monoburg.y
+	bison $(srcdir)/monoburg.y -o $(bdir)/parser.c
 
-monoburg$(BUILD_EXEEXT): monoburg.c monoburg.h parser.c
-	$(CC_FOR_BUILD) -o $@ monoburg.c parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
+monoburg$(BUILD_EXEEXT): $(srcdir)/monoburg.c $(srcdir)/monoburg.h $(bdir)/parser.c
+	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c $(bdir)/parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
 
-sample.c: monoburg$(BUILD_EXEEXT) sample.brg
-	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg >sample.c
+$(bdir)/sample.c: monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg
+	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg > $(bdir)/sample.c
 
 #sample_LDADD = $(BUILD_GLIB_LIBS)
 
-BUILT_SOURCES = parser.c sample.c
+BUILT_SOURCES = $(bdir)/parser.c $(bdir)/sample.c
 
-CLEANFILES = $(BUILT_SOURCES)
+CLEANFILES = $(BUILT_SOURCES) monoburg$(BUILD_EXEEXT)
 
 man_MANS = monoburg.1
 
-EXTRA_DIST = ChangeLog monoburg.y sample.brg $(man_MANS)
+EXTRA_DIST = ChangeLog monoburg.c monoburg.h monoburg.y sample.brg $(man_MANS)
 
