@@ -58,7 +58,7 @@ case "$host" in
 		;;
 	*-*-*freebsd*|*-*-*openbsd*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS"
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
