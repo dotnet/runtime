@@ -235,7 +235,7 @@ illegal:
 initblk:
 initobj:
 isinst:
-jmp:
+jmp: len:40
 label:
 lcall: dest:l len:8 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c

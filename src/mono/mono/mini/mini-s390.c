@@ -207,8 +207,10 @@ typedef struct {
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-static guint32 *emit_memcpy (guint8 *, int, int, int, int, int);
+static guint32 * emit_memcpy (guint8 *, int, int, int, int, int);
 static void indent (int);
+static guint8 * restoreLMF(MonoCompile *, guint8 *);
+static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
 static void decodeParm (MonoType *, void *, int);
 static void enter_method (MonoMethod *, RegParm *, char *);
 static void leave_method (MonoMethod *, ...);
@@ -382,6 +384,75 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 	arg_info [k].pad = pad;
 
 	return frame_size;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- restoreLMF                                        */
+/*                                                                  */
+/* Function	- Restore the LMF state prior to exiting a method.  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static inline guint8 * 
+restoreLMF(MonoCompile *cfg, guint8 *code)
+{
+	int lmfOffset = 0;
+
+	s390_lr  (code, s390_r13, cfg->frame_reg);
+
+	lmfOffset = cfg->stack_usage -  sizeof(MonoLMF);
+
+	/*-------------------------------------------------*/
+	/* r13 = my lmf					   */
+	/*-------------------------------------------------*/
+	s390_ahi (code, s390_r13, lmfOffset);
+
+	/*-------------------------------------------------*/
+	/* r6 = &jit_tls->lmf				   */
+	/*-------------------------------------------------*/
+	s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+
+	/*-------------------------------------------------*/
+	/* r0 = lmf.previous_lmf			   */
+	/*-------------------------------------------------*/
+	s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+
+	/*-------------------------------------------------*/
+	/* jit_tls->lmf = previous_lmf			   */
+	/*-------------------------------------------------*/
+	s390_l   (code, s390_r13, 0, s390_r6, 0);
+	s390_st  (code, s390_r0, 0, s390_r6, 0);
+	return (code);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- backStackPtr.                                     */
+/*                                                                  */
+/* Function	- Restore Stack Pointer to previous frame.          */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static inline guint8 *
+backUpStackPtr(MonoCompile *cfg, guint8 *code)
+{
+	int stackSize = cfg->stack_usage;
+
+	if (s390_is_imm16 (cfg->stack_usage)) {
+		s390_ahi  (code, STK_BASE, cfg->stack_usage);
+	} else { 
+		while (stackSize > 32767) {
+			s390_ahi  (code, STK_BASE, -32767);
+			stackSize -= 32767;
+		}
+		s390_ahi  (code, STK_BASE, -stackSize);
+	}
+	return (code);
 }
 
 /*========================= End of Function ========================*/
@@ -3820,8 +3891,17 @@ guint8 cond;
 				s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
-		case CEE_JMP:
-			g_assert_not_reached ();
+		case CEE_JMP: {
+			if (cfg->method->save_lmf)
+				code = restoreLMF(cfg, code);
+
+			code = backUpStackPtr(cfg, code);
+			s390_l   (code, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
+			mono_add_patch_info (cfg, code - cfg->native_code,
+					     MONO_PATCH_INFO_METHOD_JUMP,
+					     ins->inst_p0);
+			s390_jcl (code, S390_CC_UN, 0);
+		}
 			break;
 		case OP_CHECK_THIS: {
 			/* ensure ins->sreg1 is not NULL */
@@ -4481,9 +4561,26 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			ip    += 2;	/* Skip over op-code */
 			break;
 		}
-		case MONO_PATCH_INFO_METHOD_JUMP:
-			g_assert_not_reached ();
+		case MONO_PATCH_INFO_METHOD_JUMP: {
+			GSList *list;
+
+			/*------------------------------------------------------*/
+			/* get the trampoline to the method from the domain 	*/
+			/*------------------------------------------------------*/
+			target = mono_create_jump_trampoline (domain, 
+						      patch_info->data.method, 
+						      TRUE);
+			target = S390_RELATIVE(target, ip);
+			if (!domain->jump_target_hash)
+				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain->jump_target_hash, 
+						    patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain->jump_target_hash, 
+					     patch_info->data.method, list);
+			ip  +=2;
 			break;
+		}
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = S390_RELATIVE(code, ip);
@@ -4935,7 +5032,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig = method->signature;
 	MonoInst *inst;
-	int i, lmfOffset, tracing = 0;
+	int i, tracing = 0;
 	guint8 *code;
 
 	code = cfg->native_code + cfg->code_len;
@@ -4945,50 +5042,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		tracing = 1;
 	}
 	
-	if (method->save_lmf) {
-		s390_lr  (code, s390_r13, cfg->frame_reg);
+	if (method->save_lmf) 
+		code = restoreLMF(cfg, code);
 
-		lmfOffset = cfg->stack_usage -  sizeof(MonoLMF);
-
-		/*-------------------------------------------------*/
-		/* r13 = my lmf					   */
-		/*-------------------------------------------------*/
-		s390_ahi (code, s390_r13, lmfOffset);
-
-		/*-------------------------------------------------*/
-		/* r6 = &jit_tls->lmf				   */
-		/*-------------------------------------------------*/
-		s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
-
-		/*-------------------------------------------------*/
-		/* r0 = lmf.previous_lmf			   */
-		/*-------------------------------------------------*/
-		s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-
-		/*-------------------------------------------------*/
-		/* jit_tls->lmf = previous_lmf			   */
-		/*-------------------------------------------------*/
-		s390_l   (code, s390_r13, 0, s390_r6, 0);
-		s390_st  (code, s390_r0, 0, s390_r6, 0);
-	}
-
-//	if (cfg->frame_reg != STK_BASE)
-//		s390_lr  (code, STK_BASE, cfg->frame_reg);
-
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA) 
 		s390_l	 (code, STK_BASE, 0, STK_BASE, 0);
-	} else {
-		if (s390_is_imm16 (cfg->stack_usage)) {
-			s390_ahi  (code, STK_BASE, cfg->stack_usage);
-		} else { 
-			int stackSize = cfg->stack_usage;
-			while (stackSize > 32767) {
-				s390_ahi  (code, STK_BASE, -32767);
-				stackSize -= 32767;
-			}
-			s390_ahi  (code, STK_BASE, -stackSize);
-		}
-	}
+	else
+		code = backUpStackPtr(cfg, code);
+
 	s390_lm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (code, s390_r14);
 
