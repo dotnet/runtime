@@ -168,7 +168,8 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	case MONO_TYPE_U8:
 		SWAP (64);
 		break;
-	}
+	}ma
+		 
 #endif
 }
 
@@ -185,9 +186,47 @@ ves_icall_appdomain_get_cur_domain ()
 	MonoAppDomain *ad;
 	
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = mono_object_new (adclass);
-	mono_runtime_object_init (ad);
-	return ad;
+	ad = (MonoAppDomain *) mono_object_new (adclass);
+	mono_runtime_object_init ((MonoObject *) ad);
+	return (MonoObject *) ad;
+}
+
+typedef struct {
+	MonoArray *res;
+	int idx;
+} add_assembly_helper_t;
+
+static void
+add_assembly (gpointer key, gpointer value, gpointer user_data)
+{
+	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
+
+	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (value));
+}
+
+//
+// This is not correct, because we return all the assemblies loaded, and not
+// those that come from the AppDomain, but its better than nothing.
+//
+static MonoArray *
+ves_icall_appdomain_get_default_assemblies ()
+{
+	static MonoClass *System_Reflection_Assembly;
+	GHashTable *assemblies = mono_get_assemblies ();
+	MonoArray *res;
+	add_assembly_helper_t ah;
+	
+	if (!System_Reflection_Assembly)
+		System_Reflection_Assembly = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "Assembly");
+
+	res = mono_array_new (System_Reflection_Assembly, g_hash_table_size (assemblies));
+
+	ah.res = res;
+	ah.idx = 0;
+	g_hash_table_foreach (assemblies, add_assembly, &ah);
+
+	return res;
 }
 
 static void
@@ -855,6 +894,7 @@ static gpointer icall_map [] = {
 	 * System.AppDomain
 	 */
 	"System.AppDomain::getCurDomain", ves_icall_appdomain_get_cur_domain,
+	"System.AppDomain::getDefaultAssemblies", ves_icall_appdomain_get_default_assemblies,
 	"System.AppDomain::LoadFrom", ves_icall_System_AppDomain_LoadFrom,
 
 	/*
