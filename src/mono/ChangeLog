@@ -1,3 +1,8 @@
+2003-09-03  Zoltan Varga  <vargaz@freemail.hu>
+
+	* Makefile.am: Use $(MAKE) in even more places. Patch by Bernie Solomon
+	(bernard@ugsolutions.com).
+	
 2003-08-27  Zoltan Varga  <vargaz@freemail.hu>
 
 	* Makefile.am: Use $(MAKE) instead of make. Patch by Bernie Solomon
