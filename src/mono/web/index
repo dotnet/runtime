@@ -155,6 +155,16 @@
 <br>
 <br>
 
+@item Mar 18th, 2004: Mono 0.31 has been released
+
+	We have released version 0.31 of Mono.  All the new features
+	and improvements are described in our <a
+	href="archive/mono-0.31.html">Mono 0.31 Release Notes</a>. 
+
+	You can download Mono 0.31 packages using Red Carpet, or pick
+	the individual packages from our <a
+	href="download.html">download</a> page.
+
 @item Mar 15th, 2004: Async IO lands on Mono.
 
 	Gonzalo has completed the implementation of Async I/O for Mono
