@@ -125,7 +125,7 @@ load_section_tables (MonoAssembly *assembly, cli_image_info_t *iinfo)
 	int i;
 
 	iinfo->cli_section_count = top;
-	iinfo->cli_section_tables = g_new (section_table_t, top);
+	iinfo->cli_section_tables = g_new0 (section_table_t, top);
 	iinfo->cli_sections = g_new0 (void *, top);
 	
 	for (i = 0; i < top; i++){
@@ -275,6 +275,9 @@ load_tables (MonoAssembly *assembly, metadata_t *meta)
 			meta->tables [table].rows = 0;
 			continue;
 		}
+		if (table > 0x2b) {
+			g_warning("bits in valid must be zero above 0x2b (II - 23.1.6)");
+		}
 		meta->tables [table].rows = read32 (rows);
 		rows++;
 		valid++;
@@ -315,9 +318,9 @@ mono_assembly_open (const char *fname, enum MonoAssemblyOpenStatus *status)
 	MonoAssembly *assembly;
 	int n;
 
-	assembly = g_new (MonoAssembly, 1);
+	assembly = g_new0 (MonoAssembly, 1);
 	assembly->f = fopen (fname, "r");
-	iinfo = g_new (cli_image_info_t, 1);
+	iinfo = g_new0 (cli_image_info_t, 1);
 	assembly->image_info = iinfo;
 
 	header = &iinfo->cli_header;

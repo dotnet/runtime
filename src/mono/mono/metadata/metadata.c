@@ -345,7 +345,17 @@ mono_meta_table_name (int table)
 	return tables [table].name;
 }
 
-#define rtsize(s,b) (((s) > (1 << (b)) ? 4 : 2))
+/* The guy who wrote the spec for this should not be allowed near a
+ * computer again.
+ 
+If  e is a coded token(see clause 23.1.7) that points into table ti out of n possible tables t0, .. tn-1, 
+then it is stored as e << (log n) & tag{ t0, .. tn-1}[ ti] using 2 bytes if the maximum number of 
+rows of tables t0, ..tn-1, is less than 2^16 - (log n), and using 4 bytes otherwise. The family of 
+finite maps tag{ t0, ..tn-1} is defined below. Note that to decode a physical row, you need the 
+inverse of this mapping.
+
+ */
+#define rtsize(s,b) (((s) < (1 << (b)) ? 2 : 4))
 #define idx_size(tableidx) (meta->tables [(tableidx)].rows < 65536 ? 2 : 4)
 
 /* Reference: Partition II - 23.2.6 */
@@ -469,10 +479,11 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 * permission are indexing the Blob heap,
 			 * we should consider the blob size first
 			 */
+			/* I'm not a believer - lupus
 			if (meta->idx_blob_wide){
 				field_size = 4;
 				break;
-			}
+			}*/
 			
 			n = MAX (meta->tables [META_TABLE_METHOD].rows,
 				 meta->tables [META_TABLE_FIELD].rows);
@@ -504,10 +515,11 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *r
 			 */
 		case MONO_MT_CAT_IDX:
 			/* String is a heap, if it is wide, we know the size */
+			/* See above, nope.
 			if (meta->idx_string_wide){
 				field_size = 4;
 				break;
-			}
+			}*/
 			
 			n = MAX (meta->tables [META_TABLE_TYPEREF].rows,
 				 meta->tables [META_TABLE_TYPEDEF].rows);
@@ -716,6 +728,7 @@ mono_metadata_string_heap (metadata_t *meta, guint32 index)
 const char *
 mono_metadata_user_string (metadata_t *meta, guint32 index)
 {
+	g_return_val_if_fail (index < meta->heap_us.sh_size, "");
 	return meta->raw_metadata + meta->heap_us.sh_offset + index;
 }
 
@@ -729,6 +742,7 @@ mono_metadata_user_string (metadata_t *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (metadata_t *meta, guint32 index)
 {
+	g_return_val_if_fail (index < meta->heap_blob.sh_size, "");
 	return meta->raw_metadata + meta->heap_blob.sh_offset + index;
 }
 
