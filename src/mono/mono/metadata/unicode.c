@@ -94,7 +94,7 @@ ves_icall_System_Char_IsUpper (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsNumber (gunichar2 c)
 {
-	return g_unichar_isdigit (c);
+	return g_unichar_isxdigit (c);
 }
 
 gboolean 
