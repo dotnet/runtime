@@ -21,6 +21,8 @@
 #endif
 #endif
 
+#define DEBUG(x)
+
 /* gpointer
 fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
 {
@@ -226,7 +228,7 @@ enum_retvalue:
 		 }
 	}
 	/* align stack size to 16 */
-	printf ("      stack size: %d (%d)\n       code size: %d\n", (*stack_size + 15) & ~15, *stack_size, *code_size);
+	DEBUG (printf ("      stack size: %d (%d)\n       code size: %d\n", (*stack_size + 15) & ~15, *stack_size, *code_size));
 	*stack_size = (*stack_size + 15) & ~15;
 
 }
@@ -408,7 +410,7 @@ alloc_code_memory (guint code_size)
 #else
 	p = g_malloc (code_size);
 #endif
-	printf ("           align: %p (%d)\n", p, (guint)p % 4);
+	DEBUG (printf ("           align: %p (%d)\n", p, (guint)p % 4));
 
 	return p;
 }
@@ -551,7 +553,7 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	guint8 *p, *code_buffer;
 	guint stack_size, code_size, strings;
 
-	printf ("\nPInvoke [start emiting] %s\n", method->name);
+	DEBUG (printf ("\nPInvoke [start emiting] %s\n", method->name));
 	calculate_sizes (method, &stack_size, &code_size, &strings, runtime);
 
 	p = code_buffer = alloc_code_memory (code_size);
@@ -574,10 +576,10 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	}
 #endif
 
-	printf ("emited code size: %d\n", p - code_buffer);
+	DEBUG (printf ("emited code size: %d\n", p - code_buffer));
 	flush_icache (code_buffer, p - code_buffer);
 
-	printf ("PInvoke [end emiting]\n");
+	DEBUG (printf ("PInvoke [end emiting]\n"));
 
 	return (MonoPIFunc) code_buffer;
 	/* return fake_func; */
@@ -615,7 +617,7 @@ mono_create_method_pointer (MonoMethod *method)
 
 	p = code_buffer = g_malloc (code_size);
 
-	printf ("\nDelegate [start emiting] %s\n", method->name);
+	DEBUG (printf ("\nDelegate [start emiting] %s\n", method->name));
 
 	/* jump after header which consist of "Mono" + method ptr */
 	ppc_b (p, 3);
@@ -788,10 +790,10 @@ mono_create_method_pointer (MonoMethod *method)
 	ppc_mr   (p, ppc_r1, ppc_r11);            /* sp      <--- r11     restore stack */
 	ppc_blr  (p);                             /* return */
 
-	printf ("emited code size: %d\n", p - code_buffer);
+	DEBUG (printf ("emited code size: %d\n", p - code_buffer));
 	flush_icache (code_buffer, p - code_buffer);
 
-	printf ("Delegate [end emiting]\n");
+	DEBUG (printf ("Delegate [end emiting]\n"));
 
 	return (MonoPIFunc) code_buffer;
 }
