@@ -989,10 +989,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
 		ic = method->klass;
 
-	if (constrained_class->generic_class) {
+	if (constrained_class->generic_class)
 		gclass = constrained_class->generic_class;
-		constrained_class = gclass->container_class;
-	}
 
 	result = find_method (constrained_class, ic, method->name, method->signature);
 	if (!result)
