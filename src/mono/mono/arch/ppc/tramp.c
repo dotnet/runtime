@@ -58,6 +58,46 @@ flush_icache (guint8 *code, guint size)
 	asm ("isync");
 }
 
+static void
+disassemble (guint8 *code, int size)
+{
+	int i;
+	FILE *ofd;
+	const char *tmp = getenv("TMP");
+	char *as_file;
+	char *o_file;
+	char *cmd;
+
+	if (tmp == NULL)
+		tmp = "/tmp";
+	as_file = g_strdup_printf ("%s/test.s", tmp);    
+
+	if (!(ofd = fopen (as_file, "w")))
+		g_assert_not_reached ();
+
+	fprintf (ofd, "tmp:\n");
+
+	for (i = 0; i < size; ++i) 
+		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
+
+	fclose (ofd);
+#ifdef __APPLE__
+#define DIS_CMD "otool -V -v -t"
+#else
+#define DIS_CMD "objdump -d"
+#endif
+	o_file = g_strdup_printf ("%s/test.o", tmp);    
+	cmd = g_strdup_printf ("as %s -o %s", as_file, o_file);
+	system (cmd); 
+	g_free (cmd);
+	cmd = g_strdup_printf (DIS_CMD " %s", o_file);
+	system (cmd);
+	g_free (cmd);
+	g_free (o_file);
+	g_free (as_file);
+}
+
+
 #define NOT_IMPLEMENTED(x) \
                 g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
 
@@ -279,27 +319,29 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, guint stack_size)
 }
 
 #define ARG_BASE ppc_r12
+#define ARG_SIZE sizeof (stackval)
 #define SAVE_4_IN_GENERIC_REGISTER \
-			if (gr < GENERAL_REGS) { \
-				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
-				gr ++; \
-			} else { \
-				ppc_lwz  (p, ppc_r11, i*16, ARG_BASE); \
-				ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
-                                stack_par_pos += 4; \
-			}
+	if (gr < GENERAL_REGS) { \
+		ppc_lwz  (p, ppc_r3 + gr, i*ARG_SIZE, ARG_BASE); \
+		gr ++; \
+		ALWAYS_ON_STACK (stack_par_pos += 4); \
+	} else { \
+		ppc_lwz  (p, ppc_r11, i*ARG_SIZE, ARG_BASE); \
+		ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
+		stack_par_pos += 4; \
+	}
 #define SAVE_4_VAL_IN_GENERIC_REGISTER \
-			if (gr < GENERAL_REGS) { \
-				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
-				ppc_lwz  (p, ppc_r3 + gr, 0, ppc_r3 + gr); \
-				gr ++; \
-                                ALWAYS_ON_STACK (stack_par_pos += 4); \
-			} else { \
-				ppc_lwz  (p, ppc_r11, i*16, ARG_BASE); \
-				ppc_lwz  (p, ppc_r11, 0, ppc_r11); \
-				ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
-                                stack_par_pos += 4; \
-			}
+	if (gr < GENERAL_REGS) { \
+		ppc_lwz  (p, ppc_r3 + gr, i*ARG_SIZE, ARG_BASE); \
+		ppc_lwz  (p, ppc_r3 + gr, 0, ppc_r3 + gr); \
+		gr ++; \
+		ALWAYS_ON_STACK (stack_par_pos += 4); \
+	} else { \
+		ppc_lwz  (p, ppc_r11, i*ARG_SIZE, ARG_BASE); \
+		ppc_lwz  (p, ppc_r11, 0, ppc_r11); \
+		ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1); \
+		stack_par_pos += 4; \
+	}
 
 inline static guint8*
 emit_save_parameters (guint8 *p, MonoMethodSignature *sig, guint stack_size, gboolean use_memcpy)
@@ -437,18 +479,18 @@ DEBUG(printf("Mono_Type_i8. gr = %d, arg_base = %d\n", gr, ARG_BASE));
 				gr++;
 #endif
 			if (gr < 7) {
-				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
-				ppc_lwz  (p, ppc_r3 + gr + 1, i*16 + 4, ARG_BASE);
+				ppc_lwz  (p, ppc_r3 + gr, i*ARG_SIZE, ARG_BASE);
+				ppc_lwz  (p, ppc_r3 + gr + 1, i*ARG_SIZE + 4, ARG_BASE);
                         	ALWAYS_ON_STACK (stack_par_pos += 8);
 			} else if (gr == 7) {
-                                ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
-				ppc_lwz  (p, ppc_r11, i*16 + 4,  ARG_BASE);
+                                ppc_lwz  (p, ppc_r3 + gr, i*ARG_SIZE, ARG_BASE);
+				ppc_lwz  (p, ppc_r11, i*ARG_SIZE + 4,  ARG_BASE);
                                 ppc_stw  (p, ppc_r11, stack_par_pos + 4, ppc_r1);
                         	stack_par_pos += 8;
                         } else {
-                                ppc_lwz  (p, ppc_r11, i*16, ARG_BASE);
+                                ppc_lwz  (p, ppc_r11, i*ARG_SIZE, ARG_BASE);
                                 ppc_stw  (p, ppc_r11, stack_par_pos, ppc_r1);
-				ppc_lwz  (p, ppc_r11, i*16 + 4,  ARG_BASE);
+				ppc_lwz  (p, ppc_r11, i*ARG_SIZE + 4,  ARG_BASE);
                                 ppc_stw  (p, ppc_r11, stack_par_pos + 4, ppc_r1);
                         	stack_par_pos += 8;
 			}
@@ -456,7 +498,7 @@ DEBUG(printf("Mono_Type_i8. gr = %d, arg_base = %d\n", gr, ARG_BASE));
 			break;
 		case MONO_TYPE_R4:
 			if (fr < 7) {
-				ppc_lfs  (p, ppc_f1 + fr, i*16, ARG_BASE);
+				ppc_lfs  (p, ppc_f1 + fr, i*ARG_SIZE, ARG_BASE);
 				fr ++;
                                 FP_ALSO_IN_REG (gr ++);
                                 ALWAYS_ON_STACK (stack_par_pos += 4);
@@ -466,7 +508,7 @@ DEBUG(printf("Mono_Type_i8. gr = %d, arg_base = %d\n", gr, ARG_BASE));
 			break;
 		case MONO_TYPE_R8:
 			if (fr < 7) {
-				ppc_lfd  (p, ppc_f1 + fr, i*16, ARG_BASE);
+				ppc_lfd  (p, ppc_f1 + fr, i*ARG_SIZE, ARG_BASE);
 				fr ++;
                                 FP_ALSO_IN_REG (gr += 2);
                                 ALWAYS_ON_STACK (stack_par_pos += 8);
@@ -631,7 +673,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 
 
 #ifdef __APPLE__
-#define MINV_POS  24   /* MonoInvocation structure offset on stack */
+#define MINV_POS  40  /* MonoInvocation structure offset on stack - STACK_PARAM_OFFSET + 4 pointer args for stackval_from_data */
 #else
 #define MINV_POS  8   /* MonoInvocation structure offset on stack */
 #endif
@@ -655,8 +697,8 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
 	guint8 *p, *code_buffer;
-	guint i, align = 0, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param,
-		this_flag, cpos, vt_cur;
+	guint i, align = 0, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param = 0, stack_param,
+		cpos, vt_cur;
 	gint *vtbuf;
 	guint32 simpletype;
 
@@ -694,18 +736,12 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	if (sig->hasthis) {
 		ppc_stw  (p, ppc_r3, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), ppc_r31);
 		reg_param = 1;
-	} else if (sig->param_count) {
-		DEBUG (printf ("save r%d\n", 3));
-		ppc_stw  (p, ppc_r3, local_pos, ppc_r31);
-		local_pos += 4;
-		reg_param = 0;
-	}
+	} 
 
-	this_flag = (sig->hasthis ? 1 : 0);
 	if (sig->param_count) {
-		gint save_count = MIN (8, sig->param_count - 1);
+		gint save_count = MIN (8, sig->param_count + sig->hasthis);
 		for (i = reg_param; i < save_count; i ++) {
-			ppc_stw (p, ppc_r4 + i, local_pos, ppc_r31);
+			ppc_stw (p, ppc_r3 + i, local_pos, ppc_r31);
 			local_pos += 4;
 			DEBUG (printf ("save r%d\n", 4 + i));
 		}
@@ -744,7 +780,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* add stackval arguments */
 	for (i = 0; i < sig->param_count; ++i) {
 		if (reg_param < 8) {
-			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - this_flag)*4);
+			ppc_addi (p, ppc_r5, ppc_r31, local_start + i*4);
 			reg_param ++;
 		} else {
 			ppc_addi (p, ppc_r5, stack_size + 8 + stack_param, ppc_r31);
@@ -768,13 +804,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 		ppc_mtlr (p, ppc_r0);
 		ppc_blrl (p);
 
-		/* fixme: alignment */
-		DEBUG (printf ("arg_pos %d --> ", stackval_arg_pos));
-		if (sig->pinvoke)
-			stackval_arg_pos += 4*mono_type_native_stack_size (sig->params [i], &align);
-		else
-			stackval_arg_pos += 4*mono_type_stack_size (sig->params [i], &align);
-		DEBUG (printf ("%d\n", stackval_arg_pos));
+		stackval_arg_pos += sizeof (stackval);
 	}
 
 	/* return value storage */
@@ -849,6 +879,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	ppc_blr  (p);                             /* return */
 
 	DEBUG (printf ("emited code size: %d\n", p - code_buffer));
+	DEBUG (disassemble (code_buffer, p - code_buffer));
 	flush_icache (code_buffer, p - code_buffer);
 
 	DEBUG (printf ("Delegate [end emiting]\n"));
