@@ -528,6 +528,26 @@ ves_icall_System_IO_MonoIO_get_ConsoleError ()
 	return GetStdHandle (STD_ERROR_HANDLE);
 }
 
+MonoBoolean
+ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
+				       HANDLE *write_handle)
+{
+	SECURITY_ATTRIBUTES attr;
+	gboolean ret;
+	
+	attr.nLength=sizeof(SECURITY_ATTRIBUTES);
+	attr.bInheritHandle=TRUE;
+	attr.lpSecurityDescriptor=NULL;
+	
+	ret=CreatePipe (read_handle, write_handle, &attr, 0);
+	if(ret==FALSE) {
+		/* FIXME: throw an exception? */
+		return(FALSE);
+	}
+	
+	return(TRUE);
+}
+
 gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 {

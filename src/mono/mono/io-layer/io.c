@@ -84,8 +84,27 @@ struct _WapiHandleOps _wapi_console_ops = {
 /* Find handle has no ops.
  */
 struct _WapiHandleOps _wapi_find_ops = {
-	NULL,			/* close */
-	NULL,			/* getfiletype */
+	NULL,			/* close_shared */
+	NULL,			/* close_private */
+	NULL,			/* signal */
+	NULL,			/* own */
+	NULL,			/* is_owned */
+};
+
+static void pipe_close_shared (gpointer handle);
+static void pipe_close_private (gpointer handle);
+static WapiFileType pipe_getfiletype (void);
+static gboolean pipe_read (gpointer handle, gpointer buffer, guint32 numbytes,
+			   guint32 *bytesread, WapiOverlapped *overlapped);
+static gboolean pipe_write (gpointer handle, gconstpointer buffer,
+			    guint32 numbytes, guint32 *byteswritten,
+			    WapiOverlapped *overlapped);
+
+/* Pipe handles
+ */
+struct _WapiHandleOps _wapi_pipe_ops = {
+	pipe_close_shared,	/* close_shared */
+	pipe_close_private,	/* close_private */
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
@@ -95,7 +114,7 @@ static struct {
 	/* File, console and pipe handles */
 	WapiFileType (*getfiletype)(void);
 	
-	/* File and console handles */
+	/* File, console and pipe handles */
 	gboolean (*readfile)(gpointer handle, gpointer buffer,
 			     guint32 numbytes, guint32 *bytesread,
 			     WapiOverlapped *overlapped);
@@ -145,6 +164,11 @@ static struct {
 	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
 	/* process */
 	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+	/* pipe */
+	{pipe_getfiletype,
+	 pipe_read,
+	 pipe_write,
+	 NULL, NULL, NULL, NULL, NULL, NULL},
 };
 
 
@@ -272,7 +296,7 @@ static void file_close_private (gpointer handle)
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE, NULL,
 				(gpointer *)&file_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
@@ -915,7 +939,7 @@ static void console_close_private (gpointer handle)
 	struct _WapiHandlePrivate_file *console_private_handle;
 	gboolean ok;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE, NULL,
 				(gpointer *)&console_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
@@ -1023,6 +1047,167 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
 			  console_private_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+	if(byteswritten!=NULL) {
+		*byteswritten=ret;
+	}
+	
+	return(TRUE);
+}
+
+static void pipe_close_shared (gpointer handle)
+{
+	struct _WapiHandle_file *pipe_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+				(gpointer *)&pipe_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up pipe handle %p", handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing pipe handle %p", handle);
+#endif
+	
+	if(pipe_handle->filename!=0) {
+		_wapi_handle_scratch_delete (pipe_handle->filename);
+		pipe_handle->filename=0;
+	}
+	if(pipe_handle->security_attributes!=0) {
+		_wapi_handle_scratch_delete (pipe_handle->security_attributes);
+		pipe_handle->security_attributes=0;
+	}
+}
+
+static void pipe_close_private (gpointer handle)
+{
+	struct _WapiHandlePrivate_file *pipe_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE, NULL,
+				(gpointer *)&pipe_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up pipe handle %p", handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": closing pipe handle %p with fd %d", handle,
+		  pipe_private_handle->fd);
+#endif
+	
+	close(pipe_private_handle->fd);
+}
+
+static WapiFileType pipe_getfiletype(void)
+{
+	return(FILE_TYPE_PIPE);
+}
+
+static gboolean pipe_read (gpointer handle, gpointer buffer,
+			   guint32 numbytes, guint32 *bytesread,
+			   WapiOverlapped *overlapped G_GNUC_UNUSED)
+{
+	struct _WapiHandle_file *pipe_handle;
+	struct _WapiHandlePrivate_file *pipe_private_handle;
+	gboolean ok;
+	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+				(gpointer *)&pipe_handle,
+				(gpointer *)&pipe_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up pipe handle %p", handle);
+		return(FALSE);
+	}
+	
+	if(bytesread!=NULL) {
+		*bytesread=0;
+	}
+	
+	if(!(pipe_handle->fileaccess&GENERIC_READ) &&
+	   !(pipe_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": reading up to %d bytes from pipe %p (fd %d)", numbytes,
+		   handle, pipe_private_handle->fd);
+#endif
+
+	ret=read(pipe_private_handle->fd, buffer, numbytes);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": read of handle %p fd %d error: %s", handle,
+			  pipe_private_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": read %d bytes from pipe", ret);
+#endif
+
+	if(bytesread!=NULL) {
+		*bytesread=ret;
+	}
+	
+	return(TRUE);
+}
+
+static gboolean pipe_write(gpointer handle, gconstpointer buffer,
+			   guint32 numbytes, guint32 *byteswritten,
+			   WapiOverlapped *overlapped G_GNUC_UNUSED)
+{
+	struct _WapiHandle_file *pipe_handle;
+	struct _WapiHandlePrivate_file *pipe_private_handle;
+	gboolean ok;
+	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+				(gpointer *)&pipe_handle,
+				(gpointer *)&pipe_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up pipe handle %p", handle);
+		return(FALSE);
+	}
+	
+	if(byteswritten!=NULL) {
+		*byteswritten=0;
+	}
+	
+	if(!(pipe_handle->fileaccess&GENERIC_WRITE) &&
+	   !(pipe_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+	
+	ret=write(pipe_private_handle->fd, buffer, numbytes);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": write of handle %p fd %d error: %s", handle,
+			  pipe_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -1737,7 +1922,7 @@ WapiFileType GetFileType(gpointer handle)
 	WapiHandleType type=_wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletype==NULL) {
-		return(FALSE);
+		return(FILE_TYPE_UNKNOWN);
 	}
 	
 	return(io_ops[type].getfiletype ());
@@ -2479,10 +2664,15 @@ int _wapi_file_handle_to_fd (gpointer handle)
 		ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE, NULL,
 					(gpointer *)&file_private_handle);
 		if(ok==FALSE) {
+			ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE, NULL,
+						(gpointer *)&file_private_handle);
+			if(ok==FALSE) {
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": returning -1");
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": returning -1");
 #endif
-			return(-1);
+				return(-1);
+			}
 		}
 	}
 	
@@ -2492,4 +2682,107 @@ int _wapi_file_handle_to_fd (gpointer handle)
 #endif
 	
 	return(file_private_handle->fd);
+}
+
+gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
+		     WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 size)
+{
+	struct _WapiHandle_file *pipe_read_handle;
+	struct _WapiHandle_file *pipe_write_handle;
+	struct _WapiHandlePrivate_file *pipe_read_private_handle;
+	struct _WapiHandlePrivate_file *pipe_write_private_handle;
+	gpointer read_handle;
+	gpointer write_handle;
+	gboolean ok;
+	int filedes[2];
+	int ret;
+	
+	mono_once (&io_ops_once, io_ops_init);
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Creating pipe");
+#endif
+
+	ret=pipe (filedes);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Error creating pipe: %s",
+			   strerror (errno));
+#endif
+		
+		_wapi_set_last_error_from_errno ();
+		return(FALSE);
+	}
+	
+	/* filedes[0] is open for reading, filedes[1] for writing */
+
+	read_handle=_wapi_handle_new (WAPI_HANDLE_PIPE);
+	if(read_handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating pipe read handle");
+		close (filedes[0]);
+		close (filedes[1]);
+		return(FALSE);
+	}
+	
+	_wapi_handle_lock_handle (read_handle);
+
+	ok=_wapi_lookup_handle (read_handle, WAPI_HANDLE_PIPE,
+				(gpointer *)&pipe_read_handle,
+				(gpointer *)&pipe_read_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": error looking up pipe handle %p", read_handle);
+		_wapi_handle_unlock_handle (read_handle);
+		close (filedes[0]);
+		close (filedes[1]);
+		return(FALSE);
+	}
+	
+	write_handle=_wapi_handle_new (WAPI_HANDLE_PIPE);
+	if(write_handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating pipe write handle");
+		_wapi_handle_unlock_handle (read_handle);
+		_wapi_handle_unref (read_handle);
+		
+		close (filedes[0]);
+		close (filedes[1]);
+		return(FALSE);
+	}
+	
+	_wapi_handle_lock_handle (write_handle);
+
+	ok=_wapi_lookup_handle (write_handle, WAPI_HANDLE_PIPE,
+				(gpointer *)&pipe_write_handle,
+				(gpointer *)&pipe_write_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION ": error looking up pipe handle %p", read_handle);
+		_wapi_handle_unlock_handle (read_handle);
+		_wapi_handle_unref (read_handle);
+		_wapi_handle_unlock_handle (write_handle);
+		close (filedes[0]);
+		close (filedes[1]);
+		return(FALSE);
+	}
+	
+	pipe_read_private_handle->fd=filedes[0];
+	pipe_read_handle->fileaccess=GENERIC_READ;
+	
+	*readpipe=read_handle;
+
+	pipe_write_private_handle->fd=filedes[1];
+	pipe_write_handle->fileaccess=GENERIC_WRITE;
+	
+	*writepipe=write_handle;
+
+	_wapi_handle_unlock_handle (read_handle);
+	_wapi_handle_unlock_handle (write_handle);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Returning pipe: read handle %p, write handle %p",
+		   read_handle, write_handle);
+#endif
+
+	return(TRUE);
 }

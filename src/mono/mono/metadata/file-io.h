@@ -139,6 +139,10 @@ ves_icall_System_IO_MonoIO_get_ConsoleInput (void);
 extern HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleError (void);
 
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
+				       HANDLE *write_handle);
+
 extern gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);
 

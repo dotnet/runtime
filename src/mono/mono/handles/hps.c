@@ -17,6 +17,7 @@ static const guchar *event_details (struct _WapiHandleShared *handle);
 static const guchar *socket_details (struct _WapiHandleShared *handle);
 static const guchar *find_details (struct _WapiHandleShared *handle);
 static const guchar *process_details (struct _WapiHandleShared *handle);
+static const guchar *pipe_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
  * io-layer/wapi-private.h
@@ -32,6 +33,7 @@ static const char *typename[]={
 	"Socket",
 	"Find",
 	"Process",
+	"Pipe",
 	"Error!!"
 };
 
@@ -48,6 +50,7 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 	socket_details,
 	find_details,
 	process_details,
+	pipe_details,
 	unused_details,
 };
 
@@ -193,4 +196,9 @@ static const guchar *process_details (struct _WapiHandleShared *handle)
 		    proc->id);
 	
 	return(buf);
+}
+
+static const guchar *pipe_details (struct _WapiHandleShared *handle)
+{
+	return(file_details (handle));
 }

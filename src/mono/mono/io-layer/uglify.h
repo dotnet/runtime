@@ -37,6 +37,7 @@ typedef gpointer *LPHANDLE;
 typedef guint32 SOCKET;
 typedef gpointer HMODULE;
 
+typedef WapiSecurityAttributes SECURITY_ATTRIBUTES;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;

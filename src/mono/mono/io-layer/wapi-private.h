@@ -22,7 +22,7 @@
  *
  * If this ever reaches 255, we have problems :-(
  */
-#define _WAPI_HANDLE_VERSION 5
+#define _WAPI_HANDLE_VERSION 6
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -35,6 +35,7 @@ typedef enum {
 	WAPI_HANDLE_SOCKET,
 	WAPI_HANDLE_FIND,
 	WAPI_HANDLE_PROCESS,
+	WAPI_HANDLE_PIPE,
 	WAPI_HANDLE_COUNT,
 } WapiHandleType;
 

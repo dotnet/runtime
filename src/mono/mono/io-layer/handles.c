@@ -54,6 +54,7 @@ static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	&_wapi_socket_ops,
 	&_wapi_find_ops,
 	&_wapi_process_ops,
+	&_wapi_pipe_ops,
 };
 
 static int daemon_sock;
@@ -275,10 +276,7 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 
 	shared_handle_data=&_wapi_shared_data->handles[idx];
 
-	/* Allow WAPI_HANDLE_UNUSED to mean "dont care which
-	 * type"
-	 */
-	if(shared_handle_data->type!=type && type != WAPI_HANDLE_UNUSED) {
+	if(shared_handle_data->type!=type) {
 		return(FALSE);
 	}
 
@@ -407,13 +405,15 @@ void _wapi_handle_unref (gpointer handle)
 		
 		if(shared==FALSE) {
 			_wapi_handle_ops_close_shared (handle);
-			_wapi_shared_data->handles[idx].type=WAPI_HANDLE_UNUSED;
+
 			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
 			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
 			memset (&_wapi_shared_data->handles[idx].u, '\0', sizeof(_wapi_shared_data->handles[idx].u));
-		}
 		
+		}
+
 		_wapi_handle_ops_close_private (handle);
+		_wapi_shared_data->handles[idx].type=WAPI_HANDLE_UNUSED;
 	}
 }
 

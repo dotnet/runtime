@@ -655,7 +655,7 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	mono_image_close (image);
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *filename, MonoString *args, MonoProcInfo *process_info)
+MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *filename, MonoString *args, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
 	gunichar2 *utf16_filename;
@@ -665,6 +665,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *fil
 	
 	utf16_filename=mono_string_to_utf16 (filename);
 	utf16_args=mono_string_to_utf16 (args);
+	
+	startinfo.cb=sizeof(STARTUPINFO);
+	startinfo.dwFlags=STARTF_USESTDHANDLES;
+	startinfo.hStdInput=stdin_handle;
+	startinfo.hStdOutput=stdout_handle;
+	startinfo.hStdError=stderr_handle;
 	
 	ret=CreateProcess (utf16_filename, utf16_args, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startinfo, &procinfo);
 

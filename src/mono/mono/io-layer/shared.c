@@ -49,6 +49,7 @@
 #include <sys/shm.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -148,6 +149,8 @@ try_again:
 			_wapi_shm_destroy ();
 			exit (-1);
 		} else if (pid==0) {
+			int i;
+			
 			/* child */
 			setsid ();
 			
@@ -158,6 +161,13 @@ try_again:
 			 * informative
 			 */
 
+			/* Start the daemon with a clean sheet of file
+			 * descriptors
+			 */
+			for(i=3; i<getdtablesize (); i++) {
+				close (i);
+			}
+			
 			/* _wapi_daemon_main() does not return */
 			_wapi_daemon_main ();
 			

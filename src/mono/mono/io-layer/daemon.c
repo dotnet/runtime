@@ -238,7 +238,6 @@ static gboolean unref_handle (guint32 idx, guint32 handle)
 		
 		_wapi_handle_ops_close_shared (GUINT_TO_POINTER (handle));
 		
-		_wapi_shared_data->handles[handle].type=WAPI_HANDLE_UNUSED;
 		mono_mutex_destroy (&_wapi_shared_data->handles[handle].signal_mutex);
 		pthread_cond_destroy (&_wapi_shared_data->handles[handle].signal_cond);
 		memset (&_wapi_shared_data->handles[handle].u, '\0', sizeof(_wapi_shared_data->handles[handle].u));
@@ -717,19 +716,26 @@ static void process_process_fork (guint32 idx,
 			char **argv, *full_args;
 			GError *gerr=NULL;
 			gboolean ret;
-			
+			int i;
+				
 			/* should we detach from the process group? 
 			 * We're already running without a controlling
 			 * tty...
 			 */
-			if(process_fork.inherit!=TRUE) {
-				/* Close all file descriptors */
-			}
 
 			/* Connect stdin, stdout and stderr */
 			dup2 (fds[0], 0);
 			dup2 (fds[1], 1);
 			dup2 (fds[2], 2);
+
+			if(process_fork.inherit!=TRUE) {
+				/* FIXME: do something here */
+			}
+				
+			/* Close all file descriptors */
+			for(i=3; i<getdtablesize (); i++) {
+				close (i);
+			}
 			
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -756,7 +762,7 @@ static void process_process_fork (guint32 idx,
 
 #ifdef DEBUG
 			{
-				int i=0;
+				i=0;
 				while(argv[i]!=NULL) {
 					g_message ("arg %d: [%s]", i, argv[i]);
 					i++;

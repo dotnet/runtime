@@ -227,6 +227,9 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		 * marks into account
 		 */
 
+		/* FIXME: move the contents of args down when token
+		 * has been set (otherwise argv[0] is duplicated)
+		 */
 		/* Assume the opening quote will always be the first
 		 * character
 		 */

@@ -65,7 +65,7 @@ static void thread_close_private (gpointer handle)
 	struct _WapiHandlePrivate_thread *thread_handle;
 	gboolean ok;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_UNUSED, NULL,
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD, NULL,
 				(gpointer *)&thread_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION

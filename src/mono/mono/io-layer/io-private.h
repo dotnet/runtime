@@ -17,8 +17,9 @@
 extern struct _WapiHandleOps _wapi_file_ops;
 extern struct _WapiHandleOps _wapi_console_ops;
 extern struct _WapiHandleOps _wapi_find_ops;
+extern struct _WapiHandleOps _wapi_pipe_ops;
 
-/* Currently used for both FILE and CONSOLE handle types.  This may
+/* Currently used for both FILE, CONSOLE and PIPE handle types.  This may
  * have to change in future.
  */
 struct _WapiHandle_file
