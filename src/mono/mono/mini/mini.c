@@ -5800,28 +5800,40 @@ mono_thread_abort (MonoObject *obj)
 {
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	
-	g_free (jit_tls);
+	/* handle_remove should be eventually called for this thread, too
+	g_free (jit_tls);*/
 
 	ExitThread (-1);
 }
 
 static void
-mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
+setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
+	MonoThread *thread;
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
-	jit_tls->abort_func = mono_thread_abort;
+	jit_tls->abort_func = abort_func;
 	jit_tls->end_of_stack = stack_start;
 
 	lmf = g_new0 (MonoLMF, 1);
 	lmf->ebp = -1;
 
-	jit_tls->lmf = lmf;
+	jit_tls->lmf = jit_tls->first_lmf = lmf;
+
+	thread = mono_thread_current ();
+	if (thread)
+		thread->jit_data = jit_tls;
+}
+
+static void
+mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
+{
+	setup_jit_tls_data (stack_start, mono_thread_abort);
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -5838,20 +5850,19 @@ mono_thread_abort_dummy (MonoObject *obj)
 static void
 mono_thread_attach_cb (guint32 tid, gpointer stack_start)
 {
-	MonoJitTlsData *jit_tls;
-	MonoLMF *lmf;
+	setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
+}
 
-	jit_tls = g_new0 (MonoJitTlsData, 1);
+static void
+mini_thread_cleanup (MonoThread *thread)
+{
+	MonoJitTlsData *jit_tls = thread->jit_data;
 
-	TlsSetValue (mono_jit_tls_id, jit_tls);
-
-	jit_tls->abort_func = mono_thread_abort_dummy;
-	jit_tls->end_of_stack = stack_start;
-
-	lmf = g_new0 (MonoLMF, 1);
-	lmf->ebp = -1;
-
-	jit_tls->lmf = lmf;
+	if (jit_tls) {
+		g_free (jit_tls->first_lmf);
+		g_free (jit_tls);
+		thread->jit_data = NULL;
+	}
 }
 
 void
@@ -7224,6 +7235,7 @@ mini_init (const char *filename)
 	mono_burg_init ();
 
 	mono_runtime_install_handlers ();
+	mono_threads_install_cleanup (mini_thread_cleanup);
 
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (mono_arch_create_jit_trampoline);

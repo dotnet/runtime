@@ -325,6 +325,7 @@ struct MonoMethodVar {
 typedef struct {
 	gpointer          end_of_stack;
 	MonoLMF          *lmf;
+	MonoLMF          *first_lmf;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
 
