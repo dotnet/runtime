@@ -2048,8 +2048,7 @@ ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return FALSE;
 
-	mn = (MonoMethodNormal *) method->method;
-	return mn->header->gen_params != NULL;
+	return method->method->signature->generic_param_count != 0;
 }
 
 static MonoArray*
