@@ -263,50 +263,50 @@ static jobject JNICALL CallObjectMethodA (JNIEnv *env, jobject obj, jmethodID me
 static MonoObject *
 box_Boolean (jboolean val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.boolean_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_boolean_class (), &val);
 }
 
 static MonoObject *
 box_Byte (jbyte val)
 {
 	/* Sbyte ! */
-	return mono_value_box (mono_domain_get (), mono_defaults.sbyte_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_sbyte_class (), &val);
 }
 
 static MonoObject *
 box_Char (jchar val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.char_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_char_class (), &val);
 }
 
 static MonoObject *
 box_Short (jshort val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.int16_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_int16_class (), &val);
 }
 
 static MonoObject *
 box_Int (jint val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.int32_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_int32_class (), &val);
 }
 
 static MonoObject *
 box_Long (jlong val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.int64_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_int64_class (), &val);
 }
 
 static MonoObject *
 box_Float (jfloat val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.single_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_single_class (), &val);
 }
 
 static MonoObject *
 box_Double (jdouble val)
 {
-	return mono_value_box (mono_domain_get (), mono_defaults.double_class, &val);
+	return mono_value_box (mono_domain_get (), mono_get_double_class (), &val);
 }
 
 static int 
@@ -368,7 +368,7 @@ InvokeHelper (JNIEnv *env, jobject object, jmethodID methodID, jvalue* args)
 		}
 	}
 
-	args2 = mono_array_new (mono_domain_get (), mono_defaults.object_class, argc);
+	args2 = mono_array_new (mono_domain_get (), mono_get_object_class (), argc);
 	for (i = 0; i < argc; ++i)
 		mono_array_set (args2, MonoObject*, i, argarray [i]);
 
@@ -734,42 +734,42 @@ static jobjectArray JNICALL NewObjectArray (JNIEnv *env, jsize len, jclass clazz
 
 static jbooleanArray JNICALL NewBooleanArray (JNIEnv *env, jsize len)
 {
-	return (jbooleanArray)new_java_array (env, mono_defaults.boolean_class, len);
+	return (jbooleanArray)new_java_array (env, mono_get_boolean_class (), len);
 }	
 
 static jbyteArray JNICALL NewByteArray (JNIEnv *env, jsize len)
 {
-	return (jbyteArray)new_java_array (env, mono_defaults.sbyte_class, len);
+	return (jbyteArray)new_java_array (env, mono_get_sbyte_class (), len);
 }
 	
 static jcharArray JNICALL NewCharArray (JNIEnv *env, jsize len)
 {
-	return (jcharArray)new_java_array (env, mono_defaults.char_class, len);
+	return (jcharArray)new_java_array (env, mono_get_char_class (), len);
 }
 	
 static jshortArray JNICALL NewShortArray (JNIEnv *env, jsize len)
 {
-	return (jshortArray)new_java_array (env, mono_defaults.int16_class, len);
+	return (jshortArray)new_java_array (env, mono_get_int16_class (), len);
 }	
 
 static jintArray JNICALL NewIntArray (JNIEnv *env, jsize len)
 {
-	return (jintArray)new_java_array (env, mono_defaults.int32_class, len);
+	return (jintArray)new_java_array (env, mono_get_int32_class (), len);
 }
 
 static jlongArray JNICALL NewLongArray (JNIEnv *env, jsize len)
 {
-	return (jlongArray)new_java_array (env, mono_defaults.int64_class, len);
+	return (jlongArray)new_java_array (env, mono_get_int64_class (), len);
 }
 
 static jfloatArray JNICALL NewFloatArray (JNIEnv *env, jsize len)
 {
-	return (jfloatArray)new_java_array (env, mono_defaults.single_class, len);
+	return (jfloatArray)new_java_array (env, mono_get_single_class (), len);
 }
 
 static jdoubleArray JNICALL NewDoubleArray (JNIEnv *env, jsize len)
 {
-	return (jdoubleArray)new_java_array (env, mono_defaults.double_class, len);
+	return (jdoubleArray)new_java_array (env, mono_get_double_class (), len);
 }
 
 /* Original version with copy */

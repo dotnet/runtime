@@ -1,3 +1,8 @@
+
+Fri Jun 18 13:46:05 CEST 2004 Paolo Molaro <lupus@ximian.com>
+
+	* mono-jni.c: updates for the API cleanups.
+
 2004-05-05  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono-jni.c: Implement some missing JNI functions.
