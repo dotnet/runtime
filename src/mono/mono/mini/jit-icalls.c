@@ -274,7 +274,7 @@ ves_array_element_address (MonoArray *this, ...)
 {
 	MonoClass *class;
 	va_list ap;
-	int i, ind, esize;
+	int i, ind, esize, realidx;
 	gpointer ea;
 
 	MONO_ARCH_SAVE_REGS;
@@ -285,20 +285,22 @@ ves_array_element_address (MonoArray *this, ...)
 
 	class = this->obj.vtable->klass;
 
-	ind = va_arg(ap, int);
 	g_assert (this->bounds != NULL);
 
+	esize = mono_array_element_size (class);
 	ind -= this->bounds [0].lower_bound;
-	for (i = 1; i < class->rank; i++) {
-		ind = ind*this->bounds [i].length + va_arg(ap, int) -
-			this->bounds [i].lower_bound;;
+	for (i = 0; i < class->rank; i++) {
+		ind = va_arg(ap, int);
+		realidx = ind - (int)this->bounds [i].lower_bound;
+		if (realidx < 0 || realidx >= this->bounds [i].length)
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
+		esize *= realidx;
 	}
 
 	if (ind >= this->max_length)
 		mono_raise_exception (mono_get_exception_index_out_of_range ());
 
-	esize = mono_array_element_size (class);
-	ea = (gpointer*)((char*)this->vector + (ind * esize));
+	ea = (gpointer*)((char*)this->vector + esize);
 
 	va_end(ap);
 

@@ -1450,4 +1450,44 @@ class Tests {
 			return 0;
 		return 4;
 	}
+
+	static readonly int[] mul_dim_results = new int[] {
+		0, 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8,
+		1, 0, 1, 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8,
+		2, 0, 2, 1, 2, 8, 
+		3, 0, 3, 1, 3, 8, 
+		4, 0, 4, 1, 4, 8, 
+		5, 0, 5, 1, 5, 2, 5, 3, 5, 4, 5, 5, 5, 6, 5, 7, 5, 8,
+		6, 0, 6, 1, 6, 2, 6, 3, 6, 4, 6, 5, 6, 6, 6, 7, 6, 8,
+		7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 6, 7, 7, 7, 8,
+	};
+
+	static int test_0_multi_dim_array_access () {
+		int [,] a = System.Array.CreateInstance (typeof (int),
+			new int [] {3,6}, new int [] {2,2 }) as int[,];
+                int x, y;
+		int result_idx = 0;
+		for (x = 0; x < 8; ++x) {
+			for (y = 0; y < 9; ++y) {
+				bool got_ex = false;
+				try {
+					a [x, y] = 1;
+				} catch {
+					got_ex = true;
+				}
+				if (got_ex) {
+					if (result_idx >= mul_dim_results.Length)
+						return -1;
+					if (mul_dim_results [result_idx] != x || mul_dim_results [result_idx + 1] != y) {
+						return result_idx + 1;
+					}
+					result_idx += 2;
+				}
+			}
+		}
+		if (result_idx == mul_dim_results.Length)
+			return 0;
+		return 200;
+	}
 }
+

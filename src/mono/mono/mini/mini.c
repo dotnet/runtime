@@ -1931,6 +1931,35 @@ mono_method_check_inlining (MonoMethod *method)
 }
 
 static MonoInst*
+mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmethod, MonoInst **sp, unsigned char *ip, gboolean is_set)
+{
+	int temp, rank;
+	MonoInst *addr;
+	MonoMethodSignature *esig;
+
+	rank = cmethod->signature->param_count - (is_set? 1: 0);
+	/* 
+	 * FIXME: handle TypeMismatch for set or use the slow path
+	 * for that.
+	 */
+	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
+		MonoInst *indexes;
+		NEW_GROUP (cfg, indexes, sp [1], sp [2]);
+		MONO_INST_NEW (cfg, addr, OP_LDELEMA2D);
+		addr->inst_left = sp [0];
+		addr->inst_right = indexes;
+		addr->cil_code = ip;
+		addr->type = STACK_MP;
+		addr->klass = cmethod->klass;
+		return addr;
+	}
+	esig = mono_get_element_address_signature (rank);
+	temp = mono_emit_native_call (cfg, bblock, ves_array_element_address, esig, sp, ip, FALSE);
+	NEW_TEMPLOAD (cfg, addr, temp);
+	return addr;
+}
+
+static MonoInst*
 mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	int pc, op;
@@ -2717,14 +2746,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 	      				
 			} else if (array_rank) {
-				MonoMethodSignature *esig;
 				MonoInst *addr;
 
 				if (strcmp (cmethod->name, "Set") == 0) { /* array Set */ 
-					esig = mono_get_element_address_signature (fsig->param_count - 1);
-					
-					temp = mono_emit_native_call (cfg, bblock, ves_array_element_address, esig, sp, ip, FALSE);
-					NEW_TEMPLOAD (cfg, addr, temp);
+					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, TRUE);
 					NEW_INDSTORE (cfg, ins, addr, sp [fsig->param_count], fsig->params [fsig->param_count - 1]);
 					ins->cil_code = ip;
 					if (ins->opcode == CEE_STOBJ) {
@@ -2734,21 +2759,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 
 				} else if (strcmp (cmethod->name, "Get") == 0) { /* array Get */
-					esig = mono_get_element_address_signature (fsig->param_count);
-
-					temp = mono_emit_native_call (cfg, bblock, ves_array_element_address, esig, sp, ip, FALSE);
-					NEW_TEMPLOAD (cfg, addr, temp);
+					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, FALSE);
 					NEW_INDLOAD (cfg, ins, addr, fsig->ret);
 					ins->cil_code = ip;
 
 					*sp++ = ins;
 				} else if (strcmp (cmethod->name, "Address") == 0) { /* array Address */
-					/* implement me */
-					esig = mono_get_element_address_signature (fsig->param_count);
-
-					temp = mono_emit_native_call (cfg, bblock, ves_array_element_address, esig, sp, ip, FALSE);
-					NEW_TEMPLOAD (cfg, *sp, temp);
-					sp++;
+					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, FALSE);
+					*sp++ = addr;
 				} else {
 					g_assert_not_reached ();
 				}

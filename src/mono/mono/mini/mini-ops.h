@@ -294,6 +294,8 @@ MINI_OP(OP_ATAN,    "atan")
 MINI_OP(OP_SQRT,    "sqrt")
 /* to optimize strings */
 MINI_OP(OP_GETCHR, "getchar")
+/* get adrress of element in a 2D array */
+MINI_OP(OP_LDELEMA2D, "getldelema2")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")
