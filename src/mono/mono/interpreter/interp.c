@@ -712,12 +712,12 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 
 	if (frame->method) {
 		if (!frame->method->info) {
-			func = frame->method->info = mono_create_trampoline (sig, string_ctor);
+			func = frame->method->info = mono_arch_create_trampoline (sig, string_ctor);
 		} else { 
 			func = (MonoPIFunc)frame->method->info;
 		}
 	} else {
-		func = mono_create_trampoline (sig, string_ctor);
+		func = mono_arch_create_trampoline (sig, string_ctor);
 	}
 
 	context->current_frame = frame;
@@ -1519,6 +1519,49 @@ handle_enum:
 		return result.data.p;
 	stackval_to_data (sig->ret, &result, ret, sig->pinvoke);
 	return retval;
+}
+
+static CRITICAL_SECTION create_method_pointer_mutex;
+
+static MonoGHashTable *method_pointer_hash = NULL;
+
+void *
+mono_create_method_pointer (MonoMethod *method)
+{
+	gpointer addr;
+	MonoJitInfo *ji;
+
+	EnterCriticalSection (&create_method_pointer_mutex);
+	if (!method_pointer_hash) {
+		method_pointer_hash = mono_g_hash_table_new (NULL, NULL);
+	}
+	addr = mono_g_hash_table_lookup (method_pointer_hash, method);
+	if (addr) {
+		LeaveCriticalSection (&create_method_pointer_mutex);
+		return addr;
+	}
+
+	/*
+	 * If it is a static P/Invoke method, we can just return the pointer
+	 * to the method implementation.
+	 */
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+		ji = g_new0 (MonoJitInfo, 1);
+		ji->method = method;
+		ji->code_size = 1;
+		ji->code_start = method->addr;
+
+		mono_jit_info_table_add (mono_root_domain, ji);
+		
+		addr = method->addr;
+	}		
+	else
+		addr = mono_arch_create_method_pointer (method);
+
+	mono_g_hash_table_insert (method_pointer_hash, method, addr);
+	LeaveCriticalSection (&create_method_pointer_mutex);
+
+	return addr;
 }
 
 static MonoMethod *
@@ -5068,6 +5111,7 @@ main (int argc, char *argv [])
 	thread_context_id = TlsAlloc ();
 	TlsSetValue (thread_context_id, NULL);
 	InitializeCriticalSection(&calc_section);
+	InitializeCriticalSection(&create_method_pointer_mutex);
 
 	mono_install_compile_method (mono_create_method_pointer);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);

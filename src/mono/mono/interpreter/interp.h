@@ -71,9 +71,11 @@ void ves_exec_method (MonoInvocation *frame);
 typedef void (*MonoFunc) (void);
 typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
 
+void *mono_create_method_pointer (MonoMethod *method);
+
 /*
  * defined in an arch specific file.
  */
 MonoPIFunc
-mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
-void *mono_create_method_pointer (MonoMethod *method);
+mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
+void *mono_arch_create_method_pointer (MonoMethod *method);
