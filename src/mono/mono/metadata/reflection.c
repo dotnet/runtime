@@ -4084,7 +4084,6 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	image->image.module_name = module_name;
 	image->image.version = g_strdup (version);
 	image->image.dynamic = TRUE;
-	image->image.ref_count = 1;
 
 	image->image.references = g_new0 (MonoAssembly*, 1);
 	image->image.references [0] = NULL;
