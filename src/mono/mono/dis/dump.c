@@ -222,7 +222,7 @@ dump_table_memberref (MonoImage *m)
 	int i, kind, idx;
 	char *x, *xx;
 	char *sig;
-	const char *blob, *ks;
+	const char *blob, *ks = NULL;
 
 	fprintf (output, "MemberRef Table (1..%d)\n", t->rows);
 
@@ -318,7 +318,7 @@ dump_table_constant (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_CONSTANT_SIZE];
-		char *parent;
+		const char *parent;
 		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
 		parent = desc [cols [MONO_CONSTANT_PARENT] & MONO_HASCONSTANT_MASK];
 
@@ -1149,8 +1149,7 @@ dump_table_standalonesig (MonoImage *m)
 	fprintf (output, "Stand alone signature (1..%d)\n", t->rows);
 
 	for (i = 1; i <= t->rows; i++) {
-                char *sig;
-		const char *locals_ptr;
+                const char *locals_ptr;
 		int j, bsize;
 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);

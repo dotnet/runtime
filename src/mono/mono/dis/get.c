@@ -1395,7 +1395,7 @@ get_method (MonoImage *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
-	char *sig, *esname;
+	char *sig = NULL, *esname;
 	const char *name;
 
 	MonoMethod *mh;
@@ -1526,7 +1526,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
         char *s, *type_param;
         const char *ptr;
-	guint32 sig;
+	guint32 sig = 0;
 	int param_count, cconv, i, gen_count = 0;
 
 	switch (token & MONO_METHODDEFORREF_MASK) {
