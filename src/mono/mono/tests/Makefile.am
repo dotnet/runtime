@@ -2,7 +2,6 @@
 TEST_PROG=../interpreter/mint
 JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config --optimize=all
-
 #CSC=csc /unsafe
 CSC=mcs --unsafe -nowarn:0162
 
@@ -50,7 +49,6 @@ TEST_CS_SRC=			\
 	pinvoke9.cs		\
 	pinvoke10.cs		\
 	pinvoke11.cs		\
-	pinvoke12.cs		\
 	pinvoke13.cs		\
 	pinvoke14.cs		\
 	pinvoke15.cs		\

@@ -84,6 +84,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_array")]
 	public static extern int mono_test_marshal_array (int [] a1);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_string_array")]
+	public static extern int mono_test_marshal_string_array (string [] a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
 
@@ -351,6 +354,11 @@ public class Tests {
 		if (res != "This is my message.  Isn't it nice?")
 			return 1;  
 		
+		return 0;
+	}
+
+	static int test_0_marshal_empty_string_array () {
+		mono_test_marshal_string_array (null);
 		return 0;
 	}
 
