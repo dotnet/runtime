@@ -113,15 +113,15 @@
  		    <a href="archive/beta3/windows/mono-Beta3-win32-1.exe">Mono Setup</a>
  		  </td>
  		</tr>
-<!-- 		<tr> -->
-<!-- 		  <td bgcolor="#999999"> -->
-<!--                     <img src="images/macos-36.gif"><b>Mac OS X package</b> -->
-<!-- 		  </td> -->
-<!-- 		  <td> -->
-<!-- 		    <a href="archive/beta2/macos/Mono_0.95_Beta_2.dmg">Mono_0.95_Beta_2.dmg</a>: on /Library/Framework.<br> -->
-<!-- 		    <a href="archive/beta2/macos/mono-0.95.dmg">mono-0.95.dmg</a> On /opt. -->
-<!-- 		  </td> -->
-<!-- 		</tr> -->
+		<tr>
+		  <td bgcolor="#999999">
+                    <img src="images/macos-36.gif"><b>Mac OS X package</b>
+		  </td>
+		  <td>
+		    <a href="archive/beta3/macos/mono-0.96-framework.dmg">mono-0.96-framework.dmg</a>: on /Library/Framework.<br>
+		    <a href="archive/beta3/macos/mono-0.96.dmg">mono-0.96.dmg</a> On /opt.
+		  </td>
+		</tr>
              </table>
             </td>
 	</table>
