@@ -151,7 +151,14 @@
   </tr>
 </table>
 
-@item Jul 27th, 2003: Daily Snapshots
+@item Jul 27th, 2003: Wine packages and Daily Snapshots 
+
+	MonoWine packages (used to run System.Windows.Forms) software
+	are now available from our (<a
+	href="download.html">download</a> page).  You can track the
+	progress on our <a
+	href="http://www.nullenvoid.com/mono/wiki/index.php/WineSamples">Wiki
+	page.
 
 	We're now building daily snapshots of Mono.  They come in
 	three distinct flavors:
