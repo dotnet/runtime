@@ -22,6 +22,11 @@ mono_exception_from_name               (MonoImage *image,
 					const char* name_space, 
 					const char *name);
 
+extern MonoException *
+mono_exception_from_name_domain        (MonoDomain *domain, MonoImage *image, 
+					const char* name_space, 
+					const char *name);
+
 MonoException *
 mono_get_exception_divide_by_zero      (void);
 

@@ -29,7 +29,15 @@ MonoException *
 mono_exception_from_name (MonoImage *image, const char *name_space,
 			  const char *name)
 {
-	MonoDomain *domain = mono_domain_get ();
+	return mono_exception_from_name_domain (mono_domain_get (), image, name_space, name);
+}
+
+MonoException *
+mono_exception_from_name_domain (MonoDomain *domain,
+								 MonoImage *image, 
+								 const char* name_space, 
+								 const char *name)
+{
 	MonoClass *klass;
 	MonoObject *o;
 

@@ -347,7 +347,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = mono_string_to_utf8 (friendly_name);
-	data->out_of_memory_ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
+	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
 
 	mono_context_init (data);
 
@@ -803,29 +803,29 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 											MonoArray *raw_assembly,
 											MonoArray *raw_symbol_store, MonoObject *evidence)
 {
-  MonoAssembly *ass;
-  MonoDomain *domain = ad->data;
-  MonoImageOpenStatus status;
-  guint32 raw_assembly_len = mono_array_length (raw_assembly);
-  MonoImage *image = mono_image_open_from_data (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, 0, NULL);
+	MonoAssembly *ass;
+	MonoDomain *domain = ad->data;
+	MonoImageOpenStatus status;
+	guint32 raw_assembly_len = mono_array_length (raw_assembly);
+	MonoImage *image = mono_image_open_from_data (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, TRUE, NULL);
 
-  if (raw_symbol_store)
-	  mono_raise_exception (mono_get_exception_not_implemented ());
+	if (raw_symbol_store)
+		mono_raise_exception (mono_get_exception_not_implemented ());
   
-  if (!image) {
-	  mono_raise_exception (mono_get_exception_bad_image_format (""));
-	  return NULL;
-  }
+	if (!image) {
+		mono_raise_exception (mono_get_exception_bad_image_format (""));
+		return NULL;
+	}
 
-  ass = mono_assembly_load_from (image, "", &status);
+	ass = mono_assembly_load_from (image, "", &status);
 
-  if (!ass) {
-	  mono_image_close (image);
-	  mono_raise_exception (mono_get_exception_bad_image_format (""));
-	  return NULL; 
-  }
+	if (!ass) {
+		mono_image_close (image);
+		mono_raise_exception (mono_get_exception_bad_image_format (""));
+		return NULL; 
+	}
 
-  return mono_assembly_get_object (domain, ass); 
+	return mono_assembly_get_object (domain, ass); 
 }
 
 MonoReflectionAssembly *
