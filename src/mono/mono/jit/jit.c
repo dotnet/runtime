@@ -3770,7 +3770,8 @@ mono_jit_compile_method (MonoMethod *method)
 	mono_jit_stats.methods_compiled++;
 	
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("Start JIT compilation of %s\n", mono_method_full_name (method, TRUE));
+		printf ("Start JIT compilation of %s, domain '%s'\n",
+			mono_method_full_name (method, TRUE), target_domain->friendly_name);
 	}
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
@@ -3882,7 +3883,11 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("END JIT compilation of %s %p %p\n", mono_method_full_name (method, FALSE), method, addr);
+		printf ("END JIT compilation of %s %p %p, domain '%s'\n",
+				 mono_method_full_name (method, FALSE),
+				 method,
+				 addr,
+				 target_domain->friendly_name);
 	}
 
 	g_hash_table_insert (jit_code_hash, method, addr);
