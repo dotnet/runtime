@@ -52,6 +52,7 @@
 2,SQL Lite,sqlite.html,sqlite.src
 2,Sybase,sybase.html,sybase.src
 2,TDS Generic,tdsclient.html,tdsclient.src
+2,TDS Providers,tds-providers.html,tds-providers.src
 1,Crypto,crypto.html,crypto.src
 1,Java,java.html,java.src
 1,Windows.Forms,winforms.html,winforms.src
