@@ -538,9 +538,10 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 	int high2_reg = mono_regstate_next_int (s->rs);
 	int realidx1_reg = mono_regstate_next_int (s->rs);
 	int realidx2_reg = mono_regstate_next_int (s->rs);
+	int sum_reg = mono_regstate_next_int (s->rs);
 	int index1, index2;
-	guint32 size = mono_class_array_element_size (tree->klass);
-
+	guint32 size = mono_array_element_size (tree->klass);
+	
 	index1 = state->right->left->reg1;
 	index2 = state->right->right->reg1;
 
@@ -550,8 +551,6 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, low1_reg, 
 				       bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
-	/*MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, low1_reg, index1);
-	MONO_EMIT_NEW_COND_EXC (s, GT, "IndexOutOfRangeException");*/
 	MONO_EMIT_NEW_BIALU (s, CEE_SUB, realidx1_reg, index1, low1_reg);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, high1_reg, 
 				       bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, length));
@@ -560,16 +559,15 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, low2_reg, 
 				       bounds_reg, sizeof (MonoArrayBounds) + G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
-	/*MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, low2_reg, index2);
-	MONO_EMIT_NEW_COND_EXC (s, GT, "IndexOutOfRangeException");*/
 	MONO_EMIT_NEW_BIALU (s, CEE_SUB, realidx2_reg, index2, low2_reg);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, high2_reg, 
 				       bounds_reg, sizeof (MonoArrayBounds) + G_STRUCT_OFFSET (MonoArrayBounds, length));
 	MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, high2_reg, realidx2_reg);
 	MONO_EMIT_NEW_COND_EXC (s, LE_UN, "IndexOutOfRangeException");
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_MUL_IMM, mult_reg, realidx1_reg, size);
-	MONO_EMIT_NEW_BIALU (s, CEE_MUL, mult2_reg, mult_reg, realidx2_reg);
+	MONO_EMIT_NEW_BIALU (s, CEE_MUL, mult_reg, high2_reg, realidx1_reg);
+	MONO_EMIT_NEW_BIALU (s, CEE_ADD, sum_reg, mult_reg, realidx2_reg);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_MUL_IMM, mult2_reg, sum_reg, size);
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult2_reg, state->left->reg1);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
 }

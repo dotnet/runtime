@@ -288,17 +288,18 @@ ves_array_element_address (MonoArray *this, ...)
 	g_assert (this->bounds != NULL);
 
 	esize = mono_array_element_size (class);
-	ind -= this->bounds [0].lower_bound;
-	for (i = 0; i < class->rank; i++) {
-		ind = va_arg(ap, int);
-		realidx = ind - (int)this->bounds [i].lower_bound;
-		if (realidx < 0 || realidx >= this->bounds [i].length)
-			mono_raise_exception (mono_get_exception_index_out_of_range ());
-		esize *= realidx;
-	}
-
-	if (ind >= this->max_length)
+	ind = va_arg(ap, int);
+	ind -= (int)this->bounds [0].lower_bound;
+	if ((guint32)ind >= (guint32)this->bounds [0].length)
 		mono_raise_exception (mono_get_exception_index_out_of_range ());
+	for (i = 1; i < class->rank; i++) {
+		realidx = va_arg(ap, int) - (int)this->bounds [i].lower_bound;
+		if ((guint32)realidx >= (guint32)this->bounds [i].length)
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
+		ind *= this->bounds [i].length;
+		ind += realidx;
+	}
+	esize *= ind;
 
 	ea = (gpointer*)((char*)this->vector + esize);
 
