@@ -13,6 +13,14 @@ Some of them may start contributing because they want a mention in the
 
 * Mono Hackers
 
+** Sergey Chaban
+
+Sergey has been a long time contributor to the project, from the early
+work on the class libraries that were critical to Mono's origin: every
+time you use a Hashtable in Mono, it runs Sergey's code, to the
+low-level optimizations on the JIT engine and to his work on ILASM and
+the PEToolkit.  And countless other things.
+
 ** Nick Drochak
 
 The first, deserved, entry in the <b>Mono Hackers Hall Of Fame</b> is for
