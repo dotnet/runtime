@@ -112,6 +112,12 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate8", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_marshal_delegate8 (SimpleDelegate8 d, string s);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate9")]
+	public static extern int mono_test_marshal_delegate9 (SimpleDelegate9 d, return_int_delegate d2);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate10")]
+	public static extern int mono_test_marshal_delegate10 (SimpleDelegate9 d);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -123,6 +129,10 @@ public class Tests {
 	public delegate int SimpleDelegate7 (out SimpleClass ss);
 
 	public delegate int SimpleDelegate8 ([MarshalAs (UnmanagedType.LPWStr)] string s1);
+
+	public delegate int return_int_delegate (int i);
+
+	public delegate int SimpleDelegate9 (return_int_delegate del);
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -191,5 +201,33 @@ public class Tests {
 		catch (ArgumentNullException ex) {
 			return 0;
 		}
+	}
+
+	static int return_self (int i) {
+		return i;
+	}
+
+	static int call_int_delegate (return_int_delegate d) {
+		return d (55);
+	}
+
+	static int test_55_marshal_delegate_delegate () {
+		SimpleDelegate9 d = new SimpleDelegate9 (call_int_delegate);
+
+		return mono_test_marshal_delegate9 (d, new return_int_delegate (return_self));
+	}
+
+	static int test_0_marshal_delegate_delegate_unmanaged_ftn () {
+		SimpleDelegate9 d = new SimpleDelegate9 (call_int_delegate);
+
+		try {
+			mono_test_marshal_delegate10 (d);
+			return 1;
+		}
+		catch (ArgumentException) {
+			return 0;
+		}
+
+		return 2;
 	}
 }

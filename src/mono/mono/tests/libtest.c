@@ -580,6 +580,27 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 	return delegate (s);
 }
 
+typedef int (*return_int_fnt) (int i);
+typedef int (*SimpleDelegate9) (return_int_fnt *d);
+
+int
+mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
+{
+	return delegate (ftn);
+}
+
+int
+return_self (int i)
+{
+	return i;
+}
+
+int
+mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
+{
+	return delegate (return_self);
+}
+
 int 
 mono_test_marshal_stringbuilder (char *s, int n)
 {
