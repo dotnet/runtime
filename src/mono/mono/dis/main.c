@@ -23,6 +23,8 @@
 #include "dump.h"
 #include "get.h"
 #include "dis-cil.h"
+#include <mono/metadata/class-internals.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
@@ -729,7 +731,7 @@ dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 end)
+dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 end, MonoGenericContext *context)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_METHOD_SIZE];
@@ -757,7 +759,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
-		ms = mono_metadata_parse_method_signature (m, i + 1, sig, &sig);
+		ms = mono_metadata_parse_method_signature_full (m, context, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, FALSE);
 
 		fprintf (output, "    // method line %d\n", i + 1);
@@ -1029,67 +1031,6 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 }
 
 /**
- * dis_generic_param_and_constraints:
- * @m: metadata context
- * @table_type: Type of table (0 for typedef, 1 for methoddef)
- * @row: Row in table
- *
- * Dissasembles the generic parameters for this type or method, also
- * returns an allocated GString containing the generic constraints NULL
- * if their are no generic constraints.
- */
-static GString*
-dis_generic_param_and_constraints (MonoImage *m, int table_type, guint32 typedef_row)
-{
-        MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
-        MonoTableInfo *ct = &m->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
-        GString* cnst_block = NULL;
-	guint32 cols [MONO_GENERICPARAM_SIZE];
-        guint32 ccols [MONO_GENPARCONSTRAINT_SIZE];
-	int i, own_tok, table, idx, found_count, cnst_start, cnst_ind;
-
-        g_assert (table_type != MONO_TYPEORMETHOD_TYPE || table_type != MONO_TYPEORMETHOD_METHOD);
-        
-        found_count = cnst_start = 0;
-	for (i = 1; i <= t->rows; i++) {
-		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
-                own_tok = cols [MONO_GENERICPARAM_OWNER];
-                table = own_tok & MONO_TYPEORMETHOD_MASK;
-                idx = own_tok >> MONO_TYPEORMETHOD_BITS;
-                
-                if (table != table_type || idx != typedef_row)
-                        continue;
-
-                if (found_count == 0)
-                        fprintf (output, "<");
-                else
-                        fprintf (output, ", ");
-
-                for (cnst_ind = cnst_start; cnst_ind < ct->rows; cnst_ind++) {
-                        char *sig;
-                        mono_metadata_decode_row (ct, cnst_ind, ccols, MONO_GENPARCONSTRAINT_SIZE);
-                        if (ccols [MONO_GENPARCONSTRAINT_GENERICPAR] != i)
-                                continue;
-                        if (cnst_block == NULL)
-                                cnst_block = g_string_new ("");
-                        sig = get_typedef_or_ref (m, ccols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
-			fprintf (output, "(%s) ", sig);
-                        g_free (sig);
-                        cnst_start = cnst_ind;
-                }
-
-		fprintf (output, "%s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
-               
-                found_count++;
-	}
-
-        if (found_count)
-                fprintf (output, ">");
-
-        return cnst_block;
-}
-
-/**
  * dis_type:
  * @m: metadata context
  * @n: index of type to disassemble
@@ -1100,11 +1041,11 @@ static void
 dis_type (MonoImage *m, int n)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
-        GString *cnst_block = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	const char *name, *nspace;
-	char *esname;
+	char *esname, *param;
+	MonoGenericContainer *container;
 	guint32 packing_size, class_size;
 	gboolean next_is_valid, last;
 	guint32 nested;
@@ -1124,11 +1065,17 @@ dis_type (MonoImage *m, int n)
 	if (*nspace)
 		fprintf (output, ".namespace %s\n{\n", nspace);
 
+	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1));
+
 	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
 		
-                cnst_block = dis_generic_param_and_constraints (m, MONO_TYPEORMETHOD_TYPE, n+1);
+                param = get_generic_param (m, container);
+		if (param) {
+			fprintf (output, param);
+			g_free (param);
+		}
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
 			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
@@ -1138,17 +1085,17 @@ dis_type (MonoImage *m, int n)
 	} else {
 		fprintf (output, "  .class interface %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), esname);
 
-                cnst_block = dis_generic_param_and_constraints (m, MONO_TYPEORMETHOD_TYPE, n+1);
+                param = get_generic_param (m, container);
+		if (param) {
+			fprintf (output, param);
+			g_free (param);
+		}
 		fprintf (output, "\n");
 	}
 
 	g_free (esname);
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
-        if (cnst_block) {
-                fprintf (output, "%s", cnst_block->str);
-                g_string_free (cnst_block, TRUE);
-        }
 	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 	dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
 
@@ -1176,7 +1123,7 @@ dis_type (MonoImage *m, int n)
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
 	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
+		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, (MonoGenericContext *) container);
 
 	dis_property_list (m, n);
 	dis_event_list (m, n);
@@ -1240,7 +1187,7 @@ dis_globals (MonoImage *m)
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
 	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
+		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, NULL);
 
 }
 

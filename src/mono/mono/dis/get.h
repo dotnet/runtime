@@ -27,7 +27,7 @@ char *get_method              (MonoImage *m, guint32 token);
 char *get_method_type_param   (MonoImage *m, guint32 blob_signature);
 char *get_guid                (MonoImage *m, guint32 guid_index);
 char *get_marshal_info        (MonoImage *m, const char *blob);
-char *get_generic_param       (MonoImage *m, int table_type, guint32 row);
+char *get_generic_param       (MonoImage *m, MonoGenericContainer *container);
 char *get_escaped_name        (const char *name);
 char *get_method_override     (MonoImage *m, guint32 token);
 

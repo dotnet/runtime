@@ -551,37 +551,47 @@ dis_stringify_param (MonoImage *m, MonoType *param)
  * Returns: Allocated stringified generic parameters
  */
 char*
-get_generic_param (MonoImage *m, int table_type, guint32 row)
+get_generic_param (MonoImage *m, MonoGenericContainer *container)
 {
-        MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
-        GString *result = g_string_new ("");
-        char *retval;
-	guint32 cols [MONO_GENERICPARAM_SIZE];
-	int i, own_tok, table, idx, found_count;
+        GString *result;
+	char *retval;
+	int i;
 
-        g_assert (table_type != MONO_TYPEORMETHOD_TYPE || table_type != MONO_TYPEORMETHOD_METHOD);
-        
-        found_count = 0;
-	for (i = 1; i <= t->rows; i++) {
-		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
-                own_tok = cols [MONO_GENERICPARAM_OWNER];
-                table = own_tok & MONO_TYPEORMETHOD_MASK;
-                idx = own_tok >> MONO_TYPEORMETHOD_BITS;
-                
-                if (table != table_type || idx != row)
-                        continue;
+	if (!container)
+		return NULL;
 
-                if (found_count == 0)
-                        g_string_append_printf (result, "<%s",
-                                        mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
-                else
-                        g_string_append_printf (result, ", %s",
-                                        mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
-                found_count++;
+	result = g_string_new ("");
+
+	g_string_append_c (result, '<');
+	for (i = 0; i < container->type_argc; i++) {
+		MonoGenericParam *param = &container->type_params [i];
+		MonoClass **constr;
+		guint16 flags;
+
+		if (i > 0)
+			g_string_append (result, ", ");
+
+		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+		if (flags == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
+			g_string_append (result, "class ");
+		else if (flags == GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
+			g_string_append (result, "valuetype ");
+		else if (flags == GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT)
+			g_string_append (result, ".ctor ");
+
+		for (constr = param->constraints; constr && *constr; constr++) {
+			char *sig;
+
+			sig = dis_stringify_object_with_class (m, *constr, FALSE);
+			g_string_append_printf (result, "(%s) ", sig);
+			g_free (sig);
+                }
+
+		g_string_append (result, param->name);
 	}
 
-        if (found_count)
-                g_string_append_c (result, '>');
+	g_string_append_c (result, '>');
+
         retval = result->str;
         g_string_free (result, FALSE);
         return retval;
@@ -599,11 +609,14 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	char *type = NULL;
 	char *gen_param = NULL;
 	GString *result = g_string_new ("");
+	MonoGenericContainer *container = NULL;
 	int i;
         
 	g_assert (method || methoddef_row);
 
 	if (methoddef_row) {
+		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row);
+
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
 		if (fully_qualified)
 			type = get_typedef (m, mono_metadata_typedef_from_method (m, methoddef_row));
@@ -612,10 +625,11 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (!method) {
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature (m, methoddef_row, sig, &sig);
+			method = mono_metadata_parse_method_signature_full (
+				m, (MonoGenericContext *) container, methoddef_row, sig, &sig);
 			free_method = 1;
 		}      
-                gen_param = get_generic_param (m, 1, methoddef_row);
+                gen_param = get_generic_param (m, container);
 	}
 	
 	retval = dis_stringify_param (m, method->ret);
@@ -720,7 +734,7 @@ char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
-	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype" : "class" ;
+	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype " : "class " ;
 	char *assemblyref = NULL, *result, *esname, *generic = NULL;
 	
 	if (m != c->image) {
@@ -762,7 +776,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix)
 	}
 
 
-	result = g_strdup_printf ("%s %s%s%s", prefix ? otype : "", assemblyref?assemblyref:"",
+	result = g_strdup_printf ("%s%s%s%s", prefix ? otype : "", assemblyref?assemblyref:"",
 				  esname, generic?generic:"");
 	
 	g_free (generic);
