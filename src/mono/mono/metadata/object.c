@@ -1729,13 +1729,15 @@ mono_unhandled_exception (MonoObject *exc)
 }
 
 /*
- * Launch a new thread to start all setup that requires managed code
- * to be executed.
+ * Launch a new thread to execute a function
  *
  * main_func is called back from the thread with main_args as the
  * parameter.  The callback function is expected to start Main()
  * eventually.  This function then waits for all managed threads to
  * finish.
+ * It is not necesseray anymore to execute managed code in a subthread,
+ * so this function should not be used anymore by default: just
+ * execute the code and then call mono_thread_manage ().
  */
 void
 mono_runtime_exec_managed_code (MonoDomain *domain,
