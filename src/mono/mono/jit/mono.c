@@ -346,7 +346,10 @@ main (int argc, char *argv [])
 			mono_insert_breakpoint_full (desc, FALSE);
 		}
 
-		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
+		if (mono_debug_format == MONO_DEBUG_FORMAT_MONO_DEBUGGER)
+			retval = mono_debugger_jit_exec (domain, assembly, argc - i, argv + i);
+		else
+			retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 	}
 
 	mono_profiler_shutdown ();

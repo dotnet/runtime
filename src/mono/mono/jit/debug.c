@@ -93,25 +93,25 @@ mono_debugger_unlock (void)
 }
 
 static void
-mono_debugger_signal (gboolean modified, gboolean wait_until_finished)
+mono_debugger_signal (gboolean modified)
 {
 #ifndef PLATFORM_WIN32
-	mono_debugger_lock ();
+	if (modified)
+		debugger_symbol_file_table_modified = TRUE;
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
-		if (modified)
-			debugger_symbol_file_table_modified = TRUE;
 		pthread_cond_signal (&debugger_thread_cond);
 	}
-	if (wait_until_finished)
-		must_send_finished = TRUE;
-	mono_debugger_unlock ();
+#endif
+}
 
-	if (wait_until_finished) {
-		pthread_mutex_lock (&debugger_finished_mutex);
-		pthread_cond_wait (&debugger_finished_cond, &debugger_finished_mutex);
-		pthread_mutex_unlock (&debugger_finished_mutex);
-	}
+static void
+mono_debugger_wait (void)
+{
+#ifndef PLATFORM_WIN32
+	pthread_mutex_lock (&debugger_finished_mutex);
+	pthread_cond_wait (&debugger_finished_cond, &debugger_finished_mutex);
+	pthread_mutex_unlock (&debugger_finished_mutex);
 #endif
 }
 
@@ -994,7 +994,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (info->symfile) {
 		mono_debugger_lock ();
 		mono_debug_symfile_add_type (info->symfile, klass);
-		mono_debugger_signal (TRUE, FALSE);
+		mono_debugger_signal (TRUE);
 		mono_debugger_unlock ();
 	}
 }
@@ -1164,7 +1164,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
-		mono_debugger_signal (TRUE, FALSE);
+		mono_debugger_signal (TRUE);
 	}
 
 	mono_debugger_unlock ();
@@ -1401,6 +1401,11 @@ initialize_debugger_support ()
 	 * debugger attached to it.
 	 */
 	pthread_cond_wait (&debugger_start_cond, &debugger_start_mutex);
+
+	/*
+	 * We keep this mutex until mono_debugger_jit_exec().
+	 */
+	pthread_mutex_lock (&debugger_thread_mutex);
 #endif
 }
 
@@ -1467,7 +1472,7 @@ debugger_compile_method (MonoMethod *method)
 
 	mono_debugger_lock ();
 	retval = mono_compile_method (method);
-	mono_debugger_signal (FALSE, FALSE);
+	mono_debugger_signal (FALSE);
 	mono_debugger_unlock ();
 	return retval;
 }
@@ -1516,5 +1521,41 @@ mono_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline)
 void
 mono_debugger_trampoline_breakpoint_callback (void)
 {
-	mono_debugger_signal (FALSE, TRUE);
+	mono_debugger_lock ();
+	must_send_finished = TRUE;
+	mono_debugger_signal (FALSE);
+	mono_debugger_unlock ();
+
+	mono_debugger_wait ();
+}
+
+/*
+ * This is a custom version of mono_jit_exec() which is used when we're being run inside
+ * the Mono Debugger.
+ */
+int 
+mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
+{
+	MonoImage *image = assembly->image;
+	MonoMethod *method;
+	gpointer addr;
+
+	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+
+	addr = mono_compile_method (method);
+
+	/*
+	 * The mutex has been locked in initialize_debugger_support(); we keep it locked
+	 * until we compiled the main method and signalled the debugger.
+	 */
+	must_send_finished = TRUE;
+	mono_debugger_signal (TRUE);
+	mono_debugger_unlock ();
+
+	/*
+	 * Wait until the debugger has loaded the initial symbol tables.
+	 */
+	mono_debugger_wait ();
+
+	return mono_runtime_run_main (method, argc, argv, NULL);
 }

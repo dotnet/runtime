@@ -80,6 +80,8 @@ int            mono_remove_breakpoint (int breakpint_id);
 
 void           mono_debugger_trampoline_breakpoint_callback (void);
 
+int            mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
+
 
 /* DEBUGGER PUBLIC FUNCTION:
  *
