@@ -4148,7 +4148,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_R4: /* FIXME: change precision */
 		case CEE_CONV_R8:
 			if (use_sse2)
-				amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
+				amd64_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			else {
 				amd64_push_reg (code, ins->sreg1);
 				amd64_fild_membase (code, AMD64_RSP, 0, FALSE);

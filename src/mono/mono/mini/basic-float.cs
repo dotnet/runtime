@@ -181,6 +181,11 @@ class Tests {
 		long b = (long)d;
 		if (b != 1000)
 			return 0;
+		a = -1;
+		d = (double)a;
+		b = (long)d;
+		if (b != -1)
+			return 1;
 		return 4;
 	}
 
