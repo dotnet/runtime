@@ -2384,7 +2384,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			if (klass->element_class == mono_defaults.string_class) {
 				g_assert (tmp_locals [i]);
 
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_BRFALSE);
 				pos = mb->pos;
 				mono_mb_emit_i4 (mb, 0);
