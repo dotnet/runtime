@@ -231,6 +231,7 @@ struct _MonoGenericInst {
 struct _MonoGenericMethod {
 	MonoGenericInst *generic_inst;
 	MonoClass *klass;
+	MonoMethod *declaring;
 	MonoMethod *generic_method;
 	int mtype_argc;
 	MonoType **mtype_argv;
