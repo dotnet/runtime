@@ -4131,8 +4131,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-			if (cfg->domain->thread_static_fields)
-				addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field);
+			if (cfg->domain->special_static_fields)
+				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
 
 			if ((cfg->opt & MONO_OPT_SHARED) || (mono_compile_aot && addr)) {
 				int temp;
@@ -4172,7 +4172,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					int temp;
 					MonoInst *iargs [1];
 					NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
-					temp = mono_emit_jit_icall (cfg, bblock, mono_threads_get_static_data, iargs, ip);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_get_special_static_data, iargs, ip);
 					NEW_TEMPLOAD (cfg, ins, temp);
 				}
 			}
@@ -7734,7 +7734,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 helper_sig_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_threads_get_static_data, "mono_threads_get_static_data", helper_sig_ptr_int, FALSE);
+	mono_register_jit_icall (mono_get_special_static_data, "mono_get_special_static_data", helper_sig_ptr_int, FALSE);
 	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
 	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);
 	mono_register_jit_icall (helper_memset, "helper_memset", helper_sig_memset, FALSE);

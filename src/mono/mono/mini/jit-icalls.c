@@ -363,10 +363,10 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	//printf ("SFLDA1 %p\n", (char*)vtable->data + field->offset);
 
-	if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
-		addr = (char*)vtable->data + field->offset;
+	if (domain->special_static_fields && (addr = g_hash_table_lookup (domain->special_static_fields, field)))
+		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	else
-		addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
+		addr = (char*)vtable->data + field->offset;
 	
 	return addr;
 }
