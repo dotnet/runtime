@@ -385,6 +385,15 @@ typedef struct {
 #define sparc_fop(ins,r1,op,r2,dest) sparc_encode_format3c((ins),2,(op),(r1),52,(r2),(dest))
 #define sparc_fcmp(ins,r1,op,r2) sparc_encode_format3c((ins),2,(op),(r1),53,(r2),0)
 
+/* fadd for a single has an op code of 65, double 66, quad 67 */
+#define sparc_fadds(ins, r1, op, r2, dest) sparc_fop( ins, r1, 65, r2, dest )
+#define sparc_faddd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 66, r2, dest )
+#define sparc_faddq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 67, r2, dest )
+
+#define sparc_fsubs(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
+#define sparc_fsubd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
+#define sparc_fsubq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
+
 /* logical */
 #define sparc_and(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|1,(dest))
 #define sparc_and_imm(ins,setcc,r1,imm,dest) sparc_encode_format3b((ins),2,(r1),(imm),(setcc)|1,(dest))
@@ -451,7 +460,6 @@ typedef struct {
 /* synthetic instructions */
 #define sparc_cmp(ins,r1,r2) sparc_sub((ins),sparc_cc,(r1),(r2),sparc_g0)
 #define sparc_cmp_imm(ins,r1,imm) sparc_sub_imm((ins),sparc_cc,(r1),(imm),sparc_g0)
-
 #define sparc_jmp(ins,base,disp) sparc_jmpl((ins),(base),(disp),sparc_g0)
 #define sparc_jmp_imm(ins,base,disp) sparc_jmpl_imm((ins),(base),(disp),sparc_g0)
 #define sparc_call(ins,base,disp) sparc_jmpl((ins),(base),(disp),sparc_o7)
