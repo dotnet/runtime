@@ -2803,14 +2803,20 @@ handle_parent:
 		method = event->add;
 		if (!method)
 			method = event->remove;
-
-		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-			if (!(bflags & BFLAGS_Public))
-				continue;
-		} else {
+		if (!method)
+			method = event->raise;
+		if (method) {
+			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+				if (!(bflags & BFLAGS_Public))
+					continue;
+			} else {
+				if (!(bflags & BFLAGS_NonPublic))
+					continue;
+			}
+		}
+		else
 			if (!(bflags & BFLAGS_NonPublic))
 				continue;
-		}
 
 		g_free (event_name);
 		return mono_event_get_object (domain, startklass, event);
