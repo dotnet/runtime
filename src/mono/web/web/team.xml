@@ -114,4 +114,18 @@
     </tasks>
   </contributor>  
  
+  <contributor>
+    <name>
+      <first-name>Tim</first-name>
+      <last-name>Coleman</last-name>
+    </name>
+    <e-mail>tim@timcoleman.com</e-mail>
+    <location>Kitchener-Waterloo, Ontario, Canada</location>
+    <tasks>
+      <task>ADO.NET</task>
+      <task>Web Services</task>
+      <task>Class library hacking</task>
+    </tasks>
+  </contributor>
+ 
 </contributors>
