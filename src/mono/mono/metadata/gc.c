@@ -321,7 +321,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 	MONO_ARCH_SAVE_REGS;
 
 	EnterCriticalSection (&handle_section);
-	idx = next_handle++;
+	/* Indexes start from 1 since 0 means the handle is not allocated */
+	idx = ++next_handle;
 	if (idx >= array_size) {
 #if HAVE_BOEHM_GC
 		gpointer *new_array;
