@@ -49,6 +49,40 @@
 	might need to install the CygWin32 development tools to get a
 	Unix-like compilation environment.
 
+** JIT Engine
+
+	Currently we are evaluating various mechanisms for our JIT
+	engine (<a
+	href="http://www.intel.com/research/mrl/orp/">ORP</a>, <a
+	href="http://www.gnu.org/software/lightning/">GNU
+	Lightning</a>, and <a
+	href="http://www.eecs.harvard.edu/~nr/toolkit/">NJ Machine
+	Toolkit</a>.
+
+	We have not made a decision yet, but we might want to use a
+	Code Generator Generator for the Common Intermediate Language,
+	as that is likely going to allow us to create better code.
+
+** Garbage Collection
+
+	We have decided to implement a generational tracing garbage
+	collector, which is very similar to the one being used by
+	.NET.  For an introduction to the garbage collection system
+	used by Microsoft's CLR implementation, you can read this book
+	on <a
+	href="http://www.amazon.com/exec/obidos/ASIN/0471941484/o/qid=992556433/sr=2-1/ref=aps_sr_b_1_1/103-5866388-0492603">Garbage
+	Collection.</a>
+
+	Although using a conservative garbage collector like Bohem's
+	would work, all the type information is available at runtime,
+	so we can actually implement a better collector than a
+	conservative collector.
+
+	<ul>
+		* Garbage collection list and FAQ:<br>
+		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
+	</ul>
+
 ** Useful links
 
 	Paolo Molaro found a few interesting links:
@@ -67,25 +101,7 @@
 		  interpreters from simple descriptions of the VM instructions:<br>
 		  <a href="http://www.complang.tuwien.ac.at/anton/vmgen/">
 		  http://www.complang.tuwien.ac.at/anton/vmgen</a>
-
-		* Garbage collection list and FAQ:<br>
-		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
 	</ul>
-
-** Garbage Collection
-
-	We have decided to implement a generational tracing garbage
-	collector, which is very similar to the one being used by
-	.NET.  For an introduction to the garbage collection system
-	used by Microsoft's CLR implementation, you can read this book
-	on <a
-	href="http://www.amazon.com/exec/obidos/ASIN/0471941484/o/qid=992556433/sr=2-1/ref=aps_sr_b_1_1/103-5866388-0492603">Garbage
-	Collection.</a>
-
-	Although using a conservative garbage collector like Bohem's
-	would work, all the type information is available at runtime,
-	so we can actually implement a better collector than a
-	conservative collector.
 
 ** PInvoke
 

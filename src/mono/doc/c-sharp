@@ -82,6 +82,21 @@
 		  parents are.
 	</ul>
 
+	Interesting tasks:
+
+	<ul>
+		* Finishing the JB port from Java to C#.  If you are
+		  interested in working on this, please contact Brian
+		  Jepson (bjepson at oreilly d-o-t com).
+
+		  More on JB at: <a href="http://www.cs.colorado.edu/~dennis/software/jb.html">
+		  http://www.cs.colorado.edu/~dennis/software/jb.html</a>
+
+		  JB will allow us to move from the Berkeley Yacc
+		  based Jay to a Bison-based compiler (better error
+		  reporting and recovery).
+	</ul>
+
 ** Questions and Answers
 
 Q: Why not write a C# front-end for GCC?

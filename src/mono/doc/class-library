@@ -84,6 +84,41 @@
 	the correctness of the class library, compiler, and JIT
 	engine.
 
+** Coding conventions
+
+	Please follow the conventions on the ECMA specification (On
+	the Annex Partition) for your coding your libraries. 
+
+	Use 8 space tabs for writing your code (hopefully we can keep
+	this consistent).  If you are modifying someone else's code, try
+	to keep the coding style similar.
+
+	For a rationale on 8 space tabs, read Linus Torvald's Coding
+	Style guidelines in the Linux kernel source for a rationale. 
+
+*** Missing implementation bits
+
+	If you implement a class and you are missing implementation bits,
+	please put in the code the word "TODO" and a description of what
+	is missing to be implemented.
+
+*** Tagging buggy code
+
+	If there is a bug in your implementation tag the problem by using
+	the word "FIXME" in the code, together with a description of the 
+	problem.
+
+	Do not use XXX or obscure descriptions, because otherwise people
+	will not be able to understand what you mean.
+
+*** Tagging Lame specs
+
+	Sometimes the specification will be lame (consider Version.ToString (fieldCount)
+	where there is no way of knowing how many fields are available, making the API
+	not only stupid, but leading to unreliable code).
+
+	In those cases, use the keyword "LAMESPEC".
+
 ** Contributing
 
 	We welcome contributions to the the Class Library.  To get

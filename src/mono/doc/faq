@@ -285,7 +285,8 @@ A: Yes, you will.
 Q: What about Soup?
 
 A: Soup is a library for GNOME applications to create SOAP server and
-   SOAP clients.  
+   SOAP clients.   You can browse the source code for soup using <a
+   href="http://cvs.gnome.org/bonsai">GNOME's Bonsai</a>
 
 Q: Can I use CORBA?
 
@@ -353,6 +354,13 @@ A: The main rule is that the stack in the CLI is not a general purpose
    At any given call or return instruction, the types on the stack
    have to be the same independently of the flow of execution of your
    code. 
+
+Q: I heard that the CIL is ideal for JITing and not efficient for
+   interpreters, is this the case?
+
+A: The CIL is better suited to be JITed than JVM byte codes, but you
+   can interpret them as trivially as you can interpret JVM byte
+   codes. 
 
 ** Extending Mono
 
@@ -430,6 +438,8 @@ Q: Did Nat and Miguel meet at Microsoft?
 A: They met online on the Linux IRC network;  They met in person for
    the first time in 1997.
 
+** Mono and Microsoft
+   
 Q: How can you expect Mono to compete with Microsoft, wont this
    require an effort too large?
 
@@ -437,6 +447,15 @@ A: You are right.  Mono will never become a reality without the help
    of other contributors.  Ximian is a small company that can not
    finish Mono alone.  We will be working with members of the
    community to deliver the product.
+
+Q: Is Microsoft and Corel involved in the Mono implementation?
+
+A: No, they are not.
+
+Q: Are you writing Mono from the ECMA specs?
+
+A: yes, we are writing them from the ECMA specs and the published
+   materials in print about .NET
 
 ** Acronyms
 
@@ -487,6 +506,16 @@ Q: But would this work around the GPL in the GCC compiler and allow
 A: People can already do this by targeting the JVM byte codes (there
    are about 130 compilers for various languages that target the JVM).
 
+Q: Why are you writing a JIT engine instead of a front-end to GCC?
+
+A: The JIT engine and runtime engine will be able to execute CIL
+   executables generated on Windows.
+
+** Mono and GNU
+
+Q: Is Mono part of the GNU project?
+
+A: Mono is a Ximian project, that is also part of the GNU project.
 
 ** Mono and Portability
 
@@ -506,3 +535,48 @@ A: It will depend only if you are using a particular assembly (for
    example, for doing GUI applications).  If you are just interested
    in Mono for implementing a `Hello World Enterprise P2P Web
    Service', you will not need any GNOME component.
+
+** Performance
+
+Q: How fast will be Mono?
+
+A: We can not predict the future, but a conservative estimate is that
+   it would be at least `as fast as other JIT engines'.
+
+   Now, wishfully thinking I hope that we will ship various JITs with
+   Mono just like Microsoft has done.  A fast JITer when maximum
+   performance is not needed, but fast load times are important;  And
+   an optimizing JITer that would be slower at generating code but
+   produce more optimal output.
+
+   The CIL has some advantages over the Java byte code:  it is really
+   an intermediate representation and there are a number of
+   restrictions on how you can emit CIL code that simplify creating
+   better JIT engines.
+
+   For example, on the CIL the stack is not really an abstraction
+   available for the code generator to use at will: it is just a way
+   of creating a postfix representation of the parsed tree.  At any
+   given call point or return point, the contents of the stack are
+   expected to contain the same object types independently of how the
+   instructions was reached.
+
+** Assorted questions
+
+Q: You say that the CLI allows multiple languages to execute on the
+   same environment.  Isn't this the purpose of CORBA?
+
+A: CORBA can be used for this purpose, but think of CORBA mostly as a
+   inter-process (local machine or remote machine) communication
+   system.  
+
+   Think of the CLI to be targeted to interoperation of languages in
+   the same process, and CORBA as being a nifty addition for
+   out-of-process.  
+
+   Sure, we have used CORBA for in-proc components, but the lack of an
+   ABI for in-proc components does not translate into a good framework
+   for in-proc systems
+
+   
+

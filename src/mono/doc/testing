@@ -17,5 +17,5 @@
 	be written to demonstrate the bug and its fix. Then, if
 	you ever reintroduce the bug, you will know immediately. For
 	more info, read <a
-	href="http://junit.sourceforge.net/doc/testinfected/testing.htm">
+	href="http://nunit.sourceforge.net/doc/testinfected/testing.html">
 	JUnit Test Infected: Programmers Love Writing Tests</a>.
