@@ -1,3 +1,17 @@
+2004-11-08  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (mcs_topdir, mcs_topdir_from_srcdir): New 'subst'ed
+	variables.  Used to support both an in-tree mcs/ and a sibling
+	mcs/ directory.
+	* Makefile.am (mcs_topdir): Remove.
+	(dist-hook): Distribute mcs/ as a subdirectory.
+	* runtime/Makefile.am ($(monoone_DATA) $(monotwo_DATA) $(monobins_DATA)):
+	Use mcs_topdir and mcs_topdir_from_srcdir.
+	* runtime/net_1_1/Makefile.am (mscorlib.dll $(gac_assemblies) $(mdb_files)): 
+	Likewise.
+	(all-local): Depend on $(mdb_files) too.
+	* runtime/net_2_0/Makefile.am: Likewise.
+	
 2004-11-05  Zoltan Varga  <vargaz@freemail.hu>
 
 	* runtime/net_2_0/Makefile.am (install-data-local): 

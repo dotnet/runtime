@@ -259,6 +259,19 @@ else
 fi
 CFLAGS="$CFLAGS -g $WARN"
 
+# Where's the 'mcs' source tree?
+if test -d $srcdir/mcs; then
+  mcsdir=mcs
+else
+  mcsdir=../mcs
+fi
+
+mcs_topdir='$(top_srcdir)/'$mcsdir
+mcs_topdir_from_srcdir='$(top_builddir)/'$mcsdir
+
+AC_SUBST([mcs_topdir])
+AC_SUBST([mcs_topdir_from_srcdir])
+
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
@@ -1473,7 +1486,7 @@ tools/locale-builder/Makefile
 ])
 
 echo "
-
+        mcs source:  $mcs_topdir
 	GC:	     $gc
 	ICU:	     $enable_icu
 	TLS:         $with_tls

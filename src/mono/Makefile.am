@@ -9,6 +9,11 @@ DIST_SUBDIRS = libgc mono ikvm-jni docs data runtime scripts man samples support
 
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
+# Distribute the 'mcs' tree too
+dist-hook:
+	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
+	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
+
 pkgconfigdir = $(libdir)/pkgconfig
 if JIT_SUPPORTED
 pkgconfig_DATA= mono.pc mint.pc
@@ -22,8 +27,6 @@ DISTCLEANFILES= mono.pc mint.pc
 # mono and mcs without running into the out-of-sync
 # problems by doing the compilation in the right order.
 #
-
-mcs_topdir=$(top_srcdir)/../mcs
 
 .PHONY: bootstrap faststrap fasterstrap bootstrap-clean bootstrap-check get-monolite-latest monolite-bootstrap
 .PHONY: tmpinst-dir tmpinst-mcs-basic-build tmpinst-mcs-short-build tmpinst-mcs-full-build tmpinst-monolite
@@ -97,11 +100,13 @@ monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
 	$(MAKE) fasterstrap
 
-bootstrap-world:
-	$(MAKE) bootstrap-clean
+compiler-tests:
+	$(MAKE) mcs-do-clean-profiles
 	$(MAKE) bootstrap
-	$(MAKE) install
 	$(MAKE) mcs-do-compiler-tests
+
+bootstrap-world: compiler-tests
+	$(MAKE) install
 
 # internal targets
 
