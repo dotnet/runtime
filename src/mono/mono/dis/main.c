@@ -337,9 +337,12 @@ dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 		return;
 
 	mh = mono_metadata_parse_mh (m, ptr);
-	loc = mono_metadata_locate_token (m, ii->cli_cli_header.ch_entry_point);
-	if (rva == read32(loc))
-		fprintf (output, "\t.entrypoint\n");
+	if (ii->cli_cli_header.ch_entry_point){
+		loc = mono_metadata_locate_token (m, ii->cli_cli_header.ch_entry_point);
+		if (rva == read32 (loc))
+			fprintf (output, "\t.entrypoint\n");
+	}
+	
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
 	printf ("\t// Values Code Size=%d/0x%x\n\t// LocalTok=%x\n\n",
