@@ -87,11 +87,10 @@ mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
 {
 	ASyncCall *ac = (ASyncCall *)ares->data;
 
-	if (!cb_only) {
+	if (!cb_only)
 		ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
 					       &ac->msg->exc, &ac->out_args);
-		g_assert (ac->res);
-	}
+
 	ac->inside_cb = 1;
 	ares->completed = 1;
 		
@@ -213,8 +212,10 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	}
 
 	/* restore return value */
-	g_assert (ac->res);
-	arch_method_return_message_restore (method, &first_arg, ac->res, ac->out_args);
+	if (method->signature->ret->type != MONO_TYPE_VOID) {
+		g_assert (ac->res);
+		arch_method_return_message_restore (method, &first_arg, ac->res, ac->out_args);
+	}
 }
 
 gpointer
