@@ -153,28 +153,45 @@ typedef enum {
 
 typedef enum {
 	/* fop1 format */
-	sparc_fitos = 196,
-	sparc_fitod = 200,
-	sparc_fstoi = 209,
-	sparc_fdtoi = 210,
-	sparc_fstod = 201,
-	sparc_fdtos = 198,
-	sparc_fmov  = 1,
-	sparc_fneg  = 5,
-	sparc_fabs  = 9,
-	sparc_fsqrts = 41,
-	sparc_fsqrtd = 42,
-	sparc_fadds  = 65,
-	sparc_faddd  = 66,
-	sparc_fsubs  = 69,
-	sparc_fsubd  = 70,
-	sparc_fmuls  = 73,
-	sparc_fmuld  = 74,
-	sparc_fdivs  = 77,
-	sparc_fdivd  = 78,
+	sparc_fitos_val = 196,
+	sparc_fitod_val = 200,
+	sparc_fitoq_val = 204,
+	sparc_fstoi_val = 209,
+	sparc_fdtoi_val = 210,
+	sparc_fqtoi_val = 211,
+	sparc_fstod_val = 201,
+	sparc_fstoq_val = 205,
+	sparc_fdtos_val = 198,
+	sparc_fdtoq_val = 206,
+	sparc_fqtos_val = 199,
+	sparc_fqtod_val = 203,
+	sparc_fmovs_val  = 1,
+	sparc_fnegs_val  = 5,
+	sparc_fabss_val  = 9,
+	sparc_fsqrts_val = 41,
+	sparc_fsqrtd_val = 42,
+	sparc_fsqrtq_val = 43,
+	sparc_fadds_val  = 65,
+	sparc_faddd_val  = 66,
+	sparc_faddq_val  = 67,
+	sparc_fsubs_val  = 69,
+	sparc_fsubd_val  = 70,
+	sparc_fsubq_val  = 71,
+	sparc_fmuls_val  = 73,
+	sparc_fmuld_val  = 74,
+	sparc_fmulq_val  = 75,
+	sparc_fsmuld_val = 105,
+	sparc_fdmulq_val = 111,
+	sparc_fdivs_val  = 77,
+	sparc_fdivd_val  = 78,
+	sparc_fdivq_val  = 79,
 	/* fop2 format */
-	sparc_fcmps  = 81,
-	sparc_fcmpd  = 82
+	sparc_fcmps_val  = 81,
+	sparc_fcmpd_val  = 82,
+	sparc_fcmpq_val  = 83,
+	sparc_fcmpes_val = 85,
+	sparc_fcmped_val = 86,
+	sparc_fcmpeq_val = 87
 } SparcFOp;
 
 typedef struct {
@@ -385,14 +402,59 @@ typedef struct {
 #define sparc_fop(ins,r1,op,r2,dest) sparc_encode_format3c((ins),2,(op),(r1),52,(r2),(dest))
 #define sparc_fcmp(ins,r1,op,r2) sparc_encode_format3c((ins),2,(op),(r1),53,(r2),0)
 
-/* fadd for a single has an op code of 65, double 66, quad 67 */
-#define sparc_fadds(ins, r1, op, r2, dest) sparc_fop( ins, r1, 65, r2, dest )
-#define sparc_faddd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 66, r2, dest )
-#define sparc_faddq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 67, r2, dest )
+/* format 1 fops */
+#define sparc_fadds(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_fadds_val, r2, dest )
+#define sparc_faddd(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_faddd_val, r2, dest )
+#define sparc_faddq(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_faddq_val, r2, dest )
 
-#define sparc_fsubs(ins, r1, op, r2, dest) sparc_fop( ins, r1, 69, r2, dest ) 
-#define sparc_fsubd(ins, r1, op, r2, dest) sparc_fop( ins, r1, 70, r2, dest ) 
-#define sparc_fsubq(ins, r1, op, r2, dest) sparc_fop( ins, r1, 71, r2, dest ) 
+#define sparc_fsubs(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_fsubs_val, r2, dest ) 
+#define sparc_fsubd(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_fsubd_val, r2, dest ) 
+b#define sparc_fsubq(ins, r1, r2, dest) sparc_fop( ins, r1, sparc_fsubq_val, r2, dest ) 
+
+#define sparc_fmuls( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fmuls_val, r2, dest )
+#define sparc_fmuld( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fmuld_val, r2, dest )
+#define sparc_fmulq( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fmulq_val, r2, dest )
+
+#define sparc_fsmuld( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fsmuld_val, r2, dest )
+#define sparc_fdmulq( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fdmulq_val, r2, dest )
+
+#define sparc_fdivs( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fdivs_val, r2, dest )
+#define sparc_fdivd( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fdivd_val, r2, dest )
+#define sparc_fdivq( ins, r1, r2, dest ) sparc_fop( ins, r1, sparc_fdivq_val, r2, dest )
+
+#define sparc_fitos( ins, r2, dest ) sparc_fop( ins, 0, sparc_fitos_val, r2, dest )
+#define sparc_fitod( ins, r2, dest ) sparc_fop( ins, 0, sparc_fitod_val, r2, dest )
+#define sparc_fitoq( ins, r2, dest ) sparc_fop( ins, 0, sparc_fitoq_val, r2, dest )
+
+#define sparc_fstoi( ins, r2, dest ) sparc_fop( ins, 0, sparc_fstoi_val, r2, dest )
+#define sparc_fdtoi( ins, r2, dest ) sparc_fop( ins, 0, sparc_fdtoi_val, r2, dest )
+#define sparc_fqtoi( ins, r2, dest ) sparc_fop( ins, 0, sparc_fqtoi_val, r2, dest )
+
+#define sparc_fstod( ins, r2, dest ) sparc_fop( ins, 0, sparc_fstod_val, r2, dest )
+#define sparc_fstoq( ins, r2, dest ) sparc_fop( ins, 0, sparc_fstoq_val, r2, dest )
+
+#define sparc_fdtos( ins, r2, dest ) sparc_fop( ins, 0, sparc_fdtos_val, r2, dest )
+#define sparc_fdtoq( ins, r2, dest ) sparc_fop( ins, 0, sparc_fdtoq_val, r2, dest )
+
+#define sparc_fqtos( ins, r2, dest ) sparc_fop( ins, 0, sparc_fqtos_val, r2, dest )
+#define sparc_fqtod( ins, r2, dest ) sparc_fop( ins, 0, sparc_fqtod_val, r2, dest )
+
+#define sparc_fmovs( ins, r2, dest ) sparc_fop( ins, 0, sparc_fmovs_val, r2, dest )
+#define sparc_fnegs( ins, r2, dest ) sparc_fop( ins, 0, sparc_fnegs_val, r2, dest )
+#define sparc_fabss( ins, r2, dest ) sparc_fop( ins, 0, sparc_fabss_val, r2, dest )
+
+#define sparc_fsqrts( ins, r2, dest ) sparc_fop( ins, 0, sparc_fsqrts_val, r2, dest )
+#define sparc_fsqrtd( ins, r2, dest ) sparc_fop( ins, 0, sparc_fsqrtd_val, r2, dest )
+#define sparc_fsqrtq( ins, r2, dest ) sparc_fop( ins, 0, sparc_fsqrtq_val, r2, dest )
+
+/* format 2 fops */
+
+#define sparc_fcmps( ins, r1, r2 ) sparc_fcmp( ins, r1, sparc_fcmps_val, r2 )
+#define sparc_fcmpd( ins, r1, r2 ) sparc_fcmp( ins, r1, sparc_fcmpd_val, r2 )
+#define sparc_fcmpq( ins, r1, r2 ) sparc_fcmp( ins, r1, sparc_fcmpq_val, r2 )
+#define sparc_fcmpes( ins, r1, r2 ) sparc_fcmpes( ins, r1, sparc_fcmpes_val, r2 )
+#define sparc_fcmped( ins, r1, r2 ) sparc_fcmped( ins, r1, sparc_fcmped_val, r2 )
+#define sparc_fcmpeq( ins, r1, r2 ) sparc_fcmpeq( ins, r1, sparc_fcmpeq_val, r2 ) 
 
 /* logical */
 #define sparc_and(ins,setcc,r1,r2,dest) sparc_encode_format3a((ins),2,0,(r1),(r2),(setcc)|1,(dest))
