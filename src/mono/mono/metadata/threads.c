@@ -284,9 +284,9 @@ static guint32 start_wrapper(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
+#endif
 	
 	thread_cleanup (thread);
-#endif
 
 	return(0);
 }
