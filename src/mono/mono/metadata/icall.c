@@ -12,6 +12,7 @@
 #include <stdarg.h>
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/threads-pthread.h>
 
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
@@ -198,6 +199,11 @@ static gpointer icall_map [] = {
 	 * System.Object
 	 */
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
+
+	/*
+	 * System.Threading
+	 */
+	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
 
 	/*
 	 * add other internal calls here

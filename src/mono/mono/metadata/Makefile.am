@@ -20,7 +20,10 @@ libmetadata_a_SOURCES = \
 	loader.c	\
 	class.c		\
 	object.c	\
-	icall.c
+	icall.c		\
+	threads-pthread.c	\
+	threads-pthread.h	\
+	#
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
@@ -42,5 +45,6 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)
 
-pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS)
+pedump_LDADD = $(GLIB_LIBS) $(GMODULE_LIBS) $(PTHREAD_LIBS)
+
 

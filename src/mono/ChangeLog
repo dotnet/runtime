@@ -1,3 +1,7 @@
+2001-09-21  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Check for libpthread
+
 2001-09-19  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/test-ops.cs: added more tests
