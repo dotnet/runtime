@@ -393,6 +393,7 @@ static CallInfo*
 get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr, simpletype;
+	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
@@ -404,8 +405,9 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	/* return value */
 	{
-		simpletype = sig->ret->type;
+		ret_type = sig->ret;
 enum_retvalue:
+		simpletype = ret_type->type;
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -442,12 +444,12 @@ enum_retvalue:
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
+			if (ret_type->data.klass->enumtype) {
+				ret_type = ret_type->data.klass->enum_basetype;
 				goto enum_retvalue;
 			}
 
-			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack)
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
@@ -458,6 +460,9 @@ enum_retvalue:
 			add_general (&gr, &stack_size, &cinfo->ret);
 			;
 			break;
+		case MONO_TYPE_GENERICINST:
+			ret_type = ret_type->data.generic_inst->generic_type;
+			goto enum_retvalue;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -479,6 +484,7 @@ enum_retvalue:
 
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
+		MonoType *ptype;
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
@@ -497,8 +503,9 @@ enum_retvalue:
 			add_general (&gr, &stack_size, ainfo);
 			continue;
 		}
-		simpletype = sig->params [i]->type;
-	enum_calc_size:
+		ptype = sig->params [i];
+	handle_enum:
+		simpletype = ptype->type;
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -525,17 +532,20 @@ enum_retvalue:
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				simpletype = sig->params [i]->data.klass->enum_basetype->type;
-				goto enum_calc_size;
+			if (ptype->data.klass->enumtype) {
+				ptype = ptype->data.klass->enum_basetype;
+				goto handle_enum;
 			}
 
-			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			add_valuetype (sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
 			ainfo->storage = ArgOnStack;
 			break;
+		case MONO_TYPE_GENERICINST:
+			ptype = ptype->data.generic_inst->generic_type;
+			goto handle_enum;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 			add_general (&gr, &stack_size, ainfo);
