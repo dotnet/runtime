@@ -7,9 +7,9 @@
       <last-name>Mak</last-name>
     </name>
     <e-mail>duncan@ximian.com</e-mail>
-    <image>none.png</image>
+    <image>duncan.png</image>
     <location>Boston / Hong Kong</location>
-    <organization>Ximian Inc.</organization>
+    <organization>Ximian.</organization>
     <description>Ximian intern</description>
     <tasks>
       <task>XML Schema</task>
@@ -26,11 +26,13 @@
     <e-mail>miguel@ximian.com</e-mail>
     <image>none.png</image>
     <location>Boston / Mexico City</location>
-    <organization>Ximian Inc.</organization>
+    <organization>Ximian.</organization>
     <description>Ximian CTO</description>
     <tasks>
-      <task>Mono project manager</task>
+      <task>Mono Project Manager</task>
       <task>MCS compiler</task>
+      <task>Core class libraries</task>
+      <task>MonoDoc, Gtk#</task>
     </tasks>
   </contributor>
 
@@ -42,9 +44,12 @@
     <e-mail>lupus@ximian.com</e-mail>
     <image>none.png</image>
     <location>Italy</location>
-    <organization>Ximian Inc.</organization>
-    <description>JIT hacker</description>
+    <organization>Ximian.</organization>
+    <description>Mono hacker</description>
     <tasks>
+      <task>Runtime implementation</task>
+      <task>Core class libraries</task>
+      <task>JIT compiler</task>
     </tasks>
   </contributor>
 
@@ -57,8 +62,11 @@
     <image>none.png</image>
     <location>Austria</location>
     <organization>Ximian</organization>
-    <description>JIT hacker</description>
+    <description>Mono hacker</description>
     <tasks>
+      <task>Runtime implementation</task>
+      <task>Core class libraries</task>
+      <task>JIT compiler</task>
     </tasks>
   </contributor>
 
