@@ -197,6 +197,20 @@ stream_data_align (MonoDynamicStream *stream)
 		mono_image_add_stream_data (stream, buf, 4 - count);
 }
 
+/* modified version needed to handle building corlib */
+static MonoClass*
+my_mono_class_from_mono_type (MonoType *type) {
+	switch (type->type) {
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
+		return mono_class_from_mono_type (type);
+	default:
+		/* should be always valid when we reach this case... */
+		return type->data.klass;
+	}
+}
+
 static void
 encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endbuf)
 {
@@ -1244,13 +1258,18 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	guint32 token, scope, enclosing;
 	MonoClass *klass;
 
+#if COMPILE_CORLIB
+	/* nasty hack, need to find the proper solution */
+	if (type->type == MONO_TYPE_OBJECT)
+		return 0x08;
+#endif
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
 	token = create_typespec (assembly, type);
 	if (token)
 		return token;
-	klass = mono_class_from_mono_type (type);
+	klass = my_mono_class_from_mono_type (type);
 	/*
 	 * If it's in the same module:
 	 */
@@ -1419,22 +1438,26 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 {
 	MonoDynamicTable *table;
 	guint *values;
-	int i;
+	int i, is_object = 0, is_system = 0;
 	char *n;
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
-	if (tb->parent) { /* interfaces don't have a parent */
-		values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
-	} else
-		values [MONO_TYPEDEF_EXTENDS] = 0;
 	n = mono_string_to_utf8 (tb->name);
+	if (strcmp (n, "Object") == 0)
+		is_object++;
 	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
 	n = mono_string_to_utf8 (tb->nspace);
+	if (strcmp (n, "System") == 0)
+		is_system++;
 	values [MONO_TYPEDEF_NAMESPACE] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
+	if (tb->parent && !(is_system && is_object)) { /* interfaces don't have a parent */
+		values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
+	} else
+		values [MONO_TYPEDEF_EXTENDS] = 0;
 	values [MONO_TYPEDEF_FIELD_LIST] = assembly->tables [MONO_TABLE_FIELD].next_idx;
 	values [MONO_TYPEDEF_METHOD_LIST] = assembly->tables [MONO_TABLE_METHOD].next_idx;
 
@@ -2210,6 +2233,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
 #endif
 
+	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
@@ -2237,7 +2261,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	image = g_new0 (MonoImage, 1);
 	
 	/* keep in sync with image.c */
-	image->name = mono_string_to_utf8 (assemblyb->name);
+	assembly->assembly.aname.name = image->name = mono_string_to_utf8 (assemblyb->name);
 	image->assembly_name = image->name; /* they may be different */
 
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -3424,7 +3448,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 	MonoAssembly *ta;
 
 	name = mono_type_get_name (type);
-	klass = mono_class_from_mono_type (type);
+	klass = my_mono_class_from_mono_type (type);
 	ta = klass->image->assembly;
 	if (ta == ass || klass->image == mono_defaults.corlib)
 		return name;
@@ -3676,9 +3700,14 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	klass->image = tb->module->assemblyb->dynamic_assembly->assembly.image;
 
-	if (tb->parent)
-		parent = mono_class_from_mono_type (tb->parent->type);
-	else
+	if (tb->parent) {
+		/* check so we can compile corlib correctly */
+		if (strcmp (mono_object_class (tb->parent)->name, "TypeBuilder") == 0) {
+			/* mono_class_setup_mono_type () guaranteess type->data.klass is valid */
+			parent = tb->parent->type->data.klass;
+		} else 
+			parent = my_mono_class_from_mono_type (tb->parent->type);
+	} else
 		parent = NULL;
 	
 	klass->inited = 1; /* we lie to the runtime */
@@ -3692,6 +3721,13 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	if (parent != NULL)
 		mono_class_setup_parent (klass, parent);
+	else if (strcmp (klass->name, "Object") == 0 && strcmp (klass->name_space, "System") == 0) {
+		const char *old_n = klass->name;
+		/* trick to get relative numbering right when compiling corlib */
+		klass->name = "BuildingObject";
+		mono_class_setup_parent (klass, mono_defaults.object_class);
+		klass->name = old_n;
+	}
 	mono_class_setup_mono_type (klass);
 
 	/*
@@ -3714,7 +3750,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
 
-	klass = mono_class_from_mono_type (tb->type.type);
+	klass = my_mono_class_from_mono_type (tb->type.type);
 
 	if (klass->enumtype && klass->enum_basetype == NULL) {
 		MonoReflectionFieldBuilder *fb;
@@ -3725,7 +3761,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, 0);
 
 		klass->enum_basetype = fb->type->type;
-		klass->element_class = mono_class_from_mono_type (klass->enum_basetype);
+		klass->element_class = my_mono_class_from_mono_type (klass->enum_basetype);
 	}
 }
 
