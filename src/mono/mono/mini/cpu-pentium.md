@@ -94,7 +94,7 @@ ldc.r8:
 dup:
 pop:
 jmp: len:32
-call: dest:a clob:c len:11
+call: dest:a clob:c len:17
 calli:
 ret: len:1
 br.s:
@@ -174,8 +174,8 @@ castclass:
 isinst:
 conv.r.un:
 unbox:
-throw: src1:i len:6
-op_rethrow: src1:i len:6
+throw: src1:i len:13
+op_rethrow: src1:i len:13
 ldfld:
 ldflda:
 stfld:
@@ -303,16 +303,16 @@ retarg:
 setret: dest:a src1:i len:2
 setlret: dest:l src1:i src2:i len:4
 checkthis: src1:b len:2
-voidcall: len:11 clob:c
+voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
-fcall: dest:f len:11 clob:c
+fcall: dest:f len:17 clob:c
 fcall_reg: dest:f src1:i len:11 clob:c
 fcall_membase: dest:f src1:b len:16 clob:c
-lcall: dest:l len:11 clob:c
+lcall: dest:l len:17 clob:c
 lcall_reg: dest:l src1:i len:11 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
-vcall: len:11 clob:c
+vcall: len:17 clob:c
 vcall_reg: src1:i len:11 clob:c
 vcall_membase: src1:b len:16 clob:c
 call_reg: dest:a src1:i len:11 clob:c
@@ -320,8 +320,8 @@ call_membase: dest:a src1:b len:16 clob:c
 trap:
 iconst: dest:i len:5
 i8const:
-r4const: dest:f len:6
-r8const: dest:f len:6
+r4const: dest:f len:15 clob:a
+r8const: dest:f len:15 clob:a
 regvar:
 reg:
 regoffset:
