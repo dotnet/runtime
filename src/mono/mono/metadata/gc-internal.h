@@ -37,5 +37,10 @@ extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 extern gpointer mono_gc_out_of_memory (size_t size);
 extern void     mono_gc_enable_events (void);
 
+/* disappearing link functionality */
+void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj);
+void        mono_gc_weak_link_remove (void **link_addr);
+MonoObject *mono_gc_weak_link_get    (void **link_addr);
+
 #endif /* __MONO_METADATA_GC_H__ */
 

@@ -19,13 +19,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-logger.h>
-#define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
-
-#ifndef HIDE_POINTER
-#define HIDE_POINTER(v)         (v)
-#define REVEAL_POINTER(v)       (v)
-#endif
 
 typedef struct DomainFinalizationReq {
 	MonoDomain *domain;
@@ -371,7 +365,6 @@ typedef struct {
 } HandleData;
 
 /* weak and weak-track arrays will be allocated in malloc memory 
- * (sadly libgc still requires REVEAL/HIDE_POINTER)
  */
 static HandleData gc_handles [] = {
 	{NULL, NULL, 0, HANDLE_WEAK, 0},
@@ -451,7 +444,6 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			memset (handles->entries + handles->size, 0, sizeof (gpointer) * handles->size);
 #endif
 		} else {
-#ifdef HAVE_BOEHM_GC
 			gpointer *entries;
 			entries = g_malloc (sizeof (gpointer) * new_size);
 			/* we disable GC because we could lose some disappearing link updates */
@@ -459,19 +451,16 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
 			memset (entries + handles->size, 0, sizeof (gpointer) * handles->size);
 			for (i = 0; i < handles->size; ++i) {
-				GC_unregister_disappearing_link (&(handles->entries [i]));
-				/*g_print ("reg/unreg entry %d of type %d at %p to object %p (%p), was: %p\n", i, handles->type, &(entries [i]), REVEAL_POINTER (entries [i]), entries [i], handles->entries [i]);*/
-				if (entries [i] && entries [i] != (gpointer)-1) {
-					GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(entries [i]), REVEAL_POINTER (entries [i]));
+				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
+				mono_gc_weak_link_remove (&(handles->entries [i]));
+				/*g_print ("reg/unreg entry %d of type %d at %p to object %p (%p), was: %p\n", i, handles->type, &(entries [i]), obj, entries [i], handles->entries [i]);*/
+				if (obj) {
+					mono_gc_weak_link_add (&(entries [i]), obj);
 				}
 			}
 			g_free (handles->entries);
 			handles->entries = entries;
 			mono_gc_enable ();
-#else
-			handles->entries = g_realloc (handles->entries, sizeof (gpointer) * new_size);
-			memset (handles->entries + handles->size, 0, sizeof (gpointer) * handles->size);
-#endif
 		}
 
 		/* set i and slot to the next free position */
@@ -483,12 +472,9 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 	handles->bitmap [slot] |= 1 << i;
 	slot = slot * 32 + i;
 	handles->entries [slot] = obj;
-#ifdef HAVE_BOEHM_GC
 	if (handles->type <= HANDLE_WEAK_TRACK) {
-		handles->entries [slot] = (void*)HIDE_POINTER (obj);
-		GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(handles->entries [slot]), obj);
+		mono_gc_weak_link_add (&(handles->entries [slot]), obj);
 	}
-#endif
 
 	unlock_handles (handles);
 	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
@@ -516,11 +502,10 @@ mono_gchandle_get_target (guint32 gchandle)
 	MonoObject *obj = NULL;
 	lock_handles (handles);
 	if (slot < handles->size) {
-		obj = handles->entries [slot];
 		if (handles->type <= HANDLE_WEAK_TRACK) {
-			obj = REVEAL_POINTER (obj);
-			if (obj == (MonoObject *) -1)
-				obj = NULL;
+			obj = mono_gc_weak_link_get (&handles->entries [slot]);
+		} else {
+			obj = handles->entries [slot];
 		}
 	} else {
 		/* print a warning? */
@@ -537,17 +522,12 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	HandleData *handles = &gc_handles [gchandle & 3];
 	lock_handles (handles);
 	if (slot < handles->size) {
-#ifdef HAVE_BOEHM_GC
 		if (handles->type <= HANDLE_WEAK_TRACK) {
-			GC_unregister_disappearing_link (&handles->entries [slot]);
-			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(handles->entries [slot]), obj);
-			handles->entries [slot] = (void*)HIDE_POINTER (obj);
+			mono_gc_weak_link_remove (&handles->entries [slot]);
+			mono_gc_weak_link_add (&handles->entries [slot], obj);
 		} else {
 			handles->entries [slot] = obj;
 		}
-#else
-		handles->entries [slot] = obj;
-#endif
 	} else {
 		/* print a warning? */
 	}
@@ -562,10 +542,8 @@ mono_gchandle_free (guint32 gchandle)
 	HandleData *handles = &gc_handles [gchandle & 3];
 	lock_handles (handles);
 	if (slot < handles->size) {
-#ifdef HAVE_BOEHM_GC
 		if (handles->type <= HANDLE_WEAK_TRACK)
-			GC_unregister_disappearing_link (&handles->entries [slot]);
-#endif
+			mono_gc_weak_link_remove (&handles->entries [slot]);
 		handles->entries [slot] = NULL;
 		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
 	} else {

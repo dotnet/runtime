@@ -4,6 +4,7 @@
  */
 
 #include "config.h"
+#define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
@@ -96,6 +97,29 @@ mono_gc_enable_events (void)
 }
 
 #endif
+
+void
+mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
+{
+	/* libgc requires that we use HIDE_POINTER... */
+	*link_addr = (void*)HIDE_POINTER (obj);
+	GC_GENERAL_REGISTER_DISAPPEARING_LINK (link_addr, obj);
+}
+
+void
+mono_gc_weak_link_remove (void **link_addr)
+{
+	GC_unregister_disappearing_link (link_addr);
+}
+
+MonoObject*
+mono_gc_weak_link_get (void **link_addr)
+{
+	MonoObject *obj = REVEAL_POINTER (*link_addr);
+	if (obj == (MonoObject *) -1)
+		return NULL;
+	return obj;
+}
 
 #endif /* no Boehm GC */
 

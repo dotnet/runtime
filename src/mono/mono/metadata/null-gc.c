@@ -55,5 +55,22 @@ mono_gc_enable_events (void)
 {
 }
 
+void
+mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
+{
+	*link_addr = obj;
+}
+
+void
+mono_gc_weak_link_remove (void **link_addr)
+{
+}
+
+MonoObject*
+mono_gc_weak_link_get (void **link_addr)
+{
+	return *link_addr;
+}
+
 #endif
 
