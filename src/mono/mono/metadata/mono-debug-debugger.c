@@ -282,10 +282,17 @@ add_builtin_type_2 (MonoDebuggerBuiltinTypeInfo *info)
 	* (guint32 *) (info->type_data + 5) = info->class_info;
 }
 
+static void
+add_exception_class (MonoDebuggerSymbolFile *symfile, MonoException *exc)
+{
+	mono_debugger_add_type (symfile, ((MonoObject *) exc)->vtable->klass);
+}
+
 MonoDebuggerBuiltinTypes *
 mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile)
 {
 	MonoDebuggerBuiltinTypes *types = g_new0 (MonoDebuggerBuiltinTypes, 1);
+	MonoException *exc;
 
 	mono_debugger_symbol_table->corlib = symfile;
 	mono_debugger_symbol_table->builtin_types = types;
@@ -335,6 +342,21 @@ mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile)
 	add_builtin_type_2 (types->enum_type);
 	add_builtin_type_2 (types->array_type);
 	add_builtin_type_2 (types->exception_type);
+
+	add_exception_class (symfile, mono_get_exception_divide_by_zero ());
+	add_exception_class (symfile, mono_get_exception_security ());
+	add_exception_class (symfile, mono_get_exception_arithmetic ());
+	add_exception_class (symfile, mono_get_exception_overflow ());
+	add_exception_class (symfile, mono_get_exception_null_reference ());
+	add_exception_class (symfile, mono_get_exception_thread_abort ());
+	add_exception_class (symfile, mono_get_exception_invalid_cast ());
+	add_exception_class (symfile, mono_get_exception_index_out_of_range ());
+	add_exception_class (symfile, mono_get_exception_thread_abort ());
+	add_exception_class (symfile, mono_get_exception_index_out_of_range ());
+	add_exception_class (symfile, mono_get_exception_array_type_mismatch ());
+	add_exception_class (symfile, mono_get_exception_missing_method ());
+	add_exception_class (symfile, mono_get_exception_appdomain_unloaded ());
+	add_exception_class (symfile, mono_get_exception_stack_overflow ());
 
 	return types;
 }

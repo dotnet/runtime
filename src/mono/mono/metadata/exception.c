@@ -139,7 +139,7 @@ mono_get_exception_divide_by_zero ()
 MonoException *
 mono_get_exception_security ()
 {
-	return mono_exception_from_name (mono_get_corlib (), "System",
+	return mono_exception_from_name (mono_get_corlib (), "System.Security",
 					 "SecurityException");
 }
 
