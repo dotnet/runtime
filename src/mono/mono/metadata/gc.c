@@ -42,6 +42,8 @@ static CRITICAL_SECTION finalizer_mutex;
 
 static GSList *domains_to_finalize= NULL;
 
+static HANDLE gc_thread;
+
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
 #if HAVE_BOEHM_GC
@@ -253,6 +255,10 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	
 #if HAVE_BOEHM_GC
 	if (!GC_should_invoke_finalizers ())
+		return;
+
+	if (GetCurrentThread () == gc_thread)
+		/* Avoid deadlocks */
 		return;
 
 	ResetEvent (pending_done_event);
@@ -584,8 +590,6 @@ static GCThreadFunctions mono_gc_thread_vtable = {
 
 void mono_gc_init (void)
 {
-	HANDLE gc_thread;
-
 	InitializeCriticalSection (&handle_section);
 	InitializeCriticalSection (&allocator_section);
 
