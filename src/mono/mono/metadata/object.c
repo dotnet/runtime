@@ -363,7 +363,7 @@ mono_runtime_get_main_args (void)
  */
 int
 mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
-		       MonoObject **exc, MonoAssembly *app)
+		       MonoObject **exc)
 {
 	int i;
 	MonoArray *args = NULL;
@@ -384,7 +384,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 		}
 	}
 	
-	mono_assembly_set_main (app);
+	mono_assembly_set_main (method->klass->image->assembly);
 	
 	return mono_runtime_exec_main (method, args, exc);
 }
