@@ -2,7 +2,7 @@ using System;
 
 public class Tests {
 
-	static int si = 0;
+	public static int si = 0;
 	
 	public static int Main (string[] args) {
 		int h = 0, repeat = 1;
@@ -14,6 +14,9 @@ public class Tests {
 				h += si;
 			}
 		}
+
+		if (h != 0)
+			return 1;
 		
 		return 0;
 	}
