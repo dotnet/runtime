@@ -761,7 +761,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		 * Search using a variety of mangled names
 		 */
 		for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
-			for (mangle_stdcall = 0; mangle_stdcall <= 2; mangle_stdcall ++) {
+			for (mangle_stdcall = 0; mangle_stdcall <= 1; mangle_stdcall ++) {
 				gboolean need_param_count = FALSE;
 #ifdef PLATFORM_WIN32
 				if (mangle_stdcall > 0)
@@ -801,10 +801,12 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 						param_count = mangle_param_count;
 
 					/* Try the stdcall mangled name */
+					/* 
+					 * gcc under windows creates mangled names without the underscore, but MS.NET
+					 * doesn't support it, so we doesn't support it either.
+					 */
 					if (mangle_stdcall == 1)
-						mangled_name2 = g_strdup_printf ("%s@%d", mangled_name, param_count);
-					else if (mangle_stdcall == 2)
-						mangled_name2 = g_strdup_printf ("%s@%d", mangled_name, param_count);
+						mangled_name2 = g_strdup_printf ("_%s@%d", mangled_name, param_count);
 					else
 						mangled_name2 = mangled_name;
 #else
