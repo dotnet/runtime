@@ -9,13 +9,153 @@
 ** Class Library Tests
 
 	All classes in Mono libraries should have comprehensive unit test
-	suites to go with them. Unit testing is a software engineering
-  	methodology that makes it easier to build correct code. Every
+	suites to go with them.  Unit testing is a software engineering
+  	methodology that makes it easier to build correct code.  Every
   	method in every class should have a set of tests to verify
-  	that they work correctly. Mono also needs a testing framework
+  	that they work correctly.  Mono also needs a testing framework
 	to make it easy to write and run lots of tests. 
 
-	Try <a href="http://nunit.sourceforge.net">NUnit</a>
+
+** Getting started
+
+	If you are new to writing NUnit tests, there is a template you may use
+	to help get started. The file is:
+
+		<b>mcs/class/doc/TemplateTest.cs</b>
+
+	Save a copy of this file in the appropriate test subdirecty
+	(see below), and replace all the [text] markers with
+	appropriate code. Comments in the template are there to guide
+	you. You should also look at existing tests to see how other
+	people have written them.
+	mcs/class/corlib/Test/System.Collections/CollectionBaseTest.cs
+	is a small one that might help.
+
+	The directory that will contain your new file depends on the
+	assembly/namespace of the class for which you are creating the
+	tests.  Under mcs/class there is a directory for each
+	assembly. In each assembly there is a Test directory,
+	e.g. mcs/class/corlib/Test. In the Test directory there are
+	sub-directories for each namespace in the assembly,
+	e.g. mcs/class/corlib/Test/Sytem. Put your new test file in
+	the appropriate sub-directory under Test for the class you are
+	testing.
+	
+	Once your test class is complete, you need to add it to the
+	AllTests.cs file in the same directory as your new test. Add a
+	call to "suite.AddTest()" passing the name of your new test
+	class's suite property as the parameter.  You will see
+	examples in the AllTests.cs file, so just copy and paste
+	inside there.
+	
+	Once all of that is done, you can do a 'make test' from the top mcs
+	directory.  Your test class will be automagically included in the
+	build and the tests will be run along with all the others.
+
+* Tips on writing Unit tests.
+
+	You should look at the NUnit documentation, as it is a
+	fantastic product, and includes fantastic documentation, but
+	here are some tips for those of you who are already reading
+	this web page.
+
+
+** Provide an unique error message for Assert()
+
+	Include an unique message for each Assert() so that when the assert
+	fails, it is trivial to locate the failing one. Otherwise, it may be
+	difficult to determine which part of the test is failing. A good way
+	to ensure unique messages is to use something like #A01, #A02 etc.
+
+	    Ok:
+	<pre>
+	
+		AssertEquals("array match", compare[0], i1[0]);
+		AssertEquals("array match", compare[1], i1[1]);
+		AssertEquals("array match", compare[2], i1[2]);
+		AssertEquals("array match", compare[3], i1[3]);
+	</pre>
+
+	    Excellent:
+	<pre>
+		AssertEquals("#A01", compare[0], i1[0]);
+		AssertEquals("#A02", compare[1], i1[1]);
+		AssertEquals("#A03", compare[2], i1[2]);
+		AssertEquals("#A04", compare[3], i1[3]);
+	</pre>
+	
+	Once you used such a number in an Assert(), don't change it later on -
+	people might use it it identify the test in bug reports or in mailing
+	lists.
+
+** Use AssertEquals() to compare things, not Assert().
+
+	Do not compare two values with Assert() - if the test fails,
+	people have no idea what went wrong while AssertEquals()
+	reports the failed value.
+
+	Ok:
+	<pre>
+	        Assert ("A01", myTicks[0] == t1.Ticks);
+	</pre>
+
+	Excellent:
+	<pre>
+	        AssertEquals ("A01", myTicks[0], t1.Ticks);
+	</pre>
+
+** Constructors
+
+	When writing your testcase, please make sure to provide a constructor
+	which takes no arguments:
+
+	<pre>
+        public class DateTimeTest : TestCase
+        {
+
+                public DateTimeTest() : base ("[MonoTests.System.DateTimeTest]") {}
+                public DateTimeTest (string name): base(name) {}
+
+        	public static ITest Suite
+                {
+                        get {
+                                TestSuite suite = new TestSuite ();
+        			return suite;
+        		}
+        	}
+        }
+	</pre>
+
+** Namespace
+
+	Please keep the namespace within each test directory consistent - all
+	tests which are referenced in the same AllTests.cs must be in the same
+	namespace. Of course you can use subnamespaces as you like -
+	especially for subdirectories of your testsuite.
+	
+	For instance, if your AllTests.cs is in namespace "MonoTests" and you
+	have a subdirectory called "System", you can put all the tests in that
+	dir into namespace "MonoTests.System".
+	
+** Test your test with the Microsoft runtime
+	
+	If possible, try to run your testsuite with the Microsoft runtime on
+	Windows and make sure all tests in it pass. This is especially
+	important if you're writing a totally new testcase - without this
+	check you can never be sure that your testcase contains no bugs ....
+	
+	Don't worry if you're writing your test on Linux, other people can
+	test it for you on Windows.
+	
+	Sometimes you may discover that a test doesn't show the expected
+	result when run with the Microsoft runtime - either because there is a
+	bug in their runtime or something is misleading or wrong in their
+	documentation. In this case, please put a detailed description of the
+	problem to mcs/class/doc/API-notes and do also report it to the list -
+	we'll forward this to the Microsoft people from time to time to help
+	them fix their documentation and runtime.
+
+** Unit tets.
 
 	Why do unit testing? It becomes simple to run automated tests
 	for the whole library. Unit tests are a safety net - you can

@@ -1,17 +1,42 @@
 * Status of the various pieces of the class library
 
-	You can browse the status of the class library and see who has
-	registered to work on what parts of the system.  These list
-	work-in-progress components currently.
+	Classes in Mono are organized by the assembly that they belong to. 
 
-	Browse the current <a href="class-status/index.html">status</a>.
+	Here is the status of the different assemblies:
+	<ul>
+		<li><a href="http://www.go-mono.com/class-status-corlib.html">corlib</a>: The core library.
+		<li><a href="http://www.go-mono.com/class-status-System.html">System</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Xml.html">System.Xml</a>.
 
-	You can also download the XML <a
-	href="class-status/maintainers.xml">maintainers</a> file that
-	contains the actual maintainers list.  
+		<li><a
+		href="http://www.go-mono.com/class-status-System.Data.html">System.Data</a>:
+		Database access functionality (also check the <a href="ado-net.html">Mono ADO.NET status</a> pages).
 
-	You can also download the master <a
-	href="class-status/class.xml">Class Status XML</a> file.
+		<li><a href="http://www.go-mono.com/class-status-System.Drawing.html">System.Drawing</a>.
+
+		<li><a
+		href="http://www.go-mono.com/class-status-System.Web.html">System.Web</a>:
+		ASP.NET classes, also check the <a href="asp-net.html">Mono ASP.NET status pages</a>
+
+		<li><a href="http://www.go-mono.com/class-status-System.Web.Services.html">System.Web.Services</a>.
+
+		<li><a
+		href="http://www.go-mono.com/class-status-Microsoft.VisualBasic.html">Microsoft.VisualBasic</a>:
+		Support runtime for Visual Basic applications
+
+		<li><a
+		href="http://www.go-mono.com/class-status-Windows.Forms.html">Windows.Forms</a>:
+		there is also a <a
+		href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mailing
+		list available</a>
+
+		<li><a href="http://www.go-mono.com/class-status-System.EnterpriseServices.html">EnterpriseServices</a>.
+
+		<li><a
+		href="http://www.go-mono.com/class-status-System.Runtime.Serialization.Formatters.Soap.html">System.Runtime.Serialization.Formatters.Soap</a>.
+
+		
+	</ul>
 
 * List of not-implemented classes
 

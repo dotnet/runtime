@@ -1,18 +1,50 @@
 * Contributing to the Mono project
 
-	There are many ways in which you can help in the Mono project:
+	Mono has not been completed yet.  It is a project under
+	active development and with a vibrant community.  If you are
+	looking at ways of helping the project, you have come to the
+	right web page. 
 
-	<ul>
-		* <b>Programmers:</b> You can work on a free
-		  implementation of the <a
-		  href="class-library.html">class libraries</a>, the
-		  <a href="runtime.html">runtime engine</a>, <a
-		  href="tools.html">the tools</a>, the <a
-		  href="testing.html">testing framework</a>
+	There are three different philosophical approaches to helping
+	the Mono project, the selfish way, the altruistic or the
+	educational way.
 
-		* <b>Writers:</b> You can help us bywriting <a
-		  href="documentation.html">documentation</a>.
-	</ul>
+	The <b>selfish</b> way is packed with adventure.  You start by
+	building your own software, and start using the compiler and
+	tools that come with Mono.  Eventually you will run into
+	missing features, or a bug in the software.  Since we ship all
+	the source code for Mono, you can start tracking down the
+	problem.  Depending on how much time you have to devote to the
+	problem you could: <a href="http://bugzilla.ximian.com">File a
+	bug report</a>;  track down the problem and provide a better
+	<a href="http://bugzilla.ximian.com">bug report</a>;  fix the
+	bug and provide a patch (you can <a
+	href="mailto:mono-list@ximian.com">post it</a> to the <a
+	href="http://lists.ximian.com/mailman/listinfo/mono-list">mono
+	mailing list</a>;  or discuss the solution on the mailing
+	list.   Ideally you will also write a <a
+	href="testing.html">regression test</a> so the bug does not
+	get re-introduced in the future. 
+
+	The <b>altruistic</b> is probably the easiest because you get
+	to pick a piece of Mono that you might want to work on.  You
+	can pick an unfinished <a href="class-library.html">class</a> (from our <a
+	href="class-status.html">class status page</a>); help with the
+	<a href="documentation.html">documentation effort</a> (<a
+	href="http://lists.ximian.com/mailman/listinfo/mono-docs-list">mailing
+	list for the documentation effort</a>); fix existing <a
+	href=http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FClass+Libraries&product=Mono%2FRuntime&component=CORLIB&component=misc&component=System&component=System.Web&component=System.XML&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&newqueryname=&order=Reuse+same+sort+as+last+time&form_name=query">runtime
+	bugs</a>; <a
+	href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FMCS&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&newqueryname=&order=Reuse+same+sort+as+last+time&form_name=query">compiler
+	bugs</a>; help with the <a href="tools.html">tools</a> or
+	writing <a href="testing.html">tests</a> that help make Mono
+	more robust or help with the <a
+	href="http://www.go-mono.com/winforms.html">Winforms
+	effort</a>.
+
+	The <b>educational</b> way is an interesting one, because you
+	pick a technology you are interested in, and work on that
+	technology to learn the technology.  
 
 	Those are just broad things that need to be worked on, but
 	something that would help tremendously would be to help with
