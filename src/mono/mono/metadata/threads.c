@@ -606,16 +606,16 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 MonoThread *
 mono_thread_current (void)
 {
-	#if THREAD_DEBUG
+#ifdef THREAD_DEBUG
 	MonoThread *thread;
 	MONO_ARCH_SAVE_REGS;
 	thread = GET_CURRENT_OBJECT ();
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", thread);
 	return thread;
-	#else
+#else
 	MONO_ARCH_SAVE_REGS;
 	return GET_CURRENT_OBJECT ();
-	#endif
+#endif
 }
 
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
@@ -1540,10 +1540,14 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name); */
+		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return;
+
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
-			data->wait.handles [data->wait.num] = thread->handle;
+			data->wait.handles [data->wait.num] = handle;
 			data->wait.threads [data->wait.num] = thread;
 			data->wait.num++;
 		} else {
