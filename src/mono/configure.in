@@ -872,6 +872,7 @@ AC_SUBST(LDFLAGS)
 
 AC_OUTPUT([
 Makefile
+mint.pc
 mono.pc
 mono/Makefile
 mono/utils/Makefile
