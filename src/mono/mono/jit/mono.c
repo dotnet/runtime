@@ -207,6 +207,14 @@ static void main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
 	MonoDebugHandle *debug = NULL;
+
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		gchar **args = g_strsplit (main_args->debug_args ?
+					   main_args->debug_args : "", ",", -1);
+		mono_debug_init (mono_debug_format, FALSE,
+				 main_args->file, (const char **) args);
+		g_strfreev (args);
+	}
 	
 	assembly = mono_domain_assembly_open (main_args->domain,
 					      main_args->file);
@@ -215,15 +223,8 @@ static void main_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		gchar **args;
-
-		args = g_strsplit (main_args->debug_args ?
-				   main_args->debug_args : "", ",", -1);
-		mono_debug_init (FALSE);
-		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
-		g_strfreev (args);
-	}
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+		mono_debug_init_2 (assembly);
 
 	if (main_args->testjit) {
 		mono_jit_compile_image (assembly->image, TRUE);

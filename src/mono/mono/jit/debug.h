@@ -63,7 +63,10 @@ extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer da
 
 extern MonoDebugFormat mono_debug_format;
 
-MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args);
+void           mono_debug_init (MonoDebugFormat format, int in_the_debugger, const char *name,
+				const char **args);
+
+void           mono_debug_init_2 (MonoAssembly *assembly);
 
 void           mono_debug_cleanup (void);
 
@@ -92,7 +95,6 @@ void           mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpoi
 
 gpointer       mono_debug_create_notification_function (gpointer *notification_address);
 
-void           mono_debug_init (int running_in_the_mono_debugger);
 void           mono_debug_lock (void);
 void           mono_debug_unlock (void);
 int            mono_debug_update_symbol_file_table (void);

@@ -71,15 +71,10 @@ mono_debugger_event (MonoDebuggerEvent event, gpointer data, gpointer data2)
 		(* mono_debugger_event_handler) (event, data, data2);
 }
 
-void
-mono_debug_init (int in_the_debugger)
+static void
+debug_arg_warning (const char *message)
 {
-	if (mono_debug_initialized)
-		return;
-
-	InitializeCriticalSection (&debugger_lock_mutex);
-	mono_debug_initialized = TRUE;
-	running_in_the_mono_debugger = in_the_debugger;
+	g_warning ("Error while processing --debug-args arguments: %s", message);
 }
 
 gpointer
@@ -138,22 +133,24 @@ free_wrapper_info (DebugWrapperInfo *winfo)
 	g_free (winfo);
 }
 
-static void
-debug_arg_warning (const char *message)
-{
-	g_warning ("Error while processing --debug-args arguments: %s", message);
-}
-
-MonoDebugHandle*
-mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args)
+void
+mono_debug_init (MonoDebugFormat format, int in_the_debugger, const char *name, const char **args)
 {
 	MonoDebugHandle *debug;
-	const char **ptr;
+	MonoAssembly **ass;
+	const gchar **ptr;
 
-	g_assert (!mono_debug_handle);
+	g_assert (!mono_debug_initialized && !mono_debug_handle);
+
+	InitializeCriticalSection (&debugger_lock_mutex);
+	mono_debug_initialized = TRUE;
+	running_in_the_mono_debugger = in_the_debugger;
+
+	mono_debug_lock ();
+	release_symbol_file_table ();
 
 	debug = g_new0 (MonoDebugHandle, 1);
-	debug->name = g_strdup (assembly->image->name);
+	debug->name = g_strdup (name);
 	debug->format = format;
 	debug->source_files = g_ptr_array_new ();
 	debug->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
@@ -236,14 +233,19 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 		g_assert_not_reached ();
 	}
 
-	mono_debug_lock ();
-	release_symbol_file_table ();
-
 	mono_debug_handle = debug;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
-	mono_debug_open_image (mono_debug_handle, assembly->image);
 	mono_debug_open_image (mono_debug_handle, mono_defaults.corlib);
+	for (ass = mono_defaults.corlib->references; ass && *ass; ass++)
+		mono_debug_add_assembly (*ass, NULL);
+}
+
+void
+mono_debug_init_2 (MonoAssembly *assembly)
+{
+	mono_debug_open_image (mono_debug_handle, mono_defaults.corlib);
+	mono_debug_open_image (mono_debug_handle, assembly->image);
 
 	mono_debug_add_type (mono_defaults.object_class);
 	mono_debug_add_type (mono_defaults.object_class);
@@ -292,8 +294,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_debug_update_symbol_file_table ();
 
 	mono_debug_unlock ();
-
-	return debug;
 }
 
 static void
@@ -575,7 +575,6 @@ static AssemblyDebugInfo *
 mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 {
 	AssemblyDebugInfo *info;
-	MonoAssembly **ptr;
 
 	info = _mono_debug_get_image (debug, image);
 	if (info != NULL)
@@ -598,9 +597,6 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
-
-	for (ptr = image->references; ptr && *ptr; ptr++)
-		mono_debug_add_assembly (*ptr, NULL);
 
 	if (image->assembly->dynamic)
 		return info;
