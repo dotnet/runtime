@@ -150,8 +150,14 @@
 				ipc-daemon &
 				
 			  or you can set it up as a Windows service.  See the 
-			  file cygrunsrv.README at /usr/doc/Cygwin on how to do this.  Note the
-			  troubleshooting section at the end of the cygrunsrv.README file.
+			  file cygrunsrv.README at /usr/doc/Cygwin on how to do this
+			  for ipc-daemon and postmaster.  Note the
+			  troubleshooting section at the end of 
+			  the cygrunsrv.README file.
+			  
+			  To install ipc-daemon as a service, 
+			  you just have to run 'ipc-daemon --install-as-service' (--remove-as-service) 
+			  and then run 'net start ipc-daemon'		  
 			  
 		* Read the installation.html file 
 		  at /usr/doc/postgresql-x.x/html/installation.html
