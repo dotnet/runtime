@@ -2687,7 +2687,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			ppc_mulhwu (code, ppc_r0, ins->sreg1, ins->sreg2);
 			ppc_cmpi (code, 0, 0, ppc_r0, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BNE_UN - CEE_BEQ, ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BNE_UN - CEE_BEQ, "OverflowException");
 			ppc_mullw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ICONST:
