@@ -522,9 +522,25 @@ gpointer GetCurrentProcess (void)
 
 guint32 GetCurrentProcessId (void)
 {
+	struct _WapiHandle_process *current_process_handle;
+	gboolean ok;
+	
 	mono_once (&process_current_once, process_set_current);
 		
-	return(getpid ());
+	ok=_wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
+				(gpointer *)&current_process_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up current process handle %p",
+			   current_process);
+		/* No failure return is defined.  PID 0 is invalid.
+		 * This should only be reached when something else has
+		 * gone badly wrong anyway.
+		 */
+		return(0);
+	}
+	
+	return(current_process_handle->id);
 }
 
 static gboolean process_enum (gpointer handle, gpointer user_data)
