@@ -225,7 +225,7 @@ A: Yes, we will enable people to write GNOME applications using Mono.
 Q: Will Mono enable GUI applications to be authored?
 
 A: Yes, you will be able to build GUI applications.  Indeed, that is our
-   main focus.  We will provide both the Windows.Forms API and the Gtk# AP(I.
+   main focus.  We will provide both the Windows.Forms API and the Gtk# API.
 
 Q: What is the difference between Gtk# and System.Windows.Forms?
 
@@ -392,6 +392,10 @@ Q: Can I serialize my objects to other things other than XML?
 
 A: Yes, although the serializing tools have not yet been planned, and
 you would probably have to implement them yourself.
+
+Q: Will Mono use ORBit?
+
+A: No. Mono will be using a new implementation of CORBA that isn't still started. 
 
 <a name="devel"></a>
 ** Development Tools and Issues
@@ -687,4 +691,8 @@ Q: Will you support COM?
 
 A: The runtime will support XPCOM on Unix systems and COM on Windows.
    Most of the code for dynamic trampolines exists already.
+
+Q: Will Ximian offer certifications on Mono or related technologies?. 
+
+A: It's possible. But there is no plan about this. So the short answer is no.
 
