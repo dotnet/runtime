@@ -70,12 +70,6 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_STIND_I8 (OP_REGVAR, reg) {
-	/* this should only happen for methods returning a long */
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EAX, state->right->reg1);
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EDX, state->right->reg2);
-}
-
 freg: OP_LCONV_TO_R8 (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
@@ -153,7 +147,10 @@ stmt: OP_SETRET (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)) {
+stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_I4 (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_U4 (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_I (OP_REGVAR)) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->dreg = X86_EAX;
@@ -172,10 +169,15 @@ stmt: OP_SETRET (freg) {
 }
 
 stmt: OP_SETRET (OP_ICONST) {
-	tree->opcode = OP_ICONST;
-	tree->inst_c0 = state->left->tree->inst_c0;
-	tree->dreg = X86_EAX;
-	mono_bblock_add_inst (s->cbb, tree);
+	if (state->left->tree->inst_c0 == 0) {
+		MONO_EMIT_BIALU (s, tree, CEE_XOR, AMD64_RAX, AMD64_RAX, AMD64_RAX);
+	}
+	else {
+		tree->opcode = OP_ICONST;
+		tree->inst_c0 = state->left->tree->inst_c0;
+		tree->dreg = X86_EAX;
+		mono_bblock_add_inst (s->cbb, tree);
+	}
 }
 
 stmt: OP_OUTARG (reg) {
@@ -184,14 +186,24 @@ stmt: OP_OUTARG (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG_REG (reg, base) {
+stmt: OP_OUTARG_REG (base,reg) {
 /*
 	tree->opcode = OP_SETREG;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
 */
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, state->right->tree->inst_basereg, state->right->tree->inst_offset, state->left->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, state->left->tree->inst_basereg, state->left->tree->inst_offset, state->right->reg1);
+}
+
+stmt: OP_OUTARG_REG (base,OP_ICONST) {
+/*
+	tree->opcode = OP_SETREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+*/
+	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, state->left->tree->inst_basereg, state->left->tree->inst_offset, state->right->tree->inst_c0);
 }
 
 # we need to reduce this code duplication with some burg syntax extension
@@ -550,6 +562,21 @@ stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 
 reg: CEE_LDIND_I2 (OP_REGVAR) {
 	MONO_EMIT_UNALU (s, tree, OP_SEXT_I2, state->reg1, state->left->tree->dreg);
+}
+
+# The XOR rule
+stmt: CEE_STIND_I8 (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_I1 (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_REF (OP_REGVAR, OP_ICONST),
+stmt: CEE_STIND_I (OP_REGVAR, OP_ICONST) {
+	int r = state->left->tree->dreg;
+	MONO_EMIT_BIALU (s, tree, CEE_XOR, r, r, r);
+} cost {
+	MBCOND (!state->right->tree->inst_c0);
+	
+	return 0;
 }
 
 # on x86, fp compare overwrites EAX, so we must
