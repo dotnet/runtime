@@ -752,7 +752,6 @@ public class Tests {
 		return mono_test_marshal_array_delegate6 (arr, 1024, new ArrayDelegate6 (array_delegate6));
 	}
 
-
 	public delegate int ArrayDelegate7 (int i, 
 										string j, 
 										[In, MarshalAs(UnmanagedType.LPArray, 
@@ -772,6 +771,27 @@ public class Tests {
 	static int test_0_marshal_array_delegate_sizeconst_paramindex () {	
 		string[] arr = new string [] { "ABC", "DEF" };
 		return mono_test_marshal_array_delegate7 (arr, 1, new ArrayDelegate7 (array_delegate7));
+	}
+
+	public delegate int ArrayDelegate8 (int i, string j,
+										[In, MarshalAs(UnmanagedType.LPArray, 
+										SizeParamIndex=0)] 
+										int[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate8 (int[] arr, int len, ArrayDelegate8 d);
+
+	public static int array_delegate8 (int i, string j, int[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != 42) || (arr [1] != 43))
+			return 2;
+		return 0;
+	}
+
+	static int test_0_marshal_array_delegate_blittable () {	
+		int[] arr = new int [] { 42, 43 };
+		return mono_test_marshal_array_delegate8 (arr, 2, new ArrayDelegate8 (array_delegate8));
 	}
 
 }

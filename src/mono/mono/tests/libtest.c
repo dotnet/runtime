@@ -1606,10 +1606,10 @@ mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
 	return 0;
 }
 
-typedef int (STDCALL *ArrayDelegate) (int i, char *j, char **arr);
+typedef int (STDCALL *ArrayDelegate) (int i, char *j, void *arr);
 
 STDCALL int
-mono_test_marshal_array_delegate (char **arr, int len, ArrayDelegate del)
+mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 {
 	return del (len, NULL, arr);
 }
