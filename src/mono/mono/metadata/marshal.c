@@ -587,7 +587,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
 		mono_mb_emit_byte (mb, 5);
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
@@ -2638,12 +2638,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
 
+	if (pinvoke && !method->addr)
+		mono_lookup_pinvoke_call (method);
+
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
-
-	if (pinvoke && !method->addr)
-		mono_lookup_pinvoke_call (method);
 
 	piinfo = (MonoMethodPInvoke *)method;
 
@@ -4253,6 +4253,11 @@ mono_type_native_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+/* __alignof__ returns the preferred alignment of values not the actual alignment used by
+   the compiler so is wrong e.g. for Linux where doubles are aligned on a 4 byte boundary
+   but __alignof__ returns 8 - using G_STRUCT_OFFSET works better */
+#define ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
+
 gint32
 mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
 			gboolean as_field, gboolean unicode)
@@ -4279,13 +4284,13 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 		return 4;
 	case MONO_NATIVE_I8:
 	case MONO_NATIVE_U8:
-		*align = 4;
+		*align = ALIGNMENT(guint64);
 		return 8;
 	case MONO_NATIVE_R4:
 		*align = 4;
 		return 4;
 	case MONO_NATIVE_R8:
-		*align = 4;
+		*align = ALIGNMENT(double);
 		return 8;
 	case MONO_NATIVE_INT:
 	case MONO_NATIVE_UINT:
@@ -4304,7 +4309,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 	case MONO_NATIVE_VARIANTBOOL:
 	case MONO_NATIVE_FUNC:
 	case MONO_NATIVE_LPSTRUCT:
-		*align =  4;
+		*align = ALIGNMENT(gpointer);
 		return sizeof (gpointer);
 	case MONO_NATIVE_STRUCT: 
 		klass = mono_class_from_mono_type (type);
