@@ -609,13 +609,13 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 		clause = &header->clauses [i];
 		if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->token_or_filter) &&
 		    (offset < (clause->token_or_filter + filter_lengths [i])))
-			return (i << 8) | MONO_REGION_FILTER | clause->flags;
+			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
 			   
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
 			if (clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)
-				return (i << 8) | MONO_REGION_FINALLY | clause->flags;
+				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
 			else
-				return (i << 8) | MONO_REGION_CATCH | clause->flags;
+				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
 		}
 	}
 
@@ -623,7 +623,7 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, offset))
-			return (i << 8) | clause->flags;
+			return ((i + 1) << 8) | clause->flags;
 	}
 
 	return -1;
@@ -6236,22 +6236,22 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 
 		cfg->num_bblocks = dfn + 1;
 
-#if 0
-		/* we always remove unreachable code, because the code in them may be 
-		 * inconsistent  (access to dead variables for example) */
-		for (bb = cfg->bb_entry; bb;) {
-			MonoBasicBlock *bbn = bb->next_bb;
+		if (!header->clauses) {
+			/* remove unreachable code, because the code in them may be 
+			 * inconsistent  (access to dead variables for example) */
+			for (bb = cfg->bb_entry; bb;) {
+				MonoBasicBlock *bbn = bb->next_bb;
 
-			if (bbn && bbn->region == -1 && !bbn->dfn) {
-				if (cfg->verbose_level > 1)
-					g_print ("found unreachabel code in BB%d\n", bbn->block_num);
-				bb->next_bb = bbn->next_bb;
-				nullify_basic_block (bbn);			
-			} else {
-				bb = bb->next_bb;
+				if (bbn && bbn->region == -1 && !bbn->dfn) {
+					if (cfg->verbose_level > 1)
+						g_print ("found unreachabel code in BB%d\n", bbn->block_num);
+					bb->next_bb = bbn->next_bb;
+					nullify_basic_block (bbn);			
+				} else {
+					bb = bb->next_bb;
+				}
 			}
 		}
-#endif
 	}
 
 	if (cfg->opt & MONO_OPT_LOOP) {
