@@ -482,4 +482,20 @@
       <task>MCS Compiler</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Mark</first-name>
+      <last-name>Crichton</last-name>
+    </name>
+    <e-mail>reverse_gro.pmig@nothcirc</e-mail>
+    <image>none.png</image>
+    <location>Amherst, MA</location>
+    <organization>Univ. of Mass., Amherst</organization>
+    <description>Research Asst.</description>
+    <tasks>
+      <task>Vorbis#</task>
+      <task>GtkMozEmbed#</task>
+      <task>SPARC Work</task>
+    </tasks>
+  </contributor>
 </contributors>
