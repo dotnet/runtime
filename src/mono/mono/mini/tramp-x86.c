@@ -96,7 +96,6 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	gint32 disp = 0;
 	char *o = NULL;
 	gpointer addr;
-	MonoDomain *domain = mono_domain_get ();
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -121,13 +120,13 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
+			if (!mono_running_on_valgrind ()) {
+				MonoJitInfo *ji = 
+					mono_jit_info_table_find (mono_domain_get (), code);
+				MonoJitInfo *target_ji = 
+					mono_jit_info_table_find (mono_domain_get (), addr);
 
-			if (mono_method_same_domain (ji, target_ji)) {
-				if (!mono_running_on_valgrind ()) {
+				if (mono_method_same_domain (ji, target_ji)) {
 					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
