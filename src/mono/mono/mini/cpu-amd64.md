@@ -281,16 +281,16 @@ regoffset:
 label:
 store_membase_imm: dest:b len:15
 store_membase_reg: dest:b src1:i len:8
-storei8_membase_reg: dest:b src1:i len:8
+storei8_membase_reg: dest:b src1:i len:9
 storei1_membase_imm: dest:b len:11
-storei1_membase_reg: dest:b src1:i len:8
+storei1_membase_reg: dest:b src1:i len:9
 storei2_membase_imm: dest:b len:12
-storei2_membase_reg: dest:b src1:i len:8
+storei2_membase_reg: dest:b src1:i len:9
 storei4_membase_imm: dest:b len:12
-storei4_membase_reg: dest:b src1:i len:8
+storei4_membase_reg: dest:b src1:i len:9
 storei8_membase_imm: dest:b len:17
 storer4_membase_reg: dest:b src1:f len:14
-storer8_membase_reg: dest:b src1:f len:8
+storer8_membase_reg: dest:b src1:f len:9
 load_membase: dest:i src1:b len:14
 loadi1_membase: dest:i src1:b len:9
 loadu1_membase: dest:i src1:b len:9
@@ -488,7 +488,7 @@ x86_add_membase_imm: src1:b len:12
 x86_sub_membase_imm: src1:b len:12
 x86_push: src1:i len:3
 x86_push_imm: len:6
-x86_push_membase: src1:b len:7
+x86_push_membase: src1:b len:8
 x86_push_obj: src1:b len:40
 x86_lea: dest:i src1:i src2:i len:8
 x86_lea_membase: dest:i src1:i len:11
