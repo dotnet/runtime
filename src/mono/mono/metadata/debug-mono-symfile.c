@@ -222,13 +222,13 @@ close_symfile (MonoSymbolFile *symfile)
 		priv->method_table = NULL;
 	}
 
-	if (priv->method_hash) {
+	if (symfile->is_dynamic) {
+		unlink (priv->file_name);
+		priv->method_hash = NULL;
+	} else if (priv->method_hash) {
 		g_hash_table_destroy (priv->method_hash);
 		priv->method_hash = NULL;
 	}
-
-	if (symfile->is_dynamic)
-		unlink (priv->file_name);
 
 	if (symfile->image_file) {
 		g_free (symfile->image_file);
@@ -332,10 +332,9 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	MonoSymbolFileMethodEntryPriv *mep;
 	MonoSymbolFileMethodAddress *address;
 	MonoDebugVarInfo *var_table;
-	MonoSymbolFileLineNumberEntry *lne;
 	MonoDebugRangeInfo *range;
-	guint32 size, line_size, line_offset, num_variables, variable_size, variable_offset;
-	guint32 type_size, type_offset, *line_addresses, *type_index_table;
+	guint32 size, num_variables, variable_size, variable_offset;
+	guint32 type_size, type_offset, *type_index_table;
 	gpointer *type_table;
 	guint8 *ptr;
 	int i;
@@ -357,10 +356,6 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 
 	size = sizeof (MonoSymbolFileMethodAddress);
 
-	line_size = mep->entry->num_line_numbers * sizeof (MonoSymbolFileLineNumberEntry);
-	line_offset = size;
-	size += line_size;
-
 	num_variables = mep->entry->num_parameters + mep->entry->num_locals;
 	if (mep->entry->this_type_index)
 		num_variables++;
@@ -379,9 +374,14 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	address->size = size;
 	address->start_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start);
 	address->end_address = GPOINTER_TO_UINT (mep->minfo->jit->code_start + mep->minfo->jit->code_size);
-	address->line_table_offset = line_offset;
 	address->variable_table_offset = variable_offset;
 	address->type_table_offset = type_offset;
+
+	if (mep->minfo->jit->line_numbers) {
+		address->num_line_numbers = mep->minfo->jit->line_numbers->len;
+		address->line_numbers = (MonoDebugLineNumberEntry *) mep->minfo->jit->line_numbers->data;
+		address->line_number_size = address->num_line_numbers * sizeof (MonoDebugLineNumberEntry);
+	}
 
 	range = allocate_range_entry (symfile);
 	range->file_offset = mep->minfo->file_offset;
@@ -429,34 +429,6 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	} else
 		for (i = 0; i < mep->minfo->jit->num_locals; i++)
 			*var_table++ = mep->minfo->jit->locals [i];
-
-	lne = (MonoSymbolFileLineNumberEntry *)
-		(symfile->raw_contents + mep->entry->line_number_table_offset);
-
-	line_addresses = (guint32 *) (ptr + line_offset);
-
-	for (i = 0; i < mep->entry->num_line_numbers; i++, lne++) {
-		int j;
-
-		if (i == 0) {
-			line_addresses [i] = 0;
-			continue;
-		} else if (lne->offset == 0) {
-			line_addresses [i] = mep->minfo->jit->prologue_end;
-			continue;
-		}
-
-		line_addresses [i] = mep->minfo->jit->code_size;
-
-		for (j = 0; j < mep->minfo->num_il_offsets; j++) {
-			MonoSymbolFileLineNumberEntry *il = &mep->minfo->il_offsets [j];
-
-			if (il->offset >= lne->offset) {
-				line_addresses [i] = mep->minfo->jit->il_addresses [j];
-				break;
-			}
-		}
-	}
 }
 
 void
@@ -499,8 +471,8 @@ create_method (MonoSymbolFile *symfile, guint32 token, MonoMethod *method)
 				     method->klass->name, method->name);
 	symfile->_priv->string_table_size += strlen (mep->name) + 1;
 
-	minfo = g_new0 (MonoDebugMethodInfo, 1);
-	minfo->method = method;
+	minfo = g_hash_table_lookup (symfile->_priv->method_hash, method);
+	g_assert (minfo && (minfo->method == method));
 	minfo->symfile = symfile;
 
 	mep->minfo = minfo;
@@ -509,7 +481,6 @@ create_method (MonoSymbolFile *symfile, guint32 token, MonoMethod *method)
 	symfile->_priv->offset_table->method_count++;
 
 	g_hash_table_insert (symfile->_priv->method_table, method, mep);
-	g_hash_table_insert (symfile->_priv->method_hash, method, minfo);
 }
 
 static void
@@ -526,58 +497,6 @@ write_method (gpointer key, gpointer value, gpointer user_data)
 	if (write (symfile->_priv->fd, mep->entry, sizeof (MonoSymbolFileMethodEntry)) < 0) {
 		symfile->_priv->error = TRUE;
 		return;
-	}
-}
-
-static void
-write_line_numbers (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
-	MonoSymbolFilePriv *priv = symfile->_priv;
-	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
-	MonoSymbolFileLineNumberEntry lne;
-	const unsigned char *ip, *start, *end;
-	MonoMethodHeader *header;
-
-	if (priv->error)
-		return;
-
-	if ((mep->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (mep->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (mep->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		g_assert_not_reached ();
-
-	header = ((MonoMethodNormal *) mep->method)->header;
-	g_assert (header);
-
-	mep->entry->line_number_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-	++mep->entry->num_line_numbers;
-
-	lne.offset = 0;
-	lne.row = -1;
-
-	if (write (priv->fd, &lne, sizeof (MonoSymbolFileLineNumberEntry)) < 0) {
-		priv->error = TRUE;
-		return;
-	}
-
-	ip = start = header->code;
-	end = ip + header->code_size;
-
-	while (ip < end) {
-		gchar *line;
-
-		++mep->entry->num_line_numbers;
-		lne.offset = ip - start;
-		lne.row = -1;
-
-		if (write (priv->fd, &lne, sizeof (MonoSymbolFileLineNumberEntry)) < 0) {
-			priv->error = TRUE;
-			return;
-		}
-
-		line = mono_disasm_code_one (NULL, mep->method, ip, &ip);
-		g_free (line);
 	}
 }
 
@@ -613,17 +532,6 @@ create_methods (MonoSymbolFile *symfile)
 
 		create_method (symfile, token, method);
 	}
-}
-
-static void
-load_line_numbers (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
-	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
-
-	mep->minfo->num_il_offsets = mep->entry->num_line_numbers;
-	mep->minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
-		(symfile->raw_contents + mep->entry->line_number_table_offset);
 }
 
 static int
@@ -675,23 +583,8 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 
 	priv->method_table = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
 						    (GDestroyNotify) free_method_entry);
-	priv->method_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
-						   (GDestroyNotify) free_method_info);
 
 	create_methods (symfile);
-
-	//
-	// Write line numbers.
-	//
-
-	priv->offset_table->line_number_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-
-	g_hash_table_foreach (priv->method_table, write_line_numbers, symfile);
-	if (priv->error)
-		return FALSE;
-
-	priv->offset_table->line_number_table_size = lseek (priv->fd, 0, SEEK_CUR) -
-		priv->offset_table->line_number_table_offset;
 
 	//
 	// Write method table.
@@ -724,13 +617,6 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 
 	symfile->raw_contents = ptr;
 
-	//
-	// Load line number table.
-	//
-	g_hash_table_foreach (priv->method_table, load_line_numbers, symfile);
-	if (priv->error)
-		return FALSE;
-
 	if (!write_string_table (symfile))
 		return FALSE;
 
@@ -738,7 +624,7 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 }
 
 MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage *image)
+mono_debug_create_mono_symbol_file (MonoImage *image, GHashTable *method_hash)
 {
 	MonoSymbolFile *symfile;
 
@@ -752,6 +638,7 @@ mono_debug_create_mono_symbol_file (MonoImage *image)
 
 	symfile->_priv = g_new0 (MonoSymbolFilePriv, 1);
 	symfile->_priv->image = image;
+	symfile->_priv->method_hash = method_hash;
 
 	if (!create_symfile (symfile, TRUE)) {
 		mono_debug_close_mono_symbol_file (symfile);

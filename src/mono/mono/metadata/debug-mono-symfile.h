@@ -16,6 +16,7 @@ typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
+typedef struct MonoDebugLineNumberEntry		MonoDebugLineNumberEntry;
 typedef struct MonoDebugRangeInfo		MonoDebugRangeInfo;
 typedef struct MonoDebugTypeInfo		MonoDebugTypeInfo;
 
@@ -54,9 +55,11 @@ struct MonoSymbolFileMethodAddress {
 	guint32 size;
 	guint64 start_address;
 	guint64 end_address;
-	guint32 line_table_offset;
 	guint32 variable_table_offset;
 	guint32 type_table_offset;
+	guint32 num_line_numbers;
+	guint32 line_number_size;
+	MonoDebugLineNumberEntry *line_numbers;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -75,12 +78,19 @@ struct MonoDebugMethodInfo {
 	gpointer user_data;
 };
 
+struct MonoDebugLineNumberEntry {
+	guint32 line;
+	guint32 offset;
+	guint32 address;
+};
+
 struct MonoDebugMethodJitInfo {
 	const guint8 *code_start;
 	guint32 code_size;
 	guint32 prologue_end;
 	guint32 epilogue_begin;
-	guint32 *il_addresses;
+	// Array of MonoDebugLineNumberEntry
+	GArray *line_numbers;
 	guint32 num_params;
 	MonoDebugVarInfo *this_var;
 	MonoDebugVarInfo *params;
@@ -163,7 +173,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		26
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	8
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	9
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *
@@ -183,7 +193,8 @@ void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
 
 MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage                *image);
+mono_debug_create_mono_symbol_file (MonoImage                *image,
+				    GHashTable               *method_hash);
 
 gchar *
 mono_debug_find_source_location    (MonoSymbolFile           *symfile,
