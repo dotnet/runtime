@@ -1768,6 +1768,29 @@ mono_array_element_size (MonoClass *ac)
 gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 {
+	if (image->assembly->dynamic) {
+		gpointer obj = mono_lookup_dynamic_token (image, token);
+
+		switch (token & 0xff000000) {
+		case MONO_TOKEN_TYPE_DEF:
+		case MONO_TOKEN_TYPE_REF:
+		case MONO_TOKEN_TYPE_SPEC:
+			if (handle_class)
+				*handle_class = mono_defaults.typehandle_class;
+			return &((MonoClass*)obj)->byval_arg;
+		case MONO_TOKEN_METHOD_DEF:
+			if (handle_class)
+				*handle_class = mono_defaults.methodhandle_class;
+			return obj;
+		case MONO_TOKEN_FIELD_DEF:
+			if (handle_class)
+				*handle_class = mono_defaults.fieldhandle_class;
+			return obj;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
 	switch (token & 0xff000000) {
 	case MONO_TOKEN_TYPE_DEF:
 	case MONO_TOKEN_TYPE_REF: {
