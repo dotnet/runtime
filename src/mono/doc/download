@@ -43,7 +43,15 @@
 		* <a href="archive/mono-0.11.tar.gz">mono-0.11.tar.gz</a>
 		Mono runtime
 	</ul>
-	
+
+* Snapshots	
+
+	Volunteers package up daily the sources:
+
+	<ul>
+		* <a href="http://www.atoker.com/mono">Debian Linux</a>
+		* <a href="http://mono.baselabs.org/index.php/software">Red Hat Linux</a>
+	</ul>
 
 <a name="snapshots">
 	For up to date sources, it is recommended that you use the Mono 

@@ -1,3 +1,4 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <title>#TITLE#</title>
@@ -35,25 +36,28 @@
 
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
-        <td><img src="images/pixel.gif"></td><!-- left border -->
+        <td><img src="images/pixel.gif" alt=""></td><!-- left border -->
         <td colspan="4">
-           <a href="http://www.go-mono.com"><img src="images/mono.gif" border="0"></a></td>
-        <td><img src="images/pixel.gif"></td><!-- right border -->
+           <a href="http://www.go-mono.com"><img src="images/mono.gif"
+        alt="mono-logo" border="0"></a></td>
+        <td><img src="images/pixel.gif" alt=""></td><!-- right border -->
     </tr>
     <tr>
-        <td><img src="images/pixel.gif" width="1" height="1"></td>
-        <td colspan="3" bgcolor="black"><img src="images/pixel.gif" height="2"></td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
-	     <td><img src="images/pixel.gif"></td>
+        <td><img src="images/pixel.gif" width="1" height="1" alt=""></td>
+        <td colspan="3" bgcolor="black"><img src="images/pixel.gif"
+        height="2" alt=""></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1" alt=""></td>
+	     <td><img src="images/pixel.gif" alt=""></td>
     </tr>
     <tr>
-        <td width="100"><img src="images/pixel.gif"></td>
+        <td width="100"><img src="images/pixel.gif" alt=""></td>
         <td valign="top">
             <table cellpadding="2" valign="top" cellspacing="0" border="0">
                 #MENU#
             </table>
 	     </td>
-        <td bgcolor="black" width="1"><img src="images/pixel.gif" width="1"></td>
+        <td bgcolor="black" width="1"><img src="images/pixel.gif"
+        width="1" alt=""></td>
         <td bgcolor="white" align="left" width="80%" valign="top">
             <table cellpadding="16">
               <tr><td>
@@ -61,24 +65,26 @@
 	           </td></tr>
             </table>
 	</td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
-        <td width="100"><img src="images/pixel.gif"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1" alt=""></td>
+        <td width="100"><img src="images/pixel.gif" alt=""></td>
     </tr>
     <tr>
         <td colspan="2">
-            <img src="images/pixel.gif"></td>
-        <td colspan="2" bgcolor="black"><img src="images/pixel.gif" height="1"></td>
-        <td bgcolor="black"><img src="images/pixel.gif" width="1"></td>
-        <td><img src="images/pixel.gif"></td>
+            <img src="images/pixel.gif" alt=""></td>
+        <td colspan="2" bgcolor="black"><img src="images/pixel.gif"
+        height="1" alt=""></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="1" alt=""></td>
+        <td><img src="images/pixel.gif" alt=""></td>
     </tr>
 
-    <td colspan="2"></td>
-    <td colspan="2" align="center">
-	<a class="footnote" href="mailto:webmaster@go-mono.com">webmaster@go-mono.com</a>
-    </td>
-    <td colspan="2"></td>
+    <tr>
+      <td colspan="2"></td>
+      <td colspan="2" align="center">
+	  <a class="footnote" href="mailto:webmaster@go-mono.com">webmaster@go-mono.com</a>
+      </td>
+      <td colspan="2"></td>
     </tr>
-</tr>
+  </tr>
 </table>
 
 </body>

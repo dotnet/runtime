@@ -29,9 +29,7 @@
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
     </td>
     <td>
-	<table border=1 bgcolor>
-	  <tr>
-	  </tr>
+	<table border=1>
 	  <tr>
 	    <td>
 	      <b><a href="c-sharp.html">C# Compiler</a></b>
@@ -39,7 +37,7 @@
 	    <td>
 	      <b>Self hosting on Linux</b><br>
 	      Self hosting on .NET.
-    </td>
+            </td>
 	  </tr>
 	  <tr>
 	    <td>
@@ -72,18 +70,19 @@
   </tr>
 </table>
 
+** May 1st, 2002
+
+	Daily packages for <a href="http://www.debian.org">Debian</a> are available
+	<a href="http://www.atoker.com/mono/">here</a>
+
 ** Apr 26, 2002
 
 	Binary packages of Mono 0.11 are available for <a
 	href="http://www.superin.formativ.net/mono/mono.htm">Windows</a>
-	(Thanks to Guenther Roith) and for
+	(Thanks to Johannes Roith) and for
 	<a
 	href="http://mono.baselabs.org/index.php/software/">Linux</a> (thanks
 	to BaseLabs).
-
-	We have started a little document that aims to be a complete 
-	introduction to how to contribute to Mono without having to search
-	a lot through Google, mailing lists or the CVS. It is <a href="mono-contribution-howto">here</a>
 
 ** Apr 24, 2002
 
