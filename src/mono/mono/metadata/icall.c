@@ -464,7 +464,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 			sizes [i + aklass->rank] = 0;
 	}
 
-	array = mono_array_new_full (mono_domain_get (), aklass, sizes, sizes + aklass->rank);
+	array = mono_array_new_full (mono_object_domain (type), aklass, sizes, sizes + aklass->rank);
 
 	return array;
 }
@@ -637,7 +637,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that)
 static MonoReflectionType *
 ves_icall_System_Object_GetType (MonoObject *obj)
 {
-	return mono_type_get_object (mono_domain_get (), &obj->vtable->klass->byval_arg);
+	return mono_type_get_object (mono_object_domain (obj), &obj->vtable->klass->byval_arg);
 }
 
 static void
@@ -893,7 +893,7 @@ ves_icall_get_parameter_info (MonoMethod *method)
 static void
 ves_icall_get_field_info (MonoReflectionField *field, MonoFieldInfo *info)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (field); 
 
 	info->parent = mono_type_get_object (domain, &field->klass->byval_arg);
 	info->type = mono_type_get_object (domain, field->field->type);
@@ -908,7 +908,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	MonoClassField *cf = field->field;
 	MonoClass *klass;
 	MonoVTable *vtable;
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *domain = mono_object_domain (field); 
 	gchar *v;
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
@@ -1014,7 +1014,7 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), field->klass);
+		MonoVTable *vtable = mono_class_vtable (mono_object_domain (field), field->klass);
 		mono_field_static_set_value (vtable, cf, v);
 	} else {
 		mono_field_set_value (obj, cf, v);
@@ -1024,7 +1024,7 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 static void
 ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo *info)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (property); 
 
 	info->parent = mono_type_get_object (domain, &property->klass->byval_arg);
 	info->name = mono_string_new (domain, property->property->name);
@@ -1040,7 +1040,7 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 static void
 ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (event); 
 
 	info->parent = mono_type_get_object (domain, &event->klass->byval_arg);
 	info->name = mono_string_new (domain, event->event->name);
@@ -1053,7 +1053,7 @@ ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 static MonoArray*
 ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (type); 
 	MonoArray *intf;
 	int ninterf, i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
@@ -1142,7 +1142,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 static MonoObject *
 ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoArray **outArgs) 
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
 	MonoMethodSignature *sig = m->signature;
 	MonoArray *out_args;
@@ -1241,7 +1241,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 static MonoObject *
 ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (type); 
 	MonoClass *enumc, *objc;
 	gint32 s1, s2;
 	MonoObject *res;
@@ -1274,7 +1274,6 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 static MonoObject *
 ves_icall_System_Enum_get_value (MonoObject *this)
 {
-	MonoDomain *domain = mono_domain_get (); 
 	MonoObject *res;
 	MonoClass *enumc;
 	gpointer dst;
@@ -1287,7 +1286,7 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 	g_assert (this->vtable->klass->enumtype);
 	
 	enumc = mono_class_from_mono_type (this->vtable->klass->enum_basetype);
-	res = mono_object_new (domain, enumc);
+	res = mono_object_new (mono_object_domain (this), enumc);
 	dst = (char *)res + sizeof (MonoObject);
 	src = (char *)this + sizeof (MonoObject);
 	size = mono_class_value_size (enumc, NULL);
@@ -1300,7 +1299,7 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 static void
 ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (type); 
 	MonoClass *enumc = mono_class_from_mono_type (type->type);
 	guint i, j, nvalues, crow;
 	MonoClassField *field;
@@ -1363,7 +1362,7 @@ search_property (MonoClass *klass, char* name, MonoArray *args) {
 static MonoReflectionProperty*
 ves_icall_get_property (MonoReflectionType *type, MonoString *name, MonoArray *args)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (type); 
 	MonoProperty *p;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	char *n = mono_string_to_utf8 (name);
@@ -1790,7 +1789,6 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
-	MonoDomain *domain = mono_domain_get (); 
 	gchar *str;
 	MonoType *type;
 	MonoTypeNameParse info;
@@ -1818,14 +1816,14 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		return NULL;
 	}
 	/* g_print ("got it\n"); */
-	return mono_type_get_object (domain, type);
+	return mono_type_get_object (mono_object_domain (assembly), type);
 
 }
 
 static MonoString *
 ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoString *res;
 	char *name = g_strconcat (
 		"file://", assembly->assembly->image->name, NULL);
@@ -1838,7 +1836,7 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 static MonoString *
 ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assembly)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoString *res;
 	char *name = g_strconcat (
 		assembly->assembly->basedir, G_DIR_SEPARATOR_S,
@@ -2024,7 +2022,7 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 static MonoString *
 ves_icall_System_MonoType_getFullName (MonoReflectionType *object)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (object); 
 	MonoString *res;
 	gchar *name;
 
@@ -2050,7 +2048,7 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 static MonoArray*
 ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoArray *res;
 	MonoClass *klass;
 	MonoTableInfo *tdef = &assembly->assembly->image->tables [MONO_TABLE_TYPEDEF];
@@ -2105,7 +2103,7 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 			isbyref = 1;
 			p++;
 			g_free (str);
-			return mono_type_get_object (mono_domain_get (), &klass->this_arg);
+			return mono_type_get_object (mono_object_domain (tb), &klass->this_arg);
 			break;
 		case '*':
 			klass = mono_ptr_class_get (&klass->byval_arg);
@@ -2139,7 +2137,7 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 		}
 	}
 	g_free (str);
-	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
+	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 }
 
 static MonoObject *
@@ -2375,7 +2373,7 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 static MonoObject *
 ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_object_domain (this); 
 	MonoObject *res;
 	MonoRealProxy *rp = ((MonoRealProxy *)this);
 	MonoType *type;
@@ -2557,9 +2555,7 @@ ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this,
 					 MonoReflectionMethod *method,
 					 MonoArray *out_args)
 {
-	MonoDomain *domain = mono_domain_get ();
-	
-	mono_message_init (domain, this, method, out_args);
+	mono_message_init (mono_object_domain (this), this, method, out_args);
 }
 
 static MonoBoolean
