@@ -61,8 +61,14 @@ default_assembly_name_resolver (const char *base_dir, const char *name)
 			(strcmp (name, "corlib") == 0))
 		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
 
-	path = g_concat_dir_and_file (base_dir, name);
+	/* Full name already supplied */
+	path = g_strdup (name);
 	if (g_file_test (name, G_FILE_TEST_EXISTS))
+		return path;
+
+	g_free (path);
+	path = g_concat_dir_and_file (base_dir, name);
+	if (g_file_test (path, G_FILE_TEST_EXISTS))
 		return path;
 
 	file = path;
@@ -126,7 +132,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	if (resolver == NULL)
 		resolver = default_assembly_name_resolver;
 
-	base_dir = g_path_get_dirname (fullname);
+	base_dir = g_path_get_dirname (filename);
 	
 	fullname = resolver (base_dir, filename);
 	image = mono_image_open (fullname, status);
