@@ -53,7 +53,7 @@ genmdesc_SOURCES = \
 	helpers.c
 
 genmdesc_LDADD = \
-	$(libs) -lgc -lm	\
+	$(libs) -lm	\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS)
 
