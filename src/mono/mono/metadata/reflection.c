@@ -3612,6 +3612,42 @@ fixup_cattrs (MonoDynamicImage *assembly)
 	}
 }
 
+/*
+ * fixup_methodimpl:
+ *
+ * The METHODIMPL table might contain METHODDEF tokens whose final
+ * value is not known when the table is emitted.
+ */
+static void
+fixup_methodimpl (MonoDynamicImage *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 decl, i, idx, token;
+	MonoObject *method;
+
+	table = &assembly->tables [MONO_TABLE_METHODIMPL];
+
+	for (i = 0; i < table->rows; ++i) {
+		values = table->values + ((i + 1) * MONO_METHODIMPL_SIZE);
+		decl = values [MONO_METHODIMPL_DECLARATION];
+
+		idx = decl >> MONO_METHODDEFORREF_BITS;
+		if ((decl & MONO_METHODDEFORREF_MASK) != MONO_METHODDEFORREF_METHODDEF)
+			continue;
+
+		token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
+		method = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+		g_assert (method);
+
+		if (!strcmp (method->vtable->klass->name, "MethodBuilder")) {
+			token = mono_image_create_token (assembly, method, FALSE);
+			idx = mono_metadata_token_index (token);
+			values [MONO_METHODIMPL_DECLARATION] = (idx << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
+		}
+	}
+}
+
 static void
 assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc, guint32 implementation)
 {
@@ -3929,6 +3965,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
 	fixup_cattrs (assembly);
+	fixup_methodimpl (assembly);
 }
 
 /*
