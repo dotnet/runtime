@@ -168,7 +168,8 @@ lreg: OP_LNOT (lreg) {
 lreg: OP_LNEG (lreg) "4" {
 	MONO_EMIT_NEW_UNALU (s, CEE_NOT, state->reg1, state->left->reg1);
 	MONO_EMIT_NEW_UNALU (s, CEE_NOT, state->reg2, state->left->reg2);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1, 1);
+	/* ADC sets the condition codes */
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADC_IMM, state->reg1, state->reg1, 1);
 	MONO_EMIT_BIALU_IMM (s, tree, OP_ADC_IMM, state->reg2, state->reg2, 0);
 }
 
