@@ -184,7 +184,10 @@ inflate_generic_type (MonoType *type, MonoGenericInst *tgen, MonoGenericInst *mg
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		return dup_type (mgen->type_argv [type->data.generic_param->num]);
+		if (mgen)
+			return dup_type (mgen->type_argv [type->data.generic_param->num]);
+		else
+			return type;
 	case MONO_TYPE_VAR:
 		/*g_print ("inflating var %d to %s\n", type->data.type_param, mono_type_get_name (tgen->type_argv [type->data.type_param]));*/
 		return dup_type (tgen->type_argv [type->data.generic_param->num]);
