@@ -1112,7 +1112,7 @@ mono_ptr_class_get (MonoType *type)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name = "System";
 	result->name_space = "MonoPtrFakeClass";
-	result->image = NULL;
+	result->image = el_class->image;
 	result->inited = TRUE;
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
