@@ -1045,12 +1045,14 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 void
 mono_ssa_cprop (MonoCompile *cfg) 
 {
-	MonoInst *carray [cfg->num_varinfo];
+	MonoInst **carray;
 	MonoBasicBlock *bb;
 	GList *bblock_list, *cvars;
 	GList *tmp;
 	int i;
 	//printf ("SIMPLE OPTS BB%d %s\n", bb->block_num, mono_method_full_name (cfg->method, TRUE));
+
+	carray = g_new0 (MonoInst*, cfg->num_varinfo);
 
 	if (!(cfg->comp_done & MONO_COMP_SSA_DEF_USE))
 		mono_ssa_create_def_use (cfg);
@@ -1107,6 +1109,8 @@ mono_ssa_cprop (MonoCompile *cfg)
 			fold_tree (cfg, bb, inst, carray);
 		}
 	}
+
+	g_free (carray);
 
 	cfg->comp_done |= MONO_COMP_REACHABILITY;
 }
