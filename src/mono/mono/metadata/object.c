@@ -339,7 +339,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
 	int i;
 		
 	if (NULL != params) {
-		pa = alloca (sizeof (gpointer) * mono_array_length (params);
+		pa = alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
 			if (sig->params [i]->byref) {
 				/* nothing to do */
