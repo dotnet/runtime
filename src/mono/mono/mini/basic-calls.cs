@@ -146,6 +146,14 @@ class Tests {
 		return pass_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
+	static float pass_floats (float a, float b, float c, float d, float e, float f, float g, float h, float i, float j) {
+		return a + b + c + d + e + f + g + h + i + j;
+	}
+
+	static int test_55_sparc_float_argument_passing2 () {
+		return (int)pass_floats (1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f);
+	}
+
 	// The first argument must be passed on a dword aligned stack location
 	static int pass_byref_ints_longs (ref long a, ref int b, ref byte c, ref short d, ref long e, ref int f, ref long g) {
 		return (int)(a + b + c + d + e + f + g);
@@ -159,6 +167,18 @@ class Tests {
 	// when the argument must reside in the stack because its address is taken
 	static int test_2_sparc_takeaddr_argument_passing () {
 		return pass_takeaddr_ints_longs (1, 2, 253, -253, System.Int64.MaxValue, 0, System.Int64.MinValue);
+	}
+
+	static int pass_byref_floats_doubles (ref float a, ref double b, ref double c, ref double d, ref double e, ref float f, ref double g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int pass_takeaddr_floats_doubles (float a, double b, double c, double d, double e, float f, double g) {
+		return pass_byref_floats_doubles (ref a, ref b, ref c, ref d, ref e, ref f, ref g);
+	}
+
+	static int test_721_sparc_takeaddr_argument_passing2 () {
+		return pass_takeaddr_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
 	static void pass_byref_double (out double d) {

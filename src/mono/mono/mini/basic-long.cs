@@ -343,6 +343,21 @@ class Tests {
 		return count;
 	}
 
+	static int test_1_shift_u ()
+	{
+		ulong a;
+		int b;
+		int count = 0;
+
+		// The JIT optimizes this
+		a = 8589934592UL;
+		if ((a >> 32) != 2)
+			return 0;
+		count ++;
+
+		return count;
+	}
+
 	static int test_1_simple_neg () {
 		long a = 9;
 		
@@ -642,9 +657,10 @@ class Tests {
 		b = (byte) (val & 0xFF);
 		if (b != 0xf0)
 			return 1;
+
 		return 3;
 	}
-	
+
 	static int test_4_ushort_cast () {
 		ulong val = 0xff00ff00f0f0f0f0;
 		ushort b;

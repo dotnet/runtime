@@ -725,6 +725,35 @@ class Tests {
 		return a;
 	}
 
+	static int test_0_comp () {
+		int a = 0;
+		int b = -1;
+		int error = 1;
+		bool val;
+
+		val = a < b;
+		if (val)
+			return error;
+		error++;
+
+		val = a > b;
+		if (!val)
+			return error;
+		error ++;
+
+		val = a == b;
+		if (val)
+			return error;
+		error ++;
+
+		val = a == a;
+		if (!val)
+			return error;
+		error ++;
+
+		return 0;
+	}
+
 	static int test_0_comp_unsigned () {
 		uint a = 1;
 		uint b = 0xffffffff;

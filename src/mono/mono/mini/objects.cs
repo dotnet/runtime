@@ -242,7 +242,7 @@ class Tests {
 	}
 
 	// Test fields with big offsets
-	static int test_1_fields_with_big_offsets () {
+	static int test_0_fields_with_big_offsets () {
 		StructWithBigOffsets s = new StructWithBigOffsets ();
 		StructWithBigOffsets s2 = new StructWithBigOffsets ();
 
@@ -260,10 +260,20 @@ class Tests {
 		s2.f = s.f;
 		s2.d = s.d;
 
-		if ((s2.b != 0xde) || (s2.s != 0x12de) || (s2.i != 0xdeadbeef) || (s2.l != 0xcafebabe) || (s2.f != 3.14F) || (s2.d != 3.14))
-			return 0;
-		else
+		if (s2.b != 0xde)
 			return 1;
+		if (s2.s != 0x12de)
+			return 2;
+		if (s2.i != 0xdeadbeef)
+			return 3;
+		if (s2.l != 0xcafebabe)
+			return 4;
+		if (s2.f != 3.14F)
+			return 5;
+		if (s2.d != 3.14)
+			return 6;
+
+		return 0;
 	}
 
 	class TestRegA {

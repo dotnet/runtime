@@ -86,6 +86,7 @@ class Tests {
 	static int test_0_byte_cast () {
 		int a;
 		long l;
+		ulong ul;
 		byte b = 0;
 		bool failed;
 
@@ -116,6 +117,7 @@ class Tests {
 			return 2;
 		if (b != 0)
 			return -2;
+
 
 		try {
 			a = 256;
@@ -256,7 +258,22 @@ class Tests {
 			return 12;
 		if (b != 0)
 			return -12;
-		
+
+		try {
+			ul = 256;
+			failed = true;
+			checked {
+				b = (byte)ul;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 13;
+		if (b != 0)
+			return -13;
+
 		return 0;
 	}
 	
@@ -552,6 +569,7 @@ class Tests {
 	static int test_0_ushort_cast () {
 		int a;
 		long l;
+		ulong ul;
 		ushort b;
 		bool failed;
 
@@ -698,6 +716,18 @@ class Tests {
 		}
 		if (failed)
 			return 12;
+
+		try {
+			ul = 0xfffff;
+			failed = true;
+			checked {
+				b = (ushort)ul;
+			}
+		} catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 13;
 
 		return 0;
 	}
@@ -1256,6 +1286,32 @@ class Tests {
 				i = (ulong) f;
 			}
 		}
+
+		try {
+			int i = -1;
+			failed = true;
+			checked {
+				a = (ulong)i;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 5;
+
+		try {
+			int i = Int32.MinValue;
+			failed = true;
+			checked {
+				a = (ulong)i;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 6;
 
 		return 0;
 	}
