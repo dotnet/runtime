@@ -545,5 +545,5 @@ mono_amd64_tramp_init (void)
 	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
-	create_trampoline_code (MONO_TRAMPOLINE_CLASS_AOT);
+	create_trampoline_code (MONO_TRAMPOLINE_AOT);
 }
