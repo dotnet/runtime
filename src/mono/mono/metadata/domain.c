@@ -360,6 +360,10 @@ mono_init (const char *filename)
 	        mono_defaults.corlib, "System.Diagnostics", "StackTrace");
 	g_assert (mono_defaults.stack_trace_class != 0);
 
+	mono_defaults.marshal_class = mono_class_from_name (
+	        mono_defaults.corlib, "System.Runtime.InteropServices", "Marshal");
+	g_assert (mono_defaults.marshal_class != 0);
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;

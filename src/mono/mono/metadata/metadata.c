@@ -2326,16 +2326,17 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
  * may have been specified for the field in a FieldLayout table
  * @rva: a pointer to the RVA of the field data in the image that
  * may have been defined in a FieldRVA table
- * @marshal_info: a pointer to the marshal signature that may have been 
+ * @marshal_spec: a pointer to the marshal spec that may have been 
  * defined for the field in a FieldMarshal table.
  *
  * Gather info for field @index that may have been defined in the FieldLayout, 
  * FieldRVA and FieldMarshal tables.
- * Either of offset, rva and marshal_info can be NULL if you're not interested 
+ * Either of offset, rva and marshal_spec can be NULL if you're not interested 
  * in the data.
  */
 void
-mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, const char **marshal_info)
+mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
+			  MonoMarshalSpec **marshal_spec)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -2358,7 +2359,7 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
 
 		loc.col_idx = MONO_FIELD_RVA_FIELD;
 		loc.t = tdef;
-
+		
 		if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
 			/*
 			 * LAMESPEC: There is no signature, no nothing, just the raw data.
@@ -2366,6 +2367,22 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
 			*rva = mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_RVA_RVA);
 		} else {
 			*rva = 0;
+		}
+	}
+	if (marshal_spec) {
+		const char *p;
+		
+		tdef = &meta->tables [MONO_TABLE_FIELDMARSHAL];
+
+		loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
+		loc.t = tdef;
+		loc.idx = (loc.idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_FIELDSREF;
+
+		if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
+			p = mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
+			*marshal_spec = mono_metadata_parse_marshal_spec (meta, p);
+		} else {
+			*marshal_spec = NULL;
 		}
 	}
 
@@ -2635,22 +2652,258 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	return type;
 }
 
-const char*
-mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
+MonoMarshalSpec *
+mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 {
-	locator_t loc;
-	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
+	MonoMarshalSpec *res;
+	int len;
+	const char *start = ptr;
 
-	if (!tdef->base)
-		return NULL;
+	/* fixme: this is incomplete, but I cant find more infos in the specs */
 
-	loc.t = tdef;
-	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
-	loc.idx = ((idx + 1) << HAS_FIELD_MARSHAL_BITS) | (is_field? HAS_FIELD_MARSHAL_FIELDSREF: HAS_FIELD_MARSHAL_PARAMDEF);
+	res = g_new0 (MonoMarshalSpec, 1);
+	
+	len = mono_metadata_decode_value (ptr, &ptr);
+	res->native = *ptr++;
 
-	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return NULL;
+	if (res->native == MONO_NATIVE_LPARRAY) {
+		if (ptr - start <= len)
+			res->elem_type = *ptr++;
+		if (ptr - start <= len)
+			res->param_num = mono_metadata_decode_value (ptr, &ptr);
+		if (ptr - start <= len)
+			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+	} 
 
-	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
+	if (res->native == MONO_NATIVE_BYVALTSTR) {
+		if (ptr - start <= len)
+			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+	}
+
+	if (res->native == MONO_NATIVE_BYVALARRAY) {
+		if (ptr - start <= len)
+			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+	}
+
+	return res;
 }
 
+guint32
+mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_field,
+			gboolean unicode, MonoMarshalConv *conv) 
+{
+	MonoMarshalConv dummy_conv;
+	int t = type->type;
+
+	if (!conv)
+		conv = &dummy_conv;
+
+	*conv = MONO_MARSHAL_CONV_NONE;
+
+	if (type->byref)
+		return MONO_NATIVE_UINT;
+
+handle_enum:
+	switch (t) {
+	case MONO_TYPE_BOOLEAN: 
+		if (mspec) {
+			switch (mspec->native) {
+			case MONO_NATIVE_VARIANTBOOL:
+				*conv = MONO_MARSHAL_CONV_BOOL_VARIANTBOOL;
+				return MONO_NATIVE_VARIANTBOOL;
+			case MONO_NATIVE_BOOLEAN:
+				*conv = MONO_MARSHAL_CONV_BOOL_I4;
+				return MONO_NATIVE_BOOLEAN;
+			case MONO_NATIVE_U1:
+				return MONO_NATIVE_U1;
+			default:
+				g_error ("cant marshal bool to native type %02x", mspec->native);
+			}
+		}
+		*conv = MONO_MARSHAL_CONV_BOOL_I4;
+		return MONO_NATIVE_BOOLEAN;
+	case MONO_TYPE_CHAR: return MONO_NATIVE_U2;
+	case MONO_TYPE_I1: return MONO_NATIVE_I1;
+	case MONO_TYPE_U1: return MONO_NATIVE_U1;
+	case MONO_TYPE_I2: return MONO_NATIVE_I2;
+	case MONO_TYPE_U2: return MONO_NATIVE_U2;
+	case MONO_TYPE_I4: return MONO_NATIVE_I4;
+	case MONO_TYPE_U4: return MONO_NATIVE_U4;
+	case MONO_TYPE_I8: return MONO_NATIVE_I8;
+	case MONO_TYPE_U8: return MONO_NATIVE_U8;
+	case MONO_TYPE_R4: return MONO_NATIVE_R4;
+	case MONO_TYPE_R8: return MONO_NATIVE_R8;
+	case MONO_TYPE_STRING:
+		if (mspec) {
+			switch (mspec->native) {
+			case MONO_NATIVE_BSTR:
+				*conv = MONO_MARSHAL_CONV_STR_BSTR;
+				return MONO_NATIVE_BSTR;
+			case MONO_NATIVE_LPSTR:
+				*conv = MONO_MARSHAL_CONV_STR_LPSTR;
+				return MONO_NATIVE_LPSTR;
+			case MONO_NATIVE_LPWSTR:
+				*conv = MONO_MARSHAL_CONV_STR_LPWSTR;
+				return MONO_NATIVE_LPWSTR;
+			case MONO_NATIVE_LPTSTR:
+				*conv = MONO_MARSHAL_CONV_STR_LPTSTR;
+				return MONO_NATIVE_LPTSTR;
+			case MONO_NATIVE_ANSIBSTR:
+				*conv = MONO_MARSHAL_CONV_STR_ANSIBSTR;
+				return MONO_NATIVE_ANSIBSTR;
+			case MONO_NATIVE_TBSTR:
+				*conv = MONO_MARSHAL_CONV_STR_TBSTR;
+				return MONO_NATIVE_TBSTR;
+			case MONO_NATIVE_BYVALTSTR:
+				if (unicode)
+					*conv = MONO_MARSHAL_CONV_STR_BYVALWSTR;
+				else
+					*conv = MONO_MARSHAL_CONV_STR_BYVALSTR;
+				return MONO_NATIVE_BYVALTSTR;
+			default:
+				g_error ("cant marshal string to native type %02x", mspec->native);
+			}
+		} 	
+		*conv = MONO_MARSHAL_CONV_STR_LPTSTR;
+		return MONO_NATIVE_LPTSTR; 
+	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
+	case MONO_TYPE_VALUETYPE: /*FIXME*/
+		if (type->data.klass->enumtype) {
+			t = type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		return MONO_NATIVE_STRUCT;
+	case MONO_TYPE_SZARRAY: 
+	case MONO_TYPE_ARRAY: 
+		if (mspec) {
+			switch (mspec->native) {
+			case MONO_NATIVE_BYVALARRAY:
+				*conv = MONO_MARSHAL_CONV_ARRAY_BYVALARRAY;
+				return MONO_NATIVE_BYVALARRAY;
+			case MONO_NATIVE_SAFEARRAY:
+				*conv = MONO_MARSHAL_CONV_ARRAY_SAVEARRAY;
+				return MONO_NATIVE_SAFEARRAY;
+			case MONO_NATIVE_LPARRAY:				
+				*conv = MONO_MARSHAL_CONV_ARRAY_LPARRAY;
+				return MONO_NATIVE_LPARRAY;
+			default:
+				g_error ("cant marshal array as native type %02x", mspec->native);
+			}
+		} 	
+
+		*conv = MONO_MARSHAL_CONV_ARRAY_LPARRAY;
+		return MONO_NATIVE_LPARRAY;
+	case MONO_TYPE_I: return MONO_NATIVE_INT;
+	case MONO_TYPE_U: return MONO_NATIVE_UINT;
+	case MONO_TYPE_OBJECT: {
+		if (mspec) {
+			switch (mspec->native) {
+			case MONO_NATIVE_STRUCT:
+				return MONO_NATIVE_STRUCT;
+			case MONO_NATIVE_INTERFACE:
+				*conv = MONO_MARSHAL_CONV_OBJECT_INTERFACE;
+				return MONO_NATIVE_INTERFACE;
+			case MONO_NATIVE_IDISPATCH:
+				*conv = MONO_MARSHAL_CONV_OBJECT_IDISPATCH;
+				return MONO_NATIVE_IDISPATCH;
+			case MONO_NATIVE_IUNKNOWN:
+				*conv = MONO_MARSHAL_CONV_OBJECT_IUNKNOWN;
+				return MONO_NATIVE_IUNKNOWN;
+			default:
+				g_error ("cant marshal object as native type %02x", mspec->native);
+			}
+		}
+		return MONO_NATIVE_LPSTRUCT; /* ?? */
+	}
+	case MONO_TYPE_FNPTR: return MONO_NATIVE_FUNC;
+	case MONO_TYPE_CLASS: 
+		/* FIXME : we need to handle ArrayList and StringBuilder here, probably */
+		return MONO_NATIVE_INTERFACE; /* ?? */
+	case MONO_TYPE_TYPEDBYREF:
+	default:
+		g_error ("type 0x%02x not handled in marshal", t);
+	}
+	return MONO_NATIVE_MAX;
+}
+
+gint32
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+			gboolean as_field, gboolean unicode)
+{
+	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
+	MonoClass *klass;
+
+	switch (native_type) {
+	case MONO_NATIVE_BOOLEAN:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_I1:
+	case MONO_NATIVE_U1:
+		*align = 1;
+		return 1;
+	case MONO_NATIVE_I2:
+	case MONO_NATIVE_U2:
+		*align = 2;
+		return 2;
+	case MONO_NATIVE_I4:
+	case MONO_NATIVE_U4:
+	case MONO_NATIVE_ERROR:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_I8:
+	case MONO_NATIVE_U8:
+		*align = 8;
+		return 8;
+	case MONO_NATIVE_R4:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_R8:
+		*align = 8;
+		return 8;
+	case MONO_NATIVE_INT:
+	case MONO_NATIVE_UINT:
+	case MONO_NATIVE_LPSTR:
+	case MONO_NATIVE_LPWSTR:
+	case MONO_NATIVE_LPTSTR:
+	case MONO_NATIVE_BSTR:
+	case MONO_NATIVE_ANSIBSTR:
+	case MONO_NATIVE_TBSTR:
+	case MONO_NATIVE_LPARRAY:
+	case MONO_NATIVE_SAFEARRAY:
+	case MONO_NATIVE_IUNKNOWN:
+	case MONO_NATIVE_IDISPATCH:
+	case MONO_NATIVE_INTERFACE:
+	case MONO_NATIVE_ASANY:
+	case MONO_NATIVE_VARIANTBOOL:
+	case MONO_NATIVE_FUNC:
+	case MONO_NATIVE_LPSTRUCT:
+		*align =  __alignof__(gpointer);
+		return sizeof (gpointer);
+	case MONO_NATIVE_STRUCT: 
+		klass = mono_class_from_mono_type (type);
+		*align = mono_class_min_align (klass);
+		return mono_class_native_size (klass);
+	case MONO_NATIVE_BYVALTSTR: {
+		int esize = unicode ? 2: 1;
+		g_assert (mspec);
+		*align = esize;
+		return mspec->num_elem * esize;
+	}
+	case MONO_NATIVE_BYVALARRAY: {
+		int esize;
+		klass = mono_class_from_mono_type (type);
+		*align = mono_class_min_align (klass->element_class);
+		esize = mono_array_element_size (klass);
+		g_assert (mspec);
+		return mspec->num_elem * esize;
+	}
+	case MONO_NATIVE_CURRENCY:
+	case MONO_NATIVE_VBBYREFSTR:
+	case MONO_NATIVE_CUSTOM:
+	default:
+		g_error ("native type %02x not implemented", native_type); 
+		break;
+	}
+	g_assert_not_reached ();
+	return 0;
+}

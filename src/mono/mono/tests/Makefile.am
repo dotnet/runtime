@@ -113,6 +113,7 @@ TESTSRC=			\
 	array-invoke.cs		\
 	decimal.cs		\
 	marshal1.cs		\
+	marshal2.cs		\
 	cpblkTest.il		\
 	jmpTest.il		\
 	calliTest.il		\

@@ -9,16 +9,24 @@
 
 extern gboolean mono_print_vtable;
 
-/* declared in marshal.h */
-typedef struct MonoMarshalType MonoMarshalType;
+typedef struct {
+	MonoType        *type;
+	int              offset;
+	const char      *name;
+	const char      *data;
+} MonoClassField;
 
 typedef struct {
-	MonoType *type;
-	int       offset;
-	const char     *name;
-	const char     *data;
-	/* add marshal data, too */
-} MonoClassField;
+	MonoClassField *field;
+	guint32 offset;
+	MonoMarshalSpec *mspec;
+} MonoMarshalField;
+
+typedef struct {
+	guint32 native_size;
+	guint32 num_fields;
+	MonoMarshalField fields [MONO_ZERO_LEN_ARRAY];
+} MonoMarshalType;
 
 typedef struct {
 	const char *name;
@@ -62,6 +70,9 @@ struct _MonoClass {
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 	guint delegate        : 1; /* class is a Delegate */
 	guint min_align       : 4;
+	guint packing_size    : 4;
+	guint blittable       : 1; /* class is blittable */
+	guint unicode         : 1; /* class uses unicode char when marshalled */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -125,6 +136,9 @@ struct _MonoClass {
 	MonoType byval_arg;
 
 	void *reflection_info;
+
+	MonoMethod *ptr_to_str;
+	MonoMethod *str_to_ptr;
 
         MonoMethod **vtable;	
 };
@@ -203,6 +217,15 @@ mono_class_value_size      (MonoClass *klass, guint32 *align);
 
 gint32
 mono_class_data_size       (MonoClass *klass);
+
+gint32
+mono_class_native_size     (MonoClass *klass);
+
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass);
+
+gint32
+mono_class_min_align       (MonoClass *klass);
 
 MonoClass *
 mono_class_from_mono_type  (MonoType *type);

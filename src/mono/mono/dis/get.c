@@ -1377,7 +1377,7 @@ get_marshal_info (MonoImage *m, const char *blob) {
 		return g_strdup ("method");
 	case MONO_NATIVE_ASANY:
 		return g_strdup ("as any");
-	case MONO_NATIVE_ARRAY:
+	case MONO_NATIVE_LPARRAY:
 		return g_strdup ("[]");
 	case MONO_NATIVE_LPSTRUCT:
 		return g_strdup ("lpstruct");

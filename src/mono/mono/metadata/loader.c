@@ -420,6 +420,9 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	}
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
+			result->string_ctor = 1;
+
 		result->addr = mono_lookup_internal_call (result);
 		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -489,4 +492,17 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			return;
 		}
 	}
+}
+
+gpointer
+mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
+{
+	GList *l;
+	g_assert (method != NULL);
+	g_assert (method->is_wrapper == 1);
+
+	if (!(l = g_list_nth (((MonoMethodWrapper *)method)->data, id - 1)))
+		g_assert_not_reached ();
+
+	return l->data;
 }

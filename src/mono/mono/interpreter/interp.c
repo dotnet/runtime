@@ -1100,7 +1100,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
-	int i, type, isobject = 0, string_ctor = 0;
+	int i, type, isobject = 0;
 	void *ret;
 	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
@@ -1109,7 +1109,6 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
-		string_ctor = method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor");
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
@@ -1197,9 +1196,9 @@ handle_enum:
 
 	INIT_FRAME(&frame,NULL,obj,args,&result,method);
 	ves_exec_method (&frame);
-	if (sig->ret->type == MONO_TYPE_VOID && !string_ctor)
+	if (sig->ret->type == MONO_TYPE_VOID && !method->string_ctor)
 		return NULL;
-	if (isobject || string_ctor)
+	if (isobject || method->string_ctor)
 		return result.data.p;
 	stackval_to_data (sig->ret, &result, ret);
 	return retval;

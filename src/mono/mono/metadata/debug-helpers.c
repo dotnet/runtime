@@ -414,3 +414,16 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	return result;
 }
 
+char *
+mono_method_full_name (MonoMethod *method)
+{
+	const char *prefix = "";
+
+	if (method->is_wrapper)
+		prefix = "(runtime) ";
+
+	return g_strdup_printf ("%s%s.%s:%s", prefix, method->klass->name_space, 
+				method->klass->name, method->name);
+}
+
+

@@ -49,6 +49,7 @@
 
 #define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.vartype=k; vi.offset=o; vi.size=s; } while (0)
 
+extern int mono_exc_esp_offset;
 
 typedef struct _MBTree MBTree;
 
@@ -165,6 +166,7 @@ typedef struct {
 	gint32            code_size;
 	gint32            prologue_end;
 	gint32            epilogue_end;
+	gint32            lmfip_offset;
 	MonoRegSet       *rs;
 	guint32           epilog;
 	guint32           args_start_index;
@@ -212,7 +214,6 @@ typedef struct {
 
 typedef struct {
 	gpointer          end_of_stack;
-	jmp_buf          *env;
 	MonoLMF          *lmf;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
@@ -255,7 +256,7 @@ mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip,
 			    MonoJumpInfoType type, gpointer target);
 
 gpointer 
-mono_compile_method        (MonoMethod *method);
+mono_get_lmf_addr          (void);
 
 void
 mono_cpu_detect            (void);
@@ -290,12 +291,6 @@ arch_create_jit_trampoline (MonoMethod *method);
 gpointer
 arch_create_remoting_trampoline (MonoMethod *method);
 
-MonoObject*
-arch_runtime_invoke        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
-
-gpointer
-arch_create_native_wrapper (MonoMethod *method);
-
 int
 arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 
 			    MonoVarType vartype, MonoValueType type);
@@ -303,22 +298,19 @@ arch_allocate_var          (MonoFlowGraph *cfg, int size, int align,
 void
 mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
 
-gpointer 
-arch_get_lmf_addr          (void);
-
-char *
+const char *
 arch_get_reg_name          (int regnum);
 
 /* delegate support functions */
 
-gpointer
-arch_get_delegate_begin_invoke (MonoMethod *method);
+gpointer 
+arch_begin_invoke          (MonoDelegate *delegate, ...);
 
 void
-arch_end_invoke            (MonoMethod *method, gpointer first_arg, ...);
+arch_end_invoke            (gpointer first_arg, ...);
 
-gpointer
-arch_get_delegate_invoke   (MonoMethod *method);
+void
+arch_end_invoke_vt         (gpointer first_arg, MonoObject *sec_arg, ...);
 
 /* remoting support */
 

@@ -18,49 +18,71 @@
 #include "jit.h"
 #include "codegen.h"
 
-static gpointer 
-arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
+gpointer 
+arch_begin_invoke (MonoDelegate *delegate, ...)
 {
 	MonoMethodMessage *msg;
 	MonoDelegate *async_callback;
 	MonoObject *state;
 	MonoMethod *im;
-	
+	MonoClass *klass;
+	MonoMethod *method = NULL;
+	int i;
+
+	g_assert (delegate);
+
+	klass = delegate->object.vtable->klass;
+
+	method = mono_get_delegate_invoke (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'B' && 
+		    !strcmp ("BeginInvoke", klass->methods [i]->name)) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method != NULL);
+
 	im = mono_get_delegate_invoke (method->klass);
 	msg = arch_method_call_message_new (method, &delegate, im, &async_callback, &state);
 
-	return mono_thread_pool_add (delegate, msg, async_callback, state);
+	return mono_thread_pool_add ((MonoObject *)delegate, msg, async_callback, state);
 }
 
-gpointer
-arch_get_delegate_begin_invoke (MonoMethod *method)
-{
-	guint8 *code, *addr;
-
-	code = addr = g_malloc (32);
-
-	x86_push_imm (code, method);
-	x86_call_code (code, arch_begin_invoke);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-	x86_ret (code);
-	g_assert ((code - addr) <= 32);
-
-	return addr;
-}
-
-void
-arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
+static void
+real_arch_end_invoke (MonoDelegate *delegate, gpointer first_arg)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
-	MonoMethodSignature *sig = method->signature;
+	MonoMethod *method = NULL;
+	MonoMethodSignature *sig;
 	MonoMethodMessage *msg;
 	MonoObject *res, *exc;
 	MonoArray *out_args;
+	MonoClass *klass;
+	int i;
 
-	g_assert (method);
+	g_assert (delegate);
 
-	msg = arch_method_call_message_new (method, &first_arg, NULL, NULL, NULL);
+	if (!delegate->method_info || !delegate->method_info->method)
+		g_assert_not_reached ();
+
+	klass = delegate->object.vtable->klass;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->name[0] == 'E' && 
+		    !strcmp ("EndInvoke", klass->methods [i]->name)) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method != NULL);
+
+	sig = method->signature;
+
+	msg = arch_method_call_message_new (method, first_arg, NULL, NULL, NULL);
 
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
@@ -80,117 +102,18 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 	/* restore return value */
 	if (method->signature->ret->type != MONO_TYPE_VOID) {
 		g_assert (res);
-		arch_method_return_message_restore (method, &first_arg, res, out_args);
+		arch_method_return_message_restore (method, first_arg, res, out_args);
 	}
 }
 
-gpointer
-arch_get_delegate_invoke (MonoMethod *method)
+void
+arch_end_invoke (gpointer first_arg, ...)
 {
-	/*
-	 *	Invoke( args .. ) {
-	 *		if ( prev )
-	 *			prev.Invoke();
-	 *		return this.<m_target>( args );
-	 *	}
-	 */
-	MonoMethodSignature *csig = method->signature;
-	guint8 *code, *addr, *br[2], *pos[2];
-	int i, arg_size, this_pos = 4;
-			
-	if (csig->ret->type == MONO_TYPE_VALUETYPE) {
-		g_assert (!csig->ret->byref);
-		this_pos = 8;
-	}
+	return real_arch_end_invoke ((MonoDelegate *)first_arg, &first_arg);
+}
 
-	arg_size = 0;
-	if (csig->param_count) {
-		int align;
-		
-		for (i = 0; i < csig->param_count; ++i) {
-			arg_size += mono_type_stack_size (csig->params [i], &align);
-			g_assert (align == 4);
-		}
-	}
-
-	code = addr = g_malloc (64 + arg_size * 2);
-
-	/* load the this pointer */
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
-	
-	/* load prev */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX, G_STRUCT_OFFSET (MonoMulticastDelegate, prev), 4);
-
-	/* prev == 0 ? */
-	x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
-	br[0] = code; x86_branch32 (code, X86_CC_EQ, 0, TRUE );
-	pos[0] = code;
-	
-	x86_push_reg( code, X86_EAX );
-	/* push args */
-	for ( i = 0; i < (arg_size>>2); i++ )
-		x86_push_membase( code, X86_ESP, (arg_size + this_pos + 4) );
-	/* push next */
-	x86_push_reg( code, X86_EDX );
-	if (this_pos == 8)
-		x86_push_membase (code, X86_ESP, (arg_size + 8));
-	/* recurse */
-	br[1] = code; x86_call_imm( code, 0 );
-	pos[1] = code; x86_call_imm( br[1], addr - pos[1] );
-
-	if (this_pos == 8)
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 8);
-	else
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
-	x86_pop_reg( code, X86_EAX );
-	
-	/* prev == 0 */ 
-	x86_branch32( br[0], X86_CC_EQ, code - pos[0], TRUE );
-	
-	/* load mtarget */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, target), 4); 
-	/* mtarget == 0 ? */
-	x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
-	br[0] = code; x86_branch32 (code, X86_CC_EQ, 0, TRUE);
-	pos[0] = code;
-
-	/* 
-	 * virtual delegate methods: we have to
-	 * replace the this pointer with the actual
-	 * target
-	 */
-	x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
-
-	/* jump to method_ptr() */
-	x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-
-	/* mtarget != 0 */ 
-	x86_branch32( br[0], X86_CC_EQ, code - pos[0], TRUE);
-	/* 
-	 * static delegate methods: we have to remove
-	 * the this pointer from the activation frame
-	 * - I do this creating a new stack frame anx
-	 * copy all arguments except the this pointer
-	 */
-	g_assert ((arg_size & 3) == 0);
-	for (i = 0; i < (arg_size>>2); i++) {
-		x86_push_membase (code, X86_ESP, (arg_size + this_pos));
-	}
-	
-	if (this_pos == 8)
-		x86_push_membase (code, X86_ESP, (arg_size + 4));
-	
-	x86_call_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-	if (arg_size) {
-		if (this_pos == 8) 
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
-		else
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size);
-	}
-	
-	x86_ret (code);
-	
-	g_assert ((code - addr) < (64 + arg_size * 2));
-
-	return addr;
+void
+arch_end_invoke_vt (gpointer first_arg, MonoObject *sec_arg, ...)
+{
+	return real_arch_end_invoke ((MonoDelegate *)sec_arg, &first_arg);
 }

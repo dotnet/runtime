@@ -30,7 +30,7 @@
 //#define DEBUG_REGALLOC
 //#define DEBUG_SPILLS
 
-char *
+const char *
 arch_get_reg_name (int regnum)
 {
 	switch (regnum) {
@@ -111,11 +111,12 @@ enter_method (MonoMethod *method, char *ebp)
 	int i, j;
 	MonoClass *class;
 	MonoObject *o;
-	char *tmpsig;
+	char *tmpsig, *fname;
 
-	tmpsig = mono_signature_get_desc(method->signature, TRUE);
-	printf ("ENTER: %s.%s::%s (%s)\n(", method->klass->name_space,
-		method->klass->name, method->name, tmpsig);
+	tmpsig = mono_signature_get_desc (method->signature, TRUE);
+	fname = mono_method_full_name (method);
+	printf ("ENTER: %s (%s)\n(", fname, tmpsig);
+	g_free (fname);
 	g_free (tmpsig);
 	
 	if (((int)ebp & 3) != 0) {
@@ -141,15 +142,16 @@ enter_method (MonoMethod *method, char *ebp)
 		} else {
 			o = *((MonoObject **)ebp);
 
-			g_assert (o);
+			if (o) {
+				class = o->vtable->klass;
 
-			class = o->vtable->klass;
-
-			if (class == mono_defaults.string_class) {
-				printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-			} else {
-				printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
-			}
+				if (class == mono_defaults.string_class) {
+					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+				} else {
+					printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
+				}
+			} else 
+				printf ("this:NULL, ");
 		}
 		ebp += sizeof (gpointer);
 	}
@@ -238,9 +240,14 @@ static void
 leave_method (MonoMethod *method, int edx, int eax, double test)
 {
 	gint64 l;
+	char *tmpsig, *fname;
 
-	printf ("LEAVE: %s.%s::%s ", method->klass->name_space,
-		method->klass->name, method->name);
+	tmpsig = mono_signature_get_desc (method->signature, TRUE);
+	fname = mono_method_full_name (method);
+	printf ("LEAVE: %s (%s) ", fname, tmpsig);
+	g_free (fname);
+	g_free (tmpsig);
+
 
 	switch (method->signature->ret->type) {
 	case MONO_TYPE_VOID:
@@ -321,27 +328,56 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
-	int i, j, k, alloc_size;
+	int i, j, k, alloc_size, pos;
 
 	x86_push_reg (cfg->code, X86_EBP);
 	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
 
 	alloc_size = cfg->locals_size;
+	pos = 0;
+
+	if (method->save_lmf) {
+		
+		pos += sizeof (MonoLMF);
+
+		/* save the current IP */
+		cfg->lmfip_offset = cfg->code + 1 - cfg->start;
+		x86_push_imm (cfg->code, 0);
+		/* save all caller saved regs */
+		x86_push_reg (cfg->code, X86_EBX);
+		x86_push_reg (cfg->code, X86_EDI);
+		x86_push_reg (cfg->code, X86_ESI);
+		x86_push_reg (cfg->code, X86_EBP);
+
+		/* save method info */
+		x86_push_imm (cfg->code, method);
+	
+		/* get the address of lmf for the current thread */
+		x86_call_code (cfg->code, mono_get_lmf_addr);
+		/* push lmf */
+		x86_push_reg (cfg->code, X86_EAX); 
+		/* push *lfm (previous_lmf) */
+		x86_push_membase (cfg->code, X86_EAX, 0);
+		/* *(lmf) = ESP */
+		x86_mov_membase_reg (cfg->code, X86_EAX, 0, X86_ESP, 4);
+	}
 
 	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
 		x86_push_reg (cfg->code, X86_EBX);
-		alloc_size -= 4;
+		pos += 4;
 	}
 
 	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
 		x86_push_reg (cfg->code, X86_EDI);
-		alloc_size -= 4;
+		pos += 4;
 	}
 
 	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
 		x86_push_reg (cfg->code, X86_ESI);
-		alloc_size -= 4;
+		pos += 4;
 	}
+
+	alloc_size -= pos;
 
 	if (alloc_size)
 		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, alloc_size);
@@ -500,7 +536,11 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EAX);
 	}
 
-	pos = -4;
+	if (cfg->method->save_lmf) {
+		pos = -sizeof (MonoLMF) - 4;
+	} else
+		pos = -4;
+
 	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
 		x86_mov_reg_membase (cfg->code, X86_EBX, X86_EBP, pos, 4);
 		pos -= 4;
@@ -512,6 +552,29 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
 		x86_mov_reg_membase (cfg->code, X86_ESI, X86_EBP, pos, 4);
 		pos -= 4;
+	}
+
+	if (cfg->method->save_lmf) {
+		pos = -sizeof (MonoLMF);
+
+		x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
+
+		/* ebx = previous_lmf */
+		x86_pop_reg (cfg->code, X86_EBX);
+		/* edi = lmf */
+		x86_pop_reg (cfg->code, X86_EDI);
+		/* *(lmf) = previous_lmf */
+		x86_mov_membase_reg (cfg->code, X86_EDI, 0, X86_EBX, 4);
+
+		/* discard method info */
+		x86_pop_reg (cfg->code, X86_ESI);
+
+		/* restore caller saved regs */
+		x86_pop_reg (cfg->code, X86_EBP);
+		x86_pop_reg (cfg->code, X86_ESI);
+		x86_pop_reg (cfg->code, X86_EDI);
+		x86_pop_reg (cfg->code, X86_EBX);
+
 	}
 
 	x86_leave (cfg->code);
@@ -1064,6 +1127,12 @@ mono_compute_branches (MonoFlowGraph *cfg)
 			g_assert_not_reached ();
 		}
 		x86_patch (ip, target);
+	}
+
+	/* patch the IP in the LMF saving code */
+	if (cfg->lmfip_offset) {
+		*((guint32 *)(cfg->start + cfg->lmfip_offset)) =  
+			(gint32)(cfg->start + cfg->lmfip_offset);
 	}
 }
 

@@ -80,6 +80,76 @@ typedef enum {
 	MONO_CALL_VARARG
 } MonoCallConvention;
 
+/* ECMA lamespec: the old spec had more info... */
+typedef enum {
+	MONO_NATIVE_BOOLEAN = 0x02, /* 4 bytes, 0 is false, != 0 is true */
+	MONO_NATIVE_I1 = 0x03,
+	MONO_NATIVE_U1 = 0x04,
+	MONO_NATIVE_I2 = 0x05,
+	MONO_NATIVE_U2 = 0x06,
+	MONO_NATIVE_I4 = 0x07,
+	MONO_NATIVE_U4 = 0x08,
+	MONO_NATIVE_I8 = 0x09,
+	MONO_NATIVE_U8 = 0x0a,
+	MONO_NATIVE_R4 = 0x0b,
+	MONO_NATIVE_R8 = 0x0c,
+	MONO_NATIVE_CURRENCY = 0x0f,
+	MONO_NATIVE_BSTR = 0x13, /* prefixed length, Unicode */
+	MONO_NATIVE_LPSTR = 0x14, /* ANSI, null terminated */
+	MONO_NATIVE_LPWSTR = 0x15, /* UNICODE, null terminated */
+	MONO_NATIVE_LPTSTR = 0x16, /* plattform dep., null terminated */
+	MONO_NATIVE_BYVALTSTR = 0x17,
+	MONO_NATIVE_IUNKNOWN = 0x19,
+	MONO_NATIVE_IDISPATCH = 0x1a,
+	MONO_NATIVE_STRUCT = 0x1b,
+	MONO_NATIVE_INTERFACE = 0x1c,
+	MONO_NATIVE_SAFEARRAY = 0x1d,
+	MONO_NATIVE_BYVALARRAY = 0x1e,
+	MONO_NATIVE_INT   = 0x1f,
+	MONO_NATIVE_UINT  = 0x20,
+	MONO_NATIVE_VBBYREFSTR  = 0x22,
+	MONO_NATIVE_ANSIBSTR  = 0x23,  /* prefixed length, ANSI */
+	MONO_NATIVE_TBSTR  = 0x24, /* prefixed length, plattform dep. */
+	MONO_NATIVE_VARIANTBOOL  = 0x25,
+	MONO_NATIVE_FUNC  = 0x26,
+	MONO_NATIVE_ASANY = 0x28,
+	MONO_NATIVE_LPARRAY = 0x2a,
+	MONO_NATIVE_LPSTRUCT = 0x2b,
+	MONO_NATIVE_CUSTOM = 0x2c,
+	MONO_NATIVE_ERROR = 0x2d,
+	MONO_NATIVE_MAX = 0x50 /* no info */
+} MonoMarshalNative;
+
+typedef enum {
+	MONO_MARSHAL_CONV_NONE,
+	MONO_MARSHAL_CONV_BOOL_VARIANTBOOL,
+	MONO_MARSHAL_CONV_BOOL_I4,
+	MONO_MARSHAL_CONV_STR_BSTR,
+	MONO_MARSHAL_CONV_STR_LPSTR,
+	MONO_MARSHAL_CONV_LPSTR_STR,
+	MONO_MARSHAL_CONV_STR_LPWSTR,
+	MONO_MARSHAL_CONV_STR_LPTSTR,
+	MONO_MARSHAL_CONV_STR_ANSIBSTR,
+	MONO_MARSHAL_CONV_STR_TBSTR,
+	MONO_MARSHAL_CONV_STR_BYVALSTR,
+	MONO_MARSHAL_CONV_STR_BYVALWSTR,
+	MONO_MARSHAL_CONV_ARRAY_BYVALARRAY,
+	MONO_MARSHAL_CONV_ARRAY_SAVEARRAY,
+	MONO_MARSHAL_CONV_ARRAY_LPARRAY,
+	MONO_MARSHAL_CONV_OBJECT_INTERFACE,
+	MONO_MARSHAL_CONV_OBJECT_IDISPATCH,
+	MONO_MARSHAL_CONV_OBJECT_IUNKNOWN,
+	MONO_MARSHAL_CONV_DEL_FTN
+} MonoMarshalConv;
+
+typedef struct {
+	MonoMarshalNative native;
+	MonoMarshalNative elem_type;
+	gint32 param_num;
+	gint32 num_elem;
+} MonoMarshalSpec;
+
+
 void         mono_metadata_decode_row (MonoTableInfo         *t,
 				       int                    idx,
 				       guint32               *res,
@@ -123,7 +193,8 @@ guint32     mono_metadata_methods_from_event      (MonoImage *meta, guint32 tabl
 guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 table_index, guint *end);
 guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 table_index, guint *end);
 guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 table_index, guint32 *packing, guint32 *size);
-const char* mono_metadata_get_marshal_info        (MonoImage *meta, guint32 idx, gboolean is_field);
+
+MonoMarshalSpec *mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr);
 
 guint32     mono_metadata_implmap_from_method     (MonoImage *meta, guint32 method_idx);
 
@@ -131,7 +202,7 @@ void        mono_metadata_field_info (MonoImage *meta,
 				      guint32       table_index,
 				      guint32      *offset,
 				      guint32      *rva,
-				      const char  **marshal_info);
+				      MonoMarshalSpec **marshal_spec);
 
 guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token);
 
@@ -275,6 +346,14 @@ gboolean          mono_metadata_signature_equal (MonoMethodSignature *sig1,
 
 MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 void              mono_metadata_free_mh  (MonoMethodHeader *mh);
+
+guint32 
+mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, 
+			gboolean as_field, gboolean unicode, MonoMarshalConv *conv);
+
+gint32
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+			gboolean as_field, gboolean unicode);
 
 /*
  * Makes a token based on a table and an index

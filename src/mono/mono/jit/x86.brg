@@ -24,6 +24,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/marshal.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "regset.h"
@@ -221,7 +222,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
 %term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8 LDIND_OBJ 
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
-%term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
+%term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY JMP
 %term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
 %term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT CKFINITE
@@ -238,6 +239,9 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term REMOTE_LDFLDA REMOTE_STIND_I1 REMOTE_STIND_I2 REMOTE_STIND_I4
 %term REMOTE_STIND_I8 REMOTE_STIND_R4 REMOTE_STIND_R8 REMOTE_STIND_OBJ
 %term SIN COS SQRT
+
+%term FUNC1 PROC3 FREE OBJADDR
+
 #
 # we start at stmt
 #
@@ -380,7 +384,7 @@ stmt: RETHROW {
 
 stmt: HANDLER {
 	/* save ESP (used by ENDFINALLY) */
-	x86_mov_membase_reg (s->code, X86_EBP, -16, X86_ESP, 4);
+	x86_mov_membase_reg (s->code, X86_EBP, mono_exc_esp_offset, X86_ESP, 4);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_call_imm (s->code, 0); 
 }
@@ -388,7 +392,7 @@ stmt: HANDLER {
 stmt: ENDFINALLY {
 	/* restore ESP - which can be modified when we allocate value types
 	 * in the finally handler */
-	x86_mov_reg_membase (s->code, X86_ESP, X86_EBP, -16, 4);
+	x86_mov_reg_membase (s->code, X86_ESP, X86_EBP, mono_exc_esp_offset, 4);
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
 	x86_ret (s->code);
 }
@@ -962,7 +966,6 @@ reg: CONV_U2 (reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
-# warning: this chain rule requires a register
 reg: CONST_I4 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
 }
@@ -1717,6 +1720,80 @@ reg: NEWOBJ_SPEC {
 	PRINT_REG ("NEWOBJ_SPEC", tree->reg1);
 }
 
+reg: OBJADDR (reg) {
+	if (tree->left->reg1 != tree->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+stmt: FREE (reg) {
+	x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_reg (s->code, tree->left->reg1);
+
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, g_free);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
+	
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	x86_pop_reg (s->code, X86_EAX);
+}
+
+stmt: PROC3 (reg, CPSRC (reg, reg)) {
+	int dest_reg = tree->left->reg1;
+	int source_reg = tree->right->left->reg1;
+	int size_reg = tree->right->right->reg1;
+
+	x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_reg (s->code, size_reg);
+	x86_push_reg (s->code, source_reg);
+	x86_push_reg (s->code, dest_reg);
+
+	switch (tree->data.i) {
+	case MONO_MARSHAL_CONV_STR_BYVALSTR:
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_string_to_byvalstr);
+		break;
+	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_string_to_byvalwstr);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	x86_pop_reg (s->code, X86_EAX);
+}
+
+reg: FUNC1 (reg) {
+	if (tree->reg1 != X86_EAX)
+		x86_push_reg (s->code, X86_EAX);
+	x86_push_reg (s->code, X86_ECX);
+	x86_push_reg (s->code, X86_EDX);
+
+	x86_push_reg (s->code, tree->left->reg1);
+
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->data.p);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+
+	x86_pop_reg (s->code, X86_EDX);
+	x86_pop_reg (s->code, X86_ECX);
+	if (tree->reg1 != X86_EAX) {
+		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
+		x86_pop_reg (s->code, X86_EAX);
+	}
+}
+
+
 reg: LOCALLOC (reg) {
 	int offset = 0;
 	/* size must be aligned to 4 bytes */
@@ -1751,12 +1828,12 @@ reg: LOCALLOC (reg) {
 		x86_prefix (s->code, X86_REP_PREFIX);
 		x86_stosl (s->code);
 		
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI)
+			x86_pop_reg (s->code, X86_EDI);
 		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX)
 			x86_pop_reg (s->code, X86_ECX);
 		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX)
 			x86_pop_reg (s->code, X86_EAX);
-		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI)
-			x86_pop_reg (s->code, X86_EDI);
 	}
 
 	x86_mov_reg_reg (s->code, tree->reg1, X86_ESP, 4);
@@ -2580,25 +2657,6 @@ stmt: ARG_I4 (reg) {
 	PRINT_REG ("ARG_I4",  tree->left->reg1);
 }
 
-# fixme: we must free the allocated strings somewhere
-stmt: ARG_STRING (reg) {
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
-	x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_ECX);
-	x86_push_reg (s->code, X86_EDX);
-
-	x86_push_reg (s->code, tree->left->reg1);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_string_to_utf8);
-	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
-	
-	x86_mov_membase_reg (s->code, X86_ESP, 12, X86_EAX, 4);
-
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_ECX);
-	x86_pop_reg (s->code, X86_EAX);
-}
-
 stmt: ARG_I4 (ADDR_G) {
 	x86_push_imm (s->code, tree->left->data.p);
 }
@@ -2665,6 +2723,7 @@ reg: CALL_I4 (this, reg) {
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
 	}
 
 	if (tree->data.ci.vtype_num) {
@@ -3598,6 +3657,41 @@ lreg: REM_UN (lreg, lreg) {
 
 	mono_assert (tree->reg1 == X86_EAX &&
 		     tree->reg2 == X86_EDX);
+}
+
+lreg: CALL_I8 (this, reg) {
+	int treg = X86_EAX;
+	int lreg = tree->left->reg1;
+	int rreg = tree->right->reg1;
+	
+	if (lreg == treg || rreg == treg) 
+		treg = X86_EDX;
+	if (lreg == treg || rreg == treg) 
+		treg = X86_ECX;
+	if (lreg == treg || rreg == treg) 
+		mono_assert_not_reached ();
+
+	if (tree->left->op != MB_TERM_NOP) {
+		mono_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
+	}
+
+	if (tree->data.ci.vtype_num) {
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
+		x86_lea_membase (s->code, treg, X86_EBP, offset);
+		x86_push_reg (s->code, treg);
+	}
+
+	x86_call_reg (s->code, rreg);
+
+	if (tree->data.ci.args_size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.ci.args_size);
+	
+	PRINT_REG ("CALL_I8", tree->reg1);
+
+	mono_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg2 == X86_EDX);
 }
 
 lreg: CALL_I8 (this, ADDR_G) {

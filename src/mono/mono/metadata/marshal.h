@@ -14,69 +14,191 @@
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/opcodes.h>
+#include <mono/metadata/reflection.h>
 
-/* ECMA lamespec: the old spec had more info... */
-typedef enum {
-	MONO_NATIVE_BOOLEAN = 0x02, /* 4 bytes, 0 is false, != 0 is true */
-	MONO_NATIVE_I1 = 0x03,
-	MONO_NATIVE_U1 = 0x04,
-	MONO_NATIVE_I2 = 0x05,
-	MONO_NATIVE_U2 = 0x06,
-	MONO_NATIVE_I4 = 0x07,
-	MONO_NATIVE_U4 = 0x08,
-	MONO_NATIVE_I8 = 0x09,
-	MONO_NATIVE_U8 = 0x0a,
-	MONO_NATIVE_R4 = 0x0b,
-	MONO_NATIVE_R8 = 0x0c,
-	MONO_NATIVE_CURRENCY = 0x0f,
-	MONO_NATIVE_BSTR = 0x13,
-	MONO_NATIVE_LPSTR = 0x14, /* char* */
-	MONO_NATIVE_LPWSTR = 0x15, /* gunichar2* */
-	MONO_NATIVE_LPTSTR = 0x16,
-	MONO_NATIVE_BYVALTSTR = 0x17,
-	MONO_NATIVE_IUNKNOWN = 0x19,
-	MONO_NATIVE_IDISPATCH = 0x1a,
-	MONO_NATIVE_STRUCT = 0x1b,
-	MONO_NATIVE_INTERFACE = 0x1c,
-	MONO_NATIVE_SAFEARRAY = 0x1d,
-	MONO_NATIVE_BYVALARRAY = 0x1e,
-	MONO_NATIVE_INT   = 0x1f,
-	MONO_NATIVE_UINT  = 0x20,
-	MONO_NATIVE_VBBYREFSTR  = 0x22,
-	MONO_NATIVE_ANSIBSTR  = 0x23,
-	MONO_NATIVE_TBSTR  = 0x24,
-	MONO_NATIVE_VARIANTBOOL  = 0x25,
-	MONO_NATIVE_FUNC  = 0x26,
-	MONO_NATIVE_ASANY = 0x28,
-	MONO_NATIVE_ARRAY = 0x2a,
-	MONO_NATIVE_LPSTRUCT = 0x2b,
-	MONO_NATIVE_CUSTOM = 0x2c,
-	MONO_NATIVE_ERROR = 0x2d,
-	MONO_NATIVE_MAX = 0x50 /* no info */
-} MonoMarshalNative;
+typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
-typedef struct {
-	MonoClassField *field;
-	guint32 offset;
-	guint32 utype;
-	guint32 conv;
-	guint32 count;
-} MonoMarshalField;
+/* marshaling helper functions */
 
-struct MonoMarshalType {
-	guint32 unmanaged_size;
-	guint32 num_fields;
-	MonoMarshalField fields [MONO_ZERO_LEN_ARRAY];
-};
+gpointer
+mono_array_to_savearray (MonoArray *array);
 
-void* mono_marshal_string_array (MonoArray *array);
+gpointer
+mono_array_to_lparray (MonoArray *array);
 
-guint32 mono_type_to_unmanaged      (MonoType *type);
-void    mono_marshal_load_type_info (MonoClass* klass);
+gpointer
+mono_string_to_ansibstr (MonoString *string_obj);
 
-void* mono_marshal_alloc   (gpointer size);
-void  mono_marshal_free    (gpointer ptr);
-void* mono_marshal_realloc (gpointer ptr, gpointer size);
+gpointer
+mono_string_to_bstr (MonoString *string_obj);
+
+void
+mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
+
+void
+mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
+
+gpointer
+mono_delegate_to_ftnptr (MonoDelegate *delegate);
+
+void * 
+mono_marshal_string_array (MonoArray *array);
+
+/* method builder functions */
+
+void
+mono_mb_free (MonoMethodBuilder *mb);
+
+MonoMethodBuilder *
+mono_mb_new (MonoClass *klass, const char *name);
+
+void
+mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value);
+
+guint32
+mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
+
+void
+mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpointer func);
+
+void
+mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig);
+
+int
+mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type);
+
+MonoMethod *
+mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
+
+void
+mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum);
+
+void
+mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum);
+
+void
+mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num);
+
+void
+mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num);
+
+void
+mono_mb_emit_exception (MonoMethodBuilder *mb);
+
+void
+mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);
+
+void
+mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint8 local, gint8 incr);
+
+void
+mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op);
+
+void
+mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data);
+
+void
+mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data);
+
+/* functions to create various architecture independent helper functions */
+
+MonoMethod *
+mono_marshal_get_delegate_begin_invoke (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_delegate_invoke (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_runtime_invoke (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this);
+
+MonoMethod *
+mono_marshal_get_native_wrapper (MonoMethod *method);
+
+MonoMethod *
+mono_marshal_get_struct_to_ptr (MonoClass *klass);
+
+MonoMethod *
+mono_marshal_get_ptr_to_struct (MonoClass *klass);
+
+/* marshaling internal calls */
+
+void * 
+mono_marshal_alloc (gpointer size);
+
+void 
+mono_marshal_free (gpointer ptr);
+
+void * 
+mono_marshal_realloc (gpointer ptr, gpointer size);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
+								    gpointer dest, gint32 length);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
+								      MonoArray *dest, gint32 length);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset);
+
+unsigned char
+ves_icall_System_Runtime_InteropServices_Marshal_ReadByte (gpointer ptr, gint32 offset);
+
+gint16
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32 offset);
+
+gint32
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32 offset);
+
+gint64
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32 offset);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteByte (gpointer ptr, gint32 offset, unsigned char val);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint32 offset, gpointer val);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint32 offset, gint16 val);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint32 offset, gint32 val);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val);
+
+MonoString*
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr);
+
+guint32 
+ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
+
+guint32 
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rtype);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj, gpointer dst, MonoBoolean delete_old);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst);
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif /* __MONO_MARSHAL_H__ */
 

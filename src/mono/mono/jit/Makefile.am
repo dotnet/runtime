@@ -27,7 +27,6 @@ libmono_a_SOURCES =		\
 	trampoline.c		\
 	delegate.c		\
 	exception.c		\
-	invoke.c		\
 	message.c		\
 	linear-scan.c		\
 	helpers.h		\

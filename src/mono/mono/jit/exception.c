@@ -122,7 +122,7 @@ arch_get_call_finally (void)
 	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
 	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
 	/* save the ESP - this is used by endfinally */
-	x86_mov_membase_reg (code, X86_EBP, -16, X86_ESP, 4);
+	x86_mov_membase_reg (code, X86_EBP, mono_exc_esp_offset, X86_ESP, 4);
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
 	/* restore EBP */
@@ -184,7 +184,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			
 			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 				char    *strace;
-				char    *tmp, *tmpsig, *source_location, *tmpaddr;
+				char    *tmp, *tmpsig, *source_location, *tmpaddr, *fname;
 				gint32   address, iloffset;
 
 				trace_ips = g_list_append (trace_ips, ip);
@@ -204,14 +204,17 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 				else
 					tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
 
-				tmpsig = mono_signature_get_desc(m->signature, TRUE);
+				tmpsig = mono_signature_get_desc (m->signature, TRUE);
+
+				fname = mono_method_full_name (m);
+
 				if (source_location)
-					tmp = g_strdup_printf ("%sin %s (at %s) %s.%s:%s (%s)\n", strace, tmpaddr,
-							       source_location, m->klass->name_space, m->klass->name,
-							       m->name, tmpsig);
+					tmp = g_strdup_printf ("%sin %s (at %s) %s (%s)\n", strace, tmpaddr,
+							       source_location, fname, tmpsig);
 				else
-					tmp = g_strdup_printf ("%sin %s %s.%s:%s (%s)\n", strace, tmpaddr,
-							       m->klass->name_space, m->klass->name, m->name, tmpsig);
+					tmp = g_strdup_printf ("%sin %s %s (%s)\n", strace, tmpaddr,
+							       fname, tmpsig);
+				g_free (fname);
 				g_free (source_location);
 				g_free (tmpsig);
 				g_free (strace);
@@ -229,8 +232,8 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 				
 					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
 						/* catch block */
-						if (ei->flags == 0 && mono_object_isinst (obj, 
-						        mono_class_get (m->klass->image, ei->token_or_filter))) {
+						if (ei->flags == 0 && (m->is_wrapper || 
+							mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
 							((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 							g_list_free (trace_ips);
 							return TRUE;
@@ -247,9 +250,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			if (bp >= end_of_stack) {
 				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 				g_list_free (trace_ips);
-				if (!jit_tls->env)
-					return FALSE;
-				return TRUE;
+				return FALSE;
 			}
 	
 		} else {
@@ -289,9 +290,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			if (bp >= end_of_stack) {
 				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
 				g_list_free (trace_ips);
-				if (!jit_tls->env)
-					return FALSE;
-				return TRUE;
+				return FALSE;
 			}
 		}
 	}
@@ -467,8 +466,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 					if (ei->try_start <= ip && ip <= (ei->try_end)) { 
 						/* catch block */
-						if (ei->flags == 0 && mono_object_isinst (obj, 
-						        mono_class_get (m->klass->image, ei->token_or_filter))) {
+						if (ei->flags == 0 && (m->is_wrapper || 
+							mono_object_isinst (obj, mono_class_get (m->klass->image, ei->token_or_filter)))) {
 					
 							ctx->SC_EIP = (unsigned long)ei->handler_start;
 							ctx->SC_ECX = (unsigned long)obj;

@@ -10,14 +10,15 @@ class Test {
 	static extern int mono_invoke_delegate (SimpleDelegate d);
 
 	public static int Add (int a, int b) {
-		Console.WriteLine ("Test.Add from delegate: " + a +  "+ " + b);
+		Console.WriteLine ("Test.Add from delegate: " + a +  " + " + b);
 		return a + b;
 	}
 
 	static int Main () {
 		SimpleDelegate d = new SimpleDelegate (Add);
 		
-		mono_invoke_delegate (d);
+		if (mono_invoke_delegate (d) != 5)
+			return 1;
 
 		return 0;
 	}

@@ -34,6 +34,7 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/marshal.h>
 
 #include "jit.h"
 #include "helpers.h"
@@ -294,6 +295,22 @@ mono_allocate_excvar (MonoFlowGraph *cfg)
 	return cfg->excvar;
 }
 
+/**
+ * mono_jit_runtime_invoke:
+ * @method: the method to invoke
+ * @obj: this pointer
+ * @params: array of parameter values.
+ * @exc: used to catch exceptions objects
+ */
+static MonoObject*
+mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+{
+	MonoMethod *invoke;
+	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
+	invoke = mono_marshal_get_runtime_invoke (method);
+	runtime_invoke = mono_compile_method (invoke);       
+	return runtime_invoke (obj, params, exc);
+}
 
 /**
  * ctree_create_load:
@@ -541,7 +558,7 @@ static void
 mono_analyze_flow (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
-	register const unsigned char *ip, *end;
+	const unsigned char *ip, *end;
 	MonoMethodHeader *header;
 	MonoBytecodeInfo *bcinfo;
 	MonoExceptionClause *clause;
@@ -579,12 +596,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			block_end = FALSE;
 		}
 
-		if (*ip == 0xfe) {
-			++ip;
-			i = *ip + 256;
-		} else {
-			i = *ip;
-		}
+		i = mono_opcode_value (&ip);
 
 		opcode = &mono_opcodes [i];
 
@@ -721,12 +733,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		}
 		g_assert (bb);
 
-		if (*ip == 0xfe) {
-			++ip;
-			i = *ip + 256;
-		} else {
-			i = *ip;
-		}
+		i = mono_opcode_value (&ip);
 
 		opcode = &mono_opcodes [i];
 
@@ -960,6 +967,9 @@ check_inlining (MonoMethod *method)
 
 	method->inline_info = 1;
 	
+	if (method->is_wrapper)
+		goto fail;
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -1487,7 +1497,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			token = read32 (ip);
 			ip += 4;
 			
-			c = mono_class_get (image, token);
+			if (method->is_wrapper)
+				c = (MonoClass *)mono_method_get_wrapper_data (method, token);
+			else
+				c = mono_class_get (image, token);
 			
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
 			t1->data.p = c;
@@ -1518,7 +1531,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 			sp--;
 
-			class = mono_class_get (image, token);
+			if (method->is_wrapper)
+				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
+			else 
+				class = mono_class_get (image, token);
+
 			t1 = mono_ctree_new (mp, MB_TERM_UNBOX, *sp, NULL);
 			t1->data.klass = class;
 
@@ -1911,10 +1928,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				newarr = TRUE;
 				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				this->data.m = cm;
-			} else if (cm->klass == mono_defaults.string_class) {
+			} else if (cm->string_ctor) {
+				static MonoString *string_dummy = NULL; 
+
+				if (!string_dummy)
+					string_dummy = mono_string_new_wrapper ("dummy");
+
 				newstr = TRUE;
+				/* we just pass a dummy as this, it is not used */
 				this = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-				this->data.m = cm;
+				this->data.p = string_dummy;
 			} else {				
 				if (cm->klass->valuetype) {
 					t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -1952,7 +1975,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (newarr || newstr) {
 
-				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				if (newarr) {
 					t2->data.p = mono_array_new_va;
 				} else {
@@ -2015,7 +2038,12 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (calli) {
 				ftn = *(--sp);
-				csig = mono_metadata_parse_signature (image, token);
+				
+				if (method->is_wrapper) 
+					csig = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
+				else
+					csig = mono_metadata_parse_signature (image, token);
+      
 				g_assert (csig);
 				arg_sp = sp -= csig->param_count;
 			} else {
@@ -2043,9 +2071,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					}
 				}
 
-				if (cm->klass == mono_defaults.string_class &&
-				    *cm->name == '.' && !strcmp (cm->name, ".ctor"))
+				if (cm->string_ctor)
 					g_assert_not_reached ();
+
 				arg_sp = sp -= cm->signature->param_count;
 
 				if ((cm->flags & METHOD_ATTRIBUTE_FINAL && 
@@ -2093,6 +2121,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				csig = cm->signature;
 
 			nargs = csig->param_count;
+
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			g_assert (!virtual || csig->hasthis);
 
@@ -3064,6 +3093,107 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I8_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I64);
 			break;
+		case MONO_CUSTOM_PREFIX: {
+			++ip;			
+			switch (*ip) {
+				
+			case CEE_MONO_FUNC1: {
+				MonoMarshalConv conv;
+				++ip;
+
+				conv = *ip;
+
+				++ip;
+
+				sp--;
+				t1 = mono_ctree_new (mp, MB_TERM_FUNC1, *sp, NULL);
+
+				switch (conv) {
+				case MONO_MARSHAL_CONV_STR_LPWSTR:
+					t1->data.p = mono_string_to_utf16;
+					break;
+				case MONO_MARSHAL_CONV_LPSTR_STR:
+					t1->data.p = mono_string_new_wrapper;
+					break;
+				case MONO_MARSHAL_CONV_STR_LPTSTR:
+				case MONO_MARSHAL_CONV_STR_LPSTR:
+					t1->data.p = mono_string_to_utf8;
+					break;
+				case MONO_MARSHAL_CONV_STR_BSTR:
+					t1->data.p = mono_string_to_bstr;
+					break;
+				case MONO_MARSHAL_CONV_STR_TBSTR:
+				case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+					t1->data.p = mono_string_to_ansibstr;
+					break;
+				case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
+					t1->data.p = mono_array_to_savearray;
+					break;
+				case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+					t1->data.p = mono_array_to_lparray;
+					break;
+				case MONO_MARSHAL_CONV_DEL_FTN:
+					t1->data.p = mono_delegate_to_ftnptr;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				PUSH_TREE (t1, VAL_POINTER); 
+				break;
+			}
+			case CEE_MONO_PROC3: {
+				MonoMarshalConv conv;
+				++ip;
+
+				conv = *ip;
+
+				++ip;
+
+				sp -= 3;
+
+				t1 = mono_ctree_new (mp, MB_TERM_CPSRC, sp [1], sp [2]);
+				t1 = mono_ctree_new (mp, MB_TERM_PROC3, sp [0], t1);
+				t1->data.i = conv;
+
+				ADD_TREE (t1, cli_addr);
+				break;
+			}
+			case CEE_MONO_FREE: {
+				++ip;
+
+				sp -= 1;
+				t1 = mono_ctree_new (mp, MB_TERM_FREE, *sp, NULL);
+				ADD_TREE (t1, cli_addr);
+				break;
+			}
+			case CEE_MONO_OBJADDR: {
+				++ip;
+
+				sp -= 1;
+				t1 = mono_ctree_new (mp, MB_TERM_OBJADDR, *sp, NULL);
+				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
+			case CEE_MONO_LDPTR: {
+				guint32 token;
+				++ip;
+				
+				token = read32 (ip);
+				ip += 4;
+				
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t1->data.p = mono_method_get_wrapper_data (method, token);
+				
+				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
+
+			default:
+				g_error ("Unimplemented opcode at IL_%04x "
+					 "%02x %02x", ip - header->code, MONO_CUSTOM_PREFIX, *ip);
+			}
+			break;
+		}
 		case CEE_PREFIX1: {
 			++ip;			
 			switch (*ip) {
@@ -3141,7 +3271,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				token = read32 (ip);
 				ip += 4;
 
-				cm = mono_get_method (image, token, NULL);
+				if (method->is_wrapper)
+					cm = mono_method_get_wrapper_data (method, token);
+				else 
+					cm = mono_get_method (image, token, NULL);
+
 				g_assert (cm);
 				
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_LDFTN);
@@ -3344,6 +3478,8 @@ mono_cfg_free (MonoFlowGraph *cfg)
 	mono_mempool_destroy (cfg->mp);
 }
 
+int mono_exc_esp_offset = 0;
+
 static MonoFlowGraph *
 mono_cfg_new (MonoMethod *method)
 {
@@ -3359,10 +3495,17 @@ mono_cfg_new (MonoMethod *method)
 	cfg->method = method;
 	cfg->mp = mp;
 
-	/* reserve space for caller saved registers */
+	/* reserve space to save LMF */
+	cfg->locals_size = sizeof (MonoLMF);
+	/* reserve space to save caller saved registers */
 	/* fixme: this is arch dependent */
 	/* we save EAX, EDX, ECX - and ESP if we call finally handlers */
-	cfg->locals_size = 16;
+	cfg->locals_size += 16;
+	
+	mono_exc_esp_offset = - cfg->locals_size;
+
+	/* aligment check */
+	g_assert (!(cfg->locals_size & 0x7));
 
 	/* fixme: we should also consider loader optimisation attributes */
 	cfg->share_code = mono_jit_share_code;
@@ -3388,6 +3531,7 @@ mono_cfg_new (MonoMethod *method)
 static gpointer 
 mono_get_runtime_method (MonoMethod* method)
 {
+	MonoMethod *nm;
 	const char *name = method->name;
 	guint8 *addr = NULL;
 	gboolean delegate = FALSE;
@@ -3398,13 +3542,21 @@ mono_get_runtime_method (MonoMethod* method)
 	if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
 		addr = (gpointer)mono_delegate_ctor;
 	} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
-		addr = arch_get_delegate_invoke (method);
+		MonoMethod *invoke = mono_marshal_get_delegate_invoke (method);
+		addr = mono_compile_method (invoke);
 	} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-		addr = arch_get_delegate_begin_invoke (method);
+		addr = (gpointer)arch_begin_invoke;
 	} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-		/* this can raise exceptions, so we need a wrapper to save/restore LMF */
-		method->addr = (gpointer)arch_end_invoke;
-		addr = arch_create_native_wrapper (method);
+		/* EndInvoke can raise exceptions, so we need a wrapper 
+		 * to save/restore LMF */
+		if (ISSTRUCT (method->signature->ret)) {
+			method->addr = (gpointer)arch_end_invoke_vt;
+		} else
+			method->addr = (gpointer)arch_end_invoke;
+
+		
+		nm = mono_marshal_get_native_wrapper (method);
+		addr = mono_compile_method (nm);
 	}
 
 	return addr;
@@ -3430,8 +3582,8 @@ match_debug_method (MonoMethod* method)
  *
  * Returns: a pointer to the newly created code.
  */
-gpointer
-mono_compile_method (MonoMethod *method)
+static gpointer
+mono_jit_compile_method (MonoMethod *method)
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *ji;
@@ -3440,8 +3592,13 @@ mono_compile_method (MonoMethod *method)
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		if (!method->info)
-			method->info = arch_create_native_wrapper (method);
+
+		if (!method->info) {
+			MonoMethod *nm;
+    
+			nm = mono_marshal_get_native_wrapper (method);
+			method->info = mono_compile_method (nm);
+		}
 		return method->info;
 	}
 
@@ -3609,15 +3766,11 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
-	MonoObject *exc;
-	int rval;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	rval = mono_runtime_run_main (method, argc, argv, &exc);
-
-	return rval;
+	return mono_runtime_run_main (method, argc, argv, NULL);
 }
 
 #ifdef PLATFORM_WIN32
@@ -3668,6 +3821,18 @@ sigsegv_signal_handler (int _dummy)
 	g_error ("we should never reach this code");
 }
 
+gpointer 
+mono_get_lmf_addr (void)
+{
+	MonoJitTlsData *jit_tls;	
+
+	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+		return &jit_tls->lmf;
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
 /**
  * mono_thread_abort:
  * @obj: exception object
@@ -3680,10 +3845,6 @@ mono_thread_abort (MonoObject *obj)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	
 	g_assert (obj);
-
-	if (jit_tls->env) {	
-		longjmp (*jit_tls->env, (int)obj);
-	}
 
 	g_free (jit_tls);
 
@@ -3763,10 +3924,11 @@ mono_jit_init (char *file) {
 	mono_jit_tls_id = TlsAlloc ();
 	mono_thread_start_cb (&file);
 
+	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
 	mono_install_handler (arch_get_throw_exception ());
-	mono_install_runtime_invoke (arch_runtime_invoke);
+	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 
 	domain = mono_init (file);
 	mono_runtime_init (domain, mono_thread_start_cb);

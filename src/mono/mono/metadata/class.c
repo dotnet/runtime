@@ -101,11 +101,79 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	return mono_class_from_name (image, nspace, name);
 }
 
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass)
+{
+	int i, j, count = 0;
+	MonoMarshalType *info;
+	guint32 layout;
+
+	g_assert (klass != NULL);
+
+	if (klass->marshal_info)
+		return klass->marshal_info;
+
+	if (!klass->inited)
+		mono_class_init (klass);
+	
+	for (i = 0; i < klass->field.count; ++i) {
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		count++;
+	}
+
+	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
+	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	info->num_fields = count;
+	
+	if (klass->parent)
+		info->native_size = mono_class_native_size (klass->parent);
+
+	for (j = i = 0; i < klass->field.count; ++i) {
+		int size, align;
+		
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
+			mono_metadata_field_info (klass->image, klass->field.first + i, 
+						  NULL, NULL, &info->fields [j].mspec);
+
+		info->fields [j].field = &klass->fields [i];
+
+		switch (layout) {
+		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
+		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
+			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
+						       &align, TRUE, klass->unicode);
+			align = klass->packing_size ? MIN (klass->packing_size, align): align;	
+			info->fields [j].offset = info->native_size;
+			info->fields [j].offset += align - 1;
+			info->fields [j].offset &= ~(align - 1);
+			info->native_size = info->fields [j].offset + size;
+			break;
+		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
+			/* FIXME: */
+			info->fields [j].offset = klass->fields [i].offset - sizeof (MonoObject);
+			info->native_size = klass->instance_size - sizeof (MonoObject);
+			break;
+		}	
+		j++;
+	}
+
+	if (info->native_size & (klass->min_align - 1)) {
+		info->native_size += klass->min_align - 1;
+		info->native_size &= ~(klass->min_align - 1);
+	}
+
+	return klass->marshal_info;
+}
+
 /** 
  * class_compute_field_layout:
  * @m: pointer to the metadata.
  * @class: The class to initialize
- * @pack: the value from the .pack directive (or 0)
  *
  * Initializes the class->fields.
  *
@@ -113,13 +181,13 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
  * a good job at it.  This is temporary to get the code for Paolo.
  */
 static void
-class_compute_field_layout (MonoClass *class, int pack)
+class_compute_field_layout (MonoClass *class)
 {
 	MonoImage *m = class->image; 
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i;
+	int i, blittable = TRUE;
 	guint32 rva;
 
 	/*
@@ -139,17 +207,33 @@ class_compute_field_layout (MonoClass *class, int pack)
 		g_assert (*sig == 0x06);
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+
+		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			if (class->fields [i].type->byref) {
+				blittable = FALSE;
+			} else {
+				MonoClass *field_class = mono_class_from_mono_type (class->fields [i].type);
+				if (!field_class->blittable)
+					blittable = FALSE;
+			}
+		}
+
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
 			mono_metadata_field_info (m, idx, NULL, &rva, NULL);
 			if (!rva)
 				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
 			class->fields [i].data = mono_cli_rva_map (class->image->image_info, rva);
 		}
+
 		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC)) {
 			class->enum_basetype = class->fields [i].type;
 			class->element_class = mono_class_from_mono_type (class->enum_basetype);
+			blittable = class->element_class->blittable;
 		}
 	}
+
+	class->blittable = blittable;
+
 	if (class->enumtype && !class->enum_basetype) {
 		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
 			G_BREAKPOINT ();
@@ -167,14 +251,15 @@ class_compute_field_layout (MonoClass *class, int pack)
 				continue;
 
 			size = mono_type_size (class->fields [i].type, &align);
-
+			
 			/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
-			align = pack? MIN (pack, align): align;
+			align = class->packing_size ? MIN (class->packing_size, align): align;
 			class->min_align = MAX (align, class->min_align);
 			class->fields [i].offset = class->instance_size;
 			class->fields [i].offset += align - 1;
 			class->fields [i].offset &= ~(align - 1);
 			class->instance_size = class->fields [i].offset + size;
+
 		}
        
 		if (class->instance_size & (class->min_align - 1)) {
@@ -208,8 +293,7 @@ class_compute_field_layout (MonoClass *class, int pack)
 			/*
 			 * Calc max size.
 			 */
-			size += class->fields [i].offset;
-			class->instance_size = MAX (class->instance_size, size);
+			class->instance_size = MAX (class->instance_size, size + class->fields [i].offset);
 		}
 		break;
 	}
@@ -402,16 +486,19 @@ mono_class_init (MonoClass *class)
 	} else
 		class->min_align = 1;
 
-	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size))
+	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
 		class->instance_size += sizeof (MonoObject);
-	/* use packing_size in field layout */
+	}
+
+	g_assert ((packing_size & 0xfffffff0) == 0);
+	class->packing_size = packing_size;
 
 	/*
 	 * Computes the size used by the fields, and their locations
 	 */
 	if (!class->size_inited && class->field.count > 0){
 		class->fields = g_new0 (MonoClassField, class->field.count);
-		class_compute_field_layout (class, packing_size);
+		class_compute_field_layout (class);
 	}
 
 	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
@@ -836,6 +923,7 @@ mono_class_setup_mono_type (MonoClass *class)
 					t = MONO_TYPE_BOOLEAN;
 				} else if (!strcmp(name, "Byte")) {
 					t = MONO_TYPE_U1;
+					class->blittable = TRUE;						
 				}
 				break;
 			case 'C':
@@ -851,12 +939,16 @@ mono_class_setup_mono_type (MonoClass *class)
 			case 'I':
 				if (!strcmp (name, "Int32")) {
 					t = MONO_TYPE_I4;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "Int16")) {
 					t = MONO_TYPE_I2;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "Int64")) {
 					t = MONO_TYPE_I8;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "IntPtr")) {
 					t = MONO_TYPE_I;
+					class->blittable = TRUE;
 				}
 				break;
 			case 'S':
@@ -864,17 +956,22 @@ mono_class_setup_mono_type (MonoClass *class)
 					t = MONO_TYPE_R4;
 				} else if (!strcmp(name, "SByte")) {
 					t = MONO_TYPE_I1;
+					class->blittable = TRUE;
 				}
 				break;
 			case 'U':
 				if (!strcmp (name, "UInt32")) {
 					t = MONO_TYPE_U4;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "UInt16")) {
 					t = MONO_TYPE_U2;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "UInt64")) {
 					t = MONO_TYPE_U8;
+					class->blittable = TRUE;
 				} else if (!strcmp(name, "UIntPtr")) {
 					t = MONO_TYPE_U;
+					class->blittable = TRUE;
 				}
 				break;
 			case 'V':
@@ -990,6 +1087,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->type_token = type_token;
 	class->flags = cols [MONO_TYPEDEF_FLAGS];
 
+	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
+		class->unicode = 1;
+	/* fixme: maybe we must set this on windows 
+	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_AUTO_CLASS)
+		class->unicode = 1;
+	*/
+
 	class->element_class = class;
 
 	/*g_print ("Init class %s\n", name);*/
@@ -1037,11 +1141,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (class->enumtype) {
 		class->fields = g_new0 (MonoClassField, class->field.count);
-		class_compute_field_layout (class, 0);
+		class_compute_field_layout (class);
 	} 
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
+
 	return class;
 }
 
@@ -1236,6 +1341,9 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
 
+	if (rank == 1 && class->element_class->blittable)
+		class->blittable = TRUE;
+
 	list = g_slist_append (list, class);
 	g_hash_table_insert (image->array_cache, &class->element_class->byval_arg, list);
 	return class;
@@ -1255,6 +1363,39 @@ mono_class_instance_size (MonoClass *klass)
 		mono_class_init (klass);
 
 	return klass->instance_size;
+}
+
+/**
+ * mono_class_native_size:
+ * @klass: a class 
+ * 
+ * Returns: the native size of an object instance (when marshaled 
+ * to unmanaged code) 
+ */
+gint32
+mono_class_native_size (MonoClass *klass)
+{
+	
+	if (!klass->marshal_info)
+		mono_marshal_load_type_info (klass);
+
+	return klass->marshal_info->native_size;
+}
+
+/**
+ * mono_class_min_align:
+ * @klass: a class 
+ * 
+ * Returns: minimm alignment requirements 
+ */
+gint32
+mono_class_min_align (MonoClass *klass)
+{
+	
+	if (!klass->size_inited)
+		mono_class_init (klass);
+
+	return klass->min_align;
 }
 
 /**
@@ -1381,6 +1522,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 
 	if (!class)
 		g_warning ("Could not load class from token 0x%08x in %s", type_token, image->name);
+
 	return class;
 }
 

@@ -293,5 +293,10 @@
 <opcode name="illegal" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta"/>
 <opcode name="endmac" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta"/>
 
+<opcode name="mono_func1" input="Pop1" output="PushI" args="ShortInlineI" o1="0xF0" o2="0x00" flow="next"/>
+<opcode name="mono_proc3" input="PopI+PopI+PopI" output="Push0" args="ShortInlineI" o1="0xF0" o2="0x01" flow="next"/>
+<opcode name="mono_free" input="Pop1" output="Push0" args="InlineNone" o1="0xF0" o2="0x02" flow="next"/>
+<opcode name="mono_objaddr" input="Pop1" output="Push1" args="InlineNone" o1="0xF0" o2="0x03" flow="next"/>
+<opcode name="mono_ldptr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x04" flow="next"/>
 
 </opdesc>

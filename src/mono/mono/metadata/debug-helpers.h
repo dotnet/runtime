@@ -33,5 +33,7 @@ gboolean        mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *m
 MonoMethod*     mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass);
 MonoMethod*     mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image);
 
+char*           mono_method_full_name (MonoMethod *method);
+
 #endif /* __MONO_DEBUG_HELPERS_H__ */
 

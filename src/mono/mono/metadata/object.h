@@ -166,6 +166,7 @@ typedef struct {
 } MonoStackFrame;
 
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
+typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
@@ -267,6 +268,9 @@ mono_runtime_class_init     (MonoClass *klass);
 void        
 mono_install_runtime_invoke (MonoInvokeFunc func);
 
+void        
+mono_install_compile_method (MonoCompileFunc func);
+
 MonoObject*
 mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
@@ -321,6 +325,8 @@ mono_print_unhandled_exception (MonoObject *exc);
 void
 mono_delegate_ctor          (MonoObject *this, MonoObject *target, gpointer addr);
 
+gpointer 
+mono_compile_method        (MonoMethod *method);
 
 #endif
 

@@ -18,6 +18,9 @@ typedef struct {
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
 	unsigned int uses_this:1;
+	unsigned int is_wrapper:1;
+	unsigned int string_ctor:1;
+	unsigned int save_lmf:1;
 	gint16 inline_count;
 } MonoMethod;
 
@@ -25,6 +28,11 @@ typedef struct {
 	MonoMethod method;
 	MonoMethodHeader *header;
 } MonoMethodNormal;
+
+typedef struct {
+	MonoMethodNormal method;
+	GList *data;
+} MonoMethodWrapper;
 
 typedef struct {
 	MonoMethod method;
@@ -73,6 +81,7 @@ typedef struct {
 	MonoClass *math_class;
 	MonoClass *stack_frame_class;
 	MonoClass *stack_trace_class;
+	MonoClass *marshal_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;
@@ -106,5 +115,8 @@ mono_lookup_pinvoke_call (MonoMethod *method);
 
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);
+
+gpointer
+mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
 #endif

@@ -41,10 +41,7 @@ public class Test {
 		ss.emb1 = new SimpleStruct2 ();
 		ss.emb1.a = 3;
 		ss.emb1.b = 4;
-		
-		//ss.s2 = "efgh";
-		//ss.s3 = "ijkl";
-		
+				
 		Marshal.StructureToPtr (ss, p, false);
 		if (Marshal.ReadInt32 (p, 0) != 1)
 			return 1;

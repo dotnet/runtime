@@ -53,7 +53,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	ac->msg->exc = NULL;
 	ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
 				       &ac->msg->exc, &ac->out_args);
-       
+
 	ares->completed = 1;
 		
 	/* notify listeners */
@@ -126,6 +126,8 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	ares->endinvoke_called = 1;
 	ac = (ASyncCall *)ares->data;
 
+	g_assert (ac != NULL);
+
 	if ((l = g_list_find (async_call_queue, ares))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
 		mono_async_invoke (ares);
@@ -145,7 +147,7 @@ static void
 async_invoke_thread ()
 {
 	MonoDomain *domain;
-      
+ 
 	for (;;) {
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
@@ -189,7 +191,7 @@ async_invoke_thread ()
 		domain = ((MonoObject *)ar)->vtable->domain;
 		mono_domain_set (domain);
 
-		if (new_worker) 
+		if (new_worker)
 			mono_thread_create (domain, async_invoke_thread);
 
 		mono_async_invoke (ar);

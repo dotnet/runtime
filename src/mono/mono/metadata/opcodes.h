@@ -10,12 +10,16 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#include <glib.h>
+
+#define MONO_CUSTOM_PREFIX 0xf0
+
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	MONO_ ## a = ((g-1)<<8) | i,
+	MONO_ ## a,
 
 typedef enum {
 #include "mono/cil/opcode.def"
-	MONO_CEE_LAST = MONO_CEE_UNUSED70 + 2
+	MONO_CEE_LAST
 } MonoOpcodeEnum;
 
 #undef OPDEF
@@ -56,9 +60,10 @@ typedef struct {
 	unsigned short opval;
 } MonoOpcode;
 
-#define MONO_N_OPCODES 300
+extern const MonoOpcode mono_opcodes [];
+extern const char* const mono_opcode_names [];
 
-extern const MonoOpcode mono_opcodes [MONO_N_OPCODES];
-extern const char* const mono_opcode_names [MONO_N_OPCODES];
+MonoOpcodeEnum
+mono_opcode_value (const guint8 **ip);
 
 #endif /* __MONO_METADATA_OPCODES_H__ */

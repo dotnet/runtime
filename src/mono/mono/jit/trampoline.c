@@ -201,7 +201,10 @@ arch_create_jit_trampoline (MonoMethod *method)
 	/* icalls use method->addr */
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		method->info = arch_create_native_wrapper (method);
+		MonoMethod *nm;
+		
+		nm = mono_marshal_get_native_wrapper (method);
+		method->info = mono_compile_method (nm);
 		return method->info;
 	}
 
@@ -236,7 +239,7 @@ arch_create_jit_trampoline (MonoMethod *method)
 		/* save method info */
 		x86_push_membase (buf, X86_ESP, 32);
 		/* get the address of lmf for the current thread */
-		x86_call_code (buf, arch_get_lmf_addr);
+		x86_call_code (buf, mono_get_lmf_addr);
 		/* push lmf */
 		x86_push_reg (buf, X86_EAX); 
 		/* push *lfm (previous_lmf) */

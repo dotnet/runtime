@@ -94,6 +94,25 @@ mono_install_remoting_trampoline (MonoTrampoline func)
 	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
 }
 
+static MonoCompileFunc default_mono_compile_method = NULL;
+
+void        
+mono_install_compile_method (MonoCompileFunc func)
+{
+	default_mono_compile_method = func;
+}
+
+gpointer 
+mono_compile_method (MonoMethod *method)
+{
+	if (!default_mono_compile_method) {
+		g_error ("compile method called on uninitialized runtime");
+		return NULL;
+	}
+	return default_mono_compile_method (method);
+}
+
+
 #if 0 && HAVE_BOEHM_GC
 static void
 vtable_finalizer (void *obj, void *data) {
@@ -314,6 +333,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		g_error ("runtime invoke called on uninitialized runtime");
 		return NULL;
 	}
+
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
@@ -1111,7 +1131,8 @@ mono_string_to_utf8 (MonoString *s)
 	char *as;
 	GError *error = NULL;
 
-	g_assert (s != NULL);
+	if (s == NULL)
+		return NULL;
 
 	if (!s->length)
 		return g_strdup ("");
@@ -1137,7 +1158,8 @@ mono_string_to_utf16 (MonoString *s)
 {
 	char *as;
 
-	g_assert (s != NULL);
+	if (s == NULL)
+		return NULL;
 
 	as = g_malloc ((s->length * 2) + 2);
 	as [(s->length * 2)] = '\0';
@@ -1148,7 +1170,6 @@ mono_string_to_utf16 (MonoString *s)
 	}
 	
 	memcpy (as, mono_string_chars(s), s->length * 2);
-	
 	return (gunichar2 *)(as);
 }
 

@@ -1628,131 +1628,6 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	return res;
 }
 
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
-								    gpointer dest, gint32 length)
-{
-	int element_size;
-	void *source_addr;
-
-	MONO_CHECK_ARG_NULL (src);
-	MONO_CHECK_ARG_NULL (dest);
-
-	g_assert (src->obj.vtable->klass->rank == 1);
-	g_assert (start_index >= 0 && start_index < mono_array_length (src));
-	g_assert (start_index + length <= mono_array_length (src));
-
-	element_size = mono_array_element_size (src->obj.vtable->klass);
-	  
-	source_addr = mono_array_addr_with_size (src, element_size, start_index);
-
-	memcpy (dest, source_addr, length * element_size);
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
-								      MonoArray *dest, gint32 length)
-{
-	int element_size;
-	void *dest_addr;
-
-	MONO_CHECK_ARG_NULL (src);
-	MONO_CHECK_ARG_NULL (dest);
-
-	g_assert (dest->obj.vtable->klass->rank == 1);
-	g_assert (start_index >= 0 && start_index < mono_array_length (dest));
-	g_assert (start_index + length <= mono_array_length (dest));
-
-	element_size = mono_array_element_size (dest->obj.vtable->klass);
-	  
-	dest_addr = mono_array_addr_with_size (dest, element_size, start_index);
-
-	memcpy (dest_addr, src, length * element_size);
-}
-
-static gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-	return *(gpointer*)(p + offset);
-}
-
-static unsigned char
-ves_icall_System_Runtime_InteropServices_Marshal_ReadByte (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-	return *(unsigned char*)(p + offset);
-}
-
-static gint16
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-	return *(gint16*)(p + offset);
-}
-
-static gint32
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-	return *(gint32*)(p + offset);
-}
-
-static gint64
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-	return *(gint64*)(p + offset);
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteByte (gpointer ptr, gint32 offset, unsigned char val)
-{
-	char *p = ptr;
-	*(unsigned char*)(p + offset) = val;
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint32 offset, gpointer val)
-{
-	char *p = ptr;
-	*(gpointer*)(p + offset) = val;
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint32 offset, gint16 val)
-{
-	char *p = ptr;
-	*(gint16*)(p + offset) = val;
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint32 offset, gint32 val)
-{
-	char *p = ptr;
-	*(gint32*)(p + offset) = val;
-}
-
-static void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val)
-{
-	char *p = ptr;
-	*(gint64*)(p + offset) = val;
-}
-
-static MonoString*
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr)
-{
-	MonoDomain *domain = mono_domain_get (); 
-
-	return mono_string_new (domain, (char *)ptr);
-}
-
-static guint32 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error(void)
-{
-	return(GetLastError());
-}
-
 static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *name, MonoBoolean throwOnError, MonoBoolean ignoreCase)
 {
@@ -2543,6 +2418,9 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::ReAllocHGlobal", mono_marshal_realloc,
 	"System.Runtime.InteropServices.Marshal::copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged,
 	"System.Runtime.InteropServices.Marshal::copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged,
+	"System.Runtime.InteropServices.Marshal::SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf,
+	"System.Runtime.InteropServices.Marshal::StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr,
+	"System.Runtime.InteropServices.Marshal::PtrToStructure", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure,
 
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
