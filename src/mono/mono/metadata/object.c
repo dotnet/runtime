@@ -461,6 +461,8 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 	for (p = class; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
 		while ((field = mono_class_get_fields (p, &iter))) {
+			MonoType *type;
+
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
 			/* FIXME: should not happen, flag as type load error */
@@ -470,11 +472,13 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			pos = field->offset / sizeof (gpointer);
 			pos += offset;
 
-			switch (field->type->type) {
+			type = mono_type_get_underlying_type (field->type);
+			switch (type->type) {
 			/* FIXME: _I and _U and _PTR should be removed eventually */
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
 			case MONO_TYPE_PTR:
+			case MONO_TYPE_FNPTR:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
@@ -493,7 +497,21 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 				}
 				break;
 			}
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_CHAR:
+				break;
 			default:
+				g_assert_not_reached ();
 				break;
 			}
 		}
