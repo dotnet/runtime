@@ -171,16 +171,17 @@ dnl
 dnl AC_CONFIG_SUBDIRS(libgc)
 
 gc_headers=no
-AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
-AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
-gc=boehm
+gc=included
 use_included_gc=no
-AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc])
+AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=included])
 
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 case "x$gc" in
 	xboehm|xbohem|xyes)
+		AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
+		AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
+
 		if test "x$found_boehm" != "xyes"; then
 			AC_MSG_ERROR("GC requested but libgc not found!")
 		fi
@@ -191,6 +192,8 @@ case "x$gc" in
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
 		LIBGC_LIBS="-lgc $libdl"
+
+		AC_CHECK_FUNCS(GC_gcj_malloc)
 		;;
 
 	xincluded)
@@ -199,35 +202,22 @@ case "x$gc" in
 		use_included_gc=yes
 
 		LIBGC_CFLAGS='-I$(top_srcdir)/libgc/include'
-		LIBGC_LIBS='$(top_builddir)/libgc/libgc.la'
+		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
 
 		AC_DEFINE(HAVE_BOEHM_GC)
-		AC_DEFINE(USE_INCLUDED_LIBGC)
 		AC_SUBST(HAVE_BOEHM_GC)
+
+		AC_DEFINE(HAVE_GC_H)
+		AC_DEFINE(USE_INCLUDED_LIBGC)
 		;;
 
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 	*)
-		# If libgc was found, use it.  Otherwise just warn.
-		if test "x$found_boehm" != "xyes"; then
-			AC_MSG_WARN("Compiling mono without GC.")
-		else
-			if test "x$gc_headers" != "xyes"; then
-				AC_MSG_ERROR("Found libgc but not its header files! You may need to install them by hand.")
-			fi
-			AC_DEFINE(HAVE_BOEHM_GC)
-			AC_SUBST(HAVE_BOEHM_GC)
-			LIBS="$LIBS -lgc $libdl"
-			gc="boehm"
-		fi
+		AC_MSG_ERROR([Invalid argument to --with-gc.])
 		;;
 esac
-
-if test "x$gc" = xboehm; then
-	AC_CHECK_FUNCS(GC_gcj_malloc)
-fi
 
 we_are_embedded_in_mono=yes
 export we_are_embedded_in_mono

@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libmonoutils.la
 
-INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(LIBGC_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
 libmonoutils_la_SOURCES = \
 	mono-hash.c	\
@@ -12,8 +12,6 @@ libmonoutils_la_SOURCES = \
 	strtod.c
 
 libmonoutilsincludedir = $(includedir)/mono/utils
-
-libmonoutils_la_LIBADD = $(LIBGC_LIBS)
 
 libmonoutilsinclude_HEADERS = \
 	monobitset.h	\

@@ -5,7 +5,8 @@ libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/metadata/libmetadata.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
-	$(monodir)/mono/utils/libmonoutils.la
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(LIBGC_LIBS)
 
 MCS=mcs
 RUNTIME=mono

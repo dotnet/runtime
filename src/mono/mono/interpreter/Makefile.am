@@ -1,8 +1,8 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
+	$(LIBGC_CFLAGS)			\
 	$(GMODULE_CFLAGS)		\
-	$(GLIB_CFLAGS)			\
-	$(LIBGC_CFLAGS)
+	$(GLIB_CFLAGS)
 
 if PLATFORM_WIN32
 export HOST_CC
@@ -25,6 +25,7 @@ mint_LDADD =				\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	../os/libmonoos.la		\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

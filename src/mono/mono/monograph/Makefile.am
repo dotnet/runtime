@@ -14,6 +14,7 @@ monograph_LDADD = \
 	../metadata/libmetadata.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

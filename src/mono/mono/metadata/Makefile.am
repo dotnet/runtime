@@ -18,7 +18,7 @@ bin_PROGRAMS = monosn pedump
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
 
-INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(LIBGC_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/mono \
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) \
 	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 libmonoruntime_la_SOURCES = \
@@ -122,15 +122,15 @@ pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(GLIB_LIBS) $(GMODULE_LIBS) $(LIBGC_LIBS) -lm
+	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 
 monosn_LDADD = \
 	../metadata/libmetadata.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
-	$(LIBGC_LIBS)			\
 	-lm
 

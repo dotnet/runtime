@@ -1,3 +1,12 @@
+2003-06-10  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Make the libgc stuff actually work; we now create
+	a shared libmonogc.so when using the included libgc.
+
+2003-06-09  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Only check for gc if --with-gc=boehm.
+
 2003-06-08  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Tell libgc's configure about our threads library.

@@ -27,6 +27,7 @@ monodis_LDADD = 			\
 	../metadata/libmetadata.la 	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 

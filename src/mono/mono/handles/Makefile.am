@@ -8,21 +8,24 @@ INCLUDES = 				\
 
 hps_LDADD = \
 	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la		\
+	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
 
 scratch_LDADD = \
 	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la		\
+	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
 
 shmdel_LDADD = \
 	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la		\
+	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
