@@ -4,7 +4,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/jit/codegen.h>
-#include <mono/jit/dwarf2.h>
 #include <mono/jit/debug.h>
 
 #include "debug-private.h"
@@ -16,6 +15,76 @@
 #define ABBREV_FORMAL_PARAMETER		5
 #define ABBREV_PARAMETER		6
 #define ABBREV_LOCAL_VARIABLE		7
+
+// The following constants are defined in the DWARF 2 specification
+#define DW_TAG_formal_parameter		0x05
+#define DW_TAG_compile_unit		0x11
+#define DW_TAG_base_type		0x24
+#define DW_TAG_subprogram		0x2e
+#define DW_TAG_variable			0x34
+
+#define DW_CHILDREN_no			0
+#define DW_CHILDREN_yes			1
+
+#define DW_AT_location			0x02
+#define DW_AT_name			0x03
+#define DW_AT_byte_size			0x0b
+#define DW_AT_stmt_list			0x10
+#define DW_AT_low_pc			0x11
+#define DW_AT_high_pc			0x12
+#define DW_AT_language			0x13
+#define DW_AT_producer			0x25
+#define DW_AT_start_scope		0x2c
+#define DW_AT_calling_convention	0x36
+#define DW_AT_encoding			0x3e
+#define DW_AT_external			0x3f
+#define DW_AT_type			0x49
+
+#define DW_FORM_addr			0x01
+#define DW_FORM_block4			0x04
+#define DW_FORM_data2			0x05
+#define DW_FORM_data4			0x06
+#define DW_FORM_data8			0x07
+#define DW_FORM_string			0x08
+#define DW_FORM_data1			0x0b
+#define DW_FORM_flag			0x0c
+#define DW_FORM_ref4			0x13
+
+#define DW_ATE_void			0x00
+#define DW_ATE_address			0x01
+#define DW_ATE_boolean			0x02
+#define DW_ATE_complex_float		0x03
+#define DW_ATE_float			0x04
+#define DW_ATE_signed			0x05
+#define DW_ATE_signed_char		0x06
+#define DW_ATE_unsigned			0x07
+#define DW_ATE_unsigned_char		0x08
+
+#define DW_OP_fbreg			0x91
+
+#define DW_CC_normal			1
+#define DW_CC_program			2
+#define DW_CC_nocall			3
+
+#define DW_LANG_C_plus_plus		0x04
+#define DW_LANG_Java			0x0b
+// This is NOT in the standard, we're using Java for the moment. */
+#define DW_LANG_C_sharp			DW_LANG_Java
+
+#define DW_LNS_extended_op		0
+#define DW_LNS_copy			1
+#define DW_LNS_advance_pc		2
+#define DW_LNS_advance_line		3
+#define DW_LNS_set_file			4
+#define DW_LNS_set_column		5
+#define DW_LNS_negate_stmt		6
+#define DW_LNS_set_basic_block		7
+#define DW_LNS_const_add_pc		8
+#define DW_LNS_fixed_advance_pc		9
+
+#define DW_LNE_end_sequence		1
+#define DW_LNE_set_address		2
+#define DW_LNE_define_file		3
 
 
 static const int line_base = 1, line_range = 8, opcode_base = 10;
@@ -182,7 +251,7 @@ dwarf2_write_base_type (AssemblyDebugInfo *info, int index,
 }
 
 static void
-dwarf2_write_type (AssemblyDebugInfo *info, int index, MonoType *type)
+dwarf2_write_class (AssemblyDebugInfo *info, MonoClass *klass, int index)
 {
 	char buffer [BUFSIZ];
 
@@ -212,18 +281,50 @@ write_base_types (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	dwarf2_write_base_type (info, MONO_TYPE_R8, DW_ATE_unsigned, 8, "Double");
 }
 
-static guint
-debug_get_type_index (AssemblyDebugInfo *info, MonoType *type)
+static void
+dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
+			int stack_offset, MonoClass *klass)
 {
-	guint hash;
+	static long label_index = 0;
+	int type_index = mono_debug_get_type (info, klass);
+	char start [BUFSIZ], end [BUFSIZ];
 
-	hash = mono_metadata_type_hash (type);
-	if (g_hash_table_lookup (info->type_hash, GINT_TO_POINTER (hash)))
-		return hash;
+	sprintf (start, "DT1_%ld", ++label_index);
+	sprintf (end, "DT2_%ld", label_index);
+		
+	// DW_TAG_format_parameter
+	dwarf2_write_byte (info->f, ABBREV_PARAMETER);
+	dwarf2_write_string (info->f, name);
+	dwarf2_write_type_ref (info->f, type_index);
+	dwarf2_write_section_size (info->f, start, end);
+	dwarf2_write_label (info->f, start);
+	dwarf2_write_byte (info->f, DW_OP_fbreg);
+	dwarf2_write_sleb128 (info->f, stack_offset);
+	dwarf2_write_label (info->f, end);
+	dwarf2_write_long (info->f, minfo->frame_start_offset);
+}
 
-	g_hash_table_insert (info->type_hash, GINT_TO_POINTER (hash), type);
+static void
+dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
+		       int stack_offset, MonoClass *klass)
+{
+	static long label_index = 0;
+	int type_index = mono_debug_get_type (info, klass);
+	char start [BUFSIZ], end [BUFSIZ];
 
-	return hash;
+	sprintf (start, "DT3_%ld", ++label_index);
+	sprintf (end, "DT4_%ld", label_index);
+		
+	// DW_TAG_format_parameter
+	dwarf2_write_byte (info->f, ABBREV_LOCAL_VARIABLE);
+	dwarf2_write_string (info->f, name);
+	dwarf2_write_type_ref (info->f, type_index);
+	dwarf2_write_section_size (info->f, start, end);
+	dwarf2_write_label (info->f, start);
+	dwarf2_write_byte (info->f, DW_OP_fbreg);
+	dwarf2_write_sleb128 (info->f, stack_offset);
+	dwarf2_write_label (info->f, end);
+	dwarf2_write_long (info->f, minfo->frame_start_offset);
 }
 
 static void 
@@ -343,33 +444,55 @@ write_line_numbers (AssemblyDebugInfo *info)
 }
 
 static void
-write_type_dwarf2 (AssemblyDebugInfo *info, MonoType *type, guint index)
+write_class_dwarf2 (AssemblyDebugInfo *info, MonoClass *klass, guint index)
 {
-	switch (index) {
+	switch (klass->byval_arg.type) {
 	case MONO_TYPE_BOOLEAN:
+		dwarf2_write_base_type (info, index, DW_ATE_boolean, 1, "Boolean");
+		break;
 	case MONO_TYPE_CHAR:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned_char, 2, "Char");
+		break;
 	case MONO_TYPE_I1:
+		dwarf2_write_base_type (info, index, DW_ATE_signed, 1, "SByte");
+		break;
 	case MONO_TYPE_U1:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 1, "Byte");
+		break;
 	case MONO_TYPE_I2:
+		dwarf2_write_base_type (info, index, DW_ATE_signed, 2, "Int16");
+		break;
 	case MONO_TYPE_U2:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 2, "UInt16");
+		break;
 	case MONO_TYPE_I4:
+		dwarf2_write_base_type (info, index, DW_ATE_signed, 4, "Int32");
+		break;
 	case MONO_TYPE_U4:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 4, "UInt32");
+		break;
 	case MONO_TYPE_I8:
+		dwarf2_write_base_type (info, index, DW_ATE_signed, 8, "Int64");
+		break;
 	case MONO_TYPE_U8:
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 8, "UInt64");
+		break;
 	case MONO_TYPE_R4:
+		dwarf2_write_base_type (info, index, DW_ATE_signed, 4, "Float");
+		break;
 	case MONO_TYPE_R8:
-		// Already written as base type
+		dwarf2_write_base_type (info, index, DW_ATE_unsigned, 8, "Double");
 		break;
 	default:
-		dwarf2_write_type (info, index, type);
+		dwarf2_write_class (info, klass, index);
 		break;
 	}
 }
 
 static void
-write_type (gpointer key, gpointer value, gpointer user_data)
+write_class (gpointer key, gpointer value, gpointer user_data)
 {
-	write_type_dwarf2 (user_data, value, GPOINTER_TO_INT (key));
+	write_class_dwarf2 (user_data, key, GPOINTER_TO_INT (value));
 }
 
 static void
@@ -393,77 +516,38 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	dwarf2_write_address (info->f, minfo->code_start + minfo->code_size);
 	dwarf2_write_byte (info->f, DW_CC_nocall);
 	if (ret_type) {
-		int type_index = debug_get_type_index (info, ret_type);
+		MonoClass *klass = mono_class_from_mono_type (ret_type);
+		int type_index = mono_debug_get_type (info, klass);
 		g_message (G_STRLOC ": %s - %d", minfo->name, type_index);
 		dwarf2_write_type_ref (info->f, type_index);
 	}
+
+	if (minfo->method->signature->hasthis)
+		dwarf2_write_parameter (info, minfo, "this", 8, minfo->method->klass);
 
 	names = g_new (char *, minfo->method->signature->param_count);
 	mono_method_get_param_names (minfo->method, (const char **) names);
 
 	for (i = 0; i < minfo->method->signature->param_count; i++) {
 		MonoType *type = minfo->method->signature->params [i];
-		int type_index = debug_get_type_index (info, type);
-		char start [BUFSIZ], end [BUFSIZ];
+		MonoClass *klass = mono_class_from_mono_type (type);
 
-		sprintf (start, "DT1_%d_%d", minfo->method_number, i);
-		sprintf (end, "DT2_%d_%d", minfo->method_number, i);
-		
-		// DW_TAG_format_parameter
-		dwarf2_write_byte (info->f, ABBREV_PARAMETER);
-		dwarf2_write_string (info->f, names [i]);
-		dwarf2_write_type_ref (info->f, type_index);
-		dwarf2_write_section_size (info->f, start, end);
-		dwarf2_write_label (info->f, start);
-		dwarf2_write_byte (info->f, DW_OP_fbreg);
-		dwarf2_write_sleb128 (info->f, minfo->params [i].offset);
-		dwarf2_write_label (info->f, end);
-		dwarf2_write_long (info->f, minfo->frame_start_offset);
+		dwarf2_write_parameter (info, minfo, names [i], minfo->params [i].offset, klass);
 	}
 
 	g_free (names);
 
 	for (i = 0; i < minfo->num_locals; i++) {
 		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method)->header;
-		int type_index = debug_get_type_index (info, header->locals [i]);
-		char start [BUFSIZ], end [BUFSIZ], name [BUFSIZ];
+		MonoClass *klass = mono_class_from_mono_type (header->locals [i]);
+		char name [BUFSIZ];
 
 		sprintf (name, "V_%d", i);
-		sprintf (start, "DT3_%d_%d", minfo->method_number, i);
-		sprintf (end, "DT4_%d_%d", minfo->method_number, i);
-		
-		// DW_TAG_format_parameter
-		dwarf2_write_byte (info->f, ABBREV_LOCAL_VARIABLE);
-		dwarf2_write_string (info->f, name);
-		dwarf2_write_type_ref (info->f, type_index);
-		dwarf2_write_section_size (info->f, start, end);
-		dwarf2_write_label (info->f, start);
-		dwarf2_write_byte (info->f, DW_OP_fbreg);
-		dwarf2_write_sleb128 (info->f, minfo->locals [i].offset);
-		dwarf2_write_label (info->f, end);
-		dwarf2_write_long (info->f, minfo->frame_start_offset);
+		dwarf2_write_variable (info, minfo, name, minfo->locals [i].offset, klass);
 	}
 
 	dwarf2_write_byte (info->f, 0);
 	// DW_TAG_subprogram ends here
-}
-
-static void
-scan_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
-{
-	int i;
-
-	if (minfo->method->signature->ret->type != MONO_TYPE_VOID)
-		debug_get_type_index (info, minfo->method->signature->ret);
-
-	for (i = 0; i < minfo->num_params; i++)
-		debug_get_type_index (info, minfo->method->signature->params [i]);
-
-	for (i = 0; i < minfo->num_locals; i++) {
-		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method)->header;
-
-		debug_get_type_index (info, header->locals [i]);
-	}
 }
 
 static void
@@ -472,18 +556,10 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 	write_method_dwarf2 (user_data, value);
 }
 
-static void
-scan_method_func (gpointer key, gpointer value, gpointer user_data)
-{
-	scan_method_dwarf2 (user_data, value);
-}
-
 void
 mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 {
 	gchar *source_file = g_ptr_array_index (info->source_files, 0);
-
-	info->type_hash = g_hash_table_new (NULL, NULL);
 
 	// DWARF 2 Abbreviation table.
 	dwarf2_write_section_start (info->f, "debug_abbrev");
@@ -570,19 +646,18 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	// DW_TAG_compile_unit
 	dwarf2_write_byte (info->f, ABBREV_COMPILE_UNIT);
 	dwarf2_write_string (info->f, source_file);
-	dwarf2_write_2byte (info->f, DW_LANG_C_plus_plus);
+	dwarf2_write_2byte (info->f, DW_LANG_C_sharp);
 	dwarf2_write_string (info->f, info->producer_name);
 	dwarf2_write_ref4 (info->f, "debug_lines_b");
 
 	// Base types
-	write_base_types (info, NULL);
-
-	// Derived types
-	g_hash_table_foreach (info->methods, scan_method_func, info);
-	g_hash_table_foreach (info->type_hash, write_type, info);
+	// write_base_types (info, NULL);
 
 	// Methods
 	g_hash_table_foreach (info->methods, write_method_func, info);
+
+	// Derived types
+	g_hash_table_foreach (info->type_hash, write_class, info);
 
 	dwarf2_write_byte (info->f, 0);
 	// DW_TAG_compile_unit ends here
@@ -590,7 +665,4 @@ mono_debug_write_assembly_dwarf2 (AssemblyDebugInfo *info)
 	dwarf2_write_label (info->f, "debug_info_e");
 
 	dwarf2_write_section_end (info->f);
-
-	g_hash_table_destroy (info->type_hash);
-	info->type_hash = NULL;
 }

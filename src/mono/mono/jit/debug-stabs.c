@@ -4,7 +4,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/jit/codegen.h>
-#include <mono/jit/dwarf2.h>
 #include <mono/jit/debug.h>
 
 #include "debug-private.h"
@@ -145,6 +144,35 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 	write_method_stabs (user_data, value);
 }
 
+static void
+write_class_stabs (AssemblyDebugInfo *info, MonoClass *klass, int index)
+{
+	char *name;
+	int i;
+	char buf [64];
+
+	/* output enums ...*/
+	if (klass->enumtype) {
+		name = g_strdup_printf ("%s%s%s", klass->name_space, klass->name_space [0]? "_": "", klass->name);
+		fprintf (info->f, ".stabs \"%s:T%d=e", name, ++info->next_idx);
+		g_free (name);
+		for (i = 0; i < klass->field.count; ++i) {
+			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_LITERAL) {
+				get_enumvalue (klass, klass->field.first + i, buf);
+				fprintf (info->f, "%s_%s=%s,", klass->name, klass->fields [i].name, buf);
+			}
+		}
+		fprintf (info->f, ";\",128,0,0,0\n");
+	}
+	fflush (info->f);
+}
+
+static void
+write_class (gpointer key, gpointer value, gpointer user_data)
+{
+	write_class_stabs (user_data, key, GPOINTER_TO_INT (value));
+}
+
 void
 mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 {
@@ -162,4 +190,6 @@ mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 	}
 
 	g_hash_table_foreach (info->methods, write_method_func, info);
+
+	g_hash_table_foreach (info->type_hash, write_class, info);
 }
