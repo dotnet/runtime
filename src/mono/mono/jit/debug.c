@@ -472,13 +472,13 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->first_line = line;
 	minfo->last_line = end_line;
 	minfo->method_info.code_start = cfg->start + 1;
-	minfo->method_info.code_size = cfg->code_size;
+	minfo->method_info.code_size = cfg->epilogue_end - 1;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
 	minfo->method_info.num_params = method->signature->param_count;
 	minfo->method_info.params = g_new0 (MonoDebugVarInfo, minfo->method_info.num_params);
 	minfo->method_info.prologue_end = cfg->prologue_end - 1;
-	minfo->method_info.epilogue_begin = cfg->epilogue_begin - 1;
+	minfo->method_info.epilogue_begin = cfg->epilog - 1;
 
 	if (method->signature->hasthis) {
 		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;

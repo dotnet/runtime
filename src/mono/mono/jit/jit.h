@@ -121,7 +121,7 @@ typedef struct {
 	guint8           *code;
 	gint32            code_size;
 	gint32            prologue_end;
-	gint32            epilogue_begin;
+	gint32            epilogue_end;
 	MonoRegSet       *rs;
 	guint32           epilog;
 	guint32           args_start_index;
