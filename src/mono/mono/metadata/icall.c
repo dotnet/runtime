@@ -930,26 +930,18 @@ ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 	mono_image_build_metadata (mb);
 }
 
-static MonoReflectionType*
-ves_icall_type_from_name (MonoString *name,
-			  MonoBoolean throwOnError,
-			  MonoBoolean ignoreCase)
+static MonoReflectionType *
+type_from_name (const char *str, MonoBoolean ignoreCase)
 {
-	gchar *str;
 	MonoType *type = NULL;
 	MonoAssembly *assembly;
 	MonoTypeNameParse info;
 
 	MONO_ARCH_SAVE_REGS;
 
-	str = mono_string_to_utf8 (name);
 	if (!mono_reflection_parse_type (str, &info)) {
-		g_free (str);
 		g_list_free (info.modifiers);
 		g_list_free (info.nested);
-		if (throwOnError) /* uhm: this is a parse error, though... */
-			mono_raise_exception (mono_get_exception_type_load (name));
-
 		return NULL;
 	}
 
@@ -968,18 +960,42 @@ ves_icall_type_from_name (MonoString *name,
 	if (!info.assembly.name && !type) /* try mscorlib */
 		type = mono_reflection_get_type (NULL, &info, ignoreCase);
 
-	g_free (str);
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
-	if (!type) {
-		if (throwOnError)
-			mono_raise_exception (mono_get_exception_type_load (name));
-
+	if (!type) 
 		return NULL;
-	}
 
 	return mono_type_get_object (mono_domain_get (), type);
 }
+
+MonoReflectionType *
+mono_type_get (const char *str)
+{
+	char *copy = g_strdup (str);
+	MonoReflectionType *type = type_from_name (copy, FALSE);
+
+	g_free (copy);
+	return type;
+}
+
+static MonoReflectionType*
+ves_icall_type_from_name (MonoString *name,
+			  MonoBoolean throwOnError,
+			  MonoBoolean ignoreCase)
+{
+	char *str = mono_string_to_utf8 (name);
+	MonoReflectionType *type;
+
+	type = type_from_name (str, ignoreCase);
+	g_free (str);
+	if (type == NULL){
+		if (throwOnError)
+			mono_raise_exception (mono_get_exception_type_load (name));
+	}
+	
+	return type;
+}
+
 
 static MonoReflectionType*
 ves_icall_type_from_handle (MonoType *handle)
@@ -4523,10 +4539,8 @@ ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page)
 		p = encodings [++i];
 	}
 	
-	if (p - codepage > 5){
-		if (strstr (codepage, "utf_8") != NULL)
-			*int_code_page |= 0x10000000;
-	}
+	if (strstr (codepage, "utf_8") != NULL)
+		*int_code_page |= 0x10000000;
 	free (codepage);
 	
 	if (want_name && *int_code_page == -1)
