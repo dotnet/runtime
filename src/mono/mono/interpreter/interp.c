@@ -11,6 +11,9 @@
  *
  * (C) 2001 Ximian, Inc.
  */
+#ifndef __USE_ISOC99
+#define __USE_ISOC99
+#endif
 #include "config.h"
 #include <stdio.h>
 #include <string.h>
@@ -18,6 +21,10 @@
 #include <glib.h>
 #include <setjmp.h>
 #include <signal.h>
+
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -794,23 +801,27 @@ verify_method (MonoMethod *m)
 	mono_free_verify_list (errors);
 }
 
+#define MYGUINT64_MAX 18446744073709551615UL
+#define MYGINT64_MAX 9223372036854775807LL
+#define MYGINT64_MIN (-MYGINT64_MAX -1LL)
+
+#define MYGUINT32_MAX 4294967295U
+#define MYGINT32_MAX 2147483647
+#define MYGINT32_MIN (-MYGINT32_MAX -1)
+	
 #define CHECK_ADD_OVERFLOW(a,b) \
-	(gint32)(b) >= 0 ? (gint32)(INT_MAX) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
-	: (gint32)(INT_MIN) - (gint32)(b) > (gint32)(a) ? +1 : 0
+	(gint32)(b) >= 0 ? (gint32)(MYGINT32_MAX) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
+	: (gint32)(MYGINT32_MIN) - (gint32)(b) > (gint32)(a) ? +1 : 0
 
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
-	(guint32)(UINT_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+	(guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
 
 #define CHECK_ADD_OVERFLOW64(a,b) \
-	(gint64)(b) >= 0 ? (gint64)(LLONG_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
-	: (gint64)(LLONG_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
+	(gint64)(b) >= 0 ? (gint64)(MYGINT64_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
+	: (gint64)(MYGINT64_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
 
-#ifndef GUINT64_MAX
-#define GUINT64_MAX 18446744073709551615UL
-#endif
-	
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
-	(guint64)(GUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
@@ -2540,7 +2551,7 @@ array_constructed:
 		CASE (CEE_CONV_OVF_U8_UN) {
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
-				if (sp [-1].data.f < 0 || sp [-1].data.f > GUINT64_MAX)
+				if (sp [-1].data.f < 0 || sp [-1].data.f > MYGUINT64_MAX)
 					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
@@ -2984,6 +2995,25 @@ array_constructed:
 			BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF)
+			--sp;
+			/* FIXME: check overflow */
+			if (sp->type == VAL_I32) {
+				if (CHECK_ADD_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)GET_NATI (sp [0]);
+			} else if (sp->type == VAL_I64) {
+				if (CHECK_ADD_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.l = (guint64)sp [-1].data.l + (guint64)sp [0].data.l;
+			} else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f += sp [0].data.f;
+			else {
+				char *p = sp [-1].data.p;
+				p += GET_NATI (sp [0]);
+				sp [-1].data.p = p;
+			}
+			++ip;
+			BREAK;
 		CASE (CEE_ADD_OVF_UN)
 			--sp;
 			/* FIXME: check overflow, make unsigned */
@@ -3933,6 +3963,20 @@ segv_handler (int signum)
 	mono_raise_exception (segv_exception);
 }
 
+#if HAVE_BOEHM_GC
+static void
+my_GC_free (void *p)
+{
+	/* do nothing */
+}
+
+static void*
+my_GC_calloc (gsize n_blocks, gsize n_block_bytes)
+{
+	return GC_malloc (n_block_bytes * n_blocks);
+}
+#endif
+
 int 
 main (int argc, char *argv [])
 {
@@ -3944,6 +3988,20 @@ main (int argc, char *argv [])
 
 	if (argc < 2)
 		usage ();
+
+#if HAVE_BOEHM_GC
+	{
+		static GMemVTable boehm_table = {
+			GC_malloc,
+			GC_realloc,
+			my_GC_free,
+			my_GC_calloc,
+			GC_malloc, /* try variants */
+			GC_realloc,
+		};
+		g_mem_set_vtable (&boehm_table);
+	}
+#endif
 
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)

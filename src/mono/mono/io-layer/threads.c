@@ -1,4 +1,7 @@
 #include <config.h>
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 #include <glib.h>
 #include <string.h>
 #include <pthread.h>
@@ -39,6 +42,10 @@ static pthread_cond_t thread_signal_cond = PTHREAD_COND_INITIALIZER;
 static pthread_once_t thread_hash_once = PTHREAD_ONCE_INIT;
 static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
+
+#if HAVE_BOEHM_GC
+static GHashTable *tls_gc_hash = NULL;
+#endif
 
 static void thread_close(WapiHandle *handle);
 static gboolean thread_wait(WapiHandle *handle, WapiHandle *signal,
@@ -517,6 +524,9 @@ gboolean TlsFree(guint32 idx)
 	TLS_used[idx]=FALSE;
 	pthread_key_delete(TLS_keys[idx]);
 	
+#if HAVE_BOEHM_GC
+	g_hash_table_remove (tls_gc_hash, GUINT_TO_POINTER (idx));
+#endif
 	mono_mutex_unlock(&TLS_mutex);
 	
 	return(TRUE);
@@ -576,6 +586,11 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 		return(FALSE);
 	}
 	
+#if HAVE_BOEHM_GC
+	if (!tls_gc_hash)
+		tls_gc_hash = g_hash_table_new(g_direct_hash, g_direct_equal);
+	g_hash_table_insert (tls_gc_hash, GUINT_TO_POINTER (idx), value);
+#endif
 	mono_mutex_unlock(&TLS_mutex);
 	
 	return(TRUE);

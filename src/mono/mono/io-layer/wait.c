@@ -2,6 +2,10 @@
 #include <glib.h>
 #include <string.h>
 
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
+
 #include "mono/io-layer/wapi.h"
 #include "wait-private.h"
 #include "timed-thread.h"
