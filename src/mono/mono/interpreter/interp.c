@@ -13,7 +13,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
-#include <alloca.h>
+
+#ifdef HAVE_ALLOCA_H
+#   include <alloca.h>
+#else
+#   ifdef __CYGWIN__
+#      define alloca __builtin_alloca
+#   endif
+#endif
 
 #include "interp.h"
 /* trim excessive headers */
