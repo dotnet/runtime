@@ -15,6 +15,7 @@
 #include <glib.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include <sched.h>
 #include <sys/time.h>
 #include <errno.h>
@@ -57,10 +58,18 @@ struct _WapiHandleOps _wapi_thread_ops = {
 
 static mono_once_t thread_ops_once=MONO_ONCE_INIT;
 
+#ifdef WITH_INCLUDED_LIBGC
+static void gc_init (void);
+#endif
+
 static void thread_ops_init (void)
 {
 	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD,
 					    WAPI_HANDLE_CAP_WAIT);
+
+#ifdef WITH_INCLUDED_LIBGC
+	gc_init ();
+#endif
 }
 
 static void thread_close_private (gpointer handle)
@@ -516,13 +525,19 @@ guint32 ResumeThread(gpointer handle)
 		return(0xFFFFFFFF);
 	}
 
+#ifdef WITH_INCLUDED_LIBGC
+	if (thread_private_handle->thread->suspend_count <= 1)
+		_wapi_timed_thread_resume (thread_private_handle->thread);
+	
+	return --thread_private_handle->thread->suspend_count;
+#else
 	/* This is still a kludge that only copes with starting a
 	 * thread that was suspended on create, so don't bother with
 	 * the suspend count crap yet
 	 */
 	_wapi_timed_thread_resume (thread_private_handle->thread);
-	
 	return(0xFFFFFFFF);
+#endif
 }
 
 /**
@@ -534,9 +549,37 @@ guint32 ResumeThread(gpointer handle)
  *
  * Return value: the previous suspend count, or 0xFFFFFFFF on error.
  */
-guint32 SuspendThread(gpointer handle G_GNUC_UNUSED)
+guint32 SuspendThread(gpointer handle)
 {
+#ifdef WITH_INCLUDED_LIBGC
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gpointer current;
+	gboolean ok;
+
+	current = GetCurrentThread ();
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(0xFFFFFFFF);
+	}
+
+	if (!thread_private_handle->thread->suspend_count) {
+		if (handle == current)
+			_wapi_timed_thread_suspend (thread_private_handle->thread);
+		else {
+			pthread_kill (thread_private_handle->thread->id, SIGPWR);
+			sem_wait (&thread_private_handle->thread->suspended_sem);
+		}
+	}
+
+	return thread_private_handle->thread->suspend_count++;
+#else
 	return(0xFFFFFFFF);
+#endif
 }
 
 /*
@@ -806,3 +849,58 @@ void SleepEx(guint32 ms, gboolean alertable)
 	
 	Sleep(ms);
 }
+
+#ifdef WITH_INCLUDED_LIBGC
+
+static void GC_suspend_handler (int sig)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gpointer handle;
+	gboolean ok;
+
+	handle = GetCurrentThread ();
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return;
+	}
+
+	thread_private_handle->thread->stack_ptr = &ok;
+	sem_post (&thread_private_handle->thread->suspended_sem);
+
+	_wapi_timed_thread_suspend (thread_private_handle->thread);
+
+	thread_private_handle->thread->stack_ptr = NULL;
+}
+
+static void gc_init (void)
+{
+	struct sigaction act;
+
+	act.sa_handler = GC_suspend_handler;
+	g_assert (sigaction (SIGPWR, &act, NULL) == 0);
+}
+
+void mono_wapi_push_thread_stack (gpointer handle, gpointer stack_ptr)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gboolean ok;
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return;
+	}
+
+	GC_push_all_stack (thread_private_handle->thread->stack_ptr, stack_ptr);
+}
+
+#endif /* WITH_INCLUDED_LIBGC */
