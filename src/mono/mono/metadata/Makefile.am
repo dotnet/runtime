@@ -33,6 +33,7 @@ endif
 
 if PLATFORM_WIN32
 libmonoruntime_la_LIBADD = ../os/libmonoos.la
+libmetadata_la_LIBADD = ../os/libmonoos.la
 endif
 
 libmonoruntime_la_SOURCES = \
