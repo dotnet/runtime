@@ -1135,8 +1135,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	if(wait->num<MAXIMUM_WAIT_OBJECTS) {
 		MonoThread *thread=(MonoThread *)value;
 
-		/* BUG: For now we just ignore background threads, we should abort them
-		*/
+		/* Ignore background threads, we abort them later */
 		if (thread->state & ThreadState_Background)
 			return; /* just leave, ignore */
 		
@@ -1157,12 +1156,21 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 }
 
 static gboolean
-remove_threads (gpointer key, gpointer value, gpointer user)
+remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 {
 	guint32 self = GPOINTER_TO_UINT (user);
 	MonoThread *thread = (MonoThread *) value;
 
-	return (thread->tid != self && !mono_gc_is_finalizer_thread (thread));
+	/* The finalizer thread is not a background thread */
+	if (thread->tid != self && thread->state & ThreadState_Background) {
+#ifdef THREAD_DEBUG
+		g_print ("Aborting id: %d\n", thread->tid);
+#endif
+		ves_icall_System_Threading_Thread_Abort (thread, (MonoDomain *) thread->obj.vtable->domain);
+		return TRUE;
+	}
+
+	return (thread->tid != self && !mono_gc_is_finalizer_thread (thread)); 
 }
 
 void mono_thread_manage (void)
@@ -1205,8 +1213,12 @@ void mono_thread_manage (void)
 	g_free (wait);
 
 	EnterCriticalSection(&threads_mutex);
-	/* Remove everything but the finalizer thread and self */
-	mono_g_hash_table_foreach_remove (threads, remove_threads,
+
+	/* 
+	 * Remove everything but the finalizer thread and self.
+	 * Also abort all the background threads
+	 * */
+	mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads,
 					  GUINT_TO_POINTER (GetCurrentThreadId ()));
 
 	LeaveCriticalSection(&threads_mutex);
@@ -1297,7 +1309,7 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoDomain *domain = data->domain;
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
-		//printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name);
+		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name); */
 		ves_icall_System_Threading_Thread_Abort (thread, (MonoObject*)domain->domain);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
@@ -1323,7 +1335,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	abort_appdomain_data user_data;
 	guint32 start_time;
 
-	//printf ("ABORT BEGIN.\n");
+	/* printf ("ABORT BEGIN.\n"); */
 
 	start_time = GetTickCount ();
 	do {
@@ -1346,7 +1358,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	}
 	while (user_data.wait.num > 0);
 
-	//printf ("ABORT DONE.\n");
+	/* printf ("ABORT DONE.\n"); */
 
 	return TRUE;
 }
