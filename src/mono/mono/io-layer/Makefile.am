@@ -112,7 +112,13 @@ if PLATFORM_WIN32
 libwapi_la_SOURCES = $(WINDOWS_SRC)
 libwapiinclude_HEADERS = $(WINDOWS_H)
 else
+if HPPA
+libwapi_la_SOURCES = $(OTHER_SRC) hppa_atomic.s
+# to enable pick up of config.h
+libwapi_la_CCASFLAGS = -I$(top_builddir)
+else
 libwapi_la_SOURCES = $(OTHER_SRC)
+endif
 libwapiinclude_HEADERS = $(OTHER_H)
 endif
 
