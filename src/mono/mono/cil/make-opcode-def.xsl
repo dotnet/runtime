@@ -10,7 +10,7 @@
  |
  | Author: Sergey Chaban
  |
- | $Id: make-opcode-def.xsl,v 1.1 2001/07/13 01:04:23 miguel Exp $
+ | $Id$
   -->
 
 

@@ -178,8 +178,8 @@ benefits:
 
 This mechanism works very well for GNOME and other projects.
 
-Q: Should I use any of the special RCS keywords like $Id: devel-faq,v 1.1 2001/07/31 21:13:05 miguel Exp $, $Author: miguel $,
-   $Date: 2001/07/31 21:13:05 $, or $Revision: 1.1 $?
+Q: Should I use any of the special RCS keywords like $Id$, $Author$,
+   $Date$, or $Revision: 1.1 $?
 
 A: Please avoid using those in the source code in the CVS.  They
    are not really useful, and they cause a lot of conflicts when

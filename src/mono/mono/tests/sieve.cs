@@ -1,5 +1,5 @@
 /* -*- mode: c -*-
- * $Id: sieve.cs,v 1.2 2003/07/18 13:06:43 lupus Exp $
+ * $Id$
  * http://www.bagley.org/~doug/shootout/
  */
 

@@ -1,4 +1,4 @@
-// $Id: ackermann.cs,v 1.3 2002/05/23 13:03:04 lupus Exp $
+// $Id$
 // http://www.bagley.org/~doug/shootout/
 
 public class ackermann {
