@@ -2027,38 +2027,49 @@ assembly_add_resource (MonoDynamicAssembly *assembly, MonoReflectionResource *rs
 	guchar hash [20];
 	char *b = blob_size;
 	char *name, *sname;
-	guint32 idx;
+	guint32 idx, offset;
 
-	/* FIXME: later add support (also in mcs) to embed resurces */
-	g_assert (rsrc->filename);
-	name = mono_string_to_utf8 (rsrc->filename);
-	sname = g_path_get_basename (name);
+	if (rsrc->filename) {
+		name = mono_string_to_utf8 (rsrc->filename);
+		sname = g_path_get_basename (name);
 	
-	table = &assembly->tables [MONO_TABLE_FILE];
-	table->rows++;
-	alloc_table (table, table->rows);
-	values = table->values + table->next_idx * MONO_FILE_SIZE;
-	values [MONO_FILE_FLAGS] = FILE_CONTAINS_NO_METADATA;
-	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, sname);
-	g_free (sname);
+		table = &assembly->tables [MONO_TABLE_FILE];
+		table->rows++;
+		alloc_table (table, table->rows);
+		values = table->values + table->next_idx * MONO_FILE_SIZE;
+		values [MONO_FILE_FLAGS] = FILE_CONTAINS_NO_METADATA;
+		values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, sname);
+		g_free (sname);
 
-	mono_sha1_get_digest_from_file (name, hash);
-	mono_metadata_encode_value (20, b, &b);
-	values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, hash, 20);
-	g_free (name);
-	idx = table->next_idx++;
+		mono_sha1_get_digest_from_file (name, hash);
+		mono_metadata_encode_value (20, b, &b);
+		values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+		mono_image_add_stream_data (&assembly->blob, hash, 20);
+		g_free (name);
+		idx = table->next_idx++;
+		idx = IMPLEMENTATION_FILE | (idx << IMPLEMENTATION_BITS);
+		offset = 0;
+	} else {
+		char sizebuf [4];
+		offset = mono_array_length (rsrc->data);
+		sizebuf [0] = offset; sizebuf [1] = offset >> 8;
+		sizebuf [2] = offset >> 16; sizebuf [3] = offset >> 24;
+		offset = mono_image_add_stream_data (&assembly->resources, sizebuf, 4);
+		mono_image_add_stream_data (&assembly->resources, mono_array_addr (rsrc->data, char, 0), mono_array_length (rsrc->data));
+		idx = 0;
+	}
 
 	table = &assembly->tables [MONO_TABLE_MANIFESTRESOURCE];
 	table->rows++;
 	alloc_table (table, table->rows);
 	values = table->values + table->next_idx * MONO_MANIFEST_SIZE;
-	values [MONO_MANIFEST_OFFSET] = 0;
+	values [MONO_MANIFEST_OFFSET] = offset;
 	values [MONO_MANIFEST_FLAGS] = rsrc->attrs;
 	name = mono_string_to_utf8 (rsrc->name);
 	values [MONO_MANIFEST_NAME] = string_heap_insert (&assembly->sheap, name);
 	g_free (name);
-	values [MONO_MANIFEST_IMPLEMENTATION] = IMPLEMENTATION_FILE | (idx << IMPLEMENTATION_BITS);
+	values [MONO_MANIFEST_IMPLEMENTATION] = idx;
+	table->next_idx++;
 }
 
 /*
@@ -2345,8 +2356,10 @@ calc_section_size (MonoDynamicAssembly *assembly)
 	assembly->code.index &= ~3;
 	assembly->meta_size += 3;
 	assembly->meta_size &= ~3;
+	assembly->resources.index += 3;
+	assembly->resources.index &= ~3;
 
-	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index;
+	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index + assembly->resources.index;
 	assembly->sections [MONO_SECTION_TEXT].attrs = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
 	nsections++;
 
@@ -2372,7 +2385,7 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	MonoDotNetHeader *header;
 	MonoSectionTable *section;
 	MonoCLIHeader *cli_header;
-	guint32 size, image_size, virtual_base;
+	guint32 size, image_size, virtual_base, text_offset;
 	guint32 header_start, section_start, file_offset, virtual_offset;
 	MonoDynamicAssembly *assembly;
 	MonoDynamicStream *pefile;
@@ -2538,7 +2551,12 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 		cli_header->ch_entry_point = GUINT32_FROM_LE (assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF);
 	else
 		cli_header->ch_entry_point = GUINT32_FROM_LE (0);
-	cli_header->ch_metadata.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->code.index);
+	/* The embedded managed resources */
+	text_offset = assembly->text_rva + assembly->code.index;
+	cli_header->ch_resources.rva = GUINT32_FROM_LE (text_offset);
+	cli_header->ch_resources.size = GUINT32_FROM_LE (assembly->resources.index);
+	text_offset += assembly->resources.index;
+	cli_header->ch_metadata.rva = GUINT32_FROM_LE (text_offset);
 	cli_header->ch_metadata.size = GUINT32_FROM_LE (assembly->meta_size);
 
 	/* write the section tables and section content */
@@ -2562,8 +2580,12 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 			/* patch entry point */
 			rva = (guint32*)(assembly->code.data + 2);
 			*rva = GUINT32_FROM_LE (virtual_base + assembly->text_rva + assembly->iat_offset);
-			memcpy (pefile->data + assembly->sections [i].offset, assembly->code.data, assembly->code.index);
-			memcpy (pefile->data + assembly->sections [i].offset + assembly->code.index, assembly->assembly.image->raw_metadata, assembly->meta_size);
+			text_offset = assembly->sections [i].offset;
+			memcpy (pefile->data + text_offset, assembly->code.data, assembly->code.index);
+			text_offset += assembly->code.index;
+			memcpy (pefile->data + text_offset, assembly->resources.data, assembly->resources.index);
+			text_offset += assembly->resources.index;
+			memcpy (pefile->data + text_offset, assembly->assembly.image->raw_metadata, assembly->meta_size);
 			break;
 		case MONO_SECTION_RELOC:
 			rva = (guint32*)(pefile->data + assembly->sections [i].offset);

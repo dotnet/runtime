@@ -267,6 +267,7 @@ typedef struct {
 	MonoDynamicStream pefile;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
+	MonoDynamicStream resources; /* managed embedded resources */
 	MonoDynamicStream us;
 	MonoDynamicStream blob;
 	MonoDynamicStream tstream;
