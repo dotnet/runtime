@@ -5,10 +5,6 @@
 	required to run ASP.NET web application as well as a small
 	embeddable web server.
 
-	Currently ASP.NET does not work, but work is underway.  If you
-	are interested in helping the effort please contact the
-	mono-list mailing list.
-
 	There are a couple of components to the puzzle:
 
 	<ul>
@@ -19,7 +15,7 @@
 		* Web controls (System.Web.UI.HtmlControls and
 		  System.Web.UI.WebControls).
 	
-		* Underlying infrastrcture for the controls (System.Web.UI).
+		* Underlying infrastructure for the controls (System.Web.UI).
 	
 		* HttpRuntime.ProcessRequest is the core of the ASP.NET
 		  implementation.
@@ -28,18 +24,14 @@
 
 	Gonzalo has been working on an ASP.NET parser that takes .aspx
 	files and generated the code required to run them (the code lives in
-	module `xsp').
+	module `xsp' along with a little web server for testing).
 
 	Most of the runtime support was mostly written by Patrik Torstensson
 	(now at Intel).  This was interesting, because in order to implement
 	some of its features, Patrik had to go into the runtime/JIT engine and
 	he spent a few weeks doing work there.
 
-	Duncan last week got our System.Web assembly to compile, and he is in
-	the process of getting the generated output to compile and link with our
-	System.Web classes, but so far, most of the work has been in stubbing
-	out the classes, just so we can get a clean compilation of the
-	code.
+	Duncan got our System.Web assembly to compile.
 
 ** HttpRuntime
 
@@ -53,7 +45,7 @@
 	interesting to see if it makes sense to extend the ASP.NET
 	syntax to make it simpler to develop applications.
 
-	Gonzalo is in charge of the compil.er
+	Gonzalo is in charge of the compiler.
 
 ** Controls
 
@@ -62,6 +54,9 @@
 	but they have been coded mostly in the dark, and without being
 	able to test them in real life: Gaurav and Leen worked very
 	hard on this namespace, but needs to be finished.
+
+	We can now render all HtmlControls and some WebControls. Work is
+	ongoing to make all WebControls render HTML.
 
 ** Extending ASP.NET
 
@@ -75,3 +70,33 @@
 	For example people doing blogs and editing their templates
 	over the web probably do not want to use direct ASP.NET but a
 	wrapper around it.
+
+** Roadmap
+
+        1. The Parser.
+
+        2. Get the parser to generate output compatible with ASP.NET.
+
+        3. Run the sample output with the real Microsoft runtime
+           but using our generated page.   
+
+        4. Run the sample with our classes with the .NET runtime.
+	<b>We are here</b>.
+
+        5. Finish HttpRuntime.
+	
+        6. Running our sample code with our classes with our runtime.
+
+** How to Help
+
+        Currently we are testing and fixing HtmlControls, WebControls and
+        validators.
+
+        In the CVS module XSP you can find the aspx to C# page parser,
+        a little web server used for testing and a directory containing
+        sample aspx pages.
+
+        You have some documentation under doc directory and in the README
+        file of each directory. They explain how to test our System.Web.
+        Testing is really easy!
+
