@@ -56,6 +56,7 @@ TODO=multimedia
 <a name="projects">
 ** Projects
 
+	This list of projects ideas is outdated
 
 TODO=guavac,Java compiler for .NET
 		* You could take one of the existing Java compilers
@@ -68,19 +69,8 @@ TODO=guavac,Java compiler for .NET
 		  it could be compiled with the Microsoft Managed C++
 		  compiler and produce a .NET executable with it.
 
-TODO=CORBA,CORBA implementation
-		* Build a CORBA interoperability engine for the CLR.
-		  You do not need to do all of the work, just talking
-		  the protocol will get us a long way (<a
-		  href="http://www.omg.org">The OMG site</a> has the
-		  CORBA specs).
-
-		  Get in touch with David Taylor (dtaylo11 at bigpond
-		  dot net dot au) as he has been working on this
-		  project.
-
 TODO=Bonobo,Bonobo for Mono
-		* Once CORBA is done, implement the Bonobo interfaces
+		* Once <a href="http://remoting-corba.sourceforge.net/">CORBA</a> is done, implement the Bonobo interfaces
 		  to allow people to use Bonobo components in Mono and
 		  Mono components with Bonobo.  The best of both worlds!
 

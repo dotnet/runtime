@@ -561,10 +561,11 @@ A: Yes. The CLI contains enough information about a class that
    exposing it to other RPC systems (like CORBA) is really simple, and
    does not even require support from an object.  
 
-   We will be implementing CORBA inter-operation as an extension to the
-   Mono classes so that we can integrate with Bonobo, just like
-   Microsoft provides COM inter-operation classes and support
-   mechanisms. 
+   <a href="http://remoting-corba.sourceforge.net/">Remoting.CORBA</a> is
+   a CORBA implementation that is gaining momentum.
+
+   Building an implementation of the Bonobo interfaces once this is ready
+   should be relatively simple. 
 
 Q: Can I serialize my objects to other things other than XML?
 
@@ -573,7 +574,14 @@ A: Yes, although the serializing tools have not yet been planned, and
 
 Q: Will Mono use ORBit?
 
-A: No. Mono will be using a new implementation of CORBA that isn't still started. 
+A: There are a few advantages in using ORBit, like reusing existing code
+   and leveraging all the work done on it.  Michael Meeks has posted
+   a few <a href="http://lists.ximian.com/archives/public/mono-list/2002-September/008592.html">reasons</a>,
+   as well as some <a href="http://lists.ximian.com/archives/public/mono-list/2002-September/008657.html">ideas</a>
+   that could be used to reuse ORBit.
+
+   Most users are likely to choose a native .NET solution, like <a href="http://cvs.gnome.org/bonsai">Remoting.CORBA</a>
+
 
 <a name="monodoc"></a>
 ** MonoDoc
