@@ -5,13 +5,20 @@ unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
 {
 	int i = 0;
-	
+	unsigned short *res;
+
+	res = malloc (2 * (length + 1));
+
 	printf("test_lpwstr_marshal()\n");
 	
-	while ( i < length )
-		printf("X|%u|\n", chars[i++]);
+	while ( i < length ) {
+		printf("X|%u|\n", chars[i]);
+		res [i] = chars[i++];
+	}
 
-	return chars;
+	res [i] = 0;
+
+	return res;
 }
 
 typedef struct {
@@ -249,7 +256,6 @@ mono_test_marshal_string_array (char **array)
 }
 
 /* this does not work on Redhat gcc 2.96 */
-#if 0
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
@@ -257,8 +263,6 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 		return 0;
 	return 1;
 }
-#endif
-
 
 typedef struct {
        char a[100];
