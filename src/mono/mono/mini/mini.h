@@ -179,6 +179,7 @@ struct MonoBasicBlock {
 	/* loop nesting and recognition */
 	GList *loop_blocks;
 	gint8  nesting;
+	gint8  loop_body_start;
 
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;

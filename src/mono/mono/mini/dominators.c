@@ -425,6 +425,8 @@ mono_compute_natural_loops (MonoCompile *cfg)
 			if (n != h && mono_bitset_test (n->dominators, h->dfn)) {
 				GList *todo;
 
+				n->loop_body_start = 1;
+
 				/* already in loop_blocks? */
 				if (h->loop_blocks && g_list_find (h->loop_blocks, n))
 					continue;
