@@ -7,8 +7,10 @@
 
 #include "mono/io-layer/wapi.h"
 
-typedef const guchar *LPCTSTR;		/* replace this with gunichar */
+typedef const gunichar2 *LPCTSTR;
+typedef gunichar2 *LPTSTR;
 typedef guint8 BYTE;
+typedef guint8 *LPBYTE;
 typedef guint16 WORD;
 typedef guint32 DWORD;
 typedef gpointer PVOID;
@@ -21,9 +23,9 @@ typedef gint32 *PLONG;
 typedef guint64 LONGLONG;
 typedef gunichar2 TCHAR;
 
-typedef WapiHandle *HANDLE;
-typedef WapiHandle **LPHANDLE;
-typedef WapiHandle *SOCKET;	/* NB: w32 defines this to be int */
+typedef gpointer HANDLE;
+typedef gpointer *LPHANDLE;
+typedef guint32 SOCKET;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
@@ -47,6 +49,9 @@ typedef WapiFindData WIN32_FIND_DATA;
 typedef WapiFindData *LPWIN32_FIND_DATA;
 typedef WapiFileAttributesData WIN32_FILE_ATTRIBUTE_DATA;
 typedef WapiGetFileExInfoLevels GET_FILEEX_INFO_LEVELS;
+typedef WapiStartupInfo STARTUPINFO;
+typedef WapiStartupInfo *LPSTARTUPINFO;
+typedef WapiProcessInformation PROCESS_INFORMATION;
 
 #define CONST const
 #define VOID void

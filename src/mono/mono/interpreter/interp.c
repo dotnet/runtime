@@ -3923,6 +3923,9 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
+
 	mono_init_icall ();
 	mono_add_internal_call ("System.Array::Set", ves_array_set);
 	mono_add_internal_call ("System.Array::Get", ves_array_get);

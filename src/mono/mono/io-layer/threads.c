@@ -10,32 +10,17 @@
 #include <sys/time.h>
 #include <errno.h>
 
-#include "mono/io-layer/wapi.h"
-#include "wapi-private.h"
-#include "timed-thread.h"
-#include "wait-private.h"
-#include "handles-private.h"
-#include "misc-private.h"
-
-#include "mono-mutex.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/timed-thread.h>
+#include <mono/io-layer/wait-private.h>
+#include <mono/io-layer/handles-private.h>
+#include <mono/io-layer/misc-private.h>
+#include <mono/io-layer/mono-mutex.h>
+#include <mono/io-layer/thread-private.h>
 
 #undef DEBUG
-
-typedef enum {
-	THREAD_STATE_START,
-	THREAD_STATE_EXITED,
-} WapiThreadState;
-
-struct _WapiHandle_thread
-{
-	WapiHandle handle;
-	WapiThreadState state;
-	TimedThread *thread;
-	guint32 exitstatus;
-};
-
-static mono_mutex_t thread_signal_mutex = MONO_MUTEX_INITIALIZER;
-static pthread_cond_t thread_signal_cond = PTHREAD_COND_INITIALIZER;
+#undef TLS_DEBUG
 
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
@@ -48,10 +33,8 @@ static GHashTable *thread_hash=NULL;
 static MonoGHashTable *tls_gc_hash = NULL;
 #endif
 
-static void thread_close(WapiHandle *handle);
-static gboolean thread_wait(WapiHandle *handle, WapiHandle *signal,
-			    guint32 ms);
-static guint32 thread_wait_multiple(gpointer data);
+static void thread_close(gpointer handle);
+static void thread_own (gpointer handle);
 
 static struct _WapiHandleOps thread_ops = {
 	thread_close,			/* close */
@@ -64,198 +47,98 @@ static struct _WapiHandleOps thread_ops = {
 	NULL,				/* getfilesize */
 	NULL,				/* getfiletime */
 	NULL,				/* setfiletime */
-	thread_wait,			/* wait */
-	thread_wait_multiple,		/* wait_multiple */
 	NULL,				/* signal */
+	thread_own,			/* own */
+	NULL,				/* is_owned */
 };
 
-static void thread_close(WapiHandle *handle)
+static pthread_once_t thread_ops_once=PTHREAD_ONCE_INIT;
+
+static void thread_ops_init (void)
 {
-	struct _WapiHandle_thread *thread_handle=(struct _WapiHandle_thread *)handle;
+	_wapi_handle_register_ops (WAPI_HANDLE_THREAD, &thread_ops);
+	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD,
+					    WAPI_HANDLE_CAP_WAIT);
+}
+
+static void thread_close(gpointer handle)
+{
+	struct _WapiHandle_thread *thread_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return;
+	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": closing thread handle %p with thread %p id %ld",
-		  thread_handle, thread_handle->thread,
+		  handle, thread_handle->thread,
 		  thread_handle->thread->id);
 #endif
 
-	mono_mutex_destroy (&thread_handle->thread->join_mutex);
-	g_free(thread_handle->thread);
-}
-
-static gboolean thread_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
-{
-	struct _WapiHandle_thread *thread_handle=(struct _WapiHandle_thread *)handle;
-	int ret;
-	
-	/* A thread can never become unsignalled after it was
-	 * signalled, so we can signal this handle now without
-	 * worrying about lost wakeups
-	 */
-	if(signal!=NULL) {
-		signal->ops->signal(signal);
-	}
-	
-	if(handle->signalled==TRUE) {
-		/* Already signalled, so return straight away */
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": thread handle %p already signalled, returning now", handle);
-#endif
-
-		return(TRUE);
-	}
-
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": waiting for %d ms for thread handle %p with id %ld", ms,
-		  thread_handle, thread_handle->thread->id);
-#endif
-
-	if(ms==INFINITE) {
-		ret=_wapi_timed_thread_join(thread_handle->thread, NULL, NULL);
-	} else {
-		struct timespec timeout;
-
-		_wapi_calc_timeout(&timeout, ms);
-	
-		ret=_wapi_timed_thread_join(thread_handle->thread, &timeout,
-					    NULL);
-	}
-	
-	if(ret==0) {
-		/* Thread joined */
-		return(TRUE);
-	} else {
-		/* ret might be ETIMEDOUT for timeout, or other for error */
-		return(FALSE);
+	if(thread_handle->thread!=NULL) {
+		_wapi_timed_thread_destroy (thread_handle->thread);
 	}
 }
 
-static guint32 thread_wait_multiple(gpointer data)
+static void thread_own (gpointer handle)
 {
-	WaitQueueItem *item=(WaitQueueItem *)data;
-	int ret;
-	guint32 numhandles, count;
-	struct timespec timeout;
+	struct _WapiHandle_thread *thread_handle;
+	gboolean ok;
 	
-	numhandles=item->handles[WAPI_HANDLE_THREAD]->len;
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": waiting on %d thread handles for %d ms", numhandles,
-		  item->timeout);
-#endif
-
-	/* First, check if any of the handles are already
-	 * signalled. If waitall is specified we only return if all
-	 * handles have been signalled.
-	 */
-	count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
-
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Preliminary check found %d handles signalled", count);
-#endif
-
-	if((item->waitall==TRUE && count==numhandles) || 
-	   (item->waitall==FALSE && count>0)) {
-		goto success;
-	}
-	
-	/* OK, we need to wait for some */
-	if(item->timeout!=INFINITE) {
-		_wapi_calc_timeout(&timeout, item->timeout);
-	}
-	
-	/* We can restart from here without resetting the timeout,
-	 * because it is calculated from absolute time, not an offset
-	 */
-again:
-	mono_mutex_lock(&thread_signal_mutex);
-	if(item->timeout==INFINITE) {
-		ret=mono_cond_wait(&thread_signal_cond,
-				      &thread_signal_mutex);
-	} else {
-		ret=mono_cond_timedwait(&thread_signal_cond,
-					   &thread_signal_mutex,
-					   &timeout);
-	}
-	mono_mutex_unlock(&thread_signal_mutex);
-
-	if(ret==ETIMEDOUT) {
-		/* Check signalled state here, just in case a thread
-		 * exited between the first check and the cond wait.
-		 * We return the number of signalled handles, which
-		 * may be fewer than the total.
-		 */
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Wait timed out");
-#endif
-
-		count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
-		goto success;
-	}
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Thread exited, checking status");
-#endif
-
-	/* Another thread exited, so see if it was one we are
-	 * interested in
-	 */
-	count=_wapi_handle_count_signalled(item, WAPI_HANDLE_THREAD);
-
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Check after thread exit found %d handles signalled",
-		  count);
-#endif
-
-	if((item->waitall==TRUE && count==numhandles) ||
-	   (item->waitall==FALSE && count>0)) {
-		goto success;
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return;
 	}
 
-	/* Either we have waitall set with more handles to wait for,
-	 * or the thread that exited wasn't interesting to us
-	 */
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Waiting a bit longer");
-#endif
-
-	goto again;
-
-success:
-	item->waited[WAPI_HANDLE_THREAD]=TRUE;
-	item->waitcount[WAPI_HANDLE_THREAD]=count;
-	
-	return(count);
+	if(thread_handle->joined==FALSE) {
+		_wapi_timed_thread_join (thread_handle->thread, NULL, NULL);
+		thread_handle->joined=TRUE;
+	}
 }
 
-static void thread_exit(guint32 exitstatus, gpointer userdata)
+static void thread_exit(guint32 exitstatus, gpointer handle)
 {
-	struct _WapiHandle_thread *thread_handle=(struct _WapiHandle_thread *)userdata;
+	struct _WapiHandle_thread *thread_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return;
+	}
 
+	_wapi_handle_lock_handle (handle);
+	
 	thread_handle->exitstatus=exitstatus;
 	thread_handle->state=THREAD_STATE_EXITED;
-	thread_handle->handle.signalled=TRUE;
+	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
+
+	_wapi_handle_unlock_handle (handle);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Recording thread handle %p id %ld status as %d",
-		  thread_handle, thread_handle->thread->id, exitstatus);
+		  handle, thread_handle->thread->id, exitstatus);
 #endif
 
 	/* Remove this thread from the hash */
 	mono_mutex_lock(&thread_hash_mutex);
 	g_hash_table_remove(thread_hash, &thread_handle->thread->id);
 	mono_mutex_unlock(&thread_hash_mutex);
-	
-	/* Signal any thread waiting on thread exit */
-	mono_mutex_lock(&thread_signal_mutex);
-	pthread_cond_broadcast(&thread_signal_cond);
-	mono_mutex_unlock(&thread_signal_mutex);
+
+	/* The thread is no longer active, so unref it */
+	_wapi_handle_unref (handle);
 }
 
 static void thread_hash_init(void)
@@ -279,24 +162,42 @@ static void thread_hash_init(void)
  *
  * Return value: a new handle, or NULL
  */
-WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize G_GNUC_UNUSED,
-			 WapiThreadStart start, gpointer param, guint32 create G_GNUC_UNUSED,
-			 guint32 *tid) 
+gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize G_GNUC_UNUSED,
+		      WapiThreadStart start, gpointer param, guint32 create G_GNUC_UNUSED,
+		      guint32 *tid) 
 {
 	struct _WapiHandle_thread *thread_handle;
-	WapiHandle *handle;
+	gpointer handle;
+	gboolean ok;
 	int ret;
 	
 	pthread_once(&thread_hash_once, thread_hash_init);
+	pthread_once (&thread_ops_once, thread_ops_init);
 	
 	if(start==NULL) {
 		return(NULL);
 	}
 	
-	thread_handle=(struct _WapiHandle_thread *)g_new0(struct _WapiHandle_thread, 1);
+	handle=_wapi_handle_new (WAPI_HANDLE_THREAD);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating thread handle");
+		return(NULL);
+	}
 
-	handle=(WapiHandle *)thread_handle;
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_THREAD, thread_ops);
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(NULL);
+	}
+
+	/* Hold a reference while the thread is active */
+	_wapi_handle_ref (handle);
 
 	thread_handle->state=THREAD_STATE_START;
 	
@@ -306,30 +207,36 @@ WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32
 	mono_mutex_lock(&thread_hash_mutex);
 	
 	ret=_wapi_timed_thread_create(&thread_handle->thread, NULL, start,
-				      thread_exit, param, thread_handle);
+				      thread_exit, param, handle);
 	if(ret!=0) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread create error: %s",
 			  strerror(ret));
 #endif
 		mono_mutex_unlock(&thread_hash_mutex);
-		g_free(thread_handle);
+		_wapi_handle_unlock_handle (handle);
+		_wapi_handle_unref (handle);
+		
+		/* And again, because of the reference we took above */
+		_wapi_handle_unref (handle);
 		return(NULL);
 	}
 
 	g_hash_table_insert(thread_hash, &thread_handle->thread->id,
-			    thread_handle);
+			    handle);
 	mono_mutex_unlock(&thread_hash_mutex);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Started thread handle %p thread %p ID %ld", thread_handle,
+		  ": Started thread handle %p thread %p ID %ld", handle,
 		  thread_handle->thread, thread_handle->thread->id);
 #endif
 	
 	if(tid!=NULL) {
 		*tid=thread_handle->thread->id;
 	}
+
+	_wapi_handle_unlock_handle (handle);
 	
 	return(handle);
 }
@@ -358,9 +265,18 @@ void ExitThread(guint32 exitcode)
  *
  * Return value: %TRUE, or %FALSE on error.
  */
-gboolean GetExitCodeThread(WapiHandle *handle, guint32 *exitcode)
+gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
 {
-	struct _WapiHandle_thread *thread_handle=(struct _WapiHandle_thread *)handle;
+	struct _WapiHandle_thread *thread_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		return(FALSE);
+	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -417,9 +333,9 @@ guint32 GetCurrentThreadId(void)
  * (Unknown whether Windows has a possible failure here.  It may be
  * necessary to implement the pseudohandle-constant behaviour).
  */
-WapiHandle *GetCurrentThread(void)
+gpointer GetCurrentThread(void)
 {
-	WapiHandle *ret=NULL;
+	gpointer ret=NULL;
 	guint32 tid;
 	
 	tid=GetCurrentThreadId();
@@ -442,7 +358,7 @@ WapiHandle *GetCurrentThread(void)
  *
  * Return value: the previous suspend count, or 0xFFFFFFFF on error.
  */
-guint32 ResumeThread(WapiHandle *handle G_GNUC_UNUSED)
+guint32 ResumeThread(gpointer handle G_GNUC_UNUSED)
 {
 	return(0xFFFFFFFF);
 }
@@ -456,7 +372,7 @@ guint32 ResumeThread(WapiHandle *handle G_GNUC_UNUSED)
  *
  * Return value: the previous suspend count, or 0xFFFFFFFF on error.
  */
-guint32 SuspendThread(WapiHandle *handle G_GNUC_UNUSED)
+guint32 SuspendThread(gpointer handle G_GNUC_UNUSED)
 {
 	return(0xFFFFFFFF);
 }
@@ -497,12 +413,22 @@ guint32 TlsAlloc(void)
 			pthread_key_create(&TLS_keys[i], NULL);
 
 			mono_mutex_unlock(&TLS_mutex);
+	
+#ifdef TLS_DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": returning key %d",
+				   i);
+#endif
 			
 			return(i);
 		}
 	}
 
 	mono_mutex_unlock(&TLS_mutex);
+	
+#ifdef TLS_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": out of indices");
+#endif
+			
 	
 	return(TLS_OUT_OF_INDEXES);
 }
@@ -520,6 +446,10 @@ guint32 TlsAlloc(void)
  */
 gboolean TlsFree(guint32 idx)
 {
+#ifdef TLS_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": freeing key %d", idx);
+#endif
+
 	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
@@ -552,14 +482,26 @@ gpointer TlsGetValue(guint32 idx)
 {
 	gpointer ret;
 	
+#ifdef TLS_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": looking up key %d", idx);
+#endif
+
 	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
+#ifdef TLS_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
+#endif
+
 		mono_mutex_unlock(&TLS_mutex);
 		return(NULL);
 	}
 	
 	ret=pthread_getspecific(TLS_keys[idx]);
+
+#ifdef TLS_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", ret);
+#endif
 	
 	mono_mutex_unlock(&TLS_mutex);
 	
@@ -578,16 +520,30 @@ gpointer TlsGetValue(guint32 idx)
 gboolean TlsSetValue(guint32 idx, gpointer value)
 {
 	int ret;
+
+#ifdef TLS_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": setting key %d to %p", idx,
+		   value);
+#endif
 	
 	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
+#ifdef TLS_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
+#endif
+
 		mono_mutex_unlock(&TLS_mutex);
 		return(FALSE);
 	}
 	
 	ret=pthread_setspecific(TLS_keys[idx], value);
 	if(ret!=0) {
+#ifdef TLS_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": pthread_setspecific error: %s", strerror (ret));
+#endif
+
 		mono_mutex_unlock(&TLS_mutex);
 		return(FALSE);
 	}

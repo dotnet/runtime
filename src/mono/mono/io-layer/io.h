@@ -22,7 +22,7 @@ struct _WapiOverlapped
 	guint32 InternalHigh;
 	guint32 Offset;
 	guint32 OffsetHigh;
-	WapiHandle *hEvent;
+	gpointer hEvent;
 };
 
 #define GENERIC_READ	0x80000000
@@ -137,36 +137,46 @@ typedef struct
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
 
-extern WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
-			      guint32 sharemode,
-			      WapiSecurityAttributes *security,
-			      guint32 createmode,
-			      guint32 attrs, WapiHandle *tmplate);
+extern gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
+			   guint32 sharemode,
+			   WapiSecurityAttributes *security,
+			   guint32 createmode,
+			   guint32 attrs, gpointer tmplate);
 extern gboolean DeleteFile(const gunichar2 *name);
-extern WapiHandle *GetStdHandle(WapiStdHandle stdhandle);
-extern gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
+extern gpointer GetStdHandle(WapiStdHandle stdhandle);
+extern gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 			 guint32 *bytesread, WapiOverlapped *overlapped);
-extern gboolean WriteFile(WapiHandle *handle, gconstpointer buffer,
+extern gboolean WriteFile(gpointer handle, gconstpointer buffer,
 			  guint32 numbytes, guint32 *byteswritten,
 			  WapiOverlapped *overlapped);
-extern gboolean FlushFileBuffers(WapiHandle *handle);
-extern gboolean SetEndOfFile(WapiHandle *handle);
-extern guint32 SetFilePointer(WapiHandle *handle, gint32 movedistance,
+extern gboolean FlushFileBuffers(gpointer handle);
+extern gboolean SetEndOfFile(gpointer handle);
+extern guint32 SetFilePointer(gpointer handle, gint32 movedistance,
 			      gint32 *highmovedistance, WapiSeekMethod method);
-extern WapiFileType GetFileType(WapiHandle *handle);
-extern guint32 GetFileSize(WapiHandle *handle, guint32 *highsize);
-extern gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time, WapiFileTime *last_access, WapiFileTime *last_write);
-extern gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time, const WapiFileTime *last_access, const WapiFileTime *last_write);
-extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time, WapiSystemTime *system_time);
-extern WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data);
-extern gboolean FindNextFile (WapiHandle *handle, WapiFindData *find_data);
-extern gboolean FindClose (WapiHandle *handle);
-extern gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *security);
+extern WapiFileType GetFileType(gpointer handle);
+extern guint32 GetFileSize(gpointer handle, guint32 *highsize);
+extern gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
+			    WapiFileTime *last_access,
+			    WapiFileTime *last_write);
+extern gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
+			    const WapiFileTime *last_access,
+			    const WapiFileTime *last_write);
+extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
+				     WapiSystemTime *system_time);
+extern gpointer FindFirstFile (const gunichar2 *pattern,
+			       WapiFindData *find_data);
+extern gboolean FindNextFile (gpointer handle, WapiFindData *find_data);
+extern gboolean FindClose (gpointer handle);
+extern gboolean CreateDirectory (const gunichar2 *name,
+				 WapiSecurityAttributes *security);
 extern gboolean RemoveDirectory (const gunichar2 *name);
 extern gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name);
-extern gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists);
+extern gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
+			  gboolean fail_if_exists);
 extern guint32 GetFileAttributes (const gunichar2 *name);
-extern gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels level, gpointer info);
+extern gboolean GetFileAttributesEx (const gunichar2 *name,
+				     WapiGetFileExInfoLevels level,
+				     gpointer info);
 extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs);
 extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer);
 extern gboolean SetCurrentDirectory (const gunichar2 *path);

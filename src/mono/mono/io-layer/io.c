@@ -11,51 +11,32 @@
 #include <stdio.h>
 #include <utime.h>
 
-#include "mono/io-layer/wapi.h"
-#include "unicode.h"
-#include "wapi-private.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/unicode.h>
+#include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/handles-private.h>
+#include <mono/io-layer/io-private.h>
 
 #undef DEBUG
 #define ACTUALLY_DO_UNICODE
 
-/* Currently used for both FILE and CONSOLE handle types.  This may
- * have to change in future.
- */
-struct _WapiHandle_file
-{
-	WapiHandle handle;
-	int fd;
-	gchar *filename;
-	WapiSecurityAttributes *security_attributes;
-	guint32 fileaccess;
-	guint32 sharemode;
-	guint32 attrs;
-};
-
-struct _WapiHandle_find
-{
-	WapiHandle handle;
-	glob_t glob;
-	size_t count;
-};
-
-static void file_close(WapiHandle *handle);
+static void file_close(gpointer handle);
 static WapiFileType file_getfiletype(void);
-static gboolean file_read(WapiHandle *handle, gpointer buffer,
+static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
 			  WapiOverlapped *overlapped);
-static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
+static gboolean file_write(gpointer handle, gconstpointer buffer,
 			   guint32 numbytes, guint32 *byteswritten,
 			   WapiOverlapped *overlapped);
-static gboolean file_flush(WapiHandle *handle);
-static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
+static gboolean file_flush(gpointer handle);
+static guint32 file_seek(gpointer handle, gint32 movedistance,
 			 gint32 *highmovedistance, WapiSeekMethod method);
-static gboolean file_setendoffile(WapiHandle *handle);
-static guint32 file_getfilesize(WapiHandle *handle, guint32 *highsize);
-static gboolean file_getfiletime(WapiHandle *handle, WapiFileTime *create_time,
+static gboolean file_setendoffile(gpointer handle);
+static guint32 file_getfilesize(gpointer handle, guint32 *highsize);
+static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 				 WapiFileTime *last_access,
 				 WapiFileTime *last_write);
-static gboolean file_setfiletime(WapiHandle *handle,
+static gboolean file_setfiletime(gpointer handle,
 				 const WapiFileTime *create_time,
 				 const WapiFileTime *last_access,
 				 const WapiFileTime *last_write);
@@ -72,30 +53,38 @@ static struct _WapiHandleOps file_ops = {
 	file_getfilesize,	/* getfilesize */
 	file_getfiletime,	/* getfiletime */
 	file_setfiletime,	/* setfiletime */
-	NULL,			/* wait */
-	NULL,			/* wait_multiple */
 	NULL,			/* signal */
+	NULL,			/* own */
+	NULL,			/* is_owned */
 };
 
+static void console_close(gpointer handle);
 static WapiFileType console_getfiletype(void);
+static gboolean console_read(gpointer handle, gpointer buffer,
+			     guint32 numbytes, guint32 *bytesread,
+			     WapiOverlapped *overlapped);
+static gboolean console_write(gpointer handle, gconstpointer buffer,
+			      guint32 numbytes, guint32 *byteswritten,
+			      WapiOverlapped *overlapped);
+static gboolean console_flush(gpointer handle);
 
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
  */
 static struct _WapiHandleOps console_ops = {
-	file_close,		/* close */
+	console_close,		/* close */
 	console_getfiletype,	/* getfiletype */
-	file_read,		/* readfile */
-	file_write,		/* writefile */
-	file_flush,		/* flushfile */
+	console_read,		/* readfile */
+	console_write,		/* writefile */
+	console_flush,		/* flushfile */
 	NULL,			/* seek */
 	NULL,			/* setendoffile */
 	NULL,			/* getfilesize */
 	NULL,			/* getfiletime */
 	NULL,			/* setfiletime */
-	NULL,			/* FIXME: wait */
-	NULL,			/* FIXME: wait_multiple */
 	NULL,			/* signal */
+	NULL,			/* own */
+	NULL,			/* is_owned */
 };
 
 /* Find handle has no ops.
@@ -111,10 +100,23 @@ static struct _WapiHandleOps find_ops = {
 	NULL,			/* getfilesize */
 	NULL,			/* getfiletime */
 	NULL,			/* setfiletime */
-	NULL,			/* FIXME: wait */
-	NULL,			/* FIXME: wait_multiple */
 	NULL,			/* signal */
+	NULL,			/* own */
+	NULL,			/* is_owned */
 };
+
+static pthread_once_t io_ops_once=PTHREAD_ONCE_INIT;
+
+static void io_ops_init (void)
+{
+	_wapi_handle_register_ops (WAPI_HANDLE_FILE, &file_ops);
+/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_FILE, */
+/* 					    WAPI_HANDLE_CAP_WAIT); */
+	_wapi_handle_register_ops (WAPI_HANDLE_CONSOLE, &console_ops);
+/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
+/* 					    WAPI_HANDLE_CAP_WAIT); */
+	_wapi_handle_register_ops (WAPI_HANDLE_FIND, &find_ops);
+}
 
 /* Some utility functions.
  */
@@ -206,19 +208,34 @@ static void _wapi_set_last_error_from_errno (void)
 
 /* Handle ops.
  */
-static void file_close(WapiHandle *handle)
+static void file_close(gpointer handle)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return;
+	}
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": closing file handle %p with fd %d",
-		  file_handle, file_handle->fd);
+		  handle, file_private_handle->fd);
 #endif
 	
-	close(file_handle->fd);
-	if(file_handle->filename!=NULL) {
-		g_free(file_handle->filename);
-		file_handle->filename=NULL;
+	close(file_private_handle->fd);
+	if(file_handle->filename!=0) {
+		_wapi_handle_scratch_delete (file_handle->filename);
+		file_handle->filename=0;
+	}
+	if(file_handle->security_attributes!=0) {
+		_wapi_handle_scratch_delete (file_handle->security_attributes);
+		file_handle->security_attributes=0;
 	}
 }
 
@@ -227,12 +244,23 @@ static WapiFileType file_getfiletype(void)
 	return(FILE_TYPE_DISK);
 }
 
-static gboolean file_read(WapiHandle *handle, gpointer buffer,
+static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
 			  WapiOverlapped *overlapped G_GNUC_UNUSED)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
 	
 	if(bytesread!=NULL) {
 		*bytesread=0;
@@ -241,18 +269,18 @@ static gboolean file_read(WapiHandle *handle, gpointer buffer,
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
 	}
 	
-	ret=read(file_handle->fd, buffer, numbytes);
+	ret=read(file_private_handle->fd, buffer, numbytes);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": read of handle %p fd %d error: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -265,12 +293,23 @@ static gboolean file_read(WapiHandle *handle, gpointer buffer,
 	return(TRUE);
 }
 
-static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
+static gboolean file_write(gpointer handle, gconstpointer buffer,
 			   guint32 numbytes, guint32 *byteswritten,
 			   WapiOverlapped *overlapped G_GNUC_UNUSED)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -279,18 +318,18 @@ static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
 	}
 	
-	ret=write(file_handle->fd, buffer, numbytes);
+	ret=write(file_private_handle->fd, buffer, numbytes);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -302,26 +341,37 @@ static gboolean file_write(WapiHandle *handle, gconstpointer buffer,
 	return(TRUE);
 }
 
-static gboolean file_flush(WapiHandle *handle)
+static gboolean file_flush(gpointer handle)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
 
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
 	}
 
-	ret=fsync(file_handle->fd);
+	ret=fsync(file_private_handle->fd);
 	if (ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -330,19 +380,30 @@ static gboolean file_flush(WapiHandle *handle)
 	return(TRUE);
 }
 
-static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
+static guint32 file_seek(gpointer handle, gint32 movedistance,
 			 gint32 *highmovedistance, WapiSeekMethod method)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	off_t offset, newpos;
 	int whence;
 	guint32 ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(INVALID_SET_FILE_POINTER);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(INVALID_SET_FILE_POINTER);
@@ -390,20 +451,20 @@ static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": moving handle %p fd %d by %lld bytes from %d", handle,
-		  file_handle->fd, offset, whence);
+		  file_private_handle->fd, offset, whence);
 #else
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": moving handle %p fd %d by %ld bytes from %d", handle,
-		  file_handle->fd, offset, whence);
+		  file_private_handle->fd, offset, whence);
 #endif
 #endif
 
-	newpos=lseek(file_handle->fd, offset, whence);
+	newpos=lseek(file_private_handle->fd, offset, whence);
 	if(newpos==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": lseek on handle %p fd %d returned error %s",
-			  handle, file_handle->fd, strerror(errno));
+			  handle, file_private_handle->fd, strerror(errno));
 #endif
 
 		return(INVALID_SET_FILE_POINTER);
@@ -433,24 +494,35 @@ static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": move of handle %p fd %d returning %d/%d", handle,
-		  file_handle->fd, ret,
+		  file_private_handle->fd, ret,
 		  highmovedistance==NULL?0:*highmovedistance);
 #endif
 
 	return(ret);
 }
 
-static gboolean file_setendoffile(WapiHandle *handle)
+static gboolean file_setendoffile(gpointer handle)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	struct stat statbuf;
 	off_t size, pos;
 	int ret;
 	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
+	
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
@@ -462,24 +534,24 @@ static gboolean file_setendoffile(WapiHandle *handle)
 	 * than the length, truncate the file.
 	 */
 	
-	ret=fstat(file_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
 	}
 	size=statbuf.st_size;
 
-	pos=lseek(file_handle->fd, (off_t)0, SEEK_CUR);
+	pos=lseek(file_private_handle->fd, (off_t)0, SEEK_CUR);
 	if(pos==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d lseek failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -487,12 +559,13 @@ static gboolean file_setendoffile(WapiHandle *handle)
 	
 	if(pos>size) {
 		/* extend */
-		ret=write(file_handle->fd, "", 1);
+		ret=write(file_private_handle->fd, "", 1);
 		if(ret==-1) {
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": handle %p fd %d extend write failed: %s",
-				  handle, file_handle->fd, strerror(errno));
+				  handle, file_private_handle->fd,
+				  strerror(errno));
 #endif
 
 			return(FALSE);
@@ -502,12 +575,12 @@ static gboolean file_setendoffile(WapiHandle *handle)
 	/* always truncate, because the extend write() adds an extra
 	 * byte to the end of the file
 	 */
-	ret=ftruncate(file_handle->fd, pos);
+	ret=ftruncate(file_private_handle->fd, pos);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d ftruncate failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 		
 		return(FALSE);
@@ -516,29 +589,40 @@ static gboolean file_setendoffile(WapiHandle *handle)
 	return(TRUE);
 }
 
-static guint32 file_getfilesize(WapiHandle *handle, guint32 *highsize)
+static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	struct stat statbuf;
 	guint32 size;
 	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(INVALID_FILE_SIZE);
+	}
 	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(INVALID_FILE_SIZE);
 	}
 
-	ret=fstat(file_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(INVALID_FILE_SIZE);
@@ -565,30 +649,41 @@ static guint32 file_getfilesize(WapiHandle *handle, guint32 *highsize)
 	return(size);
 }
 
-static gboolean file_getfiletime(WapiHandle *handle, WapiFileTime *create_time,
+static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 				 WapiFileTime *last_access,
 				 WapiFileTime *last_write)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
 	struct stat statbuf;
 	guint64 create_ticks, access_ticks, write_ticks;
 	int ret;
 	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
+	
 	if(!(file_handle->fileaccess&GENERIC_READ) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
 	}
 	
-	ret=fstat(file_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -642,31 +737,43 @@ static gboolean file_getfiletime(WapiHandle *handle, WapiFileTime *create_time,
 	return(TRUE);
 }
 
-static gboolean file_setfiletime(WapiHandle *handle,
+static gboolean file_setfiletime(gpointer handle,
 				 const WapiFileTime *create_time G_GNUC_UNUSED,
 				 const WapiFileTime *last_access,
 				 const WapiFileTime *last_write)
 {
-	struct _WapiHandle_file *file_handle=(struct _WapiHandle_file *)handle;
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	guchar *name;
 	struct utimbuf utbuf;
 	struct stat statbuf;
 	guint64 access_ticks, write_ticks;
 	int ret;
 	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		return(FALSE);
+	}
+	
 	if(!(file_handle->fileaccess&GENERIC_WRITE) &&
 	   !(file_handle->fileaccess&GENERIC_ALL)) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_handle->fd, file_handle->fileaccess);
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
 		return(FALSE);
 	}
 
-	if(file_handle->filename==NULL) {
+	if(file_handle->filename==0) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d unknown filename", handle,
-			  file_handle->fd);
+			  file_private_handle->fd);
 #endif
 
 		return(FALSE);
@@ -675,12 +782,12 @@ static gboolean file_setfiletime(WapiHandle *handle,
 	/* Get the current times, so we can put the same times back in
 	 * the event that one of the FileTime structs is NULL
 	 */
-	ret=fstat(file_handle->fd, &statbuf);
+	ret=fstat(file_private_handle->fd, &statbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p fd %d fstat failed: %s", handle,
-			  file_handle->fd, strerror(errno));
+			  file_private_handle->fd, strerror(errno));
 #endif
 
 		return(FALSE);
@@ -708,24 +815,196 @@ static gboolean file_setfiletime(WapiHandle *handle,
 		  utbuf.actime, utbuf.modtime);
 #endif
 
-	ret=utime(file_handle->filename, &utbuf);
+	name=_wapi_handle_scratch_lookup_as_string (file_handle->filename);
+
+	ret=utime(name, &utbuf);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": handle %p [%s] fd %d utime failed: %s", handle,
-			  file_handle->filename, file_handle->fd,
-			  strerror(errno));
-#endif
+			  name, file_private_handle->fd, strerror(errno));
 
+#endif
+		g_free (name);
 		return(FALSE);
 	}
 
+	g_free (name);
+	
 	return(TRUE);
+}
+
+static void console_close(gpointer handle)
+{
+	struct _WapiHandle_file *console_handle;
+	struct _WapiHandlePrivate_file *console_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				(gpointer *)&console_handle,
+				(gpointer *)&console_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": closing console handle %p with fd %d", handle,
+		  console_private_handle->fd);
+#endif
+	
+	close(console_private_handle->fd);
+	if(console_handle->filename!=0) {
+		_wapi_handle_scratch_delete (console_handle->filename);
+		console_handle->filename=0;
+	}
+	if(console_handle->security_attributes!=0) {
+		_wapi_handle_scratch_delete (console_handle->security_attributes);
+		console_handle->security_attributes=0;
+	}
 }
 
 static WapiFileType console_getfiletype(void)
 {
 	return(FILE_TYPE_CHAR);
+}
+
+static gboolean console_read(gpointer handle, gpointer buffer,
+			     guint32 numbytes, guint32 *bytesread,
+			     WapiOverlapped *overlapped G_GNUC_UNUSED)
+{
+	struct _WapiHandle_file *console_handle;
+	struct _WapiHandlePrivate_file *console_private_handle;
+	gboolean ok;
+	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&console_handle,
+				(gpointer *)&console_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return(FALSE);
+	}
+	
+	if(bytesread!=NULL) {
+		*bytesread=0;
+	}
+	
+	if(!(console_handle->fileaccess&GENERIC_READ) &&
+	   !(console_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+	
+	ret=read(console_private_handle->fd, buffer, numbytes);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": read of handle %p fd %d error: %s", handle,
+			  console_private_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+	
+	if(bytesread!=NULL) {
+		*bytesread=ret;
+	}
+	
+	return(TRUE);
+}
+
+static gboolean console_write(gpointer handle, gconstpointer buffer,
+			      guint32 numbytes, guint32 *byteswritten,
+			      WapiOverlapped *overlapped G_GNUC_UNUSED)
+{
+	struct _WapiHandle_file *console_handle;
+	struct _WapiHandlePrivate_file *console_private_handle;
+	gboolean ok;
+	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				(gpointer *)&console_handle,
+				(gpointer *)&console_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return(FALSE);
+	}
+	
+	if(byteswritten!=NULL) {
+		*byteswritten=0;
+	}
+	
+	if(!(console_handle->fileaccess&GENERIC_WRITE) &&
+	   !(console_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+	
+	ret=write(console_private_handle->fd, buffer, numbytes);
+	if(ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": write of handle %p fd %d error: %s", handle,
+			  console_private_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+	if(byteswritten!=NULL) {
+		*byteswritten=ret;
+	}
+	
+	return(TRUE);
+}
+
+static gboolean console_flush(gpointer handle)
+{
+	struct _WapiHandle_file *console_handle;
+	struct _WapiHandlePrivate_file *console_private_handle;
+	gboolean ok;
+	int ret;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				(gpointer *)&console_handle,
+				(gpointer *)&console_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		return(FALSE);
+	}
+
+	if(!(console_handle->fileaccess&GENERIC_WRITE) &&
+	   !(console_handle->fileaccess&GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
+#endif
+
+		return(FALSE);
+	}
+
+	ret=fsync(console_private_handle->fd);
+	if (ret==-1) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": write of handle %p fd %d error: %s", handle,
+			  console_private_handle->fd, strerror(errno));
+#endif
+
+		return(FALSE);
+	}
+	
+	return(TRUE);
 }
 
 static int convert_flags(guint32 fileaccess, guint32 createmode)
@@ -838,17 +1117,21 @@ static mode_t convert_perms(guint32 sharemode)
  *
  * Return value: the new handle, or %INVALID_HANDLE_VALUE on error.
  */
-WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
-		       guint32 sharemode, WapiSecurityAttributes *security,
-		       guint32 createmode, guint32 attrs,
-		       WapiHandle *template G_GNUC_UNUSED)
+gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
+		    guint32 sharemode, WapiSecurityAttributes *security,
+		    guint32 createmode, guint32 attrs,
+		    gpointer template G_GNUC_UNUSED)
 {
 	struct _WapiHandle_file *file_handle;
-	WapiHandle *handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gpointer handle;
+	gboolean ok;
 	int flags=convert_flags(fileaccess, createmode);
 	mode_t perms=convert_perms(sharemode);
 	gchar *filename;
 	int ret;
+
+	pthread_once (&io_ops_once, io_ops_init);
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -889,18 +1172,37 @@ WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	file_handle=g_new0(struct _WapiHandle_file, 1);
-	handle=(WapiHandle *)file_handle;
-	
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_FILE, file_ops);
+	handle=_wapi_handle_new (WAPI_HANDLE_FILE);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating file handle");
+		return(INVALID_HANDLE_VALUE);
+	}
 
-	file_handle->fd=ret;
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(INVALID_HANDLE_VALUE);
+	}
+
+	file_private_handle->fd=ret;
 #ifdef ACTUALLY_DO_UNICODE
-	file_handle->filename=filename;
+	file_handle->filename=_wapi_handle_scratch_store (filename,
+							  strlen (filename));
 #else
-	file_handle->filename=g_strdup(name);
+	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
 #endif
-	file_handle->security_attributes=security;
+	if(security!=NULL) {
+		file_handle->security_attributes=_wapi_handle_scratch_store (
+			security, sizeof(WapiSecurityAttributes));
+	}
+	
 	file_handle->fileaccess=fileaccess;
 	file_handle->sharemode=sharemode;
 	file_handle->attrs=attrs;
@@ -908,8 +1210,10 @@ WapiHandle *CreateFile(const gunichar2 *name, guint32 fileaccess,
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning handle %p [%s] with fd %d",
-		  handle, file_handle->filename, file_handle->fd);
+		  handle, file_handle->filename, file_private_handle->fd);
 #endif
+
+	_wapi_handle_unlock_handle (handle);
 
 	return(handle);
 }
@@ -1030,9 +1334,10 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists)
+gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
+		   gboolean fail_if_exists)
 {
-	WapiHandle *src, *dest;
+	gpointer src, dest;
 	guint32 attrs;
 	char *buffer;
 	int remain, n;
@@ -1108,23 +1413,31 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean f
  * Return value: the handle, or %INVALID_HANDLE_VALUE on error
  */
 
-WapiHandle *GetStdHandle(WapiStdHandle stdhandle)
+gpointer GetStdHandle(WapiStdHandle stdhandle)
 {
 	struct _WapiHandle_file *file_handle;
-	WapiHandle *handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	gpointer handle;
+	const guchar *name;
 	int flags, fd;
+
+	pthread_once (&io_ops_once, io_ops_init);
 	
 	switch(stdhandle) {
 	case STD_INPUT_HANDLE:
 		fd=0;
+		name="<stdin>";
 		break;
 
 	case STD_OUTPUT_HANDLE:
 		fd=1;
+		name="<stdout>";
 		break;
 
 	case STD_ERROR_HANDLE:
 		fd=2;
+		name="<stderr>";
 		break;
 
 	default:
@@ -1150,25 +1463,39 @@ WapiHandle *GetStdHandle(WapiStdHandle stdhandle)
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-	file_handle=g_new0(struct _WapiHandle_file, 1);
-	handle=(WapiHandle *)file_handle;
-	
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_CONSOLE, console_ops);
+	handle=_wapi_handle_new (WAPI_HANDLE_CONSOLE);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating file handle");
+		return(NULL);
+	}
 
-	file_handle->fd=fd;
-	/* We might want to set file_handle->filename to something
-	 * like "<stdin>" if we ever want to display handle internal
-	 * details somehow
-	 */
-	file_handle->security_attributes=/*some default*/NULL;
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				(gpointer *)&file_handle,
+				(gpointer *)&file_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up console handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(NULL);
+	}
+	
+	file_private_handle->fd=fd;
+	file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
+	/* some default security attributes might be needed */
+	file_handle->security_attributes=0;
 	file_handle->fileaccess=convert_from_flags(flags);
 	file_handle->sharemode=0;
 	file_handle->attrs=0;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": returning handle %p with fd %d",
-		  handle, file_handle->fd);
+		  handle, file_private_handle->fd);
 #endif
+
+	_wapi_handle_unlock_handle (handle);
 
 	return(handle);
 }
@@ -1200,14 +1527,10 @@ WapiHandle *GetStdHandle(WapiStdHandle stdhandle)
  * read due to an attempt to read past the end of the file), %FALSE on
  * error.
  */
-gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
+gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 		  guint32 *bytesread, WapiOverlapped *overlapped)
 {
-	if(handle->ops->readfile==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->readfile(handle, buffer, numbytes, bytesread,
+	return(_wapi_handle_ops_readfile(handle, buffer, numbytes, bytesread,
 				     overlapped));
 }
 
@@ -1236,15 +1559,11 @@ gboolean ReadFile(WapiHandle *handle, gpointer buffer, guint32 numbytes,
  *
  * Return value: %TRUE if the write succeeds, %FALSE on error.
  */
-gboolean WriteFile(WapiHandle *handle, gconstpointer buffer, guint32 numbytes,
+gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
 		   guint32 *byteswritten, WapiOverlapped *overlapped)
 {
-	if(handle->ops->writefile==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->writefile(handle, buffer, numbytes, byteswritten,
-				      overlapped));
+	return(_wapi_handle_ops_writefile(handle, buffer, numbytes,
+					  byteswritten, overlapped));
 }
 
 /**
@@ -1257,13 +1576,9 @@ gboolean WriteFile(WapiHandle *handle, gconstpointer buffer, guint32 numbytes,
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean FlushFileBuffers(WapiHandle *handle)
+gboolean FlushFileBuffers(gpointer handle)
 {
-	if(handle->ops->flushfile==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->flushfile(handle));
+	return(_wapi_handle_ops_flushfile(handle));
 }
 
 /**
@@ -1276,13 +1591,9 @@ gboolean FlushFileBuffers(WapiHandle *handle)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean SetEndOfFile(WapiHandle *handle)
+gboolean SetEndOfFile(gpointer handle)
 {
-	if(handle->ops->setendoffile==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->setendoffile(handle));
+	return(_wapi_handle_ops_setendoffile(handle));
 }
 
 /**
@@ -1314,15 +1625,11 @@ gboolean SetEndOfFile(WapiHandle *handle)
  * If @highmovedistance is not %NULL, the high 32 bits of the new file
  * pointer are stored there.  On failure, %INVALID_SET_FILE_POINTER.
  */
-guint32 SetFilePointer(WapiHandle *handle, gint32 movedistance,
+guint32 SetFilePointer(gpointer handle, gint32 movedistance,
 		       gint32 *highmovedistance, WapiSeekMethod method)
 {
-	if(handle->ops->seek==NULL) {
-		return(INVALID_SET_FILE_POINTER);
-	}
-	
-	return(handle->ops->seek(handle, movedistance, highmovedistance,
-				 method));
+	return(_wapi_handle_ops_seek(handle, movedistance, highmovedistance,
+				     method));
 }
 
 /**
@@ -1336,13 +1643,9 @@ guint32 SetFilePointer(WapiHandle *handle, gint32 movedistance,
  * %FILE_TYPE_CHAR - @handle is a character device, such as a console.
  * %FILE_TYPE_PIPE - @handle is a named or anonymous pipe.
  */
-WapiFileType GetFileType(WapiHandle *handle)
+WapiFileType GetFileType(gpointer handle)
 {
-	if(handle->ops->getfiletype==NULL) {
-		return(FILE_TYPE_UNKNOWN);
-	}
-	
-	return(handle->ops->getfiletype());
+	return(_wapi_handle_ops_getfiletype(handle));
 }
 
 /**
@@ -1361,13 +1664,9 @@ WapiFileType GetFileType(WapiHandle *handle)
  * @highsize is non-%NULL then the high 32 bits of the file size are
  * stored here.  On failure %INVALID_FILE_SIZE is returned.
  */
-guint32 GetFileSize(WapiHandle *handle, guint32 *highsize)
+guint32 GetFileSize(gpointer handle, guint32 *highsize)
 {
-	if(handle->ops->getfilesize==NULL) {
-		return(INVALID_FILE_SIZE);
-	}
-	
-	return(handle->ops->getfilesize(handle, highsize));
+	return(_wapi_handle_ops_getfilesize(handle, highsize));
 }
 
 /**
@@ -1395,15 +1694,11 @@ guint32 GetFileSize(WapiHandle *handle, guint32 *highsize)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time,
+gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
 		     WapiFileTime *last_access, WapiFileTime *last_write)
 {
-	if(handle->ops->getfiletime==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->getfiletime(handle, create_time, last_access,
-					last_write));
+	return(_wapi_handle_ops_getfiletime(handle, create_time, last_access,
+					    last_write));
 }
 
 /**
@@ -1429,16 +1724,12 @@ gboolean GetFileTime(WapiHandle *handle, WapiFileTime *create_time,
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean SetFileTime(WapiHandle *handle, const WapiFileTime *create_time,
+gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
 		     const WapiFileTime *last_access,
 		     const WapiFileTime *last_write)
 {
-	if(handle->ops->setfiletime==NULL) {
-		return(FALSE);
-	}
-	
-	return(handle->ops->setfiletime(handle, create_time, last_access,
-					last_write));
+	return(_wapi_handle_ops_setfiletime(handle, create_time, last_access,
+					    last_write));
 }
 
 /* A tick is a 100-nanosecond interval.  File time epoch is Midnight,
@@ -1601,9 +1892,11 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	return(TRUE);
 }
 
-WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
+gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
-	struct _WapiHandle_find *handle;
+	struct _WapiHandle_find *find_handle;
+	gpointer handle;
+	gboolean ok;
 	gchar *utf8_pattern = NULL;
 	int result;
 	
@@ -1624,15 +1917,31 @@ WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		return INVALID_HANDLE_VALUE;
 	}
 	
-	handle = g_new0 (struct _WapiHandle_find, 1);
-	_WAPI_HANDLE_INIT ((&handle->handle), WAPI_HANDLE_FIND, find_ops);
+	handle=_wapi_handle_new (WAPI_HANDLE_FIND);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating find handle");
+		return(INVALID_HANDLE_VALUE);
+	}
 
-	result = glob (utf8_pattern, 0, NULL, &handle->glob);
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
+				(gpointer *)&find_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up find handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(INVALID_HANDLE_VALUE);
+	}
+	
+	result = glob (utf8_pattern, 0, NULL, &find_handle->glob);
 	g_free (utf8_pattern);
 
 	if (result != 0) {
-		globfree (&handle->glob);
-		g_free (handle);
+		globfree (&find_handle->glob);
+		_wapi_handle_unlock_handle (handle);
+		_wapi_handle_unref (handle);
 
 		switch (result) {
 #ifdef GLOB_NOMATCH
@@ -1652,19 +1961,22 @@ WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		return INVALID_HANDLE_VALUE;
 	}
 
-	handle->count = 0;
-	if (!FindNextFile ((WapiHandle *)handle, find_data)) {
-		FindClose ((WapiHandle *)handle);
+	find_handle->count = 0;
+	if (!FindNextFile (handle, find_data)) {
+		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
 		return INVALID_HANDLE_VALUE;
 	}
 
-	return (WapiHandle *)handle;
+	_wapi_handle_unlock_handle (handle);
+
+	return (handle);
 }
 
-gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
+gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 {
-	struct _WapiHandle_find *handle;
+	struct _WapiHandle_find *find_handle;
+	gboolean ok;
 	struct stat buf;
 	const gchar *filename;
 	
@@ -1672,21 +1984,24 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	gunichar2 *utf16_basename;
 	time_t create_time;
 	int i;
-
-	if (wapi_handle == INVALID_HANDLE_VALUE || wapi_handle->type != WAPI_HANDLE_FIND) {
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
+				(gpointer *)&find_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up find handle %p", handle);
 		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+		return(FALSE);
 	}
 
-	handle = (struct _WapiHandle_find *)wapi_handle;
-	if (handle->count >= handle->glob.gl_pathc) {
+	if (find_handle->count >= find_handle->glob.gl_pathc) {
 		SetLastError (ERROR_NO_MORE_FILES);
 		return FALSE;
 	}
 
 	/* stat next glob match */
 
-	filename = handle->glob.gl_pathv [handle->count ++];
+	filename = find_handle->glob.gl_pathv [find_handle->count ++];
 	if (stat (filename, &buf) != 0) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": stat failed: %s", filename);
@@ -1746,18 +2061,22 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
-gboolean FindClose (WapiHandle *wapi_handle)
+gboolean FindClose (gpointer handle)
 {
-	struct _WapiHandle_find *handle;
-
-	if (wapi_handle == INVALID_HANDLE_VALUE || wapi_handle->type != WAPI_HANDLE_FIND) {
+	struct _WapiHandle_find *find_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
+				(gpointer *)&find_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up find handle %p", handle);
 		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+		return(FALSE);
 	}
 	
-	handle = (struct _WapiHandle_find *)wapi_handle;
-	globfree (&handle->glob);
-	g_free (handle);
+	globfree (&find_handle->glob);
+	_wapi_handle_unref (handle);
 
 	return TRUE;
 }

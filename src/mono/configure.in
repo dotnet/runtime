@@ -432,6 +432,14 @@ else
 fi
 fi
 
+AC_MSG_CHECKING([if inter-process shared handles are requested])
+AC_ARG_ENABLE(shared-handles, [  --disable-shared-handles disable inter-process shared handles], try_shared_handles=$enableval, try_shared_handles=yes)
+AC_MSG_RESULT($try_shared_handles)
+if test "x$try_shared_handles" != "xyes"; then
+	AC_DEFINE(DISABLE_SHARED_HANDLES)
+	AC_SUBST(DISABLE_SHARED_HANDLES)
+fi
+
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
@@ -485,6 +493,7 @@ mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/jit/Makefile
 mono/io-layer/Makefile
+mono/handles/Makefile
 runtime/Makefile
 scripts/Makefile
 man/Makefile

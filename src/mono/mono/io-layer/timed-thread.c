@@ -142,3 +142,10 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 	return(result);
 }
 
+void _wapi_timed_thread_destroy (TimedThread *thread)
+{
+	mono_mutex_destroy (&thread->join_mutex);
+	pthread_cond_destroy (&thread->exit_cond);
+	
+	g_free(thread);
+}

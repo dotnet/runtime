@@ -1,3 +1,9 @@
+2002-04-30  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in: Added option to disable using shared memory for
+	handles
+
 2002-04-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: fix for conditional "THREADS_PTHREAD" was never 

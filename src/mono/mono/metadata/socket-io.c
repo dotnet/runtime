@@ -455,7 +455,7 @@ static MonoException *get_socket_exception(guint32 error_code)
 	return(ex);
 }
 
-SOCKET ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto)
+gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto)
 {
 	SOCKET sock;
 	gint32 sock_family;
@@ -498,7 +498,7 @@ SOCKET ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gin
 		return(NULL);
 	}
 	
-	return(sock);
+	return(GUINT_TO_POINTER (sock));
 }
 
 void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
@@ -536,7 +536,7 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 	}
 }
 
-SOCKET ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
+gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 {
 	SOCKET newsock;
 	
@@ -546,7 +546,7 @@ SOCKET ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock)
 		return(NULL);
 	}
 	
-	return(newsock);
+	return(GUINT_TO_POINTER (newsock));
 }
 
 void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,

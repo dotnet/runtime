@@ -5,8 +5,17 @@
 #include <glib.h>
 
 #include "mono/io-layer/handles.h"
+#include "mono/io-layer/io.h"
+
+/* Increment this whenever an incompatible change is made to the
+ * shared handle structure.
+ *
+ * If this ever reaches 255, we have problems :-(
+ */
+#define _WAPI_HANDLE_VERSION 1
 
 typedef enum {
+	WAPI_HANDLE_UNUSED=0,
 	WAPI_HANDLE_FILE,
 	WAPI_HANDLE_CONSOLE,
 	WAPI_HANDLE_THREAD,
@@ -14,63 +23,134 @@ typedef enum {
 	WAPI_HANDLE_MUTEX,
 	WAPI_HANDLE_EVENT,
 	WAPI_HANDLE_SOCKET,
+	WAPI_HANDLE_FIND,
+	WAPI_HANDLE_PROCESS,
 	WAPI_HANDLE_COUNT,
-	WAPI_HANDLE_FIND
 } WapiHandleType;
+
+typedef enum {
+	WAPI_HANDLE_CAP_WAIT=0x01,
+	WAPI_HANDLE_CAP_SIGNAL=0x02,
+	WAPI_HANDLE_CAP_OWN=0x04,
+} WapiHandleCapability;
 
 struct _WapiHandleOps 
 {
 	/* All handle types */
-	void (*close)(WapiHandle *handle);
+	void (*close)(gpointer handle);
 
 	/* File, console and pipe handles */
 	WapiFileType (*getfiletype)(void);
 	
 	/* File and console handles */
-	gboolean (*readfile)(WapiHandle *handle, gpointer buffer,
+	gboolean (*readfile)(gpointer handle, gpointer buffer,
 			     guint32 numbytes, guint32 *bytesread,
 			     WapiOverlapped *overlapped);
-	gboolean (*writefile)(WapiHandle *handle, gconstpointer buffer,
+	gboolean (*writefile)(gpointer handle, gconstpointer buffer,
 			      guint32 numbytes, guint32 *byteswritten,
 			      WapiOverlapped *overlapped);
-	gboolean (*flushfile)(WapiHandle *handle);
+	gboolean (*flushfile)(gpointer handle);
 	
 	/* File handles */
-	guint32 (*seek)(WapiHandle *handle, gint32 movedistance,
+	guint32 (*seek)(gpointer handle, gint32 movedistance,
 			gint32 *highmovedistance, WapiSeekMethod method);
-	gboolean (*setendoffile)(WapiHandle *handle);
-	guint32 (*getfilesize)(WapiHandle *handle, guint32 *highsize);
-	gboolean (*getfiletime)(WapiHandle *handle, WapiFileTime *create_time,
+	gboolean (*setendoffile)(gpointer handle);
+	guint32 (*getfilesize)(gpointer handle, guint32 *highsize);
+	gboolean (*getfiletime)(gpointer handle, WapiFileTime *create_time,
 				WapiFileTime *last_access,
 				WapiFileTime *last_write);
-	gboolean (*setfiletime)(WapiHandle *handle,
+	gboolean (*setfiletime)(gpointer handle,
 				const WapiFileTime *create_time,
 				const WapiFileTime *last_access,
 				const WapiFileTime *last_write);
 	
-	/* WaitForSingleObject */
-	gboolean (*wait)(WapiHandle *handle, WapiHandle *signal, guint32 ms);
-
-	/* WaitForMultipleObjects */
-	guint32 (*wait_multiple)(gpointer data);
-
 	/* SignalObjectAndWait */
-	void (*signal)(WapiHandle *signal);
+	void (*signal)(gpointer signal);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects,
+	 * with the handle locked
+	 */
+	void (*own_handle)(gpointer handle);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects, if the
+	 * handle in question is "ownable" (ie mutexes), to see if the current
+	 * thread already owns this handle
+	 */
+	gboolean (*is_owned)(gpointer handle);
 };
 
-struct _WapiHandle
+#include <mono/io-layer/event-private.h>
+#include <mono/io-layer/io-private.h>
+#include <mono/io-layer/mutex-private.h>
+#include <mono/io-layer/semaphore-private.h>
+#include <mono/io-layer/socket-private.h>
+#include <mono/io-layer/thread-private.h>
+#include <mono/io-layer/process-private.h>
+
+struct _WapiHandleShared
 {
 	WapiHandleType type;
 	guint ref;
 	gboolean signalled;
-	struct _WapiHandleOps *ops;
+	mono_mutex_t signal_mutex;
+	pthread_cond_t signal_cond;
+	
+	union 
+	{
+		struct _WapiHandle_event event;
+		struct _WapiHandle_file file;
+		struct _WapiHandle_find find;
+		struct _WapiHandle_mutex mutex;
+		struct _WapiHandle_sem sem;
+		struct _WapiHandle_socket sock;
+		struct _WapiHandle_thread thread;
+		struct _WapiHandle_process process;
+	} u;
 };
 
-#define _WAPI_HANDLE_INIT(_handle, _type, _ops)	G_STMT_START {\
-		_handle->type=_type;\
-		_handle->ref=1;\
-		_handle->signalled=FALSE;\
-		_handle->ops=&_ops;\
-	} G_STMT_END;
+#define _WAPI_MAX_HANDLES 4096
+#define _WAPI_HANDLE_INVALID (gpointer)-1
+
+/*
+ * This is the layout of the shared memory segment
+ */
+struct _WapiHandleShared_list
+{
+#ifdef _POSIX_THREAD_PROCESS_SHARED
+	mono_mutex_t signal_mutex;
+	pthread_cond_t signal_cond;
+#endif
+	guint32 lock;
+	struct _WapiHandleShared handles[_WAPI_MAX_HANDLES];
+	guchar scratch_base[0];
+};
+
+struct _WapiHandlePrivate
+{
+	union 
+	{
+		struct _WapiHandlePrivate_event event;
+		struct _WapiHandlePrivate_file file;
+		struct _WapiHandlePrivate_find find;
+		struct _WapiHandlePrivate_mutex mutex;
+		struct _WapiHandlePrivate_sem sem;
+		struct _WapiHandlePrivate_socket sock;
+		struct _WapiHandlePrivate_thread thread;
+		struct _WapiHandlePrivate_process process;
+	} u;
+};
+
+/* Per-process handle info. For lookup convenience, each index matches
+ * the corresponding shared data.
+ */
+struct _WapiHandlePrivate_list
+{
+#ifndef _POSIX_THREAD_PROCESS_SHARED
+	mono_mutex_t signal_mutex;
+	pthread_cond_t signal_cond;
+#endif
+	struct _WapiHandlePrivate handles[_WAPI_MAX_HANDLES];
+};
+
 
 #endif /* _WAPI_PRIVATE_H_ */

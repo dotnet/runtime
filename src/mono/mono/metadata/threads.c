@@ -18,6 +18,10 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/io-layer/io-layer.h>
 
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
+
 #undef THREAD_DEBUG
 #undef THREAD_LOCK_DEBUG
 #undef THREAD_WAIT_DEBUG
@@ -57,38 +61,10 @@ static guint32 slothash_key;
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
-
-static guint32 start_wrapper(void *data)
-{
-	struct StartInfo *start_info=(struct StartInfo *)data;
-	guint32 (*start_func)(void *);
-	void *this;
-	
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
-#endif
-
-	/* FIXME: GC problem here with recorded object
-	 * pointer!
-	 *
-	 * This is recorded so CurrentThread can return the
-	 * Thread object.
-	 */
-	TlsSetValue (current_object_key, start_info->obj);
-	start_func = start_info->func;
-	mono_domain_set (start_info->domain);
-	this = start_info->this;
-	g_free (start_info);
-	
-	start_func (this);
-
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper terminating");
-#endif
-
-	return(0);
-}
 		
+/* handle_store() and handle_remove() manage the array of threads that
+ * still need to be waited for when the main thread exits.
+ */
 static void handle_store(HANDLE thread)
 {
 #ifdef THREAD_DEBUG
@@ -112,7 +88,60 @@ static void handle_remove(HANDLE thread)
 	EnterCriticalSection(&threads_mutex);
 	g_ptr_array_remove_fast(threads, thread);
 	LeaveCriticalSection(&threads_mutex);
-	CloseHandle(thread);
+
+	/* Don't close the handle here, wait for the object finalizer
+	 * to do it. Otherwise, the following race condition applies:
+	 *
+	 * 1) Thread exits (and handle_remove() closes the handle)
+	 *
+	 * 2) Some other handle is reassigned the same slot
+	 *
+	 * 3) Another thread tries to join the first thread, and
+	 * blocks waiting for the reassigned handle to be signalled
+	 * (which might never happen).  This is possible, because the
+	 * thread calling Join() still has a reference to the first
+	 * thread's object.
+	 */
+}
+
+static guint32 start_wrapper(void *data)
+{
+	struct StartInfo *start_info=(struct StartInfo *)data;
+	guint32 (*start_func)(void *);
+	void *this;
+	HANDLE thread;
+	
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
+#endif
+
+	/* FIXME: GC problem here with recorded object
+	 * pointer!
+	 *
+	 * This is recorded so CurrentThread can return the
+	 * Thread object.
+	 */
+	TlsSetValue (current_object_key, start_info->obj);
+	start_func = start_info->func;
+	mono_domain_set (start_info->domain);
+	this = start_info->this;
+	g_free (start_info);
+
+	thread=GetCurrentThread ();
+	
+	handle_store(thread);
+	mono_profiler_thread_start (thread);
+
+	start_func (this);
+
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper terminating");
+#endif
+	
+	mono_profiler_thread_end (thread);
+	handle_remove (thread);
+
+	return(0);
 }
 
 MonoObject *
@@ -133,16 +162,13 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 	start_info->func = func;
 	start_info->obj = thread;
 	start_info->domain = domain;
+	/* start_info->this needs to be set? */
 		
 	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info, 0, &tid);
 	g_assert (thread_handle);
 
 	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
 
-	/*
-	 * This thread is not added to the threads array: why?
-	 */
-	mono_profiler_thread_start (thread_handle);
 	return thread;
 }
 
@@ -184,16 +210,23 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		}
 		
 #ifdef THREAD_DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d",
-			  tid);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": Started thread ID %d (handle %p)", tid, thread);
 #endif
-
-		/* Store handle for cleanup later */
-		handle_store(thread);
-		mono_profiler_thread_start (thread);
 		
 		return(thread);
 	}
+}
+
+void ves_icall_System_Threading_Thread_Thread_free_internal (MonoObject *this,
+							     HANDLE thread)
+{
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Closing thread %p, handle %p",
+		   this, thread);
+#endif
+
+	CloseHandle (thread);
 }
 
 void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
@@ -227,6 +260,11 @@ MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
 	
 	/* Find the current thread object */
 	thread=TlsGetValue(current_object_key);
+
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", thread);
+#endif
+
 	return(thread);
 }
 
@@ -238,16 +276,24 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 	if(ms== -1) {
 		ms=INFINITE;
 	}
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": joining thread handle %p, %d ms",
+		   thread, ms);
+#endif
 	
 	ret=WaitForSingleObject(thread, ms);
 	if(ret==WAIT_OBJECT_0) {
-		/* is the handle still valid at this point? */
-		mono_profiler_thread_end (thread);
-		/* Clean up the handle */
-		handle_remove(thread);
+#ifdef THREAD_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": join successful");
+#endif
+
 		return(TRUE);
 	}
 	
+#ifdef THREAD_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": join failed");
+#endif
+
 	return(FALSE);
 }
 
@@ -274,26 +320,51 @@ MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void)
 	return(data);
 }
 
+static void mon_finalize (void *o, void *unused)
+{
+	MonoThreadsSync *mon=(MonoThreadsSync *)o;
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Finalizing sync");
+#endif
+	
+	CloseHandle (mon->monitor);
+	CloseHandle (mon->sema);
+	CloseHandle (mon->waiters_done);
+}
+
 static MonoThreadsSync *mon_new(void)
 {
 	MonoThreadsSync *new;
 	
+#if HAVE_BOEHM_GC
+	new=(MonoThreadsSync *)GC_debug_malloc (sizeof(MonoThreadsSync), "sync", 1);
+	GC_register_finalizer (new, mon_finalize, NULL, NULL, NULL);
+#else
 	/* This should be freed when the object that owns it is
 	 * deleted
 	 */
-
-	new=(MonoThreadsSync *)g_new0(MonoThreadsSync, 1);
-	new->monitor=CreateMutex(NULL, FALSE, NULL);
-#ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": ThreadsSync mutex created: %p",
-		  new->monitor);
+	new=(MonoThreadsSync *)g_new0 (MonoThreadsSync, 1);
 #endif
+	
+	new->monitor=CreateMutex(NULL, FALSE, "sync");
+	if(new->monitor==NULL) {
+		/* Throw some sort of system exception? (ditto for the
+		 * sem and event handles below)
+		 */
+	}
 
 	new->waiters_count=0;
 	new->was_broadcast=FALSE;
 	InitializeCriticalSection(&new->waiters_count_lock);
 	new->sema=CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
 	new->waiters_done=CreateEvent(NULL, FALSE, FALSE, NULL);
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": ThreadsSync %p mutex created: %p, sem: %p, event: %p",
+		  new, new->monitor, new->sema, new->waiters_done);
+#endif
 	
 	return(new);
 }
@@ -306,7 +377,7 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 	
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Trying to lock %p in thread %d", obj,
+		  ": Trying to lock object %p in thread %d", obj,
 		  GetCurrentThreadId());
 #endif
 
@@ -334,8 +405,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 		mon->tid=GetCurrentThreadId();
 	
 #ifdef THREAD_LOCK_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": %p now locked %d times", obj,
-		  mon->count);
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": object %p now locked %d times", obj, mon->count);
 #endif
 
 		return(TRUE);
@@ -403,6 +474,11 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
 	}
 
 	if(mon->tid!=GetCurrentThreadId()) {
+#ifdef THREAD_LOCK_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": object %p is owned by thread %d", obj, mon->tid);
+#endif
+
 		goto finished;
 	}
 	
@@ -755,7 +831,7 @@ void mono_thread_init(MonoDomain *domain)
 	main_thread = mono_object_new (domain, thread_class);
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Finished to building main Thread object");
+		  ": Finished building main Thread object: %p", main_thread);
 #endif
 
 	InitializeCriticalSection(&threads_mutex);
@@ -763,6 +839,11 @@ void mono_thread_init(MonoDomain *domain)
 	InitializeCriticalSection(&interlocked_mutex);
 	
 	current_object_key=TlsAlloc();
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
+		   current_object_key);
+#endif
+
 	TlsSetValue(current_object_key, main_thread);
 
 	slothash_key=TlsAlloc();
@@ -789,7 +870,9 @@ void mono_thread_cleanup(void)
 	 *
 	 * The first method call should be started in its own thread,
 	 * and then the main thread should poll an event and wait for
-	 * any terminated threads, until there are none left.
+	 * any terminated threads, until there are none left. (This
+	 * loop will break if a subthread creates new threads after
+	 * the main thread ends.)
 	 */
 #ifdef THREAD_DEBUG
 	g_message("There are %d threads to join", threads->len);

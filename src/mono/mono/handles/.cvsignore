@@ -1,0 +1,7 @@
+.deps
+.libs
+Makefile
+Makefile.in
+hps
+scratch
+shmdel

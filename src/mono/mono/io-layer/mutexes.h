@@ -3,7 +3,8 @@
 
 #include <glib.h>
 
-extern WapiHandle *CreateMutex(WapiSecurityAttributes *security, gboolean owned, const guchar *name);
-extern gboolean ReleaseMutex(WapiHandle *handle);
+extern gpointer CreateMutex(WapiSecurityAttributes *security, gboolean owned,
+			    const guchar *name);
+extern gboolean ReleaseMutex(gpointer handle);
 
 #endif /* _WAPI_MUTEXES_H_ */

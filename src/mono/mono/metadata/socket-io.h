@@ -131,12 +131,12 @@ typedef enum {
 	SocketOptionName_ChecksumCoverage=20,
 } MonoSocketOptionName;
 
-extern SOCKET ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto);
+extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto);
 extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock);
 extern gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void);
 extern gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock);
 extern void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock, gboolean block);
-extern SOCKET ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock);
+extern gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock);
 extern void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock, guint32 backlog);
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock);
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock);

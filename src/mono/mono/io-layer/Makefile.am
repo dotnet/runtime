@@ -19,6 +19,7 @@ OTHER_H = \
 	io-layer.h	\
 	macros.h	\
 	mutexes.h	\
+	processes.h	\
 	semaphores.h	\
 	sockets.h	\
 	status.h	\
@@ -41,28 +42,39 @@ OTHER_SRC = \
 	error.h			\
 	events.c		\
 	events.h		\
+	event-private.h		\
 	handles.c		\
 	handles.h		\
 	handles-private.h	\
 	io.c			\
 	io.h			\
+	io-private.h		\
 	io-layer.h		\
 	macros.h		\
 	misc.c			\
 	misc-private.h		\
 	mutexes.c		\
 	mutexes.h		\
+	mutex-private.h		\
 	mono-mutex.c		\
 	mono-mutex.h		\
+	processes.c		\
+	processes.h		\
+	process-private.h	\
 	semaphores.c		\
 	semaphores.h		\
+	semaphore-private.h	\
+	shared.c		\
+	shared.h		\
 	sockets.c		\
 	sockets.h		\
+	socket-private.h	\
 	status.h		\
 	system.c		\
 	system.h		\
 	threads.c		\
 	threads.h		\
+	thread-private.h	\
 	timefuncs.c		\
 	timefuncs.h		\
 	timed-thread.c		\

@@ -1,328 +1,19 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
+#include <errno.h>
 
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
 #endif
 
-#include "mono/io-layer/wapi.h"
-#include "wait-private.h"
-#include "timed-thread.h"
-#include "handles-private.h"
-#include "wapi-private.h"
-
-#include "mono-mutex.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/handles-private.h>
+#include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/mono-mutex.h>
+#include <mono/io-layer/misc-private.h>
 
 #undef DEBUG
-
-static pthread_once_t wait_once=PTHREAD_ONCE_INIT;
-
-static GPtrArray *WaitQueue=NULL;
-
-static pthread_t wait_monitor_thread_id;
-static gboolean wait_monitor_thread_running=FALSE;
-static mono_mutex_t wait_monitor_mutex=MONO_MUTEX_INITIALIZER;
-static sem_t wait_monitor_sem;
-
-static void launch_tidy(guint32 exitcode G_GNUC_UNUSED, gpointer user)
-{
-	WaitQueueItem *item=(WaitQueueItem *)user;
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Informing monitor thread");
-#endif
-
-	/* Update queue item */
-	mono_mutex_lock(&item->mutex);
-	item->update++;
-	mono_mutex_unlock(&item->mutex);
-	
-	/* Signal monitor */
-	sem_post(&wait_monitor_sem);
-}
-
-/* This function is called by the monitor thread to launch handle-type
- * specific threads to block in particular ways.
- *
- * The item mutex is held by the monitor thread when this function is
- * called.
- */
-static void launch_blocker_threads(WaitQueueItem *item)
-{
-	int i, ret;
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Launching blocker threads");
-#endif
-
-	for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-		if(item->handles[i]->len>0) {
-			WapiHandle *handle;
-
-			handle=g_ptr_array_index(item->handles[i], 0);
-			g_assert(handle!=NULL);
-			g_assert(handle->ops->wait_multiple!=NULL);
-			
-#ifdef DEBUG
-			g_message("Handle type %d active", i);
-#endif
-			item->waited[i]=FALSE;
-			
-			ret=_wapi_timed_thread_create(
-				&item->thread[i], NULL,
-				handle->ops->wait_multiple, launch_tidy, item,
-				item);
-			if(ret!=0) {
-				g_warning(G_GNUC_PRETTY_FUNCTION
-					  ": Thread create error: %s",
-					  strerror(ret));
-				return;
-			}
-		} else {
-			/* Pretend to have already waited for the
-			 * thread; it makes life easier for the
-			 * monitor thread.
-			 */
-			item->waited[i]=TRUE;
-		}
-	}
-}
-
-static gboolean launch_threads_done(WaitQueueItem *item)
-{
-	int i;
-	
-	for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-		if(item->waited[i]==FALSE) {
-			return(FALSE);
-		}
-	}
-
-	return(TRUE);
-}
-
-/* This is the main loop for the monitor thread.  It waits for a
- * signal to check the wait queue, then takes any action necessary on
- * any queue items that have indicated readiness.
- */
-static void *wait_monitor_thread(void *unused G_GNUC_UNUSED)
-{
-	guint i;
-	
-	/* Signal that the monitor thread is ready */
-	wait_monitor_thread_running=TRUE;
-	
-	while(TRUE) {
-		/* Use a semaphore rather than a cond so we dont miss
-		 * any signals
-		 */
-		sem_wait(&wait_monitor_sem);
-		
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Blocking thread doing stuff");
-#endif
-		
-		/* We've been signalled, so scan the wait queue for
-		 * activity.
-		 */
-		mono_mutex_lock(&wait_monitor_mutex);
-		for(i=0; i<WaitQueue->len; i++) {
-			WaitQueueItem *item=g_ptr_array_index(WaitQueue, i);
-			
-			if(item->update > item->ack) {
-				/* Something changed */
-				mono_mutex_lock(&item->mutex);
-				item->ack=item->update;
-				
-				switch(item->state) {
-				case WQ_NEW:
-					/* Launch a new thread for each type of
-					 * handle to be waited for here.
-					 */
-					launch_blocker_threads(item);
-					
-					item->state=WQ_WAITING;
-					break;
-					
-				case WQ_WAITING:
-					/* See if we have waited for
-					 * the last blocker thread.
-					 */
-					if(launch_threads_done(item)) {
-						/* All handles have
-						 * been signalled, so
-						 * signal the waiting
-						 * thread.  Let the
-						 * waiting thread
-						 * remove this item
-						 * from the queue,
-						 * because it makes
-						 * the logic a lot
-						 * easier here.
-						 */
-						item->state=WQ_SIGNALLED;
-						sem_post(&item->wait_sem);
-					}
-					break;
-					
-				case WQ_SIGNALLED:
-					/* This shouldn't happen. Prod
-					 * the blocking thread again
-					 * just to make sure.
-					 */
-					g_warning(G_GNUC_PRETTY_FUNCTION
-						  ": Prodding blocker again");
-					sem_post(&item->wait_sem);
-					break;
-				}
-				
-				mono_mutex_unlock(&item->mutex);
-			}
-		}
-
-		mono_mutex_unlock(&wait_monitor_mutex);
-	}
-	
-	return(NULL);
-}
-
-static void wait_init(void)
-{
-	int ret;
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Starting monitor thread");
-#endif
-	
-	WaitQueue=g_ptr_array_new();
-	
-	sem_init(&wait_monitor_sem, 0, 0);
-	
-	/* Launch a thread which manages the wait queue, and deals
-	 * with waiting for handles of various types.
-	 */
-	ret=pthread_create(&wait_monitor_thread_id, NULL,
-			   wait_monitor_thread, NULL);
-	if(ret!=0) {
-		g_warning(G_GNUC_PRETTY_FUNCTION
-			  ": Couldn't start handle monitor thread: %s",
-			  strerror(ret));
-	}
-	
-	/* Wait for the monitor thread to get going */
-	while(wait_monitor_thread_running==FALSE) {
-		sched_yield();
-	}
-}
-
-static WaitQueueItem *wait_item_new(guint32 timeout, gboolean waitall)
-{
-	WaitQueueItem *new;
-	int i;
-	
-	new=g_new0(WaitQueueItem, 1);
-	
-	mono_mutex_init(&new->mutex, NULL);
-	sem_init(&new->wait_sem, 0, 0);
-
-	new->update=1;		/* As soon as this item is queued it
-				 * will need attention.
-				 */
-	new->state=WQ_NEW;
-	new->timeout=timeout;
-	new->waitall=waitall;
-	new->lowest_signal=MAXIMUM_WAIT_OBJECTS;
-	
-	for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-		new->handles[i]=g_ptr_array_new();
-		new->waitindex[i]=g_array_new(FALSE, FALSE, sizeof(guint32));
-	}
-	
-	return(new);
-}
-
-/* Adds our queue item to the work queue, and blocks until the monitor
- * thread thinks it's done the work.  Returns TRUE for done, FALSE for
- * timed out.  Sets lowest to the index of the first signalled handle
- * in the list.
- */
-static gboolean wait_for_item(WaitQueueItem *item, guint32 *lowest)
-{
-	gboolean ret;
-	int i;
-	
-	/* Add the wait item to the monitor queue, and signal the
-	 * monitor thread */
-	mono_mutex_lock(&wait_monitor_mutex);
-	g_ptr_array_add(WaitQueue, item);
-	sem_post(&wait_monitor_sem);
-	mono_mutex_unlock(&wait_monitor_mutex);
-	
-	/* Wait for the item to become ready */
-	sem_wait(&item->wait_sem);
-	
-	mono_mutex_lock(&item->mutex);
-	
-	/* If waitall is TRUE, then the number signalled in each handle type
-	 * must be the length of the handle type array for the wait to be
-	 * successful.  Otherwise, any signalled handle is good enough
-	 */
-	if(item->waitall==TRUE) {
-		ret=TRUE;
-		for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-			if(item->waitcount[i]!=item->handles[i]->len) {
-				ret=FALSE;
-				break;
-			}
-		}
-	} else {
-		ret=FALSE;
-		for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-			if(item->waitcount[i]>0) {
-				ret=TRUE;
-				break;
-			}
-		}
-	}
-
-	*lowest=item->lowest_signal;
-	
-	mono_mutex_unlock(&item->mutex);
-
-	return(ret);
-}
-
-static gboolean wait_dequeue_item(WaitQueueItem *item)
-{
-	gboolean ret;
-	
-	g_assert(WaitQueue!=NULL);
-	
-	mono_mutex_lock(&wait_monitor_mutex);
-	ret=g_ptr_array_remove_fast(WaitQueue, item);
-	mono_mutex_unlock(&wait_monitor_mutex);
-	
-	return(ret);
-}
-
-static void wait_item_destroy(WaitQueueItem *item)
-{
-	int i;
-	
-	mono_mutex_destroy(&item->mutex);
-	sem_destroy(&item->wait_sem);
-	
-	for(i=0; i<WAPI_HANDLE_COUNT; i++) {
-		if(item->thread[i]!=NULL) {
-			g_free(item->thread[i]);
-		}
-		g_ptr_array_free(item->handles[i], FALSE);
-		g_array_free(item->waitindex[i], FALSE);
-	}
-}
-
 
 /**
  * WaitForSingleObject:
@@ -342,30 +33,220 @@ static void wait_item_destroy(WaitQueueItem *item)
  * @handle's state is still not signalled.  %WAIT_FAILED - an error
  * occurred.
  */
-guint32 WaitForSingleObject(WapiHandle *handle, guint32 timeout)
+guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 {
-	gboolean wait;
+	guint32 ret, waited;
+	struct timespec abstime;
 	
-	if(handle->ops->wait==NULL) {
+	if(_wapi_handle_test_capabilities (handle,
+					   WAPI_HANDLE_CAP_WAIT)==FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": handle %p can't be waited for", handle);
+#endif
+
 		return(WAIT_FAILED);
 	}
+	
+	_wapi_handle_lock_handle (handle);
 
-	wait=handle->ops->wait(handle, NULL, timeout);
-	if(wait==TRUE) {
-		/* Object signalled before timeout expired */
+	if(_wapi_handle_test_capabilities (handle,
+					   WAPI_HANDLE_CAP_OWN)==TRUE) {
+		if(_wapi_handle_ops_isowned (handle)==TRUE) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Object %p (type %d) signalled", handle,
-			  handle->type);
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": handle %p already owned", handle);
 #endif
-		return(WAIT_OBJECT_0);
-	} else {
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Object %p wait timed out",
-			  handle);
-#endif
-		return(WAIT_TIMEOUT);
+			_wapi_handle_ops_own (handle);
+			ret=WAIT_OBJECT_0;
+			goto done;
+		}
 	}
+	
+	if(_wapi_handle_issignalled (handle)) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": handle %p already signalled", handle);
+#endif
+
+		_wapi_handle_ops_own (handle);
+		ret=WAIT_OBJECT_0;
+		goto done;
+	}
+
+	/* Have to wait for it */
+	if(timeout!=INFINITE) {
+		_wapi_calc_timeout (&abstime, timeout);
+	}
+	
+	do {
+		if(timeout==INFINITE) {
+			waited=_wapi_handle_wait_signal_handle (handle);
+		} else {
+			waited=_wapi_handle_timedwait_signal_handle (handle,
+								     &abstime);
+		}
+
+		if(waited==0) {
+			/* Condition was signalled, so hopefully
+			 * handle is signalled now.  (It might not be
+			 * if someone else got in before us.)
+			 */
+			if(_wapi_handle_issignalled (handle)) {
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": handle %p signalled", handle);
+#endif
+
+				_wapi_handle_ops_own (handle);
+				ret=WAIT_OBJECT_0;
+				goto done;
+			}
+		
+			/* Better luck next time */
+		}
+	} while(waited==0);
+
+	/* Timeout or other error */
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": wait on handle %p error: %s",
+		   handle, strerror (ret));
+#endif
+
+	ret=WAIT_TIMEOUT;
+	
+done:
+	_wapi_handle_unlock_handle (handle);
+	return(ret);
+}
+
+/**
+ * SignalObjectAndWait:
+ * @signal_handle: An object to signal
+ * @wait: An object to wait for
+ * @timeout: The maximum time in milliseconds to wait for
+ * @alertable: Specifies whether the function returnes when the system
+ * queues an I/O completion routine or an APC for the calling thread.
+ *
+ * Atomically signals @signal and waits for @wait to become signalled,
+ * or @timeout ms elapses.  If @timeout is zero, the object's state is
+ * tested and the function returns immediately.  If @timeout is
+ * %INFINITE, the function waits forever.
+ *
+ * @signal can be a semaphore, mutex or event object.
+ *
+ * If @alertable is %TRUE and the system queues an I/O completion
+ * routine or an APC for the calling thread, the function returns and
+ * the thread calls the completion routine or APC function.  If
+ * %FALSE, the function does not return, and the thread does not call
+ * the completion routine or APC function.  A completion routine is
+ * queued when the ReadFileEx() or WriteFileEx() function in which it
+ * was specified has completed.  The calling thread is the thread that
+ * initiated the read or write operation.  An APC is queued when
+ * QueueUserAPC() is called.  Currently completion routines and APC
+ * functions are not supported.
+ *
+ * Return value: %WAIT_ABANDONED - @wait is a mutex that was not
+ * released by the owning thread when it exited.  Ownershop of the
+ * mutex object is granted to the calling thread and the mutex is set
+ * to nonsignalled.  %WAIT_IO_COMPLETION - the wait was ended by one
+ * or more user-mode asynchronous procedure calls queued to the
+ * thread.  %WAIT_OBJECT_0 - The state of @wait is signalled.
+ * %WAIT_TIMEOUT - The @timeout interval elapsed and @wait's state is
+ * still not signalled.  %WAIT_FAILED - an error occurred.
+ */
+guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
+			    guint32 timeout, gboolean alertable)
+{
+	guint32 ret, waited;
+	struct timespec abstime;
+	
+	if(_wapi_handle_test_capabilities (signal_handle,
+					   WAPI_HANDLE_CAP_SIGNAL)==FALSE) {
+		return(WAIT_FAILED);
+	}
+	
+	if(_wapi_handle_test_capabilities (wait,
+					   WAPI_HANDLE_CAP_WAIT)==FALSE) {
+		return(WAIT_FAILED);
+	}
+	
+	_wapi_handle_lock_handle (wait);
+
+	_wapi_handle_ops_signal (signal_handle);
+
+	if(_wapi_handle_test_capabilities (wait, WAPI_HANDLE_CAP_OWN)==TRUE) {
+		if(_wapi_handle_ops_isowned (wait)==TRUE) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": handle %p already owned", wait);
+#endif
+			_wapi_handle_ops_own (wait);
+			ret=WAIT_OBJECT_0;
+			goto done;
+		}
+	}
+	
+	if(_wapi_handle_issignalled (wait)) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": handle %p already signalled", wait);
+#endif
+
+		_wapi_handle_ops_own (wait);
+		ret=WAIT_OBJECT_0;
+		goto done;
+	}
+
+	/* Have to wait for it */
+	if(timeout!=INFINITE) {
+		_wapi_calc_timeout (&abstime, timeout);
+	}
+	
+	do {
+		if(timeout==INFINITE) {
+			waited=_wapi_handle_wait_signal_handle (wait);
+		} else {
+			waited=_wapi_handle_timedwait_signal_handle (wait,
+								     &abstime);
+		}
+
+		if(waited==0) {
+			/* Condition was signalled, so hopefully
+			 * handle is signalled now.  (It might not be
+			 * if someone else got in before us.)
+			 */
+			if(_wapi_handle_issignalled (wait)) {
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": handle %p signalled", wait);
+#endif
+
+				_wapi_handle_ops_own (wait);
+				ret=WAIT_OBJECT_0;
+				goto done;
+			}
+		
+			/* Better luck next time */
+		}
+	} while(waited==0);
+
+	/* Timeout or other error */
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": wait on handle %p error: %s",
+		   wait, strerror (ret));
+#endif
+
+	ret=WAIT_TIMEOUT;
+	
+done:
+	_wapi_handle_unlock_handle (wait);
+
+	if(alertable==TRUE) {
+		/* Deal with queued APC or IO completion routines */
+	}
+	
+	return(ret);
 }
 
 /**
@@ -396,17 +277,15 @@ guint32 WaitForSingleObject(WapiHandle *handle, guint32 timeout)
  * %WAIT_TIMEOUT - The @timeout interval elapsed and no objects in
  * @handles are signalled.  %WAIT_FAILED - an error occurred.
  */
-guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
+guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 			       gboolean waitall, guint32 timeout)
 {
-	WaitQueueItem *item;
 	GHashTable *dups;
-	gboolean duplicate=FALSE, bogustype=FALSE;
-	gboolean wait;
+	gboolean duplicate=FALSE, bogustype=FALSE, done;
+	guint32 count, lowest;
+	struct timespec abstime;
 	guint i;
-	guint32 lowest;
-	
-	pthread_once(&wait_once, wait_init);
+	guint32 ret;
 	
 	if(numobjects>MAXIMUM_WAIT_OBJECTS) {
 #ifdef DEBUG
@@ -431,11 +310,11 @@ guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
 			break;
 		}
 
-		if(handles[i]->ops->wait_multiple==NULL) {
+		if(_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_WAIT)==FALSE) {
 #ifdef DEBUG
-			g_message(G_GNUC_PRETTY_FUNCTION
-				  ": Handle %p can't be waited for (type %d)",
-				  handles[i], handles[i]->type);
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Handle %p can't be waited for",
+				   handles[i]);
 #endif
 
 			bogustype=TRUE;
@@ -462,23 +341,66 @@ guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles,
 
 		return(WAIT_FAILED);
 	}
-	
-	item=wait_item_new(timeout, waitall);
 
-	/* Sort the handles by type */
-	for(i=0; i<numobjects; i++) {
-		g_ptr_array_add(item->handles[handles[i]->type], handles[i]);
-		g_array_append_val(item->waitindex[handles[i]->type], i);
+	done=_wapi_handle_count_signalled_handles (numobjects, handles,
+						   waitall, &count, &lowest);
+	if(done==TRUE) {
+		for(i=0; i<numobjects; i++) {
+			_wapi_handle_ops_own (handles[i]);
+		}
+		
+		_wapi_handle_unlock_handles (numobjects, handles);
+		return(WAIT_OBJECT_0+lowest);
 	}
 	
-	wait=wait_for_item(item, &lowest);
-	wait_dequeue_item(item);
-	wait_item_destroy(item);
+	/* Have to wait for some or all handles to become signalled
+	 */
 
-	if(wait==FALSE) {
-		/* Wait timed out */
-		return(WAIT_TIMEOUT);
+	_wapi_handle_unlock_handles (numobjects, handles);
+
+	if(timeout!=INFINITE) {
+		_wapi_calc_timeout (&abstime, timeout);
 	}
+	
+	_wapi_handle_lock_signal_mutex ();
 
-	return(WAIT_OBJECT_0+lowest);
+	while(1) {
+		if(timeout==INFINITE) {
+			ret=_wapi_handle_wait_signal ();
+		} else {
+			ret=_wapi_handle_timedwait_signal (&abstime);
+		}
+		
+		if(ret==0) {
+			/* Something was signalled ... */
+			done=_wapi_handle_count_signalled_handles (numobjects,
+								   handles,
+								   waitall,
+								   &count,
+								   &lowest);
+			if(done==TRUE) {
+				for(i=0; i<numobjects; i++) {
+					_wapi_handle_ops_own (handles[i]);
+				}
+				
+				_wapi_handle_unlock_handles (numobjects,
+							     handles);
+				_wapi_handle_unlock_signal_mutex ();
+				return(WAIT_OBJECT_0+lowest);
+			}
+			_wapi_handle_unlock_handles (numobjects, handles);
+		} else {
+			/* Timeout or other error */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": wait returned error: %s", strerror (ret));
+#endif
+
+			_wapi_handle_unlock_signal_mutex ();
+			if(ret==ETIMEDOUT) {
+				return(WAIT_TIMEOUT);
+			} else {
+				return(WAIT_FAILED);
+			}
+		}
+	}
 }

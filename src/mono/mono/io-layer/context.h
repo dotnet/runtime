@@ -72,6 +72,6 @@ typedef struct
 	guint8 ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 } WapiContext;
 
-extern gboolean GetThreadContext(WapiHandle *handle, WapiContext *context);
+extern gboolean GetThreadContext(gpointer handle, WapiContext *context);
 
 #endif /* _WAPI_COMPEX_H_ */

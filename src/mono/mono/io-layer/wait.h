@@ -16,7 +16,10 @@
 #define WAIT_TIMEOUT		STATUS_TIMEOUT
 #define WAIT_IO_COMPLETION	STATUS_USER_APC
 
-extern guint32 WaitForSingleObject(WapiHandle *handle, guint32 timeout);
-extern guint32 WaitForMultipleObjects(guint32 numobjects, WapiHandle **handles, gboolean waitall, guint32 timeout);
+extern guint32 WaitForSingleObject(gpointer handle, guint32 timeout);
+extern guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
+				   guint32 timeout, gboolean alertable);
+extern guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
+				      gboolean waitall, guint32 timeout);
 
 #endif /* _WAPI_WAIT_H_ */

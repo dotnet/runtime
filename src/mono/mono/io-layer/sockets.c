@@ -14,23 +14,19 @@
 #endif
 #include <unistd.h>
 
-#include "mono/io-layer/wapi.h"
-#include "wapi-private.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/socket-private.h>
+#include <mono/io-layer/handles-private.h>
 
 #undef DEBUG
-
-struct _WapiHandle_socket
-{
-	WapiHandle handle;
-	int fd;
-};
 
 static guint32 startup_count=0;
 static GPtrArray *sockets=NULL;
 static pthread_key_t error_key;
 static pthread_once_t error_key_once=PTHREAD_ONCE_INIT;
 
-static void socket_close(WapiHandle *handle);
+static void socket_close(gpointer handle);
 
 static struct _WapiHandleOps socket_ops = {
 	socket_close,		/* close */
@@ -43,18 +39,27 @@ static struct _WapiHandleOps socket_ops = {
 	NULL,			/* getfilesize */
 	NULL,			/* getfiletime */
 	NULL,			/* setfiletime */
-	NULL,			/* wait */
-	NULL,			/* wait_multiple */
 	NULL,			/* signal */
+	NULL,			/* own */
+	NULL,			/* is_owned */
 };
 
-static void socket_close(WapiHandle *handle)
+static pthread_once_t socket_ops_once=PTHREAD_ONCE_INIT;
+
+static void socket_ops_init (void)
+{
+	_wapi_handle_register_ops (WAPI_HANDLE_SOCKET, &socket_ops);
+	/* No capabilities to register */
+}
+
+static void socket_close(gpointer handle)
 {
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing socket handle %p", handle);
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing socket handle 0x%x",
+		  handle);
 #endif
 
-	closesocket(handle);
+	closesocket(GPOINTER_TO_UINT (handle));
 }
 
 int WSAStartup(guint32 requested, WapiWSAData *data)
@@ -106,10 +111,10 @@ int WSACleanup(void)
 	
 	/* Close down all sockets */
 	for(i=0; i<sockets->len; i++) {
-		WapiHandle *handle;
+		gpointer handle;
 
 		handle=g_ptr_array_index(sockets, i);
-		handle->ops->close(handle);
+		_wapi_handle_ops_close(handle);
 	}
 
 	g_ptr_array_free(sockets, FALSE);
@@ -141,9 +146,10 @@ int WSAGetLastError(void)
 	return(err);
 }
 
-int closesocket(WapiHandle *handle)
+int closesocket(guint32 handle)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -151,14 +157,18 @@ int closesocket(WapiHandle *handle)
 		return(SOCKET_ERROR);
 	}
 	
-	if(handle->type!=WAPI_HANDLE_SOCKET) {
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
 	
-	g_ptr_array_remove_fast(sockets, handle);
+	g_ptr_array_remove_fast(sockets, GUINT_TO_POINTER (handle));
 	
-	ret=close(socket_handle->fd);
+	ret=close(socket_private_handle->fd);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
@@ -183,11 +193,13 @@ int closesocket(WapiHandle *handle)
 	return(ret);
 }
 
-WapiHandle *_wapi_accept(WapiHandle *handle, struct sockaddr *addr, socklen_t *addrlen)
+guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
+		     socklen_t *addrlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
-	struct _WapiHandle_socket *new_socket_handle;
-	WapiHandle *new_handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	struct _WapiHandlePrivate_socket *new_socket_private_handle;
+	gpointer new_handle;
+	gboolean ok;
 	int fd;
 	
 	if(startup_count==0) {
@@ -195,7 +207,16 @@ WapiHandle *_wapi_accept(WapiHandle *handle, struct sockaddr *addr, socklen_t *a
 		return(INVALID_SOCKET);
 	}
 	
-	fd=accept(socket_handle->fd, addr, addrlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(INVALID_SOCKET);
+	}
+	
+	fd=accept(socket_private_handle->fd, addr, addrlen);
 	if(fd==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": accept error: %s",
@@ -252,26 +273,42 @@ WapiHandle *_wapi_accept(WapiHandle *handle, struct sockaddr *addr, socklen_t *a
 		
 		return(INVALID_SOCKET);
 	}
+
+	new_handle=_wapi_handle_new (WAPI_HANDLE_SOCKET);
+	if(new_handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating socket handle");
+		return(INVALID_SOCKET);
+	}
+
+	_wapi_handle_lock_handle (new_handle);
 	
-	new_socket_handle=g_new0(struct _WapiHandle_socket, 1);
-	new_handle=(WapiHandle *)new_socket_handle;
+	ok=_wapi_lookup_handle (new_handle, WAPI_HANDLE_SOCKET, NULL,
+				(gpointer *)&new_socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		_wapi_handle_unlock_handle (new_handle);
+		return(INVALID_SOCKET);
+	}
 	
-	_WAPI_HANDLE_INIT(new_handle, WAPI_HANDLE_SOCKET, socket_ops);
-	
-	new_socket_handle->fd=fd;
+	new_socket_private_handle->fd=fd;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning newly accepted socket handle %p with fd %d",
-		  new_handle, new_socket_handle->fd);
+		  new_handle, new_socket_private_handle->fd);
 #endif
 
-	return(new_handle);
+	_wapi_handle_unlock_handle (new_handle);
+
+	return(GPOINTER_TO_UINT (new_handle));
 }
 
-int _wapi_bind(WapiHandle *handle, struct sockaddr *my_addr, socklen_t addrlen)
+int _wapi_bind(guint32 handle, struct sockaddr *my_addr, socklen_t addrlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -279,7 +316,16 @@ int _wapi_bind(WapiHandle *handle, struct sockaddr *my_addr, socklen_t addrlen)
 		return(SOCKET_ERROR);
 	}
 	
-	ret=bind(socket_handle->fd, my_addr, addrlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=bind(socket_private_handle->fd, my_addr, addrlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": bind error: %s",
@@ -318,9 +364,11 @@ int _wapi_bind(WapiHandle *handle, struct sockaddr *my_addr, socklen_t addrlen)
 	return(ret);
 }
 
-int _wapi_connect(WapiHandle *handle, const struct sockaddr *serv_addr, socklen_t addrlen)
+int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
+		  socklen_t addrlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -328,7 +376,16 @@ int _wapi_connect(WapiHandle *handle, const struct sockaddr *serv_addr, socklen_
 		return(SOCKET_ERROR);
 	}
 	
-	ret=connect(socket_handle->fd, serv_addr, addrlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=connect(socket_private_handle->fd, serv_addr, addrlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": bind error: %s",
@@ -382,17 +439,28 @@ int _wapi_connect(WapiHandle *handle, const struct sockaddr *serv_addr, socklen_
 	return(ret);
 }
 
-int _wapi_getpeername(WapiHandle *handle, struct sockaddr *name, socklen_t *namelen)
+int _wapi_getpeername(guint32 handle, struct sockaddr *name,
+		      socklen_t *namelen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
 		return(SOCKET_ERROR);
 	}
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
 
-	ret=getpeername(socket_handle->fd, name, namelen);
+	ret=getpeername(socket_private_handle->fd, name, namelen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getpeername error: %s",
@@ -425,17 +493,28 @@ int _wapi_getpeername(WapiHandle *handle, struct sockaddr *name, socklen_t *name
 	return(ret);
 }
 
-int _wapi_getsockname(WapiHandle *handle, struct sockaddr *name, socklen_t *namelen)
+int _wapi_getsockname(guint32 handle, struct sockaddr *name,
+		      socklen_t *namelen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
 		return(SOCKET_ERROR);
 	}
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
 
-	ret=getsockname(socket_handle->fd, name, namelen);
+	ret=getsockname(socket_private_handle->fd, name, namelen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getsockname error: %s",
@@ -465,9 +544,11 @@ int _wapi_getsockname(WapiHandle *handle, struct sockaddr *name, socklen_t *name
 	return(ret);
 }
 
-int _wapi_getsockopt(WapiHandle *handle, int level, int optname, void *optval, socklen_t *optlen)
+int _wapi_getsockopt(guint32 handle, int level, int optname, void *optval,
+		     socklen_t *optlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -475,7 +556,17 @@ int _wapi_getsockopt(WapiHandle *handle, int level, int optname, void *optval, s
 		return(SOCKET_ERROR);
 	}
 	
-	ret=getsockopt(socket_handle->fd, level, optname, optval, optlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=getsockopt(socket_private_handle->fd, level, optname, optval,
+		       optlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getsockopt error: %s",
@@ -504,9 +595,10 @@ int _wapi_getsockopt(WapiHandle *handle, int level, int optname, void *optval, s
 	return(ret);
 }
 
-int _wapi_listen(WapiHandle *handle, int backlog)
+int _wapi_listen(guint32 handle, int backlog)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -514,7 +606,16 @@ int _wapi_listen(WapiHandle *handle, int backlog)
 		return(SOCKET_ERROR);
 	}
 	
-	ret=listen(socket_handle->fd, backlog);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=listen(socket_private_handle->fd, backlog);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": listen error: %s",
@@ -543,14 +644,16 @@ int _wapi_listen(WapiHandle *handle, int backlog)
 	return(0);
 }
 
-int _wapi_recv(WapiHandle *handle, void *buf, size_t len, int recv_flags)
+int _wapi_recv(guint32 handle, void *buf, size_t len, int recv_flags)
 {
 	return(_wapi_recvfrom(handle, buf, len, recv_flags, NULL, 0));
 }
 
-int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int recv_flags, struct sockaddr *from, socklen_t *fromlen)
+int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
+		   struct sockaddr *from, socklen_t *fromlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -558,7 +661,17 @@ int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int recv_flags, st
 		return(SOCKET_ERROR);
 	}
 	
-	ret=recvfrom(socket_handle->fd, buf, len, recv_flags, from, fromlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags, from,
+		     fromlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": recv error: %s",
@@ -599,9 +712,10 @@ int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int recv_flags, st
 	return(ret);
 }
 
-int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int send_flags)
+int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -609,7 +723,16 @@ int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int send_flags)
 		return(SOCKET_ERROR);
 	}
 	
-	ret=send(socket_handle->fd, msg, len, send_flags);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=send(socket_private_handle->fd, msg, len, send_flags);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
@@ -656,9 +779,11 @@ int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int send_flags)
 	return(ret);
 }
 
-int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int send_flags, const struct sockaddr *to, socklen_t tolen)
+int _wapi_sendto(guint32 handle, const void *msg, size_t len, int send_flags,
+		 const struct sockaddr *to, socklen_t tolen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -666,7 +791,16 @@ int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int send_flags
 		return(SOCKET_ERROR);
 	}
 	
-	ret=sendto(socket_handle->fd, msg, len, send_flags, to, tolen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=sendto(socket_private_handle->fd, msg, len, send_flags, to, tolen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
@@ -713,9 +847,11 @@ int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int send_flags
 	return(ret);
 }
 
-int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const void *optval, socklen_t optlen)
+int _wapi_setsockopt(guint32 handle, int level, int optname,
+		     const void *optval, socklen_t optlen)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -723,7 +859,17 @@ int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const void *opt
 		return(SOCKET_ERROR);
 	}
 	
-	ret=setsockopt(socket_handle->fd, level, optname, optval, optlen);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=setsockopt(socket_private_handle->fd, level, optname, optval,
+		       optlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": setsockopt error: %s",
@@ -752,9 +898,10 @@ int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const void *opt
 	return(ret);
 }
 
-int _wapi_shutdown(WapiHandle *handle, int how)
+int _wapi_shutdown(guint32 handle, int how)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -762,7 +909,16 @@ int _wapi_shutdown(WapiHandle *handle, int how)
 		return(SOCKET_ERROR);
 	}
 	
-	ret=shutdown(socket_handle->fd, how);
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	ret=shutdown(socket_private_handle->fd, how);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": shutdown error: %s",
@@ -788,10 +944,11 @@ int _wapi_shutdown(WapiHandle *handle, int how)
 	return(ret);
 }
 
-WapiHandle *_wapi_socket(int domain, int type, int protocol)
+guint32 _wapi_socket(int domain, int type, int protocol)
 {
-	struct _WapiHandle_socket *socket_handle;
-	WapiHandle *handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gpointer handle;
+	gboolean ok;
 	int fd;
 	
 	fd=socket(domain, type, protocol);
@@ -803,26 +960,42 @@ WapiHandle *_wapi_socket(int domain, int type, int protocol)
 		return(INVALID_SOCKET);
 	}
 	
-	socket_handle=g_new0(struct _WapiHandle_socket, 1);
-	handle=(WapiHandle *)socket_handle;
+	pthread_once (&socket_ops_once, socket_ops_init);
 	
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_SOCKET, socket_ops);
+	handle=_wapi_handle_new (WAPI_HANDLE_SOCKET);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating socket handle");
+		return(INVALID_SOCKET);
+	}
+
+	_wapi_handle_lock_handle (handle);
 	
-	socket_handle->fd=fd;
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET, NULL,
+				(gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(INVALID_SOCKET);
+	}
+	
+	socket_private_handle->fd=fd;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": returning socket handle %p with fd %d", handle,
-		  socket_handle->fd);
+		  socket_private_handle->fd);
 #endif
 
-	return(handle);
+	_wapi_handle_unlock_handle (handle);
+
+	return(GPOINTER_TO_UINT (handle));
 }
 
 struct hostent *_wapi_gethostbyname(const char *hostname)
 {
 	struct hostent *he;
-	
 	
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
@@ -861,9 +1034,10 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 	return(he);
 }
 
-int ioctlsocket(WapiHandle *handle, gint32 command, gpointer arg)
+int ioctlsocket(guint32 handle, gint32 command, gpointer arg)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
 	int ret;
 	
 	if(startup_count==0) {
@@ -871,7 +1045,11 @@ int ioctlsocket(WapiHandle *handle, gint32 command, gpointer arg)
 		return(SOCKET_ERROR);
 	}
 	
-	if(handle->type!=WAPI_HANDLE_SOCKET) {
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -886,7 +1064,7 @@ int ioctlsocket(WapiHandle *handle, gint32 command, gpointer arg)
 		return(SOCKET_ERROR);
 	}
 
-	ret=ioctl(socket_handle->fd, command, arg);
+	ret=ioctl(socket_private_handle->fd, command, arg);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": ioctl error: %s",
@@ -954,24 +1132,54 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 	return(ret);
 }
 
-void _wapi_FD_CLR(WapiHandle *handle, fd_set *set)
+void _wapi_FD_CLR(guint32 handle, fd_set *set)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return;
+	}
 
-	FD_CLR(socket_handle->fd, set);
+	FD_CLR(socket_private_handle->fd, set);
 }
 
-int _wapi_FD_ISSET(WapiHandle *handle, fd_set *set)
+int _wapi_FD_ISSET(guint32 handle, fd_set *set)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return(0);
+	}
 
-	return(FD_ISSET(socket_handle->fd, set));
+	return(FD_ISSET(socket_private_handle->fd, set));
 }
 
-void _wapi_FD_SET(WapiHandle *handle, fd_set *set)
+void _wapi_FD_SET(guint32 handle, fd_set *set)
 {
-	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
+	struct _WapiHandlePrivate_socket *socket_private_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (GUINT_TO_POINTER (handle), WAPI_HANDLE_SOCKET,
+				NULL, (gpointer *)&socket_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up socket handle 0x%x", handle);
+		WSASetLastError(WSAENOTSOCK);
+		return;
+	}
 
-	FD_SET(socket_handle->fd, set);
+	FD_SET(socket_private_handle->fd, set);
 }
 

@@ -2,29 +2,22 @@
 #include <glib.h>
 #include <pthread.h>
 #include <string.h>
+#include <unistd.h>
 
-#include "mono/io-layer/wapi.h"
-#include "wapi-private.h"
-#include "wait-private.h"
-#include "misc-private.h"
-#include "handles-private.h"
-
-#include "mono-mutex.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/wait-private.h>
+#include <mono/io-layer/misc-private.h>
+#include <mono/io-layer/handles-private.h>
+#include <mono/io-layer/mono-mutex.h>
+#include <mono/io-layer/mutex-private.h>
 
 #undef DEBUG
 
-struct _WapiHandle_mutex
-{
-	WapiHandle handle;
-	mono_mutex_t mutex;
-	pthread_t tid;
-	guint32 recursion;
-};
-
-static void mutex_close(WapiHandle *handle);
-static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms);
-static guint32 mutex_wait_multiple(gpointer data);
-static void mutex_signal(WapiHandle *handle);
+static void mutex_close(gpointer handle);
+static void mutex_signal(gpointer handle);
+static void mutex_own (gpointer handle);
+static gboolean mutex_is_owned (gpointer handle);
 
 static struct _WapiHandleOps mutex_ops = {
 	mutex_close,		/* close */
@@ -37,253 +30,118 @@ static struct _WapiHandleOps mutex_ops = {
 	NULL,			/* getfilesize */
 	NULL,			/* getfiletime */
 	NULL,			/* setfiletime */
-	mutex_wait,		/* wait */
-	mutex_wait_multiple,	/* wait_multiple */
 	mutex_signal,		/* signal */
+	mutex_own,		/* own */
+	mutex_is_owned,		/* is_owned */
 };
 
-static void mutex_close(WapiHandle *handle)
-{
-	struct _WapiHandle_mutex *mutex_handle=(struct _WapiHandle_mutex *)handle;
-	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing mutex handle %p",
-		  mutex_handle);
-#endif
+static pthread_once_t mutex_ops_once=PTHREAD_ONCE_INIT;
 
-	mono_mutex_destroy(&mutex_handle->mutex);
+static void mutex_ops_init (void)
+{
+	_wapi_handle_register_ops (WAPI_HANDLE_MUTEX, &mutex_ops);
+	_wapi_handle_register_capabilities (WAPI_HANDLE_MUTEX,
+					    WAPI_HANDLE_CAP_WAIT |
+					    WAPI_HANDLE_CAP_SIGNAL |
+					    WAPI_HANDLE_CAP_OWN);
 }
 
-static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
+static void mutex_close(gpointer handle)
 {
-	struct _WapiHandle_mutex *mutex_handle=(struct _WapiHandle_mutex *)handle;
-	pthread_t tid=pthread_self();
-	int ret;
+	struct _WapiHandle_mutex *mutex_handle;
+	gboolean ok;
 	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": waiting for mutex handle %p",
-		  mutex_handle);
-#endif
-
-	/* Signal this handle now.  It really doesn't matter if some
-	 * other thread grabs the mutex before we can
-	 */
-	if(signal!=NULL) {
-		signal->ops->signal(signal);
-	}
-
-	if(mutex_handle->tid==tid) {
-		/* We already own this mutex, so just increase the count and
-		 * return TRUE
-		 */
-
-		mutex_handle->recursion++;
-	
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Already own mutex handle %p (recursion %d)",
-			  mutex_handle, mutex_handle->recursion);
-#endif
-
-		return(TRUE);
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				(gpointer *)&mutex_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
+		return;
 	}
 	
-	if(ms==INFINITE) {
-		ret=mono_mutex_lock(&mutex_handle->mutex);
-	} else {
-		struct timespec timeout;
-		
-		_wapi_calc_timeout(&timeout, ms);
-		
-		ret=mono_mutex_timedlock(&mutex_handle->mutex, &timeout);
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing mutex handle %p", handle);
+#endif
+
+	if(mutex_handle->name!=0) {
+		_wapi_handle_scratch_delete (mutex_handle->name);
+		mutex_handle->name=0;
 	}
+}
 
-	if(ret==0) {
-		/* Mutex locked */
+static void mutex_signal(gpointer handle)
+{
+	ReleaseMutex(handle);
+}
+
+static void mutex_own (gpointer handle)
+{
+	struct _WapiHandle_mutex *mutex_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				(gpointer *)&mutex_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
+		return;
+	}
 	
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Locking mutex handle %p",
-			  mutex_handle);
+	g_message(G_GNUC_PRETTY_FUNCTION ": owning mutex handle %p", handle);
 #endif
 
-		mutex_handle->tid=tid;
-		mutex_handle->recursion=1;
-
-		return(TRUE);
-	} else {
-		/* ret might be ETIMEDOUT for timeout, or other for error */
+	_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	
+	mutex_handle->pid=getpid ();
+	mutex_handle->tid=pthread_self ();
+	mutex_handle->recursion++;
+
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": Failed to lock mutex handle %p: %s", mutex_handle,
-			  strerror(ret));
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": mutex handle %p locked %d times by %d:%ld", handle,
+		   mutex_handle->recursion, mutex_handle->pid,
+		   mutex_handle->tid);
 #endif
+}
+
+static gboolean mutex_is_owned (gpointer handle)
+{
+	struct _WapiHandle_mutex *mutex_handle;
+	gboolean ok;
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				(gpointer *)&mutex_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
 		return(FALSE);
 	}
-}
-
-static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
-{
-	WaitQueueItem *item=(WaitQueueItem *)data;
-	GPtrArray *needed;
-	int ret;
-	guint32 numhandles;
-	struct timespec timeout;
-	pthread_t tid=pthread_self();
-	guint32 i, iterations;
-	
-	numhandles=item->handles[WAPI_HANDLE_MUTEX]->len;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": waiting on %d mutex handles for %d ms", numhandles,
-		  item->timeout);
+		  ": testing ownership mutex handle %p", handle);
 #endif
 
-	/*
-	 * See which ones we need to lock
-	 */
-	needed=g_ptr_array_new();
-	for(i=0; i<numhandles; i++) {
-		struct _WapiHandle_mutex *mutex_handle;
-		
-		mutex_handle=g_ptr_array_index(
-			item->handles[WAPI_HANDLE_MUTEX], i);
-		
-		if(mutex_handle->tid!=tid) {
-			/* We don't have this one, so add it to the list */
-			g_ptr_array_add(needed, mutex_handle);
-		}
+	if(mutex_handle->recursion>0 &&
+	   mutex_handle->pid==getpid () &&
+	   mutex_handle->tid==pthread_self ()) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": mutex handle %p owned by %d:%ld", handle,
+			   getpid (), pthread_self ());
+#endif
+
+		return(TRUE);
+	} else {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": mutex handle %p not owned by %d:%ld", handle,
+			   getpid (), pthread_self ());
+#endif
+
+		return(FALSE);
 	}
-
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": need to lock %d mutex handles",
-		  needed->len);
-#endif
-	
-	iterations=0;
-	do {
-		iterations++;
-		
-		/* If the timeout isnt INFINITE but greater than 1s,
-		 * split the timeout into 1s chunks
-		 */
-		if((item->timeout!=INFINITE) &&
-		   (item->timeout < (iterations*1000))) {
-			_wapi_calc_timeout(
-				&timeout, item->timeout-((iterations-1)*1000));
-		} else {
-			_wapi_calc_timeout(&timeout, 1000);
-		}
-	
-		/* Try and lock as many mutexes as we can until we run
-		 * out of time, but to avoid deadlocks back off if we
-		 * fail to lock one
-		 */
-		for(i=0; i<needed->len; i++) {
-			struct _WapiHandle_mutex *mutex_handle;
-
-			mutex_handle=g_ptr_array_index(needed, i);
-		
-#ifdef DEBUG
-			g_message(G_GNUC_PRETTY_FUNCTION
-				  ": Locking %d mutex %p (owner %ld, me %ld)",
-				  i, mutex_handle, mutex_handle->tid, tid);
-#endif
-
-			ret=mono_mutex_timedlock(&mutex_handle->mutex,
-						 &timeout);
-
-#ifdef DEBUG
-			g_message(G_GNUC_PRETTY_FUNCTION ": timedlock ret %s",
-				  strerror(ret));
-#endif
-
-			if(ret!=0) {
-				/* ETIMEDOUT is the most likely, but
-				 * fail on other error too
-				 */
-
-#ifdef DEBUG
-				g_message(G_GNUC_PRETTY_FUNCTION
-					  ": Lock %d mutex failed: %s", i,
-					  strerror(ret));
-#endif
-
-				while(i--) {
-#ifdef DEBUG
-					g_message(G_GNUC_PRETTY_FUNCTION
-						  ": Releasing %d mutex", i);
-#endif
-					mutex_handle=g_ptr_array_index(needed,
-								       i);
-					mono_mutex_unlock(&mutex_handle->mutex);
-				}
-
-				break;
-			}
-
-			/* OK, got that one. Don't record it as ours
-			 * though until we get them all
-			 */
-		}
-
-		if(i==needed->len) {
-			/* We've locked all the mutexes.  Update the
-			 * ones we already had, and record that the
-			 * new ones belong to us
-			 */
-			for(i=0; i<numhandles; i++) {
-				struct _WapiHandle_mutex *mutex_handle;
-				guint32 idx;
-
-				mutex_handle=g_ptr_array_index(
-					item->handles[WAPI_HANDLE_MUTEX], i);
-		
-				idx=g_array_index(
-					item->waitindex[WAPI_HANDLE_MUTEX],
-					guint32, i);
-				_wapi_handle_set_lowest(item, idx);
-				
-#ifdef DEBUG
-				g_message(G_GNUC_PRETTY_FUNCTION
-					  ": Updating mutex %p", mutex_handle);
-#endif
-				
-				if(mutex_handle->tid==tid) {
-					/* We already own this mutex,
-					 * so just increase the count
-					 */
-					mutex_handle->recursion++;
-				} else {
-					mutex_handle->tid=tid;
-					mutex_handle->recursion=1;
-				}
-			}
-		
-			g_ptr_array_free(needed, FALSE);
-
-			item->waited[WAPI_HANDLE_MUTEX]=TRUE;
-			item->waitcount[WAPI_HANDLE_MUTEX]=numhandles;
-			
-			return(numhandles);
-		}
-	} while((item->timeout==INFINITE) ||
-		(item->timeout > (iterations * 1000)));
-
-	/* Didn't get all the locks, and timeout isn't INFINITE */
-		
-	g_ptr_array_free(needed, FALSE);
-
-	item->waited[WAPI_HANDLE_MUTEX]=TRUE;
-	item->waitcount[WAPI_HANDLE_MUTEX]=0;
-	
-	return(0);
-}
-
-static void mutex_signal(WapiHandle *handle)
-{
-	ReleaseMutex(handle);
 }
 
 /**
@@ -292,7 +150,7 @@ static void mutex_signal(WapiHandle *handle)
  * @owned: If %TRUE, the mutex is created with the calling thread
  * already owning the mutex.
  * @name:Pointer to a string specifying the name of this mutex, or
- * %NULL.  Currently ignored.
+ * %NULL.
  *
  * Creates a new mutex handle.  A mutex is signalled when no thread
  * owns it.  A thread acquires ownership of the mutex by waiting for
@@ -305,26 +163,51 @@ static void mutex_signal(WapiHandle *handle)
  *
  * Return value: A new handle, or %NULL on error.
  */
-WapiHandle *CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean owned G_GNUC_UNUSED,
-			const guchar *name G_GNUC_UNUSED)
+gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean owned,
+			const guchar *name)
 {
 	struct _WapiHandle_mutex *mutex_handle;
-	WapiHandle *handle;
+	gpointer handle;
+	gboolean ok;
 	
-	mutex_handle=(struct _WapiHandle_mutex *)g_new0(struct _WapiHandle_mutex, 1);
-	handle=(WapiHandle *)mutex_handle;
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_MUTEX, mutex_ops);
+	pthread_once (&mutex_ops_once, mutex_ops_init);
+	
+	handle=_wapi_handle_new (WAPI_HANDLE_MUTEX);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating mutex handle");
+		return(NULL);
+	}
 
-	mono_mutex_init(&mutex_handle->mutex, NULL);
-	if(owned==TRUE) {
-		pthread_t tid=pthread_self();
-		
-		mono_mutex_lock(&mutex_handle->mutex);
-		
-		mutex_handle->tid=tid;
-		mutex_handle->recursion=1;
+	_wapi_handle_lock_handle (handle);
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				(gpointer *)&mutex_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(NULL);
+	}
+
+	if(name!=NULL) {
+		mutex_handle->name=_wapi_handle_scratch_store (name,
+							       strlen (name));
 	}
 	
+	if(owned==TRUE) {
+		mutex_own (handle);
+	} else {
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": returning mutex handle %p",
+		   handle);
+#endif
+
+	_wapi_handle_unlock_handle (handle);
+
 	return(handle);
 }
 
@@ -337,21 +220,34 @@ WapiHandle *CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean
  * Return value: %TRUE on success, %FALSE otherwise.  This function
  * fails if the calling thread does not own the mutex @handle.
  */
-gboolean ReleaseMutex(WapiHandle *handle)
+gboolean ReleaseMutex(gpointer handle)
 {
-	struct _WapiHandle_mutex *mutex_handle=(struct _WapiHandle_mutex *)handle;
+	struct _WapiHandle_mutex *mutex_handle;
+	gboolean ok;
 	pthread_t tid=pthread_self();
+	pid_t pid=getpid ();
+	
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				(gpointer *)&mutex_handle, NULL);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
+		return(FALSE);
+	}
+
+	_wapi_handle_lock_handle (handle);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex handle %p",
-		  mutex_handle);
+		  handle);
 #endif
 
-	if(mutex_handle->tid!=tid) {
+	if(mutex_handle->tid!=tid || mutex_handle->pid!=pid) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": We don't own mutex handle %p (owned by %ld, me %ld)", mutex_handle, mutex_handle->tid, tid);
+		g_message(G_GNUC_PRETTY_FUNCTION ": We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", handle, mutex_handle->pid, mutex_handle->tid, pid, tid);
 #endif
 
+		_wapi_handle_unlock_handle (handle);
 		return(FALSE);
 	}
 
@@ -361,12 +257,15 @@ gboolean ReleaseMutex(WapiHandle *handle)
 	if(mutex_handle->recursion==0) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": Unlocking mutex handle %p",
-			  mutex_handle);
+			  handle);
 #endif
 
+		mutex_handle->pid=0;
 		mutex_handle->tid=0;
-		mono_mutex_unlock(&mutex_handle->mutex);
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
+
+	_wapi_handle_unlock_handle (handle);
 	
 	return(TRUE);
 }

@@ -2275,6 +2275,7 @@ static gconstpointer icall_map [] = {
 	 * System.Threading
 	 */
 	"System.Threading.Thread::Thread_internal", ves_icall_System_Threading_Thread_Thread_internal,
+	"System.Threading.Thread::Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal,
 	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
 	"System.Threading.Thread::Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal,
 	"System.Threading.Thread::CurrentThread_internal", ves_icall_System_Threading_Thread_CurrentThread_internal,

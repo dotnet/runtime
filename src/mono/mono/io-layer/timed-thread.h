@@ -29,5 +29,6 @@ extern int _wapi_timed_thread_create(TimedThread **threadp,
 extern int _wapi_timed_thread_join(TimedThread *thread,
 				   struct timespec *timeout,
 				   guint32 *exitstatus);
+extern void _wapi_timed_thread_destroy (TimedThread *thread);
 
 #endif /* _WAPI_TIMED_THREAD_H_ */
