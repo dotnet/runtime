@@ -1,37 +1,7 @@
-
 Fri Nov 12 17:56:26 CET 2004 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, mono/mini/Makefile.am: control static
 	linking of the mono binary with a configure option.
-
-2004-11-12  Jonathan Pryor <jonpryor@vt.edu>
-
-	* configure.in: Check for `struct dirent' members which don't exist across
-	  all Unix platforms.
-	* support/dirent.c: Only access members which exist on the target platform.
-	* support/errno.c: Only export strerror_r if it's available.
-	* support/mph.h: Remove MPH_ON_BSD; use the configure checks instead.
-	* support/sys-mman.c: Only export posix_madvise if it's available.
-	* support/unistd.c: Only export sethostid if it's available.
-
-2004-11-08  Jonathan Pryor <jonpryor@vt.edu>
-
-	* configure.in: Add new function/header/type checks for use by
-	  MonoPosixHelper (the support directory).
-	* support/Makefile.am: Add sys-sendfile.c to the build.
-	* support/dirent.c, support/fcntl.c, support/unistd.c: Remove compile-time
-	  checks for -64 apis (pread64, etc.), as they're superfluous.  GLibc 
-	  #defines the functions to the appropriate -64 counterpart when necessary,
-	  and Darwin is intrinsically large-file-aware, so manual checking on my
-	  part is redundant and unnecessary.
-	* support/grp.c: Add checks for non-portable functions getgrnam_r,
-	  getgrgid_r.
-	* support/pwd.c: Add checks for non-portable functions getpwnam_r,
-	  getpwuid_r.
-	* support/map.c: Remove <poll.h> include.  Building on Tiger (Mac OS X 10.4
-	  beta) breaks when both <poll.h> and <sys/poll.h> are included, so only use
-	  <sys/poll.h>.
-	* support/mph.h: Clean up macro handling for type overflow checking.
 
 2004-11-08  Raja R Harinath  <rharinath@novell.com>
 
@@ -53,43 +23,6 @@ Fri Nov 12 17:56:26 CET 2004 Paolo Molaro <lupus@ximian.com>
 	* runtime/net_1_1/Makefile.am (install-data-local): Applied patch
 	from Götz Waschk (waschk@informatik.uni-rostock.de). Make this work 
 	with DESTDIR.
-
-2004-11-05  Jonathan Pryor <jonpryor@vt.edu>
-
-	* support/.cvsignore: Ignore generated files.
-	* support/Makefile.am: Add new INCLUDE directives (for glib headers),
-	  source; bump library version (so we don't clobber previous versions of
-	  libMonoPosixHelper.so).
-	* support/dirent.c: New file; <dirent.h> wrapper functions; 
-	  BSD portability fixes.
-	* support/errno.c: New file; <errno.h> wrapper functions
-	* support/fcntl.c: New file; <fcntl.h> wrapper functions;
-	  BSD portability fixes.
-	* support/grp.c: New file; <grp.h> wrapper functions;
-	  BSD portability fixes.
-	* support/map.c: Updated macro mapping functions (more enums mapped, more
-	  error checking, etc.).
-	* support/map.h: Updated macro mapping functions
-	* support/old-map.c: Previous map.c implementation, for backward compatibility
-	  Remove spurious warning about redefining _GNU_SOURCE.
-	* support/old-map.h: Previous map.h implementation, for backward compatibility
-	* support/mph.h: New file; Utility types, macros;
-	  BSD portability fixes.
-	* support/pwd.c: New file; <pwd.h> wrapper functions;
-	  BSD portability fixes.
-	* support/stdio.c: New file; <stdio.h> wrapper functions
-	* support/stdlib.c: New file; <stdlib.h> wrapper functions
-	* support/sys-mman.c: New file; <sys/mman.h> wrapper functions
-	* support/sys-mount.c: New file; <sys/mount.h> wrapper functions;
-	  BSD portability fixes.
-	* support/sys-sendfile.c: New file; <sys/sendfile.h> wrapper functions;
-	  BSD portability fixes.
-	* support/sys-stat.c: New file; <sys/stat.h> wrapper functions
-	* support/sys-wait.c: New file; <sys/wait.h> wrapper functions
-	* support/time.c: New file; <time.h> wrapper functions;
-	  BSD portability fixes.
-	* support/unistd.c: New file; <unistd.h> wrapper functions;
-	  BSD portability fixes.
 
 2004-10-31  Zoltan Varga  <vargaz@freemail.hu>
 
