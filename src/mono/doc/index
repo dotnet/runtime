@@ -16,8 +16,10 @@
 	Questions</a> or <a href="mailto:mono-list@ximian.com">contact us.</a>
 
 	You might also want to <a href="download.html">Download the
-	source</a> for our work so far.  Or you can grab a <a
-	href="snapshots">snapshot</a> of our current work. 
+	source</a> for our work so far.  Grab a <a
+	href="snapshots">snapshot</a> of our current work, or <a
+	href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?hidenonreadable=1&f=u&logsort=date&sortby=file&hideattic=1&cvsroot=Mono">browse
+	the sources</a>
 
 	You might want to <a
 	href="mailing-lists.html">subscribe</a> to our mono-list
@@ -70,6 +72,8 @@
 </table>
 
 ** Mar 5, 2002
+
+	The CVS repository <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?hidenonreadable=1&f=u&logsort=date&sortby=file&hideattic=1&cvsroot=Mono">can be browsed</a>
 
 	Jason has got an incredible amount of work on the Xml
 	classes during the weekend, and Gaurav is very close to have
