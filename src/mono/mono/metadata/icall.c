@@ -3853,7 +3853,7 @@ static void
 fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute)
 {
 	static MonoMethod *create_culture = NULL;
-    gpointer args [1];
+	gpointer args [1];
 	guint32 pkey_len;
 	const char *pkey_ptr;
 	gchar *codebase;
@@ -3890,6 +3890,21 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 		aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
 		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+	}
+
+	/* MonoAssemblyName keeps the public key token as an hexadecimal string */
+	if (name->public_key_token [0]) {
+		int i, j;
+		char *p;
+
+		aname->keyToken = mono_array_new (domain, mono_defaults.byte_class, 8);
+		p = mono_array_addr (aname->keyToken, char, 0);
+
+		for (i = 0, j = 0; i < 8; i++) {
+			*p = g_ascii_xdigit_value (name->public_key_token [j++]) << 4;
+			*p |= g_ascii_xdigit_value (name->public_key_token [j++]);
+			p++;
+		}
 	}
 }
 
