@@ -35,7 +35,7 @@ typedef struct {
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
 	unsigned int uses_this:1;
-	MonoWrapperType wrapper_type:4;
+	unsigned int wrapper_type:4;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	gint16 inline_count;
