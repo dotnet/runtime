@@ -1,3 +1,10 @@
+2002-05-19  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net: updated page to include C# code snippets using
+	System.Data.  Update status: handle reading NULL values, DataSet/DataAdapter
+	works, executing/reading multiple results, and stored procedures.
+	And other tweaks about the providers.  
+
 2002-05-19  Martin Baulig  <martin@gnome.org>
 
 	* mono/Makefile.am (SUBDIRS): Added `os', it's referenced by
