@@ -1,3 +1,11 @@
+2004-11-26  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (runtime/etc/mono/1.0/machine.config): Use custom
+	command to create.
+	(runtime/etc/mono/2.0/machine.config): Likewise.
+	* Makefile.am (get-monolite-latest): Update to new style of
+	handling the "basic" profile.
+
 2004-11-25  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (all-local): Make mcs/ tree writeable if

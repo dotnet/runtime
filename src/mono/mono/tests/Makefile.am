@@ -1,14 +1,17 @@
 check-local: test
 
-TEST_PROG=../interpreter/mint
-JITTEST_PROG=../mini/mono
+TEST_PROG = ../interpreter/mint
+JITTEST_PROG = ../mini/mono
+
+TEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default $(LIBTOOL) --mode=execute $(TEST_PROG)
+JITTEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default $(LIBTOOL) --mode=execute $(JITTEST_PROG)
+
 RUNTIME_ARGS=--config tests-config --optimize=all
-#CSC=csc /unsafe
 
-RUNTIME = $(top_builddir)/runtime/mono-wrapper
+RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono-wrapper
 
-CSC = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
-ILASM = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
+CSC = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
+ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -225,7 +228,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver '$(LIBTOOL) --mode=execute $(TEST_PROG)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -240,7 +243,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -252,17 +255,16 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
 	done
 
 testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
-		if $(srcdir)/test-driver $(JITTEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -282,7 +284,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	for i in $(TESTSI_CS) $(TESTBS); do	\
 		rm -f $${i}.so; \
 		$(JITTEST_PROG) --aot $${i} > /dev/null; \
-		if $(srcdir)/test-driver $(JITTEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -300,7 +302,7 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL); do \
-		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \

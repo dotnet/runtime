@@ -31,10 +31,10 @@ static_libs=	\
 	$(libgc_static_libs) \
 	$(ICU_LIBS)
 
-RUNTIME = $(LIBTOOL) --mode=execute ./mono --config $(top_builddir)/data/config
+RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default ./mono --config $(top_builddir)/data/config
 
-MCS = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
-ILASM = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
+ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 INCLUDES = \
 	-I$(top_srcdir) 	\
@@ -286,36 +286,36 @@ inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
 
 testi: mono test.exe
-	./mono -v -v --ncompile 1 --compile Test:$(mtest) test.exe
+	$(RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
 
 # ensure the tests are actually correct
 checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
 rcheck: mono $(regtests)
-	./mono --regression $(regtests)
+	$(RUNTIME) --regression $(regtests)
 
 aotcheck: mono $(regtests)
-	for i in $(regtests); do ./mono --aot $$i; done
-	./mono --verbose --regression $(regtests)
+	for i in $(regtests); do $(RUNTIME) --aot $$i; done
+	$(RUNTIME) --verbose --regression $(regtests)
 	rm -f *.exe.so
 
 bench: mono test.exe
-	time ./mono --ncompile $(count) --compile Test:$(mtest) test.exe
+	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
 
 mbench: test.exe
 	time $(monodir)/mono/jit/mono --ncompile $(count) --compile Test:$(mtest) test.exe
 
 stat1: mono bench.exe
-	./mono --verbose --statfile stats.pl --regression bench.exe
+	$(RUNTIME) --verbose --statfile stats.pl --regression bench.exe
 	perl viewstat.pl stats.pl
 
 stat2: mono basic.exe
-	./mono --verbose --statfile stats.pl --regression basic.exe
+	$(RUNTIME) --verbose --statfile stats.pl --regression basic.exe
 	perl viewstat.pl -e stats.pl
 
 stat3: mono bench.exe
-	./mono --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
+	$(RUNTIME) --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
 	perl viewstat.pl stats.pl
 
 docu: mini.sgm

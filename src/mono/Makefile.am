@@ -25,14 +25,17 @@ DISTCLEANFILES= mono.pc mint.pc
 .PHONY: get-monolite-latest mcs-do-compiler-tests compiler-tests bootstrap-world
 
 # building with monolite
-monolitedir = $(mcs_topdir)/class/lib/basic
+mcsclassdir = $(mcs_topdir)/class
+monolitedir = $(mcsclassdir)/lib/basic
 get-monolite-latest:
-	wget -O $(srcdir)/../monolite-latest.tar.gz http://www.go-mono.com/daily/monolite-latest.tar.gz
-	-rm -f $(monolitedir)/mcs.exe $(monolitedir)/*.dll
-	-rm -fr $(monolitedir)//monolite-*
-	srcdir=`cd $(srcdir) && pwd` && cd $(monolitedir) && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
-	mv -f $(monolitedir)/monolite-*/mcs.exe $(monolitedir)/monolite-*/*.dll $(monolitedir)
+	-rm -f $(monolitedir)/*.exe $(monolitedir)/*.dll
+	-rm -fr $(monolitedir)/monolite-*
+	cd $(monolitedir) && { wget -O- http://www.go-mono.com/daily/monolite-latest.tar.gz | gzip -d | tar xf - ; }
+	mv -f $(monolitedir)/monolite-*/*.exe $(monolitedir)/monolite-*/*.dll $(monolitedir)
 	rm -fr $(monolitedir)/monolite-*
+	cd $(mcsclassdir)/lib && { test ! -f basic.tar.gz || mv -f basic.tar.gz basic.tar.gz.old; }
+	cd $(mcsclassdir) && $(MAKE) lib/basic.tar.gz
+	-rm -f $(monolitedir)/*.exe $(monolitedir)/*.dll
 
 compiler-tests:
 	cd runtime && $(MAKE) clean-local
