@@ -4644,10 +4644,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	guint32 *code;
 	int can_fold = 0;
+	int max_epilog_size = 16 + 20 * 4;
+	
+	if (cfg->method->save_lmf)
+		max_epilog_size += 128;
+	
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 50;
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		max_epilog_size += 50;
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
 
 	code = (guint32*)(cfg->native_code + cfg->code_len);
 
@@ -4695,7 +4710,43 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	else
 		sparc_restore_imm (code, sparc_g0, 0, sparc_g0);
 
-	/* add code to raise exceptions */
+	cfg->code_len = (guint8*)code - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
+
+}
+
+void
+mono_arch_emit_exceptions (MonoCompile *cfg)
+{
+	MonoJumpInfo *patch_info;
+	guint32 *code;
+	int exc_count = 0;
+	guint32 code_size;
+
+	/* Compute needed space */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC)
+			exc_count++;
+	}
+     
+	/* 
+	 * make sure we have enough space for exceptions
+	 */
+#ifdef SPARCV9
+	code_size = exc_count * (20 * 4);
+#else
+	code_size += exc_count * 24;
+#endif
+
+	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
+	code = (guint32*)(cfg->native_code + cfg->code_len);
+
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		glong offset = patch_info->ip.i;
 
