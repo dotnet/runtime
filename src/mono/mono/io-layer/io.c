@@ -2973,11 +2973,6 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	
 	g_free (utf8_name);
 
-	if (result != 0) {
-		SetLastError (ERROR_FILE_NOT_FOUND);
-		return(FALSE);
-	}
-
 	return(TRUE);
 }
 
