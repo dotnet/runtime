@@ -157,30 +157,6 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 
 */
 
-/* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (int)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (int)bp; } while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_sp))
-
-#ifdef __APPLE__
-
-typedef struct {
-	unsigned long sp;
-	unsigned long unused1;
-	unsigned long lr;
-} MonoPPCStackFrame;
-
-#else
-
-typedef struct {
-	unsigned long sp;
-	unsigned long lr;
-} MonoPPCStackFrame;
-
-#endif
-
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
@@ -629,53 +605,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	}
 
 	return NULL;
-}
-
-MonoArray *
-ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	MonoArray *ta = exc->trace_ips;
-	int i, len;
-	
-	len = mono_array_length (ta);
-
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
-
-	for (i = skip; i < len; i++) {
-		MonoJitInfo *ji;
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
-		gpointer ip = mono_array_get (ta, gpointer, i);
-
-		ji = mono_jit_info_table_find (domain, ip);
-		if (!ji) {
-			sf->method = mono_method_get_object (domain, mono_defaults.object_class->methods [0], NULL);
-			mono_array_set (res, gpointer, i, sf);
-			continue;
-		}
-		//g_assert (ji != NULL);
-
-		sf->method = mono_method_get_object (domain, ji->method, NULL);
-		sf->native_offset = (char *)ip - (char *)ji->code_start;
-
-		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
-
-		if (need_file_info) {
-			gchar *filename;
-			
-			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
-
-			sf->filename = filename? mono_string_new (domain, filename): NULL;
-			sf->column = 0;
-
-			g_free (filename);
-		}
-
-		mono_array_set (res, gpointer, i, sf);
-	}
-
-	return res;
 }
 
 void

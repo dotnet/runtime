@@ -24,6 +24,8 @@
 
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
+#ifndef mono_find_jit_info
+
 /* mono_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
@@ -100,6 +102,8 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 	return ji;
 }
+
+#endif /* mono_find_jit_info */
 
 MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
@@ -197,6 +201,8 @@ mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start
 	}
 }
 
+#ifndef CUSTOM_STACK_WALK
+
 void
 mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
 	MonoDomain *domain = mono_domain_get ();
@@ -285,6 +291,8 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	return TRUE;
 }
+
+#endif /* CUSTOM_STACK_WALK */
 
 typedef struct {
 	guint32 skips;
@@ -422,6 +430,8 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 
 	return stack;
 }
+
+#ifndef CUSTOM_EXCEPTION_HANDLING
 
 /**
  * mono_handle_exception:
@@ -682,3 +692,5 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 	g_assert_not_reached ();
 }
+#endif /* CUSTOM_EXECPTION_HANDLING */
+

@@ -84,4 +84,49 @@ typedef struct MonoCompileArch {
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
 
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (int)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (int)bp; } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_sp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+
+#ifdef __APPLE__
+
+typedef struct {
+	unsigned long sp;
+	unsigned long unused1;
+	unsigned long lr;
+} MonoPPCStackFrame;
+
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
+		MonoPPCStackFrame *sframe;	\
+		__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));	\
+		MONO_CONTEXT_SET_BP ((ctx), sframe->sp);	\
+		sframe = (MonoPPCStackFrame*)sframe->sp;	\
+		MONO_CONTEXT_SET_IP ((ctx), sframe->lr);	\
+	} while (0)
+
+#else
+
+typedef struct {
+	unsigned long sp;
+	unsigned long lr;
+} MonoPPCStackFrame;
+
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\
+		MonoPPCStackFrame *sframe;	\
+		__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));	\
+		MONO_CONTEXT_SET_BP ((ctx), sframe->sp);	\
+		sframe = (MonoPPCStackFrame*)sframe->sp;	\
+		MONO_CONTEXT_SET_IP ((ctx), sframe->lr);	\
+	} while (0)
+
+#endif
+
+#define mono_find_jit_info mono_arch_find_jit_info
+#define CUSTOM_STACK_WALK 1
+#define CUSTOM_EXCEPTION_HANDLING 1
+
 #endif /* __MONO_MINI_PPC_H__ */  

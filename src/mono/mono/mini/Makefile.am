@@ -119,6 +119,7 @@ amd64_sources = \
 	tramp-amd64.c
 
 ppc_sources = \
+	mini-exceptions.c	\
 	mini-ppc.c		\
 	mini-ppc.h		\
 	exceptions-ppc.c	\
