@@ -2735,7 +2735,7 @@ mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
 
 typedef struct {
 	MonoDomain *orig_domain;
-	char *ins;
+	MonoString *ins;
 	MonoString *res;
 } LDStrInfo;
 
@@ -2756,48 +2756,22 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	MonoGHashTable *ldstr_table;
 	MonoString *res;
 	MonoDomain *domain;
-	char *ins = g_malloc (4 + str->length * 2);
-	char *p;
 	
-	/* Encode the length */
-	/* Same code as in mono_image_insert_string () */
-	p = ins;
-	mono_metadata_encode_value (1 | (2 * str->length), p, &p);
-
-	/*
-	 * ins is stored in the hash table as a key and needs to have the same
-	 * representation as in the metadata: we swap the character bytes on big
-	 * endian boxes.
-	 */
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	{
-		int i;
-		char *p2 = (char *)mono_string_chars (str);
-		for (i = 0; i < str->length; ++i) {
-			*p++ = p2 [1];
-			*p++ = p2 [0];
-			p2 += 2;
-		}
-	}
-#else
-	memcpy (p, mono_string_chars (str), str->length * 2);
-#endif
 	domain = ((MonoObject *)str)->vtable->domain;
 	ldstr_table = domain->ldstr_table;
 	mono_domain_lock (domain);
-	if ((res = mono_g_hash_table_lookup (ldstr_table, ins))) {
+	if ((res = mono_g_hash_table_lookup (ldstr_table, str))) {
 		mono_domain_unlock (domain);
-		g_free (ins);
 		return res;
 	}
 	if (insert) {
-		mono_g_hash_table_insert (ldstr_table, ins, str);
+		mono_g_hash_table_insert (ldstr_table, str, str);
 		mono_domain_unlock (domain);
 		return str;
 	} else {
 		LDStrInfo ldstr_info;
 		ldstr_info.orig_domain = domain;
-		ldstr_info.ins = ins;
+		ldstr_info.ins = str;
 		ldstr_info.res = NULL;
 
 		mono_domain_foreach (str_lookup, &ldstr_info);
@@ -2806,13 +2780,12 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 			 * the string was already interned in some other domain:
 			 * intern it in the current one as well.
 			 */
-			mono_g_hash_table_insert (ldstr_table, ins, str);
+			mono_g_hash_table_insert (ldstr_table, str, str);
 			mono_domain_unlock (domain);
 			return str;
 		}
 	}
 	mono_domain_unlock (domain);
-	g_free (ins);
 	return NULL;
 }
 
@@ -2872,14 +2845,8 @@ static MonoString*
 mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 {
 	const char *str = sig;
-	MonoString *o;
+	MonoString *o, *interned;
 	size_t len2;
-	
-	mono_domain_lock (domain);
-	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig))) {
-		mono_domain_unlock (domain);
-		return o;
-	}
 	
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
@@ -2895,7 +2862,14 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 		}
 	}
 #endif
-	mono_g_hash_table_insert (domain->ldstr_table, (gpointer)sig, o);
+	mono_domain_lock (domain);
+	if ((interned = mono_g_hash_table_lookup (domain->ldstr_table, o))) {
+		mono_domain_unlock (domain);
+		/* o will get garbage collected */
+		return interned;
+	}
+
+	mono_g_hash_table_insert (domain->ldstr_table, o, o);
 	mono_domain_unlock (domain);
 
 	return o;

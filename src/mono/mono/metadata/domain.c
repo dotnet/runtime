@@ -200,36 +200,6 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_unlock (domain);
 }	
 
-static int
-ldstr_hash (const char* str)
-{
-	guint len, h;
-	const char *end;
-	len = mono_metadata_decode_blob_size (str, &str) - 1;
-	end = str + len;
-	/* if len == 0 *str will point to the mark byte */
-	h = len? *str: 0;
-	/*
-	 * FIXME: The distribution may not be so nice with lots of
-	 * null chars in the string.
-	 */
-	for (str += 1; str < end; str++)
-		h = (h << 5) - h + *str;
-	return h;
-}
-
-static gboolean
-ldstr_equal (const char *str1, const char *str2) {
-	int len, len2;
-	if (str1 == str2)
-		return TRUE;
-	len = mono_metadata_decode_blob_size (str1, NULL) - 1;
-	len2 = mono_metadata_decode_blob_size (str2, NULL) - 1;
-	if (len != len2)
-		return 0;
-	return memcmp (str1, str2, len) == 0;
-}
-
 static gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
 {
@@ -289,7 +259,7 @@ mono_domain_create (void)
 	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->static_data_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
-	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
+	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
 	domain->class_init_trampoline_hash = g_hash_table_new (NULL, NULL);
 	domain->jump_trampoline_hash = g_hash_table_new (NULL, NULL);
