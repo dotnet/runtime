@@ -2162,13 +2162,17 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericMethod *gmethod
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
+	MonoMethod *declaring;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (gmethod);
-	sig = method_encode_signature (assembly, gmethod->generic_method->signature);
+	declaring = gmethod->generic_method;
+	if (declaring->signature->gen_method)
+		declaring = declaring->signature->gen_method->generic_method;
+	sig = method_encode_signature (assembly, declaring->signature);
 	mtoken = mono_image_get_memberref_token (assembly, &gmethod->klass->byval_arg,
-						 gmethod->generic_method->name, sig);
+						 declaring->name, sig);
 
 	if (!gmethod->generic_method->signature->generic_param_count)
 		return mtoken;
