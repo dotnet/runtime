@@ -1124,11 +1124,42 @@ dump_stream_blob (MonoImage *m)
 	fprintf (output, "Blob heap contents\n");
 
 	for (i = 0; i < m->heap_blob.size; i++) {
-		fprintf (output, "%x ", m->heap_blob.data [i]);
-		if (i > 0 && (i % 25) == 0)
-			fprintf (output, "\n");
+		if (i > 0) {
+			if ((i % 16) == 0)
+				fprintf (output, "\n");
+			else if ((i % 8) == 0)
+				fprintf (output, "- ");
+		}
+		fprintf (output, "%02x ", m->heap_blob.data [i] & 0xff);
 	}
 
 	fprintf (output, "\n");
 }
 
+void
+dump_table_standalonesig (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
+	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
+	int i;
+	
+	fprintf (output, "Stand alone signature (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+                char *sig;
+		const char *locals_ptr;
+		int j, bsize;
+
+		mono_metadata_decode_row (t, i - 1, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
+
+		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
+		bsize = mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
+
+		fprintf (output, "%d: blob[0x%x] = ", i, cols [MONO_STAND_ALONE_SIGNATURE]);
+
+		for (j = 0; j < bsize; j++) {
+			fprintf (output, "%02x ", locals_ptr [j]);
+		}
+		fprintf (output, "\n");
+	}
+}

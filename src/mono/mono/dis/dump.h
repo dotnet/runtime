@@ -30,4 +30,5 @@ void dump_table_genericpar   (MonoImage *m);
 void dump_table_methodspec   (MonoImage *m);
 void dump_table_parconstraint(MonoImage *m);
 void dump_table_implmap      (MonoImage *m);
+void dump_table_standalonesig (MonoImage *m);
 void dump_stream_blob        (MonoImage *m);

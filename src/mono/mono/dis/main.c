@@ -452,11 +452,38 @@ method_impl_flags (guint32 f)
 }
 
 static void
-dis_locals (MonoImage *m, MonoMethodHeader *mh) 
+dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr) 
 {
 	int i;
 
-	fprintf(output, "\t.locals %s(\n", mh->init_locals ? "init " : "");
+	if (show_tokens) {
+		unsigned char flags = *(const unsigned char *) ptr;
+		unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
+		guint16 fat_flags;
+		guint32 local_var_sig_tok, max_stack, code_size, init_locals;
+		int hsize;
+
+		g_assert (format == METHOD_HEADER_FAT_FORMAT);
+		fat_flags = read16 (ptr);
+		ptr += 2;
+		hsize = (fat_flags >> 12) & 0xf;
+		max_stack = read16 (ptr);
+		ptr += 2;
+		code_size = read32 (ptr);
+		ptr += 4;
+		local_var_sig_tok = read32 (ptr);
+		ptr += 4;
+
+		if (fat_flags & METHOD_HEADER_INIT_LOCALS)
+			init_locals = 1;
+		else
+			init_locals = 0;
+
+		fprintf(output, "\t.locals /*%08x*/ %s(\n",
+			local_var_sig_tok, init_locals ? "init " : "");
+	} else
+		fprintf(output, "\t.locals %s(\n", mh->init_locals ? "init " : "");
+
 	for (i=0; i < mh->num_locals; ++i) {
 		char * desc;
 		if (i)
@@ -490,7 +517,7 @@ dis_code (MonoImage *m, guint32 rva)
 	fprintf (output, "\t// Code size %d (0x%x)\n", mh->code_size, mh->code_size);
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	if (mh->num_locals)
-		dis_locals (m, mh);
+		dis_locals (m, mh, ptr);
 	dissasemble_cil (m, mh);
 	
 /*
@@ -1157,6 +1184,7 @@ struct {
 	{ "--typeref",     MONO_TABLE_TYPEREF,     	dump_table_typeref },
 	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
+	{ "--standalonesig", MONO_TABLE_STANDALONESIG,  dump_table_standalonesig },
 	{ "--blob",	   NULL,			dump_stream_blob },
 	{ NULL, -1 }
 };
