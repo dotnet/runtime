@@ -11,6 +11,7 @@
 		* <a href="#mbas">Mono Basic</a> (Mono's VB.NET compiler)
 		* <a href="#dotlist">dotLisp</a>
                 * <a href="#nemerle">Nemerle</a>
+		* <a href="#python">Python</a>
 	</ul>
 
 	Languages which are known to run, but we have not done a
@@ -28,11 +29,10 @@
 		* <a href="#c">C</a>
 	</ul>
 
-	Some experimental languages:
+	Some experimental bindings:
 
 	<ul>
 		* <a href="#Tachy">Tachy</a> (scheme-like)
-		* <a href="#python">Python</a>
 	</ul>
 
 <a name="Java"></a>
