@@ -3246,7 +3246,7 @@ array_constructed:
 				 * behavior described in Partition II, 3.5).
 				 */
 				--sp;
-				g_assert (sp->type = VAL_VALUETA);
+				g_assert (sp->type == VAL_VALUETA);
 				memset (sp->data.vt.vt, 0, mono_class_value_size (sp->data.vt.klass, NULL));
 				break;
 			}
