@@ -291,7 +291,7 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
-	int i, j;
+	int i, j, k;
 
 	x86_push_reg (cfg->code, X86_EBP);
 	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
@@ -329,12 +329,17 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 			MonoVarInfo *vi = &VARINFO (cfg, cfg->locals_start_index + header->num_locals - 1);
 			int offset = vi->offset;  
 			int size = - offset;
-
+			int inited = 0;
+			
 			for (i = 0; i < header->num_locals; ++i) {
-				MonoVarInfo *rv = &VARINFO (cfg, cfg->locals_start_index + header->num_locals - 1);
+				MonoVarInfo *rv = &VARINFO (cfg, cfg->locals_start_index + i);
 
-				if (rv->reg >= 0)
-					x86_alu_reg_imm (cfg->code, X86_XOR, rv->reg, rv->reg);
+				if (rv->reg >= 0) {
+					int ind = 1 << rv->reg;
+					if (!(inited & ind))
+						x86_alu_reg_reg (cfg->code, X86_XOR, rv->reg, rv->reg);
+					inited |= ind;
+				}
 			}
 
 			if (size == 1 || size == 2 || size == 4) {
@@ -344,7 +349,22 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 			
 			i = size / 4;
 			j = size % 4;
-	
+
+			if (i < 3) {
+				for (k = 0; k < i; k++) {
+					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 4);
+					offset += 4;
+				}
+
+				if (j & 2) {
+					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 2);
+					offset += 2;
+				}
+				if (j & 1)
+					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 1);
+				return;
+			}
+			
 			if (i) {
 				if (!mono_regset_reg_used (cfg->rs, X86_EDI)) 
 					x86_push_reg (cfg->code, X86_EDI);

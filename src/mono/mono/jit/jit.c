@@ -39,6 +39,12 @@
 #include "codegen.h"
 #include "debug.h"
 
+/* this is x86 specific */
+#define MB_TERM_LDIND_REF MB_TERM_LDIND_I4
+#define MB_TERM_LDIND_U4 MB_TERM_LDIND_I4
+#define MB_TERM_STIND_REF MB_TERM_STIND_I4
+#define MB_TERM_REMOTE_STIND_REF MB_TERM_REMOTE_STIND_I4
+
 #define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
 
 #define MAKE_CJUMP(name)                                                      \
@@ -941,21 +947,10 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
 		t->svt = VAL_I32;
 		break;
-	case MB_TERM_STIND_REF:
-	case MB_TERM_LDIND_REF:
-		t = ctree_dup_address (mp, s->left);
-		t = mono_ctree_new (mp, MB_TERM_LDIND_REF, t, NULL);
-		t->svt = VAL_POINTER;
-		break;
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
 		t = ctree_dup_address (mp, s->left);
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
-		t->svt = VAL_I32;
-		break;
-	case MB_TERM_LDIND_U4:
-		t = ctree_dup_address (mp, s->left);
-		t = mono_ctree_new (mp, MB_TERM_LDIND_U4, t, NULL);
 		t->svt = VAL_I32;
 		break;
 	case MB_TERM_STIND_I8:
@@ -998,8 +993,6 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **tdup)
 	case MB_TERM_LDIND_I2:
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
-	case MB_TERM_STIND_REF:
-	case MB_TERM_LDIND_REF:
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
 	case MB_TERM_STIND_R4:

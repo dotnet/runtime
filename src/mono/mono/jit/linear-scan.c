@@ -102,7 +102,6 @@ update_gen_set (MBTree *tree, MonoBitSet *set)
 		case MB_TERM_REMOTE_STIND_I8:
 		case MB_TERM_REMOTE_STIND_R4:
 		case MB_TERM_REMOTE_STIND_R8:
-		case MB_TERM_REMOTE_STIND_REF:
 		case MB_TERM_REMOTE_STIND_OBJ:
 		case MB_TERM_STIND_I1:
 		case MB_TERM_STIND_I2:
@@ -110,7 +109,6 @@ update_gen_set (MBTree *tree, MonoBitSet *set)
 		case MB_TERM_STIND_I8:
 		case MB_TERM_STIND_R4:
 		case MB_TERM_STIND_R8:
-		case MB_TERM_STIND_REF:
 		case MB_TERM_STIND_OBJ:
 			if (tree->left->op != MB_TERM_ADDR_L)
 				update_gen_set (tree->left, set);
@@ -171,7 +169,6 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 			case MB_TERM_REMOTE_STIND_I8:
 			case MB_TERM_REMOTE_STIND_R4:
 			case MB_TERM_REMOTE_STIND_R8:
-			case MB_TERM_REMOTE_STIND_REF:
 			case MB_TERM_REMOTE_STIND_OBJ:
 			case MB_TERM_STIND_I1:
 			case MB_TERM_STIND_I2:
@@ -179,7 +176,6 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 			case MB_TERM_STIND_I8:
 			case MB_TERM_STIND_R4:
 			case MB_TERM_STIND_R8:
-			case MB_TERM_STIND_REF:
 			case MB_TERM_STIND_OBJ:
 				if (t1->left->op == MB_TERM_ADDR_L)
 					mono_bitset_set (bb->kill_set, t1->left->data.i);

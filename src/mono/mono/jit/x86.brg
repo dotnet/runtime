@@ -213,9 +213,8 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 
 # constatnts
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
-%term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_REF LDIND_I8 LDIND_R4 LDIND_R8
-%term LDIND_U4 LDIND_OBJ 
-%term STIND_I1 STIND_I2 STIND_I4 STIND_REF STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
+%term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8 LDIND_OBJ 
+%term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
 %term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
@@ -229,7 +228,7 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER CHECKTHIS
 %term LDLEN LDELEMA LDFTN LDVIRTFTN LDSTR LDSFLDA
-%term REMOTE_LDFLDA REMOTE_STIND_I1 REMOTE_STIND_I2 REMOTE_STIND_I4 REMOTE_STIND_REF
+%term REMOTE_LDFLDA REMOTE_STIND_I1 REMOTE_STIND_I2 REMOTE_STIND_I4
 %term REMOTE_STIND_I8 REMOTE_STIND_R4 REMOTE_STIND_R8 REMOTE_STIND_OBJ
 #
 # we start at stmt
@@ -426,6 +425,95 @@ stmt: ENDFINALLY {
 	x86_ret (s->code);
 }
 
+stmt: STIND_I4 (ADDR_L, ADD (LDIND_I4 (ADDR_L), CONST_I4)) {
+	int vn = tree->left->data.i;
+	int treg = VARINFO (s, vn).reg;
+	int offset = VARINFO (s, vn).offset;
+	int data = tree->right->right->data.i;
+
+	if (data == 1) {
+		if (treg >= 0)
+			x86_inc_reg (s->code, treg);
+		else 
+			x86_inc_membase (s->code, X86_EBP, offset);
+	} else {
+		if (treg >= 0)
+			x86_alu_reg_imm (s->code, X86_ADD, treg, data);
+		else
+			x86_alu_membase_imm (s->code, X86_ADD, X86_EBP, offset, data);
+	}
+} cost {
+	MBCOND (tree->right->left->left->data.i == tree->left->data.i);
+	return 0;
+}
+
+stmt: STIND_I4 (ADDR_L, SUB (LDIND_I4 (ADDR_L), CONST_I4)) {
+	int vn = tree->left->data.i;
+	int treg = VARINFO (s, vn).reg;
+	int offset = VARINFO (s, vn).offset;
+	int data = tree->right->right->data.i;
+
+	if (data == 1) {
+		if (treg >= 0)
+			x86_dec_reg (s->code, treg);
+		else 
+			x86_dec_membase (s->code, X86_EBP, offset);
+	} else {
+		if (treg >= 0)
+			x86_alu_reg_imm (s->code, X86_SUB, treg, data);
+		else
+			x86_alu_membase_imm (s->code, X86_SUB, X86_EBP, offset, data);
+	}
+} cost {
+	MBCOND (tree->right->left->left->data.i == tree->left->data.i);
+	return 0;
+}
+
+stmt: STIND_I4 (ADDR_L, ADD (LDIND_I4 (ADDR_L), reg)) {
+	int vn = tree->left->data.i;
+	int treg = VARINFO (s, vn).reg;
+	int sreg = tree->right->right->reg1;
+	int offset = VARINFO (s, vn).offset;
+
+	if (treg >= 0)
+		x86_alu_reg_reg (s->code, X86_ADD, treg, sreg);
+	else
+		x86_alu_membase_reg (s->code, X86_ADD, X86_EBP, offset, sreg);
+
+} cost {
+	MBCOND (tree->right->left->left->data.i == tree->left->data.i);
+	return 0;
+}
+
+stmt: STIND_I4 (ADDR_L, LDIND_I4 (ADDR_L)) {
+	int treg1 = VARINFO (s, tree->left->data.i).reg;
+	int treg2 = VARINFO (s, tree->right->left->data.i).reg;
+	int offset1 = VARINFO (s, tree->left->data.i).offset;
+	int offset2 = VARINFO (s, tree->right->left->data.i).offset;
+
+	//{static int cx= 0; printf ("CX %5d\n", cx++);}
+
+	if (treg1 >= 0 && treg2 >= 0) {
+		x86_mov_reg_reg (s->code, treg1, treg2, 4);
+		return;
+	}
+	if (treg1 >= 0 && treg2 < 0) {
+		x86_mov_reg_membase (s->code, treg1, X86_EBP, offset2, 4);
+		return;
+	}
+	if (treg1 < 0 && treg2 >= 0) {
+		x86_mov_membase_reg (s->code, X86_EBP, offset1, treg2, 4);
+		return;
+	}
+
+	g_assert_not_reached ();
+
+} cost {
+	MBCOND (VARINFO (data, tree->left->data.i).reg >= 0 ||
+		VARINFO (data, tree->right->left->data.i).reg >= 0);
+	return 0;
+}
+
 stmt: STIND_I4 (addr, coni4) {
 	switch (tree->left->data.ainfo.amode) {
 
@@ -477,72 +565,6 @@ stmt: STIND_I4 (addr, reg) {
 }
 
 stmt: REMOTE_STIND_I4 (reg, reg) {
-	guint8 *br[2];
-	int treg = X86_EAX;
-	int lreg = tree->left->reg1;
-	int rreg = tree->right->reg1;
-	int offset;
-
-	if (lreg == treg)
-		treg = X86_EDX;
-
-	if (rreg == treg)
-		treg = X86_ECX;
-
-	x86_mov_reg_membase (s->code, treg, lreg, 0, 4);
-	x86_alu_membase_imm (s->code, X86_CMP, treg, 0, ((int)mono_defaults.transparent_proxy_class));
-	br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
-
-	/* this is a transparent proxy - remote the call */
-
-	/* save value to stack */
-	x86_push_reg (s->code, rreg);
-
-	x86_push_reg (s->code, X86_ESP);
-	x86_push_imm (s->code, tree->data.fi.field);
-	x86_push_imm (s->code, tree->data.fi.klass);
-	x86_push_reg (s->code, lreg);
-	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_store_remote_field);
-	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
-
-	br [1] = s->code; x86_jump8 (s->code, 0);
-
-	x86_patch (br [0], s->code);
-	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
-		tree->data.fi.field->offset;
-	x86_mov_membase_reg (s->code, lreg, offset, rreg, 4);
-
-	x86_patch (br [1], s->code);
-}
-
-stmt: STIND_REF (addr, reg) {
-	PRINT_REG ("STIND_REF", tree->right->reg1);
-
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 4);
-		break;
-		
-	case AMBase:
-		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, tree->right->reg1, 4);
-		break;		
-	case AMIndex:
-		x86_mov_memindex_reg (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->reg1, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->reg1, 4);
-		break;		
-	}
-}
-
-stmt: REMOTE_STIND_REF (reg, reg) {
 	guint8 *br[2];
 	int treg = X86_EAX;
 	int lreg = tree->left->reg1;
@@ -714,11 +736,11 @@ stmt: REMOTE_STIND_I2 (reg, reg) {
 	x86_patch (br [1], s->code);
 }
 
-stmt: STIND_I4 (ADDR_L, reg) {
+reg: LDIND_I4 (ADDR_L) {
 	int treg = VARINFO (s, tree->left->data.i).reg;
 
-	if (treg != tree->right->reg1)
-		x86_mov_reg_reg (s->code, treg, tree->right->reg1, 4);
+	if (treg != tree->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
 
 } cost {
 	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
@@ -735,29 +757,18 @@ stmt: STIND_I4 (ADDR_L, coni4) {
 	return 0;
 }
 
-reg: LDIND_I4 (ADDR_L) {
+stmt: STIND_I4 (ADDR_L, LDIND_I4 (ADDR_L)) {
 	int treg = VARINFO (s, tree->left->data.i).reg;
-
-	if (treg != tree->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
-
+	int offset = VARINFO (s, tree->right->left->data.i).offset;
+	
+	x86_mov_reg_membase (s->code, treg, X86_EBP, offset, 4);
 } cost {
 	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	MBCOND ((VARINFO (data, tree->right->left->data.i).reg < 0));
 	return 0;
 }
 
-reg: LDIND_U4 (ADDR_L) {
-	int treg = VARINFO (s, tree->left->data.i).reg;
-
-	if (treg != tree->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
-
-} cost {
-	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
-	return 0;
-}
-
-stmt: STIND_REF (ADDR_L, reg) {
+stmt: STIND_I4 (ADDR_L, reg) {
 	int treg = VARINFO (s, tree->left->data.i).reg;
 
 	if (treg != tree->right->reg1)
@@ -768,27 +779,6 @@ stmt: STIND_REF (ADDR_L, reg) {
 	return 0;
 }
 
-stmt: STIND_REF (ADDR_L, coni4) {
-	int treg = VARINFO (s, tree->left->data.i).reg;
-
-	if (treg != tree->right->reg1)
-		x86_mov_reg_imm (s->code, treg, tree->right->data.i);
-
-} cost {
-	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
-	return 0;
-}
-
-reg: LDIND_REF (ADDR_L) {
-	int treg = VARINFO (s, tree->left->data.i).reg;
-
-	if (treg != tree->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
-
-} cost {
-	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
-	return 0;
-}
 
 reg: LDIND_I4 (addr) {
 
@@ -815,33 +805,6 @@ reg: LDIND_I4 (addr) {
 
 
 	PRINT_REG ("LDIND_I4", tree->reg1);
-}
-
-reg: LDIND_REF (addr) {
-
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
-		break;
-
-	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, 4);
-		break;		
-	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
-		break;		
-	}
-
-
-	PRINT_REG ("LDIND_REF", tree->reg1);
 }
 
 reg: LDIND_I1 (addr) {
@@ -942,31 +905,6 @@ reg: LDIND_U2 (addr) {
 	}
 
 	PRINT_REG ("LDIND_U2", tree->reg1);
-}
-
-reg: LDIND_U4 (addr) {
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
-		break;
-
-	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, 4);
-		break;		
-	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 4);
-		break;		
-	}
-
-	PRINT_REG ("LDIND_U4", tree->reg1);
 }
 
 reg: REMOTE_LDFLDA (reg) {
@@ -1412,6 +1350,18 @@ reg: ADD (reg, coni4) "MB_USE_OPT1(0)" {
 
 }
 
+reg: ADD (reg, LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->right->left->data.i).reg;
+
+	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, treg);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+} cost {
+	MBCOND ((VARINFO (data, tree->right->left->data.i).reg >= 0));
+	return 0;
+}
+
 reg: ADD (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
 
@@ -1443,6 +1393,18 @@ reg: SUB (reg, coni4) "MB_USE_OPT1(0)" {
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: SUB (reg, LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->right->left->data.i).reg;
+
+	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, treg);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+} cost {
+	MBCOND ((VARINFO (data, tree->right->left->data.i).reg >= 0));
+	return 0;
 }
 
 reg: SUB (reg, reg) {
@@ -1987,6 +1949,30 @@ stmt: BR {
 	x86_jump32 (s->code, 0); 
 }
 
+cflags: COMPARE (reg, LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->right->left->data.i).reg;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, treg);
+} cost {
+	MBCOND ((VARINFO (data, tree->right->left->data.i).reg >= 0));
+	return 0;
+}
+
+cflags: COMPARE (LDIND_I4 (ADDR_L), coni4) {
+	int treg = VARINFO (s, tree->left->left->data.i).reg;
+	x86_alu_reg_imm (s->code, X86_CMP, treg, tree->right->data.i);
+} cost {
+	MBCOND ((VARINFO (data, tree->left->left->data.i).reg >= 0));
+	return 0;
+}
+
+cflags: COMPARE (LDIND_I4 (ADDR_L), reg) {
+	int treg = VARINFO (s, tree->left->left->data.i).reg;
+	x86_alu_reg_reg (s->code, X86_CMP, treg, tree->right->reg1);
+} cost {
+	MBCOND ((VARINFO (data, tree->left->left->data.i).reg >= 0));
+	return 0;
+}
+
 cflags: COMPARE (reg, coni4) {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 }
@@ -2035,10 +2021,38 @@ stmt: CBRANCH (cflags) {
 	}
 }
 
+stmt: BRTRUE (LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->left->left->data.i).reg;
+	int offset = VARINFO (s, tree->left->left->data.i).offset;
+
+	if (treg >= 0)
+		x86_test_reg_reg (s->code, treg, treg);
+	else
+		x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, 0);
+
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_NE, 0, TRUE);
+}
+
 stmt: BRTRUE (reg) {
 	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
 	x86_branch32 (s->code, X86_CC_NE, 0, TRUE);
+}
+
+stmt: BRFALSE (LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->left->left->data.i).reg;
+	int offset = VARINFO (s, tree->left->left->data.i).offset;
+
+	if (treg >= 0)
+		x86_test_reg_reg (s->code, treg, treg);
+	else
+		x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, 0);
+
+	mono_add_jump_info (s, s->code + 2, MONO_JUMP_INFO_BB, tree->data.bb);
+	x86_branch32 (s->code, X86_CC_EQ, 0, TRUE);
+
+	//{static int cx= 0; printf ("CX1 %5d\n", cx++);}
 }
 
 stmt: BRFALSE (reg) {
@@ -2093,28 +2107,12 @@ stmt: ARG_I4 (LDIND_I4 (addr)) {
 	}
 }
 
-stmt: ARG_I4 (LDIND_U4 (addr)) {
-	MBTree *at = tree->left->left;
-
-	switch (at->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_push_mem (s->code, at->data.ainfo.offset);
-		break;
-
-	case AMBase:
-		x86_push_membase (s->code, at->data.ainfo.basereg, at->data.ainfo.offset);
-		break;		
-	case AMIndex:
-		x86_push_memindex (s->code, X86_NOBASEREG, at->data.ainfo.offset,
-				   at->data.ainfo.indexreg, at->data.ainfo.shift);
-		break;		
-	case AMBaseIndex:
-		x86_push_memindex (s->code, at->data.ainfo.basereg, 
-				   at->data.ainfo.offset, at->data.ainfo.indexreg, 
-				   at->data.ainfo.shift);
-		break;		
-	}
+stmt: ARG_I4 (LDIND_I4 (ADDR_L)) {
+	int treg = VARINFO (s, tree->left->left->data.i).reg;
+	x86_push_reg (s->code, treg);
+} cost {
+	MBCOND ((VARINFO (data, tree->left->left->data.i).reg >= 0));
+	return 0;
 }
 
 stmt: ARG_I4 (reg) {
