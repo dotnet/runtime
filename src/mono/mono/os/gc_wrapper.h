@@ -5,10 +5,15 @@
 
 #ifdef HAVE_BOEHM_GC
 
-	/* libgc specifies this on the command line,
-	 * so we must define it ourselfs
-	 */
-#	define GC_GCJ_SUPPORT
+#	ifdef _MSC_VER
+#		include <winsock2.h>
+#	else
+		/* libgc specifies this on the command line,
+		 * so we must define it ourselfs
+		*/
+#		define GC_GCJ_SUPPORT
+#	endif
+
 	/*
 	 * Local allocation is only beneficial if we have __thread
 	 * We had to fix a bug with include order in libgc, so only do
