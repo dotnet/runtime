@@ -54,6 +54,7 @@ struct _MonoImage {
 	char *name;
 	const char *assembly_name;
 	const char *module_name;
+	char *guid;
 	void *image_info;
 
 	char                *raw_metadata;
@@ -133,6 +134,7 @@ typedef enum {
 MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);
 MonoImage    *mono_image_loaded   (const char *name);
+MonoImage    *mono_image_loaded_by_guid (const char *guid);
 void          mono_image_close    (MonoImage *image);
 const char   *mono_image_strerror (MonoImageOpenStatus status);
 

@@ -29,6 +29,7 @@
  * Keeps track of the various assemblies loaded
  */
 static GHashTable *loaded_images_hash;
+static GHashTable *loaded_images_guid_hash;
 
 guint32
 mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
@@ -294,6 +295,12 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			ptr += 4 - (((guint32)ptr) % 4);
 		}
 	}
+
+	g_assert (image->heap_guid.data);
+	g_assert (image->heap_guid.size >= 16);
+
+	image->guid = mono_guid_to_string (image->heap_guid.data);
+
 	return TRUE;
 }
 
@@ -580,6 +587,13 @@ mono_image_loaded (const char *name) {
 	return NULL;
 }
 
+MonoImage *
+mono_image_loaded_by_guid (const char *guid) {
+	if (loaded_images_guid_hash)
+		return g_hash_table_lookup (loaded_images_guid_hash, guid);
+	return NULL;
+}
+
 /**
  * mono_image_open:
  * @fname: filename that points to the module we want to open
@@ -613,6 +627,10 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (image->assembly_name)
 		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);
 	
+	if (!loaded_images_guid_hash)
+		loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
+
 	return image;
 }
 
