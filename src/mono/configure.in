@@ -947,7 +947,7 @@ mono/profiler/Makefile
 runtime/Makefile
 scripts/Makefile
 man/Makefile
-doc/Makefile
+web/Makefile
 docs/Makefile
 data/Makefile
 samples/Makefile
