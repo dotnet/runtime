@@ -280,6 +280,9 @@ gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 						   gboolean check_interfaces);
 
+gboolean
+mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
+
 gpointer
 mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
 

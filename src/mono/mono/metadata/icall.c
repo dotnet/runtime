@@ -1010,6 +1010,25 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 }
 
 static guint32
+ves_icall_type_is_assignable_from (MonoReflectionType *type, MonoReflectionType *c)
+{
+	MonoDomain *domain; 
+	MonoClass *klass;
+	MonoClass *klassc;
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (type != NULL);
+	
+	domain = ((MonoObject *)type)->vtable->domain;
+
+	klass = mono_class_from_mono_type (type->type);
+	klassc = mono_class_from_mono_type (c->type);
+
+	return mono_class_is_assignable_from (klass, klassc);
+}
+
+static guint32
 ves_icall_get_attributes (MonoReflectionType *type)
 {
 	MonoClass *klass = mono_class_from_mono_type (type->type);
@@ -3804,6 +3823,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
+	"System.Type::type_is_assignable_from", ves_icall_type_is_assignable_from,
 	"System.Type::Equals", ves_icall_type_Equals,
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,

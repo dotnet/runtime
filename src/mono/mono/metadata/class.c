@@ -1945,9 +1945,61 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 		if (!(klass->flags & TYPE_ATTRIBUTE_INTERFACE) && mono_class_has_parent (klass, klassc))
 			return TRUE;
 	}
+
+	/* 
+	 * MS.NET thinks interfaces are a subclass of Object, so we think it as
+	 * well.
+	 */
+	if (klassc == mono_defaults.object_class)
+		return TRUE;
 	
 	return FALSE;
 }
+
+gboolean
+mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
+{
+	if (!klass->inited)
+		mono_class_init (klass);
+
+	if (!oklass->inited)
+		mono_class_init (oklass);
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if ((klass->interface_id <= oklass->max_interface_id) &&
+		    (oklass->interface_offsets [klass->interface_id] != -1))
+			return TRUE;
+	} else
+		if (klass->rank) {
+			MonoClass *eclass, *eoclass;
+
+			if (oklass->rank != klass->rank)
+				return FALSE;
+
+			eclass = klass->cast_class;
+			eoclass = oklass->cast_class;
+
+
+			/* 
+			 * a is b does not imply a[] is b[] when a is a valuetype, and
+			 * b is a reference type.
+			 */
+
+			if (eoclass->valuetype) {
+				if ((eclass == mono_defaults.enum_class) || 
+					(eclass == mono_defaults.enum_class->parent) ||
+					(eclass == mono_defaults.object_class))
+					return FALSE;
+			}
+
+			return mono_class_is_assignable_from (klass->cast_class, oklass->cast_class);
+		}
+	else
+		if (klass == mono_defaults.object_class)
+			return TRUE;
+
+	return mono_class_has_parent (oklass, klass);
+}	
 
 /*
  * Returns the nnumber of bytes an element of type klass

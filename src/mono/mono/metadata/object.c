@@ -1739,24 +1739,15 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		if ((klass->interface_id <= vt->max_interface_id) &&
-		    vt->interface_offsets [klass->interface_id])
-			return obj;
-	} else {
-		if (oklass == mono_defaults.transparent_proxy_class) {
-			/* fixme: add check for IRemotingTypeInfo */
-			oklass = ((MonoTransparentProxy *)obj)->klass;
-		}
-		if (klass->rank) {
-			if (oklass->rank == klass->rank && mono_class_has_parent (oklass->cast_class, klass->cast_class))
-				return obj;
-			
-		} else if (mono_class_has_parent (oklass, klass))
-			return obj;
+	if (oklass == mono_defaults.transparent_proxy_class) {
+		/* fixme: add check for IRemotingTypeInfo */
+		MonoRealProxy *rp = ((MonoTransparentProxy *)obj)->rp;
+		MonoType *type;
+		type = rp->class_to_proxy->type;
+		oklass = mono_class_from_mono_type (type);
 	}
 
-	return NULL;
+	return mono_class_is_assignable_from (klass, oklass) ? obj : NULL;
 }
 
 typedef struct {
