@@ -124,7 +124,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 #ifdef HAVE_BOEHM_GC
 	info = GC_MALLOC (sizeof (MonoAotModuleInfo));
 #else
-	info = g_new0 (MonoAotModuleInfo);
+	info = g_new0 (MonoAotModuleInfo, 1);
 #endif
 	info->methods = mono_g_hash_table_new (NULL, NULL);
 	sscanf (opt_flags, "%d", &info->opts);
@@ -249,7 +249,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 #ifdef HAVE_BOEHM_GC
 	minfo = GC_MALLOC (sizeof (MonoAotMethodInfo));
 #else
-	minfo = g_new0 (MonoAotMethodInfo, 0);
+	minfo = g_new0 (MonoAotMethodInfo, 1);
 #endif
 
 	if (info) {
