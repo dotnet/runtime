@@ -34,6 +34,9 @@
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "7"
 
+typedef gpointer (*MonoGetLmfAddrFunc) (void);
+typedef void (*MonoSetLmfAddrFunc) (gpointer addr);
+
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
 #else
@@ -659,6 +662,7 @@ typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 /* main function */
 int         mono_main                      (int argc, char* argv[]);
 void        mono_set_defaults              (int verbose_level, guint32 opts);
+void        mono_install_lmf_accessors     (MonoGetLmfAddrFunc get_func, MonoSetLmfAddrFunc set_func);
 MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
 
@@ -717,6 +721,8 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
+MonoGetLmfAddrFunc mono_get_lmf_accessor_get (void);
+MonoSetLmfAddrFunc mono_get_lmf_accessor_set (void);
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);

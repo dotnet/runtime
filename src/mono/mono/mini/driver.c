@@ -49,6 +49,28 @@ static FILE *mini_stats_fd = NULL;
 
 static void mini_usage (void);
 
+/*
+ * Putting TLS variables into the main mono executable instead of libmono
+ * speeds up TLS access, since the compiler can use 'initial-exec' TLS model.
+ */
+#ifdef HAVE_KW_THREAD
+
+static __thread gpointer mono_lmf_addr;
+
+static gpointer
+get_lmf_addr (void)
+{
+	return mono_lmf_addr;
+}
+
+static void
+set_lmf_addr (gpointer addr)
+{
+	mono_lmf_addr = addr;
+}
+
+#endif
+
 typedef void (*OptFunc) (const char *p);
 
 /* keep in sync with enum in mini.h */
@@ -711,6 +733,9 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
+#ifdef HAVE_KW_THREAD
+	mono_install_lmf_accessors (get_lmf_addr, set_lmf_addr);
+#endif
 	domain = mini_init (argv [i]);
 	
 	switch (action) {

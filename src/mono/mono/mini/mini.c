@@ -123,6 +123,9 @@ static GHashTable *class_init_hash_addr = NULL;
 
 static GHashTable *jump_trampoline_hash = NULL;
 
+static MonoGetLmfAddrFunc get_lmf_addr_func = NULL;
+static MonoSetLmfAddrFunc set_lmf_addr_func = NULL;
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -6532,6 +6535,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls->lmf = jit_tls->first_lmf = lmf;
 
+	if (set_lmf_addr_func)
+		set_lmf_addr_func (&jit_tls->lmf);
+
 	mono_arch_setup_jit_tls_data (jit_tls);
 
 	return jit_tls;
@@ -8321,10 +8327,13 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 
-	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
+	if (get_lmf_addr_func)
+		mono_register_jit_icall (get_lmf_addr_func, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
+	else
+		mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
 
-	/* fixme: we cant hanlde vararg methods this way, because the signature is not constant */
+	/* fixme: we cant handle vararg methods this way, because the signature is not constant */
 	//mono_register_jit_icall (ves_array_element_address, "ves_array_element_address", NULL);
 	//mono_register_jit_icall (mono_array_new_va, "mono_array_new_va", NULL);
 
@@ -8508,6 +8517,25 @@ mono_set_defaults (int verbose_level, guint32 opts)
 {
 	mini_verbose = verbose_level;
 	default_opt = opts;
+}
+
+void
+mono_install_lmf_accessors (MonoGetLmfAddrFunc get_func, MonoSetLmfAddrFunc set_func)
+{
+	get_lmf_addr_func = get_func;
+	set_lmf_addr_func = set_func;
+}
+
+MonoGetLmfAddrFunc
+mono_get_lmf_accessor_get (void)
+{
+	return get_lmf_addr_func;
+}
+
+MonoSetLmfAddrFunc
+mono_get_lmf_accessor_set (void)
+{
+	return set_lmf_addr_func;
 }
 
 static void
