@@ -41,7 +41,7 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 			ao->bounds [i].lower_bound;
 
 	esize = mono_array_element_size (ac);
-	ea = ao->vector + (pos * esize);
+	ea = (gpointer*)((char*)ao->vector + (pos * esize));
 
 	if (ac->element_class->valuetype)
 		return mono_value_box (ac->element_class, ea);
@@ -79,7 +79,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 			ao->bounds [i].lower_bound;
 
 	esize = mono_array_element_size (ac);
-	ea = ao->vector + (pos * esize);
+	ea = (gpointer*)((char*)ao->vector + (pos * esize));
 
 	if (ac->element_class->valuetype) {
 		g_assert (vc->valuetype);
@@ -88,68 +88,6 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	} else
 		*ea = (gpointer)vo;
 
-}
-
-static void 
-ves_icall_array_ctor (MonoObject *this, gint32 n1, ...)
-{
-	va_list ap;
-	MonoArray *ao;
-	MonoClass *ac;
-	gint32 i, s, len, esize;
-
-	va_start (ap, n1);
-
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)this->klass;
-
-	g_assert (ac->rank >= 1);
-
-	ao->bounds = g_malloc0 (ac->rank * sizeof (MonoArrayBounds));
-
-	len = n1;
-	ao->bounds [0].length = n1;
-	for (i = 1; i < ac->rank; i++) {
-		s = va_arg (ap, gint32);
-		len *= s;
-		ao->bounds [i].length = s;
-	}
-
-	esize = mono_array_element_size (ac);
-	ao->vector = g_malloc0 (len * esize);
-}
-
-static void 
-ves_icall_array_bound_ctor (MonoObject *this, gint32 n1, ...)
-{
-	va_list ap;
-	MonoArray *ao;
-	MonoClass *ac;
-	gint32 i, s, len, esize;
-
-	va_start (ap, n1);
-
-	ao = (MonoArray *)this;
-	ac = (MonoClass *)this->klass;
-
-	g_assert (ac->rank >= 1);
-
-	ao->bounds = g_malloc0 (ac->rank * sizeof (MonoArrayBounds));
-
-	ao->bounds [0].lower_bound = n1;
-	for (i = 1; i < ac->rank; i++)
-		ao->bounds [i].lower_bound = va_arg (ap, gint32);
-
-	len = va_arg (ap, gint32);
-	ao->bounds [0].length = len;
-	for (i = 1; i < ac->rank; i++) {
-		s = va_arg (ap, gint32);
-		len *= s;
-		ao->bounds [i].length = s;
-	}
-
-	esize = mono_array_element_size (ac);
-	ao->vector = g_malloc0 (len * esize);
 }
 
 static void
@@ -176,6 +114,16 @@ static gint32
 ves_icall_System_Array_GetLowerBound (MonoObject *this, gint32 dimension)
 {
 	return ((MonoArray *)this)->bounds [dimension].lower_bound;
+}
+
+static void
+ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
+{
+		guint32 size = mono_array_element_size (((MonoObject*) array)->klass) * mono_array_length (array);
+		/*
+		 * FIXME: ENOENDIAN: we need to byteswap as needed.
+		 */
+		memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
 }
 
 static MonoObject *
@@ -211,7 +159,7 @@ ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 type, Mono
 	int count;
 
 	if (type == 0) { /* get the header */
-		count = mono_image_get_header (assb, buf->vector, buf->bounds->length);
+		count = mono_image_get_header (assb, (char*)buf->vector, buf->bounds->length);
 		if (count != -1)
 			return count;
 	} else {
@@ -243,8 +191,6 @@ static gpointer icall_map [] = {
 	/*
 	 * System.Array
 	 */
-	"__array_ctor",                   ves_icall_array_ctor,
-	"__array_bound_ctor",             ves_icall_array_bound_ctor,
 	"System.Array::GetValue",         ves_icall_System_Array_GetValue,
 	"System.Array::SetValue",         ves_icall_System_Array_SetValue,
 	"System.Array::GetRank",          ves_icall_System_Array_GetRank,
@@ -290,6 +236,11 @@ static gpointer icall_map [] = {
 	 */
 	"System.Type::internal_from_name", ves_icall_type_from_name,
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
+
+	/*
+	 * System.Runtime.CompilerServices.RuntimeHelpers
+	 */
+	"System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray", ves_icall_InitializeArray,
 	
 	/*
 	 * System.Threading

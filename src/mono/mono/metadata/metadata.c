@@ -1915,3 +1915,55 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 		*endbuf = p;
 }
 
+/*
+ * mono_metadata_field_info:
+ * @meta: the Image the field is defined in
+ * @index: the index in the field table representing the field
+ * @offset: a pointer to an integer where to store the offset that 
+ * may have been specified for the field in a FieldLayout table
+ * @rva: a pointer to the address of the field data in the image that
+ * may have been defined in a FieldRVA table
+ * @marshal_info: a pointer to the marshal signature that may have been 
+ * defined for the field in a FieldMarshal table.
+ *
+ * Gather info for field @index that may have been defined in the FieldLayout, 
+ * FieldRVA and FieldMarshal tables.
+ * Either of offset, rva and marshal_info can be NULL if you're not interested 
+ * in the data.
+ */
+void
+mono_metadata_field_info (MonoMetadata *meta, guint32 index, guint32 *offset, const char **rva, const char **marshal_info)
+{
+	MonoTableInfo *tdef;
+	locator_t loc;
+
+	loc.idx = index + 1;
+	if (offset) {
+		tdef = &meta->tables [MONO_TABLE_FIELDLAYOUT];
+
+		loc.col_idx = MONO_FIELD_LAYOUT_FIELD;
+		loc.t = tdef;
+
+		if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
+			*offset = mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_LAYOUT_OFFSET);
+		} else {
+			*offset = (guint32)-1;
+		}
+	}
+	if (rva) {
+		tdef = &meta->tables [MONO_TABLE_FIELDRVA];
+
+		loc.col_idx = MONO_FIELD_RVA_FIELD;
+		loc.t = tdef;
+
+		if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
+			/*
+			 * LAMESPEC: There is no signature, no nothing, just the raw data.
+			 */
+			*rva = mono_cli_rva_map (meta->image_info, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_RVA_RVA));
+		} else {
+			*rva = NULL;
+		}
+	}
+
+}

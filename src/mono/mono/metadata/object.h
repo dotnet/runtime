@@ -16,8 +16,9 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
-	gpointer vector;
 	MonoArrayBounds *bounds;
+	/* we use double to ensure proper alignment on platforms that need it */
+	double vector [MONO_ZERO_LEN_ARRAY];
 } MonoArray;
 
 typedef struct {
@@ -42,8 +43,11 @@ mono_object_new             (MonoClass *klass);
 MonoObject *
 mono_object_new_from_token  (MonoImage *image, guint32 token);
 
-MonoObject *
+MonoArray*
 mono_array_new              (MonoClass *eclass, guint32 n);
+
+MonoArray*
+mono_array_new_full         (MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds);
 
 MonoString*
 mono_string_new_utf16       (const guint16 *text, gint32 len);

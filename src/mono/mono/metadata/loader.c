@@ -399,19 +399,12 @@ method_from_memberref (MonoImage *image, guint32 index)
 		result->signature = sig;
 		result->name = mname;
 
-		if (!strcmp (mname, ".ctor")) { 
-			g_assert (sig->hasthis);
-			if (type->data.array->rank == sig->param_count) {
-				result->addr = mono_lookup_internal_call ("__array_ctor");
-			} else if ((type->data.array->rank * 2) == sig->param_count) {
-				result->addr = mono_lookup_internal_call ("__array_bound_ctor");
-			} else 
-				g_assert_not_reached ();
-
-			result->flags = METHOD_ATTRIBUTE_PINVOKE_IMPL;
-			return result;						
+		if (!strcmp (mname, ".ctor")) {
+			/* we special-case this in the runtime. */
+			result->addr = NULL;
+			return result;
 		}
-
+		
 		if (!strcmp (mname, "Set")) {
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank + 1 == sig->param_count);

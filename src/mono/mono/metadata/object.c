@@ -106,6 +106,42 @@ mono_object_clone (MonoObject *obj)
 	return o;
 }
 
+MonoArray*
+mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds)
+{
+	guint32 byte_len;
+	MonoObject *o;
+	MonoArray *array;
+	MonoArrayBounds *bounds;
+	int i;
+
+	if (!array_class->metadata_inited)
+		mono_class_metadata_init (array_class);
+	byte_len = mono_array_element_size (array_class);
+
+	bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
+	for (i = 0; i < array_class->rank; ++i) {
+		bounds [i].length = lengths [i];
+		byte_len *= lengths [i];
+	}
+
+	if (lower_bounds)
+		for (i = 0; i < array_class->rank; ++i)
+			bounds [i].lower_bound = lower_bounds [i];
+	/* 
+	 * Following three lines almost taken from mono_object_new ():
+	 * they need to be kept in sync.
+	 */
+	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	o->klass = array_class;
+	mono_threads_synchronisation_init (&o->synchronisation);
+
+	array = (MonoArray*)o;
+
+	array->bounds = bounds;
+	return array;
+}
+
 /*
  * mono_array_new:
  * @image: image where the object is being referenced
@@ -114,27 +150,15 @@ mono_object_clone (MonoObject *obj)
  *
  * This routine creates a new szarray with @n elements of type @token
  */
-MonoObject *
+MonoArray *
 mono_array_new (MonoClass *eclass, guint32 n)
 {
-	MonoObject *o;
 	MonoClass *ac;
-	MonoArray *ao;
 
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac != NULL);
 
-	o = mono_object_new (ac);
-
-	ao = (MonoArray *)o;
-
-	ao->bounds = g_malloc0 (sizeof (MonoArrayBounds));
-	ao->bounds [0].length = n;
-	ao->bounds [0].lower_bound = 0;
-
-	ao->vector = g_malloc0 (n * mono_array_element_size (ac));
-
-	return o;
+	return mono_array_new_full (ac, &n, NULL);
 }
 
 /**
@@ -328,7 +352,7 @@ mono_ldstr (MonoImage *image, guint32 index)
 		return o;
 	
 	len = mono_metadata_decode_blob_size (str, &str);
-	o = mono_string_new_utf16 (str, len >> 1);
+	o = mono_string_new_utf16 ((guint16*)str, len >> 1);
 	g_hash_table_insert (ldstr_table, (gpointer)sig, o);
 
 	return o;
@@ -345,7 +369,7 @@ mono_string_to_utf8 (MonoString *s)
 	if (!s->length || !s->c_str)
 		return g_strdup ("");
 
-	vector = s->c_str->vector;
+	vector = (char*)s->c_str->vector;
 
 	g_assert (vector != NULL);
 

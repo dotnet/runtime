@@ -12,7 +12,9 @@
 typedef struct {
 	MonoType *type;
 	int       offset;
-	char     *name;
+	const char     *name;
+	const char     *data;
+	/* add marshal data, too */
 } MonoClassField;
 
 struct _MonoClass {

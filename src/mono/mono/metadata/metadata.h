@@ -114,6 +114,12 @@ guint32 mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index);
 
 MonoClass** mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint *count);
 
+void        mono_metadata_field_info (MonoMetadata *meta, 
+				      guint32       index,
+				      guint32      *offset,
+				      const char  **rva,
+				      const char  **marshal_info);
+
 /*
  * Functions to extract information from the Blobs
  */

@@ -81,7 +81,7 @@ class_compute_field_layout (MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i, j;
+	int i;
 
 	/*
 	 * Fetch all the field information.
@@ -100,6 +100,11 @@ class_compute_field_layout (MonoClass *class)
 		g_assert (*sig == 0x06);
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
+			mono_metadata_field_info (m, idx, NULL, &class->fields [i].data, NULL);
+			if (!class->fields [i].data)
+				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
+		}
 	}
 	/*
 	 * Compute field layout and total size.
@@ -128,25 +133,30 @@ class_compute_field_layout (MonoClass *class)
 			int size, align;
 			int idx = class->field.first + i;
 
-			t = &m->tables [MONO_TABLE_FIELDLAYOUT];
+			/*
+			 * There must be info about all the fields in a type if it
+			 * uses explicit layout.
+			 */
 
-			for (j = 0; j < t->rows; j++) {
-
-				mono_metadata_decode_row (t, j, cols, CSIZE (cols));
-				if (cols [1] == idx) {
-					g_warning ("TODO: Explicit layout not supported yet");
-				}
-			}
-			
 			size = mono_type_size (class->fields [i].type, &align);
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				class->fields [i].offset = class->class_size;
 				class->class_size += (class->class_size % align);
 				class->class_size += size;
 			} else {
-				class->fields [i].offset = class->instance_size;
-				class->instance_size += (class->instance_size % align);
-				class->instance_size += size;
+				mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
+				if (class->fields [i].offset == (guint32)-1)
+						g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
+				/*
+				 * The offset is from the start of the object: this works for both
+				 * classes and valuetypes.
+				 */
+				class->fields [i].offset += sizeof (MonoObject);
+				/*
+				 * Calc max size.
+				 */
+				size += class->fields [i].offset;
+				class->instance_size = MAX (class->instance_size, size);
 			}
 		}
 		break;
@@ -739,7 +749,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 	g_assert (!eclass->type_token ||
 		  mono_metadata_token_table (eclass->type_token) == MONO_TABLE_TYPEDEF);
-	
+
 	key = ((rank & 0xff) << 24) | (eclass->type_token & 0xffffff);
 	if ((class = g_hash_table_lookup (image->array_cache, GUINT_TO_POINTER (key))))
 		return class;
@@ -994,10 +1004,17 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 			return &class->byval_arg;
 		class = mono_class_create_from_typespec (image, token);
 		return &class->byval_arg;
-		break;
+	}
+	case MONO_TOKEN_FIELD_DEF: {
+		MonoClass *class;
+		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
+		class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+		mono_class_metadata_init (class);
+		if (handle_class)
+				*handle_class = mono_class_from_name (mono_defaults.corlib, "System", "RuntimeFieldHandle");
+		return mono_class_get_field (class, token);
 	}
 	case MONO_TOKEN_METHOD_DEF:
-	case MONO_TOKEN_FIELD_DEF:
 	case MONO_TOKEN_MEMBER_REF:
 	default:
 		g_warning ("Unknown token 0x%08x in ldtoken", token);

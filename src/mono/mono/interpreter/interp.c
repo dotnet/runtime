@@ -473,6 +473,29 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	}
 }
 
+static MonoObject*
+ves_array_create (MonoClass *klass, MonoMethodSignature *sig, stackval *values)
+{
+	guint32 *lengths;
+	guint32 *lower_bounds;
+	int i;
+
+	lengths = alloca (sizeof (guint32) * klass->rank * 2);
+	for (i = 0; i < sig->param_count; ++i) {
+		lengths [i] = values->data.i;
+		values ++;
+	}
+	if (klass->rank == sig->param_count) {
+		/* Only lengths provided. */
+		lower_bounds = NULL;
+	} else {
+		/* lower bounds are first. */
+		lower_bounds = lengths;
+		lengths += klass->rank;
+	}
+	return (MonoObject*)mono_array_new_full (klass, lengths, lower_bounds);
+}
+
 static void 
 ves_array_set (MonoInvocation *frame)
 {
@@ -2021,6 +2044,12 @@ ves_exec_method (MonoInvocation *frame)
 
 			csig = child_frame.method->signature;
 
+			if (child_frame.method->klass->parent == mono_defaults.array_class) {
+				sp -= csig->param_count;
+				o = ves_array_create (child_frame.method->klass, csig, sp);
+				goto array_constructed;
+			}
+
 			o = mono_object_new (child_frame.method->klass);
 
 			/*
@@ -2057,7 +2086,7 @@ ves_exec_method (MonoInvocation *frame)
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
-
+array_constructed:
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = o->klass;
@@ -2435,7 +2464,7 @@ ves_exec_method (MonoInvocation *frame)
 			ip++;
 			token = read32 (ip);
 			class = mono_class_get (image, token);
-			o = mono_array_new (class, sp [-1].data.i);
+			o = (MonoObject*) mono_array_new (class, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
