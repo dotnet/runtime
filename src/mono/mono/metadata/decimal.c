@@ -345,7 +345,7 @@ DECINLINE static int div128by32(guint64* plo, guint64* phi, guint32 factor, guin
     if (pRest) *pRest = (guint32) a;
 
     a <<= 1;
-    return (a > factor || (a == factor && (c & 1) == 1)) ? 1 : 0;
+    return (a >= factor || (a == factor && (c & 1) == 1)) ? 1 : 0;
 }
 
 /* division: x(192bit) /= factor(32bit) 
