@@ -90,13 +90,6 @@ static void shared_init (void)
 	_wapi_shared_data=g_new0 (struct _WapiHandleShared_list *, 1);
 	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list *, 1);
 
-	/* Build this array at runtime, because I'm guessing that
-	 * getdtablesize() won't be a fixed value on all systems (or
-	 * why would it be a function rather than a constant define?)
-	 */
-	_wapi_fd_offset_table_size=getdtablesize ();
-	_wapi_fd_offset_table=g_new0 (gpointer, _wapi_fd_offset_table_size);
-	
 attach_again:
 
 #ifndef DISABLE_SHARED_HANDLES
@@ -156,6 +149,9 @@ attach_again:
 				
 				goto attach_again;
 			}
+		} else {
+			_wapi_fd_offset_table_size = _wapi_shared_data[0]->fd_offset_table_size;
+			_wapi_fd_offset_table=g_new0 (gpointer, _wapi_fd_offset_table_size);
 		}
 	}
 
@@ -168,6 +164,10 @@ attach_again:
 		_wapi_shared_data[0]->num_segments=1;
 
 		_wapi_shared_scratch=g_new0 (struct _WapiHandleScratch, 1);
+
+		_wapi_fd_offset_table_size=getdtablesize ();
+		_wapi_fd_offset_table=g_new0 (gpointer,
+					      _wapi_fd_offset_table_size);
 	}
 	_wapi_private_data[0]=g_new0 (struct _WapiHandlePrivate_list, 1);
 	_wapi_shm_mapped_segments=1;

@@ -1628,6 +1628,19 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	if (fd >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+		
+		close (fd);
+		g_free (filename);
+		
+		return(INVALID_HANDLE_VALUE);
+	}
+
 	ret = fstat (fd, &statbuf);
 	if (ret == -1) {
 #ifdef DEBUG
@@ -2002,16 +2015,16 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 }
 
 static mono_once_t stdhandle_once=MONO_ONCE_INIT;
-static gpointer stdin_handle=NULL;
-static gpointer stdout_handle=NULL;
-static gpointer stderr_handle=NULL;
+static gpointer stdin_handle=INVALID_HANDLE_VALUE;
+static gpointer stdout_handle=INVALID_HANDLE_VALUE;
+static gpointer stderr_handle=INVALID_HANDLE_VALUE;
 
 static gpointer stdhandle_create (int fd, const guchar *name)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
-	gpointer handle, ret = NULL;
+	gpointer handle, ret = INVALID_HANDLE_VALUE;
 	int flags;
 	int thr_ret;
 	
@@ -2042,7 +2055,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating file handle");
-		return(NULL);
+		return(INVALID_HANDLE_VALUE);
 	}
 
 	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
@@ -2059,6 +2072,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 		goto cleanup;
 	}
 
+	/* We know this is fd 0, 1 or 2 */
 	_wapi_handle_fd_offset_store (fd, handle);
 	ret = GINT_TO_POINTER (fd);
 	
@@ -2130,6 +2144,11 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	if (handle == INVALID_HANDLE_VALUE) {
+		SetLastError (ERROR_NO_MORE_FILES);
+		return(INVALID_HANDLE_VALUE);
+	}
+	
 	/* Add a reference to this handle */
 	_wapi_handle_ref (_wapi_handle_fd_offset_to_handle (handle));
 	
@@ -3565,6 +3584,20 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 #endif
 		
 		_wapi_set_last_error_from_errno ();
+		return(FALSE);
+	}
+
+	if (filedes[0] >= _wapi_fd_offset_table_size ||
+	    filedes[1] >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+		
+		close (filedes[0]);
+		close (filedes[1]);
+		
 		return(FALSE);
 	}
 	

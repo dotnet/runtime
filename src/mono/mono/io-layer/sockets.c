@@ -261,6 +261,18 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 
+	if (new_fd >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		WSASetLastError (WSASYSCALLFAILURE);
+		
+		close (new_fd);
+		
+		return(INVALID_SOCKET);
+	}
+
 	new_handle=_wapi_handle_new (WAPI_HANDLE_SOCKET);
 	if(new_handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
@@ -764,6 +776,18 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused, guint32 u
 
 		return(INVALID_SOCKET);
 	}
+
+	if (fd >= _wapi_fd_offset_table_size) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": File descriptor is too big");
+#endif
+
+		WSASetLastError (WSASYSCALLFAILURE);
+		close (fd);
+		
+		return(INVALID_SOCKET);
+	}
+	
 	
 	mono_once (&socket_ops_once, socket_ops_init);
 	
