@@ -3191,6 +3191,14 @@ compare_semantics (const void *a, const void *b)
 {
 	const guint32 *a_values = a;
 	const guint32 *b_values = b;
+	return a_values [MONO_CONSTANT_PARENT] - b_values [MONO_CONSTANT_PARENT];
+}
+
+static int
+compare_constants (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
 	int assoc = a_values [MONO_METHOD_SEMA_ASSOCIATION] - b_values [MONO_METHOD_SEMA_ASSOCIATION];
 	if (assoc)
 		return assoc;
@@ -3429,6 +3437,9 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	p = (unsigned char*)int32val;
 
 	/* sort the tables that still need sorting */
+	table = &assembly->tables [MONO_TABLE_CONSTANT];
+	if (table->rows)
+		qsort (table->values + MONO_CONSTANT_SIZE, table->rows, sizeof (guint32) * MONO_CONSTANT_SIZE, compare_constants);
 	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
 	if (table->rows)
 		qsort (table->values + MONO_METHOD_SEMA_SIZE, table->rows, sizeof (guint32) * MONO_METHOD_SEMA_SIZE, compare_semantics);
