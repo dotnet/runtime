@@ -8,6 +8,7 @@ libmonoutils_la_SOURCES = \
 	mono-sha1.c	\
 	mono-logger.c	\
 	mono-codeman.c	\
+	mono-compiler.h	\
 	monobitset.c	\
 	mono-math.c  \
 	strtod.h	\
