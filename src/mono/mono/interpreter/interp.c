@@ -49,6 +49,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/opcodes.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
 /*#include <mono/cli/types.h>*/
@@ -193,6 +194,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
 
+	mono_class_init (m->klass);
 	g_assert (m->klass->inited);
 
 	obj = objs->data.p;
@@ -532,6 +534,7 @@ ves_runtime_method (MonoInvocation *frame)
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
 	MonoDelegate *delegate = (MonoDelegate*)frame->obj;
+	MonoInvocation call;
 
 	mono_class_init (mono_defaults.delegate_class);
 	
@@ -550,11 +553,15 @@ ves_runtime_method (MonoInvocation *frame)
 		code = (guchar*)delegate->method_ptr;
 		method = mono_method_pointer_get (code);
 		/* FIXME: check for NULL method */
+		INIT_FRAME(&call,frame,delegate->target,frame->stack_args,frame->retval,method);
+		ves_exec_method (&call);
+#if 0
 		if (!method->addr)
 			method->addr = mono_create_trampoline (method, 1);
 		func = method->addr;
 		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
+#endif
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
 		return;
 	}
@@ -643,21 +650,10 @@ static void
 db_match_method (gpointer data, gpointer user_data)
 {
 	MonoMethod *m = (MonoMethod*)user_data;
-	char *startname, *startclass;
+	MonoMethodDesc *desc = data;
 
-	if (strcmp((char*)data, m->name) == 0) {
+	if (mono_method_desc_full_match (desc, m))
 		break_on_method = 1;
-		return;
-	}
-	startname = strrchr ((char*)data, ':');
-	if (!startname)
-		return;
-	if (strcmp(startname + 1, m->name) != 0)
-		return;
-	startclass = (char*)data;
-	if (memcmp (startclass, m->klass->name, startname-startclass) == 0)
-		break_on_method = 1;
-	/* ignore namespace */
 }
 
 #define DEBUG_ENTER()	\
@@ -669,7 +665,8 @@ db_match_method (gpointer data, gpointer user_data)
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
 		output_indent ();	\
-		g_print ("Entering %s.%s::%s %p (", klass->name_space, klass->name, frame->method->name, frame->obj);	\
+		g_print ("Entering %s.%s::%s (", klass->name_space, klass->name, frame->method->name);	\
+		if (frame->method->signature->hasthis) g_print ("%p ", frame->obj);	\
 		dump_stack (frame->stack_args, frame->stack_args+frame->method->signature->param_count);	\
 		g_print (")\n");	\
 	}	\
@@ -1050,13 +1047,17 @@ ves_exec_method (MonoInvocation *frame)
 #if DEBUG_INTERP
 		opcode_count++;
 		if (tracing > 1) {
+			char *ins;
+			if (sp > frame->stack) {
+				output_indent ();
+				g_print ("stack: ");
+				dump_stack (frame->stack, sp);
+				g_print ("\n");
+			}
 			output_indent ();
-			g_print ("stack: ");
-			dump_stack (frame->stack, sp);
-			g_print ("\n");
-			output_indent ();
-			g_print ("0x%04x: %s\n", ip-header->code,
-				 *ip == 0xfe ? mono_opcode_names [256 + ip [1]] : mono_opcode_names [*ip]);
+			ins = mono_disasm_code_one (NULL, frame->method, ip);
+			g_print ("%s", ins);
+			g_free (ins);
 		}
 #endif
 		
@@ -4021,8 +4022,12 @@ main (int argc, char *argv [])
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
 #if DEBUG_INTERP
-		if (strcmp (argv [i], "--debug") == 0)
-			db_methods = g_list_append (db_methods, argv [++i]);
+		if (strcmp (argv [i], "--debug") == 0) {
+			MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
+			if (!desc)
+				g_error ("Invalid method name '%s'", argv [i]);
+			db_methods = g_list_append (db_methods, desc);
+		}
 #endif
 	}
 	
