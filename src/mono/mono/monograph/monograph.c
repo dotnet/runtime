@@ -949,7 +949,7 @@ static void
 usage (void) {
 	printf ("monograph 0.2 Copyright (c) 2002 Ximian, Inc\n");
 	printf ("Create call graph or type hierarchy information from CIL assemblies.\n");
-	printf ("Usage: monograph [options] [assembly [typename|methodname]]\n");
+	printf ("Usage: monograph [options] [assembly [typename|methodname]]\n\n");
 	printf ("Valid options are:\n");
 	printf ("\t-c|--call             output call graph instead of type hierarchy\n");
 	printf ("\t-C|--control-flow     output control flow of methodname\n");
@@ -958,12 +958,14 @@ usage (void) {
 	printf ("\t-o|--output filename  write graph to file filename (default: stdout)\n");
 	printf ("\t-f|--fullname         include namespace in type and method names\n");
 	printf ("\t-n|--neato            invoke neato directly\n");
-	printf ("\t-v|--verbose          verbose operation\n");
+	printf ("\t-v|--verbose          verbose operation\n\n");
 	printf ("The default assembly is mscorlib.dll. The default method for\n");
-	printf ("the --call and --control-flow options is the entrypoint.\n");
+	printf ("the --call and --control-flow options is the entrypoint.\n\n");
 	printf ("When the --neato option is used the output type info is taken\n");
-	printf ("from the output filename extension. You need the graphviz package installed\n");
-	printf ("to be able to use this option.\n");
+	printf ("from the output filename extension. You need the graphviz package\n");
+	printf ("installed to be able to use this option and build bitmap files.\n");
+	printf ("Without --neato, monograph will create .dot files, a description\n");
+	printf ("file for a graph.\n\n");
 	printf ("Sample runs:\n");
 	printf ("\tmonograph -n -o vt.png mscorlib.dll System.ValueType\n");
 	printf ("\tmonograph -n -o expr.png mcs.exe Mono.CSharp.Expression\n");
