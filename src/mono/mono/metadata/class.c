@@ -181,6 +181,9 @@ mono_class_metadata_init (MonoClass *class)
 		class_compute_field_layout (class);
 	}
 
+	if (class->class_size)
+		class->data = g_malloc0 (class->class_size);
+
 	/* initialize mothod pointers */
 	class->methods = g_new (MonoMethod*, class->method.count);
 	for (i = 0; i < class->method.count; ++i)
@@ -388,8 +391,6 @@ mono_class_metadata_init (MonoClass *class)
 
 	}
 	*/
-
-	class->data = g_malloc0 (class->class_size);
 
 	//printf ("METAEND %s.%s\n", class->name_space, class->name);
 }

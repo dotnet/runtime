@@ -85,7 +85,9 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 	gpointer rval;
 
 	g_assert (pool != NULL);
-	g_assert (size < 256);
+
+	/* we should also handle large blocks */
+	g_assert (size < 4096);
 
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
 

@@ -20,8 +20,7 @@
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "jit.h"
-
-static void emit_method (MonoMethod *method, MBCodeGenStatus *s);
+#include "codegen.h"
 
 /**
  * arch_emit_prologue:
@@ -29,23 +28,23 @@ static void emit_method (MonoMethod *method, MBCodeGenStatus *s);
  *
  * Emits the function prolog.
  */
-void
-arch_emit_prologue (MBCodeGenStatus *s)
+static void
+arch_emit_prologue (MonoFlowGraph *cfg)
 {
-	x86_push_reg (s->code, X86_EBP);
-	x86_mov_reg_reg (s->code, X86_EBP, X86_ESP, 4);
+	x86_push_reg (cfg->code, X86_EBP);
+	x86_mov_reg_reg (cfg->code, X86_EBP, X86_ESP, 4);
 	
-	if (s->locals_size)
-		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, s->locals_size);
+	if (cfg->locals_size)
+		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, cfg->locals_size);
 
-	if (mono_regset_reg_used (s->rs, X86_EBX)) 
-		x86_push_reg (s->code, X86_EBX);
+	if (mono_regset_reg_used (cfg->rs, X86_EBX)) 
+		x86_push_reg (cfg->code, X86_EBX);
 
-	if (mono_regset_reg_used (s->rs, X86_EDI)) 
-		x86_push_reg (s->code, X86_EDI);
+	if (mono_regset_reg_used (cfg->rs, X86_EDI)) 
+		x86_push_reg (cfg->code, X86_EDI);
 
-	if (mono_regset_reg_used (s->rs, X86_ESI))
-		x86_push_reg (s->code, X86_ESI);
+	if (mono_regset_reg_used (cfg->rs, X86_ESI))
+		x86_push_reg (cfg->code, X86_ESI);
 }
 
 /**
@@ -54,20 +53,20 @@ arch_emit_prologue (MBCodeGenStatus *s)
  *
  * Emits the function epilog.
  */
-void
-arch_emit_epilogue (MBCodeGenStatus *s)
+static void
+arch_emit_epilogue (MonoFlowGraph *cfg)
 {
-	if (mono_regset_reg_used (s->rs, X86_EDI))
-		x86_pop_reg (s->code, X86_EDI);
+	if (mono_regset_reg_used (cfg->rs, X86_EDI))
+		x86_pop_reg (cfg->code, X86_EDI);
 
-	if (mono_regset_reg_used (s->rs, X86_ESI))
-		x86_pop_reg (s->code, X86_ESI);
+	if (mono_regset_reg_used (cfg->rs, X86_ESI))
+		x86_pop_reg (cfg->code, X86_ESI);
 
-	if (mono_regset_reg_used (s->rs, X86_EBX))
-		x86_pop_reg (s->code, X86_EBX);
+	if (mono_regset_reg_used (cfg->rs, X86_EBX))
+		x86_pop_reg (cfg->code, X86_EBX);
 
-	x86_leave (s->code);
-	x86_ret (s->code);
+	x86_leave (cfg->code);
+	x86_ret (cfg->code);
 }
 
 /**
@@ -115,65 +114,27 @@ arch_create_jit_trampoline (MonoMethod *method)
 	return code;
 }
 
-/**
- * arch_compile_method:
- * @method: pointer to the method info
- *
- * JIT compilation of a single method. This method also writes the result 
- * back to method->addr, an thus overwrites the trampoline function.
- *
- * Returns: a pointer to the newly created code.
- */
-gpointer
-arch_compile_method (MonoMethod *method)
-{
-	MBCodeGenStatus cgstat;
-	MonoMemPool *mp = mono_mempool_new ();
-	guint locals_size;
-
-	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
-	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
-
-	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
-		method->klass->name, method->name);
-
-	cgstat.forest = mono_create_forest (method, mp, &locals_size);
-	cgstat.code = NULL;
-	cgstat.locals_size = locals_size;
-	cgstat.mp = mp;
-
-	cgstat.rs = mono_regset_new (X86_NREG);
-	mono_regset_reserve_reg (cgstat.rs, X86_ESP);
-	mono_regset_reserve_reg (cgstat.rs, X86_EBP);
-
-	emit_method (method, &cgstat);
-
-	mono_regset_free (cgstat.rs);
-	g_ptr_array_free (cgstat.forest, TRUE);
-
-	mono_mempool_destroy (mp);
-
-	return method->addr;
-}
-
 static void
-forest_label (MBCodeGenStatus *s)
+mono_label_cfg (MonoFlowGraph *cfg)
 {
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
+	int i, j;
 	
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		MBState *mbstate;
+	for (i = 0; i < cfg->block_count; i++) {
+		GPtrArray *forest = cfg->bblocks [i].forest;
+		const int top = forest->len;
 
-		mbstate =  mono_burg_label (t1, s);
-		if (!mbstate) {
-			g_warning ("tree does not match");
-			mono_print_ctree (t1); printf ("\n\n");
+		for (j = 0; j < top; j++) {
+			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			MBState *mbstate;
 
-			mono_print_forest (forest);
-			g_assert_not_reached ();
+			mbstate =  mono_burg_label (t1, cfg);
+			if (!mbstate) {
+				g_warning ("tree does not match");
+				mono_print_ctree (t1); printf ("\n\n");
+
+				mono_print_forest (forest);
+				g_assert_not_reached ();
+			}
 		}
 	}
 }
@@ -260,30 +221,52 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		/* fixme: allocate floating point registers */
 		break;
 
+		/*
+	case MB_NTERM_addr:
+		if (tree->op == MB_TERM_ADD) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
+		}
+		break;
+		*/
+	case MB_NTERM_base:
+		if (tree->op == MB_TERM_ADD) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		}
+		break;
+	       
+	case MB_NTERM_index:
+		if (tree->op == MB_TERM_SHL ||
+		    tree->op == MB_TERM_MUL) {
+			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
+		}
+		break;
+	       
 	default:
 		/* do nothing */
 	}
-
 
 	tree->emit = mono_burg_func [ern];
 }
 
 static void
-forest_allocate_regs (MBCodeGenStatus *s)
+arch_allocate_regs (MonoFlowGraph *cfg)
 {
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
+	int i, j;
 	
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		tree_allocate_regs (t1, 1, s->rs);
-	}
+	for (i = 0; i < cfg->block_count; i++) {
+		GPtrArray *forest = cfg->bblocks [i].forest;
+		const int top = forest->len;
 
+		for (j = 0; j < top; j++) {
+			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			tree_allocate_regs (t1, 1, cfg->rs);
+		}
+	}
 }
 
 static void
-tree_emit (int goal, MBCodeGenStatus *s, MBTree *tree) 
+tree_emit (int goal, MonoFlowGraph *s, MBTree *tree) 
 {
 	MBTree *kids[10];
 	int i, ern = mono_burg_rule (tree->state, goal);
@@ -302,152 +285,132 @@ tree_emit (int goal, MBCodeGenStatus *s, MBTree *tree)
 }
 
 static void
-forest_emit (MBCodeGenStatus *s)
+mono_emit_cfg (MonoFlowGraph *cfg)
 {
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
+	int i, j;
+
+	for (i = 0; i < cfg->block_count; i++) {
+		MonoBBlock *bb = &cfg->bblocks [i];
+		GPtrArray *forest = bb->forest;
+		const int top = forest->len;
+
+		bb->addr = cfg->code - cfg->start;
+	  
+		for (j = 0; j < top; j++) {
+			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			tree_emit (1, cfg, t1);
+		}
+	}
 		
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		t1->first_addr = s->code - s->start;
-		tree_emit (1, s, t1);
-	}
-
-	s->epilog = s->code - s->start;
-}
-
-static gint32
-get_address (GPtrArray *forest, gint32 cli_addr, gint base, gint len)
-{
-	gint32 ind, pos;
-	MBTree *t1;
-	int i;
-
-	// use a simple search
-	for (i = base; i < (base + len); i++) {
-		t1 = (MBTree *) g_ptr_array_index (forest, i);
-		if (t1->cli_addr == cli_addr) {
-			t1->jump_target = 1;
-			return  t1->first_addr;
-		}
-	}
-	return -1;
-
-	// fixme: this binary search does not work - there is a bug somewhere ?
-
-	ind = (len / 2);
-	pos = base + ind;
-
-	/* skip trees with cli_addr == -1 */
-	while ((t1 = (MBTree *) g_ptr_array_index (forest, pos)) &&
-	       t1->cli_addr == -1 && ind) {
-		ind--;
-		pos--;
-	}
-
-	if (t1->cli_addr == cli_addr) {
-		t1->jump_target = 1;
-		return t1->first_addr;
-	}
-
-	if (len <= 1)
-		return -1;
-
-	if (t1->cli_addr > cli_addr) {
-		return get_address (forest, cli_addr, base, ind);
-	} else {
-		ind = (len / 2);		
-		return get_address (forest, cli_addr, base + ind, len - ind);
-	}
+	cfg->epilog = cfg->code - cfg->start;
 }
 
 static void
-compute_branches (MBCodeGenStatus *s)
+mono_compute_branches (MonoFlowGraph *cfg)
 {
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	gint32 addr;
 	guint8 *end;
-	int i;
+	int i, j;
 
-	end = s->code;
+	end = cfg->code;
 
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+	for (j = 0; j < cfg->block_count; j++) {
+		MonoBBlock *bb = &cfg->bblocks [j];
+		GPtrArray *forest = bb->forest;
+		const int top = forest->len;
+	
+		for (i = 0; i < top; i++) {
+			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
-		if (t1->is_jump) {
+			if (t1->is_jump) {
 
-			if ((i + 1) < forest->len) {
-				MBTree *t2 = (MBTree *) g_ptr_array_index (forest, i + 1);
-				t2->jump_target = 1;
-			}
+				if (t1->op == MB_TERM_SWITCH) {
+					MonoBBlock **jt = (MonoBBlock **)t1->data.p;
+					guint32 *rt = (guint32 *)t1->data.p;
 
-			switch (t1->op) {
-			case MB_TERM_SWITCH: {
-				guint32 *jt = (guint32 *)t1->data.p;
-				int j, m;
-
-				m = jt [0] + 1;
-				for (j = 1; j <= m; j++) {
-					addr = get_address (forest, jt [j], 0, forest->len);
-					if (addr == -1) {
-						g_error ("address 0x%x not found at IL_%04x",
-							 jt [j], t1->cli_addr);
-					}
-
-					if (j < m) /* register jumps needs absolute address */
-						jt [j] = (int)(addr + s->start);
-					else /* branch needs relative address */
-						jt [j] = addr - t1->addr;
+					int m = *((guint32 *)t1->data.p) + 1;
+					int j;
+					
+					for (j = 1; j <= m; j++)
+						rt [j] = (int)(jt [j]->addr + cfg->start);
 				}
-				break;
-			}
-			case MB_TERM_RET:
-			case MB_TERM_RETV: {
-				addr = s->epilog;
-				t1->data.i = addr - t1->addr;
-				break;
-			}
-			default:
-				addr = get_address (forest, t1->data.i, 0, forest->len);
-				if (addr == -1) {
-					g_error ("address 0x%x not found at IL_%04x",
-						 t1->data.i, t1->cli_addr);
-				}
-				t1->data.i = addr - t1->addr;
-				break;
-			}
 
-			/* emit the jump instruction again to update addresses */
-			s->code = s->start + t1->addr;
-			((MBEmitFunc)t1->emit) (t1, s);
+				/* emit the jump instruction again to update addresses */
+				cfg->code = cfg->start + t1->addr;
+				((MBEmitFunc)t1->emit) (t1, cfg);
 
+			}
 		}
 	}
 
-	s->code = end;
+	cfg->code = end;
 }
 
-static void
-emit_method (MonoMethod *method, MBCodeGenStatus *s)
+/**
+ * arch_compile_method:
+ * @method: pointer to the method info
+ *
+ * JIT compilation of a single method. This method also writes the result 
+ * back to method->addr, an thus overwrites the trampoline function.
+ *
+ * Returns: a pointer to the newly created code.
+ */
+gpointer
+arch_compile_method (MonoMethod *method)
 {
-	method->addr = s->start = s->code = g_malloc (1024);
+	MonoFlowGraph *cfg;
+	MonoMemPool *mp = mono_mempool_new ();
 
-	if (mono_jit_dump_forest)
-		mono_print_forest (s->forest);
+	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
+	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	forest_label (s);
+	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
+		method->klass->name, method->name);
 
-	forest_allocate_regs (s);
-	arch_emit_prologue (s);
-	forest_emit (s);
-	arch_emit_epilogue (s);
+	cfg = mono_cfg_new (method, mp);
 
-	compute_branches (s);
+	mono_analyze_flow (cfg);
 
+	mono_analyze_stack (cfg);
+
+	cfg->code = NULL;
+	cfg->rs = mono_regset_new (X86_NREG);
+	mono_regset_reserve_reg (cfg->rs, X86_ESP);
+	mono_regset_reserve_reg (cfg->rs, X86_EBP);
+
+	// fixme: remove limitation to 1024 bytes
+	method->addr = cfg->start = cfg->code = g_malloc (1024);
+
+	if (mono_jit_dump_forest) {
+		int i;
+		for (i = 0; i < cfg->block_count; i++) {
+			printf ("BLOCK %d:\n", i);
+			mono_print_forest (cfg->bblocks [i].forest);
+		}
+	}
+
+	mono_label_cfg (cfg);
+
+	arch_allocate_regs (cfg);
+
+	arch_emit_prologue (cfg);
+
+	mono_emit_cfg (cfg);
+
+	arch_emit_epilogue (cfg);
+
+	mono_compute_branches (cfg);
+		
 	if (mono_jit_dump_asm)
-		mono_disassemble_code (s->start, s->code - s->start);
+		mono_disassemble_code (cfg->start, cfg->code - cfg->start);
+
+	mono_regset_free (cfg->rs);
+
+	mono_cfg_free (cfg);
+
+	mono_mempool_destroy (mp);
+
+	return method->addr;
 }
+
 
 

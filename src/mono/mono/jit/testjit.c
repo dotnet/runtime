@@ -23,6 +23,7 @@
 
 #include "jit.h"
 #include "regset.h"
+#include "codegen.h"
 
 /*
  * Pull the list of opcodes
@@ -37,23 +38,30 @@ enum {
 #undef OPDEF
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) b,
-char *opcode_names [] = {
+static char *opcode_names [] = {
 #include "mono/cil/opcode.def"	
 };
 #undef OPDEF
 
+#define SET_VARINFO(vi,t,k,o)  do { vi.type=t; vi.kind=k; vi.offset=o; } while (0)
+
 #define MAKE_CJUMP(name)                                                      \
 case CEE_##name:                                                              \
 case CEE_##name##_S: {                                                        \
+        gint32 target;                                                        \
 	int near_jump = *ip == CEE_##name##_S;                                \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
 	if (near_jump)                                                        \
-		t1->data.i = cli_addr + 2 + (signed char) *ip;                \
+		target = cli_addr + 2 + (signed char) *ip;                    \
 	else                                                                  \
-		t1->data.i = cli_addr + 5 + (gint32) read32 (ip);             \
-	t1->cli_addr = sp [0]->cli_addr;                                      \
+		target = cli_addr + 5 + (gint32) read32 (ip);                 \
+	g_assert (target >= 0 && target <= header->code_size);                \
+	g_assert (bcinfo [target].is_block_start);                            \
+	tbb = &cfg->bblocks [bcinfo [target].block_id];                       \
+	MARK_REACHED (tbb);                                                   \
+	t1->data.p = tbb;                                                     \
 	ADD_TREE (t1);                                                        \
 	ip += near_jump ? 1: 4;		                                      \
 	break;                                                                \
@@ -64,18 +72,17 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
-	t1->cli_addr = sp [0]->cli_addr;                                      \
-	PUSH_TREE (t1);                                                       \
+        g_assert (sp [0]->svt == sp [1]->svt);                                \
+	PUSH_TREE (t1, sp [0]->svt);                                          \
 	break;                                                                \
 }
 
-#define MAKE_LDIND(name, op)                                                  \
+#define MAKE_LDIND(name, op, svt)                                             \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp--;                                                                 \
 	t1 = mono_ctree_new (mp, op, *sp, NULL);                              \
-	t1->cli_addr = sp [0]->cli_addr;                                      \
-	PUSH_TREE (t1);                                                       \
+	PUSH_TREE (t1, svt);                                                  \
 	break;                                                                \
 }
 	
@@ -84,7 +91,6 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, op, sp [0], sp [1]);                         \
-	t1->cli_addr = sp [0]->cli_addr;                                      \
 	ADD_TREE (t1);                                                        \
 	break;                                                                \
 }
@@ -177,49 +183,68 @@ map_stind_type (MonoType *type)
  * for the code generator.
  */
 static int
-map_ldind_type (MonoType *type)
+map_ldind_type (MonoType *type, MonoValueType *svt)
 {
-	if (type->byref)
+	if (type->byref) {
+		*svt = VAL_POINTER;
 		return MB_TERM_LDIND_I4;
-       
+	}
+
 	switch (type->type) {
 	case MONO_TYPE_I1:
+		*svt = VAL_I32;
 		return MB_TERM_LDIND_I1;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
+		*svt = VAL_I32;
 		return MB_TERM_LDIND_U1;
 	case MONO_TYPE_I2:
+		*svt = VAL_I32;
 		return MB_TERM_LDIND_I2;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
+		*svt = VAL_I32;
 		return MB_TERM_LDIND_U2;
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
+		*svt = VAL_I32;
+		return MB_TERM_LDIND_I4;
 	case MONO_TYPE_U4:
+		*svt = VAL_I32;
+		return MB_TERM_LDIND_U4;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		return MB_TERM_LDIND_I4;
+		*svt = VAL_POINTER;
+		return MB_TERM_LDIND_U4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+		*svt = VAL_I64;
 		return MB_TERM_LDIND_I8;
 	case MONO_TYPE_R4:
+		*svt = VAL_DOUBLE;
 		return MB_TERM_LDIND_R4;
 	case MONO_TYPE_R8:
+		*svt = VAL_DOUBLE;
 		return MB_TERM_LDIND_R8;
 	case MONO_TYPE_VALUETYPE: {
 		int size =  type->data.klass->instance_size - sizeof (MonoObject);
 
 		switch (size) {
 		case 4:
-			return MB_TERM_LDIND_I4;
+			*svt = VAL_I32;
+			return MB_TERM_LDIND_U4;
 		case 2:
+			*svt = VAL_I32;
 			return MB_TERM_LDIND_U2;
 		case 1:
+			*svt = VAL_I32;
 			return MB_TERM_LDIND_U1;
+		default:
+			*svt = VAL_UNKNOWN;
+			return MB_TERM_LDIND_OBJ;
 		}
-		return MB_TERM_LDIND_OBJ;
 	}
 	default:
 		g_warning ("unknown type %02x", type->type);
@@ -238,7 +263,7 @@ map_ldind_type (MonoType *type)
  * for the code generator.
  */
 static int
-map_call_type (MonoType *type)
+map_call_type (MonoType *type, MonoValueType *svt)
 {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
@@ -251,16 +276,21 @@ map_call_type (MonoType *type)
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+		*svt = VAL_I32;
+		return MB_TERM_CALL_I4;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
+		*svt = VAL_POINTER;
 		return MB_TERM_CALL_I4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+		*svt = VAL_I64;
 		return MB_TERM_CALL_I8;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
+		*svt = VAL_DOUBLE;
 		return MB_TERM_CALL_R8;
 	default:
 		g_warning ("unknown type %02x", type->type);
@@ -309,11 +339,7 @@ mono_print_forest (GPtrArray *forest)
 
 	for (i = 0; i < top; i++) {
 		MBTree *t = (MBTree *) g_ptr_array_index (forest, i);
-		if (t->jump_target && t->cli_addr >= 0)
-			printf ("IL%04x:", t->cli_addr);
-		else
-			printf ("       ");
-
+		printf ("       ");
 		mono_print_ctree (t);
 		printf ("\n");
 	}
@@ -344,19 +370,87 @@ mono_disassemble_code (guint8 *code, int size)
 	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
 }
 
+static int
+arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, MonoValueType type)
+{
+	MonoVarInfo vi;
+
+	switch (kind) {
+	case MONO_TEMPVAR:
+	case MONO_LOCALVAR: {
+		cfg->locals_size += align - 1;
+		cfg->locals_size &= ~(align - 1);
+		cfg->locals_size += size;
+
+		SET_VARINFO (vi, type, kind, - cfg->locals_size);
+		g_array_append_val (cfg->varinfo, vi);
+		break;
+	}
+	case MONO_ARGVAR: {
+		SET_VARINFO (vi, type, kind, cfg->args_size + 8);
+		g_array_append_val (cfg->varinfo, vi);
+
+		cfg->args_size += align - 1;
+		cfg->args_size &= ~(align - 1);
+		cfg->args_size += size;
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	return cfg->varinfo->len - 1;
+}
+
+inline static void
+mono_get_val_sizes (MonoValueType type, int *size, int *align) 
+{ 
+	switch (type) {
+	case VAL_I32:
+		*size = *align = sizeof (gint32);
+		break;
+	case VAL_I64:
+		*size = *align = sizeof (gint64);
+		break;
+	case VAL_POINTER:
+		*size = *align = sizeof (gpointer);
+		break;
+	case VAL_DOUBLE:
+		*size = *align = sizeof (double);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static int
+mono_allocate_intvar (MonoFlowGraph *cfg, int slot, MonoValueType type)
+{
+	int size, align, vnum;
+
+	g_assert (type != VAL_UNKNOWN);
+
+	if ((vnum = cfg->intvars[slot][type - 1]))
+		return vnum;
+
+	mono_get_val_sizes (type, &size, &align);
+
+	return cfg->intvars[slot][type - 1] = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, type);
+}
+
 /**
  * ctree_create_load:
  * @mp: pointer to a memory pool
- * @addr_type: address type (MB_TERM_ADDR_L, MB_TERM_ADDR_A or MB_TERM_ADDR_G)
+ * @addr_type: address type (MB_TERM_ADDR_L or MB_TERM_ADDR_G)
  * @type: the type of the value
  * @addr: the address of the value
  *
  * Creates a tree to load the value at address @addr.
  */
 inline static MBTree *
-ctree_create_load (MonoMemPool *mp, int addr_type, MonoType *type, gpointer addr)
+ctree_create_load (MonoMemPool *mp, int addr_type, MonoType *type, gpointer addr, MonoValueType *svt)
 {
-	int ldind = map_ldind_type (type);
+	int ldind = map_ldind_type (type, svt);
 	MBTree *t;
 
 	t = mono_ctree_new_leaf (mp, addr_type);
@@ -369,7 +463,7 @@ ctree_create_load (MonoMemPool *mp, int addr_type, MonoType *type, gpointer addr
 /**
  * ctree_create_store:
  * @mp: pointer to a memory pool
- * @addr_type: address type (MB_TERM_ADDR_L, MB_TERM_ADDR_A or MB_TERM_ADDR_G)
+ * @addr_type: address type (MB_TERM_ADDR_L or MB_TERM_ADDR_G)
  * @s: the value (tree) to store
  * @type: the type of the value
  * @addr: the address of the value
@@ -389,6 +483,108 @@ ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoType *type, g
 	return t;
 }
 
+inline static MBTree *
+ctree_dup_address (MonoMemPool *mp, MBTree *s)
+{
+	MBTree *t;
+
+	switch (s->op) {
+
+	case MB_TERM_ADDR_L:
+	case MB_TERM_ADDR_G:
+		t = mono_ctree_new_leaf (mp, s->op);
+		t->data.i = s->data.i;
+		t->svt = VAL_POINTER;
+		return t;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return NULL;
+}
+
+static MBTree *
+mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
+{
+	MonoMemPool *mp = cfg->mp;
+	MBTree *t;
+	int vnum;
+
+	switch (s->op) {
+	case MB_TERM_STIND_I1:
+	case MB_TERM_LDIND_I1:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
+		break;
+	case MB_TERM_STIND_I2:
+	case MB_TERM_LDIND_I2:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
+		break;
+	case MB_TERM_STIND_I4:
+	case MB_TERM_LDIND_I4:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
+		break;
+	case MB_TERM_STIND_I8:
+	case MB_TERM_LDIND_I8:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I64;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
+		break;
+	case MB_TERM_STIND_R4:
+	case MB_TERM_LDIND_R4:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_DOUBLE;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
+		break;
+	case MB_TERM_STIND_R8:
+	case MB_TERM_LDIND_R8:
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_DOUBLE;
+		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
+		break;
+	default: {
+			g_assert (s->svt != VAL_UNKNOWN);
+
+			if (slot >= 0) 
+				vnum = mono_allocate_intvar (cfg, slot, s->svt);
+			else {
+				int size, align;
+				mono_get_val_sizes (s->svt, &size, &align);
+				vnum = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, s->svt);
+			}
+
+			t = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+			t->data.i = vnum;
+		       
+			switch (s->svt) {
+			case VAL_I32:
+			case VAL_POINTER:
+				t = mono_ctree_new (mp, MB_TERM_STIND_I4, t, s);
+				break;
+			case VAL_I64:
+				t = mono_ctree_new (mp, MB_TERM_STIND_I8, t, s);
+				break;
+			case VAL_DOUBLE:
+				t = mono_ctree_new (mp, MB_TERM_STIND_R8, t, s);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+
+	if (dup) 
+		*dup = mono_store_tree (cfg, -1, t, NULL);
+
+	return t;
+}
+
+/* fixme: this is to clumsy :-( */
 static MBTree *
 ctree_create_newobj (MonoMemPool *mp, MonoClass *klass)
 {
@@ -421,37 +617,37 @@ static MBTree *
 ctree_create_dup (MonoMemPool *mp, MBTree *s)
 {
 	MBTree *t;
-
+	
 	switch (s->op) {
-	case MB_TERM_ADDR_L:
-	case MB_TERM_ADDR_A:
-	case MB_TERM_ADDR_G:
-		t = mono_ctree_new_leaf (mp, s->op);
-		t->data.i = s->data.i;
-		return t;
 	case MB_TERM_STIND_I1:
 	case MB_TERM_LDIND_I1:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
 		return mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
 	case MB_TERM_STIND_I2:
 	case MB_TERM_LDIND_I2:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
 		return mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I32;
 		return mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_I64;
 		return mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
 	case MB_TERM_STIND_R4:
 	case MB_TERM_LDIND_R4:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_DOUBLE;
 		return mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
 	case MB_TERM_STIND_R8:
 	case MB_TERM_LDIND_R8:
-		t = ctree_create_dup (mp, s->left);
+		t = ctree_dup_address (mp, s->left);
+		t->svt = VAL_DOUBLE;
 		return mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
 	default:
 		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
@@ -502,18 +698,341 @@ mono_jit_init_class (MonoClass *klass)
 	/* No class constructor found */
 }
 
-#define ADD_TREE(t)     do { g_ptr_array_add (forest, (t)); } while (0)
-#define PUSH_TREE(t)    do { *sp = t; sp++; } while (0)
+MonoFlowGraph *
+mono_cfg_new (MonoMethod *method, MonoMemPool *mp)
+{
+	MonoVarInfo vi;
+	MonoFlowGraph *cfg;
 
-#define LOCAL_POS(n)    (locals_offsets [(n)])
+	cfg = mono_mempool_alloc0 (mp, sizeof (MonoFlowGraph));
+
+	cfg->method = method;
+	cfg->mp = mp;
+
+	cfg->varinfo = g_array_new (FALSE, TRUE, sizeof (MonoVarInfo));
+	
+	SET_VARINFO (vi, 0, 0, 0);
+	g_array_append_val (cfg->varinfo, vi); /* add invalid value at position 0 */
+
+	cfg->intvars = mono_mempool_alloc0 (mp, sizeof (guint16) * VAL_DOUBLE * 
+					    ((MonoMethodNormal *)method)->header->max_stack);
+	return cfg;
+}
+
+void
+mono_cfg_free (MonoFlowGraph *cfg)
+{
+	int i;
+
+	for (i = 0; i < cfg->block_count; i++) {
+		g_ptr_array_free (cfg->bblocks [i].forest, TRUE);
+	}
+
+	g_array_free (cfg->varinfo, TRUE);
+}
+
+#define CREATE_BLOCK(t) {if (!bcinfo [t].is_block_start) {block_count++;bcinfo [t].is_block_start = 1;}}
+
+void
+mono_analyze_flow (MonoFlowGraph *cfg)
+{
+	MonoMethod *method = cfg->method;
+	MonoMemPool *mp = cfg->mp;
+	register const unsigned char *ip, *end;
+	MonoMethodHeader *header;
+	MonoBytecodeInfo *bcinfo;
+	MonoBBlock *bblocks, *bb;
+	gboolean block_end;
+	int i, block_count;
+
+	header = ((MonoMethodNormal *)method)->header;
+
+	bcinfo = mono_mempool_alloc0 (mp, header->code_size * sizeof (MonoBytecodeInfo));
+	bcinfo [0].is_block_start = 1;
+	block_count = 1;
+	block_end = FALSE;
+
+	ip = header->code;
+	end = ip + header->code_size;
+
+	/* fixme: add block boundaries for exceptions */
+
+	while (ip < end) {
+		guint32 cli_addr = ip - header->code;
+
+		//printf ("IL%04x OPCODE %s\n", cli_addr, opcode_names [*ip]);
+		
+		if (block_end) {
+			CREATE_BLOCK (cli_addr);
+			block_end = FALSE;
+		}
+
+		switch (*ip) {
+
+		case CEE_THROW:
+			ip++;
+			block_end = 1;
+			break;
+		case CEE_NOP: 
+		case CEE_BREAK:
+		case CEE_LDC_I4_M1:
+		case CEE_LDC_I4_0:
+		case CEE_LDC_I4_1:
+		case CEE_LDC_I4_2:
+		case CEE_LDC_I4_3:
+		case CEE_LDC_I4_4:
+		case CEE_LDC_I4_5:
+		case CEE_LDC_I4_6:
+		case CEE_LDC_I4_7:
+		case CEE_LDC_I4_8:
+		case CEE_LDNULL:
+		case CEE_LDLOC_0:
+		case CEE_LDLOC_1:
+		case CEE_LDLOC_2:
+		case CEE_LDLOC_3:
+		case CEE_STLOC_0:
+		case CEE_STLOC_1:
+		case CEE_STLOC_2:
+		case CEE_STLOC_3: 
+		case CEE_LDARG_0:
+		case CEE_LDARG_1:
+		case CEE_LDARG_2:
+		case CEE_LDARG_3:
+		case CEE_NEG:
+		case CEE_NOT:
+		case CEE_DUP:
+		case CEE_POP:
+		case CEE_CONV_U1: 
+		case CEE_CONV_I1:
+		case CEE_CONV_U2: 
+		case CEE_CONV_I2: 
+		case CEE_CONV_I: 
+		case CEE_CONV_I4:
+		case CEE_CONV_I8: 
+		case CEE_CONV_R8:
+		case CEE_ADD:
+		case CEE_SUB:
+		case CEE_AND:
+		case CEE_OR:
+		case CEE_XOR:
+		case CEE_SHL:
+		case CEE_SHR:
+		case CEE_SHR_UN:
+		case CEE_MUL:
+		case CEE_DIV:
+		case CEE_DIV_UN:
+		case CEE_REM:
+		case CEE_REM_UN:
+		case CEE_LDIND_I1:
+		case CEE_LDIND_U1:
+		case CEE_LDIND_I2:
+		case CEE_LDIND_U2:
+		case CEE_LDIND_I:
+		case CEE_LDIND_I4:
+		case CEE_LDIND_REF:
+		case CEE_LDIND_U4:
+		case CEE_LDIND_I8:
+		case CEE_LDIND_R4:
+		case CEE_LDIND_R8:
+		case CEE_STIND_I1:
+		case CEE_STIND_I2:
+		case CEE_STIND_I:
+		case CEE_STIND_I4:
+		case CEE_STIND_I8:
+		case CEE_STIND_R4:
+		case CEE_STIND_R8:
+		case CEE_STIND_REF:
+			ip++;
+			break;
+		case CEE_RET:
+			ip++;
+			block_end = 1;
+			break;
+		case CEE_BOX:
+		case CEE_UNBOX:
+		case CEE_LDOBJ:
+		case CEE_LDSTR:
+		case CEE_LDSFLD:
+		case CEE_LDSFLDA:
+		case CEE_LDFLD:
+		case CEE_LDFLDA:
+		case CEE_STSFLD: 
+		case CEE_STFLD:
+		case CEE_NEWOBJ:
+		case CEE_NEWARR:
+		case CEE_LDTOKEN:
+		case CEE_CALL:
+		case CEE_CALLVIRT:
+		case CEE_ISINST:
+		case CEE_CASTCLASS:
+		case CEE_LDC_I4:
+		case CEE_LDC_R4:
+			ip += 5;
+			break;
+		case CEE_BR:
+		case CEE_BRTRUE:
+		case CEE_BRFALSE:
+		case CEE_BGT:
+		case CEE_BGT_UN:
+		case CEE_BLT:
+		case CEE_BLT_UN:
+		case CEE_BNE_UN:
+		case CEE_BEQ:
+		case CEE_BGE:
+		case CEE_BGE_UN:
+		case CEE_BLE:
+		case CEE_BLE_UN: {
+			gint32 offset;
+			ip++;
+			offset = read32 (ip);
+			ip += 4;
+			CREATE_BLOCK (cli_addr + 5 + offset);
+			block_end = 1;
+			break;
+		}
+		case CEE_LDC_I8:
+		case CEE_LDC_R8:
+			ip += 9;
+			break;
+		case CEE_LDC_I4_S:
+		case CEE_LDLOC_S:
+		case CEE_LDLOCA_S:
+		case CEE_STLOC_S:
+		case CEE_LDARG_S: 
+			ip += 2;
+			break;
+		case CEE_BR_S:
+		case CEE_BRTRUE_S:
+		case CEE_BRFALSE_S:
+		case CEE_BGT_S:
+		case CEE_BGT_UN_S:
+		case CEE_BLT_S:
+		case CEE_BLT_UN_S:
+		case CEE_BNE_UN_S:
+		case CEE_BEQ_S:
+		case CEE_BGE_S:
+		case CEE_BGE_UN_S:
+		case CEE_BLE_S:
+		case CEE_BLE_UN_S: {
+			gint32 offset;
+			ip++;
+			offset = (signed char)*ip;
+			ip++;
+			CREATE_BLOCK (cli_addr + 2 + offset);
+			block_end = 1;
+			break;
+		}
+		case CEE_SWITCH: {
+			gint32 i, st, target, n;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			st = cli_addr + 5 + 4 * n;
+			CREATE_BLOCK (st);
+
+			for (i = 0; i < n; i++) {
+				target = read32 (ip) + st;
+				ip += 4;
+				CREATE_BLOCK (st + target);			
+			}
+			break;
+		}
+		case 0xFE: {
+			++ip;			
+			switch (*ip) {
+				
+			case CEE_CEQ:
+				ip++;
+				break;
+			case CEE_LDARG:
+				ip +=5;
+				break;
+			default:
+				g_error ("Unimplemented opcode at IL_%04x "
+					 "0xFE %02x", ip - header->code, *ip);
+			}
+			break;
+		}
+
+		default:
+			g_warning ("unknown instruction `%s' at IL_%04X", 
+				   opcode_names [*ip], ip - header->code);
+			g_assert_not_reached ();
+		}
+	}
+
+
+	g_assert (block_count);
+
+	bb = bblocks  = mono_mempool_alloc0 (mp, sizeof (MonoBBlock) * block_count);
+
+	block_count = 0;
+	bblocks [0].reached = 1;
+
+	for (i = 0; i < header->code_size; i++) {
+		if (bcinfo [i].is_block_start) {
+			bb->cli_addr = i;
+			if (block_count)
+				bb [-1].length = i - bb [-1].cli_addr; 
+			bcinfo [i].block_id = block_count;
+			bb++;
+			block_count++;
+		}
+	}
+	bb [-1].length = header->code_size - bb [-1].cli_addr; 
+
+	cfg->bcinfo = bcinfo;
+	cfg->bblocks = bblocks;
+	cfg->block_count = block_count;
+}
+
+static MBTree **
+mono_copy_stack (MBTree **sp, int depth, MonoMemPool *mp)
+{
+	int i;
+	MBTree **copy;
+
+	copy = mono_mempool_alloc (mp, depth * sizeof (MBTree *));
+	
+	sp -= depth;
+
+	for (i = 0; i < depth; i++) {
+		switch (sp [i]->op) {
+		case MB_TERM_LDIND_I1:
+		case MB_TERM_LDIND_U1:
+		case MB_TERM_LDIND_I2:
+		case MB_TERM_LDIND_U2:
+		case MB_TERM_LDIND_I4:
+		case MB_TERM_LDIND_U4:
+		case MB_TERM_LDIND_I8:
+		case MB_TERM_LDIND_R4:
+		case MB_TERM_LDIND_R8:
+			break;
+		default:
+			g_warning ("cant handle type %s (%d)\n", mono_burg_term_string [sp [i]->op], i);
+				// fixme: store the value somewhere
+			g_assert_not_reached ();
+		}
+	}
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#define ADD_TREE(t)     do { g_ptr_array_add (forest, (t)); } while (0)
+#define PUSH_TREE(t,k)  do { *sp = t; sp++; t->svt = k; } while (0)
+
+#define LOCAL_POS(n)    (1 + n)
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
 
-#define ARG_POS(n)      (args_offsets [(n)])
+#define ARG_POS(n)      (1 + header->num_locals + n)
 #define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
 			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
 
+#define MARK_REACHED(bb) do { if (!bb->reached) { bb->reached = 1; }} while (0)
+
 /**
- * mono_create_forest:
+ * mono_create_cfg:
  * @method: the method to analyse
  * @mp: a memory pool
  * @locals_size: to return the size of local vars
@@ -522,85 +1041,140 @@ mono_jit_init_class (MonoClass *klass)
  * It creates a forest of trees which can then be fed into the
  * architecture dependent code generation.
  *
- * We should extend this to mark basic blocks. We can then also try
- * to make various optimisations at this level.
+ * The algorithm is from Andi Krall, the same is used in CACAO
  */
-GPtrArray *
-mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
+void
+mono_analyze_stack (MonoFlowGraph *cfg)
 {
+	MonoMethod *method = cfg->method;
+	MonoMemPool *mp = cfg->mp;
+	MonoBytecodeInfo *bcinfo = cfg->bcinfo;
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
+	MonoValueType svt;
 	MBTree **sp, **stack, *t1, *t2;
 	register const unsigned char *ip, *end;
-	guint *locals_offsets;
-	guint *args_offsets;
 	GPtrArray *forest;
-	int local_offset = 0;
+	int i, j, depth, repeat_count;
+	gboolean repeat, superblock_end;
+	MonoBBlock *bb, *tbb;
 
 	header = ((MonoMethodNormal *)method)->header;
 	signature = method->signature;
-	image = method->klass->image;
-	
-	ip = header->code;
-	end = ip + header->code_size;
+	image = method->klass->image; 
 
 	sp = stack = alloca (sizeof (MBTree *) * (header->max_stack + 1));
 	
 	if (header->num_locals) {
-		int i, size, align;
-		locals_offsets = alloca (sizeof (gint) * header->num_locals);
+		int size, align;
 
 		for (i = 0; i < header->num_locals; ++i) {
 			size = mono_type_size (header->locals [i], &align);
-			local_offset += align - 1;
-			local_offset &= ~(align - 1);
-			local_offset += size;
-			locals_offsets [i] = - local_offset;
+			arch_allocate_var (cfg, size, align, MONO_LOCALVAR, VAL_UNKNOWN);
 		}
 	}
 	
 	if (signature->params_size) {
-		int i, align, size, offset = 0;
+		int align, size;
 		int has_this = signature->hasthis;
 
-		args_offsets = alloca (sizeof (gint) * (signature->param_count + has_this));
 		if (has_this) {
-			args_offsets [0] = 0;
-			offset += sizeof (gpointer);
+			size = align = sizeof (gpointer);
+			arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_POINTER);
 		}
 
 		for (i = 0; i < signature->param_count; ++i) {
-			args_offsets [i + has_this] = offset;
 			size = mono_type_size (signature->params [i], &align);
 			if (size < 4) {
 				size = 4; 
 				align = 4;
 			}
-			offset += align - 1;
-			offset &= ~(align - 1);
-			offset += size;
+			arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
 		}
 	}
 
-	forest = g_ptr_array_new ();
+	repeat_count = 0;
 
-	while (ip < end) {
+	do {
+		repeat = FALSE;
+		superblock_end = TRUE;
+		sp = stack;
+
+		printf ("START\n");
+		for (i = 0; i < cfg->block_count; i++) {
+			bb = &cfg->bblocks [i];
+
+			printf ("BBS %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
+			
+			if (!bb->reached && !superblock_end) {
+
+				if ((depth = sp - stack)) {
+
+					g_assert_not_reached ();
+					//bb->instack = mono_copy_stack;
+					bb->indepth = depth;
+
+					for (j = 0; j < depth; j++) {
+						bb->instack [j] = ctree_create_dup (mp, sp [j]);
+					}
+				}
+
+				MARK_REACHED (bb);
+			} 
+			
+			if (bb->reached) {
+
+				if (!bb->finished) {
+
+					sp = stack;
+
+					for (j = 0; j < bb->indepth; j++) {
+						sp [j] = bb->instack [j];
+					}
+					sp += bb->indepth;
+
+					bb->finished = 1;
+				
+					ip = header->code + bb->cli_addr;
+					end = ip + bb->length;
+
+					bb->forest = forest = g_ptr_array_new ();
+				
+					superblock_end = FALSE;
+
+        while (ip < end) {
 		guint32 cli_addr = ip - header->code;
-
-		printf ("IL%04x OPCODE %s %d\n", cli_addr, opcode_names [*ip], forest->len);
+					
+		printf ("%d IL%04x OPCODE %s %d %d %d\n", i, cli_addr, opcode_names [*ip], 
+			forest->len, superblock_end, sp - stack);
 
 		switch (*ip) {
-
-		case CEE_THROW: {
+			case CEE_THROW: {
 			--sp;
 			ip++;
 			
 			// fixme: 
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_NOP);
-			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);		
+			superblock_end = TRUE;
+			break;
+		}
+		case CEE_BOX: {
+			MonoClass *c;
+			guint32 token;
+			
+			--sp;
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			
+			c = mono_class_get (image, token);
+			
+			t1 = mono_ctree_new (mp, MB_TERM_BOX, *sp, NULL);
+			t1->data.p = c;
+			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
 		case CEE_UNBOX: {
@@ -617,8 +1191,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1->data.i = sizeof (MonoObject);
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, *sp, t1);
 
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
 		case CEE_LDOBJ: {
@@ -637,20 +1210,23 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			size = c->instance_size - sizeof (MonoObject);
 			switch (size) {
 			case 4:
-				t1 = mono_ctree_new (mp, MB_TERM_LDIND_I4, *sp, NULL);
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_U4, *sp, NULL);
+				svt = VAL_I32;
 				break;
 			case 2:
 				t1 = mono_ctree_new (mp, MB_TERM_LDIND_U2, *sp, NULL);
+				svt = VAL_I32;
 				break;
 			case 1:
 				t1 = mono_ctree_new (mp, MB_TERM_LDIND_U1, *sp, NULL);
+				svt = VAL_I32;
 				break;
 			default:
 				t1 = mono_ctree_new (mp, MB_TERM_LDIND_OBJ, *sp, NULL);
+				svt = VAL_UNKNOWN;
 				break;
 			}
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_LDSTR: {
@@ -665,7 +1241,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.p = o;
 
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
 		case CEE_LDSFLD:
@@ -695,12 +1271,12 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			if (load_addr) {
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t1->data.p = addr;
+				svt = VAL_POINTER;
 			} else {
-				t1 = ctree_create_load (mp, MB_TERM_ADDR_G, field->type, addr);
+				t1 = ctree_create_load (mp, MB_TERM_ADDR_G, field->type, addr, &svt);
 			}
 
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_LDFLD:
@@ -735,10 +1311,11 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
 
 			if (!load_addr)
-				t1 = mono_ctree_new (mp, map_ldind_type (field->type), t1, NULL);
-	
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+				t1 = mono_ctree_new (mp, map_ldind_type (field->type, &svt), t1, NULL);
+			else
+				svt = VAL_POINTER;
+
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_STSFLD: {
@@ -765,7 +1342,6 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_G, *sp, field->type, addr);
 
-			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);
 			break;
 		}
@@ -790,16 +1366,16 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			g_assert (field);
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			
 			if (klass->valuetype)
 				t1->data.i = field->offset - sizeof (MonoObject);
 			else 
 				t1->data.i = field->offset;
 
+			printf ("VALUETYPE %d %d %d\n", klass->valuetype, field->offset, t1->data.i);
+
 			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
 			t1 = mono_ctree_new (mp, map_stind_type (field->type), t1, sp [1]);
 
-			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);
 			break;
 		}
@@ -810,13 +1386,13 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		case CEE_BREAK: { 
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BREAK);
-			t1->cli_addr = cli_addr;
 			ADD_TREE (t1);
 			break;
 		} 
 		case CEE_SWITCH: {
-			guint32 i, n, *jt;
-			gint32 st;
+			guint32 i, n;
+			MonoBBlock **jt;
+			gint32 st, target;
 
 			++ip;
 			n = read32 (ip);
@@ -824,17 +1400,56 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			--sp;
 
 			t1 = mono_ctree_new (mp, MB_TERM_SWITCH, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			jt = t1->data.p = mono_alloc_static (4 * (n + 2));
-			st = jt [n + 1] = cli_addr + 5 + 4 * n;
+			jt = t1->data.p = mono_alloc_static (sizeof (gpointer) * (n + 2));
+			st = cli_addr + 5 + 4 * n;
 			
-			jt [0] = n;
-			for (i = 1; i <= n; i++) {
-				jt [i] = read32 (ip) + st; 
-				ip += 4;
+			// hack: we store n at position 0
+			jt [0] = (MonoBBlock *)n;
+
+			for (i = 1; i <= (n + 1); i++) {
+				if (i > n)
+					target = st;
+				else {
+					target = read32 (ip) + st;
+					ip += 4;
+				}
+				g_assert (target >= 0 && target <= header->code_size);
+				g_assert (bcinfo [target].is_block_start);
+				tbb = &cfg->bblocks [bcinfo [target].block_id];
+				MARK_REACHED (tbb);
+				jt [i] = tbb; 
 			}
 
 			ADD_TREE (t1);
+			break;
+		}
+		case CEE_LDTOKEN: {
+			gpointer handle;
+			MonoClass *handle_class;
+
+			++ip;
+			handle = mono_ldtoken (image, read32 (ip), &handle_class);
+			ip += 4;
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.p = handle;
+			PUSH_TREE (t1, VAL_POINTER);
+
+			break;
+		}
+		case CEE_NEWARR: {
+			MonoClass *class;
+			guint32 token;
+
+			ip++;
+			--sp;
+			token = read32 (ip);
+			class = mono_class_get (image, token);
+			ip += 4;
+
+			t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
+			PUSH_TREE (t1, VAL_POINTER);
+
 			break;
 		}
 		case CEE_NEWOBJ:
@@ -845,7 +1460,6 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			MBTree *nobj, *this = NULL;
 			guint32 token;
 			int i, nargs, align, size, args_size = 0;
-			gint32 fa;
 			int virtual = *ip == CEE_CALLVIRT;
 			int newobj = *ip == CEE_NEWOBJ;
 
@@ -863,27 +1477,29 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
 
-#warning disabled virtual calls
+			// fixme: virtual does not work
 			virtual = 0;
 
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 
 			if (newobj) {
+				int n;
+
 				for (i = 0; i < csig->param_count; i++)
 					sp [-i] = sp [-i - 1];
-				local_offset += sizeof (gpointer);
+				
+				n = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), 
+						       MONO_TEMPVAR, VAL_UNKNOWN);
+
 				nobj = ctree_create_newobj (mp, cm->klass);
 				nobj = ctree_create_store (mp, MB_TERM_ADDR_L, nobj, 
-							   &cm->klass->this_arg, 
-							   (gpointer)-local_offset);
-				nobj->cli_addr = cli_addr;
+							   &cm->klass->this_arg, (gpointer)n);
 				ADD_TREE (nobj);
 				sp [-i] =  ctree_create_dup (mp, nobj);
 				sp++;
 			} 
 			
-
 			nargs = csig->param_count;
 			if (csig->hasthis || virtual || newobj) {
 				nargs++;
@@ -917,16 +1533,13 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			if (nargs) {
 
-				fa = sp [0]->cli_addr;
-				printf ("FA %04x\n", fa);
-
 #ifdef ARCH_ARGS_RIGHT_TO_LEFT
 				for (i = nargs - 1; i >= 0; i--) {
 #else
 				for (i = 0; i < nargs; i++) {
 #endif
 					t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, sp [i]);	
-					
+			
 					if (!i && this)
 						size = mono_type_size (&cm->klass->this_arg, &align);
 					else
@@ -935,32 +1548,29 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 					// fixme: does this really work ?
 					args_size += (size + 3) & ~3;
 				}
-			} else
-				fa = cli_addr;
+			}
 
-			t1 = mono_ctree_new (mp, map_call_type (csig->ret), t1, t2);
+			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t1, t2);
 			t1->size = args_size;
-			
-			if (csig->ret->type != MONO_TYPE_VOID) {
-				size = mono_type_size (csig->ret, &align);
-				local_offset += align - 1;
-				local_offset &= ~(align - 1);
-				local_offset += size;
+			t1->svt = svt;
 
-				t2 = ctree_create_store (mp, MB_TERM_ADDR_L, t1, csig->ret, 
-							 (gpointer)-local_offset);
-				t2->cli_addr = fa;
+			if (csig->ret->type != MONO_TYPE_VOID) {
+				int n;
+
+				size = mono_type_size (csig->ret, &align);
+				n = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
+				
+				t2 = ctree_create_store (mp, MB_TERM_ADDR_L, t1, csig->ret, (gpointer)n);
 				ADD_TREE (t2);
 
 				t1 = ctree_create_dup (mp, t2);
-				PUSH_TREE (t1);
+				PUSH_TREE (t1, svt);
 			} else {
 				if (newobj) {
 					ADD_TREE (t1);			
 					t1 = ctree_create_dup (mp, nobj);		
-					PUSH_TREE (t1);
+					PUSH_TREE (t1, t1->svt);
 				} else {
-					t1->cli_addr = fa;
 					ADD_TREE (t1);
 				}
 			}
@@ -982,8 +1592,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = *(gint8 *)ip;
 			++ip;
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_LDC_I4: { 
@@ -991,8 +1600,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = read32 (ip);
 			ip += 4;
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_LDC_I4_M1:
@@ -1008,8 +1616,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = (*ip) - CEE_LDC_I4_0;
 			++ip;
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_LDNULL: {
@@ -1017,8 +1624,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = 0;
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_LDC_I8: {
@@ -1026,8 +1632,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I8);
 			t1->data.l = read64 (ip);
 			ip += 8;
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_I64);		
 			break;
 		}
 		case CEE_LDC_R4: {
@@ -1036,9 +1641,8 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R4);
 			readr4 (ip, f);
 			t1->data.p = f;
-			t1->cli_addr = cli_addr;
 			ip += 4;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
 		}
 		case CEE_LDC_R8: { 
@@ -1047,9 +1651,8 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R8);
 			readr8 (ip, d);
 			t1->data.p = d;
-			t1->cli_addr = cli_addr;
 			ip += 8;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
 		}
 		case CEE_LDLOC_0:
@@ -1060,21 +1663,19 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 
 			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (n), 
-						(gpointer)LOCAL_POS (n));
-			t1->cli_addr = cli_addr;
+						(gpointer)LOCAL_POS (n), &svt);
 
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_LDLOC_S: {
 			++ip;
 			
 			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, LOCAL_TYPE (*ip), 
-						(gpointer)LOCAL_POS (*ip));
-			t1->cli_addr = cli_addr;
+						(gpointer)LOCAL_POS (*ip), &svt);
 			++ip;
 
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_LDLOCA_S: {
@@ -1082,9 +1683,8 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.p = (gpointer)LOCAL_POS (*ip);
-			t1->cli_addr = cli_addr;
 			++ip;
-			PUSH_TREE (t1);			
+			PUSH_TREE (t1, VAL_POINTER);			
 			break;
 		}
 		case CEE_STLOC_0:
@@ -1097,7 +1697,6 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (n), 
 						 (gpointer)LOCAL_POS (n));
-			t1->cli_addr = sp [0]->cli_addr;
 
 			ADD_TREE (t1);			
 			break;
@@ -1108,7 +1707,6 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_L, *sp, LOCAL_TYPE (*ip), 
 						 (gpointer)LOCAL_POS (*ip));
-			t1->cli_addr = sp [0]->cli_addr;
 			++ip;
 
 			ADD_TREE (t1);			
@@ -1129,17 +1727,17 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		MAKE_BI_ALU (REM)
 		MAKE_BI_ALU (REM_UN)
 
-		MAKE_LDIND (LDIND_I1,  MB_TERM_LDIND_I1)
-		MAKE_LDIND (LDIND_U1,  MB_TERM_LDIND_U1)
-		MAKE_LDIND (LDIND_I2,  MB_TERM_LDIND_I2)
-		MAKE_LDIND (LDIND_U2,  MB_TERM_LDIND_U2)
-		MAKE_LDIND (LDIND_I,   MB_TERM_LDIND_I4)
-		MAKE_LDIND (LDIND_I4,  MB_TERM_LDIND_I4)
-		MAKE_LDIND (LDIND_REF, MB_TERM_LDIND_U4)
-		MAKE_LDIND (LDIND_U4,  MB_TERM_LDIND_U4)
-		MAKE_LDIND (LDIND_I8,  MB_TERM_LDIND_I8)
-		MAKE_LDIND (LDIND_R4,  MB_TERM_LDIND_R4)
-		MAKE_LDIND (LDIND_R8,  MB_TERM_LDIND_R8)
+		MAKE_LDIND (LDIND_I1,  MB_TERM_LDIND_I1, VAL_I32)
+		MAKE_LDIND (LDIND_U1,  MB_TERM_LDIND_U1, VAL_I32)
+		MAKE_LDIND (LDIND_I2,  MB_TERM_LDIND_I2, VAL_I32)
+		MAKE_LDIND (LDIND_U2,  MB_TERM_LDIND_U2, VAL_I32)
+		MAKE_LDIND (LDIND_I,   MB_TERM_LDIND_I4, VAL_I32)
+		MAKE_LDIND (LDIND_I4,  MB_TERM_LDIND_I4, VAL_I32)
+		MAKE_LDIND (LDIND_REF, MB_TERM_LDIND_U4, VAL_I32)
+		MAKE_LDIND (LDIND_U4,  MB_TERM_LDIND_U4, VAL_I32)
+		MAKE_LDIND (LDIND_I8,  MB_TERM_LDIND_I8, VAL_I64)
+		MAKE_LDIND (LDIND_R4,  MB_TERM_LDIND_R4, VAL_DOUBLE)
+		MAKE_LDIND (LDIND_R8,  MB_TERM_LDIND_R8, VAL_DOUBLE)
 
 		MAKE_STIND (STIND_I1,  MB_TERM_STIND_I1)
 		MAKE_STIND (STIND_I2,  MB_TERM_STIND_I2)
@@ -1154,34 +1752,50 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			ip++;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_NEG, sp [0], NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, sp [0]->svt);		
 			break;
 		}
 		case CEE_NOT: {
 			ip++;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_NOT, sp [0], NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);
+			PUSH_TREE (t1, sp [0]->svt);
 			break;
 		}
 	        case CEE_BR_S: {
+			gint32 target;
+
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
-			t1->data.i = cli_addr + 2 + (signed char) *ip;
-			t1->cli_addr = cli_addr;
+			target = cli_addr + 2 + (signed char) *ip;
+
+			g_assert (target >= 0 && target <= header->code_size);
+			g_assert (bcinfo [target].is_block_start);
+			tbb = &cfg->bblocks [bcinfo [target].block_id];
+			MARK_REACHED (tbb);
+			t1->data.p = tbb;
+
 			ADD_TREE (t1);
 			++ip;
+			superblock_end = TRUE;
 			break;
 		}
 		case CEE_BR: {
+			gint32 target;
+
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
-			t1->data.i = cli_addr + 5 + (gint32) read32(ip);
-			t1->cli_addr = cli_addr;
+			target = cli_addr + 5 + (gint32) read32(ip);
+
+			g_assert (target >= 0 && target <= header->code_size);
+			g_assert (bcinfo [target].is_block_start);
+			tbb = &cfg->bblocks [bcinfo [target].block_id];
+			MARK_REACHED (tbb);
+			t1->data.p = tbb;
+
 			ADD_TREE (t1);
 			ip += 4;
+			superblock_end = TRUE;
 			break;
 		}
 
@@ -1198,6 +1812,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 		case CEE_BRTRUE:
 		case CEE_BRTRUE_S: {
+			gint32 target;
 			int near_jump = *ip == CEE_BRTRUE_S;
 			++ip;
 			--sp;
@@ -1205,17 +1820,23 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new (mp, MB_TERM_BRTRUE, sp [0], NULL);
 
 			if (near_jump)
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
+				target = cli_addr + 2 + (signed char) *ip;
 			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
+				target = cli_addr + 5 + (gint32) read32 (ip);
+
+			g_assert (target >= 0 && target <= header->code_size);
+			g_assert (bcinfo [target].is_block_start);
+			tbb = &cfg->bblocks [bcinfo [target].block_id];
+			MARK_REACHED (tbb);
+			t1->data.p = tbb;
 
 			ip += near_jump ? 1: 4;
-			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);
 			break;
 		}
 		case CEE_BRFALSE:
 		case CEE_BRFALSE_S: {
+			gint32 target;
 			int near_jump = *ip == CEE_BRFALSE_S;
 			++ip;
 			--sp;
@@ -1223,13 +1844,26 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			t1 = mono_ctree_new (mp, MB_TERM_BRFALSE, sp [0], NULL);
 
 			if (near_jump)
-				t1->data.i = cli_addr + 2 + (signed char) *ip;
+				target = cli_addr + 2 + (signed char) *ip;
 			else 
-				t1->data.i = cli_addr + 5 + (gint32) read32 (ip);
+				target = cli_addr + 5 + (gint32) read32 (ip);
+
+			g_assert (target >= 0 && target <= header->code_size);
+			g_assert (bcinfo [target].is_block_start);
+			tbb = &cfg->bblocks [bcinfo [target].block_id];
+			MARK_REACHED (tbb);
+			t1->data.p = tbb;
 
 			ip += near_jump ? 1: 4;
-			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);
+
+			if ((tbb->indepth = sp - stack)) {
+				
+				printf ("DEPTH %d\n", tbb->indepth);
+				g_assert_not_reached ();
+			}
+
+
 			break;
 		}
 		case CEE_RET: {
@@ -1238,10 +1872,8 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--sp;
 				t1 = mono_ctree_new (mp, MB_TERM_RETV, *sp, NULL);
-				t1->cli_addr = sp [0]->cli_addr;
 			} else {
 				t1 = mono_ctree_new (mp, MB_TERM_RET, NULL, NULL);
-				t1->cli_addr = cli_addr;
 			}
 
 			t1->last_instr = (ip == end);
@@ -1253,6 +1885,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				mono_print_ctree (sp [-1]);
 				printf ("\n");
 			}
+			superblock_end = TRUE;
 			break;
 		}
 		case CEE_LDARG_0:
@@ -1262,38 +1895,38 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			int n = (*ip) - CEE_LDARG_0;
 			++ip;
 
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n), 
-						(gpointer)ARG_POS (n));
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, ARG_TYPE (n), 
+						(gpointer)ARG_POS (n), &svt);
+			PUSH_TREE (t1, svt);
 			break;
 		}
 		case CEE_LDARG_S: {
 			++ip;
 
-			t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (*ip), 
-						(gpointer)ARG_POS (*ip));
-			t1->cli_addr = cli_addr;
-			PUSH_TREE (t1);
+			t1 = ctree_create_load (mp, MB_TERM_ADDR_L, ARG_TYPE (*ip), 
+						(gpointer)ARG_POS (*ip), &svt);
+			PUSH_TREE (t1, svt);
 			++ip;
 			break;
 		}
 		case CEE_DUP: {
 			++ip; 
 			
-			t1 = ctree_create_dup (mp, sp [-1]);
-			PUSH_TREE (t1);
+			/* fixme: IMO we can use the temp. variable associated
+			 * with the current slot instead of -1 
+			 */
+			sp [-1] = mono_store_tree (cfg, -1, sp [-1], &t1);
+			PUSH_TREE (t1, t1->svt);
 
 			break;
 		}
 		case CEE_POP: {
 			++ip;
 			--sp;
-			/*
-			 * all side effects are already on the forest,
-			 * so we can simply ignore this tree
-			 */
-			// we use the mompool g_free (*sp);
+
+			t1 = mono_ctree_new (mp, MB_TERM_POP, *sp, NULL);
+			ADD_TREE (t1);
+
 			break;
 		}
 		case CEE_CONV_U1: 
@@ -1301,8 +1934,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_I32);		
 			break;
 		}
 		case CEE_CONV_U2: 
@@ -1310,8 +1942,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_I32);		
 			break;
 		}
 		case CEE_CONV_I: 
@@ -1319,27 +1950,24 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_I32);		
 			break;
 		}
 		case CEE_CONV_I8: {
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_I8, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_I64);		
 			break;
 		}
 		case CEE_CONV_R8: {
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_R8, *sp, NULL);
-			t1->cli_addr = sp [0]->cli_addr;
-			PUSH_TREE (t1);		
+			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
 		}
-		case 0xFE:
+		case 0xFE: {
 			++ip;			
 			switch (*ip) {
 				
@@ -1351,10 +1979,9 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				n = read32 (ip);
 				ip += 4;
 
-				t1 = ctree_create_load (mp, MB_TERM_ADDR_A, ARG_TYPE (n), 
-							(gpointer)ARG_POS (n));
-				t1->cli_addr = cli_addr;
-				PUSH_TREE (t1);
+				t1 = ctree_create_load (mp, MB_TERM_ADDR_L, ARG_TYPE (n), 
+							(gpointer)ARG_POS (n), &svt);
+				PUSH_TREE (t1, svt);
 				break;
 			}
 			default:
@@ -1362,16 +1989,38 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 					 "0xFE %02x", ip - header->code, *ip);
 			}
 			break;
+		}	
 		default:
 			g_warning ("unknown instruction `%s' at IL_%04X", 
 				   opcode_names [*ip], ip - header->code);
 			mono_print_forest (forest);
 			g_assert_not_reached ();
 		}
+	}		
+
+        if ((depth = sp - stack)) {
+		g_assert_not_reached ();
 	}
 
-	*locals_size = local_offset;
-	return forest;
+	                        } else 
+					superblock_end = TRUE;
+
+			} else {
+				superblock_end = TRUE;
+				printf ("unreached block %d\n", i);
+				repeat = TRUE;
+				g_assert (repeat_count < 10);
+			}
+	printf ("BBE %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
+		}
+
+		repeat_count++;
+		printf ("REPEAT %d\n", repeat);
+
+
+	} while (repeat);
+
+	printf ("FINISHED\n");
 }
 	
 /**
