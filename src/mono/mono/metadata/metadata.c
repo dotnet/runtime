@@ -1549,8 +1549,9 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	gclass->klass = g_new0 (MonoClass, 1);
 
 	gclass->generic_type = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	gclass->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
-	gclass->type_argv = g_new0 (MonoType*, count);
+	gclass->inst = g_new0 (MonoGenericInst, 1);
+	gclass->inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
+	gclass->inst->type_argv = g_new0 (MonoType*, count);
 
 	gklass = mono_class_from_mono_type (gclass->generic_type);
 	g_assert ((gclass->container = gklass->generic_container) != NULL);
@@ -1565,12 +1566,12 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	mono_class_create_generic (gclass);
 
-	for (i = 0; i < gclass->type_argc; i++) {
+	for (i = 0; i < gclass->inst->type_argc; i++) {
 		MonoType *t = mono_metadata_parse_type_full (m, generic_container, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-		gclass->type_argv [i] = t;
-		if (!gclass->is_open)
-			gclass->is_open = mono_class_is_open_constructed_type (t);
+		gclass->inst->type_argv [i] = t;
+		if (!gclass->inst->is_open)
+			gclass->inst->is_open = mono_class_is_open_constructed_type (t);
 	}
 
 	mono_class_create_generic_2 (gclass);
@@ -1595,7 +1596,8 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	cached = g_hash_table_lookup (m->generic_class_cache, gclass);
 	if (cached) {
 		g_free (gclass->klass);
-		g_free (gclass->type_argv);
+		g_free (gclass->inst->type_argv);
+		g_free (gclass->inst);
 		g_free (gclass);
 
 		type->data.generic_class = cached;
@@ -1606,7 +1608,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
 			sizeof (MonoGenericContext) +
-			gclass->type_argc * sizeof (MonoType);
+			gclass->inst->type_argc * sizeof (MonoType);
 	}
 
 	gclass->init_pending = FALSE;
@@ -2566,7 +2568,7 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *gclass = t->data.generic_class;
 
-		g_assert (!gclass->is_open && !gclass->klass->generic_container);
+		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
 
 		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
 			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
@@ -2665,7 +2667,7 @@ mono_type_stack_size (MonoType *t, gint *align)
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *gclass = t->data.generic_class;
 
-		g_assert (!gclass->is_open && !gclass->klass->generic_container);
+		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
 
 		if (MONO_TYPE_ISSTRUCT (gclass->generic_type)) {
 			MonoClass *gklass = mono_class_from_mono_type (gclass->generic_type);
@@ -2711,12 +2713,12 @@ _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, 
 {
 	int i;
 
-	if (g1->type_argc != g2->type_argc)
+	if (g1->inst->type_argc != g2->inst->type_argc)
 		return FALSE;
 	if (!do_mono_metadata_type_equal (g1->generic_type, g2->generic_type, signature_only))
 		return FALSE;
-	for (i = 0; i < g1->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (g1->type_argv [i], g2->type_argv [i], signature_only))
+	for (i = 0; i < g1->inst->type_argc; ++i) {
+		if (!do_mono_metadata_type_equal (g1->inst->type_argv [i], g2->inst->type_argv [i], signature_only))
 			return FALSE;
 	}
 	return TRUE;
@@ -2731,7 +2733,7 @@ mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2)
 guint
 mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
 {
-	return gmethod->mtype_argc;
+	return gmethod->inst->type_argc;
 }
 
 gboolean
@@ -2739,10 +2741,10 @@ mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2
 {
 	int i;
 
-	if (g1->mtype_argc != g2->mtype_argc)
+	if (g1->inst->type_argc != g2->inst->type_argc)
 		return FALSE;
-	for (i = 0; i < g1->mtype_argc; ++i) {
-		if (!mono_metadata_type_equal (g1->mtype_argv [i], g2->mtype_argv [i]))
+	for (i = 0; i < g1->inst->type_argc; ++i) {
+		if (!mono_metadata_type_equal (g1->inst->type_argv [i], g2->inst->type_argv [i]))
 			return FALSE;
 	}
 	return TRUE;

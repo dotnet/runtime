@@ -159,11 +159,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			int i;
 
 			g_string_append_c (str, '[');
-			for (i = 0; i < gclass->type_argc; i++) {
+			for (i = 0; i < gclass->inst->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				mono_type_get_name_recurse (
-					gclass->type_argv [i], str, FALSE, include_ns, include_arity);
+					gclass->inst->type_argv [i], str, FALSE, include_ns, include_arity);
 			}
 			g_string_append_c (str, ']');
 		} else if (klass->generic_container) {
@@ -249,8 +249,8 @@ mono_class_is_open_constructed_type (MonoType *t)
 
 		if (mono_class_is_open_constructed_type (gclass->generic_type))
 			return TRUE;
-		for (i = 0; i < gclass->type_argc; i++)
-			if (mono_class_is_open_constructed_type (gclass->type_argv [i]))
+		for (i = 0; i < gclass->inst->type_argc; i++)
+			if (mono_class_is_open_constructed_type (gclass->inst->type_argv [i]))
 				return TRUE;
 		return FALSE;
 	}
@@ -264,16 +264,16 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		if (context->gmethod && context->gmethod->mtype_argv)
+		if (context->gmethod && context->gmethod->inst->type_argv)
 			return dup_type (
-				context->gmethod->mtype_argv [type->data.generic_param->num],
+				context->gmethod->inst->type_argv [type->data.generic_param->num],
 				type);
 		else
 			return NULL;
 	case MONO_TYPE_VAR:
 		if (context->gclass)
 			return dup_type (
-				context->gclass->type_argv [type->data.generic_param->num],
+				context->gclass->inst->type_argv [type->data.generic_param->num],
 				type);
 		else
 			return NULL;
@@ -295,16 +295,20 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass = g_new0 (MonoGenericClass, 1);
 		*ngclass = *ogclass;
 
-		ngclass->is_open = FALSE;
+		ngclass->inst = g_new0 (MonoGenericInst, 1);
+		*ngclass->inst = *ogclass->inst;
 
-		ngclass->type_argv = g_new0 (MonoType *, ogclass->type_argc);
+		ngclass->inst->is_open = FALSE;
 
-		for (i = 0; i < ogclass->type_argc; i++) {
-			MonoType *t = ogclass->type_argv [i];
-			ngclass->type_argv [i] = mono_class_inflate_generic_type (t, context);
+		ngclass->inst->type_argv = g_new0 (MonoType *, ogclass->inst->type_argc);
 
-			if (!ngclass->is_open)
-				ngclass->is_open = mono_class_is_open_constructed_type (ngclass->type_argv [i]);
+		for (i = 0; i < ogclass->inst->type_argc; i++) {
+			MonoType *t = ogclass->inst->type_argv [i];
+			ngclass->inst->type_argv [i] = mono_class_inflate_generic_type (t, context);
+
+			if (!ngclass->inst->is_open)
+				ngclass->inst->is_open = mono_class_is_open_constructed_type (
+					ngclass->inst->type_argv [i]);
 		};
 
 		ngclass->klass = NULL;
@@ -316,7 +320,8 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		cached = g_hash_table_lookup (ogclass->klass->image->generic_class_cache, ngclass);
 
 		if (cached) {
-			g_free (ngclass->type_argv);
+			g_free (ngclass->inst->type_argv);
+			g_free (ngclass->inst);
 			g_free (ngclass);
 			mono_loader_unlock ();
 
@@ -334,7 +339,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
 			sizeof (MonoGenericContext) +
-			ngclass->type_argc * sizeof (MonoType);
+			ngclass->inst->type_argc * sizeof (MonoType);
 
 		nt = dup_type (type, type);
 		nt->data.generic_class = ngclass;
@@ -594,7 +599,7 @@ class_compute_field_layout (MonoClass *class)
 	}
 
 	if (class->generic_container ||
-	    (class->generic_class && class->generic_class->is_open))
+	    (class->generic_class && class->generic_class->inst->is_open))
 		return;
 
 	mono_class_layout_fields (class);
@@ -2423,7 +2428,7 @@ mono_class_instance_size (MonoClass *klass)
 		mono_class_init (klass);
 
 	g_assert (!klass->generic_container &&
-		  (!klass->generic_class || !klass->generic_class->is_open));
+		  (!klass->generic_class || !klass->generic_class->inst->is_open));
 	return klass->instance_size;
 }
 
@@ -2667,7 +2672,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 
 	switch (class->byval_arg.type) {
 	case MONO_TYPE_GENERICINST:
-		if (!class->generic_class->is_open)
+		if (!class->generic_class->inst->is_open)
 			return class;
 		break;
 	case MONO_TYPE_VAR:

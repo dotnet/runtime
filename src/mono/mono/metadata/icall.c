@@ -1206,7 +1206,7 @@ ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *
 	int i;
 
 	if (klass->generic_container ||
-	    (klass->generic_class && klass->generic_class->is_open))
+	    (klass->generic_class && klass->generic_class->inst->is_open))
 		return NULL;
 
 	info = mono_marshal_load_type_info (klass);
@@ -1741,7 +1741,7 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_class) {
-		MonoGenericClass *inst = klass->generic_class;
+		MonoGenericInst *inst = klass->generic_class->inst;
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i) {
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
@@ -2267,11 +2267,11 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 		MonoGenericMethod *gmethod = imethod->context->gmethod;
 
 		if (gmethod) {
-			count = gmethod->mtype_argc;
+			count = gmethod->inst->type_argc;
 			res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 			for (i = 0; i < count; i++) {
-				MonoType *t = gmethod->mtype_argv [i];
+				MonoType *t = gmethod->inst->type_argv [i];
 				mono_array_set (
 					res, gpointer, i, mono_type_get_object (domain, t));
 			}
