@@ -80,7 +80,16 @@
   </tr>
 </table>
 
-@item Aug 1st, 2002
+	<b>Mono Talks:</b>
+
+	<b>Hong Kong:</b> August 10th.  If you live in Hong
+	Kong, come see Duncan Mak talk about the Mono project.
+	Details are <a
+	href="http://linux.org.hk/org/event/200208-talk/">here</a>
+
+	<b>San Francisco</b>: August 14th.  Linux World Expo.
+
+@item Aug 1st, 2002: Mono Hackers Hall of Fame
 
 	The <a href="hackers.html">Mono Hackers Hall Of Fame</a> has been started
 	to show our appreciation to the excellent contributors that made <b>mono::</b>
@@ -92,7 +101,35 @@
 	himself in the lands of the C runtime. His work is invaluable for keeping
 	Mono on the right track through the daily changes in the codebase.
 
-@item Jul 26th, 2002
+@item July 31st, 2002: Flow Analysis
+
+	Martin has checked into CVS the data flow analysis patch for
+	MCS, this means that we now correctly implement definite
+	assignment in the C# language.
+
+@item Jul 31st, 2002: Most ASP.NET controls render, Gtk# structs.
+
+	Gonzalo <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-August/001234.html">posted
+	an update</a> on the ASP.NET widgets that are still pending.  Patrik is back, and he is 
+	working with Gonzalo to streamline the pipeline
+
+	Rachel quietly commited to Gtk-Sharp support for marshaling
+	structures (very important for Gtk#).  This uses extensively
+	the new marshaling code that Dietmar added to the runtime.
+
+	Dietmar is also now sharing more code for P/Invoke using his
+	intermediate representation.  Another step to share more code, and 
+	simplify the porting and maintenance process. 
+
+@item Jul 27th, 2002: NGEN tool for Mono.
+
+	Zoltan <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-July/001117.html">announced</a>
+	the availability of his CIL to C compiler.  This allows your Mono assemblies to be pre-compiled
+	and optimized by GCC in your platform, increasing the speed significantly of your code. 
+
+@item Jul 26th, 2002: Mono 0.13 has been released.
 
 	<b>Mono 0.13 has been released!</b> (details <a
 	href="archive/mono-0.13">here</a>).  Get
@@ -106,7 +143,7 @@
 	href="http://mono.baselabs.org/software">here</a>.
 	And Windows packages have been <a href="http://www.superin.formativ.net/mono/mono.htm">contributed</a>
 
-@item Jul 23rd, 2002
+@item Jul 23rd, 2002: Mono Verifier, System.Web.Services, ASP.NET samples.
 
 	Mono now has a verifier.  It is used by the runtime, or you can invoke it manually to 
 	verify an image by using the `pedump' tool.
@@ -118,7 +155,7 @@
 
 	Various samples for ASP.NET have landed in CVS. 
 
-@item Jul 20th, 2002
+@item Jul 20th, 2002: Spanish Mono Tutorial.
 
 	A spanish tutorial on using Mono is <a
 	href="http://mono.es.gnome.org/tutoriales/mono-linux/">here</a>.
@@ -126,7 +163,7 @@
 	href="http://mono.es.gnome.org/tutoriales/mono-puf/">FAQ</a>
 	has been translated as well.
 
-@item Jul 19th, 2002
+@item Jul 19th, 2002: File handle redirection, Embeddable Mono and Mono Linux compilation.
 
 	Dick's code for file handle redirection is complete and has
 	now landed on the CVS repository.
