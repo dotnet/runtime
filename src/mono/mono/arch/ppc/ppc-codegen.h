@@ -591,7 +591,7 @@ my and Ximian's copyright to this code. ;)
 #define ppc_subfo(c,D,A,B) ppc_subfx(c,D,A,B,1,0)
 #define ppc_subfod(c,D,A,B) ppc_subfx(c,D,A,B,1,1)
 
-#define ppc_sub(c,D,A,B) ppc_subf(c,D,B.A)
+#define ppc_sub(c,D,A,B) ppc_subf(c,D,B,A)
 
 #define ppc_subfcx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | (D << 21) | (A << 16) | (B << 11) | (OE << 10) | (8 << 1) | Rc)
 #define ppc_subfc(c,D,A,B) ppc_subfcx(c,D,A,B,0,0)
