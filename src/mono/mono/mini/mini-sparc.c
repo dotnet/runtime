@@ -3967,10 +3967,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			gint32 offset = mono_spillvar_offset_float (cfg, 0);
 			if (!sparc_is_imm13 (offset))
 				NOT_IMPLEMENTED;
-			/* FIXME: Is having the same code for all of these ok ? */
 			sparc_fdtoi (code, ins->sreg1, FP_SCRATCH_REG);
 			sparc_stdf_imm (code, FP_SCRATCH_REG, sparc_sp, offset);
 			sparc_ld_imm (code, sparc_sp, offset, ins->dreg);
+
+			switch (ins->opcode) {
+			case OP_FCONV_TO_I1:
+			case OP_FCONV_TO_U1:
+				sparc_and_imm (code, 0, ins->dreg, 0xff, ins->dreg);
+				break;
+			case OP_FCONV_TO_I2:
+			case OP_FCONV_TO_U2:
+				sparc_set (code, 0xffff, sparc_o7);
+				sparc_and (code, 0, ins->dreg, sparc_o7, ins->dreg);
+				break;
+			default:
+				break;
+			}
 			break;
 		}
 		case OP_FCONV_TO_I8:
