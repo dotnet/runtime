@@ -33,6 +33,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads.h>
+/* FIXME change this code to not mess so much with the internals */
+#include <mono/metadata/class-internals.h>
 
 #include <sys/time.h> 
 
@@ -800,8 +802,8 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_array_set(data, guint8, 5, (address>>16) & 0xff);
 		mono_array_set(data, guint8, 6, (address>>8) & 0xff);
 		mono_array_set(data, guint8, 7, (address) & 0xff);
-		
-		*(MonoArray **)(((char *)sockaddr_obj) + field->offset)=data;
+	
+		mono_field_set_value (sockaddr_obj, field, data);
 
 		return(sockaddr_obj);
 #ifdef AF_INET6
@@ -831,7 +833,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_array_set(data, guint8, 27,
 			       (sa_in->sin6_scope_id >> 24) & 0xff);
 
-		*(MonoArray **)(((char *)sockaddr_obj) + field->offset)=data;
+		mono_field_set_value (sockaddr_obj, field, data);
 
 		return(sockaddr_obj);
 #endif
@@ -843,7 +845,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 			mono_array_set (data, guint8, i+2, saddr->sa_data[i]);
 		}
 		
-		*(MonoArray **)(((char *)sockaddr_obj) + field->offset) = data;
+		mono_field_set_value (sockaddr_obj, field, data);
 
 		return sockaddr_obj;
 #endif

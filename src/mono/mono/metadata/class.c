@@ -2864,5 +2864,327 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token)
 	return lookup_dynamic (image, token);
 }
 
+MonoImage*
+mono_class_get_image (MonoClass *klass)
+{
+	return klass->image;
+}
 
+MonoClass*
+mono_class_get_element_class (MonoClass *klass)
+{
+	return klass->element_class;
+}
+
+gboolean
+mono_class_is_valuetype (MonoClass *klass)
+{
+	return klass->valuetype;
+}
+
+gboolean
+mono_class_is_enum (MonoClass *klass)
+{
+	return klass->enumtype;
+}
+
+MonoType*
+mono_class_enum_basetype (MonoClass *klass)
+{
+	return klass->enum_basetype;
+}
+
+MonoClass*
+mono_class_get_parent (MonoClass *klass)
+{
+	return klass->parent;
+}
+
+MonoClass*
+mono_class_get_nesting_type (MonoClass *klass)
+{
+	return klass->nested_in;
+}
+
+int
+mono_class_get_rank (MonoClass *klass)
+{
+	return klass->rank;
+}
+
+guint32
+mono_class_get_flags (MonoClass *klass)
+{
+	return klass->flags;
+}
+
+const char*
+mono_class_get_name (MonoClass *klass)
+{
+	return klass->name;
+}
+
+const char*
+mono_class_get_namespace (MonoClass *klass)
+{
+	return klass->name_space;
+}
+
+MonoType*
+mono_class_get_type (MonoClass *klass)
+{
+	return &klass->byval_arg;
+}
+
+MonoType*
+mono_class_get_byref_type (MonoClass *klass)
+{
+	return &klass->this_arg;
+}
+
+MonoClassField*
+mono_class_get_fields (MonoClass* klass, gpointer *iter)
+{
+	MonoClassField* field;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->field.count) {
+			return *iter = &klass->fields [0];
+		} else {
+			/* no fields */
+			return NULL;
+		}
+	}
+	field = *iter;
+	field++;
+	if (field < &klass->fields [klass->field.count]) {
+		return *iter = field;
+	}
+	return NULL;
+}
+
+MonoMethod*
+mono_class_get_methods (MonoClass* klass, gpointer *iter)
+{
+	MonoMethod** method;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->method.count) {
+			*iter = &klass->methods [0];
+			return klass->methods [0];
+		} else {
+			/* no method */
+			return NULL;
+		}
+	}
+	method = *iter;
+	method++;
+	if (method < &klass->methods [klass->method.count]) {
+		*iter = method;
+		return *method;
+	}
+	return NULL;
+}
+
+MonoProperty*
+mono_class_get_properties (MonoClass* klass, gpointer *iter)
+{
+	MonoProperty* property;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->property.count) {
+			return *iter = &klass->properties [0];
+		} else {
+			/* no fields */
+			return NULL;
+		}
+	}
+	property = *iter;
+	property++;
+	if (property < &klass->properties [klass->property.count]) {
+		return *iter = property;
+	}
+	return NULL;
+}
+
+MonoEvent*
+mono_class_get_events (MonoClass* klass, gpointer *iter)
+{
+	MonoEvent* event;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->event.count) {
+			return *iter = &klass->events [0];
+		} else {
+			/* no fields */
+			return NULL;
+		}
+	}
+	event = *iter;
+	event++;
+	if (event < &klass->events [klass->event.count]) {
+		return *iter = event;
+	}
+	return NULL;
+}
+
+MonoClass*
+mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
+{
+	MonoClass** iface;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->interface_count) {
+			*iter = &klass->interfaces [0];
+			return klass->interfaces [0];
+		} else {
+			/* no interface */
+			return NULL;
+		}
+	}
+	iface = *iter;
+	iface++;
+	if (iface < &klass->interfaces [klass->interface_count]) {
+		*iter = iface;
+		return *iface;
+	}
+	return NULL;
+}
+
+MonoClass*
+mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
+{
+	GList *item;
+	if (!iter)
+		return NULL;
+	if (!klass->inited)
+		mono_class_init (klass);
+	if (!*iter) {
+		/* start from the first */
+		if (klass->nested_classes) {
+			*iter = klass->nested_classes;
+			return klass->nested_classes->data;
+		} else {
+			/* no nested types */
+			return NULL;
+		}
+	}
+	item = *iter;
+	item = item->next;
+	if (item) {
+		*iter = item;
+		return item->data;
+	}
+	return NULL;
+}
+
+const char*
+mono_field_get_name (MonoClassField *field)
+{
+	return field->name;
+}
+
+MonoType*
+mono_field_get_type (MonoClassField *field)
+{
+	return field->type;
+}
+
+MonoClass*
+mono_field_get_parent (MonoClassField *field)
+{
+	return field->parent;
+}
+
+guint32
+mono_field_get_flags (MonoClassField *field)
+{
+	return field->type->attrs;
+}
+
+const char*
+mono_property_get_name (MonoProperty *prop)
+{
+	return prop->name;
+}
+
+MonoMethod*
+mono_property_get_set_method (MonoProperty *prop)
+{
+	return prop->set;
+}
+
+MonoMethod*
+mono_property_get_get_method (MonoProperty *prop)
+{
+	return prop->get;
+}
+
+MonoClass*
+mono_property_get_parent (MonoProperty *prop)
+{
+	return prop->parent;
+}
+
+guint32
+mono_property_get_flags (MonoProperty *prop)
+{
+	return prop->attrs;
+}
+
+const char*
+mono_event_get_name (MonoEvent *event)
+{
+	return event->name;
+}
+
+MonoMethod*
+mono_event_get_add_method (MonoEvent *event)
+{
+	return event->add;
+}
+
+MonoMethod*
+mono_event_get_remove_method (MonoEvent *event)
+{
+	return event->remove;
+}
+
+MonoMethod*
+mono_event_get_raise_method (MonoEvent *event)
+{
+	return event->raise;
+}
+
+MonoClass*
+mono_event_get_parent (MonoEvent *event)
+{
+	return event->parent;
+}
+
+guint32
+mono_event_get_flags (MonoEvent *event)
+{
+	return event->attrs;
+}
 

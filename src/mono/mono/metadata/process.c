@@ -21,6 +21,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/utils/strenc.h>
 #include <mono/io-layer/io-layer.h>
+/* FIXME: fix this code to not depend so much on the inetrnals */
+#include <mono/metadata/class-internals.h>
 
 #undef DEBUG
 

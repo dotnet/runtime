@@ -1608,25 +1608,6 @@ mono_object_allocate_spec (size_t size, void *gcdescr)
 #endif
 
 /**
- * mono_object_free:
- *
- * Frees the memory used by the object.  Debugging purposes
- * only, as we will have our GC system.
- */
-void
-mono_object_free (MonoObject *o)
-{
-#if HAVE_BOEHM_GC
-	g_error ("mono_object_free called with boehm gc.");
-#else
-	MonoClass *c = o->vtable->klass;
-	
-	memset (o, 0, c->instance_size);
-	free (o);
-#endif
-}
-
-/**
  * mono_object_new:
  * @klass: the class of the object that we want to create
  *
@@ -2150,6 +2131,18 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	if (class->has_finalize)
 		mono_object_register_finalizer (res);
 	return res;
+}
+
+MonoDomain*
+mono_object_get_domain (MonoObject *obj)
+{
+	return mono_object_domain (obj);
+}
+
+MonoClass*
+mono_object_get_class (MonoObject *obj)
+{
+	return mono_object_class (obj);
 }
 
 gpointer

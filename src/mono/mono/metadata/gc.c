@@ -15,6 +15,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/class-internals.h>
 #define GC_I_HIDE_POINTERS
 #include <mono/os/gc_wrapper.h>
 

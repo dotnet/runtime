@@ -351,7 +351,7 @@ dump_verify_info (MonoImage *image, int flags)
 				char *sig;
 				MonoClass *klass = mono_method_get_class (method);
 				sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
-				g_print ("In method: %s.%s::%s(%s)\n", klass->name_space, klass->name, mono_method_get_name (method), sig);
+				g_print ("In method: %s.%s::%s(%s)\n", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), sig);
 				g_free (sig);
 			}
 

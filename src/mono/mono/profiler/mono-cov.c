@@ -91,7 +91,7 @@ cov_shutdown (MonoProfiler *prof)
 		/* FIXME: handle icalls, runtime calls and synchronized methods */
 		if (prof->class_name && *prof->class_name) {
 			klass = mono_method_get_class (method);
-			if (!strstr (klass->name, prof->class_name) && !strstr (klass->name_space, prof->class_name))
+			if (!strstr (mono_class_get_name (klass), prof->class_name) && !strstr (mono_class_get_namespace (klass), prof->class_name))
 				continue;
 		}
 		/*g_print ("check %s::%s, %p\n", method->klass->name, method->name, method);*/

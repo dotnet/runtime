@@ -127,11 +127,14 @@ mono_string_to_utf16	    (MonoString *string_obj);
 MonoString *
 mono_string_from_utf16	    (gunichar2 *data);
 
-void	   
-mono_object_free	    (MonoObject *o);
-
 MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, gpointer val);
+
+MonoDomain*
+mono_object_get_domain      (MonoObject *obj);
+
+MonoClass*
+mono_object_get_class       (MonoObject *obj);
 
 gpointer
 mono_object_unbox	    (MonoObject *obj);

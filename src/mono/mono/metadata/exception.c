@@ -70,8 +70,10 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 	MonoClass *klass;
 	MonoMethod *method = NULL;
 	MonoObject *o;
-	int i, count = 1;
+	int count = 1;
 	gpointer args [2];
+	gpointer iter;
+	MonoMethod *m;
 
 	if (a2 != NULL)
 		count++;
@@ -79,12 +81,13 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 	klass = mono_class_from_name (image, name_space, name);
 	o = mono_object_new (domain, klass);
 
-	for (i = 0; i < klass->method.count; ++i) {
+	iter = NULL;
+	while ((m = mono_class_get_methods (klass, &iter))) {
 		MonoMethodSignature *sig;
 		
-		if (strcmp (".ctor", mono_method_get_name (klass->methods [i])))
+		if (strcmp (".ctor", mono_method_get_name (m)))
 			continue;
-		sig = mono_method_signature (klass->methods [i]);
+		sig = mono_method_signature (m);
 		if (sig->param_count != count)
 			continue;
 
@@ -92,7 +95,7 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 			continue;
 		if (count == 2 && sig->params [1]->type != MONO_TYPE_STRING)
 			continue;
-		method = klass->methods [i];
+		method = m;
 	}
 
 	args [0] = a1;
@@ -117,14 +120,11 @@ mono_exception_from_name_msg (MonoImage *image, const char *name_space,
 			      const char *name, const guchar *msg)
 {
 	MonoException *ex;
-	MonoDomain *domain;
 
 	ex = mono_exception_from_name (image, name_space, name);
 
-	domain = ((MonoObject *)ex)->vtable->domain;
-
 	if (msg)
-		ex->message = mono_string_new (domain, msg);
+		ex->message = mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg);
 
 	return ex;
 }
@@ -223,14 +223,12 @@ MonoException *
 mono_get_exception_not_implemented (const guchar *msg)
 {
 	MonoException *ex;
-	MonoDomain *domain;
 	
 	ex = mono_exception_from_name (mono_get_corlib (), "System",
 				       "NotImplementedException");
-	domain = ((MonoObject *)ex)->vtable->domain;
 
 	if (msg)
-		ex->message = mono_string_new (domain, msg);
+		ex->message = mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg);
 
 	return ex;
 }
@@ -246,16 +244,13 @@ MonoException*
 mono_get_exception_argument_null (const guchar *arg)
 {
 	MonoException *ex;
-	MonoDomain *domain;
 
 	ex = mono_exception_from_name ( 
 		mono_get_corlib (), "System", "ArgumentNullException");
 
-	domain = ((MonoObject *)ex)->vtable->domain;
-
 	if (arg)
 		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (domain, arg);
+			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
 	
 	return ex;
 }
@@ -264,16 +259,13 @@ MonoException *
 mono_get_exception_argument (const guchar *arg, const guchar *msg)
 {
 	MonoException *ex;
-	MonoDomain *domain;
 
 	ex = mono_exception_from_name_msg (
 		mono_get_corlib (), "System", "ArgumentException", msg);
 
-	domain = ((MonoObject *)ex)->vtable->domain;
-
 	if (arg)
 		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (domain, arg);
+			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
 	
 	return ex;
 }
@@ -282,16 +274,13 @@ MonoException *
 mono_get_exception_argument_out_of_range (const guchar *arg)
 {
 	MonoException *ex;
-	MonoDomain *domain;
 
 	ex = mono_exception_from_name (
 		mono_get_corlib (), "System", "ArgumentOutOfRangeException");
 
-	domain = ((MonoObject *)ex)->vtable->domain;
-
 	if (arg)
 		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (domain, arg);
+			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
 	
 	return ex;
 }
@@ -324,7 +313,7 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	gpointer args [2];
 	MonoObject *exc;
 	MonoMethod *method;
-	gint i;
+	gpointer iter;
 
 	klass = mono_class_from_name (mono_get_corlib (), "System", "TypeInitializationException");
 	g_assert (klass);
@@ -332,8 +321,8 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	mono_class_init (klass);
 
 	/* TypeInitializationException only has 1 ctor with 2 args */
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method)) && mono_method_signature (method)->param_count == 2)
 			break;
 		method = NULL;

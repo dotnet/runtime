@@ -31,15 +31,18 @@ free_method_info (MonoDebugMethodInfo *minfo)
 static gchar *
 get_class_name (MonoClass *klass)
 {
-	if (klass->nested_in) {
-		gchar *parent_name = get_class_name (klass->nested_in);
-		gchar *name = g_strdup_printf ("%s.%s", parent_name, klass->name);
+	MonoClass *nested_in = mono_class_get_nesting_type (klass);
+	const char *name_space;
+	if (nested_in) {
+		gchar *parent_name = get_class_name (nested_in);
+		gchar *name = g_strdup_printf ("%s.%s", parent_name, mono_class_get_name (klass));
 		g_free (parent_name);
 		return name;
 	}
 
-	return g_strdup_printf ("%s%s%s", klass->name_space,
-				klass->name_space [0] ? "." : "", klass->name);
+	name_space = mono_class_get_namespace (klass);
+	return g_strdup_printf ("%s%s%s", name_space,
+				name_space [0] ? "." : "", mono_class_get_name (klass));
 }
 
 static int
@@ -227,7 +230,7 @@ mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
 	if (!symfile->method_hash)
 		return NULL;
 
-	if (handle->image != mono_method_get_class (method)->image)
+	if (handle->image != mono_class_get_image (mono_method_get_class (method)))
 		return NULL;
 
 	first_ie = (MonoSymbolFileMethodIndexEntry *)

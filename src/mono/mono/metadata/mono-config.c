@@ -12,6 +12,7 @@
 #include <string.h>
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
+#include "mono/metadata/metadata-internals.h"
 #include "mono/utils/mono-logger.h"
 
 static void start_element (GMarkupParseContext *context, 
