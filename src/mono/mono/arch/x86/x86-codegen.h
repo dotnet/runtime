@@ -1,8 +1,15 @@
-/* Copyright (C)  2000 Intel Corporation.  All rights reserved.
-   Copyright (C)  2001 Ximian, Inc. 
-//
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.30 2002/05/10 19:25:15 serge Exp $
-*/
+/*
+ * x86-codegen.h: Macros for generating x86 code
+ *
+ * Authors:
+ *   Paolo Molaro (lupus@ximian.com)
+ *   Intel Corporation (ORP Project)
+ *   Sergey Chaban (serge@wildwestsoftware.com)
+ *   Dietmar Maurer (dietmar@ximian.com)
+ * 
+ * Copyright (C)  2000 Intel Corporation.  All rights reserved.
+ * Copyright (C)  2001, 2002 Ximian, Inc.
+ */
 
 #ifndef X86_H
 #define X86_H
