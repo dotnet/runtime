@@ -7,6 +7,7 @@
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
 <a href="#asp">Mono and ASP.NET</a><br>
+<a href="#ado">Mono and ADO.NET</a><br>
 <a href="#devel">Development Tools and Issues</a><br>
 <a href="#java">Mono and Java</a><br>
 <a href="#extending">Extending Mono</a><br>
@@ -691,6 +692,7 @@ A: To build the compiler and class libraries in Linux, run:
    </ul>
    If you want to produce and distribute a monocharge tarball, run:
    make -f makefile.gnu dist
+   Of course you have to run these in the top level mcs directory.
 
 Q: Is it possible to build a C# file to some sort of intermediate format which 
    can linked into a final module, like the traditional .c -> .o -> .so path? 
@@ -703,6 +705,14 @@ Q: Is there any plans for implementing remoting in the near future?, When will
 
 A: The remoting infrastructure is in place. Some of the channels and 
    formatters are not.
+
+Q: I'm wondering if there are any plans to start using nant to build the
+   class lib + test lib. i think that every project neeed/should use an
+   automated build process and nant + a couple of tools enables this. is
+   the problem that the compiler can't run nant yet?
+
+A: Maybe well be doing some sort of automated build process + testing when
+   the summer finish.
 
 <a name="asp">
 ** Mono and ASP.NET
@@ -727,6 +737,30 @@ Q: Any plan to make ASP.NET in mono works with Apache in linux?.
 A: Yes, we have plans to do so, but we need to wait for Patrik's patches to
    HttpRuntime. Once that is there, writing a mod_mono should be trivial 
    (look at mono/samples/embed for a sample embedded application).
+
+<a name="ado">
+** Mono and ADO.NET
+
+Q: What is the status of ADO.NET support?. Could I start migrating 
+   applications from MS.NET to Mono?.
+
+A: You could start right now using the ADO.NET support in mono, of course,
+   if you want to help filling the missing gaps while you develop your app
+   :-) Well, what I mean is that we're not that far to having full ADO.NET
+   support in Mono, and we've got a lot of working things, so if we could
+   get more help, we'd finish it really soon :-)
+
+Q: In developing the data architecture for the application are there and
+   objects I should stay away from in order to insure the smoothest possible
+   transition (minimum code rewrite) to Mono's ADO.NET implementation?  (For
+   example, strongly typed datasets versus untyped datasets, etc...)
+
+A: we are implementing all the classes in Microsoft .NET's System.Data, so
+   you can be sure that things will work the same in Mono as with the MS's
+   implementation. We'll maybe provide extra classes to fix some things
+   we've found missing while developing ADO.NET in Mono, but if you keep
+   using the MS's System.Data classes, things will work out of the box with
+   no changes (or at least that's the plan :-)
 
 <a name="java">
 ** Mono and Java
@@ -1136,6 +1170,12 @@ Q: How about getting searchable archives on lists.ximian.com?
 
 A: You mean like http://www.go-mono.com/mailing-lists.html?
 
+Q: I downloaded the lastest snapshot and did a make and make install on
+   mono which ran normal but when I tried to do the same with mcs it
+   errored out with a message saying Mono and Runtime out of sync.
+
+A: You need to compile first the class libraries and install them with your
+   existing compiler and then the runtime.
 
 
 
