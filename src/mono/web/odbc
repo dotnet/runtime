@@ -25,7 +25,7 @@
 	
 	<li>List of unixODBC <a href="http://www.unixodbc.org/drivers.html">drivers</a>
 	
-	<li>List of <a href="http://ourworld.compuserve.com/homepages/Ken_North/odbcvend.htm">ODBC Vendors</a>
+	<li>List of <a href="http://www.sqlsummit.com/odbcvend.htm">ODBC Vendors</a>
 	
 	<li>ODBC can connect to various databases which has an ODBC driver installed:
 	<ul> 
