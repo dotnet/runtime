@@ -328,7 +328,7 @@ base: ADD (reg, coni4) {
 }
 
 base: ADDR_L {
-	tree->data.ainfo.offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+	tree->data.ainfo.offset = VAROFFSET (s, tree->data.i);
 	tree->data.ainfo.basereg = X86_EBP;
 	tree->data.ainfo.amode = AMBase;
 }
@@ -385,7 +385,7 @@ addr: ADD (index, base) {
 
 # we pass exception in ECX to catch handler
 reg: EXCEPTION {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+	int offset = VAROFFSET (s, tree->data.i);
 
 	if (tree->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, tree->reg1, X86_ECX, 4);
@@ -404,7 +404,7 @@ stmt: THROW (reg) {
 }
 
 stmt: RETHROW {
-	int off = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+	int off = VAROFFSET (s, tree->data.i);
 	gpointer target;
 
 	x86_push_membase (s->code, X86_EBP, off);
@@ -946,7 +946,7 @@ reg: REMOTE_LDFLDA (reg) {
 }
 
 reg: ADDR_L 5 {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;  
+	int offset = VAROFFSET (s, tree->data.i);  
 
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 	
@@ -1804,47 +1804,47 @@ cflags: COMPARE (reg, coni4) {
 }
 
 cflags: COMPARE (LDIND_I4 (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
 }
 
 cflags: COMPARE (LDIND_U4 (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
 }
 
 cflags: COMPARE (LDIND_REF (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
 }
 
 cflags: COMPARE (reg, LDIND_I4 (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->right->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->right->left->data.i);  
 	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
 }
 
 cflags: COMPARE (reg, LDIND_U4 (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->right->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->right->left->data.i);  
 	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
 }
 
 cflags: COMPARE (reg, LDIND_REF (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->right->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->right->left->data.i);  
 	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
 }
 
 cflags: COMPARE (LDIND_I4 (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
 }
 
 cflags: COMPARE (LDIND_U4 (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
 }
 
 cflags: COMPARE (LDIND_REF (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->left->data.i);  
 	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
 }
 
@@ -2042,7 +2042,7 @@ reg: CALL_I4 (this, reg) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2071,7 +2071,7 @@ reg: CALL_I4 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2110,7 +2110,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2171,7 +2171,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2202,7 +2202,7 @@ stmt: CALL_VOID (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2227,7 +2227,7 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2255,7 +2255,7 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2937,7 +2937,7 @@ lreg: CALL_I8 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2965,7 +2965,7 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2997,7 +2997,7 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3535,7 +3535,7 @@ freg: NEG (freg) {
 stmt: POP (freg)
 
 stmt: STIND_R4 (ADDR_L, freg) {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->data.i);  
 	x86_fst_membase (s->code, X86_EBP, offset, FALSE, TRUE);
 }
 
@@ -3581,7 +3581,7 @@ stmt: REMOTE_STIND_R4 (reg, freg) {
 }
 
 stmt: STIND_R8 (ADDR_L, freg) {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;  
+	int offset = VAROFFSET (s, tree->left->data.i);  
 	x86_fst_membase (s->code, X86_EBP, offset, TRUE, TRUE);
 }
 
@@ -3710,7 +3710,7 @@ freg: CALL_R8 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3735,7 +3735,7 @@ freg: CALL_R8 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3763,7 +3763,7 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.ci.vtype_num).offset;
+		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}

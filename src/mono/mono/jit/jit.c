@@ -723,7 +723,7 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
 }
 
-static int
+int
 arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, MonoValueType type)
 {
 	MonoVarInfo vi;

@@ -27,6 +27,7 @@
 
 
 //#define DEBUG_REGALLOC
+//#define DEBUG_SPILLS
 
 static void
 enter_method (MonoMethod *method, char *ebp)
@@ -422,7 +423,7 @@ mono_label_cfg (MonoFlowGraph *cfg)
 }
 
 static gboolean
-tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask) 
+tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask, int *spillcount) 
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
@@ -462,7 +463,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 
 	if (nts [0] && kids [0] == tree) {
 		/* chain rule */
-		if (!tree_allocate_regs (kids [0], nts [0], rs, exclude_mask))
+		if (!tree_allocate_regs (kids [0], nts [0], rs, exclude_mask, spillcount))
 			return FALSE;
 		/* special case reg: coni4 */
 		if (goal == MB_NTERM_reg) {
@@ -474,9 +475,19 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 		return TRUE;
 	}
 
+	if (tree->spilled) {
+		if (tree->reg1 >= 0)
+			(*spillcount)--;
+		if (tree->reg2 >= 0)
+			(*spillcount)--;
+		if (tree->reg3 >= 0)
+			(*spillcount)--;
+	}
+
 	tree->reg1 = -1;
 	tree->reg2 = -1;
 	tree->reg3 = -1;
+	
 	tree->spilled = 0;
  
 	if (nts [0]) {
@@ -485,12 +496,12 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 			if (nts [2]) /* we cant handle tree kids */
 				g_assert_not_reached ();
 
-			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask))
+			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask, spillcount))
 				return FALSE;
 
 			saved_rs = *rs;
 
-			if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask)) {
+			if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
 
 #ifdef DEBUG_REGALLOC
 				printf ("tree_allocate_regs try 1 failed %d %d %d %d\n", 
@@ -499,20 +510,26 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 #endif
 				*rs = saved_rs;
 
-				if (kids [0]->reg1 != -1)
+				if (kids [0]->reg1 != -1) {
 					right_exclude_mask |= 1 << kids [0]->reg1;
-				if (kids [0]->reg2 != -1)
+					(*spillcount)++;
+				}
+				if (kids [0]->reg2 != -1) {
 					right_exclude_mask |= 1 << kids [0]->reg2;
-				if (kids [0]->reg3 != -1)
+					(*spillcount)++;
+				}
+				if (kids [0]->reg3 != -1) {
 					right_exclude_mask |= 1 << kids [0]->reg3;
-				
+					(*spillcount)++;
+				}
+
 				mono_regset_free_reg (rs, kids [0]->reg1);
 				mono_regset_free_reg (rs, kids [0]->reg2);
 				mono_regset_free_reg (rs, kids [0]->reg3);
 
 				kids [0]->spilled = 1;
 
-				if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask)) {
+				if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
 #ifdef DEBUG_REGALLOC
 					printf ("tree_allocate_regs try 2 failed\n");
 #endif
@@ -524,7 +541,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 			}
 
 		} else { /* one kid */
-			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask))
+			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask, spillcount))
 				return FALSE;			
 		}
 	}
@@ -634,7 +651,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask)
 static void
 arch_allocate_regs (MonoFlowGraph *cfg)
 {
-	int i, j;
+	int i, j, max_spillcount = 0;
 	
 	for (i = 0; i < cfg->block_count; i++) {
 		GPtrArray *forest = cfg->bblocks [i].forest;
@@ -647,13 +664,16 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			int spillcount = 0;
 #ifdef DEBUG_REGALLOC
 			printf ("arch_allocate_regs start %d:%d %08x\n", i, j, cfg->rs->free_mask);
 #endif
-			if (!tree_allocate_regs (t1, 1, cfg->rs, 0)) {
+			if (!tree_allocate_regs (t1, 1, cfg->rs, 0, &spillcount)) {
 				mono_print_ctree (t1);
 				g_error ("register allocation failed");
 			}
+
+			max_spillcount = MAX (max_spillcount, spillcount);
 
 #ifdef DEBUG_REGALLOC
 			printf ("arch_allocate_regs end %d:%d %08x\n", i, j, cfg->rs->free_mask);
@@ -661,10 +681,22 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 			g_assert (cfg->rs->free_mask == 0xffffffff);
 		}
 	}
+
+	/* allocate space for spilled regs */
+
+	cfg->spillvars = mono_mempool_alloc0 (cfg->mp, sizeof (gint) *  max_spillcount);
+	cfg->spillcount = max_spillcount;
+
+	for (i = 0; i < max_spillcount; i++) {
+		int spillvar;
+		spillvar = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer),
+					      MONO_TEMPVAR, VAL_I32);
+		cfg->spillvars [i] = VAROFFSET (cfg, spillvar);
+	}
 }
 
 static void
-tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree) 
+tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree, int *spillcount) 
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
@@ -676,14 +708,15 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 
 	if (nts [0]) {
 		if (nts [1]) {
+			int spilloffset1, spilloffset2, spilloffset3;
+			
 			if (nts [2])
 				g_assert_not_reached ();
 
-			tree_emit (nts [0], cfg, kids [0]);
+			tree_emit (nts [0], cfg, kids [0], spillcount);
 
 			if (kids [0]->spilled) {
-
-#ifdef DEBUG_REGALLOC
+#ifdef DEBUG_SPILLS
 				printf ("SPILL_REGS %d %03x %s.%s:%s\n", 
 					nts [0], cfg->code - cfg->start,
 					cfg->method->klass->name_space,
@@ -691,22 +724,32 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 
 				mono_print_ctree (kids [0]);printf ("\n\n");
 #endif
+				spilloffset1 = 0;
+				spilloffset2 = 0;
+				spilloffset3 = 0;
 
-				/* fixme: we should allocate a spill location instead
-				   of using the stack to save values */
-				if (kids [0]->reg1 != -1) 
-					x86_push_reg (cfg->code, kids [0]->reg1);
-				if (kids [0]->reg2 != -1) 
-					x86_push_reg (cfg->code, kids [0]->reg2);
-				if (kids [0]->reg3 != -1) 
-					x86_push_reg (cfg->code, kids [0]->reg3);
+				if (kids [0]->reg1 != -1) {
+					spilloffset1 = cfg->spillvars [(*spillcount)++];
+					x86_mov_membase_reg (cfg->code, X86_EBP, spilloffset1, 
+							     kids [0]->reg1, 4);
+				}
+				if (kids [0]->reg2 != -1) {
+					spilloffset2 = cfg->spillvars [(*spillcount)++];
+					x86_mov_membase_reg (cfg->code, X86_EBP, spilloffset2, 
+							     kids [0]->reg2, 4);
+				}
+				if (kids [0]->reg3 != -1) {
+					spilloffset3 = cfg->spillvars [(*spillcount)++];
+					x86_mov_membase_reg (cfg->code, X86_EBP, spilloffset3, 
+							     kids [0]->reg3, 4);
+				}
 			}
 
-			tree_emit (nts [1], cfg, kids [1]);
+			tree_emit (nts [1], cfg, kids [1], spillcount);
 
 			if (kids [0]->spilled) {
 
-#ifdef DEBUG_REGALLOC
+#ifdef DEBUG_SPILLS
 				printf ("RELOAD_REGS %03x %s.%s:%s\n", 
 					cfg->code - cfg->start,
 					cfg->method->klass->name_space,
@@ -714,16 +757,21 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 #endif
 
 				if (kids [0]->reg3 != -1) 
-					x86_pop_reg (cfg->code, kids [0]->reg3);
+					x86_mov_reg_membase (cfg->code, kids [0]->reg3, X86_EBP, 
+							     spilloffset3, 4);
 				if (kids [0]->reg2 != -1) 
-					x86_pop_reg (cfg->code, kids [0]->reg2);
+					x86_mov_reg_membase (cfg->code, kids [0]->reg2, X86_EBP, 
+							     spilloffset2, 4);
 				if (kids [0]->reg1 != -1) 
-					x86_pop_reg (cfg->code, kids [0]->reg1);
+					x86_mov_reg_membase (cfg->code, kids [0]->reg1, X86_EBP, 
+							     spilloffset1, 4);
 			}
 		} else {
-			tree_emit (nts [0], cfg, kids [0]);
+			tree_emit (nts [0], cfg, kids [0], spillcount);
 		}
 	}
+
+	g_assert ((*spillcount) <= cfg->spillcount);
 
 	tree->addr = offset = cfg->code - cfg->start;
 
@@ -746,7 +794,7 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 static void
 mono_emit_cfg (MonoFlowGraph *cfg)
 {
-	int i, j;
+	int i, j, spillcount;
 
 	for (i = 0; i < cfg->block_count; i++) {
 		MonoBBlock *bb = &cfg->bblocks [i];
@@ -763,7 +811,8 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
 			
-			tree_emit (1, cfg, t1);
+			spillcount = 0;
+			tree_emit (1, cfg, t1, &spillcount);
 		}
 	}
 		
@@ -1007,11 +1056,11 @@ arch_compile_method (MonoMethod *method)
 			return NULL;
 		}
 		
+		arch_allocate_regs (cfg);
+
 		/* align to 8 byte boundary */
 		cfg->locals_size += 7;
 		cfg->locals_size &= ~7;
-
-		arch_allocate_regs (cfg);
 
 		arch_emit_prologue (cfg);
 		cfg->prologue_end = cfg->code - cfg->start;

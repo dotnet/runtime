@@ -32,6 +32,8 @@
 
 #define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
 
+#define VAROFFSET(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num).offset)
+
 typedef struct _MBTree MBTree;
 
 typedef enum {
@@ -128,7 +130,8 @@ typedef struct {
 	guint32           args_start_index;
 	guint32           locals_start_index;
 	gint              invalid;
-
+	gint             *spillvars; 
+	gint              spillcount;
 	MonoJumpInfo     *jump_info;
 } MonoFlowGraph;
 
@@ -230,6 +233,10 @@ arch_runtime_invoke        (MonoMethod *method, void *obj, void **params);
 
 gpointer
 arch_create_native_wrapper (MonoMethod *method);
+
+int
+arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 
+			    MonoValueKind kind, MonoValueType type);
 
 /* delegate support functions */
 
