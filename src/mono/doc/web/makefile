@@ -1,34 +1,35 @@
 CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
 
 OBJECTS=	\
-	deploy/anoncvs.html		\
-	deploy/contributing.html	\
+	deploy/anoncvs.html			\
+	deploy/contributing.html		\
 	deploy/class-status.html		\
 	deploy/class-status-corlib.html		\
 	deploy/class-status-System.html		\
-	deploy/class-status-System.Xml.html		\
-	deploy/class-status-System.Data.html		\
-	deploy/class-library.html	\
+	deploy/class-status-System.Xml.html	\
+	deploy/class-status-System.Data.html	\
+	deploy/class-status-System.Web.html	\
+	deploy/class-library.html		\
 	deploy/classlib-doc.html		\
-	deploy/contact.html		\
-	deploy/c-sharp.html		\
+	deploy/contact.html			\
+	deploy/c-sharp.html			\
 	deploy/ccvs.html			\
-	deploy/documentation.html	\
-	deploy/download.html		\
-	deploy/faq.html			\
+	deploy/documentation.html		\
+	deploy/download.html			\
+	deploy/faq.html				\
 	deploy/gcc-frontend.html		\
-	deploy/index.html		\
-	deploy/ideas.html		\
-	deploy/mailing-lists.html	\
-	deploy/monodoc-xml.html		\
-	deploy/passport.html		\
-	deploy/rationale.html		\
-	deploy/resources.html		\
-	deploy/roadmap.html		\
-	deploy/runtime.html		\
-	deploy/status.html		\
-	deploy/testing.html		\
-	deploy/porting.html		\
+	deploy/index.html			\
+	deploy/ideas.html			\
+	deploy/mailing-lists.html		\
+	deploy/monodoc-xml.html			\
+	deploy/passport.html			\
+	deploy/rationale.html			\
+	deploy/resources.html			\
+	deploy/roadmap.html			\
+	deploy/runtime.html			\
+	deploy/status.html			\
+	deploy/testing.html			\
+	deploy/porting.html			\
 	deploy/tools.html
 
 NON_HTML_SOURCES=	\

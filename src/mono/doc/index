@@ -37,8 +37,7 @@
 	      <b><a href="c-sharp.html">Compiler</a></b>
 	    </td>
 	    <td>
-	      Self hosting on .NET.<br>
-	      Classes need work to run on Mono.
+	      Self hosting on Linux and Windows.
 	    </td>
 	  </tr>
 	  <tr>
@@ -70,6 +69,30 @@
     </td>
   </tr>
 </table>
+
+** Mar 19, 2002
+
+	Martin has been working on our debugging infrastructure, both
+	on the JIT side of things (adding dward support) as well as on
+	the class libraries (so that MCS can start generating
+	debugging information).
+	
+	Jason and Kral keep working on the System.Xml namespace,
+	allowing Mike to move more to self-hosting his Gtk# code.  
+
+	The System.Web classes are now part of the build (and they are
+	also part of the class status now).  Ajay contributed a large
+	chunk of code to the System.Xml.Schema namespace
+
+	Dan (of regex fame) has been working on internal calls
+	support: moving more code from the old monowrapper to become
+	internal calls.
+
+	Paolo and Dietmar are working steadily on our runtime
+	environment, fixing bugs, adding missing features and allowing
+	us to run the compiler on Linux.
+
+	Remember to post your bug reports
 
 ** Mar 12, 2002
 
