@@ -1,3 +1,7 @@
+2004-01-21  Zoltan Varga  <vargaz@freemail.hu>
+
+	* Makefile.am (remove-binaries): Get rid of non-portable >& construct.
+
 2003-12-29  Miguel de Icaza  <miguel@ximian.com>
 
 	* scripts/sn.in: Add sn script.
