@@ -52,21 +52,35 @@
 	<a href="http://msdn.microsoft.com/downloads">
 	msdn.microsoft.com/downloads</a>.
 
-	You will also need to get GLIB 1.3 and pkg-config.  The easiest way
-	to install these libraries on your system is to use the precompiled
-	packages by <a href="mailto:alex@ximian.com">Alex Graveley</a> located
-	here:
+	There are scripts to help build mono for both Unix and Windows.  Get
+	<a href="mono-build.sh">mono-build.sh</a> for Unix, or <a
+	href="mono-build-w32.sh">mono-build-w32.sh</a> for Windows.
+	These scripts automate the installation of GLIB and pkgconfig
+	(building from source on Unix, and using binary packages
+	provided by the GIMP for Windows project on Windows.)  To use
+	the script, follow these simple steps:
 
 	<ul>
-		* <a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
-	http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip</a>
-
-		* <a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
-	http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip</a>
+		* Save the script for your platform somewhere (e.g. /usr/local/bin)
+		* Make the script executable (i.e chmod 755 /usr/local/bin/mono-build.sh)
+		* Create a directory to hold the mono source, and the compiled binaries (e.g. mkdir ~/mono)
+		* Change to the new directory (i.e. cd ~/mono)
+		* run the script (i.e. /usr/local/bin/mono-build.sh)
 	</ul>
 
+	The script requires wget on either platform, and building the
+	software requires make, gcc, automake, autoconf, and libtool.
+	You should install these packages from your distribution or
+	with the cygwin installer.
+
+	The script will download required packages from
+	www.go-mono.org and do a cvs checkout of mono in the current
+	directory.  The cvs server chosen defaults to anonymous cvs;
+	set your CVSROOT environment variable before running the script to
+	select a particular cvs server.
+
 <a name="install">
-** Installing the software
+** Building the software manually
 
 *** Download the required software.
 
@@ -81,13 +95,14 @@
 		  Some people observed problems with autoconf 2.52. Installing 
 		  autoconf 2.13 helped in those cases.
 
-		* Precompiled GLIB 1.3 and pkg-config packages by
-		  <a href="mailto:alex@ximian.com">Alex Graveley</a>
-		  from
-		  <a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">
-		http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip</a>
-		<a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">
-		http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip</a>
+		* Precompiled GLIB 1.3 and pkg-config packages (and
+		  their dependencies) by the <a href="http://www.gimp.org/~tml/gimp/win32//index.html">GIMP for Windows</a> project from
+		  <a href="http://www.go-mono.org/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.org/archive/pkgconfig-0.80-tml-20020101.zip</a>
+		  <a href="http://www.go-mono.org/archive/glib-1.3.12-20020101.zip">http://www.go-mono.org/archive/glib-1.3.12-20020101.zip</a>
+		  <a href="http://www.go-mono.org/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.org/archive/glib-dev-1.3.12-20020101.zip</a>
+		  <a href="http://www.go-mono.org/archive/libiconv-1.7.zip">http://www.go-mono.org/archive/libiconv-1.7.zip</a>
+		  <a href="http://www.go-mono.org/archive/libiconv-dev-1.7.zip">http://www.go-mono.org/archive/libiconv-dev-1.7-20020101.zip</a>
+		  <a href="http://www.go-mono.org/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.org/archive/libintl-0.10.40-20020101.zip</a>
 
 		* Download the Mono source code from the
 		  <a href="#feb-11">packaged versions</a> or
@@ -110,12 +125,9 @@
 		* Install <a href="http://msdn.microsoft.com/downloads">
 		  Microsoft .NET Framework SDK</a>.
 
-		* Change to the <strong>/</strong> directory of your Cygwin 
-		  installation.<br>
-		  Unzip the precompiled <a href="http://primates.ximian.com/~alex/glib-1.3.12-win32-native.zip">GLIB 1.3</a> and 
-		  <a href="http://primates.ximian.com/~alex/pkg-config-0.8-cygwin.zip">pkg-config</a> packages.
-		  The goal is to install the libraries in the /usr/local
-		  directory of your Cygwin installation.
+		* Change to the <strong>/usr/local</strong> directory
+		  of your Cygwin installation.<br>
+		  Unzip the precompiled packages listed above.
 
 	</ul>
 
@@ -150,7 +162,7 @@
 		* Configure, compile and install:
 
 <pre><strong>
-./configure --prefix=//c/mono
+./configure --prefix=c:/mono
 make
 make install
 </strong></pre>

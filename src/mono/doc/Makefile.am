@@ -3,7 +3,7 @@ WEB_FILES=  \
 	faq gcc-frontend ideas index  passport rationale resources \
 	roadmap runtime status team testing thanks tools porting anoncvs
 
-OTHERS= pending resources-pending todo
+OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh
 
 EXTRA_DIST = $(WEB_FILES) README $(OTHERS)
 

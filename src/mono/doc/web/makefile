@@ -27,6 +27,11 @@ SOURCES=	\
 	../porting		\
 	../tools
 
+NON_HTML_SOURCES=	\
+	../mono-build.sh	\
+	../mono-build-w32.sh
+
+
 all:
 	-mkdir site
 	for i in $(SOURCES); do \
@@ -41,7 +46,7 @@ clean:
 	done;
 
 push:
-	scp -P 2200 *.html www@www.ximian.com:/web/cvsmodules/mono
+	scp -P 2200 *.html $(NON_HTML_SOURCES) www@www.ximian.com:/web/cvsmodules/mono
 	echo scp *.html migueldeicaza@mononet.sf.net:/home/groups/m/mo/mononet/htdocs
 
 push2: 
