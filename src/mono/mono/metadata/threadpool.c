@@ -194,7 +194,7 @@ mark_bad_fds (mono_pollfd *pfds, int nfds)
 
 		ret = mono_poll (pfds, 1, 0);
 		if (ret == -1 && errno == EBADF) {
-			pfd->revents |= POLLNVAL;
+			pfd->revents |= MONO_POLLNVAL;
 			count++;
 		} else if (ret == 1) {
 			count++;
@@ -204,7 +204,6 @@ mark_bad_fds (mono_pollfd *pfds, int nfds)
 	return count;
 }
 
-#undef DEBUG_IO
 static void
 socket_io_main (gpointer p)
 {
@@ -334,7 +333,6 @@ socket_io_main (gpointer p)
 		LeaveCriticalSection (&data->io_lock);
 	}
 }
-#undef DEBUG_IO
 
 static void
 socket_io_init (SocketIOData *data)
