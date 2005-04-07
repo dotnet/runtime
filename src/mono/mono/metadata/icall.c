@@ -562,6 +562,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	MonoClass *src_class;
 	MonoClass *dest_class;
 	int i;
+	gboolean char_int16;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -606,7 +607,13 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 		return TRUE;
 	}
 
-	if (src_class != dest_class) {
+	/* Check if we're copying a char[] <==> (u)short[] */
+	char_int16 = (src_class == mono_defaults.int16_class || src_class == mono_defaults.uint16_class ||
+				src_class == mono_defaults.char_class);
+	char_int16 = (char_int16 && (dest_class == mono_defaults.int16_class || dest_class == mono_defaults.uint16_class ||
+				dest_class == mono_defaults.char_class));
+
+	if (!char_int16 && src_class != dest_class) {
 		if (dest_class->valuetype || dest_class->enumtype || src_class->valuetype || src_class->enumtype)
 			return FALSE;
 
@@ -6296,8 +6303,6 @@ static const IcallEntry dns_icalls [] = {
 
 static const IcallEntry socket_icalls [] = {
 	{"Accept_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Accept_internal},
-	{"AsyncReceiveInternal", ves_icall_System_Net_Sockets_Socket_AsyncReceive},
-	{"AsyncSendInternal", ves_icall_System_Net_Sockets_Socket_AsyncSend},
 	{"Available_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Available_internal},
 	{"Bind_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Bind_internal},
 	{"Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal},

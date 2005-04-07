@@ -157,6 +157,8 @@ typedef struct _MonoSocketAsyncResult {
 	MonoBoolean completed;
 	MonoDelegate *real_callback;
 	gint error;
+	gint operation;
+	MonoAsyncResult *ares;
 } MonoSocketAsyncResult;
 
 typedef struct
@@ -192,9 +194,6 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *h
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list);
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name);
 extern MonoBoolean ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode, gint timeout, gint32 *error);
-
-extern void ves_icall_System_Net_Sockets_Socket_AsyncReceive (MonoSocketAsyncResult *ares, gint *error);
-extern void ves_icall_System_Net_Sockets_Socket_AsyncSend (MonoSocketAsyncResult *ares, gint *error);
 
 extern void mono_network_init(void);
 extern void mono_network_cleanup(void);
