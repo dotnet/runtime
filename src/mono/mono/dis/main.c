@@ -39,6 +39,9 @@ FILE *output;
 /* True if you want to get a dump of the header data */
 gboolean dump_header_data_p = FALSE;
 
+/* True if you want to get forward declarations */
+gboolean dump_forward_decls = FALSE;
+
 gboolean substitute_with_mscorlib_p = FALSE;
 
 int dump_table = -1;
@@ -1077,11 +1080,13 @@ dis_interfaces (MonoImage *m, guint32 typedef_row, MonoGenericContext *context)
  * dis_type:
  * @m: metadata context
  * @n: index of type to disassemble
+ * @is_nested: nested type ?
+ * @forward: forward declarations?
  *
  * Disassembles the type whose index in the TypeDef table is @n.
  */
 static void
-dis_type (MonoImage *m, int n)
+dis_type (MonoImage *m, int n, int is_nested, int forward)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -1105,7 +1110,7 @@ dis_type (MonoImage *m, int n)
 
 	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
-	if (*nspace)
+	if (*nspace && !is_nested) 
 		fprintf (output, ".namespace %s\n{\n", nspace);
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
@@ -1140,47 +1145,49 @@ dis_type (MonoImage *m, int n)
 	g_free (esname);
 	dis_interfaces (m, n + 1, (MonoGenericContext *) container);
 	fprintf (output, "  {\n");
-	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
-	dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
+        if (!forward) {
+        	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
+	        dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
 
-	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
-		fprintf (output, "    .pack %d\n", packing_size);
-		fprintf (output, "    .size %d\n", class_size);
-	}
-	/*
-	 * The value in the table is always valid, we know we have fields
-	 * if the value stored is different than the next record.
-	 */
-
-	if (next_is_valid)
-		last = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
-	else
-		last = m->tables [MONO_TABLE_FIELD].rows;
+        	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
+	        	fprintf (output, "    .pack %d\n", packing_size);
+	        	fprintf (output, "    .size %d\n", class_size);
+        	}
+        	/*
+	         * The value in the table is always valid, we know we have fields
+        	 * if the value stored is different than the next record.
+        	 */
+        
+        	if (next_is_valid)
+	        	last = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+        	else
+	        	last = m->tables [MONO_TABLE_FIELD].rows;
 			
-	if (cols [MONO_TYPEDEF_FIELD_LIST] && cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
-		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last, (MonoGenericContext *) container);
-	fprintf (output, "\n");
+        	if (cols [MONO_TYPEDEF_FIELD_LIST] && cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
+		        dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last, (MonoGenericContext *) container);
+        	fprintf (output, "\n");
 
-	if (next_is_valid)
-		last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
-	else
-		last = m->tables [MONO_TABLE_METHOD].rows;
+        	if (next_is_valid)
+	        	last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
+        	else
+	        	last = m->tables [MONO_TABLE_METHOD].rows;
 	
-	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, (MonoGenericContext *) container);
+        	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
+	        	dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, (MonoGenericContext *) container);
 
-	dis_property_list (m, n, (MonoGenericContext *) container);
-	dis_event_list (m, n, (MonoGenericContext *) container);
+        	dis_property_list (m, n, (MonoGenericContext *) container);
+	        dis_event_list (m, n, (MonoGenericContext *) container);
+        }
 
 	t = &m->tables [MONO_TABLE_NESTEDCLASS];
 	nested = mono_metadata_nesting_typedef (m, n + 1, 1);
 	while (nested) {
-		dis_type (m, mono_metadata_decode_row_col (t, nested - 1, MONO_NESTED_CLASS_NESTED) - 1);
+		dis_type (m, mono_metadata_decode_row_col (t, nested - 1, MONO_NESTED_CLASS_NESTED) - 1, 1, forward);
 		nested = mono_metadata_nesting_typedef (m, n + 1, nested + 1);
 	}
 	
 	fprintf (output, "  } // end of class %s%s%s\n", nspace, *nspace? ".": "", name);
-	if (*nspace)
+	if (*nspace && !is_nested)
 		fprintf (output, "}\n");
 	fprintf (output, "\n");
 }
@@ -1242,7 +1249,7 @@ dis_globals (MonoImage *m)
  * disassembles all types in the @m context
  */
 static void
-dis_types (MonoImage *m)
+dis_types (MonoImage *m, int forward)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
@@ -1254,7 +1261,7 @@ dis_types (MonoImage *m)
 		flags = mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_FLAGS);
 		flags &= TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (flags == TYPE_ATTRIBUTE_PUBLIC || flags == TYPE_ATTRIBUTE_NOT_PUBLIC)
-			dis_type (m, i);
+			dis_type (m, i, 0, forward);
 	}
 }
 
@@ -1369,7 +1376,12 @@ disassemble_file (const char *file)
 		dis_directive_mresource (img);
 		dis_directive_module (img);
 		dis_directive_moduleref (img);
-		dis_types (img);
+		if (dump_forward_decls) {
+			fprintf (output, "// *************** Forward Declarations for Classes ***************\n\n"); 
+			dis_types (img, 1);
+			fprintf (output, "// *************** End-Of Forward Declarations for Classes ***************\n\n"); 
+		}	
+		dis_types (img, 0);
 		dis_data (img);
 	}
 	
@@ -1567,6 +1579,7 @@ usage (void)
 		if (((i-2) % 5) == 0)
 			g_string_append_c (args, '\n');
 	}
+	g_string_append (args, "[--forward-decls]");
 	fprintf (stderr,
 		 "Usage is: monodis %s file ..\n", args->str);
 	exit (1);
@@ -1605,6 +1618,9 @@ main (int argc, char *argv [])
 				continue;
 			} else if (strncmp (argv [i], "--filter=", 9) == 0) {
 				load_filter (argv [i]+9);
+				continue;
+			} else if (strcmp (argv [i], "--forward-decls") == 0) {
+				dump_forward_decls = TRUE;
 				continue;
 			} else if (strcmp (argv [i], "--help") == 0)
 				usage ();

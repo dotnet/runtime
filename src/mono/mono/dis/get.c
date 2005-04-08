@@ -51,7 +51,7 @@ get_typedef (MonoImage *m, int idx)
                 
                 outer = get_typedef (m, mono_metadata_token_index (token));
                 result = g_strdup_printf (
-                        "%s%s%s/%s%s", ns, *ns?".":"", outer,
+                        "%s/%s%s", outer,
                         mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 			tstring ? tstring : "");
 		g_free (outer);
