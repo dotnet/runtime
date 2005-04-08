@@ -55,10 +55,6 @@ extern gpointer TlsGetValue(guint32 idx);
 extern gboolean TlsSetValue(guint32 idx, gpointer value);
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
-extern gboolean BindIoCompletionCallback (gpointer handle,
-					  WapiOverlappedCB callback,
-					  guint64 flags);
-
 extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
 					gpointer param);
 

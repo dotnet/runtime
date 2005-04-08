@@ -37,8 +37,6 @@ struct _WapiHandle_file
 struct _WapiHandlePrivate_file
 {
 	WapiFDMapped fd_mapped;
-	gboolean async;
-	WapiOverlappedCB callback;
 };
 
 struct _WapiHandle_find
@@ -56,9 +54,6 @@ struct _WapiHandlePrivate_find
 
 G_BEGIN_DECLS
 int _wapi_file_handle_to_fd (gpointer handle);
-gboolean _wapi_io_add_callback (gpointer handle,
-				WapiOverlappedCB callback,
-				guint64 flags);
 G_END_DECLS
 
 #endif /* _WAPI_IO_PRIVATE_H_ */
