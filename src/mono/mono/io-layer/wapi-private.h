@@ -64,7 +64,8 @@ typedef struct
 typedef enum {
 	WAPI_HANDLE_CAP_WAIT=0x01,
 	WAPI_HANDLE_CAP_SIGNAL=0x02,
-	WAPI_HANDLE_CAP_OWN=0x04
+	WAPI_HANDLE_CAP_OWN=0x04,
+	WAPI_HANDLE_CAP_SPECIAL_WAIT=0x08
 } WapiHandleCapability;
 
 struct _WapiHandleOps 
@@ -85,6 +86,13 @@ struct _WapiHandleOps
 	 * thread already owns this handle
 	 */
 	gboolean (*is_owned)(gpointer handle);
+
+	/* Called by WaitForSingleObject, if the handle in question
+	 * needs a special wait function instead of using the normal
+	 * handle signal mechanism.  Returns the WaitForSingleObject
+	 * return code.
+	 */
+	guint32 (*special_wait)(gpointer handle, guint32 timeout);
 };
 
 #include <mono/io-layer/event-private.h>

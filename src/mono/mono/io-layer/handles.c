@@ -93,6 +93,8 @@ guint32 _wapi_fd_reserve;
 mono_mutex_t _wapi_global_signal_mutex;
 pthread_cond_t _wapi_global_signal_cond;
 
+static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
+
 static mono_once_t shared_init_once = MONO_ONCE_INIT;
 static void shared_init (void)
 {
@@ -304,7 +306,6 @@ again:
 
 gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 {
-	static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
@@ -386,7 +387,6 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 					   gpointer handle_specific,
 					   guint32 offset)
 {
-	static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
@@ -482,6 +482,64 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	_wapi_handle_init (handle, type, handle_specific);
 
 	return(GUINT_TO_POINTER(fd));
+}
+
+gpointer _wapi_handle_new_from_offset (WapiHandleType type, int offset)
+{
+	guint32 handle_idx = 0;
+	gpointer handle;
+	int thr_ret;
+	struct _WapiHandle_shared_ref *ref;
+	struct _WapiHandleUnshared *handle_data;
+	
+	mono_once (&shared_init_once, shared_init);
+	
+#ifdef DEBUG
+	g_message ("%s: Creating new handle of type %s to offset %d", __func__,
+		   _wapi_handle_typename[type], offset);
+#endif
+
+	g_assert(_WAPI_SHARED_HANDLE(type));
+
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	g_assert(thr_ret == 0);
+	
+	while ((handle_idx = _wapi_handle_new_internal (type, NULL)) == 0) {
+		/* Try and expand the array, and have another go */
+		_wapi_private_handles = g_renew (struct _WapiHandleUnshared,
+						 _wapi_private_handles,
+						 _wapi_private_handle_count +
+						 _WAPI_HANDLE_INITIAL_COUNT);
+			
+		memset (_wapi_private_handles +
+			(_wapi_private_handle_count *
+			 sizeof(struct _WapiHandleUnshared)), '\0',
+			(_WAPI_HANDLE_INITIAL_COUNT *
+			 sizeof(struct _WapiHandleUnshared)));
+			
+		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
+	}
+
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+				
+	/* Make sure we left the space for fd mappings */
+	g_assert (handle_idx >= _wapi_fd_reserve);
+
+	handle_data = &_wapi_private_handles[handle_idx];
+	ref = &handle_data->u.shared;
+	ref->offset = offset;
+
+	handle = GUINT_TO_POINTER (handle_idx);
+			
+#ifdef DEBUG
+	g_message ("%s: Allocated new handle %p", __func__, handle);
+#endif
+
+	return (handle);
 }
 
 gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
@@ -989,6 +1047,22 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
 		return(FALSE);
 	}
 }
+
+guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleType type;
+	
+	type = _wapi_private_handles[idx].type;
+	
+	if (handle_ops[type] != NULL &&
+	    handle_ops[type]->special_wait != NULL) {
+		return(handle_ops[type]->special_wait (handle, timeout));
+	} else {
+		return(WAIT_FAILED);
+	}
+}
+
 
 /**
  * CloseHandle:

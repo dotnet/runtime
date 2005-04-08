@@ -37,6 +37,7 @@ extern gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 						  guint32 offset);
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 				     gpointer handle_specific);
+extern gpointer _wapi_handle_new_from_offset (WapiHandleType type, int offset);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 				     gpointer *handle_specific);
 extern gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
@@ -62,6 +63,8 @@ extern void _wapi_handle_ops_close (gpointer handle);
 extern void _wapi_handle_ops_signal (gpointer handle);
 extern gboolean _wapi_handle_ops_own (gpointer handle);
 extern gboolean _wapi_handle_ops_isowned (gpointer handle);
+extern guint32 _wapi_handle_ops_special_wait (gpointer handle,
+					      guint32 timeout);
 
 extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      gpointer *handles,

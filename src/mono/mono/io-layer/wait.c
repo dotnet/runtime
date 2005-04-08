@@ -59,6 +59,15 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 
 		return(WAIT_FAILED);
 	}
+
+	if (_wapi_handle_test_capabilities (handle, WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
+#ifdef DEBUG
+		g_message ("%s: handle %p has special wait", __func__, handle);
+#endif
+
+		return (_wapi_handle_ops_special_wait (handle, timeout));
+	}
+	
 	
 #ifdef DEBUG
 	g_message ("%s: locking handle %p", __func__, handle);
@@ -223,6 +232,13 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	if (_wapi_handle_test_capabilities (wait,
 					    WAPI_HANDLE_CAP_WAIT)==FALSE) {
 		return(WAIT_FAILED);
+	}
+
+	if (_wapi_handle_test_capabilities (wait, WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
+		g_warning ("%s: handle %p has special wait, implement me!!",
+			   __func__, wait);
+
+		return (WAIT_FAILED);
 	}
 
 #ifdef DEBUG
@@ -464,6 +480,13 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				   __func__, handles[i]);
 #endif
 
+			bogustype = TRUE;
+		}
+
+		if (_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
+			g_warning ("%s: handle %p has special wait, implement me!!",
+				   __func__, handles[i]);
+			
 			bogustype = TRUE;
 		}
 

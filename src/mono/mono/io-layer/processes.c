@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -26,17 +27,21 @@
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
 #include <mono/utils/strenc.h>
+#include <mono/io-layer/timefuncs-private.h>
 
 /* The process' environment strings */
 extern char **environ;
 
 #undef DEBUG
 
+static guint32 process_wait (gpointer handle, guint32 timeout);
+
 struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* close_shared */
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
+	process_wait			/* special_wait */
 };
 
 static mono_once_t process_current_once=MONO_ONCE_INIT;
@@ -47,7 +52,106 @@ static mono_once_t process_ops_once=MONO_ONCE_INIT;
 static void process_ops_init (void)
 {
 	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
-					    WAPI_HANDLE_CAP_WAIT);
+					    WAPI_HANDLE_CAP_WAIT |
+					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
+}
+
+/* Limitations: This can only wait for processes that are our own
+ * children.  Fixing this means resurrecting a daemon helper to manage
+ * processes.
+ */
+static guint32 process_wait (gpointer handle, guint32 timeout)
+{
+	struct _WapiHandleShared shared_handle;
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	pid_t pid, ret;
+	int status;
+	
+#ifdef DEBUG
+	g_message ("%s: Waiting for process %p", __func__, handle);
+#endif
+
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up process handle %p", __func__,
+			   handle);
+		return(WAIT_FAILED);
+	}
+	
+	pid = process_handle->id;
+	
+#ifdef DEBUG
+	g_message ("%s: PID is %d", __func__, pid);
+#endif
+
+	if (timeout == INFINITE) {
+		while ((ret = waitpid (pid, &status, 0)) != pid) {
+			if (ret == (pid_t)-1 && errno != EINTR) {
+				return(WAIT_FAILED);
+			}
+		}
+	} else if (timeout == 0) {
+		/* Just poll */
+		ret = waitpid (pid, &status, WNOHANG);
+		if (ret != pid) {
+			return (WAIT_TIMEOUT);
+		}
+	} else {
+		/* Poll in a loop */
+		do {
+			ret = waitpid (pid, &status, WNOHANG);
+			if (ret == pid) {
+				break;
+			} else if (ret == (pid_t)-1 && errno != EINTR) {
+				return(WAIT_FAILED);
+			}
+
+			_wapi_handle_spin (100);
+			timeout -= 100;
+		} while (timeout > 0);
+
+		if (timeout <= 0) {
+			return(WAIT_TIMEOUT);
+		}
+	}
+
+	/* Process must have exited */
+#ifdef DEBUG
+	g_message ("%s: Wait done", __func__);
+#endif
+
+	ok = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up process handle %p",
+			   __func__, handle);
+		return(WAIT_FAILED);
+	}
+	
+	process_handle = &shared_handle.u.process;
+
+	if (WIFSIGNALED(status)) {
+		process_handle->exitstatus = 128 + WTERMSIG(status);
+	} else {
+		process_handle->exitstatus = WEXITSTATUS(status);
+	}
+	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
+	
+	_wapi_replace_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	
+	_wapi_shared_handle_set_signal_state (handle, TRUE);
+
+	return(WAIT_OBJECT_0);
+}
+	
+static void process_set_defaults (struct _WapiHandle_process *process_handle)
+{
+	/* These seem to be the defaults on w2k */
+	process_handle->min_working_set = 204800;
+	process_handle->max_working_set = 1413120;
+
+	_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
 }
 
 gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
@@ -58,13 +162,15 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			WapiStartupInfo *startup,
 			WapiProcessInformation *process_info)
 {
-	gchar *cmd=NULL, *prog = NULL, *full_prog = NULL, *args=NULL, *args_after_prog=NULL, *dir=NULL;
-	guint32 env=0, stored_dir=0, stored_prog=0, i;
-	gboolean ret=FALSE;
-	gpointer stdin_handle, stdout_handle, stderr_handle;
-	guint32 pid, tid;
-	gpointer process_handle, thread_handle;
-	struct _WapiHandle_process *process_handle_data;
+	gchar *cmd=NULL, *prog = NULL, *full_prog = NULL, *args = NULL, *args_after_prog = NULL, *dir = NULL, **env_strings = NULL, **argv;
+	guint32 i, env_count = 0;
+	gboolean ret = FALSE;
+	gpointer handle;
+	struct _WapiHandleShared shared_handle;
+	struct _WapiHandle_process process_handle = {0};
+	GError *gerr = NULL;
+	int in_fd, out_fd, err_fd;
+	pid_t pid;
 	
 	mono_once (&process_ops_once, process_ops_init);
 	
@@ -94,125 +200,79 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	 * beginning to understand just why windows apps are generally
 	 * so crap, with an API like this :-(
 	 */
-	if(appname!=NULL) {
-		cmd=mono_unicode_to_external (appname);
-		if(cmd==NULL) {
+	if (appname != NULL) {
+		cmd = mono_unicode_to_external (appname);
+		if (cmd == NULL) {
 #ifdef DEBUG
 			g_message ("%s: unicode conversion returned NULL",
 				   __func__);
 #endif
 
-			SetLastError(ERROR_PATH_NOT_FOUND);
+			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 
 		/* Turn all the slashes round the right way */
-		for(i=0; i<strlen (cmd); i++) {
-			if(cmd[i]=='\\') {
-				cmd[i]='/';
+		for (i = 0; i < strlen (cmd); i++) {
+			if (cmd[i] == '\\') {
+				cmd[i] = '/';
 			}
 		}
 	}
 	
-	if(cmdline!=NULL) {
-		args=mono_unicode_to_external (cmdline);
-		if(args==NULL) {
+	if (cmdline != NULL) {
+		args = mono_unicode_to_external (cmdline);
+		if (args == NULL) {
 #ifdef DEBUG
 			g_message ("%s: unicode conversion returned NULL", __func__);
 #endif
 
-			SetLastError(ERROR_PATH_NOT_FOUND);
+			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 	}
 
-	if(cwd!=NULL) {
-		dir=mono_unicode_to_external (cwd);
-		if(dir==NULL) {
+	if (cwd != NULL) {
+		dir = mono_unicode_to_external (cwd);
+		if (dir == NULL) {
 #ifdef DEBUG
 			g_message ("%s: unicode conversion returned NULL", __func__);
 #endif
 
-			SetLastError(ERROR_PATH_NOT_FOUND);
+			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 
 		/* Turn all the slashes round the right way */
-		for(i=0; i<strlen (dir); i++) {
-			if(dir[i]=='\\') {
-				dir[i]='/';
+		for (i = 0; i < strlen (dir); i++) {
+			if (dir[i] == '\\') {
+				dir[i] = '/';
 			}
 		}
 	} else {
-		dir=g_get_current_dir ();
+		dir = g_get_current_dir ();
 	}
-	//stored_dir=_wapi_handle_scratch_store (dir, strlen (dir));
 	
-	
-	/* new_environ is a block of NULL-terminated strings, which
-	 * is itself NULL-terminated. Of course, passing an array of
-	 * string pointers would have made things too easy :-(
-	 *
-	 * If new_environ is not NULL it specifies the entire set of
-	 * environment variables in the new process.  Otherwise the
-	 * new process inherits the same environment.
-	 */
-	if(new_environ!=NULL) {
-		gchar **strings;
-		guint32 count=0;
-		gunichar2 *new_environp;
-
-		/* Count the number of strings */
-		for(new_environp=(gunichar2 *)new_environ; *new_environp;
-		    new_environp++) {
-			count++;
-			while(*new_environp) {
-				new_environp++;
-			}
-		}
-		strings=g_new0 (gchar *, count + 1); /* +1 -> last one is NULL */
-		
-		/* Copy each environ string into 'strings' turning it
-		 * into utf8 (or the requested encoding) at the same
-		 * time
-		 */
-		count=0;
-		for(new_environp=(gunichar2 *)new_environ; *new_environp;
-		    new_environp++) {
-			strings[count]=mono_unicode_to_external (new_environp);
-			count++;
-			while(*new_environp) {
-				new_environp++;
-			}
-		}
-
-		//env=_wapi_handle_scratch_store_string_array (strings);
-
-		g_strfreev (strings);
-	} else {
-		/* Use the existing environment */
-		//env=_wapi_handle_scratch_store_string_array (environ);
-	}
 
 	/* We can't put off locating the executable any longer :-( */
-	if(cmd!=NULL) {
+	if (cmd != NULL) {
 		gchar *unquoted;
-		if(g_ascii_isalpha (cmd[0]) && (cmd[1]==':')) {
+		if (g_ascii_isalpha (cmd[0]) && (cmd[1] == ':')) {
 			/* Strip off the drive letter.  I can't
 			 * believe that CP/M holdover is still
 			 * visible...
 			 */
 			g_memmove (cmd, cmd+2, strlen (cmd)-2);
-			cmd[strlen (cmd)-2]='\0';
+			cmd[strlen (cmd)-2] = '\0';
 		}
 
 		unquoted = g_shell_unquote (cmd, NULL);
-		if(unquoted[0]=='/') {
+		if (unquoted[0] == '/') {
 			/* Assume full path given */
-			prog=g_strdup (unquoted);
+			prog = g_strdup (unquoted);
 
 			/* Executable existing ? */
-			if(access (prog, X_OK)!=0) {
+			if (access (prog, X_OK) != 0) {
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, prog);
@@ -226,16 +286,16 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			/* Search for file named by cmd in the current
 			 * directory
 			 */
-			char *curdir=g_get_current_dir ();
+			char *curdir = g_get_current_dir ();
 
-			prog=g_strdup_printf ("%s/%s", curdir, unquoted);
+			prog = g_strdup_printf ("%s/%s", curdir, unquoted);
 			g_free (unquoted);
 			g_free (curdir);
 		}
 
-		args_after_prog=args;
+		args_after_prog = args;
 	} else {
-		gchar *token=NULL;
+		gchar *token = NULL;
 		char quote;
 		
 		/* Dig out the first token from args, taking quotation
@@ -243,24 +303,24 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		 */
 
 		/* First, strip off all leading whitespace */
-		args=g_strchug (args);
+		args = g_strchug (args);
 		
 		/* args_after_prog points to the contents of args
 		 * after token has been set (otherwise argv[0] is
 		 * duplicated)
 		 */
-		args_after_prog=args;
+		args_after_prog = args;
 
 		/* Assume the opening quote will always be the first
 		 * character
 		 */
-		if(args[0]=='\"' || args [0] == '\'') {
+		if (args[0] == '\"' || args [0] == '\'') {
 			quote = args [0];
-			for(i=1; args[i]!='\0' && args[i]!=quote; i++);
-			if(g_ascii_isspace (args[i+1])) {
+			for (i = 1; args[i] != '\0' && args[i] != quote; i++);
+			if (g_ascii_isspace (args[i+1])) {
 				/* We found the first token */
-				token=g_strndup (args+1, i-1);
-				args_after_prog=args+i;
+				token = g_strndup (args+1, i-1);
+				args_after_prog = args + i;
 			} else {
 				/* Quotation mark appeared in the
 				 * middle of the token.  Just give the
@@ -270,55 +330,57 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			}
 		}
 		
-		if(token==NULL) {
+		if (token == NULL) {
 			/* No quote mark, or malformed */
-			for(i=0; args[i]!='\0'; i++) {
-				if(g_ascii_isspace (args[i])) {
-					token=g_strndup (args, i);
-					args_after_prog=args+i+1;
+			for (i = 0; args[i] != '\0'; i++) {
+				if (g_ascii_isspace (args[i])) {
+					token = g_strndup (args, i);
+					args_after_prog = args + i + 1;
 					break;
 				}
 			}
 		}
 
-		if(token==NULL && args[0]!='\0') {
+		if (token == NULL && args[0] != '\0') {
 			/* Must be just one token in the string */
-			token=g_strdup (args);
-			args_after_prog=NULL;
+			token = g_strdup (args);
+			args_after_prog = NULL;
 		}
 		
-		if(token==NULL) {
+		if (token == NULL) {
 			/* Give up */
 #ifdef DEBUG
 			g_message ("%s: Couldn't find what to exec", __func__);
 #endif
 
-			SetLastError(ERROR_PATH_NOT_FOUND);
+			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto cleanup;
 		}
 		
-		/* Turn all the slashes round the right way. Only for the prg. name */
-		for(i=0; i < strlen (token); i++) {
-			if (token[i]=='\\') {
-				token[i]='/';
+		/* Turn all the slashes round the right way. Only for
+		 * the prg. name
+		 */
+		for (i = 0; i < strlen (token); i++) {
+			if (token[i] == '\\') {
+				token[i] = '/';
 			}
 		}
 
-		if(g_ascii_isalpha (token[0]) && (token[1]==':')) {
+		if (g_ascii_isalpha (token[0]) && (token[1] == ':')) {
 			/* Strip off the drive letter.  I can't
 			 * believe that CP/M holdover is still
 			 * visible...
 			 */
 			g_memmove (token, token+2, strlen (token)-2);
-			token[strlen (token)-2]='\0';
+			token[strlen (token)-2] = '\0';
 		}
 
-		if(token[0]=='/') {
+		if (token[0] == '/') {
 			/* Assume full path given */
-			prog=g_strdup (token);
+			prog = g_strdup (token);
 			
 			/* Executable existing ? */
-			if(access (prog, X_OK)!=0) {
+			if (access (prog, X_OK) != 0) {
 				g_free (prog);
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
@@ -330,7 +392,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			}
 
 		} else {
-			char *curdir=g_get_current_dir ();
+			char *curdir = g_get_current_dir ();
 
 			/* FIXME: Need to record the directory
 			 * containing the current process, and check
@@ -338,16 +400,16 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			 * place to look
 			 */
 
-			prog=g_strdup_printf ("%s/%s", curdir, token);
+			prog = g_strdup_printf ("%s/%s", curdir, token);
 			g_free (curdir);
 
 			/* I assume X_OK is the criterion to use,
 			 * rather than F_OK
 			 */
-			if(access (prog, X_OK)!=0) {
+			if (access (prog, X_OK) != 0) {
 				g_free (prog);
-				prog=g_find_program_in_path (token);
-				if(prog==NULL) {
+				prog = g_find_program_in_path (token);
+				if (prog == NULL) {
 #ifdef DEBUG
 					g_message ("%s: Couldn't find executable %s", __func__, token);
 #endif
@@ -367,78 +429,202 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		   args_after_prog);
 #endif
 	
-	if(args_after_prog!=NULL && *args_after_prog) {
+	if (args_after_prog != NULL && *args_after_prog) {
 		gchar *qprog;
 
 		qprog = g_shell_quote (prog);
-		full_prog=g_strconcat (qprog, " ", args_after_prog, NULL);
+		full_prog = g_strconcat (qprog, " ", args_after_prog, NULL);
 		g_free (qprog);
 	} else {
-		full_prog=g_shell_quote (prog);
+		full_prog = g_shell_quote (prog);
 	}
-	
-	//stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog));
 
-	if(startup!=NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
-		stdin_handle=startup->hStdInput;
-		stdout_handle=startup->hStdOutput;
-		stderr_handle=startup->hStdError;
+	ret = g_shell_parse_argv (full_prog, NULL, &argv, &gerr);
+	if (ret == FALSE) {
+		/* FIXME: Could do something with the GError here
+		 */
+	}
+
+	if (startup != NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
+		in_fd = GPOINTER_TO_UINT (startup->hStdInput);
+		out_fd = GPOINTER_TO_UINT (startup->hStdOutput);
+		err_fd = GPOINTER_TO_UINT (startup->hStdError);
 	} else {
-		stdin_handle=GetStdHandle (STD_INPUT_HANDLE);
-		stdout_handle=GetStdHandle (STD_OUTPUT_HANDLE);
-		stderr_handle=GetStdHandle (STD_ERROR_HANDLE);
+		in_fd = GPOINTER_TO_UINT (GetStdHandle (STD_INPUT_HANDLE));
+		out_fd = GPOINTER_TO_UINT (GetStdHandle (STD_OUTPUT_HANDLE));
+		err_fd = GPOINTER_TO_UINT (GetStdHandle (STD_ERROR_HANDLE));
 	}
 	
-	ret=_wapi_handle_process_fork (stored_prog, env, stored_dir,
-				       inherit_handles, create_flags,
-				       stdin_handle, stdout_handle,
-				       stderr_handle, &process_handle,
-				       &thread_handle, &pid, &tid);
+	g_strlcpy (process_handle.proc_name, prog, _POSIX_PATH_MAX-1);
+
+	process_set_defaults (&process_handle);
 	
-	if(ret==TRUE && process_info!=NULL) {
-		process_info->hProcess=process_handle;
-		process_info->hThread=thread_handle;
-		process_info->dwProcessId=pid;
-		process_info->dwThreadId=tid;
-		/* Wait for possible execve failure */
-		if (WaitForSingleObjectEx (process_handle, 500, FALSE) != WAIT_TIMEOUT) {
-			_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
-					     WAPI_HANDLE_PROCESS,
-					     (gpointer *) &process_handle_data);
-		
-			if (process_handle_data && process_handle_data->exec_errno != 0) {
-				ret = FALSE;
-				SetLastError (ERROR_PATH_NOT_FOUND);
+	handle = _wapi_handle_new (WAPI_HANDLE_PROCESS, &process_handle);
+	if (handle == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error creating process handle", __func__);
+
+		SetLastError (ERROR_PATH_NOT_FOUND);
+		goto cleanup;
+	}
+	
+	/* new_environ is a block of NULL-terminated strings, which
+	 * is itself NULL-terminated. Of course, passing an array of
+	 * string pointers would have made things too easy :-(
+	 *
+	 * If new_environ is not NULL it specifies the entire set of
+	 * environment variables in the new process.  Otherwise the
+	 * new process inherits the same environment.
+	 */
+	if (new_environ != NULL) {
+		gunichar2 *new_environp;
+
+		/* Count the number of strings */
+		for (new_environp = (gunichar2 *)new_environ; *new_environp;
+		     new_environp++) {
+			env_count++;
+			while (*new_environp) {
+				new_environp++;
 			}
 		}
-	} else if (ret==FALSE) {
-		/* FIXME: work out a better error code
+
+		/* +2: one for the process handle value, and the last
+		 * one is NULL
 		 */
-		SetLastError (ERROR_PATH_NOT_FOUND);
+		env_strings = g_new0 (gchar *, env_count + 2);
+		
+		/* Copy each environ string into 'strings' turning it
+		 * into utf8 (or the requested encoding) at the same
+		 * time
+		 */
+		env_count = 0;
+		for (new_environp = (gunichar2 *)new_environ; *new_environp;
+		     new_environp++) {
+			env_strings[env_count] = mono_unicode_to_external (new_environp);
+			env_count++;
+			while (*new_environp) {
+				new_environp++;
+			}
+		}
+	} else {
+		for (i = 0; environ[i] != NULL; i++) {
+			env_count++;
+		}
+
+		/* +2: one for the process handle value, and the last
+		 * one is NULL
+		 */
+		env_strings = g_new0 (gchar *, env_count + 2);
+		
+		/* Copy each environ string into 'strings' turning it
+		 * into utf8 (or the requested encoding) at the same
+		 * time
+		 */
+		env_count = 0;
+		for (i = 0; environ[i] != NULL; i++) {
+			env_strings[env_count] = g_strdup (environ[i]);
+			env_count++;
+		}
+	}
+	/* pass process handle info to the child, so it doesn't have
+	 * to do an expensive search over the whole list
+	 */
+	if (env_strings != NULL) {
+		struct _WapiHandleUnshared *handle_data;
+		struct _WapiHandle_shared_ref *ref;
+		
+		handle_data = &_wapi_private_handles[GPOINTER_TO_UINT(handle)];
+		ref = &handle_data->u.shared;
+		
+		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);
+	}
+	
+	pid = fork ();
+	if (pid == -1) {
+		/* Error */
+	} else if (pid == 0) {
+		/* Child */
+
+		/* should we detach from the process group? */
+
+		/* Connect stdin, stdout and stderr */
+		dup2 (in_fd, 0);
+		dup2 (out_fd, 1);
+		dup2 (err_fd, 2);
+
+		if (inherit_handles != TRUE) {
+			/* FIXME: do something here */
+		}
+		
+		/* Close all file descriptors */
+		for (i = getdtablesize () - 1; i > 2; i--) {
+			close (i);
+		}
+
+#ifdef DEBUG
+		g_message ("%s: exec()ing [%s] in dir [%s]", __func__, cmd,
+			   dir);
+		for (i = 0; argv[i] != NULL; i++) {
+			g_message ("arg %d: [%s]", i, argv[i]);
+		}
+		
+		for (i = 0; env_strings[i] != NULL; i++) {
+			g_message ("env %d: [%s]", i, env_strings[i]);
+		}
+#endif
+
+		/* set cwd */
+		if (chdir (dir) == -1) {
+			/* set error */
+			exit (-1);
+		}
+		
+		/* exec */
+		execve (argv[0], argv, env_strings);
+		
+		/* set error */
+		exit (-1);
+	}
+	/* parent */
+
+	ret = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	if (ret == FALSE) {
+		g_warning ("%s: error copying process handle %p", __func__,
+			   handle);
+		_wapi_handle_unref (handle);
+		goto cleanup;
+	}
+	
+	shared_handle.u.process.id = pid;
+
+	_wapi_replace_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	
+	if (process_info != NULL) {
+		process_info->hProcess = handle;
+		process_info->dwProcessId = pid;
+
+		/* FIXME: we might need to handle the thread info some
+		 * day
+		 */
+		process_info->hThread = NULL;
+		process_info->dwThreadId = 0;
 	}
 
 cleanup:
-	if(cmd!=NULL) {
+	if (cmd != NULL) {
 		g_free (cmd);
 	}
-	if(full_prog!=NULL) {
+	if (full_prog != NULL) {
 		g_free (prog);
 	}
-//	if(stored_prog!=0) {
-//		_wapi_handle_scratch_delete (stored_prog);
-//	}
-	if(args!=NULL) {
+	if (args != NULL) {
 		g_free (args);
 	}
-	if(dir!=NULL) {
+	if (dir != NULL) {
 		g_free (dir);
 	}
-//	if(stored_dir!=0) {
-//		_wapi_handle_scratch_delete (stored_dir);
-//	}
-//	if(env!=0) {
-//		_wapi_handle_scratch_delete_string_array (env);
-//	}
+	if(env_strings != NULL) {
+		g_strfreev (env_strings);
+	}
 	
 	return(ret);
 }
@@ -458,10 +644,10 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 		slash=strrchr (utf8_progname, '/');
 		if(slash!=NULL) {
 			g_strlcpy (process_handle->proc_name, slash+1,
-				   sizeof(process_handle->proc_name));
+				   _POSIX_PATH_MAX-1);
 		} else {
 			g_strlcpy (process_handle->proc_name, utf8_progname,
-				   sizeof(process_handle->proc_name));
+				   _POSIX_PATH_MAX-1);
 		}
 
 		g_free (utf8_progname);
@@ -472,11 +658,11 @@ extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 
 static void process_set_current (void)
 {
-	pid_t pid=getpid ();
+	pid_t pid = getpid ();
 	char *handle_env;
 	
-	handle_env=getenv ("_WAPI_PROCESS_HANDLE");
-	if(handle_env==NULL) {
+	handle_env = getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
+	if (handle_env == NULL) {
 		struct _WapiHandle_process process_handle = {0};
 
 #ifdef DEBUG
@@ -485,14 +671,8 @@ static void process_set_current (void)
 #endif
 
 		process_handle.id = pid;
-		
-		/* These seem to be the defaults on w2k */
-		process_handle.min_working_set = 204800;
-		process_handle.max_working_set = 1413120;
 
-		_wapi_time_t_to_filetime (time (NULL),
-					  &process_handle.create_time);
-
+		process_set_defaults (&process_handle);
 		process_set_name (&process_handle);
 
 		current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
@@ -512,23 +692,23 @@ static void process_set_current (void)
 		guchar *procname = NULL;
 		gboolean ok;
 		
-		current_process = GUINT_TO_POINTER (atoi (handle_env));
-
+		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env));
+		
 #ifdef DEBUG
-		g_message ("%s: Found my process handle: %p", __func__,
-			   current_process);
+		g_message ("%s: Found my process handle: %p (offset %d)",
+			   __func__, current_process, atoi (handle_env));
 #endif
 
-		ok=_wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
-					(gpointer *)&process_handle);
-		if(ok==FALSE) {
+		ok = _wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
+					  (gpointer *)&process_handle);
+		if (ok == FALSE) {
 			g_warning ("%s: error looking up process handle %p",
 				   __func__, current_process);
 			return;
 		}
 
 		procname = process_handle->proc_name;
-		if(!strcmp (procname, "mono")) {
+		if (!strcmp (procname, "mono")) {
 			/* Set a better process name */
 #ifdef DEBUG
 			g_message ("%s: Setting better process name",
