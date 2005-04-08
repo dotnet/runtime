@@ -398,6 +398,12 @@ typedef struct MonoSsapreWorkArea {
 	/* The number of generated class numbers */
 	int number_of_classes;
 	
+	/* The number of occurrences scheduled for reloading/insertion */
+	/* (used to decide if the redundancy is worth eliminating) */
+	int occurrences_scheduled_for_reloading;
+	int arguments_scheduled_for_insertion;
+	int dominating_arguments_scheduled_for_insertion;
+	
 	/* Statistics fields (per expression)  */
 	int saved_occurrences;
 	int reloaded_occurrences;

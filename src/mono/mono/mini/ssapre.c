@@ -1263,6 +1263,16 @@ renaming_pass (MonoSsapreWorkArea *area) {
 					current_expression->redundancy_class = phi_bb->phi_redundancy_class;
 					current_expression->defined_by_phi = phi_bb;
 					
+					/* If this PHI was not "covered", it is not down safe. */
+					/* However, if the real occurrence is in the same BB, it */
+					/* actually is down safe */
+					if (phi_bb == current_bb) {
+						if (DUMP_SSAPRE) {
+							printf ("PHI in bb %d [ID %d] defined occurrence %d in the same BB, so it is down safe\n", phi_bb->cfg_dfn, phi_bb->bb->block_num, current_expression->redundancy_class);
+						}
+						phi_bb->phi_is_down_safe = TRUE;
+					}
+					
 					/*
 					 * Major difference from the paper here...
 					 * Instead of maintaining "set_for_rename2" (see figure 20), we just
@@ -1576,6 +1586,10 @@ static void finalize_availability_and_reload (MonoSsapreWorkArea *area, MonoSsap
 	MonoSsapreBBInfo *current_bb = NULL;
 	MonoSsapreExpressionOccurrence *current_expression = NULL;
 	
+	area->occurrences_scheduled_for_reloading = 0;
+	area->arguments_scheduled_for_insertion = 0;
+	area->dominating_arguments_scheduled_for_insertion = 0;
+	
 	for (current_bb = area->first_interesting_bb; current_bb != NULL; current_bb = current_bb->next_interesting_bb) {
 		if (current_bb->has_phi) {
 			if (current_bb->phi_can_be_available && ! current_bb->phi_is_later) {
@@ -1599,6 +1613,9 @@ static void finalize_availability_and_reload (MonoSsapreWorkArea *area, MonoSsap
 	 			availability_table [current_expression->redundancy_class].class_defined_by_real_occurrence = current_expression;
 	 		} else {
 	 			current_expression->reload = TRUE;
+				
+				area->occurrences_scheduled_for_reloading ++;
+				
 	 			current_expression->defined_by_phi = availability_table [current_expression->redundancy_class].class_defined_by_phi;
 	 			current_expression->defined_by_real_occurrence = availability_table [current_expression->redundancy_class].class_defined_by_real_occurrence;
 	 		}
@@ -1614,6 +1631,12 @@ static void finalize_availability_and_reload (MonoSsapreWorkArea *area, MonoSsap
 						(! ((current_bb->phi_argument_defined_by_phi->phi_can_be_available) && (! current_bb->phi_argument_defined_by_phi->phi_is_later)))
 					))) {
 				current_bb->phi_argument_needs_insert = TRUE;
+				
+				area->arguments_scheduled_for_insertion ++;
+				if (dominates (current_bb, phi_bb)) {
+					area->dominating_arguments_scheduled_for_insertion ++;
+				}
+				
 				current_bb->phi_argument_defined_by_real_occurrence = NULL;
 				current_bb->phi_argument_defined_by_phi = NULL;
 			} else {
@@ -1671,10 +1694,16 @@ static void finalize_save (MonoSsapreWorkArea *area) {
 	}
 }
 
+#define OP_IS_CHEAP(op) (((op)==CEE_ADD)||((op)==CEE_SUB))
+#define EXPRESSION_HAS_ICONST(d) (((d).left_argument.type==MONO_SSAPRE_EXPRESSION_ARGUMENT_INTEGER_CONSTANT)||((d).right_argument.type==MONO_SSAPRE_EXPRESSION_ARGUMENT_INTEGER_CONSTANT))
+#define EXPRESSION_IS_CHEAP(d) ((OP_IS_CHEAP ((d).opcode))&&(EXPRESSION_HAS_ICONST ((d))))
+#define REDUNDANCY_IS_SMALL(a) (((a)->occurrences_scheduled_for_reloading < 2)&&((a)->dominating_arguments_scheduled_for_insertion < 1))
+
 /*
- * Perform all "finalize" steps
+ * Perform all "finalize" steps.
+ * Return TRUE if we must go on with code_motion.
  */
-static void finalize (MonoSsapreWorkArea *area) {
+static gboolean finalize (MonoSsapreWorkArea *area) {
 	MonoSsapreAvailabilityTableElement *availability_table = alloca (sizeof (MonoSsapreAvailabilityTableElement) * (area->number_of_classes));
 	int i;
 	
@@ -1684,7 +1713,14 @@ static void finalize (MonoSsapreWorkArea *area) {
 	}
 	
 	finalize_availability_and_reload (area, availability_table);
-	finalize_save (area);
+	
+	/* Tuning: if the redundancy is not worth handling, give up */
+	if ((EXPRESSION_IS_CHEAP (area->current_expression->description)) && (REDUNDANCY_IS_SMALL (area))) {
+		return FALSE;
+	} else {
+		finalize_save (area);
+		return TRUE;
+	}
 }
 
 /*
@@ -1981,8 +2017,14 @@ process_expression (MonoSsapreWorkArea *area) {
 	down_safety (area);
 	compute_can_be_available (area);
 	compute_later (area);
-	finalize (area);
-	code_motion (area);
+	if (finalize (area)) {
+		code_motion (area);
+	} else {
+		if (area->cfg->verbose_level >= TRACE_LEVEL) {
+			printf ("SSAPRE CODE MOTION SKIPPED\n");
+		}
+	}
+	
 	
 	if (area->cfg->verbose_level >= DUMP_LEVEL) {
 		printf ("START DUMP OF BB INFOS\n");
@@ -2060,6 +2102,11 @@ mono_perform_ssapre (MonoCompile *cfg) {
 	if (area.cfg->verbose_level >= LOG_LEVEL) {
 		printf ("SSAPRE STARTS PROCESSING METHOD %s\n", mono_method_full_name (cfg->method, TRUE));
 	}
+	if (area.cfg->verbose_level >= DUMP_LEVEL) {
+		printf ("BEFORE SSAPRE START\n");
+		mono_print_code (area.cfg);
+		printf ("BEFORE SSAPRE END\n");
+	}
 	
 	area.first_in_queue = NULL;
 	area.last_in_queue = NULL;
@@ -2097,6 +2144,11 @@ mono_perform_ssapre (MonoCompile *cfg) {
 		process_expression (&area);		
 	}
 	
+	if (area.cfg->verbose_level >= DUMP_LEVEL) {
+		printf ("AFTER SSAPRE START\n");
+		mono_print_code (area.cfg);
+		printf ("AFTER SSAPRE END\n");
+	}
 	if (area.cfg->verbose_level >= TRACE_LEVEL) {
 		printf ("SSAPRE ENDS PROCESSING METHOD %s\n", mono_method_full_name (cfg->method, TRUE));
 	}
