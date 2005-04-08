@@ -1,3 +1,7 @@
+2005-04-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: no more checks for aio_*.
+
 2005-04-05  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix isinf detection on solaris.

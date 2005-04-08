@@ -1035,41 +1035,6 @@ if test x$platform_win32 = xno; then
 		AC_MSG_RESULT(no)
 	]) 
 
-	dnl *********************
-	dnl *** Check for AIO ***
-	dnl *********************
-	AC_MSG_CHECKING([for SIGEV_THREAD definition])
-	dnl Some systems (FreeBSD at least) may have aio_read
-	dnl but don't support/define SIGEV_THREAD.
-	AC_TRY_COMPILE([
-	#include <sys/signal.h>
-	],[
-	int x = SIGEV_THREAD;
-	],[
-		ac_cv_c_sigev_thread=yes
-		AC_MSG_RESULT(yes)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-	if test "$ac_cv_c_sigev_thread" = "yes" ; then
-		AC_CHECK_HEADERS(aio.h sys/aio.h)
-		AC_CHECK_LIB(rt, aio_read, [ LIBS="$LIBS -lrt" ],)
-		SIGVAL_PTR="undefined"
-		if test "$ac_cv_header_aio_h" = "yes" -o "$ac_cv_header_sys_aio_h" = "yes" ; then
-			AC_CHECK_MEMBER(union sigval.sigval_ptr,SIGVAL_PTR="sigval_ptr",, [
-					#include <sys/signal.h>
-					])
-			AC_CHECK_MEMBER(union sigval.sival_ptr,SIGVAL_PTR="sival_ptr",, [
-					#include <sys/signal.h>
-					])
-			if test "$SIGVAL_PTR" = "undefined" ; then
-				AC_MSG_ERROR([Unable to detect field name in 'union sigval'])
-			fi
-		fi
-		AC_DEFINE_UNQUOTED(SIGVAL_PTR,$SIGVAL_PTR,[Pointer field name in 'union sigval'])
-	fi
-
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
