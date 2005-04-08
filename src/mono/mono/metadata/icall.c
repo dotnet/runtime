@@ -6060,8 +6060,6 @@ static const IcallEntry path_icalls [] = {
 };
 
 static const IcallEntry monoio_icalls [] = {
-	{"BeginRead", ves_icall_System_IO_MonoIO_BeginRead },
-	{"BeginWrite", ves_icall_System_IO_MonoIO_BeginWrite },
 	{"Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close},
 	{"CopyFile(string,string,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile},
 	{"CreateDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CreateDirectory},
@@ -6076,7 +6074,6 @@ static const IcallEntry monoio_icalls [] = {
 	{"GetFileStat(string,System.IO.MonoIOStat&,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileStat},
 	{"GetFileType(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileType},
 	{"GetLength(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetLength},
-	{"GetSupportsAsync", ves_icall_System_IO_MonoIO_GetSupportsAsync},
 	{"GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath},
 	{"Lock(intptr,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Lock},
 	{"MoveFile(string,string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_MoveFile},
@@ -6310,7 +6307,6 @@ static const IcallEntry socket_icalls [] = {
 	{"Connect_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Connect_internal},
 	{"GetSocketOption_arr_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,byte[]&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal},
 	{"GetSocketOption_obj_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal},
-	{"GetSupportsAsync", ves_icall_System_IO_MonoIO_GetSupportsAsync},
 	{"Listen_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_Listen_internal},
 	{"LocalEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal},
 	{"Poll_internal", ves_icall_System_Net_Sockets_Socket_Poll_internal},
@@ -6603,7 +6599,6 @@ static const IcallEntry thread_icalls [] = {
 };
 
 static const IcallEntry threadpool_icalls [] = {
-	{"BindHandleInternal", ves_icall_System_Threading_ThreadPool_BindHandle},
 	{"GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads},
 	{"GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads},
 	{"GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinThreads},

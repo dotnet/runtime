@@ -35,7 +35,4 @@ MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, 
 								gint completionPortThreads);
 
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle);
-
 #endif

@@ -14,18 +14,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#ifndef PLATFORM_WIN32
-#ifdef HAVE_AIO_H
-#include <aio.h>
-#define USE_AIO	1
-#elif defined(HAVE_SYS_AIO_H)
-#include <sys/aio.h>
-#define USE_AIO 1
-#else
-#undef USE_AIO
-#endif
-#endif
-
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/file-io.h>
@@ -916,73 +904,6 @@ ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name)
 	g_free (name);
 	
 	return(ret);
-}
-
-/*
- * Asynchronous IO
- */
-MonoBoolean
-ves_icall_System_IO_MonoIO_GetSupportsAsync (void)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef PLATFORM_WIN32
-	/* Seems like BindIoCompletionCallback is not found when compiling...
-	 * Disabling AIO support on win. Any one wants to fix this?
-	 */
-	return FALSE;	
-	/* return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500); */
-#elif defined(USE_AIO)
-	return FALSE;
-	/* Disabled. See bug 73718. We can enable this again if we have
-	 * a thread that handles socket/file IO
-	 *
-	if (aio_cancel (-1, NULL) == -1 && errno == ENOSYS)
-		return FALSE;
-
-	return (g_getenv ("MONO_DISABLE_AIO") == NULL);
-	*/
-#else
-	return FALSE;
-#endif
-}
-
-static WapiOverlapped *
-get_overlapped_from_fsa (MonoFSAsyncResult *ares)
-{
-	WapiOverlapped *ovl;
-
-	ovl = g_new0 (WapiOverlapped, 1);
-	ovl->Offset = ares->offset;
-	ovl->hEvent = ares->wait_handle;
-
-	return ovl;
-}
-
-MonoBoolean
-ves_icall_System_IO_MonoIO_BeginRead (HANDLE handle, MonoFSAsyncResult *ares)
-{
-	guint32 bytesread;
-	WapiOverlapped *ovl;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ovl = get_overlapped_from_fsa (ares);
-	ovl->handle1 = ares;
-	return ReadFile (handle, mono_array_addr (ares->buffer, gchar, ares->offset), ares->count, &bytesread, ovl);
-}
-
-MonoBoolean
-ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares)
-{
-	guint32 byteswritten;
-	WapiOverlapped *ovl;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ovl = get_overlapped_from_fsa (ares);
-	ovl->handle1 = ares;
-	return WriteFile (handle, mono_array_addr (ares->buffer, gchar, ares->offset), ares->count, &byteswritten, ovl);
 }
 
 void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,

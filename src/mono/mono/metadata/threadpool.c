@@ -788,33 +788,3 @@ overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped
 	g_free (overlapped);
 }
 
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef PLATFORM_WIN32
-	return FALSE;
-#else
-	if (!BindIoCompletionCallback (handle, overlapped_callback, 0)) {
-		gint error = GetLastError ();
-		MonoException *exc;
-		gchar *msg;
-
-		if (error == ERROR_INVALID_PARAMETER) {
-			exc = mono_get_exception_argument (NULL, "Invalid parameter.");
-		} else {
-			msg = g_strdup_printf ("Win32 error %d.", error);
-			exc = mono_exception_from_name_msg (mono_defaults.corlib,
-							    "System",
-							    "ApplicationException", msg);
-			g_free (msg);
-		}
-
-		mono_raise_exception (exc);
-	}
-
-	return TRUE;
-#endif
-}
-

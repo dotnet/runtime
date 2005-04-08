@@ -95,21 +95,6 @@ typedef struct _MonoFSAsyncResult {
 	MonoDelegate *real_cb;
 } MonoFSAsyncResult;
 
-#ifdef PLATFORM_WIN32
-typedef struct _WapiOverlapped WapiOverlapped;
-
-struct _WapiOverlapped
-{
-	guint32 Internal;
-	guint32 InternalHigh;
-	guint32 Offset;
-	guint32 OffsetHigh;
-	gpointer hEvent;
-	gpointer handle1;
-	gpointer handle2;
-};
-#endif
-
 /* System.IO.MonoIO */
 
 extern MonoBoolean
@@ -228,15 +213,6 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
 extern gint32
 ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name);
-
-extern MonoBoolean
-ves_icall_System_IO_MonoIO_GetSupportsAsync (void);
-
-extern MonoBoolean
-ves_icall_System_IO_MonoIO_BeginRead (HANDLE handle, MonoFSAsyncResult *ares);
-
-extern MonoBoolean
-ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares);
 
 extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
 					     gint64 length, gint32 *error);

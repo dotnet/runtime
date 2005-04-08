@@ -15,18 +15,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifndef PLATFORM_WIN32
-#ifdef HAVE_AIO_H
-#include <aio.h>
-#define USE_AIO	1
-#elif defined(HAVE_SYS_AIO_H)
-#include <sys/aio.h>
-#define USE_AIO 1
-#else
-#undef USE_AIO
-#endif
-#endif
-
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
