@@ -137,7 +137,7 @@ static void    ensure_runtime_vtable (MonoClass *klass);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
 static guint32 type_get_signature_size (MonoType *type);
-static void get_default_param_value_blobs (MonoMethod *method, char **blobs);
+static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 
 
@@ -5532,6 +5532,8 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
 	char **names, **blobs = NULL;
+	guint32 *types = NULL;
+	MonoType *type = NULL;
 	MonoObject *dbnull = mono_get_dbnull_object (domain);
 	MonoMarshalSpec **mspecs;
 	int i;
@@ -5567,18 +5569,29 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
 			param->DefaultValueImpl = dbnull;
 		} else {
-			MonoType *type = param->ClassImpl->type;
 
 			if (!blobs) {
 				blobs = g_new0 (char *, mono_method_signature (method)->param_count);
-				get_default_param_value_blobs (method, blobs); 
+				types = g_new0 (guint32, mono_method_signature (method)->param_count);
+				get_default_param_value_blobs (method, blobs, types); 
 			}
 
+			/* Build MonoType for the type from the Constant Table */
+			if (!type)
+				type = g_new0 (MonoType, 1);
+			type->type = types [i];
+			type->data.klass = NULL;
+			if (types [i] == MONO_TYPE_CLASS)
+				type->data.klass = mono_defaults.object_class;
+			else	
+				type->data.klass = mono_class_from_mono_type (type);
+			
 			param->DefaultValueImpl = mono_get_object_from_blob (domain, type, blobs [i]);
 
-			if (!param->DefaultValueImpl) {
+			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
+			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) 
 				param->DefaultValueImpl = dbnull;
-			}
+			
 		}
 
 		if (mspecs [i + 1])
@@ -5588,6 +5601,8 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	}
 	g_free (names);
 	g_free (blobs);
+	g_free (types);
+	g_free (type);
 
 	for (i = mono_method_signature (method)->param_count; i >= 0; i--)
 		if (mspecs [i])
@@ -5717,7 +5732,7 @@ mono_get_dbnull_object (MonoDomain *domain)
 
 
 static void
-get_default_param_value_blobs (MonoMethod *method, char **blobs)
+get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 {
 	guint32 param_index, i, lastp, crow = 0;
 	guint32 param_cols [MONO_PARAM_SIZE], const_cols [MONO_CONSTANT_SIZE];
@@ -5776,6 +5791,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 	
 		mono_metadata_decode_row (constt, crow - 1, const_cols, MONO_CONSTANT_SIZE);
 		blobs [paramseq - 1] = (gpointer) mono_metadata_blob_heap (image, const_cols [MONO_CONSTANT_VALUE]);
+		types [paramseq - 1] = const_cols [MONO_CONSTANT_TYPE];
 	}
 
 	return;
