@@ -10,8 +10,9 @@
 
 const char* mono_get_config_dir (void);
 
-void mono_config_parse (const char *filename);
+void mono_config_parse        (const char *filename);
 void mono_config_for_assembly (MonoImage *assembly);
+void mono_config_parse_memory (const char *buffer);
 
 #endif /* __MONO_METADATA_CONFIG_H__ */
 

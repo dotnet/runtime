@@ -251,6 +251,20 @@ mono_config_parse_file_with_context (ParseState *state, const char *filename)
 	return 1;
 }
 
+/**
+ * mono_config_parse_memory:
+ * @buffer: a pointer to an string XML representation of the configuration
+ *
+ * Parses the configuration from a buffer
+ */
+void
+mono_config_parse_memory (const char *buffer)
+{
+	ParseState state = {NULL};
+	
+	mono_config_parse_xml_with_context (&state, buffer, strlen (buffer));
+}
+
 static void
 mono_config_parse_file (const char *filename)
 {
