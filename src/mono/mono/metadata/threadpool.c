@@ -760,31 +760,3 @@ ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint co
 	return TRUE;
 }
 
-static void
-overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped)
-{
-	MonoFSAsyncResult *ares;
-	MonoThread *thread;
- 
-	MONO_ARCH_SAVE_REGS;
-
-	ares = (MonoFSAsyncResult *) overlapped->handle1;
-	ares->completed = TRUE;
-	if (ares->bytes_read != -1)
-		ares->bytes_read = numbytes;
-	else
-		ares->count = numbytes;
-
-	thread = mono_thread_attach (mono_object_domain (ares));
-	if (ares->async_callback != NULL) {
-		gpointer p [1];
-
-		*p = ares;
-		mono_runtime_invoke (ares->async_callback->method_info->method, NULL, p, NULL);
-	}
-
-	SetEvent (ares->wait_handle->handle);
-	mono_thread_detach (thread);
-	g_free (overlapped);
-}
-
