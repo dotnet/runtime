@@ -332,6 +332,9 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
+testtrace:
+	$(MAKE) RUNTIME_ARGS="$${RUNTIME_ARGS} --trace" testjit
+
 testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
