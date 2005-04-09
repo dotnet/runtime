@@ -40,6 +40,8 @@
 
 #include <mono/utils/mono-poll.h>
 
+#include "mono/io-layer/socket-wrappers.h"
+
 #include "threadpool.h"
 
 /* maximum number of worker threads */
@@ -288,8 +290,11 @@ socket_io_main (gpointer p)
 				for (; i < allocated; i++)
 					INIT_POLLFD (&pfds [i], -1, 0);
 			}
-
+#ifndef PLATFORM_WIN32
 			read (data->pipe [0], one, 1);
+#else
+			recv ((SOCKET) data->pipe [0], one, 1, 0);
+#endif
 			INIT_POLLFD (&pfds [i], data->newpfd->fd, data->newpfd->events);
 			ReleaseSemaphore (data->new_sem, 1, NULL);
 			if (i >= maxfd)
@@ -335,14 +340,60 @@ socket_io_main (gpointer p)
 	}
 }
 
+#ifdef PLATFORM_WIN32
+static void
+connect_hack (gpointer x)
+{
+	struct sockaddr_in *addr = (struct sockaddr_in *) x;
+	int count = 0;
+
+	while (connect ((SOCKET) socket_io_data.pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
+		Sleep (500);
+		if (++count > 3) {
+			g_warning ("Error intiializing async. sockets %d.\n", WSAGetLastError ());
+			g_assert (WSAGetLastError ());
+		}
+	}
+}
+
+#endif
 static void
 socket_io_init (SocketIOData *data)
 {
+#ifndef PLATFORM_WIN32
 	if (pipe (data->pipe) != 0) {
 		int err = errno;
 		perror ("mono");
 		g_assert (err);
 	}
+#else
+	struct sockaddr_in server;
+	struct sockaddr_in client;
+	SOCKET srv;
+	int len;
+
+	srv = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	g_assert (srv != INVALID_SOCKET);
+	data->pipe [1] = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	g_assert (data->pipe [1] != INVALID_SOCKET);
+
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = inet_addr ("127.0.0.1");
+	server.sin_port = 0;
+	if (bind (srv, (SOCKADDR *) &server, sizeof (server))) {
+		g_print ("%d\n", WSAGetLastError ());
+		g_assert (1 != 0);
+	}
+
+	len = sizeof (server);
+	getsockname (srv, (SOCKADDR *) &server, &len);
+	listen (srv, 1);
+	mono_thread_create (mono_get_root_domain (), connect_hack, &server);
+	len = sizeof (server);
+	data->pipe [0] = accept (srv, (SOCKADDR *) &client, &len);
+	g_assert (data->pipe [0] != INVALID_SOCKET);
+	closesocket (srv);
+#endif
 
 	data->sock_to_state = g_hash_table_new (g_direct_hash, g_direct_equal);
 	data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
@@ -385,7 +436,11 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 	g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (state->handle), list);
 	LeaveCriticalSection (&data->io_lock);
 	*msg = (char) state->operation;
+#ifndef PLATFORM_WIN32
 	write (data->pipe [1], msg, 1);
+#else
+	send ((SOCKET) data->pipe [1], msg, 1, 0);
+#endif
 }
 
 static gboolean
