@@ -1,3 +1,8 @@
+2005-04-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: define FD_SETSIZE=1024 on windows (the default is only
+	64). Re-add aio_* stuff. Shouldn't have removed it.
+
 2005-04-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: no more checks for aio_*.
