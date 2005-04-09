@@ -1,4 +1,5 @@
 #include "mono-poll.h"
+#include <errno.h>
 
 #ifdef HAVE_POLL
 int
@@ -62,8 +63,25 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 	}
 
 	affected = select (maxfd + 1, &rfds, &wfds, &efds, tvptr);
-	if (affected == -1) /* EBADF should be translated to POLLNVAL */
+	if (affected == -1) {
+#ifdef PLATFORM_WIN32
+		int error = WSAGetLastError ();
+		switch (error) {
+		case WSAEFAULT: errno = EFAULT; break;
+		case WSAEINVAL: errno = EINVAL; break;
+		case WSAEINTR: errno = EINTR; break;
+		/* case WSAEINPROGRESS: errno = EINPROGRESS; break; */
+		case WSAEINPROGRESS: errno = EINTR; break;
+		case WSAENOTSOCK: errno = EBADF; break;
+#ifdef ENOSR
+		case WSAENETDOWN: errno = ENOSR; break;
+#endif
+		default: errno = 0;
+		}
+#endif
+
 		return -1;
+	}
 
 	count = 0;
 	for (i = 0; i < nfds && affected > 0; i++) {

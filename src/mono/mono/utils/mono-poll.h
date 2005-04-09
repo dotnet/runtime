@@ -21,8 +21,6 @@ typedef struct pollfd mono_pollfd;
 #else
 
 #ifdef PLATFORM_WIN32
-/* The default in cygwin header files is 64 */
-#define FD_SETSIZE		1024
 #include <windows.h>
 #endif
 #define MONO_POLLIN		1
