@@ -1,7 +1,6 @@
 noinst_LTLIBRARIES = libwapi.la
 
 INCLUDES = \
-	-Werror			\
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
 	$(LIBGC_CFLAGS)		\
