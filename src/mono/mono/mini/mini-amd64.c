@@ -63,15 +63,6 @@ static gboolean use_sse2 = TRUE;
  */
 
 /*
- * FIXME: 
- * - Use xmm registers instead of the x87 stack
- * - Allocate arguments to global registers
- * - implement emulated opcodes
- * - (all archs) do not store trampoline addresses in method->info since they
- *   are domain specific.   
- */
-
-/*
  * Floating point comparison results:
  *                  ZF PF CF
  * A > B            0  0  0

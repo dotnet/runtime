@@ -298,6 +298,8 @@ get_throw_trampoline (gboolean rethrow)
 	amd64_mov_reg_reg (code, AMD64_RCX, AMD64_RBX, 8);
 	amd64_mov_reg_reg (code, AMD64_R8, AMD64_RBP, 8);
 	amd64_mov_reg_reg (code, AMD64_R9, AMD64_R12, 8);
+	/* align stack */
+	amd64_push_imm (code, 0);
 	/* reverse order */
 	amd64_push_imm (code, rethrow);
 	amd64_push_reg (code, AMD64_R15);
@@ -353,57 +355,12 @@ mono_arch_get_rethrow_exception (void)
 	return start;
 }
 
-/**
- * mono_arch_get_throw_exception_by_name:
- *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (char *exc_name); 
- */
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-	guint8 *code;
-	guint64 throw_ex;
+	g_assert_not_reached ();
 
-	if (inited)
-		return start;
-
-	start = code = mono_global_codeman_reserve (64);
-
-	code = start;
-
-	/* Push return address */
-	amd64_push_reg (code, AMD64_RSI);
-
-	/* Call exception_from_name */
-	amd64_mov_reg_reg (code, AMD64_RDX, AMD64_RDI, 8);
-	amd64_mov_reg_imm (code, AMD64_RSI, "System");
-	amd64_mov_reg_imm (code, AMD64_RDI, mono_defaults.exception_class->image);
-
-	amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_name);
-	amd64_call_reg (code, AMD64_R11);
-
-	/* Put the original return address at the top of the misaligned stack */
-	amd64_pop_reg (code, AMD64_RSI);
-	amd64_push_reg (code, AMD64_R11);
-	amd64_push_reg (code, AMD64_RSI);
-
-	throw_ex = (guint64)mono_arch_get_throw_exception ();
-
-	/* Call throw_exception */
-	amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RAX, 8);
-	amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
-	/* The original IP is on the stack */
-	amd64_jump_reg (code, AMD64_R11);
-
-	g_assert ((code - start) < 64);
-
-	inited = TRUE;
-
-	return start;
+	return NULL;
 }
 
 /**
