@@ -186,7 +186,7 @@ get_method_from_ip (void *ip)
 		return NULL;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
-	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
+	source = mono_debug_source_location_from_address (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), NULL, domain);
 
 	res = g_strdup_printf (" %s + 0x%x (%p %p) [%p - %s]", method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
@@ -211,7 +211,7 @@ print_method_from_ip (void *ip)
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
-	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
+	source = mono_debug_source_location_from_address (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), NULL, domain);
 
 	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
