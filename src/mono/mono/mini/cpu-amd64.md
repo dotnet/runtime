@@ -175,7 +175,7 @@ conv.ovf.u4: dest:i src1:i len:15
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
-ckfinite: dest:f src1:f len:39
+ckfinite: dest:f src1:f len:43
 mkrefany:
 ldtoken:
 conv.u2: dest:i src1:i len:4

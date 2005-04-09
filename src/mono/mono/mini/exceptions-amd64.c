@@ -357,10 +357,20 @@ mono_arch_get_rethrow_exception (void)
 
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
-{
-	g_assert_not_reached ();
+{	
+	static guint8* start;
+	static gboolean inited = FALSE;
+	guint8 *code;
 
-	return NULL;
+	if (inited)
+		return start;
+
+	start = code = mono_global_codeman_reserve (64);
+
+	/* Not used on amd64 */
+	amd64_breakpoint (code);
+
+	return start;
 }
 
 /**
