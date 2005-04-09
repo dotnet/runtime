@@ -1,3 +1,8 @@
+2005-04-09  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add --with-large-heap option to enable support for
+	GC heaps larger than 3GB. Hopefully fixes #73882.
+
 2005-04-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: define FD_SETSIZE=1024 on windows (the default is only

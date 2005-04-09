@@ -517,6 +517,11 @@ case "x$gc" in
 		;;
 esac
 
+AC_ARG_WITH(large-heap, [  --with-large-heap=yes,no    Enable support for GC heaps larger than 3GB], [large_heap=$withval], [large_heap=no])
+if test "x$large_heap" = "xyes"; then
+   echo "FOO"
+   CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
+fi
 
 # tell libgc/configure about what we want
 ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads"
