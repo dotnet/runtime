@@ -29,23 +29,23 @@ class Tests {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 	
-	static int test_10_create () {
+	public static int test_10_create () {
 		int[] a = new int [10];
 		return a.Length;
 	}
 
-	static int test_0_unset_value () {
+	public static int test_0_unset_value () {
 		int[] a = new int [10];
 		return a [5];
 	}
 
-	static int test_3_set_value () {
+	public static int test_3_set_value () {
 		int[] a = new int [10];
 		a [5] = 3;
 		return a [5];
 	}
 
-	static int test_0_char_array_1 () {
+	public static int test_0_char_array_1 () {
 		int value = -30;
 		char[] tmp = new char [20];
 		char[] digitLowerTable = new char[16];
@@ -53,7 +53,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_char_array_2 () {
+	public static int test_0_char_array_2 () {
 		int value = 5;
 		char[] tmp = new char [20];
 		char[] digitLowerTable = new char[16];
@@ -61,7 +61,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_char_array_3 () {
+	public static int test_0_char_array_3 () {
 		int value = -1;
 		char[] tmp = new char [20];
 		char[] digitLowerTable = new char[16];
@@ -69,7 +69,7 @@ class Tests {
 		return 0;
 	}
 
-	unsafe static int test_0_byte_array () {
+	public unsafe static int test_0_byte_array () {
 		byte [] src = new byte [8];
 		double ret;
 		byte *dst = (byte *)&ret;
@@ -206,5 +206,15 @@ class Tests {
 		}
 		return 0;
 	}
+
+	class Foo {
+		public static Foo[][] foo;
+	}
+
+	public static int test_0_regress_74549 () {
+		new Foo ();
+		return 0;
+	}
 }
+
 
