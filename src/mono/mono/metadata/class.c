@@ -516,9 +516,6 @@ mono_get_inflated_method (MonoMethod *method)
  * @class: The class to initialize
  *
  * Initializes the class->fields.
- *
- * Currently we only support AUTO_LAYOUT, and do not even try to do
- * a good job at it.  This is temporary to get the code for Paolo.
  */
 static void
 class_compute_field_layout (MonoClass *class)
@@ -533,7 +530,7 @@ class_compute_field_layout (MonoClass *class)
 	gboolean explicit_size;
 	MonoClassField *field;
 
-	if (class->size_inited)
+	if (class->fields)
 		return;
 
 	if (class->parent) {
