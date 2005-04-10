@@ -49,18 +49,4 @@ extern int WSAIoctl (guint32 handle, gint32 command,
 		     gchar *output, gint o_len, glong *written,
 		     void *unused1, void *unused2);
 
-#ifndef PLATFORM_WIN32
-typedef void (*SocketAsyncCB) (guint32 error, guint32 numbytes, gpointer ares);
-
-gboolean _wapi_socket_async_read (gpointer handle, gpointer buffer,
-				  guint32 numbytes,
-				  guint32 *bytesread, gpointer ares,
-				  SocketAsyncCB callback);
-
-gboolean _wapi_socket_async_write (gpointer handle, gpointer buffer,
-				  guint32 numbytes,
-				  guint32 *bytesread, gpointer ares,
-				  SocketAsyncCB callback);
-#endif
-
 #endif /* _WAPI_SOCKETS_H_ */

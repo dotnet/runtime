@@ -35,6 +35,13 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 		_wapi_handle_update_refs ();
 		nanosleep (&sleepytime, NULL);
 	}
+
+#ifndef __GNUC__
+	/* Even though we tell gcc that this function doesn't return,
+	 * other compilers won't see that.
+	 */
+	return(NULL);
+#endif
 }
 
 void _wapi_collection_init (void)

@@ -132,6 +132,13 @@ static void *timed_thread_start_routine(gpointer args)
 	}
 	
 	_wapi_timed_thread_exit(thread->start_routine(thread->arg));
+
+#ifndef __GNUC__
+	/* Even though we tell gcc that this function doesn't return,
+	 * other compilers won't see that.
+	 */
+	return(NULL);
+#endif
 }
 
 /* Allocate a thread which can be used with timed_thread_join().

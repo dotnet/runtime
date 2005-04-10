@@ -20,18 +20,6 @@
 #include <stdio.h>
 #include <utime.h>
 
-#ifndef PLATFORM_WIN32
-#ifdef HAVE_AIO_H
-#include <aio.h>
-#define USE_AIO	1
-#elif defined(HAVE_SYS_AIO_H)
-#include <sys/aio.h>
-#define USE_AIO 1
-#else
-#undef USE_AIO
-#endif
-#endif
-
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
@@ -274,38 +262,6 @@ static WapiFileType file_getfiletype(void)
 	return(FILE_TYPE_DISK);
 }
 
-#ifdef USE_AIO
-typedef struct {
-	struct aiocb *aio;
-	WapiOverlapped *overlapped;
-	WapiOverlappedCB callback;
-} notifier_data_t;
-
-#define SIGPTR(a) a.SIGVAL_PTR
-
-static void
-async_notifier (union sigval sig)
-{
-	notifier_data_t *ndata = SIGPTR (sig);
-	guint32 error;
-	guint32 numbytes;
-
-	error = aio_return (ndata->aio);
-	if (error < 0) {
-		error = _wapi_get_win32_file_error (error);
-		numbytes = 0;
-	} else {
-		numbytes = error;
-		error = 0;
-	}
-
-	ndata->callback (error, numbytes, ndata->overlapped);
-	g_free (ndata->aio);
-	g_free (ndata);
-}
-
-#endif /* USE_AIO */
-
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
 			  WapiOverlapped *overlapped)
@@ -339,86 +295,27 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 		return(FALSE);
 	}
 
-	if (file_handle->async == FALSE) {
-		do {
-			ret=read(fd, buffer, numbytes);
-		} while (ret==-1 && errno==EINTR &&
-			 !_wapi_thread_cur_apc_pending());
+	do {
+		ret = read (fd, buffer, numbytes);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending());
 			
-		if(ret==-1) {
-			gint err = errno;
+	if(ret==-1) {
+		gint err = errno;
 
 #ifdef DEBUG
-			g_message("%s: read of handle %p error: %s", __func__,
-				  handle, strerror(err));
+		g_message("%s: read of handle %p error: %s", __func__,
+			  handle, strerror(err));
 #endif
-			SetLastError (_wapi_get_win32_file_error (err));
-			return(FALSE);
-		}
+		SetLastError (_wapi_get_win32_file_error (err));
+		return(FALSE);
+	}
 		
-		if(bytesread!=NULL) {
-			*bytesread=ret;
-		}
+	if (bytesread != NULL) {
+		*bytesread = ret;
+	}
 		
-		return(TRUE);
-	}
-
-#ifndef USE_AIO
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return FALSE;
-#else
-	if (overlapped == NULL || file_handle->callback == NULL) {
-		SetLastError (ERROR_INVALID_PARAMETER);
-		return FALSE;
-	}
-
-	{
-	struct aiocb *aio;
-	int result;
-	notifier_data_t *ndata;
-
-	ndata = g_new0 (notifier_data_t, 1);
-	aio = g_new0 (struct aiocb, 1);
-	ndata->overlapped = overlapped;
-	ndata->aio = aio;
-	ndata->callback = file_handle->callback;
-
-	aio->aio_fildes = fd;
-	aio->aio_lio_opcode = LIO_READ;
-	aio->aio_nbytes = numbytes;
-	aio->aio_offset = overlapped->Offset + (((gint64) overlapped->OffsetHigh) << 32);
-	aio->aio_buf = buffer;
-	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
-	aio->aio_sigevent.sigev_notify_function = async_notifier;
-	SIGPTR (aio->aio_sigevent.sigev_value) = ndata;
-
-	result = aio_read (aio);
-	if (result == -1) {
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	result = aio_error (aio);
-#ifdef DEBUG
-	g_print ("aio_error (read) returned %d for %d\n", result, fd);
-#endif
-	if (result == 0) {
-		numbytes = aio_return (aio);
-#ifdef DEBUG
-		g_print ("numbytes %d for %d\n", numbytes, fd);
-#endif
-	} else {
-		errno = result;
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	if (bytesread)
-		*bytesread = numbytes;
-
-	return TRUE;
-	}
-#endif
+	return(TRUE);
 }
 
 static gboolean file_write(gpointer handle, gconstpointer buffer,
@@ -428,6 +325,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
 	int ret;
+	off_t current_pos;
 	int fd = GPOINTER_TO_UINT(handle);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
@@ -453,112 +351,49 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	if (file_handle->async == FALSE) {
-		off_t current_pos;
-		
-		/* Need to lock the region we're about to write to,
-		 * because we only do advisory locking on POSIX
-		 * systems
-		 */
-		current_pos = lseek (fd, (off_t)0, SEEK_CUR);
-		if (current_pos == -1) {
+	/* Need to lock the region we're about to write to, because we
+	 * only do advisory locking on POSIX systems
+	 */
+	current_pos = lseek (fd, (off_t)0, SEEK_CUR);
+	if (current_pos == -1) {
 #ifdef DEBUG
-			g_message ("%s: handle %p lseek failed: %s", __func__,
-				   handle, strerror (errno));
+		g_message ("%s: handle %p lseek failed: %s", __func__, handle,
+			   strerror (errno));
 #endif
+		_wapi_set_last_error_from_errno ();
+		return(FALSE);
+	}
+		
+	if (_wapi_lock_file_region (fd, current_pos, numbytes) == FALSE) {
+		/* The error has already been set */
+		return(FALSE);
+	}
+		
+	do {
+		ret = write (fd, buffer, numbytes);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending());
+
+	_wapi_unlock_file_region (fd, current_pos, numbytes);
+
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
 			_wapi_set_last_error_from_errno ();
-			return(FALSE);
-		}
-		
-		if (_wapi_lock_file_region (fd, current_pos,
-					    numbytes) == FALSE) {
-			/* The error has already been set */
-			return(FALSE);
-		}
-		
-		do {
-			ret=write(fd, buffer, numbytes);
-		} while (ret==-1 && errno==EINTR &&
-			 !_wapi_thread_cur_apc_pending());
-
-		_wapi_unlock_file_region (fd, current_pos, numbytes);
-
-		if (ret == -1) {
-			if (errno == EINTR) {
-				ret = 0;
-			} else {
-				_wapi_set_last_error_from_errno ();
 				
 #ifdef DEBUG
-				g_message("%s: write of handle %p error: %s",
-					  __func__, handle, strerror(errno));
+			g_message("%s: write of handle %p error: %s",
+				  __func__, handle, strerror(errno));
 #endif
 
-				return(FALSE);
-			}
+			return(FALSE);
 		}
-		if(byteswritten!=NULL) {
-			*byteswritten=ret;
-		}
-		return(TRUE);
 	}
-
-#ifndef USE_AIO
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return FALSE;
-#else
-	if (overlapped == NULL || file_handle->callback == NULL) {
-		SetLastError (ERROR_INVALID_PARAMETER);
-		return FALSE;
+	if (byteswritten != NULL) {
+		*byteswritten = ret;
 	}
-
-	{
-	struct aiocb *aio;
-	int result;
-	notifier_data_t *ndata;
-
-	ndata = g_new0 (notifier_data_t, 1);
-	aio = g_new0 (struct aiocb, 1);
-	ndata->overlapped = overlapped;
-	ndata->aio = aio;
-	ndata->callback = file_handle->callback;
-
-	aio->aio_fildes = fd;
-	aio->aio_lio_opcode = LIO_WRITE;
-	aio->aio_nbytes = numbytes;
-	aio->aio_offset = overlapped->Offset + (((gint64) overlapped->OffsetHigh) << 32);
-	aio->aio_buf = (gpointer) buffer;
-	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
-	aio->aio_sigevent.sigev_notify_function = async_notifier;
-	SIGPTR (aio->aio_sigevent.sigev_value) = ndata;
-
-	result = aio_write (aio);
-	if (result == -1) {
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	result = aio_error (aio);
-#ifdef DEBUG
-	g_print ("aio_error (write) returned %d for %d\n", result, fd);
-#endif
-	if (result == 0) {
-		numbytes = aio_return (aio);
-#ifdef DEBUG
-	g_print ("numbytes %d for %d\n", numbytes, fd);
-#endif
-	} else {
-		errno = result;
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	if (byteswritten)
-		*byteswritten = numbytes;
-
-	return TRUE;
-	}
-#endif
+	return(TRUE);
 }
 
 static gboolean file_flush(gpointer handle)
@@ -1595,9 +1430,10 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	gpointer handle;
 	int flags=convert_flags(fileaccess, createmode);
 	/*mode_t perms=convert_perms(sharemode);*/
-	/* we don't use sharemode, because that relates to sharing of the file
-	 * when the file is open and is already handled by other code, perms instead
-	 * are the on-disk permissions and this is a sane default.
+	/* we don't use sharemode, because that relates to sharing of
+	 * the file when the file is open and is already handled by
+	 * other code, perms instead are the on-disk permissions and
+	 * this is a sane default.
 	 */
 	mode_t perms=0644;
 	gchar *filename;
@@ -1704,7 +1540,6 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-	file_handle.async = ((attrs & FILE_FLAG_OVERLAPPED) != 0);
 	file_handle.filename = filename;
 
 	if(security!=NULL) {
@@ -3600,51 +3435,6 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	return(ret);
 }
 
-gboolean
-_wapi_io_add_callback (gpointer handle,
-		       WapiOverlappedCB callback,
-		       guint64 flags G_GNUC_UNUSED)
-{
-	struct _WapiHandle_file *file_handle;
-	gboolean ok;
-	int thr_ret;
-	gboolean ret = FALSE;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
-				  (gpointer *) &file_handle);
-
-	if (ok == FALSE) {
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
-					  (gpointer *) &file_handle);
-
-	}
-
-	if (ok == FALSE || file_handle->async == FALSE) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
-	}
-
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
-	thr_ret = _wapi_handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-	
-	if (file_handle->callback != NULL) {
-		SetLastError (ERROR_INVALID_PARAMETER);
-		goto cleanup;
-	}
-	ret = TRUE;
-	
-	file_handle->callback = callback;
-
-cleanup:
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
-
-	return(ret);
-}
-
 gint32
 GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 {
@@ -3745,6 +3535,14 @@ static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)
 #endif
 
 	if (ret == -1) {
+		/*
+		 * if locks are not available (NFS for example),
+		 * ignore the error
+		 */
+		if (errno == ENOLCK) {
+			return (TRUE);
+		}
+		
 		SetLastError (ERROR_LOCK_VIOLATION);
 		return(FALSE);
 	}

@@ -464,7 +464,7 @@ static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 
 static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
-	gint32 tmp;
+	gint32 tmp = 0;
 
 	__asm__ __volatile__ ("\n1:\n\t"
 			      "lwarx  %0, 0, %2\n\t"

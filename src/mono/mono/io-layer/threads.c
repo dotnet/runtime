@@ -855,21 +855,6 @@ void Sleep(guint32 ms)
 	SleepEx(ms, FALSE);
 }
 
-gboolean
-BindIoCompletionCallback (gpointer handle,
-			  WapiOverlappedCB callback,
-			  guint64 flags)
-{
-	WapiHandleType type;
-	
-	type = _wapi_handle_type (handle);
-	if (type == WAPI_HANDLE_FILE || type == WAPI_HANDLE_PIPE)
-		return _wapi_io_add_callback (handle, callback, flags);
-
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return FALSE;
-}
-
 guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
 					gpointer param)
 {

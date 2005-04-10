@@ -36,8 +36,6 @@ struct _WapiHandle_file
 	guint32 fileaccess;
 	guint32 sharemode;
 	guint32 attrs;
-	gboolean async;
-	WapiOverlappedCB callback;
 };
 
 struct _WapiHandle_find
@@ -47,11 +45,5 @@ struct _WapiHandle_find
 	int num;
 	size_t count;
 };
-
-G_BEGIN_DECLS
-extern gboolean _wapi_io_add_callback (gpointer handle,
-				       WapiOverlappedCB callback,
-				       guint64 flags);
-G_END_DECLS
 
 #endif /* _WAPI_IO_PRIVATE_H_ */
