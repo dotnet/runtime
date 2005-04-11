@@ -80,18 +80,6 @@ extern int _wapi_handle_timedwait_signal_poll_share (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_handle (gpointer handle);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 						 struct timespec *timeout);
-extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env,
-					   guint32 dir, gboolean inherit,
-					   guint32 flags,
-					   gpointer stdin_handle,
-					   gpointer stdout_handle,
-					   gpointer stderr_handle,
-					   gpointer *process_handle,
-					   gpointer *thread_handle,
-					   guint32 *pid, guint32 *tid);
-
-extern gboolean _wapi_handle_process_kill (pid_t pid, guint32 signo,
-					   gint *err);
 extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,

@@ -1088,8 +1088,8 @@ TerminateProcess (gpointer process, gint32 exitCode)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
-	gint signo;
-	gint err;
+	int signo;
+	int ret;
 
 	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				  (gpointer *) &process_handle);
@@ -1103,6 +1103,23 @@ TerminateProcess (gpointer process, gint32 exitCode)
 	}
 
 	signo = (exitCode == -1) ? SIGKILL : SIGTERM;
-	return _wapi_handle_process_kill (process_handle->id, signo, &err);
+	ret = kill (process_handle->id, signo);
+	if (ret == -1) {
+		switch (errno) {
+		case EINVAL:
+			SetLastError (ERROR_INVALID_PARAMETER);
+			break;
+		case EPERM:
+			SetLastError (ERROR_ACCESS_DENIED);
+			break;
+		case ESRCH:
+			SetLastError (ERROR_PROC_NOT_FOUND);
+			break;
+		default:
+			SetLastError (ERROR_GEN_FAILURE);
+		}
+	}
+	
+	return (ret == 0);
 }
 
