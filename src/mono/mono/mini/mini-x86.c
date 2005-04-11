@@ -4687,16 +4687,13 @@ setup_stack (MonoJitTlsData *tls)
 		return;
 
 	/* Determine stack boundaries */
+	pthread_attr_init( &attr );
 #ifdef HAVE_PTHREAD_GETATTR_NP
 	pthread_getattr_np( self, &attr );
 #else
 #ifdef HAVE_PTHREAD_ATTR_GET_NP
-#if defined(__FreeBSD__) 
-	pthread_attr_init( &attr );
-#endif
 	pthread_attr_get_np( self, &attr );
 #elif defined(sun)
-	pthread_attr_init( &attr );
 	pthread_attr_getstacksize( &attr, &stsize );
 #else
 #error "Not implemented"
