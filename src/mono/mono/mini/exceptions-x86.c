@@ -25,6 +25,10 @@
 #include "mini.h"
 #include "mini-x86.h"
 
+#if defined(__FreeBSD__)
+#include <ucontext.h>
+#endif 
+
 #ifdef PLATFORM_WIN32
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
@@ -549,6 +553,17 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
+#if defined(__FreeBSD__)
+	mctx->eax = ctx->uc_mcontext.mc_eax;
+	mctx->ebx = ctx->uc_mcontext.mc_ebx;
+	mctx->ecx = ctx->uc_mcontext.mc_ecx;
+	mctx->edx = ctx->uc_mcontext.mc_edx;
+	mctx->ebp = ctx->uc_mcontext.mc_ebp;
+	mctx->esp = ctx->uc_mcontext.mc_esp;
+	mctx->esi = ctx->uc_mcontext.mc_esi;
+	mctx->edi = ctx->uc_mcontext.mc_edi;
+	mctx->eip = ctx->uc_mcontext.mc_eip;
+#else
 	mctx->eax = ctx->uc_mcontext.gregs [REG_EAX];
 	mctx->ebx = ctx->uc_mcontext.gregs [REG_EBX];
 	mctx->ecx = ctx->uc_mcontext.gregs [REG_ECX];
@@ -558,6 +573,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = ctx->uc_mcontext.gregs [REG_ESI];
 	mctx->edi = ctx->uc_mcontext.gregs [REG_EDI];
 	mctx->eip = ctx->uc_mcontext.gregs [REG_EIP];
+#endif
 #else	
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
@@ -579,6 +595,18 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
+#if defined(__FreeBSD__)
+	ctx->uc_mcontext.mc_eax = mctx->eax;
+	ctx->uc_mcontext.mc_ebx = mctx->ebx;
+	ctx->uc_mcontext.mc_ecx = mctx->ecx;
+	ctx->uc_mcontext.mc_edx = mctx->edx;
+	ctx->uc_mcontext.mc_ebp  = mctx->ebp;
+	ctx->uc_mcontext.mc_esp = mctx->esp;
+	ctx->uc_mcontext.mc_esi = mctx->esi;
+	ctx->uc_mcontext.mc_edi = mctx->edi;
+	ctx->uc_mcontext.mc_eip = mctx->eip;
+
+#else
 	ctx->uc_mcontext.gregs [REG_EAX] = mctx->eax;
 	ctx->uc_mcontext.gregs [REG_EBX] = mctx->ebx;
 	ctx->uc_mcontext.gregs [REG_ECX] = mctx->ecx;
@@ -588,6 +616,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	ctx->uc_mcontext.gregs [REG_ESI] = mctx->esi;
 	ctx->uc_mcontext.gregs [REG_EDI] = mctx->edi;
 	ctx->uc_mcontext.gregs [REG_EIP] = mctx->eip;
+#endif
 #else
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
@@ -608,7 +637,11 @@ mono_arch_ip_from_context (void *sigctx)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
+#if defined(__FreeBSD__)
+	return (gpointer)ctx->uc_mcontext.mc_eip;
+#else
 	return (gpointer)ctx->uc_mcontext.gregs [REG_EIP];
+#endif
 #else
 	struct sigcontext *ctx = sigctx;
 	return (gpointer)ctx->SC_EIP;

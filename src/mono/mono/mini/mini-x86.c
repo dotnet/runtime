@@ -4691,6 +4691,9 @@ setup_stack (MonoJitTlsData *tls)
 	pthread_getattr_np( self, &attr );
 #else
 #ifdef HAVE_PTHREAD_ATTR_GET_NP
+#if defined(__FreeBSD__) 
+	pthread_attr_init( &attr );
+#endif
 	pthread_attr_get_np( self, &attr );
 #elif defined(sun)
 	pthread_attr_init( &attr );

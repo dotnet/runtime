@@ -77,17 +77,21 @@ struct sigcontext {
 #ifndef PLATFORM_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK
-
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #define MONO_ARCH_USE_SIGACTION
 
-/* NetBSD doesn't define SA_STACK */
-#ifndef SA_STACK
-#define SA_STACK SA_ONSTACK
-#endif
-#endif
+/* FreeBSD and NetBSD need SA_STACK and MAP_ANON re-definitions */
+#	if defined(__FreeBSD__) || defined(__NetBSD__) 
+#		ifndef SA_STACK
+#			define SA_STACK SA_ONSTACK
+#		endif
+#		ifndef MAP_ANONYMOUS
+#			define MAP_ANONYMOUS MAP_ANON
+#		endif
+#	endif /* BSDs */
 
-#endif
+#endif /* HAVE_WORKING_SIGALTSTACK */
+#endif /* !PLATFORM_WIN32 */
 
 /* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
