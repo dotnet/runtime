@@ -114,6 +114,19 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	}
 	
 	do {
+		/* Check before waiting on the condition, just in case
+		 */
+		if (_wapi_handle_issignalled (handle)) {
+#ifdef DEBUG
+			g_message ("%s: handle %p signalled", __func__,
+				   handle);
+#endif
+
+			_wapi_handle_ops_own (handle);
+			ret = WAIT_OBJECT_0;
+			goto done;
+		}
+			
 		if (timeout == INFINITE) {
 			waited = _wapi_handle_wait_signal_handle (handle);
 		} else {
@@ -270,27 +283,38 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		goto done;
 	}
 	
-	if(_wapi_handle_issignalled (wait)) {
+	if (_wapi_handle_issignalled (wait)) {
 #ifdef DEBUG
 		g_message ("%s: handle %p already signalled", __func__, wait);
 #endif
 
 		_wapi_handle_ops_own (wait);
-		ret=WAIT_OBJECT_0;
+		ret = WAIT_OBJECT_0;
 		goto done;
 	}
 
 	/* Have to wait for it */
-	if(timeout!=INFINITE) {
+	if (timeout != INFINITE) {
 		_wapi_calc_timeout (&abstime, timeout);
 	}
 	
 	do {
-		if(timeout==INFINITE) {
-			waited=_wapi_handle_wait_signal_handle (wait);
+		/* Check before waiting on the condition, just in case
+		 */
+		if (_wapi_handle_issignalled (wait)) {
+#ifdef DEBUG
+			g_message ("%s: handle %p signalled", __func__, wait);
+#endif
+
+			_wapi_handle_ops_own (wait);
+			ret = WAIT_OBJECT_0;
+			goto done;
+		}
+		
+		if (timeout == INFINITE) {
+			waited = _wapi_handle_wait_signal_handle (wait);
 		} else {
-			waited=_wapi_handle_timedwait_signal_handle (wait,
-								     &abstime);
+			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime);
 		}
 
 		if (alertable) {
@@ -532,6 +556,14 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	}
 	
 	while(1) {
+		/* Check before waiting on the condition, just in case
+		 */
+		done = test_and_own (numobjects, handles, waitall,
+				     &count, &lowest);
+		if (done == TRUE) {
+			return(WAIT_OBJECT_0 + lowest);
+		}
+		
 #ifdef DEBUG
 		g_message ("%s: locking signal mutex", __func__);
 #endif
