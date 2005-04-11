@@ -100,13 +100,10 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		libgc_threads=pthreads
-# TLS isn't implemented at all on -STABLE
+# TLS isn't implemented at all on 4-STABLE
 		with_nptl=no
 		with_tls=pthread
 		;;
-# older versions of -CURRENT will break with these flags but testing
-# indicates these older versions won't run Mono anyway
-#
 	*-*-*freebsd5*)
 		platform_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
@@ -127,10 +124,61 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		libgc_threads=pthreads
-# TLS is only partially implemented on -CURRENT (compiler support
+# TLS is only partially implemented on 5-STABLE (compiler support
 # but NOT library support)
 #
 		with_nptl=no
+		with_tls=pthread
+		;;
+	*-*-*freebsd6*)
+		platform_win32=no
+		if test "x$PTHREAD_CFLAGS" = "x"; then
+			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags=
+		else
+		    	CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags="$PTHREAD_CFLAGS"
+		fi
+		if test "x$PTHREAD_LIBS" = "x"; then
+		    	LDFLAGS="$LDFLAGS -pthread"
+			libmono_ldflags="-pthread"
+		else
+		    	LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
+			libmono_ldflags="$PTHREAD_LIBS"
+		fi
+		need_link_unlink=yes
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libdl=
+		libgc_threads=pthreads
+# TLS is only partially implemented on -CURRENT (compiler support
+# but NOT library support)
+#
+		with_tls=pthread
+		;;
+	*-*-*freebsd6*)
+		platform_win32=no
+		if test "x$PTHREAD_CFLAGS" = "x"; then
+			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags=
+		else
+			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
+			libmono_cflags="$PTHREAD_CFLAGS"
+		fi
+		if test "x$PTHREAD_LIBS" = "x"; then
+			LDFLAGS="$LDFLAGS -lpthread"
+			libmono_ldflags="-lpthread"
+		else
+			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
+			libmono_ldflags="$PTHREAD_LIBS"
+		fi
+		need_link_unlink=yes
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libdl=
+		libgc_threads=pthreads
+		with_sigaltstack=yes
+# TLS is only partially implemented on -CURRENT (compiler support
+# but NOT library support)
+#
 		with_tls=pthread
 		;;
 	*-*-*openbsd*)
@@ -258,7 +306,17 @@ AC_CHECK_HEADERS(syslog.h)
 
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
-AC_CHECK_HEADERS(ieeefp.h)
+case "$host" in
+	*-*-*freebsd6*)
+		AC_CHECK_HEADERS(ieeefp.h)
+	;;
+	*-*-*freebsd*)
+		/* Only freebsd6 has a working ieeefp.h */
+	;;
+	*)
+		AC_CHECK_HEADERS(ieeefp.h)
+	;;
+esac
 AC_MSG_CHECKING(for isinf)
 AC_TRY_LINK([#include <math.h>], [
 	int f = isinf (1);
@@ -837,7 +895,6 @@ if test x$platform_win32 = xno; then
 	else
 		AC_TRY_RUN([
 			#include <pthread.h>
-
 			__thread int i;
 			static int res1, res2;
 
@@ -886,7 +943,9 @@ if test x$platform_win32 = xno; then
 			#include <signal.h>
 			#include <pthread.h>
 			#include <sys/wait.h>
-
+			#if defined(__FreeBSD__) || defined(__NetBSD__)
+			#define SA_STACK SA_ONSTACK
+			#endif
 			static void
 			sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 			{
