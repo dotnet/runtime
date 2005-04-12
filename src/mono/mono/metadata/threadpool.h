@@ -4,8 +4,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection.h>
 
-extern int mono_max_worker_threads;
-
 /* No managed code here */
 void mono_thread_pool_init (void);
 
