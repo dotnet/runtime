@@ -124,9 +124,14 @@ socket_io_cleanup (SocketIOData *data)
 
 	EnterCriticalSection (&data->io_lock);
 	data->inited = 0;
+#ifdef PLATFORM_WIN32
+	closesocket (data->pipe [0]);
+	closesocket (data->pipe [1]);
+#else
 	close (data->pipe [0]);
-	data->pipe [0] = -1;
 	close (data->pipe [1]);
+#endif
+	data->pipe [0] = -1;
 	data->pipe [1] = -1;
 	CloseHandle (data->new_sem);
 	data->new_sem = NULL;
@@ -373,6 +378,8 @@ socket_io_main (gpointer p)
 
 		/* Got a new socket */
 		if ((pfds->revents & MONO_POLLIN) != 0) {
+			int nread;
+
 			for (i = 1; i < allocated; i++) {
 				pfd = &pfds [i];
 				if (pfd->fd == -1 || pfd->fd == data->newpfd->fd)
@@ -391,10 +398,15 @@ socket_io_main (gpointer p)
 					INIT_POLLFD (&pfds [i], -1, 0);
 			}
 #ifndef PLATFORM_WIN32
-			read (data->pipe [0], one, 1);
+			nread = read (data->pipe [0], one, 1);
 #else
-			recv ((SOCKET) data->pipe [0], one, 1, 0);
+			nread = recv ((SOCKET) data->pipe [0], one, 1, 0);
 #endif
+			if (nread <= 0) {
+				g_free (pfds);
+				return; /* we're closed */
+			}
+
 			INIT_POLLFD (&pfds [i], data->newpfd->fd, data->newpfd->events);
 			ReleaseSemaphore (data->new_sem, 1, NULL);
 			if (i >= maxfd)
