@@ -18,6 +18,7 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "meta.h"
 #include "util.h"
 #include "dump.h"
@@ -41,6 +42,9 @@ gboolean dump_header_data_p = FALSE;
 
 /* True if you want to get forward declarations */
 gboolean dump_forward_decls = FALSE;
+
+/* True if you want to dump managed resources as files */
+gboolean dump_managed_resources = FALSE;
 
 gboolean substitute_with_mscorlib_p = FALSE;
 
@@ -1242,6 +1246,36 @@ dis_globals (MonoImage *m)
 
 }
 
+static void
+dis_mresource (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MANIFESTRESOURCE];
+	int i;
+	
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MANIFEST_SIZE];
+		const char *name, *res;
+		guint32 size;
+		FILE* fp;
+
+		mono_metadata_decode_row (t, i, cols, MONO_MANIFEST_SIZE);
+		name = mono_metadata_string_heap (m, cols [MONO_MANIFEST_NAME]);
+		
+		if (! (res = mono_image_get_resource (m, cols [MONO_MANIFEST_OFFSET], &size)))
+			continue;	
+
+		if ( (fp = fopen (name, "ab")) ) {
+			if (ftell (fp) == 0)
+				fwrite (res, size, 1, fp);
+			else 
+				g_warning ("Error creating managed resource - %s : File already exists.", name);
+
+			fclose (fp);
+		} else
+			g_warning ("Error creating managed resource - %s : %s", name, g_strerror (errno));
+	}		
+}
+
 /**
  * dis_types:
  * @m: metadata context
@@ -1376,6 +1410,8 @@ disassemble_file (const char *file)
 		dis_directive_mresource (img);
 		dis_directive_module (img);
 		dis_directive_moduleref (img);
+                if (dump_managed_resources)
+        		dis_mresource (img);
 		if (dump_forward_decls) {
 			fprintf (output, "// *************** Forward Declarations for Classes ***************\n\n"); 
 			dis_types (img, 1);
@@ -1579,7 +1615,7 @@ usage (void)
 		if (((i-2) % 5) == 0)
 			g_string_append_c (args, '\n');
 	}
-	g_string_append (args, "[--forward-decls]");
+	g_string_append (args, "[--forward-decls]\n[--mresources]");
 	fprintf (stderr,
 		 "Usage is: monodis %s file ..\n", args->str);
 	exit (1);
@@ -1621,6 +1657,9 @@ main (int argc, char *argv [])
 				continue;
 			} else if (strcmp (argv [i], "--forward-decls") == 0) {
 				dump_forward_decls = TRUE;
+				continue;
+			} else if (strcmp (argv [i], "--mresources") == 0) {
+				dump_managed_resources = TRUE;
 				continue;
 			} else if (strcmp (argv [i], "--help") == 0)
 				usage ();
