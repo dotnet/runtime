@@ -26,18 +26,14 @@ struct _WapiHandle_thread
 {
 	WapiThreadState state;
 	guint32 exitstatus;
-	gpointer process_handle;
-};
-
-struct _WapiHandlePrivate_thread
-{
+	pid_t owner_pid;
 	TimedThread *thread;
 	gboolean joined;
 };
 
-gboolean _wapi_thread_apc_pending (gpointer handle);
-gboolean _wapi_thread_cur_apc_pending (void);
-gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
+extern gboolean _wapi_thread_apc_pending (gpointer handle);
+extern gboolean _wapi_thread_cur_apc_pending (void);
+extern gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
 
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

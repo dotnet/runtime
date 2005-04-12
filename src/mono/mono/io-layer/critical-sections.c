@@ -149,8 +149,8 @@ void EnterCriticalSection(WapiCriticalSection *section)
 	int stat;
 
 	if ((stat = mono_mutex_lock(&section->mutex)) != 0) {
-		g_error (G_GNUC_PRETTY_FUNCTION
-			 ": EnterCriticalSection failed: %s", g_strerror(stat));
+		g_error ("%s: EnterCriticalSection failed: %s", __func__,
+			 g_strerror(stat));
 	}
 }
 

@@ -120,7 +120,7 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 		sys_error = strerror (code);
 		msg = g_locale_to_utf8 (sys_error, strlen (sys_error), NULL, NULL, NULL);
 		if (function_name == NULL)
-			function_name = G_GNUC_PRETTY_FUNCTION;
+			function_name = __func__;
 
 		g_warning ("%s: Need to translate %d [%s] into winsock error",
 			   function_name, code, msg);

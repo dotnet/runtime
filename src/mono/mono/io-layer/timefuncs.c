@@ -63,7 +63,7 @@ guint32 GetTickCount (void)
 	ret=(guint32)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": returning %d", ret);
+	g_message ("%s: returning %d", __func__, ret);
 #endif
 
 	return(ret);

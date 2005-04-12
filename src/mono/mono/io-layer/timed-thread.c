@@ -71,8 +71,7 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	/* Tell a joiner that we're exiting.
 	 */
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Setting thread %p id %ld exit status to %d",
+	g_message("%s: Setting thread %p id %ld exit status to %d", __func__,
 		  thread, thread->id, exitstatus);
 #endif
 
@@ -133,6 +132,13 @@ static void *timed_thread_start_routine(gpointer args)
 	}
 	
 	_wapi_timed_thread_exit(thread->start_routine(thread->arg));
+
+#ifndef __GNUC__
+	/* Even though we tell gcc that this function doesn't return,
+	 * other compilers won't see that.
+	 */
+	return(NULL);
+#endif
 }
 
 /* Allocate a thread which can be used with timed_thread_join().
@@ -287,14 +293,14 @@ void _wapi_timed_thread_suspend (TimedThread *thread)
 	void *specific;
 	
 	if((specific = pthread_getspecific (timed_thread_key))==NULL) {
-		g_warning (G_GNUC_PRETTY_FUNCTION ": thread lookup failed");
+		g_warning ("%s: thread lookup failed", __func__);
 		return;
 	}
 	self=(TimedThread *)specific;
 	
 	if(thread != self) {
-		g_error (G_GNUC_PRETTY_FUNCTION
-			 ": attempt to suspend a different thread!");
+		g_error ("%s: attempt to suspend a different thread!",
+			 __func__);
 		exit (-1);
 	}
 

@@ -15,16 +15,13 @@
 
 extern struct _WapiHandleOps _wapi_sem_ops;
 
+extern void _wapi_sem_details (gpointer handle_info);
+
 /* emulate sem_t, so that we can prod the internal state more easily */
 struct _WapiHandle_sem
 {
 	guint32 val;
 	gint32 max;
-};
-
-struct _WapiHandlePrivate_sem
-{
-	int dummy;
 };
 
 #endif /* _WAPI_SEMAPHORE_PRIVATE_H_ */

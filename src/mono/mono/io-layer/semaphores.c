@@ -26,17 +26,22 @@
 
 #undef DEBUG
 
-static void sema_close_shared (gpointer handle);
 static void sema_signal(gpointer handle);
-static void sema_own (gpointer handle);
+static gboolean sema_own (gpointer handle);
 
 struct _WapiHandleOps _wapi_sem_ops = {
-	sema_close_shared,	/* close_shared */
-	NULL,			/* close_private */
+	NULL,			/* close */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
 	NULL,			/* is_owned */
 };
+
+void _wapi_sem_details (gpointer handle_info)
+{
+	struct _WapiHandle_sem *sem = (struct _WapiHandle_sem *)handle_info;
+	
+	g_print ("val: %5u, max: %5d", sem->val, sem->max);
+}
 
 static mono_once_t sem_ops_once=MONO_ONCE_INIT;
 
@@ -47,46 +52,39 @@ static void sem_ops_init (void)
 					    WAPI_HANDLE_CAP_SIGNAL);
 }
 
-static void sema_close_shared (gpointer handle G_GNUC_UNUSED)
-{
-	/* Not really much to do here */
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing sem handle %p", handle);
-#endif
-}
-
 static void sema_signal(gpointer handle)
 {
 	ReleaseSemaphore(handle, 1, NULL);
 }
 
-static void sema_own (gpointer handle)
+static gboolean sema_own (gpointer handle)
 {
 	struct _WapiHandle_sem *sem_handle;
 	gboolean ok;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
-				(gpointer *)&sem_handle, NULL);
+				(gpointer *)&sem_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up sem handle %p", handle);
-		return;
+		g_warning ("%s: error looking up sem handle %p", __func__,
+			   handle);
+		return(FALSE);
 	}
 	
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": owning sem handle %p", handle);
+	g_message("%s: owning sem handle %p", __func__, handle);
 #endif
 
 	sem_handle->val--;
 	
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": sem %p val now %d", handle,
-		   sem_handle->val);
+	g_message ("%s: sem %p val now %d", __func__, handle, sem_handle->val);
 #endif
 
 	if(sem_handle->val==0) {
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
+
+	return(TRUE);
 }
 
 
@@ -110,34 +108,37 @@ static void sema_own (gpointer handle)
  */
 gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name G_GNUC_UNUSED)
 {
-	struct _WapiHandle_sem *sem_handle;
+	struct _WapiHandle_sem sem_handle = {0};
 	gpointer handle;
-	gboolean ok;
 	int thr_ret;
-	gpointer ret = NULL;
 	
 	mono_once (&sem_ops_once, sem_ops_init);
 	
 	if(max<=0) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": max <= 0");
+		g_message("%s: max <= 0", __func__);
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(NULL);
 	}
 	
 	if(initial>max || initial<0) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": initial>max or < 0");
+		g_message("%s: initial>max or < 0", __func__);
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(NULL);
 	}
 	
-	handle=_wapi_handle_new (WAPI_HANDLE_SEM);
-	if(handle==_WAPI_HANDLE_INVALID) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error creating semaphore handle");
+	sem_handle.val = initial;
+	sem_handle.max = max;
+
+	handle = _wapi_handle_new (WAPI_HANDLE_SEM, &sem_handle);
+	if (handle == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error creating semaphore handle", __func__);
+		SetLastError (ERROR_GEN_FAILURE);
 		return(NULL);
 	}
 
@@ -146,34 +147,20 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
-				(gpointer *)&sem_handle, NULL);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error lookup up semaphore handle %p", handle);
-		goto cleanup;
-	}
-	ret = handle;
-	
-	sem_handle->val=initial;
-	sem_handle->max=max;
-
-	if(initial!=0) {
+	if (initial != 0) {
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Created semaphore handle %p initial %d max %d", handle,
-		  initial, max);
+	g_message ("%s: Created semaphore handle %p initial %d max %d",
+		   __func__, handle, initial, max);
 #endif
 
-cleanup:
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
-	
-	return(ret);
+
+	return(handle);
 }
 
 /**
@@ -196,10 +183,10 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
-				(gpointer *)&sem_handle, NULL);
+				(gpointer *)&sem_handle);
 	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up sem handle %p", handle);
+		g_warning ("%s: error looking up sem handle %p", __func__,
+			   handle);
 		return(FALSE);
 	}
 
@@ -209,8 +196,8 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	g_assert (thr_ret == 0);
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": sem %p val %d count %d",
-		  handle, sem_handle->val, count);
+	g_message("%s: sem %p val %d count %d", __func__, handle,
+		  sem_handle->val, count);
 #endif
 	
 	/* Do this before checking for count overflow, because overflowing max
@@ -223,8 +210,7 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	/* No idea why max is signed, but thats the spec :-( */
 	if(sem_handle->val+count > (guint32)sem_handle->max) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": sem %p max value would be exceeded: max %d current %d count %d",
-			  handle, sem_handle->max, sem_handle->val, count);
+		g_message("%s: sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
 #endif
 
 		goto end;
@@ -236,8 +222,7 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	ret=TRUE;
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": sem %p val now %d", handle,
-		  sem_handle->val);
+	g_message("%s: sem %p val now %d", __func__, handle, sem_handle->val);
 #endif
 	
 end:

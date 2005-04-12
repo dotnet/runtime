@@ -16,18 +16,24 @@
 #include <sys/types.h>
 
 extern struct _WapiHandleOps _wapi_mutex_ops;
+extern struct _WapiHandleOps _wapi_namedmutex_ops;
+
+extern void _wapi_mutex_details (gpointer handle_info);
 
 struct _WapiHandle_mutex
 {
-	WapiSharedNamespace sharedns;
 	pid_t pid;
 	pthread_t tid;
 	guint32 recursion;
 };
 
-struct _WapiHandlePrivate_mutex
+struct _WapiHandle_namedmutex 
 {
-	int dummy;
+	WapiSharedNamespace sharedns;
+	guint32 is_owned;
+	pid_t pid;
+	pthread_t tid;
+	guint32 recursion;
 };
 
 extern void _wapi_mutex_check_abandoned (pid_t pid, pthread_t tid);
