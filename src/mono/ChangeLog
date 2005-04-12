@@ -1,3 +1,7 @@
+2005-04-12  Geoff Norton  <gnorton@customerdna.com>
+
+	* configure.in: Disable -O2 on PPC until #74562 is fixed.
+
 2005-04-11  James Willcox  <james@ximian.com>
 
 	* man/mkbundle.1: add --static option
