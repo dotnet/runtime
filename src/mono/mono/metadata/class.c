@@ -530,7 +530,7 @@ class_compute_field_layout (MonoClass *class)
 	gboolean explicit_size;
 	MonoClassField *field;
 
-	if (class->fields)
+	if (class->size_inited)
 		return;
 
 	if (class->parent) {
@@ -566,6 +566,9 @@ class_compute_field_layout (MonoClass *class)
 
 	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 		blittable = FALSE;
+
+	/* Prevent infinite loops if the class references itself */
+	class->size_inited = 1;
 
 	class->fields = g_new0 (MonoClassField, top);
 
