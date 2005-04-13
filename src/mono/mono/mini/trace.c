@@ -330,7 +330,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *cpos); 
-		} else switch (type->type) {
+		} else switch (mono_type_get_underlying_type (type)->type) {
 			
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
