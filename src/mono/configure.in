@@ -1462,8 +1462,6 @@ case "$host" in
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
-		# HACK: PPC -O2 is locking wiht io-layer-no-daemon; remove me when #74562 is fixed
-		CFLAGS=`echo $CFLAGS | sed -e 's/-O2 //'`
 		;;
 	arm-*-linux-* | armv4l-*-linux-*)
 		TARGET=ARM;
