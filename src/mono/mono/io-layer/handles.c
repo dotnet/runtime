@@ -1559,7 +1559,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
  * implement their own ways of finding out if a particular file is
  * open by a process.
  */
-void _wapi_handle_check_share (struct _WapiFileShare *share_info)
+void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 {
 	DIR *proc_dir;
 	struct dirent *proc_entry;
@@ -1593,9 +1593,10 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info)
 	while ((proc_entry = readdir (proc_dir)) != NULL) {
 		/* We only care about numerically-named directories */
 		pid = atoi (proc_entry->d_name);
-		if (pid != 0 && pid != self) {
+		if (pid != 0) {
 			/* Look in /proc/<pid>/fd/ but ignore
-			 * ourselves, as we have the file open too
+			 * /proc/<our pid>/fd/<fd>, as we have the
+			 * file open too
 			 */
 			DIR *fd_dir;
 			struct dirent *fd_entry;
@@ -1614,7 +1615,9 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info)
 				struct stat link_stat;
 				
 				if (!strcmp (fd_entry->d_name, ".") ||
-				    !strcmp (fd_entry->d_name, "..")) {
+				    !strcmp (fd_entry->d_name, "..") ||
+				    (pid == self &&
+				     fd == atoi (fd_entry->d_name))) {
 					continue;
 				}
 

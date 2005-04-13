@@ -86,7 +86,8 @@ extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					       guint32 *old_sharemode,
 					       guint32 *old_access,
 					       struct _WapiFileShare **info);
-extern void _wapi_handle_check_share (struct _WapiFileShare *share_info);
+extern void _wapi_handle_check_share (struct _WapiFileShare *share_info,
+				      int fd);
 extern void _wapi_handle_dump (void);
 extern void _wapi_handle_update_refs (void);
 

@@ -1364,7 +1364,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 
 static gboolean share_check (struct stat *statbuf, guint32 sharemode,
 			     guint32 fileaccess,
-			     struct _WapiFileShare **share_info)
+			     struct _WapiFileShare **share_info, int fd)
 {
 	if (share_allows_open (statbuf, sharemode, fileaccess,
 			       share_info) == TRUE) {
@@ -1379,7 +1379,7 @@ static gboolean share_check (struct stat *statbuf, guint32 sharemode,
 	 * collection.
 	 */
 
-	_wapi_handle_check_share (*share_info);
+	_wapi_handle_check_share (*share_info, fd);
 	if (share_allows_open (statbuf, sharemode, fileaccess,
 			       share_info) == TRUE) {
 		return (TRUE);
@@ -1520,7 +1520,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 
 	if (share_check (&statbuf, sharemode, fileaccess,
-			 &file_handle.share_info) == FALSE) {
+			 &file_handle.share_info, fd) == FALSE) {
 		SetLastError (ERROR_SHARING_VIOLATION);
 		g_free (filename);
 		close (fd);
