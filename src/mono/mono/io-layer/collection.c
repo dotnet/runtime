@@ -18,7 +18,7 @@
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/handles-private.h>
 
-#define DEBUG
+#undef DEBUG
 
 static pthread_t collection_thread_id;
 
