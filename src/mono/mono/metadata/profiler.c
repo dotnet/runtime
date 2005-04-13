@@ -1262,19 +1262,19 @@ mono_profiler_install_simple (const char *desc)
 {
 	MonoProfiler *prof;
 	gchar **args, **ptr;
-	MonoProfileFlags flags = MONO_PROFILE_JIT_COMPILATION;
+	MonoProfileFlags flags = 0;
 
 	MONO_TIMER_STARTUP;
 
 	if (!desc)
-		desc = "alloc,time";
+		desc = "alloc,time,jit";
 
 	if (desc) {
 		/* Parse options */
 		if (strstr (desc, ":"))
 			desc = strstr (desc, ":") + 1;
 		else
-			desc = "alloc,time";
+			desc = "alloc,time,jit";
 		args = g_strsplit (desc, ",", -1);
 
 		for (ptr = args; ptr && *ptr; ptr++) {
@@ -1286,6 +1286,8 @@ mono_profiler_install_simple (const char *desc)
 				flags |= MONO_PROFILE_ALLOCATIONS;
 			else if (!strcmp (arg, "stat"))
 				flags |= MONO_PROFILE_STATISTICAL | MONO_PROFILE_APPDOMAIN_EVENTS;
+			else if (!strcmp (arg, "jit"))
+				flags |= MONO_PROFILE_JIT_COMPILATION;
 			else {
 				fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
 				return;
