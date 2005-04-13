@@ -657,7 +657,7 @@ socket_io_init (SocketIOData *data)
 
 	data->sock_to_state = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	if (FALSE == data->epoll_disabled)
+	if (data->epoll_disabled)
 		data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
 	io_job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	InitializeCriticalSection (&io_queue_lock);
