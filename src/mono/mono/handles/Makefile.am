@@ -1,5 +1,5 @@
 
-noinst_PROGRAMS = hps scratch shmdel
+noinst_PROGRAMS = hps
 
 INCLUDES = 				\
 	-I$(top_srcdir)			\
@@ -7,22 +7,6 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 hps_LDADD = \
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
-	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
-	-lm
-
-scratch_LDADD = \
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
-	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
-	-lm
-
-shmdel_LDADD = \
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	$(LIBGC_LIBS)			\

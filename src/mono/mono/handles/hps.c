@@ -6,85 +6,98 @@
 /* We're digging into handle internals here... */
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/wapi-private.h>
+#include <mono/io-layer/shared.h>
+#include <mono/io-layer/collection.h>
 
 static const guchar *unused_details (struct _WapiHandleShared *handle);
-static const guchar *file_details (struct _WapiHandleShared *handle);
-static const guchar *console_details (struct _WapiHandleShared *handle);
+static const guchar *unshared_details (struct _WapiHandleShared *handle);
 static const guchar *thread_details (struct _WapiHandleShared *handle);
-static const guchar *sem_details (struct _WapiHandleShared *handle);
-static const guchar *mutex_details (struct _WapiHandleShared *handle);
-static const guchar *event_details (struct _WapiHandleShared *handle);
-static const guchar *socket_details (struct _WapiHandleShared *handle);
-static const guchar *find_details (struct _WapiHandleShared *handle);
+static const guchar *namedmutex_details (struct _WapiHandleShared *handle);
 static const guchar *process_details (struct _WapiHandleShared *handle);
-static const guchar *pipe_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
  * io-layer/wapi-private.h
  */
-static const char *typename[]={
-	"Unused",
-	"File",
-	"Console",
-	"Thread",
-	"Sem",
-	"Mutex",
-	"Event",
-	"Socket",
-	"Find",
-	"Process",
-	"Pipe",
-	"Error!!"
-};
-
-/* So does this... */
 static const guchar * (*details[])(struct _WapiHandleShared *)=
 {
 	unused_details,
-	file_details,
-	console_details,
+	unshared_details,		/* file */
+	unshared_details,		/* console */
 	thread_details,
-	sem_details,
-	mutex_details,
-	event_details,
-	socket_details,
-	find_details,
+	unshared_details,		/* sem */
+	unshared_details,		/* mutex */
+	unshared_details,		/* event */
+	unshared_details,		/* socket */
+	unshared_details,		/* find */
 	process_details,
-	pipe_details,
+	unshared_details,		/* pipe */
+	namedmutex_details,
 	unused_details,
 };
 
 int main (int argc, char **argv)
 {
-	guint32 handle_idx;
-	gboolean success;
+	guint32 i;
 	
-	_wapi_shared_data=g_new0 (struct _WapiHandleShared_list *, 1);
-	_wapi_shared_scratch=g_new0 (struct _WapiHandleScratch, 1);
-	
-	success=_wapi_shm_attach (&_wapi_shared_data[0],
-				  &_wapi_shared_scratch);
-	if(success==FALSE) {
+	_wapi_shared_layout = _wapi_shm_attach();
+	if (_wapi_shared_layout == FALSE) {
 		g_error ("Failed to attach shared memory!");
 		exit (-1);
 	}
-	
-	/* Make sure index 0 is actually unused */
-	for(handle_idx=0; handle_idx<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT; handle_idx++) {
-		guint32 segment, idx;
-		struct _WapiHandleShared *shared;
 
-		_wapi_handle_segment (GUINT_TO_POINTER (handle_idx), &segment,
-				      &idx);
-		_wapi_handle_ensure_mapped (segment);
+	_wapi_fileshare_layout = _wapi_fileshare_shm_attach();
+	if (_wapi_fileshare_layout == FALSE) {
+		g_error ("Failed to attach fileshare shared memory!");
+		exit (-1);
+	}
+	
+	if (argc > 1) {
+		_wapi_collection_init ();
+		_wapi_handle_collect ();
+	}
+	
+	g_print ("master: %d namespace: %d collection: %d signals: %d\n",
+		 _wapi_shared_layout->master_timestamp,
+		 _wapi_shared_layout->namespace_check,
+		 _wapi_shared_layout->collection_count,
+		 _wapi_shared_layout->signal_count);
+	
+	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
+		struct _WapiHandleShared *shared;
+		struct _WapiHandleSharedMetadata *meta;
+		guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
 		
-		shared=&_wapi_shared_data[segment]->handles[idx];
+		meta = &_wapi_shared_layout->metadata[i];
 		
-		if(shared->type!=WAPI_HANDLE_UNUSED) {
-			g_print ("%6x [%7s] %4u %s (%s)\n", handle_idx,
-				 typename[shared->type], shared->ref,
-				 shared->signalled?"Sg":"Un",
+		shared = &_wapi_shared_layout->handles[i];
+		if (shared->stale == TRUE) {
+			g_print ("    (%3x) [%7s]  *STALE*  (%s)\n", i,
+				 _wapi_handle_typename[shared->type],
 				 details[shared->type](shared));
+		}
+		
+		shared = &_wapi_shared_layout->handles[meta->offset];
+		if (shared->type != WAPI_HANDLE_UNUSED) {
+			g_print ("%3x (%3x) [%7s] %c %4u %s (%s)\n",
+				 i, meta->offset,
+				 _wapi_handle_typename[shared->type],
+				 meta->checking == 0?' ':'X',
+				 now - meta->timestamp,
+				 meta->signalled?"Sg":"Un",
+				 details[shared->type](shared));
+		}
+	}
+
+	g_print ("Fileshare check: %d hwm: %d\n",
+		 _wapi_fileshare_layout->share_check,
+		 _wapi_fileshare_layout->hwm);
+	
+	for (i = 0; i <= _wapi_fileshare_layout->hwm; i++) {
+		struct _WapiFileShare *file_share;
+		
+		file_share = &_wapi_fileshare_layout->share_info[i];
+		if (file_share->handle_refs > 0) {
+			g_print ("dev: 0x%llx ino: %lld share: 0x%x access: 0x%x refs: %d\n", file_share->device, file_share->inode, file_share->sharemode, file_share->access, file_share->handle_refs);
 		}
 	}
 	
@@ -96,35 +109,9 @@ static const guchar *unused_details (struct _WapiHandleShared *handle)
 	return("unused details");
 }
 
-static const guchar *file_details (struct _WapiHandleShared *handle)
+static const guchar *unshared_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
-	guchar *name;
-	struct _WapiHandle_file *file=&handle->u.file;
-	
-	name=_wapi_handle_scratch_lookup (file->filename);
-	
-	g_snprintf (buf, sizeof(buf),
-		    "[%20s] acc: %c%c%c, shr: %c%c%c, attrs: %5u",
-		    name==NULL?(guchar *)"":name,
-		    file->fileaccess&GENERIC_READ?'R':'.',
-		    file->fileaccess&GENERIC_WRITE?'W':'.',
-		    file->fileaccess&GENERIC_EXECUTE?'X':'.',
-		    file->sharemode&FILE_SHARE_READ?'R':'.',
-		    file->sharemode&FILE_SHARE_WRITE?'W':'.',
-		    file->sharemode&FILE_SHARE_DELETE?'D':'.',
-		    file->attrs);
-
-	if(name!=NULL) {
-		g_free (name);
-	}
-	
-	return(buf);
-}
-
-static const guchar *console_details (struct _WapiHandleShared *handle)
-{
-	return(file_details (handle));
+	return("unshared details");
 }
 
 static const guchar *thread_details (struct _WapiHandleShared *handle)
@@ -133,84 +120,38 @@ static const guchar *thread_details (struct _WapiHandleShared *handle)
 	struct _WapiHandle_thread *thr=&handle->u.thread;
 
 	g_snprintf (buf, sizeof(buf),
-		    "proc: %p, state: %d, exit: %u",
-		    thr->process_handle, thr->state, thr->exitstatus);
+		    "proc: %d, state: %d, exit: %u, join: %d",
+		    thr->owner_pid, thr->state, thr->exitstatus,
+		    thr->joined);
 	
 	return(buf);
 }
 
-static const guchar *sem_details (struct _WapiHandleShared *handle)
+static const guchar *namedmutex_details (struct _WapiHandleShared *handle)
 {
 	static guchar buf[80];
-	struct _WapiHandle_sem *sem=&handle->u.sem;
+	gchar *name;
+	struct _WapiHandle_namedmutex *mut=&handle->u.namedmutex;
 	
-	g_snprintf (buf, sizeof(buf), "val: %5u, max: %5d",
-		    sem->val, sem->max);
+	name = mut->sharedns.name;
 	
-	return(buf);
-}
-
-static const guchar *mutex_details (struct _WapiHandleShared *handle)
-{
-	static guchar buf[80];
-	guchar *name;
-	struct _WapiHandle_mutex *mut=&handle->u.mutex;
-	
-	name=_wapi_handle_scratch_lookup (mut->sharedns.name);
-	
-	g_snprintf (buf, sizeof(buf), "[%20s] own: %5d:%5ld, count: %5u",
-		    name==NULL?(guchar *)"":name, mut->pid, mut->tid,
+	g_snprintf (buf, sizeof(buf), "[%15s] own: %5d:%5ld, count: %5u",
+		    name==NULL?(gchar *)"":name, mut->pid, mut->tid,
 		    mut->recursion);
 
-	if(name!=NULL) {
-		g_free (name);
-	}
-	
 	return(buf);
-}
-
-static const guchar *event_details (struct _WapiHandleShared *handle)
-{
-	static guchar buf[80];
-	struct _WapiHandle_event *event=&handle->u.event;
-
-	g_snprintf (buf, sizeof(buf), "manual: %s",
-		    event->manual?"TRUE":"FALSE");
-	
-	return(buf);
-}
-
-static const guchar *socket_details (struct _WapiHandleShared *handle)
-{
-	/* Nothing to see here */
-	return("");
-}
-
-static const guchar *find_details (struct _WapiHandleShared *handle)
-{
-	/* Nothing to see here either */
-	return("");
 }
 
 static const guchar *process_details (struct _WapiHandleShared *handle)
 {
 	static guchar buf[80];
-	guchar *name;
+	gchar *name;
 	struct _WapiHandle_process *proc=&handle->u.process;
 	
-	name=_wapi_handle_scratch_lookup (proc->proc_name);
+	name = proc->proc_name;
 	
-	g_snprintf (buf, sizeof(buf), "[%20s] pid: %5u",
-		    name==NULL?(guchar *)"":name, proc->id);
-
-	if(name!=NULL) {
-		g_free (name);
-	}
+	g_snprintf (buf, sizeof(buf), "[%15s] pid: %5u exit: %u",
+		    name==NULL?(gchar *)"":name, proc->id, proc->exitstatus);
 	
 	return(buf);
-}
-
-static const guchar *pipe_details (struct _WapiHandleShared *handle)
-{
-	return(file_details (handle));
 }
