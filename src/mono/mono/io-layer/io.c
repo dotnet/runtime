@@ -2635,7 +2635,7 @@ mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
 	struct _WapiHandle_find find_handle = {0};
-	gpointer handle, find_ret = INVALID_HANDLE_VALUE;
+	gpointer handle;
 	gchar *utf8_pattern = NULL, *dir_part, *entry_part;
 	int result;
 	
@@ -2715,7 +2715,6 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_free (utf8_pattern);
 		g_free (entry_part);
 		g_free (dir_part);
-		SetLastError (ERROR_GEN_FAILURE);
 		return (INVALID_HANDLE_VALUE);
 	}
 
@@ -2745,7 +2744,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	    !FindNextFile (handle, find_data)) {
 		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
-		find_ret = INVALID_HANDLE_VALUE;
+		handle = INVALID_HANDLE_VALUE;
 	}
 
 	return (handle);
