@@ -622,7 +622,6 @@ socket_io_init (SocketIOData *data)
 		data->epollfd = -1;
 	}
 #else
-	data->epollfd = -1;
 	data->epoll_disabled = TRUE;
 #endif
 
