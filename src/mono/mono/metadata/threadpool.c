@@ -127,6 +127,8 @@ enum {
 static void
 socket_io_cleanup (SocketIOData *data)
 {
+	gint release;
+
 	if (data->inited == 0)
 		return;
 
@@ -148,6 +150,9 @@ socket_io_cleanup (SocketIOData *data)
 	data->sock_to_state = NULL;
 	g_list_free (async_io_queue);
 	async_io_queue = NULL;
+	release = (gint) InterlockedCompareExchange (&io_worker_threads, 0, -1);
+	if (io_job_added)
+		ReleaseSemaphore (io_job_added, release, NULL);
 	g_free (data->newpfd);
 	data->newpfd = NULL;
 #ifdef HAVE_EPOLL
@@ -232,9 +237,6 @@ async_invoke_io_thread (gpointer data)
 			
 				if (wr != WAIT_TIMEOUT)
 					data = dequeue_job (&io_queue_lock, &async_io_queue);
-				
-				if (timeout <= 0 && data == NULL)
-					timeout = 10000;
 			}
 			while (!data && timeout > 0);
 		}
@@ -266,7 +268,7 @@ start_io_thread_or_queue (MonoAsyncResult *ares)
 	worker = (int) InterlockedCompareExchange (&io_worker_threads, 0, -1); 
 	if (worker <= ++busy &&
 	    worker < mono_io_max_worker_threads) {
-		InterlockedIncrement (&io_worker_threads);
+		InterlockedIncrement (&busy_io_worker_threads);
 		InterlockedIncrement (&io_worker_threads);
 		domain = ((ares) ? ((MonoObject *) ares)->vtable->domain : mono_domain_get ());
 		mono_thread_create (domain, async_invoke_io_thread, ares);
@@ -626,10 +628,13 @@ socket_io_init (SocketIOData *data)
 #endif
 
 #ifndef PLATFORM_WIN32
-	if (pipe (data->pipe) != 0) {
+	if (data->epoll_disabled && pipe (data->pipe) != 0) {
 		int err = errno;
 		perror ("mono");
 		g_assert (err);
+	} else {
+		data->pipe [0] = -1;
+		data->pipe [1] = -1;
 	}
 #else
 	srv = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -970,7 +975,7 @@ mono_thread_pool_cleanup (void)
 	EnterCriticalSection (&mono_delegate_section);
 	g_list_free (async_call_queue);
 	async_call_queue = NULL;
-	release = (gint) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
+	release = (gint) InterlockedCompareExchange (&mono_worker_threads, 0, -1);
 	LeaveCriticalSection (&mono_delegate_section);
 	if (job_added)
 		ReleaseSemaphore (job_added, release, NULL);
