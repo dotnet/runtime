@@ -514,9 +514,12 @@ socket_io_epoll_main (gpointer p)
 
 		if (ready == -1) {
 			int err = errno;
-			g_warning ("epoll_wait: %d %s\n", err, g_strerror (err));
 			g_free (events);
-			close (epollfd);
+			if (err != EBADF) {
+				g_warning ("epoll_wait: %d %s\n", err, g_strerror (err));
+			} else {
+				close (epollfd);
+			}
 			return;
 		}
 
@@ -556,7 +559,11 @@ socket_io_epoll_main (gpointer p)
 #endif
 				if (epoll_ctl (epollfd, EPOLL_CTL_MOD, fd, evt)) {
 					int err = errno;
-					g_message ("epoll_ctl(MOD): %d %s", err, g_strerror (err));
+					if (err == EBADF) {
+						g_free (events);
+						return; /* epollfd closed */
+					}
+					g_message ("epoll_ctl(MOD): %d %s fd: %d events: %d", err, g_strerror (err), fd, evt->events);
 				}
 			} else {
 				g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
@@ -565,6 +572,10 @@ socket_io_epoll_main (gpointer p)
 #endif
 				if (epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt)) {
 					int err = errno;
+					if (err == EBADF) {
+						g_free (events);
+						return; /* epollfd closed */
+					}
 					g_message ("epoll_ctl(DEL): %d %s", err, g_strerror (err));
 				}
 			}
