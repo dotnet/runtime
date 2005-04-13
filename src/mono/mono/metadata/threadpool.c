@@ -550,7 +550,7 @@ socket_io_epoll_main (gpointer p)
 				g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (fd), list);
 				evt->events = get_events_from_list (list);
 #ifdef EPOLL_DEBUG
-			g_print ("MOD %d to %d\n", fd, evt->events);
+				g_print ("MOD %d to %d\n", fd, evt->events);
 #endif
 				if (epoll_ctl (epollfd, EPOLL_CTL_MOD, fd, evt)) {
 					int err = errno;
@@ -559,9 +559,9 @@ socket_io_epoll_main (gpointer p)
 			} else {
 				g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
 #ifdef EPOLL_DEBUG
-			g_print ("DEL %d\n", fd);
+				g_print ("DEL %d\n", fd);
 #endif
-				if (epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, NULL)) {
+				if (epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt)) {
 					int err = errno;
 					g_message ("epoll_ctl(DEL): %d %s", err, g_strerror (err));
 				}
