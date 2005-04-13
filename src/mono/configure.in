@@ -1730,7 +1730,6 @@ mono/benchmark/Makefile
 mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/io-layer/Makefile
-mono/handles/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
 ikvm-native/Makefile

@@ -1,3 +1,7 @@
+2005-04-13  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_OUTPUT): Remove 'mono/handles' directory.
+
 2005-04-12 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added checks for epoll().
