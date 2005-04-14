@@ -48,6 +48,7 @@
 #include "threadpool.h"
 
 #undef EPOLL_DEBUG
+
 /* maximum number of worker threads */
 static int mono_max_worker_threads = THREADS_PER_CPU;
 static int mono_min_worker_threads = 0;
@@ -506,7 +507,7 @@ socket_io_epoll_main (gpointer p)
 #ifdef EPOLL_DEBUG
 			{
 			int err = errno;
-			g_print ("epoll_wait end with %d ready sockets.\n", ready);
+			g_print ("epoll_wait end with %d ready sockets (%d %s).\n", ready, err, (err) ? g_strerror (err) : "");
 			errno = err;
 			}
 #endif
@@ -557,26 +558,20 @@ socket_io_epoll_main (gpointer p)
 				g_print ("MOD %d to %d\n", fd, evt->events);
 #endif
 				if (epoll_ctl (epollfd, EPOLL_CTL_MOD, fd, evt)) {
-					int err = errno;
-					if (err == EBADF) {
-						g_free (events);
-						return; /* epollfd closed */
+					if (epoll_ctl (epollfd, EPOLL_CTL_ADD, fd, evt) == -1) {
+#ifdef EPOLL_DEBUG
+						int err = errno;
+						g_message ("epoll_ctl(MOD): %d %s fd: %d events: %d", err, g_strerror (err), fd, evt->events);
+						errno = err;
+#endif
 					}
-					g_message ("epoll_ctl(MOD): %d %s fd: %d events: %d", err, g_strerror (err), fd, evt->events);
 				}
 			} else {
 				g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
 #ifdef EPOLL_DEBUG
 				g_print ("DEL %d\n", fd);
 #endif
-				if (epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt)) {
-					int err = errno;
-					if (err == EBADF) {
-						g_free (events);
-						return; /* epollfd closed */
-					}
-					g_message ("epoll_ctl(DEL): %d %s", err, g_strerror (err));
-				}
+				epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt);
 			}
 		}
 		LeaveCriticalSection (&data->io_lock);
@@ -759,10 +754,11 @@ socket_io_add_epoll (MonoSocketAsyncResult *state)
 #endif
 	if (epoll_ctl (data->epollfd, epoll_op, fd, &event) == -1) {
 		int err = errno;
-		g_message ("epoll_ctl(ADD): %d %s\n", err, g_strerror (err));
-		epoll_op = EPOLL_CTL_MOD;
-		if (epoll_ctl (data->epollfd, epoll_op, fd, &event) == -1) {
-			g_message ("epoll_ctl(MOD): %d %s\n", err, g_strerror (err));
+		if (epoll_op == EPOLL_CTL_ADD && err == EEXIST) {
+			epoll_op = EPOLL_CTL_MOD;
+			if (epoll_ctl (data->epollfd, epoll_op, fd, &event) == -1) {
+				g_message ("epoll_ctl(MOD): %d %s\n", err, g_strerror (err));
+			}
 		}
 	}
 
