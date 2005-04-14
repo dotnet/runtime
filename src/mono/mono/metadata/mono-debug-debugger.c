@@ -428,6 +428,36 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	return retval;
 }
 
+gboolean
+mono_debugger_lookup_type (const gchar *type_name)
+{
+	int i;
+	mono_debugger_lock ();
+
+	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
+		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
+		MonoType *type;
+		MonoClass* klass;
+		gchar *name;
+
+		name = g_strdup (type_name);
+		type = mono_reflection_type_from_name (name, symfile->image);
+		g_free (name);
+		if (!type)
+			continue;
+
+		klass = mono_class_from_mono_type (type);
+		if (klass)
+			mono_class_init (klass);
+
+		mono_debugger_unlock ();
+		return TRUE;
+	}
+
+	mono_debugger_unlock ();
+	return FALSE;
+}
+
 gint32
 mono_debugger_lookup_assembly (const gchar *name)
 {

@@ -101,7 +101,7 @@ gpointer        mono_debugger_create_notification_function (gpointer *notificati
 MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
 							   void **params, MonoObject **exc);
 
-guint32         mono_debugger_lookup_type                 (const gchar *type_name);
+gboolean        mono_debugger_lookup_type                 (const gchar *type_name);
 gint32          mono_debugger_lookup_assembly             (const gchar *name);
 gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpointer stack, MonoObject *exc);
 void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
