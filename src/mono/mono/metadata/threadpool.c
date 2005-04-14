@@ -515,11 +515,10 @@ socket_io_epoll_main (gpointer p)
 		if (ready == -1) {
 			int err = errno;
 			g_free (events);
-			if (err != EBADF) {
+			if (err != EBADF)
 				g_warning ("epoll_wait: %d %s\n", err, g_strerror (err));
-			} else {
-				close (epollfd);
-			}
+
+			close (epollfd);
 			return;
 		}
 
@@ -639,10 +638,12 @@ socket_io_init (SocketIOData *data)
 #endif
 
 #ifndef PLATFORM_WIN32
-	if (data->epoll_disabled && pipe (data->pipe) != 0) {
-		int err = errno;
-		perror ("mono");
-		g_assert (err);
+	if (data->epoll_disabled) {
+		if (pipe (data->pipe) != 0) {
+			int err = errno;
+			perror ("mono");
+			g_assert (err);
+		}
 	} else {
 		data->pipe [0] = -1;
 		data->pipe [1] = -1;
