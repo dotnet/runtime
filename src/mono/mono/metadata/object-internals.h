@@ -872,19 +872,13 @@ typedef struct {
 	MonoString *name;
 	MonoString *codebase;
 	gint32 major, minor, build, revision;
-	/* FIXME: add missing stuff */
-/*	CultureInfo cultureinfo;
-	AssemblyNameFlags flags;
-	AssemblyHashAlgorithm hashalg;
-	StrongNameKeyPair keypair;
-	AssemblyVersionCompatibility versioncompat;*/
 	MonoObject  *cultureInfo;
 	guint32     flags;
 	guint32     hashalg;
 	MonoObject  *keypair;
 	MonoArray   *publicKey;
 	MonoArray   *keyToken;
-	MonoObject  *versioncompat;
+	guint32     versioncompat;
 } MonoReflectionAssemblyName;
 
 typedef struct {

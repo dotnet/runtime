@@ -3511,7 +3511,6 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	for (i = 0; i < count; i++) {
 		MonoAssembly *assem;
 		MonoReflectionAssemblyName *aname;
-		char *codebase, *absolute;
 
 		/* FIXME: There is no need to load the assemblies themselves */
 		mono_assembly_load_reference (assembly->assembly->image, i);
@@ -3536,6 +3535,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname->revision = assem->aname.revision;
 		aname->hashalg = assem->aname.hash_alg;
 		aname->flags = assem->aname.flags;
+		aname->versioncompat = 1; /* SameMachine (default) */
 
 		if (create_culture) {
 			gpointer args [1];
@@ -3555,11 +3555,9 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		/* public key token isn't copied - the class library will 
 		   automatically generate it from the public key if required */
 
-		absolute = g_build_filename (assem->basedir, assem->image->module_name, NULL);
-		codebase = g_filename_to_uri (absolute, NULL, NULL);
-		aname->codebase = mono_string_new (domain, codebase);
-		g_free (codebase);
-		g_free (absolute);
+		/* note: this function doesn't return the codebase on purpose (i.e. it can
+		         be used under partial trust as path information isn't present). */
+
 		mono_array_set (result, gpointer, i, aname);
 	}
 	return result;
