@@ -38,7 +38,16 @@ compiler-tests: mcs-do-clean
 	$(MAKE) all
 	$(MAKE) mcs-do-compiler-tests
 
+compiler-tests-net_2_0:
+	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0_bootstrap clean
+	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0 clean
+	$(MAKE) all
+	$(MAKE) build_profiles=net_2_0 mcs-do-compiler-tests
+
 bootstrap-world: compiler-tests
+	$(MAKE) install
+
+bootstrap-world-net_2_0: compiler-tests-net_2_0
 	$(MAKE) install
 
 # internal targets
