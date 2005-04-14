@@ -15,7 +15,6 @@
 
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
-#include <mono/io-layer/daemon-private.h>
 
 /* Catch this here rather than corrupt the shared data at runtime */
 #if MONO_SIZEOF_SUNPATH==0
