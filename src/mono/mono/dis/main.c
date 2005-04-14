@@ -1617,6 +1617,7 @@ usage (void)
 	}
 	g_string_append (args, "[--forward-decls]\n[--mresources]");
 	fprintf (stderr,
+		 "monodis -- Mono Common Intermediate Language Dissassembler\n" 
 		 "Usage is: monodis %s file ..\n", args->str);
 	exit (1);
 }
