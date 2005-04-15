@@ -53,7 +53,11 @@ void _wapi_collection_init (void)
 	g_assert (ret == 0);
 	
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+#ifdef __FreeBSD__
+	ret = pthread_attr_setstacksize (&attr, 65536);
+#else
 	ret = pthread_attr_setstacksize (&attr, PTHREAD_STACK_MIN);
+#endif
 	g_assert (ret == 0);
 #endif
 
