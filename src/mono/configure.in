@@ -114,8 +114,8 @@ case "$host" in
 			libmono_cflags="$PTHREAD_CFLAGS"
 		fi
 		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -lpthread"
-			libmono_ldflags="-lpthread"
+			LDFLAGS="$LDFLAGS -lthr"
+			libmono_ldflags="-lthr"
 		else
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
@@ -123,34 +123,9 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
+		with_sigaltstack=yes
 		libgc_threads=pthreads
 # TLS is only partially implemented on 5-STABLE (compiler support
-# but NOT library support)
-#
-		with_nptl=no
-		with_tls=pthread
-		;;
-	*-*-*freebsd6*)
-		platform_win32=no
-		if test "x$PTHREAD_CFLAGS" = "x"; then
-			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
-			libmono_cflags=
-		else
-		    	CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
-			libmono_cflags="$PTHREAD_CFLAGS"
-		fi
-		if test "x$PTHREAD_LIBS" = "x"; then
-		    	LDFLAGS="$LDFLAGS -pthread"
-			libmono_ldflags="-pthread"
-		else
-		    	LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
-			libmono_ldflags="$PTHREAD_LIBS"
-		fi
-		need_link_unlink=yes
-		AC_DEFINE(PTHREAD_POINTER_ID)
-		libdl=
-		libgc_threads=pthreads
-# TLS is only partially implemented on -CURRENT (compiler support
 # but NOT library support)
 #
 		with_tls=pthread
@@ -165,8 +140,8 @@ case "$host" in
 			libmono_cflags="$PTHREAD_CFLAGS"
 		fi
 		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -lpthread"
-			libmono_ldflags="-lpthread"
+			LDFLAGS="$LDFLAGS -lthr"
+			libmono_ldflags="-lthr"
 		else
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
@@ -865,6 +840,14 @@ if test x$platform_win32 = xno; then
 	case "${host}" in
 		*-*-*freebsd4*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
+		;;
+		*-*-*freebsd5*)
+			# libthr is preferrable on CURRENT 
+			AC_CHECK_LIB(thr, main, LIBS="$LIBS -lthr")
+		;;
+		*-*-*freebsd6*)
+			# libthr is preferrable on CURRENT 
+			AC_CHECK_LIB(thr, main, LIBS="$LIBS -lthr")
 		;;
 		*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")

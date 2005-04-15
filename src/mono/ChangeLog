@@ -1,3 +1,16 @@
+2005-04-15  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Applied another freebsd patch from Bill Middleton (flashdict@gmail.com).
+
+2005-04-14  Raja R Harinath  <rharinath@novell.com>
+
+	* mono/Makefile.am (DIST_SUBDIRS): Add 'handles' directory.
+	* configure.in (AC_OUTPUT): Add back 'mono/handles' directory.
+
+2005-04-13  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_OUTPUT): Remove 'mono/handles' directory.
+
 2005-04-12 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added checks for epoll().
