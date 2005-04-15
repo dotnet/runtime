@@ -301,6 +301,13 @@ process_io_event (GSList *list, int event)
 #ifdef EPOLL_DEBUG
 		g_print ("Dispatching event %d on socket %d\n", event, state->handle);
 #endif
+#ifdef PLATFORM_WIN32
+		{
+		int block;
+		block = state->blocking;
+		ioctlsocket (state->handle, FIONBIO, (gulong *) &block);
+		}
+#endif
 		InterlockedIncrement (&pending_io_items);
 		start_io_thread_or_queue (state->ares);
 	}

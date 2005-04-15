@@ -155,7 +155,7 @@ typedef struct _MonoSocketAsyncResult {
 	gint total;
 	MonoBoolean completed_synch;
 	MonoBoolean completed;
-	MonoDelegate *real_callback;
+	MonoBoolean blocking;
 	gint error;
 	gint operation;
 	MonoAsyncResult *ares;
