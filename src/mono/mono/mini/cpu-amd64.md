@@ -397,9 +397,9 @@ long_clt:
 long_clt_un:
 long_conv_to_r_un: dest:f src1:i src2:i len:48 
 long_conv_to_u:
-long_shr_imm: dest:i src1:i len:11
-long_shr_un_imm: dest:i src1:i len:11
-long_shl_imm: dest:i src1:i len:11
+long_shr_imm: dest:i src1:i clob:1 len:11
+long_shr_un_imm: dest:i src1:i clob:1 len:11
+long_shl_imm: dest:i src1:i clob:1 len:11
 long_add_imm:
 long_sub_imm:
 long_beq:

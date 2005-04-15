@@ -698,4 +698,31 @@ COND:   ldloc.0
 		ret
 	}
 
+	.method public static int32 test_7_conv_ovf_u8_un () {
+    	.maxstack  2
+        .locals    init (unsigned int64)
+
+        ldc.i4.7
+        conv.ovf.u8.un
+        stloc.0
+		ldloc.0
+		conv.i4
+        ret
+	}
+
+	.method public static int32 test_1_bug_74591 () {
+		.maxstack 16
+		.locals init (int32)
+
+		ldc.i4.m1
+		stloc.0
+		ldloc.0
+		conv.ovf.i8
+		ldc.i4.m1
+		conv.ovf.i8
+		mul.ovf
+		conv.i4
+		ret
+	}
+
 }
