@@ -532,7 +532,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		struct _WapiHandleUnshared *handle_data;
 		struct _WapiHandle_shared_ref *ref;
 		
-		handle_data = &_wapi_private_handles[GPOINTER_TO_UINT(handle)];
+		handle_data = &_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT(handle));
 		ref = &handle_data->u.shared;
 		
 		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);

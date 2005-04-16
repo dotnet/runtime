@@ -20,9 +20,10 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/collection.h>
 
+#define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [x / _WAPI_HANDLE_INITIAL_COUNT][x % _WAPI_HANDLE_INITIAL_COUNT])
 #undef DEBUG
 
-extern struct _WapiHandleUnshared *_wapi_private_handles;
+extern struct _WapiHandleUnshared *_wapi_private_handles [];
 extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
 extern struct _WapiFileShareLayout *_wapi_fileshare_layout;
 
@@ -94,20 +95,20 @@ extern void _wapi_handle_update_refs (void);
 /* This is OK to use for atomic writes of individual struct members, as they
  * are independent
  */
-#define WAPI_SHARED_HANDLE_METADATA(handle) _wapi_shared_layout->metadata[_wapi_private_handles[GPOINTER_TO_UINT((handle))].u.shared.offset]
+#define WAPI_SHARED_HANDLE_METADATA(handle) _wapi_shared_layout->metadata[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset]
 
 /* Use this for read-only accesses to shared handle structs, so that
  * if a handle is updated we always look at the latest copy.  For
  * write access, use handle_copy/handle_replace so that all the
  * handle-type-specific data is updated atomically.
  */
-#define WAPI_SHARED_HANDLE_TYPED_DATA(handle, type) _wapi_shared_layout->handles[_wapi_shared_layout->metadata[_wapi_private_handles[GPOINTER_TO_UINT((handle))].u.shared.offset].offset].u.type
+#define WAPI_SHARED_HANDLE_TYPED_DATA(handle, type) _wapi_shared_layout->handles[_wapi_shared_layout->metadata[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset].offset].u.type
 
 static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	
-	return(_wapi_private_handles[idx].type);
+	return(_WAPI_PRIVATE_HANDLES(idx).type);
 }
 
 static inline void _wapi_handle_set_signal_state (gpointer handle,
@@ -120,7 +121,7 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 
 	g_assert (!_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
 	
-	handle_data = &_wapi_private_handles[idx];
+	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 #ifdef DEBUG
 	g_message ("%s: setting state of %p to %s (broadcast %s)", __func__,
@@ -171,7 +172,7 @@ static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
 	
 	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
 	
-	handle_data = &_wapi_private_handles[idx];
+	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 	ref = &handle_data->u.shared;
 	shared_meta = &_wapi_shared_layout->metadata[ref->offset];
@@ -192,7 +193,7 @@ static inline gboolean _wapi_handle_issignalled (gpointer handle)
 	if (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle))) {
 		return(WAPI_SHARED_HANDLE_METADATA(handle).signalled);
 	} else {
-		return(_wapi_private_handles[idx].signalled);
+		return(_WAPI_PRIVATE_HANDLES(idx).signalled);
 	}
 }
 
@@ -229,7 +230,7 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 		return(0);
 	}
 	
-	return(mono_mutex_lock (&_wapi_private_handles[idx].signal_mutex));
+	return(mono_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
 }
 
 static inline int _wapi_handle_trylock_handle (gpointer handle)
@@ -246,7 +247,7 @@ static inline int _wapi_handle_trylock_handle (gpointer handle)
 		return(0);
 	}
 
-	return(mono_mutex_trylock (&_wapi_private_handles[idx].signal_mutex));
+	return(mono_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
 }
 
 static inline int _wapi_handle_unlock_handle (gpointer handle)
@@ -263,7 +264,7 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 		return(0);
 	}
 	
-	ret = mono_mutex_unlock (&_wapi_private_handles[idx].signal_mutex);
+	ret = mono_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 
 	_wapi_handle_unref (handle);
 	
