@@ -86,7 +86,6 @@ const char *_wapi_handle_typename[] = {
  * We can hold _WAPI_PRIVATE_MAX_SLOTS * _WAPI_HANDLE_INITIAL_COUNT handles.
  * If 4M handles are not enough... Oh, well... we will crash.
  */
-#define _WAPI_PRIVATE_MAX_SLOTS		1024
 #define SLOT_INDEX(x)	(x / _WAPI_HANDLE_INITIAL_COUNT)
 #define SLOT_OFFSET(x)	(x % _WAPI_HANDLE_INITIAL_COUNT)
 

@@ -20,7 +20,10 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/collection.h>
 
+#define _WAPI_PRIVATE_MAX_SLOTS		1024
 #define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [x / _WAPI_HANDLE_INITIAL_COUNT][x % _WAPI_HANDLE_INITIAL_COUNT])
+#define _WAPI_PRIVATE_HAVE_SLOT(x) ((GPOINTER_TO_UINT (x) / _WAPI_PRIVATE_MAX_SLOTS) < _WAPI_PRIVATE_MAX_SLOTS && \
+					_wapi_private_handles [GPOINTER_TO_UINT (x) / _WAPI_HANDLE_INITIAL_COUNT] != NULL)
 #undef DEBUG
 
 extern struct _WapiHandleUnshared *_wapi_private_handles [];
