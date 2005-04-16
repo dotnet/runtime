@@ -5757,8 +5757,10 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 
 	if (klass->image->dynamic) {
 		MonoReflectionMethodAux *aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
-		if (aux && aux->param_defaults)
+		if (aux && aux->param_defaults) {
 			memcpy (blobs, &(aux->param_defaults [1]), methodsig->param_count * sizeof (char*));
+			memcpy (types, &(aux->param_default_types [1]), methodsig->param_count * sizeof (guint32));
+		}
 		return;
 	}
 
@@ -7868,8 +7870,11 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		for (i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
-				if (i > 0)
+				if ((i > 0) && (pb->attrs)) {
+					/* Make a copy since it might point to a shared type structure */
+					m->signature->params [i - 1] = g_memdup (m->signature->params [i - 1], sizeof (MonoType) + ((m->signature->params [i - 1]->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod)));
 					m->signature->params [i - 1]->attrs = pb->attrs;
+				}
 
 				if (pb->def_value) {
 					MonoDynamicImage *assembly;
@@ -7877,8 +7882,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					char *p;
 					const char *p2;
 
-					if (!method_aux->param_defaults)
+					if (!method_aux->param_defaults) {
 						method_aux->param_defaults = g_new0 (guint8*, m->signature->param_count + 1);
+						method_aux->param_default_types = g_new0 (guint32, m->signature->param_count + 1);
+					}
 					assembly = (MonoDynamicImage*)klass->image;
 					idx = encode_constant (assembly, pb->def_value, &def_type);
 					/* Copy the data from the blob since it might get realloc-ed */
@@ -7886,6 +7893,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					len = mono_metadata_decode_blob_size (p, &p2);
 					len += p2 - p;
 					method_aux->param_defaults [i] = g_malloc (len);
+					method_aux->param_default_types [i] = def_type;
 					memcpy ((gpointer)method_aux->param_defaults [i], p, len);
 				}
 
