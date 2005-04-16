@@ -1599,8 +1599,8 @@ fi
 
 PREVIEW=yes
 AC_ARG_WITH(preview, [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
-	if test x$with_preview = xyes; then
-	      PREVIEW=yes
+	if test x$with_preview = xno; then
+	      PREVIEW=no
 	fi
 ])
 
