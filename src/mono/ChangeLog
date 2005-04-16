@@ -1,3 +1,8 @@
+2005-04-16  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in (PTHREAD_POINTER_ID): Patch from Jonathan Pryor to
+	fix the Mono build on Solaris (bug #72818)
+
 2005-04-16  Bill Middleton  <flashdict@gmail.com>
 
 	* configure.in (PREVIEW): Allow --without-preview to work.
