@@ -2643,6 +2643,27 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 		br[2] = code; /* loop */
 		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x1000);
 		x86_test_membase_reg (code, X86_ESP, 0, X86_ESP);
+
+		/* 
+		 * By the end of the loop, sreg2 is smaller than 0x1000, so the init routine
+		 * that follows only initializes the last part of the area.
+		 */
+		/* Same as the init code below with size==0x1000 */
+		if (tree->flags & MONO_INST_INIT) {
+			x86_push_reg (code, X86_EAX);
+			x86_push_reg (code, X86_ECX);
+			x86_push_reg (code, X86_EDI);
+			x86_mov_reg_imm (code, X86_ECX, (0x1000 >> 2));
+			x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);				
+			x86_lea_membase (code, X86_EDI, X86_ESP, 12);
+			x86_cld (code);
+			x86_prefix (code, X86_REP_PREFIX);
+			x86_stosl (code);
+			x86_pop_reg (code, X86_EDI);
+			x86_pop_reg (code, X86_ECX);
+			x86_pop_reg (code, X86_EAX);
+		}
+
 		x86_alu_reg_imm (code, X86_SUB, sreg, 0x1000);
 		x86_alu_reg_imm (code, X86_CMP, sreg, 0x1000);
 		br[3] = code; x86_branch8 (code, X86_CC_AE, 0, FALSE);
