@@ -562,7 +562,6 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	MonoClass *src_class;
 	MonoClass *dest_class;
 	int i;
-	gboolean char_int16;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -608,12 +607,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	}
 
 	/* Check if we're copying a char[] <==> (u)short[] */
-	char_int16 = (src_class == mono_defaults.int16_class || src_class == mono_defaults.uint16_class ||
-				src_class == mono_defaults.char_class);
-	char_int16 = (char_int16 && (dest_class == mono_defaults.int16_class || dest_class == mono_defaults.uint16_class ||
-				dest_class == mono_defaults.char_class));
-
-	if (!char_int16 && src_class != dest_class) {
+	if (src_class != dest_class) {
 		if (dest_class->valuetype || dest_class->enumtype || src_class->valuetype || src_class->enumtype)
 			return FALSE;
 
