@@ -709,6 +709,12 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
+
+	/*
+	 * block == TRUE/FALSE means we will block/not block.
+	 * But the ioctlsocket call takes TRUE/FALSE for non-block/block
+	 */
+	block = !block;
 	
 	ret = ioctlsocket (sock, FIONBIO, (gulong *) &block);
 	if(ret==SOCKET_ERROR) {

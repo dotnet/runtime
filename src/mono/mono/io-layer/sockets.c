@@ -856,9 +856,9 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 		ret = fcntl (fd, F_GETFL, 0);
 		if (ret != -1) {
 			if (*(gboolean *)arg) {
-				ret &= ~O_NONBLOCK;
-			} else {
 				ret |= O_NONBLOCK;
+			} else {
+				ret &= ~O_NONBLOCK;
 			}
 			ret = fcntl (fd, F_SETFL, ret);
 		}
