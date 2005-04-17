@@ -2211,7 +2211,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->got_offset > 0)
 		fprintf (tmpfp, ".skip %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
 
-	printf ("GOT SIZE: %d\n", acfg->got_offset * sizeof (gpointer));
+	printf ("GOT SIZE: %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
 
 	symbol = g_strdup_printf ("got_addr");
 	emit_section_change (tmpfp, ".data", 1);

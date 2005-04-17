@@ -321,14 +321,14 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
-	unsigned int stackptr;
+	gssize stackptr;
 
 	mono_arch_flush_register_windows ();
 
 #ifdef _MSC_VER
 	__asm mov stackptr, ebp;
 #else
-	stackptr = (unsigned int) __builtin_frame_address (0);
+	stackptr = (gssize)__builtin_frame_address (0);
 #endif
 
 	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
