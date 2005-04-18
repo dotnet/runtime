@@ -1,3 +1,7 @@
+2005-04-18  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Applied another freebsd patch from Bill Middleton (flashdict@gmail.com).
+
 2005-04-16  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in (PTHREAD_POINTER_ID): Patch from Jonathan Pryor to

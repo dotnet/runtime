@@ -114,8 +114,8 @@ case "$host" in
 			libmono_cflags="$PTHREAD_CFLAGS"
 		fi
 		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -lthr"
-			libmono_ldflags="-lthr"
+			LDFLAGS="$LDFLAGS -pthread"
+			libmono_ldflags="-pthread"
 		else
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
@@ -140,8 +140,8 @@ case "$host" in
 			libmono_cflags="$PTHREAD_CFLAGS"
 		fi
 		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -lthr"
-			libmono_ldflags="-lthr"
+			LDFLAGS="$LDFLAGS -pthread"
+			libmono_ldflags="-pthread"
 		else
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
@@ -842,12 +842,10 @@ if test x$platform_win32 = xno; then
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
 		*-*-*freebsd5*)
-			# libthr is preferrable on CURRENT 
-			AC_CHECK_LIB(thr, main, LIBS="$LIBS -lthr")
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
 		*-*-*freebsd6*)
-			# libthr is preferrable on CURRENT 
-			AC_CHECK_LIB(thr, main, LIBS="$LIBS -lthr")
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
 		*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
