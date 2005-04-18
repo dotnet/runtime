@@ -103,10 +103,10 @@ typedef struct {
 } ASyncCall;
 
 static void async_invoke_thread (gpointer data);
-static void append_job (CRITICAL_SECTION *cs, GList **plist, MonoAsyncResult *ar);
+static void append_job (CRITICAL_SECTION *cs, GList **plist, gpointer ar);
 static void start_thread_or_queue (MonoAsyncResult *ares);
 static void mono_async_invoke (MonoAsyncResult *ares);
-static MonoAsyncResult *dequeue_job (CRITICAL_SECTION *cs, GList **plist);
+static gpointer dequeue_job (CRITICAL_SECTION *cs, GList **plist);
 
 static GList *async_call_queue = NULL;
 static GList *async_io_queue = NULL;
@@ -196,6 +196,14 @@ get_events_from_list (GSList *list)
 	return events;
 }
 
+#define ICALL_RECV(x)	ves_icall_System_Net_Sockets_Socket_Receive_internal (\
+				(SOCKET) x->handle, x->buffer, x->offset, x->size,\
+				 x->socket_flags, &x->error);
+
+#define ICALL_SEND(x)	ves_icall_System_Net_Sockets_Socket_Send_internal (\
+				(SOCKET) x->handle, x->buffer, x->offset, x->size,\
+				 x->socket_flags, &x->error);
+
 static void
 async_invoke_io_thread (gpointer data)
 {
@@ -206,13 +214,24 @@ async_invoke_io_thread (gpointer data)
 	thread->state |= ThreadState_Background;
 
 	for (;;) {
+		MonoSocketAsyncResult *state;
 		MonoAsyncResult *ar;
 
-		ar = (MonoAsyncResult *) data;
-		if (ar) {
+		state = (MonoSocketAsyncResult *) data;
+		if (state) {
 			InterlockedDecrement (&pending_io_items);
+			ar = state->ares;
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
+			switch (state->operation) {
+			case AIO_OP_RECEIVE:
+				state->total = ICALL_RECV (state);
+				break;
+			case AIO_OP_SEND:
+				state->total = ICALL_SEND (state);
+				break;
+			}
+
 			domain = ((MonoObject *)ar)->vtable->domain;
 			if (mono_domain_set (domain, FALSE)) {
 				mono_thread_push_appdomain_ref (domain);
@@ -260,7 +279,7 @@ async_invoke_io_thread (gpointer data)
 }
 
 static void
-start_io_thread_or_queue (MonoAsyncResult *ares)
+start_io_thread_or_queue (MonoSocketAsyncResult *ares)
 {
 	int busy, worker;
 	MonoDomain *domain;
@@ -302,7 +321,7 @@ process_io_event (GSList *list, int event)
 		g_print ("Dispatching event %d on socket %d\n", event, state->handle);
 #endif
 		InterlockedIncrement (&pending_io_items);
-		start_io_thread_or_queue (state->ares);
+		start_io_thread_or_queue (state);
 	}
 
 	return oldlist;
@@ -992,7 +1011,7 @@ mono_thread_pool_cleanup (void)
 }
 
 static void
-append_job (CRITICAL_SECTION *cs, GList **plist, MonoAsyncResult *ar)
+append_job (CRITICAL_SECTION *cs, GList **plist, gpointer ar)
 {
 	GList *tmp, *list;
 
@@ -1012,17 +1031,17 @@ append_job (CRITICAL_SECTION *cs, GList **plist, MonoAsyncResult *ar)
 	LeaveCriticalSection (cs);
 }
 
-static MonoAsyncResult *
+static gpointer
 dequeue_job (CRITICAL_SECTION *cs, GList **plist)
 {
-	MonoAsyncResult *ar = NULL;
+	gpointer ar = NULL;
 	GList *tmp, *tmp2, *list;
 
 	EnterCriticalSection (cs);
 	list = *plist;
 	tmp = list;
 	if (tmp) {
-		ar = (MonoAsyncResult *) tmp->data;
+		ar = tmp->data;
 		tmp->data = NULL;
 		tmp2 = tmp;
 		for (tmp2 = tmp; tmp2->next != NULL; tmp2 = tmp2->next);
