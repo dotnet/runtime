@@ -767,7 +767,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			handle_data = &_wapi_private_handles [i][k];
 		
 			if(handle_data->type == type) {
-				ret = GUINT_TO_POINTER (i);
+				ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
 				if(check (ret, user_data) == TRUE) {
 					found = TRUE;
 					break;
