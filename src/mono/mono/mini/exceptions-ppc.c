@@ -448,7 +448,7 @@ mono_arch_get_throw_exception_by_name (void)
 }	
 
 static MonoArray *
-glist_to_array (GList *list) 
+glist_to_array (GList *list, MonoClass *eclass) 
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
@@ -458,7 +458,7 @@ glist_to_array (GList *list)
 		return NULL;
 
 	len = g_list_length (list);
-	res = mono_array_new (domain, mono_defaults.int_class, len);
+	res = mono_array_new (domain, eclass, len);
 
 	for (i = 0; list; list = list->next, i++)
 		mono_array_set (res, gpointer, i, list->data);
@@ -799,9 +799,9 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
-	MonoString *initial_stack_trace = NULL;
-	GString *trace_str = NULL;
+	MonoArray *initial_trace_ips = NULL;
 	int frame_count = 0;
+	gboolean has_dynamic_methods = FALSE;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -813,7 +813,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
-		initial_stack_trace = mono_ex->stack_trace;
+		initial_trace_ips = mono_ex->trace_ips;
 	} else {
 		mono_ex = NULL;
 	}
@@ -841,17 +841,10 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	while (1) {
 		MonoContext new_ctx;
-		char *trace = NULL;
-		gboolean need_trace = FALSE;
-		
-		if (test_only && (frame_count < 1000)) {
-			need_trace = TRUE;
-			if (!trace_str)
-				trace_str = g_string_new ("");
-		}
+
 		setup_context (&new_ctx);
 		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-					      need_trace ? &trace : NULL, &lmf, NULL, NULL);
+					      NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
@@ -861,13 +854,19 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			frame_count ++;
 			
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-				if (!initial_stack_trace && (frame_count < 1000)) {
+				/* 
+				 * Avoid overwriting the stack trace if the exception is
+				 * rethrown. Also avoid giant stack traces during a stack
+				 * overflow.
+				 */
+				if (!initial_trace_ips && (frame_count < 1000)) {
 					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-					g_string_append (trace_str, trace);
-					g_string_append_c (trace_str, '\n');
 				}
 			}
+
+			if (ji->method->dynamic)
+				has_dynamic_methods = TRUE;
 
 			if (ji->num_clauses) {
 				int i;
@@ -887,9 +886,6 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							g_assert (ei->exvar_offset);
 							/* need to use the frame pointer (ppc_r31), not r1 (regs start from register r13): methods with clauses always have r31 */
 							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ei->exvar_offset)) = obj;
-							if (!initial_stack_trace && trace_str) {
-								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
-							}
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
@@ -898,14 +894,14 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, ei->data.catch_class)) || filtered) {
 							if (test_only) {
-								if (mono_ex) {
+								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);
-									mono_ex->trace_ips = glist_to_array (trace_ips);
+									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+									if (has_dynamic_methods)
+										/* These methods could go away anytime, so compute the stack trace now */
+										mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
 								}
 								g_list_free (trace_ips);
-								g_free (trace);
-								if (trace_str)
-									g_string_free (trace_str, TRUE);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls != NULL)
@@ -913,9 +909,6 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							/*printf ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
-							g_free (trace);
-							if (trace_str)
-								g_string_free (trace_str, TRUE);
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -931,8 +924,6 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			}
 		}
 
-		g_free (trace);
-			
 		*ctx = new_ctx;
 		setup_context (ctx);
 
@@ -942,13 +933,14 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				if (mono_ex) {
+				if (mono_ex && !initial_trace_ips) {
 					trace_ips = g_list_reverse (trace_ips);
-					mono_ex->trace_ips = glist_to_array (trace_ips);
+					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+					if (has_dynamic_methods)
+						/* These methods could go away anytime, so compute the stack trace now */
+						mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
 				}
 				g_list_free (trace_ips);
-				if (trace_str)
-					g_string_free (trace_str, TRUE);
 				return FALSE;
 			}
 		}
