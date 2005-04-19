@@ -160,7 +160,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 	
-	g_hash_table_remove(thread_hash, &thread_handle->thread->id);
+	g_hash_table_remove (thread_hash, GUINT_TO_POINTER (thread_handle->thread->id));
 
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
@@ -291,7 +291,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	 */
 	_wapi_handle_ref (handle);
 	
-	g_hash_table_insert (thread_hash, &thread_handle.thread->id, handle);
+	g_hash_table_insert (thread_hash, GUINT_TO_POINTER (thread_handle.thread->id), handle);
 	
 #ifdef DEBUG
 	g_message("%s: Started thread handle %p thread %p ID %ld", __func__,
@@ -331,7 +331,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 	
-	ret=g_hash_table_lookup(thread_hash, &tid);
+	ret = g_hash_table_lookup (thread_hash, GUINT_TO_POINTER (tid));
 
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
@@ -484,7 +484,7 @@ static gpointer thread_attach(guint32 *tid)
 	 */
 	_wapi_handle_ref (handle);
 	
-	g_hash_table_insert (thread_hash, &thread_handle.thread->id, handle);
+	g_hash_table_insert (thread_hash, GUINT_TO_POINTER (thread_handle.thread->id), handle);
 
 #ifdef DEBUG
 	g_message("%s: Attached thread handle %p thread %p ID %ld", __func__,
@@ -534,7 +534,7 @@ gpointer GetCurrentThread(void)
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 
-	ret=g_hash_table_lookup(thread_hash, &tid);
+	ret = g_hash_table_lookup (thread_hash, GUINT_TO_POINTER (tid));
 
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
