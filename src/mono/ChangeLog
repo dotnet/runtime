@@ -1,3 +1,8 @@
+2005-04-19  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add check for <sys/xattr.h>.
+	  Thanks to Daniel Drake <dsd@gentoo.org> for the patch.
+
 2005-04-18  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Applied another freebsd patch from Bill Middleton (flashdict@gmail.com).

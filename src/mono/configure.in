@@ -1133,6 +1133,7 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_HEADERS(sys/sendfile.h)
 	AC_CHECK_HEADERS(sys/statvfs.h)
 	AC_CHECK_HEADERS(sys/vfstab.h)
+	AC_CHECK_HEADERS(sys/xattr.h)
 	AC_CHECK_FUNCS(getdomainname)
 	AC_CHECK_FUNCS(setdomainname)
 	AC_CHECK_FUNCS(fgetgrent)
