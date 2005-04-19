@@ -1797,13 +1797,22 @@ void mono_thread_abort_all_other_threads (void)
 	LeaveCriticalSection (&threads_mutex);
 }
 
-static void suspend_thread (gpointer key, gpointer value, gpointer user)
+static void
+collect_threads (gpointer key, gpointer value, gpointer user_data)
 {
-	MonoThread *thread=(MonoThread *)value;
-	guint32 self=GPOINTER_TO_UINT (user);
-	
-	if ((thread->tid!=self) && !mono_gc_is_finalizer_thread (thread))
-		SuspendThread (thread->handle);
+	MonoThread *thread = (MonoThread*)value;
+	struct wait_data *wait = (struct wait_data*)user_data;
+	HANDLE handle;
+
+	if (wait->num<MAXIMUM_WAIT_OBJECTS) {
+		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return;
+
+		wait->handles [wait->num] = handle;
+		wait->threads [wait->num] = thread;
+		wait->num++;
+	}
 }
 
 /*
@@ -1813,12 +1822,64 @@ static void suspend_thread (gpointer key, gpointer value, gpointer user)
  */
 void mono_thread_suspend_all_other_threads (void)
 {
-	guint32 self=GetCurrentThreadId ();
+	struct wait_data *wait = g_new0 (struct wait_data, 1);
+	int i, waitnum;
+	guint32 self = GetCurrentThreadId ();
 
-	EnterCriticalSection (&threads_mutex);
-	mono_g_hash_table_foreach (threads, suspend_thread,
-				   GUINT_TO_POINTER (self));
-	LeaveCriticalSection (&threads_mutex);
+	do {
+		/* 
+		 * Make a copy of the hashtable since we can't do anything with
+		 * threads while threads_mutex is held.
+		 */
+		EnterCriticalSection (&threads_mutex);
+		mono_g_hash_table_foreach (threads, collect_threads, wait);
+		LeaveCriticalSection (&threads_mutex);
+
+		waitnum = 0;
+		for (i = 0; i < wait->num; ++i) {
+			MonoThread *thread = wait->threads [i];
+
+			if ((thread->tid == self) || mono_gc_is_finalizer_thread (thread)) {
+				//CloseHandle (wait->handles [i]);
+				continue;
+			}
+
+			mono_monitor_enter (thread->synch_lock);
+
+			if ((thread->state & ThreadState_Suspended) != 0 || 
+				(thread->state & ThreadState_SuspendRequested) != 0 ||
+				(thread->state & ThreadState_StopRequested) != 0 ||
+				(thread->state & ThreadState_Stopped) != 0) {
+				mono_monitor_exit (thread->synch_lock);
+				CloseHandle (wait->handles [i]);
+				continue;
+			}
+	
+			thread->state |= ThreadState_SuspendRequested;
+
+			//printf ("S: %d\n", thread->state);
+			thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+
+			mono_monitor_exit (thread->synch_lock);
+
+			/* Signal the thread to suspend */
+			signal_thread_state_change (thread);
+
+			/* Wait for it to become suspended */
+			//printf ("W1\n");
+			WaitForSingleObject (thread->suspended_event, INFINITE);
+			//printf ("W2\n");
+
+			CloseHandle (thread->suspended_event);
+			thread->suspended_event = NULL;
+
+			CloseHandle (wait->handles [i]);
+			
+			waitnum ++;
+		}
+	} while (waitnum > 0);
+
+	g_free (wait);
 }
 
 /*
@@ -2266,6 +2327,8 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
 		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (thread->suspended_event)
+			SetEvent (thread->suspended_event);
 		mono_monitor_exit (thread->synch_lock);
 		
 		WaitForSingleObject (thread->suspend_event, INFINITE);
@@ -2327,7 +2390,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		
 		thread->interruption_requested = TRUE;
 		mono_monitor_exit (thread->synch_lock);
-		
+
 		/* this will awake the thread if it is in WaitForSingleObject 
 	       or similar */
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
@@ -2356,7 +2419,7 @@ static void mono_thread_interruption_checkpoint_request (gboolean bypass_abort_p
 	MonoThread *thread = mono_thread_current ();
 
 	/* The thread may already be stopping */
-	if (thread == NULL) 
+	if (thread == NULL)
 		return;
 	
 	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
