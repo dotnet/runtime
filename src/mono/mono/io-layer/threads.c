@@ -172,7 +172,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 
 static void thread_hash_init(void)
 {
-	thread_hash = g_hash_table_new(g_int_hash, g_int_equal);
+	thread_hash = g_hash_table_new (NULL, NULL);
 }
 
 /**
