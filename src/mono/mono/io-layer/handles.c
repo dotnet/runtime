@@ -136,6 +136,7 @@ static void _wapi_handle_init_shared_metadata (struct _WapiHandleSharedMetadata 
 {
 	meta->timestamp = (guint32)(time (NULL) & 0xFFFFFFFF);
 	meta->signalled = FALSE;
+	meta->checking = 0;
 }
 
 static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
@@ -395,7 +396,7 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 {
 	guint32 handle_idx = 0;
 	gpointer handle;
-	int thr_ret;
+	int thr_ret, i, k;
 	
 	mono_once (&shared_init_once, shared_init);
 	
@@ -407,12 +408,29 @@ gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
 	g_assert(!_WAPI_FD_HANDLE(type));
 	g_assert(_WAPI_SHARED_HANDLE(type));
 	g_assert(offset != 0);
-	
+		
+	for (i = SLOT_INDEX (0); _wapi_private_handles [i] != NULL; i++) {
+		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
+			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles [i][k];
+		
+			if (handle_data->type == type &&
+			    handle_data->u.shared.offset == offset) {
+				handle = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
+				_wapi_handle_ref (handle);
+
+#ifdef DEBUG
+				g_message ("%s: Returning old handle %p referencing 0x%x", __func__, handle, offset);
+#endif
+				return (handle);
+			}
+		}
+	}
+
 	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
 			      (void *)&scan_mutex);
 	thr_ret = mono_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
-		
+	
 	while ((handle_idx = _wapi_handle_new_internal (type, handle_specific)) == 0) {
 		/* Try and expand the array, and have another go */
 		int idx = SLOT_INDEX (_wapi_private_handle_count);
@@ -556,6 +574,11 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 		struct _WapiHandleShared *shared_handle_data;
 		struct _WapiHandleSharedMetadata *shared_meta;
 		guint32 offset;
+			
+		/* Unsafe, because we don't want the handle to vanish
+		 * while we're checking it
+		 */
+		_WAPI_HANDLE_COLLECTION_UNSAFE;
 		
 		do {
 			ref = &handle_data->u.shared;
@@ -567,6 +590,8 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 
 			*handle_specific = &shared_handle_data->u;
 		} while (offset != shared_meta->offset);
+
+		_WAPI_HANDLE_COLLECTION_SAFE;
 	} else {
 		*handle_specific = &handle_data->u;
 	}
@@ -757,10 +782,6 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	guint32 i, k;
 	gboolean found = FALSE;
 
-	/* Unsafe, because we don't want the handle to vanish while
-	 * we're checking it
-	 */
-	_WAPI_HANDLE_COLLECTION_UNSAFE;
 
 	for(i = SLOT_INDEX (0); !found && _wapi_private_handles [i] != NULL; i++) {
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
@@ -787,6 +808,11 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			struct _WapiHandleSharedMetadata *shared_meta;
 			guint32 offset, now;
 			
+			/* Unsafe, because we don't want the handle to
+			 * vanish while we're checking it
+			 */
+			_WAPI_HANDLE_COLLECTION_UNSAFE;
+
 			do {
 				ref = &handle_data->u.shared;
 				shared_meta = &_wapi_shared_layout->metadata[ref->offset];
@@ -803,14 +829,14 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			 */
 			now = (guint32)(time (NULL) & 0xFFFFFFFF);
 			InterlockedExchange (&shared_meta->timestamp, now);
+
+			_WAPI_HANDLE_COLLECTION_SAFE;
 		} else {
 			*handle_specific = &handle_data->u;
 		}
 	}
 
 done:
-	_WAPI_HANDLE_COLLECTION_SAFE;
-	
 	return(ret);
 }
 
@@ -909,8 +935,21 @@ done:
 void _wapi_handle_ref (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
+	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
+	struct _WapiHandleUnshared *handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
-	InterlockedIncrement (&_WAPI_PRIVATE_HANDLES(idx).ref);
+	InterlockedIncrement (&handle_data->ref);
+
+	/* It's possible for processes to exit before getting around
+	 * to updating timestamps in the collection thread, so if a
+	 * shared handle is reffed do the timestamp here as well just
+	 * to make sure.
+	 */
+	if (_WAPI_SHARED_HANDLE(handle_data->type)) {
+		struct _WapiHandleSharedMetadata *shared_meta = &_wapi_shared_layout->metadata[handle_data->u.shared.offset];
+		
+		InterlockedExchange (&shared_meta->timestamp, now);
+	}
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: handle %p ref now %d", __func__, handle,
@@ -1083,7 +1122,8 @@ gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 					       gpointer *handles,
 					       gboolean waitall,
 					       guint32 *retcount,
-					       guint32 *lowest)
+					       guint32 *lowest,
+					       guint32 *now)
 {
 	guint32 count, i, iter=0;
 	gboolean ret;
@@ -1095,34 +1135,17 @@ again:
 	for(i=0; i<numhandles; i++) {
 		gpointer handle = handles[i];
 		guint32 idx = GPOINTER_TO_UINT(handle);
-		guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
 
 #ifdef DEBUG
 		g_message ("%s: attempting to lock %p", __func__, handle);
 #endif
 
+		*now = (guint32)(time(NULL) & 0xFFFFFFFF);
 		type = _WAPI_PRIVATE_HANDLES(idx).type;
 
 		if (_WAPI_SHARED_HANDLE(type)) {
-			/* We don't lock shared handles, but we need
-			 * to be able to simultaneously check the
-			 * signal state of all handles in the array
-			 *
-			 * We do this by atomically putting the
-			 * least-significant 32 bits of time(2) into
-			 * the 'checking' field if it is zero.  If it
-			 * isn't zero, then it means that either
-			 * another thread is looking at this handle
-			 * right now, or someone crashed here.  Assume
-			 * that if the time value is more than 10
-			 * seconds old, its a crash and override it.
-			 * 10 seconds should be enough for anyone...
-			 *
-			 * If the time value is within 10 seconds,
-			 * back off and try again as per the
-			 * non-shared case.
-			 */
-			thr_ret = _wapi_timestamp_exclusion (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
+			thr_ret = _wapi_handle_shared_trylock_handle (handle,
+								      *now);
 		} else {
 			thr_ret = _wapi_handle_trylock_handle (handle);
 		}
@@ -1140,11 +1163,11 @@ again:
 				idx = GPOINTER_TO_UINT(handle);
 
 				if (_WAPI_SHARED_HANDLE(type)) {
-					/* Reset the checking field */
-					thr_ret = _wapi_timestamp_release (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
-				} else{
+					thr_ret = _wapi_handle_shared_unlock_handle (handle, *now);
+				} else {
 					thr_ret = _wapi_handle_unlock_handle (handle);
 				}
+				
 				g_assert (thr_ret == 0);
 			}
 
@@ -1226,7 +1249,8 @@ again:
 	return(ret);
 }
 
-void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
+void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles,
+				  guint32 now)
 {
 	guint32 i;
 	int thr_ret;
@@ -1241,13 +1265,12 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 #endif
 
 		if (_WAPI_SHARED_HANDLE(type)) {
-			WAPI_SHARED_HANDLE_METADATA(handle).checking = 0;
+			thr_ret = _wapi_handle_shared_unlock_handle (handle,
+								     now);
 		} else {
-			thr_ret = mono_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
-			g_assert (thr_ret == 0);
+			thr_ret = _wapi_handle_unlock_handle (handle);
 		}
-
-		_wapi_handle_unref (handle);
+		g_assert (thr_ret == 0);
 	}
 }
 

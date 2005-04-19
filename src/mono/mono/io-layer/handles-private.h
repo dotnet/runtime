@@ -74,9 +74,10 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      gpointer *handles,
 						      gboolean waitall,
 						      guint32 *retcount,
-						      guint32 *lowest);
+						      guint32 *lowest,
+						      guint32 *now);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
-					 gpointer *handles);
+					 gpointer *handles, guint32 now);
 extern int _wapi_handle_wait_signal (void);
 extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_poll_share (void);
@@ -321,6 +322,66 @@ static inline void _wapi_handle_spin (guint32 ms)
 	sleepytime.tv_nsec = ms * 1000000;
 	
 	nanosleep (&sleepytime, NULL);
+}
+
+static inline int _wapi_handle_shared_lock_handle (gpointer handle, guint32 *now)
+{
+	int ret;
+	
+	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type(handle)));
+	
+	_wapi_handle_ref (handle);
+	
+	/* We don't lock shared handles, but we need to be able to
+	 * tell other threads to hold off.
+	 *
+	 * We do this by atomically putting the least-significant 32
+	 * bits of time(2) into the 'checking' field if it is zero.
+	 * If it isn't zero, then it means that either another thread
+	 * is looking at this handle right now, or someone crashed
+	 * here.  Assume that if the time value is more than 10
+	 * seconds old, its a crash and override it.  10 seconds
+	 * should be enough for anyone...
+	 *
+	 * If the time value is within 10 seconds, back off and try
+	 * again as per the non-shared case.
+	 */
+	do {
+		*now = (guint32)(time (NULL) & 0xFFFFFFFF);
+		
+		ret = _wapi_timestamp_exclusion (&WAPI_SHARED_HANDLE_METADATA(handle).checking, *now);
+		if (ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
+	} while (ret == EBUSY);
+
+	return (ret);
+}
+
+static inline int _wapi_handle_shared_trylock_handle (gpointer handle, guint32 now)
+{
+	int ret;
+	
+	g_assert (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle)));
+	
+	_wapi_handle_ref (handle);
+	
+	ret = _wapi_timestamp_exclusion (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
+	if (ret == EBUSY) {
+		_wapi_handle_unref (handle);
+	}
+	
+	return (ret);
+}
+
+static inline int _wapi_handle_shared_unlock_handle (gpointer handle, guint32 now)
+{
+	g_assert (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle)));
+	
+	_wapi_timestamp_release (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
+	_wapi_handle_unref (handle);
+
+	return (0);
 }
 
 static inline void _wapi_handle_share_release (struct _WapiFileShare *info)

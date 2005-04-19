@@ -22,6 +22,52 @@
 
 #undef DEBUG
 
+static gboolean own_if_signalled(gpointer handle)
+{
+	gboolean ret = FALSE;
+	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
+	
+	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
+		if (_wapi_handle_shared_trylock_handle (handle, now) == EBUSY) {
+			return (FALSE);
+		}
+	}
+	
+	if (_wapi_handle_issignalled (handle)) {
+		_wapi_handle_ops_own (handle);
+		ret = TRUE;
+	}
+
+	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
+		_wapi_handle_shared_unlock_handle (handle, now);
+	}
+
+	return(ret);
+}
+
+static gboolean own_if_owned(gpointer handle)
+{
+	gboolean ret = FALSE;
+	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
+	
+	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
+		if (_wapi_handle_shared_trylock_handle (handle, now) == EBUSY) {
+			return (FALSE);
+		}
+	}
+	
+	if (_wapi_handle_ops_isowned (handle)) {
+		_wapi_handle_ops_own (handle);
+		ret = TRUE;
+	}
+
+	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
+		_wapi_handle_shared_unlock_handle (handle, now);
+	}
+
+	return(ret);
+}
+
 /**
  * WaitForSingleObjectEx:
  * @handle: an object to wait for
@@ -80,12 +126,11 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 
 	if (_wapi_handle_test_capabilities (handle,
 					    WAPI_HANDLE_CAP_OWN) == TRUE) {
-		if (_wapi_handle_ops_isowned (handle)==TRUE) {
+		if (own_if_owned (handle) == TRUE) {
 #ifdef DEBUG
 			g_message ("%s: handle %p already owned", __func__,
 				   handle);
 #endif
-			_wapi_handle_ops_own (handle);
 			ret = WAIT_OBJECT_0;
 			goto done;
 		}
@@ -97,13 +142,12 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		goto done;
 	}
 	
-	if (_wapi_handle_issignalled (handle)) {
+	if (own_if_signalled (handle) == TRUE) {
 #ifdef DEBUG
 		g_message ("%s: handle %p already signalled", __func__,
 			   handle);
 #endif
 
-		_wapi_handle_ops_own (handle);
 		ret=WAIT_OBJECT_0;
 		goto done;
 	}
@@ -116,13 +160,12 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
-		if (_wapi_handle_issignalled (handle)) {
+		if (own_if_signalled (handle)) {
 #ifdef DEBUG
 			g_message ("%s: handle %p signalled", __func__,
 				   handle);
 #endif
 
-			_wapi_handle_ops_own (handle);
 			ret = WAIT_OBJECT_0;
 			goto done;
 		}
@@ -141,20 +184,14 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 			 * handle is signalled now.  (It might not be
 			 * if someone else got in before us.)
 			 */
-			if(_wapi_handle_issignalled (handle)) {
+			if (own_if_signalled (handle)) {
 #ifdef DEBUG
 				g_message ("%s: handle %p signalled", __func__,
 					   handle);
 #endif
 
-				/* This might fail if a shared handle
-				 * was grabbed before we got it (we
-				 * can't lock those.)
-				 */
-				if (_wapi_handle_ops_own (handle) == TRUE) {
-					ret=WAIT_OBJECT_0;
-					goto done;
-				}
+				ret=WAIT_OBJECT_0;
+				goto done;
 			}
 		
 			/* Better luck next time */
@@ -266,12 +303,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	_wapi_handle_ops_signal (signal_handle);
 
 	if (_wapi_handle_test_capabilities (wait, WAPI_HANDLE_CAP_OWN)==TRUE) {
-		if (_wapi_handle_ops_isowned (wait)==TRUE) {
+		if (own_if_owned (wait)) {
 #ifdef DEBUG
 			g_message ("%s: handle %p already owned", __func__,
 				   wait);
 #endif
-			_wapi_handle_ops_own (wait);
 			ret = WAIT_OBJECT_0;
 			goto done;
 		}
@@ -283,12 +319,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		goto done;
 	}
 	
-	if (_wapi_handle_issignalled (wait)) {
+	if (own_if_signalled (wait)) {
 #ifdef DEBUG
 		g_message ("%s: handle %p already signalled", __func__, wait);
 #endif
 
-		_wapi_handle_ops_own (wait);
 		ret = WAIT_OBJECT_0;
 		goto done;
 	}
@@ -301,12 +336,11 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
-		if (_wapi_handle_issignalled (wait)) {
+		if (own_if_signalled (wait)) {
 #ifdef DEBUG
 			g_message ("%s: handle %p signalled", __func__, wait);
 #endif
 
-			_wapi_handle_ops_own (wait);
 			ret = WAIT_OBJECT_0;
 			goto done;
 		}
@@ -326,20 +360,14 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 			 * handle is signalled now.  (It might not be
 			 * if someone else got in before us.)
 			 */
-			if(_wapi_handle_issignalled (wait)) {
+			if (own_if_signalled (wait)) {
 #ifdef DEBUG
 				g_message ("%s: handle %p signalled", __func__,
 					   wait);
 #endif
 
-				/* This might fail if a shared handle
-				 * was grabbed before we got it (we
-				 * can't lock those.)
-				 */
-				if (_wapi_handle_ops_own (wait) == TRUE) {
-					ret = WAIT_OBJECT_0;
-					goto done;
-				}
+				ret = WAIT_OBJECT_0;
+				goto done;
 			}
 		
 			/* Better luck next time */
@@ -376,13 +404,15 @@ struct handle_cleanup_data
 {
 	guint32 numobjects;
 	gpointer *handles;
+	guint32 now;
 };
 
 static void handle_cleanup (void *data)
 {
 	struct handle_cleanup_data *handles = (struct handle_cleanup_data *)data;
 
-	_wapi_handle_unlock_handles (handles->numobjects, handles->handles);
+	_wapi_handle_unlock_handles (handles->numobjects, handles->handles,
+				     handles->now);
 }
 
 static gboolean test_and_own (guint32 numobjects, gpointer *handles,
@@ -401,18 +431,15 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
 	
 	pthread_cleanup_push (handle_cleanup, (void *)&cleanup_data);
 	done = _wapi_handle_count_signalled_handles (numobjects, handles,
-						     waitall, count, lowest);
+						     waitall, count, lowest,
+						     &cleanup_data.now);
 	if (done == TRUE) {
 		if (waitall == TRUE) {
 			for (i = 0; i < numobjects; i++) {
-				if (_wapi_handle_issignalled (handles[i])) {
-					_wapi_handle_ops_own (handles[i]);
-				}
+				own_if_signalled (handles[i]);
 			}
 		} else {
-			if (_wapi_handle_issignalled (handles[*lowest])) {
-				_wapi_handle_ops_own (handles[*lowest]);
-			}
+			own_if_signalled (handles[*lowest]);
 		}
 	}
 	

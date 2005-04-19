@@ -138,8 +138,8 @@ static gboolean mutex_own (gpointer handle)
 
 	_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	
-	mutex_handle->pid=getpid ();
-	mutex_handle->tid=pthread_self ();
+	mutex_handle->pid = getpid ();
+	mutex_handle->tid = pthread_self ();
 	mutex_handle->recursion++;
 
 #ifdef DEBUG
@@ -168,9 +168,9 @@ static gboolean mutex_is_owned (gpointer handle)
 	g_message("%s: testing ownership mutex handle %p", __func__, handle);
 #endif
 
-	if(mutex_handle->recursion>0 &&
-	   mutex_handle->pid==getpid () &&
-	   mutex_handle->tid==pthread_self ()) {
+	if (mutex_handle->recursion > 0 &&
+	    mutex_handle->pid == getpid () &&
+	    mutex_handle->tid == pthread_self ()) {
 #ifdef DEBUG
 		g_message ("%s: mutex handle %p owned by %d:%ld", __func__,
 			   handle, getpid (), pthread_self ());
@@ -203,7 +203,7 @@ static gboolean namedmutex_own (gpointer handle)
 	gboolean ok;
 	
 #ifdef DEBUG
-	g_message("%s: owning named mutex handle %p", __func__, handle);
+	g_message ("%s: owning named mutex handle %p", __func__, handle);
 #endif
 	
 	ok = _wapi_copy_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
@@ -219,27 +219,16 @@ static gboolean namedmutex_own (gpointer handle)
 	namedmutex_handle->tid = pthread_self ();
 	namedmutex_handle->recursion++;
 
-	/* If try_replace returns FALSE, it means someone else updated
-	 * this handle, so we failed to own it
-	 */
-	ok = _wapi_try_replace_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
-				       &shared_handle);
-	if (ok) {
-		_wapi_shared_handle_set_signal_state (handle, FALSE);
+	_wapi_replace_handle (handle, WAPI_HANDLE_NAMEDMUTEX, &shared_handle);
+	_wapi_shared_handle_set_signal_state (handle, FALSE);
 
 #ifdef DEBUG
-		g_message ("%s: mutex handle %p locked %d times by %d:%ld",
-			   __func__, handle, namedmutex_handle->recursion,
-			   namedmutex_handle->pid, namedmutex_handle->tid);
+	g_message ("%s: mutex handle %p locked %d times by %d:%ld", __func__,
+		   handle, namedmutex_handle->recursion,
+		   namedmutex_handle->pid, namedmutex_handle->tid);
 #endif
-	} else {
-#ifdef DEBUG
-		g_message ("%s: failed to own mutex handle %p", __func__,
-			   handle);
-#endif
-	}
 	
-	return(ok);
+	return(TRUE);
 }
 
 static gboolean namedmutex_is_owned (gpointer handle)
@@ -330,6 +319,7 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 	gboolean ok;
 	struct mutex_check_data *data = (struct mutex_check_data *)user_data;
 	int thr_ret;
+	guint32 now;
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
 				  (gpointer *)&mutex_handle);
@@ -339,9 +329,7 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 		return(FALSE);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = _wapi_handle_shared_lock_handle (handle, &now);
 	g_assert (thr_ret == 0);
 	
 	if (mutex_handle->pid == data->pid &&
@@ -357,9 +345,7 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 		_wapi_shared_handle_set_signal_state (handle, TRUE);
 	}
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
+	_wapi_handle_shared_unlock_handle (handle, now);
 	
 	/* Return false to keep searching */
 	return(FALSE);
@@ -432,10 +418,10 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	gchar *utf8_name;
 	int thr_ret;
 	gpointer ret = NULL;
-	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
+	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF), locknow;
 	guint32 namelen;
 	gint32 offset;
-	
+
 	/* w32 seems to guarantee that opening named mutexes can't
 	 * race each other
 	 */
@@ -503,8 +489,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		/* Set the initial state, as this is a completely new
 		 * handle
 		 */
-		pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle, handle);
-		thr_ret = _wapi_handle_lock_handle (handle);
+		thr_ret = _wapi_handle_shared_lock_handle (handle, &locknow);
 		g_assert (thr_ret == 0);
 	
 		if (owned == TRUE) {
@@ -513,9 +498,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 			_wapi_shared_handle_set_signal_state (handle, TRUE);
 		}
 
-		thr_ret = _wapi_handle_unlock_handle (handle);
-		g_assert (thr_ret == 0);
-		pthread_cleanup_pop (0);
+		_wapi_handle_shared_unlock_handle (handle, locknow);
 	}
 	
 #ifdef DEBUG
@@ -625,6 +608,7 @@ static gboolean namedmutex_release (gpointer handle)
 	pid_t pid=getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
+	guint32 now;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
 				(gpointer *)&mutex_handle);
@@ -634,9 +618,7 @@ static gboolean namedmutex_release (gpointer handle)
 		return(FALSE);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = _wapi_handle_shared_lock_handle (handle, &now);
 	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
@@ -666,9 +648,7 @@ static gboolean namedmutex_release (gpointer handle)
 	}
 
 cleanup:
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
+	_wapi_handle_shared_unlock_handle (handle, now);
 	
 	return(ret);
 }
