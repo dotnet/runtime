@@ -246,6 +246,18 @@ struct _MonoThread {
 	guint32 serialized_culture_info_len;
 	guint8* serialized_ui_culture_info;
 	guint32 serialized_ui_culture_info_len;
+	/* 
+	 * These fields are used to avoid having to increment corlib versions
+	 * when a new field is added to the unmanaged MonoThread structure.
+	 */
+	gpointer unused1;
+	gpointer unused2;
+	gpointer unused3;
+	gpointer unused4;
+	gpointer unused5;
+	gpointer unused6;
+	gpointer unused7;
+	gpointer unused8;
 };
 
 typedef struct {
