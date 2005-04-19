@@ -2611,7 +2611,9 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	/* Make the call to the real object */
 
 	emit_thread_force_interrupt_checkpoint (mb);
-	mono_mb_emit_managed_call (mb, method, NULL);
+	
+	mono_mb_emit_byte (mb, CEE_CALLVIRT);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
 
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_stloc (mb, loc_return);
