@@ -1588,12 +1588,11 @@ void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks)
 	mono_thread_callbacks = callbacks;
 }
 
-#ifdef THREAD_DEBUG
+G_GNUC_UNUSED
 static void print_tids (gpointer key, gpointer value, gpointer user)
 {
 	g_message ("Waiting for: %d", GPOINTER_TO_UINT(key));
 }
-#endif
 
 struct wait_data 
 {

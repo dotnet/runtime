@@ -140,7 +140,7 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	if (io->bounds != NULL || io->max_length !=  ac->rank)
 		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
-	ind = (guint32 *)io->vector;
+	ind = (gint32 *)io->vector;
 
 	if (ao->bounds == NULL) {
 		if (*ind < 0 || *ind >= ao->max_length)
@@ -440,7 +440,7 @@ ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
 	if (idxs->bounds != NULL || idxs->max_length != ac->rank)
 		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
-	ind = (guint32 *)idxs->vector;
+	ind = (gint32 *)idxs->vector;
 
 	if (this->bounds == NULL) {
 		if (*ind < 0 || *ind >= this->max_length)
@@ -468,7 +468,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 {
 	MonoClass *aklass;
 	MonoArray *array;
-	gint32 *sizes, i;
+	guint32 *sizes, i;
 	gboolean bounded = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
@@ -494,9 +494,9 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 
 	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
-		sizes [i] = mono_array_get (lengths, gint32, i);
+		sizes [i] = mono_array_get (lengths, guint32, i);
 		if (bounds)
-			sizes [i + aklass->rank] = mono_array_get (bounds, gint32, i);
+			sizes [i + aklass->rank] = mono_array_get (bounds, guint32, i);
 		else
 			sizes [i + aklass->rank] = 0;
 	}
@@ -3539,7 +3539,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 
 		if (assem->aname.public_key) {
 			guint32 pkey_len;
-			const char *pkey_ptr = assem->aname.public_key;
+			const char *pkey_ptr = (char*)assem->aname.public_key;
 			pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
 
 			aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
@@ -3646,7 +3646,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 
 	*ref_module = mono_module_get_object (mono_domain_get (), module);
 
-	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], size);
+	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
 }
 
 static gboolean
@@ -3961,7 +3961,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 		mono_runtime_invoke (create_culture, NULL, args, NULL);
 
 	if (name->public_key) {
-		pkey_ptr = name->public_key;
+		pkey_ptr = (char*)name->public_key;
 		pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
 
 		aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
@@ -4979,7 +4979,7 @@ ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 idx, gint8 val
 static MonoBoolean
 ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, MonoArray *dest, gint32 dest_offset, gint32 count) 
 {
-	char *src_buf, *dest_buf;
+	guint8 *src_buf, *dest_buf;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4987,8 +4987,8 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	if ((src_offset > mono_array_get_byte_length (src) - count) || (dest_offset > mono_array_get_byte_length (dest) - count))
 		return FALSE;
 
-	src_buf = (gint8 *)src->vector + src_offset;
-	dest_buf = (gint8 *)dest->vector + dest_offset;
+	src_buf = (guint8 *)src->vector + src_offset;
+	dest_buf = (guint8 *)dest->vector + dest_offset;
 
 	if (src != dest)
 		memcpy (dest_buf, src_buf, count);

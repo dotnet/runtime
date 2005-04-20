@@ -731,7 +731,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = field_is_special_static (class, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
-				guint32 size, align, offset;
+				guint32 size, offset;
+				int align;
 				size = mono_type_size (field->type, &align);
 				offset = mono_alloc_special_static_data (special_static, size, align);
 				if (!domain->special_static_fields)
@@ -2324,7 +2325,7 @@ MonoArray*
 mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
 	MonoArray *o;
-	int size, i;
+	guint32 size, i;
 	guint32 *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
 
