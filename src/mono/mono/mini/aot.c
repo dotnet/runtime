@@ -177,10 +177,9 @@ load_image (MonoAotModule *module, int index)
 
 
 static inline gint32
-decode_value (char *_ptr, char **rptr)
+decode_value (guint8 *ptr, guint8 **rptr)
 {
-	unsigned char *ptr = (unsigned char *) _ptr;
-	unsigned char b = *ptr;
+	guint8 b = *ptr;
 	gint32 len;
 	
 	if ((b & 0x80) == 0){
@@ -208,7 +207,7 @@ decode_value (char *_ptr, char **rptr)
 }
 
 static MonoClass*
-decode_klass_info (MonoAotModule *module, char *buf, char **endbuf)
+decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoImage *image;
 	MonoClass *klass;
@@ -236,7 +235,7 @@ decode_klass_info (MonoAotModule *module, char *buf, char **endbuf)
 }
 
 static MonoClassField*
-decode_field_info (MonoAotModule *module, char *buf, char **endbuf)
+decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoClass *klass = decode_klass_info (module, buf, &buf);
 	guint32 token;
@@ -252,7 +251,7 @@ decode_field_info (MonoAotModule *module, char *buf, char **endbuf)
 }
 
 static inline MonoImage*
-decode_method_ref (MonoAotModule *module, guint32 *token, char *buf, char **endbuf)
+decode_method_ref (MonoAotModule *module, guint32 *token, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
 	MonoImage *image;
@@ -277,7 +276,7 @@ make_writable (guint8* addr, guint32 len)
 	guint8 *page_start;
 	int pages, err;
 
-	page_start = (char *) (((gssize) (addr)) & ~ (PAGESIZE - 1));
+	page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1));
 	pages = (addr + len - page_start + PAGESIZE - 1) / PAGESIZE;
 	err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 	g_assert (err == 0);
@@ -556,7 +555,7 @@ mono_aot_init (void)
 }
 
 static gboolean
-decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, char *buf, char **endbuf)
+decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guint8 *buf, guint8 **endbuf)
 {
 	guint32 flags;
 
@@ -587,9 +586,8 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	int i;
 	MonoAotModule *aot_module;
 	MonoClass *klass = vtable->klass;
-	guint8 *info;
+	guint8 *info, *p;
 	MonoCachedClassInfo class_info;
-	char *p;
 	gboolean err;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
@@ -604,7 +602,7 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	}
 
 	info = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
-	p = (char*)info;
+	p = info;
 
 	err = decode_cached_class_info (aot_module, &class_info, p, &p);
 	if (!err) {
@@ -655,7 +653,7 @@ gboolean
 mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 {
 	MonoAotModule *aot_module;
-	char *p;
+	guint8 *p;
 	gboolean err;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
@@ -669,7 +667,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 		return FALSE;
 	}
 
-	p = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+	p = (guint8*)&aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
 
 	err = decode_cached_class_info (aot_module, res, p, &p);
 	if (!err) {
@@ -753,9 +751,9 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	int i, pindex, got_index;
 	gboolean non_got_patches, keep_patches = TRUE;
 	gboolean has_clauses;
-	char *p;
+	guint8 *p;
 
-	p = (char*)info;
+	p = info;
 	code_len = decode_value (p, &p);
 	used_int_regs = decode_value (p, &p);
 
@@ -1140,7 +1138,7 @@ mono_aot_is_got_entry (guint8 *code, guint8 *addr)
 	MonoAssembly *ass;
 	MonoAotModule *aot_module;
 
-	ji = mono_jit_info_table_find (mono_domain_get (), code);
+	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
 	if (!ji)
 		return FALSE;
 
@@ -1285,9 +1283,9 @@ mono_get_field_token (MonoClassField *field)
 }
 
 static inline void
-encode_value (gint32 value, char *buf, char **endbuf)
+encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 {
-	char *p = buf;
+	guint8 *p = buf;
 
 	//printf ("ENCODE: %d 0x%x.\n", value, value);
 
@@ -1337,7 +1335,7 @@ get_image_index (MonoAotCompile *cfg, MonoImage *image)
 }
 
 static void
-encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, char *buf, char **endbuf)
+encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	encode_value (get_image_index (cfg, klass->image), buf, &buf);
 	if (!klass->type_token) {
@@ -1357,7 +1355,7 @@ encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, char *buf, char **endb
 }
 
 static void
-encode_field_info (MonoAotCompile *cfg, MonoClassField *field, char *buf, char **endbuf)
+encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guint8 **endbuf)
 {
 	guint32 token = mono_get_field_token (field);
 
@@ -1368,7 +1366,7 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, char *buf, char *
 }
 
 static void
-encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, char *buf, char **endbuf)
+encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index = get_image_index (acfg, method->klass->image);
 	guint32 token = method->token;
@@ -1455,7 +1453,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoMethod *method;
 	FILE *tmpfp;
 	int i, j, pindex, byte_index;
-	guint8 *code, *mname, *mname_p;
+	guint8 *code;
+	char *mname, *mname_p;
 	int func_alignment = 16;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
@@ -1561,13 +1560,13 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	FILE *tmpfp;
 	int i, j, k, pindex, buf_size;
 	guint32 debug_info_size;
-	guint8 *code, *mname, *mname_p;
+	guint8 *code;
+	char *mname, *mname_p;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
 	guint32 last_offset;
-	char *p, *buf;
-	guint8 *debug_info;
+	guint8 *p, *buf, *debug_info;
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	guint32 first_got_offset;
 #endif
@@ -1843,7 +1842,7 @@ static void
 emit_klass_info (MonoAotCompile *acfg, guint32 token)
 {
 	MonoClass *klass = mono_class_get (acfg->image, token);
-	char *p, *buf;
+	guint8 *p, *buf;
 	int i, buf_size;
 	char *label;
 	FILE *tmpfp = acfg->fp;
@@ -2060,10 +2059,9 @@ int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
-	char *com, *tmpfname, *opts_str;
+	char *com, *tmpfname, *opts_str, *symbol;
 	FILE *tmpfp;
 	int i;
-	guint8 *symbol;
 	MonoAotCompile *acfg;
 	MonoCompile **cfgs;
 	char *outfile_name, *tmp_outfile_name;

@@ -690,8 +690,8 @@ mono_main (int argc, char* argv[])
 			g_print ("Mono JIT compiler version %s, (C) 2002-2005 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
 			g_print (info);
 			if (mini_verbose) {
-				const guchar *cerror;
-				const guchar *clibpath;
+				const char *cerror;
+				const char *clibpath;
 				mono_init ("mono");
 				cerror = mono_check_corlib_version ();
 				clibpath = mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown";
@@ -872,7 +872,7 @@ mono_main (int argc, char* argv[])
 		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
-		const guchar *error;
+		const char *error;
 
 		//mono_set_rootdir ();
 

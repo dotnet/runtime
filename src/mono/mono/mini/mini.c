@@ -2430,7 +2430,7 @@ static void
 handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native) {
 	MonoInst *iargs [3];
 	int n;
-	guint32 align = 0;
+	int align = 0;
 	MonoMethod *memcpy_method;
 
 	g_assert (klass);
@@ -7035,7 +7035,7 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 	vtype_stack_slots = g_new0 (StackSlotInfo, 256);
 	nvtypes = 0;
 
-	offsets = g_new (guint32, m->num_varinfo);
+	offsets = g_new (gint32, m->num_varinfo);
 	for (i = 0; i < m->num_varinfo; ++i)
 		offsets [i] = -1;
 

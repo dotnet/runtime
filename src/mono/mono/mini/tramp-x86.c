@@ -109,7 +109,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		if ((code [1] == 0xe8)) {
 			if (!mono_running_on_valgrind ()) {
 				MonoJitInfo *ji = 
-					mono_jit_info_table_find (mono_domain_get (), code);
+					mono_jit_info_table_find (mono_domain_get (), (char*)code);
 				MonoJitInfo *target_ji = 
 					mono_jit_info_table_find (mono_domain_get (), addr);
 
@@ -231,7 +231,7 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 			/* Then atomically change the first 4 bytes to a nop as well */
 			ops = 0x90909090;
-			InterlockedExchange ((guint32*)code, ops);
+			InterlockedExchange ((gint32*)code, ops);
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 			/* FIXME: the calltree skin trips on the self modifying code above */

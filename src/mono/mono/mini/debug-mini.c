@@ -287,9 +287,9 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 }
 
 static inline void
-encode_value (gint32 value, char *buf, char **endbuf)
+encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 {
-	char *p = buf;
+	guint8 *p = buf;
 
 	//printf ("ENCODE: %d 0x%x.\n", value, value);
 
@@ -323,10 +323,9 @@ encode_value (gint32 value, char *buf, char **endbuf)
 }
 
 static inline gint32
-decode_value (char *_ptr, char **rptr)
+decode_value (guint8 *ptr, guint8 **rptr)
 {
-	unsigned char *ptr = (unsigned char *) _ptr;
-	unsigned char b = *ptr;
+	guint8 b = *ptr;
 	gint32 len;
 	
 	if ((b & 0x80) == 0){
@@ -354,7 +353,7 @@ decode_value (char *_ptr, char **rptr)
 }
 
 static void
-serialize_variable (MonoDebugVarInfo *var, char *p, char **endbuf)
+serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 {
 	guint32 flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 
@@ -378,8 +377,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	MiniDebugMethodInfo *info;
 	MonoDebugMethodJitInfo *jit;
 	guint32 size, prev_offset, prev_native_offset;
-	char *buf;
-	char *p;
+	guint8 *buf, *p;
 	int i;
 
 	info = (MiniDebugMethodInfo *) cfg->debug_info;
@@ -424,7 +422,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 }
 
 static void
-deserialize_variable (MonoDebugVarInfo *var, char *p, char **endbuf)
+deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 {
 	guint32 flags;
 
@@ -450,7 +448,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 	MonoMethodHeader *header;
 	gint32 offset, native_offset, prev_offset, prev_native_offset;
 	MonoDebugMethodJitInfo *jit;
-	char *p;
+	guint8 *p;
 	int i;
 
 	header = mono_method_get_header (method);
@@ -538,7 +536,7 @@ MonoDomain *
 mono_init_debugger (const char *file, const char *opt_flags)
 {
 	MonoDomain *domain;
-	const guchar *error;
+	const char *error;
 	int opt;
 
 	g_set_prgname (file);
