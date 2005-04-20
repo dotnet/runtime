@@ -1185,6 +1185,8 @@ emit_symbol_type (FILE *fp, const char *name, gboolean func)
 
 #if defined(sparc)
 	fprintf (fp, "\t.type %s,#%s\n", name, stype);
+#elif defined(PLATFORM_WIN32)
+
 #elif !(defined(__ppc__) && defined(__MACH__))
 	fprintf (fp, "\t.type %s,@%s\n", name, stype);
 #elif defined(__x86_64__) || defined(__i386__)
@@ -1195,7 +1197,7 @@ emit_symbol_type (FILE *fp, const char *name, gboolean func)
 static void
 emit_global (FILE *fp, const char *name, gboolean func)
 {
-#if defined(__ppc__) && defined(__MACH__)
+#if  (defined(__ppc__) && defined(__MACH__)) || defined(PLATFORM_WIN32)
     // mach-o always uses a '_' prefix.
 	fprintf (fp, "\t.globl _%s\n", name);
 #else
@@ -1208,10 +1210,15 @@ emit_global (FILE *fp, const char *name, gboolean func)
 static void
 emit_label (FILE *fp, const char *name)
 {
-#if defined(__ppc__) && defined(__MACH__)
+#if (defined(__ppc__) && defined(__MACH__)) || defined(PLATFORM_WIN32)
     // mach-o always uses a '_' prefix.
 	fprintf (fp, "_%s:\n", name);
 #else
+	fprintf (fp, "%s:\n", name);
+#endif
+
+#if defined(PLATFORM_WIN32)
+	/* Emit a normal label too */
 	fprintf (fp, "%s:\n", name);
 #endif
 }
@@ -2282,6 +2289,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	com = g_strdup_printf ("as -xarch=v9 %s -o %s.o", tmpfname, tmpfname);
 #else
 	com = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
+	
 #endif
 	printf ("Executing the native assembler: %s\n", com);
 	if (system (com) != 0) {
@@ -2302,6 +2310,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	com = g_strdup_printf ("ld -shared -G -o %s %s.o", outfile_name, tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
 	com = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", outfile_name, tmpfname);
+#elif defined(PLATFORM_WIN32)
+	com = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", outfile_name, tmpfname);
 #else
 	com = g_strdup_printf ("ld -shared -o %s %s.o", outfile_name, tmpfname);
 #endif
