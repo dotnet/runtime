@@ -691,7 +691,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 				first = 0;
 			} else
 				g_string_append (result, ", ");
-			sig = dis_stringify_object_with_class (m, *constr, TRUE, TRUE);
+			sig = dis_stringify_type (m, &((*constr)->byval_arg), TRUE);
 			g_string_append (result, sig);
 			g_free (sig);
                 }
@@ -852,6 +852,9 @@ get_escaped_class_name (MonoClass *c)
 {
 	char *result, *esname;
 
+	if (c->rank || c->byval_arg.type == MONO_TYPE_PTR) 
+		g_assert (0);
+
 	esname = get_escaped_name (c->name);
 
 	if (c->nested_in){
@@ -872,7 +875,8 @@ char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix, gboolean is_def)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
-	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype " : "class " ;
+	MonoType *type = &c->byval_arg;
+	const char *otype = type->type == MONO_TYPE_VALUETYPE ? "valuetype " : "class " ;
 	char *assemblyref = NULL, *result, *esname, *generic = NULL;
 	
 	if (m != c->image) {
@@ -1621,7 +1625,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 		if (mono_method_signature (mh)->is_inflated)
 			context = ((MonoMethodInflated *) mh)->context;
 		esname = get_escaped_name (mh->name);
-		sig = dis_stringify_object_with_class (m, mh->klass, TRUE, TRUE);
+		sig = dis_stringify_type (m, &mh->klass->byval_arg, TRUE);
 		if (show_tokens)
 			name = g_strdup_printf ("%s/*%08x*/::%s", sig, token, esname);
 		else
@@ -1701,7 +1705,7 @@ get_methoddef (MonoImage *m, guint32 idx)
 
 	mh = mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
 	if (mh) {
-		sig = dis_stringify_object_with_class (m, mh->klass, TRUE, FALSE);
+		sig = dis_stringify_type (m, &mh->klass->byval_arg, FALSE);
 		name = g_strdup_printf ("%s::%s", sig, mh->name);
 		g_free (sig);
 	} else
