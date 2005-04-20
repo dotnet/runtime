@@ -246,7 +246,7 @@ unsigned char finalcount[8];
 }
  
 void
-mono_sha1_get_digest (const gchar *buffer, gint buffer_size, guchar digest [20])
+mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20])
 {	
 	MonoSHA1Context ctx;
 

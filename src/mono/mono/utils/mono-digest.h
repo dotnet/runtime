@@ -35,7 +35,7 @@ typedef struct {
 	gint doByteReverse;
 } MonoMD5Context;
 
-void mono_md5_get_digest (const gchar *buffer, gint buffer_size, guchar digest[16]);
+void mono_md5_get_digest (const guchar *buffer, gint buffer_size, guchar digest[16]);
 
 /* use this one when speed is needed */
 /* for use in provider code only */
@@ -52,7 +52,7 @@ typedef struct {
     unsigned char buffer[64];
 } MonoSHA1Context;
 
-void mono_sha1_get_digest (const gchar *buffer, gint buffer_size, guchar digest [20]);
+void mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20]);
 void mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20]);
 
 void mono_sha1_init   (MonoSHA1Context* context);
