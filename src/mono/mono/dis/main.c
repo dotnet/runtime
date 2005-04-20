@@ -435,7 +435,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 		if (field_offset != -1)
 			attrs = g_strdup_printf ("[%d]", field_offset);
 		esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
-		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_LITERAL){
+		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_DEFAULT){
 			char *lit;
 			guint32 const_cols [MONO_CONSTANT_SIZE];
 			guint32 crow;
