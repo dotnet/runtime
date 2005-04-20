@@ -791,52 +791,45 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 #if defined (PLATFORM_WIN32)
-	return (gunichar2) 0x003a;	/* colon */
+	return (gunichar2) ':';	/* colon */
 #else
-	return (gunichar2) 0x002f;	/* forward slash */
+	return (gunichar2) '/';	/* forward slash */
 #endif
 }
 
 gunichar2 
 ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 #if defined (PLATFORM_WIN32)
-	return (gunichar2) 0x005c;	/* backslash */
+	return (gunichar2) '\\';	/* backslash */
 #else
-	return (gunichar2) 0x002f;	/* forward slash */
+	return (gunichar2) '/';	/* forward slash */
 #endif
 }
 
 gunichar2 
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 #if defined (PLATFORM_WIN32)
-	return (gunichar2) 0x002f;	/* forward slash */
+	return (gunichar2) '/';	/* forward slash */
 #else
-	return (gunichar2) 0x005c;	/* backslash */
+	return (gunichar2) '/';	/* slash, same as DirectorySeparatorChar */
 #endif
 }
 
 gunichar2 
 ves_icall_System_IO_MonoIO_get_PathSeparator ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 #if defined (PLATFORM_WIN32)
-	return (gunichar2) 0x003b;	/* semicolon */
+	return (gunichar2) ';';	/* semicolon */
 #else
-	return (gunichar2) 0x003a;	/* colon */
+	return (gunichar2) ':';	/* colon */
 #endif
 }
 
-static gunichar2 invalid_path_chars [] = {
+static const gunichar2
+invalid_path_chars [] = {
 #if defined (PLATFORM_WIN32)
 	0x0022,				/* double quote, which seems allowed in MS.NET but should be rejected */
 	0x003c,				/* less than */
