@@ -7608,7 +7608,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerIn
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
-	int j, count = 0, native_size = 0, min_align = 1;
+	int j, count = 0;
+	guint32 native_size = 0, min_align = 1;
 	MonoMarshalType *info;
 	MonoClassField* field;
 	gpointer iter;
@@ -7650,7 +7651,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 	iter = NULL;
 	j = 0;
 	while ((field = mono_class_get_fields (klass, &iter))) {
-		int size, align;
+		int size;
+		guint32 align;
 		
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
@@ -7741,9 +7743,9 @@ mono_class_native_size (MonoClass *klass, guint32 *align)
  * type on the native stack
  */
 int
-mono_type_native_stack_size (MonoType *t, gint *align)
+mono_type_native_stack_size (MonoType *t, guint32 *align)
 {
-	int tmp;
+	guint32 tmp;
 
 	g_assert (t != NULL);
 
@@ -7812,7 +7814,7 @@ mono_type_native_stack_size (MonoType *t, gint *align)
 #define ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
 
 gint32
-mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode)
 {
 	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);

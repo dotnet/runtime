@@ -32,11 +32,11 @@ MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass);
 
 gint32
-mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode);
 
 int            
-mono_type_native_stack_size (MonoType *type, int *alignment);
+mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 
 gpointer
 mono_array_to_savearray (MonoArray *array);

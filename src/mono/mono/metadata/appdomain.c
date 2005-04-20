@@ -965,7 +965,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			if (*value && strncmp (value, "null", 4)) {
 				gchar *t = g_strdup (value);
 				g_strchug (t);
-				g_strlcpy (aname->public_key_token, g_strchomp (value), MONO_PUBLIC_KEY_TOKEN_LENGTH);
+				g_strlcpy ((char*)aname->public_key_token, g_strchomp (value), MONO_PUBLIC_KEY_TOKEN_LENGTH);
 				g_free (t);
 			}
 			continue;
@@ -1331,7 +1331,7 @@ mono_domain_unload (MonoDomain *domain)
 	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, GetCurrentThreadId ()); */
 
 	/* Atomically change our state to UNLOADING */
-	prev_state = InterlockedCompareExchange (&domain->state,
+	prev_state = InterlockedCompareExchange ((gint32*)&domain->state,
 											 MONO_APPDOMAIN_UNLOADING,
 											 MONO_APPDOMAIN_CREATED);
 	if (prev_state != MONO_APPDOMAIN_CREATED) {
