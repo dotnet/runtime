@@ -1511,7 +1511,7 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 {
 	DIR *proc_dir;
 	struct dirent *proc_entry;
-	gboolean found = FALSE;
+	gboolean found = FALSE, proc_fds = FALSE;
 	pid_t self = getpid();
 	int pid;
 	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
@@ -1558,6 +1558,8 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 				continue;
 			}
 			
+			proc_fds = TRUE;
+			
 			while ((fd_entry = readdir (fd_dir)) != NULL) {
 				char path[_POSIX_PATH_MAX];
 				struct stat link_stat;
@@ -1591,7 +1593,7 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	
 	closedir (proc_dir);
 
-	if (found == FALSE) {
+	if (found == FALSE && proc_fds == TRUE) {
 		/* Blank out this entry, as it is stale */
 #ifdef DEBUG
 		g_message ("%s: Didn't find it, destroying entry", __func__);
