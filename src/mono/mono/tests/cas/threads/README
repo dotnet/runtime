@@ -1,0 +1,19 @@
+The basic idea of the tests are to try to exit the running process by calling
+Environment.Exit(int). The entry point, Main, denies UnmanagedCode from being
+executed. UnmanagedCode is required to call Environment.Exit(int). Then we try
+to call Environment.Exit(int) from other threads which "should" have inherited
+the restriction from the "main" (i.e. original) thread.
+
+This security stack "inheritance" is called "stack propagation".
+
+
+* thread1.cs	Deny unmanaged code before creating the thread object.
+* thread2.cs	Deny unmanaged code after creating the thread object but 
+		before calling Start.
+* thread3.cs	Deny unmanaged code after creating the thread object and 
+		calling Start. 
+
+* timer1.cs:	Use System.Threading.Timer (Thread.Start) to test stack 
+		propagation.
+* timer2.cs:	Use System.Timers.Timer (ThreadPool.QueueUserWorkItem) to test
+		stack propagation.
