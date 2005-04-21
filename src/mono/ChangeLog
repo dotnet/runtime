@@ -1,3 +1,10 @@
+2005-04-21  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am: Update.  Pass 'monodis-wrapper' as ILDISASM
+	to sub-makes.
+	* runtime/monodis-wrapper.in: New file.
+	* configure.in (runtime/monodis-wrapper): Create.
+
 2005-04-20  Rafael Teixeira <rafaelteixeirabr@hotmail.com>
 	* data/net_1_1/machine.config, data/net_2_0/machine.config: 
 	added ' explicit="true" strict="false" ' to system.web/compilation 
