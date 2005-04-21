@@ -111,7 +111,14 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		g_message ("%s: handle %p has special wait", __func__, handle);
 #endif
 
-		return (_wapi_handle_ops_special_wait (handle, timeout));
+		ret = _wapi_handle_ops_special_wait (handle, timeout);
+	
+		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+			apc_pending = TRUE;
+			ret = WAIT_IO_COMPLETION;
+		}
+
+		goto check_pending;
 	}
 	
 	
@@ -216,6 +223,7 @@ done:
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 	
+check_pending:
 	if (apc_pending) {
 		_wapi_thread_dispatch_apc_queue (current_thread);
 		ret = WAIT_IO_COMPLETION;
@@ -534,13 +542,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 			bogustype = TRUE;
 		}
 
-		if (_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
-			g_warning ("%s: handle %p has special wait, implement me!!",
-				   __func__, handles[i]);
-			
-			bogustype = TRUE;
-		}
-
 		if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handles[i]))) {
 			shared_wait = TRUE;
 		}
@@ -583,6 +584,15 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	}
 	
 	while(1) {
+		/* Prod all special-wait handles that aren't already
+		 * signalled
+		 */
+		for (i = 0; i < numobjects; i++) {
+			if (_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE && _wapi_handle_issignalled (handles[i]) == FALSE) {
+				_wapi_handle_ops_special_wait (handles[i], 0);
+			}
+		}
+
 		/* Check before waiting on the condition, just in case
 		 */
 		done = test_and_own (numobjects, handles, waitall,
@@ -626,15 +636,18 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 			return WAIT_IO_COMPLETION;
 		}
 	
-		if(ret==0) {
-			/* Something was signalled ... */
-			done = test_and_own (numobjects, handles, waitall,
-					     &count, &lowest);
-			if(done==TRUE) {
-				return(WAIT_OBJECT_0+lowest);
-			}
-		} else {
-			/* Timeout or other error */
+		/* Check if everything is signalled, as we can't
+		 * guarantee to notice a shared signal even if the
+		 * wait timed out
+		 */
+		done = test_and_own (numobjects, handles, waitall,
+				     &count, &lowest);
+		if (done == TRUE) {
+			return(WAIT_OBJECT_0+lowest);
+		} else if (ret != 0) {
+			/* Didn't get all handles, and there was a
+			 * timeout or other error
+			 */
 #ifdef DEBUG
 			g_message ("%s: wait returned error: %s", __func__,
 				   strerror (ret));

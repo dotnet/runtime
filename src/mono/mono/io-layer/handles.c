@@ -1227,44 +1227,35 @@ int _wapi_handle_timedwait_signal (struct timespec *timeout)
 int _wapi_handle_wait_signal_poll_share (void)
 {
 	struct timespec fake_timeout;
-	guint32 signal_count = _wapi_shared_layout->signal_count;
 	int ret;
 	
 #ifdef DEBUG
 	g_message ("%s: poll private and shared handles", __func__);
 #endif
 
-	while(1) {
-		_wapi_calc_timeout (&fake_timeout, 100);
+	_wapi_calc_timeout (&fake_timeout, 100);
 	
-		ret = mono_cond_timedwait (&_wapi_global_signal_cond,
-					   &_wapi_global_signal_mutex,
-					   &fake_timeout);
+	ret = mono_cond_timedwait (&_wapi_global_signal_cond,
+				   &_wapi_global_signal_mutex, &fake_timeout);
 	
-		/* Check the shared signal counter */
-		if (ret == ETIMEDOUT) {
-			if (signal_count != _wapi_shared_layout->signal_count) {
-#ifdef DEBUG
-				g_message ("%s: A shared handle was signalled",
-					   __func__);
-#endif
-
-				return (0);
-			}
-		} else {
-			/* This will be 0 indicating a private handle
-			 * was signalled, or an error
-			 */
-#ifdef DEBUG
-			g_message ("%s: returning: %d", __func__, ret);
-#endif
-
-			return (ret);
-		}
-
-		/* If timeout and no shared handle was signalled, go
-		 * round again
+	if (ret == ETIMEDOUT) {
+		/* This will cause the waiting thread to check signal
+		 * status for all handles
 		 */
+#ifdef DEBUG
+		g_message ("%s: poll timed out, returning success", __func__);
+#endif
+
+		return (0);
+	} else {
+		/* This will be 0 indicating a private handle was
+		 * signalled, or an error
+		 */
+#ifdef DEBUG
+		g_message ("%s: returning: %d", __func__, ret);
+#endif
+
+		return (ret);
 	}
 }
 
