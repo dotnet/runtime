@@ -1733,15 +1733,15 @@ runtime/Makefile
 
 (
   case $prefix in
-  NONE) prefix=/usr/local ;;
+  NONE) prefix=$ac_default_prefix ;;
   esac
   case $exec_prefix in
-  NONE | '${prefix}') exec_prefix=$prefix ;;
+  NONE ) exec_prefix='${prefix}' ;;
   esac
 
   echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
   echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
-  echo "mono_libdir=$exec_prefix/lib" >> $srcdir/$mcsdir/build/config.make
+  echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$mcsdir/build/config.make
   echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
 )
 

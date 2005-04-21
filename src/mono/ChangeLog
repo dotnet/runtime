@@ -5,6 +5,8 @@
 	(mcs-compileall): Verify the fixed-up dll too.
 	* runtime/monodis-wrapper.in: New file.
 	* configure.in (runtime/monodis-wrapper): Create.
+	($mcsdir/build/config.make): Don't be over-eager in the definition
+	and evaluation of '$exec_prefix'.
 
 2005-04-20  Rafael Teixeira <rafaelteixeirabr@hotmail.com>
 	* data/net_1_1/machine.config, data/net_2_0/machine.config: 
