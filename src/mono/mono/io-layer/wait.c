@@ -88,7 +88,7 @@ static gboolean own_if_owned(gpointer handle)
  * occurred. %WAIT_IO_COMPLETION - the wait was ended by an APC.
  */
 guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
-						gboolean alertable)
+			      gboolean alertable)
 {
 	guint32 ret, waited;
 	struct timespec abstime;

@@ -27,7 +27,7 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 {
 	struct timespec sleepytime;
 
-	sleepytime.tv_sec = 10;
+	sleepytime.tv_sec = _WAPI_HANDLE_COLLECTION_UPDATE_INTERVAL;
 	sleepytime.tv_nsec = 0;
 
 	while (1) {
@@ -90,7 +90,7 @@ void _wapi_handle_collect (void)
 		for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
 			struct _WapiHandleShared *shared;
 			struct _WapiHandleSharedMetadata *meta;
-			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - 300; /* 5 minutes without update */
+			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL;
 			
 			meta = &_wapi_shared_layout->metadata[i];
 			if (meta->timestamp < too_old && meta->offset != 0) {
@@ -116,7 +116,7 @@ void _wapi_handle_collect (void)
 
 		for (i = 0; i < _wapi_fileshare_layout->hwm; i++) {
 			struct _WapiFileShare *file_share = &_wapi_fileshare_layout->share_info[i];
-			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - 300; /* 5 minutes without update */
+			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL;
 			
 			if (file_share->timestamp < too_old) {
 				memset (file_share, '\0',

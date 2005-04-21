@@ -46,9 +46,8 @@ extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 				     gpointer *handle_specific);
 extern gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
 				   struct _WapiHandleShared *handle_specific);
-extern void _wapi_replace_handle (gpointer handle, WapiHandleType type,
+extern gboolean _wapi_replace_handle (gpointer handle, WapiHandleType type,
 				  struct _WapiHandleShared *handle_specific);
-extern gboolean _wapi_try_replace_handle (gpointer handle, WapiHandleType type, struct _WapiHandleShared *handle_specific);
 extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gboolean (*check)(gpointer, gpointer),
 				     gpointer user_data,

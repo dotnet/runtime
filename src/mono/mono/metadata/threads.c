@@ -363,7 +363,11 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 				     CREATE_SUSPENDED, &tid);
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
 		  tid, thread_handle));
-	g_assert (thread_handle);
+	if (thread_handle == NULL) {
+		/* The thread couldn't be created, so throw an exception */
+		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
+		return;
+	}
 
 	thread->handle=thread_handle;
 	thread->tid=tid;

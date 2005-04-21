@@ -219,7 +219,13 @@ static gboolean namedmutex_own (gpointer handle)
 	namedmutex_handle->tid = pthread_self ();
 	namedmutex_handle->recursion++;
 
-	_wapi_replace_handle (handle, WAPI_HANDLE_NAMEDMUTEX, &shared_handle);
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
+				   &shared_handle);
+	if (ok == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		return (FALSE);
+	}
+	
 	_wapi_shared_handle_set_signal_state (handle, FALSE);
 
 #ifdef DEBUG

@@ -138,7 +138,12 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 	}
 	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
 	
-	_wapi_replace_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
+				   &shared_handle);
+	if (ok == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		return (WAIT_FAILED);
+	}
 	
 	_wapi_shared_handle_set_signal_state (handle, TRUE);
 
@@ -596,7 +601,13 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	
 	shared_handle.u.process.id = pid;
 
-	_wapi_replace_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	ret = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
+				    &shared_handle);
+	if (ret == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		_wapi_handle_unref (handle);
+		goto cleanup;
+	}
 	
 	if (process_info != NULL) {
 		process_info->hProcess = handle;

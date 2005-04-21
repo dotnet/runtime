@@ -103,8 +103,12 @@ static gboolean thread_own (gpointer handle)
 		_wapi_timed_thread_join (thread_handle->thread, NULL, NULL);
 		thread_handle->joined = TRUE;
 
-		_wapi_replace_handle (handle, WAPI_HANDLE_THREAD,
-				      &shared_handle);
+		ok = _wapi_replace_handle (handle, WAPI_HANDLE_THREAD,
+					   &shared_handle);
+		if (ok == FALSE) {
+			SetLastError (ERROR_OUTOFMEMORY);
+			return (FALSE);
+		}
 	}
 
 	return(TRUE);
@@ -141,7 +145,11 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	thread_handle->exitstatus = exitstatus;
 	thread_handle->state = THREAD_STATE_EXITED;
 
-	_wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	if (ok == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		return;
+	}
 	
 	_wapi_shared_handle_set_signal_state (handle, TRUE);
 
@@ -284,7 +292,12 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		goto thread_hash_cleanup;
 	}
 	shared_handle.u.thread.thread = thread_handle.thread;
-	_wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	if (ok == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		_wapi_handle_unref (handle);
+		goto thread_hash_cleanup;
+	}
 	
 	/* Hold a reference while the thread is active, because we use
 	 * the handle to store thread exit information
@@ -477,7 +490,12 @@ static gpointer thread_attach(guint32 *tid)
 		goto thread_hash_cleanup;
 	}
 	shared_handle.u.thread.thread = thread_handle.thread;
-	_wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_THREAD, &shared_handle);
+	if (ok == FALSE) {
+		SetLastError (ERROR_OUTOFMEMORY);
+		_wapi_handle_unref (handle);
+		goto thread_hash_cleanup;
+	}
 
 	/* Hold a reference while the thread is active, because we use
 	 * the handle to store thread exit information

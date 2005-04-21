@@ -369,7 +369,7 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 			offset = _wapi_handle_new_shared (type,
 							  handle_specific);
 			/* FIXME: grow the arrays */
-			g_assert (offset != 0);
+			return (_WAPI_HANDLE_INVALID);
 		}
 		
 		ref = _wapi_handle_new_shared_offset (offset);
@@ -377,7 +377,7 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 			_wapi_handle_collect ();
 			ref = _wapi_handle_new_shared_offset (offset);
 			/* FIXME: grow the arrays */
-			g_assert (ref != 0);
+			return (_WAPI_HANDLE_INVALID);
 		}
 		
 		_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = ref;
@@ -654,8 +654,8 @@ gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
 	return(TRUE);
 }
 
-void _wapi_replace_handle (gpointer handle, WapiHandleType type,
-			   struct _WapiHandleShared *handle_specific)
+gboolean _wapi_replace_handle (gpointer handle, WapiHandleType type,
+			       struct _WapiHandleShared *handle_specific)
 {
 	struct _WapiHandleShared *shared_handle_data;
 	struct _WapiHandleSharedMetadata *shared_meta;
@@ -681,7 +681,7 @@ void _wapi_replace_handle (gpointer handle, WapiHandleType type,
 			new_off = _wapi_handle_new_shared (type, 
 							   handle_specific);
 			/* FIXME: grow the arrays */
-			g_assert (new_off != 0);
+			return (FALSE);
 		}
 		
 		shared_handle_data = &_wapi_shared_layout->handles[new_off];
@@ -701,71 +701,8 @@ void _wapi_replace_handle (gpointer handle, WapiHandleType type,
 	g_message ("%s: handle at 0x%x is now found at 0x%x", __func__, ref,
 		   new_off);
 #endif
-}
 
-gboolean _wapi_try_replace_handle (gpointer handle, WapiHandleType type,
-				   struct _WapiHandleShared *handle_specific)
-{
-	struct _WapiHandleShared *shared_handle_data;
-	struct _WapiHandleSharedMetadata *shared_meta;
-	guint32 handle_idx = GPOINTER_TO_UINT(handle);
-	guint32 old_off, new_off, ref;
-	gboolean ret;
-	
-#ifdef DEBUG
-	g_message ("%s: Trying to replace handle %p of type %s", __func__,
-		   handle, _wapi_handle_typename[type]);
-#endif
-
-	g_assert(_WAPI_SHARED_HANDLE(type));
-	g_assert(_WAPI_PRIVATE_HANDLES(handle_idx).type == type);
-	
-	ref = _WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset;
-	shared_meta = &_wapi_shared_layout->metadata[ref];
-	
-	old_off = shared_meta->offset;
-	new_off = _wapi_handle_new_shared (type, handle_specific);
-
-	if (new_off == 0) {
-		_wapi_handle_collect ();
-		new_off = _wapi_handle_new_shared (type, handle_specific);
-	
-		/* FIXME: grow the arrays */
-		g_assert (new_off != 0);
-	}
-	
-	shared_handle_data = &_wapi_shared_layout->handles[new_off];
-
-#ifdef DEBUG
-	g_message ("%s: Old offset: 0x%x, trying to move to 0x%x", __func__,
-		   old_off, new_off);
-#endif
-
-	memcpy (shared_handle_data, handle_specific,
-		sizeof(struct _WapiHandleShared));
-	
-	ret = (InterlockedCompareExchange (&shared_meta->offset, new_off,
-					   old_off) == old_off);
-
-	if (ret) {
-		/* An entry can't become fresh again (its going to be
-		 * collected eventually), so no need for atomic ops
-		 * here.
-		 */
-		_wapi_shared_layout->handles[old_off].stale = TRUE;
-	}
-
-#ifdef DEBUG
-	if (ret) {
-		g_message ("%s: handle at 0x%x is now found at 0x%x", __func__,
-			   ref, new_off);
-	} else {
-		g_message ("%s: handle at 0x%x already updated", __func__,
-			   ref);
-	}
-#endif
-
-	return(ret);
+	return (TRUE);
 }
 
 /* This will only find shared handles that have already been opened by

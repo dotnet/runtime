@@ -12,6 +12,9 @@
 
 #include <glib.h>
 
+#define _WAPI_HANDLE_COLLECTION_UPDATE_INTERVAL		10
+#define _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL	300
+
 #define _WAPI_HANDLE_COLLECTION_UNSAFE				\
 	{							\
 		guint32 _wapi_save_start;			\
