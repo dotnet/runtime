@@ -1291,6 +1291,7 @@ char*
 get_escaped_name (const char *name)
 {
 	const char *s;
+	char *tmp, *tmp2;
 
 	g_assert (key_table);
 
@@ -1315,6 +1316,12 @@ get_escaped_name (const char *name)
 		    *s == '?' || *s == '.' || *s == 0 || *s == '!')
 			continue;
 
+		if (*s == '[') {
+			tmp = g_strndup (name, s - name);
+			tmp2 = g_strjoin ("", "'", tmp, "'", s);
+			g_free (tmp);
+			return tmp2;
+		}
 		return g_strdup_printf ("'%s'", name);
 	}
 	
