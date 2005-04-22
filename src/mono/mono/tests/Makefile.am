@@ -10,7 +10,7 @@ RUNTIME_ARGS=--config tests-config --optimize=all
 
 RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono-wrapper
 
-CSC = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+CSC = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
