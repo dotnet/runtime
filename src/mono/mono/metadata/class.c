@@ -3308,6 +3308,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		oklass = oklass->generic_class->container_class;
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
+		if ((oklass->byval_arg.type == MONO_TYPE_VAR) || (oklass->byval_arg.type == MONO_TYPE_MVAR))
+			return FALSE;
+
 		/* interface_offsets might not be set for dynamic classes */
 		if (oklass->reflection_info && !oklass->interface_offsets)
 			/* 
