@@ -1318,7 +1318,7 @@ get_escaped_name (const char *name)
 
 		if (*s == '[') {
 			tmp = g_strndup (name, s - name);
-			tmp2 = g_strjoin ("", "'", tmp, "'", s);
+			tmp2 = g_strjoin ("", "'", tmp, "'", s, NULL);
 			g_free (tmp);
 			return tmp2;
 		}
