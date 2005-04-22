@@ -61,23 +61,27 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 	if (managed2 || ji->method->wrapper_type) {
 		char *source_location, *tmpaddr, *fname;
-		gint32 address, iloffset;
+		gint32 offset, iloffset;
 
-		address = (char *)ip - (char *)ji->code_start;
+		if (!managed2)
+			/* ctx->ip points into native code */
+			offset = (char*)MONO_CONTEXT_GET_IP (new_ctx) - (char*)ji->code_start;
+		else
+			offset = (char *)ip - (char *)ji->code_start;
 
 		if (native_offset)
-			*native_offset = address;
+			*native_offset = offset;
 
 		if (managed)
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
 		if (trace) {
-			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, domain);
-			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
+			source_location = mono_debug_source_location_from_address (ji->method, offset, NULL, domain);
+			iloffset = mono_debug_il_offset_from_address (ji->method, offset, domain);
 
 			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%05x>", address);
+				tmpaddr = g_strdup_printf ("<0x%05x>", offset);
 			else
 				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
 		
