@@ -1268,13 +1268,13 @@ static MonoStackWalkImpl stack_walk = default_stack_walk;
 void
 mono_stack_walk (MonoStackWalk func, gpointer user_data)
 {
-	stack_walk (func, FALSE, user_data);
+	stack_walk (func, TRUE, user_data);
 }
 
 void
 mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 {
-	stack_walk (func, TRUE, user_data);
+	stack_walk (func, FALSE, user_data);
 }
 
 void
