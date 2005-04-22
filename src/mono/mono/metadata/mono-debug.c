@@ -543,7 +543,10 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 	guint32 i, il_offset = 0, native_offset = 0;
 	guint8 *ptr;
 
-	jit = g_new0 (MonoDebugMethodJitInfo, 1);
+	if (address->jit)
+		return address->jit;
+
+	jit = address->jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = address->code_start;
 	jit->code_size = address->code_size;
 	jit->wrapper_addr = address->wrapper_addr;
@@ -601,6 +604,19 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 		read_variable (&jit->locals [i], ptr, &ptr);
 
 	return jit;
+}
+
+void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+{
+	if (jit->address)
+		jit->address->jit = NULL;
+
+	g_free (jit->line_numbers);
+	g_free (jit->this_var);
+	g_free (jit->params);
+	g_free (jit->locals);
+	g_free (jit);
 }
 
 /*

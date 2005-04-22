@@ -107,6 +107,7 @@ struct _MonoDebugHandle {
 };
 
 struct _MonoDebugMethodJitInfo {
+	MonoDebugMethodAddress *address;
 	const guint8 *code_start;
 	guint32 code_size;
 	guint32 prologue_end;
@@ -131,6 +132,7 @@ struct _MonoDebugMethodAddress {
 	const guint8 *code_start;
 	guint32 code_size;
 	const guint8 *wrapper_addr;
+	MonoDebugMethodJitInfo *jit;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -165,7 +167,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				48
+#define MONO_DEBUGGER_VERSION				49
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
@@ -180,6 +182,7 @@ void mono_debug_cleanup (void);
 MonoDebugMethodAddress *mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 					       MonoDomain *domain);
 MonoDebugMethodJitInfo *mono_debug_read_method (MonoDebugMethodAddress *address);
+void mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
 gchar *mono_debug_source_location_from_address (MonoMethod *method, guint32 address,
 						guint32 *line_number, MonoDomain *domain);
 gchar *mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset,

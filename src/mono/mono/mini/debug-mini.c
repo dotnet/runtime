@@ -189,16 +189,6 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 #endif /* VALGRIND_ADD_LINE_INFO */
 }
 
-static void
-free_jit_debug_info (MonoDebugMethodJitInfo *jit)
-{
-	g_free (jit->line_numbers);
-	g_free (jit->this_var);
-	g_free (jit->params);
-	g_free (jit->locals);
-	g_free (jit);
-}
-
 void
 mono_debug_close_method (MonoCompile *cfg)
 {
@@ -254,7 +244,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
-	free_jit_debug_info (jit);
+	mono_debug_free_method_jit_info (jit);
 	g_array_free (info->line_numbers, TRUE);
 	g_free (info);
 }
@@ -529,7 +519,7 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 
 	mono_debug_add_vg_method (method, jit);
 
-	free_jit_debug_info (jit);
+	mono_debug_free_method_jit_info (jit);
 }
 
 MonoDomain *
