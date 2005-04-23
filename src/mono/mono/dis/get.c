@@ -1316,12 +1316,6 @@ get_escaped_name (const char *name)
 		    *s == '?' || *s == '.' || *s == 0 || *s == '!')
 			continue;
 
-		if (*s == '[') {
-			tmp = g_strndup (name, s - name);
-			tmp2 = g_strjoin ("", "'", tmp, "'", s, NULL);
-			g_free (tmp);
-			return tmp2;
-		}
 		return g_strdup_printf ("'%s'", name);
 	}
 	
