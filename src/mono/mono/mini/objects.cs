@@ -355,6 +355,14 @@ class Tests {
 	}
 	class Duper: Super {
 	}
+
+	static int test_0_null_cast () {
+		object o = null;
+
+		Super s = (Super)o;
+
+		return 0;
+	}
 	
 	static int test_0_super_cast () {
 		Duper d = new Duper ();
