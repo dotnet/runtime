@@ -47,6 +47,9 @@
 
 #include "threadpool.h"
 
+#define THREAD_WANTS_A_BREAK(t) ((t->state & (ThreadState_StopRequested | \
+						ThreadState_SuspendRequested)) != 0)
+
 #undef EPOLL_DEBUG
 
 /* maximum number of worker threads */
@@ -250,7 +253,7 @@ async_invoke_io_thread (gpointer data)
 			
 			do {
 				wr = WaitForSingleObjectEx (io_job_added, (guint32)timeout, TRUE);
-				if ((thread->state & ThreadState_StopRequested)!=0)
+				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			
 				timeout -= GetTickCount () - start_time;
@@ -381,7 +384,7 @@ socket_io_poll_main (gpointer p)
 
 		do {
 			if (nsock == -1) {
-				if ((thread->state & ThreadState_StopRequested) != 0)
+				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			}
 
@@ -512,12 +515,8 @@ socket_io_epoll_main (gpointer p)
 	while (1) {
 		do {
 			if (ready == -1) {
-				if ((thread->state & ThreadState_StopRequested) != 0) {
-					g_free (events);
-					close (epollfd);
+				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
-					g_assert_not_reached ();
-				}
 			}
 #ifdef EPOLL_DEBUG
 			g_print ("epoll_wait init\n");
@@ -1094,7 +1093,7 @@ async_invoke_thread (gpointer data)
 			
 			do {
 				wr = WaitForSingleObjectEx (job_added, (guint32)timeout, TRUE);
-				if ((thread->state & ThreadState_StopRequested)!=0)
+				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			
 				timeout -= GetTickCount () - start_time;
@@ -1111,7 +1110,7 @@ async_invoke_thread (gpointer data)
 	
 			while (!data && workers <= min) {
 				WaitForSingleObjectEx (job_added, INFINITE, TRUE);
-				if ((thread->state & ThreadState_StopRequested)!=0)
+				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			
 				data = dequeue_job (&mono_delegate_section, &async_call_queue);
