@@ -206,6 +206,12 @@ mono_runtime_quit ()
 		quit_function (mono_get_root_domain (), NULL);
 }
 
+void
+mono_runtime_set_shutting_down (void)
+{
+	shutting_down = TRUE;
+}
+
 gboolean
 mono_runtime_is_shutting_down (void)
 {

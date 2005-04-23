@@ -50,6 +50,9 @@ mono_install_runtime_cleanup (MonoDomainFunc func);
 void
 mono_runtime_quit (void);
 
+void
+mono_runtime_set_shutting_down (void);
+
 gboolean
 mono_runtime_is_shutting_down (void);
 

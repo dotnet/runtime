@@ -5172,6 +5172,7 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	mono_runtime_set_shutting_down ();
 	/* Suspend all managed threads since the runtime is going away */
 	mono_thread_suspend_all_other_threads ();
 
