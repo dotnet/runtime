@@ -7431,6 +7431,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 		int i = 0;
 		gpointer iter = NULL;
 		while ((field = mono_class_get_fields (klass, &iter))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
 			if (!strcmp (fname, field->name)) {
 				match_index = i;
 				break;
