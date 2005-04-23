@@ -58,8 +58,7 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) {
 	if (digits == 0)
 		return ves_icall_System_Math_Round(value);
 	p = pow(10, digits);
-	int_part = floor(value);
-	dec_part = value - int_part;
+	dec_part = modf (value, &int_part);
 	dec_part *= 1000000000000000ULL;
 	dec_part = floor(dec_part);
 	dec_part /= (1000000000000000ULL / p);
