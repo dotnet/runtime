@@ -1,3 +1,8 @@
+2005-04-23  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Remove --with-icu option to prevent people from using
+	it by mistake.
+
 2005-04-21  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am: Update.  Pass 'monodis-wrapper' as ILDISASM
