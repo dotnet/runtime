@@ -1,5 +1,7 @@
 2005-04-23  Zoltan Varga  <vargaz@freemail.hu>
 
+	* doc: Remove unused directory.
+	
 	* configure.in: Remove --with-icu option to prevent people from using
 	it by mistake.
 
