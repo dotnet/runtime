@@ -41,7 +41,7 @@ static GPtrArray *sockets=NULL;
 static pthread_key_t error_key;
 static mono_once_t error_key_once=MONO_ONCE_INIT;
 
-static void socket_close (gpointer handle);
+static void socket_close (gpointer handle, gpointer data);
 
 struct _WapiHandleOps _wapi_socket_ops = {
 	socket_close,		/* close */
@@ -57,7 +57,7 @@ static void socket_ops_init (void)
 	/* No capabilities to register */
 }
 
-static void socket_close (gpointer handle)
+static void socket_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 {
 	int ret;
 
@@ -138,7 +138,7 @@ int WSACleanup(void)
 		gpointer handle;
 
 		handle = g_ptr_array_index (sockets, i);
-		_wapi_handle_ops_close (handle);
+		_wapi_handle_ops_close (handle, NULL);
 	}
 
 	g_ptr_array_free (sockets, FALSE);

@@ -22,18 +22,16 @@
 
 #undef DEBUG
 
-static void mutex_close (gpointer handle);
 static void mutex_signal(gpointer handle);
 static gboolean mutex_own (gpointer handle);
 static gboolean mutex_is_owned (gpointer handle);
 
-static void namedmutex_close (gpointer handle);
 static void namedmutex_signal (gpointer handle);
 static gboolean namedmutex_own (gpointer handle);
 static gboolean namedmutex_is_owned (gpointer handle);
 
 struct _WapiHandleOps _wapi_mutex_ops = {
-	mutex_close,		/* close */
+	NULL,			/* close */
 	mutex_signal,		/* signal */
 	mutex_own,		/* own */
 	mutex_is_owned,		/* is_owned */
@@ -53,7 +51,7 @@ void _wapi_mutex_details (gpointer handle_info)
 }
 
 struct _WapiHandleOps _wapi_namedmutex_ops = {
-	namedmutex_close,	/* close */
+	NULL,			/* close */
 	namedmutex_signal,	/* signal */
 	namedmutex_own,		/* own */
 	namedmutex_is_owned,	/* is_owned */
@@ -92,26 +90,6 @@ static void mutex_ops_init (void)
 					    WAPI_HANDLE_CAP_WAIT |
 					    WAPI_HANDLE_CAP_SIGNAL |
 					    WAPI_HANDLE_CAP_OWN);
-}
-
-static void mutex_close (gpointer handle)
-{
-	struct _WapiHandle_mutex *mutex_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
-				(gpointer *)&mutex_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up mutex handle %p", __func__,
-			   handle);
-		return;
-	}
-	
-#ifdef DEBUG
-	g_message("%s: closing mutex handle %p", __func__, handle);
-#endif
-
-	/* If its a shared one, clear the name */
 }
 
 static void mutex_signal(gpointer handle)
@@ -186,14 +164,9 @@ static gboolean mutex_is_owned (gpointer handle)
 	}
 }
 
-static void namedmutex_close (gpointer handle)
-{
-	/**/
-}
-
 static void namedmutex_signal (gpointer handle)
 {
-	/**/
+	ReleaseMutex(handle);
 }
 
 static gboolean namedmutex_own (gpointer handle)

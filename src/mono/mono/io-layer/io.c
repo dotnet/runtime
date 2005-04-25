@@ -33,7 +33,7 @@
 static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
 static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
 
-static void file_close (gpointer handle);
+static void file_close (gpointer handle, gpointer data);
 static WapiFileType file_getfiletype(void);
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
@@ -77,7 +77,7 @@ void _wapi_file_details (gpointer handle_info)
 		 file->attrs);
 }
 
-static void console_close (gpointer handle);
+static void console_close (gpointer handle, gpointer data);
 static WapiFileType console_getfiletype(void);
 static gboolean console_read(gpointer handle, gpointer buffer,
 			     guint32 numbytes, guint32 *bytesread,
@@ -110,7 +110,7 @@ struct _WapiHandleOps _wapi_find_ops = {
 	NULL,			/* is_owned */
 };
 
-static void pipe_close (gpointer handle);
+static void pipe_close (gpointer handle, gpointer data);
 static WapiFileType pipe_getfiletype (void);
 static gboolean pipe_read (gpointer handle, gpointer buffer, guint32 numbytes,
 			   guint32 *bytesread, WapiOverlapped *overlapped);
@@ -232,22 +232,13 @@ _wapi_set_last_error_from_errno (void)
 
 /* Handle ops.
  */
-static void file_close (gpointer handle)
+static void file_close (gpointer handle, gpointer data)
 {
-	struct _WapiHandle_file *file_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
-				(gpointer *)&file_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up file handle %p", __func__,
-			   handle);
-		SetLastError (ERROR_INVALID_HANDLE);
-		return;
-	}
+	struct _WapiHandle_file *file_handle = (struct _WapiHandle_file *)data;
 	
 #ifdef DEBUG
-	g_message("%s: closing file handle %p", __func__, handle);
+	g_message("%s: closing file handle %p [%s]", __func__, handle,
+		  file_handle->filename);
 #endif
 
 	g_free (file_handle->filename);
@@ -915,19 +906,9 @@ static gboolean file_setfiletime(gpointer handle,
 	return(TRUE);
 }
 
-static void console_close (gpointer handle)
+static void console_close (gpointer handle, gpointer data)
 {
-	struct _WapiHandle_file *console_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
-				(gpointer *)&console_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up console handle %p", __func__,
-			   handle);
-		SetLastError (ERROR_INVALID_HANDLE);
-		return;
-	}
+	struct _WapiHandle_file *console_handle = (struct _WapiHandle_file *)data;
 	
 #ifdef DEBUG
 	g_message("%s: closing console handle %p", __func__, handle);
@@ -1054,20 +1035,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	return(TRUE);
 }
 
-static void pipe_close (gpointer handle)
+static void pipe_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 {
-	struct _WapiHandle_file *pipe_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
-				(gpointer *)&pipe_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up pipe handle %p", __func__,
-			   handle);
-		SetLastError (ERROR_INVALID_HANDLE);
-		return;
-	}
-	
 #ifdef DEBUG
 	g_message("%s: closing pipe handle %p", __func__, handle);
 #endif

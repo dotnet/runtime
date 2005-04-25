@@ -62,7 +62,7 @@ extern void _wapi_handle_register_capabilities (WapiHandleType type,
 						WapiHandleCapability caps);
 extern gboolean _wapi_handle_test_capabilities (gpointer handle,
 						WapiHandleCapability caps);
-extern void _wapi_handle_ops_close (gpointer handle);
+extern void _wapi_handle_ops_close (gpointer handle, gpointer data);
 extern void _wapi_handle_ops_signal (gpointer handle);
 extern gboolean _wapi_handle_ops_own (gpointer handle);
 extern gboolean _wapi_handle_ops_isowned (gpointer handle);

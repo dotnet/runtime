@@ -68,7 +68,7 @@ typedef enum {
 
 struct _WapiHandleOps 
 {
-	void (*close)(gpointer handle);
+	void (*close)(gpointer handle, gpointer data);
 
 	/* SignalObjectAndWait */
 	void (*signal)(gpointer signal);

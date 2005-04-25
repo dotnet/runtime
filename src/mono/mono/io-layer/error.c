@@ -203,6 +203,10 @@ _wapi_get_win32_file_error (gint err)
 		ret = ERROR_INVALID_HANDLE;
 		break;
 		
+	case EINTR:
+		ret = ERROR_IO_PENDING;		/* best match I could find */
+		break;
+		
 	default:
 		g_message ("Unknown errno: %s\n", strerror (err));
 		ret = ERROR_GEN_FAILURE;
