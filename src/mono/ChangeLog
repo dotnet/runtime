@@ -1,3 +1,7 @@
+2005-04-25  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: Version bumpage
+
 2005-04-25  Raja R Harinath  <rharinath@novell.com>
 
 	Fix #74692.
