@@ -114,6 +114,19 @@ GetSidName (gunichar2 *server, PSID sid, gint32 *size)
 
 #else /* not PLATFORM_WIN32 */
 
+#define MONO_SYSCONF_DEFAULT_SIZE	((size_t) 1024)
+
+/*
+ * Ensure we always get a valid (usable) value from sysconf.
+ * In case of error, we return the default value.
+ */
+static size_t mono_sysconf (int name)
+{
+	size_t size = (size_t) sysconf (name);
+	/* default value */
+	return (size == -1) ? MONO_SYSCONF_DEFAULT_SIZE : size;
+}
+
 
 static gchar*
 GetTokenName (uid_t uid)
@@ -131,9 +144,9 @@ GetTokenName (uid_t uid)
 
 #ifdef HAVE_GETPWUID_R
 #ifdef _SC_GETPW_R_SIZE_MAX
- 	fbufsize = (size_t) sysconf (_SC_GETPW_R_SIZE_MAX);
+ 	fbufsize = mono_sysconf (_SC_GETPW_R_SIZE_MAX);
 #else
-	fbufsize = (size_t) 1024;
+	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 	fbuf = g_malloc0 (fbufsize);
 	retval = getpwuid_r (uid, &pwd, fbuf, fbufsize, &p);
@@ -197,9 +210,9 @@ IsDefaultGroup (uid_t user, gid_t group)
 
 #ifdef HAVE_GETPWUID_R
 #ifdef _SC_GETPW_R_SIZE_MAX
- 	fbufsize = (size_t) sysconf (_SC_GETPW_R_SIZE_MAX);
+ 	fbufsize = mono_sysconf (_SC_GETPW_R_SIZE_MAX);
 #else
-	fbufsize = (size_t) 1024;
+	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 
 	fbuf = g_malloc0 (fbufsize);
@@ -359,9 +372,9 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 
 #ifdef HAVE_GETPWNAM_R
 #ifdef _SC_GETPW_R_SIZE_MAX
- 	fbufsize = (size_t) sysconf (_SC_GETPW_R_SIZE_MAX);
+ 	fbufsize = mono_sysconf (_SC_GETPW_R_SIZE_MAX);
 #else
-	fbufsize = (size_t) 1024;
+	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 
 	fbuf = g_malloc0 (fbufsize);
@@ -515,9 +528,9 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 
 #ifdef HAVE_GETGRGID_R
 #ifdef _SC_GETGR_R_SIZE_MAX
- 	fbufsize = (size_t) sysconf (_SC_GETGR_R_SIZE_MAX);
+ 	fbufsize = mono_sysconf (_SC_GETGR_R_SIZE_MAX);
 #else
-	fbufsize = (size_t) 1024;
+	fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 	fbuf = g_malloc0 (fbufsize);
 	retval = getgrgid_r ((gid_t) GPOINTER_TO_INT (group), &grp, fbuf, fbufsize, &g);
@@ -567,9 +580,9 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 		gchar *fbuf;
 		gint32 retval;
 #ifdef _SC_GETGR_R_SIZE_MAX
-	 	size_t fbufsize = (size_t) sysconf (_SC_GETGR_R_SIZE_MAX);
+	 	size_t fbufsize = mono_sysconf (_SC_GETGR_R_SIZE_MAX);
 #else
-		size_t fbufsize = (size_t) 1024;
+		size_t fbufsize = MONO_SYSCONF_DEFAULT_SIZE;
 #endif
 		fbuf = g_malloc0 (fbufsize);
 		retval = getgrnam_r (utf8_groupname, &grp, fbuf, fbufsize, &g);
