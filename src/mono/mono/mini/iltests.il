@@ -725,4 +725,37 @@ COND:   ldloc.0
 		ret
 	}
 
+	.class public auto ansi Integer
+  		extends [mscorlib]System.Object {
+
+		.field public bool n
+
+	    .method private hidebysig  specialname  rtspecialname 
+           instance default void .ctor (unsigned int64 i, bool n)  cil managed 
+	    {
+			.maxstack 8
+			ldarg.0
+			call instance void class [mscorlib]System.Object::.ctor()
+			ldarg.0
+			ldarg.2
+			stfld bool Tests/Integer::n
+			ret
+		}
+	}
+
+	.method public static int32 test_1_bug_74726 () {
+		.maxstack 16
+
+		ldc.i4.2
+		conv.ovf.u8
+		ldc.i4.1
+		conv.ovf.u8
+		mul.ovf.un
+		ldc.i4.1
+		newobj instance void class Tests/Integer::.ctor(unsigned int64, bool)
+		ldfld bool Tests/Integer::n
+		ldc.i4.1
+		ceq
+		ret
+	}
 }
