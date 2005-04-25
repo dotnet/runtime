@@ -350,9 +350,6 @@ const static unsigned char GenericParamSchema [] = {
 	MONO_MT_TABLE_IDX,  /* "Owner" },  TypeDef or MethodDef */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 
-	/* soon to be removed */
-	MONO_MT_TABLE_IDX,  /* "Kind" },  */
-	
 	MONO_MT_END
 };
 

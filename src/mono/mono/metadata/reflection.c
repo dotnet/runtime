@@ -2078,7 +2078,6 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	values [MONO_GENERICPARAM_FLAGS] = entry->gparam->attrs;
 	values [MONO_GENERICPARAM_NUMBER] = param->num;
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
-	values [MONO_GENERICPARAM_KIND] = 0;
 
 	encode_constraints (entry->gparam, table_idx, assembly);
 }
@@ -3396,10 +3395,10 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	p += 4;
 
 	if ((assembly->tables [MONO_TABLE_GENERICPARAM].rows > 0) ||
-			(assembly->tables [MONO_TABLE_METHODSPEC].rows > 0) ||
-			(assembly->tables [MONO_TABLE_GENERICPARAMCONSTRAINT].rows > 0)) {
-		*p++ = 1; /* version */
-		*p++ = 1;
+	    (assembly->tables [MONO_TABLE_METHODSPEC].rows > 0) ||
+	    (assembly->tables [MONO_TABLE_GENERICPARAMCONSTRAINT].rows > 0)) {
+		*p++ = 2; /* version */
+		*p++ = 0;
 	} else {
 		*p++ = 1; /* version */
 		*p++ = 0;
