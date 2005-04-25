@@ -1,3 +1,12 @@
+2005-04-25  Raja R Harinath  <rharinath@novell.com>
+
+	Fix #74692.
+	* configure.in ($mcsdir/build/config.make): Point RUNTIME and
+	ILDISASM to the in-tree versions of mono and monodis.  Propagate
+	value of INSTALL to mcs too.
+	* runtime/Makefile.am: Avoid passing RUNTIME and ILDISASM to each
+	sub-make, now that 'configure' sets up the 'mcs' tree.
+
 2005-04-23  Zoltan Varga  <vargaz@freemail.hu>
 
 	* doc: Remove unused directory.
