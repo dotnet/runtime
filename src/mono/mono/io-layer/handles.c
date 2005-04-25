@@ -1534,16 +1534,14 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
  */
 void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 {
-	DIR *proc_dir;
-	struct dirent *proc_entry;
 	gboolean found = FALSE, proc_fds = FALSE;
 	pid_t self = getpid();
 	int pid;
 	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
-	int thr_ret;
+	int thr_ret, i;
 	
-	proc_dir = opendir ("/proc");
-	if (proc_dir == NULL) {
+	/* If there is no /proc, there's nothing more we can do here */
+	if (access ("/proc", F_OK) == -1) {
 		return;
 	}
 	
@@ -1563,18 +1561,26 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	} while (thr_ret == EBUSY);
 	g_assert (thr_ret == 0);
 
-	while ((proc_entry = readdir (proc_dir)) != NULL) {
-		/* We only care about numerically-named directories */
-		pid = atoi (proc_entry->d_name);
-		if (pid != 0) {
+	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
+		struct _WapiHandleShared *shared;
+		struct _WapiHandleSharedMetadata *meta;
+		struct _WapiHandle_process *process_handle;
+
+		meta = &_wapi_shared_layout->metadata[i];
+		shared = &_wapi_shared_layout->handles[meta->offset];
+		
+		if (shared->type == WAPI_HANDLE_PROCESS) {
+			DIR *fd_dir;
+			struct dirent *fd_entry;
+			char subdir[_POSIX_PATH_MAX];
+
+			process_handle = &shared->u.process;
+			pid = process_handle->id;
+		
 			/* Look in /proc/<pid>/fd/ but ignore
 			 * /proc/<our pid>/fd/<fd>, as we have the
 			 * file open too
 			 */
-			DIR *fd_dir;
-			struct dirent *fd_entry;
-			char subdir[_POSIX_PATH_MAX];
-			
 			g_snprintf (subdir, _POSIX_PATH_MAX, "/proc/%d/fd",
 				    pid);
 			
@@ -1582,6 +1588,10 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 			if (fd_dir == NULL) {
 				continue;
 			}
+
+#ifdef DEBUG
+			g_message ("%s: Looking in %s", __func__, subdir);
+#endif
 			
 			proc_fds = TRUE;
 			
@@ -1615,8 +1625,6 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 			closedir (fd_dir);
 		}
 	}
-	
-	closedir (proc_dir);
 
 	if (found == FALSE && proc_fds == TRUE) {
 		/* Blank out this entry, as it is stale */
@@ -1645,9 +1653,11 @@ void _wapi_handle_dump (void)
 				continue;
 			}
 		
-			g_print ("%3x [%7s] %s %d ", i,
+			g_print ("%3x [%7s] %s %d ",
+				 i * _WAPI_HANDLE_INITIAL_COUNT + k,
 				 _wapi_handle_typename[handle_data->type],
-				 handle_data->signalled?"Sg":"Un", handle_data->ref);
+				 handle_data->signalled?"Sg":"Un",
+				 handle_data->ref);
 			handle_details[handle_data->type](&handle_data->u);
 			g_print ("\n");
 		}
