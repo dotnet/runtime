@@ -9473,20 +9473,32 @@ mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDe
 }
 
 gboolean
-mono_reflection_call_is_assignable_from (MonoClass *klass, MonoClass *oklass)
+mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass)
 {
 	MonoObject *res, *exc;
 	void *params [1];
+	static MonoClass *System_Reflection_Emit_TypeBuilder = NULL;
 	static MonoMethod *method = NULL;
 
+	if (!System_Reflection_Emit_TypeBuilder) {
+		System_Reflection_Emit_TypeBuilder = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "TypeBuilder");
+		g_assert (System_Reflection_Emit_TypeBuilder);
+	}
 	if (method == NULL) {
-		method = mono_class_get_method_from_name (mono_defaults.monotype_class->parent, "IsAssignableFrom", 1);
+		method = mono_class_get_method_from_name (System_Reflection_Emit_TypeBuilder, "IsAssignableTo", 1);
 		g_assert (method);
 	}
 
+	/* 
+	 * The result of mono_type_get_object () might be a System.MonoType but we
+	 * need a TypeBuilder so use klass->reflection_info.
+	 */
+	g_assert (klass->reflection_info);
+	g_assert (!strcmp (((MonoObject*)(klass->reflection_info))->vtable->klass->name, "TypeBuilder"));
+
 	params [0] = mono_type_get_object (mono_domain_get (), &oklass->byval_arg);
 
-	res = mono_runtime_invoke (method, mono_type_get_object (mono_domain_get (), &klass->byval_arg), params, &exc);
+	res = mono_runtime_invoke (method, (MonoObject*)(klass->reflection_info), params, &exc);
 	if (exc)
 		return FALSE;
 	else

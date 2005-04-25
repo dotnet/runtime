@@ -3317,7 +3317,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			 * oklass might be a generic type parameter but they have 
 			 * interface_offsets set.
 			 */
- 			return mono_reflection_call_is_assignable_from (klass, oklass);
+ 			return mono_reflection_call_is_assignable_to (oklass, klass);
 
 		if ((klass->interface_id <= oklass->max_interface_id) &&
 		    (oklass->interface_offsets [klass->interface_id] != -1))

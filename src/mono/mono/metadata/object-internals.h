@@ -1030,7 +1030,7 @@ gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class);
 
 gboolean
-mono_reflection_call_is_assignable_from (MonoClass *klass, MonoClass *oklass);
+mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass);
 
 void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module);
