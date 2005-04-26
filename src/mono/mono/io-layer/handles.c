@@ -370,16 +370,21 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 			_wapi_handle_collect ();
 			offset = _wapi_handle_new_shared (type,
 							  handle_specific);
-			/* FIXME: grow the arrays */
-			return (_WAPI_HANDLE_INVALID);
+			if (offset == 0) {
+				/* FIXME: grow the arrays */
+				return (_WAPI_HANDLE_INVALID);
+			}
 		}
 		
 		ref = _wapi_handle_new_shared_offset (offset);
 		if (ref == 0) {
 			_wapi_handle_collect ();
 			ref = _wapi_handle_new_shared_offset (offset);
-			/* FIXME: grow the arrays */
-			return (_WAPI_HANDLE_INVALID);
+
+			if (ref == 0) {
+				/* FIXME: grow the arrays */
+				return (_WAPI_HANDLE_INVALID);
+			}
 		}
 		
 		_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = ref;
@@ -682,8 +687,11 @@ gboolean _wapi_replace_handle (gpointer handle, WapiHandleType type,
 			_wapi_handle_collect ();
 			new_off = _wapi_handle_new_shared (type, 
 							   handle_specific);
-			/* FIXME: grow the arrays */
-			return (FALSE);
+
+			if (new_off == 0) {
+				/* FIXME: grow the arrays */
+				return (FALSE);
+			}
 		}
 		
 		shared_handle_data = &_wapi_shared_layout->handles[new_off];
