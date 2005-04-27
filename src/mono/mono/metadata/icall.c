@@ -3526,7 +3526,6 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname->minor = assem->aname.minor;
 		aname->build = assem->aname.build;
 		aname->revision = assem->aname.revision;
-		aname->revision = assem->aname.revision;
 		aname->hashalg = assem->aname.hash_alg;
 		aname->flags = assem->aname.flags;
 		aname->versioncompat = 1; /* SameMachine (default) */
