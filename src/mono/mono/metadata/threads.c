@@ -1688,22 +1688,22 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	HANDLE handle;
 
 	/* The finalizer thread is not a background thread */
-	if (thread->tid != self && thread->state & ThreadState_Background) {
+	if (thread->tid != self && (thread->state & ThreadState_Background) != 0) {
 	
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
 			return FALSE;
 		
-		wait->handles[wait->num]=thread->handle;
-		wait->threads[wait->num]=thread;
-		wait->num++;
-	
 		if(thread->state & ThreadState_AbortRequested ||
 		   thread->state & ThreadState_Aborted) {
 			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Thread id %d already aborting", thread->tid));
 			return(TRUE);
 		}
-		
+
+		wait->handles[wait->num]=thread->handle;
+		wait->threads[wait->num]=thread;
+		wait->num++;
+
 		THREAD_DEBUG (g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %d\n", thread->tid));
 		mono_thread_stop (thread);
 		return TRUE;
@@ -1740,8 +1740,12 @@ void mono_thread_manage (void)
 			/* Something to wait for */
 			wait_for_tids (wait, INFINITE);
 		}
+		THREAD_DEBUG (g_message ("I have %d threads after waiting.", wait->num));
 	} while(wait->num>0);
-	
+
+	mono_runtime_set_shutting_down ();
+
+	THREAD_DEBUG (g_message ("threadpool cleanup"));
 	mono_thread_pool_cleanup ();
 
 	EnterCriticalSection(&threads_mutex);
@@ -1755,6 +1759,7 @@ void mono_thread_manage (void)
 
 	LeaveCriticalSection(&threads_mutex);
 
+	THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
 	if(wait->num>0) {
 		/* Something to wait for */
 		wait_for_tids (wait, INFINITE);
