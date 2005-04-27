@@ -1,3 +1,7 @@
+2005-04-27  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_DISABLE_FAST_INSTALL): Set.
+
 2005-04-25  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Version bumpage
