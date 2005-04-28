@@ -1762,7 +1762,11 @@ void mono_thread_manage (void)
 	THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
 	if(wait->num>0) {
 		/* Something to wait for */
-		wait_for_tids (wait, INFINITE);
+
+		/*
+		 * This seems to hang in some cases, so disable it for now.
+		 */
+		//wait_for_tids (wait, INFINITE);
 	}
 	/* 
 	 * give the subthreads a chance to really quit (this is mainly needed
