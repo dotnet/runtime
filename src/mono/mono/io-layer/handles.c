@@ -662,6 +662,38 @@ gboolean _wapi_replace_handle (gpointer handle, WapiHandleType type,
 	return (TRUE);
 }
 
+void
+_wapi_handle_foreach (WapiHandleType type,
+			gboolean (*on_each)(gpointer test, gpointer user),
+			gpointer user_data)
+{
+	struct _WapiHandleUnshared *handle_data = NULL;
+	gpointer ret = NULL;
+	guint32 i, k;
+	int thr_ret;
+
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	g_assert (thr_ret == 0);
+
+	for (i = SLOT_INDEX (0); _wapi_private_handles [i] != NULL; i++) {
+		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
+			handle_data = &_wapi_private_handles [i][k];
+		
+			if (handle_data->type == type) {
+				ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
+				if (on_each (ret, user_data) == TRUE)
+					break;
+			}
+		}
+	}
+
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+}
+
 /* This might list some shared handles twice if they are already
  * opened by this process, and the check function returns FALSE the
  * first time.  Shared handles that are created during the search are

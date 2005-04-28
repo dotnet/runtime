@@ -37,7 +37,6 @@
 #undef DEBUG
 
 static guint32 startup_count=0;
-static GPtrArray *sockets=NULL;
 static pthread_key_t error_key;
 static mono_once_t error_key_once=MONO_ONCE_INIT;
 
@@ -70,8 +69,6 @@ static void socket_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 		return;
 	}
 
-	g_ptr_array_remove_fast (sockets, handle);
-
 	do {
 		ret = close (GPOINTER_TO_UINT(handle));
 	} while (ret == -1 && errno == EINTR &&
@@ -98,10 +95,6 @@ int WSAStartup(guint32 requested, WapiWSAData *data)
 		return(WSAVERNOTSUPPORTED);
 	}
 
-	if (startup_count == 0) {
-		sockets = g_ptr_array_new();
-	}
-	
 	startup_count++;
 
 	/* I've no idea what is the minor version of the spec I read */
@@ -120,6 +113,13 @@ int WSAStartup(guint32 requested, WapiWSAData *data)
 	return(0);
 }
 
+static gboolean
+cleanup_close (gpointer handle, gpointer data)
+{
+	_wapi_handle_ops_close (handle, NULL);
+	return TRUE;
+}
+
 int WSACleanup(void)
 {
 	guint32 i;
@@ -132,18 +132,8 @@ int WSACleanup(void)
 		/* Do nothing */
 		return(0);
 	}
-	
-	/* Close down all sockets */
-	for (i = 0; i < sockets->len; i++) {
-		gpointer handle;
 
-		handle = g_ptr_array_index (sockets, i);
-		_wapi_handle_ops_close (handle, NULL);
-	}
-
-	g_ptr_array_free (sockets, FALSE);
-	sockets = NULL;
-	
+	_wapi_handle_foreach (WAPI_HANDLE_SOCKET, cleanup_close, NULL);
 	return(0);
 }
 
@@ -241,8 +231,6 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 
-	g_ptr_array_add (sockets, new_handle);
-	
 #ifdef DEBUG
 	g_message ("%s: returning newly accepted socket handle %p with",
 		   __func__, new_handle);
@@ -718,8 +706,6 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		g_warning ("%s: error creating socket handle", __func__);
 		return(INVALID_SOCKET);
 	}
-
-	g_ptr_array_add (sockets, handle);
 
 #ifdef DEBUG
 	g_message ("%s: returning socket handle %p", __func__, handle);

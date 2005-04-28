@@ -92,6 +92,9 @@ extern void _wapi_handle_check_share (struct _WapiFileShare *share_info,
 				      int fd);
 extern void _wapi_handle_dump (void);
 extern void _wapi_handle_update_refs (void);
+extern void _wapi_handle_foreach (WapiHandleType type,
+					gboolean (*on_each)(gpointer test, gpointer user),
+					gpointer user_data);
 
 /* This is OK to use for atomic writes of individual struct members, as they
  * are independent
