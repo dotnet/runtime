@@ -1285,6 +1285,19 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 					/* The callee might be an AOT method */
 					near_call = FALSE;
 			}
+
+			if (patch_type == MONO_PATCH_INFO_INTERNAL_METHOD) {
+				/* 
+				 * The call might go directly to a native function without
+				 * the wrapper.
+				 */
+				MonoJitICallInfo *mi = mono_find_jit_icall_by_name (data);
+				if (mi) {
+					gconstpointer target = mono_icall_get_wrapper (mi);
+					if ((((guint64)target) >> 32) != 0)
+						near_call = FALSE;
+				}
+			}
 		}
 		else {
 			if (mono_find_class_init_trampoline_by_addr (data))
