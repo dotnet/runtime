@@ -1654,6 +1654,15 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (class->init_pending) {
+		/*
+		 * We might be called recursively from mono_class_from_typeref if
+		 * one of our fields has a type which is a nested type of this class,
+		 * and the compiler encodes it as a typeref, like older versions of
+		 * MS ilasm do.
+		 */
+		if (class->size_inited)
+			return;
+
 		/* this indicates a cyclic dependency */
 		g_error ("pending init %s.%s\n", class->name_space, class->name);
 	}
@@ -1736,6 +1745,19 @@ mono_class_init (MonoClass *class)
 	if (class->parent && !class->parent->inited)
 		mono_class_init (class->parent);
 
+	if (!class->generic_class) {
+		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
+		while (i) {
+			MonoClass* nclass;
+			guint32 cols [MONO_NESTED_CLASS_SIZE];
+			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+			nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+			class->nested_classes = g_list_prepend (class->nested_classes, nclass);
+
+			i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
+		}
+	}
+
 	/*
 	 * Computes the size used by the fields, and their locations
 	 */
@@ -1777,19 +1799,6 @@ mono_class_init (MonoClass *class)
 			ctor->name = ".ctor";
 			ctor->slot = -1;
 			class->methods [1] = ctor;
-		}
-	}
-
-	if (!class->generic_class) {
-		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
-		while (i) {
-			MonoClass* nclass;
-			guint32 cols [MONO_NESTED_CLASS_SIZE];
-			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-			nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-			class->nested_classes = g_list_prepend (class->nested_classes, nclass);
-
-			i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
 		}
 	}
 
