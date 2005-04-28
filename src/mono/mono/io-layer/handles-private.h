@@ -36,12 +36,10 @@ extern pthread_cond_t _wapi_global_signal_cond;
 
 extern gpointer _wapi_handle_new (WapiHandleType type,
 				  gpointer handle_specific);
-extern gpointer _wapi_handle_new_for_existing_ns (WapiHandleType type,
-						  gpointer handle_specific,
-						  guint32 offset);
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 				     gpointer handle_specific);
-extern gpointer _wapi_handle_new_from_offset (WapiHandleType type, int offset);
+extern gpointer _wapi_handle_new_from_offset (WapiHandleType type,
+					      guint32 offset);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 				     gpointer *handle_specific);
 extern gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,

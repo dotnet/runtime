@@ -766,13 +766,63 @@ guint32 GetCurrentProcessId (void)
 	return(current_process_handle->id);
 }
 
+/* Returns the process id as a convenience to the functions that call this */
+static pid_t signal_process_if_gone (gpointer handle)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	
+	/* Make sure the process is signalled if it has exited - if
+	 * the parent process didn't wait for it then it won't be
+	 */
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up process handle %p",
+			   __func__, handle);
+		
+		return (0);
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: looking at process %d", __func__, process_handle->id);
+#endif
+
+	if (kill (process_handle->id, 0) == -1 &&
+	    (errno == ESRCH ||
+	     errno == EPERM)) {
+		/* The process is dead, (EPERM tells us a new process
+		 * has that ID, but as it's owned by someone else it
+		 * can't be the one listed in our shared memory file)
+		 */
+		_wapi_shared_handle_set_signal_state (handle, TRUE);
+	}
+
+	return (process_handle->id);
+}
+
 static gboolean process_enum (gpointer handle, gpointer user_data)
 {
 	GPtrArray *processes=user_data;
+	pid_t pid = signal_process_if_gone (handle);
+	
+	if (pid == 0) {
+		return (FALSE);
+	}
 	
 	/* Ignore processes that have already exited (ie they are signalled) */
-	if(_wapi_handle_issignalled (handle)==FALSE) {
-		g_ptr_array_add (processes, handle);
+	if (_wapi_handle_issignalled (handle) == FALSE) {
+#ifdef DEBUG
+		g_message ("%s: process %d added to array", __func__, pid);
+#endif
+
+		/* This ensures that duplicates aren't returned (see
+		 * the comment above _wapi_search_handle () for why
+		 * it's needed
+		 */
+		g_ptr_array_remove (processes, GUINT_TO_POINTER(pid));
+		
+		g_ptr_array_add (processes, GUINT_TO_POINTER(pid));
 	}
 	
 	/* Return false to keep searching */
@@ -791,19 +841,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	
 	fit=len/sizeof(guint32);
 	for (i = 0, j = 0; j < fit && i < processes->len; i++) {
-		struct _WapiHandle_process *process_handle;
-		gboolean ok;
-
-		ok=_wapi_lookup_handle (g_ptr_array_index (processes, i),
-					WAPI_HANDLE_PROCESS,
-					(gpointer *)&process_handle);
-		if (ok == TRUE) {
-			pids[j++] = process_handle->id;
-		} else {
-			/* Handle must have been deleted while we were
-			 * looking through the list
-			 */
-		}
+		pids[j++] = GPOINTER_TO_UINT(g_ptr_array_index (processes, i));
 	}
 
 	g_ptr_array_free (processes, FALSE);
@@ -815,26 +853,21 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 
 static gboolean process_open_compare (gpointer handle, gpointer user_data)
 {
-	struct _WapiHandle_process *process_handle;
-	gboolean ok;
-	pid_t pid;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
-				(gpointer *)&process_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up process handle %p", __func__,
-			   handle);
+	pid_t wanted_pid;
+	pid_t checking_pid = signal_process_if_gone (handle);
+
+	if (checking_pid == 0) {
 		return(FALSE);
 	}
-
-	pid=GPOINTER_TO_UINT (user_data);
+	
+	wanted_pid = GPOINTER_TO_UINT (user_data);
 
 	/* It's possible to have more than one process handle with the
 	 * same pid, but only the one running process can be
 	 * unsignalled
 	 */
-	if(process_handle->id==pid &&
-	   _wapi_handle_issignalled (handle)==FALSE) {
+	if (checking_pid == wanted_pid &&
+	    _wapi_handle_issignalled (handle) == FALSE) {
 		return(TRUE);
 	} else {
 		return(FALSE);
@@ -848,14 +881,19 @@ gpointer OpenProcess (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUS
 	
 	mono_once (&process_current_once, process_set_current);
 
-	handle=_wapi_search_handle (WAPI_HANDLE_PROCESS, process_open_compare,
-				    GUINT_TO_POINTER (pid), NULL);
-	if(handle==0) {
+#ifdef DEBUG
+	g_message ("%s: looking for process %d", __func__, pid);
+#endif
+
+	handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
+				      process_open_compare,
+				      GUINT_TO_POINTER (pid), NULL);
+	if (handle == 0) {
 #ifdef DEBUG
 		g_message ("%s: Can't find pid %d", __func__, pid);
 #endif
 
-		/* Set an error code */
+		SetLastError (ERROR_PROC_NOT_FOUND);
 	
 		return(NULL);
 	}
