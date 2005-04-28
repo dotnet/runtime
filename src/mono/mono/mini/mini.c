@@ -5173,6 +5173,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			field = mono_field_from_token (image, token, &klass, generic_context);
 			mono_class_init (klass);
 
+			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
+
 			if ((*ip) == CEE_STSFLD)
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
