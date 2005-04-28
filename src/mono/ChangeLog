@@ -1,3 +1,7 @@
+2005-04-28  James Willcox  <james@ximian.com>
+
+	* man/mkbundle.1: add --config-dir flag
+
 2005-04-27  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (AC_DISABLE_FAST_INSTALL): Set.
