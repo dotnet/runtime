@@ -3786,9 +3786,11 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 		real_module_count = module_count;
 
 		modules = g_new0 (MonoImage*, module_count);
-		for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
-			modules [i] = 
-				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i)->module.image;
+		if (assemblyb->modules) {
+			for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
+				modules [i] = 
+					mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i)->module.image;
+			}
 		}
 	}
 	else {
