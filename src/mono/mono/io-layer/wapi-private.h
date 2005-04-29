@@ -24,7 +24,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 4
+#define _WAPI_HANDLE_VERSION 5
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -179,6 +179,7 @@ struct _WapiFileShare
 {
 	dev_t device;
 	ino_t inode;
+	pid_t opened_by_pid;
 	guint32 sharemode;
 	guint32 access;
 	guint32 handle_refs;

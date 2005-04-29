@@ -1539,6 +1539,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 			
 			file_share->device = device;
 			file_share->inode = inode;
+			file_share->opened_by_pid = getpid ();
 			file_share->sharemode = new_sharemode;
 			file_share->access = new_access;
 			file_share->handle_refs = 1;
@@ -1555,6 +1556,27 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	_WAPI_HANDLE_COLLECTION_SAFE;
 
 	return(exists);
+}
+
+/* If we don't have the info in /proc, check if the process that
+ * opened this share info is still there (it's not a perfect method,
+ * due to pid reuse)
+ */
+static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
+{
+	if (kill (share_info->opened_by_pid, 0) == -1 &&
+	    (errno == ESRCH ||
+	     errno == EPERM)) {
+		/* It's gone completely (or there's a new process
+		 * owned by someone else) so mark this share info as
+		 * dead
+		 */
+#ifdef DEBUG
+		g_message ("%s: Didn't find it, destroying entry", __func__);
+#endif
+
+		memset (share_info, '\0', sizeof(struct _WapiFileShare));
+	}
 }
 
 /* Scan /proc/<pids>/fd/ for open file descriptors to the file in
@@ -1574,6 +1596,7 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	
 	/* If there is no /proc, there's nothing more we can do here */
 	if (access ("/proc", F_OK) == -1) {
+		_wapi_handle_check_share_by_pid (share_info);
 		return;
 	}
 	
@@ -1658,7 +1681,9 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 		}
 	}
 
-	if (found == FALSE && proc_fds == TRUE) {
+	if (proc_fds == FALSE) {
+		_wapi_handle_check_share_by_pid (share_info);
+	} else if (found == FALSE) {
 		/* Blank out this entry, as it is stale */
 #ifdef DEBUG
 		g_message ("%s: Didn't find it, destroying entry", __func__);
