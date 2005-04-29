@@ -1660,8 +1660,10 @@ mono_class_init (MonoClass *class)
 		 * and the compiler encodes it as a typeref, like older versions of
 		 * MS ilasm do.
 		 */
-		if (class->size_inited)
+		if (class->size_inited) {
+			mono_loader_unlock ();
 			return;
+		}
 
 		/* this indicates a cyclic dependency */
 		g_error ("pending init %s.%s\n", class->name_space, class->name);
