@@ -122,8 +122,6 @@ cleanup_close (gpointer handle, gpointer data)
 
 int WSACleanup(void)
 {
-	guint32 i;
-	
 #ifdef DEBUG
 	g_message ("%s: cleaning up", __func__);
 #endif

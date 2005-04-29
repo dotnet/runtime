@@ -103,7 +103,7 @@ int main (int argc, char **argv)
 		
 		file_share = &_wapi_fileshare_layout->share_info[i];
 		if (file_share->handle_refs > 0) {
-			g_print ("dev: 0x%llx ino: %lld share: 0x%x access: 0x%x refs: %d\n", file_share->device, file_share->inode, file_share->sharemode, file_share->access, file_share->handle_refs);
+			g_print ("dev: 0x%llx ino: %lld open pid: %d share: 0x%x access: 0x%x refs: %d\n", file_share->device, file_share->inode, file_share->opened_by_pid, file_share->sharemode, file_share->access, file_share->handle_refs);
 		}
 	}
 	

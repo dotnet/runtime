@@ -803,8 +803,9 @@ static pid_t signal_process_if_gone (gpointer handle)
 
 static gboolean process_enum (gpointer handle, gpointer user_data)
 {
-	GPtrArray *processes=user_data;
+	GArray *processes=user_data;
 	pid_t pid = signal_process_if_gone (handle);
+	int i;
 	
 	if (pid == 0) {
 		return (FALSE);
@@ -820,9 +821,16 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 		 * the comment above _wapi_search_handle () for why
 		 * it's needed
 		 */
-		g_ptr_array_remove (processes, GUINT_TO_POINTER(pid));
+		for (i = 0; i < processes->len; i++) {
+			if (g_array_index (processes, pid_t, i) == pid) {
+				/* We've already got this one, return
+				 * FALSE to keep searching
+				 */
+				return (FALSE);
+			}
+		}
 		
-		g_ptr_array_add (processes, GUINT_TO_POINTER(pid));
+		g_array_append_val (processes, pid);
 	}
 	
 	/* Return false to keep searching */
@@ -831,7 +839,7 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
-	GPtrArray *processes=g_ptr_array_new ();
+	GArray *processes = g_array_new (FALSE, FALSE, sizeof(pid_t));
 	guint32 fit, i, j;
 	
 	mono_once (&process_current_once, process_set_current);
@@ -841,10 +849,10 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	
 	fit=len/sizeof(guint32);
 	for (i = 0, j = 0; j < fit && i < processes->len; i++) {
-		pids[j++] = GPOINTER_TO_UINT(g_ptr_array_index (processes, i));
+		pids[j++] = g_array_index (processes, pid_t, i);
 	}
 
-	g_ptr_array_free (processes, FALSE);
+	g_array_free (processes, TRUE);
 	
 	*needed = j * sizeof(guint32);
 	
