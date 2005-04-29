@@ -189,16 +189,19 @@ static MonoMethod *
 find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig)
 {
 	int i;
-	char *qname, *fqname;
+	char *qname, *fqname, *class_name;
+	MonoMethod *result = NULL;
 
 	if (ic) {
-		qname = g_strconcat (ic->name, ".", name, NULL); 
+		class_name = mono_class_get_name_full (ic, FALSE, FALSE, FALSE);
+
+		qname = g_strconcat (class_name, ".", name, NULL); 
 		if (ic->name_space && ic->name_space [0])
-			fqname = g_strconcat (ic->name_space, ".", ic->name, ".", name, NULL);
+			fqname = g_strconcat (ic->name_space, ".", class_name, ".", name, NULL);
 		else
 			fqname = NULL;
 	} else
-		qname = fqname = NULL;
+		class_name = qname = fqname = NULL;
 
 	while (klass) {
 		mono_class_setup_methods (klass);
@@ -210,11 +213,15 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 				continue;
 
 			if (sig->call_convention == MONO_CALL_VARARG) {
-				if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m)))
-					return m;
+				if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m))) {
+					result = m;
+					goto out;
+				}
 			} else {
-				if (mono_metadata_signature_equal (sig, mono_method_signature (m)))
-					return m;
+				if (mono_metadata_signature_equal (sig, mono_method_signature (m))) {
+					result = m;
+					goto out;
+				}
 			}
 		}
 
@@ -224,7 +231,11 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		klass = klass->parent;
 	}
 
-	return NULL;
+ out:
+	g_free (class_name);
+	g_free (fqname);
+	g_free (qname);
+	return result;
 }
 
 /*

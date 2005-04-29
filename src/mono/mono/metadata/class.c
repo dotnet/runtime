@@ -113,7 +113,8 @@ dup_type (MonoType* t, const MonoType *original)
 
 static void
 mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
-			    gboolean include_ns, gboolean include_arity)
+			    gboolean include_ns, gboolean include_arity,
+			    gboolean nested_plus)
 {
 	MonoClass *klass;
 	
@@ -123,7 +124,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 
 		mono_type_get_name_recurse (
 			&type->data.array->eklass->byval_arg, str,
-			FALSE, include_ns, include_arity);
+			FALSE, include_ns, include_arity, nested_plus);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -132,19 +133,25 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 	case MONO_TYPE_SZARRAY:
 		mono_type_get_name_recurse (
-			&type->data.klass->byval_arg, str, FALSE, include_ns, include_arity);
+			&type->data.klass->byval_arg, str, FALSE, include_ns, include_arity,
+			nested_plus);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
-		mono_type_get_name_recurse (type->data.type, str, FALSE, include_ns, include_arity);
+		mono_type_get_name_recurse (
+			type->data.type, str, FALSE, include_ns, include_arity, nested_plus);
 		g_string_append_c (str, '*');
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
 			mono_type_get_name_recurse (
-				&klass->nested_in->byval_arg, str, TRUE, include_ns, include_arity);
-			g_string_append_c (str, '+');
+				&klass->nested_in->byval_arg, str, TRUE, include_ns, include_arity,
+				nested_plus);
+			if (nested_plus)
+				g_string_append_c (str, '+');
+			else
+				g_string_append_c (str, '.');
 		}
 		if (include_ns && *klass->name_space) {
 			g_string_append (str, klass->name_space);
@@ -163,24 +170,25 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MonoGenericClass *gclass = klass->generic_class;
 			int i;
 
-			g_string_append_c (str, '[');
+			g_string_append_c (str, '<');
 			for (i = 0; i < gclass->inst->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				mono_type_get_name_recurse (
-					gclass->inst->type_argv [i], str, FALSE, include_ns, include_arity);
+					gclass->inst->type_argv [i], str, FALSE, TRUE, include_arity,
+					nested_plus);
 			}
-			g_string_append_c (str, ']');
+			g_string_append_c (str, '>');
 		} else if (klass->generic_container) {
 			int i;
 
-			g_string_append_c (str, '[');
+			g_string_append_c (str, '<');
 			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				g_string_append (str, klass->generic_container->type_params [i].name);
 			}
-			g_string_append_c (str, ']');
+			g_string_append_c (str, '>');
 		}
 		break;
 	}
@@ -195,10 +203,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
  */
 static char*
 _mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_ns,
-		     gboolean include_arity)
+		     gboolean include_arity, gboolean nested_plus)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result, is_recursed, include_ns, include_arity);
+	mono_type_get_name_recurse (
+		type, result, is_recursed, include_ns, include_arity, nested_plus);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
@@ -209,13 +218,21 @@ _mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_ns,
 char*
 mono_type_get_name (MonoType *type)
 {
-	return _mono_type_get_name (type, TRUE, TRUE, TRUE);
+	return _mono_type_get_name (type, TRUE, TRUE, TRUE, TRUE);
 }
 
 char*
 mono_type_get_full_name (MonoType *type)
 {
-	return _mono_type_get_name (type, FALSE, TRUE, TRUE);
+	return _mono_type_get_name (type, FALSE, TRUE, TRUE, TRUE);
+}
+
+char*
+mono_class_get_name_full (MonoClass *klass, gboolean include_ns, gboolean include_arity,
+			  gboolean nested_plus)
+{
+	return _mono_type_get_name (
+		&klass->byval_arg, FALSE, include_ns, include_arity, nested_plus);
 }
 
 MonoType*
@@ -1225,6 +1242,35 @@ mono_class_setup_vtable (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+static void
+setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
+{
+	MonoClass *gklass = class->generic_class->container_class;
+	MonoGenericContext *gcontext = class->generic_class->context;
+	int i;
+
+	mono_class_init (gklass);
+	class->vtable_size = gklass->vtable_size;
+
+	class->vtable = g_new0 (gpointer, class->vtable_size);
+	memcpy (class->vtable, gklass->vtable,  sizeof (gpointer) * class->vtable_size);
+
+	for (i = 0; i < class->vtable_size; i++) {
+		MonoMethod *m = class->vtable [i];
+
+		if (!m)
+			continue;
+
+		m = mono_class_inflate_generic_method (m, gcontext, class);
+		class->vtable [i] = mono_get_inflated_method (m);
+	}
+
+	class->max_interface_id = gklass->max_interface_id;
+	class->interface_offsets = g_new0 (gpointer, gklass->max_interface_id + 1);
+	memcpy (class->interface_offsets, gklass->interface_offsets,
+		sizeof (gpointer) * (gklass->max_interface_id + 1));
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1240,6 +1286,11 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	if (class->vtable)
 		return;
+
+	if (class->generic_class) {
+		setup_generic_vtable (class, overrides, onum);
+		return;
+	}
 
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
@@ -1289,6 +1340,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	for (k = class; k ; k = k->parent) {
 		int nifaces = 0;
+
 		ifaces = mono_class_get_implemented_interfaces (k);
 		if (ifaces)
 			nifaces = ifaces->len;
@@ -1381,7 +1433,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 				if (ic->generic_class) {
 					MonoClass *the_ic = ic->generic_class->container_class;
-					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, FALSE, TRUE);
+					the_cname = _mono_type_get_name (&ic->byval_arg, FALSE, TRUE, FALSE, TRUE);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
@@ -1400,7 +1452,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 							continue;
-					
+
 						if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
 						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
 
