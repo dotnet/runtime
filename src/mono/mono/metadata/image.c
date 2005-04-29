@@ -814,6 +814,30 @@ mono_image_loaded_by_guid (const char *guid)
 	return res;
 }
 
+static MonoImage *
+register_image (MonoImage *image)
+{
+	MonoImage *image2;
+
+	EnterCriticalSection (&images_mutex);
+	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
+
+	if (image2) {
+		/* Somebody else beat us to it */
+		mono_image_addref (image2);
+		LeaveCriticalSection (&images_mutex);
+		mono_image_close (image);
+		return image2;
+	}
+	g_hash_table_insert (loaded_images_hash, image->name, image);
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == NULL))
+		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);	
+	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
+	LeaveCriticalSection (&images_mutex);
+
+	return image;
+}
+
 MonoImage *
 mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status)
 {
@@ -846,7 +870,11 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 
-	return do_mono_image_load (image, status, TRUE);
+	image = do_mono_image_load (image, status, TRUE);
+	if (image == NULL)
+		return NULL;
+
+	return register_image (image);
 }
 
 /**
@@ -860,7 +888,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	MonoImage *image, *image2;
+	MonoImage *image;
 	char *absfname;
 	
 	g_return_val_if_fail (fname != NULL, NULL);
@@ -888,23 +916,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (image == NULL)
 		return NULL;
 
-	EnterCriticalSection (&images_mutex);
-	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
-
-	if (image2) {
-		/* Somebody else beat us to it */
-		mono_image_addref (image2);
-		LeaveCriticalSection (&images_mutex);
-		mono_image_close (image);
-		return image2;
-	}
-	g_hash_table_insert (loaded_images_hash, image->name, image);
-	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == NULL))
-		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);	
-	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
-	LeaveCriticalSection (&images_mutex);
-
-	return image;
+	return register_image (image);
 }
 
 /**
