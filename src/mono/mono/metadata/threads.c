@@ -1868,6 +1868,10 @@ void mono_thread_suspend_all_other_threads (void)
 			continue;
 		}
 
+		/* Convert abort requests into suspend requests */
+		if ((thread->state & ThreadState_AbortRequested) != 0)
+			thread->state &= ~ThreadState_AbortRequested;
+			
 		thread->state |= ThreadState_SuspendRequested;
 
 		if (thread->suspended_event == NULL)
