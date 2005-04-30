@@ -188,7 +188,7 @@ gboolean PulseEvent(gpointer handle)
 	if(event_handle->manual==TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
-		event_handle->set_count++;
+		event_handle->set_count = 1;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
@@ -325,7 +325,7 @@ gboolean SetEvent(gpointer handle)
 	if(event_handle->manual==TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
-		event_handle->set_count++;
+		event_handle->set_count = 1;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
