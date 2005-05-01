@@ -1614,3 +1614,15 @@ mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 	return del (len, NULL, arr);
 }
 
+typedef int (*CdeclDelegate) (int i, int j);
+
+STDCALL int
+mono_test_marshal_cdecl_delegate (CdeclDelegate del)
+{
+	int i;
+
+	for (i = 0; i < 1000; ++i)
+		del (1, 2);
+
+	return 0;
+}
