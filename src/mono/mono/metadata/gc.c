@@ -811,7 +811,7 @@ void mono_gc_cleanup (void)
 			finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
-			if (WaitForSingleObjectEx (shutdown_event, 2000000, FALSE) == WAIT_TIMEOUT) {
+			if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
 				mono_thread_stop (gc_thread);
 			}
 		}
