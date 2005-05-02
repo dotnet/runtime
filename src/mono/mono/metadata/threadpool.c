@@ -857,21 +857,21 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 	if (target == NULL || state == NULL)
 		return FALSE;
 
-	klass = InterlockedCompareExchangePointer ((gpointer *) &socket_async_call_klass, NULL, NULL);
-	if (klass == NULL) {
-		MonoImage *system_assembly = mono_image_loaded ("System");
-
-		if (system_assembly == NULL)
-			g_assert_not_reached ();
-
-		klass = mono_class_from_name (system_assembly, "System.Net.Sockets", "Socket/SocketAsyncCall");
-		if (klass == NULL)
-			g_assert_not_reached ();
-
-		InterlockedCompareExchangePointer ((gpointer *) &socket_async_call_klass, klass, NULL);
+	if (socket_async_call_klass == NULL) {
+		klass = target->vtable->klass;
+		/* Check if it's SocketAsyncCall in System
+		 * FIXME: check the assembly is signed correctly for extra care
+		 */
+		if (klass->name [0] == 'S' && strcmp (klass->name, "SocketAsyncCall") == 0 
+				&& strcmp (mono_image_get_name (klass->image), "System") == 0
+				&& klass->nested_in && strcmp (klass->nested_in->name, "Socket") == 0)
+			socket_async_call_klass = klass;
 	}
 
-	if (target->vtable->klass != klass)
+	/* return both when socket_async_call_klass has not been seen yet and when
+	 * the object is not an instance of the class.
+	 */
+	if (target->vtable->klass != socket_async_call_klass)
 		return FALSE;
 
 	op = sock_res->operation;
