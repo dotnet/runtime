@@ -61,6 +61,7 @@ libmonoruntime_la_SOURCES = \
 	threads-types.h	\
 	threadpool.c	\
 	threadpool.h	\
+	threadpool-internals.h	\
 	file-io.c	\
 	file-io.h	\
 	socket-io.c	\

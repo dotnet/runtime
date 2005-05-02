@@ -24,6 +24,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/monitor.h>
@@ -125,6 +126,8 @@ enum {
 	AIO_OP_RECEIVEFROM,
 	AIO_OP_SEND,
 	AIO_OP_SENDTO,
+	AIO_OP_RECV_JUST_CALLBACK,
+	AIO_OP_SEND_JUST_CALLBACK,
 	AIO_OP_LAST
 };
 
@@ -172,9 +175,11 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	switch (state->operation) {
 	case AIO_OP_ACCEPT:
 	case AIO_OP_RECEIVE:
+	case AIO_OP_RECV_JUST_CALLBACK:
 	case AIO_OP_RECEIVEFROM:
 		return MONO_POLLIN;
 	case AIO_OP_SEND:
+	case AIO_OP_SEND_JUST_CALLBACK:
 	case AIO_OP_SENDTO:
 	case AIO_OP_CONNECT:
 		return MONO_POLLOUT;
@@ -237,8 +242,13 @@ async_invoke_io_thread (gpointer data)
 
 			domain = ((MonoObject *)ar)->vtable->domain;
 			if (mono_domain_set (domain, FALSE)) {
+				ASyncCall *ac;
+
 				mono_thread_push_appdomain_ref (domain);
 				mono_async_invoke (ar);
+				ac = (ASyncCall *) ar->data;
+				if (ac->msg->exc != NULL)
+					mono_unhandled_exception (ac->msg->exc);
 				mono_thread_pop_appdomain_ref ();
 			}
 			InterlockedDecrement (&busy_io_worker_threads);
@@ -597,6 +607,44 @@ socket_io_epoll_main (gpointer p)
 }
 #endif
 
+/*
+ * select/poll wake up when a socket is closed, but epoll just removes
+ * the socket from its internal list without notification.
+ */
+void
+mono_thread_pool_remove_socket (int sock)
+{
+#ifdef HAVE_EPOLL
+	GSList *list, *next;
+	MonoSocketAsyncResult *state;
+
+	if (socket_io_data.epoll_disabled == TRUE || socket_io_data.inited == FALSE)
+		return;
+
+	EnterCriticalSection (&socket_io_data.io_lock);
+	list = g_hash_table_lookup (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
+	if (list) {
+		g_hash_table_remove (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
+	}
+	LeaveCriticalSection (&socket_io_data.io_lock);
+	
+	while (list) {
+		state = (MonoSocketAsyncResult *) list->data;
+		if (state->operation == AIO_OP_RECEIVE)
+			state->operation = AIO_OP_RECV_JUST_CALLBACK;
+		else if (state->operation == AIO_OP_SEND)
+			state->operation = AIO_OP_SEND_JUST_CALLBACK;
+
+		next = g_slist_remove_link (list, list);
+		list = process_io_event (list, MONO_POLLIN);
+		if (list)
+			process_io_event (list, MONO_POLLOUT);
+
+		list = next;
+	}
+#endif
+}
+
 #ifdef PLATFORM_WIN32
 static void
 connect_hack (gpointer x)
@@ -814,14 +862,11 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 		MonoImage *system_assembly = mono_image_loaded ("System");
 
 		if (system_assembly == NULL)
-			return FALSE;
+			g_assert_not_reached ();
 
 		klass = mono_class_from_name (system_assembly, "System.Net.Sockets", "Socket/SocketAsyncCall");
-		if (klass == NULL) {
-			/* Should never happen... */
-			g_print ("socket_io_filter: SocketAsyncCall class not found.\n");
-			return FALSE;
-		}
+		if (klass == NULL)
+			g_assert_not_reached ();
 
 		InterlockedCompareExchangePointer ((gpointer *) &socket_async_call_klass, klass, NULL);
 	}
@@ -1077,8 +1122,13 @@ async_invoke_thread (gpointer data)
 			 * so we need to set the right domain here */
 			domain = ((MonoObject *)ar)->vtable->domain;
 			if (mono_domain_set (domain, FALSE)) {
+				ASyncCall *ac;
+
 				mono_thread_push_appdomain_ref (domain);
 				mono_async_invoke (ar);
+				ac = (ASyncCall *) ar->data;
+				if (ac->msg->exc != NULL)
+					mono_unhandled_exception (ac->msg->exc);
 				mono_thread_pop_appdomain_ref ();
 			}
 			InterlockedDecrement (&busy_worker_threads);
