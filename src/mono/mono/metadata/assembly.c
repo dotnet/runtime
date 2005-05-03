@@ -1027,58 +1027,244 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 	return mono_assembly_load_from_full (image, fname, status, FALSE);
 }
 
-static MonoAssembly*
-probe_for_partial_name (const char *basepath, const char *fullname, MonoImageOpenStatus *status)
+/**
+* mono_assembly_name_free:
+* @aname: assembly name to free
+* 
+* Frees the provided assembly name object.
+* (it does not frees the object itself, only the name members).
+*/
+void
+mono_assembly_name_free (MonoAssemblyName *aname)
 {
-	MonoAssembly *res = NULL;
-	gchar *fullpath;
+	if (aname == NULL)
+		return;
+
+	g_free ((void *) aname->name);
+	g_free ((void *) aname->culture);
+	g_free ((void *) aname->hash_value);
+}
+
+static gboolean
+build_assembly_name (const char *name, const char *version, const char *culture, const char *token, MonoAssemblyName *aname)
+{
+	gint major, minor, build, revision;
+
+	memset (aname, 0, sizeof (MonoAssemblyName));
+
+	if (version) {
+		if (sscanf (version, "%u.%u.%u.%u", &major, &minor, &build, &revision) != 4)
+			return FALSE;
+
+		aname->major = major;
+		aname->minor = minor;
+		aname->build = build;
+		aname->revision = revision;
+	}
+	
+	aname->name = g_strdup (name);
+	
+	if (culture) {
+		if (g_strcasecmp (culture, "neutral") == 0)
+			aname->culture = g_strdup ("");
+		else
+			aname->culture = g_strdup (culture);
+	}
+	
+	if (token && strncmp (token, "null", 4) != 0)
+		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	
+	return TRUE;
+}
+
+static gboolean
+parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemblyName *aname)
+{
+	gchar **parts;
+	gboolean res;
+	
+	parts = g_strsplit (dirname, "_", 3);
+	if (!parts || !parts[0] || !parts[1] || !parts[2]) {
+		g_strfreev (parts);
+		return FALSE;
+	}
+	
+	res = build_assembly_name (name, parts[0], parts[1], parts[2], aname);
+	g_strfreev (parts);
+	return res;
+}
+
+/**
+* mono_assembly_name_parse:
+* @name: name to parse
+* @aname: the destination assembly name
+* Returns: true if the name could be parsed.
+* 
+* Parses an assembly qualified type name and assigns the name,
+* version, culture and token to the provided assembly name object.
+*/
+gboolean
+mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
+{
+	gchar *dllname;
+	gchar *version = NULL;
+	gchar *culture = NULL;
+	gchar *token = NULL;
+	gboolean res;
+	gchar *value;
+	gchar **parts;
+	gchar **tmp;
+
+	parts = tmp = g_strsplit (name, ",", 4);
+	if (!tmp || !*tmp) {
+		g_strfreev (tmp);
+		return FALSE;
+	}
+
+	dllname = g_strstrip (*tmp);
+	
+	tmp++;
+
+	while (*tmp) {
+		value = g_strstrip (*tmp);
+		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
+			version = g_strstrip (value + 8);
+			tmp++;
+			continue;
+		}
+
+		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
+			culture = g_strstrip (value + 8);
+			tmp++;
+			continue;
+		}
+
+		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
+			token = g_strstrip (value + 15);
+			tmp++;
+			continue;
+		}
+		
+		g_strfreev (parts);
+		return FALSE;
+	}
+
+	res = build_assembly_name (dllname, version, culture, token, aname);
+	g_strfreev (parts);
+	return res;
+}
+
+static MonoAssembly*
+probe_for_partial_name (const char *basepath, const char *fullname, MonoAssemblyName *aname, MonoImageOpenStatus *status)
+{
+	gchar *fullpath = NULL;
 	GDir *dirhandle;
 	const char* direntry;
-
+	MonoAssemblyName gac_aname;
+	gint major=-1, minor=0, build=0, revision=0;
+	gboolean exact_version;
+	
 	dirhandle = g_dir_open (basepath, 0, NULL);
 	if (!dirhandle)
 		return NULL;
+		
+	exact_version = (aname->major | aname->minor | aname->build | aname->revision) != 0;
 
 	while ((direntry = g_dir_read_name (dirhandle))) {
-		fullpath = g_build_path (G_DIR_SEPARATOR_S, basepath, direntry, fullname, NULL);
-		res = mono_assembly_open (fullpath, status);
-		g_free (fullpath);
-		if (res)
-			break;
-	}
-	g_dir_close (dirhandle);
+		gboolean match = TRUE;
+		
+		parse_assembly_directory_name (aname->name, direntry, &gac_aname);
+		
+		if (aname->culture != NULL && strcmp (aname->culture, gac_aname.culture) != 0)
+			match = FALSE;
+			
+		if (match && strlen ((char*)aname->public_key_token) > 0 && 
+				strcmp ((char*)aname->public_key_token, (char*)gac_aname.public_key_token) != 0)
+			match = FALSE;
+		
+		if (match) {
+			if (exact_version) {
+				match = (aname->major == gac_aname.major && aname->minor == gac_aname.minor &&
+						 aname->build == gac_aname.build && aname->revision == gac_aname.revision); 
+			}
+			else if (gac_aname.major < major)
+				match = FALSE;
+			else if (gac_aname.major == major) {
+				if (gac_aname.minor < minor)
+					match = FALSE;
+				else if (gac_aname.minor == minor) {
+					if (gac_aname.build < build)
+						match = FALSE;
+					else if (gac_aname.build == build && gac_aname.revision <= revision)
+						match = FALSE; 
+				}
+			}
+		}
+		
+		if (match) {
+			major = gac_aname.major;
+			minor = gac_aname.minor;
+			build = gac_aname.build;
+			revision = gac_aname.revision;
+			g_free (fullpath);
+			fullpath = g_build_path (G_DIR_SEPARATOR_S, basepath, direntry, fullname, NULL);
+		}
 
-	return res;
+		mono_assembly_name_free (&gac_aname);
+	}
+	
+	g_dir_close (dirhandle);
+	
+	if (fullpath == NULL)
+		return NULL;
+	else {
+		MonoAssembly *res = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		return res;
+	}
 }
 
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
-	MonoAssemblyName aname;
+	MonoAssemblyName *aname, base_name, maped_aname;
 	gchar *fullname, *gacpath;
 	gchar **paths;
 
-	memset (&aname, 0, sizeof (MonoAssemblyName));
-	aname.name = name;
+	memset (&base_name, 0, sizeof (MonoAssemblyName));
+	aname = &base_name;
 
-	res = mono_assembly_loaded (&aname);
-	if (res)
-		return res;
+	if (!mono_assembly_name_parse (name, aname))
+		return NULL;
 
-	res = invoke_assembly_preload_hook (&aname, assemblies_path);
+	/* 
+	 * If no specific version has been requested, make sure we load the
+	 * correct version for system assemblies.
+	 */ 
+	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
+		aname = mono_assembly_remap_version (aname, &maped_aname);
+	
+	res = mono_assembly_loaded (aname);
 	if (res) {
-		res->in_gac = FALSE;
+		mono_assembly_name_free (aname);
 		return res;
 	}
 
-	fullname = g_strdup_printf ("%s.dll", name);
+	res = invoke_assembly_preload_hook (aname, assemblies_path);
+	if (res) {
+		res->in_gac = FALSE;
+		mono_assembly_name_free (aname);
+		return res;
+	}
+
+	fullname = g_strdup_printf ("%s.dll", aname->name);
 
 	if (extra_gac_paths) {
 		paths = extra_gac_paths;
 		while (!res && *paths) {
-			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", name, NULL);
-			res = probe_for_partial_name (gacpath, fullname, status);
+			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", aname->name, NULL);
+			res = probe_for_partial_name (gacpath, fullname, aname, status);
 			g_free (gacpath);
 			paths++;
 		}
@@ -1087,18 +1273,19 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (res) {
 		res->in_gac = TRUE;
 		g_free (fullname);
+		mono_assembly_name_free (aname);
 		return res;
-		
 	}
 
-	gacpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac", name, NULL);
-	res = probe_for_partial_name (gacpath, fullname, status);
+	gacpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac", aname->name, NULL);
+	res = probe_for_partial_name (gacpath, fullname, aname, status);
 	g_free (gacpath);
 
 	if (res)
 		res->in_gac = TRUE;
 
 	g_free (fullname);
+	mono_assembly_name_free (aname);
 
 	return res;
 }

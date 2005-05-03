@@ -896,95 +896,6 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 	return mono_assembly_get_object (domain, ass);
 }
 
-static void
-free_assembly_name (MonoAssemblyName *aname)
-{
-	if (aname == NULL)
-		return;
-
-	g_free ((void *) aname->name);
-	g_free ((void *) aname->culture);
-	g_free ((void *) aname->hash_value);
-}
-
-static gboolean
-get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
-{
-	gchar *name;
-	gchar *value;
-	gchar **parts;
-	gchar **tmp;
-	gint major, minor, build, revision;
-
-	memset (aname, 0, sizeof (MonoAssemblyName));
-
-	name = mono_string_to_utf8 (assRef);
-	parts = tmp = g_strsplit (name, ",", 4);
-	g_free (name);
-	if (!tmp || !*tmp) {
-		g_strfreev (tmp);
-		return FALSE;
-	}
-
-	value = g_strstrip (*tmp);
-	/* g_print ("Assembly name: %s\n", value); */
-	aname->name = g_strdup (value);
-	tmp++;
-	if (!*tmp) {
-		g_strfreev (parts);
-		return TRUE;
-	}
-
-	while (*tmp) {
-		value = g_strstrip (*tmp);
-		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
-			if (sscanf (value + 8, "%u.%u.%u.%u",
-				    &major, &minor, &build, &revision) != 4) {
-				g_strfreev (parts);
-				return FALSE;
-			}
-			/* g_print ("Version: %u.%u.%u.%u\n", major, minor, build, revision); */
-			aname->major = major;
-			aname->minor = minor;
-			aname->build = build;
-			aname->revision = revision;
-			tmp++;
-			continue;
-		}
-
-		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
-			gchar *t = g_strdup (value + 8);
-			g_strchug (t);
-			aname->culture = g_strdup (g_strchomp (t));
-			tmp++;
-			g_free (t);
-			if (g_strcasecmp (aname->culture, "neutral") == 0) {
-				g_free ((void *) aname->culture);
-				aname->culture = g_strdup ("");
-			}
-			continue;
-		}
-
-		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
-			tmp++;
-			value += 15;
-			if (*value && strncmp (value, "null", 4)) {
-				gchar *t = g_strdup (value);
-				g_strchug (t);
-				g_strlcpy ((char*)aname->public_key_token, g_strchomp (value), MONO_PUBLIC_KEY_TOKEN_LENGTH);
-				g_free (t);
-			}
-			continue;
-		}
-
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	g_strfreev (parts);
-	return TRUE;
-}
-
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad, 
 											MonoArray *raw_assembly,
@@ -1027,22 +938,27 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	MonoAssembly *ass;
 	MonoAssemblyName aname;
 	MonoReflectionAssembly *refass = NULL;
+	gchar *name;
+	gboolean parsed;
 
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (assRef != NULL);
 
-	if (!get_info_from_assembly_name (assRef, &aname)) {
+	name = mono_string_to_utf8 (assRef);
+	parsed = mono_assembly_name_parse (name, &aname);
+	g_free (name);
+
+	if (!parsed) {
 		MonoException *exc;
 
-		free_assembly_name (&aname);
 		/* This is a parse error... */
 		exc = mono_get_exception_file_not_found (assRef);
 		mono_raise_exception (exc);
 	}
 
 	ass = mono_assembly_load_full (&aname, NULL, &status, refOnly);
-	free_assembly_name (&aname);
+	mono_assembly_name_free (&aname);
 
 	if (!ass && (refass = try_assembly_resolve (domain, assRef, refOnly)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */

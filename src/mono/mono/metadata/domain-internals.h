@@ -244,4 +244,10 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 const MonoRuntimeInfo*
 mono_get_runtime_info (void);
 
+gboolean
+mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
+
+void
+mono_assembly_name_free (MonoAssemblyName *aname);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
