@@ -1,3 +1,7 @@
+2005-05-04  Zoltan Varga  <vargaz@freemail.hu>
+
+	* runtime/Makefile.am: Pass the prefix to the mcs makefiles.
+
 2005-04-28  James Willcox  <james@ximian.com>
 
 	* man/mkbundle.1: add --config-dir flag
