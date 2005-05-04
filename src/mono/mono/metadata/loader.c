@@ -291,7 +291,6 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 			g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (token), sig);
 		mono_loader_unlock ();
 	}
-	mono_loader_unlock ();
 
 	sig = mono_class_inflate_generic_signature (image, sig, context);
 
