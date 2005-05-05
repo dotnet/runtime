@@ -1268,196 +1268,107 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles,
 	}
 }
 
+static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
+{
+	struct timespec fake_timeout;
+	int ret;
+	
+	_wapi_calc_timeout (&fake_timeout, 100);
+	
+	if (timeout != NULL && ((fake_timeout.tv_sec > timeout->tv_sec) ||
+	   (fake_timeout.tv_sec == timeout->tv_sec &&
+		fake_timeout.tv_nsec > timeout->tv_nsec))) {
+		/* Real timeout is less than 100ms time */
+		ret=mono_cond_timedwait (cond, mutex, timeout);
+	} else {
+		ret=mono_cond_timedwait (cond, mutex, &fake_timeout);
+
+		/* Mask the fake timeout, this will cause
+		 * another poll if the cond was not really signaled
+		 */
+		if (ret==ETIMEDOUT) {
+			ret=0;
+		}
+	}
+	
+	return(ret);
+}
+
 int _wapi_handle_wait_signal (void)
 {
-	return(mono_cond_wait (&_wapi_global_signal_cond,
-			       &_wapi_global_signal_mutex));
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, NULL);
 }
 
 int _wapi_handle_timedwait_signal (struct timespec *timeout)
 {
-	return(mono_cond_timedwait (&_wapi_global_signal_cond,
-				    &_wapi_global_signal_mutex,
-				    timeout));
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, timeout);
 }
 
 int _wapi_handle_wait_signal_poll_share (void)
 {
-	struct timespec fake_timeout;
-	int ret;
-	
 #ifdef DEBUG
 	g_message ("%s: poll private and shared handles", __func__);
 #endif
-
-	_wapi_calc_timeout (&fake_timeout, 100);
 	
-	ret = mono_cond_timedwait (&_wapi_global_signal_cond,
-				   &_wapi_global_signal_mutex, &fake_timeout);
-	
-	if (ret == ETIMEDOUT) {
-		/* This will cause the waiting thread to check signal
-		 * status for all handles
-		 */
-#ifdef DEBUG
-		g_message ("%s: poll timed out, returning success", __func__);
-#endif
-
-		return (0);
-	} else {
-		/* This will be 0 indicating a private handle was
-		 * signalled, or an error
-		 */
-#ifdef DEBUG
-		g_message ("%s: returning: %d", __func__, ret);
-#endif
-
-		return (ret);
-	}
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, NULL);
 }
 
 int _wapi_handle_timedwait_signal_poll_share (struct timespec *timeout)
 {
-	struct timespec fake_timeout;
-	guint32 signal_count = _wapi_shared_layout->signal_count;
-	int ret;
-	
 #ifdef DEBUG
 	g_message ("%s: poll private and shared handles", __func__);
 #endif
 	
-	do {
-		_wapi_calc_timeout (&fake_timeout, 100);
-	
-		if ((fake_timeout.tv_sec > timeout->tv_sec) ||
-		    (fake_timeout.tv_sec == timeout->tv_sec &&
-		     fake_timeout.tv_nsec > timeout->tv_nsec)) {
-			/* Real timeout is less than 100ms time */
-
-#ifdef DEBUG
-			g_message ("%s: last few ms", __func__);
-#endif
-
-			ret = mono_cond_timedwait (&_wapi_global_signal_cond,
-						   &_wapi_global_signal_mutex,
-						   timeout);
-			/* If this times out, it will compare the
-			 * shared signal counter and then if that
-			 * hasn't increased will fall out of the
-			 * do-while loop.
-			 */
-			if (ret != ETIMEDOUT) {
-				/* Either a private handle was
-				 * signalled, or an error.
-				 */
-#ifdef DEBUG
-				g_message ("%s: returning: %d", __func__, ret);
-#endif
-				return (ret);
-			}
-		} else {
-			ret = mono_cond_timedwait (&_wapi_global_signal_cond,
-						   &_wapi_global_signal_mutex,
-						   &fake_timeout);
-
-			/* Mask the fake timeout, this will cause
-			 * another poll if the shared counter hasn't
-			 * changed
-			 */
-			if (ret == ETIMEDOUT) {
-				ret = 0;
-			} else {
-				/* Either a private handle was
-				 * signalled, or an error
-				 */
-#ifdef DEBUG
-				g_message ("%s: returning: %d", __func__, ret);
-#endif
-				return (ret);
-			}
-		}
-
-		/* No private handle was signalled, so check the
-		 * shared signal counter
-		 */
-		if (signal_count != _wapi_shared_layout->signal_count) {
-#ifdef DEBUG
-				g_message ("%s: A shared handle was signalled",
-					   __func__);
-#endif
-			return (0);
-		}
-	} while (ret != ETIMEDOUT);
-
-#ifdef DEBUG
-	g_message ("%s: returning ETIMEDOUT", __func__);
-#endif
-
-	return (ret);
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, timeout);
 }
 
 int _wapi_handle_wait_signal_handle (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
-	
 #ifdef DEBUG
 	g_message ("%s: waiting for %p", __func__, handle);
 #endif
 	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		while(1) {
-			if (WAPI_SHARED_HANDLE_METADATA(handle).signalled == TRUE) {
-				return (0);
-			}
-			
-			_wapi_handle_spin (100);
-		}
-	} else {
-		return(mono_cond_wait (&_WAPI_PRIVATE_HANDLES(idx).signal_cond,
-				       &_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
-	}
+	return _wapi_handle_timedwait_signal_handle (handle, NULL);
 }
 
 int _wapi_handle_timedwait_signal_handle (gpointer handle,
 					  struct timespec *timeout)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
-	
 #ifdef DEBUG
 	g_message ("%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
 #endif
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		struct timespec fake_timeout;
-
-		while (1) {
-			if (WAPI_SHARED_HANDLE_METADATA(handle).signalled == TRUE) {
-				return (0);
-			}
-		
+		if (WAPI_SHARED_HANDLE_METADATA(handle).signalled == TRUE) {
+			return (0);
+		}
+		if (timeout != NULL) {
+			struct timespec fake_timeout;
 			_wapi_calc_timeout (&fake_timeout, 100);
 		
 			if ((fake_timeout.tv_sec > timeout->tv_sec) ||
-			    (fake_timeout.tv_sec == timeout->tv_sec &&
-			     fake_timeout.tv_nsec > timeout->tv_nsec)) {
+				(fake_timeout.tv_sec == timeout->tv_sec &&
+				 fake_timeout.tv_nsec > timeout->tv_nsec)) {
 				/* FIXME: Real timeout is less than
 				 * 100ms time, but is it really worth
 				 * calculating to the exact ms?
 				 */
 				_wapi_handle_spin (100);
-				
+
 				if (WAPI_SHARED_HANDLE_METADATA(handle).signalled == TRUE) {
 					return (0);
 				} else {
 					return (ETIMEDOUT);
 				}
-			} else {
-				_wapi_handle_spin (100);
 			}
 		}
+		_wapi_handle_spin (100);
+		return (0);
+		
 	} else {
-		return(mono_cond_timedwait (&_WAPI_PRIVATE_HANDLES(idx).signal_cond, &_WAPI_PRIVATE_HANDLES(idx).signal_mutex, timeout));
+		guint32 idx = GPOINTER_TO_UINT(handle);
+		return timedwait_signal_poll_cond (&_WAPI_PRIVATE_HANDLES(idx).signal_cond, &_WAPI_PRIVATE_HANDLES(idx).signal_mutex, timeout);
 	}
 }
 
