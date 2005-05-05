@@ -116,8 +116,8 @@ emit_prolog (guint8 *p, const gint SIZE, int hasthis )
 {
 	// 9 instructions.
 	alpha_ldah( p, alpha_gp, alpha_pv, 0 );  
-	alpha_lda( p, alpha_sp, alpha_sp, -SIZE ); // grow stack down SIZE
 	alpha_lda( p, alpha_gp, alpha_gp, 0 );     // ldgp gp, 0(pv)
+	alpha_lda( p, alpha_sp, alpha_sp, -((SIZE & 8) ? (SIZE+8) : SIZE) ); // grow stack down SIZE (align to 16 bytes like gcc does)
 	
 	/* TODO: we really don't need to store everything.
 	   alpha_a1: We have to store this in order to return the retval.
@@ -181,7 +181,7 @@ emit_epilog (guint8 *p, const gint SIZE )
 	/* restore fp, ra, sp */
 	alpha_ldq( p, alpha_ra, alpha_sp, SIZE-24 ); 
 	alpha_ldq( p, alpha_fp, alpha_sp, SIZE-16 ); 
-	alpha_lda( p, alpha_sp, alpha_sp, SIZE ); 
+	alpha_lda( p, alpha_sp, alpha_sp, ((SIZE & 8) ? (SIZE+8) : SIZE) ); 
 	
 	/* return */
 	alpha_ret( p, alpha_ra, 1 );
@@ -242,7 +242,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	// allocate.	
 	buffer = p = malloc(BUFFER_SIZE);
 	memset( buffer, 0, BUFFER_SIZE );
-	pos = 0;
+	pos = 8 * (sig->param_count - alpharegs - 1);
 	
 	// Ok, start creating this thing.
 	p = emit_prolog( p, STACK_SIZE, hasthis );
@@ -254,15 +254,12 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 		
 		if( param->byref )
 		{
-			if( i > alpharegs )
+			if( i >= alpharegs )
 			{
 				// load into temp register, then store on the stack 
 				alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ));
-				alpha_stl( p, alpha_t1, alpha_sp, pos );
-				pos += 8;
-				
-				if( pos > 128 )
-					g_error( "Too large." );
+				alpha_stq( p, alpha_t1, alpha_sp, pos );
+				pos -= 8;
 			}
 			else
 			{
@@ -275,8 +272,8 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 			simple_type = param->type;
 			if( simple_type == MONO_TYPE_VALUETYPE )
 			{
-                        	if (sig->ret->data.klass->enumtype)
-                                	simple_type = sig->ret->data.klass->enum_basetype->type;
+                        	if (param->data.klass->enumtype)
+                                	simple_type = param->data.klass->enum_basetype->type;
                         }
 			
 			switch (simple_type) 
@@ -291,20 +288,35 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 			case MONO_TYPE_U2:
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
+				// 4 bytes - need to sign-extend (stackvals are not extended)
+				if( i >= alpharegs )
+				{
+					// load into temp register, then store on the stack
+					alpha_ldl( p, alpha_t1, alpha_t0, ARG_LOC( i ) );
+					alpha_stq( p, alpha_t1, alpha_sp, pos );
+					pos -= 8;
+				}
+				else
+				{
+					// load into register
+					alpha_ldl( p, regbase + i, alpha_t0, ARG_LOC(i) );
+				}
+				break;
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_I8:
 				// 8 bytes
-				if( i > alpharegs )
+				if( i >= alpharegs )
 				{
 					// load into temp register, then store on the stack
 					alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ) );
 					alpha_stq( p, alpha_t1, alpha_sp, pos );
-					pos += 8;
+					pos -= 8;
 				}
 				else
 				{
@@ -321,7 +333,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 					alpha_ldq( p, alpha_t1, alpha_t0, ARG_LOC( i ) );
 					alpha_cpys( p, alpha_ft1, alpha_ft1, alpha_ft2 );
 					alpha_stt( p, alpha_ft2, alpha_sp, pos );
-					pos += 8;
+					pos -= 8;
 				}
 				else
 				{
@@ -334,7 +346,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 				g_error ("Not implemented: ValueType as parameter to delegate." );
 				break;
 			default:
-				g_error( "Not implemented." );
+				g_error( "Not implemented: 0x%x.", simple_type );
 				break;	
 			}
 		}
@@ -346,7 +358,10 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	p = emit_epilog( p, STACK_SIZE );
 
 	if( p > buffer + BUFFER_SIZE )
-		g_error( "Buffer overflow." );
+		g_error( "Buffer overflow: got 0x%lx, expected <=0x%x.", (long)(p-buffer), BUFFER_SIZE );
+
+	/* flush instruction cache to see trampoline code */
+	asm volatile("imb":::"memory");
 	
 	return (MonoPIFunc)buffer;
 }
