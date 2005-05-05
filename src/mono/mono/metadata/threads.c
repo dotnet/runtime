@@ -1762,11 +1762,7 @@ void mono_thread_manage (void)
 	THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
 	if(wait->num>0) {
 		/* Something to wait for */
-
-		/*
-		 * This seems to hang in some cases, so disable it for now.
-		 */
-		//wait_for_tids (wait, INFINITE);
+		wait_for_tids (wait, INFINITE);
 	}
 	/* 
 	 * give the subthreads a chance to really quit (this is mainly needed
@@ -2408,11 +2404,6 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
-		/* Someone is waiting for this thread to be suspended */
-		if (mono_runtime_is_shutting_down () && thread->suspended_event) {
-			return mono_thread_execute_interruption (thread);
-		}
-		
 		return NULL;
 	}
 	else {

@@ -5176,17 +5176,7 @@ ves_icall_System_Environment_Exit (int result)
 	mono_runtime_set_shutting_down ();
 
 	/* Suspend all managed threads since the runtime is going away */
-
-	/* 
-	 * Implementing correct suspension of all threads is very hard to do, so
-	 * skip it for the moment. This is not a problem, since the 
-	 * mini_cleanup function is also changed to return immediately without
-	 * freeing up the runtime data structures.
-	 * No waiting -> no hangs
-	 * No freeing -> no crashes
-	 * http://bugzilla.ximian.com/show_bug.cgi?id=71274
-	 */
-	//mono_thread_suspend_all_other_threads ();
+	mono_thread_suspend_all_other_threads ();
 
 	mono_runtime_quit ();
 
