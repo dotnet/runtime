@@ -512,7 +512,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 				   "     Public Key: %s\n%s",
 				   image->name, aname.name, index,
 				   aname.major, aname.minor, aname.build, aname.revision,
-				   strlen(aname.public_key_token) == 0 ? "(none)" : aname.public_key_token, extra_msg);
+				   strlen(aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token, extra_msg);
 		g_free (extra_msg);
 	}
 
