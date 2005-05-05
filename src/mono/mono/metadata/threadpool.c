@@ -15,10 +15,9 @@
 #ifdef PLATFORM_WIN32
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
-#define THREADS_PER_CPU	25
-#else
-#define THREADS_PER_CPU	50
 #endif
+
+#define THREADS_PER_CPU	5 /* 20 + THREADS_PER_CPU * number of CPUs */
 
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/tabledefs.h>
@@ -54,9 +53,9 @@
 #undef EPOLL_DEBUG
 
 /* maximum number of worker threads */
-static int mono_max_worker_threads = THREADS_PER_CPU;
-static int mono_min_worker_threads = 0;
-static int mono_io_max_worker_threads = THREADS_PER_CPU * 2;
+static int mono_max_worker_threads;
+static int mono_min_worker_threads;
+static int mono_io_max_worker_threads;
 
 /* current number of worker threads */
 static int mono_worker_threads = 0;
@@ -732,6 +731,9 @@ socket_io_init (SocketIOData *data)
 	g_assert (data->pipe [0] != INVALID_SOCKET);
 	closesocket (srv);
 #endif
+	mono_io_max_worker_threads = mono_max_worker_threads / 2;
+	if (mono_io_max_worker_threads < 10)
+		mono_io_max_worker_threads = 10;
 
 	data->sock_to_state = g_hash_table_new (g_direct_hash, g_direct_equal);
 
@@ -929,13 +931,13 @@ mono_thread_pool_init ()
 	ares_htable = mono_g_hash_table_new (NULL, NULL);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	GetSystemInfo (&info);
-	if (getenv ("MONO_THREADS_PER_CPU") != NULL) {
-		threads_per_cpu = atoi (getenv ("MONO_THREADS_PER_CPU"));
+	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
+		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
 		if (threads_per_cpu <= 0)
 			threads_per_cpu = THREADS_PER_CPU;
 	}
 
-	mono_max_worker_threads = threads_per_cpu * info.dwNumberOfProcessors;
+	mono_max_worker_threads = 20 + threads_per_cpu * info.dwNumberOfProcessors;
 }
 
 MonoAsyncResult *
