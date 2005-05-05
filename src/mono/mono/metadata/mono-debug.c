@@ -90,6 +90,8 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
+
+	mono_debugger_unlock ();
 }
 
 void
