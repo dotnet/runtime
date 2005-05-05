@@ -71,7 +71,7 @@ extern MonoDebuggerIOLayer mono_debugger_io_layer;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_initialize                  (void);
+void            mono_debugger_initialize                  (gboolean use_debugger);
 void            mono_debugger_cleanup                     (void);
 
 void            mono_debugger_lock                        (void);

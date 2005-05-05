@@ -74,8 +74,7 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_format = format;
 	in_the_mono_debugger = format == MONO_DEBUG_FORMAT_DEBUGGER;
 
-	if (in_the_mono_debugger)
-		mono_debugger_initialize ();
+	mono_debugger_initialize (in_the_mono_debugger);
 
 	mono_debugger_lock ();
 
