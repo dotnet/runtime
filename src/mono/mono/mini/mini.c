@@ -10089,19 +10089,6 @@ mini_cleanup (MonoDomain *domain)
 	 */
 	mono_domain_finalize (domain, 2000);
 
-	/*
-	 * Since the runtime does not suspend/abort running threads when exiting,
-	 * freeing up JIT structures could cause crashes in those threads. So skip 
-	 * that for the moment.
-	 */
-
-	/* 
-	 * This is not safe but people running profilers hopefully do not
-	 * use threads.
-	 */
-	mono_profiler_shutdown ();
-	return;
-
 	mono_runtime_cleanup (domain);
 
 	mono_profiler_shutdown ();
