@@ -280,7 +280,7 @@ struct MonoCallInst {
 	gboolean virtual;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
-#ifdef __x86_64__
+#if defined(MONO_ARCH_HAS_XP_LOCAL_REGALLOC) || defined(__x86_64__)
 	GSList *out_ireg_args;
 	GSList *out_freg_args;
 #endif
@@ -825,7 +825,9 @@ MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
+const char       *mono_regname_full (int reg, gboolean fp);
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align);
+void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb);
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);
@@ -836,7 +838,9 @@ void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, v
 MonoCallInst *mono_arch_call_opcode             (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual);
 MonoInst *mono_arch_get_inst_for_method       (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 void      mono_codegen                          (MonoCompile *cfg);
+void      mono_call_inst_add_outarg_reg         (MonoCallInst *call, int vreg, int hreg, gboolean fp);
 const char *mono_arch_regname                   (int reg);
+const char *mono_arch_fregname                  (int reg);
 gpointer  mono_arch_get_throw_exception         (void);
 gpointer  mono_arch_get_rethrow_exception       (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);

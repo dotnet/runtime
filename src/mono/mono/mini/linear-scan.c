@@ -8,6 +8,7 @@
  */
 
 #include "mini.h"
+#include <mono/metadata/debug-helpers.h>
 
 GList *
 mono_varlist_insert_sorted (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type)
@@ -193,8 +194,32 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
 				if (cfg->verbose_level > 2)
 					printf ("REGVAR %d C%d R%d\n", vmv->idx, vmv->spill_costs, vmv->reg);
-			} else
+			} else {
+				if (cfg->verbose_level > 2)
+					printf ("COSTLY: %s R%d C%d C%d %s\n", mono_method_full_name (cfg->method, TRUE), vmv->idx, vmv->spill_costs, mono_arch_regalloc_cost (cfg, vmv), mono_arch_regname (vmv->reg));
 				vmv->reg = -1;
+			}
+		}
+
+		if (vmv->reg == -1) {
+			if ((vmv->range.first_use.abs_pos >> 16) == (vmv->range.last_use.abs_pos >> 16)) {
+				/*
+				 * This variables is only used in a single basic block so
+				 * convert it into a virtual register.
+				 * FIXME: This increases register pressure in the local
+				 * allocator, leading to the well known 'branches inside
+				 * basic blocks screw up the allocator' problem.
+				 */
+#if 0
+				//#ifdef MONO_ARCH_HAS_XP_LOCAL_REGALLOC
+				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
+				cfg->varinfo [vmv->idx]->dreg = mono_regstate_next_int (cfg->rs);
+#endif
+			}
+			else {
+				if (cfg->verbose_level > 2)
+					printf ("NOT REGVAR: %d\n", vmv->idx);
+			}
 		}
 	}
 
