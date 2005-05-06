@@ -19,6 +19,7 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/collection.h>
+#include <mono/io-layer/shared.h>
 
 #define _WAPI_PRIVATE_MAX_SLOTS		1024
 #define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [x / _WAPI_HANDLE_INITIAL_COUNT][x % _WAPI_HANDLE_INITIAL_COUNT])
@@ -33,6 +34,7 @@ extern struct _WapiFileShareLayout *_wapi_fileshare_layout;
 extern guint32 _wapi_fd_reserve;
 extern mono_mutex_t _wapi_global_signal_mutex;
 extern pthread_cond_t _wapi_global_signal_cond;
+extern int _wapi_sem_id;
 
 extern gpointer _wapi_handle_new (WapiHandleType type,
 				  gpointer handle_specific);
@@ -50,8 +52,6 @@ extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gboolean (*check)(gpointer, gpointer),
 				     gpointer user_data,
 				     gpointer *handle_specific);
-extern int _wapi_namespace_timestamp_release (gpointer nowptr);
-extern int _wapi_namespace_timestamp (guint32 now);
 extern gint32 _wapi_search_handle_namespace (WapiHandleType type,
 					     gchar *utf8_name);
 extern void _wapi_handle_ref (gpointer handle);
@@ -71,10 +71,9 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      gpointer *handles,
 						      gboolean waitall,
 						      guint32 *retcount,
-						      guint32 *lowest,
-						      guint32 *now);
+						      guint32 *lowest);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
-					 gpointer *handles, guint32 now);
+					 gpointer *handles);
 extern int _wapi_handle_wait_signal (void);
 extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_poll_share (void);
@@ -275,43 +274,6 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 	return(ret);
 }
 
-static inline int _wapi_timestamp_exclusion (volatile gint32 *timestamp,
-					     guint32 now)
-{
-	guint32 then;
-	int ret;
-
-	then = InterlockedCompareExchange (timestamp, now, 0);
-	if (then == 0) {
-		ret = 0;
-	} else if (now - then > 10) {
-		/* Try to overwrite the previous
-		 * attempt, but make sure noone else
-		 * got in first
-		 */
-		g_warning ("%s: Breaking a previous timestamp", __func__);
-				
-		ret = InterlockedCompareExchange (timestamp, now,
-						  then) == then?0:EBUSY;
-	} else {
-		/* Someone else is working on this one */
-		ret = EBUSY;
-	}
-			
-	return(ret);
-}
-
-static inline int _wapi_timestamp_release (volatile gint32 *timestamp,
-					   guint32 now)
-{
-	/* The timestamp can be either: now, in which case we reset
-	 * it; 0, in which case we don't do anything; any other value,
-	 * in which case we don't do anything because someone else is
-	 * in charge of resetting it.
-	 */
-	return(InterlockedCompareExchange (timestamp, 0, now) != now);
-}
-
 static inline void _wapi_handle_spin (guint32 ms)
 {
 	struct timespec sleepytime;
@@ -324,89 +286,47 @@ static inline void _wapi_handle_spin (guint32 ms)
 	nanosleep (&sleepytime, NULL);
 }
 
-static inline int _wapi_handle_shared_lock_handle (gpointer handle, guint32 *now)
+static inline int _wapi_handle_lock_shared_handles (void)
 {
-	int ret;
-	
-	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type(handle)));
-	
-	_wapi_handle_ref (handle);
-	
-	/* We don't lock shared handles, but we need to be able to
-	 * tell other threads to hold off.
-	 *
-	 * We do this by atomically putting the least-significant 32
-	 * bits of time(2) into the 'checking' field if it is zero.
-	 * If it isn't zero, then it means that either another thread
-	 * is looking at this handle right now, or someone crashed
-	 * here.  Assume that if the time value is more than 10
-	 * seconds old, its a crash and override it.  10 seconds
-	 * should be enough for anyone...
-	 *
-	 * If the time value is within 10 seconds, back off and try
-	 * again as per the non-shared case.
-	 */
-	do {
-		*now = (guint32)(time (NULL) & 0xFFFFFFFF);
-		
-		ret = _wapi_timestamp_exclusion (&WAPI_SHARED_HANDLE_METADATA(handle).checking, *now);
-		if (ret == EBUSY) {
-			_wapi_handle_spin (100);
-		}
-	} while (ret == EBUSY);
-
-	return (ret);
+	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_HANDLE));
 }
 
-static inline int _wapi_handle_shared_trylock_handle (gpointer handle, guint32 now)
+static inline int _wapi_handle_trylock_shared_handles (void)
 {
-	int ret;
-	
-	g_assert (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle)));
-	
-	_wapi_handle_ref (handle);
-	
-	ret = _wapi_timestamp_exclusion (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
-	if (ret == EBUSY) {
-		_wapi_handle_unref (handle);
-	}
-	
-	return (ret);
+	return(_wapi_shm_sem_trylock (_WAPI_SHARED_SEM_HANDLE));
 }
 
-static inline int _wapi_handle_shared_unlock_handle (gpointer handle, guint32 now)
+static inline int _wapi_handle_unlock_shared_handles (void)
 {
-	g_assert (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle)));
-	
-	_wapi_timestamp_release (&WAPI_SHARED_HANDLE_METADATA(handle).checking, now);
-	_wapi_handle_unref (handle);
+	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_HANDLE));
+}
 
-	return (0);
+static inline int _wapi_namespace_lock (void)
+{
+	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_NAMESPACE));
+}
+
+/* This signature makes it easier to use in pthread cleanup handlers */
+static inline int _wapi_namespace_unlock (gpointer data G_GNUC_UNUSED)
+{
+	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_NAMESPACE));
 }
 
 static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 {
-	guint32 now;
 	int thr_ret;
 	
 	g_assert (info->handle_refs > 0);
 	
 	/* Prevent new entries racing with us */
-	do {
-		now = (guint32)(time(NULL) & 0xFFFFFFFF);
-		
-		thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, now);
-		if (thr_ret == EBUSY) {
-			_wapi_handle_spin (100);
-		}
-	} while (thr_ret == EBUSY);
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARE);
 	g_assert(thr_ret == 0);
 
 	if (InterlockedDecrement (&info->handle_refs) == 0) {
 		memset (info, '\0', sizeof(struct _WapiFileShare));
 	}
 
-	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, now);
+	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARE);
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */

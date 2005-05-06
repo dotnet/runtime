@@ -7,41 +7,6 @@
  * (C) 2002 Ximian, Inc.
  */
 
-/*
- * Code to support inter-process sharing of handles.
- *
- * I thought of using an mmap()ed file for this.  If linuxthreads
- * supported PTHREAD_PROCESS_SHARED I would have done; however without
- * that pthread support the only other inter-process IPC
- * synchronisation option is a sysV semaphore, and if I'm going to use
- * that I may as well take advantage of sysV shared memory too.
- * Actually, semaphores seem to be buggy, or I was using them
- * incorrectly :-).  I've replaced the sysV semaphore with a shared
- * integer controlled with Interlocked functions.  And I've since
- * replaced that with a separate process to serialise access to the
- * shared memory, to avoid the possibility of DOS by leaving the
- * shared memory locked, and also to allow the shared memory to be
- * cleaned up.
- *
- * mmap() files have the advantage of avoiding namespace collisions,
- * but have the disadvantage of needing cleaning up, and also msync().
- * sysV shared memory has a really stupid way of getting random key
- * IDs, which can lead to collisions.
- *
- * Having tried sysv shm, I tested mmap() and found that MAP_SHARED
- * makes msync() irrelevent, and both types need cleaning up.  Seeing
- * as mmap() doesn't suffer from the bonkers method of allocating
- * segments, it seems to be the best method.
- *
- * This shared memory is needed because w32 processes do not have the
- * POSIX parent-child relationship, so a process handle is available
- * to any other process to find out exit status.  Handles are
- * destroyed when the last reference to them is closed.  New handles
- * can be created for long lasting items such as processes or threads,
- * and also for named synchronisation objects so long as these haven't
- * been deleted by having the last referencing handle closed.
- */
-
 
 #include <config.h>
 #include <glib.h>
@@ -53,14 +18,17 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/shared.h>
+#include <mono/io-layer/handles-private.h>
 
 #undef DEBUG
 
-static guchar *_wapi_shm_file (void)
+static guchar *_wapi_shm_file (_wapi_shm_t type)
 {
 	static guchar file[_POSIX_PATH_MAX];
 	guchar *name = NULL, *filename, *dir, *wapi_dir;
@@ -69,53 +37,17 @@ static guchar *_wapi_shm_file (void)
 	if (gethostname(machine_name, sizeof(machine_name)) != 0)
 		machine_name[0] = '\0';
 	
-	/* Change the filename whenever the format of the contents
-	 * changes
-	 */
-	name = g_strdup_printf ("shared_data-%s-%d-%d",
-				machine_name, _WAPI_HANDLE_VERSION, 0);
-
-	/* I don't know how nfs affects mmap.  If mmap() of files on
-	 * nfs mounts breaks, then there should be an option to set
-	 * the directory.
-	 */
-	wapi_dir = getenv ("MONO_SHARED_DIR");
-	if (wapi_dir == NULL) {
-		filename = g_build_filename (g_get_home_dir (), ".wapi", name,
-					     NULL);
-	} else {
-		filename = g_build_filename (wapi_dir, ".wapi", name, NULL);
-	}
-	g_free (name);
-
-	g_snprintf (file, _POSIX_PATH_MAX, "%s", filename);
-	g_free (filename);
+	switch (type) {
+	case WAPI_SHM_DATA:
+		name = g_strdup_printf ("shared_data-%s-%d-%d",
+					machine_name, _WAPI_HANDLE_VERSION, 0);
+		break;
 		
-	/* No need to check if the dir already exists or check
-	 * mkdir() errors, because on any error the open() call will
-	 * report the problem.
-	 */
-	dir = g_path_get_dirname (file);
-	mkdir (dir, 0755);
-	g_free (dir);
-	
-	return(file);
-}
-
-static guchar *_wapi_fileshare_shm_file (void)
-{
-	static guchar file[_POSIX_PATH_MAX];
-	guchar *name = NULL, *filename, *dir, *wapi_dir;
-	gchar machine_name[256];
-
-	if (gethostname(machine_name, sizeof(machine_name)) != 0)
-		machine_name[0] = '\0';
-	
-	/* Change the filename whenever the format of the contents
-	 * changes
-	 */
-	name = g_strdup_printf ("shared_fileshare-%s-%d-%d",
-				machine_name, _WAPI_HANDLE_VERSION, 0);
+	case WAPI_SHM_FILESHARE:
+		name = g_strdup_printf ("shared_fileshare-%s-%d-%d",
+					machine_name, _WAPI_HANDLE_VERSION, 0);
+		break;
+	}
 
 	/* I don't know how nfs affects mmap.  If mmap() of files on
 	 * nfs mounts breaks, then there should be an option to set
@@ -253,31 +185,41 @@ try_again:
  * Attach to the shared memory file or create it if it did not exist.
  * Returns the memory area the file was mmapped to.
  */
-gpointer _wapi_shm_attach (void)
+gpointer _wapi_shm_attach (_wapi_shm_t type)
 {
 	gpointer shm_seg;
 	int fd;
 	struct stat statbuf;
-	guchar *filename=_wapi_shm_file ();
+	guchar *filename=_wapi_shm_file (type);
+	guint32 size;
 	
-	fd=_wapi_shm_file_open (filename,
-				sizeof(struct _WapiHandleSharedLayout));
-	if(fd==-1) {
+	switch(type) {
+	case WAPI_SHM_DATA:
+		size = sizeof(struct _WapiHandleSharedLayout);
+		break;
+		
+	case WAPI_SHM_FILESHARE:
+		size = sizeof(struct _WapiFileShareLayout);
+		break;
+	}
+	
+	fd = _wapi_shm_file_open (filename, size);
+	if (fd == -1) {
 		g_critical ("%s: shared file [%s] open error", __func__,
 			    filename);
 		return(NULL);
 	}
 	
-	if(fstat (fd, &statbuf)==-1) {
+	if (fstat (fd, &statbuf)==-1) {
 		g_critical ("%s: fstat error: %s", __func__,
 			    g_strerror (errno));
 		close (fd);
 		return(NULL);
 	}
 	
-	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
-		      fd, 0);
-	if(shm_seg==MAP_FAILED) {
+	shm_seg = mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE,
+			MAP_SHARED, fd, 0);
+	if (shm_seg == MAP_FAILED) {
 		g_critical ("%s: mmap error: %s", __func__,
 			    g_strerror (errno));
 		close (fd);
@@ -288,36 +230,191 @@ gpointer _wapi_shm_attach (void)
 	return(shm_seg);
 }
 
-gpointer _wapi_fileshare_shm_attach (void)
+void _wapi_shm_semaphores_init ()
 {
-	gpointer shm_seg;
-	int fd;
-	struct stat statbuf;
-	guchar *filename=_wapi_fileshare_shm_file ();
+	key_t key = ftok (_wapi_shm_file (WAPI_SHM_DATA), 'M');
+	key_t oldkey;
+
+	/* Yet more barmy API - this union is a well-defined parameter
+	 * in a syscall, yet I still have to define it here as it
+	 * doesn't appear in a header
+	 */
+	union semun {
+		int val;
+		struct semid_ds *buf;
+		ushort *array;
+	} defs;
+	ushort def_vals[_WAPI_SHARED_SEM_COUNT];
+	int i;
 	
-	fd=_wapi_shm_file_open (filename, sizeof(struct _WapiFileShareLayout));
-	if(fd==-1) {
-		g_critical ("%s: shared file [%s] open error", __func__,
-			    filename);
-		return(NULL);
+	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
+		def_vals[i] = 1;
 	}
+	defs.array = def_vals;
 	
-	if(fstat (fd, &statbuf)==-1) {
-		g_critical ("%s: fstat error: %s", __func__,
-			    g_strerror (errno));
-		close (fd);
-		return(NULL);
-	}
-	
-	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
-		      fd, 0);
-	if(shm_seg==MAP_FAILED) {
-		g_critical ("%s: mmap error: %s", __func__,
-			    g_strerror (errno));
-		close (fd);
-		return(NULL);
-	}
+again:
+	oldkey = _wapi_shared_layout->sem_key;
+
+	if (oldkey == 0) {
+#ifdef DEBUG
+		g_message ("%s: Creating with new key (0x%x)", __func__, key);
+#endif
+
+		/* The while loop attempts to make some sense of the
+		 * bonkers 'think of a random number' method of
+		 * picking a key without collision with other
+		 * applications
+		 */
+		while ((_wapi_sem_id = semget (key, _WAPI_SHARED_SEM_COUNT,
+					       IPC_CREAT | IPC_EXCL | 0600)) == -1) {
+			if (errno != EEXIST) {
+				g_warning ("%s: semget error: %s key 0x%x - trying again", __func__, g_strerror (errno), key);
+			}
+			
+			key++;
+#ifdef DEBUG
+			g_message ("%s: Got (%s), trying with new key (0x%x)",
+				   __func__, g_strerror (errno), key);
+#endif
+		}
+		/* Got a semaphore array, so initialise it and install
+		 * the key into the shared memory
+		 */
 		
-	close (fd);
-	return(shm_seg);
+		if (semctl (_wapi_sem_id, 0, SETALL, defs) == -1) {
+			g_warning ("%s: semctl init error: %s - trying again", __func__, g_strerror (errno));
+
+			/* Something went horribly wrong, so try
+			 * getting a new set from scratch
+			 */
+			semctl (_wapi_sem_id, 0, IPC_RMID);
+			goto again;
+		}
+
+		if (InterlockedCompareExchange (&_wapi_shared_layout->sem_key,
+						key, 0) != 0) {
+			/* Someone else created one and installed the
+			 * key while we were working, so delete the
+			 * array we created and fall through to the
+			 * 'key already known' case.
+			 */
+			semctl (_wapi_sem_id, 0, IPC_RMID);
+			oldkey = _wapi_shared_layout->sem_key;
+		} else {
+			/* We've installed this semaphore set's key into
+			 * the shared memory
+			 */
+			return;
+		}
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: Trying with old key 0x%x", __func__, oldkey);
+#endif
+
+	_wapi_sem_id = semget (oldkey, _WAPI_SHARED_SEM_COUNT, 0600);
+	if (_wapi_sem_id == -1) {
+		g_warning ("%s: semget error opening old key 0x%x (%s) - trying again", __func__, oldkey, g_strerror (errno));
+
+		/* Someone must have deleted the semaphore set, so
+		 * blow away the bad key and try again
+		 */
+		InterlockedCompareExchange (&_wapi_shared_layout->sem_key, 0,
+					    oldkey);
+		
+		goto again;
+	}
 }
+
+int _wapi_shm_sem_lock (int sem)
+{
+	struct sembuf ops;
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: locking sem %d", __func__, sem);
+#endif
+
+	ops.sem_num = sem;
+	ops.sem_op = -1;
+	ops.sem_flg = SEM_UNDO;
+	
+	do {
+		ret = semop (_wapi_sem_id, &ops, 1);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
+		/* Turn this into a pthreads-style return value */
+		ret = errno;
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
+#endif
+	
+	return(ret);
+}
+
+int _wapi_shm_sem_trylock (int sem)
+{
+	struct sembuf ops;
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: trying to lock sem %d", __func__, sem);
+#endif
+	
+	ops.sem_num = sem;
+	ops.sem_op = -1;
+	ops.sem_flg = IPC_NOWAIT | SEM_UNDO;
+	
+	do {
+		ret = semop (_wapi_sem_id, &ops, 1);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
+		/* Turn this into a pthreads-style return value */
+		ret = errno;
+	}
+	
+	if (ret == EAGAIN) {
+		/* But pthreads uses this code instead */
+		ret = EBUSY;
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
+#endif
+	
+	return(ret);
+}
+
+int _wapi_shm_sem_unlock (int sem)
+{
+	struct sembuf ops;
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: unlocking sem %d", __func__, sem);
+#endif
+	
+	ops.sem_num = sem;
+	ops.sem_op = 1;
+	ops.sem_flg = SEM_UNDO;
+	
+	do {
+		ret = semop (_wapi_sem_id, &ops, 1);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
+		/* Turn this into a pthreads-style return value */
+		ret = errno;
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
+#endif
+
+	return(ret);
+}
+

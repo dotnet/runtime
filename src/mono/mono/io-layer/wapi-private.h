@@ -24,7 +24,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 5
+#define _WAPI_HANDLE_VERSION 6
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -142,7 +142,6 @@ struct _WapiHandleSharedMetadata
 	volatile guint32 offset;
 	guint32 timestamp;
 	volatile gboolean signalled;
-	volatile guint32 checking;
 };
 
 struct _WapiHandleShared
@@ -161,13 +160,17 @@ struct _WapiHandleShared
 	} u;
 };
 
+#define _WAPI_SHARED_SEM_NAMESPACE 0
+#define _WAPI_SHARED_SEM_COLLECTION 1
+#define _WAPI_SHARED_SEM_SHARE 2
+#define _WAPI_SHARED_SEM_HANDLE 3
+#define _WAPI_SHARED_SEM_COUNT 8	/* Leave some future expansion space */
+
 struct _WapiHandleSharedLayout
 {
-	guint32 namespace_check;
 	volatile guint32 signal_count;
-
-	guint32 master_timestamp;
 	volatile guint32 collection_count;
+	volatile key_t sem_key;
 	
 	struct _WapiHandleSharedMetadata metadata[_WAPI_HANDLE_INITIAL_COUNT];
 	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
@@ -188,7 +191,6 @@ struct _WapiFileShare
 
 struct _WapiFileShareLayout
 {
-	guint32 share_check;
 	guint32 hwm;
 	
 	struct _WapiFileShare share_info[_WAPI_FILESHARE_SIZE];

@@ -45,28 +45,28 @@ int main (int argc, char **argv)
 {
 	guint32 i;
 	
-	_wapi_shared_layout = _wapi_shm_attach();
+	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
 	if (_wapi_shared_layout == FALSE) {
 		g_error ("Failed to attach shared memory!");
 		exit (-1);
 	}
 
-	_wapi_fileshare_layout = _wapi_fileshare_shm_attach();
+	_wapi_fileshare_layout = _wapi_shm_attach(WAPI_SHM_FILESHARE);
 	if (_wapi_fileshare_layout == FALSE) {
 		g_error ("Failed to attach fileshare shared memory!");
 		exit (-1);
 	}
 	
 	if (argc > 1) {
+		_wapi_shm_semaphores_init ();
 		_wapi_collection_init ();
 		_wapi_handle_collect ();
 	}
 	
-	g_print ("master: %d namespace: %d collection: %d signals: %d\n",
-		 _wapi_shared_layout->master_timestamp,
-		 _wapi_shared_layout->namespace_check,
+	g_print ("collection: %d signals: %d sem: 0x%x\n",
 		 _wapi_shared_layout->collection_count,
-		 _wapi_shared_layout->signal_count);
+		 _wapi_shared_layout->signal_count,
+		 _wapi_shared_layout->sem_key);
 	
 	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
 		struct _WapiHandleShared *shared;
@@ -84,19 +84,16 @@ int main (int argc, char **argv)
 		
 		shared = &_wapi_shared_layout->handles[meta->offset];
 		if (shared->type != WAPI_HANDLE_UNUSED) {
-			g_print ("%3x (%3x) [%7s] %c %4u %s (%s)\n",
+			g_print ("%3x (%3x) [%7s] %4u %s (%s)\n",
 				 i, meta->offset,
 				 _wapi_handle_typename[shared->type],
-				 meta->checking == 0?' ':'X',
 				 now - meta->timestamp,
 				 meta->signalled?"Sg":"Un",
 				 details[shared->type](shared));
 		}
 	}
 
-	g_print ("Fileshare check: %d hwm: %d\n",
-		 _wapi_fileshare_layout->share_check,
-		 _wapi_fileshare_layout->hwm);
+	g_print ("Fileshare hwm: %d\n", _wapi_fileshare_layout->hwm);
 	
 	for (i = 0; i <= _wapi_fileshare_layout->hwm; i++) {
 		struct _WapiFileShare *file_share;

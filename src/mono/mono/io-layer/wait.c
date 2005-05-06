@@ -25,10 +25,9 @@
 static gboolean own_if_signalled(gpointer handle)
 {
 	gboolean ret = FALSE;
-	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_shared_trylock_handle (handle, now) == EBUSY) {
+		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
 			return (FALSE);
 		}
 	}
@@ -39,7 +38,7 @@ static gboolean own_if_signalled(gpointer handle)
 	}
 
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_shared_unlock_handle (handle, now);
+		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -48,10 +47,9 @@ static gboolean own_if_signalled(gpointer handle)
 static gboolean own_if_owned(gpointer handle)
 {
 	gboolean ret = FALSE;
-	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_shared_trylock_handle (handle, now) == EBUSY) {
+		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
 			return (FALSE);
 		}
 	}
@@ -62,7 +60,7 @@ static gboolean own_if_owned(gpointer handle)
 	}
 
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_shared_unlock_handle (handle, now);
+		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -412,15 +410,13 @@ struct handle_cleanup_data
 {
 	guint32 numobjects;
 	gpointer *handles;
-	guint32 now;
 };
 
 static void handle_cleanup (void *data)
 {
 	struct handle_cleanup_data *handles = (struct handle_cleanup_data *)data;
 
-	_wapi_handle_unlock_handles (handles->numobjects, handles->handles,
-				     handles->now);
+	_wapi_handle_unlock_handles (handles->numobjects, handles->handles);
 }
 
 static gboolean test_and_own (guint32 numobjects, gpointer *handles,
@@ -439,8 +435,7 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
 	
 	pthread_cleanup_push (handle_cleanup, (void *)&cleanup_data);
 	done = _wapi_handle_count_signalled_handles (numobjects, handles,
-						     waitall, count, lowest,
-						     &cleanup_data.now);
+						     waitall, count, lowest);
 	if (done == TRUE) {
 		if (waitall == TRUE) {
 			for (i = 0; i < numobjects; i++) {

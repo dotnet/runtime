@@ -298,7 +298,6 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 	gboolean ok;
 	struct mutex_check_data *data = (struct mutex_check_data *)user_data;
 	int thr_ret;
-	guint32 now;
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
 				  (gpointer *)&mutex_handle);
@@ -308,7 +307,7 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_shared_lock_handle (handle, &now);
+	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
 	if (mutex_handle->pid == data->pid &&
@@ -324,7 +323,7 @@ static gboolean namedmutex_check (gpointer handle, gpointer user_data)
 		_wapi_shared_handle_set_signal_state (handle, TRUE);
 	}
 
-	_wapi_handle_shared_unlock_handle (handle, now);
+	_wapi_handle_unlock_shared_handles ();
 	
 	/* Return false to keep searching */
 	return(FALSE);
@@ -397,15 +396,14 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	gchar *utf8_name;
 	int thr_ret;
 	gpointer ret = NULL;
-	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF), locknow;
 	guint32 namelen;
 	gint32 offset;
 
 	/* w32 seems to guarantee that opening named mutexes can't
 	 * race each other
 	 */
-	pthread_cleanup_push ((void(*)(void *))_wapi_namespace_timestamp_release, GUINT_TO_POINTER(now));
-	thr_ret = _wapi_namespace_timestamp (now);
+	pthread_cleanup_push ((void(*)(void *))_wapi_namespace_unlock, NULL);
+	thr_ret = _wapi_namespace_lock ();
 	g_assert (thr_ret == 0);
 
 	/* Need to blow away any old errors here, because code tests
@@ -469,7 +467,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		/* Set the initial state, as this is a completely new
 		 * handle
 		 */
-		thr_ret = _wapi_handle_shared_lock_handle (handle, &locknow);
+		thr_ret = _wapi_handle_lock_shared_handles ();
 		g_assert (thr_ret == 0);
 	
 		if (owned == TRUE) {
@@ -478,7 +476,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 			_wapi_shared_handle_set_signal_state (handle, TRUE);
 		}
 
-		_wapi_handle_shared_unlock_handle (handle, locknow);
+		_wapi_handle_unlock_shared_handles ();
 	}
 	
 #ifdef DEBUG
@@ -588,7 +586,6 @@ static gboolean namedmutex_release (gpointer handle)
 	pid_t pid=getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
-	guint32 now;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
 				(gpointer *)&mutex_handle);
@@ -598,7 +595,7 @@ static gboolean namedmutex_release (gpointer handle)
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_shared_lock_handle (handle, &now);
+	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
@@ -628,7 +625,7 @@ static gboolean namedmutex_release (gpointer handle)
 	}
 
 cleanup:
-	_wapi_handle_shared_unlock_handle (handle, now);
+	_wapi_handle_unlock_shared_handles ();
 	
 	return(ret);
 }
