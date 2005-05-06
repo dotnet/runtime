@@ -1602,6 +1602,89 @@ load_filter (const char* filename)
 	sort_filter_elems ();
 }
 
+
+static gboolean
+try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
+					const gchar *path3, const gchar *path4, gboolean refonly)
+{
+	gchar *fullpath;
+
+	*assembly = NULL;
+	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
+	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
+		*assembly = mono_assembly_open_full (fullpath, NULL, refonly);
+
+	g_free (fullpath);
+	return (*assembly != NULL);
+}
+
+static MonoAssembly *
+real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolean refonly)
+{
+	MonoAssembly *result = NULL;
+	gchar **path;
+	gchar *filename;
+	const gchar *local_culture;
+	gint len;
+
+	if (!culture || *culture == '\0') {
+		local_culture = "";
+	} else {
+		local_culture = culture;
+	}
+
+	filename =  g_strconcat (name, ".dll", NULL);
+	len = strlen (filename);
+
+	for (path = search_path; *path; path++) {
+		if (**path == '\0')
+			continue; /* Ignore empty ApplicationBase */
+
+		/* See test cases in bug #58992 and bug #57710 */
+		/* 1st try: [culture]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+			break;
+
+		/* 2nd try: [culture]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+			break;
+
+		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+			break;
+
+		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+			break;
+	}
+
+	g_free (filename);
+	return result;
+}
+
+/*
+ * Try to load referenced assemblies from assemblies_path.
+ */
+static MonoAssembly *
+monodis_preload (MonoAssemblyName *aname,
+				 gchar **assemblies_path,
+				 gpointer user_data)
+{
+	MonoAssembly *result = NULL;
+	gboolean refonly = GPOINTER_TO_UINT (user_data);
+
+	if (assemblies_path && assemblies_path [0] != NULL) {
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
+	}
+
+	return result;
+}
+
+
 static void
 usage (void)
 {
@@ -1684,6 +1767,9 @@ main (int argc, char *argv [])
 		char *filename = input_files->data;
 
 		mono_init_from_assembly (argv [0], filename);
+
+		mono_install_assembly_preload_hook (monodis_preload, GUINT_TO_POINTER (FALSE));
+
 		disassemble_file (filename);
 	} else {
 		mono_init (argv [0]);
