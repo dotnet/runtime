@@ -460,12 +460,21 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 
 	class = mono_class_from_name (mono_get_corlib (),
 			"System.Globalization", "CultureInfo");
+
+	/* The InvariantCulture is not in culture_entries */
+	/* We reserve the first slot in the array for it */
+	if (neutral)
+		len++;
+
 	ret = mono_array_new (domain, class, len);
 
 	if (len == 0)
 		return ret;
 
 	len = 0;
+	if (neutral)
+		mono_array_set (ret, MonoCultureInfo *, len++, NULL);
+
 	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
 		ci = &culture_entries [i];
 		is_neutral = ((ci->lcid & 0xff00) == 0 || ci->specific_lcid == 0);
