@@ -338,7 +338,7 @@ mono_monitor_exit (MonoObject *obj)
 	mon = obj->synchronisation;
 
 	if (mon == NULL) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		/* No one ever used Enter. Just ignore the Exit request as MS does */
 		return;
 	}
 	if (mon->owner != GetCurrentThreadId ()) {
