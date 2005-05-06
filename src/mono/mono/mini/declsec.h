@@ -27,10 +27,13 @@
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
 #define MONO_SECMAN_FLAG_SET_VALUE(x,y)		do { x = ((y) ? 0x3 : 0x2); } while (0)
 
+#define	MONO_CAS_INITIAL_STACK_SIZE		6
+
 
 /* keep in synch with RuntimeSecurityFrame in /mcs/class/corlib/System.Security/SecurityFrame.cs */
 typedef struct {
 	MonoObject obj;
+	MonoAppDomain *domain;
 	MonoReflectionMethod *method;
 	MonoDeclSecurityEntry assert;
 	MonoDeclSecurityEntry deny;

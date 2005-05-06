@@ -71,6 +71,7 @@ mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo)
 	}
 
 	frame->method = mono_method_get_object (domain, jinfo->method, NULL);
+	frame->domain = domain->domain;
 
 	/* stack modifiers on methods have priority on (i.e. replaces) modifiers on class */
 
@@ -266,6 +267,7 @@ mono_declsec_linkdemand_pinvoke (MonoDomain *domain, MonoMethod *caller, MonoMet
 		if (MONO_SECMAN_FLAG_INIT (assembly->fulltrust) && MONO_SECMAN_FLAG_GET_VALUE (assembly->fulltrust)) {
 			/* FullTrust includes UnmanagedCode permission */
 			MONO_SECMAN_FLAG_SET_VALUE (assembly->unmanaged, TRUE);
+			return FALSE;
 		} else {
 			MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
 			MonoSecurityManager* secman = mono_security_manager_get_methods ();

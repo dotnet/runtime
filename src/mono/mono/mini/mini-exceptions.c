@@ -447,8 +447,25 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 
 typedef struct {
 	guint32 skips;
-	GList *stack;
+	MonoArray *stack;
+	guint32 count;
+	guint32 maximum;
 } MonoSecurityStack;
+
+static void
+grow_array (MonoSecurityStack *stack)
+{
+	MonoDomain *domain = mono_domain_get ();
+	guint32 newsize = (stack->maximum << 1);
+	MonoArray *newstack = mono_array_new (domain, mono_defaults.runtimesecurityframe_class, newsize);
+	int i;
+	for (i=0; i < stack->maximum; i++) {
+		gpointer frame = mono_array_get (stack->stack, gpointer, i);
+		mono_array_set (newstack, gpointer, i, frame);
+	}
+	stack->maximum = newsize;
+	stack->stack = newstack;
+}
 
 static gboolean
 callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
@@ -469,7 +486,10 @@ callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, M
 		return FALSE;
 	}
 
-	ss->stack = g_list_prepend (ss->stack, mono_declsec_create_frame (domain, ji));
+	if (ss->count == ss->maximum)
+		grow_array (ss);
+	
+	mono_array_set (ss->stack, gpointer, ss->count++, mono_declsec_create_frame (domain, ji));
 
 	/* continue down the stack */
 	return FALSE;
@@ -510,7 +530,6 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoSecurityStack ss;
 	MonoContext ctx;
-	MonoArray *stack;
 
 #ifdef _MSC_VER
 	/* seems that MSC doesn't like having __asm in macros */
@@ -524,14 +543,12 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 #endif
 
 	ss.skips = skip;
-	ss.stack = NULL;
+	ss.count = 0;
+	ss.maximum = MONO_CAS_INITIAL_STACK_SIZE;
+	ss.stack = mono_array_new (domain, mono_defaults.runtimesecurityframe_class, ss.maximum);
 	mono_walk_stack (domain, jit_tls, &ctx, callback_get_stack_frames_security_info, (gpointer)&ss);
-
-	stack = glist_to_array (ss.stack, mono_defaults.runtimesecurityframe_class);
-	if (ss.stack)
-		g_list_free (ss.stack);
-
-	return stack;
+	/* g_warning ("STACK RESULT: %d out of %d", ss.count, ss.maximum); */
+	return ss.stack;
 }
 
 #ifndef CUSTOM_EXCEPTION_HANDLING
