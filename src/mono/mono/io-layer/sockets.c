@@ -392,7 +392,9 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
-	
+	struct timeval tv;
+	void *tmp_val;
+
 	if (startup_count == 0) {
 		WSASetLastError (WSANOTINITIALISED);
 		return(SOCKET_ERROR);
@@ -402,8 +404,14 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
-	
-	ret = getsockopt (fd, level, optname, optval, optlen);
+
+	tmp_val = optval;
+	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+		tmp_val = &tv;
+		*optlen = sizeof (tv);
+	}
+
+	ret = getsockopt (fd, level, optname, tmp_val, optlen);
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG
@@ -415,6 +423,11 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
+	}
+
+	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+		*((int *) optval)  = tv.tv_sec * 1000 + tv.tv_usec;
+		*optlen = sizeof (int);
 	}
 	
 	return(ret);
@@ -601,6 +614,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
+	const void *tmp_val;
+	struct timeval tv;
 	
 	if (startup_count == 0) {
 		WSASetLastError (WSANOTINITIALISED);
@@ -611,8 +626,17 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
-	
-	ret = setsockopt (fd, level, optname, optval, optlen);
+
+	tmp_val = optval;
+	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+		int ms = *((int *) optval);
+		tv.tv_sec = ms / 1000;
+		tv.tv_usec = ms % 1000;
+		tmp_val = &tv;
+		optlen = sizeof (tv);
+	}
+		
+	ret = setsockopt (fd, level, optname, tmp_val, optlen);
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG

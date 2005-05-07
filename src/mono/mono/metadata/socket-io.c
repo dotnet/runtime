@@ -24,6 +24,7 @@
 #include <mono/metadata/threads.h>
 /* FIXME change this code to not mess so much with the internals */
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/threadpool-internals.h>
 
 #include <sys/time.h> 
 
@@ -1442,8 +1443,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	int valsize=sizeof(val);
 	struct linger linger;
 	int lingersize=sizeof(linger);
-	struct timeval tv;
-	int tvsize=sizeof(tv);
+	int time_ms = 0;
+	int time_ms_size = sizeof (time_ms);
 #ifdef SO_PEERCRED
 	struct ucred cred;
 	int credsize = sizeof(cred);
@@ -1477,8 +1478,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		
 	case SocketOptionName_SendTimeout:
 	case SocketOptionName_ReceiveTimeout:
-		ret = _wapi_getsockopt (sock, system_level, system_name, &tv,
-		           &tvsize);
+		ret = _wapi_getsockopt (sock, system_level, system_name, (char *) &time_ms, &time_ms_size);
 		break;
 
 #ifdef SO_PEERCRED
@@ -1524,7 +1524,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		
 	case SocketOptionName_SendTimeout:
 	case SocketOptionName_ReceiveTimeout:
-		obj = int_to_object (domain, (tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+		obj = int_to_object (domain, time_ms);
 		break;
 
 #ifdef SO_PEERCRED
@@ -1793,19 +1793,8 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			return;
 		}
 	} else {
-		switch(name) {
-			case SocketOptionName_SendTimeout:
-			case SocketOptionName_ReceiveTimeout: {
-				struct timeval tv;
-				tv.tv_sec = int_val / 1000;
-				tv.tv_usec = (int_val % 1000) * 1000;
-				ret = _wapi_setsockopt (sock, system_level, system_name, &tv, sizeof (tv));
-				break;
-			}
-			default:
-				ret = _wapi_setsockopt (sock, system_level, system_name, &int_val,
-			       sizeof(int_val));
-		}
+		/* ReceiveTimeout/SendTimeout get here */
+		ret = _wapi_setsockopt (sock, system_level, system_name, (char *) &int_val, sizeof (int_val));
 	}
 
 	if(ret==SOCKET_ERROR) {
