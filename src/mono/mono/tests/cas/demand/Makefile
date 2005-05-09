@@ -1,5 +1,5 @@
 RUNTIME = mono --debug --security
-CSCOMPILE = mcs --debug
+CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
 all:	pinvoke1.exe pinvoke2.exe pinvoke3.exe \

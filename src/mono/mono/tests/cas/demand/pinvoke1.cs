@@ -14,7 +14,8 @@ public class Program {
 
 	static bool RunningOnWindows ()
 	{
-		bool win = ((int) Environment.OSVersion.Platform != 128);
+		int p = (int) Environment.OSVersion.Platform;
+		bool win = ((p != 4) && (p != 128));
 		Console.WriteLine ("Running on {0}...", Environment.OSVersion);
 		return win;
 	}
