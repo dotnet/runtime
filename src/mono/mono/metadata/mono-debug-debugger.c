@@ -68,7 +68,9 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 void
 mono_debugger_lock (void)
 {
-	EnterCriticalSection (&debugger_lock_mutex);
+	/* use the loader lock until the deadlock between it and the debugger lock is resolved */
+	mono_loader_lock ();
+	/*EnterCriticalSection (&debugger_lock_mutex);*/
 	debugger_lock_level++;
 }
 
@@ -85,7 +87,8 @@ mono_debugger_unlock (void)
 	}
 
 	debugger_lock_level--;
-	LeaveCriticalSection (&debugger_lock_mutex);
+	mono_loader_unlock ();
+	/*LeaveCriticalSection (&debugger_lock_mutex);*/
 }
 
 void
