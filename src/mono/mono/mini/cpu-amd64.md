@@ -429,7 +429,7 @@ float_div: dest:f src1:f src2:f len:5
 float_div_un: dest:f src1:f src2:f len:5
 float_rem: dest:f src1:f src2:f len:19
 float_rem_un: dest:f src1:f src2:f len:19
-float_neg: dest:f src1:f len:19
+float_neg: dest:f src1:f len:23
 float_not: dest:f src1:f len:3
 float_conv_to_i1: dest:i src1:f len:49
 float_conv_to_i2: dest:i src1:f len:49

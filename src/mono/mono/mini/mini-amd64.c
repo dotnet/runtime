@@ -1311,6 +1311,11 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 						if ((((guint64)data) >> 32) == 0)
 							near_call = TRUE;
 					}
+					else if (info->func == info->wrapper) {
+						/* No wrapper */
+						if ((((guint64)info->func) >> 32) == 0)
+							near_call = TRUE;
+					}
 					else
 						near_call = TRUE;
 				}
@@ -4347,6 +4352,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_push_reg (code, AMD64_R11);
 				amd64_push_reg (code, AMD64_R11);
 				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RSP, 0);
+				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 16);
 			}
 			else
 				amd64_fchs (code);
