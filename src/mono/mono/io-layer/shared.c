@@ -246,6 +246,7 @@ void _wapi_shm_semaphores_init ()
 	} defs;
 	ushort def_vals[_WAPI_SHARED_SEM_COUNT];
 	int i;
+	int retries = 0;
 	
 	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
 		def_vals[i] = 1;
@@ -253,6 +254,7 @@ void _wapi_shm_semaphores_init ()
 	defs.array = def_vals;
 	
 again:
+	retries++;
 	oldkey = _wapi_shared_layout->sem_key;
 
 	if (oldkey == 0) {
@@ -268,7 +270,9 @@ again:
 		while ((_wapi_sem_id = semget (key, _WAPI_SHARED_SEM_COUNT,
 					       IPC_CREAT | IPC_EXCL | 0600)) == -1) {
 			if (errno != EEXIST) {
-				g_warning ("%s: semget error: %s key 0x%x - trying again", __func__, g_strerror (errno), key);
+				if (retries > 3)
+					g_warning ("%s: semget error: %s key 0x%x - trying again", __func__,
+							g_strerror (errno), key);
 			}
 			
 			key++;
@@ -282,7 +286,8 @@ again:
 		 */
 		
 		if (semctl (_wapi_sem_id, 0, SETALL, defs) == -1) {
-			g_warning ("%s: semctl init error: %s - trying again", __func__, g_strerror (errno));
+			if (retries > 3)
+				g_warning ("%s: semctl init error: %s - trying again", __func__, g_strerror (errno));
 
 			/* Something went horribly wrong, so try
 			 * getting a new set from scratch
