@@ -8373,8 +8373,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	else
 		pklass = gklass->parent;
 
-	mono_class_setup_parent (klass, pklass);
-
 	dgclass->count_methods = methods ? mono_array_length (methods) : 0;
 	dgclass->count_ctors = ctors ? mono_array_length (ctors) : 0;
 	dgclass->count_fields = fields ? mono_array_length (fields) : 0;
