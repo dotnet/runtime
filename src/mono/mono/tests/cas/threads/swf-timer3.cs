@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Security;
 using System.Security.Permissions;
 using System.Timers;
+using System.Windows.Forms;
 
 class Program {
 
@@ -33,7 +34,7 @@ class Program {
 	static bool debug;
 	static int counter = 0;
 	static int result = 0;
-	static Timer t;
+	static System.Timers.Timer t;
 
 	// this Deny will prevent the Assembly.Evidence property from working
 	[SecurityPermission (SecurityAction.Deny, ControlEvidence = true)]
@@ -51,7 +52,10 @@ class Program {
 			Console.WriteLine ("SecurityManager.SecurityEnabled: false");
 		}
 
-		t = new Timer (500);
+		Label label = new Label ();
+
+		t = new System.Timers.Timer (500);
+		t.SynchronizingObject = label;
 		t.Elapsed += new ElapsedEventHandler (ShowStackTrace);
 		t.AutoReset = true;
 		t.Enabled = true;

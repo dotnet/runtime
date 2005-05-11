@@ -2,11 +2,11 @@ using System;
 using System.Reflection;
 using System.Security;
 using System.Security.Permissions;
-using System.Timers;
+using System.Windows.Forms;
 
 class Program {
 
-	static void ShowStackTrace (object o, ElapsedEventArgs e)
+	static void ShowStackTrace (object o, EventArgs e)
 	{
 		if (debug)
 			Console.WriteLine ("{0}: {1}", counter, Environment.StackTrace);
@@ -24,16 +24,12 @@ class Program {
 			result = 1;
 		}
 
-		if (counter++ > 5) {
-			t.AutoReset = false;
-			t.Enabled = false;
-		}
+		counter++;
 	}
 
 	static bool debug;
-	static int counter = 0;
+	static int counter;
 	static int result = 0;
-	static Timer t;
 
 	// this Deny will prevent the Assembly.Evidence property from working
 	[SecurityPermission (SecurityAction.Deny, ControlEvidence = true)]
@@ -51,12 +47,14 @@ class Program {
 			Console.WriteLine ("SecurityManager.SecurityEnabled: false");
 		}
 
-		t = new Timer (500);
-		t.Elapsed += new ElapsedEventHandler (ShowStackTrace);
-		t.AutoReset = true;
-		t.Enabled = true;
+		Timer t = new Timer ();
+		t.Tick += new EventHandler (ShowStackTrace);
+		t.Interval = 1000;
+		t.Start ();
 		
-		System.Threading.Thread.Sleep (5000);
+		while (counter <= 5)
+			Application.DoEvents ();
+
 		return result;
 	}
 }
