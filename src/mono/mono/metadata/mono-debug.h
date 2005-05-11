@@ -63,8 +63,8 @@ struct _MonoSymbolTable {
 	/*
 	 * The symbol files.
 	 */
-	guint32 num_symbol_files;
 	MonoDebugHandle **symbol_files;
+	guint32 num_symbol_files;
 
 	/*
 	 * Data table.
@@ -129,8 +129,9 @@ struct _MonoDebugMethodAddress {
 	guint32 symfile_id;
 	guint32 domain_id;
 	guint32 method_id;
-	const guint8 *code_start;
 	guint32 code_size;
+	guint32 dummy;
+	const guint8 *code_start;
 	const guint8 *wrapper_addr;
 	MonoDebugMethodJitInfo *jit;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
@@ -167,7 +168,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				49
+#define MONO_DEBUGGER_VERSION				50
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
