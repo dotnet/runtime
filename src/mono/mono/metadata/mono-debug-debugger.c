@@ -18,7 +18,7 @@
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean must_reload_symtabs = FALSE;
-static gboolean mono_debugger_use_debugger = FALSE;
+static gboolean mono_debugger_initialized = FALSE;
 static MonoObject *last_exception = NULL;
 
 struct _MonoDebuggerMetadataInfo {
@@ -68,44 +68,59 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 void
 mono_debugger_lock (void)
 {
-	/* use the loader lock until the deadlock between it and the debugger lock is resolved */
-	mono_loader_lock ();
-	/*EnterCriticalSection (&debugger_lock_mutex);*/
+	if (!mono_debugger_initialized) {
+		debugger_lock_level++;
+		return;
+	}
+
+	EnterCriticalSection (&debugger_lock_mutex);
 	debugger_lock_level++;
 }
 
 void
 mono_debugger_unlock (void)
 {
-	g_assert (debugger_lock_level > 0);
+	if (debugger_lock_level <= 0) {
+		g_warning (G_STRLOC ": Attempting to release a lock which you do not own.");
+		/*
+		 * Turn the assertion into a warning if we're not running in the debugger.
+		 * This should never happen, though.  See bug #74830.
+		 */
+		g_assert (!mono_debugger_initialized);
+		return;
+	}
+
+	if (!mono_debugger_initialized) {
+		debugger_lock_level--;
+		return;
+	}
 
 	if (debugger_lock_level == 1) {
-		if (must_reload_symtabs && mono_debugger_use_debugger) {
+		if (must_reload_symtabs) {
 			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
 			must_reload_symtabs = FALSE;
 		}
 	}
 
 	debugger_lock_level--;
-	mono_loader_unlock ();
-	/*LeaveCriticalSection (&debugger_lock_mutex);*/
+	LeaveCriticalSection (&debugger_lock_mutex);
 }
 
 void
-mono_debugger_initialize (gboolean use_debugger)
+mono_debugger_initialize (void)
 {
 	MONO_GC_REGISTER_ROOT (last_exception);
 	
-	g_assert (!mono_debugger_use_debugger);
+	g_assert (!mono_debugger_initialized);
 
 	InitializeCriticalSection (&debugger_lock_mutex);
-	mono_debugger_use_debugger = use_debugger;
+	mono_debugger_initialized = TRUE;
 }
 
 void
 mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 {
-	g_assert (mono_debugger_use_debugger);
+	g_assert (mono_debugger_initialized);
 
 	mono_debugger_lock ();
 	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, GPOINTER_TO_UINT (handle), 0);
@@ -306,7 +321,7 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 gboolean
 mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
-	if (!mono_debugger_use_debugger)
+	if (!mono_debugger_initialized)
 		return FALSE;
 
 	// Prevent the object from being finalized.
@@ -321,7 +336,7 @@ mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	MonoDebuggerExceptionInfo info;
 
-	if (!mono_debugger_use_debugger)
+	if (!mono_debugger_initialized)
 		return;
 
 	// Prevent the object from being finalized.
@@ -340,7 +355,7 @@ mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	MonoDebuggerExceptionInfo info;
 
-	if (!mono_debugger_use_debugger)
+	if (!mono_debugger_initialized)
 		return FALSE;
 
 	// Prevent the object from being finalized.
