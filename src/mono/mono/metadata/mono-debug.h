@@ -129,9 +129,8 @@ struct _MonoDebugMethodAddress {
 	guint32 symfile_id;
 	guint32 domain_id;
 	guint32 method_id;
-	guint32 code_size;
-	guint32 dummy;
 	const guint8 *code_start;
+	guint32 code_size;
 	const guint8 *wrapper_addr;
 	MonoDebugMethodJitInfo *jit;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
