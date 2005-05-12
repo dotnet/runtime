@@ -5579,6 +5579,127 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		
 		break;
 	}
+	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
+		MonoClass *eklass;
+		guint32 label1, label2, label3;
+		int index_var, dest_ptr, loc, esize, param_num, num_elem;
+		MonoMarshalConv conv;
+		gboolean is_string = FALSE;
+		
+		/* These are already checked in CONV_IN */
+		g_assert (!t->byref);
+		g_assert (spec->native == MONO_NATIVE_LPARRAY);
+		g_assert (t->attrs & PARAM_ATTRIBUTE_OUT);
+
+		param_num = spec->data.array_data.param_num;
+		num_elem = spec->data.array_data.num_elem;
+
+		if (spec->data.array_data.elem_mult == 0)
+			/* param_num is not specified */
+			param_num = -1;
+
+		if (param_num == -1) {
+			if (num_elem <= 0) {
+				g_assert_not_reached ();
+			}
+		}
+
+		/* FIXME: Optimize blittable case */
+
+		eklass = klass->element_class;
+		if (eklass == mono_defaults.string_class) {
+			is_string = TRUE;
+			conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
+		}
+		else if (eklass == mono_defaults.stringbuilder_class) {
+			is_string = TRUE;
+			conv = mono_marshal_get_stringbuilder_to_ptr_conv (m->piinfo, spec);
+		}
+		else
+			conv = -1;
+
+		mono_marshal_load_type_info (eklass);
+
+		if (is_string)
+			esize = sizeof (gpointer);
+		else
+			esize = mono_class_native_size (eklass, NULL);
+
+		dest_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+		/* Check null */
+		mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_byte (mb, CEE_BRFALSE);
+		label1 = mb->pos;
+		mono_mb_emit_i4 (mb, 0);
+
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_stloc (mb, dest_ptr);
+
+		if (eklass->blittable) {
+			/* dest */
+			mono_mb_emit_ldarg (mb, argnum);
+			/* src */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_CONV_I);
+			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_byte (mb, CEE_ADD);
+			/* length */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_LDLEN);
+			mono_mb_emit_icon (mb, esize);
+			mono_mb_emit_byte (mb, CEE_MUL);
+			mono_mb_emit_byte (mb, CEE_PREFIX1);
+			mono_mb_emit_byte (mb, CEE_CPBLK);			
+			break;
+		}
+
+		/* Emit marshalling loop */
+		index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_stloc (mb, index_var);
+		label2 = mb->pos;
+		mono_mb_emit_ldloc (mb, index_var);
+		mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_byte (mb, CEE_LDLEN);
+		mono_mb_emit_byte (mb, CEE_BGE);
+		label3 = mb->pos;
+		mono_mb_emit_i4 (mb, 0);
+
+		/* Emit marshalling code */
+		if (is_string) {
+			g_assert (conv != -1);
+
+			/* dest */
+			mono_mb_emit_ldloc (mb, dest_ptr);
+
+			/* src */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldloc (mb, index_var);
+
+			mono_mb_emit_byte (mb, CEE_LDELEM_REF);
+
+			mono_mb_emit_icall (mb, conv_to_icall (conv));
+			mono_mb_emit_byte (mb, CEE_STIND_I);
+		}
+		else {
+			char *msg = g_strdup ("Marshalling of non-string and non-blittable arrays to managed code is not implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			return conv_arg;
+		}
+
+		mono_mb_emit_add_to_local (mb, index_var, 1);
+		mono_mb_emit_add_to_local (mb, dest_ptr, esize);
+
+		mono_mb_emit_byte (mb, CEE_BR);
+		mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+
+		mono_mb_patch_addr (mb, label1, mb->pos - (label1 + 4));
+		mono_mb_patch_addr (mb, label3, mb->pos - (label3 + 4));
+
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -6305,6 +6426,16 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			case MONO_TYPE_VALUETYPE:
 				emit_marshal (&m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
+			}
+		}
+		else if (invoke_sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT) {
+			/* The [Out] information is encoded in the delegate signature */
+			switch (t->type) {
+			case MONO_TYPE_SZARRAY:
+				emit_marshal (&m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 		}
 	}
