@@ -272,6 +272,18 @@ mono_test_marshal_inout_array (int *a1)
 }
 
 STDCALL int 
+mono_test_marshal_out_array (int *a1)
+{
+	int i;
+
+	for (i = 0; i < 50; i++) {
+		a1 [i] = i;
+	}
+	
+	return 0;
+}
+
+STDCALL int 
 mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 {
 	int i, sum = 0;
@@ -1316,6 +1328,14 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 	return &custom_res;
 }
 
+STDCALL void*
+mono_test_marshal_pass_return_custom_null (int i, guint32 *ptr, int j)
+{
+	g_assert (ptr == NULL);
+
+	return NULL;
+}
+
 typedef void *(STDCALL *PassReturnPtrDelegate) (void *ptr);
 
 STDCALL int
@@ -1339,6 +1359,14 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 #endif
 
 	return res;
+}
+
+STDCALL int
+mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del)
+{
+	void *ptr = del (NULL);
+
+	return (ptr == NULL) ? 15 : 0;
 }
 
 typedef int (STDCALL *ReturnEnumDelegate) (int e);
