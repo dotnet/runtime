@@ -4132,6 +4132,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
 	MonoMethodBuilder *mb = m->mb;
 	guint32 loc1;
+	int pos2;
 
 	mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, mb->method->klass->image);
 	g_assert (mtype != NULL);
@@ -4171,6 +4172,13 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_stloc (mb, conv_arg);
+
+		/* Check for null */
+		mono_mb_emit_ldarg (mb, argnum);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 		mono_mb_emit_byte (mb, CEE_CALL);
@@ -4192,19 +4200,26 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
 		mono_mb_emit_stloc (mb, conv_arg);
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
+		/* Check for null */
+		mono_mb_emit_ldloc (mb, conv_arg);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+							
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-			
+
 		mono_mb_emit_byte (mb, CEE_CALL);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-				
+
 		mono_mb_emit_ldloc (mb, conv_arg);
 
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
 
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	case MARSHAL_ACTION_PUSH:
@@ -4218,6 +4233,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_emit_byte (mb, CEE_LDLOC_3);
 		mono_mb_emit_stloc (mb, loc1);
+
+		/* Check for null */
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
@@ -4234,6 +4253,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
 
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
@@ -4244,6 +4264,13 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_stloc (mb, conv_arg);
+
+		/* Check for null */
+		mono_mb_emit_ldarg (mb, argnum);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 		mono_mb_emit_byte (mb, CEE_CALL);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
@@ -4253,6 +4280,8 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
 		mono_mb_emit_stloc (mb, conv_arg);
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
@@ -4264,6 +4293,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			
 		mono_mb_emit_byte (mb, CEE_LDLOC_3);
 		mono_mb_emit_stloc (mb, loc1);
+
+		/* Check for null */
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 		mono_mb_emit_byte (mb, CEE_CALL);
@@ -4279,10 +4312,15 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
 
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
 		g_assert (!t->byref);
+
+		/* Check for null */
+		mono_mb_emit_ldloc (mb, conv_arg);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		/* Call CleanUpManagedData */
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
@@ -4293,7 +4331,8 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, conv_arg);
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
-				
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));				
 		break;
 
 	default:
