@@ -163,4 +163,109 @@ public class Tests
 		return res == 15 ? 0 : 3;
 	}
 
+	/*
+	 * Test custom marshaller class not implementing ICustomMarshaler
+	 */
+
+	public class Marshal2 {
+	}
+
+	[DllImport ("libtest")]
+	private static extern IntPtr mono_test_marshal_pass_return_custom2 (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal3), MarshalCookie = "5")] object number, int j);
+
+	public static int test_0_not_icustommarshaller () {
+		try {
+			mono_test_marshal_pass_return_custom2 (5, 10, 5);
+		}
+		catch (ApplicationException) {
+			return 0;
+		}
+		return 1;
+	}
+
+
+	/*
+	 * Test custom marshaller class missing GetInstance method
+	 */
+
+	public class Marshal3 : ICustomMarshaler {
+		public void CleanUpManagedData (object managedObj)
+		{
+		}
+
+		public void CleanUpNativeData (IntPtr pNativeData)
+		{
+		}
+
+		public int GetNativeDataSize ()
+		{
+			return 4;
+		}
+
+		public IntPtr MarshalManagedToNative (object managedObj)
+		{
+			return IntPtr.Zero;
+		}
+
+		public object MarshalNativeToManaged (IntPtr pNativeData)
+		{
+			return null;
+		}
+	}
+
+	public class Marshal4 : Marshal3 {
+		public static object GetInstance (string s) {
+			return null;
+		}
+	}
+
+	public class Marshal5 : Marshal3 {
+		public static ICustomMarshaler GetInstance (object s) {
+			return null;
+		}
+	}
+
+	[DllImport ("libtest", EntryPoint = "mono_test_marshal_pass_return_custom2")]
+	private static extern IntPtr mono_test_marshal_pass_return_custom3 (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal3), MarshalCookie = "5")] object number, int j);
+
+	[DllImport ("libtest", EntryPoint = "mono_test_marshal_pass_return_custom2")]
+	private static extern IntPtr mono_test_marshal_pass_return_custom4 (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal4), MarshalCookie = "5")] object number, int j);
+
+	[DllImport ("libtest", EntryPoint = "mono_test_marshal_pass_return_custom2")]
+	private static extern IntPtr mono_test_marshal_pass_return_custom5 (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal5), MarshalCookie = "5")] object number, int j);
+
+	public static int test_0_missing_getinstance1 () {
+		try {
+			mono_test_marshal_pass_return_custom3 (5, 10, 5);
+		}
+		catch (ApplicationException) {
+			return 0;
+		}
+		return 1;
+	}
+
+	public static int test_0_missing_getinstance2 () {
+		try {
+			mono_test_marshal_pass_return_custom4 (5, 10, 5);
+		}
+		catch (ApplicationException) {
+			return 0;
+		}
+		return 1;
+	}
+
+	public static int test_0_missing_getinstance3 () {
+		try {
+			mono_test_marshal_pass_return_custom5 (5, 10, 5);
+		}
+		catch (ApplicationException) {
+			return 0;
+		}
+		return 1;
+	}
+
 }

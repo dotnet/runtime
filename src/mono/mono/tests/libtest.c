@@ -1329,6 +1329,14 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 }
 
 STDCALL void*
+mono_test_marshal_pass_return_custom2 (int i, guint32 *ptr, int j)
+{
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
+STDCALL void*
 mono_test_marshal_pass_return_custom_null (int i, guint32 *ptr, int j)
 {
 	g_assert (ptr == NULL);
