@@ -1070,9 +1070,16 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 	case MONO_MARSHAL_CONV_DEL_FTN: {
-		/* fixme: we never convert functions back to delegates, dont 
-		// know if thats the correct behaviour
-		*/
+		MonoClass *klass = mono_class_from_mono_type (type);
+
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icall (mb, mono_ftnptr_to_delegate);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
