@@ -1648,6 +1648,28 @@ mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 	return del (len, NULL, arr);
 }
 
+STDCALL int
+mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
+{
+	del (len, NULL, arr);
+
+	if ((arr [0] != 1) || (arr [1] != 2))
+		return 1;
+	else
+		return 0;
+}
+
+STDCALL int
+mono_test_marshal_out_string_array_delegate (int *arr, int len, ArrayDelegate del)
+{
+	del (len, NULL, arr);
+
+	if (!strcmp (arr [0], "ABC") && !strcmp (arr [1], "DEF"))
+		return 0;
+	else
+		return 1;
+}
+
 typedef int (*CdeclDelegate) (int i, int j);
 
 STDCALL int

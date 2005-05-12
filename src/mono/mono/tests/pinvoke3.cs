@@ -182,14 +182,14 @@ public class Tests {
 	}
 
 	/* Test structures as arguments and return values of delegates */
-	static int test_0_marshal_struct_delegate () {
+	public static int test_0_marshal_struct_delegate () {
 		SimpleDelegate2 d = new SimpleDelegate2 (delegate_test_struct);
 
 		return mono_test_marshal_delegate2 (d);
 	}
 
 	/* Test structures as byref arguments of delegates */
-	static int test_0_marshal_byref_struct_delegate () {
+	public static int test_0_marshal_byref_struct_delegate () {
 		SimpleStruct ss = new SimpleStruct ();
 		TestDelegate d = new TestDelegate (delegate_test_struct_byref);
 		
@@ -206,7 +206,7 @@ public class Tests {
 	}
 
 	/* Test structures as out arguments of delegates */
-	static int test_0_marshal_out_struct_delegate () {
+	public static int test_0_marshal_out_struct_delegate () {
 		SimpleStruct ss = new SimpleStruct ();
 		OutStructDelegate d = new OutStructDelegate (delegate_test_struct_out);
 
@@ -214,35 +214,35 @@ public class Tests {
 	}
 
 	/* Test classes as arguments and return values of delegates */
-	static int test_0_marshal_class_delegate () {
+	public static int test_0_marshal_class_delegate () {
 		SimpleDelegate4 d = new SimpleDelegate4 (delegate_test_class);
 
 		return mono_test_marshal_delegate4 (d);
 	}
 
 	/* Test classes as byref arguments of delegates */
-	static int test_0_marshal_byref_class_delegate () {
+	public static int test_0_marshal_byref_class_delegate () {
 		SimpleDelegate5 d = new SimpleDelegate5 (delegate_test_class_byref);
 
 		return mono_test_marshal_delegate5 (d);
 	}
 
 	/* Test classes as out arguments of delegates */
-	static int test_0_marshal_out_class_delegate () {
+	public static int test_0_marshal_out_class_delegate () {
 		SimpleDelegate7 d = new SimpleDelegate7 (delegate_test_class_out);
 
 		return mono_test_marshal_delegate7 (d);
 	}
 
 	/* Test string marshalling with delegates */
-	static int test_0_marshal_string_delegate () {
+	public static int test_0_marshal_string_delegate () {
 		SimpleDelegate8 d = new SimpleDelegate8 (delegate_test_string_marshalling);
 
 		return mono_test_marshal_delegate8 (d, "ABC");
 	}
 
 	/* Test that the delegate wrapper correctly catches null byref arguments */
-	static int test_0_marshal_byref_class_delegate_null () {
+	public static int test_0_marshal_byref_class_delegate_null () {
 		SimpleDelegate5 d = new SimpleDelegate5 (delegate_test_class_byref);
 		
 		try {
@@ -262,13 +262,13 @@ public class Tests {
 		return d (55);
 	}
 
-	static int test_55_marshal_delegate_delegate () {
+	public static int test_55_marshal_delegate_delegate () {
 		SimpleDelegate9 d = new SimpleDelegate9 (call_int_delegate);
 
 		return mono_test_marshal_delegate9 (d, new return_int_delegate (return_self));
 	}
 
-	static int test_0_marshal_primitive_byref_delegate () {
+	public static int test_0_marshal_primitive_byref_delegate () {
 		PrimitiveByrefDelegate d = new PrimitiveByrefDelegate (delegate_test_primitive_byref);
 
 		return mono_test_marshal_primitive_byref_delegate (d);
@@ -278,7 +278,7 @@ public class Tests {
 		return new return_int_delegate (return_self);
 	}
 
-	static int test_55_marshal_return_delegate_delegate () {
+	public static int test_55_marshal_return_delegate_delegate () {
 		return mono_test_marshal_return_delegate_delegate (new ReturnDelegateDelegate (return_delegate));
 	}
 
@@ -296,7 +296,7 @@ public class Tests {
 			return "12345";
 	}
 
-	static int test_0_marshal_return_string_delegate () {
+	public static int test_0_marshal_return_string_delegate () {
 		ReturnStringDelegate d = new ReturnStringDelegate (managed_return_string);
 		String s = mono_test_marshal_return_string_delegate (d);
 
@@ -320,7 +320,7 @@ public class Tests {
 		return (FooEnum)((int)e + 1);
 	}
 
-	static int test_0_marshal_return_enum_delegate () {
+	public static int test_0_marshal_return_enum_delegate () {
 		ReturnEnumDelegate d = new ReturnEnumDelegate (managed_return_enum);
 		FooEnum e = (FooEnum)mono_test_marshal_return_enum_delegate (d);
 
@@ -352,7 +352,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_blittable_struct_delegate")]
 	public static extern int mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 d);
 
-	static int test_0_marshal_blittable_struct_delegate () {
+	public static int test_0_marshal_blittable_struct_delegate () {
 		return mono_test_marshal_blittable_struct_delegate (new SimpleDelegate10 (delegate_test_blittable_struct));
 	}
 
@@ -380,7 +380,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate1")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate1 d);
 
-	static int test_0_marshal_small_struct_delegate1 () {
+	public static int test_0_marshal_small_struct_delegate1 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate1 (delegate_test_struct));
 	}
 
@@ -405,7 +405,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate2")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate2 d);
 
-	static int test_0_marshal_small_struct_delegate2 () {
+	public static int test_0_marshal_small_struct_delegate2 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate2 (delegate_test_struct));
 	}
 
@@ -431,7 +431,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate3")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate3 d);
 
-	static int test_0_marshal_small_struct_delegate3 () {
+	public static int test_0_marshal_small_struct_delegate3 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate3 (delegate_test_struct));
 	}
 
@@ -455,7 +455,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate4")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate4 d);
 
-	static int test_0_marshal_small_struct_delegate4 () {
+	public static int test_0_marshal_small_struct_delegate4 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate4 (delegate_test_struct));
 	}
 
@@ -479,7 +479,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate5")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate5 d);
 
-	static int test_0_marshal_small_struct_delegate5 () {
+	public static int test_0_marshal_small_struct_delegate5 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate5 (delegate_test_struct));
 	}
 
@@ -504,7 +504,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate6")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate6 d);
 
-	static int test_0_marshal_small_struct_delegate6 () {
+	public static int test_0_marshal_small_struct_delegate6 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate6 (delegate_test_struct));
 	}
 
@@ -530,7 +530,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate7")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate7 d);
 
-	static int test_0_marshal_small_struct_delegate7 () {
+	public static int test_0_marshal_small_struct_delegate7 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate7 (delegate_test_struct));
 	}
 
@@ -554,7 +554,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate8")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate8 d);
 
-	static int test_0_marshal_small_struct_delegate8 () {
+	public static int test_0_marshal_small_struct_delegate8 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate8 (delegate_test_struct));
 	}
 
@@ -578,7 +578,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate9")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate9 d);
 
-	static int test_0_marshal_small_struct_delegate9 () {
+	public static int test_0_marshal_small_struct_delegate9 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate9 (delegate_test_struct));
 	}
 
@@ -604,7 +604,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate10")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate10 d);
 
-	static int test_0_marshal_small_struct_delegate10 () {
+	public static int test_0_marshal_small_struct_delegate10 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate10 (delegate_test_struct));
 	}
 
@@ -630,7 +630,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_small_struct_delegate11")]
 	public static extern int mono_test_marshal_small_struct_delegate (SmallStructDelegate11 d);
 
-	static int test_0_marshal_small_struct_delegate11 () {
+	public static int test_0_marshal_small_struct_delegate11 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate11 (delegate_test_struct));
 	}
 
@@ -653,7 +653,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_array_delegate_string () {	
+	public static int test_0_marshal_array_delegate_string () {	
 		string[] arr = new string [] { "ABC", "DEF" };
 		return mono_test_marshal_array_delegate1 (arr, arr.Length, new ArrayDelegate1 (array_delegate1));
 	}
@@ -662,7 +662,7 @@ public class Tests {
 		return (arr == null) ? 0 : 1;
 	}
 
-	static int test_0_marshal_array_delegate_null () {	
+	public static int test_0_marshal_array_delegate_null () {	
 		return mono_test_marshal_array_delegate1 (null, 0, new ArrayDelegate1 (array_delegate2));
 	}
 
@@ -678,7 +678,7 @@ public class Tests {
 		return (arr == null) ? 0 : 1;
 	}
 
-	static int test_0_marshal_array_delegate_bad_paramindex () {
+	public static int test_0_marshal_array_delegate_bad_paramindex () {
 		try {
 			mono_test_marshal_array_delegate3 (null, 0, new ArrayDelegate3 (array_delegate3));
 			return 1;
@@ -700,7 +700,7 @@ public class Tests {
 		return (arr == null) ? 0 : 1;
 	}
 
-	static int test_0_marshal_array_delegate_bad_paramtype () {
+	public static int test_0_marshal_array_delegate_bad_paramtype () {
 		try {
 			mono_test_marshal_array_delegate4 (null, 0, new ArrayDelegate4 (array_delegate4));
 			return 1;
@@ -726,7 +726,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_array_delegate_unicode_string () {	
+	public static int test_0_marshal_array_delegate_unicode_string () {	
 		string[] arr = new string [] { "ABC", "DEF" };
 		return mono_test_marshal_array_delegate5 (arr, arr.Length, new ArrayDelegate5 (array_delegate5));
 	}
@@ -747,7 +747,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_array_delegate_sizeconst () {	
+	public static int test_0_marshal_array_delegate_sizeconst () {	
 		string[] arr = new string [] { "ABC", "DEF" };
 		return mono_test_marshal_array_delegate6 (arr, 1024, new ArrayDelegate6 (array_delegate6));
 	}
@@ -768,7 +768,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_array_delegate_sizeconst_paramindex () {	
+	public static int test_0_marshal_array_delegate_sizeconst_paramindex () {	
 		string[] arr = new string [] { "ABC", "DEF" };
 		return mono_test_marshal_array_delegate7 (arr, 1, new ArrayDelegate7 (array_delegate7));
 	}
@@ -789,9 +789,63 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_array_delegate_blittable () {	
+	public static int test_0_marshal_array_delegate_blittable () {	
 		int[] arr = new int [] { 42, 43 };
 		return mono_test_marshal_array_delegate8 (arr, 2, new ArrayDelegate8 (array_delegate8));
+	}
+
+	/*
+	 * [Out] blittable arrays
+	 */
+
+	public delegate int ArrayDelegate9 (int i, string j,
+										[Out, MarshalAs(UnmanagedType.LPArray, 
+										SizeParamIndex=0)] 
+										int[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_array_delegate")]
+	public static extern int mono_test_marshal_out_array_delegate (int[] arr, int len, ArrayDelegate9 d);
+
+	public static int array_delegate9 (int i, string j, int[] arr) {
+		if (arr.Length != 2)
+			return 1;
+
+		arr [0] = 1;
+		arr [1] = 2;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_out_array_delegate () {	
+		int[] arr = new int [] { 42, 43 };
+		return mono_test_marshal_out_array_delegate (arr, 2, new ArrayDelegate9 (array_delegate9));
+	}
+
+	/*
+	 * [Out] string arrays
+	 */
+
+	public delegate int ArrayDelegate10 (int i, 
+										 string j, 
+										 [Out, MarshalAs(UnmanagedType.LPArray, 
+														 ArraySubType=UnmanagedType.LPStr, SizeConst=2)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_string_array_delegate")]
+	public static extern int mono_test_marshal_out_string_array_delegate (string[] arr, int len, ArrayDelegate10 d);
+
+	public static int array_delegate10 (int i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+
+		arr [0] = "ABC";
+		arr [1] = "DEF";
+
+		return 0;
+	}
+
+	public static int test_0_marshal_out_string_array_delegate () {	
+		string[] arr = new string [] { "", "" };
+		return mono_test_marshal_out_string_array_delegate (arr, 2, new ArrayDelegate10 (array_delegate10));
 	}
 
 }
