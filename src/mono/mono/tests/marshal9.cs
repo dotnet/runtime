@@ -95,14 +95,42 @@ public class Tests
 		return res == 15 ? 0 : 3;
 	}
 
+	[DllImport ("libtest")]
+	[return : MarshalAs(UnmanagedType.CustomMarshaler,MarshalTypeRef = typeof
+						(Marshal1), MarshalCookie = "5")]
+	private static extern object mono_test_marshal_pass_return_custom_null (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] object number, int j);
+
+	public static int test_0_pass_return_null () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		object o = mono_test_marshal_pass_return_custom_null (5, null, 5);
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 1;
+		if (Marshal1.cleanup_native_count != 0)
+			return 2;
+
+		return (o == null) ? 0 : 1;
+	}
+
 	[return : MarshalAs(UnmanagedType.CustomMarshaler,MarshalTypeRef = typeof
 (Marshal1), MarshalCookie = "5")] public delegate object pass_return_int_delegate ([MarshalAs (UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] object o);
 
 	[DllImport ("libtest")]
 	private static extern int mono_test_marshal_pass_return_custom_in_delegate (pass_return_int_delegate del);
 
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_return_custom_null_in_delegate (pass_return_int_delegate del);
+
 	private static object pass_return_int (object i) {
 		return (int)i;
+	}
+
+	private static object pass_return_null (object i) {
+		return (i == null) ? null : new Object ();
 	}
 
 	public static int test_0_pass_return_delegate () {
@@ -119,4 +147,20 @@ public class Tests
 
 		return res == 15 ? 0 : 3;
 	}
+
+	public static int test_0_pass_return_null_delegate () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		int res = mono_test_marshal_pass_return_custom_null_in_delegate (new pass_return_int_delegate (pass_return_null));
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 1;
+		if (Marshal1.cleanup_native_count != 0)
+			return 2;
+
+		return res == 15 ? 0 : 3;
+	}
+
 }
