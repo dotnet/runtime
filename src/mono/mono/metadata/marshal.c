@@ -4128,27 +4128,73 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoType *mtype;
 	MonoClass *mklass;
-	MonoMethod *get_instance, *cleanup_native, *cleanup_managed;
-	MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
+	static MonoClass *ICustomMarshaler = NULL;
+	static MonoMethod *cleanup_native, *cleanup_managed;
+	static MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
+	MonoMethod *get_instance;
 	MonoMethodBuilder *mb = m->mb;
+	char *exception_msg = NULL;
 	guint32 loc1;
 	int pos2;
+
+	if (!ICustomMarshaler) {
+		ICustomMarshaler = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ICustomMarshaler");
+		g_assert (ICustomMarshaler);
+
+		cleanup_native = mono_class_get_method_from_name (ICustomMarshaler, "CleanUpNativeData", 1);
+		g_assert (cleanup_native);
+		cleanup_managed = mono_class_get_method_from_name (ICustomMarshaler, "CleanUpManagedData", 1);
+		g_assert (cleanup_managed);
+		marshal_managed_to_native = mono_class_get_method_from_name (ICustomMarshaler, "MarshalManagedToNative", 1);
+		g_assert (marshal_managed_to_native);
+		marshal_native_to_managed = mono_class_get_method_from_name (ICustomMarshaler, "MarshalNativeToManaged", 1);
+		g_assert (marshal_native_to_managed);
+	}
 
 	mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, mb->method->klass->image);
 	g_assert (mtype != NULL);
 	mklass = mono_class_from_mono_type (mtype);
 	g_assert (mklass != NULL);
 
-	get_instance = mono_class_get_method_from_name (mklass, "GetInstance", 1);
-	g_assert (get_instance);
-	cleanup_native = mono_class_get_method_from_name (mklass, "CleanUpNativeData", 1);
-	g_assert (cleanup_native);
-	cleanup_managed = mono_class_get_method_from_name (mklass, "CleanUpManagedData", 1);
-	g_assert (cleanup_managed);
-	marshal_managed_to_native = mono_class_get_method_from_name (mklass, "MarshalManagedToNative", 1);
-	g_assert (marshal_managed_to_native);
-	marshal_native_to_managed = mono_class_get_method_from_name (mklass, "MarshalNativeToManaged", 1);
-	g_assert (marshal_native_to_managed);
+	if (!mono_class_is_assignable_from (ICustomMarshaler, mklass))
+		exception_msg = g_strdup_printf ("Custom marshaler '%s' does not implement the ICustomMarshaler interface.", mklass->name);
+
+	get_instance = mono_class_get_method_from_name_flags (mklass, "GetInstance", 1, METHOD_ATTRIBUTE_STATIC);
+	if (get_instance) {
+		MonoMethodSignature *get_sig = mono_method_signature (get_instance);
+		if ((get_sig->ret->type != MONO_TYPE_CLASS) ||
+			(mono_class_from_mono_type (get_sig->ret) != ICustomMarshaler) ||
+			(get_sig->params [0]->type != MONO_TYPE_STRING))
+			get_instance = NULL;
+	}
+
+	if (!get_instance)
+		exception_msg = g_strdup_printf ("Custom marshaler '%s' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.", mklass->name);
+
+	/* Throw exception and emit compensation code if neccesary */
+	if (exception_msg) {
+		switch (action) {
+		case MARSHAL_ACTION_CONV_IN:
+		case MARSHAL_ACTION_CONV_RESULT:
+		case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+			if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
+				mono_mb_emit_byte (mb, CEE_POP);
+
+			mono_mb_emit_exception_full (mb, "System", "ApplicationException", exception_msg);
+			g_free (exception_msg);
+
+			break;
+		case MARSHAL_ACTION_PUSH:
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			break;
+		default:
+			break;
+		}
+		return 0;
+	}
+
+	/* FIXME: MS.NET seems to create one instance for each klass + cookie pair */
+	/* FIXME: MS.NET throws an exception if GetInstance returns null */
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
