@@ -35,7 +35,6 @@ typedef enum {
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread);
-extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this_obj, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms, HANDLE thread);
 extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
@@ -91,6 +90,9 @@ extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObj
 extern void ves_icall_System_Threading_Thread_ResetAbort (void);
 extern void ves_icall_System_Threading_Thread_Suspend (MonoThread *thread);
 extern void ves_icall_System_Threading_Thread_Resume (MonoThread *thread);
+extern void ves_icall_System_Threading_Thread_ClrState (MonoThread *thread, guint32 state);
+extern void ves_icall_System_Threading_Thread_SetState (MonoThread *thread, guint32 state);
+extern guint32 ves_icall_System_Threading_Thread_GetState (MonoThread *thread);
 
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
 gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);

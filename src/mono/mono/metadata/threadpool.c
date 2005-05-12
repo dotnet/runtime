@@ -218,7 +218,7 @@ async_invoke_io_thread (gpointer data)
 	MonoThread *thread;
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
-	thread->state |= ThreadState_Background;
+	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	for (;;) {
 		MonoSocketAsyncResult *state;
@@ -377,7 +377,7 @@ socket_io_poll_main (gpointer p)
 
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
-	thread->state |= ThreadState_Background;
+	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	allocated = INITIAL_POLLFD_SIZE;
 	pfds = g_new0 (mono_pollfd, allocated);
@@ -518,7 +518,7 @@ socket_io_epoll_main (gpointer p)
 	epollfd = data->epollfd;
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
-	thread->state |= ThreadState_Background;
+	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 	events = g_new0 (struct epoll_event, nevents);
 
 	while (1) {
@@ -1113,7 +1113,7 @@ async_invoke_thread (gpointer data)
  
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
-	thread->state |= ThreadState_Background;
+	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	for (;;) {
 		MonoAsyncResult *ar;

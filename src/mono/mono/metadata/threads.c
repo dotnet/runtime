@@ -126,12 +126,17 @@ static guint32 default_stacksize = 0;
 static void thread_adjust_static_data (MonoThread *thread);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
+static gboolean mono_thread_resume (MonoThread* thread);
+static void mono_thread_start (MonoThread *thread);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
 
 /* global count of thread interruptions requested */
 static gint32 thread_interruption_requested = 0;
+
+/* Event signaled when a thread changes its background mode */
+static HANDLE background_change_event;
 
 guint32
 mono_thread_get_tls_key (void)
@@ -472,6 +477,14 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Trying to start a new thread: this (%p) start (%p)", this, start));
 
+	mono_monitor_enter (this->synch_lock);
+
+	if ((this->state & ThreadState_Unstarted) == 0) {
+		mono_monitor_exit (this->synch_lock);
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has already been started."));
+		return NULL;
+	}
+
 /* FIXME: remove the code inside BROKEN_THREAD_START once martin gets rid of the
  * thread_start_compile_func stuff.
  */
@@ -485,6 +498,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		start_func = mono_compile_method (im);
 
 	if(start_func==NULL) {
+		mono_monitor_exit (this->synch_lock);
 		g_warning(G_GNUC_PRETTY_FUNCTION
 			  ": Can't locate start method!");
 		return(NULL);
@@ -507,6 +521,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 		this->start_notify=CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 		if(this->start_notify==NULL) {
+			mono_monitor_exit (this->synch_lock);
 			g_warning (G_GNUC_PRETTY_FUNCTION ": CreateSemaphore error 0x%x", GetLastError ());
 			return(NULL);
 		}
@@ -514,6 +529,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		thread=CreateThread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
+			mono_monitor_exit (this->synch_lock);
 			g_warning(G_GNUC_PRETTY_FUNCTION
 				  ": CreateThread error 0x%x", GetLastError());
 			return(NULL);
@@ -528,9 +544,14 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		 * store the handle till then.
 		 */
 
+		mono_thread_start (this);
+		
+		this->state &= ~ThreadState_Unstarted;
+
 		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ": Started thread ID %d (handle %p)", tid, thread));
 
+		mono_monitor_exit (this->synch_lock);
 		return(thread);
 	}
 }
@@ -546,29 +567,28 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 	CloseHandle (thread);
 }
 
-void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
-						      HANDLE thread)
+static void mono_thread_start (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Launching thread %p (%d)",
-		  GetCurrentThreadId (), this, this->tid));
+		  GetCurrentThreadId (), thread, thread->tid));
 
 	/* Only store the handle when the thread is about to be
 	 * launched, to avoid the main thread deadlocking while trying
 	 * to clean up a thread that will never be signalled.
 	 */
-	handle_store(this);
+	handle_store (thread);
 
 	if (mono_thread_callbacks)
-		(* mono_thread_callbacks->start_resume) (this->tid);
+		(* mono_thread_callbacks->start_resume) (thread->tid);
 
-	ResumeThread(thread);
+	ResumeThread (thread->handle);
 
 	if (mono_thread_callbacks)
-		(* mono_thread_callbacks->end_resume) (this->tid);
+		(* mono_thread_callbacks->end_resume) (thread->tid);
 
-	if(this->start_notify!=NULL) {
+	if(thread->start_notify!=NULL) {
 		/* Wait for the thread to set up its TLS data etc, so
 		 * theres no potential race condition if someone tries
 		 * to look up the data believing the thread has
@@ -577,16 +597,16 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 
 		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ": (%d) waiting for thread %p (%d) to start",
-			  GetCurrentThreadId (), this, this->tid));
+			  GetCurrentThreadId (), thread, thread->tid));
 
-		WaitForSingleObjectEx (this->start_notify, INFINITE, FALSE);
-		CloseHandle (this->start_notify);
-		this->start_notify=NULL;
+		WaitForSingleObjectEx (thread->start_notify, INFINITE, FALSE);
+		CloseHandle (thread->start_notify);
+		thread->start_notify = NULL;
 	}
 
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Done launching thread %p (%d)",
-		  GetCurrentThreadId (), this, this->tid));
+		  GetCurrentThreadId (), thread, thread->tid));
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -619,17 +639,28 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 MonoString* 
 ves_icall_System_Threading_Thread_GetName_internal (MonoThread *this_obj)
 {
+	MonoString* str;
+	mono_monitor_enter (this_obj->synch_lock);
+	
 	if (!this_obj->name)
-		return NULL;
+		str = NULL;
 	else
-		return mono_string_new_utf16 (mono_domain_get (), this_obj->name, this_obj->name_len);
+		str = mono_string_new_utf16 (mono_domain_get (), this_obj->name, this_obj->name_len);
+	
+	mono_monitor_exit (this_obj->synch_lock);
+	return str;
 }
 
 void 
 ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name)
 {
-	if (this_obj->name)
-		g_free (this_obj->name);
+	mono_monitor_enter (this_obj->synch_lock);
+	
+	if (this_obj->name) {
+		mono_monitor_exit (this_obj->synch_lock);
+		mono_raise_exception (mono_get_exception_invalid_operation ("Thread.Name can only be set once."));
+		return;
+	}
 	if (name) {
 		this_obj->name = g_new (gunichar2, mono_string_length (name));
 		memcpy (this_obj->name, mono_string_chars (name), mono_string_length (name) * 2);
@@ -637,6 +668,8 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 	}
 	else
 		this_obj->name = NULL;
+	
+	mono_monitor_exit (this_obj->synch_lock);
 }
 
 MonoObject*
@@ -806,6 +839,13 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	MONO_ARCH_SAVE_REGS;
 
 	mono_monitor_enter (this->synch_lock);
+	
+	if ((this->state & ThreadState_Unstarted) != 0) {
+		mono_monitor_exit (this->synch_lock);
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started."));
+		return FALSE;
+	}
+	
 	this->state |= ThreadState_WaitSleepJoin;
 	mono_monitor_exit (this->synch_lock);
 
@@ -1291,6 +1331,46 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 #endif
 }
 
+void
+ves_icall_System_Threading_Thread_ClrState (MonoThread* this, guint32 state)
+{
+	mono_monitor_enter (this->synch_lock);
+	this->state &= ~state;
+	if (state & ThreadState_Background) {
+		/* If the thread changes the background mode, the main thread has to
+		 * be notified, since it has to rebuild the list of threads to
+		 * wait for.
+		 */
+		SetEvent (background_change_event);
+	}
+	mono_monitor_exit (this->synch_lock);
+}
+
+void
+ves_icall_System_Threading_Thread_SetState (MonoThread* this, guint32 state)
+{
+	mono_monitor_enter (this->synch_lock);
+	this->state |= state;
+	if (state & ThreadState_Background) {
+		/* If the thread changes the background mode, the main thread has to
+		 * be notified, since it has to rebuild the list of threads to
+		 * wait for.
+		 */
+		SetEvent (background_change_event);
+	}
+	mono_monitor_exit (this->synch_lock);
+}
+
+guint32
+ves_icall_System_Threading_Thread_GetState (MonoThread* this)
+{
+	guint32 state;
+	mono_monitor_enter (this->synch_lock);
+	state = this->state;
+	mono_monitor_exit (this->synch_lock);
+	return state;
+}
+
 int  
 mono_thread_get_abort_signal (void)
 {
@@ -1365,7 +1445,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 		   thread, thread->tid));
 	
 	/* Make sure the thread is awake */
-	ves_icall_System_Threading_Thread_Resume (thread);
+	mono_thread_resume (thread);
 	
 	signal_thread_state_change (thread);
 }
@@ -1393,29 +1473,45 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	mono_monitor_exit (thread->synch_lock);
 }
 
-void
-ves_icall_System_Threading_Thread_Suspend (MonoThread *thread)
+static gboolean
+mono_thread_suspend (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
 	mono_monitor_enter (thread->synch_lock);
+
+	if ((thread->state & ThreadState_Unstarted) != 0 || 
+		(thread->state & ThreadState_Aborted) != 0 || 
+		(thread->state & ThreadState_Stopped) != 0)
+	{
+		mono_monitor_exit (thread->synch_lock);
+		return FALSE;
+	}
 
 	if ((thread->state & ThreadState_Suspended) != 0 || 
 		(thread->state & ThreadState_SuspendRequested) != 0 ||
 		(thread->state & ThreadState_StopRequested) != 0) 
 	{
 		mono_monitor_exit (thread->synch_lock);
-		return;
+		return TRUE;
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
 	mono_monitor_exit (thread->synch_lock);
 
 	signal_thread_state_change (thread);
+	return TRUE;
 }
 
 void
-ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
+ves_icall_System_Threading_Thread_Suspend (MonoThread *thread)
+{
+	if (!mono_thread_suspend (thread))
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
+}
+
+static gboolean
+mono_thread_resume (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -1424,13 +1520,16 @@ ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 	if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		thread->state &= ~ThreadState_SuspendRequested;
 		mono_monitor_exit (thread->synch_lock);
-		return;
+		return TRUE;
 	}
-		
-	if ((thread->state & ThreadState_Suspended) == 0) 
+
+	if ((thread->state & ThreadState_Suspended) == 0 ||
+		(thread->state & ThreadState_Unstarted) != 0 || 
+		(thread->state & ThreadState_Aborted) != 0 || 
+		(thread->state & ThreadState_Stopped) != 0)
 	{
 		mono_monitor_exit (thread->synch_lock);
-		return;
+		return FALSE;
 	}
 	
 	thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -1444,6 +1543,15 @@ ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 	WaitForSingleObject (thread->resume_event, INFINITE);
 	CloseHandle (thread->resume_event);
 	thread->resume_event = NULL;
+
+	return TRUE;
+}
+
+void
+ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
+{
+	if (!mono_thread_resume (thread))
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
 }
 
 static gboolean
@@ -1482,7 +1590,7 @@ void mono_thread_stop (MonoThread *thread)
 	}
 	
 	/* Make sure the thread is awake */
-	ves_icall_System_Threading_Thread_Resume (thread);
+	mono_thread_resume (thread);
 	
 	thread->state |= ThreadState_StopRequested;
 	thread->state &= ~ThreadState_AbortRequested;
@@ -1558,6 +1666,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
+	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
@@ -1644,6 +1753,47 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	}
 }
 
+static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeout)
+{
+	guint32 i, ret, count;
+	
+	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
+		  ": %d threads to wait for in this batch", wait->num));
+
+	/* Add the thread state change event, so it wakes up if a thread changes
+	 * to background mode.
+	 */
+	count = wait->num;
+	if (count < MAXIMUM_WAIT_OBJECTS) {
+		wait->handles [count] = background_change_event;
+		count++;
+	}
+
+	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, FALSE);
+
+	if(ret==WAIT_FAILED) {
+		/* See the comment in build_wait_tids() */
+		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed"));
+		return;
+	}
+	
+	for(i=0; i<wait->num; i++)
+		CloseHandle (wait->handles[i]);
+
+	if (ret == WAIT_TIMEOUT)
+		return;
+	
+	if (ret < wait->num) {
+		guint32 tid=wait->threads[ret]->tid;
+		if (mono_g_hash_table_lookup (threads, GUINT_TO_POINTER(tid))!=NULL) {
+			/* See comment in wait_for_tids about thread cleanup */
+			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
+				   ": cleaning up after thread %d", tid));
+			thread_cleanup (wait->threads[i]);
+		}
+	}
+}
+
 static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 {
 	struct wait_data *wait=(struct wait_data *)user;
@@ -1653,8 +1803,12 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		MonoThread *thread=(MonoThread *)value;
 
 		/* Ignore background threads, we abort them later */
-		if (thread->state & ThreadState_Background)
+		mono_monitor_enter (thread->synch_lock);
+		if (thread->state & ThreadState_Background) {
+			mono_monitor_exit (thread->synch_lock);
 			return; /* just leave, ignore */
+		}
+		mono_monitor_exit (thread->synch_lock);
 		
 		if (mono_gc_is_finalizer_thread (thread))
 			return;
@@ -1733,12 +1887,13 @@ void mono_thread_manage (void)
 			  ":There are %d threads to join", mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
+		ResetEvent (background_change_event);
 		wait->num=0;
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
 		LeaveCriticalSection (&threads_mutex);
 		if(wait->num>0) {
 			/* Something to wait for */
-			wait_for_tids (wait, INFINITE);
+			wait_for_tids_or_state_change (wait, INFINITE);
 		}
 		THREAD_DEBUG (g_message ("I have %d threads after waiting.", wait->num));
 	} while(wait->num>0);
