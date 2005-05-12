@@ -6,8 +6,8 @@ the restriction from the "main" (i.e. original) thread.
 
 This security stack "inheritance" is called "stack propagation".
 
-* delegate1.cs	Use a static deletage to test stack propagation.
-* delegate2.cs	Use an instance deletage to test stack propagation.
+* delegate1.cs	Use a static delegate to test stack propagation.
+* delegate2.cs	Use an instance delegate to test stack propagation.
 
 * thread1.cs	Deny unmanaged code before creating the thread object.
 * thread2.cs	Deny unmanaged code after creating the thread object but 

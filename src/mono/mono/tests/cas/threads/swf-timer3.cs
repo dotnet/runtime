@@ -59,8 +59,11 @@ class Program {
 		t.Elapsed += new ElapsedEventHandler (ShowStackTrace);
 		t.AutoReset = true;
 		t.Enabled = true;
-		
-		System.Threading.Thread.Sleep (5000);
+
+		// Mono SWF async support requires the message loop in action		
+		while (counter <= 5)
+			Application.DoEvents ();
+
 		return result;
 	}
 }
