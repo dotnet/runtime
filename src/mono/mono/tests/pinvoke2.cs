@@ -173,7 +173,7 @@ public class Tests {
 	public static extern int mono_test_marshal_delegate (SimpleDelegate d);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate_struct")]
-	public static extern int mono_test_marshal_delegate_struct (DelegateStruct d);
+	public static extern DelegateStruct mono_test_marshal_delegate_struct (DelegateStruct d);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_delegate")]
 	public static extern SimpleDelegate mono_test_marshal_return_delegate (SimpleDelegate d);
@@ -415,7 +415,16 @@ public class Tests {
 		s.del = new SimpleDelegate (delegate_test);
 		s.del2 = new SimpleDelegate (delegate_test);
 
-		return mono_test_marshal_delegate_struct (s);
+		DelegateStruct res = mono_test_marshal_delegate_struct (s);
+
+		if (res.a != 0)
+			return 1;
+		if (res.del (2) != 0)
+			return 2;
+		if (res.del2 (2) != 0)
+			return 3;
+
+		return 0;
 	}
 
 	static int test_0_marshal_point () {

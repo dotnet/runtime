@@ -367,10 +367,16 @@ typedef struct {
 	SimpleDelegate func, func2;
 } DelegateStruct;
 
-STDCALL int 
+STDCALL DelegateStruct
 mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
-	return ds.func (ds.a) + ds.func2 (ds.a);
+	DelegateStruct res;
+
+	res.a = ds.func (ds.a) + ds.func2 (ds.a);
+	res.func = ds.func;
+	res.func2 = ds.func2;
+
+	return res;
 }
 
 STDCALL int 
