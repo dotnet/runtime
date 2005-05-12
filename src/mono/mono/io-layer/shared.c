@@ -319,7 +319,9 @@ again:
 
 	_wapi_sem_id = semget (oldkey, _WAPI_SHARED_SEM_COUNT, 0600);
 	if (_wapi_sem_id == -1) {
-		g_warning ("%s: semget error opening old key 0x%x (%s) - trying again", __func__, oldkey, g_strerror (errno));
+		if (retries > 3)
+			g_warning ("%s: semget error opening old key 0x%x (%s) - trying again",
+					__func__, oldkey,g_strerror (errno));
 
 		/* Someone must have deleted the semaphore set, so
 		 * blow away the bad key and try again
