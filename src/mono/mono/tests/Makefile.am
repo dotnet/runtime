@@ -202,6 +202,7 @@ TEST_CS_SRC=			\
 	main-returns-background-abort-resetabort.cs	\
 	main-returns-background-resetabort.cs	\
 	main-returns-background.cs	\
+	main-returns-background-change.cs	\
 	main-returns.cs	\
 	subthread-exit.cs	\
 	desweak.cs
