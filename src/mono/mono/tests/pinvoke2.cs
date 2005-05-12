@@ -136,6 +136,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_array")]
+	public static extern int mono_test_marshal_out_array ([Out] int [] a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
 	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
 	
@@ -201,12 +204,21 @@ public class Tests {
 
 	[DllImport ("libtest")]
         static extern void class_marshal_test1 (out SimpleObj obj);
-	
-	[DllImport ("libtest")]
-        static extern int class_marshal_test2 (ref SimpleObj obj);
 
 	[DllImport ("libtest")]
         static extern int class_marshal_test4 (SimpleObj obj);
+	
+	[DllImport ("libtest")]
+        static extern int string_marshal_test0 (string str);
+
+	[DllImport ("libtest")]
+        static extern void string_marshal_test1 (out string str);
+
+	[DllImport ("libtest")]
+        static extern int string_marshal_test2 (ref string str);
+
+	[DllImport ("libtest")]
+        static extern int string_marshal_test3 (string str);
 
 	public delegate int SimpleDelegate (int a);
 
@@ -214,11 +226,11 @@ public class Tests {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
-	static int test_0_marshal_char () {
+	public static int test_0_marshal_char () {
 		return mono_test_marshal_char ('a');
 	}
 
-	static int test_0_marshal_char_array () {
+	public static int test_0_marshal_char_array () {
 		// a unicode char[] is implicitly marshalled as [Out]
 		char[] buf = new char [32];
 		mono_test_marshal_char_array (buf);
@@ -229,7 +241,7 @@ public class Tests {
 			return 1;
 	}
 
-	static int test_1225_marshal_array () {
+	public static int test_1225_marshal_array () {
 		int [] a1 = new int [50];
 		for (int i = 0; i < 50; i++)
 			a1 [i] = i;
@@ -237,7 +249,7 @@ public class Tests {
 		return mono_test_marshal_array (a1);
 	}
 
-	static int test_1225_marshal_inout_array () {
+	public static int test_1225_marshal_inout_array () {
 		int [] a1 = new int [50];
 		for (int i = 0; i < 50; i++)
 			a1 [i] = i;
@@ -253,7 +265,21 @@ public class Tests {
 		return res;
 	}
 
-	static int test_0_marshal_inout_nonblittable_array () {
+	public static int test_0_marshal_inout_array () {
+		int [] a1 = new int [50];
+
+		int res = mono_test_marshal_out_array (a1);
+
+		for (int i = 0; i < 50; i++)
+			if (a1 [i] != i) {
+				Console.WriteLine ("X: " + i + " " + a1 [i]);
+				return 2;
+			}
+
+		return 0;
+	}
+
+	public static int test_0_marshal_inout_nonblittable_array () {
 		char [] a1 = new char [10];
 		for (int i = 0; i < 10; i++)
 			a1 [i] = "Hello, World" [i];
@@ -267,7 +293,7 @@ public class Tests {
 		return res;
 	}
 
-	static int test_0_marshal_struct () {
+	public static int test_0_marshal_struct () {
 		SimpleStruct ss = new  SimpleStruct ();
 		ss.b = true;
 		ss.d = "TEST";
@@ -275,7 +301,7 @@ public class Tests {
 		return mono_test_marshal_struct (ss);
 	}
 
-	static int test_0_marshal_struct2 () {
+	public static int test_0_marshal_struct2 () {
 		SimpleStruct2 ss2 = new  SimpleStruct2 ();
 		ss2.b = true;
 		ss2.d = "TEST";
@@ -287,7 +313,7 @@ public class Tests {
 		return mono_test_marshal_struct2 (ss2);
 	}
 
-	static int test_0_marshal_struct3 () {
+	public static int test_0_marshal_struct3 () {
 		SimpleStruct2 ss2 = new  SimpleStruct2 ();
 		ss2.b = true;
 		ss2.d = "TEST";
@@ -299,7 +325,7 @@ public class Tests {
 		return mono_test_marshal_struct2_2 (10, 11, 12, ss2);
 	}
 
-	static int test_0_marshal_empty_struct () {
+	public static int test_0_marshal_empty_struct () {
 		EmptyStruct es = new EmptyStruct ();
 
 		if (mono_test_empty_struct (1, es, 2) != 0)
@@ -308,7 +334,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_struct_array () {
+	public static int test_0_marshal_struct_array () {
 		SimpleStruct2[] ss_arr = new SimpleStruct2 [2];
 
 		SimpleStruct2 ss2 = new SimpleStruct2 ();
@@ -333,7 +359,7 @@ public class Tests {
 		return mono_test_marshal_struct_array (ss_arr);
 	}
 
-	static int test_105_marshal_long_align_struct_array () {
+	public static int test_105_marshal_long_align_struct_array () {
 		LongAlignStruct[] ss_arr = new LongAlignStruct [2];
 
 		LongAlignStruct ss = new LongAlignStruct ();
@@ -353,7 +379,7 @@ public class Tests {
 	}
 
 	/* Test classes as arguments and return values */
-	static int test_0_marshal_class () {
+	public static int test_0_marshal_class () {
 		SimpleClass ss = new  SimpleClass ();
 		ss.b = true;
 		ss.d = "TEST";
@@ -378,7 +404,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_byref_class () {
+	public static int test_0_marshal_byref_class () {
 		SimpleClass ss = new  SimpleClass ();
 		ss.b = true;
 		ss.d = "TEST";
@@ -394,13 +420,13 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_delegate () {
+	public static int test_0_marshal_delegate () {
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		return mono_test_marshal_delegate (d);
 	}
 
-	static int test_0_marshal_return_delegate () {
+	public static int test_0_marshal_return_delegate () {
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		SimpleDelegate d2 = mono_test_marshal_return_delegate (d);
@@ -408,7 +434,7 @@ public class Tests {
 		return d2 (2);
 	}
 
-	static int test_0_marshal_delegate_struct () {
+	public static int test_0_marshal_delegate_struct () {
 		DelegateStruct s = new DelegateStruct ();
 
 		s.a = 2;
@@ -427,7 +453,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_point () {
+	public static int test_0_marshal_point () {
 		Point pt = new Point();
 		pt.x = 1.25;
 		pt.y = 3.5;
@@ -435,7 +461,7 @@ public class Tests {
 		return mono_test_marshal_point(pt);
 	}
 
-	static int test_0_marshal_mixed_point () {
+	public static int test_0_marshal_mixed_point () {
 		MixedPoint mpt = new MixedPoint();
 		mpt.x = 5;
 		mpt.y = 6.75;
@@ -443,7 +469,7 @@ public class Tests {
 		return mono_test_marshal_mixed_point(mpt);
 	}
 
-	static int test_0_marshal_bool_byref () {
+	public static int test_0_marshal_bool_byref () {
 		bool b = true;
 		if (mono_test_marshal_bool_byref (99, ref b, 100) != 1)
 			return 1;
@@ -456,7 +482,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_return_vtype () {
+	public static int test_0_return_vtype () {
 		SimpleStruct ss = mono_test_return_vtype (new IntPtr (5));
 
 		if (!ss.a && ss.b && !ss.c && ss.d == "TEST" && ss.d2 == "TEST2")
@@ -465,7 +491,7 @@ public class Tests {
 		return 1;
 	}
 
-	static int test_0_marshal_stringbuilder () {
+	public static int test_0_marshal_stringbuilder () {
 		StringBuilder sb = new StringBuilder(255);
 		sb.Append ("ABCD");
 		mono_test_marshal_stringbuilder (sb, sb.Capacity);
@@ -477,7 +503,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_stringbuilder_unicode () {
+	public static int test_0_marshal_stringbuilder_unicode () {
 		StringBuilder sb = new StringBuilder(255);
 		mono_test_marshal_stringbuilder_unicode (sb, sb.Capacity);
 		String res = sb.ToString();
@@ -488,19 +514,19 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_empty_string_array () {
+	public static int test_0_marshal_empty_string_array () {
 		return mono_test_marshal_empty_string_array (null);
 	}
 
-	static int test_0_marshal_string_array () {
+	public static int test_0_marshal_string_array () {
 		return mono_test_marshal_string_array (new String [] { "ABC", "DEF" });
 	}
 
-	static int test_0_marshal_unicode_string_array () {
+	public static int test_0_marshal_unicode_string_array () {
 		return mono_test_marshal_unicode_string_array (new String [] { "ABC", "DEF" }, new String [] { "ABC", "DEF" });
 	}
 
-	static int test_0_marshal_stringbuilder_array () {
+	public static int test_0_marshal_stringbuilder_array () {
 		StringBuilder sb1 = new StringBuilder ("ABC");
 		StringBuilder sb2 = new StringBuilder ("DEF");
 
@@ -514,7 +540,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_last_error () {
+	public static int test_0_last_error () {
 		mono_test_last_error (5);
 		if (Marshal.GetLastWin32Error () == 5)
 			return 0;
@@ -522,7 +548,7 @@ public class Tests {
 			return 1;
 	}
 
-	static int test_0_library_not_found () {
+	public static int test_0_library_not_found () {
 
 		try {
 			mono_entry_point_not_found ();
@@ -534,7 +560,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_entry_point_not_found () {
+	public static int test_0_entry_point_not_found () {
 
 		try {
 			mono_library_not_found ();
@@ -547,7 +573,7 @@ public class Tests {
 	}
 
 	/* Check that the runtime trims .dll from the library name */
-	static int test_0_trim_dll_from_name () {
+	public static int test_0_trim_dll_from_name () {
 
 		mono_test_marshal_char_2 ('A');
 
@@ -555,7 +581,7 @@ public class Tests {
 	}
 
 	/* Check that the runtime adds lib to to the library name */
-	static int test_0_add_lib_to_name () {
+	public static int test_0_add_lib_to_name () {
 
 		mono_test_marshal_char_3 ('A');
 
@@ -566,7 +592,7 @@ public class Tests {
 		public int i;
 	}
 
-	static int test_0_asany () {
+	public static int test_0_asany () {
 		if (mono_test_asany (5, 1) != 0)
 			return 1;
 
@@ -736,7 +762,7 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_byval_class () {
+	public static int test_0_marshal_byval_class () {
 		SimpleObj obj0 = new SimpleObj ();
 		obj0.str = "T1";
 		obj0.i = 4;
@@ -747,14 +773,14 @@ public class Tests {
 		return 0;
 	}
 
-	static int test_0_marshal_byval_class_null () {
+	public static int test_0_marshal_byval_class_null () {
 		if (class_marshal_test4 (null) != 0)
 			return 1;
 
 		return 0;
 	}
 
-	static int test_0_marshal_out_class () {
+	public static int test_0_marshal_out_class () {
 		SimpleObj obj1;
 
 		class_marshal_test1 (out obj1);
@@ -768,10 +794,35 @@ public class Tests {
 		return 0;
 	}
 
+	public static int test_0_marshal_string () {
+		return string_marshal_test0 ("TEST0");
+	}
+
+	public static int test_0_marshal_out_string () {
+		string res;
+		
+		string_marshal_test1 (out res);
+
+		if (res != "TEST1")
+			return 1;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_byref_string () {
+		string res = "TEST1";
+
+		return string_marshal_test2 (ref res);
+	}
+
+	public static int test_0_marshal_null_string () {
+		return string_marshal_test3 (null);
+	}
+
 	[DllImport ("libtest", EntryPoint="mono_test_stdcall_name_mangling", CallingConvention=CallingConvention.StdCall)]
 	public static extern int mono_test_stdcall_name_mangling (int a, int b, int c);
 
-	static int test_0_stdcall_name_mangling () {
+	public static int test_0_stdcall_name_mangling () {
 		return mono_test_stdcall_name_mangling (0, 1, 2) == 3 ? 0 : 1;
 	}
 
@@ -787,7 +838,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static unsafe extern int mono_test_marshal_ptr_to_struct (CharInfo *ptr);
 
-	static unsafe int test_0_marshal_ptr_to_struct () {
+	public static unsafe int test_0_marshal_ptr_to_struct () {
 		CharInfo [] buffer = new CharInfo [1];
 		fixed (CharInfo *ptr = &buffer [0]) {
 			try {
@@ -799,6 +850,27 @@ public class Tests {
 			}
 		}
 		return 1;
+	}
+
+	/*
+	 * LPWStr marshalling
+	 */
+
+	[DllImport("libtest", EntryPoint="test_lpwstr_marshal")]
+	[return: MarshalAs(UnmanagedType.LPWStr)]
+	private static extern string mono_test_marshal_lpwstr_marshal(
+		[MarshalAs(UnmanagedType.LPWStr)] string s,
+		int length );
+
+	public static int test_0_pass_return_lwpstr () {
+		string s = "ABC";
+		
+		string res = mono_test_marshal_lpwstr_marshal (s, s.Length);
+
+		if (res != "ABC")
+			return 1;
+		
+		return 0;		
 	}
 }
 
