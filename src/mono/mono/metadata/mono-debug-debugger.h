@@ -74,8 +74,8 @@ extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 dat
 void            mono_debugger_initialize                  (gboolean use_debugger);
 void            mono_debugger_cleanup                     (void);
 
-void            mono_debugger_lock                        (gboolean use_loader_lock);
-void            mono_debugger_unlock                      (gboolean use_loader_lock);
+void            mono_debugger_lock                        (void);
+void            mono_debugger_unlock                      (void);
 void            mono_debugger_event                       (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
 void            mono_debugger_add_symbol_file             (MonoDebugHandle *handle);

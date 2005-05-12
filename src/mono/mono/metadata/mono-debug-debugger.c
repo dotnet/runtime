@@ -66,26 +66,15 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 #endif
 
 void
-mono_debugger_lock (gboolean use_loader_lock)
+mono_debugger_lock (void)
 {
-	if (mono_debugger_use_debugger) {
-		EnterCriticalSection (&debugger_lock_mutex);
-		debugger_lock_level++;
-	}
-
-	if (use_loader_lock)
-		mono_loader_lock ();
+	EnterCriticalSection (&debugger_lock_mutex);
+	debugger_lock_level++;
 }
 
 void
-mono_debugger_unlock (gboolean use_loader_lock)
+mono_debugger_unlock (void)
 {
-	if (use_loader_lock)
-		mono_loader_unlock ();
-
-	if (!mono_debugger_use_debugger)
-		return;
-
 	if (debugger_lock_level == 1) {
 		if (must_reload_symtabs && mono_debugger_use_debugger) {
 			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
@@ -113,9 +102,9 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 {
 	g_assert (mono_debugger_use_debugger);
 
-	mono_debugger_lock (FALSE);
+	mono_debugger_lock ();
 	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, GPOINTER_TO_UINT (handle), 0);
-	mono_debugger_unlock (FALSE);
+	mono_debugger_unlock ();
 }
 
 void
@@ -428,7 +417,7 @@ gboolean
 mono_debugger_lookup_type (const gchar *type_name)
 {
 	int i;
-	mono_debugger_lock (TRUE);
+	mono_debugger_lock ();
 
 	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
 		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
@@ -446,11 +435,11 @@ mono_debugger_lookup_type (const gchar *type_name)
 		if (klass)
 			mono_class_init (klass);
 
-		mono_debugger_unlock (TRUE);
+		mono_debugger_unlock ();
 		return TRUE;
 	}
 
-	mono_debugger_unlock (TRUE);
+	mono_debugger_unlock ();
 	return FALSE;
 }
 
@@ -461,14 +450,14 @@ mono_debugger_lookup_assembly (const gchar *name)
 	MonoImageOpenStatus status;
 	int i;
 
-	mono_debugger_lock (TRUE);
+	mono_debugger_lock ();
 
  again:
 	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
 		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
 
 		if (!strcmp (symfile->image_file, name)) {
-			mono_debugger_unlock (TRUE);
+			mono_debugger_unlock ();
 			return i;
 		}
 	}
@@ -477,7 +466,7 @@ mono_debugger_lookup_assembly (const gchar *name)
 
 	if (status != MONO_IMAGE_OK) {
 		g_warning (G_STRLOC ": Cannot open image `%s'", name);
-		mono_debugger_unlock (TRUE);
+		mono_debugger_unlock ();
 		return -1;
 	}
 
