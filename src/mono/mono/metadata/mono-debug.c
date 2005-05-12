@@ -74,10 +74,9 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_format = format;
 	in_the_mono_debugger = format == MONO_DEBUG_FORMAT_DEBUGGER;
 
-	if (in_the_mono_debugger)
-		mono_debugger_initialize ();
+	mono_debugger_initialize (in_the_mono_debugger);
 
-	mono_debugger_lock ();
+	mono_debugger_lock (FALSE);
 
 	mono_symbol_table = g_new0 (MonoSymbolTable, 1);
 	mono_symbol_table->magic = MONO_DEBUGGER_MAGIC;
@@ -191,9 +190,9 @@ mono_debug_close_image (MonoDebugHandle *handle)
 static void
 mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 {
-	mono_debugger_lock ();
+	mono_debugger_lock (TRUE);
 	mono_debug_open_image (mono_assembly_get_image (assembly));
-	mono_debugger_unlock ();
+	mono_debugger_unlock (TRUE);
 }
 
 /*
@@ -363,17 +362,17 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return NULL;
 
-	mono_debugger_lock ();
+	mono_debugger_lock (TRUE);
 
 	handle = _mono_debug_get_image (method->klass->image);
 	if (!handle || !handle->symfile || !handle->symfile->offset_table) {
-		mono_debugger_unlock ();
+		mono_debugger_unlock (TRUE);
 		return NULL;
 	}
 
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo) {
-		mono_debugger_unlock ();
+		mono_debugger_unlock (TRUE);
 		return NULL;
 	}
 
@@ -450,7 +449,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		//        This should only happen for very big methods, for instance
 		//        with more than 40.000 line numbers and more than 5.000
 		//        local variables.
-		mono_debugger_unlock ();
+		mono_debugger_unlock (TRUE);
 		return NULL;
 	}
 
@@ -479,7 +478,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	if (in_the_mono_debugger)
 		mono_debugger_add_method (jit);
 
-	mono_debugger_unlock ();
+	mono_debugger_unlock (TRUE);
 
 	return address;
 }

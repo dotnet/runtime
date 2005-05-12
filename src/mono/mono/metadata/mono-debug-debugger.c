@@ -18,7 +18,7 @@
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean must_reload_symtabs = FALSE;
-static gboolean mono_debugger_initialized = FALSE;
+static gboolean mono_debugger_use_debugger = FALSE;
 static MonoObject *last_exception = NULL;
 
 struct _MonoDebuggerMetadataInfo {
@@ -66,37 +66,28 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 #endif
 
 void
-mono_debugger_lock (void)
+mono_debugger_lock (gboolean use_loader_lock)
 {
-	if (!mono_debugger_initialized) {
+	if (mono_debugger_use_debugger) {
+		EnterCriticalSection (&debugger_lock_mutex);
 		debugger_lock_level++;
-		return;
 	}
 
-	EnterCriticalSection (&debugger_lock_mutex);
-	debugger_lock_level++;
+	if (use_loader_lock)
+		mono_loader_lock ();
 }
 
 void
-mono_debugger_unlock (void)
+mono_debugger_unlock (gboolean use_loader_lock)
 {
-	if (debugger_lock_level <= 0) {
-		g_warning (G_STRLOC ": Attempting to release a lock which you do not own.");
-		/*
-		 * Turn the assertion into a warning if we're not running in the debugger.
-		 * This should never happen, though.  See bug #74830.
-		 */
-		g_assert (!mono_debugger_initialized);
-		return;
-	}
+	if (use_loader_lock)
+		mono_loader_unlock ();
 
-	if (!mono_debugger_initialized) {
-		debugger_lock_level--;
+	if (!mono_debugger_use_debugger)
 		return;
-	}
 
 	if (debugger_lock_level == 1) {
-		if (must_reload_symtabs) {
+		if (must_reload_symtabs && mono_debugger_use_debugger) {
 			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
 			must_reload_symtabs = FALSE;
 		}
@@ -107,24 +98,24 @@ mono_debugger_unlock (void)
 }
 
 void
-mono_debugger_initialize (void)
+mono_debugger_initialize (gboolean use_debugger)
 {
 	MONO_GC_REGISTER_ROOT (last_exception);
 	
-	g_assert (!mono_debugger_initialized);
+	g_assert (!mono_debugger_use_debugger);
 
 	InitializeCriticalSection (&debugger_lock_mutex);
-	mono_debugger_initialized = TRUE;
+	mono_debugger_use_debugger = use_debugger;
 }
 
 void
 mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 {
-	g_assert (mono_debugger_initialized);
+	g_assert (mono_debugger_use_debugger);
 
-	mono_debugger_lock ();
+	mono_debugger_lock (FALSE);
 	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, GPOINTER_TO_UINT (handle), 0);
-	mono_debugger_unlock ();
+	mono_debugger_unlock (FALSE);
 }
 
 void
@@ -321,7 +312,7 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 gboolean
 mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
-	if (!mono_debugger_initialized)
+	if (!mono_debugger_use_debugger)
 		return FALSE;
 
 	// Prevent the object from being finalized.
@@ -336,7 +327,7 @@ mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	MonoDebuggerExceptionInfo info;
 
-	if (!mono_debugger_initialized)
+	if (!mono_debugger_use_debugger)
 		return;
 
 	// Prevent the object from being finalized.
@@ -355,7 +346,7 @@ mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	MonoDebuggerExceptionInfo info;
 
-	if (!mono_debugger_initialized)
+	if (!mono_debugger_use_debugger)
 		return FALSE;
 
 	// Prevent the object from being finalized.
@@ -437,7 +428,7 @@ gboolean
 mono_debugger_lookup_type (const gchar *type_name)
 {
 	int i;
-	mono_debugger_lock ();
+	mono_debugger_lock (TRUE);
 
 	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
 		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
@@ -455,11 +446,11 @@ mono_debugger_lookup_type (const gchar *type_name)
 		if (klass)
 			mono_class_init (klass);
 
-		mono_debugger_unlock ();
+		mono_debugger_unlock (TRUE);
 		return TRUE;
 	}
 
-	mono_debugger_unlock ();
+	mono_debugger_unlock (TRUE);
 	return FALSE;
 }
 
@@ -470,14 +461,14 @@ mono_debugger_lookup_assembly (const gchar *name)
 	MonoImageOpenStatus status;
 	int i;
 
-	mono_debugger_lock ();
+	mono_debugger_lock (TRUE);
 
  again:
 	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
 		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
 
 		if (!strcmp (symfile->image_file, name)) {
-			mono_debugger_unlock ();
+			mono_debugger_unlock (TRUE);
 			return i;
 		}
 	}
@@ -486,7 +477,7 @@ mono_debugger_lookup_assembly (const gchar *name)
 
 	if (status != MONO_IMAGE_OK) {
 		g_warning (G_STRLOC ": Cannot open image `%s'", name);
-		mono_debugger_unlock ();
+		mono_debugger_unlock (TRUE);
 		return -1;
 	}
 
