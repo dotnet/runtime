@@ -6,7 +6,7 @@ using System.Reflection;
  *
  * Each test needs to be of the form:
  *
- * static int test_<result>_<name> ();
+ * public static int test_<result>_<name> ();
  *
  * where <result> is an integer (the value that needs to be returned by
  * the method to make it pass.
@@ -25,16 +25,16 @@ using System.Reflection;
 
 class Tests {
 
-	static int Main () {
+	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 
-	static int test_10_simple_cast () {
+	public static int test_10_simple_cast () {
 		long a = 10;
 		return (int)a;
 	}
 
-	static int test_1_bigmul1 () {
+	public static int test_1_bigmul1 () {
 		int a;
 		int b;
 		long c;
@@ -46,7 +46,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_1_bigmul2 () {
+	public static int test_1_bigmul2 () {
                 int a = System.Int32.MaxValue, b = System.Int32.MaxValue;
                 long s = System.Int64.MinValue;
                 long c;
@@ -56,7 +56,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_1_bigmul3 () {
+	public static int test_1_bigmul3 () {
                 int a = 10, b = 10;
                 ulong c;
                 c = (ulong) a * (ulong) b;
@@ -65,7 +65,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_1_bigmul4 () {
+	public static int test_1_bigmul4 () {
                 int a = System.Int32.MaxValue, b = System.Int32.MaxValue;
                 ulong c;
                 c = (ulong) a * (ulong) b;
@@ -74,7 +74,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_1_bigmul5 () {
+	public static int test_1_bigmul5 () {
                 int a = System.Int32.MaxValue, b = System.Int32.MinValue;
                 long c;
                 c = (long) a * (long) b;
@@ -83,7 +83,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_1_bigmul6 () {
+	public static int test_1_bigmul6 () {
                 uint a = System.UInt32.MaxValue, b = System.UInt32.MaxValue/(uint)2;
                 ulong c;
                 c = (ulong) a * (ulong) b;
@@ -92,75 +92,75 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_beq () {
+	public static int test_0_beq () {
 		long a = 0xffffffffff;
 		if (a != 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_bne_un () {
+	public static int test_0_bne_un () {
 		long a = 0xffffffffff;
 		if (a == 0xfffffffffe)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_ble () {
+	public static int test_0_ble () {
 		long a = 0xffffffffff;
 		if (a > 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_ble_un () {
+	public static int test_0_ble_un () {
 		ulong a = 0xffffffffff;
 		if (a > 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_bge () {
+	public static int test_0_bge () {
 		long a = 0xffffffffff;
 		if (a < 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_bge_un () {
+	public static int test_0_bge_un () {
 		ulong a = 0xffffffffff;
 		if (a < 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_blt () {
+	public static int test_0_blt () {
 		long a = 0xfffffffffe;
 		if (a >= 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_blt_un () {
+	public static int test_0_blt_un () {
 		ulong a = 0xfffffffffe;
 		if (a >= 0xffffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_bgt () {
+	public static int test_0_bgt () {
 		long a = 0xffffffffff;
 		if (a <= 0xfffffffffe)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_conv_to_i4 () {
+	public static int test_0_conv_to_i4 () {
 		long a = 0;
 
 		return (int)a;
 	}
-	static int test_0_conv_from_i4 () {
+	public static int test_0_conv_from_i4 () {
 		long a = 2;
 		if (a != 2)
 			return 1;
@@ -172,7 +172,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_conv_from_i4_negative () {
+	public static int test_0_conv_from_i4_negative () {
 		long a = -2;
 		if (a != -2)
 			return 1;
@@ -185,7 +185,7 @@ class Tests {
 	}
 
 	/*
-	static int test_0_conv_from_r8 () {
+	public static int test_0_conv_from_r8 () {
 		double b = 2.0;
 		long a = (long)b;
 
@@ -194,7 +194,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_conv_from_r4 () {
+	public static int test_0_conv_from_r4 () {
 		float b = 2.0F;
 		long a = (long)b;
 
@@ -204,56 +204,56 @@ class Tests {
 	}
 	*/
 	
-	static int test_8_and () {
+	public static int test_8_and () {
 		long a = 0xffffffffff;
 		long b = 8;		
 		return (int)(a & b);
 	}
 
-	static int test_8_and_imm () {
+	public static int test_8_and_imm () {
 		long a = 0xffffffffff;
 		return (int)(a & 8);
 	}
 
-	static int test_10_or () {
+	public static int test_10_or () {
 		long a = 8;
 		long b = 2;		
 		return (int)(a | b);
 	}
 
-	static int test_10_or_imm () {
+	public static int test_10_or_imm () {
 		long a = 8;
 		return (int)(a | 2);
 	}
 
-	static int test_5_xor () {
+	public static int test_5_xor () {
 		long a = 7;
 		long b = 2;		
 		return (int)(a ^ b);
 	}
 
-	static int test_5_xor_imm () {
+	public static int test_5_xor_imm () {
 		long a = 7;
 		return (int)(a ^ 2);
 	}
 
-	static int test_5_add () {
+	public static int test_5_add () {
 		long a = 2;
 		long b = 3;		
 		return (int)(a + b);
 	}
 
-	static int test_5_add_imm () {
+	public static int test_5_add_imm () {
 		long a = 2;
 		return (int)(a + 3);
 	}
 
-	static int test_0_add_imm_carry () {
+	public static int test_0_add_imm_carry () {
 		long a = -1;
 		return (int)(a + 1);
 	}
 
-	static int test_0_add_imm_no_inc () {
+	public static int test_0_add_imm_no_inc () {
 		// we can't blindly convert an add x, 1 to an inc x
 		long a = 0x1ffffffff;
 		long c;
@@ -263,34 +263,34 @@ class Tests {
 		return 1;
 	}
 
-	static int test_4_addcc_imm () {
+	public static int test_4_addcc_imm () {
 		long a = 3;
 		long b = 0;
 		return (int)(a - b + 1);
 	}
 
-	static int test_5_sub () {
+	public static int test_5_sub () {
 		long a = 8;
 		long b = 3;		
 		return (int)(a - b);
 	}
 
-	static int test_5_sub_imm () {
+	public static int test_5_sub_imm () {
 		long a = 8;
 		return (int)(a - 3);
 	}
 
-	static int test_0_sub_imm_carry () {
+	public static int test_0_sub_imm_carry () {
 		long a = 0;
 		return (int)((a - 1) + 1);
 	}
 
-	static int test_2_neg () {
+	public static int test_2_neg () {
 		long a = -2;		
 		return (int)(-a);
 	}	
 
-	static int test_0_neg_large () {
+	public static int test_0_neg_large () {
 		long min = -9223372036854775808;
 		unchecked {
 			ulong ul = (ulong)min;
@@ -298,7 +298,7 @@ class Tests {
 		}
 	}	
 
-	static int test_0_shl () {
+	public static int test_0_shl () {
 		long a = 9;
 		int b = 1;
 		
@@ -309,7 +309,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_1_rshift ()
+	public static int test_1_rshift ()
 	{
 		long a = 9;
 		int b = 1;
@@ -319,7 +319,7 @@ class Tests {
 		return 1;
 	}
 
-	static int test_5_shift ()
+	public static int test_5_shift ()
 	{
 		long a = 9;
 		int b = 1;
@@ -349,10 +349,9 @@ class Tests {
 		return count;
 	}
 
-	static int test_1_shift_u ()
+	public static int test_1_shift_u ()
 	{
 		ulong a;
-		int b;
 		int count = 0;
 
 		// The JIT optimizes this
@@ -364,7 +363,7 @@ class Tests {
 		return count;
 	}
 
-	static int test_1_simple_neg () {
+	public static int test_1_simple_neg () {
 		long a = 9;
 		
 		if (-a != -9)
@@ -372,7 +371,7 @@ class Tests {
 		return 1;
 	}
 
-	static int test_2_compare () {
+	public static int test_2_compare () {
 		long a = 1;
 		long b = 1;
 		
@@ -381,7 +380,7 @@ class Tests {
 		return 2;
 	}
 
-	static int test_9_alu ()
+	public static int test_9_alu ()
 	{
 		long a = 9, b = 6;
 		int count = 0;
@@ -426,13 +425,13 @@ class Tests {
 		return count;
 	}
 	
-	static int test_24_mul () {
+	public static int test_24_mul () {
 		long a = 8;
 		long b = 3;		
 		return (int)(a * b);
 	}	
 	
-	static int test_24_mul_ovf () {
+	public static int test_24_mul_ovf () {
 		long a = 8;
 		long b = 3;
 		long res;
@@ -443,13 +442,13 @@ class Tests {
 		return (int)res;
 	}	
 
-	static int test_24_mul_un () {
+	public static int test_24_mul_un () {
 		ulong a = 8;
 		ulong b = 3;		
 		return (int)(a * b);
 	}	
 	
-	static int test_24_mul_ovf_un () {
+	public static int test_24_mul_ovf_un () {
 		ulong a = 8;
 		ulong b = 3;
 		ulong res;
@@ -460,20 +459,20 @@ class Tests {
 		return (int)res;
 	}	
 	
-	static int test_4_divun () {
+	public static int test_4_divun () {
 		uint b = 12;
 		int a = 3;
 		return (int)(b / a);
 	}
 
-	static int test_1431655764_bigdivun_imm () {
+	public static int test_1431655764_bigdivun_imm () {
 		unchecked {
 			uint b = (uint)-2;
 			return (int)(b / 3);
 		}
 	}
 
-	static int test_1431655764_bigdivun () {
+	public static int test_1431655764_bigdivun () {
 		unchecked {
 			uint b = (uint)-2;
 			int a = 3;
@@ -481,13 +480,13 @@ class Tests {
 		}
 	}
 
-	static int test_1_remun () {
+	public static int test_1_remun () {
 		uint b = 13;
 		int a = 3;
 		return (int)(b % a);
 	}
 
-	static int test_2_bigremun () {
+	public static int test_2_bigremun () {
 		unchecked {
 			uint b = (uint)-2;
 			int a = 3;
@@ -495,7 +494,7 @@ class Tests {
 		}
 	}
 
-	static int test_0_ceq () {
+	public static int test_0_ceq () {
 		long a = 2;
 		long b = 2;
 		long c = 3;
@@ -516,7 +515,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_ceq_complex () {
+	public static int test_0_ceq_complex () {
                 long l = 1, ll = 2;
 
                 if (l < 0 != ll < 0)
@@ -525,7 +524,7 @@ class Tests {
                 return 0;
 	}
 	
-	static int test_0_clt () {
+	public static int test_0_clt () {
 		long a = 2;
 		long b = 2;
 		long c = 3;
@@ -555,7 +554,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_clt_un () {
+	public static int test_0_clt_un () {
 		ulong a = 2;
 		ulong b = 2;
 		ulong c = 3;
@@ -581,7 +580,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_cgt () {
+	public static int test_0_cgt () {
 		long a = 2;
 		long b = 2;
 		long c = 3;
@@ -611,7 +610,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_cgt_un () {
+	public static int test_0_cgt_un () {
 		ulong a = 2;
 		ulong b = 2;
 		ulong c = 3;
@@ -645,19 +644,19 @@ class Tests {
 		return 0x500000000;
 	}
 
-	static int test_3_long_ret () {
+	public static int test_3_long_ret () {
 		long val = return_5low ();
 		return (int) (val - 2);
 	}
 
-	static int test_1_long_ret2 () {
+	public static int test_1_long_ret2 () {
 		long val = return_5high ();
 		if (val > 0xffffffff)
 			return 1;
 		return 0;
 	}
 
-	static int test_3_byte_cast () {
+	public static int test_3_byte_cast () {
 		ulong val = 0xff00ff00f0f0f0f0;
 		byte b;
 		b = (byte) (val & 0xFF);
@@ -667,7 +666,7 @@ class Tests {
 		return 3;
 	}
 
-	static int test_4_ushort_cast () {
+	public static int test_4_ushort_cast () {
 		ulong val = 0xff00ff00f0f0f0f0;
 		ushort b;
 		b = (ushort) (val & 0xFFFF);
@@ -676,7 +675,7 @@ class Tests {
 		return 4;
 	}
 
-	static int test_500_mul_div () {
+	public static int test_500_mul_div () {
 		long val = 1000;
 		long exp = 10;
 		long maxexp = 20;
@@ -687,7 +686,7 @@ class Tests {
 
 	static long position = 0;
 
-	static int test_4_static_inc_long () {
+	public static int test_4_static_inc_long () {
 
 		int count = 4;
 
@@ -702,7 +701,7 @@ class Tests {
 		m = (long) value;
 	}
 	
-	static int test_3_checked_cast_un () {
+	public static int test_3_checked_cast_un () {
                 ulong i = 2;
                 long j;
 
@@ -713,7 +712,7 @@ class Tests {
 		return 3;
 	}
 	
-	static int test_4_checked_cast () {
+	public static int test_4_checked_cast () {
                 long i = 3;
                 ulong j;
 
@@ -724,7 +723,23 @@ class Tests {
 		return 4;
 	}
 
-	static int test_1234_checked_i2_cast () {
+	public static int test_12_checked_i1_cast () {
+		long l = 12;
+
+		checked {
+			return (sbyte)l;
+		}
+	}
+
+	public static int test_127_checked_i1_cast_un () {
+		ulong l = 127;
+
+		checked {
+			return (sbyte)l;
+		}
+	}
+
+	public static int test_1234_checked_i2_cast () {
 		long l = 1234;
 
 		checked {
@@ -732,7 +747,15 @@ class Tests {
 		}
 	}
 
-	static int test_1234_checked_i4_cast () {
+	public static int test_32767_checked_i2_cast_un () {
+		ulong l = 32767;
+
+		checked {
+			return (ushort)l;
+		}
+	}
+
+	public static int test_1234_checked_i4_cast () {
 		ulong ul = 1234;
 
 		checked {
@@ -740,7 +763,7 @@ class Tests {
 		}
 	}
 
-	static int test_10_int_uint_compare () {
+	public static int test_10_int_uint_compare () {
 		uint size = 10;
 		int j = 0;
 		for (int i = 0; i < size; ++i) {
@@ -749,7 +772,7 @@ class Tests {
 		return j;
 	}
 
-	static int test_0_ftol_clobber () {
+	public static int test_0_ftol_clobber () {
 		long m;
 		doit (1.3, out m);
 		if (m != 1)
@@ -757,7 +780,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_71_long_shift_right () {
+	public static int test_71_long_shift_right () {
 		ulong value = 38654838087;
 		int x = 0;
 		byte [] buffer = new byte [1];
@@ -765,14 +788,14 @@ class Tests {
 		return buffer [x];
 	}
 
-	static int test_0_ulong_regress () {
+	public static int test_0_ulong_regress () {
 		ulong u = 4257145737;
 		u --;
 		return (u == 4257145736) ? 0 : 1;
 	}
 	
 	static long x;
-	static int test_0_addsub_mem ()
+	public static int test_0_addsub_mem ()
 	{
 		x = 0;
 		x += 5;
@@ -789,7 +812,7 @@ class Tests {
 	}
 	
 	static ulong y;
-	static int test_0_sh32_mem ()
+	public static int test_0_sh32_mem ()
 	{
 		y = 0x0102130405060708;
 		y >>= 32;
@@ -812,7 +835,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_assemble_long ()
+	public static int test_0_assemble_long ()
 	{
 		uint a = 5;
 		ulong x = 0x12345678;
@@ -827,7 +850,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_hash ()
+	public static int test_0_hash ()
 	{
 		ulong x = 0x1234567887654321;
 		int h = (int)(x & 0xffffffff) ^ (int)(x >> 32);
@@ -837,7 +860,7 @@ class Tests {
 				
 	}
 
-	static int test_0_shift_regress () {
+	public static int test_0_shift_regress () {
 		long a = 0; 
 		int b = 6; 
 		UInt16 c = 3;

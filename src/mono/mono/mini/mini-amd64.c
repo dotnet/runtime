@@ -102,7 +102,7 @@ static const char * xmmregs [] = {
 	"xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"
 };
 
-static const char*
+const char*
 mono_arch_fregname (int reg)
 {
 	if (reg < AMD64_XMM_NREG)

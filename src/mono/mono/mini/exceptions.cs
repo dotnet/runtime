@@ -6,7 +6,7 @@ using System.Reflection;
  *
  * Each test needs to be of the form:
  *
- * static int test_<result>_<name> ();
+ * public static int test_<result>_<name> ();
  *
  * where <result> is an integer (the value that needs to be returned by
  * the method to make it pass.
@@ -25,11 +25,11 @@ using System.Reflection;
 
 class Tests {
 
-	static int Main () {
+	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 
-	static int test_0_catch () {
+	public static int test_0_catch () {
 		Exception x = new Exception ();
 		
 		try {
@@ -41,7 +41,7 @@ class Tests {
 		return 1;
 	}
 
-	static int test_0_finally_without_exc () {
+	public static int test_0_finally_without_exc () {
 		int x;
 		
 		try {
@@ -55,7 +55,7 @@ class Tests {
 		return x;
 	}
 
-	static int test_0_finally () {
+	public static int test_0_finally () {
 		int x = 1;
 		
 		try {
@@ -68,7 +68,7 @@ class Tests {
 		return x;
 	}
 
-	static int test_0_nested_finally () {
+	public static int test_0_nested_finally () {
 		int a;
 
 		try {
@@ -83,7 +83,7 @@ class Tests {
 		return a;
 	}		
 
-	static int test_0_byte_cast () {
+	public static int test_0_byte_cast () {
 		int a;
 		long l;
 		ulong ul;
@@ -277,7 +277,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_sbyte_cast () {
+	public static int test_0_sbyte_cast () {
 		int a;
 		long l;
 		sbyte b = 0;
@@ -563,10 +563,25 @@ class Tests {
 		if (b != 127)
 			return -20;
 
+		try {
+			ulong ul = 128;
+			failed = true;
+			checked {
+				b = (sbyte)ul;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 21;
+		if (b != 127)
+			return -21;
+
 		return 0;
 	}
 
-	static int test_0_ushort_cast () {
+	public static int test_0_ushort_cast () {
 		int a;
 		long l;
 		ulong ul;
@@ -732,7 +747,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_short_cast () {
+	public static int test_0_short_cast () {
 		int a;
 		long l;
 		short b;
@@ -943,10 +958,22 @@ class Tests {
 		if (failed)
 			return 17;
 
+		try {
+			ulong ul = 32768;
+			failed = true;
+			checked {
+				b = (short)ul;
+			}
+		} catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 18;
+
 		return 0;
 	}
 	
-	static int test_0_int_cast () {
+	public static int test_0_int_cast () {
 		int a;
 		long l;
 		bool failed;
@@ -1089,7 +1116,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_uint_cast () {
+	public static int test_0_uint_cast () {
 		uint a;
 		long l;
 		bool failed;
@@ -1214,7 +1241,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_long_cast () {
+	public static int test_0_long_cast () {
 		long a;
 		bool failed;
 
@@ -1277,7 +1304,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_ulong_cast () {
+	public static int test_0_ulong_cast () {
 		ulong a;
 		bool failed;
 
@@ -1373,7 +1400,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_simple_double_casts () {
+	public static int test_0_simple_double_casts () {
 
 		double d = 0xffffffff;
 
@@ -1408,7 +1435,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_div_zero () {
+	public static int test_0_div_zero () {
 		int d = 1;
 		int q = 0;
 		int val;
@@ -1461,11 +1488,11 @@ class Tests {
 		return 0;
 	}
 
-	static int return_55 () {
+	public static int return_55 () {
 		return 55;
 	}
 
-	static int test_0_cfold_div_zero () {
+	public static int test_0_cfold_div_zero () {
 		// Test that constant folding doesn't cause division by zero exceptions
 		if (return_55 () != return_55 ()) {
 			int d = 1;
@@ -1486,7 +1513,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_udiv_zero () {
+	public static int test_0_udiv_zero () {
 		uint d = 1;
 		uint q = 0;
 		uint val;
@@ -1513,7 +1540,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_long_div_zero () {
+	public static int test_0_long_div_zero () {
 		long d = 1;
 		long q = 0;
 		long val;
@@ -1566,7 +1593,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_ulong_div_zero () {
+	public static int test_0_ulong_div_zero () {
 		ulong d = 1;
 		ulong q = 0;
 		ulong val;
@@ -1593,7 +1620,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_float_div_zero () {
+	public static int test_0_float_div_zero () {
 		double d = 1;
 		double q = 0;
 		double val;
@@ -1620,7 +1647,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_invalid_unbox () {
+	public static int test_0_invalid_unbox () {
 
 		int i = 123;
 		object o = "Some string";
@@ -1638,7 +1665,7 @@ class Tests {
 	}
 
 	// Test that double[] can't be cast to double (bug #46027)
-	static int test_0_invalid_unbox_arrays () {
+	public static int test_0_invalid_unbox_arrays () {
 		double[] d1 = { 1.0 };
 		double[][] d2 = { d1 };
 		Array a = d2;
@@ -1657,7 +1684,7 @@ class Tests {
 	 * jumps out of multiple exception clauses: we used to execute just 
 	 * one enclosing finally block.
 	 */
-	static int finally_level;
+	public static int finally_level;
 	static void do_something () {
 		int a = 0;
 		try {
@@ -1671,7 +1698,7 @@ class Tests {
 		}
 	}
 
-	static int test_2_multiple_finally_clauses () {
+	public static int test_2_multiple_finally_clauses () {
 		finally_level = 0;
 		do_something ();
 		if (finally_level == 1)
@@ -1679,7 +1706,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_3_checked_cast_un () {
+	public static int test_3_checked_cast_un () {
                 ulong i = 0x8000000034000000;
                 long j;
 
@@ -1694,7 +1721,7 @@ class Tests {
 		return 3;
 	}
 	
-	static int test_4_checked_cast () {
+	public static int test_4_checked_cast () {
                 long i;
                 ulong j;
 
@@ -1721,7 +1748,7 @@ class Tests {
 		7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 6, 7, 7, 7, 8,
 	};
 
-	static int test_0_multi_dim_array_access () {
+	public static int test_0_multi_dim_array_access () {
 		int [,] a = System.Array.CreateInstance (typeof (int),
 			new int [] {3,6}, new int [] {2,2 }) as int[,];
                 int x, y;
@@ -1757,7 +1784,7 @@ class Tests {
 		o = "buddy";
 	}
 
-	static int test_2_array_mismatch () {
+	public static int test_2_array_mismatch () {
 		string[] a = { "hello", "world" };
 		object[] b = a;
 		bool passed = false;
@@ -1775,7 +1802,7 @@ class Tests {
 		return 2;
 	}
 
-	static int test_0_ovf () {
+	public static int test_0_ovf () {
 		int ocount = 0;
 		
 		checked {
@@ -2013,7 +2040,7 @@ class Tests {
 	}
 
 	class Broken {
-		static int i;
+		public static int i;
 
 		static Broken () {
 			throw new Exception ("Ugh!");
@@ -2024,7 +2051,7 @@ class Tests {
 		}
 	}
 
-	static int test_0_exception_in_cctor () {
+	public static int test_0_exception_in_cctor () {
 		try {
 			Broken.DoSomething ();
 		}
@@ -2034,7 +2061,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_5_regalloc () {
+	public static int test_5_regalloc () {
 		int i = 0;
 
 		try {
@@ -2087,7 +2114,7 @@ class Tests {
 		}
 	}
 
-	static int test_0_rethrow_stacktrace () {
+	public static int test_0_rethrow_stacktrace () {
 		// Check that rethrowing an exception preserves the original stack trace
 		try {
 			try {
@@ -2117,7 +2144,7 @@ class Tests {
 	interface IFace {}
 	class Face : IFace {}
 		
-	static int test_1_array_mismatch_2 () {
+	public static int test_1_array_mismatch_2 () {
 		try {
 			object [] o = new Face [1];
 			o [0] = 1;
@@ -2127,7 +2154,7 @@ class Tests {
 		}
 	}
 	
-	static int test_1_array_mismatch_3 () {
+	public static int test_1_array_mismatch_3 () {
 		try {
 			object [] o = new IFace [1];
 			o [0] = 1;
@@ -2137,7 +2164,7 @@ class Tests {
 		}
 	}
 	
-	static int test_1_array_mismatch_4 () {
+	public static int test_1_array_mismatch_4 () {
 		try {
 			object [][] o = new Face [5] [];
 			o [0] = new object [5];
@@ -2148,7 +2175,7 @@ class Tests {
 		}
 	}
 
-	static int test_0_array_size () {
+	public static int test_0_array_size () {
 		bool failed;
 
 		try {
@@ -2186,7 +2213,7 @@ class Tests {
 	}
 
 	/* Test that arguments are correctly popped off the stack during unwinding */
-	static int test_0_stack_unwind () {
+	public static int test_0_stack_unwind () {
 		addr = new IntPtr [1000];
 		S s = new S ();
 		for (int j = 0; j < 1000; j++) {
@@ -2199,7 +2226,7 @@ class Tests {
 		return (addr [0].ToInt64 () - addr [100].ToInt64 () < 100) ? 0 : 1;
 	}
 
-	static int test_0_regress_73242 () {
+	public static int test_0_regress_73242 () {
 		int [] arr = new int [10];
 		for (int i = 0; i < 10; ++i)
 			arr [i] = 0;
@@ -2211,7 +2238,7 @@ class Tests {
 		return 0;
     }
 
-	static int test_0_nullref () {
+	public static int test_0_nullref () {
 		try {
 			Array foo = null;
 			foo.Clone();

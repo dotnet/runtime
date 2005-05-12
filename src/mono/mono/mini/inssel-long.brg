@@ -218,12 +218,17 @@ reg: OP_LCONV_TO_U2 (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_U2, state->reg1, state->left->reg1);
 }
 
-
 reg: OP_LCONV_TO_OVF_I1 (reg) {
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 127);
 	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, -128);
 	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
+}
+
+reg: OP_LCONV_TO_OVF_I1_UN (reg) {
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 127);
+	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
 }
 
@@ -247,6 +252,13 @@ reg: OP_LCONV_TO_OVF_I2 (reg) {
 	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, -32768);
 	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
+}
+
+reg: OP_LCONV_TO_OVF_I2_UN (reg) {
+	/* Probe value to be within 0 and 32767 */
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 32767);
+	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
 }
 
@@ -278,17 +290,17 @@ reg: OP_LCONV_TO_OVF_I4_UN (reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
-reg: OP_LCONV_TO_OVF_U4_UN (reg) {
-	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffffffff);
-	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-}
-
 reg: OP_LCONV_TO_OVF_U4 (reg) {
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffffffffUL);
 	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, 0);
 	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
+reg: OP_LCONV_TO_OVF_U4_UN (reg) {
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffffffff);
+	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
