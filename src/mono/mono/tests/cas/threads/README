@@ -27,6 +27,9 @@ This security stack "inheritance" is called "stack propagation".
 
 * swf-control1.cs: Use Control.BeginInvoke to test stack propagation.
 
+* tpool1.cs:	Use ThreadPool.QueueUserWorkItem to test stack propagation.
+* tpool2.cs:	Use ThreadPool.UnsafeQueueUserWorkItem to test non-propagation
+		of the stack.
 
 Notes:
 

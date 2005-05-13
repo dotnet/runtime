@@ -3,16 +3,19 @@ CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
 all:	thread1.exe thread2.exe thread3.exe \
+	tpool1.exe tpool2.exe \
 	timer1.exe timer2.exe swf-timer3.exe swf-timer4.exe \
 	delegate1.exe delegate2.exe \
 	swf-control1.exe
 
 aot:	thread1.exe.so thread2.exe.so thread3.exe.so \
+	tpool1.exe.so tpool2.exe.so \
 	timer1.exe.so timer2.exe.so swf-timer3.exe.so swf-timer4.exe.so \
 	delegate1.exe.so delegate2.exe.so \
 	swf-control1.exe.so
 
 FULLTRUST_TEST_FILES = thread1 thread2 thread3 \
+	tpool1 tpool2 \
 	timer1 timer2 swf-timer3 swf-timer4 \
 	delegate1 delegate2 \
 	swf-control1
