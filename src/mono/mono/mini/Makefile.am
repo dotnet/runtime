@@ -141,6 +141,13 @@ s390x_sources = \
 	exceptions-s390x.c	\
 	tramp-s390x.c
 
+ia64_sources = \
+	mini-ia64.c			\
+	mini-ia64.h			\
+	exceptions-ia64.c	\
+	tramp-ia64.c		\
+	mini-codegen.c
+
 common_sources = \
 	mini.c		\
 	mini.h		\
@@ -242,6 +249,14 @@ arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-s390x.brg
 arch_built=cpu-s390x.h
 endif
 
+if IA64
+libmono_la_SOURCES = \
+    $(common_sources) $(ia64_sources)
+
+arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-ia64.brg
+arch_built = cpu-ia64.h
+endif
+
 nodist_libmono_la_SOURCES = inssel.c inssel.h
 
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
@@ -285,6 +300,9 @@ cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
 
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-s390x.md cpu-s390x.h s390x
+
+cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
@@ -344,4 +362,5 @@ EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(tes
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
 	$(s390_sources) inssel-s390.brg cpu-s390.md \
-	$(s390x_sources) inssel-s390x.brg cpu-s390x.md
+	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
+	$(ia64_sources) inssel-ia64.brg cpu-ia64.md
