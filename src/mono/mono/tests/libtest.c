@@ -1668,7 +1668,7 @@ mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 }
 
 STDCALL int
-mono_test_marshal_out_string_array_delegate (int *arr, int len, ArrayDelegate del)
+mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate del)
 {
 	del (len, NULL, arr);
 
