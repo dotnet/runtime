@@ -31,6 +31,9 @@ static const char*const * ins_spec = sparc_desc;
 #elif defined(__i386__)
 const char * const pentium_desc [OP_LAST];
 static const char*const * ins_spec = pentium_desc;
+#elif defined(__ia64__)
+const char * const ia64_desc [OP_LAST];
+static const char*const * ins_spec = ia64_desc;
 #else
 #error "Not implemented"
 #endif

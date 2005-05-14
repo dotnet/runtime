@@ -15,6 +15,8 @@
 # else
 #  include "mini-s390.h"
 # endif
+#elif defined(__ia64__)
+#include "mini-ia64.h"
 #else
 #error add arch specific include file in mini-arch.h
 #endif
