@@ -38,7 +38,7 @@ This is Mono.
 		make
 		make install
 
-	Mono supports a JIT engine on x86, SPARC, S/390, AMD64 and PowerPC systems.
+	Mono supports a JIT engine on x86, SPARC, SPARCv9, S/390, AMD64 and PowerPC systems.
 
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation, unpack both
