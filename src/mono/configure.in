@@ -1682,6 +1682,7 @@ mono/arch/s390/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/alpha/Makefile
+mono/arch/ia64/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/tests/tests-config

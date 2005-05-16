@@ -1,3 +1,7 @@
+2005-05-16  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (AC_OUTPUT): Add mono/arch/ia64/Makefile.
+
 2005-05-08  Ben Maurer  <bmaurer@ximian.com>
 
 	* scripts/Makefile.am (bin_SCRIPTS): monoresgen.exe is not
