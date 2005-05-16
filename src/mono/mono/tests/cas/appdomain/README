@@ -1,0 +1,37 @@
+AppDomain sandboxes
+
+
+* makepol.cs:	Create some XML policy files to be used with the sandboxes.
+* sandbox.cs:	Create a policy-restricted appdomain to execute assemblies.
+
+
+Samples
+
+* whoami.cs:	Sample code that can be executed under a sandbox.
+
+
+Generated files
+
+* Mono doesn't (at least currently) ship with XML policy files. So the 
+makepol.exe tool creates policies similar (i.e. not all 100% identical) to the
+ones shipped with version 1.1 of the MS framework.
+
+
+More informations:
+
+* http://blogs.msdn.com/shawnfa/archive/2004/10/25/247379.aspx
+
+
+Expected Results
+
+		FullTrust	Intranet	Internet	Execution	Nothing
+sandbox		ok		ok		ok		ok		fail [1]
+whoami		ok		ok		fail		fail		fail [1]
+sandbox whoami	ok		fail		fail		fail		fail [1]
+
+
+
+Notes
+
+[1]	This should be a "PolicyException: Execution permission cannot be 
+	acquired." but it's a SecurityException on Mono (atm).
