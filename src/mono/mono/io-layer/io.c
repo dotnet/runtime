@@ -673,11 +673,17 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 		return(INVALID_FILE_SIZE);
 	}
 
-	ret=fstat(fd, &statbuf);
-	if(ret==-1) {
+	/* If the file has a size with the low bits 0xFFFFFFFF the
+	 * caller can't tell if this is an error, so clear the error
+	 * value
+	 */
+	SetLastError (ERROR_SUCCESS);
+	
+	ret = fstat(fd, &statbuf);
+	if (ret == -1) {
 #ifdef DEBUG
-		g_message("%s: handle %p fstat failed: %s", __func__,
-			  handle, strerror(errno));
+		g_message ("%s: handle %p fstat failed: %s", __func__,
+			   handle, strerror(errno));
 #endif
 
 		_wapi_set_last_error_from_errno ();
@@ -685,20 +691,20 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	}
 	
 #ifdef HAVE_LARGE_FILE_SUPPORT
-	size=statbuf.st_size & 0xFFFFFFFF;
-	if(highsize!=NULL) {
-		*highsize=statbuf.st_size>>32;
+	size = statbuf.st_size & 0xFFFFFFFF;
+	if (highsize != NULL) {
+		*highsize = statbuf.st_size>>32;
 	}
 #else
-	if(highsize!=NULL) {
+	if (highsize != NULL) {
 		/* Accurate, but potentially dodgy :-) */
-		*highsize=0;
+		*highsize = 0;
 	}
-	size=statbuf.st_size;
+	size = statbuf.st_size;
 #endif
 
 #ifdef DEBUG
-	g_message("%s: Returning size %d/%d", __func__, size, *highsize);
+	g_message ("%s: Returning size %d/%d", __func__, size, *highsize);
 #endif
 	
 	return(size);
