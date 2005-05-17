@@ -1,3 +1,7 @@
+2005-05-17  Zoltan Varga  <vargaz@freemail.hu>
+
+	* man/mono.1: Document the new MONO_DEBUG options.
+
 2005-05-16  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (AC_OUTPUT): Add mono/arch/ia64/Makefile.
