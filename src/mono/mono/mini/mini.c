@@ -147,8 +147,7 @@ static MonoCodeManager *global_codeman = NULL;
 
 static GHashTable *jit_icall_name_hash = NULL;
 
-/* If set to true, the environment variable MONO_DEBUG is set */
-static int mono_env_debug = 0;
+static MonoDebugOptions debug_options;
 
 /*
  * Address of the trampoline code.  This is used by the debugger to check
@@ -9451,7 +9450,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_domain_unlock (domain);
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
-	if (mono_env_debug && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+	if (debug_options.keep_delegates && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/*
 		 * Instead of freeing the code, change it to call an error routine
 		 * so people can fix their code.
@@ -9594,13 +9593,16 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 #error "Can't use sigaltstack without sigaction"
 #endif
 
+#endif
+
 static void
 SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
-	MonoException *exc;
+	MonoException *exc = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	GET_CONTEXT
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
 		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
@@ -9608,21 +9610,19 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 		exc = mono_domain_get ()->stack_overflow_ex;
 	else
 		exc = mono_domain_get ()->null_reference_ex;
+#endif
+
+	if (debug_options.abort_on_sigsegv) {
+		MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+		if (!ji) {
+			fprintf (stderr, "Got SIGSEGV while in unmanaged code, and the 'abort-on-sigsegv' MONO_DEBUG option is set. Aborting...\n");
+			/* Segfault in unmanaged code */
+			abort ();
+		}
+	}
 			
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
-
-#else
-
-static void
-SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
-{
-	GET_CONTEXT;
-
-	mono_arch_handle_exception (ctx, NULL, FALSE);
-}
-
-#endif
 
 static void
 SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
@@ -9709,7 +9709,7 @@ mono_runtime_install_handlers (void)
 	win32_seh_set_handler(SIGFPE, sigfpe_signal_handler);
 	win32_seh_set_handler(SIGILL, sigill_signal_handler);
 	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
-	if (getenv ("MONO_DEBUG"))
+	if (debug_options.handle_sigint)
 		win32_seh_set_handler(SIGINT, sigint_signal_handler);
 #else /* !PLATFORM_WIN32 */
 
@@ -9718,9 +9718,8 @@ mono_runtime_install_handlers (void)
 	 * handlers. If not we must call syscall directly instead 
 	 * of sigaction */
 
-	if (getenv ("MONO_DEBUG")) {
+	if (debug_options.handle_sigint)
 		add_signal_handler (SIGINT, sigint_signal_handler);
-	}
 
 	add_signal_handler (SIGFPE, sigfpe_signal_handler);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler);
@@ -9848,6 +9847,34 @@ mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget targ
 	return addr;
 }
 
+static void
+mini_parse_debug_options (void)
+{
+	char *options = getenv ("MONO_DEBUG");
+	gchar **args, **ptr;
+	
+	if (!options)
+		return;
+
+	args = g_strsplit (options, ",", -1);
+
+	for (ptr = args; ptr && *ptr; ptr++) {
+		const char *arg = *ptr;
+
+		if (!strcmp (arg, "handle-sigint"))
+			debug_options.handle_sigint = TRUE;
+		else if (!strcmp (arg, "keep-delegates"))
+			debug_options.keep_delegates = TRUE;
+		else if (!strcmp (arg, "abort-on-sigsegv"))
+			debug_options.abort_on_sigsegv = TRUE;
+		else {
+			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'abort-on-sigsegv'\n");
+			exit (1);
+		}
+	}
+}
+
 MonoDomain *
 mini_init (const char *filename)
 {
@@ -9866,7 +9893,7 @@ mini_init (const char *filename)
 		g_thread_init (NULL);
 
 	if (getenv ("MONO_DEBUG") != NULL)
-		mono_env_debug = 1;
+		mini_parse_debug_options ();
 	
 	MONO_GC_PRE_INIT ();
 

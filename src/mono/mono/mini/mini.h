@@ -726,6 +726,12 @@ typedef struct {
 	guint8  pad;
 } MonoJitArgumentInfo;
 
+typedef struct {
+	gboolean handle_sigint;
+	gboolean keep_delegates;
+	gboolean abort_on_sigsegv;
+} MonoDebugOptions;
+
 enum {
 	BRANCH_NOT_TAKEN,
 	BRANCH_TAKEN,
