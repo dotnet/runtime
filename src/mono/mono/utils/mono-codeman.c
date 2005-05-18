@@ -21,7 +21,13 @@
 #endif
 
 #define MIN_PAGES 16
+
+#ifdef __ia64__
+#define MIN_ALIGN 16
+#else
 #define MIN_ALIGN 8
+#endif
+
 /* if a chunk has less than this amount of free space it's considered full */
 #define MAX_WASTAGE 32
 #define MIN_BSIZE 32
