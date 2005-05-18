@@ -716,14 +716,26 @@ mono_main (int argc, char* argv[])
 			mini_usage_list_opt ();
 			return 0;
 		} else if (strncmp (argv [i], "--statfile", 10) == 0) {
+			if (i + 1 >= argc){
+				fprintf (stderr, "error: --statfile requires a filename argument\n");
+				return 1;
+			}
 			mini_stats_fd = fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
 			opt = parse_optimizations (argv [i] + 11);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
 			opt = parse_optimizations (argv [i] + 3);
 		} else if (strcmp (argv [i], "--config") == 0) {
+			if (i +1 >= argc){
+				fprintf (stderr, "error: --config requires a filename argument\n");
+				return 1;
+			}
 			config_file = argv [++i];
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
+			if (i + 1 >= argc){
+				fprintf (stderr, "error: --ncompile requires an argument\n");
+				return 1;
+			}
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
 		} else if (strcmp (argv [i], "--trace") == 0) {
@@ -733,8 +745,13 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
 			mono_break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
+			if (i+1 >= argc){
+				fprintf (stderr, "Missing method name in --break command line option\n");
+				return 1;
+			}
+			
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
-				g_error ("Invalid method name '%s'", argv [i]);
+				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
@@ -756,13 +773,28 @@ mono_main (int argc, char* argv[])
 			enable_profile = TRUE;
 			profile_options = argv [i] + 10;
 		} else if (strcmp (argv [i], "--compile") == 0) {
+			if (i + 1 >= argc){
+				fprintf (stderr, "error: --compile option requires a method name argument\n");
+				return 1;
+			}
+			
 			mname = argv [++i];
 			action = DO_BENCH;
 		} else if (strncmp (argv [i], "--graph=", 8) == 0) {
+			if (i + 1 >= argc){
+				fprintf (stderr, "error: --graph option requires a method name argument\n");
+				return 1;
+			}
+			
 			mono_graph_options = mono_parse_graph_options (argv [i] + 8);
 			mname = argv [++i];
 			action = DO_DRAW;
 		} else if (strcmp (argv [i], "--graph") == 0) {
+			if (i + 1 >= argc){
+				fprintf (stderr, "error: --graph option requires a method name argument\n");
+				return 1;
+			}
+			
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
