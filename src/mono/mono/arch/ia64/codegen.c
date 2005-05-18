@@ -35,8 +35,13 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 
 	fclose (ofd);
 
+#ifdef __ia64__
+#define DIS_CMD "objdump -d"
+#define AS_CMD "as"
+#else
 #define DIS_CMD "ia64-linux-gnu-objdump -d"
 #define AS_CMD "ia64-linux-gnu-as"
+#endif
 
 	o_file = g_strdup_printf ("%s/test.o", tmp);    
 	cmd = g_strdup_printf (AS_CMD " %s -o %s", as_file, o_file);
@@ -309,13 +314,13 @@ main ()
 	ia64_chk_s_i (code, 1, -1);
 	ia64_chk_s_i (code, 1, 1);
 
-	ia64_mov_to_breg (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
-	ia64_mov_to_breg (code, 1, 1, -1, IA64_MOV_TO_BR_WH_SPTK, 0);
-	ia64_mov_to_breg (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, 0);
-	ia64_mov_to_breg (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, IA64_BR_IH_IMP);
-	ia64_mov_ret_to_breg (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
+	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
+	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_SPTK, 0);
+	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, 0);
+	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, IA64_BR_IH_IMP);
+	ia64_mov_ret_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
 
-	ia64_mov_from_breg (code, 1, 1);
+	ia64_mov_from_br (code, 1, 1);
 
 	ia64_mov_to_pred (code, 1, 0xfe);
 
@@ -721,6 +726,32 @@ main ()
 	ia64_movl_pred (code, 1, 1, 0x123456789ABCDEF0LL);
 
 	ia64_codegen_close (code);
+
+	/* disassembly */
+	{
+		guint8 *buf = code.buf;
+		int template;
+		guint64 dw1, dw2;
+		guint64 ins1, ins2, ins3;
+
+		ia64_break_i (code, 0x1234);
+
+		ia64_codegen_close (code);
+
+		dw1 = ((guint64*)buf) [0];
+		dw2 = ((guint64*)buf) [1];
+
+		template = ia64_bundle_template (buf);
+		ins1 = ia64_bundle_ins1 (buf);
+		ins2 = ia64_bundle_ins2 (buf);
+		ins3 = ia64_bundle_ins3 (buf);
+
+		code.buf = buf;
+		ia64_emit_bundle_template (&code, template, ins1, ins2, ins3);
+
+		g_assert (dw1 == ((guint64*)buf) [0]);
+		g_assert (dw2 == ((guint64*)buf) [1]);
+	}
 
 	mono_disassemble_code (buf, 40960, "code");
 
