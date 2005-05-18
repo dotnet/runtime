@@ -1,0 +1,20 @@
+
+%%
+
+#
+# inssel-ia64.brg: burg file for special IA64 instructions
+#
+# Author:
+#   Zoltan Varga (vargaz@gmail.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+stmt: OP_SETRET (reg) {
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = MONO_ARCH_RETREG1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+%%

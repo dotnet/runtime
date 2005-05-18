@@ -83,9 +83,29 @@ ia64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	NOT_IMPLEMENTED;
+	guint8 *buf;
+	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	gboolean has_caller;
+	Ia64CodegenState code;
 
-	return NULL;
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
+		has_caller = FALSE;
+	else
+		has_caller = TRUE;
+
+	buf = mono_global_codeman_reserve (512);
+
+	ia64_codegen_init (code, buf);
+
+	/* FIXME: */
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
+
+	g_assert ((code.buf - buf) <= 512);
+
+	mono_arch_flush_icache (buf, code.buf - buf);
+
+	return buf;
 }
 
 #define TRAMPOLINE_SIZE 34

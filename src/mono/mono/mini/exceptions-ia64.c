@@ -39,14 +39,25 @@ mono_arch_get_restore_context (void)
 {
 	static guint8 *start = NULL;
 	static gboolean inited = FALSE;
-	guint8 *code;
+	Ia64CodegenState code;
 
 	if (inited)
 		return start;
 
-	NOT_IMPLEMENTED;
+	/* restore_contect (MonoContext *ctx) */
 
-	return NULL;
+	start = mono_global_codeman_reserve (256);
+
+	/* FIXME: */
+	ia64_codegen_init (code, start);
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
+
+	g_assert ((code.buf - start) <= 256);
+
+	mono_arch_flush_icache (start, code.buf - start);
+
+	return start;
 }
 
 /*
@@ -62,15 +73,29 @@ mono_arch_get_call_filter (void)
 	static guint8 *start;
 	static gboolean inited = FALSE;
 	int i;
-	guint8 *code;
 	guint32 pos;
+	Ia64CodegenState code;
 
 	if (inited)
 		return start;
 
-	NOT_IMPLEMENTED;
+	if (inited)
+		return start;
 
-	return NULL;
+	start = mono_global_codeman_reserve (256);
+
+	/* call_filter (MonoContext *ctx, unsigned long eip) */
+
+	/* FIXME: */
+	ia64_codegen_init (code, start);
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
+
+	g_assert ((code.buf - start) <= 256);
+
+	mono_arch_flush_icache (start, code.buf - start);
+
+	return start;
 }
 
 static void
@@ -91,11 +116,20 @@ static gpointer
 get_throw_trampoline (gboolean rethrow)
 {
 	guint8* start;
-	guint8 *code;
+	Ia64CodegenState code;
 
-	NOT_IMPLEMENTED;
+	start = mono_global_codeman_reserve (64);
 
-	return NULL;
+	/* FIXME: */
+	ia64_codegen_init (code, start);
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
+
+	g_assert ((code.buf - start) <= 256);
+
+	mono_arch_flush_icache (start, code.buf - start);
+
+	return start;
 }
 
 /**
@@ -141,16 +175,22 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {	
-	static guint8* start;
-	static gboolean inited = FALSE;
-	guint8 *code;
+	static gboolean inited = FALSE;	
+	guint8* start;
+	Ia64CodegenState code;
 
-	if (inited)
-		return start;
+	start = mono_global_codeman_reserve (64);
 
-	NOT_IMPLEMENTED;
+	/* Not used on ia64 */
+	ia64_codegen_init (code, start);
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
 
-	return NULL;
+	g_assert ((code.buf - start) <= 256);
+
+	mono_arch_flush_icache (start, code.buf - start);
+
+	return start;
 }
 
 /**
@@ -168,15 +208,24 @@ mono_arch_get_throw_corlib_exception (void)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
-	guint8 *code;
 	guint64 throw_ex;
+	Ia64CodegenState code;
 
 	if (inited)
 		return start;
 
-	NOT_IMPLEMENTED;
+	start = mono_global_codeman_reserve (64);
 
-	return NULL;
+	/* FIXME: */
+	ia64_codegen_init (code, start);
+	ia64_break_i (code, 0);
+	ia64_codegen_close (code);
+
+	g_assert ((code.buf - start) <= 256);
+
+	mono_arch_flush_icache (start, code.buf - start);
+
+	return start;
 }
 
 /* mono_arch_find_jit_info:

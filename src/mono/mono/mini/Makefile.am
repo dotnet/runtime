@@ -302,7 +302,7 @@ cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-s390x.md cpu-s390x.h s390x
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64
+	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c

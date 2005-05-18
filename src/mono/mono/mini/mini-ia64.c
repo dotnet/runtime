@@ -34,7 +34,19 @@ static const char*const * ins_spec = ia64_desc;
 
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
+/*
+ * IA64 register usage:
+ * - local registers are used for global register allocation
+ * - r8..r11, r14..r31 is used for local register allocation
+ * - FIXME: Use out registers as well
+ */
+
 #define SIGNAL_STACK_SIZE (64 * 1024)
+
+#define ARGS_OFFSET 0
+
+#define LOOP_ALIGNMENT 8
+#define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 #define NOT_IMPLEMENTED g_assert_not_reached ()
 
@@ -49,12 +61,6 @@ mono_arch_regname (int reg) {
 
 const char*
 mono_arch_fregname (int reg)
-{
-	g_assert_not_reached ();
-}
-
-static inline void 
-ia64_patch (unsigned char* code, gpointer target)
 {
 	g_assert_not_reached ();
 }
@@ -102,6 +108,8 @@ typedef struct {
  * get_call_info:
  *
  *  Obtain information about a call according to the calling convention.
+ * For IA64, see the "Itanium Software Conventions and Runtime Architecture
+ * Gude" document for more information.
  */
 static CallInfo*
 get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
@@ -117,8 +125,49 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	gr = 0;
 	fr = 0;
 
-	g_assert_not_reached ();
-	return NULL;
+	/* return value */
+	{
+		ret_type = mono_type_get_underlying_type (sig->ret);
+		switch (ret_type->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_STRING:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = IA64_R8;
+			break;
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = IA64_R8;
+			break;
+		case MONO_TYPE_VOID:
+			break;
+		default:
+			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+		}
+	}
+
+	if (sig->param_count != 0)
+		NOT_IMPLEMENTED;
+
+	cinfo->stack_usage = stack_size;
+	cinfo->reg_usage = gr;
+	cinfo->freg_usage = fr;
+	return cinfo;
 }
 
 /*
@@ -154,7 +203,7 @@ mono_arch_cpu_init (void)
 guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
-	g_assert_not_reached ();
+	*exclude_mask = 0;
 
 	return 0;
 }
@@ -248,7 +297,133 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_allocate_vars (MonoCompile *m)
 {
-	g_assert_not_reached ();
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	MonoInst *inst;
+	int i, offset;
+	guint32 locals_stack_size, locals_stack_align;
+	gint32 *offsets;
+	CallInfo *cinfo;
+
+	header = mono_method_get_header (m->method);
+
+	sig = mono_method_signature (m->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	/*
+	 * We use the ABI calling conventions for managed code as well.
+	 * Exception: valuetypes are never passed or returned in registers.
+	 */
+
+	/* Locals are allocated backwards from %fp */
+	m->frame_reg = MONO_ARCH_BASEREG;
+	offset = 0;
+
+	if (m->method->save_lmf) {
+		NOT_IMPLEMENTED;
+		/* Reserve stack space for saving LMF + argument regs */
+		offset += sizeof (MonoLMF);
+		m->arch.lmf_offset = offset;
+	}
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		switch (cinfo->ret.storage) {
+		case ArgInIReg:
+			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+				/* The register is volatile */
+				m->ret->opcode = OP_REGOFFSET;
+				m->ret->inst_basereg = MONO_ARCH_BASEREG;
+				offset += 8;
+				m->ret->inst_offset = - offset;
+			}
+			else {
+				m->ret->opcode = OP_REGVAR;
+				m->ret->inst_c0 = cinfo->ret.reg;
+			}
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		m->ret->dreg = m->ret->inst_c0;
+	}
+
+	/* Allocate locals */
+	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
+	if (locals_stack_align) {
+		offset += (locals_stack_align - 1);
+		offset &= ~(locals_stack_align - 1);
+	}
+	for (i = m->locals_start; i < m->num_varinfo; i++) {
+		if (offsets [i] != -1) {
+			MonoInst *inst = m->varinfo [i];
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = MONO_ARCH_BASEREG;
+			inst->inst_offset = - (offset + offsets [i]);
+			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
+		}
+	}
+	g_free (offsets);
+	offset += locals_stack_size;
+
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
+		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
+		m->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
+	}
+
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		inst = m->varinfo [i];
+		if (inst->opcode != OP_REGVAR) {
+			ArgInfo *ainfo = &cinfo->args [i];
+			gboolean inreg = TRUE;
+			MonoType *arg_type;
+
+			NOT_IMPLEMENTED;
+
+			if (sig->hasthis && (i == 0))
+				arg_type = &mono_defaults.object_class->byval_arg;
+			else
+				arg_type = sig->params [i - sig->hasthis];
+
+			/* FIXME: Allocate volatile arguments to registers */
+			if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
+				inreg = FALSE;
+
+			inst->opcode = OP_REGOFFSET;
+
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				inst->opcode = OP_REGVAR;
+				inst->dreg = ainfo->reg;
+				break;
+			case ArgOnStack:
+				inst->opcode = OP_REGOFFSET;
+				inst->inst_basereg = MONO_ARCH_BASEREG;
+				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
+				break;
+			case ArgValuetypeInReg:
+				break;
+			default:
+				NOT_IMPLEMENTED;
+			}
+
+			if (!inreg && (ainfo->storage != ArgOnStack)) {
+				NOT_IMPLEMENTED;
+				inst->opcode = OP_REGOFFSET;
+				inst->inst_basereg = MONO_ARCH_BASEREG;
+				/* These arguments are saved to the stack in the prolog */
+				if (ainfo->storage == ArgValuetypeInReg)
+					offset += 2 * sizeof (gpointer);
+				else
+					offset += sizeof (gpointer);
+				inst->inst_offset = - offset;
+			}
+		}
+	}
+
+	m->stack_offset = offset;
+
+	g_free (cinfo);
 }
 
 void
@@ -324,8 +499,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (bb->max_freg > cfg->rs->next_vfreg)
 		cfg->rs->next_vfreg = bb->max_freg;
 
-	g_assert_not_reached ();
-
 	bb->max_ireg = cfg->rs->next_vireg;
 	bb->max_freg = cfg->rs->next_vfreg;
 }
@@ -360,7 +533,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins;
 	MonoCallInst *call;
 	guint offset;
-	guint8 *code = cfg->native_code + cfg->code_len;
+	Ia64CodegenState code;
+	guint8 *code_start = cfg->native_code + cfg->code_len;
 	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
 	int max_len, cpos;
@@ -382,32 +556,63 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		NOT_IMPLEMENTED;
 	}
 
-	offset = code - cfg->native_code;
+	offset = code_start - cfg->native_code;
+
+	ia64_codegen_init (code, code_start);
 
 	ins = bb->code;
 	while (ins) {
-		offset = code - cfg->native_code;
+		offset = code.buf - cfg->native_code;
 
 		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
+			ia64_codegen_close (code);
+
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-			code = cfg->native_code + offset;
+			code_start = cfg->native_code + offset;
 			mono_jit_stats.code_reallocs++;
+
+			ia64_codegen_init (code, code_start);
 		}
 
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_ICONST:
+		case OP_I8CONST:
+			/* FIXME: Optimize this */
+			ia64_movl (code, ins->dreg, ins->inst_c0);
+			break;
+		case OP_MOVE:
+			ia64_mov (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_BR:
+			if (ins->flags & MONO_INST_BRLABEL) {
+				if (ins->inst_i0->inst_c0) {
+					NOT_IMPLEMENTED;
+				} else {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
+					NOT_IMPLEMENTED;
+				}
+			} else {
+				if (ins->inst_target_bb->native_offset) {
+					NOT_IMPLEMENTED;
+				} else {
+					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+					ia64_br_cond_hint (code, 0, 0, 0, 0);
+				} 
+			}
+			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
-		if ((code - cfg->native_code - offset) > max_len) {
+		if ((code.buf - cfg->native_code - offset) > max_len) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %ld)",
-				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
+				   mono_inst_name (ins->opcode), max_len, code.buf - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
 	       
@@ -419,12 +624,114 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		ins = ins->next;
 	}
 
-	cfg->code_len = code - cfg->native_code;
+	ia64_codegen_close (code);
+
+	cfg->code_len = code.buf - cfg->native_code;
 }
 
 void
 mono_arch_register_lowlevel_calls (void)
 {
+}
+
+static Ia64InsType ins_types_in_template [32][3] = {
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, 0},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, 0},
+	{0, 0, 0},
+	{0, 0, 0},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_F, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_F, IA64_INS_TYPE_I},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_F},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_F},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_B, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_B, IA64_INS_TYPE_B},
+	{0, 0, 0},
+	{0, 0, 0},
+	{IA64_INS_TYPE_B, IA64_INS_TYPE_B, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_B, IA64_INS_TYPE_B, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_B},
+	{0, 0, 0},
+	{0, 0, 0},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_F, IA64_INS_TYPE_B},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_F, IA64_INS_TYPE_B},
+	{0, 0, 0},
+	{0, 0, 0}
+};
+
+static void 
+ia64_patch (unsigned char* code, gpointer target)
+{
+	int template, i;
+	guint64 instructions [3];
+	guint8 gen_buf [8];
+	Ia64CodegenState gen;
+
+	template = ia64_bundle_template (code);
+	instructions [0] = ia64_bundle_ins1 (code);
+	instructions [1] = ia64_bundle_ins2 (code);
+	instructions [2] = ia64_bundle_ins3 (code);
+
+	ia64_codegen_init (gen, gen_buf);
+
+	if ((template == IA64_TEMPLATE_MLX) || (template == IA64_TEMPLATE_MLXS))
+		NOT_IMPLEMENTED;
+
+	for (i = 0; i < 3; ++i) {
+		guint64 ins = instructions [i];
+		int opcode = ia64_ins_opcode (ins);
+
+		/* Skip nops */
+		gboolean nop = FALSE;
+		switch (ins_types_in_template [template][i]) {
+		case IA64_INS_TYPE_I:
+			nop = (ins == IA64_NOP_I);
+			break;
+		case IA64_INS_TYPE_M:
+			nop = (ins == IA64_NOP_M);
+			break;
+		default:
+			break;
+		}
+
+		if (nop)
+			continue;
+
+		switch (ins_types_in_template [template][i]) {
+		case IA64_INS_TYPE_B:
+			if ((opcode == 4) && (ia64_ins_btype (ins) == 0)) {
+				/* br.cond */
+				gint64 disp = ((guint8*)target - code) >> 4;
+
+				/* FIXME: hints */
+				ia64_br_cond_hint_pred (gen, 0, disp, 0, 0, 0);
+				
+				ins = gen.instructions [0];
+				break;
+			}
+			else
+				NOT_IMPLEMENTED;
+			break;
+		default:
+			NOT_IMPLEMENTED;
+		}
+
+		instructions [i] = ins;
+	}
+
+	/* Rewrite code */
+	ia64_codegen_init (gen, code);
+	ia64_emit_bundle_template (&gen, template, instructions [0], instructions [1], instructions [2]);
 }
 
 void
@@ -442,28 +749,220 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			NOT_IMPLEMENTED;
 		}
 
-		NOT_IMPLEMENTED;
+		ia64_patch (ip, (gpointer)target);
 	}
 }
 
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoMethod *method = cfg->method;
+	MonoBasicBlock *bb;
+	MonoMethodSignature *sig;
+	MonoInst *inst;
+	int alloc_size, pos, max_offset, i, quad;
+	Ia64CodegenState code;
+	CallInfo *cinfo;
 
-	return NULL;
+	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
+	cfg->native_code = g_malloc (cfg->code_size);
+
+	ia64_codegen_init (code, cfg->native_code);
+
+	ia64_alloc (code, 32, 0, 2, 0, 0);
+	ia64_mov_from_br (code, 33, IA64_B0);
+
+	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
+	pos = 0;
+
+	if (method->save_lmf) {
+		NOT_IMPLEMENTED;
+	}
+
+	alloc_size -= pos;
+
+	if (alloc_size) {
+		/* See mono_emit_stack_alloc */
+#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+		NOT_IMPLEMENTED;
+#else
+		NOT_IMPLEMENTED;
+#endif
+	}
+
+	/* compute max_offset in order to use short forward jumps */
+	max_offset = 0;
+	if (cfg->opt & MONO_OPT_BRANCH) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *ins = bb->code;
+			bb->max_offset = max_offset;
+
+			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+				max_offset += 6;
+			/* max alignment for loops */
+			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
+				max_offset += LOOP_ALIGNMENT;
+
+			while (ins) {
+				if (ins->opcode == OP_LABEL)
+					ins->inst_c1 = max_offset;
+				
+				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+				ins = ins->next;
+			}
+		}
+	}
+
+	sig = mono_method_signature (method);
+	pos = 0;
+
+	cinfo = get_call_info (sig, FALSE);
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
+			/* Save volatile arguments to the stack */
+			NOT_IMPLEMENTED;
+		}
+	}
+
+	/* Keep this in sync with emit_load_volatile_arguments */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		gint32 stack_offset;
+		MonoType *arg_type;
+		inst = cfg->varinfo [i];
+
+		if (sig->hasthis && (i == 0))
+			arg_type = &mono_defaults.object_class->byval_arg;
+		else
+			arg_type = sig->params [i - sig->hasthis];
+
+		stack_offset = ainfo->offset + ARGS_OFFSET;
+
+		/* Save volatile arguments to the stack */
+		if (inst->opcode != OP_REGVAR) {
+			NOT_IMPLEMENTED;
+		}
+
+		if (inst->opcode == OP_REGVAR) {
+			/* Argument allocated to (non-volatile) register */
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				if (inst->dreg != ainfo->reg)
+					NOT_IMPLEMENTED;
+				break;
+			default:
+				NOT_IMPLEMENTED;
+			}
+		}
+	}
+
+	if (method->save_lmf) {
+		NOT_IMPLEMENTED;
+	}
+
+	ia64_codegen_close (code);
+
+	g_free (cinfo);
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		code.buf = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code.buf, TRUE);
+
+	cfg->code_len = code.buf - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
+
+	return code.buf;
 }
 
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoMethod *method = cfg->method;
+	int quad, pos, i;
+	int max_epilog_size = 16;
+	Ia64CodegenState code;
+	guint *buf;
+	CallInfo *cinfo;
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
+	buf = cfg->native_code + cfg->code_len;
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		buf = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, buf, TRUE);
+
+	ia64_codegen_init (code, buf);
+
+	/* the code restoring the registers must be kept in sync with CEE_JMP */
+	pos = 0;
+	
+	if (method->save_lmf) {
+		NOT_IMPLEMENTED;
+	}
+
+	/* Load returned vtypes into registers if needed */
+	cinfo = get_call_info (mono_method_signature (method), FALSE);
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		NOT_IMPLEMENTED;
+	}
+	g_free (cinfo);
+
+	if (cfg->stack_offset)
+		NOT_IMPLEMENTED;
+
+	ia64_mov_to_ar_i (code, IA64_PFS, 32);
+	ia64_mov_ret_to_br (code, IA64_B0, 33, 0, 0, 0);
+	ia64_br_ret_reg_hint (code, IA64_B0, 0, 0, 0);
+
+	ia64_codegen_close (code);
+
+	cfg->code_len = code.buf - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
 }
 
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoJumpInfo *patch_info;
+	int nthrows, i;
+	Ia64CodegenState code;
+	MonoClass *exc_classes [16];
+	guint8 *exc_throw_start [16], *exc_throw_end [16];
+	guint32 code_size = 0;
+
+	/* Compute needed space */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC)
+			code_size += 40;
+		if (patch_info->type == MONO_PATCH_INFO_R8)
+			code_size += 8 + 7; /* sizeof (double) + alignment */
+		if (patch_info->type == MONO_PATCH_INFO_R4)
+			code_size += 4 + 7; /* sizeof (float) + alignment */
+	}
+
+	ia64_codegen_init (code, cfg->native_code + cfg->code_len);
+
+	/* add code to raise exceptions */
+	nthrows = 0;
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_EXC: {
+			NOT_IMPLEMENTED;
+		}
+		}
+	}
+
+	ia64_codegen_close (code);
+
+	cfg->code_len = code.buf - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
 }
 
 void*
@@ -485,7 +984,13 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	NOT_IMPLEMENTED;
+	guint8* p = (guint8*)((guint64)code & ~(0x3f));
+	guint8* end = (guint8*)((guint64)code + size);
+
+	while (p < end) {
+		__asm__ __volatile__ ("fc.i %0"::"r"(p));
+		p += 32;
+	}
 }
 
 void
@@ -565,9 +1070,12 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
 
+		/* FIXME: */
+		/*
 		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
 		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
 		thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+		*/
 	}		
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK

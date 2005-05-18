@@ -1,11 +1,10 @@
 #ifndef __MONO_MINI_IA64_H__
 #define __MONO_MINI_IA64_H__
 
-#include <mono/arch/sparc/sparc-codegen.h>
-
 #include <glib.h>
 
-/* FIXME: */
+#include <mono/arch/ia64/ia64-codegen.h>
+
 /* FIXME: regset -> 128 bits ! */
 
 #define MONO_MAX_IREGS 32
@@ -15,11 +14,13 @@
 
 #define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
-#define MONO_ARCH_CALLEE_REGS 0
+/* r8..r11, r14..r31 */
+#define MONO_ARCH_CALLEE_REGS (0x700UL | 0xffffc000UL)
 
-#define MONO_ARCH_CALLEE_FREGS 0
+/* FIXME: Use the upper 64 bits as well */
+#define MONO_ARCH_CALLEE_FREGS 0xffffffffffffffffUL
 
-#define MONO_ARCH_CALLEE_SAVED_REGS 0
+#define MONO_ARCH_CALLEE_SAVED_REGS ~(MONO_ARCH_CALLEE_REGS)
 
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
@@ -31,12 +32,12 @@
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
 
-#define MONO_ARCH_FRAME_ALIGNMENT 0
+#define MONO_ARCH_FRAME_ALIGNMENT 16
 
-#define MONO_ARCH_CODE_ALIGNMENT 0
+#define MONO_ARCH_CODE_ALIGNMENT 16
 
-#define MONO_ARCH_BASEREG 0
-#define MONO_ARCH_RETREG1 0
+#define MONO_ARCH_BASEREG IA64_GP
+#define MONO_ARCH_RETREG1 IA64_R8
 
 struct MonoLMF {
 	gpointer    previous_lmf;
