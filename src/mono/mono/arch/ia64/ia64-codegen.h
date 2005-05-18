@@ -82,8 +82,8 @@ static void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
  * now. Also, we emit 1 ins + 2 nops.
  */
 
-#define ia64_codegen_init(code, buf) do { \
-    code.buf = buf; \
+#define ia64_codegen_init(code, codegen_buf) do { \
+    code.buf = codegen_buf; \
     code.nins = 0; \
 } while (0)
 
