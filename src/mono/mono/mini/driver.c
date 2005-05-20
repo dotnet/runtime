@@ -335,8 +335,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 					result = func ();
 					if (result != expected) {
 						failed++;
-						if (verbose)
-							g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+						g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
 					}
 					code_size += cfg->code_len;
 					mono_destroy_compile (cfg);
