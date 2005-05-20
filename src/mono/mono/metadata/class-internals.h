@@ -567,6 +567,7 @@ typedef struct {
 	MonoClass *monitor_class;
 	MonoClass *iremotingtypeinfo_class;
 	MonoClass *runtimesecurityframe_class;
+	MonoClass *executioncontext_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

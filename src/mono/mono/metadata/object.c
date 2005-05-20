@@ -3160,9 +3160,14 @@ mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 MonoAsyncResult *
 mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data)
 {
-	MonoAsyncResult *res;
+	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new (domain, mono_defaults.asyncresult_class);
+	MonoMethod *method = mono_get_context_capture_method ();
 
-	res = (MonoAsyncResult *)mono_object_new (domain, mono_defaults.asyncresult_class);
+	/* we must capture the execution context from the original thread */
+	if (method) {
+		res->execution_context = mono_runtime_invoke (method, NULL, NULL, NULL);
+		/* note: result may be null if the flow is suppressed */
+	}
 
 	res->data = data;
 	res->async_state = state;

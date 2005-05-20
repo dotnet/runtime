@@ -154,6 +154,8 @@ typedef struct {
 	MonoBoolean  completed;
 	MonoBoolean  endinvoke_called;
 	MonoObject  *async_callback;
+	MonoObject  *execution_context;
+	MonoObject  *original_context;
 } MonoAsyncResult;
 
 typedef struct {
@@ -246,6 +248,7 @@ struct _MonoThread {
 	guint32 serialized_culture_info_len;
 	guint8* serialized_ui_culture_info;
 	guint32 serialized_ui_culture_info_len;
+	MonoObject *execution_context;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
@@ -257,7 +260,6 @@ struct _MonoThread {
 	gpointer unused5;
 	gpointer unused6;
 	gpointer unused7;
-	gpointer unused8;
 };
 
 typedef struct {

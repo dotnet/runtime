@@ -615,6 +615,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.runtimesecurityframe_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Security", "RuntimeSecurityFrame");
 
+	mono_defaults.executioncontext_class = mono_class_from_name (
+	        mono_defaults.corlib, "System.Threading", "ExecutionContext");
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;

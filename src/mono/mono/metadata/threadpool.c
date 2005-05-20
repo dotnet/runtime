@@ -887,6 +887,17 @@ static void
 mono_async_invoke (MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->data;
+	MonoThread *thread = NULL;
+	MonoObject *original_context = NULL;
+
+	if (ares->execution_context) {
+		/* use captured ExecutionContext (if available) */
+		thread = mono_thread_current ();
+		ares->original_context = thread->execution_context;
+		thread->execution_context = ares->execution_context;
+	} else {
+		ares->original_context = NULL;
+	}
 
 	ac->msg->exc = NULL;
 	ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
@@ -901,6 +912,12 @@ mono_async_invoke (MonoAsyncResult *ares)
 		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
 		if (!ac->msg->exc)
 			ac->msg->exc = exc;
+	}
+
+	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
+	if (ares->original_context) {
+		thread->execution_context = ares->original_context;
+		ares->original_context = NULL;
 	}
 
 	/* notify listeners */

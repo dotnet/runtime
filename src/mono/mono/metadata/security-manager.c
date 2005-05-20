@@ -189,6 +189,34 @@ mono_is_ecma_key (const char *publickey, int size)
 	return TRUE;
 }
 
+/*
+ * Context propagation is required when:
+ * (a) the security manager is active (1.x and later)
+ * (b) other contexts needs to be propagated (2.x and later)
+ *
+ * returns NULL if no context propagation is required, else the returns the
+ * MonoMethod to call to Capture the ExecutionContext.
+ */
+MonoMethod*
+mono_get_context_capture_method (void)
+{
+	static MonoMethod *method = NULL;
+
+	if (!mono_security_manager_activated) {
+		if (mono_image_get_assembly (mono_defaults.corlib)->aname.major < 2)
+			return NULL;
+	}
+
+	/* older corlib revisions won't have the class (nor the method) */
+	if (mono_defaults.executioncontext_class && !method) {
+		mono_class_init (mono_defaults.executioncontext_class);
+		method = mono_class_get_method_from_name (mono_defaults.executioncontext_class, "Capture", 0);
+	}
+
+	return method;
+}
+
+
 /* System.Security icalls */
 
 MonoBoolean
