@@ -1021,14 +1021,15 @@ ves_icall_type_from_handle (MonoType *handle)
 	return mono_type_get_object (domain, handle);
 }
 
-static guint32
+static MonoBoolean
 ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	g_assert (type->type && c->type);
-
-	return mono_metadata_type_equal (type->type, c->type);
+	if (type->type && c->type)
+		return mono_metadata_type_equal (type->type, c->type);
+	else
+		return FALSE;
 }
 
 /* System.TypeCode */
