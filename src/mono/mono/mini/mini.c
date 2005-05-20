@@ -7938,7 +7938,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	
 	if (target_bb != NULL) {
 		int i;
-		
+
 		if (cfg->verbose_level > 1) {
 			printf ("remove_block_if_useless %s, removed BB%d\n", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 		}
@@ -9599,7 +9599,9 @@ static void
 SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
 	MonoException *exc = NULL;
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+#endif
 	GET_CONTEXT
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
