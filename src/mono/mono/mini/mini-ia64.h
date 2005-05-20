@@ -14,8 +14,8 @@
 
 #define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
-/* r8..r11, r14..r31 */
-#define MONO_ARCH_CALLEE_REGS (0x700UL | 0xffffc000UL)
+/* r8..r11, r14..r30 */
+#define MONO_ARCH_CALLEE_REGS (0x700UL | 0xefffc000UL)
 
 /* FIXME: Use the upper 64 bits as well */
 #define MONO_ARCH_CALLEE_FREGS 0xffffffffffffffffUL
@@ -36,6 +36,7 @@
 
 #define MONO_ARCH_CODE_ALIGNMENT 16
 
+/* FIXME: */
 #define MONO_ARCH_BASEREG IA64_GP
 #define MONO_ARCH_RETREG1 IA64_R8
 
@@ -88,5 +89,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
+
+/* FIXME: */
+#define MONO_ARCH_EMULATE_DIV           1
 
 #endif /* __MONO_MINI_IA64_H__ */  

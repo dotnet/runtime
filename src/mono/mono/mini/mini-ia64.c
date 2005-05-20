@@ -37,32 +37,72 @@ static const char*const * ins_spec = ia64_desc;
 /*
  * IA64 register usage:
  * - local registers are used for global register allocation
- * - r8..r11, r14..r31 is used for local register allocation
+ * - r8..r11, r14..r30 is used for local register allocation
+ * - r31 is a scratch register used within opcode implementations
  * - FIXME: Use out registers as well
+ * - the first three locals are used for saving ar.pfst, b0, and sp
+ * - compare instructions allways set p6 and p7
  */
 
 #define SIGNAL_STACK_SIZE (64 * 1024)
 
 #define ARGS_OFFSET 0
 
+#define GP_SCRATCH_REG 30
+
 #define LOOP_ALIGNMENT 8
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 #define NOT_IMPLEMENTED g_assert_not_reached ()
 
-const char*
-mono_arch_regname (int reg) {
-	g_assert_not_reached ();
+static const char* gregs [] = {
+	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9",
+	"r10", "r11", "r12", "r13", "r14", "r15", "r16", "r17", "r18", "r19",
+	"r20", "r21", "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29",
+	"r30", "r31", "r32", "r33", "r34", "r35", "r36", "r37", "r38", "r39",
+	"r40", "r41", "r42", "r43", "r44", "r45", "r46", "r47", "r48", "r49",
+	"r50", "r51", "r52", "r53", "r54", "r55", "r56", "r57", "r58", "r59",
+	"r60", "r61", "r62", "r63", "r64", "r65", "r66", "r67", "r68", "r69",
+	"r70", "r71", "r72", "r73", "r74", "r75", "r76", "r77", "r78", "r79",
+	"r80", "r81", "r82", "r83", "r84", "r85", "r86", "r87", "r88", "r89",
+	"r90", "r91", "r92", "r93", "r94", "r95", "r96", "r97", "r98", "r99",
+	"r100", "r101", "r102", "r103", "r104", "r105", "r106", "r107", "r108", "r109",
+	"r110", "r111", "r112", "r113", "r114", "r115", "r116", "r117", "r118", "r119",
+	"r120", "r121", "r122", "r123", "r124", "r125", "r126", "r127"
+};
 
-	switch (reg) {
-	}
-	return "unknown";
+const char*
+mono_arch_regname (int reg)
+{
+	if (reg < 128)
+		return gregs [reg];
+	else
+		return "unknown";
 }
+
+static const char* fregs [] = {
+	"f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9",
+	"f10", "f11", "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19",
+	"f20", "f21", "f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29",
+	"f30", "f31", "f32", "f33", "f34", "f35", "f36", "f37", "f38", "f39",
+	"f40", "f41", "f42", "f43", "f44", "f45", "f46", "f47", "f48", "f49",
+	"f50", "f51", "f52", "f53", "f54", "f55", "f56", "f57", "f58", "f59",
+	"f60", "f61", "f62", "f63", "f64", "f65", "f66", "f67", "f68", "f69",
+	"f70", "f71", "f72", "f73", "f74", "f75", "f76", "f77", "f78", "f79",
+	"f80", "f81", "f82", "f83", "f84", "f85", "f86", "f87", "f88", "f89",
+	"f90", "f91", "f92", "f93", "f94", "f95", "f96", "f97", "f98", "f99",
+	"f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "f108", "f109",
+	"f110", "f111", "f112", "f113", "f114", "f115", "f116", "f117", "f118", "f119",
+	"f120", "f121", "f122", "f123", "f124", "f125", "f126", "f127"
+};
 
 const char*
 mono_arch_fregname (int reg)
 {
-	g_assert_not_reached ();
+	if (reg < 128)
+		return fregs [reg];
+	else
+		return "unknown";
 }
 
 typedef enum {
@@ -317,7 +357,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 */
 
 	/* Locals are allocated backwards from %fp */
-	m->frame_reg = MONO_ARCH_BASEREG;
+	/* FIXME: */
+	m->frame_reg = IA64_GP;
 	offset = 0;
 
 	if (m->method->save_lmf) {
@@ -333,7 +374,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
 				/* The register is volatile */
 				m->ret->opcode = OP_REGOFFSET;
-				m->ret->inst_basereg = MONO_ARCH_BASEREG;
+				m->ret->inst_basereg = m->frame_reg;
 				offset += 8;
 				m->ret->inst_offset = - offset;
 			}
@@ -358,7 +399,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (offsets [i] != -1) {
 			MonoInst *inst = m->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = MONO_ARCH_BASEREG;
+			inst->inst_basereg = m->frame_reg;
 			inst->inst_offset = - (offset + offsets [i]);
 			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
@@ -398,7 +439,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				break;
 			case ArgOnStack:
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = MONO_ARCH_BASEREG;
+				inst->inst_basereg = m->frame_reg;
 				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 				break;
 			case ArgValuetypeInReg:
@@ -410,7 +451,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			if (!inreg && (ainfo->storage != ArgOnStack)) {
 				NOT_IMPLEMENTED;
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = MONO_ARCH_BASEREG;
+				inst->inst_basereg = m->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
 				if (ainfo->storage == ArgValuetypeInReg)
 					offset += 2 * sizeof (gpointer);
@@ -480,6 +521,7 @@ insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *to_insert)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = (op);	\
         insert_after_ins (bb, last_ins, (dest)); \
+        last_ins = (dest); \
 	} while (0)
 
 /*
@@ -491,13 +533,205 @@ insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *to_insert)
 static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *temp, *last_ins = NULL;
+	MonoInst *ins, *next, *temp, *temp2, *temp3, *last_ins = NULL;
 	ins = bb->code;
 
 	if (bb->max_ireg > cfg->rs->next_vireg)
 		cfg->rs->next_vireg = bb->max_ireg;
 	if (bb->max_freg > cfg->rs->next_vfreg)
 		cfg->rs->next_vfreg = bb->max_freg;
+
+	while (ins) {
+		switch (ins->opcode) {
+		case OP_STOREI1_MEMBASE_IMM:
+		case OP_STOREI2_MEMBASE_IMM:
+		case OP_STOREI4_MEMBASE_IMM:
+		case OP_STOREI8_MEMBASE_IMM:
+			/* There are no store_membase instructions on ia64 */
+			NEW_INS (cfg, temp, OP_I8CONST);
+			temp->inst_c0 = ins->inst_offset;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			NEW_INS (cfg, temp2, CEE_ADD);
+			temp2->sreg1 = ins->inst_destbasereg;
+			temp2->sreg2 = temp->dreg;
+			temp2->dreg = mono_regstate_next_int (cfg->rs);
+			NEW_INS (cfg, temp3, OP_I8CONST);
+			temp3->inst_c0 = ins->inst_imm;
+			temp3->dreg = mono_regstate_next_int (cfg->rs);
+
+			switch (ins->opcode) {
+			case OP_STOREI1_MEMBASE_IMM:
+				ins->opcode = OP_STOREI1_MEMBASE_REG;
+				break;
+			case OP_STOREI2_MEMBASE_IMM:
+				ins->opcode = OP_STOREI2_MEMBASE_REG;
+				break;
+			case OP_STOREI4_MEMBASE_IMM:
+				ins->opcode = OP_STOREI4_MEMBASE_REG;
+				break;
+			case OP_STOREI8_MEMBASE_IMM:
+				ins->opcode = OP_STOREI8_MEMBASE_REG;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
+			ins->inst_offset = 0;
+			ins->inst_destbasereg = temp2->dreg;
+			ins->sreg1 = temp3->dreg;
+			break;
+		case OP_STOREI1_MEMBASE_REG:
+		case OP_STOREI2_MEMBASE_REG:
+		case OP_STOREI4_MEMBASE_REG:
+		case OP_STOREI8_MEMBASE_REG:
+			/* There are no store_membase instructions on ia64 */
+			NEW_INS (cfg, temp, OP_I8CONST);
+			temp->inst_c0 = ins->inst_offset;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			NEW_INS (cfg, temp2, CEE_ADD);
+			temp2->sreg1 = ins->inst_destbasereg;
+			temp2->sreg2 = temp->dreg;
+			temp2->dreg = mono_regstate_next_int (cfg->rs);
+
+			ins->inst_offset = 0;
+			ins->inst_destbasereg = temp2->dreg;
+			break;
+		case OP_LOADI1_MEMBASE:
+		case OP_LOADU1_MEMBASE:
+		case OP_LOADI2_MEMBASE:
+		case OP_LOADU2_MEMBASE:
+		case OP_LOADI4_MEMBASE:
+		case OP_LOADU4_MEMBASE:
+		case OP_LOADI8_MEMBASE:
+			/* There are no load_membase instructions on ia64 */
+			NEW_INS (cfg, temp, OP_I8CONST);
+			temp->inst_c0 = ins->inst_offset;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			last_ins = temp;
+			NEW_INS (cfg, temp2, CEE_ADD);
+			temp2->sreg1 = ins->inst_basereg;
+			temp2->sreg2 = temp->dreg;
+			temp2->dreg = mono_regstate_next_int (cfg->rs);
+			last_ins = temp2;
+
+			ins->inst_offset = 0;
+			ins->inst_basereg = temp2->dreg;
+			break;
+		case OP_IADD_IMM:
+			/* FIXME: There is an add imm instruction */
+			NEW_INS (cfg, temp, OP_I8CONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+
+			ins->opcode = OP_IADD;
+			ins->sreg2 = temp->dreg;
+			break;
+		case OP_ISUB_IMM:
+		case OP_IAND_IMM:
+		case OP_IOR_IMM:
+		case OP_IXOR_IMM:
+		case OP_ISHL_IMM:
+		case OP_ISHR_IMM:
+		case OP_ISHR_UN_IMM:
+		case OP_AND_IMM:
+			/* FIXME: There is an alu imm instruction */
+			NEW_INS (cfg, temp, OP_I8CONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+
+			switch (ins->opcode) {
+			case OP_ISUB_IMM:
+				ins->opcode = OP_ISUB;
+				break;
+			case OP_IAND_IMM:
+				ins->opcode = OP_IAND;
+				break;
+			case OP_IOR_IMM:
+				ins->opcode = OP_IOR;
+				break;
+			case OP_IXOR_IMM:
+				ins->opcode = OP_IXOR;
+				break;
+			case OP_ISHL_IMM:
+				ins->opcode = OP_ISHL;
+				break;
+			case OP_ISHR_IMM:
+				ins->opcode = OP_ISHR;
+				break;
+			case OP_ISHR_UN_IMM:
+				ins->opcode = OP_ISHR_UN;
+				break;
+			case OP_AND_IMM:
+				ins->opcode = CEE_AND;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			ins->sreg2 = temp->dreg;
+			break;
+		case OP_ICOMPARE_IMM:
+		case OP_ICOMPARE: {
+			/* Instead of compare+b<cond>, ia64 has compare<cond>+br */
+			int opcode = ins->opcode;
+
+			next = ins->next;
+			switch (next->opcode) {
+			case OP_IBEQ:
+				ins->opcode = OP_IA64_CMP4_EQ;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_IBNE_UN:
+				ins->opcode = OP_IA64_CMP4_NE;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_IBLE:
+				ins->opcode = OP_IA64_CMP4_LE;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_IBLT:
+				ins->opcode = OP_IA64_CMP4_LT;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_IBGE:
+				ins->opcode = OP_IA64_CMP4_GE;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_COND_EXC_GT:
+				ins->opcode = OP_IA64_CMP4_GT;
+				next->opcode = OP_IA64_COND_EXC;
+				break;
+			case OP_COND_EXC_LT:
+				ins->opcode = OP_IA64_CMP4_LT;
+				next->opcode = OP_IA64_COND_EXC;
+				break;
+			case OP_COND_EXC_GT_UN:
+				ins->opcode = OP_IA64_CMP4_GT_UN;
+				next->opcode = OP_IA64_COND_EXC;
+				break;
+			default:
+				printf ("%s\n", mono_inst_name (next->opcode));
+				NOT_IMPLEMENTED;
+			}
+
+			if (next->opcode == OP_IA64_BR_COND)
+				next->inst_target_bb = next->inst_true_bb;
+
+			if (opcode == OP_ICOMPARE_IMM) {
+				/* FIXME: there is a cmp imm instruction */
+				NEW_INS (cfg, temp, OP_I8CONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_regstate_next_int (cfg->rs);
+				ins->sreg2 = temp->dreg;
+			}
+			break;
+		}
+		default:
+			break;
+		}
+		last_ins = ins;
+		ins = ins->next;
+	}
+	bb->last_ins = last_ins;
 
 	bb->max_ireg = cfg->rs->next_vireg;
 	bb->max_freg = cfg->rs->next_vfreg;
@@ -569,6 +803,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (offset > (cfg->code_size - max_len - 16)) {
 			ia64_codegen_close (code);
 
+			offset = code.buf - cfg->native_code;
+
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			code_start = cfg->native_code + offset;
@@ -589,21 +825,158 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_BR:
+		case OP_IA64_BR_COND: {
+			int pred = 0;
+			if (ins->opcode == OP_IA64_BR_COND)
+				pred = 6;
 			if (ins->flags & MONO_INST_BRLABEL) {
 				if (ins->inst_i0->inst_c0) {
 					NOT_IMPLEMENTED;
 				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
+					ia64_begin_bundle (code);
+					mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
 					NOT_IMPLEMENTED;
 				}
 			} else {
 				if (ins->inst_target_bb->native_offset) {
-					NOT_IMPLEMENTED;
+					gint64 disp = ((gint64)ins->inst_target_bb->native_offset - offset) >> 4;
+					ia64_br_cond_hint_pred (code, pred, disp, 0, 0, 0);
 				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					ia64_br_cond_hint (code, 0, 0, 0, 0);
+					ia64_begin_bundle (code);
+					mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+					ia64_br_cond_hint_pred (code, pred, 0, 0, 0, 0);
 				} 
 			}
+			break;
+		}
+		case CEE_ADD:
+		case OP_IADD:
+			ia64_add (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case CEE_AND:
+		case OP_IAND:
+			ia64_and (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IOR:
+			ia64_or (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IXOR:
+			ia64_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_INEG:
+			ia64_sub (code, ins->dreg, IA64_R0, ins->sreg1);
+			break;
+		case OP_INOT:
+			ia64_andcm_imm (code, ins->dreg, -1, ins->sreg1);
+			break;
+		case OP_ISHL:
+			ia64_shl (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ISHR:
+			ia64_shr (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ISHR_UN:
+			ia64_shr_u (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case CEE_SUB:
+		case OP_ISUB:
+			ia64_sub (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IADDCC:
+			/* p6 and p7 is set if there is signed/unsigned overflow */
+			
+			/* Set p8-p9 == (sreg2 > 0) */
+			ia64_cmp4_lt (code, 8, 9, IA64_R0, ins->sreg2);
+
+			ia64_add (code, GP_SCRATCH_REG, ins->sreg1, ins->sreg2);
+			
+			/* (sreg2 > 0) && (res < ins->sreg1) => signed overflow */
+			ia64_cmp4_lt_pred (code, 8, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+			/* (sreg2 <= 0) && (res > ins->sreg1) => signed overflow */
+			ia64_cmp4_lt_pred (code, 9, 6, 10, ins->sreg1, GP_SCRATCH_REG);
+
+			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
+
+			/* FIXME: Set p7 as well */
+			break;
+		case OP_STOREI1_MEMBASE_REG:
+			ia64_st1_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
+			break;
+		case OP_STOREI2_MEMBASE_REG:
+			ia64_st2_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
+			break;
+		case OP_STOREI4_MEMBASE_REG:
+			ia64_st4_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
+			break;
+		case OP_LOADU1_MEMBASE:
+			ia64_ld1_hint (code, ins->dreg, ins->inst_basereg, 0);
+			break;
+		case OP_LOADU2_MEMBASE:
+			ia64_ld2_hint (code, ins->dreg, ins->inst_basereg, 0);
+			break;
+		case OP_LOADU4_MEMBASE:
+			ia64_ld4_hint (code, ins->dreg, ins->inst_basereg, 0);
+			break;
+		case OP_LOADI1_MEMBASE:
+			ia64_ld1_hint (code, ins->dreg, ins->inst_basereg, 0);
+			ia64_sxt1 (code, ins->dreg, ins->dreg);
+			break;
+		case OP_LOADI2_MEMBASE:
+			ia64_ld2_hint (code, ins->dreg, ins->inst_basereg, 0);
+			ia64_sxt2 (code, ins->dreg, ins->dreg);
+			break;
+		case OP_LOADI4_MEMBASE:
+			ia64_ld4_hint (code, ins->dreg, ins->inst_basereg, 0);
+			ia64_sxt4 (code, ins->dreg, ins->dreg);
+			break;
+		case OP_IA64_CMP4_EQ:
+			ia64_cmp4_eq (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_NE:
+			ia64_cmp4_ne (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_LE:
+			ia64_cmp4_le (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_LT:
+			ia64_cmp4_lt (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_GE:
+			ia64_cmp4_ge (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_GT:
+			ia64_cmp4_gt (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP4_GT_UN:
+			ia64_cmp4_gtu (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_COND_EXC_IOV:
+			/* FIXME: */
+			ia64_break_i_pred (code, 6, 0);
+			break;
+		case OP_COND_EXC_IC:
+			/* FIXME: */
+			ia64_break_i_pred (code, 7, 0);
+			break;
+		case OP_IA64_COND_EXC:
+			/* FIXME: */
+			ia64_break_i_pred (code, 6, 0);
+			break;
+		case CEE_CONV_I1:
+			/* FIXME: Is this needed ? */
+			ia64_sxt1 (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_CONV_I2:
+			/* FIXME: Is this needed ? */
+			ia64_sxt2 (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_CONV_I4:
+			/* FIXME: Is this needed ? */
+			ia64_sxt4 (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_CONV_OVF_U4:
+			/* FIXME: */
+			ia64_mov (code, ins->dreg, ins->sreg1);
 			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
@@ -714,7 +1087,7 @@ ia64_patch (unsigned char* code, gpointer target)
 				gint64 disp = ((guint8*)target - code) >> 4;
 
 				/* FIXME: hints */
-				ia64_br_cond_hint_pred (gen, 0, disp, 0, 0, 0);
+				ia64_br_cond_hint_pred (gen, ia64_ins_qp (ins), disp, 0, 0, 0);
 				
 				ins = gen.instructions [0];
 				break;
@@ -769,7 +1142,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	ia64_codegen_init (code, cfg->native_code);
 
-	ia64_alloc (code, 32, 0, 2, 0, 0);
+	ia64_alloc (code, 32, 0, 3, 0, 0);
 	ia64_mov_from_br (code, 33, IA64_B0);
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
@@ -786,7 +1159,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		NOT_IMPLEMENTED;
 #else
-		NOT_IMPLEMENTED;
+		ia64_mov (code, cfg->frame_reg, IA64_SP);
+		ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
 #endif
 	}
 
@@ -879,7 +1253,7 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	int quad, pos, i;
+	int quad, pos, i, alloc_size;
 	int max_epilog_size = 16;
 	Ia64CodegenState code;
 	guint *buf;
@@ -913,7 +1287,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	g_free (cinfo);
 
 	if (cfg->stack_offset)
-		NOT_IMPLEMENTED;
+		ia64_mov (code, IA64_SP, cfg->frame_reg);
 
 	ia64_mov_to_ar_i (code, IA64_PFS, 32);
 	ia64_mov_ret_to_br (code, IA64_B0, 33, 0, 0, 0);
