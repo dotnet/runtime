@@ -135,7 +135,7 @@ create_spilled_store_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 	MonoInst *store;
 	MONO_INST_NEW (cfg, store, OP_STORER8_MEMBASE_REG);
 	store->sreg1 = reg;
-	store->inst_destbasereg = MONO_ARCH_BASEREG;
+	store->inst_destbasereg = cfg->frame_reg;
 	store->inst_offset = mono_spillvar_offset_float (cfg, spill);
 
 	DEBUG (g_print ("SPILLED FLOAT STORE (%d at 0x%08lx(%%sp)) (from %d)\n", spill, (long)store->inst_offset, reg));
@@ -151,7 +151,7 @@ create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 	MonoInst *load;
 	MONO_INST_NEW (cfg, load, OP_LOADR8_SPILL_MEMBASE);
 	load->dreg = reg;
-	load->inst_basereg = MONO_ARCH_BASEREG;
+	load->inst_basereg = cfg->frame_reg;
 	load->inst_offset = mono_spillvar_offset_float (cfg, spill);
 
 	DEBUG (g_print ("SPILLED FLOAT LOAD (%d at 0x%08lx(%%sp)) (from %d)\n", spill, (long)load->inst_offset, reg));
@@ -193,13 +193,17 @@ print_ins (int i, MonoInst *ins)
 	g_print ("\t%-2d %s", i, mono_inst_name (ins->opcode));
 	if (!spec)
 		g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
+
 	if (spec [MONO_INST_DEST]) {
 		gboolean fp = (spec [MONO_INST_DEST] == 'f');
 		if (is_soft_reg (ins->dreg, fp))
 			g_print (" R%d <-", ins->dreg);
-		else if (spec [MONO_INST_DEST] == 'b')
-			g_print (" [%s + 0x%lx] <-", mono_arch_regname (ins->dreg), (long)ins->inst_offset);
-		else
+		else if (spec [MONO_INST_DEST] == 'b') {
+			if (ins->inst_offset == 0)
+				g_print (" [%s] <-", mono_arch_regname (ins->dreg));
+			else
+				g_print (" [%s + 0x%lx] <-", mono_arch_regname (ins->dreg), (long)ins->inst_offset);
+		} else
 			g_print (" %s <-", mono_regname_full (ins->dreg, fp));
 	}
 	if (spec [MONO_INST_SRC1]) {
@@ -297,7 +301,7 @@ get_register_force_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, in
 	else
 		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 	load->dreg = sel;
-	load->inst_basereg = MONO_ARCH_BASEREG;
+	load->inst_basereg = cfg->frame_reg;
 	load->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (item->prev) {
 		while (ins->next != item->prev->data)
@@ -388,7 +392,7 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 
 	/* we need to create a spill var and insert a load to sel after the current instruction */
 	MONO_INST_NEW (cfg, load, fp ? OP_LOADR8_MEMBASE : OP_LOAD_MEMBASE);
 	load->dreg = sel;
-	load->inst_basereg = MONO_ARCH_BASEREG;
+	load->inst_basereg = cfg->frame_reg;
 	load->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (item->prev) {
 		while (ins->next != item->prev->data)
@@ -442,7 +446,7 @@ create_spilled_store (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoIn
 	MonoInst *store;
 	MONO_INST_NEW (cfg, store, fp ? OP_STORER8_MEMBASE_REG : OP_STORE_MEMBASE_REG);
 	store->sreg1 = reg;
-	store->inst_destbasereg = MONO_ARCH_BASEREG;
+	store->inst_destbasereg = cfg->frame_reg;
 	store->inst_offset = mono_spillvar_offset (cfg, spill);
 	if (ins) {
 		store->next = ins->next;
@@ -598,6 +602,10 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	/* forward pass on the instructions to collect register liveness info */
 	while (ins) {
 		spec = ins_spec [ins->opcode];
+
+		if (!spec) {
+			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
+		}
 		
 		DEBUG (print_ins (i, ins));
 
