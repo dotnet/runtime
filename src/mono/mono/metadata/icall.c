@@ -1026,10 +1026,9 @@ ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type && c->type)
-		return mono_metadata_type_equal (type->type, c->type);
-	g_print ("type equals\n");
-	return 0;
+	g_assert (type->type && c->type);
+
+	return mono_metadata_type_equal (type->type, c->type);
 }
 
 /* System.TypeCode */
@@ -1055,7 +1054,7 @@ typedef enum {
 } TypeCode;
 
 static guint32
-ves_icall_type_GetTypeCode (MonoReflectionType *type)
+ves_icall_type_GetTypeCodeInternal (MonoReflectionType *type)
 {
 	int t = type->type->type;
 
@@ -6617,7 +6616,8 @@ static const IcallEntry type_icalls [] = {
 	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
 	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
 	{"GetPacking", ves_icall_Type_GetPacking},
-	{"GetTypeCode", ves_icall_type_GetTypeCode},
+	{"GetTypeCode", ves_icall_type_GetTypeCodeInternal},
+	{"GetTypeCodeInternal", ves_icall_type_GetTypeCodeInternal},
 	{"IsArrayImpl", ves_icall_Type_IsArrayImpl},
 	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
 	{"MakePointerType", ves_icall_Type_MakePointerType},
