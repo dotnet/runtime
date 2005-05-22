@@ -208,6 +208,9 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 		case IA64_INS_TYPE_B:
 			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [i]);
 			break;
+		case IA64_INS_TYPE_F:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [i], IA64_NOP_I);
+			break;
 		case IA64_INS_TYPE_LX:
 			ia64_emit_bundle_template (code, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [i], code->instructions [i + 1]);
 			i ++;
@@ -237,6 +240,8 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 
 #define check_freg(fr) check_assert ((guint64)(fr) < 128)
 
+#define check_fr(fr) check_assert ((guint64)(fr) < 128)
+
 #define check_preg(pr) check_assert ((guint64)(pr) < 64)
 
 #define check_breg(pr) check_assert ((guint64)(pr) < 8)
@@ -263,6 +268,8 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define check_ph(ph) check_assert ((ph) >= 0 && (ph) <= IA64_PH_MANY)
 
 #define check_dh(dh) check_assert ((dh) >= 0 && (dh) <= IA64_DH_CLR)
+
+#define check_sf(sf) check_assert ((sf) >= 0 && (sf) <= 3)
 
 #define check_gregs(r1,r2,r3) do { check_greg ((r1)); check_greg ((r2)); check_greg ((r3)); } while (0)
 
@@ -1270,6 +1277,147 @@ typedef enum {
 #define ia64_nop_b_pred(code, qp, imm) ia64_b9 ((code), (qp), (imm), 2, 0x00)
 #define ia64_hint_b_pred(code, qp, imm) ia64_b9 ((code), (qp), (imm), 2, 0x01)
 
+/*
+ * FLOATING POINT
+ */
+
+#define ia64_f1(code, qp, f1, f3, f4, f2, sf, opcode, x) do { check_sf ((sf)); check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); check_fr ((f4)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (f4), 27, (sf), 34, (x), 36, (opcode), 37); } while (0)
+
+#define ia64_fma_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 8, 0)
+#define ia64_fma_s_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 8, 1)
+#define ia64_fma_d_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 9, 0)
+#define ia64_fpma_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 9, 1)
+#define ia64_fms_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xA, 0)
+#define ia64_fms_s_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xA, 1)
+#define ia64_fms_d_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xB, 0)
+#define ia64_fpms_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xB, 1)
+#define ia64_fnma_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xC, 0)
+#define ia64_fnma_s_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xC, 1)
+#define ia64_fnma_d_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xD, 0)
+#define ia64_fpnma_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xD, 1)
+
+#define ia64_f2(code, qp, f1, f3, f4, f2, opcode, x, x2) do { check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); check_fr ((f4)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (f4), 27, (x2), 34, (x), 36, (opcode), 37); } while (0)
+
+#define ia64_xma_l_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 0)
+#define ia64_xma_h_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 3)
+#define ia64_xma_hu_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 2)
+
+#define ia64_f3(code, qp, f1, f3, f4, f2, opcode, x) do { check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); check_fr ((f4)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (f4), 27, (x), 36, (opcode), 37); } while (0)
+
+#define ia64_fselect_pred(code, qp, f1, f3, f4, f2) ia64_f3 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 0)
+
+#define ia64_f4(code, qp, p1, p2, f2, f3, sf, opcode, ra, rb, ta) do { check_fr ((f2)); check_fr ((f3)); check_preg ((p1)); check_preg ((p2)); ia64_emit_ins_10 ((code), IA64_INS_TYPE_F, (qp), 0, (p1), 6, (ta), 12, (f2), 13, (f3), 20, (p2), 27, (ra), 33, (sf), 34, (rb), 36, (opcode), 37); } while (0)
+
+#define ia64_fcmp_eq_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 0, 0, 0)
+#define ia64_fcmp_lt_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 0, 1, 0)
+#define ia64_fcmp_le_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 1, 0, 0)
+#define ia64_fcmp_unord_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 1, 1, 0)
+#define ia64_fcmp_eq_unc_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 0, 0, 1)
+#define ia64_fcmp_lt_unc_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 0, 1, 1)
+#define ia64_fcmp_le_unc_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 1, 0, 1)
+#define ia64_fcmp_unord_unc_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_f4 ((code), (qp), (p1), (p2), (f2), (f3), (sf), 0x4, 1, 1, 1)
+
+/* Pseudo ops */
+#define ia64_fcmp_gt_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_lt_sf_pred ((code), (qp), (p1), (p2), (f3), (f2), (sf))
+#define ia64_fcmp_ge_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_le_sf_pred ((code), (qp), (p1), (p2), (f3), (f2), (sf))
+#define ia64_fcmp_ne_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_eq_sf_pred ((code), (qp), (p2), (p1), (f2), (f3), (sf))
+#define ia64_fcmp_nlt_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_lt_sf_pred ((code), (qp), (p2), (p1), (f2), (f3), (sf))
+#define ia64_fcmp_nle_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_le_sf_pred ((code), (qp), (p2), (p1), (f2), (f3), (sf))
+#define ia64_fcmp_ngt_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_lt_sf_pred ((code), (qp), (p2), (p1), (f3), (f2), (sf))
+#define ia64_fcmp_nge_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_le_sf_pred ((code), (qp), (p2), (p1), (f3), (f2), (sf))
+#define ia64_fcmp_ord_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_unord_sf_pred ((code), (qp), (p2), (p1), (f2), (f3), (sf))
+
+#define ia64_f5(code, qp, p1, p2, f2, fclass, opcode, ta) do { check_fr ((f2)); check_preg ((p1)); check_preg ((p2)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (p1), 6, (ta), 12, (f2), 13, (fclass) & 0x7f, 20, (p2), 27, (((guint64)(fclass)) >> 7) & 0x3, 33, (opcode), 37); } while (0)
+
+#define ia64_fclass_m_pred(code, qp, p1, p2, f2, fclass) ia64_f5 ((code), (qp), (p1), (p2), (f2), (fclass), 5, 0)
+#define ia64_fclass_m_unc_pred(code, qp, p1, p2, f2, fclass) ia64_f5 ((code), (qp), (p1), (p2), (f2), (fclass), 5, 1)
+
+#define ia64_f6(code, qp, f1, p2, f2, f3, sf, opcode, x, q) do { check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); check_preg ((p2)); ia64_emit_ins_9 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (p2), 27, (x), 33, (sf), 34, (q), 36, (opcode), 37); } while (0)
+
+#define ia64_frcpa_sf_pred(code, qp, f1, p2, f2, f3, sf) ia64_f6 ((code), (qp), (f1), (p2), (f2), (f3), (sf), 0, 1, 0)
+#define ia64_fprcpa_sf_pred(code, qp, f1, p2, f2, f3, sf) ia64_f6 ((code), (qp), (f1), (p2), (f2), (f3), (sf), 1, 1, 0)
+
+#define ia64_f7(code, qp, f1, p2, f3, sf, opcode, x, q) do { check_fr ((f1)); check_fr ((f3)); check_preg ((p2)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f3), 20, (p2), 27, (x), 33, (sf), 34, (q), 36, (opcode), 37); } while (0)
+
+#define ia64_frsqrta_sf_pred(code, qp, f1, p2, f3, sf) ia64_f7 ((code), (qp), (f1), (p2), (f3), (sf), 0, 1, 1)
+#define ia64_fprsqrta_sf_pred(code, qp, f1, p2, f3, sf) ia64_f7 ((code), (qp), (f1), (p2), (f3), (sf), 1, 1, 1)
+
+#define ia64_f8(code, qp, f1, f2, f3, sf, opcode, x, x6) do { check_sf ((sf)); check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (x6), 27, (x), 33, (sf), 34, (opcode), 37); } while (0)
+
+#define ia64_fmin_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 0, 0, 0x14)
+#define ia64_fman_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 0, 0, 0x15)
+#define ia64_famin_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 0, 0, 0x16)
+#define ia64_famax_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 0, 0, 0x17)
+#define ia64_fpmin_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x14)
+#define ia64_fpman_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x15)
+#define ia64_fpamin_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x16)
+#define ia64_fpamax_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x17)
+#define ia64_fpcmp_eq_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x30)
+#define ia64_fpcmp_lt_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x31)
+#define ia64_fpcmp_le_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x32)
+#define ia64_fpcmp_unord_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x33)
+#define ia64_fpcmp_neq_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x34)
+#define ia64_fpcmp_nlt_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x35)
+#define ia64_fpcmp_nle_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x36)
+#define ia64_fpcmp_ord_sf_pred(code, qp, f1, f2, f3, sf) ia64_f8 ((code), (qp), (f1), (f2), (f3), (sf), 1, 0, 0x37)
+
+#define ia64_f9(code, qp, f1, f2, f3, opcode, x, x6) do { check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (x6), 27, (x), 33, (opcode), 37); } while (0)
+
+#define ia64_fmerge_s_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x10)
+#define ia64_fmerge_ns_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x11)
+#define ia64_fmerge_se_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x12)
+#define ia64_fmix_lr_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x39)
+#define ia64_fmix_r_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x3A)
+#define ia64_fmix_l_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x3B)
+#define ia64_fsxt_r_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x3C)
+#define ia64_fsxt_l_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x3D)
+#define ia64_fpack_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x28)
+#define ia64_fswap_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x34)
+#define ia64_fswap_nl_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x35)
+#define ia64_fswap_nr_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x36)
+#define ia64_fand_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x2C)
+#define ia64_fandcm_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x2D)
+#define ia64_for_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x2E)
+#define ia64_fxor_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x2F)
+#define ia64_fpmerge_s_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x10)
+#define ia64_fpmerge_ns_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x11)
+#define ia64_fpmerge_se_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x12)
+
+#define ia64_f10(code, qp, f1, f2, sf, opcode, x, x6) do { check_sf ((sf)); check_fr ((f1)); check_fr ((f2)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (x6), 27, (x), 33, (sf), 34, (opcode), 37); } while (0)
+
+#define ia64_fcvt_fx_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 0, 0, 0x18)
+#define ia64_fcvt_fxu_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 0, 0, 0x19)
+#define ia64_fcvt_fx_trunc_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 0, 0, 0x1A)
+#define ia64_fcvt_fxu_trunc_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 0, 0, 0x1B)
+#define ia64_fpcvt_fx_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 1, 0, 0x18)
+#define ia64_fpcvt_fxu_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 1, 0, 0x19)
+#define ia64_fpcvt_fx_trunc_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 1, 0, 0x1A)
+#define ia64_fpcvt_fxu_trunc_sf_pred(code, qp, f1, f2, sf) ia64_f10 ((code), (qp), (f1), (f2), (sf), 1, 0, 0x1B)
+
+#define ia64_f11(code, qp, f1, f2, opcode, x, x6) do { check_fr ((f1)); check_fr ((f2)); ia64_emit_ins_6 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (x6), 27, (x), 34, (opcode), 37); } while (0)
+
+#define ia64_fcvt_xf_pred(code, qp, f1, f2) ia64_f11 ((code), (qp), (f1), (f2), 0, 0, 0x1C)
+
+#define ia64_f12(code, qp, amask, omask, sf, opcode, x, x6) do { ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (amask) & 0x3f, 13, (omask) & 0x3f, 20, (x6), 27, (x), 33, (sf), 34, (opcode), 37); } while (0)
+
+#define ia64_fsetc_sf_pred(code, qp, amask, omask, sf) ia64_f12 ((code), (qp), (amask), (omask), (sf), 0, 0, 0x04)
+
+#define ia64_f13(code, qp, sf, opcode, x, x6) do { ia64_emit_ins_5 ((code), IA64_INS_TYPE_F, (qp), 0, (x6), 27, (x), 33, (sf), 34, (opcode), 37); } while (0)
+
+#define ia64_fclrf_sf_pred(code, qp, sf) ia64_f13 ((code), (qp), (sf), 0, 0, 0x05)
+
+#define ia64_f14(code, qp, imm, sf, opcode, x, x6) do { check_imm21 ((imm)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (imm) & 0xfffff, 6, (x6), 27, (x), 33, (sf), 34, sign_bit ((imm)), 36, (opcode), 37); } while (0)
+
+#define ia64_fchkf_sf_pred(code, qp, disp, sf) ia64_f14 ((code), (qp), (disp), (sf), 0, 0, 0x8)
+
+#define ia64_f15(code, qp, imm, opcode, x, x6) do { check_imm21 ((imm)); ia64_emit_ins_6 ((code), IA64_INS_TYPE_F, (qp), 0, (imm) & 0xfffff, 6, (x6), 27, (x), 33, ((imm) >> 20) & 0x1, 36, (opcode), 37); } while (0)
+
+#define ia64_break_f_pred(code, qp, imm) ia64_f15 ((code), (qp), (imm), 0, 0, 0x0)
+
+/*
+ * X-UNIT ENCODINGS
+ */
+
 #define ia64_x1(code, qp, imm, x3, x6) do { check_imm62 ((imm)); ia64_begin_bundle (code); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((guint64)(imm) >> 21) & 0x1ffffffffffULL, 0); ia64_emit_ins_6 ((code), IA64_INS_TYPE_LX, (qp), 0, (guint64)(imm) & 0xfffff, (6), (x6), 27, (x3), 33, ((guint64)(imm) >> 20) & 0x1, 36, (0), 37); } while (0)
 
 #define ia64_break_x_pred(code, qp, imm) ia64_x1 ((code), (qp), (imm), 0, 0x00)
@@ -1290,6 +1438,11 @@ typedef enum {
 
 #define ia64_nop_x_pred(code, qp, imm) ia64_x5 ((code), (qp), (imm), 0, 0x01, 0)
 #define ia64_hint_x_pred(code, qp, imm) ia64_x5 ((code), (qp), (imm), 0, 0x01, 1)
+
+
+
+
+
 
 /*
  * Non predicated instruction variants
@@ -2133,5 +2286,113 @@ typedef enum {
 
 #define ia64_mov_pred(code, qp, r1, r3) ia64_adds_imm_pred ((code), (qp), (r1), 0, (r3))
 #define ia64_mov(code, r1, r3) ia64_mov_pred ((code), 0, (r1), (r3))
+
+/*
+ * FLOATING POINT
+ */
+
+#define ia64_fma_sf(code, f1, f3, f4, f2, sf) ia64_fma_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fma_s_sf(code, f1, f3, f4, f2, sf) ia64_fma_s_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fma_d_sf(code, f1, f3, f4, f2, sf) ia64_fma_d_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fpma_sf(code, f1, f3, f4, f2, sf) ia64_fpma_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fms_sf(code, f1, f3, f4, f2, sf) ia64_fms_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fms_s_sf(code, f1, f3, f4, f2, sf) ia64_fms_s_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fms_d_sf(code, f1, f3, f4, f2, sf) ia64_fms_d_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fpms_sf(code, f1, f3, f4, f2, sf) ia64_fpms_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fnma_sf(code, f1, f3, f4, f2, sf) ia64_fnma_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fnma_s_sf(code, f1, f3, f4, f2, sf) ia64_fnma_s_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fnma_d_sf(code, f1, f3, f4, f2, sf) ia64_fnma_d_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+#define ia64_fpnma_sf(code, f1, f3, f4, f2, sf) ia64_fpnma_sf_pred ((code), 0, f1, f3, f4, f2, sf)
+
+#define ia64_xma_l(code, f1, f3, f4, f2) ia64_xma_l_pred ((code), 0, f1, f3, f4, f2)
+#define ia64_xma_h(code, f1, f3, f4, f2) ia64_xma_h_pred ((code), 0, f1, f3, f4, f2)
+#define ia64_xma_hu(code, f1, f3, f4, f2) ia64_xma_hu_pred ((code), 0, f1, f3, f4, f2)
+
+#define ia64_fselect(code, f1, f3, f4, f2) ia64_fselect_pred ((code), 0, f1, f3, f4, f2)
+
+#define ia64_fcmp_eq_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_eq_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_lt_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_lt_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_le_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_le_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_unord_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_unord_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_eq_unc_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_eq_unc_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_lt_unc_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_lt_unc_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_le_unc_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_le_unc_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_unord_unc_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_unord_unc_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+
+/* Pseudo ops */
+#define ia64_fcmp_gt_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_gt_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_ge_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_ge_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_ne_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_ne_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_nlt_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_nlt_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_nle_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_nle_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_ngt_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_ngt_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_nge_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_nge_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+#define ia64_fcmp_ord_sf(code, p1, p2, f2, f3, sf) ia64_fcmp_ord_sf_pred ((code), 0, p1, p2, f2, f3, sf)
+
+#define ia64_fclass_m(code, p1, p2, f2, fclass) ia64_fclass_m_pred ((code), 0, p1, p2, f2, fclass)
+#define ia64_fclass_m_unc(code, p1, p2, f2, fclass) ia64_fclass_m_unc_pred ((code), 0, p1, p2, f2, fclass)
+
+#define ia64_frcpa_sf(code, f1, p2, f2, f3, sf) ia64_frcpa_sf_pred ((code), 0, f1, p2, f2, f3, sf)
+#define ia64_fprcpa_sf(code, f1, p2, f2, f3, sf) ia64_fprcpa_sf_pred ((code), 0, f1, p2, f2, f3, sf)
+
+#define ia64_frsqrta_sf(code, f1, p2, f3, sf) ia64_frsqrta_sf_pred ((code), 0, f1, p2, f3, sf)
+#define ia64_fprsqrta_sf(code, f1, p2, f3, sf) ia64_fprsqrta_sf_pred ((code), 0, f1, p2, f3, sf)
+
+#define ia64_fmin_sf(code, f1, f2, f3, sf) ia64_fmin_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fman_sf(code, f1, f2, f3, sf) ia64_fman_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_famin_sf(code, f1, f2, f3, sf) ia64_famin_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_famax_sf(code, f1, f2, f3, sf) ia64_famax_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpmin_sf(code, f1, f2, f3, sf) ia64_fpmin_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpman_sf(code, f1, f2, f3, sf) ia64_fpman_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpamin_sf(code, f1, f2, f3, sf) ia64_fpamin_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpamax_sf(code, f1, f2, f3, sf) ia64_fpamax_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_eq_sf(code, f1, f2, f3, sf) ia64_fpcmp_eq_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_lt_sf(code, f1, f2, f3, sf) ia64_fpcmp_lt_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_le_sf(code, f1, f2, f3, sf) ia64_fpcmp_le_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_unord_sf(code, f1, f2, f3, sf) ia64_fpcmp_unord_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_neq_sf(code, f1, f2, f3, sf) ia64_fpcmp_neq_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_nlt_sf(code, f1, f2, f3, sf) ia64_fpcmp_nlt_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_nle_sf(code, f1, f2, f3, sf) ia64_fpcmp_nle_sf_pred ((code), 0, f1, f2, f3, sf)
+#define ia64_fpcmp_ord_sf(code, f1, f2, f3, sf) ia64_fpcmp_ord_sf_pred ((code), 0, f1, f2, f3, sf)
+
+#define ia64_fmerge_s(code, f1, f2, f3) ia64_fmerge_s_pred ((code), 0, f1, f2, f3)
+#define ia64_fmerge_ns(code, f1, f2, f3) ia64_fmerge_ns_pred ((code), 0, f1, f2, f3)
+#define ia64_fmerge_se(code, f1, f2, f3) ia64_fmerge_se_pred ((code), 0, f1, f2, f3)
+#define ia64_fmix_lr(code, f1, f2, f3) ia64_fmix_lr_pred ((code), 0, f1, f2, f3)
+#define ia64_fmix_r(code, f1, f2, f3) ia64_fmix_r_pred ((code), 0, f1, f2, f3)
+#define ia64_fmix_l(code, f1, f2, f3) ia64_fmix_l_pred ((code), 0, f1, f2, f3)
+#define ia64_fsxt_r(code, f1, f2, f3) ia64_fsxt_r_pred ((code), 0, f1, f2, f3)
+#define ia64_fsxt_l(code, f1, f2, f3) ia64_fsxt_l_pred ((code), 0, f1, f2, f3)
+#define ia64_fpack(code, f1, f2, f3) ia64_fpack_pred ((code), 0, f1, f2, f3)
+#define ia64_fswap(code, f1, f2, f3) ia64_fswap_pred ((code), 0, f1, f2, f3)
+#define ia64_fswap_nl(code, f1, f2, f3) ia64_fswap_nl_pred ((code), 0, f1, f2, f3)
+#define ia64_fswap_nr(code, f1, f2, f3) ia64_fswap_nr_pred ((code), 0, f1, f2, f3)
+#define ia64_fand(code, f1, f2, f3) ia64_fand_pred ((code), 0, f1, f2, f3)
+#define ia64_fandcm(code, f1, f2, f3) ia64_fandcm_pred ((code), 0, f1, f2, f3)
+#define ia64_for(code, f1, f2, f3) ia64_for_pred ((code), 0, f1, f2, f3)
+#define ia64_fxor(code, f1, f2, f3) ia64_fxor_pred ((code), 0, f1, f2, f3)
+#define ia64_fpmerge_s(code, f1, f2, f3) ia64_fpmerge_s_pred ((code), 0, f1, f2, f3)
+#define ia64_fpmerge_ns(code, f1, f2, f3) ia64_fpmerge_ns_pred ((code), 0, f1, f2, f3)
+#define ia64_fpmerge_se(code, f1, f2, f3) ia64_fpmerge_se_pred ((code), 0, f1, f2, f3)
+
+#define ia64_fcvt_fx_sf(code, f1, f2, sf) ia64_fcvt_fx_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fcvt_fxu_sf(code, f1, f2, sf) ia64_fcvt_fxu_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fcvt_fx_trunc_sf(code, f1, f2, sf) ia64_fcvt_fx_trunc_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fcvt_fxu_trunc_sf(code, f1, f2, sf) ia64_fcvt_fxu_trunc_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fpcvt_fx_sf(code, f1, f2, sf) ia64_fpcvt_fx_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fpcvt_fxu_sf(code, f1, f2, sf) ia64_fpcvt_fxu_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fpcvt_fx_trunc_sf(code, f1, f2, sf) ia64_fpcvt_fx_trunc_sf_pred ((code), 0, f1, f2, sf)
+#define ia64_fpcvt_fxu_trunc_sf(code, f1, f2, sf) ia64_fpcvt_fxu_trunc_sf_pred ((code), 0, f1, f2, sf)
+
+#define ia64_fcvt_xf(code, f1, f2) ia64_fcvt_xf_pred ((code), 0, f1, f2)
+
+#define ia64_fsetc_sf(code, amask, omask, sf) ia64_fsetc_sf_pred ((code), 0, amask, omask, sf)
+
+#define ia64_fclrf_sf(code, sf) ia64_fclrf_sf_pred ((code), 0, sf)
+
+#define ia64_fchkf_sf(code, disp, sf) ia64_fchkf_sf_pred ((code), 0, disp, sf)
+
+#define ia64_break_f(code, imm) ia64_break_f_pred ((code), 0, imm)
+
 
 #endif

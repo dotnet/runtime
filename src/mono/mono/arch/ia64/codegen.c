@@ -725,8 +725,103 @@ main ()
 
 	ia64_movl_pred (code, 1, 1, 0x123456789ABCDEF0LL);
 
+	/* FLOATING-POINT */
+	ia64_fma_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fma_s_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fma_d_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fpma_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fms_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fms_s_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fms_d_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fpms_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fnma_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fnma_s_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fnma_d_sf_pred (code, 1, 1, 2, 3, 4, 2);
+	ia64_fpnma_sf_pred (code, 1, 1, 2, 3, 4, 2);
+
+	ia64_xma_l_pred (code, 1, 1, 2, 3, 4);
+	ia64_xma_h_pred (code, 1, 1, 2, 3, 4);
+	ia64_xma_hu_pred (code, 1, 1, 2, 3, 4);
+
+	ia64_fselect_pred (code, 1, 1, 2, 3, 4);
+
+	ia64_fcmp_eq_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_lt_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_le_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_unord_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_eq_unc_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_lt_unc_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_le_unc_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fcmp_unord_unc_sf_pred (code, 1, 1, 2, 3, 4, 0);
+
+	ia64_fclass_m_pred (code, 1, 1, 2, 3, 0x1ff);
+	ia64_fclass_m_unc_pred (code, 1, 1, 2, 3, 0x1ff);
+
+	ia64_frcpa_sf_pred (code, 1, 1, 2, 3, 4, 0);
+	ia64_fprcpa_sf_pred (code, 1, 1, 2, 3, 4, 0);
+
+	ia64_frsqrta_sf_pred (code, 1, 1, 2, 4, 0);
+	ia64_fprsqrta_sf_pred (code, 1, 1, 2, 4, 0);
+
+	ia64_fmin_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fman_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_famin_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_famax_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpmin_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpman_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpamin_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpamax_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_eq_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_lt_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_le_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_unord_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_neq_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_nlt_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_nle_sf_pred (code, 1, 2, 3, 4, 0);
+	ia64_fpcmp_ord_sf_pred (code, 1, 2, 3, 4, 0);
+
+	ia64_fmerge_s_pred (code, 1, 2, 3, 4);
+	ia64_fmerge_ns_pred (code, 1, 2, 3, 4);
+	ia64_fmerge_se_pred (code, 1, 2, 3, 4);
+	ia64_fmix_lr_pred (code, 1, 2, 3, 4);
+	ia64_fmix_r_pred (code, 1, 2, 3, 4);
+	ia64_fmix_l_pred (code, 1, 2, 3, 4);
+	ia64_fsxt_r_pred (code, 1, 2, 3, 4);
+	ia64_fsxt_l_pred (code, 1, 2, 3, 4);
+	ia64_fpack_pred (code, 1, 2, 3, 4);
+	ia64_fswap_pred (code, 1, 2, 3, 4);
+	ia64_fswap_nl_pred (code, 1, 2, 3, 4);
+	ia64_fswap_nr_pred (code, 1, 2, 3, 4);
+	ia64_fand_pred (code, 1, 2, 3, 4);
+	ia64_fandcm_pred (code, 1, 2, 3, 4);
+	ia64_for_pred (code, 1, 2, 3, 4);
+	ia64_fxor_pred (code, 1, 2, 3, 4);
+	ia64_fpmerge_s_pred (code, 1, 2, 3, 4);
+	ia64_fpmerge_ns_pred (code, 1, 2, 3, 4);
+	ia64_fpmerge_se_pred (code, 1, 2, 3, 4);
+	
+	ia64_fcvt_fx_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fcvt_fxu_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fcvt_fx_trunc_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fcvt_fxu_trunc_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fpcvt_fx_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fpcvt_fxu_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fpcvt_fx_trunc_sf_pred ((code), 1, 2, 3, 0);
+	ia64_fpcvt_fxu_trunc_sf_pred ((code), 1, 2, 3, 0);
+
+	ia64_fcvt_xf_pred ((code), 1, 2, 3);
+
+	ia64_fsetc_sf_pred ((code), 1, 0x33, 0x33, 3);
+
+	ia64_fclrf_sf_pred ((code), 1, 3);
+
+	ia64_fchkf_sf_pred ((code), 1, -1, 3);
+
+	ia64_break_f_pred ((code), 1, 0x123456);
+
 	ia64_codegen_close (code);
 
+#if 0
 	/* disassembly */
 	{
 		guint8 *buf = code.buf;
@@ -752,6 +847,7 @@ main ()
 		g_assert (dw1 == ((guint64*)buf) [0]);
 		g_assert (dw2 == ((guint64*)buf) [1]);
 	}
+#endif
 
 	mono_disassemble_code (buf, 40960, "code");
 
