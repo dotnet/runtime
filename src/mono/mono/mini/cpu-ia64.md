@@ -555,7 +555,9 @@ ia64_cmp4_le: src1:i src2:i len:48
 ia64_cmp4_lt: src1:i src2:i len:48
 ia64_cmp4_ge: src1:i src2:i len:48
 ia64_cmp4_gt: src1:i src2:i len:48
+ia64_cmp4_le_un: src1:i src2:i len:48
 ia64_cmp4_lt_un: src1:i src2:i len:48
+ia64_cmp4_ge_un: src1:i src2:i len:48
 ia64_cmp4_gt_un: src1:i src2:i len:48
 ia64_cmp_eq: src1:i src2:i len:48
 ia64_cmp_ne: src1:i src2:i len:48
@@ -567,6 +569,28 @@ ia64_cmp_lt_un: src1:i src2:i len:48
 ia64_cmp_gt_un: src1:i src2:i len:48
 ia64_cmp_le_un: src1:i src2:i len:48
 ia64_cmp_ge_un: src1:i src2:i len:48
+
+ia64_cmp4_eq_imm: src2:i len:48
+ia64_cmp4_ne_imm: src2:i len:48
+ia64_cmp4_le_imm: src2:i len:48
+ia64_cmp4_lt_imm: src2:i len:48
+ia64_cmp4_ge_imm: src2:i len:48
+ia64_cmp4_gt_imm: src2:i len:48
+ia64_cmp4_le_un_imm: src2:i len:48
+ia64_cmp4_lt_un_imm: src2:i len:48
+ia64_cmp4_ge_un_imm: src2:i len:48
+ia64_cmp4_gt_un_imm: src2:i len:48
+ia64_cmp_eq_imm: src2:i len:48
+ia64_cmp_ne_imm: src2:i len:48
+ia64_cmp_le_imm: src2:i len:48
+ia64_cmp_lt_imm: src2:i len:48
+ia64_cmp_ge_imm: src2:i len:48
+ia64_cmp_gt_imm: src2:i len:48
+ia64_cmp_lt_un_imm: src2:i len:48
+ia64_cmp_gt_un_imm: src2:i len:48
+ia64_cmp_le_un_imm: src2:i len:48
+ia64_cmp_ge_un_imm: src2:i len:48
+
 ia64_br_cond: len:48
 ia64_cond_exc: len:48
 ia64_cset: dest:i len:48

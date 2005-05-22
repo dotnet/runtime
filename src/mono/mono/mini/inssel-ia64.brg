@@ -10,6 +10,8 @@
 # (C) 2002 Ximian, Inc.
 #
 
+cflags: fpcflags "0"
+
 stmt: OP_SETRET (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
