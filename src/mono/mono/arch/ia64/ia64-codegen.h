@@ -220,6 +220,9 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 	code->nins = 0;
 }
 
+#define ia64_is_imm8(imm) (((gint64)(imm) >= -128) && ((gint64)(imm) <= 127))
+#define ia64_is_imm14(imm) (((gint64)(imm) >= -8192) && ((gint64)(imm) <= 8191))
+
 #if 1
 
 #define check_assert(cond) g_assert((cond))
@@ -419,6 +422,23 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define ia64_cmp4_ne_and_imm_pred(code, qp, p1, p2, imm8, r3) ia64_a8 ((code), (qp), (p1), (p2), (imm8), (r3), 0xc, 3, 1, 1)
 #define ia64_cmp4_ne_or_imm_pred(code, qp, p1, p2, imm8, r3) ia64_a8 ((code), (qp), (p1), (p2), (imm8), (r3), 0xd, 3, 1, 1)
 #define ia64_cmp4_ne_or_andcm_imm_pred(code, qp, p1, p2, imm8, r3) ia64_a8 ((code), (qp), (p1), (p2), (imm8), (r3), 0xe, 3, 1, 1)
+
+/* Pseudo ops */
+#define ia64_cmp_ne_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_eq_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
+#define ia64_cmp_le_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_lt_imm_pred ((code), (qp), (p1), (p2), (imm8) - 1, (r3))
+#define ia64_cmp_gt_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_lt_imm_pred ((code), (qp), (p2), (p1), (imm8) - 1, (r3))
+#define ia64_cmp_ge_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_lt_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
+#define ia64_cmp_leu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_ltu_imm_pred ((code), (qp), (p1), (p2), (imm8) - 1, (r3))
+#define ia64_cmp_gtu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_ltu_imm_pred ((code), (qp), (p2), (p1), (imm8) - 1, (r3))
+#define ia64_cmp_geu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp_ltu_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
+
+#define ia64_cmp4_ne_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_eq_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
+#define ia64_cmp4_le_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_lt_imm_pred ((code), (qp), (p1), (p2), (imm8) - 1, (r3))
+#define ia64_cmp4_gt_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_lt_imm_pred ((code), (qp), (p2), (p1), (imm8) - 1, (r3))
+#define ia64_cmp4_ge_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_lt_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
+#define ia64_cmp4_leu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_ltu_imm_pred ((code), (qp), (p1), (p2), (imm8) - 1, (r3))
+#define ia64_cmp4_gtu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_ltu_imm_pred ((code), (qp), (p2), (p1), (imm8) - 1, (r3))
+#define ia64_cmp4_geu_imm_pred(code, qp, p1, p2, imm8, r3) ia64_cmp4_ltu_imm_pred ((code), (qp), (p2), (p1), (imm8), (r3))
 
 #define ia64_a9(code, qp, r1, r2, r3, x2a, za, zb, x4, x2b) do { check_gregs ((r1), (r2), (r3)); ia64_emit_ins_10 ((code), IA64_INS_TYPE_A, (qp), 0, (r1), 6, (r2), 13, (r3), 20, (x2b), 27, (x4), 29, (zb), 33, (x2a), 34, (za), 36, (8), 37); } while (0)
 
@@ -1348,7 +1368,6 @@ typedef enum {
 #define ia64_cmp4_gtu(code, p1, p2, r2, r3) ia64_cmp4_gtu_pred ((code), 0, p1, p2, r2, r3)
 #define ia64_cmp4_geu(code, p1, p2, r2, r3) ia64_cmp4_geu_pred ((code), 0, p1, p2, r2, r3)
 
-
 #define ia64_cmp_gt_and(code, p1, p2, r2, r3) ia64_cmp_gt_and_pred ((code), 0, p1, p2, r2, r3)
 #define ia64_cmp_gt_or(code, p1, p2, r2, r3) ia64_cmp_gt_or_pred ((code), 0, p1, p2, r2, r3)
 #define ia64_cmp_gt_or_andcm(code, p1, p2, r2, r3) ia64_cmp_gt_or_andcm_pred ((code), 0, p1, p2, r2, r3)
@@ -1402,6 +1421,22 @@ typedef enum {
 #define ia64_cmp4_ne_or_imm(code, p1, p2, imm8, r3) ia64_cmp4_ne_or_imm_pred ((code), 0, p1, p2, imm8, r3)
 #define ia64_cmp4_ne_or_andcm_imm(code, p1, p2, imm8, r3) ia64_cmp4_ne_or_andcm_imm_pred ((code), 0, p1, p2, imm8, r3)
 
+/* Pseudo ops */
+#define ia64_cmp_ne_imm(code, p1, p2, imm8, r3) ia64_cmp_ne_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_le_imm(code, p1, p2, imm8, r3) ia64_cmp_le_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_gt_imm(code, p1, p2, imm8, r3) ia64_cmp_gt_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_ge_imm(code, p1, p2, imm8, r3) ia64_cmp_ge_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_leu_imm(code, p1, p2, imm8, r3) ia64_cmp_leu_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_gtu_imm(code, p1, p2, imm8, r3) ia64_cmp_gtu_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp_geu_imm(code, p1, p2, imm8, r3) ia64_cmp_geu_imm_pred((code), 0, p1, p2, imm8, r3)
+
+#define ia64_cmp4_ne_imm(code, p1, p2, imm8, r3) ia64_cmp4_ne_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_le_imm(code, p1, p2, imm8, r3) ia64_cmp4_le_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_gt_imm(code, p1, p2, imm8, r3) ia64_cmp4_gt_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_ge_imm(code, p1, p2, imm8, r3) ia64_cmp4_ge_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_leu_imm(code, p1, p2, imm8, r3) ia64_cmp4_leu_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_gtu_imm(code, p1, p2, imm8, r3) ia64_cmp4_gtu_imm_pred((code), 0, p1, p2, imm8, r3)
+#define ia64_cmp4_geu_imm(code, p1, p2, imm8, r3) ia64_cmp4_geu_imm_pred((code), 0, p1, p2, imm8, r3)
 
 #define ia64_padd1(code, r1,r2,r3) ia64_padd1_pred ((code), 0, r1,r2,r3)
 #define ia64_padd2(code, r1,r2,r3) ia64_padd2_pred ((code), 0, r1,r2,r3)
