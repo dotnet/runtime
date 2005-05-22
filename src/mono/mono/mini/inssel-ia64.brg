@@ -10,8 +10,6 @@
 # (C) 2002 Ximian, Inc.
 #
 
-cflags: fpcflags "0"
-
 stmt: OP_SETRET (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
@@ -24,5 +22,55 @@ reg: CEE_LDIND_I1 (OP_REGVAR) {
 
 reg: CEE_LDIND_I2 (OP_REGVAR) {
 	MONO_EMIT_UNALU (s, tree, OP_SEXT_I2, state->reg1, state->left->tree->dreg);}
+
+stmt: CEE_BNE_UN (fpcflags) {
+	tree->opcode = OP_FBNE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BEQ (fpcflags) {
+	tree->opcode = OP_FBEQ;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT (fpcflags) {
+	tree->opcode = OP_FBLT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT_UN (fpcflags) {
+	tree->opcode = OP_FBLT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT (fpcflags) {
+	tree->opcode = OP_FBGT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT_UN (fpcflags) {
+	tree->opcode = OP_FBGT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE  (fpcflags) {
+	tree->opcode = OP_FBGE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE_UN (fpcflags) {
+	tree->opcode = OP_FBGE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE  (fpcflags) {
+	tree->opcode = OP_FBLE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE_UN (fpcflags) {
+	tree->opcode = OP_FBLE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
 
 %%

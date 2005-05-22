@@ -814,6 +814,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI2_MEMBASE_REG:
 		case OP_STOREI4_MEMBASE_REG:
 		case OP_STOREI8_MEMBASE_REG:
+		case OP_STORER4_MEMBASE_REG:
+		case OP_STORER8_MEMBASE_REG:
 			/* There are no store_membase instructions on ia64 */
 			NEW_INS (cfg, temp, OP_I8CONST);
 			temp->inst_c0 = ins->inst_offset;
@@ -834,6 +836,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADU4_MEMBASE:
 		case OP_LOADI8_MEMBASE:
 		case OP_LOAD_MEMBASE:
+		case OP_LOADR8_MEMBASE:
 			/* There are no load_membase instructions on ia64 */
 			NEW_INS (cfg, temp, OP_I8CONST);
 			temp->inst_c0 = ins->inst_offset;
@@ -1006,7 +1009,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_COMPARE:
 		case OP_ICOMPARE:
-		case OP_LCOMPARE: {
+		case OP_LCOMPARE:
+		case OP_FCOMPARE: {
 			/* Instead of compare+b<cond>, ia64 has compare<cond>+br */
 
 			next = ins->next;
@@ -1465,6 +1469,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_OVF_U4:
 			/* FIXME: */
 			ia64_mov (code, ins->dreg, ins->sreg1);
+			break;
+
+			/*
+			 * FLOAT OPCODES
+			 */
+		case OP_R8CONST:
+			/* FIXME: Optimize 0.0 and 1.0 */
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, ins->inst_p0);
+			ia64_movl (code, GP_SCRATCH_REG, 0);
+			ia64_ldfd_hint (code, ins->dreg, GP_SCRATCH_REG, 0);
+			break;
+		case OP_STORER8_MEMBASE_REG:
+			ia64_stfd_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
+			break;
+		case OP_LOADR8_MEMBASE:
+			ia64_ldfd_hint (code, ins->dreg, ins->inst_basereg, 0);
 			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);

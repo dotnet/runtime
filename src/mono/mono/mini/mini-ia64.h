@@ -17,8 +17,9 @@
 /* r8..r11, r14..r30 */
 #define MONO_ARCH_CALLEE_REGS (0x700UL | 0xefffc000UL)
 
+/* f6..f15, f32..f127 */
 /* FIXME: Use the upper 64 bits as well */
-#define MONO_ARCH_CALLEE_FREGS 0xffffffffffffffffUL
+#define MONO_ARCH_CALLEE_FREGS (0xffffffffffffffff0000UL | (0x3ffUL << 6))
 
 #define MONO_ARCH_CALLEE_SAVED_REGS ~(MONO_ARCH_CALLEE_REGS)
 
