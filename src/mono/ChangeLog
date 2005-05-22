@@ -1,3 +1,11 @@
+2005-05-22  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: Add config stuff for libsqlite{,3} and
+	libX11.
+
+	* data/config.in: Add dllmaps for above mentioned libs. This means
+	that the devel packages are not needed.
+
 2005-05-17  Zoltan Varga  <vargaz@freemail.hu>
 
 	* man/mono.1: Document the new MONO_DEBUG options.

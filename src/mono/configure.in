@@ -1331,6 +1331,9 @@ JIT_SUPPORTED=no
 INTERP_SUPPORTED=no
 LIBC="libc.so.6"
 INTL="libc.so.6"
+SQLITE="libsqlite.so.0"
+SQLITE3="libsqlite3.so.0"
+X11="libX11.so.6.2"
 
 jit_wanted=false
 interp_wanted=false
@@ -1491,6 +1494,9 @@ case "$host" in
 	libsuffix=".dylib"
 	LIBC="libc.dylib"
 	INTL="libintl.dylib"
+	SQLITE="libsqlite.0.dylib"
+	SQLITE3="libsqlite3.0.dylib"
+	X11="libX11.dylib"
 	;;
      *-*-*netbsd*)
 	LIBC="libc.so.12"
@@ -1604,6 +1610,9 @@ AM_CONDITIONAL(INCLUDED_LIBGC, test x$gc = xincluded)
 
 AC_SUBST(LIBC)
 AC_SUBST(INTL)
+AC_SUBST(SQLITE)
+AC_SUBST(SQLITE3)
+AC_SUBST(X11)
 
 AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
