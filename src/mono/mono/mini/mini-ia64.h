@@ -7,8 +7,8 @@
 
 /* FIXME: regset -> 128 bits ! */
 
-#define MONO_MAX_IREGS 32
-#define MONO_MAX_FREGS 32
+#define MONO_MAX_IREGS 128
+#define MONO_MAX_FREGS 128
 
 /* Parameters used by the register allocator */
 
@@ -58,6 +58,9 @@ typedef struct MonoContext {
 typedef struct MonoCompileArch {
 	gint32 lmf_offset;
 	gint32 localloc_offset;
+	gint32 reg_in0;
+	gint32 reg_local0;
+	gint32 reg_out0;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 

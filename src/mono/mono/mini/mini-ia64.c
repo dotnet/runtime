@@ -311,8 +311,18 @@ GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
+	int i;
 
-	g_assert_not_reached ();
+	/* FIXME: */
+	/* Three registers are reserved for use by the prolog/epilog */
+	cfg->arch.reg_local0 = 32 + 3;
+	cfg->arch.reg_out0 = cfg->arch.reg_local0 + 8;
+
+	for (i = cfg->arch.reg_local0; i < cfg->arch.reg_out0; ++i) {
+		/* FIXME: regmask */
+		g_assert (i < 64);
+		regs = g_list_prepend (regs, (gpointer)(gssize)(i));
+	}
 
 	return regs;
 }
@@ -327,9 +337,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 guint32
 mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
-	MonoInst *ins = cfg->varinfo [vmv->idx];
-
-	g_assert_not_reached ();
+	/* FIXME: Increase costs linearly to avoid using all local registers */
 
 	return 0;
 }
@@ -494,8 +502,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *last_ins = NULL;
 	ins = bb->code;
 
-	g_assert_not_reached ();
-
 	while (ins) {
 		last_ins = ins;
 		ins = ins->next;
@@ -603,6 +609,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
 		case OP_LOADI8_MEMBASE:
+		case OP_LOAD_MEMBASE:
 			/* There are no load_membase instructions on ia64 */
 			NEW_INS (cfg, temp, OP_I8CONST);
 			temp->inst_c0 = ins->inst_offset;
@@ -634,6 +641,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHR_IMM:
 		case OP_ISHR_UN_IMM:
 		case OP_AND_IMM:
+		case OP_SHL_IMM:
 			/* FIXME: There is an alu imm instruction */
 			NEW_INS (cfg, temp, OP_I8CONST);
 			temp->inst_c0 = ins->inst_imm;
@@ -664,6 +672,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_AND_IMM:
 				ins->opcode = CEE_AND;
 				break;
+			case OP_SHL_IMM:
+				ins->opcode = CEE_SHL;
+				break;
 			default:
 				g_assert_not_reached ();
 			}
@@ -692,6 +703,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_IA64_CMP4_LT;
 				next->opcode = OP_IA64_BR_COND;
 				break;
+			case OP_IBGT:
+				ins->opcode = OP_IA64_CMP4_GT;
+				next->opcode = OP_IA64_BR_COND;
+				break;
 			case OP_IBGE:
 				ins->opcode = OP_IA64_CMP4_GE;
 				next->opcode = OP_IA64_BR_COND;
@@ -708,15 +723,69 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_IA64_CMP4_GT_UN;
 				next->opcode = OP_IA64_COND_EXC;
 				break;
+			case OP_ICEQ:
+				ins->opcode = OP_IA64_CMP4_EQ;
+				next->opcode = OP_IA64_CSET;
+				break;
+			case OP_ICLT:
+				ins->opcode = OP_IA64_CMP4_LT;
+				next->opcode = OP_IA64_CSET;
+				break;
+			case OP_ICGT:
+				ins->opcode = OP_IA64_CMP4_GT;
+				next->opcode = OP_IA64_CSET;
+				break;
+			case OP_ICLT_UN:
+				ins->opcode = OP_IA64_CMP4_LT_UN;
+				next->opcode = OP_IA64_CSET;
+				break;
+			case OP_ICGT_UN:
+				ins->opcode = OP_IA64_CMP4_GT_UN;
+				next->opcode = OP_IA64_CSET;
+				break;
 			default:
 				printf ("%s\n", mono_inst_name (next->opcode));
 				NOT_IMPLEMENTED;
 			}
 
 			if (next->opcode == OP_IA64_BR_COND)
-				next->inst_target_bb = next->inst_true_bb;
+				if (! (next->flags & MONO_INST_BRLABEL))
+					next->inst_target_bb = next->inst_true_bb;
 
 			if (opcode == OP_ICOMPARE_IMM) {
+				/* FIXME: there is a cmp imm instruction */
+				NEW_INS (cfg, temp, OP_I8CONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_regstate_next_int (cfg->rs);
+				ins->sreg2 = temp->dreg;
+			}
+			break;
+		}
+		case OP_COMPARE_IMM:
+		case OP_COMPARE: {
+			/* Instead of compare+b<cond>, ia64 has compare<cond>+br */
+			int opcode = ins->opcode;
+
+			next = ins->next;
+			switch (next->opcode) {
+			case CEE_BGE_UN:
+				ins->opcode = OP_IA64_CMP_GE_UN;
+				next->opcode = OP_IA64_BR_COND;
+				break;
+			case OP_COND_EXC_GT_UN:
+				ins->opcode = OP_IA64_CMP_GT_UN;
+				next->opcode = OP_IA64_COND_EXC;
+				break;
+			default:
+				printf ("%s\n", mono_inst_name (next->opcode));
+				NOT_IMPLEMENTED;
+			}
+
+			if (next->opcode == OP_IA64_BR_COND)
+				if (! (next->flags & MONO_INST_BRLABEL))
+					next->inst_target_bb = next->inst_true_bb;
+
+			if (opcode == OP_COMPARE_IMM) {
 				/* FIXME: there is a cmp imm instruction */
 				NEW_INS (cfg, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -778,7 +847,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	if (cfg->opt & MONO_OPT_LOOP) {
 		/* FIXME: */
-		g_assert_not_reached ();
 	}
 
 	if (cfg->verbose_level > 2)
@@ -835,7 +903,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					ia64_begin_bundle (code);
 					mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					NOT_IMPLEMENTED;
+					ia64_br_cond_hint_pred (code, pred, 0, 0, 0, 0);
 				}
 			} else {
 				if (ins->inst_target_bb->native_offset) {
@@ -849,6 +917,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_LABEL:
+			ia64_begin_bundle (code);
+			ins->inst_c0 = code.buf - cfg->native_code;
+			break;
+		case OP_BR_REG:
+			ia64_mov_to_br (code, IA64_B6, ins->sreg1, 0, 0, 0);
+			ia64_br_cond_reg_hint (code, IA64_B6, 0, 0, 0);
+			break;
 		case CEE_ADD:
 		case OP_IADD:
 			ia64_add (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -876,7 +952,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_shr (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISHR_UN:
-			ia64_shr_u (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ia64_zxt4 (code, GP_SCRATCH_REG, ins->sreg1);
+			ia64_shr_u (code, ins->dreg, GP_SCRATCH_REG, ins->sreg2);
+			break;
+		case CEE_SHL:
+			ia64_shl (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case CEE_SUB:
 		case OP_ISUB:
@@ -929,6 +1009,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_ld4_hint (code, ins->dreg, ins->inst_basereg, 0);
 			ia64_sxt4 (code, ins->dreg, ins->dreg);
 			break;
+		case OP_LOAD_MEMBASE:
+			ia64_ld8_hint (code, ins->dreg, ins->inst_basereg, 0);
+			break;
+		case OP_SEXT_I1:
+			ia64_sxt1 (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_SEXT_I2:
+			ia64_sxt2 (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_IA64_CMP4_EQ:
 			ia64_cmp4_eq (code, 6, 7, ins->sreg1, ins->sreg2);
 			break;
@@ -947,8 +1036,35 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IA64_CMP4_GT:
 			ia64_cmp4_gt (code, 6, 7, ins->sreg1, ins->sreg2);
 			break;
+		case OP_IA64_CMP4_LT_UN:
+			ia64_cmp4_ltu (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
 		case OP_IA64_CMP4_GT_UN:
 			ia64_cmp4_gtu (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_EQ:
+			ia64_cmp_eq (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_NE:
+			ia64_cmp_ne (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_LE:
+			ia64_cmp_le (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_LT:
+			ia64_cmp_lt (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_GE:
+			ia64_cmp_ge (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_GT:
+			ia64_cmp_gt (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_GT_UN:
+			ia64_cmp_gtu (code, 6, 7, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IA64_CMP_GE_UN:
+			ia64_cmp_geu (code, 6, 7, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COND_EXC_IOV:
 			/* FIXME: */
@@ -961,6 +1077,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IA64_COND_EXC:
 			/* FIXME: */
 			ia64_break_i_pred (code, 6, 0);
+			break;
+		case OP_IA64_CSET:
+			/* FIXME: Do this with one instruction ? */
+			ia64_mov (code, ins->dreg, IA64_R0);
+			ia64_add1_pred (code, 6, ins->dreg, IA64_R0, IA64_R0);
 			break;
 		case CEE_CONV_I1:
 			/* FIXME: Is this needed ? */
@@ -1012,8 +1133,8 @@ static Ia64InsType ins_types_in_template [32][3] = {
 	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
 	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
 	{IA64_INS_TYPE_M, IA64_INS_TYPE_I, IA64_INS_TYPE_I},
-	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, 0},
-	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, 0},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, IA64_INS_TYPE_LX},
+	{IA64_INS_TYPE_M, IA64_INS_TYPE_LX, IA64_INS_TYPE_LX},
 	{0, 0, 0},
 	{0, 0, 0},
 	{IA64_INS_TYPE_M, IA64_INS_TYPE_M, IA64_INS_TYPE_I},
@@ -1057,9 +1178,6 @@ ia64_patch (unsigned char* code, gpointer target)
 
 	ia64_codegen_init (gen, gen_buf);
 
-	if ((template == IA64_TEMPLATE_MLX) || (template == IA64_TEMPLATE_MLXS))
-		NOT_IMPLEMENTED;
-
 	for (i = 0; i < 3; ++i) {
 		guint64 ins = instructions [i];
 		int opcode = ia64_ins_opcode (ins);
@@ -1072,6 +1190,8 @@ ia64_patch (unsigned char* code, gpointer target)
 			break;
 		case IA64_INS_TYPE_M:
 			nop = (ins == IA64_NOP_M);
+			break;
+		case IA64_INS_TYPE_LX:
 			break;
 		default:
 			break;
@@ -1089,17 +1209,29 @@ ia64_patch (unsigned char* code, gpointer target)
 				/* FIXME: hints */
 				ia64_br_cond_hint_pred (gen, ia64_ins_qp (ins), disp, 0, 0, 0);
 				
-				ins = gen.instructions [0];
+				instructions [i] = gen.instructions [0];
 				break;
 			}
 			else
 				NOT_IMPLEMENTED;
 			break;
+		case IA64_INS_TYPE_LX:
+			if (i == 1)
+				break;
+
+			if ((opcode == 6) && (ia64_ins_vc (ins) == 0)) {
+				/* movl */
+				ia64_movl_pred (gen, ia64_ins_qp (ins), ia64_ins_r1 (ins), target);
+				instructions [1] = gen.instructions [0];
+				instructions [2] = gen.instructions [1];
+			}
+			else
+				NOT_IMPLEMENTED;
+
+			break;
 		default:
 			NOT_IMPLEMENTED;
 		}
-
-		instructions [i] = ins;
 	}
 
 	/* Rewrite code */
@@ -1142,7 +1274,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	ia64_codegen_init (code, cfg->native_code);
 
-	ia64_alloc (code, 32, 0, 3, 0, 0);
+	ia64_alloc (code, 32, 0, 3 + 8, 0, 0);
 	ia64_mov_from_br (code, 33, IA64_B0);
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
@@ -1254,7 +1386,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
 	int quad, pos, i, alloc_size;
-	int max_epilog_size = 16;
+	int max_epilog_size = 16 * 4;
 	Ia64CodegenState code;
 	guint *buf;
 	CallInfo *cinfo;
@@ -1328,6 +1460,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
 			NOT_IMPLEMENTED;
+		default:
+			break;
 		}
 		}
 	}

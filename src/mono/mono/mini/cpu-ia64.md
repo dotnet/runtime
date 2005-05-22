@@ -557,5 +557,16 @@ ia64_cmp4_ge: src1:i src2:i len:48
 ia64_cmp4_gt: src1:i src2:i len:48
 ia64_cmp4_lt_un: src1:i src2:i len:48
 ia64_cmp4_gt_un: src1:i src2:i len:48
+ia64_cmp_eq: src1:i src2:i len:48
+ia64_cmp_ne: src1:i src2:i len:48
+ia64_cmp_le: src1:i src2:i len:48
+ia64_cmp_lt: src1:i src2:i len:48
+ia64_cmp_ge: src1:i src2:i len:48
+ia64_cmp_gt: src1:i src2:i len:48
+ia64_cmp_lt_un: src1:i src2:i len:48
+ia64_cmp_gt_un: src1:i src2:i len:48
+ia64_cmp_le_un: src1:i src2:i len:48
+ia64_cmp_ge_un: src1:i src2:i len:48
 ia64_br_cond: len:48
 ia64_cond_exc: len:48
+ia64_cset: dest:i len:48
