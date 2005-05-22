@@ -724,5 +724,50 @@ class Tests {
 		}
 		return 0;
 	}
+	
+	public static int my_flags;
+	public static int test_0_and_cmp_static ()
+	{
+		
+		/* various forms of test [mem], imm */
+		
+		my_flags = 0x01020304;
+		
+		if ((my_flags & 0x01020304) == 0)
+			return 1;
+		
+		if ((my_flags & 0x00000304) == 0)
+			return 2;
+		
+		if ((my_flags & 0x00000004) == 0)
+			return 3;
+		
+		if ((my_flags & 0x00000300) == 0)
+			return 4;
+		
+		if ((my_flags & 0x00020000) == 0)
+			return 5;
+		
+		if ((my_flags & 0x01000000) == 0)
+			return 6;
+		
+		return 0;
+	}
+	
+	static byte b;
+	public static int test_0_byte_compares ()
+	{
+		b = 0xff;
+		if (b == -1)
+			return 1;
+		b = 0;
+		if (!(b < System.Byte.MaxValue))
+			return 2;
+		
+		if (!(b <= System.Byte.MaxValue))
+			return 3;
+		
+		return 0;
+	}
 }
 
