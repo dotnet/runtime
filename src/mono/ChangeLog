@@ -1,3 +1,7 @@
+2005-05-25  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: Do a test for libX11.so that really works :-).
+
 2005-05-22  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Add config stuff for libsqlite{,3} and

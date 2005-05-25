@@ -1333,7 +1333,7 @@ LIBC="libc.so.6"
 INTL="libc.so.6"
 SQLITE="libsqlite.so.0"
 SQLITE3="libsqlite3.so.0"
-X11="libX11.so.6.2"
+X11="libX11.so"
 
 jit_wanted=false
 interp_wanted=false
@@ -1511,6 +1511,14 @@ case "$host" in
 	INTL="libintl.so"
 	;;
 esac
+
+if test "x$X11" = "xlibX11.so"; then
+	AC_PATH_X
+	if test "x$no_x" != "xyes"; then
+		X11=`readlink $x_libraries/libX11.so`
+	fi
+fi
+
 AC_SUBST(libsuffix)
 
 if test "x$TARGET" != "xAMD64"; then
