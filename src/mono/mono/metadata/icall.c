@@ -2345,15 +2345,17 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (this) {
-		if (!mono_object_isinst (this, m->klass))
+	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
+		if (this) {
+			if (!mono_object_isinst (this, m->klass))
+				mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
+			m = mono_object_get_virtual_method (this, m);
+			/* must pass the pointer to the value for valuetype methods */
+			if (m->klass->valuetype)
+				obj = mono_object_unbox (this);
+		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type)
 			mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
-		m = mono_object_get_virtual_method (this, m);
-		/* must pass the pointer to the value for valuetype methods */
-		if (m->klass->valuetype)
-			obj = mono_object_unbox (this);
-	} else if (!(m->flags & METHOD_ATTRIBUTE_STATIC) && strcmp (m->name, ".ctor") && !m->wrapper_type)
-		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
+	}
 
 	pcount = params? mono_array_length (params): 0;
 	if (pcount != mono_method_signature (m)->param_count)
