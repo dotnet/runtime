@@ -1373,6 +1373,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 	reflection_methodbuilder_from_method_builder (&rmb, mb);
 
 	mono_image_basic_method (&rmb, assembly);
+	mb->table_idx = *rmb.table_idx;
 
 	if (mb->dll) { /* It's a P/Invoke method */
 		guint32 moduleref;
@@ -1449,6 +1450,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
 	mono_image_basic_method (&rmb, assembly);
+	mb->table_idx = *rmb.table_idx;
 }
 
 static char*
