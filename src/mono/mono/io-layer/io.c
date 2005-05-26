@@ -3518,7 +3518,14 @@ static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)
 		 * if locks are not available (NFS for example),
 		 * ignore the error
 		 */
-		if (errno == ENOLCK) {
+		if (errno == ENOLCK
+#ifdef EOPNOTSUPP
+		    || errno == EOPNOTSUPP
+#endif
+#ifdef ENOTSUP
+		    || errno == ENOTSUP
+#endif
+		   ) {
 			return (TRUE);
 		}
 		
@@ -3548,6 +3555,21 @@ static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 #endif
 	
 	if (ret == -1) {
+		/*
+		 * if locks are not available (NFS for example),
+		 * ignore the error
+		 */
+		if (errno == ENOLCK
+#ifdef EOPNOTSUPP
+		    || errno == EOPNOTSUPP
+#endif
+#ifdef ENOTSUP
+		    || errno == ENOTSUP
+#endif
+		   ) {
+			return (TRUE);
+		}
+		
 		SetLastError (ERROR_LOCK_VIOLATION);
 		return(FALSE);
 	}
