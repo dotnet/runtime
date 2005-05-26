@@ -1296,6 +1296,10 @@ typedef enum {
 #define ia64_fnma_d_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xD, 0)
 #define ia64_fpnma_sf_pred(code, qp, f1, f3, f4, f2, sf) ia64_f1 ((code), (qp), (f1), (f3), (f4), (f2), (sf), 0xD, 1)
 
+/* Pseudo ops */
+#define ia64_fnorm_s_sf_pred(code, qp, f1, f3, sf) ia64_fma_s_sf_pred ((code), (qp), (f1), (f3), 1, 0, (sf))
+#define ia64_fnorm_d_sf_pred(code, qp, f1, f3, sf) ia64_fma_d_sf_pred ((code), (qp), (f1), (f3), 1, 0, (sf))
+
 #define ia64_f2(code, qp, f1, f3, f4, f2, opcode, x, x2) do { check_fr ((f1)); check_fr ((f2)); check_fr ((f3)); check_fr ((f4)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (f4), 27, (x2), 34, (x), 36, (opcode), 37); } while (0)
 
 #define ia64_xma_l_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 0)
@@ -1382,6 +1386,9 @@ typedef enum {
 #define ia64_fpmerge_s_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x10)
 #define ia64_fpmerge_ns_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x11)
 #define ia64_fpmerge_se_pred(code, qp, f1, f2, f3) ia64_f9 ((code), (qp), (f1), (f2), (f3), 0, 0, 0x12)
+
+/* Pseudo ops */
+#define ia64_fmov_pred(code, qp, f1, f3) ia64_fmerge_s_pred ((code), (qp), (f1), (f3), (f3))
 
 #define ia64_f10(code, qp, f1, f2, sf, opcode, x, x6) do { check_sf ((sf)); check_fr ((f1)); check_fr ((f2)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (x6), 27, (x), 33, (sf), 34, (opcode), 37); } while (0)
 
@@ -2304,6 +2311,10 @@ typedef enum {
 #define ia64_fnma_d_sf(code, f1, f3, f4, f2, sf) ia64_fnma_d_sf_pred ((code), 0, f1, f3, f4, f2, sf)
 #define ia64_fpnma_sf(code, f1, f3, f4, f2, sf) ia64_fpnma_sf_pred ((code), 0, f1, f3, f4, f2, sf)
 
+/* Pseudo ops */
+#define ia64_fnorm_s_sf(code, f1, f3, sf) ia64_fnorm_s_sf_pred ((code), 0, (f1), (f3), (sf))
+#define ia64_fnorm_d_sf(code, f1, f3, sf) ia64_fnorm_d_sf_pred ((code), 0, (f1), (f3), (sf))
+
 #define ia64_xma_l(code, f1, f3, f4, f2) ia64_xma_l_pred ((code), 0, f1, f3, f4, f2)
 #define ia64_xma_h(code, f1, f3, f4, f2) ia64_xma_h_pred ((code), 0, f1, f3, f4, f2)
 #define ia64_xma_hu(code, f1, f3, f4, f2) ia64_xma_hu_pred ((code), 0, f1, f3, f4, f2)
@@ -2374,6 +2385,9 @@ typedef enum {
 #define ia64_fpmerge_s(code, f1, f2, f3) ia64_fpmerge_s_pred ((code), 0, f1, f2, f3)
 #define ia64_fpmerge_ns(code, f1, f2, f3) ia64_fpmerge_ns_pred ((code), 0, f1, f2, f3)
 #define ia64_fpmerge_se(code, f1, f2, f3) ia64_fpmerge_se_pred ((code), 0, f1, f2, f3)
+
+/* Pseudo ops */
+#define ia64_fmov(code, f1, f3) ia64_fmov_pred ((code), 0, (f1), (f3))
 
 #define ia64_fcvt_fx_sf(code, f1, f2, sf) ia64_fcvt_fx_sf_pred ((code), 0, f1, f2, sf)
 #define ia64_fcvt_fxu_sf(code, f1, f2, sf) ia64_fcvt_fxu_sf_pred ((code), 0, f1, f2, sf)
