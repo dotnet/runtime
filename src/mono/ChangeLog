@@ -1,3 +1,10 @@
+2005-05-26  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* mono.sln: Mono solution file for VS.NET 2005.
+	* genmdesc.vcproj: Project file for genmdesc.
+	* libmono.vcproj: Project file for libmono.
+	* mono.vcproj: Project file for mono executable.
+
 2005-05-25  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Do a test for libX11.so that really works :-).
