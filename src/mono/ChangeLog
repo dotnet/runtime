@@ -1,5 +1,6 @@
-2005-05-26  Sebastien Pouliot  <sebastien@ximian.com>
-
+2005-05-26  Sebastien Pouliot  <sebastien@ximian.com> 
+ 
+	* README.vsnet: Instructions about the VS.NET build.
 	* mono.sln: Mono solution file for VS.NET 2005.
 	* genmdesc.vcproj: Project file for genmdesc.
 	* libmono.vcproj: Project file for libmono.
