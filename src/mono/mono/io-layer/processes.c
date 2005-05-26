@@ -932,11 +932,13 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 		return(FALSE);
 	}
 	
-	/* A process handle is only signalled if the process has exited */
-	if(_wapi_handle_issignalled (process)==TRUE) {
-		*code=process_handle->exitstatus;
+	/* A process handle is only signalled if the process has exited
+	 * and has been waited for */
+	if (_wapi_handle_issignalled (process) == TRUE ||
+	    process_wait (process, 0) == WAIT_OBJECT_0) {
+		*code = process_handle->exitstatus;
 	} else {
-		*code=STILL_ACTIVE;
+		*code = STILL_ACTIVE;
 	}
 	
 	return(TRUE);
