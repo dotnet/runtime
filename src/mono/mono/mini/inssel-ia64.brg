@@ -23,13 +23,13 @@ reg: CEE_LDIND_I1 (OP_REGVAR) {
 reg: CEE_LDIND_I2 (OP_REGVAR) {
 	MONO_EMIT_UNALU (s, tree, OP_SEXT_I2, state->reg1, state->left->tree->dreg);}
 
-stmt: CEE_BNE_UN (fpcflags) {
-	tree->opcode = OP_FBNE_UN;
+stmt: CEE_BEQ (fpcflags) {
+	tree->opcode = OP_FBEQ;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BEQ (fpcflags) {
-	tree->opcode = OP_FBEQ;
+stmt: CEE_BNE_UN (fpcflags) {
+	tree->opcode = OP_FBNE_UN;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -70,6 +70,55 @@ stmt: CEE_BLE  (fpcflags) {
 
 stmt: CEE_BLE_UN (fpcflags) {
 	tree->opcode = OP_FBLE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+fpcflags: OP_COMPARE (freg, freg) {
+	tree->opcode = OP_FCOMPARE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_CEQ (fpcflags) {	
+	tree->dreg = state->reg1;
+	tree->opcode = OP_FCEQ;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_CLT (fpcflags) {	
+	tree->dreg = state->reg1;
+	tree->opcode = OP_FCLT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_CLT_UN (fpcflags) {	
+	tree->dreg = state->reg1;
+	tree->opcode = OP_FCLT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_CGT (fpcflags) {	
+	tree->dreg = state->reg1;
+	tree->opcode = OP_FCGT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_CGT_UN (fpcflags) {	
+	tree->dreg = state->reg1;
+	tree->opcode = OP_FCGT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_LCONV_TO_R8 (reg) {
+	/* FIXME: Move this inssel-long.brg */
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_LCONV_TO_R4 (reg) {
+	/* FIXME: Move this inssel-long.brg */
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
