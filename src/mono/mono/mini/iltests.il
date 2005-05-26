@@ -680,24 +680,6 @@ COND:   ldloc.0
 			ret
 	}
 
-	.class nested private auto ansi sealed beforefieldinit FooStruct 
-		extends [mscorlib]System.ValueType {
-
-		.method public hidebysig specialname rtspecialname instance void .ctor () cil managed {
-			.maxstack 8
-			ret
-		}
-	}
-
-	.method public static int32 test_0_newobj_vtype () {
-		.maxstack 8
-
-		newobj instance void Tests/FooStruct::.ctor()
-		pop
-		ldc.i4.0
-		ret
-	}
-
 	.method public static int32 test_7_conv_ovf_u8_un () {
     	.maxstack  2
         .locals    init (unsigned int64)
@@ -756,6 +738,37 @@ COND:   ldloc.0
 		ldfld bool Tests/Integer::n
 		ldc.i4.1
 		ceq
+		ret
+	}
+
+	.class nested private auto ansi sealed xxx
+  	extends [mscorlib]System.ValueType
+   {
+     .field  public   object a
+
+     .method public hidebysig  specialname  rtspecialname 
+            instance default void .ctor ()  cil managed 
+     {
+		 .maxstack 8
+		 ret 
+     }
+   } // end of class xxx
+
+	.method public static int32 test_0_newobj_vtype () {
+		.maxstack 6
+		.locals init (
+			valuetype Tests/xxx V_0
+		)
+
+		newobj instance void valuetype Tests/xxx::.ctor ()
+		stloc.0
+		ldloca.s 0
+		ldfld object Tests/xxx::a
+		brfalse OK
+		ldc.i4.s 1
+		ret
+	OK:
+		ldc.i4.s 0
 		ret
 	}
 }

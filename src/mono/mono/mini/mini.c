@@ -4691,6 +4691,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cmethod->klass->valuetype) {
 					iargs [0] = mono_compile_create_var (cfg, &cmethod->klass->byval_arg, OP_LOCAL);
 					temp = iargs [0]->inst_c0;
+
+					NEW_TEMPLOADA (cfg, *sp, temp);
+
+					handle_initobj (cfg, bblock, *sp, NULL, cmethod->klass, stack_start, sp);
+
 					NEW_TEMPLOADA (cfg, *sp, temp);
 
 					/* 
