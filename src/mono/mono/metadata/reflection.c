@@ -63,7 +63,7 @@ typedef struct {
 	guint32 nrefs;
 	gpointer *refs;
 	/* for PInvoke */
-	int charset, lasterr, native_cc;
+	int charset, extra_flags, native_cc;
 	MonoString *dll, *dllentry;
 } ReflectionMethodBuilder;
 
@@ -1295,8 +1295,8 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 	rmb->refs = NULL;
 
 	if (mb->dll) {
-		rmb->charset = mb->charset & 0xf;
-		rmb->lasterr = mb->charset & 0x40;
+		rmb->charset = mb->charset;
+		rmb->extra_flags = mb->extra_flags;
 		rmb->native_cc = mb->native_cc;
 		rmb->dllentry = mb->dllentry;
 		rmb->dll = mb->dll;
@@ -1377,17 +1377,15 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 
 	if (mb->dll) { /* It's a P/Invoke method */
 		guint32 moduleref;
-		int charset = mb->charset & 0xf;
-		int lasterr = mb->charset & 0x40;
-		int best_fit_mapping = mb->charset & 0x30;
-		int throw_on_unmappable = mb->charset & 0x3000;
+		/* map CharSet values to on-disk values */
+		int ncharset = (mb->charset ? (mb->charset - 1) * 2 : 1);
+		int extra_flags = mb->extra_flags;
 		table = &assembly->tables [MONO_TABLE_IMPLMAP];
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_IMPLMAP_SIZE;
-		/* map CharSet values to on-disk values */
 		
-		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | (charset ? (charset - 1) * 2: 1) | lasterr | best_fit_mapping | throw_on_unmappable;
+		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | ncharset | extra_flags;
 		values [MONO_IMPLMAP_MEMBER] = (mb->table_idx << 1) | 1; /* memberforwarded: method */
 		name = mono_string_to_utf8 (mb->dllentry);
 		values [MONO_IMPLMAP_NAME] = string_heap_insert (&assembly->sheap, name);
@@ -7770,7 +7768,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		method_aux->dllentry = g_strdup (mono_string_to_utf8 (rmb->dllentry));
 		method_aux->dll = g_strdup (mono_string_to_utf8 (rmb->dll));
 		
-		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->lasterr;
+		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->extra_flags;
 
 		if (klass->image->dynamic)
 			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);

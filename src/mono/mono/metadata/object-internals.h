@@ -710,6 +710,7 @@ typedef struct {
 	MonoString *dll;
 	MonoString *dllentry;
 	guint32 charset;
+	guint32 extra_flags;
 	guint32 native_cc;
 	guint32 call_conv;
 	MonoBoolean init_locals;

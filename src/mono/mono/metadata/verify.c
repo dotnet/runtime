@@ -2225,7 +2225,8 @@ methodbuilder_fields[] = {
 	{"pinfo", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, pinfo)},
 	{"pi_dll", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dll)},
 	{"pi_entry", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dllentry)},
-	{"ncharset", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, charset)},
+	{"charset", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, charset)},
+	{"extra_flags", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, extra_flags)},
 	{"native_cc", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, native_cc)},
 	{"call_conv", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, call_conv)},
 	{NULL, 0}
