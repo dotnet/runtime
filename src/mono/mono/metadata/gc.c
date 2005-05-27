@@ -481,7 +481,8 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 	slot = slot * 32 + i;
 	handles->entries [slot] = obj;
 	if (handles->type <= HANDLE_WEAK_TRACK) {
-		mono_gc_weak_link_add (&(handles->entries [slot]), obj);
+		if (obj)
+			mono_gc_weak_link_add (&(handles->entries [slot]), obj);
 	}
 
 	unlock_handles (handles);
@@ -538,7 +539,8 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
 			mono_gc_weak_link_remove (&handles->entries [slot]);
-			mono_gc_weak_link_add (&handles->entries [slot], obj);
+			if (obj)
+				mono_gc_weak_link_add (&handles->entries [slot], obj);
 		} else {
 			handles->entries [slot] = obj;
 		}
