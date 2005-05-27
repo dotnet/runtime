@@ -120,6 +120,7 @@ typedef enum {
 #define ia64_ins_opcode(ins) (((guint64)(ins)) >> 37)
 #define ia64_ins_qp(ins) (((guint64)(ins)) & 0x3f)
 #define ia64_ins_r1(ins) ((((guint64)(ins)) >> 6) & 0x7f)
+#define ia64_ins_b1(ins) ((((guint64)(ins)) >> 6) & 0x3)
 #define ia64_ins_btype(ins) ((((guint64)(ins)) >> 6) & 0x7)
 #define ia64_ins_x3(ins) ((((guint64)(ins)) >> 33) & 0x7)
 #define ia64_ins_x6(ins) ((((guint64)(ins)) >> 27) & 0x3f)
@@ -1252,6 +1253,8 @@ typedef enum {
 
 #define ia64_br_call_reg_hint_pred(code, qp, b1, b2, bwh, ph, dh) ia64_b5 ((code), (qp), (b1), (b2), (bwh), (ph), (dh))
 
+#define ia64_br_call_reg_pred(code, qp, b1, b2) ia64_br_call_reg_hint_pred ((code), (qp), (b1), (b2), 0, 0, 0)
+
 typedef enum {
 	IA64_IPWH_SPTK = 0,
 	IA64_IPWH_LOOP = 1,
@@ -1942,6 +1945,11 @@ typedef enum {
 #define ia64_st16_hint(code, r3, r2, hint) ia64_st16_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st16_rel_hint(code, r3, r2, hint) ia64_st16_rel_hint_pred ((code), 0, r3, r2, hint)
 
+/* Pseudo ops */
+#define ia64_ld1(code, r1, r3) ia64_ld1_hint ((code), (r1), (r3), 0)
+#define ia64_ld2(code, r1, r3) ia64_ld2_hint ((code), (r1), (r3), 0)
+#define ia64_ld4(code, r1, r3) ia64_ld4_hint ((code), (r1), (r3), 0)
+#define ia64_ld8(code, r1, r3) ia64_ld8_hint ((code), (r1), (r3), 0)
 
 #define ia64_st1_inc_imm_hint(code, r3, r2, imm, hint) ia64_st1_inc_imm_hint_pred ((code), 0, r3, r2, imm, hint)
 #define ia64_st2_inc_imm_hint(code, r3, r2, imm, hint) ia64_st2_inc_imm_hint_pred ((code), 0, r3, r2, imm, hint)
@@ -2247,16 +2255,15 @@ typedef enum {
 #define ia64_br_cexit_hint(code, disp, bwh, ph, dh) ia64_br_cexit_hint_pred ((code), 0, disp, bwh, ph, dh)
 #define ia64_br_ctop_hint(code, disp, bwh, ph, dh) ia64_br_ctop_hint_pred ((code), 0, disp, bwh, ph, dh)
 
-
 #define ia64_br_call_hint(code, b1, disp, bwh, ph, dh) ia64_br_call_hint_pred ((code), 0, b1, disp, bwh, ph, dh)
-
 
 #define ia64_br_cond_reg_hint(code, b1, bwh, ph, dh) ia64_br_cond_reg_hint_pred ((code), 0, b1, bwh, ph, dh)
 #define ia64_br_ia_reg_hint(code, b1, bwh, ph, dh) ia64_br_ia_reg_hint_pred ((code), 0, b1, bwh, ph, dh)
 #define ia64_br_ret_reg_hint(code, b1, bwh, ph, dh) ia64_br_ret_reg_hint_pred ((code), 0, b1, bwh, ph, dh)
 
-
 #define ia64_br_call_reg_hint(code, b1, b2, bwh, ph, dh) ia64_br_call_reg_hint_pred ((code), 0, b1, b2, bwh, ph, dh)
+
+#define ia64_br_call_reg(code, b1, b2) ia64_br_call_reg_hint ((code), (b1), (b2), 0, 0, 0)
 
 #define ia64_cover(code) ia64_cover_pred ((code), 0)
 #define ia64_clrrrb(code) ia64_clrrrb_pred ((code), 0)
