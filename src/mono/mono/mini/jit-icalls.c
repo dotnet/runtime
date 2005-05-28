@@ -226,6 +226,85 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	return 0;
 }
 
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+
+static gint32
+mono_imul (gint32 a, gint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a * b;
+}
+
+static gint32
+mono_idiv (gint32 a, gint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a / b;
+}
+
+static guint32
+mono_idiv_un (guint32 a, guint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a / b;
+}
+
+static gint32
+mono_irem (gint32 a, gint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a % b;
+}
+
+static guint32
+mono_irem_un (guint32 a, guint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a % b;
+}
+
+static gint32
+mono_imul_ovf (gint32 a, gint32 b)
+{
+	gint64 res;
+
+	MONO_ARCH_SAVE_REGS;
+
+	res = (gint64)a * (gint64)b;
+
+	/* FIXME: */
+	return res;
+}
+
+static gint32
+mono_imul_ovf_un (guint32 a, guint32 b)
+{
+	guint64 res;
+
+	MONO_ARCH_SAVE_REGS;
+
+	res = (guint64)a * (guint64)b;
+
+	if ((res >> 32))
+		mono_raise_exception (mono_get_exception_overflow ());
+
+	return res;
+}
+
+static double
+mono_fdiv (double a, double b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a / b;
+}
+#endif
+
 static gint64 
 mono_lldiv (gint64 a, gint64 b)
 {

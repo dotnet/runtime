@@ -1,48 +1,9 @@
 # ia64 cpu description file
-# this file is read by genmdesc to pruduce a table with all the relevant information
-# about the cpu instructions that may be used by the register allocator, the scheduler
-# and other parts of the arch-dependent part of mini.
 #
-# An opcode name is followed by a colon and optional specifiers.
-# A specifier has a name, a colon and a value. Specifiers are separated by white space.
-# Here is a description of the specifiers valid for this file and their possible values.
+# The instruction lengths are very conservative, it doesn't matter on ia64
+# since there are no short branches.
 #
-# dest:register       describes the destination register of an instruction
-# src1:register       describes the first source register of an instruction
-# src2:register       describes the second source register of an instruction
-#
-# register may have the following values:
-#	i  integer register
-#	b  base register (used in address references)
-#	f  floating point register
-#
-# len:number         describe the maximun length in bytes of the instruction
-# number is a positive integer
-#
-# cost:number        describe how many cycles are needed to complete the instruction (unused)
-#
-# clob:spec          describe if the instruction clobbers registers or has special needs
-#
-# spec can be one of the following characters:
-#	c  clobbers caller-save registers
-#	r  'reserves' the destination register until a later instruction unreserves it
-#          used mostly to set output registers in function calls
-#
-# flags:spec        describe if the instruction uses or sets the flags (unused)
-#
-# spec can be one of the following chars:
-# 	s  sets the flags
-#       u  uses the flags
-#       m  uses and modifies the flags
-#
-# res:spec          describe what units are used in the processor (unused)
-#
-# delay:            describe delay slots (unused)
-#
-# the required specifiers are: len, clob (if registers are clobbered), the registers
-# specifiers if the registers are actually used, flags (when scheduling is implemented).
-#
-#
+
 nop:
 break: len:48
 jmp: len:48
@@ -100,10 +61,10 @@ conv.i1: dest:i src1:i len:48
 conv.i2: dest:i src1:i len:48
 conv.i4: dest:i src1:i len:48
 conv.i8: dest:i src1:i len:48
-conv.r4: dest:f src1:i len:160
-conv.r8: dest:f src1:i len:160
-conv.u4: dest:i src1:i len:160
-conv.u8: dest:i src1:i len:160
+conv.r4: dest:f src1:i len:112
+conv.r8: dest:f src1:i len:112
+conv.u4: dest:i src1:i len:112
+conv.u8: dest:i src1:i len:112
 callvirt:
 cpobj:
 ldobj:
@@ -239,33 +200,28 @@ oparglist: src1:b len:48
 outarg: src1:i len:48
 outarg_imm: len:48
 retarg:
-setret: dest:a src1:i len:48
-setlret: dest:i src1:i src2:i len:48
+setret: dest:r src1:i len:48
+setlret: dest:r src1:i src2:i len:48
 checkthis: src1:b len:48
-call: dest:a clob:c len:48
-ret: len:48
-voidcall: clob:c len:48
-voidcall_reg: src1:i clob:c len:48
-voidcall_membase: src1:b clob:c len:48
-fcall: dest:f len:48 clob:c
-fcall_reg: dest:f src1:i len:48 clob:c
-fcall_membase: dest:f src1:b len:48 clob:c
-lcall: dest:a len:48 clob:c
-lcall_reg: dest:a src1:i len:48 clob:c
-lcall_membase: dest:a src1:b len:48 clob:c
-vcall: len:48 clob:c
-vcall_reg: src1:i len:48 clob:c
-vcall_membase: src1:b len:48 clob:c
-call_reg: dest:a src1:i len:48 clob:c
-call_membase: dest:a src1:b len:48 clob:c
-trap:
+call: dest:r clob:c len:80
+voidcall: clob:c len:80
+voidcall_reg: src1:i clob:c len:80
+voidcall_membase: src1:b clob:c len:80
+fcall: dest:g len:80 clob:c
+fcall_reg: dest:g src1:i len:80 clob:c
+fcall_membase: dest:g src1:b len:80 clob:c
+lcall: dest:r len:80 clob:c
+lcall_reg: dest:r src1:i len:80 clob:c
+lcall_membase: dest:r src1:b len:80 clob:c
+vcall: len:80 clob:c
+vcall_reg: src1:i len:80 clob:c
+vcall_membase: src1:b len:80 clob:c
+call_reg: dest:a src1:i len:80 clob:c
+call_membase: dest:a src1:b len:80 clob:c
 iconst: dest:i len:48
 i8const: dest:i len:48
 r4const: dest:f len:48
 r8const: dest:f len:48
-regvar:
-reg:
-regoffset:
 label:
 store_membase_imm: dest:b len:48
 store_membase_reg: dest:b src1:i len:48
@@ -378,19 +334,19 @@ float_rem: dest:f src1:f src2:f len:48
 float_rem_un: dest:f src1:f src2:f len:48
 float_neg: dest:f src1:f len:48
 float_not: dest:f src1:f len:48
-float_conv_to_i1: dest:i src1:f len:160
-float_conv_to_i2: dest:i src1:f len:160
-float_conv_to_i4: dest:i src1:f len:160
-float_conv_to_i8: dest:i src1:f len:160
-float_conv_to_r4: dest:f src1:f len:160
-float_conv_to_r8: dest:f src1:f len:160
-float_conv_to_u4: dest:i src1:f len:160
-float_conv_to_u8: dest:i src1:f len:160
-float_conv_to_u2: dest:i src1:f len:160
-float_conv_to_u1: dest:i src1:f len:160
-float_conv_to_i: dest:i src1:f len:160
-float_conv_to_ovf_i: dest:a src1:f len:160
-float_conv_to_ovd_u: dest:a src1:f len:160
+float_conv_to_i1: dest:i src1:f len:112
+float_conv_to_i2: dest:i src1:f len:112
+float_conv_to_i4: dest:i src1:f len:112
+float_conv_to_i8: dest:i src1:f len:112
+float_conv_to_r4: dest:f src1:f len:112
+float_conv_to_r8: dest:f src1:f len:112
+float_conv_to_u4: dest:i src1:f len:112
+float_conv_to_u8: dest:i src1:f len:112
+float_conv_to_u2: dest:i src1:f len:112
+float_conv_to_u1: dest:i src1:f len:112
+float_conv_to_i: dest:i src1:f len:112
+float_conv_to_ovf_i: dest:a src1:f len:112
+float_conv_to_ovd_u: dest:a src1:f len:112
 float_add_ovf:
 float_add_ovf_un:
 float_mul_ovf: 

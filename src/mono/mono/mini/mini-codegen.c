@@ -173,7 +173,12 @@ create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 #define rassign(cfg,reg,fp) ((fp) ? (cfg)->rs->fassign [(reg)] : (cfg)->rs->iassign [(reg)])
 #define sreg1_is_fp(ins) (ins_spec [(ins)->opcode] [MONO_INST_SRC1] == 'f')
 #define sreg2_is_fp(ins) (ins_spec [(ins)->opcode] [MONO_INST_SRC2] == 'f')
+
+#ifdef MONO_ARCH_INST_IS_FLOAT
+#define dreg_is_fp(ins)  (MONO_ARCH_INST_IS_FLOAT (ins_spec [(ins)->opcode] [MONO_INST_DEST]))
+#else
 #define dreg_is_fp(ins)  (ins_spec [(ins)->opcode] [MONO_INST_DEST] == 'f')
+#endif
 
 #define regpair_reg2_mask(desc,hreg1) ((MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1) != -1) ? (1 << MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1)) : MONO_ARCH_CALLEE_REGS)
 
@@ -1070,7 +1075,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if (spec [MONO_INST_CLOB] == 'c') {
 			int j, s, dreg, dreg2;
-			guint32 clob_mask;
+			guint64 clob_mask;
 
 			clob_mask = MONO_ARCH_CALLEE_REGS;
 
@@ -1105,7 +1110,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				for (j = 0; j < MONO_MAX_FREGS; ++j) {
 					s = 1 << j;
-					if ((clob_mask & s) && !(rs->ffree_mask & s) && (j != ins->sreg1)) {
+					if ((clob_mask & s) && !(rs->ffree_mask & s) && (j != ins->sreg1) && (j != dreg)) {
 						get_register_force_spilling (cfg, tmp, ins, rs->fsymbolic [j], TRUE);
 						mono_regstate_free_float (rs, j);
 					}

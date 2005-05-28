@@ -10,11 +10,12 @@
 # (C) 2002 Ximian, Inc.
 #
 
-stmt: OP_SETRET (reg) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = MONO_ARCH_RETREG1;
-	mono_bblock_add_inst (s->cbb, tree);
+reg: CEE_LDIND_I8 (OP_REGVAR) {
+	state->reg1 = state->left->tree->dreg;
+}
+
+stmt: CEE_STIND_I8 (OP_REGVAR, reg) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->left->tree->dreg, state->right->reg1);
 }
 
 reg: CEE_LDIND_I1 (OP_REGVAR) {
@@ -120,6 +121,126 @@ freg: OP_LCONV_TO_R4 (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG_REG (reg) {	
+	/* FIXME: Move this to inssel.brg */
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = mono_regstate_next_int (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+}
+
+stmt: OP_OUTARG_REG (CEE_LDIND_I (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_REF (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I1 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U1 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I2 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U2 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I4 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U4 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
+	/* FIXME: Move this to inssel.brg or inssel-long.brg */
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint32 dreg;
+	MonoInst *base = state->left->left->tree;
+
+	dreg = mono_regstate_next_int (s->rs);
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode),
+				  	dreg, base->inst_basereg, base->inst_offset);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+}
+
+stmt: OP_OUTARG_REG (OP_I8CONST),
+stmt: OP_OUTARG_REG (OP_ICONST) {
+	/* FIXME: Move this to inssel.brg or inssel-long.brg */
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_ICONST;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	tree->dreg = mono_regstate_next_int (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+}
+
+stmt: OP_OUTARG_REG (CEE_LDIND_I (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I8 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I4 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U4 (OP_REGVAR)),
+stmt: OP_OUTARG_REG (CEE_LDIND_REF (OP_REGVAR)) {	
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->left->tree->dreg;
+	tree->dreg = mono_regstate_next_int (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+}
+
+stmt: OP_OUTARG_FREG (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = mono_regstate_next_float (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
+}
+
+stmt: OP_OUTARG (reg) {
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, IA64_SP, tree->inst_imm, state->left->reg1);
+}
+
+stmt: OP_OUTARG (freg) {
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, IA64_SP, tree->inst_imm, state->left->reg1);
+}
+
+stmt: OP_OUTARG_R4 (freg) {
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, IA64_SP, tree->inst_imm, state->left->reg1);
+}
+
+stmt: OP_SETRET (reg) {
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = MONO_ARCH_RETREG1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (freg) {
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = MONO_ARCH_FRETREG1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+# Optimized call instructions
+reg: OP_LCALL_REG (OP_ICONST),
+reg: OP_LCALL_REG (OP_I8CONST) {
+	/* FIXME: Move this to inssel-long.brg */
+	tree->opcode = OP_LCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_START_HANDLER {
+	/* FIXME: */
+}
+
+stmt: CEE_ENDFINALLY {
+	/* FIXME: */
+}
+
+stmt: OP_ENDFILTER (reg) {
+	/* FIXME: */
 }
 
 %%

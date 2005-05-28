@@ -14,8 +14,8 @@
 
 #define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
-/* r8..r11, r14..r30 */
-#define MONO_ARCH_CALLEE_REGS (0x700UL | 0xefffc000UL)
+/* r8..r11, r14..r29 */
+#define MONO_ARCH_CALLEE_REGS (0x700UL | 0x3fffc000UL)
 
 /* f6..f15, f33..f127 */
 /* FIXME: Use the upper 64 bits as well */
@@ -28,7 +28,8 @@
 #define MONO_ARCH_USE_FPSTACK FALSE
 #define MONO_ARCH_FPSTACK_SIZE 0
 
-#define MONO_ARCH_INST_FIXED_REG(desc) -1
+#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'r') ? IA64_R8 : ((desc == 'g') ? 8 : -1))
+#define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
@@ -37,9 +38,8 @@
 
 #define MONO_ARCH_CODE_ALIGNMENT 16
 
-/* FIXME: */
-#define MONO_ARCH_BASEREG IA64_GP
 #define MONO_ARCH_RETREG1 IA64_R8
+#define MONO_ARCH_FRETREG1 8
 
 struct MonoLMF {
 	gpointer    previous_lmf;
@@ -59,9 +59,13 @@ typedef struct MonoContext {
 typedef struct MonoCompileArch {
 	gint32 lmf_offset;
 	gint32 localloc_offset;
+	gint32 n_out_regs;
 	gint32 reg_in0;
 	gint32 reg_local0;
 	gint32 reg_out0;
+	gint32 reg_saved_ar_pfs;
+	gint32 reg_saved_b0;
+	gint32 reg_saved_sp;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
@@ -88,9 +92,12 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 
-#define MONO_ARCH_EMULATE_CONV_R8_UN    1
+#define MONO_ARCH_EMULATE_CONV_R8_UN     1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
-#define MONO_ARCH_EMULATE_FREM 1
+#define MONO_ARCH_EMULATE_FREM           1
+#define MONO_ARCH_EMULATE_MUL_DIV        1
+#define MONO_ARCH_EMULATE_LONG_MUL_OPTS  1
+
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
 #define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
@@ -99,7 +106,5 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 
-/* FIXME: */
-#define MONO_ARCH_EMULATE_DIV           1
 
 #endif /* __MONO_MINI_IA64_H__ */  
