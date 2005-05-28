@@ -819,5 +819,59 @@ class Tests {
 		return 0;
 	}
 
+
+	static uint dum_de_dum = 1;
+	static int test_0_long_arg_opt ()
+	{
+		return Foo (0x1234567887654321, dum_de_dum);
+	}
+	
+	static int Foo (ulong x, ulong y)
+	{
+		if (x != 0x1234567887654321)
+			return 1;
+		
+		if (y != 1)
+			return 2;
+		
+		return 0;
+	}
+	
+	static int test_0_long_ret_opt ()
+	{
+		ulong x = X ();
+		if (x != 0x1234567887654321)
+			return 1;
+		ulong y = Y ();
+		if (y != 1)
+			return 2;
+		
+		return 0;
+	}
+	
+	static ulong X ()
+	{
+		return 0x1234567887654321;
+	}
+	
+	static ulong Y ()
+	{
+		return dum_de_dum;
+	}
+
+	/* from bug# 71515 */
+	static int counter = 0;
+	static bool WriteStuff () {
+		counter = 10;
+		return true;
+	}
+	static int test_0_cond_branch_side_effects () {
+		counter = 5;
+		if (WriteStuff());
+		if (counter == 10)
+			return 0;
+		return 1;
+	}
+
 }
 

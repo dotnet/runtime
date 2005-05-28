@@ -247,7 +247,7 @@ class Tests {
 		}
 		return 0;
 	}
-	
+
 	static uint dum_de_dum = 1;
 	static int test_0_long_arg_opt ()
 	{
