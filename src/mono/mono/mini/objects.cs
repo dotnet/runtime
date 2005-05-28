@@ -769,5 +769,55 @@ class Tests {
 		
 		return 0;
 	}
+
+	public static int test_71_long_shift_right () {
+		ulong value = 38654838087;
+		int x = 0;
+		byte [] buffer = new byte [1];
+		buffer [x] = ((byte)(value >> x));
+		return buffer [x];
+	}
+	
+	static long x;
+	public static int test_0_addsub_mem ()
+	{
+		x = 0;
+		x += 5;
+		
+		if (x != 5)
+			return 1;
+		
+		x -= 10;
+		
+		if (x != -5)
+			return 2;
+		
+		return 0;
+	}
+	
+	static ulong y;
+	public static int test_0_sh32_mem ()
+	{
+		y = 0x0102130405060708;
+		y >>= 32;
+		
+		if (y != 0x01021304)
+			return 1;
+		
+		y = 0x0102130405060708;
+		y <<= 32;
+		
+		if (y != 0x0506070800000000)
+			return 2;
+		
+		x = 0x0102130405060708;
+		x <<= 32;
+		
+		if (x != 0x0506070800000000)
+			return 2;
+		
+		return 0;
+	}
+
 }
 
