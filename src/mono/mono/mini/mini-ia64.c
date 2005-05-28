@@ -111,6 +111,7 @@ typedef enum {
 	ArgInIReg,
 	ArgInFloatReg,
 	ArgOnStack,
+	ArgValuetypeAddrInIReg,
 	ArgValuetypeInReg,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
@@ -262,6 +263,23 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_R8:
 			cinfo->ret.storage = ArgInFloatReg;
 			cinfo->ret.reg = 8;
+			break;
+		case MONO_TYPE_VALUETYPE: {
+			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
+
+			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			if (cinfo->ret.storage == ArgOnStack)
+				/* The caller passes the address where the value is stored */
+				add_general (&gr, &stack_size, &cinfo->ret);
+			if (cinfo->ret.storage == ArgInIReg)
+				cinfo->ret.storage = ArgValuetypeAddrInIReg;
+			break;
+		}
+		case MONO_TYPE_TYPEDBYREF:
+			/* Same as a valuetype with size 24 */
+			add_general (&gr, &stack_size, &cinfo->ret);
+			if (cinfo->ret.storage == ArgInIReg)
+				cinfo->ret.storage = ArgValuetypeAddrInIReg;
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -560,21 +578,16 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
-				/* The register is volatile */
-				m->ret->opcode = OP_REGOFFSET;
-				m->ret->inst_basereg = m->frame_reg;
-				offset += 8;
-				m->ret->inst_offset = - offset;
-			}
-			else {
-				m->ret->opcode = OP_REGVAR;
-				m->ret->inst_c0 = cinfo->ret.reg;
-			}
+			m->ret->opcode = OP_REGVAR;
+			m->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgInFloatReg:
 			m->ret->opcode = OP_REGVAR;
 			m->ret->inst_c0 = cinfo->ret.reg;
+			break;
+		case ArgValuetypeAddrInIReg:
+			m->ret->opcode = OP_REGVAR;
+			m->ret->inst_c0 = m->arch.reg_in0 + cinfo->ret.reg;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1264,6 +1277,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		case OP_ADD_IMM:
 		case OP_IADD_IMM:
 		case OP_ISUB_IMM:
 		case OP_IAND_IMM:
@@ -1276,8 +1290,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SHL_IMM:
 		case OP_LSHL_IMM:
 		case OP_LSHR_UN_IMM:
+			if ((ins->opcode == OP_ADD_IMM) && (ia64_is_imm14 (ins->inst_imm))) {
+				break;
+			}
+
 			/* FIXME: There is an alu imm instruction */
 			switch (ins->opcode) {
+			case OP_ADD_IMM:					
+				ins->opcode = CEE_ADD;
+				break;
 			case OP_IADD_IMM:
 				ins->opcode = OP_IADD;
 				break;
@@ -1523,7 +1544,6 @@ static Ia64CodegenState
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 {
 	CallInfo *cinfo;
-	guint32 quad;
 
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
@@ -1548,7 +1568,11 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		NOT_IMPLEMENTED;
+		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
+		if (cinfo->ret.storage == ArgValuetypeInReg) {
+			NOT_IMPLEMENTED;
+		}
+		g_free (cinfo);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2006,6 +2030,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_CONV_U8:
+		case CEE_CONV_U:
 			ia64_zxt4 (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_CONV_OVF_U4:
@@ -2718,7 +2743,24 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	int out_reg = cfg->arch.reg_out0;
 
 	if (vt_reg != -1) {
-		NOT_IMPLEMENTED;
+		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
+		MonoInst *vtarg;
+
+		if (cinfo->ret.storage == ArgValuetypeInReg) {
+			NOT_IMPLEMENTED;
+		}
+		else {
+			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+			vtarg->sreg1 = vt_reg;
+			vtarg->dreg = mono_regstate_next_int (cfg->rs);
+			mono_bblock_add_inst (cfg->cbb, vtarg);
+
+			mono_call_inst_add_outarg_reg (call, vtarg->dreg, out_reg, FALSE);
+
+			out_reg ++;
+		}
+
+		g_free (cinfo);
 	}
 
 	/* add the this argument */

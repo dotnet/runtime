@@ -207,6 +207,20 @@ stmt: OP_OUTARG_R4 (freg) {
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, IA64_SP, tree->inst_imm, state->left->reg1);
 }
 
+stmt: OP_OUTARG_REG (OP_LDADDR (OP_REGOFFSET)),
+stmt: OP_OUTARG_REG (CEE_LDOBJ (OP_REGOFFSET)) {
+	/* FIXME: Move this to inssel.brg */
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_ADD_IMM;
+	tree->sreg1 = state->left->left->tree->inst_basereg;
+	tree->inst_imm = state->left->left->tree->inst_offset;
+	tree->dreg = mono_regstate_next_int (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+}
+
 stmt: OP_SETRET (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
