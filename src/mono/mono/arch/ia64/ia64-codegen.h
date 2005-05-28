@@ -143,7 +143,7 @@ typedef struct {
 	int nins;
 } Ia64CodegenState;
 
-static void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
+G_GNUC_UNUSED static void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
 
 /*
  * FIXME:
@@ -181,19 +181,19 @@ static void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
 #endif
 
 #define ia64_emit_bundle_template(code, template, i1, i2, i3) do { \
+    guint64 *buf64 = (guint64*)(gpointer)(code)->buf; \
     guint64 dw1, dw2; \
     dw1 = (((guint64)(template)) & 0x1f) | ((guint64)(i1) << 5) | ((((guint64)(i2)) & 0x3ffff) << 46); \
     dw2 = (((guint64)(i2)) >> 18) | (((guint64)(i3)) << 23); \
-    ((guint64*)(code)->buf)[0] = dw1; \
-    ((guint64*)(code)->buf)[1] = dw2; \
+    buf64[0] = dw1; \
+    buf64[1] = dw2; \
     (code)->buf += 16; \
 } while (0)
 
-static void 
+G_GNUC_UNUSED static void 
 ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 {
-	int i, template;
-	guint64 i1, i2, i3;
+	int i;
 
 	for (i = 0; i < code->nins; ++i) {
 		switch (code->itypes [i]) {
