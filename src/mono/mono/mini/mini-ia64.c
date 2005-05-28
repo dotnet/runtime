@@ -182,6 +182,32 @@ add_float (guint32 *gr, guint32 *fr, guint32 *stack_size, ArgInfo *ainfo, gboole
     }
 }
 
+static void
+add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+	       gboolean is_return,
+	       guint32 *gr, guint32 *fr, guint32 *stack_size)
+{
+	guint32 size;
+	MonoClass *klass;
+
+	klass = mono_class_from_mono_type (type);
+	if (sig->pinvoke) 
+		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
+	else 
+		size = mono_type_stack_size (&klass->byval_arg, NULL);
+
+	if (!sig->pinvoke || (size == 0)) {
+		/* Allways pass in memory */
+		ainfo->offset = *stack_size;
+		*stack_size += ALIGN_TO (size, 8);
+		ainfo->storage = ArgOnStack;
+
+		return;
+	}
+	else
+		NOT_IMPLEMENTED;
+}
+
 /*
  * get_call_info:
  *
@@ -305,8 +331,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_VALUETYPE:
-			NOT_IMPLEMENTED;
-			//add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
@@ -958,103 +983,78 @@ opcode_to_ia64_cmp_imm (int opcode)
 	switch (opcode) {
 	case CEE_BEQ:
 		return OP_IA64_CMP_EQ_IMM;
-		break;
 	case CEE_BNE_UN:
 		return OP_IA64_CMP_NE_IMM;
-		break;
 	case CEE_BLE:
 		return OP_IA64_CMP_GE_IMM;
-		break;
 	case CEE_BGE:
 		return OP_IA64_CMP_LE_IMM;
-		break;
 	case CEE_BLT:
 		return OP_IA64_CMP_GT_IMM;
-		break;
 	case CEE_BGT:
 		return OP_IA64_CMP_LT_IMM;
-		break;
 	case CEE_BLE_UN:
 		return OP_IA64_CMP_GE_UN_IMM;
-		break;
 	case CEE_BGE_UN:
 		return OP_IA64_CMP_LE_UN_IMM;
-		break;
 	case CEE_BLT_UN:
 		return OP_IA64_CMP_GT_UN_IMM;
-		break;
 	case CEE_BGT_UN:
 		return OP_IA64_CMP_LT_UN_IMM;
-		break;
 	case OP_CEQ:
 		return OP_IA64_CMP_EQ_IMM;
-		break;
 	case OP_CLT:
 		return OP_IA64_CMP_GT_IMM;
-		break;
 	case OP_CGT:
 		return OP_IA64_CMP_LT_IMM;
-		break;
 	case OP_CLT_UN:
 		return OP_IA64_CMP_GT_UN_IMM;
-		break;
 	case OP_CGT_UN:
 		return OP_IA64_CMP_LT_UN_IMM;
-		break;
+	case OP_COND_EXC_EQ:
+		return OP_IA64_CMP_EQ_IMM;
 	case OP_COND_EXC_GT_UN:
 		return OP_IA64_CMP_LT_UN_IMM;
-		break;
 	case OP_COND_EXC_LT:
 		return OP_IA64_CMP_GT_IMM;
-		break;
 	case OP_COND_EXC_GT:
 		return OP_IA64_CMP_LT_IMM;
-		break;
+	case OP_COND_EXC_LE_UN:
+		return OP_IA64_CMP_GE_UN_IMM;
+	case OP_COND_EXC_NE_UN:
+		return OP_IA64_CMP_NE_IMM;
+	case OP_COND_EXC_LT_UN:
+		return OP_IA64_CMP_GT_UN_IMM;
 	case OP_IBEQ:
 		return OP_IA64_CMP4_EQ_IMM;
-		break;
 	case OP_IBNE_UN:
 		return OP_IA64_CMP4_NE_IMM;
-		break;
 	case OP_IBLE:
 		return OP_IA64_CMP4_GE_IMM;
-		break;
 	case OP_IBGE:
 		return OP_IA64_CMP4_LE_IMM;
-		break;
 	case OP_IBLT:
 		return OP_IA64_CMP4_GT_IMM;
-		break;
 	case OP_IBGT:
 		return OP_IA64_CMP4_LT_IMM;
-		break;
 	case OP_IBLE_UN:
 		return OP_IA64_CMP4_GE_UN_IMM;
-		break;
 	case OP_IBGE_UN:
 		return OP_IA64_CMP4_LE_UN_IMM;
-		break;
 	case OP_IBLT_UN:
 		return OP_IA64_CMP4_GT_UN_IMM;
-		break;
 	case OP_IBGT_UN:
 		return OP_IA64_CMP4_LT_UN_IMM;
-		break;
 	case OP_ICEQ:
 		return OP_IA64_CMP4_EQ_IMM;
-		break;
 	case OP_ICLT:
 		return OP_IA64_CMP4_GT_IMM;
-		break;
 	case OP_ICGT:
 		return OP_IA64_CMP4_LT_IMM;
-		break;
 	case OP_ICLT_UN:
 		return OP_IA64_CMP4_GT_UN_IMM;
-		break;
 	case OP_ICGT_UN:
 		return OP_IA64_CMP4_LT_UN_IMM;
-		break;
 	default:
 		printf ("%s\n", mono_inst_name (opcode));
 		NOT_IMPLEMENTED;
@@ -1377,9 +1377,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (! (next->flags & MONO_INST_BRLABEL))
 					next->inst_target_bb = next->inst_true_bb;
 				break;
-			case OP_COND_EXC_GT_UN:
+			case OP_COND_EXC_EQ:
 			case OP_COND_EXC_GT:
 			case OP_COND_EXC_LT:
+			case OP_COND_EXC_GT_UN:
+			case OP_COND_EXC_LE_UN:
+			case OP_COND_EXC_NE_UN:
+			case OP_COND_EXC_LT_UN:
 				next->opcode = OP_IA64_COND_EXC;
 				break;
 			case OP_CEQ:
@@ -1765,7 +1769,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_MUL_IMM:
 			/* This should be emulated, but rules in inssel.brg generate it */
-			NOT_IMPLEMENTED;
+			switch (ins->inst_imm) {
+			case 1:
+				ia64_mov (code, ins->dreg, ins->sreg1);
+				break;
+			case 2:
+				ia64_shl_imm (code, ins->dreg, ins->sreg1, 1);
+				break;
+			case 4:
+				ia64_shl_imm (code, ins->dreg, ins->sreg1, 2);
+				break;
+			case 8:
+				ia64_shl_imm (code, ins->dreg, ins->sreg1, 3);
+				break;
+			default:
+				/* FIXME: */
+				printf ("A: %d\n", ins->inst_imm);
+				NOT_IMPLEMENTED;
+			}
+			break;
 
 			/* Compare opcodes */
 		case OP_IA64_CMP4_EQ:
@@ -2103,6 +2125,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Exception handling */
 		case OP_CALL_HANDLER:
 			/* FIXME: */
+			break;
+
+		case CEE_THROW:
+			/* FIXME: */
+			ia64_break_i (code, 0x1234);
 			break;
 
 		default:
