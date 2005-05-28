@@ -1690,6 +1690,7 @@ typedef enum {
 #define ia64_pshl4(code, r1, r3, r2) ia64_pshl4_pred ((code), 0, r1, r3, r2)
 #define ia64_shl(code, r1, r3, r2) ia64_shl_pred ((code), 0, r1, r3, r2)
 
+#define ia64_shl_imm(code, r1, r3, count) ia64_dep_z ((code), (r1), (r3), count, 64 - count)
 
 #define ia64_pshl2_imm(code, r1, r2, count) ia64_pshl2_imm_pred ((code), 0, r1, r2, count)
 #define ia64_pshl4_imm(code, r1, r2, count) ia64_pshl4_imm_pred ((code), 0, r1, r2, count)
