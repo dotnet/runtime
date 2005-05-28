@@ -331,6 +331,8 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_VALUETYPE:
+			/* FIXME: */
+			/* We allways pass valuetypes on the stack */
 			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
@@ -778,6 +780,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg_type = sig->params [i - sig->hasthis];
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(arg_type))) {
+				MonoInst *stack_addr;
 				gint align;
 				guint32 size;
 
@@ -793,6 +796,14 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				if (ainfo->storage == ArgValuetypeInReg) {
 					NOT_IMPLEMENTED;
 				}
+
+				MONO_INST_NEW (cfg, stack_addr, OP_REGOFFSET);
+				stack_addr->inst_basereg = IA64_SP;
+				stack_addr->inst_offset = 16 + ainfo->offset;
+				stack_addr->inst_imm = size;
+
+				arg->opcode = OP_OUTARG_VT;
+				arg->inst_right = stack_addr;
 			}
 			else {
 				switch (ainfo->storage) {
@@ -901,6 +912,8 @@ opcode_to_ia64_cmp (int opcode)
 		return OP_IA64_CMP_GT_UN;
 	case OP_COND_EXC_LE_UN:
 		return OP_IA64_CMP_LE_UN;
+	case OP_COND_EXC_NE_UN:
+		return OP_IA64_CMP_NE;
 	case OP_COND_EXC_LT:
 		return OP_IA64_CMP_LT;
 	case OP_COND_EXC_GT:
@@ -1224,6 +1237,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
 			}
+
+			NEW_INS (cfg, temp, OP_LOADI8_MEMBASE);
+			temp->sreg1 = temp2->dreg;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+
+			ins->sreg1 = temp->dreg;
 
 			switch (ins->opcode) {
 			case OP_FCALL_MEMBASE:
@@ -2106,17 +2125,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 
+		case OP_CALL_REG:
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
 		case OP_VOIDCALL_REG:
 			call = (MonoCallInst*)ins;
 
-			/* Indirect call */
-			ia64_mov (code, GP_SCRATCH_REG, ins->sreg1);
-			ia64_ld8_inc_imm_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8, 0);
-			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2, 0, 0, 0);
-			ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+			if (ins->flags & MONO_INST_HAS_METHOD) {
+				/* This is a virtual call */
+				ia64_mov_to_br (code, IA64_B6, ins->sreg1, 0, 0, 0);
+			}
+			else {
+				/* Indirect call */
+				ia64_mov (code, GP_SCRATCH_REG, ins->sreg1);
+				ia64_ld8_inc_imm_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8, 0);
+				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2, 0, 0, 0);
+				ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+			}
 			ia64_br_call_reg (code, IA64_B0, IA64_B6);
 
 			code = emit_move_return_value (cfg, ins, code);
@@ -2712,6 +2738,9 @@ MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
+
+	/* FIXME: */
+	return NULL;
 
 	if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Sin") == 0) {

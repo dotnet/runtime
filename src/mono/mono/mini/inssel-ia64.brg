@@ -231,6 +231,20 @@ reg: OP_LCALL_REG (OP_I8CONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG_VT (CEE_LDOBJ (base), base) {
+	MonoInst *vt = state->left->left->tree;
+	MonoInst *stack_addr = state->right->tree;
+	int sz = stack_addr->inst_imm;
+
+	if (!sz)
+		return;
+
+	sz += 7;
+	sz &= ~7;
+	mini_emit_memcpy (s, stack_addr->inst_basereg, stack_addr->inst_offset, vt->inst_basereg, vt->inst_offset, sz, 0);
+}
+
+
 stmt: OP_START_HANDLER {
 	/* FIXME: */
 }

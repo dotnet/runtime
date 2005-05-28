@@ -216,8 +216,8 @@ lcall_membase: dest:r src1:b len:80 clob:c
 vcall: len:80 clob:c
 vcall_reg: src1:i len:80 clob:c
 vcall_membase: src1:b len:80 clob:c
-call_reg: dest:a src1:i len:80 clob:c
-call_membase: dest:a src1:b len:80 clob:c
+call_reg: dest:r src1:i len:80 clob:c
+call_membase: dest:r src1:b len:80 clob:c
 iconst: dest:i len:48
 i8const: dest:i len:48
 r4const: dest:f len:48
