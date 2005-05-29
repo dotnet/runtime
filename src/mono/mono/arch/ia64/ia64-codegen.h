@@ -120,10 +120,16 @@ typedef enum {
 #define ia64_ins_opcode(ins) (((guint64)(ins)) >> 37)
 #define ia64_ins_qp(ins) (((guint64)(ins)) & 0x3f)
 #define ia64_ins_r1(ins) ((((guint64)(ins)) >> 6) & 0x7f)
-#define ia64_ins_b1(ins) ((((guint64)(ins)) >> 6) & 0x3)
+#define ia64_ins_r2(ins) ((((guint64)(ins)) >> 13) & 0x7f)
+#define ia64_ins_r3(ins) ((((guint64)(ins)) >> 20) & 0x7f)
+
+#define ia64_ins_b1(ins) ((((guint64)(ins)) >> 6) & 0x7)
+#define ia64_ins_b2(ins) ((((guint64)(ins)) >> 13) & 0x7)
 #define ia64_ins_btype(ins) ((((guint64)(ins)) >> 6) & 0x7)
+#define ia64_ins_x(ins) ((((guint64)(ins)) >> 22) & 0x1)
 #define ia64_ins_x3(ins) ((((guint64)(ins)) >> 33) & 0x7)
 #define ia64_ins_x6(ins) ((((guint64)(ins)) >> 27) & 0x3f)
+#define ia64_ins_y(ins) ((((guint64)(ins)) >> 26) & 0x1)
 #define ia64_ins_vc(ins) ((((guint64)(ins)) >> 20) & 0x1)
 
 #define IA64_NOP_I ((0x01 << 27))
