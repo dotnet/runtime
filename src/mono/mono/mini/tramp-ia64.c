@@ -35,8 +35,43 @@
 static gpointer
 get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
-	NOT_IMPLEMENTED;
-	return NULL;
+	guint8 *buf;
+	gpointer func_addr, func_gp;
+	Ia64CodegenState code;
+	int this_reg = 0;
+	MonoDomain *domain = mono_domain_get ();
+
+	/* FIXME: Optimize this */
+
+	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
+		this_reg = 1;
+
+	func_addr = ((gpointer*)addr) [0];
+	func_gp = ((gpointer*)addr) [1];
+
+	mono_domain_lock (domain);
+	buf = mono_code_manager_reserve (domain->code_mp, 256);
+	mono_domain_unlock (domain);
+
+	/* Since the this reg is a stacked register, its a bit hard to access it */
+	ia64_codegen_init (code, buf);
+	ia64_alloc (code, 40, 8, 1, 0, 0);
+	ia64_adds_imm (code, 32 + this_reg, sizeof (MonoObject), 32 + this_reg);
+	ia64_mov_to_ar_i (code, IA64_PFS, 40);	
+	ia64_movl (code, GP_SCRATCH_REG, func_addr);
+	ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG, 0, 0, 0);
+	ia64_br_cond_reg_hint (code, IA64_B6, 0, 0, 0);
+	ia64_codegen_close (code);
+
+	g_assert (code.buf - buf < 256);
+
+	/* FIXME: */
+
+	gpointer *desc = g_malloc0 (sizeof (gpointer) * 2);
+	desc [0] = buf;
+	desc [1] = func_gp;
+
+	return desc;
 }
 
 /**
@@ -100,9 +135,9 @@ ia64_aot_trampoline (long *regs, guint8 *code, guint8 *token_info,
 static void
 ia64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
-	NOT_IMPLEMENTED;
-
-	return NULL;
+	mono_runtime_class_init (vtable);
+	
+	/* FIXME: Patch calling code */
 }
 
 guchar*
@@ -317,9 +352,9 @@ mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
 	mono_domain_unlock (domain);
 
-	*(gpointer*)buf = image;
+	*(gpointer*)(gpointer)buf = image;
 	buf += sizeof (gpointer);
-	*(guint32*)buf = token;
+	*(guint32*)(gpointer)buf = token;
 
 	ji = create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain);
 	code_start = ji->code_start;

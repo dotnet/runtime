@@ -607,7 +607,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = m->frame_reg;
 			inst->inst_offset = - (offset + offsets [i]);
-			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
+			// printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
 	}
 	g_free (offsets);
@@ -2157,9 +2157,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_REG:
 			call = (MonoCallInst*)ins;
 
-			if (ins->flags & MONO_INST_HAS_METHOD) {
+			if (call->virtual) {
+				/* Keep this in synch with get_vcall_slot_addr */
+
 				/* This is a virtual call */
 				ia64_mov_to_br (code, IA64_B6, ins->sreg1, 0, 0, 0);
+
+				/*
+				 * This nop will tell get_vcall_slot_addr that this is a virtual 
+				 * call.
+				 */
+				ia64_nop_i (code, 0x12345);
 			}
 			else {
 				/* Indirect call */
@@ -2398,7 +2406,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		NOT_IMPLEMENTED;
 #else
 		ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
-		ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+
+		if (ia64_is_imm14 (-alloc_size))
+			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+		else {
+			ia64_movl (code, GP_SCRATCH_REG, -alloc_size);
+			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+		}
 #endif
 	}
 
@@ -2667,7 +2681,60 @@ mono_arch_get_patch_offset (guint8 *code)
 gpointer*
 mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 {
-	/* FIXME: */
+	guint8 *bundle1 = code - 48;
+	guint8 *bundle2 = code - 32;
+	guint8 *bundle3 = code - 16;
+	guint64 ins11 = ia64_bundle_ins1 (bundle1);
+	guint64 ins12 = ia64_bundle_ins2 (bundle1);
+	guint64 ins13 = ia64_bundle_ins3 (bundle1);
+	guint64 ins21 = ia64_bundle_ins1 (bundle2);
+	guint64 ins22 = ia64_bundle_ins2 (bundle2);
+	guint64 ins23 = ia64_bundle_ins3 (bundle2);
+	guint64 ins31 = ia64_bundle_ins1 (bundle3);
+	guint64 ins32 = ia64_bundle_ins2 (bundle3);
+	guint64 ins33 = ia64_bundle_ins3 (bundle3);
+	int reg;
+
+	/* 
+	 * Virtual calls are made with:
+	 * [MII]       nop.m 0x0
+	 *             mov.sptk b6=r8,0x2000000000f32a80
+	 *             nop.i 0x0;;
+	 * [MII]       nop.m 0x0
+	 *             nop.i 0x123456
+	 *             nop.i 0x0
+	 * [MIB]       nop.m 0x0
+	 *             nop.i 0x0
+	 *             br.call.sptk.few b0=b6;;
+	 */
+
+	if ((ia64_bundle_template (bundle2) == IA64_TEMPLATE_MIIS) &&
+		(ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIBS) &&
+		(ins21 == IA64_NOP_M) && 
+		(ia64_ins_opcode (ins22) == 0) && (ia64_ins_x3 (ins22) == 0) && (ia64_ins_x6 (ins22) == 0x1) && (ia64_ins_y (ins22) == 0) &&
+		(ins23 == IA64_NOP_I) &&
+		(ins31 == IA64_NOP_M) &&
+		(ins32 == IA64_NOP_I) &&
+		//	   (ia64_ins_opcode (ins33) == 1) && (ia64_ins_b1 (ins33) == 0) && (ia64_ins_b2 (ins33) == 6) &&
+		((ins22 >> 6) & 0xfffff) == 0x12345) {
+		g_assert (ins11 == IA64_NOP_M);
+		g_assert (ins13 == IA64_NOP_I);
+		g_assert (ia64_ins_opcode (ins12) == 0);
+		g_assert (ia64_ins_x3 (ins12) == 7);
+		g_assert (ia64_ins_x (ins12) == 0);
+		g_assert (ia64_ins_b1 (ins12) == IA64_B6);
+
+		reg = ia64_ins_r2 (ins12);
+
+		/* 
+		 * Must be a scratch register, since only those are saved by the trampoline
+		 */
+		g_assert ((1 << reg) & MONO_ARCH_CALLEE_REGS);
+
+		g_assert (regs [reg]);
+
+		return regs [reg];
+	}
 
 	return NULL;
 }
