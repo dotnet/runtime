@@ -118,7 +118,7 @@ reg: OP_LSHR (reg, reg) {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-reg: OP_LSHR_IMM (reg, OP_ICONST) {
+reg: OP_LSHR (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
