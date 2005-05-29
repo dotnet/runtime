@@ -112,10 +112,10 @@ typedef enum {
 } Ia64ApplicationRegister;
 
 /* disassembly */
-#define ia64_bundle_template(code) ((*(guint64*)code) & 0x1f)
-#define ia64_bundle_ins1(code) (((*(guint64*)code) >> 5) & 0x1ffffffffff)
-#define ia64_bundle_ins2(code) (((*(guint64*)code) >> 46) | ((((guint64*)code)[1] & 0x3ffff) << 18))
-#define ia64_bundle_ins3(code) ((((guint64*)code)[1]) >> 23)
+#define ia64_bundle_template(code) ((*(guint64*)(gpointer)code) & 0x1f)
+#define ia64_bundle_ins1(code) (((*(guint64*)(gpointer)code) >> 5) & 0x1ffffffffff)
+#define ia64_bundle_ins2(code) (((*(guint64*)(gpointer)code) >> 46) | ((((guint64*)(gpointer)code)[1] & 0x3ffff) << 18))
+#define ia64_bundle_ins3(code) ((((guint64*)(gpointer)code)[1]) >> 23)
 
 #define ia64_ins_opcode(ins) (((guint64)(ins)) >> 37)
 #define ia64_ins_qp(ins) (((guint64)(ins)) & 0x3f)
@@ -647,8 +647,15 @@ typedef enum {
 	IA64_BR_IH_IMP = 1
 } Ia64BranchImportanceHint;
 
-#define ia64_mov_to_br_pred(code, qp, b1, r2, disp, wh, ih) ia64_i21 ((code), (qp), (b1), (r2), (disp), 7, 0, ih, wh)
-#define ia64_mov_ret_to_br_pred(code, qp, b1, r2, disp, wh, ih) ia64_i21 ((code), (qp), (b1), (r2), (disp), 7, 1, ih, wh)
+#define ia64_mov_to_br_hint_pred(code, qp, b1, r2, disp, wh, ih) ia64_i21 ((code), (qp), (b1), (r2), (disp), 7, 0, ih, wh)
+#define ia64_mov_ret_to_br_hint_pred(code, qp, b1, r2, disp, wh, ih) ia64_i21 ((code), (qp), (b1), (r2), (disp), 7, 1, ih, wh)
+
+/* Pseudo ops */
+
+#define ia64_mov_to_br_pred(code, qp, b1, r2) ia64_mov_to_br_hint_pred ((code), (qp), (b1), (r2), 0, 0, 0)
+#define ia64_mov_ret_to_br_pred(code, qp, b1, r2) ia64_mov_ret_to_br_hint_pred ((code), (qp), (b1), (r2), 0, 0, 0)
+
+/* End of pseudo ops */
 
 #define ia64_i22(code, qp, r1, b2, x3, x6) do { check_gregs ((r1), 0, 0); check_breg ((b2)); ia64_emit_ins_6 ((code), IA64_INS_TYPE_I, (qp), 0, (r1), 6, (b2), 13, (x6), 27, (x3), 33, (0), 37); } while (0)
 
@@ -857,6 +864,154 @@ typedef enum {
 #define ia64_ld4_c_clr_acq_inc_imm_hint_pred(code, qp, r1, r3, imm, hint) ia64_m3 ((code), (qp), (r1), (r3), (imm), (hint), 1, 0, 0x2A)
 #define ia64_ld8_c_clr_acq_inc_imm_hint_pred(code, qp, r1, r3, imm, hint) ia64_m3 ((code), (qp), (r1), (r3), (imm), (hint), 1, 0, 0x2B)
 
+/* Pseudo ops */
+
+#define ia64_ld1_pred(code, qp, r1, r3) ia64_ld1_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_pred(code, qp, r1, r3) ia64_ld2_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_pred(code, qp, r1, r3) ia64_ld4_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_pred(code, qp, r1, r3) ia64_ld8_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_s_pred(code, qp, r1, r3) ia64_ld1_s_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_s_pred(code, qp, r1, r3) ia64_ld2_s_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_s_pred(code, qp, r1, r3) ia64_ld4_s_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_s_pred(code, qp, r1, r3) ia64_ld8_s_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_a_pred(code, qp, r1, r3) ia64_ld1_a_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_a_pred(code, qp, r1, r3) ia64_ld2_a_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_a_pred(code, qp, r1, r3) ia64_ld4_a_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_a_pred(code, qp, r1, r3) ia64_ld8_a_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_sa_pred(code, qp, r1, r3) ia64_ld1_sa_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_sa_pred(code, qp, r1, r3) ia64_ld2_sa_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_sa_pred(code, qp, r1, r3) ia64_ld4_sa_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_sa_pred(code, qp, r1, r3) ia64_ld8_sa_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_bias_pred(code, qp, r1, r3) ia64_ld1_bias_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_bias_pred(code, qp, r1, r3) ia64_ld2_bias_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_bias_pred(code, qp, r1, r3) ia64_ld4_bias_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_bias_pred(code, qp, r1, r3) ia64_ld8_bias_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_acq_pred(code, qp, r1, r3) ia64_ld1_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_acq_pred(code, qp, r1, r3) ia64_ld2_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_acq_pred(code, qp, r1, r3) ia64_ld4_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_acq_pred(code, qp, r1, r3) ia64_ld8_acq_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld8_fill_pred(code, qp, r1, r3) ia64_ld8_fill_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_c_clr_pred(code, qp, r1, r3) ia64_ld1_c_clr_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_c_clr_pred(code, qp, r1, r3) ia64_ld2_c_clr_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_c_clr_pred(code, qp, r1, r3) ia64_ld4_c_clr_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_c_clr_pred(code, qp, r1, r3) ia64_ld8_c_clr_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_c_nc_pred(code, qp, r1, r3) ia64_ld1_c_nc_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_c_nc_pred(code, qp, r1, r3) ia64_ld2_c_nc_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_c_nc_pred(code, qp, r1, r3) ia64_ld4_c_nc_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_c_nc_pred(code, qp, r1, r3) ia64_ld8_c_nc_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_c_clr_acq_pred(code, qp, r1, r3) ia64_ld1_c_clr_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld2_c_clr_acq_pred(code, qp, r1, r3) ia64_ld2_c_clr_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld4_c_clr_acq_pred(code, qp, r1, r3) ia64_ld4_c_clr_acq_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld8_c_clr_acq_pred(code, qp, r1, r3) ia64_ld8_c_clr_acq_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld16_pred(code, qp, r1, r3) ia64_ld16_hint_pred (code, qp, r1, r3, 0)
+#define ia64_ld16_acq_pred(code, qp, r1, r3) ia64_ld16_acq_hint_pred (code, qp, r1, r3, 0)
+
+#define ia64_ld1_inc_pred(code, qp, r1, r2, r3) ia64_ld1_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_inc_pred(code, qp, r1, r2, r3) ia64_ld2_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_inc_pred(code, qp, r1, r2, r3) ia64_ld4_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_inc_pred(code, qp, r1, r2, r3) ia64_ld8_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_s_inc_pred(code, qp, r1, r2, r3) ia64_ld1_s_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_s_inc_pred(code, qp, r1, r2, r3) ia64_ld2_s_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_s_inc_pred(code, qp, r1, r2, r3) ia64_ld4_s_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_s_inc_pred(code, qp, r1, r2, r3) ia64_ld8_s_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_a_inc_pred(code, qp, r1, r2, r3) ia64_ld1_a_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_a_inc_pred(code, qp, r1, r2, r3) ia64_ld2_a_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_a_inc_pred(code, qp, r1, r2, r3) ia64_ld4_a_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_a_inc_pred(code, qp, r1, r2, r3) ia64_ld8_a_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_sa_inc_pred(code, qp, r1, r2, r3) ia64_ld1_sa_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_sa_inc_pred(code, qp, r1, r2, r3) ia64_ld2_sa_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_sa_inc_pred(code, qp, r1, r2, r3) ia64_ld4_sa_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_sa_inc_pred(code, qp, r1, r2, r3) ia64_ld8_sa_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_bias_inc_pred(code, qp, r1, r2, r3) ia64_ld1_bias_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_bias_inc_pred(code, qp, r1, r2, r3) ia64_ld2_bias_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_bias_inc_pred(code, qp, r1, r2, r3) ia64_ld4_bias_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_bias_inc_pred(code, qp, r1, r2, r3) ia64_ld8_bias_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld1_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld2_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld4_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld8_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld8_fill_inc_pred(code, qp, r1, r2, r3) ia64_ld8_fill_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_c_clr_inc_pred(code, qp, r1, r2, r3) ia64_ld1_c_clr_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_c_clr_inc_pred(code, qp, r1, r2, r3) ia64_ld2_c_clr_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_c_clr_inc_pred(code, qp, r1, r2, r3) ia64_ld4_c_clr_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_c_clr_inc_pred(code, qp, r1, r2, r3) ia64_ld8_c_clr_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_c_nc_inc_pred(code, qp, r1, r2, r3) ia64_ld1_c_nc_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_c_nc_inc_pred(code, qp, r1, r2, r3) ia64_ld2_c_nc_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_c_nc_inc_pred(code, qp, r1, r2, r3) ia64_ld4_c_nc_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_c_nc_inc_pred(code, qp, r1, r2, r3) ia64_ld8_c_nc_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_c_clr_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld1_c_clr_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld2_c_clr_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld2_c_clr_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld4_c_clr_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld4_c_clr_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+#define ia64_ld8_c_clr_acq_inc_pred(code, qp, r1, r2, r3) ia64_ld8_c_clr_acq_inc_hint_pred (code, qp, r1, r2, r3, 0)
+
+#define ia64_ld1_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_s_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_s_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_s_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_s_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_s_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_s_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_s_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_s_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_a_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_a_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_a_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_a_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_a_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_a_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_a_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_a_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_sa_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_sa_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_sa_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_sa_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_sa_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_sa_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_sa_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_sa_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_bias_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_bias_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_bias_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_bias_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_bias_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_bias_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_bias_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_bias_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld8_fill_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_fill_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_c_clr_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_c_clr_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_c_clr_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_c_clr_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_c_clr_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_c_clr_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_c_clr_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_c_clr_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_c_nc_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_c_nc_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_c_nc_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_c_nc_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_c_nc_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_c_nc_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_c_nc_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_c_nc_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+#define ia64_ld1_c_clr_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld1_c_clr_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld2_c_clr_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld2_c_clr_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld4_c_clr_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld4_c_clr_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+#define ia64_ld8_c_clr_acq_inc_imm_pred(code, qp, r1, r3, imm) ia64_ld8_c_clr_acq_inc_imm_hint_pred (code, qp, r1, r3, imm, 0)
+
+/* End of pseudo ops */
+
 #define ia64_m4(code, qp, r3, r2, hint, m, x, x6) do { check_gregs (0, (r2), (r3)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_M, (qp), 0, (r2), 13, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
 
 #define ia64_st1_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x30)
@@ -989,6 +1144,106 @@ typedef enum {
 #define ia64_ldfe_c_nc_inc_imm_hint_pred(code, qp, f1, r3, imm, hint) ia64_m8 ((code), (qp), (f1), (r3), (imm), (hint), 0x24)
 
 #define ia64_ldf_fill_inc_imm_hint_pred(code, qp, f1, r3, imm, hint) ia64_m8 ((code), (qp), (f1), (r3), (imm), (hint), 0x1B)
+
+/* Pseudo ops */
+
+#define ia64_ldfs_pred(code, qp, f1, r3) ia64_ldfs_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_pred(code, qp, f1, r3) ia64_ldfd_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_pred(code, qp, f1, r3) ia64_ldf8_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_pred(code, qp, f1, r3) ia64_ldfe_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_s_pred(code, qp, f1, r3) ia64_ldfs_s_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_s_pred(code, qp, f1, r3) ia64_ldfd_s_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_s_pred(code, qp, f1, r3) ia64_ldf8_s_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_s_pred(code, qp, f1, r3) ia64_ldfe_s_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_a_pred(code, qp, f1, r3) ia64_ldfs_a_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_a_pred(code, qp, f1, r3) ia64_ldfd_a_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_a_pred(code, qp, f1, r3) ia64_ldf8_a_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_a_pred(code, qp, f1, r3) ia64_ldfe_a_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_sa_pred(code, qp, f1, r3) ia64_ldfs_sa_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_sa_pred(code, qp, f1, r3) ia64_ldfd_sa_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_sa_pred(code, qp, f1, r3) ia64_ldf8_sa_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_sa_pred(code, qp, f1, r3) ia64_ldfe_sa_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_c_clr_pred(code, qp, f1, r3) ia64_ldfs_c_clr_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_c_clr_pred(code, qp, f1, r3) ia64_ldfd_c_clr_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_c_clr_pred(code, qp, f1, r3) ia64_ldf8_c_clr_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_c_clr_pred(code, qp, f1, r3) ia64_ldfe_c_clr_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_c_nc_pred(code, qp, f1, r3) ia64_ldfs_c_nc_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfd_c_nc_pred(code, qp, f1, r3) ia64_ldfd_c_nc_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldf8_c_nc_pred(code, qp, f1, r3) ia64_ldf8_c_nc_hint_pred (code, qp, f1, r3, 0)
+#define ia64_ldfe_c_nc_pred(code, qp, f1, r3) ia64_ldfe_c_nc_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldf_fill_pred(code, qp, f1, r3) ia64_ldf_fill_hint_pred (code, qp, f1, r3, 0)
+
+#define ia64_ldfs_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_s_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_s_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_s_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_s_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_s_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_s_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_s_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_s_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_a_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_a_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_a_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_a_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_a_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_a_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_a_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_a_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_sa_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_sa_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_sa_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_sa_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_sa_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_sa_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_sa_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_sa_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_c_clr_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_c_clr_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_c_clr_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_c_clr_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_c_clr_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_c_clr_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_c_clr_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_c_clr_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_c_nc_inc_pred(code, qp, f1, r3, r2) ia64_ldfs_c_nc_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfd_c_nc_inc_pred(code, qp, f1, r3, r2) ia64_ldfd_c_nc_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldf8_c_nc_inc_pred(code, qp, f1, r3, r2) ia64_ldf8_c_nc_inc_hint_pred (code, qp, f1, r3, r2, 0)
+#define ia64_ldfe_c_nc_inc_pred(code, qp, f1, r3, r2) ia64_ldfe_c_nc_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldf_fill_inc_pred(code, qp, f1, r3, r2) ia64_ldf_fill_inc_hint_pred (code, qp, f1, r3, r2, 0)
+
+#define ia64_ldfs_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldfs_s_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_s_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_s_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_s_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_s_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_s_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_s_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_s_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldfs_a_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_a_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_a_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_a_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_a_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_a_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_a_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_a_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldfs_sa_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_sa_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_sa_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_sa_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_sa_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_sa_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_sa_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_sa_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldfs_c_clr_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_c_clr_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_c_clr_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_c_clr_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_c_clr_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_c_clr_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_c_clr_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_c_clr_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldfs_c_nc_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfs_c_nc_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfd_c_nc_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfd_c_nc_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldf8_c_nc_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf8_c_nc_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+#define ia64_ldfe_c_nc_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldfe_c_nc_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+#define ia64_ldf_fill_inc_imm_pred(code, qp, f1, r3, imm) ia64_ldf_fill_inc_imm_hint_pred (code, qp, f1, r3, imm, 0)
+
+/* End of pseudo ops */
 
 #define ia64_m9(code, qp, r3, f2, hint, m, x, x6) do { check_greg ((r3)); check_freg ((f2)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_M, (qp), 0, (f2), 13, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (6), 37); } while (0)
 
@@ -1259,7 +1514,25 @@ typedef enum {
 
 #define ia64_br_call_reg_hint_pred(code, qp, b1, b2, bwh, ph, dh) ia64_b5 ((code), (qp), (b1), (b2), (bwh), (ph), (dh))
 
-#define ia64_br_call_reg_pred(code, qp, b1, b2) ia64_br_call_reg_hint_pred ((code), (qp), (b1), (b2), 0, 0, 0)
+/* Pseudo ops */
+
+#define ia64_br_cond_pred(code, qp, disp) ia64_br_cond_hint_pred (code, qp, disp, 0, 0, 0)
+#define ia64_br_wexit_pred(code, qp, disp) ia64_br_wexit_hint_pred (code, qp, disp, 0, 0, 0)
+#define ia64_br_wtop_pred(code, qp, disp) ia64_br_wtop_hint_pred (code, qp, disp, 0, 0, 0)
+
+#define ia64_br_cloop_pred(code, qp, disp) ia64_br_cloop_hint_pred (code, qp, disp, 0, 0, 0)
+#define ia64_br_cexit_pred(code, qp, disp) ia64_br_cexit_hint_pred (code, qp, disp, 0, 0, 0)
+#define ia64_br_ctop_pred(code, qp, disp) ia64_br_ctop_hint_pred (code, qp, disp, 0, 0, 0)
+
+#define ia64_br_call_pred(code, qp, b1, disp) ia64_br_call_hint_pred (code, qp, b1, disp, 0, 0, 0)
+
+#define ia64_br_cond_reg_pred(code, qp, b1) ia64_br_cond_reg_hint_pred (code, qp, b1, 0, 0, 0)
+#define ia64_br_ia_reg_pred(code, qp, b1) ia64_br_ia_reg_hint_pred (code, qp, b1, 0, 0, 0)
+#define ia64_br_ret_reg_pred(code, qp, b1) ia64_br_ret_reg_hint_pred (code, qp, b1, 0, 0, 0)
+
+#define ia64_br_call_reg_pred(code, qp, b1, b2) ia64_br_call_reg_hint_pred (code, qp, b1, b2, 0, 0, 0)
+
+/* End of pseudo ops */
 
 typedef enum {
 	IA64_IPWH_SPTK = 0,
@@ -1697,6 +1970,8 @@ typedef enum {
 #define ia64_shl(code, r1, r3, r2) ia64_shl_pred ((code), 0, r1, r3, r2)
 
 #define ia64_shl_imm(code, r1, r3, count) ia64_dep_z ((code), (r1), (r3), count, 64 - count)
+#define ia64_shr_imm(code, r1, r3, count) ia64_extr ((code), (r1), (r3), count, 64 - count)
+#define ia64_shr_u_imm(code, r1, r3, count) ia64_extr_u ((code), (r1), (r3), count, 64 - count)
 
 #define ia64_pshl2_imm(code, r1, r2, count) ia64_pshl2_imm_pred ((code), 0, r1, r2, count)
 #define ia64_pshl4_imm(code, r1, r2, count) ia64_pshl4_imm_pred ((code), 0, r1, r2, count)
@@ -1753,9 +2028,15 @@ typedef enum {
 
 #define ia64_chk_s_i(code, r2,disp) ia64_chk_s_i_pred ((code), 0, r2,disp)
 
-#define ia64_mov_to_br(code, b1, r2, disp, wh, ih) ia64_mov_to_br_pred ((code), 0, b1, r2, disp, wh, ih)
-#define ia64_mov_ret_to_br(code, b1, r2, disp, wh, ih) ia64_mov_ret_to_br_pred ((code), 0, b1, r2, disp, wh, ih)
+#define ia64_mov_to_br_hint(code, b1, r2, disp, wh, ih) ia64_mov_to_br_hint_pred ((code), 0, b1, r2, disp, wh, ih)
+#define ia64_mov_ret_to_br_hint(code, b1, r2, disp, wh, ih) ia64_mov_ret_to_br_hint_pred ((code), 0, b1, r2, disp, wh, ih)
 
+/* Pseudo ops */
+
+#define ia64_mov_to_br(code, b1, r2) ia64_mov_to_br_pred ((code), 0, (b1), (r2))
+#define ia64_mov_ret_to_br(code, b1, r2) ia64_mov_ret_to_br_pred ((code), 0, (b1), (r2))
+
+/* End of pseudo ops */
 
 #define ia64_mov_from_br(code, r1, b2) ia64_mov_from_br_pred ((code), 0, r1, b2)
 
@@ -1936,6 +2217,153 @@ typedef enum {
 #define ia64_ld4_c_clr_acq_inc_imm_hint(code, r1, r3, imm, hint) ia64_ld4_c_clr_acq_inc_imm_hint_pred ((code), 0, r1, r3, imm, hint)
 #define ia64_ld8_c_clr_acq_inc_imm_hint(code, r1, r3, imm, hint) ia64_ld8_c_clr_acq_inc_imm_hint_pred ((code), 0, r1, r3, imm, hint)
 
+/* Pseudo ops */
+
+#define ia64_ld1(code, r1, r3) ia64_ld1_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2(code, r1, r3) ia64_ld2_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4(code, r1, r3) ia64_ld4_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8(code, r1, r3) ia64_ld8_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_s(code, r1, r3) ia64_ld1_s_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_s(code, r1, r3) ia64_ld2_s_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_s(code, r1, r3) ia64_ld4_s_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_s(code, r1, r3) ia64_ld8_s_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_a(code, r1, r3) ia64_ld1_a_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_a(code, r1, r3) ia64_ld2_a_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_a(code, r1, r3) ia64_ld4_a_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_a(code, r1, r3) ia64_ld8_a_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_sa(code, r1, r3) ia64_ld1_sa_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_sa(code, r1, r3) ia64_ld2_sa_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_sa(code, r1, r3) ia64_ld4_sa_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_sa(code, r1, r3) ia64_ld8_sa_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_bias(code, r1, r3) ia64_ld1_bias_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_bias(code, r1, r3) ia64_ld2_bias_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_bias(code, r1, r3) ia64_ld4_bias_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_bias(code, r1, r3) ia64_ld8_bias_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_acq(code, r1, r3) ia64_ld1_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_acq(code, r1, r3) ia64_ld2_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_acq(code, r1, r3) ia64_ld4_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_acq(code, r1, r3) ia64_ld8_acq_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld8_fill(code, r1, r3) ia64_ld8_fill_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_c_clr(code, r1, r3) ia64_ld1_c_clr_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_c_clr(code, r1, r3) ia64_ld2_c_clr_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_c_clr(code, r1, r3) ia64_ld4_c_clr_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_c_clr(code, r1, r3) ia64_ld8_c_clr_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_c_nc(code, r1, r3) ia64_ld1_c_nc_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_c_nc(code, r1, r3) ia64_ld2_c_nc_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_c_nc(code, r1, r3) ia64_ld4_c_nc_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_c_nc(code, r1, r3) ia64_ld8_c_nc_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_c_clr_acq(code, r1, r3) ia64_ld1_c_clr_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld2_c_clr_acq(code, r1, r3) ia64_ld2_c_clr_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld4_c_clr_acq(code, r1, r3) ia64_ld4_c_clr_acq_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld8_c_clr_acq(code, r1, r3) ia64_ld8_c_clr_acq_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld16(code, r1, r3) ia64_ld16_hint_pred (code, 0, r1, r3, 0)
+#define ia64_ld16_acq(code, r1, r3) ia64_ld16_acq_hint_pred (code, 0, r1, r3, 0)
+
+#define ia64_ld1_inc(code, r1, r2, r3) ia64_ld1_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_inc(code, r1, r2, r3) ia64_ld2_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_inc(code, r1, r2, r3) ia64_ld4_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_inc(code, r1, r2, r3) ia64_ld8_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_s_inc(code, r1, r2, r3) ia64_ld1_s_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_s_inc(code, r1, r2, r3) ia64_ld2_s_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_s_inc(code, r1, r2, r3) ia64_ld4_s_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_s_inc(code, r1, r2, r3) ia64_ld8_s_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_a_inc(code, r1, r2, r3) ia64_ld1_a_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_a_inc(code, r1, r2, r3) ia64_ld2_a_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_a_inc(code, r1, r2, r3) ia64_ld4_a_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_a_inc(code, r1, r2, r3) ia64_ld8_a_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_sa_inc(code, r1, r2, r3) ia64_ld1_sa_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_sa_inc(code, r1, r2, r3) ia64_ld2_sa_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_sa_inc(code, r1, r2, r3) ia64_ld4_sa_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_sa_inc(code, r1, r2, r3) ia64_ld8_sa_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_bias_inc(code, r1, r2, r3) ia64_ld1_bias_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_bias_inc(code, r1, r2, r3) ia64_ld2_bias_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_bias_inc(code, r1, r2, r3) ia64_ld4_bias_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_bias_inc(code, r1, r2, r3) ia64_ld8_bias_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_acq_inc(code, r1, r2, r3) ia64_ld1_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_acq_inc(code, r1, r2, r3) ia64_ld2_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_acq_inc(code, r1, r2, r3) ia64_ld4_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_acq_inc(code, r1, r2, r3) ia64_ld8_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld8_fill_inc(code, r1, r2, r3) ia64_ld8_fill_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_c_clr_inc(code, r1, r2, r3) ia64_ld1_c_clr_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_c_clr_inc(code, r1, r2, r3) ia64_ld2_c_clr_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_c_clr_inc(code, r1, r2, r3) ia64_ld4_c_clr_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_c_clr_inc(code, r1, r2, r3) ia64_ld8_c_clr_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_c_nc_inc(code, r1, r2, r3) ia64_ld1_c_nc_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_c_nc_inc(code, r1, r2, r3) ia64_ld2_c_nc_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_c_nc_inc(code, r1, r2, r3) ia64_ld4_c_nc_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_c_nc_inc(code, r1, r2, r3) ia64_ld8_c_nc_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_c_clr_acq_inc(code, r1, r2, r3) ia64_ld1_c_clr_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld2_c_clr_acq_inc(code, r1, r2, r3) ia64_ld2_c_clr_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld4_c_clr_acq_inc(code, r1, r2, r3) ia64_ld4_c_clr_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+#define ia64_ld8_c_clr_acq_inc(code, r1, r2, r3) ia64_ld8_c_clr_acq_inc_hint_pred (code, 0, r1, r2, r3, 0)
+
+#define ia64_ld1_inc_imm(code, r1, r3, imm) ia64_ld1_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_inc_imm(code, r1, r3, imm) ia64_ld2_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_inc_imm(code, r1, r3, imm) ia64_ld4_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_inc_imm(code, r1, r3, imm) ia64_ld8_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_s_inc_imm(code, r1, r3, imm) ia64_ld1_s_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_s_inc_imm(code, r1, r3, imm) ia64_ld2_s_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_s_inc_imm(code, r1, r3, imm) ia64_ld4_s_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_s_inc_imm(code, r1, r3, imm) ia64_ld8_s_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_a_inc_imm(code, r1, r3, imm) ia64_ld1_a_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_a_inc_imm(code, r1, r3, imm) ia64_ld2_a_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_a_inc_imm(code, r1, r3, imm) ia64_ld4_a_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_a_inc_imm(code, r1, r3, imm) ia64_ld8_a_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_sa_inc_imm(code, r1, r3, imm) ia64_ld1_sa_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_sa_inc_imm(code, r1, r3, imm) ia64_ld2_sa_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_sa_inc_imm(code, r1, r3, imm) ia64_ld4_sa_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_sa_inc_imm(code, r1, r3, imm) ia64_ld8_sa_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_bias_inc_imm(code, r1, r3, imm) ia64_ld1_bias_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_bias_inc_imm(code, r1, r3, imm) ia64_ld2_bias_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_bias_inc_imm(code, r1, r3, imm) ia64_ld4_bias_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_bias_inc_imm(code, r1, r3, imm) ia64_ld8_bias_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_acq_inc_imm(code, r1, r3, imm) ia64_ld1_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_acq_inc_imm(code, r1, r3, imm) ia64_ld2_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_acq_inc_imm(code, r1, r3, imm) ia64_ld4_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_acq_inc_imm(code, r1, r3, imm) ia64_ld8_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld8_fill_inc_imm(code, r1, r3, imm) ia64_ld8_fill_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_c_clr_inc_imm(code, r1, r3, imm) ia64_ld1_c_clr_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_c_clr_inc_imm(code, r1, r3, imm) ia64_ld2_c_clr_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_c_clr_inc_imm(code, r1, r3, imm) ia64_ld4_c_clr_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_c_clr_inc_imm(code, r1, r3, imm) ia64_ld8_c_clr_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_c_nc_inc_imm(code, r1, r3, imm) ia64_ld1_c_nc_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_c_nc_inc_imm(code, r1, r3, imm) ia64_ld2_c_nc_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_c_nc_inc_imm(code, r1, r3, imm) ia64_ld4_c_nc_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_c_nc_inc_imm(code, r1, r3, imm) ia64_ld8_c_nc_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+#define ia64_ld1_c_clr_acq_inc_imm(code, r1, r3, imm) ia64_ld1_c_clr_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld2_c_clr_acq_inc_imm(code, r1, r3, imm) ia64_ld2_c_clr_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld4_c_clr_acq_inc_imm(code, r1, r3, imm) ia64_ld4_c_clr_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+#define ia64_ld8_c_clr_acq_inc_imm(code, r1, r3, imm) ia64_ld8_c_clr_acq_inc_imm_hint_pred (code, 0, r1, r3, imm, 0)
+
+/* End of pseudo ops */
 
 #define ia64_st1_hint(code, r3, r2, hint) ia64_st1_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st2_hint(code, r3, r2, hint) ia64_st2_hint_pred ((code), 0, r3, r2, hint)
@@ -1951,12 +2379,6 @@ typedef enum {
 
 #define ia64_st16_hint(code, r3, r2, hint) ia64_st16_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st16_rel_hint(code, r3, r2, hint) ia64_st16_rel_hint_pred ((code), 0, r3, r2, hint)
-
-/* Pseudo ops */
-#define ia64_ld1(code, r1, r3) ia64_ld1_hint ((code), (r1), (r3), 0)
-#define ia64_ld2(code, r1, r3) ia64_ld2_hint ((code), (r1), (r3), 0)
-#define ia64_ld4(code, r1, r3) ia64_ld4_hint ((code), (r1), (r3), 0)
-#define ia64_ld8(code, r1, r3) ia64_ld8_hint ((code), (r1), (r3), 0)
 
 #define ia64_st1_inc_imm_hint(code, r3, r2, imm, hint) ia64_st1_inc_imm_hint_pred ((code), 0, r3, r2, imm, hint)
 #define ia64_st2_inc_imm_hint(code, r3, r2, imm, hint) ia64_st2_inc_imm_hint_pred ((code), 0, r3, r2, imm, hint)
@@ -2069,6 +2491,105 @@ typedef enum {
 
 #define ia64_ldf_fill_inc_imm_hint(code, f1, r3, imm, hint) ia64_ldf_fill_inc_imm_hint_pred ((code), 0, f1, r3, imm, hint)
 
+/* Pseudo ops */
+
+#define ia64_ldfs(code, f1, r3) ia64_ldfs_pred (code, 0, f1, r3)
+#define ia64_ldfd(code, f1, r3) ia64_ldfd_pred (code, 0, f1, r3)
+#define ia64_ldf8(code, f1, r3) ia64_ldf8_pred (code, 0, f1, r3)
+#define ia64_ldfe(code, f1, r3) ia64_ldfe_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_s(code, f1, r3) ia64_ldfs_s_pred (code, 0, f1, r3)
+#define ia64_ldfd_s(code, f1, r3) ia64_ldfd_s_pred (code, 0, f1, r3)
+#define ia64_ldf8_s(code, f1, r3) ia64_ldf8_s_pred (code, 0, f1, r3)
+#define ia64_ldfe_s(code, f1, r3) ia64_ldfe_s_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_a(code, f1, r3) ia64_ldfs_a_pred (code, 0, f1, r3)
+#define ia64_ldfd_a(code, f1, r3) ia64_ldfd_a_pred (code, 0, f1, r3)
+#define ia64_ldf8_a(code, f1, r3) ia64_ldf8_a_pred (code, 0, f1, r3)
+#define ia64_ldfe_a(code, f1, r3) ia64_ldfe_a_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_sa(code, f1, r3) ia64_ldfs_sa_pred (code, 0, f1, r3)
+#define ia64_ldfd_sa(code, f1, r3) ia64_ldfd_sa_pred (code, 0, f1, r3)
+#define ia64_ldf8_sa(code, f1, r3) ia64_ldf8_sa_pred (code, 0, f1, r3)
+#define ia64_ldfe_sa(code, f1, r3) ia64_ldfe_sa_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_c_clr(code, f1, r3) ia64_ldfs_c_clr_pred (code, 0, f1, r3)
+#define ia64_ldfd_c_clr(code, f1, r3) ia64_ldfd_c_clr_pred (code, 0, f1, r3)
+#define ia64_ldf8_c_clr(code, f1, r3) ia64_ldf8_c_clr_pred (code, 0, f1, r3)
+#define ia64_ldfe_c_clr(code, f1, r3) ia64_ldfe_c_clr_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_c_nc(code, f1, r3) ia64_ldfs_c_nc_pred (code, 0, f1, r3)
+#define ia64_ldfd_c_nc(code, f1, r3) ia64_ldfd_c_nc_pred (code, 0, f1, r3)
+#define ia64_ldf8_c_nc(code, f1, r3) ia64_ldf8_c_nc_pred (code, 0, f1, r3)
+#define ia64_ldfe_c_nc(code, f1, r3) ia64_ldfe_c_nc_pred (code, 0, f1, r3)
+
+#define ia64_ldf_fill(code, f1, r3) ia64_ldf_fill_pred (code, 0, f1, r3)
+
+#define ia64_ldfs_inc(code, f1, r3, r2) ia64_ldfs_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_inc(code, f1, r3, r2) ia64_ldfd_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_inc(code, f1, r3, r2) ia64_ldf8_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_inc(code, f1, r3, r2) ia64_ldfe_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_s_inc(code, f1, r3, r2) ia64_ldfs_s_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_s_inc(code, f1, r3, r2) ia64_ldfd_s_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_s_inc(code, f1, r3, r2) ia64_ldf8_s_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_s_inc(code, f1, r3, r2) ia64_ldfe_s_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_a_inc(code, f1, r3, r2) ia64_ldfs_a_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_a_inc(code, f1, r3, r2) ia64_ldfd_a_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_a_inc(code, f1, r3, r2) ia64_ldf8_a_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_a_inc(code, f1, r3, r2) ia64_ldfe_a_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_sa_inc(code, f1, r3, r2) ia64_ldfs_sa_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_sa_inc(code, f1, r3, r2) ia64_ldfd_sa_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_sa_inc(code, f1, r3, r2) ia64_ldf8_sa_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_sa_inc(code, f1, r3, r2) ia64_ldfe_sa_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_c_clr_inc(code, f1, r3, r2) ia64_ldfs_c_clr_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_c_clr_inc(code, f1, r3, r2) ia64_ldfd_c_clr_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_c_clr_inc(code, f1, r3, r2) ia64_ldf8_c_clr_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_c_clr_inc(code, f1, r3, r2) ia64_ldfe_c_clr_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_c_nc_inc(code, f1, r3, r2) ia64_ldfs_c_nc_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfd_c_nc_inc(code, f1, r3, r2) ia64_ldfd_c_nc_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldf8_c_nc_inc(code, f1, r3, r2) ia64_ldf8_c_nc_inc_pred (code, 0, f1, r3, r2)
+#define ia64_ldfe_c_nc_inc(code, f1, r3, r2) ia64_ldfe_c_nc_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldf_fill_inc(code, f1, r3, r2) ia64_ldf_fill_inc_pred (code, 0, f1, r3, r2)
+
+#define ia64_ldfs_inc_imm(code, f1, r3, imm) ia64_ldfs_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_inc_imm(code, f1, r3, imm) ia64_ldfd_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_inc_imm(code, f1, r3, imm) ia64_ldf8_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_inc_imm(code, f1, r3, imm) ia64_ldfe_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldfs_s_inc_imm(code, f1, r3, imm) ia64_ldfs_s_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_s_inc_imm(code, f1, r3, imm) ia64_ldfd_s_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_s_inc_imm(code, f1, r3, imm) ia64_ldf8_s_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_s_inc_imm(code, f1, r3, imm) ia64_ldfe_s_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldfs_a_inc_imm(code, f1, r3, imm) ia64_ldfs_a_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_a_inc_imm(code, f1, r3, imm) ia64_ldfd_a_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_a_inc_imm(code, f1, r3, imm) ia64_ldf8_a_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_a_inc_imm(code, f1, r3, imm) ia64_ldfe_a_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldfs_sa_inc_imm(code, f1, r3, imm) ia64_ldfs_sa_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_sa_inc_imm(code, f1, r3, imm) ia64_ldfd_sa_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_sa_inc_imm(code, f1, r3, imm) ia64_ldf8_sa_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_sa_inc_imm(code, f1, r3, imm) ia64_ldfe_sa_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldfs_c_clr_inc_imm(code, f1, r3, imm) ia64_ldfs_c_clr_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_c_clr_inc_imm(code, f1, r3, imm) ia64_ldfd_c_clr_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_c_clr_inc_imm(code, f1, r3, imm) ia64_ldf8_c_clr_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_c_clr_inc_imm(code, f1, r3, imm) ia64_ldfe_c_clr_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldfs_c_nc_inc_imm(code, f1, r3, imm) ia64_ldfs_c_nc_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfd_c_nc_inc_imm(code, f1, r3, imm) ia64_ldfd_c_nc_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldf8_c_nc_inc_imm(code, f1, r3, imm) ia64_ldf8_c_nc_inc_imm_pred (code, 0, f1, r3, imm)
+#define ia64_ldfe_c_nc_inc_imm(code, f1, r3, imm) ia64_ldfe_c_nc_inc_imm_pred (code, 0, f1, r3, imm)
+
+#define ia64_ldf_fill_inc_imm(code, f1, r3, imm) ia64_ldf_fill_inc_imm_pred (code, 0, f1, r3, imm)
+
+/* End of pseudo ops */
 
 #define ia64_stfs_hint(code, r3, f2, hint) ia64_stfs_hint_pred ((code), 0, r3, f2, hint)
 #define ia64_stfd_hint(code, r3, f2, hint) ia64_stfd_hint_pred ((code), 0, r3, f2, hint)
@@ -2270,7 +2791,25 @@ typedef enum {
 
 #define ia64_br_call_reg_hint(code, b1, b2, bwh, ph, dh) ia64_br_call_reg_hint_pred ((code), 0, b1, b2, bwh, ph, dh)
 
-#define ia64_br_call_reg(code, b1, b2) ia64_br_call_reg_hint ((code), (b1), (b2), 0, 0, 0)
+/* Pseudo ops */
+
+#define ia64_br_cond(code, disp) ia64_br_cond_pred (code, 0, disp)
+#define ia64_br_wexit(code, disp) ia64_br_wexit_pred (code, 0, disp)
+#define ia64_br_wtop(code, disp) ia64_br_wtop_pred (code, 0, disp)
+
+#define ia64_br_cloop(code, disp) ia64_br_cloop_pred (code, 0, disp)
+#define ia64_br_cexit(code, disp) ia64_br_cexit_pred (code, 0, disp)
+#define ia64_br_ctop(code, disp) ia64_br_ctop_pred (code, 0, disp)
+
+#define ia64_br_call(code, b1, disp) ia64_br_call_pred (code, 0, b1, disp)
+
+#define ia64_br_cond_reg(code, b1) ia64_br_cond_reg_pred (code, 0, b1)
+#define ia64_br_ia_reg(code, b1) ia64_br_ia_reg_pred (code, 0, b1)
+#define ia64_br_ret_reg(code, b1) ia64_br_ret_reg_pred (code, 0, b1)
+
+#define ia64_br_call_reg(code, b1, b2) ia64_br_call_reg_pred (code, 0, b1, b2)
+
+/* End of pseudo ops */
 
 #define ia64_cover(code) ia64_cover_pred ((code), 0)
 #define ia64_clrrrb(code) ia64_clrrrb_pred ((code), 0)
