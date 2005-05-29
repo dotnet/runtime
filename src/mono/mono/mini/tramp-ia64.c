@@ -59,8 +59,8 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	ia64_adds_imm (code, 32 + this_reg, sizeof (MonoObject), 32 + this_reg);
 	ia64_mov_to_ar_i (code, IA64_PFS, 40);	
 	ia64_movl (code, GP_SCRATCH_REG, func_addr);
-	ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG, 0, 0, 0);
-	ia64_br_cond_reg_hint (code, IA64_B6, 0, 0, 0);
+	ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+	ia64_br_cond_reg (code, IA64_B6);
 	ia64_codegen_close (code);
 
 	g_assert (code.buf - buf < 256);
@@ -207,12 +207,13 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			ia64_adds_imm (code, l1, saved_regs_offset + (i * 8), IA64_SP);
 			ia64_st8_hint (code, l1, i, 0);
 		}
+
+	/* Save fp registers */
 	saved_fpregs_offset = offset;
 	offset += 8 * 8;
-	for (i = 0; i < 8; ++i) {
-		ia64_adds_imm (code, l1, saved_fpregs_offset + (i * 8), IA64_SP);
-		ia64_stfd_hint (code, l1, i + 8, 0);
-	}
+	ia64_adds_imm (code, l1, saved_fpregs_offset, IA64_SP);
+	for (i = 0; i < 8; ++i)
+		ia64_stfd_inc_imm_hint (code, l1, i + 8, 8, 0);
 
 	g_assert (offset < framesize);
 
@@ -241,35 +242,34 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* Call the trampoline using an indirect call */
 	ia64_movl (code, l0, tramp);
-	ia64_ld8_inc_imm_hint (code, l1, l0, 8, 0);
-	ia64_mov_to_br (code, IA64_B6, l1, 0, 0, 0);
+	ia64_ld8_inc_imm (code, l1, l0, 8);
+	ia64_mov_to_br (code, IA64_B6, l1);
 	ia64_ld8 (code, IA64_GP, l0);
 	ia64_br_call_reg (code, 0, IA64_B6);
 
 	/* Restore fp regs */
-	for (i = 0; i < 8; ++i) {
-		ia64_adds_imm (code, l1, saved_fpregs_offset + (i * 8), IA64_SP);
-		ia64_ldfd_hint (code, i + 8, l1, 0);
-	}
+	ia64_adds_imm (code, l1, saved_fpregs_offset, IA64_SP);
+	for (i = 0; i < 8; ++i)
+		ia64_ldfd_inc_imm (code, i + 8, l1, 8);
 
 	/* FIXME: Handle NATs in fp regs / scratch regs */
 
 	/* Load method address from function descriptor */
 	ia64_ld8 (code, l0, IA64_R8);
-	ia64_mov_to_br (code, IA64_B6, l0, 0, 0, 0);
+	ia64_mov_to_br (code, IA64_B6, l0);
 
 	/* Clean up register/memory stack frame */
 	ia64_adds_imm (code, IA64_SP, framesize, IA64_SP);
 	ia64_mov_to_ar_i (code, IA64_PFS, l5);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
-		ia64_mov_ret_to_br (code, IA64_B0, l7, 0, 0, 0);
-		ia64_br_ret_reg_hint (code, IA64_B0, 0, 0, 0);
+		ia64_mov_ret_to_br (code, IA64_B0, l7);
+		ia64_br_ret_reg (code, IA64_B0);
 	}
 	else {
 		/* Call the compiled method */
-		ia64_mov_to_br (code, IA64_B0, l7, 0, 0, 0);
-		ia64_br_cond_reg_hint (code, IA64_B6, 0, 0, 0);
+		ia64_mov_to_br (code, IA64_B0, l7);
+		ia64_br_cond_reg (code, IA64_B6);
 	}
 
 	ia64_codegen_close (code);
@@ -305,7 +305,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 
 	ia64_begin_bundle (code);
 	disp = (tramp - code.buf) >> 4;
-	ia64_br_cond_hint (code, disp, 0, 0, 0);
+	ia64_br_cond (code, disp);
 
 	ia64_codegen_close (code);
 

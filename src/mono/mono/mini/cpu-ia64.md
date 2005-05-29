@@ -24,24 +24,6 @@ bgt.un: len:48
 ble.un: len:48
 blt.un: len:48
 switch:
-ldind.i1: dest:i len:48
-ldind.u1: dest:i len:48
-ldind.i2: dest:i len:48
-ldind.u2: dest:i len:48
-ldind.i4: dest:i len:48
-ldind.u4: dest:i len:48
-ldind.i8:
-ldind.i: dest:i len:48
-ldind.r4:
-ldind.r8:
-ldind.ref: dest:i len:48
-stind.ref: src1:b src2:i
-stind.i1: src1:b src2:i
-stind.i2: src1:b src2:i
-stind.i4: src1:b src2:i
-stind.i8:
-stind.r4: dest:f src1:b
-stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:48
 sub: dest:i src1:i src2:i len:48
 mul: dest:i src1:i src2:i len:48
@@ -411,7 +393,6 @@ sext_i1: dest:i src1:i len:48
 sext_i2: dest:i src1:i len:48
 
 # 32 bit opcodes
-# FIXME: fix sizes
 int_add: dest:i src1:i src2:i len:48
 int_sub: dest:i src1:i src2:i len:48
 int_mul: dest:i src1:i src2:i len:48
