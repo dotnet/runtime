@@ -1306,7 +1306,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			/* FIXME: There is an alu imm instruction */
 			switch (ins->opcode) {
 			case OP_ADD_IMM:					
 				ins->opcode = CEE_ADD;
@@ -1531,6 +1530,28 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			default:
 				printf ("%s\n", mono_inst_name (next->opcode));
 				NOT_IMPLEMENTED;
+			}
+			break;
+		}
+		case OP_MUL_IMM: {
+			/* This should be emulated, but rules in inssel.brg generate it */
+			int i;
+
+			/* First the easy cases */
+			if (ins->inst_imm == 1) {
+				ins->opcode = OP_MOVE;
+				break;
+			}
+			for (i = 1; i < 64; ++i)
+				if (ins->inst_imm == (((gint64)1) << i)) {
+					ins->opcode = OP_SHL_IMM;
+					ins->inst_imm = i;
+					break;
+				}
+
+			if (ins->opcode == OP_MUL_IMM) {
+				/* FIXME: */
+				g_error ("Multiplication by %ld not implemented\n", ins->inst_imm);
 			}
 			break;
 		}
@@ -1855,28 +1876,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SEXT_I2:
 			ia64_sxt2 (code, ins->dreg, ins->sreg1);
-			break;
-
-		case OP_MUL_IMM:
-			/* This should be emulated, but rules in inssel.brg generate it */
-			switch (ins->inst_imm) {
-			case 1:
-				ia64_mov (code, ins->dreg, ins->sreg1);
-				break;
-			case 2:
-				ia64_shl_imm (code, ins->dreg, ins->sreg1, 1);
-				break;
-			case 4:
-				ia64_shl_imm (code, ins->dreg, ins->sreg1, 2);
-				break;
-			case 8:
-				ia64_shl_imm (code, ins->dreg, ins->sreg1, 3);
-				break;
-			default:
-				/* FIXME: */
-				printf ("A: %ld\n", ins->inst_imm);
-				NOT_IMPLEMENTED;
-			}
 			break;
 
 			/* Compare opcodes */
