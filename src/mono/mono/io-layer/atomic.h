@@ -607,6 +607,88 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 	return a;
 }
 
+#elif defined(__ia64__)
+#define WAPI_ATOMIC_ASM
+
+static inline gint32 InterlockedCompareExchange(gint32 volatile *dest,
+						gint32 exch, gint32 comp)
+{
+	gint32 old;
+
+	asm volatile ("mov ar.ccv = %2 ;;\n\t"
+				  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
+				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
+
+	return(old);
+}
+
+static inline gpointer InterlockedCompareExchangePointer(gpointer volatile *dest,
+						gpointer exch, gpointer comp)
+{
+	gpointer old;
+
+	asm volatile ("mov ar.ccv = %2 ;;\n\t"
+				  "cmpxchg8.acq %0 = [%1], %3, ar.ccv\n\t"
+				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
+
+	return(old);
+}
+
+static inline gint32 InterlockedIncrement(gint32 volatile *val)
+{
+	gint32 old;
+
+	do {
+		old = *val;
+	} while (InterlockedCompareExchange (val, old + 1, old) != old);
+
+	return old + 1;
+}
+
+static inline gint32 InterlockedDecrement(gint32 volatile *val)
+{
+	gint32 old;
+
+	do {
+		old = *val;
+	} while (InterlockedCompareExchange (val, old - 1, old) != old);
+
+	return old - 1;
+}
+
+static inline gint32 InterlockedExchange(gint32 volatile *dest, gint32 new_val)
+{
+	gint32 res;
+
+	do {
+		res = *dest;
+	} while (InterlockedCompareExchange (dest, new_val, res) != res);
+
+	return res;
+}
+
+static inline gpointer InterlockedExchangePointer(gpointer volatile *dest, gpointer new_val)
+{
+	gpointer res;
+
+	do {
+		res = *dest;
+	} while (InterlockedCompareExchangePointer (dest, new_val, res) != res);
+
+	return res;
+}
+
+static inline gint32 InterlockedExchangeAdd(gint32 volatile *val, gint32 add)
+{
+	gint32 old;
+
+	do {
+		old = *val;
+	} while (InterlockedCompareExchange (val, old + add, old) != old);
+
+	return old;
+}
+
 #else
 
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
