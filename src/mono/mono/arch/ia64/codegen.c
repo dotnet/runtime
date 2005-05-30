@@ -314,11 +314,11 @@ main ()
 	ia64_chk_s_i (code, 1, -1);
 	ia64_chk_s_i (code, 1, 1);
 
-	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
-	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_SPTK, 0);
-	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, 0);
-	ia64_mov_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, IA64_BR_IH_IMP);
-	ia64_mov_ret_to_br (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
+	ia64_mov_to_br_hint (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
+	ia64_mov_to_br_hint (code, 1, 1, -1, IA64_MOV_TO_BR_WH_SPTK, 0);
+	ia64_mov_to_br_hint (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, 0);
+	ia64_mov_to_br_hint (code, 1, 1, -1, IA64_MOV_TO_BR_WH_DPTK, IA64_BR_IH_IMP);
+	ia64_mov_ret_to_br_hint (code, 1, 1, -1, IA64_MOV_TO_BR_WH_NONE, 0);
 
 	ia64_mov_from_br (code, 1, 1);
 
