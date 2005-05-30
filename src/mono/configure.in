@@ -1126,6 +1126,28 @@ if test x$platform_win32 = xno; then
 		AC_DEFINE(HAVE_EPOLL, 1, [epoll supported])
 	fi
 
+	dnl ******************************
+	dnl *** Checks for SIOCGIFCONF ***
+	dnl ******************************
+	AC_CHECK_HEADERS(sys/ioctl.h)
+	AC_CHECK_HEADERS(net/if.h)
+	AC_MSG_CHECKING(for ifreq)
+	AC_TRY_COMPILE([
+		#include <sys/ioctl.h>
+		#include <net/if.h>
+		], [
+		struct ifconf ifc;
+		struct ifreq *ifr;
+		void *x;
+		ifc.ifc_len = 0;
+		ifc.ifc_buf = NULL;
+		x = (void *) &ifr->ifr_addr;
+		],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_SIOCGIFCONF, 1, [Can get interface list])
+		], [
+			AC_MSG_RESULT(no)
+		])
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************

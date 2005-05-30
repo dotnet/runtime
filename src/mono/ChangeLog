@@ -1,3 +1,7 @@
+2005-05-30 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: added test for SIOCGIFCONF.
+
 2005-05-26  Sebastien Pouliot  <sebastien@ximian.com> 
  
 	* README.vsnet: Instructions about the VS.NET build.
