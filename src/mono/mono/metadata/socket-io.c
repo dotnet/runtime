@@ -2341,7 +2341,6 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 
 		if(ret) {
 			addr_string=mono_string_new(domain, buffer);
-			g_free(buffer);
 		} else {
 			addr_string=mono_string_new(domain, "");
 		}
