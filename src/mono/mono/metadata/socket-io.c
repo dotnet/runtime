@@ -1,10 +1,12 @@
 /*
  * socket-io.c: Socket IO internal calls
  *
- * Author:
+ * Authors:
  *	Dick Porter (dick@ximian.com)
+ *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ * Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -22,6 +24,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads.h>
+#include <mono/utils/mono-poll.h>
 /* FIXME change this code to not mess so much with the internals */
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threadpool-internals.h>
@@ -1273,165 +1276,124 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 	return(sock);
 }
 
-void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout, gint32 *error)
+#define POLL_ERRORS (MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)
+void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gint32 timeout, gint32 *error)
 {
-	fd_set readfds, writefds, errfds;
-	fd_set *readptr = NULL, *writeptr = NULL, *errptr = NULL;
-	struct timeval tv;
-	div_t divvy;
+	MonoThread *thread = NULL;
+	MonoObject *obj;
+	mono_pollfd *pfds;
+	int nfds, idx;
 	int ret;
-	int readarrsize = 0, writearrsize = 0, errarrsize = 0;
-	MonoDomain *domain=mono_domain_get();
+	int i, count;
+	int mode;
 	MonoClass *sock_arr_class;
 	MonoArray *socks;
-	int count;
-	int i;
-	SOCKET handle;
+	time_t start;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	if (*read_socks)
-		readarrsize=mono_array_length(*read_socks);
-
-	*error = 0;
-	
-	if(readarrsize>FD_SETSIZE) {
-		*error = WSAEFAULT;
-		return;
-	}
-	
-	if (readarrsize) {
-		readptr = &readfds;
-		FD_ZERO(&readfds);
-		for(i=0; i<readarrsize; i++) {
-			handle = Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i));
-			_wapi_FD_SET(handle, &readfds);
+	/* *sockets -> READ, null, WRITE, null, ERROR, null */
+	count = mono_array_length (*sockets);
+	nfds = count - 3; /* NULL separators */
+	pfds = g_new0 (mono_pollfd, nfds);
+	mode = idx = 0;
+	for (i = 0; i < count; i++) {
+		obj = mono_array_get (*sockets, MonoObject *, i);
+		if (obj == NULL) {
+			mode++;
+			continue;
 		}
-	}
-	
-	if (*write_socks)
-		writearrsize=mono_array_length(*write_socks);
 
-	if(writearrsize>FD_SETSIZE) {
-		*error = WSAEFAULT;
-		return;
-	}
-	
-	if (writearrsize) {
-		writeptr = &writefds;
-		FD_ZERO(&writefds);
-		for(i=0; i<writearrsize; i++) {
-			handle = Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i));
-			_wapi_FD_SET(handle, &writefds);
-		}
-	}
-	
-	if (*err_socks)
-		errarrsize=mono_array_length(*err_socks);
-
-	if(errarrsize>FD_SETSIZE) {
-		*error = WSAEFAULT;
-		return;
-	}
-	
-	if (errarrsize) {
-		errptr = &errfds;
-		FD_ZERO(&errfds);
-		for(i=0; i<errarrsize; i++) {
-			handle = Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i));
-			_wapi_FD_SET(handle, &errfds);
-		}
+		pfds [idx].fd = GPOINTER_TO_INT (Socket_to_SOCKET (obj));
+		pfds [idx].events = (mode == 0) ? MONO_POLLIN : (mode == 1) ? MONO_POLLOUT : POLL_ERRORS;
+		idx++;
 	}
 
-	/* Negative timeout meaning block until ready is only
-	 * specified in Poll, not Select
-	 */
-
-	divvy = div (timeout, 1000000);
-	
+	timeout = (timeout >= 0) ? (timeout / 1000) : -1;
+	start = time (NULL);
 	do {
-		if(timeout>=0) {
-			tv.tv_sec=divvy.quot;
-			tv.tv_usec=divvy.rem;
+		*error = 0;
+		ret = mono_poll (pfds, nfds, timeout);
+		if (timeout > 0 && ret < 0) {
+			int err = errno;
+			int sec = time (NULL) - start;
 
-			ret = _wapi_select (0, readptr, writeptr, errptr, &tv);
-		} else {
-			ret = _wapi_select (0, readptr, writeptr, errptr, NULL);
+			timeout -= sec * 1000;
+			if (timeout < 0)
+				timeout = 0;
+			errno = err;
 		}
-	} while ((ret==SOCKET_ERROR) && (WSAGetLastError() == WSAEINTR));
+
+		/* FIXME: is this ok for non-windows Thread.Abort support?
+		if (ret == -1 && errno == EINTR) {
+			int leave = 0;
+			if (thread == NULL)
+				thread = mono_thread_current ();
+
+			mono_monitor_enter (thread->synch_lock);
+			leave = ((thread->state & ThreadState_AbortRequested) != 0 || 
+				 (thread->state & ThreadState_StopRequested) != 0) 
+			mono_monitor_exit (thread->synch_lock);
+			if (leave != 0) {
+				g_free (pfds);
+				*sockets = NULL;
+				return;
+			}
+			errno = EINTR;
+		}
+		*/
+#ifdef PLATFORM_WIN32
+	} while (ret == -1 && WSAGetLastError() == WSAEINTR);
+#else
+	} while (ret == -1 && errno == EINTR);
+#endif
 	
-	if(ret==SOCKET_ERROR) {
+	if (ret == -1) {
+#ifdef PLATFORM_WIN32
 		*error = WSAGetLastError ();
+#else
+		*error = errno_to_WSA (errno, __func__);
+#endif
+		g_free (pfds);
 		return;
 	}
 
-	if (readarrsize) {
-		sock_arr_class=((MonoObject *)*read_socks)->vtable->klass;
-		
-		count=0;
-		for(i=0; i<readarrsize; i++) {
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
-				count++;
-			}
-		}
-		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-		count=0;
-		for(i=0; i<readarrsize; i++) {
-			MonoObject *sock=mono_array_get(*read_socks, MonoObject *, i);
-			
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
-				mono_array_set(socks, MonoObject *, count, sock);
-				count++;
-			}
-		}
-		*read_socks=socks;
-	} else {
-		*read_socks = NULL;
+	if (ret == 0) {
+		g_free (pfds);
+		*sockets = NULL;
+		return;
 	}
 
-	if (writearrsize) {
-		sock_arr_class=((MonoObject *)*write_socks)->vtable->klass;
-		count=0;
-		for(i=0; i<writearrsize; i++) {
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
-				count++;
-			}
+	sock_arr_class= ((MonoObject *)*sockets)->vtable->klass;
+	ret += 3; /* space for the NULL delimiters */
+	socks = mono_array_new_full (mono_domain_get (), sock_arr_class, &ret, NULL);
+	ret -= 3;
+	mode = idx = 0;
+	for (i = 0; i < count && ret > 0; i++) {
+		mono_pollfd *pfd;
+
+		obj = mono_array_get (*sockets, MonoObject *, i);
+		if (obj == NULL) {
+			mode++;
+			continue;
 		}
-		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-		count=0;
-		for(i=0; i<writearrsize; i++) {
-			MonoObject *sock=mono_array_get(*write_socks, MonoObject *, i);
-			
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
-				mono_array_set(socks, MonoObject *, count, sock);
-				count++;
-			}
+
+		pfd = &pfds [i - mode];
+		if (pfd->revents == 0)
+			continue;
+
+		ret--;
+		if (mode == 0 && (pfd->revents & (MONO_POLLIN | POLL_ERRORS)) != 0) {
+			mono_array_set (socks, MonoObject *, idx++, obj);
+		} else if (mode == 1 && (pfd->revents & (MONO_POLLOUT | POLL_ERRORS)) != 0) {
+			mono_array_set (socks, MonoObject *, idx++, obj);
+		} else if ((pfd->revents & POLL_ERRORS) != 0) {
+			mono_array_set (socks, MonoObject *, idx++, obj);
 		}
-		*write_socks=socks;
-	} else {
-		*write_socks = NULL;
 	}
 
-	if (errarrsize) {
-		sock_arr_class=((MonoObject *)*err_socks)->vtable->klass;
-		count=0;
-		for(i=0; i<errarrsize; i++) {
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
-				count++;
-			}
-		}
-		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-		count=0;
-		for(i=0; i<errarrsize; i++) {
-			MonoObject *sock=mono_array_get(*err_socks, MonoObject *, i);
-			
-			if(_wapi_FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
-				mono_array_set(socks, MonoObject *, count, sock);
-				count++;
-			}
-		}
-		*err_socks=socks;
-	}
+	*sockets = socks;
+	g_free (pfds);
 }
 
 static MonoObject* int_to_object (MonoDomain *domain, int val)
