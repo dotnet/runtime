@@ -888,7 +888,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->data;
 	MonoThread *thread = NULL;
-	MonoObject *original_context = NULL;
 
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
