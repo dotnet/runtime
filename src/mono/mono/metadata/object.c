@@ -3471,7 +3471,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
 	int i, j, type, size;
-	if (mono_array_length (out_args) == 0)
+	if (out_args == NULL || mono_array_length (out_args) == 0)
 		return;
 	if (mono_array_length (out_args) != sig->param_count)
 		mono_raise_exception (mono_get_exception_execution_engine ("The proxy call returned an incorrect number of output arguments"));
