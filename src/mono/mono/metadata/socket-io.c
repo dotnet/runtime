@@ -1056,12 +1056,12 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 	struct timeval tv;
 	struct timeval *tvptr;
 	div_t divvy;
+	time_t start;
 
 	MONO_ARCH_SAVE_REGS;
 
+	start = time (NULL);
 	do {
-		/* FIXME: in case of extra iteration (WSAEINTR), substract time
-		 * from the initial timeout */
 		*error = 0;
 		FD_ZERO (&fds);
 		_wapi_FD_SET (sock, &fds);
@@ -1083,6 +1083,17 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 		} else {
 			g_assert_not_reached ();
 		}
+
+		if (timeout > 0 && ret < 0) {
+			int err = errno;
+			int sec = time (NULL) - start;
+
+			timeout -= sec * 1000;
+			if (timeout < 0)
+				timeout = 0;
+			errno = err;
+		}
+
 	} while ((ret == SOCKET_ERROR) && (*error == WSAGetLastError ()) == WSAEINTR);
 
 	return (ret != SOCKET_ERROR && _wapi_FD_ISSET (sock, &fds));
