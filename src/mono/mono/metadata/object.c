@@ -883,21 +883,40 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	MonoVTable *vt, *pvt;
 	int i, j, vtsize, max_interface_id, extra_interface_vtsize = 0;
 	MonoClass *k;
+	GSList *extra_interfaces = NULL;
 	MonoClass *class = remote_class->proxy_class;
 
 	vt = mono_class_vtable (domain, class);
 	max_interface_id = vt->max_interface_id;
-
+	
 	/* Calculate vtable space for extra interfaces */
 	for (j = 0; j < remote_class->interface_count; j++) {
 		MonoClass* iclass = remote_class->interfaces[j];
-		int method_count = mono_class_num_methods (iclass);
-	
-		if (iclass->interface_id <= class->max_interface_id && class->interface_offsets[iclass->interface_id] != 0) 
-			continue;	/* interface implemented by the class */
+		GPtrArray *ifaces;
+		int method_count;
 
-		for (i = 0; i < iclass->interface_count; i++)
-			method_count += mono_class_num_methods (iclass->interfaces[i]);
+		if (iclass->interface_id <= class->max_interface_id && class->interface_offsets[iclass->interface_id] != -1) 
+			continue;	/* interface implemented by the class */
+		if (g_slist_find (extra_interfaces, iclass))
+			continue;
+			
+		extra_interfaces = g_slist_prepend (extra_interfaces, iclass);
+		
+		method_count = mono_class_num_methods (iclass);
+	
+		ifaces = mono_class_get_implemented_interfaces (iclass);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; ++i) {
+				MonoClass *ic = g_ptr_array_index (ifaces, i);
+				if (ic->interface_id <= class->max_interface_id && class->interface_offsets[ic->interface_id] != -1) 
+					continue;	/* interface implemented by the class */
+				if (g_slist_find (extra_interfaces, ic))
+					continue;
+				extra_interfaces = g_slist_prepend (extra_interfaces, ic);
+				method_count += mono_class_num_methods (ic);
+			}
+			g_ptr_array_free (ifaces, TRUE);
+		}
 
 		extra_interface_vtsize += method_count * sizeof (gpointer);
 		if (iclass->max_interface_id > max_interface_id) max_interface_id = iclass->max_interface_id;
@@ -945,39 +964,26 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			pvt->interface_offsets [i] = &(pvt->vtable [slot]);
 	}
 
-	if (remote_class->interface_count > 0)
-	{
+	if (extra_interfaces) {
 		int slot = class->vtable_size;
 		MonoClass* interf;
-		MonoClass* iclass;
-		int n;
+		gpointer iter;
+		MonoMethod* cm;
+		GSList *list_item;
 
 		/* Create trampolines for the methods of the interfaces */
-		for (n = 0; n < remote_class->interface_count; n++) 
-		{
-			iclass = remote_class->interfaces[n];
-			if (iclass->interface_id <= class->max_interface_id && class->interface_offsets[iclass->interface_id] != 0) 
-				continue;	/* interface implemented by the class */
-		
-			i = -1;
-			interf = iclass;
-			do {
-				MonoMethod* cm;
-				gpointer iter;
-				
-				pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
-	
-				iter = NULL;
-				j = 0;
-				while ((cm = mono_class_get_methods (interf, &iter)))
-					pvt->vtable [slot + j++] = arch_create_remoting_trampoline (cm, target_type);
-				
-				slot += mono_class_num_methods (interf);
-				if (++i < iclass->interface_count) interf = iclass->interfaces[i];
-				else interf = NULL;
-				
-			} while (interf);
+		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
+			interf = list_item->data;
+			pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
+
+			iter = NULL;
+			j = 0;
+			while ((cm = mono_class_get_methods (interf, &iter)))
+				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (cm, target_type);
+			
+			slot += mono_class_num_methods (interf);
 		}
+		g_slist_free (extra_interfaces);
 	}
 
 	return pvt;
@@ -3465,6 +3471,10 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
 	int i, j, type, size;
+	if (mono_array_length (out_args) == 0)
+		return;
+	if (mono_array_length (out_args) != sig->param_count)
+		mono_raise_exception (mono_get_exception_execution_engine ("The proxy call returned an incorrect number of output arguments"));
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		MonoType *pt = sig->params [i];
 
