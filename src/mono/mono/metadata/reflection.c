@@ -1387,7 +1387,10 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 		
 		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | ncharset | extra_flags;
 		values [MONO_IMPLMAP_MEMBER] = (mb->table_idx << 1) | 1; /* memberforwarded: method */
-		name = mono_string_to_utf8 (mb->dllentry);
+		if (mb->dllentry)
+			name = mono_string_to_utf8 (mb->dllentry);
+		else
+			name = mono_string_to_utf8 (mb->name);
 		values [MONO_IMPLMAP_NAME] = string_heap_insert (&assembly->sheap, name);
 		g_free (name);
 		name = mono_string_to_utf8 (mb->dll);
@@ -9503,4 +9506,3 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass)
 	else
 		return *(MonoBoolean*)mono_object_unbox (res);
 }
-
