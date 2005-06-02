@@ -24,6 +24,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-poll.h>
 /* FIXME change this code to not mess so much with the internals */
 #include <mono/metadata/class-internals.h>
@@ -1324,7 +1325,6 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 			errno = err;
 		}
 
-		/* FIXME: is this ok for non-windows Thread.Abort support?
 		if (ret == -1 && errno == EINTR) {
 			int leave = 0;
 			if (thread == NULL)
@@ -1332,21 +1332,19 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 
 			mono_monitor_enter (thread->synch_lock);
 			leave = ((thread->state & ThreadState_AbortRequested) != 0 || 
-				 (thread->state & ThreadState_StopRequested) != 0) 
+				 (thread->state & ThreadState_StopRequested) != 0);
 			mono_monitor_exit (thread->synch_lock);
 			if (leave != 0) {
 				g_free (pfds);
 				*sockets = NULL;
 				return;
+			} else {
+				/* Suspend requested? */
+				mono_thread_interruption_checkpoint ();
 			}
 			errno = EINTR;
 		}
-		*/
-#ifdef PLATFORM_WIN32
-	} while (ret == -1 && WSAGetLastError() == WSAEINTR);
-#else
 	} while (ret == -1 && errno == EINTR);
-#endif
 	
 	if (ret == -1) {
 #ifdef PLATFORM_WIN32
