@@ -1378,7 +1378,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 	if (mb->dll) { /* It's a P/Invoke method */
 		guint32 moduleref;
 		/* map CharSet values to on-disk values */
-		int ncharset = (mb->charset ? (mb->charset - 1) * 2 : 1);
+		int ncharset = (mb->charset ? (mb->charset - 1) * 2 : 0);
 		int extra_flags = mb->extra_flags;
 		table = &assembly->tables [MONO_TABLE_IMPLMAP];
 		table->rows ++;
