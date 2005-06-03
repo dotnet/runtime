@@ -139,6 +139,12 @@ amd64_patch (unsigned char* code, gpointer target)
 		/* call *<OFFSET>(%rip) */
 		*(guint32*)(code + 2) = ((guint32)(guint64)target) - 7;
 	}
+	else if ((code [0] == 0xe8)) {
+		/* call <DISP> */
+		gint64 disp = (guint8*)target - (guint8*)code;
+		g_assert (amd64_is_imm32 (disp));
+		x86_patch (code, (unsigned char*)target);
+	}
 	else
 		x86_patch (code, (unsigned char*)target);
 }
@@ -1323,6 +1329,10 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 					near_call = TRUE;
 			}
 		}
+
+		if (cfg->method->dynamic)
+			/* These methods are allocated using malloc */
+			near_call = FALSE;
 
 		if (near_call) {
 			amd64_call_code (code, 0);
