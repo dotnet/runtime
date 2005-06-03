@@ -3470,10 +3470,15 @@ void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
-	int i, j, type, size;
+	int i, j, type, size, out_count;
 	if (out_args == NULL || mono_array_length (out_args) == 0)
 		return;
-	if (mono_array_length (out_args) != sig->param_count)
+	out_count = 0;
+	for (i = 0; i < sig->param_count; i++) {
+		if (sig->params [i]->byref)
+			out_count++;
+	}
+	if (mono_array_length (out_args) != out_count)
 		mono_raise_exception (mono_get_exception_execution_engine ("The proxy call returned an incorrect number of output arguments"));
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		MonoType *pt = sig->params [i];
