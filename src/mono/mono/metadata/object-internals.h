@@ -895,6 +895,7 @@ typedef struct {
 	MonoArray   *publicKey;
 	MonoArray   *keyToken;
 	guint32     versioncompat;
+	MonoObject *version;
 } MonoReflectionAssemblyName;
 
 typedef struct {
