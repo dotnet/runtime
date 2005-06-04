@@ -2307,7 +2307,7 @@ ia64_patch (unsigned char* code, gpointer target)
 {
 	int template, i;
 	guint64 instructions [3];
-	guint8 gen_buf [8];
+	guint8 gen_buf [16];
 	Ia64CodegenState gen;
 
 	template = ia64_bundle_template (code);
@@ -2340,6 +2340,16 @@ ia64_patch (unsigned char* code, gpointer target)
 			continue;
 
 		switch (ins_types_in_template [template][i]) {
+		case IA64_INS_TYPE_A:
+		case IA64_INS_TYPE_M:
+			if ((opcode == 8) && (ia64_ins_x2a (ins) == 2) && (ia64_ins_ve (ins) == 0)) {
+				/* adds */
+				ia64_adds_imm_pred (gen, ia64_ins_qp (ins), ia64_ins_r1 (ins), (guint64)target, ia64_ins_r3 (ins));
+				instructions [i] = gen.instructions [0];
+			}
+			else
+				NOT_IMPLEMENTED;
+			break;
 		case IA64_INS_TYPE_B:
 			if ((opcode == 4) && (ia64_ins_btype (ins) == 0)) {
 				/* br.cond */
@@ -2435,6 +2445,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* scratch area */
 		alloc_size += 16;
 	alloc_size = ALIGN_TO (alloc_size, MONO_ARCH_FRAME_ALIGNMENT);
+
+	cfg->arch.stack_alloc_size = alloc_size;
 
 	pos = 0;
 
@@ -2608,7 +2620,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	g_free (cinfo);
 
-	if (cfg->stack_offset)
+	if (cfg->arch.stack_alloc_size)
 		ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
 
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);

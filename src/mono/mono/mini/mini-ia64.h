@@ -57,6 +57,7 @@ typedef struct MonoContext {
 } MonoContext;
 
 typedef struct MonoCompileArch {
+	gint32 stack_alloc_size;
 	gint32 lmf_offset;
 	gint32 localloc_offset;
 	gint32 n_out_regs;
@@ -105,6 +106,5 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
-
 
 #endif /* __MONO_MINI_IA64_H__ */  
