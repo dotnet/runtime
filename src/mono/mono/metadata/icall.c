@@ -5875,6 +5875,15 @@ GCHandle_CheckCurrentDomain (guint32 gchandle)
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
 
+static MonoString*
+ves_icall_Mono_Runtime_GetDisplayName ()
+{
+	char *display_name_str = g_strdup_printf ("Mono %s", VERSION);
+	MonoString *display_name = mono_string_new (mono_domain_get (), display_name_str);
+	g_free (display_name_str);
+	return display_name;
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -5886,6 +5895,10 @@ typedef struct {
 	const IcallEntry *icalls;
 	const int size;
 } IcallMap;
+
+static const IcallEntry runtime_icalls [] = {
+	{"GetDisplayName", ves_icall_Mono_Runtime_GetDisplayName}
+};
 
 static const IcallEntry activator_icalls [] = {
 	{"CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal}
@@ -6733,6 +6746,7 @@ static const IcallEntry array_icalls [] = {
 
 /* keep the entries all sorted */
 static const IcallMap icall_entries [] = {
+	{"Mono.Runtime", runtime_icalls, G_N_ELEMENTS (runtime_icalls)},
 	{"Mono.Security.Cryptography.KeyPairPersistence", keypair_icalls, G_N_ELEMENTS (keypair_icalls)},
 	{"System.Activator", activator_icalls, G_N_ELEMENTS (activator_icalls)},
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
