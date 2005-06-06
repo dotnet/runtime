@@ -1,3 +1,13 @@
+2005-06-06  Ben Maurer  <bmaurer@ximian.com>
+
+	* scripts/Makefile.am: Add mono-find-*
+
+	* scripts/mono-find-*.in: provides/requires stuff for rpm is now
+	done with monodis. This makes packaging easier as it doesn't
+	depend on the gac ind DESTDIR.
+
+	* configure.in: changes for the above
+
 2005-05-30 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added test for SIOCGIFCONF.

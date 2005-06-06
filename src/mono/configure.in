@@ -1703,6 +1703,8 @@ Makefile
 mint.pc
 mono.pc
 scripts/mono-nunit.pc
+scripts/mono-find-provides
+scripts/mono-find-requires
 mono/Makefile
 mono/utils/Makefile
 mono/metadata/Makefile
