@@ -1745,7 +1745,6 @@ data/net_2_0/Makefile
 samples/Makefile
 support/Makefile
 data/config
-mono.spec
 tools/Makefile
 tools/locale-builder/Makefile
 runtime/Makefile

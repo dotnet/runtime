@@ -7,7 +7,7 @@ SUBDIRS = $(libgc_dir) mono $(ikvm_native_dir) support docs data runtime scripts
 ## 'tools' is not normally built
 DIST_SUBDIRS = libgc mono ikvm-native support docs data runtime scripts man samples web tools 
 
-EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
+EXTRA_DIST= mono.pc.in mint.pc.in
 
 # Distribute the 'mcs' tree too
 dist-hook:

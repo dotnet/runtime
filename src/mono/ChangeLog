@@ -1,5 +1,8 @@
 2005-06-06  Ben Maurer  <bmaurer@ximian.com>
 
+	* mono.spec.in: Remove. This is horribly out of date. A real spec
+	file is generated in the release module.
+
 	* scripts/Makefile.am: Add mono-find-*
 
 	* scripts/mono-find-*.in: provides/requires stuff for rpm is now
