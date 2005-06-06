@@ -2217,9 +2217,9 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 	if (attr->charset == 1)
 		attr->charset = 2;
 	attr->exact_spelling = (flags & 0x1) != 0;
-	attr->set_last_error = (flags & 0x4) != 0;
-	attr->best_fit_mapping = (flags & 0x10) != 0;
-	attr->throw_on_unmappable = (flags & 0x1000) != 0;
+	attr->set_last_error = (flags & 0x40) != 0;
+	attr->best_fit_mapping = (flags & 0x30) == 0x10;
+	attr->throw_on_unmappable = (flags & 0x3000) == 0x1000;
 	attr->preserve_sig = FALSE;
 
 	return attr;
@@ -5876,7 +5876,7 @@ GCHandle_CheckCurrentDomain (guint32 gchandle)
 }
 
 static MonoString*
-ves_icall_Mono_Runtime_GetDisplayName ()
+ves_icall_Mono_Runtime_GetDisplayName (void)
 {
 	char *display_name_str = g_strdup_printf ("Mono %s", VERSION);
 	MonoString *display_name = mono_string_new (mono_domain_get (), display_name_str);

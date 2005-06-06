@@ -7768,10 +7768,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 		method_aux = g_new0 (MonoReflectionMethodAux, 1);
 
-		method_aux->dllentry = g_strdup (mono_string_to_utf8 (rmb->dllentry));
+		method_aux->dllentry = rmb->dllentry ? g_strdup (mono_string_to_utf8 (rmb->dllentry)) : g_strdup (m->name);
 		method_aux->dll = g_strdup (mono_string_to_utf8 (rmb->dll));
 		
-		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 1) | rmb->extra_flags;
+		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 0) | rmb->extra_flags;
 
 		if (klass->image->dynamic)
 			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
