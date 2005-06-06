@@ -107,7 +107,6 @@ libmonoruntime_la_SOURCES = \
 	opcodes.c	\
 	image.c		\
 	cil-coff.h	\
-	tabledefs.h	\
 	metadata.c	\
 	metadata-internals.h	\
 	verify.c	\
@@ -153,7 +152,8 @@ libmonoruntimeinclude_HEADERS = \
 	profiler.h	\
 	appdomain.h	\
 	debug-helpers.h	\
-	mempool.h
+	mempool.h	\
+	tabledefs.h
 
 pedump_SOURCES =		\
 	pedump.c
