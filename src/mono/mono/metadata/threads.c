@@ -479,13 +479,16 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 	mono_monitor_enter (this->synch_lock);
 
-	if ((this->state & ThreadState_Unstarted) == 0 ||
-	    (this->state & ThreadState_Aborted) != 0) {
+	if ((this->state & ThreadState_Unstarted) == 0) {
 		mono_monitor_exit (this->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state ("Thread has already been started."));
 		return NULL;
 	}
 
+	if ((this->state & ThreadState_Aborted) != 0) {
+		mono_monitor_exit (this->synch_lock);
+		return this;
+	}
 /* FIXME: remove the code inside BROKEN_THREAD_START once martin gets rid of the
  * thread_start_compile_func stuff.
  */
