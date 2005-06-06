@@ -479,7 +479,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 	mono_monitor_enter (this->synch_lock);
 
-	if ((this->state & ThreadState_Unstarted) == 0) {
+	if ((this->state & ThreadState_Unstarted) == 0 ||
+	    (this->state & ThreadState_Aborted) != 0) {
 		mono_monitor_exit (this->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state ("Thread has already been started."));
 		return NULL;
@@ -1430,6 +1431,12 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	if ((thread->state & ThreadState_AbortRequested) != 0 || 
 		(thread->state & ThreadState_StopRequested) != 0) 
 	{
+		mono_monitor_exit (thread->synch_lock);
+		return;
+	}
+
+	if ((thread->state & ThreadState_Unstarted) != 0) {
+		thread->state |= ThreadState_Aborted;
 		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
