@@ -57,6 +57,7 @@ libmonoruntime_la_SOURCES = \
 	marshal.h	\
 	monitor.c	\
 	monitor.h	\
+	tabledefs.h \
 	threads.c	\
 	threads-types.h	\
 	threadpool.c	\
@@ -152,8 +153,7 @@ libmonoruntimeinclude_HEADERS = \
 	profiler.h	\
 	appdomain.h	\
 	debug-helpers.h	\
-	mempool.h	\
-	tabledefs.h
+	mempool.h
 
 pedump_SOURCES =		\
 	pedump.c
