@@ -503,6 +503,9 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 	cfg->arch.reg_saved_b0 = cfg->arch.reg_local0 - 2;
 	cfg->arch.reg_saved_sp = cfg->arch.reg_local0 - 3;
 
+	/* Need to allocate at least 1 out register for use by CEE_THROW */
+	cfg->arch.n_out_regs = MAX (cfg->arch.n_out_regs, 1);
+
 	g_free (cinfo);
 }
 
@@ -1624,7 +1627,7 @@ emit_call (MonoCompile *cfg, Ia64CodegenState code, guint32 patch_type, gconstpo
 {
 	mono_add_patch_info (cfg, code.buf - cfg->native_code, patch_type, data);
 
-	if (patch_type == MONO_PATCH_INFO_ABS) {
+	if ((patch_type == MONO_PATCH_INFO_ABS) || (patch_type == MONO_PATCH_INFO_INTERNAL_METHOD)) {
 		/* Indirect call */
 		ia64_movl (code, GP_SCRATCH_REG, 0);
 		ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
@@ -2234,8 +2237,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case CEE_THROW:
-			/* FIXME: */
-			ia64_break_i (code, 0x1234);
+			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							  (gpointer)"mono_arch_throw_exception");
 			break;
 
 		default:

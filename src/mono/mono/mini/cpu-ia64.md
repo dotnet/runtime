@@ -55,7 +55,7 @@ castclass:
 isinst:
 conv.r.un: dest:f src1:i len:48
 unbox:
-throw: src1:i len:48
+throw: src1:i len:96
 op_rethrow: src1:i len:48
 ldfld:
 ldflda:

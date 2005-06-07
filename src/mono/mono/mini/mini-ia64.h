@@ -3,6 +3,9 @@
 
 #include <glib.h>
 
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
 #include <mono/arch/ia64/ia64-codegen.h>
 
 /* FIXME: regset -> 128 bits ! */
@@ -51,6 +54,8 @@ struct MonoLMF {
 };
 
 typedef struct MonoContext {
+	unw_cursor_t cursor;
+	/* These variables needs to be set whenever the cursor is moved */
 	guint8 *ip;
 	gpointer *sp;
 	gpointer *fp;
