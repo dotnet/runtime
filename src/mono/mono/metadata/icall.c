@@ -6166,6 +6166,7 @@ static const IcallEntry math_icalls [] = {
 };
 
 static const IcallEntry customattrs_icalls [] = {
+	{"GetCustomAttributesDataInternal", mono_reflection_get_custom_attrs_data},
 	{"GetCustomAttributesInternal", mono_reflection_get_custom_attrs},
 	{"IsDefinedInternal", custom_attrs_defined_internal}
 };

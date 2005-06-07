@@ -6504,6 +6504,50 @@ handle_type:
 	return NULL;
 }
 
+static MonoObject*
+create_cattr_typed_arg (MonoType *t, MonoObject *val)
+{
+	static MonoClass *klass;
+	static MonoMethod *ctor;
+	MonoObject *retval;
+	void *params [2], *unboxed;
+
+	if (!klass)
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeTypedArgument");
+	if (!ctor)
+		ctor = mono_class_get_method_from_name (klass, ".ctor", 2);
+	
+	params [0] = mono_type_get_object (mono_domain_get (), t);
+	params [1] = val;
+	retval = mono_object_new (mono_domain_get (), klass);
+	unboxed = mono_object_unbox (retval);
+	mono_runtime_invoke (ctor, unboxed, params, NULL);
+
+	return retval;
+}
+
+static MonoObject*
+create_cattr_named_arg (void *minfo, MonoObject *typedarg)
+{
+	static MonoClass *klass;
+	static MonoMethod *ctor;
+	MonoObject *retval;
+	void *unboxed, *params [2];
+
+	if (!klass)
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeNamedArgument");
+	if (!ctor)
+		ctor = mono_class_get_method_from_name (klass, ".ctor", 2);
+
+	params [0] = minfo;
+	params [1] = typedarg;
+	retval = mono_object_new (mono_domain_get (), klass);
+	unboxed = mono_object_unbox (retval);
+	mono_runtime_invoke (ctor, unboxed, params, NULL);
+
+	return retval;
+}
+
 static gboolean
 type_is_reference (MonoType *type)
 {
@@ -6671,6 +6715,126 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 	return attr;
 }
 
+static MonoObject*
+create_custom_attr_data (MonoImage *image, MonoMethod *method, const char *data, guint32 len)
+{
+	MonoArray *typedargs, *namedargs;
+	MonoClass *attrklass;
+	static MonoClass *klass;
+	static MonoMethod *ctor;
+	MonoDomain *domain;
+	MonoObject *attr;
+	const char *p = data;
+	const char *named;
+	guint32 i, j, num_named;
+	void *params [3];
+
+	mono_class_init (method->klass);
+	
+	if (!klass)
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
+	if (!ctor)
+		ctor = mono_class_get_method_from_name (klass, ".ctor", 3);
+	
+	domain = mono_domain_get ();
+	if (len == 0) {
+		/* This is for Attributes with no parameters */
+		attr = mono_object_new (domain, klass);
+		params [0] = mono_method_get_object (domain, method, NULL);
+		params [1] = params [2] = NULL;
+		mono_runtime_invoke (method, attr, params, NULL);
+		return attr;
+	}
+
+	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
+		return NULL;
+
+	typedargs = mono_array_new (domain, mono_get_object_class (), mono_method_signature (method)->param_count);
+	
+	/* skip prolog */
+	p += 2;
+	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
+		MonoObject *obj, *typedarg;
+		void *val;
+
+		val = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p);
+		obj = type_is_reference (mono_method_signature (method)->params [i]) ? 
+			val : mono_value_box (domain, mono_class_from_mono_type (mono_method_signature (method)->params [i]), val);
+		typedarg = create_cattr_typed_arg (mono_method_signature (method)->params [i], obj);
+		mono_array_set (typedargs, void*, i, typedarg);
+
+		if (!type_is_reference (mono_method_signature (method)->params [i]))
+			g_free (val);
+	}
+
+	named = p;
+	num_named = read16 (named);
+	namedargs = mono_array_new (domain, mono_get_object_class (), num_named);
+	named += 2;
+	attrklass = method->klass;
+	for (j = 0; j < num_named; j++) {
+		gint name_len;
+		char *name, named_type, data_type;
+		named_type = *named++;
+		data_type = *named++; /* type of data */
+		if (data_type == 0x55) {
+			gint type_len;
+			char *type_name;
+			type_len = mono_metadata_decode_blob_size (named, &named);
+			type_name = g_malloc (type_len + 1);
+			memcpy (type_name, named, type_len);
+			type_name [type_len] = 0;
+			named += type_len;
+			/* FIXME: lookup the type and check type consistency */
+		} else if (data_type == MONO_TYPE_SZARRAY && (named_type == 0x54 || named_type == 0x53)) {
+			/* this seems to be the type of the element of the array */
+			/* g_print ("skipping 0x%02x after prop\n", *named); */
+			named++;
+		}
+		name_len = mono_metadata_decode_blob_size (named, &named);
+		name = g_malloc (name_len + 1);
+		memcpy (name, named, name_len);
+		name [name_len] = 0;
+		named += name_len;
+		if (named_type == 0x53) {
+			MonoObject *obj, *typedarg, *namedarg;
+			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
+			void *minfo, *val = load_cattr_value (image, field->type, named, &named);
+			
+			minfo = mono_field_get_object (domain, NULL, field);
+			obj = type_is_reference (field->type) ? val : mono_value_box (domain, mono_class_from_mono_type (field->type), val);
+			typedarg = create_cattr_typed_arg (field->type, obj);
+			namedarg = create_cattr_named_arg (minfo, typedarg);
+			mono_array_set (namedargs, void*, j, namedarg);
+			if (!type_is_reference (field->type))
+				g_free (val);
+		} else if (named_type == 0x54) {
+			MonoObject *obj, *typedarg, *namedarg;
+			MonoType *prop_type;
+			void *val, *minfo;
+			MonoProperty *prop = mono_class_get_property_from_name (attrklass, name);
+
+			prop_type = prop->get? mono_method_signature (prop->get)->ret :
+			     mono_method_signature (prop->set)->params [mono_method_signature (prop->set)->param_count - 1];
+			minfo =  mono_property_get_object (domain, NULL, prop);
+			val = load_cattr_value (image, prop_type, named, &named);
+			obj = type_is_reference (prop_type) ? val : mono_value_box (domain, mono_class_from_mono_type (prop_type), val);
+			typedarg = create_cattr_typed_arg (prop_type, obj);
+			namedarg = create_cattr_named_arg (minfo, typedarg);
+			mono_array_set (namedargs, void*, j, namedarg);
+			if (!type_is_reference (prop_type))
+				g_free (val);
+		}
+		g_free (name);
+	}
+	attr = mono_object_new (domain, klass);
+	params [0] = mono_method_get_object (domain, method, NULL);
+	params [1] = typedargs;
+	params [2] = namedargs;
+	mono_runtime_invoke (ctor, attr, params, NULL);
+	return attr;
+}
+
 MonoArray*
 mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 {
@@ -6683,6 +6847,25 @@ mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 	result = mono_array_new (mono_domain_get (), klass, cinfo->num_attrs);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
+		mono_array_set (result, gpointer, i, attr);
+	}
+	return result;
+}
+
+MonoArray*
+mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
+{
+	MonoArray *result;
+	static MonoClass *klass;
+	MonoObject *attr;
+	int i;
+
+	if (!klass)
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
+	
+	result = mono_array_new (mono_domain_get (), klass, cinfo->num_attrs);
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		attr = create_custom_attr_data (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
 		mono_array_set (result, gpointer, i, attr);
 	}
 	return result;
@@ -7007,6 +7190,34 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else {
 		MonoClass *klass;
 		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
+		result = mono_array_new (mono_domain_get (), klass, 0);
+	}
+
+	return result;
+}
+
+/*
+ * mono_reflection_get_custom_attrs_data:
+ * @obj: a reflection obj handle
+ *
+ * Returns an array of System.Reflection.CustomAttributeData,
+ * which include information about attributes reflected on
+ * types loaded using the Reflection Only methods
+ */
+MonoArray*
+mono_reflection_get_custom_attrs_data (MonoObject *obj)
+{
+	MonoArray *result;
+	MonoCustomAttrInfo *cinfo;
+
+	cinfo = mono_reflection_get_custom_attrs_info (obj);
+	if (cinfo) {
+		result = mono_custom_attrs_data_construct (cinfo);
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	} else {
+		MonoClass *klass;
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
 		result = mono_array_new (mono_domain_get (), klass, 0);
 	}
 
