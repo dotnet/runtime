@@ -9685,6 +9685,14 @@ SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+static void
+SIG_HANDLER_SIGNATURE (sigusr2_signal_handler)
+{
+	gboolean enabled = mono_trace_is_enabled ();
+
+	mono_trace_enable (!enabled);
+}
+
 #ifndef PLATFORM_WIN32
 static void
 add_signal_handler (int signo, gpointer handler)
@@ -9718,6 +9726,9 @@ mono_runtime_install_handlers (void)
 	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
 	if (debug_options.handle_sigint)
 		win32_seh_set_handler(SIGINT, sigint_signal_handler);
+
+	if (mono_jit_trace_calls != NULL)
+		win32_seh_set_handler(SIGUSR2, sigusr2_signal_handler);
 #else /* !PLATFORM_WIN32 */
 
 	/* libpthreads has its own implementation of sigaction(),
@@ -9732,6 +9743,9 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (SIGQUIT, sigquit_signal_handler);
 	add_signal_handler (SIGILL, sigill_signal_handler);
 	add_signal_handler (SIGBUS, sigsegv_signal_handler);
+	if (mono_jit_trace_calls != NULL)
+		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
+
 	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 
 	/* catch SIGSEGV */

@@ -96,6 +96,7 @@ enum Token {
 	TOKEN_NAMESPACE,
 	TOKEN_STRING,
 	TOKEN_EXCLUDE,
+	TOKEN_DISABLED,
 	TOKEN_SEPARATOR,
 	TOKEN_END,
 	TOKEN_ERROR
@@ -128,6 +129,8 @@ get_token (void)
 			return TOKEN_ALL;
 		if (strcmp (value, "program") == 0)
 			return TOKEN_PROGRAM;
+		if (strcmp (value, "disabled") == 0)
+			return TOKEN_DISABLED;
 		return TOKEN_STRING;
 	}
 	if (*input == '-'){
@@ -198,8 +201,9 @@ get_spec (int *last)
 	} else if (token == TOKEN_STRING){
 		trace_spec.ops [*last].op = MONO_TRACEOP_ASSEMBLY;
 		trace_spec.ops [*last].data = g_strdup (value);
-	}
-	else {
+	} else if (token == TOKEN_DISABLED) {
+		trace_spec.enabled = FALSE;
+	} else {
 		fprintf (stderr, "Syntax error in trace option specification\n");
 		return TOKEN_ERROR;
 	}
@@ -214,7 +218,8 @@ mono_trace_parse_options (char *options)
 	int size = 1;
 	int last_used;
 	int token;
-	
+
+	trace_spec.enabled = TRUE;
 	if (*p == 0){
 		trace_spec.len = 1;
 		trace_spec.ops = g_new0 (MonoTraceOperation, 1);
@@ -262,8 +267,6 @@ static void indent (int diff) {
 		indent_level += diff;
 }
 
-static gboolean enable_trace = TRUE;
-
 void
 mono_trace_enter_method (MonoMethod *method, char *ebp)
 {
@@ -274,7 +277,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	MonoMethodSignature *sig;
 	char *fname;
 
-	if (!enable_trace)
+	if (!trace_spec.enabled)
 		return;
 
 	fname = mono_method_full_name (method, TRUE);
@@ -413,7 +416,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 	char *fname;
 	va_list ap;
 
-	if (!enable_trace)
+	if (!trace_spec.enabled)
 		return;
 
 	va_start(ap, method);
@@ -524,3 +527,16 @@ handle_enum:
 	//printf (" ip: %p\n", __builtin_return_address (1));
 	printf ("\n");
 }
+
+void
+mono_trace_enable (gboolean enable)
+{
+	trace_spec.enabled = enable;
+}
+
+gboolean
+mono_trace_is_enabled ()
+{
+	return trace_spec.enabled;
+}
+
