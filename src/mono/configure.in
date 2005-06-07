@@ -1163,6 +1163,8 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(fgetpwent)
 	AC_CHECK_FUNCS(fgetpwent)
 	AC_CHECK_FUNCS(getfsstat)
+	AC_CHECK_FUNCS(mremap)
+	AC_CHECK_FUNCS(remap_file_pages)
 	AC_CHECK_FUNCS(posix_fadvise)
 	AC_CHECK_FUNCS(posix_fallocate)
 	AC_CHECK_FUNCS(posix_madvise)
