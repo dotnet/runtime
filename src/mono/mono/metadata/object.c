@@ -1032,11 +1032,13 @@ extend_interface_array (MonoDomain *domain, MonoRemoteClass *remote_class, int a
 	/* Extends the array of interfaces. Memory is extended using blocks of 5 pointers */
 
 	int current_size = ((remote_class->interface_count / 5) + 1) * 5;
-	remote_class->interface_count += amount;
+	int new_size;
 
-	if (remote_class->interface_count > current_size || remote_class->interfaces == NULL) 
+	remote_class->interface_count += amount;
+	new_size = ((remote_class->interface_count / 5) + 1) * 5;
+
+	if (new_size > current_size || remote_class->interfaces == NULL) 
 	{
-		int new_size = ((remote_class->interface_count / 5) + 1) * 5;
 		MonoClass **new_array = mono_mempool_alloc (domain->mp, new_size * sizeof (MonoClass*));
 	
 		if (remote_class->interfaces != NULL)
