@@ -1,3 +1,11 @@
+2005-06-08  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: read the SONAME from libX11. This is the same
+	thing as will be used by a shared library, so it will really
+	work.
+
+	This will have us get libX11.so.6 rather than libX11.so.6.2.
+
 2005-06-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: make automake 1.9 happy about LARGE_FILES.

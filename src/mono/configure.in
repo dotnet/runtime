@@ -223,6 +223,7 @@ AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
+AC_PROG_AWK
 dnl We should use AM_PROG_AS, but it's not available on automake/aclocal 1.4
 : ${CCAS='$(CC)'}
 # Set ASFLAGS if not already set.
@@ -1539,7 +1540,7 @@ esac
 if test "x$X11" = "xlibX11.so"; then
 	AC_PATH_X
 	if test "x$no_x" != "xyes"; then
-		X11=`readlink $x_libraries/libX11.so`
+		X11=$(objdump -p  $x_libraries/libX11.so | $AWK '/SONAME/ {print $2}')
 	fi
 fi
 
