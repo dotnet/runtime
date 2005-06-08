@@ -1051,14 +1051,17 @@ extend_interface_array (MonoDomain *domain, MonoRemoteClass *remote_class, int a
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp)
 {
+	mono_domain_lock (domain);
 	if (rp->target_domain_id != -1) {
 		if (remote_class->xdomain_vtable == NULL)
 			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN);
+		mono_domain_unlock (domain);
 		return remote_class->xdomain_vtable;
 	}
 	if (remote_class->default_vtable == NULL)
 		remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_UNKNOWN);
 	
+	mono_domain_unlock (domain);
 	return remote_class->default_vtable;
 }
 
