@@ -4334,6 +4334,22 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	else
 		assembly->assembly.aname.culture = g_strdup ("");
 
+        if (assemblyb->version) {
+                char **version = g_strsplit (mono_string_to_utf8 (assemblyb->version), ".", 4);
+                char **parts = version;
+                assembly->assembly.aname.major = atoi (*parts++);
+                assembly->assembly.aname.minor = atoi (*parts++);
+                assembly->assembly.aname.build = *parts != NULL ? atoi (*parts++) : 0;
+                assembly->assembly.aname.revision = *parts != NULL ? atoi (*parts) : 0;
+
+                g_strfreev (version);
+        } else {
+                assembly->assembly.aname.major = 0;
+                assembly->assembly.aname.minor = 0;
+                assembly->assembly.aname.build = 0;
+                assembly->assembly.aname.revision = 0;
+        }
+
 	assembly->run = assemblyb->access != 2;
 	assembly->save = assemblyb->access != 1;
 
