@@ -194,6 +194,8 @@ mono_remoting_marshal_init (void)
 	
 		klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
 		method_needs_context_sink = mono_class_get_method_from_name (klass, "get_NeedsContextSink", -1);
+
+		module_initialized = TRUE;
 	}
 }
 
