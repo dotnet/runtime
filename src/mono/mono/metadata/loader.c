@@ -204,6 +204,13 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		class_name = qname = fqname = NULL;
 
 	while (klass) {
+		MonoGenericContext *context = NULL;
+
+		if (klass->generic_container)
+			context = &klass->generic_container->context;
+		else if (klass->generic_class)
+			context = klass->generic_class->context;
+
 		mono_class_setup_methods (klass);
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *m = klass->methods [i];
@@ -218,7 +225,8 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 					goto out;
 				}
 			} else {
-				if (mono_metadata_signature_equal (sig, mono_method_signature (m))) {
+				MonoMethodSignature *msig = mono_method_signature_full (m, context);
+				if (mono_metadata_signature_equal (sig, msig)) {
 					result = m;
 					goto out;
 				}
@@ -1340,6 +1348,12 @@ mono_loader_unlock (void)
 MonoMethodSignature* 
 mono_method_signature (MonoMethod *m)
 {
+	return mono_method_signature_full (m, NULL);
+}
+
+MonoMethodSignature* 
+mono_method_signature_full (MonoMethod *m, MonoGenericContext *context)
+{
 	int idx;
 	int size;
 	MonoImage* img;
@@ -1362,7 +1376,7 @@ mono_method_signature (MonoMethod *m)
 	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	
-	m->signature = mono_metadata_parse_method_signature_full (img, NULL, idx, sig, NULL);
+	m->signature = mono_metadata_parse_method_signature_full (img, context, idx, sig, NULL);
 	
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		m->signature->pinvoke = 1;

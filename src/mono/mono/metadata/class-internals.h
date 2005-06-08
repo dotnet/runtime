@@ -617,6 +617,9 @@ mono_find_jit_icall_by_addr (gconstpointer addr);
 MonoMethodSignature*
 mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context);
 
+MonoMethodSignature *
+mono_method_signature_full (MonoMethod *image, MonoGenericContext *context);
+
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic);
 

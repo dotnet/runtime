@@ -470,7 +470,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return method;
 
-	if (method->is_inflated || mono_method_signature (method)->is_inflated) {
+	if (method->is_inflated || mono_method_signature_full (method, context)->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		context = inflate_generic_context (imethod->context, context);
