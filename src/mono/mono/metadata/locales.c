@@ -409,7 +409,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL) {
-                g_print ("ne (%s) is null\n", n);
+                /*g_print ("ne (%s) is null\n", n);*/
         	g_free (n);
 		return FALSE;
         }
