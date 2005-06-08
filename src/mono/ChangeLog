@@ -1,3 +1,7 @@
+2005-06-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: make automake 1.9 happy about LARGE_FILES.
+
 2005-06-06  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add checks for mremap, remap_file_pages.

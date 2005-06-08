@@ -603,7 +603,7 @@ if test x$platform_win32 = xno; then
 	# potential compiler bugs.  Defines LARGE_FILE_SUPPORT, adds $1 to
 	# CPPFLAGS and sets $large_offt to yes if the test succeeds
 	large_offt=no
-	AC_DEFUN(LARGE_FILES, [
+	AC_DEFUN([LARGE_FILES], [
 		large_CPPFLAGS=$CPPFLAGS
 		CPPFLAGS="$CPPFLAGS $1"
 		AC_TRY_RUN([
