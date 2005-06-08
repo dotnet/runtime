@@ -9727,8 +9727,6 @@ mono_runtime_install_handlers (void)
 	if (debug_options.handle_sigint)
 		win32_seh_set_handler(SIGINT, sigint_signal_handler);
 
-	if (mono_jit_trace_calls != NULL)
-		win32_seh_set_handler(SIGUSR2, sigusr2_signal_handler);
 #else /* !PLATFORM_WIN32 */
 
 	/* libpthreads has its own implementation of sigaction(),
