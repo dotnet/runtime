@@ -16,6 +16,29 @@ class Program {
 		return psa.CreatePermissionSet ();
 	}
 
+	// source: http://blogs.msdn.com/shawnfa/archive/2004/10/22/246549.aspx	
+	static PermissionSet GetNamedPermissionSet (string name)
+	{
+		bool foundName = false;
+		PermissionSet pset = new PermissionSet (PermissionState.Unrestricted);
+
+		IEnumerator e = SecurityManager.PolicyHierarchy ();
+		while (e.MoveNext ()) {
+			PolicyLevel pl = e.Current as PolicyLevel;
+
+			PermissionSet levelpset = pl.GetNamedPermissionSet (name);
+			if ((levelpset != null) && (pset != null)) {
+				foundName = true;
+				pset = pset.Intersect (levelpset);
+			}
+		}
+
+		if (pset == null || !foundName)
+			return new PermissionSet (PermissionState.None);
+
+		return new NamedPermissionSet (name, pset);
+	}
+
 	// source: http://blogs.msdn.com/shawnfa/archive/2004/10/25/247379.aspx
 	static AppDomain CreateRestrictedDomain (string filename)
 	{
@@ -23,10 +46,15 @@ class Program {
 		PolicyStatement emptyPolicy = new PolicyStatement (emptySet);
 		UnionCodeGroup root = new UnionCodeGroup (new AllMembershipCondition (), emptyPolicy);
 
-		PermissionSet userSet = LoadFromFile (filename);
+		PermissionSet userSet = null;
+		if (filename [0] == '@')
+			userSet = GetNamedPermissionSet (filename.Substring (1));
+		else
+			userSet = LoadFromFile (filename);
+
 		PolicyStatement userPolicy = new PolicyStatement (userSet);
 		root.AddChild (new UnionCodeGroup (new AllMembershipCondition (), userPolicy));
-        
+
 		PolicyLevel pl = PolicyLevel.CreateAppDomainLevel ();
 		pl.RootCodeGroup = root;
 
@@ -40,7 +68,7 @@ class Program {
 		switch (args.Length) {
 		case 0:
 			Console.WriteLine ("Create a restricted sandbox to execute an assembly.");
-			Console.WriteLine ("Usage: mono sandbox.exe [permissionset.xml] assembly.exe [parameters ...]");
+			Console.WriteLine ("Usage: mono sandbox.exe [@namedpermissionset | permissionset.xml] assembly.exe [parameters ...]");
 			return 0;
 		case 1:
 			Console.WriteLine ("Using default (current) appdomain to load '{0}'...", args [0]);
