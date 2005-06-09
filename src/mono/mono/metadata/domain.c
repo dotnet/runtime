@@ -235,6 +235,29 @@ mono_string_hash (MonoString *s)
 	return h;	
 }
 
+gboolean
+mono_ptrarray_equal (gpointer *s1, gpointer *s2)
+{
+	int len = GPOINTER_TO_INT (s1 [0]);
+	if (len != GPOINTER_TO_INT (s2 [0]))
+		return FALSE;
+
+	return memcmp (s1 + 1, s2 + 1, len * sizeof(gpointer)) == 0; 
+}
+
+guint
+mono_ptrarray_hash (gpointer *s)
+{
+	int i;
+	int len = GPOINTER_TO_INT (s [0]);
+	guint hash = 0;
+	
+	for (i = 1; i < len; i++)
+		hash += GPOINTER_TO_UINT (s [i]);
+
+	return hash;	
+}
+
 /*
  * Allocate an id for domain and set domain->domain_id.
  * LOCKING: must be called while holding appdomains_mutex.
@@ -301,7 +324,7 @@ mono_domain_create (void)
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->domain_assemblies = NULL;
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
+	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	domain->static_data_hash = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->jit_code_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);

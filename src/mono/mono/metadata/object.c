@@ -990,6 +990,57 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 }
 
 /**
+ * create_remote_class_key:
+ * Creates an array of pointers that can be used as a hash key for a remote class.
+ * The first element of the array is the number of pointers.
+ */
+static gpointer*
+create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
+{
+	gpointer *key;
+	int i, j;
+	
+	if (remote_class == NULL) {
+		if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			key = g_malloc (sizeof(gpointer) * 3);
+			key [0] = GINT_TO_POINTER (2);
+			key [1] = mono_defaults.marshalbyrefobject_class;
+			key [2] = extra_class;
+		} else {
+			key = g_malloc (sizeof(gpointer) * 2);
+			key [0] = GINT_TO_POINTER (1);
+			key [1] = extra_class;
+		}
+	} else {
+		if (extra_class != NULL && (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+			key = g_malloc (sizeof(gpointer) * (remote_class->interface_count + 3));
+			key [0] = GINT_TO_POINTER (remote_class->interface_count + 2);
+			key [1] = remote_class->proxy_class;
+
+			// Keep the list of interfaces sorted
+			for (i = 0, j = 2; i < remote_class->interface_count; i++, j++) {
+				if (extra_class && remote_class->interfaces [i] > extra_class) {
+					key [j++] = extra_class;
+					extra_class = NULL;
+				}
+				key [j] = remote_class->interfaces [i];
+			}
+			if (extra_class)
+				key [j] = extra_class;
+		} else {
+			// Replace the old class. The interface list is the same
+			key = g_malloc (sizeof(gpointer) * (remote_class->interface_count + 2));
+			key [0] = GINT_TO_POINTER (remote_class->interface_count + 1);
+			key [1] = extra_class != NULL ? extra_class : remote_class->proxy_class;
+			for (i = 0; i < remote_class->interface_count; i++)
+				key [2 + i] = remote_class->interfaces [i];
+		}
+	}
+	
+	return key;
+}
+
+/**
  * mono_remote_class:
  * @domain: the application domain
  * @class_name: name of the remote class
@@ -1001,51 +1052,88 @@ MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class)
 {
 	MonoRemoteClass *rc;
-
+	gpointer* key;
+	
+	key = create_remote_class_key (NULL, proxy_class);
+	
 	mono_domain_lock (domain);
-	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class_name);
+	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, key);
 
 	if (rc) {
+		g_free (key);
 		mono_domain_unlock (domain);
 		return rc;
 	}
 
-	rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass));
+	if (proxy_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass) + sizeof(MonoClass*));
+		rc->interface_count = 1;
+		rc->interfaces [0] = proxy_class;
+		rc->proxy_class = mono_defaults.marshalbyrefobject_class;
+	} else {
+		rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass));
+		rc->interface_count = 0;
+		rc->proxy_class = proxy_class;
+	}
+	
 	rc->default_vtable = NULL;
 	rc->xdomain_vtable = NULL;
-	rc->interface_count = 0;
-	rc->interfaces = NULL;
-	rc->proxy_class = mono_defaults.marshalbyrefobject_class;
 	rc->proxy_class_name = mono_string_to_utf8 (class_name);
 
-	mono_g_hash_table_insert (domain->proxy_vtable_hash, class_name, rc);
-	mono_upgrade_remote_class (domain, rc, proxy_class);
+	mono_g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
 
 	mono_domain_unlock (domain);
-
 	return rc;
 }
 
-static void
-extend_interface_array (MonoDomain *domain, MonoRemoteClass *remote_class, int amount)
+/**
+ * clone_remote_class:
+ * Creates a copy of the remote_class, adding the provided class or interface
+ */
+static MonoRemoteClass*
+clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass *extra_class)
 {
-	/* Extends the array of interfaces. Memory is extended using blocks of 5 pointers */
-
-	int current_size = ((remote_class->interface_count / 5) + 1) * 5;
-	int new_size;
-
-	remote_class->interface_count += amount;
-	new_size = ((remote_class->interface_count / 5) + 1) * 5;
-
-	if (new_size > current_size || remote_class->interfaces == NULL) 
-	{
-		MonoClass **new_array = mono_mempool_alloc (domain->mp, new_size * sizeof (MonoClass*));
+	MonoRemoteClass *rc;
+	gpointer* key;
 	
-		if (remote_class->interfaces != NULL)
-			memcpy (new_array, remote_class->interfaces, current_size * sizeof (MonoClass*));
-		
-		remote_class->interfaces = new_array;
+	key = create_remote_class_key (remote_class, extra_class);
+	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, key);
+	if (rc != NULL) {
+		g_free (key);
+		return rc;
 	}
+
+	if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		int i,j;
+		rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass) + sizeof(MonoClass*) * (remote_class->interface_count + 1));
+		rc->proxy_class = remote_class->proxy_class;
+		rc->interface_count = remote_class->interface_count + 1;
+		
+		// Keep the list of interfaces sorted, since the hash key of
+		// the remote class depends on this
+		for (i = 0, j = 0; i < remote_class->interface_count; i++, j++) {
+			if (remote_class->interfaces [i] > extra_class && i == j)
+				rc->interfaces [j++] = extra_class;
+			rc->interfaces [j] = remote_class->interfaces [i];
+		}
+		if (i == j)
+			rc->interfaces [j] = extra_class;
+	} else {
+		// Replace the old class. The interface array is the same
+		rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass) + sizeof(MonoClass*) * remote_class->interface_count);
+		rc->proxy_class = extra_class;
+		rc->interface_count = remote_class->interface_count;
+		if (rc->interface_count > 0)
+			memcpy (rc->interfaces, remote_class->interfaces, rc->interface_count * sizeof (MonoClass*));
+	}
+	
+	rc->default_vtable = NULL;
+	rc->xdomain_vtable = NULL;
+	rc->proxy_class_name = remote_class->proxy_class_name;
+
+	mono_g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
+
+	return rc;
 }
 
 gpointer
@@ -1065,53 +1153,47 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 	return remote_class->default_vtable;
 }
 
-
 /**
  * mono_upgrade_remote_class:
  * @domain: the application domain
- * @remote_class: the remote class
+ * @tproxy: the proxy whose remote class has to be upgraded.
  * @klass: class to which the remote class can be casted.
  *
  * Updates the vtable of the remote class by adding the necessary method slots
  * and interface offsets so it can be safely casted to klass. klass can be a
  * class or an interface.
  */
-void mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_class, MonoClass *klass)
+void
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoClass *klass)
 {
+	MonoTransparentProxy *tproxy;
+	MonoRemoteClass *remote_class;
 	gboolean redo_vtable;
 
 	mono_domain_lock (domain);
 
+	tproxy = (MonoTransparentProxy*) proxy_object;
+	remote_class = tproxy->remote_class;
+	
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		int i;
 		redo_vtable = TRUE;
-		for (i = 0; i < remote_class->interface_count; i++)
-			if (remote_class->interfaces[i] == klass) redo_vtable = FALSE;
-				
-		if (redo_vtable) {
-			extend_interface_array (domain, remote_class, 1);
-			remote_class->interfaces [remote_class->interface_count-1] = klass;
-		}
+		for (i = 0; i < remote_class->interface_count && redo_vtable; i++)
+			if (remote_class->interfaces [i] == klass)
+				redo_vtable = FALSE;
 	}
 	else {
 		redo_vtable = (remote_class->proxy_class != klass);
-		remote_class->proxy_class = klass;
 	}
 
 	if (redo_vtable) {
-		remote_class->default_vtable = NULL;
-		remote_class->xdomain_vtable = NULL;
+		tproxy->remote_class = clone_remote_class (domain, remote_class, klass);
+		proxy_object->vtable = mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp);
 	}
-/*
-	int n;
-	printf ("remote class upgrade - class:%s num-interfaces:%d\n", remote_class->proxy_class_name, remote_class->interface_count);
 	
-	for (n=0; n<remote_class->interface_count; n++)
-		printf ("  I:%s\n", remote_class->interfaces[n]->name);
-*/
-
 	mono_domain_unlock (domain);
 }
+
 
 /**
  * mono_object_get_virtual_method:
@@ -2844,8 +2926,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 	
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
-			mono_upgrade_remote_class (domain, ((MonoTransparentProxy *)obj)->remote_class, klass);
-			obj->vtable = mono_remote_class_vtable (domain, ((MonoTransparentProxy *)obj)->remote_class, (MonoRealProxy *)rp);
+			mono_upgrade_remote_class (domain, obj, klass);
 			return obj;
 		}
 	}

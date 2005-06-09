@@ -15,9 +15,9 @@ typedef struct {
 	MonoVTable *default_vtable;
 	MonoVTable *xdomain_vtable;
 	MonoClass *proxy_class;
-	guint interface_count;
-	MonoClass **interfaces;
 	char* proxy_class_name;
+	guint interface_count;
+	MonoClass *interfaces [MONO_ZERO_LEN_ARRAY];
 } MonoRemoteClass;
 
 MonoClass *

@@ -238,9 +238,6 @@ mono_compile_method	   (MonoMethod *method);
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class);
 
-void
-mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_class, MonoClass *klass);
-
 /* accessors for fields and properties */
 void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value);

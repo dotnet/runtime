@@ -6805,8 +6805,7 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentPro
 	MonoClass *klass;
 	MonoDomain *domain = ((MonoObject*)tproxy)->vtable->domain;
 	klass = mono_class_from_mono_type (rtype->type);
-	mono_upgrade_remote_class (domain, tproxy->remote_class, klass);
-	((MonoObject*)tproxy)->vtable = mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp);
+	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass);
 }
 
 /**

@@ -1059,5 +1059,8 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context);
 
+void
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
