@@ -5,6 +5,8 @@
 #include <glib.h>
 #include <gmodule.h>
 
+G_BEGIN_DECLS
+
 typedef struct _MonoImage MonoImage;
 typedef struct _MonoAssembly MonoAssembly;
 typedef struct _MonoTableInfo MonoTableInfo;
@@ -79,5 +81,6 @@ void          mono_image_add_to_name_cache (MonoImage *image,
 											const char *name, guint32 idx);
 gboolean      mono_image_has_authenticode_entry (MonoImage *image);
 
+G_END_DECLS
 
 #endif

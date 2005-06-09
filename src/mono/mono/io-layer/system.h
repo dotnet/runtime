@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 typedef struct _WapiSystemInfo WapiSystemInfo;
 
 struct _WapiSystemInfo 
@@ -39,4 +41,5 @@ struct _WapiSystemInfo
 
 extern void GetSystemInfo(WapiSystemInfo *info);
 
+G_END_DECLS
 #endif /* _WAPI_SYSTEM_H_ */

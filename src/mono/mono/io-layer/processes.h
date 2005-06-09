@@ -15,6 +15,8 @@
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/access.h>
 
+G_BEGIN_DECLS
+
 typedef enum {
 	STARTF_USESHOWWINDOW=0x001,
 	STARTF_USESIZE=0x002,
@@ -127,5 +129,7 @@ extern gboolean SetProcessWorkingSetSize (gpointer process, size_t min,
 					  size_t max);
 
 extern gboolean TerminateProcess (gpointer process, gint32 exitCode);
+
+G_END_DECLS
 
 #endif /* _WAPI_PROCESSES_H_ */

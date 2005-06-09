@@ -13,6 +13,7 @@
 
 #include <mono/metadata/object.h>
 
+G_BEGIN_DECLS
 
 /* System.Environment */
 extern MonoString* ves_icall_System_Environment_get_UserName (void);
@@ -48,5 +49,6 @@ extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_Prote
 /* System.Security.Policy.Evidence */
 MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass);
 
+G_END_DECLS
 
 #endif /* _MONO_METADATA_SECURITY_H_ */

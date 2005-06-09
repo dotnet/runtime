@@ -16,6 +16,8 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 
+G_BEGIN_DECLS
+
 typedef void (*MonoThreadStartCB) (guint32 tid, gpointer stack_start,
 				   gpointer func);
 typedef void (*MonoThreadAttachCB) (guint32 tid, gpointer stack_start);
@@ -179,5 +181,6 @@ mono_get_thread_class       (void);
 MonoClass*
 mono_get_exception_class    (void);
 
+G_END_DECLS
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
 

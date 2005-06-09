@@ -12,6 +12,8 @@
 
 #include "mono/io-layer/status.h"
 
+G_BEGIN_DECLS
+
 #define MAXIMUM_WAIT_OBJECTS 64
 
 #define INFINITE		0xFFFFFFFF
@@ -35,4 +37,5 @@ extern guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 extern guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				      gboolean waitall, guint32 timeout, gboolean alertable);
 
+G_END_DECLS
 #endif /* _WAPI_WAIT_H_ */

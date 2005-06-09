@@ -28,6 +28,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 typedef struct {
 	guint32 buf[4];
 	guint32 bits[2];
@@ -61,4 +63,5 @@ void mono_sha1_final  (MonoSHA1Context* context, unsigned char digest[20]);
 
 void mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len);
 
+G_END_DECLS
 #endif	/* __MONO_DIGEST_H__ */

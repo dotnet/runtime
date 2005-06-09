@@ -12,6 +12,10 @@
 
 #define INVALID_HANDLE_VALUE (gpointer)-1
 
+G_BEGIN_DECLS
+
 extern gboolean CloseHandle(gpointer handle);
+
+G_END_DECLS
 
 #endif /* _WAPI_HANDLES_H_ */

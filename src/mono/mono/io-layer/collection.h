@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 #define _WAPI_HANDLE_COLLECTION_UPDATE_INTERVAL		10
 #define _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL	60
 
@@ -28,8 +30,10 @@
 		_wapi_thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_COLLECTION); \
 		g_assert (_wapi_thr_ret == 0);	\
 	}
-	
+
 extern void _wapi_collection_init (void);
 extern void _wapi_handle_collect (void);
+
+G_END_DECLS
 
 #endif /* _WAPI_COLLECTION_H_ */

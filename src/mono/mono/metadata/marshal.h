@@ -18,6 +18,8 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 
+G_BEGIN_DECLS
+
 typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 /* marshaling helper functions */
@@ -344,6 +346,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 
 MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type);
+
+G_END_DECLS
 
 #endif /* __MONO_MARSHAL_H__ */
 

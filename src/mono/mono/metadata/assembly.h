@@ -5,6 +5,8 @@
 
 #include <mono/metadata/image.h>
 
+G_BEGIN_DECLS
+
 void          mono_assemblies_init     (void);
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
@@ -78,5 +80,6 @@ typedef struct {
 void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);
 void          mono_register_config_for_assembly (const char* assembly_name, const char* config_xml);
 
+G_END_DECLS
 #endif
 

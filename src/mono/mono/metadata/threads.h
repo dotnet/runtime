@@ -14,6 +14,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
+G_BEGIN_DECLS
+
 typedef void (*MonoThreadCleanupFunc) (MonoThread* thread);
 
 extern int  mono_thread_get_abort_signal (void);
@@ -72,5 +74,7 @@ extern gboolean mono_thread_interruption_requested (void);
 extern void mono_thread_interruption_checkpoint (void);
 extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
+
+G_END_DECLS
 
 #endif /* _MONO_METADATA_THREADS_H_ */

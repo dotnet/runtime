@@ -3,6 +3,8 @@
 
 #include <mono/metadata/object.h>
 
+G_BEGIN_DECLS
+
 typedef struct MonoTypeNameParse MonoTypeNameParse;
 
 struct MonoTypeNameParse {
@@ -133,5 +135,7 @@ MonoBoolean mono_declsec_get_inheritdemands_method (MonoMethod *callee, MonoDecl
 MonoBoolean mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry);
 MonoBoolean mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry);
 MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry);
+
+G_END_DECLS
 
 #endif /* __METADATA_REFLECTION_H__ */

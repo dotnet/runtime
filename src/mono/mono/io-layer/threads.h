@@ -18,6 +18,8 @@
 #include <mono/io-layer/processes.h>
 #include <mono/io-layer/access.h>
 
+G_BEGIN_DECLS
+
 #define TLS_MINIMUM_AVAILABLE 64
 #define TLS_OUT_OF_INDEXES 0xFFFFFFFF
 
@@ -57,5 +59,5 @@ extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
 					gpointer param);
-
+G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */

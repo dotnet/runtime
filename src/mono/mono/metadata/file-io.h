@@ -17,6 +17,8 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/io-layer/io-layer.h>
 
+G_BEGIN_DECLS
+
 /* This is a copy of System.IO.FileAccess */
 typedef enum {
 	FileAccess_Read=0x01,
@@ -218,5 +220,7 @@ extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
 					     gint64 length, gint32 *error);
 extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 					       gint64 length, gint32 *error);
+
+G_END_DECLS
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

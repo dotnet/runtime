@@ -4,6 +4,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
+G_BEGIN_DECLS
+
 typedef enum {
 	MONO_PROFILE_NONE = 0,
 	MONO_PROFILE_APPDOMAIN_EVENTS = 1 << 0,
@@ -49,6 +51,7 @@ typedef struct {
 } MonoProfileCoverageEntry;
 
 typedef struct _MonoProfiler MonoProfiler;
+
 
 /*
  * Functions that the runtime will call on the profiler.
@@ -108,6 +111,8 @@ void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoPr
 void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
 
 void mono_profiler_load             (const char *desc);
+
+G_END_DECLS
 
 #endif /* __MONO_PROFILER_H__ */
 

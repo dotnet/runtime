@@ -14,6 +14,8 @@
 
 #include "mono/io-layer/wapi.h"
 
+G_BEGIN_DECLS
+
 /* The typical idiom for this struct is to cast it to and from 64bit
  * ints, hence the endian switch.
  */
@@ -32,4 +34,5 @@ extern gboolean QueryPerformanceCounter(WapiLargeInteger *count);
 extern gboolean QueryPerformanceFrequency(WapiLargeInteger *freq);
 extern guint32 GetTickCount (void);
 
+G_END_DECLS
 #endif /* _WAPI_TIME_H_ */

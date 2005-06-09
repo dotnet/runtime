@@ -3,6 +3,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 typedef enum {
 	MONO_TRACE_ASSEMBLY		= (1<<0),
 	MONO_TRACE_TYPE			= (1<<1),
@@ -89,6 +91,8 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 	mono_tracev(G_LOG_LEVEL_MESSAGE, mask, format, args);
 	va_end (args);
 }
+
+G_END_DECLS
 
 #endif /* !__GNUC__ */
 

@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 #define MONO_CUSTOM_PREFIX 0xf0
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -67,5 +69,7 @@ mono_opcode_name (int opcode);
 
 MonoOpcodeEnum
 mono_opcode_value (const guint8 **ip, const guint8 *end);
+
+G_END_DECLS
 
 #endif /* __MONO_METADATA_OPCODES_H__ */

@@ -4,6 +4,8 @@
 #include <glib.h>
 #include <mono/metadata/class.h>
 
+G_BEGIN_DECLS
+
 typedef struct MonoDisHelper MonoDisHelper;
 
 typedef char* (*MonoDisIndenter) (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset);
@@ -37,6 +39,8 @@ MonoMethod*     mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClas
 MonoMethod*     mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image);
 
 char*           mono_method_full_name (MonoMethod *method, gboolean signature);
+
+G_END_DECLS
 
 #endif /* __MONO_DEBUG_HELPERS_H__ */
 

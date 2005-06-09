@@ -15,6 +15,5 @@ void             mono_code_manager_commit  (MonoCodeManager *cman, void *data, i
 typedef int    (*MonoCodeManagerFunc)      (void *data, int csize, int size, void *user_data);
 void            mono_code_manager_foreach  (MonoCodeManager *cman, MonoCodeManagerFunc func, void *user_data);
 
-
 #endif /* __MONO_CODEMAN_H__ */
 

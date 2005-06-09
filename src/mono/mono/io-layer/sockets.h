@@ -20,6 +20,8 @@
 
 #include "mono/io-layer/wapi.h"
 
+G_BEGIN_DECLS
+
 #define WSADESCRIPTION_LEN 256
 #define WSASYS_STATUS_LEN 128
 
@@ -49,4 +51,5 @@ extern int WSAIoctl (guint32 handle, gint32 command,
 		     gchar *output, gint o_len, glong *written,
 		     void *unused1, void *unused2);
 
+G_END_DECLS
 #endif /* _WAPI_SOCKETS_H_ */

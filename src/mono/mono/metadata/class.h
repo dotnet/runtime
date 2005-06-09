@@ -5,6 +5,8 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
 
+G_BEGIN_DECLS
+
 typedef struct MonoVTable MonoVTable;
 
 typedef struct _MonoClassField MonoClassField;
@@ -252,5 +254,7 @@ mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_c
 
 char *
 mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context);
+
+G_END_DECLS
 
 #endif /* _MONO_CLI_CLASS_H_ */

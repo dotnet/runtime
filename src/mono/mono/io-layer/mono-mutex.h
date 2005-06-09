@@ -33,6 +33,8 @@ extern "C" {
 #include <pthread.h>
 #include <time.h>
 
+G_BEGIN_DECLS
+
 typedef struct {
 	pthread_mutex_t mutex;
 	gboolean complete;
@@ -87,7 +89,6 @@ typedef struct _mono_mutex_t {
 /* static initializers */
 #define MONO_MUTEX_INITIALIZER { 0, MONO_THREAD_NONE, 0, 0, PTHREAD_MUTEX_INITIALIZER, 0 }
 #define MONO_RECURSIVE_MUTEX_INITIALIZER { 0, MONO_THREAD_NONE, 0, 0, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER }
-
 
 int mono_mutexattr_init (mono_mutexattr_t *attr);
 int mono_mutexattr_settype (mono_mutexattr_t *attr, int type);

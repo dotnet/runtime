@@ -1,6 +1,8 @@
 #ifndef _MONO_MEMPOOL_H_
 #define _MONO_MEMPOOL_H_
 
+G_BEGIN_DECLS
+
 typedef struct _MonoMemPool MonoMemPool;
 
 MonoMemPool *
@@ -28,6 +30,8 @@ mono_mempool_alloc0        (MonoMemPool *pool,
 
 gboolean
 mono_mempool_contains_addr (MonoMemPool *pool,
-							gpointer addr);
+			    gpointer addr);
+
+G_END_DECLS
 
 #endif

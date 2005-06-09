@@ -15,6 +15,8 @@
 
 #include "mono-mutex.h"
 
+G_BEGIN_DECLS
+
 typedef struct _WapiCriticalSection WapiCriticalSection;
 
 struct _WapiCriticalSection
@@ -30,5 +32,7 @@ extern guint32 SetCriticalSectionSpinCount(WapiCriticalSection *section, guint32
 extern gboolean TryEnterCriticalSection(WapiCriticalSection *section);
 extern void EnterCriticalSection(WapiCriticalSection *section);
 extern void LeaveCriticalSection(WapiCriticalSection *section);
+
+G_END_DECLS
 
 #endif /* _WAPI_CRITICAL_SECTIONS_H_ */

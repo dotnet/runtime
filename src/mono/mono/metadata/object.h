@@ -3,6 +3,8 @@
 
 #include <mono/metadata/class.h>
 
+G_BEGIN_DECLS
+
 typedef guchar MonoBoolean;
 
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
@@ -278,6 +280,8 @@ guint32      mono_gchandle_new         (MonoObject *obj, gboolean pinned);
 guint32      mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection);
 MonoObject*  mono_gchandle_get_target  (guint32 gchandle);
 void         mono_gchandle_free        (guint32 gchandle);
+
+G_END_DECLS
 
 #endif
 

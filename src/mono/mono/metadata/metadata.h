@@ -8,6 +8,8 @@
 #include <mono/metadata/row-indexes.h>
 #include <mono/metadata/image.h>
 
+G_BEGIN_DECLS
+
 #ifdef __GNUC__
 #define MONO_ZERO_LEN_ARRAY 0
 #else
@@ -434,5 +436,7 @@ guint32 mono_metadata_token_from_dor (guint32 dor_index);
 char *mono_guid_to_string (const guint8 *guid);
 
 guint32 mono_metadata_declsec_from_index (MonoImage *meta, guint32 idx);
+
+G_END_DECLS
 
 #endif /* __MONO_METADATA_H__ */

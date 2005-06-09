@@ -12,7 +12,11 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 extern gboolean ImpersonateLoggedOnUser (gpointer handle);
 extern gboolean RevertToSelf (void);
+
+G_END_DECLS
 
 #endif /* _WAPI_SECURITY_H_ */

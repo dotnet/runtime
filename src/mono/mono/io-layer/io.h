@@ -15,6 +15,8 @@
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/timefuncs.h"
 
+G_BEGIN_DECLS
+
 typedef struct _WapiSecurityAttributes WapiSecurityAttributes;
 
 struct _WapiSecurityAttributes 
@@ -200,5 +202,7 @@ extern gboolean LockFile (gpointer handle, guint32 offset_low,
 extern gboolean UnlockFile (gpointer handle, guint32 offset_low,
 			    guint32 offset_high, guint32 length_low,
 			    guint32 length_high);
+
+G_END_DECLS
 
 #endif /* _WAPI_IO_H_ */

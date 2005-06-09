@@ -4,6 +4,8 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
+G_BEGIN_DECLS
+
 typedef struct _MonoMethod MonoMethod;
 
 typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
@@ -83,6 +85,8 @@ mono_stack_walk         (MonoStackWalk func, gpointer user_data);
 /* Use this if the IL offset is not needed: it's faster */
 void
 mono_stack_walk_no_il   (MonoStackWalk func, gpointer user_data);
+
+G_END_DECLS
 
 #endif
 

@@ -7,6 +7,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
 
+G_BEGIN_DECLS
+
 extern MonoException *
 mono_exception_from_name               (MonoImage *image, 
 					const char* name_space, 
@@ -114,5 +116,7 @@ mono_get_exception_stack_overflow (void);
 
 MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions);
+
+G_END_DECLS
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */
