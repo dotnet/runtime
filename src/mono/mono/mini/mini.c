@@ -7941,7 +7941,8 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		return FALSE;
 	}
 	
-	if (target_bb != NULL) {
+	/* Check that there is a target BB, and that bb is not an empty loop (Bug 75061) */
+	if ((target_bb != NULL) && (target_bb != bb)) {
 		int i;
 
 		if (cfg->verbose_level > 1) {
