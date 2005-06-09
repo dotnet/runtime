@@ -641,6 +641,17 @@ class Tests {
 		
 		return 0;
 	}
+
+	public static int test_0_conv_ovf_i4_un () {
+		uint c;
+
+		checked {
+			c = 0x7fffffff;
+			int b = (int)c;
+		}
+
+		return 0;
+	}
 	
 	public static int test_0_bool () {
 		bool val = true;
