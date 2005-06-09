@@ -1,3 +1,8 @@
+2005-06-09  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: Handle more gracefully if objdump or X isn't
+	there. Warn the user about possible breakage.
+
 2005-06-08  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: read the SONAME from libX11. This is the same
