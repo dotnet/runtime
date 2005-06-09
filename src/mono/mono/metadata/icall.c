@@ -1984,6 +1984,137 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 	return res;
 }
 
+
+static MonoReflectionMethod*
+ves_icall_MonoGenericClass_GetCorrespondingInflatedMethod (MonoReflectionGenericClass *type, 
+                                                           MonoMethod* generic)
+{
+	MonoGenericClass *gclass;
+	MonoDynamicGenericClass *dgclass;
+	MonoDomain *domain;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	gclass = type->type.type->data.generic_class;
+	g_assert (gclass->is_dynamic);
+
+	dgclass = (MonoDynamicGenericClass *) gclass;
+
+	domain = mono_object_domain (type);
+
+	for (i = 0; i < dgclass->count_methods; i++)
+		if (generic->token == dgclass->methods [i]->token)
+                        return mono_method_get_object (domain, dgclass->methods [i], NULL);
+
+	return NULL;
+}
+
+static MonoReflectionMethod*
+ves_icall_MonoGenericClass_GetCorrespondingInflatedConstructor (MonoReflectionGenericClass *type, 
+                                                                MonoMethod* generic)
+{
+	MonoGenericClass *gclass;
+	MonoDynamicGenericClass *dgclass;
+	MonoDomain *domain;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	gclass = type->type.type->data.generic_class;
+	g_assert (gclass->is_dynamic);
+
+	dgclass = (MonoDynamicGenericClass *) gclass;
+
+	domain = mono_object_domain (type);
+
+	for (i = 0; i < dgclass->count_ctors; i++)
+		if (generic->token == dgclass->ctors [i]->token)
+                        return mono_method_get_object (domain, dgclass->ctors [i], NULL);
+
+	return NULL;
+}
+
+
+static MonoReflectionField*
+ves_icall_MonoGenericClass_GetCorrespondingInflatedField (MonoReflectionGenericClass *type, 
+                                                          MonoClassField* generic)
+{
+	MonoGenericClass *gclass;
+	MonoDynamicGenericClass *dgclass;
+	MonoDomain *domain;
+        MonoClass *refclass;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	gclass = type->type.type->data.generic_class;
+	g_assert (gclass->is_dynamic);
+
+	dgclass = (MonoDynamicGenericClass *) gclass;
+
+	refclass = mono_class_from_mono_type (type->type.type);
+
+	domain = mono_object_domain (type);
+
+	for (i = 0; i < dgclass->count_fields; i++)
+                if (strcmp (generic->name, dgclass->fields [i].name) == 0)
+                        return mono_field_get_object (domain, refclass, &dgclass->fields [i]);
+
+	return NULL;
+}
+
+
+static MonoReflectionMethod*
+ves_icall_MonoType_GetCorrespondingInflatedMethod (MonoReflectionType *type, 
+                                                   MonoMethod* generic)
+{
+	MonoDomain *domain; 
+	MonoClass *klass;
+	MonoMethod *method;
+	gpointer iter;
+		
+	MONO_ARCH_SAVE_REGS;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+
+	klass = mono_class_from_mono_type (type->type);
+
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+                if (method->token == generic->token)
+                        return mono_method_get_object (domain, method, klass);
+        }
+
+        return NULL;
+}
+
+
+static MonoReflectionField*
+ves_icall_MonoType_GetCorrespondingInflatedField (MonoReflectionType *type, 
+                                                  MonoClassField* generic)
+{
+	MonoDomain *domain; 
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+		
+	MONO_ARCH_SAVE_REGS;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+
+	klass = mono_class_from_mono_type (type->type);
+
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+                if (field->name == generic->name)
+                        return mono_field_get_object (domain, klass, field);
+        }
+
+        return NULL;
+}
+
+
 static MonoArray*
 ves_icall_MonoGenericClass_GetMethods (MonoReflectionGenericClass *type,
 				       MonoReflectionType *reflected_type)
@@ -6188,6 +6319,9 @@ static const IcallEntry monotype_icalls [] = {
 	{"GetArrayRank", ves_icall_MonoType_GetArrayRank},
 	{"GetConstructors", ves_icall_Type_GetConstructors_internal},
 	{"GetConstructors_internal", ves_icall_Type_GetConstructors_internal},
+	{"GetCorrespondingInflatedConstructor", ves_icall_MonoType_GetCorrespondingInflatedMethod},
+	{"GetCorrespondingInflatedField", ves_icall_MonoType_GetCorrespondingInflatedField},
+	{"GetCorrespondingInflatedMethod", ves_icall_MonoType_GetCorrespondingInflatedMethod},
 	{"GetElementType", ves_icall_MonoType_GetElementType},
 	{"GetEvents_internal", ves_icall_Type_GetEvents_internal},
 	{"GetField", ves_icall_Type_GetField},
@@ -6298,6 +6432,9 @@ static const IcallEntry monofield_icalls [] = {
 
 static const IcallEntry monogenericclass_icalls [] = {
 	{"GetConstructors_internal", ves_icall_MonoGenericClass_GetConstructors},
+	{"GetCorrespondingInflatedConstructor", ves_icall_MonoGenericClass_GetCorrespondingInflatedConstructor},
+	{"GetCorrespondingInflatedField", ves_icall_MonoGenericClass_GetCorrespondingInflatedField},
+	{"GetCorrespondingInflatedMethod", ves_icall_MonoGenericClass_GetCorrespondingInflatedMethod},
 	{"GetEvents_internal", ves_icall_MonoGenericClass_GetEvents},
 	{"GetFields_internal", ves_icall_MonoGenericClass_GetFields},
 	{"GetInterfaces_internal", ves_icall_MonoGenericClass_GetInterfaces},
