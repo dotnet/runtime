@@ -900,6 +900,7 @@ guint32  mono_arch_get_patch_offset             (guint8 *code);
 gpointer*mono_arch_get_vcall_slot_addr          (guint8* code, gpointer *regs);
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs);
 void     mono_arch_create_vars                  (MonoCompile *cfg);
+void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

@@ -503,8 +503,11 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 	cfg->arch.reg_saved_b0 = cfg->arch.reg_local0 - 2;
 	cfg->arch.reg_saved_sp = cfg->arch.reg_local0 - 3;
 
-	/* Need to allocate at least 1 out register for use by CEE_THROW */
-	cfg->arch.n_out_regs = MAX (cfg->arch.n_out_regs, 1);
+	/* 
+	 * Need to allocate at least 2 out register for use by CEE_THROW / the system
+	 * exception throwing code.
+	 */
+	cfg->arch.n_out_regs = MAX (cfg->arch.n_out_regs, 2);
 
 	g_free (cinfo);
 }
@@ -1679,7 +1682,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code.buf - cfg->native_code;
 
-		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+		max_len = ((int)(((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN]));
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			ia64_codegen_close (code);
@@ -2046,8 +2049,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_break_i_pred (code, 7, 0);
 			break;
 		case OP_IA64_COND_EXC:
-			/* FIXME: */
-			ia64_break_i_pred (code, 6, 0);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, ins->inst_p1);
+			ia64_br_cond_pred (code, 6, 0);
 			break;
 		case OP_IA64_CSET:
 			/* FIXME: Do this with one instruction ? */
@@ -2084,6 +2088,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_zxt4 (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_CONV_OVF_U4:
+			/* FIXME: */
+			ia64_mov (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_CONV_OVF_I4_UN:
+			/* FIXME: Do this in the lowering pass */
+			ia64_movl (code, GP_SCRATCH_REG, 0x7fffffff);
+			ia64_cmp4_gtu (code, 6, 7, ins->sreg1, GP_SCRATCH_REG);
+
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "OverflowException");
+			ia64_br_cond_pred (code, 6, 0);
+
 			/* FIXME: */
 			ia64_mov (code, ins->dreg, ins->sreg1);
 			break;
@@ -2233,9 +2249,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Exception handling */
 		case OP_CALL_HANDLER:
-			/* FIXME: */
+			/*
+			 * Using a call instruction would mess up the register stack, so
+			 * save the return address to a register and use a
+			 * branch.
+			 */
+			ia64_mov_from_ip (code, GP_SCRATCH_REG);
+			/* Add the length of OP_CALL_HANDLER */
+			ia64_adds_imm (code, GP_SCRATCH_REG, 5 * 16, GP_SCRATCH_REG);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+			ia64_movl (code, GP_SCRATCH_REG2, 0);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+			ia64_br_cond_reg (code, IA64_B6);
 			break;
+		case OP_START_HANDLER: {
+			/*
+			 * We receive the return address in GP_SCRATCH_REG.
+			 */
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
+			ia64_adds_imm (code, GP_SCRATCH_REG2, spvar->inst_offset, cfg->frame_reg);
+			ia64_st8_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 0);
+			break;
+		}
+		case CEE_ENDFINALLY: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
+			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+			ia64_br_cond_reg (code, IA64_B6);
+			break;
+		}
+		case OP_ENDFILTER: {
+			/* FIXME: Return the value */
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
+			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+			ia64_br_cond_reg (code, IA64_B6);
+			break;
+		}
 		case CEE_THROW:
 			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -2305,6 +2358,111 @@ static Ia64InsType ins_types_in_template [32][3] = {
 	{0, 0, 0},
 	{0, 0, 0}
 };
+
+static gboolean stops_in_template [32][3] = {
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, TRUE, FALSE },
+	{ FALSE, TRUE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE },
+
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ TRUE, FALSE, FALSE },
+	{ TRUE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, TRUE },
+	{ FALSE, FALSE, FALSE },
+	{ FALSE, FALSE, FALSE }
+};
+
+void
+ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
+{
+	int i, j, ins_type, template;
+
+	if (!code->automatic) {
+		if (code->nins == 0)
+			return;
+
+		g_assert (code->nins == 3);
+
+		/* Verify template is correct */
+		template = code->template;
+		for (j = 0; j < 3; ++j) {
+			if (code->stops [j])
+				g_assert (stops_in_template [template]);
+
+			ins_type = ins_types_in_template [template][j];
+			switch (code->itypes [j]) {
+			case IA64_INS_TYPE_A:
+				g_assert ((ins_type == IA64_INS_TYPE_I) || (ins_type == IA64_INS_TYPE_M));
+				break;
+			case IA64_INS_TYPE_LX:
+				g_assert (j == 1);
+				g_assert (ins_type == IA64_INS_TYPE_LX);
+				j ++;
+				break;
+			default:
+				g_assert (ins_type == code->itypes [j]);
+			}
+		}
+
+		ia64_emit_bundle_template (code, template, code->instructions [0], code->instructions [1], code->instructions [2]);
+		code->template = 0;
+		code->nins = 0;
+		return;
+	}
+
+	for (i = 0; i < code->nins; ++i) {
+		switch (code->itypes [i]) {
+		case IA64_INS_TYPE_A:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
+			break;
+		case IA64_INS_TYPE_I:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, IA64_NOP_M, code->instructions [i], IA64_NOP_I);
+			break;
+		case IA64_INS_TYPE_M:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
+			break;
+		case IA64_INS_TYPE_B:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [i]);
+			break;
+		case IA64_INS_TYPE_F:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [i], IA64_NOP_I);
+			break;
+		case IA64_INS_TYPE_LX:
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [i], code->instructions [i + 1]);
+			i ++;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	code->nins = 0;
+}
 
 static void 
 ia64_patch (unsigned char* code, gpointer target)
@@ -2428,6 +2586,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, max_offset, i;
 	Ia64CodegenState code;
 	CallInfo *cinfo;
+	unw_dyn_region_info_t *r_pro;
+	int unw_op_count;
 
 	sig = mono_method_signature (method);
 	pos = 0;
@@ -2438,9 +2598,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->native_code = g_malloc (cfg->code_size);
 
 	ia64_codegen_init (code, cfg->native_code);
-
-	ia64_alloc (code, cfg->arch.reg_saved_ar_pfs, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
-	ia64_mov_from_br (code, cfg->arch.reg_saved_b0, IA64_B0);
+	ia64_codegen_set_automatic (code, FALSE);
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 	if (cfg->param_area)
@@ -2460,47 +2618,61 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size -= pos;
 
-	if (alloc_size || cinfo->stack_usage)
+	/* Initialize unwind info */
+	r_pro = g_malloc0 (_U_dyn_region_info_size (3));
+	unw_op_count = 0;
+
+	ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
+	ia64_alloc (code, cfg->arch.reg_saved_ar_pfs, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
+	ia64_mov_from_br (code, cfg->arch.reg_saved_b0, IA64_B0);
+
+	_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 0,
+						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + cfg->arch.reg_saved_ar_pfs);
+	_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 1,
+						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + cfg->arch.reg_saved_b0);
+
+	if (alloc_size || cinfo->stack_usage) {
 		ia64_mov (code, cfg->frame_reg, IA64_SP);
+		_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 2,
+							/* reg=*/ UNW_IA64_SP, /* dst=*/ UNW_IA64_GR + cfg->frame_reg);
+	}
+	else
+		ia64_nop_i (code, 0);
+	ia64_stop (code);
+	ia64_end_bundle (code);
+
+	/* Finish unwind info */
+	r_pro->op_count = unw_op_count;
+	r_pro->insn_count = (code.buf - cfg->native_code) >> 4;
+
+	cfg->arch.r_pro = r_pro;
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
 #if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		NOT_IMPLEMENTED;
 #else
-		ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
 
-		if (ia64_is_imm14 (-alloc_size))
+		if (ia64_is_imm14 (-alloc_size)) {
+			ia64_begin_bundle_template (code, IA64_TEMPLATE_MISI);
+			ia64_nop_m (code, 0);
+			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP); ia64_stop (code);
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+			ia64_end_bundle (code);
+		}
 		else {
-			ia64_movl (code, GP_SCRATCH_REG, -alloc_size);
+			ia64_begin_bundle_template (code, IA64_TEMPLATE_MLXS);
+			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
+			ia64_movl (code, GP_SCRATCH_REG, -alloc_size); ia64_stop (code);
+			ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
 			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+			ia64_nop_i (code, 0);
+			ia64_nop_i (code, 0); ia64_stop (code);
+			ia64_end_bundle (code);
 		}
 #endif
 	}
-
-	/* compute max_offset in order to use short forward jumps */
-	max_offset = 0;
-	if (cfg->opt & MONO_OPT_BRANCH) {
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *ins = bb->code;
-			bb->max_offset = max_offset;
-
-			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-				max_offset += 6;
-			/* max alignment for loops */
-			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
-				max_offset += LOOP_ALIGNMENT;
-
-			while (ins) {
-				if (ins->opcode == OP_LABEL)
-					ins->inst_c1 = max_offset;
-				
-				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
-				ins = ins->next;
-			}
-		}
-	}
+	ia64_codegen_set_automatic (code, TRUE);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
@@ -2603,6 +2775,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		mono_jit_stats.code_reallocs++;
 	}
 
+	/* FIXME: Emit unwind info */
+
 	buf = cfg->native_code + cfg->code_len;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
@@ -2624,13 +2798,25 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	g_free (cinfo);
 
+	ia64_end_bundle (code);
+	ia64_codegen_set_automatic (code, FALSE);
+
+	ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
 	if (cfg->arch.stack_alloc_size)
 		ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
-
+	else
+		ia64_nop_m (code, 0);
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
-	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
-	ia64_br_ret_reg (code, IA64_B0);
+	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0); ia64_stop (code);
+	ia64_end_bundle (code);
 
+	ia64_begin_bundle_template (code, IA64_TEMPLATE_BBBS);
+	ia64_br_ret_reg (code, IA64_B0);
+	ia64_nop_b (code, 0);
+	ia64_nop_b (code, 0); ia64_stop (code);
+	ia64_end_bundle (code);
+
+	ia64_codegen_set_automatic (code, TRUE);
 	ia64_codegen_close (code);
 
 	cfg->code_len = code.buf - cfg->native_code;
@@ -2653,24 +2839,60 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	/* Compute needed space */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			code_size += 40;
+			code_size += 256;
 		if (patch_info->type == MONO_PATCH_INFO_R8)
 			code_size += 8 + 7; /* sizeof (double) + alignment */
 		if (patch_info->type == MONO_PATCH_INFO_R4)
 			code_size += 4 + 7; /* sizeof (float) + alignment */
 	}
 
+	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
 	ia64_codegen_init (code, cfg->native_code + cfg->code_len);
 
 	/* add code to raise exceptions */
+	/* FIXME: Optimize this */
 	nthrows = 0;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
-			NOT_IMPLEMENTED;
-		default:
+			MonoClass *exc_class;
+			guint8* throw_ip;
+			guint8* buf;
+
+			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+			g_assert (exc_class);
+			throw_ip = cfg->native_code + patch_info->ip.i;
+
+			ia64_patch (cfg->native_code + patch_info->ip.i, code.buf);
+
+			ia64_movl (code, cfg->arch.reg_out0 + 0, exc_class->type_token);
+
+			ia64_begin_bundle (code);
+
+			patch_info->data.name = "mono_arch_throw_corlib_exception";
+			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+			patch_info->ip.i = code.buf - cfg->native_code;
+
+			/* Indirect call */
+			ia64_movl (code, GP_SCRATCH_REG, 0);
+			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+			ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+
+			/* Compute the offset */
+			buf = code.buf + 32;
+			ia64_movl (code, cfg->arch.reg_out0 + 1, buf - throw_ip);
+
+			ia64_br_call_reg (code, IA64_B0, IA64_B6);
 			break;
 		}
+		default:
+			break;
 		}
 	}
 
@@ -2695,6 +2917,24 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	NOT_IMPLEMENTED;
 
 	return NULL;
+}
+
+void
+mono_arch_save_unwind_info (MonoCompile *cfg)
+{
+	unw_dyn_info_t *di;
+
+	/* FIXME: Unregister this for dynamic methods */
+
+	di = g_malloc0 (sizeof (unw_dyn_info_t));
+	di->start_ip = (unw_word_t) cfg->native_code;
+	di->end_ip = (unw_word_t) cfg->native_code + cfg->code_len;
+	di->gp = 0;
+	di->format = UNW_INFO_FORMAT_DYNAMIC;
+	di->u.pi.name_ptr = (unw_word_t)mono_method_full_name (cfg->method, TRUE);
+	di->u.pi.regions = cfg->arch.r_pro;
+
+	_U_dyn_register (di);
 }
 
 void

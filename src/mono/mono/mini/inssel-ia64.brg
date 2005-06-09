@@ -260,15 +260,16 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base), base) {
 
 
 stmt: OP_START_HANDLER {
-	/* FIXME: */
+     mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_ENDFINALLY {
-	/* FIXME: */
+     mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_ENDFILTER (reg) {
-	/* FIXME: */
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 %%

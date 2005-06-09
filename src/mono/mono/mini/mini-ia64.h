@@ -72,6 +72,7 @@ typedef struct MonoCompileArch {
 	gint32 reg_saved_ar_pfs;
 	gint32 reg_saved_b0;
 	gint32 reg_saved_sp;
+	unw_dyn_region_info_t *r_pro;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
@@ -111,5 +112,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
+#define MONO_ARCH_HAVE_SAVE_UNWIND_INFO 1
 
 #endif /* __MONO_MINI_IA64_H__ */  

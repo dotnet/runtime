@@ -309,6 +309,8 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 
 	ia64_codegen_close (code);
 
+	g_assert (code.buf - buf <= TRAMPOLINE_SIZE);
+
 	mono_arch_flush_icache (buf, code.buf - buf);
 
 	ji = g_new0 (MonoJitInfo, 1);

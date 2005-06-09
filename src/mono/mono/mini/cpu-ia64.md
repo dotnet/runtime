@@ -66,7 +66,7 @@ stsfld:
 stobj:
 conv.ovf.i1.un:
 conv.ovf.i2.un:
-conv.ovf.i4.un: dest:i src1:i len:48
+conv.ovf.i4.un: dest:i src1:i len:96
 conv.ovf.i8.un:
 conv.ovf.u1.un:
 conv.ovf.u2.un:
@@ -121,7 +121,6 @@ mul.ovf: dest:i src1:i src2:i len:48
 mul.ovf.un: dest:i src1:i src2:i len:48
 sub.ovf:
 sub.ovf.un:
-endfinally:
 leave:
 leave.s:
 stind.i:
@@ -149,7 +148,6 @@ ldloc:
 ldloca:
 stloc:
 localloc: dest:i src1:i len:48
-endfilter:
 unaligned.:
 volatile.:
 tail.:
@@ -365,7 +363,11 @@ float_clt_membase: dest:i src1:f src2:b len:48
 float_clt_un_membase: dest:i src1:f src2:b len:48
 float_conv_to_u: dest:i src1:f len:48
 fmove: dest:f src1:f len:48
-call_handler: len:48
+call_handler: len:96
+start_handler: len:96
+op_endfilter: len:96
+endfinally: len:96
+endfilter: len:96
 aot_const: dest:i len:48
 tls_get: dest:i len:48
 atomic_add_i4: src1:b src2:i dest:i len:48

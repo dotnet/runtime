@@ -11,6 +11,10 @@
  * We implement exception handling with the help of the libuwind library:
  * 
  * http://www.hpl.hp.com/research/linux/libunwind/
+ *
+ *  Under IA64 all functions are assumed to have unwind info, we do not need to save
+ * the machine state in the LMF. But we have to generate unwind info for all 
+ * dynamically generated code.
  */
 
 #include <config.h>
@@ -38,6 +42,52 @@
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 
+static gpointer
+mono_create_ftnptr (gpointer ptr)
+{
+	gpointer *desc = g_malloc (2 * sizeof (gpointer));
+	desc [0] = ptr;
+	desc [1] = NULL;
+
+	return desc;
+}
+
+static void
+fill_monocontext_from_cursor (MonoContext *ctx)
+{
+	unw_word_t ip, sp, fp;
+	unw_cursor_t new_cursor;
+	int err;
+
+	/* After changing the cursor, the variables in the MonoContext must be updated */
+	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
+	g_assert (err == 0);
+
+	err = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
+	g_assert (err == 0);
+
+	/* Fp is the SP of the parent frame */
+	new_cursor = ctx->cursor;
+
+	err = unw_step (&new_cursor);
+	g_assert (err >= 0);
+
+	err = unw_get_reg (&new_cursor, UNW_IA64_SP, &fp);
+	g_assert (err == 0);
+
+	MONO_CONTEXT_SET_IP (ctx, ip);
+	MONO_CONTEXT_SET_SP (ctx, sp);
+	MONO_CONTEXT_SET_BP (ctx, fp);
+}
+
+static void
+restore_context (MonoContext *ctx)
+{
+	unw_set_reg (&ctx->cursor, UNW_IA64_IP, (guint64)ctx->ip);
+	unw_set_reg (&ctx->cursor, UNW_IA64_SP, (guint64)ctx->sp);
+	unw_resume (&ctx->cursor);
+}
+
 /*
  * mono_arch_get_restore_context:
  *
@@ -46,27 +96,7 @@
 gpointer
 mono_arch_get_restore_context (void)
 {
-	static guint8 *start = NULL;
-	static gboolean inited = FALSE;
-	Ia64CodegenState code;
-
-	if (inited)
-		return start;
-
-	/* restore_contect (MonoContext *ctx) */
-
-	start = mono_global_codeman_reserve (256);
-
-	/* FIXME: */
-	ia64_codegen_init (code, start);
-	ia64_break_i (code, 0);
-	ia64_codegen_close (code);
-
-	g_assert ((code.buf - start) <= 256);
-
-	mono_arch_flush_icache (start, code.buf - start);
-
-	return start;
+	return restore_context;
 }
 
 /*
@@ -81,7 +111,6 @@ mono_arch_get_call_filter (void)
 {
 	static guint8 *start;
 	static gboolean inited = FALSE;
-	int i;
 	guint32 pos;
 	Ia64CodegenState code;
 
@@ -108,13 +137,12 @@ mono_arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *exc, guint64 rip, guint64 rethrow)
+throw_exception (MonoObject *exc, guint64 ip, guint64 rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	unw_context_t unw_ctx;
 	MonoContext ctx;
 	int res;
-	unw_word_t ip, sp;
 
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
@@ -130,31 +158,20 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rethrow)
 	res = unw_init_local (&ctx.cursor, &unw_ctx);
 	g_assert (res == 0);
 
-	res = unw_get_reg (&ctx.cursor, UNW_IA64_IP, &ip);
-	g_assert (res == 0);
+	/* Get rid of this frame and the throw trampoline frame */
+	res = unw_step (&ctx.cursor);
+	g_assert (res >= 0);
+	res = unw_step (&ctx.cursor);
+	g_assert (res >= 0);
 
-	res = unw_get_reg (&ctx.cursor, UNW_IA64_SP, &sp);
-	g_assert (res == 0);
+	unw_set_reg (&ctx.cursor, UNW_IA64_IP, (guint64)ip);
 
-	/* FIXME: bp */
+	fill_monocontext_from_cursor (&ctx);
 
-	MONO_CONTEXT_SET_IP (&ctx, ip);
-	MONO_CONTEXT_SET_SP (&ctx, sp);
-
-	mono_handle_exception (&ctx, exc, (gpointer)(rip + 1), FALSE);
+	mono_handle_exception (&ctx, exc, (gpointer)(ip + 1), FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
-}
-
-static gpointer
-mono_create_ftnptr (gpointer ptr)
-{
-	gpointer *desc = g_malloc (2 * sizeof (gpointer));
-	desc [0] = ptr;
-	desc [1] = NULL;
-
-	return desc;
 }
 
 static gpointer
@@ -265,7 +282,6 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {	
-	static gboolean inited = FALSE;	
 	guint8* start;
 	Ia64CodegenState code;
 
@@ -298,24 +314,84 @@ mono_arch_get_throw_corlib_exception (void)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
-	guint64 throw_ex;
+	gpointer ptr;
+	int i, in0, local0, out0, nout;
 	Ia64CodegenState code;
+	unw_dyn_info_t *di;
+	unw_dyn_region_info_t *r_pro;
 
 	if (inited)
 		return start;
 
-	start = mono_global_codeman_reserve (64);
+	start = mono_global_codeman_reserve (1024);
 
-	/* FIXME: */
+	in0 = 32;
+	local0 = in0 + 2;
+	out0 = local0 + 4;
+	nout = 3;
+
+	/* FIXME: Add unwind info */
+
 	ia64_codegen_init (code, start);
+	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
+	ia64_mov_from_br (code, local0 + 1, IA64_RP);
+
+	r_pro = g_malloc0 (_U_dyn_region_info_size (2));
+	r_pro->op_count = 2;
+	r_pro->insn_count = 6;
+	i = 0;
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 2,
+						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + local0 + 0);
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 5,
+						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + local0 + 1);
+	g_assert ((unsigned) i <= r_pro->op_count);	
+
+	/* Call exception_from_token */
+	ia64_movl (code, out0 + 0, mono_defaults.exception_class->image);
+	ia64_mov (code, out0 + 1, in0 + 0);
+	ptr = mono_exception_from_token;
+	ia64_movl (code, GP_SCRATCH_REG, ptr);
+	ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+	ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+	ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+	ia64_br_call_reg (code, IA64_B0, IA64_B6);
+	ia64_mov (code, local0 + 3, IA64_R8);
+
+	/* Compute throw ip */
+	ia64_mov (code, local0 + 2, local0 + 1);
+	ia64_sub (code, local0 + 2, local0 + 2, in0 + 1);
+
+	/* Set args */
+	ia64_mov (code, out0 + 0, local0 + 3);
+	ia64_mov (code, out0 + 1, local0 + 2);
+	ia64_mov (code, out0 + 2, IA64_R0);
+
+	/* Call throw_exception */
+	ptr = throw_exception;
+	ia64_movl (code, GP_SCRATCH_REG, ptr);
+	ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+	ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+	ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+	ia64_br_call_reg (code, IA64_B0, IA64_B6);
+
 	ia64_break_i (code, 0);
 	ia64_codegen_close (code);
 
-	g_assert ((code.buf - start) <= 256);
+	g_assert ((code.buf - start) <= 1024);
+
+	di = g_malloc0 (sizeof (unw_dyn_info_t));
+	di->start_ip = (unw_word_t) start;
+	di->end_ip = (unw_word_t) code.buf;
+	di->gp = 0;
+	di->format = UNW_INFO_FORMAT_DYNAMIC;
+	di->u.pi.name_ptr = (unw_word_t)"throw_corlib_exception_trampoline";
+	di->u.pi.regions = r_pro;
+
+	_U_dyn_register (di);
 
 	mono_arch_flush_icache (start, code.buf - start);
 
-	return start;
+	return mono_create_ftnptr (start);
 }
 
 /* mono_arch_find_jit_info:
@@ -333,26 +409,35 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			 gboolean *managed)
 {
 	MonoJitInfo *ji;
-	int i, err;
-	unw_word_t ip, sp;
+	int err;
+	unw_word_t ip;
 
 	*new_ctx = *ctx;
 
 	while (TRUE) {
-		ip = MONO_CONTEXT_GET_IP (new_ctx);
+		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
+		g_assert (err == 0);
 
 		/* Avoid costly table lookup during stack overflow */
-		if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+		if (prev_ji && ((guint8*)ip > (guint8*)prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 			ji = prev_ji;
 		else
-			ji = mono_jit_info_table_find (domain, ip);
+			ji = mono_jit_info_table_find (domain, (gpointer)ip);
 
 		if (managed)
 			*managed = FALSE;
 
-		if (ji != NULL) {
-			int offset;
+		/*
+		{
+			char name[256];
+			unw_word_t off;
 
+			unw_get_proc_name (&new_ctx->cursor, name, 256, &off);
+			printf ("F: %s\n", name);
+		}
+		*/
+
+		if (ji != NULL) {
 			if (managed)
 				if (!ji->method->wrapper_type)
 					*managed = TRUE;
@@ -363,7 +448,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			 * JIT, so we have to restore callee saved registers from the lmf.
 			 */
 			if (ji->method->save_lmf) {
-				NOT_IMPLEMENTED;
 			}
 			else {
 			}
@@ -373,51 +457,27 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				*lmf = (*lmf)->previous_lmf;
 			}
 
-			err = unw_step (&new_ctx->cursor);
-			g_assert (err >= 0);
-
-			err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
-			g_assert (err == 0);
-
-			err = unw_get_reg (&new_ctx->cursor, UNW_IA64_SP, &sp);
-			g_assert (err == 0);
-
-			/* FIXME: bp */
-
-			MONO_CONTEXT_SET_IP (new_ctx, ip);
-			MONO_CONTEXT_SET_SP (new_ctx, sp);
-
-			return ji;
+			break;
 		}
 
 		/* This is an unmanaged frame, so just unwind through it */
 		err = unw_step (&new_ctx->cursor);
 		g_assert (err >= 0);
 
-		{
-			char name[256];
-			unw_word_t off;
-
-			unw_get_proc_name (&new_ctx->cursor, name, 256, &off);
-			printf ("F: %s\n", name);
-		}
-
 		if (err == 0)
-			return NULL;
-
-		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
-		g_assert (err == 0);
-
-		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_SP, &sp);
-		g_assert (err == 0);
-
-		/* FIXME: bp */
-
-		MONO_CONTEXT_SET_IP (new_ctx, ip);
-		MONO_CONTEXT_SET_SP (new_ctx, sp);
+			break;
 	}
 
-	return NULL;
+	if (ji) {
+		err = unw_step (&new_ctx->cursor);
+		g_assert (err >= 0);
+
+		fill_monocontext_from_cursor (new_ctx);
+
+		return ji;
+	}
+	else
+		return NULL;
 }
 
 /**
