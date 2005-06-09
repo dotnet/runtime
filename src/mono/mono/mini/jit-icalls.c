@@ -241,6 +241,12 @@ mono_idiv (gint32 a, gint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (0x80000000))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
 	return a / b;
 }
 
@@ -249,6 +255,10 @@ mono_idiv_un (guint32 a, guint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
 	return a / b;
 }
 
@@ -256,6 +266,13 @@ static gint32
 mono_irem (gint32 a, gint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (0x80000000))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
 
 	return a % b;
 }
@@ -265,6 +282,10 @@ mono_irem_un (guint32 a, guint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
 	return a % b;
 }
 
@@ -440,7 +461,7 @@ ves_array_element_address (MonoArray *this, ...)
 	}
 	esize *= ind;
 
-	ea = (gpointer*)((char*)this->vector + esize);
+	ea = (gpointer*)(gpointer)((char*)this->vector + esize);
 
 	va_end(ap);
 

@@ -104,6 +104,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM           1
 #define MONO_ARCH_EMULATE_MUL_DIV        1
 #define MONO_ARCH_EMULATE_LONG_MUL_OPTS  1
+#define MONO_ARCH_NEED_DIV_CHECK         1
 
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 

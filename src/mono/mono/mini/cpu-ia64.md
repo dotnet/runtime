@@ -393,6 +393,10 @@ op_bigmul: len:48 dest:i src1:a src2:i
 op_bigmul_un: len:48 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:48
 sext_i2: dest:i src1:i len:48
+sext_i4: dest:i src1:i len:48
+zext_i1: dest:i src1:i len:48
+zext_i2: dest:i src1:i len:48
+zext_i4: dest:i src1:i len:48
 
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i len:48

@@ -411,6 +411,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 void
 mono_arch_cpu_init (void)
 {
+	gint64 tmp;
+
+	/* Enable fp traps */
+	asm volatile  ("mov %0 = ar.fpsr ;;\n\t"
+				   "dep %0 = 0, %0, 2, 1 ;;\n\t"
+				   "dep %0 = 0, %0, 3, 1 ;;\n\t"
+				   "mov ar.fpsr = %0 ;;\n\t"
+				   : "=r" (tmp));
 }
 
 /*
@@ -1561,6 +1569,56 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case CEE_CONV_OVF_U4:
+			NEW_INS (cfg, temp, OP_IA64_CMP4_LT);
+			temp->sreg1 = ins->sreg1;
+			temp->sreg2 = IA64_R0;
+
+			NEW_INS (cfg, temp, OP_IA64_COND_EXC);
+			temp->inst_p1 = (char*)"OverflowException";
+
+			ins->opcode = OP_MOVE;
+			break;
+		case CEE_CONV_OVF_I4_UN:
+			NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = 0x7fffffff;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+
+			NEW_INS (cfg, temp2, OP_IA64_CMP4_GT_UN);
+			temp2->sreg1 = ins->sreg1;
+			temp2->sreg2 = temp->dreg;
+
+			NEW_INS (cfg, temp, OP_IA64_COND_EXC);
+			temp->inst_p1 = (char*)"OverflowException";
+
+			ins->opcode = OP_MOVE;
+			break;
+		case OP_FCONV_TO_I4:
+		case OP_FCONV_TO_I2:
+		case OP_FCONV_TO_U2:
+		case OP_FCONV_TO_U1:
+			NEW_INS (cfg, temp, OP_FCONV_TO_I8);
+			temp->sreg1 = ins->sreg1;
+			temp->dreg = ins->dreg;
+
+			switch (ins->opcode) {
+			case OP_FCONV_TO_I4:
+				ins->opcode = OP_SEXT_I4;
+				break;
+			case OP_FCONV_TO_I2:
+				ins->opcode = OP_SEXT_I2;
+				break;
+			case OP_FCONV_TO_U2:
+				ins->opcode = OP_ZEXT_I4;
+				break;
+			case OP_FCONV_TO_U1:
+				ins->opcode = OP_ZEXT_I1;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			ins->sreg1 = ins->dreg;
+			break;
 		default:
 			break;
 		}
@@ -1883,6 +1941,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SEXT_I2:
 			ia64_sxt2 (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_SEXT_I4:
+			ia64_sxt4 (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_ZEXT_I1:
+			ia64_zxt1 (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_ZEXT_I2:
+			ia64_zxt2 (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_ZEXT_I4:
+			ia64_zxt4 (code, ins->dreg, ins->sreg1);
+			break;
 
 			/* Compare opcodes */
 		case OP_IA64_CMP4_EQ:
@@ -2087,22 +2157,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_U:
 			ia64_zxt4 (code, ins->dreg, ins->sreg1);
 			break;
-		case CEE_CONV_OVF_U4:
-			/* FIXME: */
-			ia64_mov (code, ins->dreg, ins->sreg1);
-			break;
-		case CEE_CONV_OVF_I4_UN:
-			/* FIXME: Do this in the lowering pass */
-			ia64_movl (code, GP_SCRATCH_REG, 0x7fffffff);
-			ia64_cmp4_gtu (code, 6, 7, ins->sreg1, GP_SCRATCH_REG);
-
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
-								 MONO_PATCH_INFO_EXC, "OverflowException");
-			ia64_br_cond_pred (code, 6, 0);
-
-			/* FIXME: */
-			ia64_mov (code, ins->dreg, ins->sreg1);
-			break;
 
 			/*
 			 * FLOAT OPCODES
@@ -2169,16 +2223,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ia64_fnorm_s_sf (code, ins->dreg, ins->sreg1, 0);
 			break;
-		case OP_FCONV_TO_I4:
-		case OP_FCONV_TO_I2:
-		case OP_FCONV_TO_U2:
-		case OP_FCONV_TO_U1:
-			/* FIXME: sign/zero extend ? */
-			ia64_fcvt_fx_trunc_sf (code, FP_SCRATCH_REG, ins->sreg1, 0);
-			ia64_getf_sig (code, ins->dreg, FP_SCRATCH_REG);
-			break;
 		case OP_FCONV_TO_I8:
-			/* FIXME: Difference with OP_FCONV_TO_I4 ? */
 			ia64_fcvt_fx_trunc_sf (code, FP_SCRATCH_REG, ins->sreg1, 0);
 			ia64_getf_sig (code, ins->dreg, FP_SCRATCH_REG);
 			break;
