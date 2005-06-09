@@ -8468,6 +8468,8 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		method = rmethod->method;
 	}
 
+	method = mono_get_inflated_method (method);
+
 	count = mono_method_signature (method)->generic_param_count;
 	if (count != mono_array_length (types))
 		return NULL;
@@ -8513,7 +8515,10 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	context->gclass = method->klass->generic_class;
 	context->gmethod = gmethod;
 
-	inflated = mono_class_inflate_generic_method (method, context, NULL);
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
+
+	inflated = mono_class_inflate_generic_method (method, context, method->klass);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
