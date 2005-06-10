@@ -285,6 +285,157 @@ class Tests {
 		return (int)((a - 1) + 1);
 	}
 
+	public static int test_0_add_ovf () {
+		long i, j, k;
+
+		checked {
+			i = System.Int64.MinValue;
+			j = 0;
+			k = i + j;
+		}
+
+		if (k != System.Int64.MinValue)
+			return 1;
+
+		checked {
+			i = System.Int64.MaxValue;
+			j = 0;
+			k = i + j;
+		}
+
+		if (k != System.Int64.MaxValue)
+			return 2;
+
+		checked {
+			i = System.Int64.MinValue;
+			j = System.Int64.MaxValue;
+			k = i + j;
+		}
+
+		if (k != -1)
+			return 3;
+
+		checked {
+			i = System.Int64.MaxValue;
+			j = System.Int64.MinValue;
+			k = i + j;
+		}
+
+		if (k != -1)
+			return 4;
+
+		checked {
+			i = System.Int64.MinValue + 1234;
+			j = -1234;
+			k = i + j;
+		}
+
+		if (k != System.Int64.MinValue)
+			return 5;
+
+		checked {
+			i = System.Int64.MaxValue - 1234;
+			j = 1234;
+			k = i + j;
+		}
+
+		if (k != System.Int64.MaxValue)
+			return 6;
+
+		return 0;
+	}
+
+	public static int test_0_add_un_ovf () {
+		ulong n = (ulong)134217728 * 16;
+		ulong number = checked (n + (uint)0);
+
+		return number == n ? 0 : 1;
+	}
+
+	public static int test_0_sub_ovf () {
+		long i, j, k;
+
+		checked {
+			i = System.Int64.MinValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.Int64.MinValue)
+			return 1;
+
+		checked {
+			i = System.Int64.MaxValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.Int64.MaxValue)
+			return 2;
+
+		checked {
+			i = System.Int64.MinValue;
+			j = System.Int64.MinValue + 1234;
+			k = i - j;
+		}
+
+		if (k != -1234)
+			return 3;
+
+		checked {
+			i = System.Int64.MaxValue;
+			j = 1234;
+			k = i - j;
+		}
+
+		if (k != System.Int64.MaxValue - 1234)
+			return 4;
+
+		checked {
+			i = System.Int64.MaxValue - 1234;
+			j = -1234;
+			k = i - j;
+		}
+
+		if (k != System.Int64.MaxValue)
+			return 5;
+
+		checked {
+			i = System.Int64.MinValue + 1234;
+			j = 1234;
+			k = i - j;
+		}
+
+		if (k != System.Int64.MinValue)
+			return 6;
+
+		return 0;
+	}
+
+	public static int test_0_sub_ovf_un () {
+		ulong i, j, k;
+
+		checked {
+			i = System.UInt64.MaxValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.UInt64.MaxValue)
+			return 1;
+
+		checked {
+			i = System.UInt64.MaxValue;
+			j = System.UInt64.MaxValue;
+			k = i - j;
+		}
+
+		if (k != 0)
+			return 2;
+
+		return 0;
+	}
+
 	public static int test_2_neg () {
 		long a = -2;		
 		return (int)(-a);
@@ -297,27 +448,6 @@ class Tests {
 			return (min == -(long)ul) ? 0 : 1;
 		}
 	}	
-
-	public static int test_0_shl () {
-		long a = 9;
-		int b = 1;
-		
-		if ((a >> b) != 4)
-			return 1;
-
-
-		return 0;
-	}
-	
-	public static int test_1_rshift ()
-	{
-		long a = 9;
-		int b = 1;
-		a = -9;
-		if ((a >> b) != -5)
-			return 0;
-		return 1;
-	}
 
 	public static int test_5_shift ()
 	{
@@ -458,6 +588,31 @@ class Tests {
 		}
 		return (int)res;
 	}	
+
+	public static int test_0_mul_imm () {
+	    long i = 4;
+
+		if ((i * 0) != 0)
+			return 1;
+		if ((i * 1) != 4)
+			return 2;
+		if ((i * 2) != 8)
+			return 3;
+		if ((i * 3) != 12)
+			return 4;
+		if ((i * 1234) != 4936)
+			return 5;
+		if ((i * -1) != -4)
+			return 6;
+		if ((i * -2) != -8)
+			return 7;
+		if ((i * -3) != -12)
+			return 8;
+		if ((i * -1234) != -4936)
+			return 9;
+
+		return 0;
+	}
 	
 	public static int test_4_divun () {
 		uint b = 12;
