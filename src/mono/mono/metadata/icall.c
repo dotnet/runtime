@@ -6041,12 +6041,18 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	ignored = 0;
 	for (i = 0; i < ilength; i++) {
 		c = start [i];
-		if (isspace (c) || c > 255)
+		if (isspace (c)) {
 			ignored++;
+		} else if (c >= sizeof (dbase64)) {
+			exc = mono_exception_from_name_msg (mono_get_corlib (),
+				"System", "FormatException",
+				"Invalid character found.");
+			mono_raise_exception (exc);
+		}
 	}
 
 	olength = ilength - ignored;
-	if ((olength & 3) != 0) {
+	if ((olength & 3) != 0 || olength <= 0) {
 		exc = mono_exception_from_name_msg (mono_get_corlib (), "System",
 					"FormatException", "Invalid length.");
 		mono_raise_exception (exc);
@@ -6064,13 +6070,13 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	for (i = 0; i < ilength; ) {
 		int k;
 
-		for (k = 0; k < 4; k++) {
+		for (k = 0; k < 4 && i < ilength; k++) {
 			c = start [i++];
-			if (isspace (c) || c > 255)
+			if (isspace (c))
 				continue;
 				
 			a [k] = (guchar) c;
-			if ((c > sizeof (dbase64) || ((b [k] = dbase64 [c]) & 0x80)) != 0) {
+			if (((b [k] = dbase64 [c]) & 0x80) != 0) {
 				exc = mono_exception_from_name_msg (mono_get_corlib (),
 					"System", "FormatException",
 					"Invalid character found.");
@@ -6083,6 +6089,9 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 			*res_ptr++ = (b [1] << 4) | (b [2] >> 2);
 		if (a [3] != '=')
 			*res_ptr++ = (b [2] << 6) | b [3];
+
+		while (i < ilength && isspace (start [i]))
+			i++;
 	}
 
 	return result;
