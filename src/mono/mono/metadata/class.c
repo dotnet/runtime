@@ -2437,9 +2437,16 @@ mono_class_create_generic_2 (MonoGenericClass *gclass)
 		klass->interfaces [i] = mono_class_from_mono_type (inflated);
 	}
 
-	for (list = gklass->nested_classes; list; list = list->next)
-		klass->nested_classes = g_list_append (
-			klass->nested_classes, list->data);
+	i = mono_metadata_nesting_typedef (klass->image, gklass->type_token, 1);
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+		klass->nested_classes = g_list_prepend (klass->nested_classes, nclass);
+		
+		i = mono_metadata_nesting_typedef (klass->image, gklass->type_token, i + 1);
+	}
 
 	if (gclass->parent)
 		klass->parent = mono_class_from_mono_type (gclass->parent);
