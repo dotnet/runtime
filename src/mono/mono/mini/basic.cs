@@ -307,6 +307,90 @@ class Tests {
 		return number == n ? 0 : 1;
 	}
 
+	public static int test_0_sub_ovf () {
+		int i, j, k;
+
+		checked {
+			i = System.Int32.MinValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.Int32.MinValue)
+			return 1;
+
+		checked {
+			i = System.Int32.MaxValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.Int32.MaxValue)
+			return 2;
+
+		checked {
+			i = System.Int32.MinValue;
+			j = System.Int32.MinValue + 1234;
+			k = i - j;
+		}
+
+		if (k != -1234)
+			return 3;
+
+		checked {
+			i = System.Int32.MaxValue;
+			j = 1234;
+			k = i - j;
+		}
+
+		if (k != System.Int32.MaxValue - 1234)
+			return 4;
+
+		checked {
+			i = System.Int32.MaxValue - 1234;
+			j = -1234;
+			k = i - j;
+		}
+
+		if (k != System.Int32.MaxValue)
+			return 5;
+
+		checked {
+			i = System.Int32.MinValue + 1234;
+			j = 1234;
+			k = i - j;
+		}
+
+		if (k != System.Int32.MinValue)
+			return 6;
+
+		return 0;
+	}
+
+	public static int test_0_sub_ovf_un () {
+		uint i, j, k;
+
+		checked {
+			i = System.UInt32.MaxValue;
+			j = 0;
+			k = i - j;
+		}
+
+		if (k != System.UInt32.MaxValue)
+			return 1;
+
+		checked {
+			i = System.UInt32.MaxValue;
+			j = System.UInt32.MaxValue;
+			k = i - j;
+		}
+
+		if (k != 0)
+			return 2;
+
+		return 0;
+	}
+
 	public static int test_3_or () {
 		int b = 2;
 		int a = 3;
