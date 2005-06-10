@@ -419,7 +419,7 @@ int_adc_imm: dest:i src1:i len:48
 int_sbb: dest:i src1:i src2:i len:48
 int_sbb_imm: dest:i src1:i len:48
 int_addcc: dest:i src1:i src2:i len:96
-int_subcc: dest:i src1:i src2:i len:48
+int_subcc: dest:i src1:i src2:i len:96
 int_add_imm: dest:i src1:i len:48
 int_sub_imm: dest:i src1:i len:48
 int_mul_imm: dest:i src1:i len:48
@@ -507,3 +507,4 @@ ia64_fcmp_ge_un: src1:f src2:f len:96
 ia64_br_cond: len:48
 ia64_cond_exc: len:48
 ia64_cset: dest:i len:48
+

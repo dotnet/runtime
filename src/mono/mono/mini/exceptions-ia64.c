@@ -122,7 +122,7 @@ mono_arch_get_call_filter (void)
 
 	start = mono_global_codeman_reserve (256);
 
-	/* call_filter (MonoContext *ctx, unsigned long eip) */
+	/* int call_filter (MonoContext *ctx, unsigned long eip) */
 
 	/* FIXME: */
 	ia64_codegen_init (code, start);
@@ -137,15 +137,13 @@ mono_arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *exc, guint64 ip, guint64 rethrow)
+throw_exception (MonoObject *exc, guint64 rethrow)
 {
-	static void (*restore_context) (MonoContext *);
 	unw_context_t unw_ctx;
 	MonoContext ctx;
+	MonoJitInfo *ji;
+	unw_word_t ip;
 	int res;
-
-	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -158,13 +156,23 @@ throw_exception (MonoObject *exc, guint64 ip, guint64 rethrow)
 	res = unw_init_local (&ctx.cursor, &unw_ctx);
 	g_assert (res == 0);
 
-	/* Get rid of this frame and the throw trampoline frame */
-	res = unw_step (&ctx.cursor);
-	g_assert (res >= 0);
-	res = unw_step (&ctx.cursor);
-	g_assert (res >= 0);
+	/* 
+	 * Unwind until the first managed frame. This is needed since 
+	 * mono_handle_exception expects the variables in the original context to
+	 * correspond to the method returned by mono_find_jit_info.
+	 */
+	while (TRUE) {
+		res = unw_get_reg (&ctx.cursor, UNW_IA64_IP, &ip);
+		g_assert (res == 0);
 
-	unw_set_reg (&ctx.cursor, UNW_IA64_IP, (guint64)ip);
+		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)ip);
+
+		if (ji)
+			break;
+
+		res = unw_step (&ctx.cursor);
+		g_assert (res >= 0);
+	}
 
 	fill_monocontext_from_cursor (&ctx);
 
@@ -208,8 +216,7 @@ get_throw_trampoline (gboolean rethrow)
 
 	/* Set args */
 	ia64_mov (code, out0 + 0, in0 + 0);
-	ia64_mov_from_br (code, out0 + 1, IA64_B0);
-	ia64_adds_imm (code, out0 + 2, rethrow, IA64_R0);
+	ia64_adds_imm (code, out0 + 1, rethrow, IA64_R0);
 
 	/* Call throw_exception */
 	ia64_movl (code, GP_SCRATCH_REG, ptr);
@@ -330,8 +337,6 @@ mono_arch_get_throw_corlib_exception (void)
 	out0 = local0 + 4;
 	nout = 3;
 
-	/* FIXME: Add unwind info */
-
 	ia64_codegen_init (code, start);
 	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
 	ia64_mov_from_br (code, local0 + 1, IA64_RP);
@@ -361,10 +366,12 @@ mono_arch_get_throw_corlib_exception (void)
 	ia64_mov (code, local0 + 2, local0 + 1);
 	ia64_sub (code, local0 + 2, local0 + 2, in0 + 1);
 
+	/* Trick the unwind library into using throw_ip as the IP in the caller frame */
+	ia64_mov (code, local0 + 1, local0 + 2);
+
 	/* Set args */
 	ia64_mov (code, out0 + 0, local0 + 3);
-	ia64_mov (code, out0 + 1, local0 + 2);
-	ia64_mov (code, out0 + 2, IA64_R0);
+	ia64_mov (code, out0 + 1, IA64_R0);
 
 	/* Call throw_exception */
 	ptr = throw_exception;
@@ -489,11 +496,42 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-	MonoContext mctx;
+	/* libunwind takes care of this */
+	unw_context_t unw_ctx;
+	MonoContext ctx;
+	MonoJitInfo *ji;
+	unw_word_t ip;
+	int res;
 
-	NOT_IMPLEMENTED;
-	return FALSE;
+	res = unw_getcontext (&unw_ctx);
+	g_assert (res == 0);
+	res = unw_init_local (&ctx.cursor, &unw_ctx);
+	g_assert (res == 0);
+
+	/* 
+	 * Unwind until the first managed frame. This skips the signal handler frames
+	 * too.
+	 */
+	while (TRUE) {
+		res = unw_get_reg (&ctx.cursor, UNW_IA64_IP, &ip);
+		g_assert (res == 0);
+
+		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)ip);
+
+		if (ji)
+			break;
+
+		res = unw_step (&ctx.cursor);
+		g_assert (res >= 0);
+	}
+
+	fill_monocontext_from_cursor (&ctx);
+
+	mono_handle_exception (&ctx, obj, (gpointer)ip, test_only);
+
+	restore_context (&ctx);
+
+	g_assert_not_reached ();
 }
 
 gpointer

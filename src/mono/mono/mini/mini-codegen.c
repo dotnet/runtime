@@ -200,7 +200,7 @@ print_ins (int i, MonoInst *ins)
 		g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
 
 	if (spec [MONO_INST_DEST]) {
-		gboolean fp = (spec [MONO_INST_DEST] == 'f');
+		gboolean fp = dreg_is_fp (ins);
 		if (is_soft_reg (ins->dreg, fp))
 			g_print (" R%d <-", ins->dreg);
 		else if (spec [MONO_INST_DEST] == 'b') {
@@ -425,6 +425,25 @@ free_up_ireg (MonoCompile *cfg, InstList *item, MonoInst *ins, int hreg)
 	}
 }
 
+static void
+free_up_reg (MonoCompile *cfg, InstList *item, MonoInst *ins, int hreg, gboolean fp)
+{
+	if (fp) {
+		if (!(cfg->rs->ffree_mask & (1 << hreg))) {
+			DEBUG (g_print ("\tforced spill of R%d\n", cfg->rs->isymbolic [hreg]));
+			get_register_force_spilling (cfg, item, ins, cfg->rs->isymbolic [hreg], fp);
+			mono_regstate_free_float (cfg->rs, hreg);
+		}
+	}
+	else {
+		if (!(cfg->rs->ifree_mask & (1 << hreg))) {
+			DEBUG (g_print ("\tforced spill of R%d\n", cfg->rs->isymbolic [hreg]));
+			get_register_force_spilling (cfg, item, ins, cfg->rs->isymbolic [hreg], fp);
+			mono_regstate_free_int (cfg->rs, hreg);
+		}
+	}
+}
+
 static MonoInst*
 create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins, gboolean fp)
 {
@@ -441,7 +460,7 @@ create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins, gboolean fp
 		copy->next = ins->next;
 		ins->next = copy;
 	}
-	DEBUG (g_print ("\tforced copy from %s to %s\n", mono_arch_regname (src), mono_arch_regname (dest)));
+	DEBUG (g_print ("\tforced copy from %s to %s\n", mono_regname_full (src, fp), mono_regname_full (dest, fp)));
 	return copy;
 }
 
@@ -643,7 +662,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					fpcount--;
 			}
 
-			if (spec [MONO_INST_DEST] == 'f') {
+			if (dreg_is_fp (ins)) {
 				if (use_fpstack && (spec [MONO_INST_CLOB] != 'm')) {
 					if (fpcount >= MONO_ARCH_FPSTACK_SIZE) {
 						reginfof [ins->dreg].flags |= MONO_FP_NEEDS_SPILL;
@@ -693,7 +712,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (spec [MONO_INST_DEST]) {
 			int dest_dreg;
 
-			if (spec [MONO_INST_DEST] == 'f')
+			if (dreg_is_fp (ins))
 				reginfod = reginfof;
 			else
 				reginfod = reginfo;
@@ -807,7 +826,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		 * TRACK FP STACK
 		 */
 		if (use_fpstack && (spec [MONO_INST_CLOB] != 'm')) {
-			if (spec [MONO_INST_DEST] == 'f') {
+			if (dreg_is_fp (ins)) {
 				if (reginfof [ins->dreg].flags & MONO_FP_NEEDS_SPILL) {
 					GList *spill_node;
 					MonoInst *store;
@@ -1060,8 +1079,14 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			create_copy_ins (cfg, ins->dreg, dest_dreg, ins, fp);
 			ins->dreg = dest_dreg;
 
-			if (rs->isymbolic [dest_dreg] >= MONO_MAX_IREGS)
-				free_up_ireg (cfg, tmp, ins, dest_dreg);
+			if (fp) {
+				if (rs->fsymbolic [dest_dreg] >= MONO_MAX_FREGS)
+					free_up_reg (cfg, tmp, ins, dest_dreg, fp);
+			}
+			else {
+				if (rs->isymbolic [dest_dreg] >= MONO_MAX_IREGS)
+					free_up_reg (cfg, tmp, ins, dest_dreg, fp);
+			}
 		}
 
 		/*
@@ -1309,7 +1334,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		/* Handle dreg==sreg1 */
-		if (((spec [MONO_INST_DEST] == 'f' && spec [MONO_INST_SRC1] == 'f' && !use_fpstack) || spec [MONO_INST_CLOB] == '1') && ins->dreg != ins->sreg1) {
+		if (((dreg_is_fp (ins) && spec [MONO_INST_SRC1] == 'f' && !use_fpstack) || spec [MONO_INST_CLOB] == '1') && ins->dreg != ins->sreg1) {
 			MonoInst *sreg2_copy = NULL;
 			MonoInst *copy;
 			gboolean fp = (spec [MONO_INST_SRC1] == 'f');

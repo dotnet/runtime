@@ -411,14 +411,6 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 void
 mono_arch_cpu_init (void)
 {
-	gint64 tmp;
-
-	/* Enable fp traps */
-	asm volatile  ("mov %0 = ar.fpsr ;;\n\t"
-				   "dep %0 = 0, %0, 2, 1 ;;\n\t"
-				   "dep %0 = 0, %0, 3, 1 ;;\n\t"
-				   "mov ar.fpsr = %0 ;;\n\t"
-				   : "=r" (tmp));
 }
 
 /*
@@ -1549,7 +1541,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_MUL_IMM: {
 			/* This should be emulated, but rules in inssel.brg generate it */
-			int i;
+			int i, sum_reg;
 
 			/* First the easy cases */
 			if (ins->inst_imm == 1) {
@@ -1563,9 +1555,29 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					break;
 				}
 
+			/* This could be optimized */
 			if (ins->opcode == OP_MUL_IMM) {
-				/* FIXME: */
-				g_error ("Multiplication by %ld not implemented\n", ins->inst_imm);
+				sum_reg = 0;
+				for (i = 0; i < 64; ++i) {
+					if (ins->inst_imm & (((gint64)1) << i)) {
+						NEW_INS (cfg, temp, OP_SHL_IMM);
+						temp->dreg = mono_regstate_next_int (cfg->rs);
+						temp->sreg1 = ins->sreg1;
+						temp->inst_imm = i;
+
+						if (sum_reg == 0)
+							sum_reg = temp->dreg;
+						else {
+							NEW_INS (cfg, temp2, CEE_ADD);
+							temp2->dreg = mono_regstate_next_int (cfg->rs);
+							temp2->sreg1 = sum_reg;
+							temp2->sreg2 = temp->dreg;
+							sum_reg = temp2->dreg;
+						}
+					}
+				}
+				ins->opcode = OP_MOVE;
+				ins->sreg1 = sum_reg;
 			}
 			break;
 		}
@@ -1740,9 +1752,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code.buf - cfg->native_code;
 
-		max_len = ((int)(((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN]));
+		max_len = ((int)(((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN])) + 128;
 
-		if (offset > (cfg->code_size - max_len - 16)) {
+		while (offset + max_len + 16 > cfg->code_size) {
 			ia64_codegen_close (code);
 
 			offset = code.buf - cfg->native_code;
@@ -1796,6 +1808,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ia64_begin_bundle (code);
 			ins->inst_c0 = code.buf - cfg->native_code;
+			break;
+		case CEE_NOP:
 			break;
 		case OP_BR_REG:
 			ia64_mov_to_br (code, IA64_B6, ins->sreg1);
@@ -1860,9 +1874,57 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* (sreg2 <= 0) && (res > ins->sreg1) => signed overflow */
 			ia64_cmp4_lt_pred (code, 9, 6, 10, ins->sreg1, GP_SCRATCH_REG);
 
-			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
+			/* res <u sreg1 => unsigned overflow */
+			ia64_cmp4_ltu (code, 7, 10, GP_SCRATCH_REG, ins->sreg1);
 
-			/* FIXME: Set p7 as well */
+			/* FIXME: Predicate this since this is a side effect */
+			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
+			break;
+		case OP_ISUBCC:
+			/* p6 and p7 is set if there is signed/unsigned overflow */
+			
+			/* Set p8-p9 == (sreg2 > 0) */
+			ia64_cmp4_lt (code, 8, 9, IA64_R0, ins->sreg2);
+
+			ia64_sub (code, GP_SCRATCH_REG, ins->sreg1, ins->sreg2);
+			
+			/* (sreg2 > 0) && (res > ins->sreg1) => signed overflow */
+			ia64_cmp4_gt_pred (code, 8, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+			/* (sreg2 <= 0) && (res < ins->sreg1) => signed overflow */
+			ia64_cmp4_lt_pred (code, 9, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+
+			/* sreg1 <u sreg2 => unsigned overflow */
+			ia64_cmp4_ltu (code, 7, 10, ins->sreg1, ins->sreg2);
+
+			/* FIXME: Predicate this since this is a side effect */
+			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
+			break;
+		case OP_ADDCC:
+			/* Same as OP_IADDCC */
+			ia64_cmp_lt (code, 8, 9, IA64_R0, ins->sreg2);
+
+			ia64_add (code, GP_SCRATCH_REG, ins->sreg1, ins->sreg2);
+			
+			ia64_cmp_lt_pred (code, 8, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+			ia64_cmp_lt_pred (code, 9, 6, 10, ins->sreg1, GP_SCRATCH_REG);
+
+			ia64_cmp_ltu (code, 7, 10, GP_SCRATCH_REG, ins->sreg1);
+
+			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
+			break;
+		case OP_SUBCC:
+			/* Same as OP_ISUBCC */
+
+			ia64_cmp_lt (code, 8, 9, IA64_R0, ins->sreg2);
+
+			ia64_sub (code, GP_SCRATCH_REG, ins->sreg1, ins->sreg2);
+			
+			ia64_cmp_gt_pred (code, 8, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+			ia64_cmp_lt_pred (code, 9, 6, 10, GP_SCRATCH_REG, ins->sreg1);
+
+			ia64_cmp_ltu (code, 7, 10, ins->sreg1, ins->sreg2);
+
+			ia64_mov (code, ins->dreg, GP_SCRATCH_REG);
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
@@ -2111,12 +2173,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_COND_EXC_IOV:
-			/* FIXME: */
-			ia64_break_i_pred (code, 6, 0);
+		case OP_COND_EXC_OV:
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "OverflowException");
+			ia64_br_cond_pred (code, 6, 0);
 			break;
 		case OP_COND_EXC_IC:
-			/* FIXME: */
-			ia64_break_i_pred (code, 7, 0);
+		case OP_COND_EXC_C:
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "OverflowException");
+			ia64_br_cond_pred (code, 7, 0);
 			break;
 		case OP_IA64_COND_EXC:
 			mono_add_patch_info (cfg, code.buf - cfg->native_code,
@@ -2292,6 +2358,31 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 
+		case OP_LOCALLOC:
+			/* keep alignment */
+			ia64_adds_imm (code, GP_SCRATCH_REG, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->sreg1);
+			ia64_movl (code, GP_SCRATCH_REG2, ~(MONO_ARCH_FRAME_ALIGNMENT - 1));
+			ia64_and (code, GP_SCRATCH_REG, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+
+			ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
+
+			/* The first 16 bytes at sp are reserved by the ABI */
+			ia64_adds_imm (code, ins->dreg, 16, IA64_SP);
+
+			if (ins->flags & MONO_INST_INIT) {
+				/* Upper limit */
+				ia64_add (code, GP_SCRATCH_REG2, ins->dreg, GP_SCRATCH_REG);
+
+				/* Init loop */
+				ia64_st8_inc_imm_hint (code, ins->dreg, IA64_R0, 8, 0);
+				ia64_cmp_lt (code, 8, 9, ins->dreg, GP_SCRATCH_REG2);
+				ia64_br_cond_pred (code, 8, -2);
+
+				ia64_sub (code, ins->dreg, GP_SCRATCH_REG2, GP_SCRATCH_REG);
+			}
+
+			break;
+
 			/* Exception handling */
 		case OP_CALL_HANDLER:
 			/*
@@ -2338,6 +2429,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							  (gpointer)"mono_arch_throw_exception");
+			break;
+		case OP_RETHROW:
+			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							  (gpointer)"mono_arch_rethrow_exception");
 			break;
 
 		default:
@@ -2997,7 +3093,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 void
 mono_arch_flush_register_windows (void)
 {
-	NOT_IMPLEMENTED;
+	/* Not needed because of libunwind */
 }
 
 gboolean 
@@ -3015,8 +3111,7 @@ mono_arch_is_inst_imm (gint64 imm)
 gboolean
 mono_arch_is_int_overflow (void *sigctx, void *info)
 {
-	NOT_IMPLEMENTED;
-
+	/* Division is emulated with explicit overflow checks */
 	return FALSE;
 }
 
