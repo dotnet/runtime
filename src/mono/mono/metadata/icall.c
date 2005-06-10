@@ -82,7 +82,7 @@ mono_double_ParseImpl (char *ptr)
 		result = bsd_strtod (ptr, &endptr);
 
 	if (!*ptr || (endptr && *endptr))
-		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+		mono_raise_exception (mono_exception_from_name (mono_get_corlib (),
 								"System",
 								"FormatException"));
 	
@@ -6015,6 +6015,95 @@ ves_icall_Mono_Runtime_GetDisplayName (void)
 	return display_name;
 }
 
+static guchar dbase64 [] = {
+	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128, 63,
+	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 128, 128, 128, 0, 128, 128,
+	128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128,
+	128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+	};
+
+static MonoArray *
+base64_to_byte_array (gunichar2 *start, gint ilength)
+{
+	gint ignored;
+	gint i;
+	gunichar2 c;
+	gint olength;
+	MonoArray *result;
+	guchar *res_ptr;
+	gint a [4], b [4];
+	MonoException *exc;
+
+	ignored = 0;
+	for (i = 0; i < ilength; i++) {
+		c = start [i];
+		if (isspace (c) || c > 255)
+			ignored++;
+	}
+
+	olength = ilength - ignored;
+	if ((olength & 3) != 0) {
+		exc = mono_exception_from_name_msg (mono_get_corlib (), "System",
+					"FormatException", "Invalid length.");
+		mono_raise_exception (exc);
+	}
+
+	olength = (olength * 3) / 4;
+	if (start [ilength - 1] == '=')
+		olength--;
+
+	if (start [ilength - 2] == '=')
+		olength--;
+
+	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, olength);
+	res_ptr = mono_array_addr (result, guchar, 0);
+	for (i = 0; i < ilength; ) {
+		int k;
+
+		for (k = 0; k < 4; k++) {
+			c = start [i++];
+			if (isspace (c) || c > 255)
+				continue;
+				
+			a [k] = (guchar) c;
+			if ((c > sizeof (dbase64) || ((b [k] = dbase64 [c]) & 0x80)) != 0) {
+				exc = mono_exception_from_name_msg (mono_get_corlib (),
+					"System", "FormatException",
+					"Invalid character found.");
+				mono_raise_exception (exc);
+			}
+		}
+
+		*res_ptr++ = (b [0] << 2) | (b [1] >> 4);
+		if (a [2] != '=')
+			*res_ptr++ = (b [1] << 4) | (b [2] >> 2);
+		if (a [3] != '=')
+			*res_ptr++ = (b [2] << 6) | b [3];
+	}
+
+	return result;
+}
+
+static MonoArray *
+InternalFromBase64String (MonoString *str)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return base64_to_byte_array (mono_string_chars (str), mono_string_length (str));
+}
+
+static MonoArray *
+InternalFromBase64CharArray (MonoArray *input, gint offset, gint length)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return base64_to_byte_array (mono_array_addr (input, gunichar2, offset), length);
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -6100,7 +6189,12 @@ static const IcallEntry consoledriver_icalls [] = {
 	{"Isatty", ves_icall_System_ConsoleDriver_Isatty },
 	{"SetBreak", ves_icall_System_ConsoleDriver_SetBreak },
 	{"SetEcho", ves_icall_System_ConsoleDriver_SetEcho },
-	{"TtySetup", ves_icall_System_ConsoleDriver_TtySetup },
+	{"TtySetup", ves_icall_System_ConsoleDriver_TtySetup }
+};
+
+static const IcallEntry convert_icalls [] = {
+	{"InternalFromBase64CharArray", InternalFromBase64CharArray },
+	{"InternalFromBase64String", InternalFromBase64String }
 };
 
 static const IcallEntry timezone_icalls [] = {
@@ -6894,6 +6988,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Char", char_icalls, G_N_ELEMENTS (char_icalls)},
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
 	{"System.ConsoleDriver", consoledriver_icalls, G_N_ELEMENTS (consoledriver_icalls)},
+	{"System.Convert", convert_icalls, G_N_ELEMENTS (convert_icalls)},
 	{"System.CurrentTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
 	{"System.DateTime", datetime_icalls, G_N_ELEMENTS (datetime_icalls)},
 #ifndef DISABLE_DECIMAL
