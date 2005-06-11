@@ -55,7 +55,6 @@ struct MonoLMF {
 
 typedef struct MonoContext {
 	unw_cursor_t cursor;
-	/* These variables needs to be set whenever the cursor is moved */
 	guint8 *ip;
 	gpointer *sp;
 	gpointer *fp;
@@ -75,13 +74,56 @@ typedef struct MonoCompileArch {
 	unw_dyn_region_info_t *r_pro;
 } MonoCompileArch;
 
+static inline unw_word_t
+mono_ia64_context_get_ip (MonoContext *ctx)
+{
+	unw_word_t ip;
+	int err;
+
+	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
+	g_assert (err == 0);
+
+	return ip;
+}
+
+static inline unw_word_t
+mono_ia64_context_get_sp (MonoContext *ctx)
+{
+	unw_word_t sp;
+	int err;
+
+	err = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
+	g_assert (err == 0);
+
+	return sp;
+}
+
+static inline unw_word_t
+mono_ia64_context_get_fp (MonoContext *ctx)
+{
+	unw_cursor_t new_cursor;
+	unw_word_t fp;
+	int err;
+
+	/* fp is the SP of the parent frame */
+	new_cursor = ctx->cursor;
+
+	err = unw_step (&new_cursor);
+	g_assert (err >= 0);
+
+	err = unw_get_reg (&new_cursor, UNW_IA64_SP, &fp);
+	g_assert (err == 0);
+
+	return fp;
+}
+
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0); 
 #define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0); 
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(mono_ia64_context_get_sp ((ctx))))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
 		mono_arch_flush_register_windows ();	\

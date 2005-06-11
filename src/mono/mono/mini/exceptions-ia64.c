@@ -53,34 +53,6 @@ mono_create_ftnptr (gpointer ptr)
 }
 
 static void
-fill_monocontext_from_cursor (MonoContext *ctx)
-{
-	unw_word_t ip, sp, fp;
-	unw_cursor_t new_cursor;
-	int err;
-
-	/* After changing the cursor, the variables in the MonoContext must be updated */
-	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
-	g_assert (err == 0);
-
-	err = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
-	g_assert (err == 0);
-
-	/* Fp is the SP of the parent frame */
-	new_cursor = ctx->cursor;
-
-	err = unw_step (&new_cursor);
-	g_assert (err >= 0);
-
-	err = unw_get_reg (&new_cursor, UNW_IA64_SP, &fp);
-	g_assert (err == 0);
-
-	MONO_CONTEXT_SET_IP (ctx, ip);
-	MONO_CONTEXT_SET_SP (ctx, sp);
-	MONO_CONTEXT_SET_BP (ctx, fp);
-}
-
-static void
 restore_context (MonoContext *ctx)
 {
 	unw_set_reg (&ctx->cursor, UNW_IA64_IP, (guint64)ctx->ip);
@@ -173,8 +145,6 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 		res = unw_step (&ctx.cursor);
 		g_assert (res >= 0);
 	}
-
-	fill_monocontext_from_cursor (&ctx);
 
 	mono_handle_exception (&ctx, exc, (gpointer)(ip + 1), FALSE);
 	restore_context (&ctx);
@@ -479,8 +449,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		err = unw_step (&new_ctx->cursor);
 		g_assert (err >= 0);
 
-		fill_monocontext_from_cursor (new_ctx);
-
 		return ji;
 	}
 	else
@@ -524,8 +492,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 		res = unw_step (&ctx.cursor);
 		g_assert (res >= 0);
 	}
-
-	fill_monocontext_from_cursor (&ctx);
 
 	mono_handle_exception (&ctx, obj, (gpointer)ip, test_only);
 
