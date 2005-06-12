@@ -2390,6 +2390,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * save the return address to a register and use a
 			 * branch.
 			 */
+			ia64_mov (code, IA64_R15, IA64_R0);
 			ia64_mov_from_ip (code, GP_SCRATCH_REG);
 			/* Add the length of OP_CALL_HANDLER */
 			ia64_adds_imm (code, GP_SCRATCH_REG, 5 * 16, GP_SCRATCH_REG);
@@ -2404,8 +2405,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
+			/* 
+			 * We might be called by the exception handling code, in which case the
+			 * the register stack is not set up correctly. So do it now.
+			 */
+			ia64_alloc (code, GP_SCRATCH_REG2, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
+
+			/* Set the fp register from the value passed in by the caller */
+			/* R15 is used since it is writable using libunwind */
+			/* R15 == 0 means we are called by OP_CALL_HANDLER or via resume_context () */
+			ia64_cmp_eq (code, 6, 7, IA64_R15, IA64_R0);
+			ia64_add_pred (code, 7, cfg->frame_reg, IA64_R0, IA64_R15);
+
 			ia64_adds_imm (code, GP_SCRATCH_REG2, spvar->inst_offset, cfg->frame_reg);
 			ia64_st8_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 0);
+
 			break;
 		}
 		case CEE_ENDFINALLY: {

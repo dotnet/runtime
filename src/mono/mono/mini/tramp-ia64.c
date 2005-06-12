@@ -22,6 +22,7 @@
 #define NOT_IMPLEMENTED g_assert_not_reached ()
 
 #define GP_SCRATCH_REG 31
+#define GP_SCRATCH_REG2 30
 
 /*
  * get_unbox_trampoline:
@@ -144,11 +145,12 @@ guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *tramp;
-	int i, lmf_offset, offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
-	int l0, l1, l2, l3, l4, l5, l6, l7, o0, o1, o2, o3;
-	gint64 disp;
+	int i, offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	int in0, local0, out0, l0, l1, l2, l3, l4, l5, l6, l7, l8, o0, o1, o2, o3;
 	gboolean has_caller;
 	Ia64CodegenState code;
+	unw_dyn_info_t *di;
+	unw_dyn_region_info_t *r_pro;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		has_caller = FALSE;
@@ -162,6 +164,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* FIXME: Save/restore lmf */
 
 	/* Stacked Registers */
+	in0 = 32;
+	local0 = in0 + 8;
+	out0 = local0 + 16;
 	l0 = 40;
 	l1 = 41;
 	l2 = 42;
@@ -170,10 +175,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	l5 = 45; /* saved ar.pfs */
 	l6 = 46; /* arg */
 	l7 = 47; /* code */
-	o0 = 48; /* regs */
-	o1 = 49; /* code */
-	o2 = 50; /* arg */
-	o3 = 51; /* tramp */
+	l8 = 48; /* saved sp */
+	o0 = out0 + 0; /* regs */
+	o1 = out0 + 1; /* code */
+	o2 = out0 + 2; /* arg */
+	o3 = out0 + 3; /* tramp */
 
 	framesize = (128 * 8) + 1024;
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
@@ -181,10 +187,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/*
 	 * Allocate a new register+memory stack frame.
 	 * 8 input registers (the max used by the ABI)
-	 * 8 locals
+	 * 16 locals
 	 * 4 output (number of parameters passed to trampoline)
 	 */
-	ia64_alloc (code, l5, 8, 8, 4, 0);
+	ia64_alloc (code, l5, local0 - in0, out0 - local0, 4, 0);
+	ia64_mov (code, l8, IA64_SP);
 	ia64_adds_imm (code, IA64_SP, (-framesize), IA64_SP);
 
 	offset = 16; /* scratch area */
@@ -194,6 +201,19 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* Save the calling address */
 	ia64_mov_from_br (code, l7, IA64_B0);
+
+	/* Create unwind info for the prolog */
+	r_pro = g_malloc0 (_U_dyn_region_info_size (3));
+	r_pro->op_count = 3;
+	r_pro->insn_count = 16;
+	i = 0;
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 2,
+						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + local0 + 5);
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 5,
+						/* reg=*/ UNW_IA64_SP, /* dst=*/ UNW_IA64_GR + local0 + 8);
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 14,
+						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + local0 + 7);
+	g_assert ((unsigned) i <= r_pro->op_count);	
 
 	/* Save registers */
 	saved_regs_offset = offset;
@@ -276,6 +296,17 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	g_assert ((code.buf - buf) <= 2048);
 
+	/* FIXME: emit unwind info for epilog */
+	di = g_malloc0 (sizeof (unw_dyn_info_t));
+	di->start_ip = (unw_word_t) buf;
+	di->end_ip = (unw_word_t) code.buf;
+	di->gp = 0;
+	di->format = UNW_INFO_FORMAT_DYNAMIC;
+	di->u.pi.name_ptr = (unw_word_t)"ia64_generic_trampoline";
+	di->u.pi.regions = r_pro;
+
+	_U_dyn_register (di);
+
 	mono_arch_flush_icache (buf, code.buf - buf);
 
 	return buf;
@@ -305,7 +336,14 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 
 	ia64_begin_bundle (code);
 	disp = (tramp - code.buf) >> 4;
-	ia64_br_cond (code, disp);
+	if (ia64_is_imm21 (disp)) {
+		ia64_br_cond (code, disp);
+	}
+	else {
+		ia64_movl (code, GP_SCRATCH_REG2, tramp);
+		ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+		ia64_br_cond_reg (code, IA64_B6);
+	}
 
 	ia64_codegen_close (code);
 
