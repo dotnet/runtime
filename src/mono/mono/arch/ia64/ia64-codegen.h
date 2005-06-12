@@ -275,6 +275,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 
 #define ia64_is_imm8(imm) (((gint64)(imm) >= -128) && ((gint64)(imm) <= 127))
 #define ia64_is_imm14(imm) (((gint64)(imm) >= -8192) && ((gint64)(imm) <= 8191))
+#define ia64_is_imm21(imm) (((gint64)(imm) >= -0x100000) && ((gint64)(imm) <= (0x100000 - 1)))
 
 #if 1
 
@@ -307,8 +308,8 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define check_imm8(imm) check_assert (((gint64)(imm) >= -128) && ((gint64)(imm) <= 127))
 #define check_imm9(imm) check_assert (((gint64)(imm) >= -256) && ((gint64)(imm) <= 255))
 #define check_imm14(imm) check_assert (((gint64)(imm) >= -8192) && ((gint64)(imm) <= 8191))
-#define check_imm21(imm) check_assert (((gint64)(imm) >= -0x200000) && ((gint64)(imm) <= (0x200000 - 1)))
-#define check_imm22(imm) check_assert (((gint64)(imm) >= -0x400000) && ((gint64)(imm) <= (0x400000 - 1)))
+#define check_imm21(imm) check_assert (((gint64)(imm) >= -0x100000) && ((gint64)(imm) <= (0x100000 - 1)))
+#define check_imm22(imm) check_assert (((gint64)(imm) >= -0x200000) && ((gint64)(imm) <= (0x200000 - 1)))
 #define check_imm62(imm) check_assert (((gint64)(imm) >= -0x2fffffffffffffffLL) && ((gint64)(imm) <= (0x2fffffffffffffffLL - 1)))
 
 #define check_len4(len) check_assert (((gint64)(len) >= 1) && ((gint64)(len) <= 16))
