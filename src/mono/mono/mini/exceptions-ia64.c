@@ -205,7 +205,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 		g_assert (res >= 0);
 	}
 
-	mono_handle_exception (&ctx, exc, (gpointer)(ip + 1), FALSE);
+	mono_handle_exception (&ctx, exc, (gpointer)(ip), FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();

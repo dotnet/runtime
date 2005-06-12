@@ -80,7 +80,8 @@ mono_ia64_context_get_ip (MonoContext *ctx)
 	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
 	g_assert (err == 0);
 
-	return ip;
+	/* Subtrack 1 so ip points into the actual instruction */
+	return ip - 1;
 }
 
 static inline unw_word_t
