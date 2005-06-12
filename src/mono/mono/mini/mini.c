@@ -100,6 +100,7 @@ static MonoMethodSignature *helper_sig_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_obj_ptr = NULL;
+static MonoMethodSignature *helper_sig_void_obj_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
 static MonoMethodSignature *helper_sig_void_void = NULL;
@@ -6823,6 +6824,8 @@ create_helper_signature (void)
 	helper_sig_class_init_trampoline = make_icall_sig ("void");
 
 	helper_sig_obj_obj_obj_ptr = make_icall_sig ("object object object ptr");
+
+	helper_sig_void_obj_obj_ptr = make_icall_sig ("void object object ptr");
 }
 
 gconstpointer
@@ -10041,7 +10044,7 @@ mini_init (const char *filename)
 #endif
 
 	/* other jit icalls */
-	mono_register_jit_icall (mono_delegate_ctor, "mono_delegate_ctor", helper_sig_obj_obj_obj_ptr, FALSE);
+	mono_register_jit_icall (mono_delegate_ctor, "mono_delegate_ctor", helper_sig_void_obj_obj_ptr, FALSE);
 	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 helper_sig_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr_ptr, FALSE);
