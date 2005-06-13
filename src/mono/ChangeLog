@@ -1,5 +1,9 @@
 2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
 
+	* man/mono-shlib-cop.1: Add man page for mono-shlib-cop program.
+
+2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
+
 	* data/config.in: Fix generated XML.
 
 2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
