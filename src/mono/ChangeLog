@@ -1,5 +1,9 @@
 2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
 
+	* data/config.in: Fix generated XML.
+
+2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
+
 	* scripts/Makefile.am: Add mono-shlib-cop.
 
 2005-06-09  Ben Maurer  <bmaurer@ximian.com>
