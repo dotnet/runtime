@@ -367,6 +367,18 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 	handle_exception_clauses (cfg);
 
+	/*
+	 * Arguments need to have their live ranges extended to the beginning of
+	 * the method to account for the arg reg/memory -> global register copies
+	 * in the prolog (bug #74992).
+	 */
+
+	for (i = 0; i < max_vars; i ++) {
+		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
+		if (cfg->varinfo [vi->idx]->opcode == OP_ARG)
+			vi->range.first_use.abs_pos = 0;
+	}
+
 #ifdef DEBUG_LIVENESS
 	for (i = cfg->num_bblocks - 1; i >= 0; i--) {
 		MonoBasicBlock *bb = cfg->bblocks [i];

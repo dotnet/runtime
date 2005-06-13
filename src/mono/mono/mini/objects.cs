@@ -873,5 +873,29 @@ class Tests {
 		return 1;
 	}
 
+	// bug #74992
+	public static int arg_only_written (string file_name, int[]
+ncells ) {
+		if (file_name == null)
+			return 1;
+
+		ncells = foo ();
+		bar (ncells [0]);
+
+		return 0;
+	}
+
+	public static int[] foo () {
+		return new int [3];
+	}
+
+	public static void bar (int i) {
+	}
+	
+
+	public static int test_0_arg_only_written ()
+	{
+		return arg_only_written ("md.in", null);
+	}		
 }
 
