@@ -9473,9 +9473,15 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	}
 #endif
 
+	/* 
+	 * This needs to be done before freeing code_mp, since the code address is the
+	 * key in the table, so if we the code_mp first, another thread can grab the
+	 * same code address and replace our entry in the table.
+	 */
+	mono_jit_info_table_remove (domain, ji->ji);
+
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
-	mono_jit_info_table_remove (domain, ji->ji);
 	g_free (ji->ji);
 	g_free (ji);
 }
