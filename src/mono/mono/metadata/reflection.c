@@ -1455,22 +1455,9 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 }
 
 static char*
-type_get_fully_qualified_name (MonoType *type) {
-	char *name, *result;
-	MonoClass *klass;
-	MonoAssembly *ta;
-
-	name = mono_type_get_name (type);
-	klass = my_mono_class_from_mono_type (type);
-	ta = klass->image->assembly;
-
-	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s",
-		name, ta->aname.name,
-		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
-		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral",
-		ta->aname.public_key_token [0] ? (char *)ta->aname.public_key_token : "null");
-	g_free (name);
-	return result;
+type_get_fully_qualified_name (MonoType *type)
+{
+	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 static char*

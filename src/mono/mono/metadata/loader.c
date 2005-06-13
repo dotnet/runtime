@@ -193,7 +193,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 	MonoMethod *result = NULL;
 
 	if (ic) {
-		class_name = mono_class_get_name_full (ic, FALSE, FALSE, FALSE);
+		class_name = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
 
 		qname = g_strconcat (class_name, ".", name, NULL); 
 		if (ic->name_space && ic->name_space [0])

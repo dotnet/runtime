@@ -113,8 +113,7 @@ dup_type (MonoType* t, const MonoType *original)
 
 static void
 mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
-			    gboolean include_ns, gboolean include_arity,
-			    gboolean nested_plus)
+			    MonoTypeNameFormat format)
 {
 	MonoClass *klass;
 	
@@ -123,8 +122,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		int i, rank = type->data.array->rank;
 
 		mono_type_get_name_recurse (
-			&type->data.array->eklass->byval_arg, str,
-			FALSE, include_ns, include_arity, nested_plus);
+			&type->data.array->eklass->byval_arg, str, FALSE, format);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -133,31 +131,29 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 	case MONO_TYPE_SZARRAY:
 		mono_type_get_name_recurse (
-			&type->data.klass->byval_arg, str, FALSE, include_ns, include_arity,
-			nested_plus);
+			&type->data.klass->byval_arg, str, FALSE, format);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
 		mono_type_get_name_recurse (
-			type->data.type, str, FALSE, include_ns, include_arity, nested_plus);
+			type->data.type, str, FALSE, format);
 		g_string_append_c (str, '*');
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
 			mono_type_get_name_recurse (
-				&klass->nested_in->byval_arg, str, TRUE, include_ns, include_arity,
-				nested_plus);
-			if (nested_plus)
-				g_string_append_c (str, '+');
-			else
+				&klass->nested_in->byval_arg, str, TRUE, format);
+			if (format == MONO_TYPE_NAME_FORMAT_IL)
 				g_string_append_c (str, '.');
+			else
+				g_string_append_c (str, '+');
 		}
-		if (include_ns && *klass->name_space) {
+		if (*klass->name_space) {
 			g_string_append (str, klass->name_space);
 			g_string_append_c (str, '.');
 		}
-		if (!include_arity) {
+		if (format == MONO_TYPE_NAME_FORMAT_IL) {
 			char *s = strchr (klass->name, '`');
 			int len = s ? s - klass->name : strlen (klass->name);
 
@@ -168,27 +164,56 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			break;
 		if (klass->generic_class) {
 			MonoGenericClass *gclass = klass->generic_class;
+			MonoTypeNameFormat nested_format;
 			int i;
 
-			g_string_append_c (str, '<');
+			nested_format = format == MONO_TYPE_NAME_FORMAT_FULL_NAME ?
+				MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED : format;
+
+			if (format == MONO_TYPE_NAME_FORMAT_IL)
+				g_string_append_c (str, '<');
+			else
+				g_string_append_c (str, '[');
 			for (i = 0; i < gclass->inst->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
+				if (nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+					g_string_append_c (str, '[');
 				mono_type_get_name_recurse (
-					gclass->inst->type_argv [i], str, FALSE, TRUE, include_arity,
-					nested_plus);
+					gclass->inst->type_argv [i], str, FALSE, nested_format);
+				if (nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+					g_string_append_c (str, ']');
 			}
-			g_string_append_c (str, '>');
+			if (format == MONO_TYPE_NAME_FORMAT_IL)	
+				g_string_append_c (str, '>');
+			else
+				g_string_append_c (str, ']');
 		} else if (klass->generic_container) {
 			int i;
 
-			g_string_append_c (str, '<');
+			if (format == MONO_TYPE_NAME_FORMAT_IL)	
+				g_string_append_c (str, '<');
+			else
+				g_string_append_c (str, '[');
 			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				g_string_append (str, klass->generic_container->type_params [i].name);
 			}
-			g_string_append_c (str, '>');
+			if (format == MONO_TYPE_NAME_FORMAT_IL)	
+				g_string_append_c (str, '>');
+			else
+				g_string_append_c (str, ']');
+		}
+		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) {
+			MonoAssembly *ta = klass->image->assembly;
+
+			g_string_append_printf (
+				str, ", %s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s",
+				ta->aname.name,
+				ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
+				ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral",
+				ta->aname.public_key_token [0] ? (char *)ta->aname.public_key_token : "null");
 		}
 		break;
 	}
@@ -201,13 +226,12 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
  * Returns: the string representation for type as required by System.Reflection.
  * The inverse of mono_reflection_parse_type ().
  */
-static char*
-_mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_ns,
-		     gboolean include_arity, gboolean nested_plus)
+char*
+mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (
-		type, result, is_recursed, include_ns, include_arity, nested_plus);
+
+	mono_type_get_name_recurse (type, result, FALSE, format);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
@@ -218,21 +242,7 @@ _mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_ns,
 char*
 mono_type_get_name (MonoType *type)
 {
-	return _mono_type_get_name (type, TRUE, TRUE, TRUE, TRUE);
-}
-
-char*
-mono_type_get_full_name (MonoType *type)
-{
-	return _mono_type_get_name (type, FALSE, TRUE, TRUE, TRUE);
-}
-
-char*
-mono_class_get_name_full (MonoClass *klass, gboolean include_ns, gboolean include_arity,
-			  gboolean nested_plus)
-{
-	return _mono_type_get_name (
-		&klass->byval_arg, FALSE, include_ns, include_arity, nested_plus);
+	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_IL);
 }
 
 MonoType*
@@ -1433,7 +1443,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 				if (ic->generic_class) {
 					MonoClass *the_ic = ic->generic_class->container_class;
-					the_cname = _mono_type_get_name (&ic->byval_arg, FALSE, TRUE, FALSE, TRUE);
+					the_cname = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
