@@ -3444,12 +3444,15 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 			continue;
 
 		splitted = g_strsplit (buffer, " ", 0);
-		if (!*splitted || !*(splitted + 1))
+		if (!*splitted || !*(splitted + 1)) {
+			g_strfreev (splitted);
 			continue;
+		}
 
 		dir = g_utf8_to_utf16 (*(splitted + 1), -1, &length, NULL, NULL);
 		g_strfreev (splitted);
 		if (total + length + 1 > len) {
+			fclose (fp);
 			return len * 2; /* guess */
 		}
 
