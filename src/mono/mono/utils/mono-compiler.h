@@ -11,6 +11,8 @@
 
 #if defined(PIC) && defined(__x86_64__)
 #define MONO_TLS_FAST 
+#elif defined (__powerpc__)
+#define MONO_TLS_FAST
 #else
 #define MONO_TLS_FAST __attribute__((tls_model("local-exec")))
 #endif
