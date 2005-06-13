@@ -1,3 +1,7 @@
+2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
+
+	* scripts/Makefile.am: Add mono-shlib-cop.
+
 2005-06-09  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Handle more gracefully if objdump or X isn't
