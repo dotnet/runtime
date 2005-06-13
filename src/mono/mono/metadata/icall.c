@@ -5386,12 +5386,13 @@ static MonoArray *
 ves_icall_System_Environment_GetLogicalDrives (void)
 {
         gunichar2 buf [128], *ptr, *dname;
-	gchar *u8;
+	gunichar2 *u16;
 	gint initial_size = 127, size = 128;
 	gint ndrives;
 	MonoArray *result;
 	MonoString *drivestr;
 	MonoDomain *domain = mono_domain_get ();
+	gint len;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5421,9 +5422,10 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 	result = mono_array_new (domain, mono_defaults.string_class, ndrives);
 	ndrives = 0;
 	do {
-		u8 = g_utf16_to_utf8 (dname, -1, NULL, NULL, NULL);
-		drivestr = mono_string_new (domain, u8);
-		g_free (u8);
+		len = 0;
+		u16 = dname;
+		while (*u16) { u16++; len ++; }
+		drivestr = mono_string_new_utf16 (domain, dname, len);
 		mono_array_set (result, gpointer, ndrives++, drivestr);
 		while (*dname++);
 	} while (*dname);
