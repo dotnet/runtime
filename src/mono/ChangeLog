@@ -1,3 +1,10 @@
+2005-06-14  Ben Maurer  <bmaurer@ximian.com>
+
+	* mono-uninstalled.pc.in: pc file that handles mono when it is not
+	installed. This lets us have mkbundle work inside the tree.
+
+	* configure.in: Create the .pc file above.
+
 2005-06-13  Jonathan Pryor <jonpryor@vt.edu>
 
 	* man/mono-shlib-cop.1: Add man page for mono-shlib-cop program.

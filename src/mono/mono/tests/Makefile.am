@@ -10,6 +10,11 @@ RUNTIME_ARGS=--config tests-config --optimize=all
 
 RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono-wrapper
 
+MKBUNDLE = \
+	PKG_CONFIG_TOP_BUILD_DIR=$(top_builddir) \
+	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
+	$(RUNTIME) $(mcs_topdir)/tools/mkbundle/mkbundle.exe
+
 CSC = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
@@ -251,7 +256,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC) $(STRESS_TESTS_
 %.exe: %.cs TestDriver.dll
 	$(CSC) -r:TestDriver.dll -out:$@ $<
 
-test:	testjit
+test:	testjit testbundle
 
 TestDriver.dll:
 	$(CSC) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
@@ -376,6 +381,11 @@ stresstest: $(STRESS_TESTS)
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+testbundle: console.exe
+	$(MKBUNDLE) --static console.exe
+	./a.out
+	- rm -rf a.out
 
 noinst_LTLIBRARIES = libtest.la
 

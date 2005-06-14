@@ -1715,6 +1715,7 @@ AC_OUTPUT([
 Makefile
 mint.pc
 mono.pc
+mono-uninstalled.pc
 scripts/mono-nunit.pc
 scripts/mono-find-provides
 scripts/mono-find-requires
