@@ -1782,6 +1782,19 @@ runtime/Makefile
   echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
   echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
   echo "INSTALL = $INSTALL" >> $srcdir/$mcsdir/build/config.make
+
+  IFS=". "
+  # make sure it has 0's on the end
+  vsplit=( $VERSION 0 0 0 0 )
+  unset IFS
+  
+  cat > $srcdir/$mcsdir/build/common/MonoVersion.cs <<EOF
+//
+// This version number is generated from configure.in in the mono source tree.
+//
+
+[[assembly: AssemblyVersion("${vsplit[0]}.${vsplit[1]}.${vsplit[2]}.${vsplit[3]}")]]
+EOF
 )
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}

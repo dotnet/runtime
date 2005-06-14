@@ -1,5 +1,9 @@
 2005-06-14  Ben Maurer  <bmaurer@ximian.com>
 
+	* configure.in: echo the version number to
+	mcs/build/common/MonoVersion.cs. This allows us to not need to
+	update AssemblyInfo.cs every time we bump the version number.
+
 	* mono-uninstalled.pc.in: pc file that handles mono when it is not
 	installed. This lets us have mkbundle work inside the tree.
 
