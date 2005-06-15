@@ -324,7 +324,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTBS); do	\
 		rm -f $${i}.so; \
-		$(JITTEST_PROG) --aot $${i} > /dev/null; \
+		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
 		if $(srcdir)/test-driver '$(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
