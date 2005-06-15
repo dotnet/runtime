@@ -1783,10 +1783,11 @@ runtime/Makefile
   echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
   echo "INSTALL = $INSTALL" >> $srcdir/$mcsdir/build/config.make
 
-  IFS=". "
-  # make sure it has 0's on the end
-  vsplit=( $VERSION 0 0 0 0 )
-  unset IFS
+  export VERSION
+  [myver=$($AWK 'BEGIN {
+    split (ENVIRON["VERSION"] ".0.0.0.0", vsplit, ".")
+    print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
+  }')]
   
   cat > $srcdir/$mcsdir/build/common/MonoVersion.cs <<EOF
 //
@@ -1794,7 +1795,7 @@ runtime/Makefile
 //
 using System.Reflection;
 
-[[assembly: AssemblyVersion("${vsplit[0]}.${vsplit[1]}.${vsplit[2]}.${vsplit[3]}")]]
+[[assembly: AssemblyVersion("${myver}")]]
 EOF
 )
 

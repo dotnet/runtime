@@ -1,3 +1,7 @@
+2005-06-15  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: What I hope is a more portable version hack.
+
 2005-06-14  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: echo the version number to
