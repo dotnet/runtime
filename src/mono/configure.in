@@ -1792,6 +1792,7 @@ runtime/Makefile
 //
 // This version number is generated from configure.in in the mono source tree.
 //
+using System.Reflection;
 
 [[assembly: AssemblyVersion("${vsplit[0]}.${vsplit[1]}.${vsplit[2]}.${vsplit[3]}")]]
 EOF
