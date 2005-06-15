@@ -1,5 +1,9 @@
 2005-06-15  Ben Maurer  <bmaurer@ximian.com>
 
+	* configure.in: Another attempt at the portable "find libX11.so"
+	Hopefully, this one has no code paths where we are worse off than
+	what we had before any of this mess.
+	
 	* configure.in: What I hope is a more portable version hack.
 
 2005-06-14  Ben Maurer  <bmaurer@ximian.com>

@@ -1539,17 +1539,17 @@ esac
 
 if test "x$X11" = "xlibX11.so"; then
 	AC_PATH_X
-	AC_PATH_PROG(OBJDUMP, objdump, no)
-	if test "x$no_x" != "xyes"; then
-		if test "x$OBJDUMP" != xno; then
-			AC_MSG_CHECKING(for the soname of libX11.so)
-			X11=$($OBJDUMP -p  $x_libraries/libX11.so | $AWK '/SONAME/ {print $2}')
-			AC_MSG_RESULT($X11)
-		else
-			AC_MSG_WARN([Could not find objdump. WinForms will not work if you install this mono on a box without the X -devel package.]);
-		fi
+	AC_MSG_CHECKING(for the soname of libX11.so)
+	for i in $x_libraries /usr/lib /usr/lib64; do
+		for r in 4 5 6; do
+			if test -f $i/libX11.so.$r; then
+				X11=libX11.so.$r
+				AC_MSG_RESULT($X11)
+			fi
+		done
+	done
 	
-	else
+	if test "x$X11" = "xlibX11.so"; then
 		AC_MSG_WARN([Could not find X development libs. Do you have the -devel package installed? WinForms may not work...]);
 	fi
 fi
