@@ -707,7 +707,7 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	guint32 nparams =  mb->parameters ? mono_array_length (mb->parameters): 0;
 	guint32 ngparams = mb->generic_params ? mono_array_length (mb->generic_params): 0;
 	guint32 notypes = mb->opt_types ? mono_array_length (mb->opt_types): 0;
-	guint32 size = 21 + nparams * 20 + notypes * 20;
+	guint32 size = 41 + nparams * 40 + notypes * 40;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
@@ -2401,7 +2401,7 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericMethod *gmetho
 	char *p;
 	int i;
 	guint32 nparams =  gmethod->inst->type_argc;
-	guint32 size = 10 + nparams * 10;
+	guint32 size = 10 + nparams * 30;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
@@ -2555,8 +2555,9 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
+	g_assert (p-sig < 128);
+
 	if (assembly->save) {
-		g_assert (p-sig < 128);
 		mono_metadata_encode_value (p-sig, b, &b);
 		token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
 		alloc_table (table, table->rows + 1);
@@ -9179,13 +9180,13 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 {
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = mono_array_length (sig->arguments);
-	guint32 buflen, i;
+	guint32 buflen, i, size;
 	MonoArray *result;
 	char *buf, *p;
 
 	MONO_ARCH_SAVE_REGS;
 
-	p = buf = g_malloc (10 + na * 10);
+	p = buf = g_malloc (size = 10 + na * 10);
 
 	mono_metadata_encode_value (0x07, p, &p);
 	mono_metadata_encode_value (na, p, &p);
@@ -9195,6 +9196,7 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 	}
 
 	buflen = p - buf;
+	g_assert (buflen < size);
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
 	p = mono_array_addr (result, char, 0);
 	memcpy (p, buf, buflen);
@@ -9208,13 +9210,13 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 {
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = mono_array_length (sig->arguments);
-	guint32 buflen, i;
+	guint32 buflen, i, size;
 	MonoArray *result;
 	char *buf, *p;
 
 	MONO_ARCH_SAVE_REGS;
 
-	p = buf = g_malloc (10 + na * 10);
+	p = buf = g_malloc (size = 10 + na * 10);
 
 	mono_metadata_encode_value (0x06, p, &p);
 	for (i = 0; i < na; ++i) {
@@ -9223,6 +9225,7 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 	}
 
 	buflen = p - buf;
+	g_assert (buflen < size);
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
 	p = mono_array_addr (result, char, 0);
 	memcpy (p, buf, buflen);
