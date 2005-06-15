@@ -8,7 +8,9 @@ JITTEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(m
 
 RUNTIME_ARGS=--config tests-config --optimize=all
 
-RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono-wrapper
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
+
+RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_TOP_BUILD_DIR=$(top_builddir) \
@@ -384,7 +386,7 @@ stresstest: $(STRESS_TESTS)
 
 testbundle: console.exe
 	$(MKBUNDLE) --static console.exe
-	./a.out
+	$(with_mono_path) ./a.out
 	- rm -rf a.out
 
 noinst_LTLIBRARIES = libtest.la
