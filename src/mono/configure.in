@@ -1535,9 +1535,7 @@ case "$host" in
     	LIBC="libc.so"
 	INTL="libintl.so"
 	;;
-esac
-
-if test "x$X11" = "xlibX11.so"; then
+    *-*-*linux*)
 	AC_PATH_X
 	AC_MSG_CHECKING(for the soname of libX11.so)
 	for i in $x_libraries /usr/lib /usr/lib64; do
@@ -1552,7 +1550,9 @@ if test "x$X11" = "xlibX11.so"; then
 	if test "x$X11" = "xlibX11.so"; then
 		AC_MSG_WARN([Could not find X development libs. Do you have the -devel package installed? WinForms may not work...]);
 	fi
-fi
+	;;
+esac
+
 
 AC_SUBST(libsuffix)
 
