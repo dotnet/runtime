@@ -770,7 +770,7 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 	char *b = blob_size;
 	int i;
 
-	size = 10 + nl * 10;
+	size = 10 + nl * 30;
 	p = buf = g_malloc (size);
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
@@ -1508,13 +1508,13 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	char* buf;
 	guint32 idx;
 	
-	p = buf = g_malloc (64);
+	p = buf = g_malloc (256);
 	
 	mono_metadata_encode_value (0x06, p, &p);
 	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, p, &p);
 	/* encode custom attributes before the type */
 	encode_reflection_type (assembly, fb->type, p, &p);
-	g_assert (p-buf < 64);
+	g_assert (p-buf < 256);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
