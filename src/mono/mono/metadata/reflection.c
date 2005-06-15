@@ -1455,22 +1455,9 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 }
 
 static char*
-type_get_fully_qualified_name (MonoType *type) {
-	char *name, *result;
-	MonoClass *klass;
-	MonoAssembly *ta;
-
-	name = mono_type_get_name (type);
-	klass = my_mono_class_from_mono_type (type);
-	ta = klass->image->assembly;
-
-	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s",
-		name, ta->aname.name,
-		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
-		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral",
-		ta->aname.public_key_token [0] ? (char *)ta->aname.public_key_token : "null");
-	g_free (name);
-	return result;
+type_get_fully_qualified_name (MonoType *type)
+{
+	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 static char*
@@ -5942,12 +5929,13 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
  *
  * Returns: 0 on parse error.
  */
-int
-mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
-
-	char *start, *p, *w, *last_point, *startn;
+static int
+_mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
+			     MonoTypeNameParse *info)
+{
+	char *start, *p, *w, *temp, *last_point, *startn;
 	int in_modifiers = 0;
-	int isbyref = 0, rank;
+	int isbyref = 0, rank, arity = 0, i;
 
 	start = p = w = name;
 
@@ -5955,6 +5943,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 	info->name = info->name_space = NULL;
 	info->nested = NULL;
 	info->modifiers = NULL;
+	info->type_arguments = NULL;
 
 	/* last_point separates the namespace from the name */
 	last_point = NULL;
@@ -5978,7 +5967,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 			}
 			break;
 		case '.':
-			last_point = w;
+			last_point = p;
 			break;
 		case '\\':
 			++p;
@@ -5987,14 +5976,24 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		case '*':
 		case '[':
 		case ',':
+		case ']':
 			in_modifiers = 1;
+			break;
+		case '`':
+			++p;
+			i = strtol (p, &temp, 10);
+			arity += i;
+			if (p == temp)
+				return 0;
+			p = temp-1;
 			break;
 		default:
 			break;
 		}
 		if (in_modifiers)
 			break;
-		*w++ = *p++;
+		// *w++ = *p++;
+		p++;
 	}
 	
 	if (!info->name) {
@@ -6021,6 +6020,63 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 			*p++ = 0;
 			break;
 		case '[':
+			if (arity != 0) {
+				*p++ = 0;
+				info->type_arguments = g_ptr_array_new ();
+				for (i = 0; i < arity; i++) {
+					MonoTypeNameParse *subinfo = g_new0 (MonoTypeNameParse, 1);
+					gboolean fqname = FALSE;
+
+					g_ptr_array_add (info->type_arguments, subinfo);
+
+					if (*p == '[') {
+						p++;
+						fqname = TRUE;
+					}
+
+					if (!_mono_reflection_parse_type (p, &p, TRUE, subinfo))
+						return 0;
+
+					if (fqname) {
+						char *aname;
+
+						if (*p != ',')
+							return 0;
+						*p++ = 0;
+
+						aname = p;
+						while (*p && (*p != ']'))
+							p++;
+
+						if (*p != ']')
+							return 0;
+
+						*p++ = 0;
+						while (*aname) {
+							if (g_ascii_isspace (*aname)) {
+								++aname;
+								continue;
+							}
+							break;
+						}
+						if (!*aname ||
+						    !assembly_name_to_aname (&subinfo->assembly, aname))
+							return 0;
+					}
+
+					if (i + 1 < arity) {
+						if (*p != ',')
+							return 0;
+					} else {
+						if (*p != ']')
+							return 0;
+					}
+					*p++ = 0;
+				}
+
+				arity = 0;
+				break;
+			}
 			rank = 1;
 			*p++ = 0;
 			while (*p) {
@@ -6036,7 +6092,13 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 				return 0;
 			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
 			break;
+		case ']':
+			if (is_recursed)
+				goto end;
+			return 0;
 		case ',':
+			if (is_recursed)
+				goto end;
 			*p++ = 0;
 			while (*p) {
 				if (g_ascii_isspace (*p)) {
@@ -6052,16 +6114,53 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 			break;
 		default:
 			return 0;
-			break;
 		}
 		if (info->assembly.name)
 			break;
 	}
-	*w = 0; /* terminate class name */
+	// *w = 0; /* terminate class name */
+ end:
 	if (!info->name || !*info->name)
 		return 0;
+	if (endptr)
+		*endptr = p;
 	/* add other consistency checks */
 	return 1;
+}
+
+int
+mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
+{
+	return _mono_reflection_parse_type (name, NULL, FALSE, info);
+}
+
+static MonoType*
+_mono_reflection_get_type_from_info (MonoTypeNameParse *info, gboolean ignorecase)
+{
+	gboolean type_resolve = FALSE;
+	MonoImage *image;
+	MonoType *type;
+
+	if (info->assembly.name) {
+		MonoAssembly *assembly = mono_assembly_loaded (&info->assembly);
+		if (!assembly) {
+			/* then we must load the assembly ourselve - see #60439 */
+			assembly = mono_assembly_load (&info->assembly, NULL, NULL);
+			if (!assembly)
+				return NULL;
+		}
+		image = assembly->image;
+	} else {
+		image = mono_defaults.corlib;
+	}
+
+	type = mono_reflection_get_type (image, info, ignorecase, &type_resolve);
+	if (type == NULL && !info->assembly.name && image != mono_defaults.corlib) {
+		image = mono_defaults.corlib;
+		type = mono_reflection_get_type (image, info, ignorecase, &type_resolve);
+	}
+
+	return type;
 }
 
 static MonoType*
@@ -6104,6 +6203,36 @@ mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gb
 	if (!klass)
 		return NULL;
 	mono_class_init (klass);
+
+	if (info->type_arguments) {
+		MonoType **type_args = g_new0 (MonoType *, info->type_arguments->len);
+		MonoReflectionType *the_type;
+		MonoType *instance;
+		int i;
+
+		for (i = 0; i < info->type_arguments->len; i++) {
+			MonoTypeNameParse *subinfo = g_ptr_array_index (info->type_arguments, i);
+
+			type_args [i] = _mono_reflection_get_type_from_info (subinfo, ignorecase);
+			if (!type_args [i]) {
+				g_free (type_args);
+				return NULL;
+			}
+		}
+
+		the_type = mono_type_get_object (mono_domain_get (), &klass->byval_arg);
+
+		instance = mono_reflection_bind_generic_parameters (
+			the_type, info->type_arguments->len, type_args);
+
+		if (!instance) {
+			g_free (type_args);
+			return NULL;
+		}
+
+		klass = mono_class_from_mono_type (instance);
+	}
+
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
@@ -6194,6 +6323,25 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	return type;
 }
 
+static void
+free_type_info (MonoTypeNameParse *info)
+{
+	g_list_free (info->modifiers);
+	g_list_free (info->nested);
+
+	if (info->type_arguments) {
+		int i;
+
+		for (i = 0; i < info->type_arguments->len; i++) {
+			MonoTypeNameParse *subinfo = g_ptr_array_index (info->type_arguments, i);
+
+			free_type_info (subinfo);
+		}
+
+		g_ptr_array_free (info->type_arguments, TRUE);
+	}
+}
+
 /*
  * mono_reflection_type_from_name:
  * @name: type name.
@@ -6207,49 +6355,20 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
-	MonoType *type;
+	MonoType *type = NULL;
 	MonoTypeNameParse info;
-	MonoAssembly *assembly;
 	char *tmp;
-	gboolean type_resolve = FALSE;
 
 	/* Make a copy since parse_type modifies its argument */
 	tmp = g_strdup (name);
 	
 	/*g_print ("requested type %s\n", str);*/
-	if (!mono_reflection_parse_type (tmp, &info)) {
-		g_free (tmp);
-		g_list_free (info.modifiers);
-		g_list_free (info.nested);
-		return NULL;
-	}
-
-	if (info.assembly.name) {
-		assembly = mono_assembly_loaded (&info.assembly);
-		if (!assembly) {
-			/* then we must load the assembly ourselve - see #60439 */
-			assembly = mono_assembly_load (&info.assembly, NULL, NULL);
-			if (!assembly) {
-				g_free (tmp);
-				g_list_free (info.modifiers);
-				g_list_free (info.nested);
-				return NULL;
-			}
-		}
-		image = assembly->image;
-	} else if (image == NULL) {
-		image = mono_defaults.corlib;
-	}
-
-	type = mono_reflection_get_type (image, &info, FALSE, &type_resolve);
-	if (type == NULL && !info.assembly.name && image != mono_defaults.corlib) {
-		image = mono_defaults.corlib;
-		type = mono_reflection_get_type (image, &info, FALSE, &type_resolve);
+	if (mono_reflection_parse_type (tmp, &info)) {
+		type = _mono_reflection_get_type_from_info (&info, FALSE);
 	}
 
 	g_free (tmp);
-	g_list_free (info.modifiers);
-	g_list_free (info.nested);
+	free_type_info (&info);
 	return type;
 }
 

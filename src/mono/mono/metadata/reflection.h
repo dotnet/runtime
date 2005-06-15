@@ -12,6 +12,7 @@ struct MonoTypeNameParse {
 	char *name;
 	MonoAssemblyName assembly;
 	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
+	GPtrArray *type_arguments;
 	GList *nested;
 };
 

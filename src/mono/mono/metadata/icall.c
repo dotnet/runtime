@@ -4077,18 +4077,23 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 }
 
 static MonoString *
-ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full_name)
+ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full_name,
+				       gboolean assembly_qualified)
 {
 	MonoDomain *domain = mono_object_domain (object); 
+	MonoTypeNameFormat format;
 	MonoString *res;
 	gchar *name;
 
 	MONO_ARCH_SAVE_REGS;
-
 	if (full_name)
-		name = mono_type_get_full_name (object->type);
+		format = assembly_qualified ?
+			MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED :
+			MONO_TYPE_NAME_FORMAT_FULL_NAME;
 	else
-		name = mono_type_get_name (object->type);
+		format = MONO_TYPE_NAME_FORMAT_REFLECTION;
+ 
+	name = mono_type_get_name_full (object->type, format);
 	res = mono_string_new (domain, name);
 	g_free (name);
 
