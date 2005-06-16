@@ -175,7 +175,7 @@ mono_declsec_is_assembly_fulltrust (MonoDomain *domain, MonoAssembly *assembly)
  * @domain	The current application domain
  * @caller	The method calling
  * @callee	The called method
- * return value: TRUE if a security violation is detection, FALSE otherwise.
+ * return value: TRUE if a security violation is detected, FALSE otherwise.
  *
  * If callee's assembly is strongnamed and doesn't have an 
  * [AllowPartiallyTrustedCallers] attribute then we must enforce a LinkDemand
@@ -221,6 +221,7 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
 		return FALSE;
 
 	/* E - the caller's assembly must have full trust permissions */
+	assembly = mono_image_get_assembly (caller->klass->image);
 	if (mono_declsec_is_assembly_fulltrust (domain, assembly))
 		return FALSE;
 
@@ -236,7 +237,7 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
  * @domain	The current application domain
  * @caller	The method calling
  * @native	The native method called
- * return value: TRUE if a security violation is detection, FALSE otherwise.
+ * return value: TRUE if a security violation is detected, FALSE otherwise.
  *
  * Executing Platform Invokes (P/Invoke) is a is a restricted operation.
  * The security policy must allow (SecurityPermissionFlag.UnmanagedCode)
@@ -302,7 +303,7 @@ mono_declsec_linkdemand_pinvoke (MonoDomain *domain, MonoMethod *caller, MonoMet
  * @domain	The current application domain
  * @caller	The method calling
  * @icall	The internal call method
- * return value: TRUE if a security violation is detection, FALSE otherwise.
+ * return value: TRUE if a security violation is detected, FALSE otherwise.
  *
  * We can't trust the icall flags/iflags as it comes from the assembly
  * that we may want to restrict and we do not have the public/restricted
