@@ -1717,12 +1717,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			guint32 icall_index;
 
 			icall_index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->icall_hash, patch_info->data.name));
-			if (!icall_index) {
-				icall_index = g_hash_table_size (acfg->icall_hash) + 1;
-				g_hash_table_insert (acfg->icall_hash, (gpointer)patch_info->data.name,
-									 GUINT_TO_POINTER (icall_index));
-				g_ptr_array_add (acfg->icall_table, (gpointer)patch_info->data.name);
-			}
+			g_assert (icall_index);
 			encode_value (icall_index - 1, p, &p);
 			break;
 		}
@@ -2106,7 +2101,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	/* Emit code */
 	symbol = g_strdup_printf ("methods");
 	emit_section_change (tmpfp, ".text", 0);
-	emit_global (tmpfp, symbol, FALSE);
+	emit_global (tmpfp, symbol, TRUE);
 	emit_alignment (tmpfp, 8);
 	emit_label (tmpfp, symbol);
 

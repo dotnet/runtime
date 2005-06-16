@@ -4395,6 +4395,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
+				mono_get_got_var (cfg);
 			}
 			ip++;
 			break;
@@ -4416,6 +4417,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
+				mono_get_got_var (cfg);
 			}
 			ip++;			
 			break;
@@ -5765,6 +5767,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
+				mono_get_got_var (cfg);
 			}
 			ip++;
 			break;
@@ -9114,8 +9117,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->got_var) {
 		GList *regs;
 
-		/* The decompose pass may create calls which need the got var */
-		mono_emit_load_got_addr (cfg);
+		g_assert (cfg->got_var_allocated);
 
 		/* 
 		 * Allways allocate the GOT var to a register, because keeping it
