@@ -1,15 +1,24 @@
 using System;
 using System.Reflection;
-//using System.Runtime.CompilerServices;
 using System.Security;
+using System.Security.Permissions;
 
 using Mono.Test;
 
+#if RESTRICT
+// this ensure we don't have FullTrust
+[assembly: SecurityPermission (SecurityAction.RequestRefuse, SkipVerification = true)]
+#endif
+
 public class Program {
 
-	static bool IsSigned ()
+	static bool IsRestricted ()
 	{
-		return (Assembly.GetExecutingAssembly ().GetName ().GetPublicKey () != null);
+#if RESTRICT
+		return true;
+#else
+		return false;
+#endif
 	}
 
 	static int Main ()
@@ -18,12 +27,12 @@ public class Program {
 			// aptclib.dll is strongnamed and DOESN'T have [AllowPartiallyTrustedCallers]
 			// so this call will work ONLY IF this assembly IS strongnamed
 			string s = AptcLibrary.Hello ("World");
-			int ec = IsSigned () ? 0 : 1;
+			int ec = IsRestricted () ? 1 : 0;
 			Console.WriteLine ("*{0}* AptcLibrary: {1}", ec, s);
 			return ec;
 		}
 		catch (SecurityException se) {
-			int ec = IsSigned () ? 1 : 0;
+			int ec = IsRestricted () ? 0 : 1;
 			Console.WriteLine ("*{0}* Expected SecurityException\n{1}", ec, se);
 			return ec;
 		}

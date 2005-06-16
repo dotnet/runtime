@@ -75,15 +75,13 @@ aptclib.cs	The strongnamed, but without APTC, test library.
 
 The files aptc1.cs and aptc2.cs are compiled twice. 
 
-The first time the files are compiled without a public key (no strongname).
-This means that the security manager (if active) will allow the call to 
-succeed _only if_
-	(a) the calling assembly is strongnamed;
-	(b) the called assembly has a [AllowPartiallyTustedCallers] attribute
+The first time the files are compiled without restrictions (e.g. they have
+FullTrust by default). The second time SkipVerification is refused at the
+asssembly level (i.e. resulting in less than FullTrust). This means that the
+security manager (if active) will allow the call to succeed _only if_
 
-The second compilation strongname the assemblies. This means that this
-will always succeed in calling other strongnamed assemblies (with or 
-without APTC).
+	(a) the calling assembly has FullTrust;
+	(b) the called assembly has a [AllowPartiallyTustedCallers] attribute
 
 [1] For example an unsigned assembly can calls System.Console.WriteLine only
 because mscorlib.dll contains the [AllowPartiallyTustedCallers].

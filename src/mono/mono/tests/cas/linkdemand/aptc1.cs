@@ -1,5 +1,11 @@
 using System;
 using System.Security;
+using System.Security.Permissions;
+
+#if RESTRICT
+// this ensure we don't have FullTrust
+[assembly: SecurityPermission (SecurityAction.RequestRefuse, SkipVerification = true)]
+#endif
 
 public class Program {
 

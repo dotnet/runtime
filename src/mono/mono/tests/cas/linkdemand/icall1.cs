@@ -53,9 +53,9 @@ public class Program {
 #endif
 			}
 #if NET_2_0
-			Console.WriteLine ("*0* Excepted internal call: {0}", result);
+			Console.WriteLine ("*0* Expected internal call: {0}", result);
 #else
-			Console.WriteLine ("*0* Unexcepted (1.x) but accepted (like 2.x) internal call: {0}", result);
+			Console.WriteLine ("*0* Unexpected (1.x) but accepted (like 2.x) internal call: {0}", result);
 #endif
 			return 0;
 		}
