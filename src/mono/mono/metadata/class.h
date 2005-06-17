@@ -122,9 +122,6 @@ mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclas
 char*         
 mono_type_get_name         (MonoType *type);
 
-char*         
-mono_type_get_full_name    (MonoType *type);
-
 MonoType*
 mono_type_get_underlying_type (MonoType *type);
 
