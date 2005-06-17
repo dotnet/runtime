@@ -234,7 +234,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			else
 				g_string_append_c (str, ']');
 		}
-		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+		if ((format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
+		    (type->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 			_mono_type_get_assembly_name (klass, str);
 		break;
 	}
