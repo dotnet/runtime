@@ -4299,7 +4299,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			ins->inst_left = *sp;
-			if (ins->inst_left->type != STACK_I4) goto unverified;
+			if ((ins->inst_left->type != STACK_I4) && (ins->inst_left->type != STACK_PTR)) 
+				goto unverified;
 			ins->cil_code = ip;
 			ip += 5;
 			CHECK_OPSIZE (n * sizeof (guint32));
