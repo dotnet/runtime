@@ -421,11 +421,13 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_DOMAINCONST(cfg,dest) do { \
-               if (cfg->opt & MONO_OPT_SHARED) { \
-                       NEW_TEMPLOAD (cfg, dest, mono_get_domainvar (cfg)->inst_c0); \
-               } else { \
-                       NEW_PCONST (cfg, dest, (cfg)->domain); \
-               } \
+		if (cfg->opt & MONO_OPT_SHARED) { \
+			/* avoid depending on undefined C behavior in sequence points */ \
+			MonoInst* __domain_var = mono_get_domainvar (cfg); \
+			NEW_TEMPLOAD (cfg, dest, __domain_var->inst_c0); \
+		} else { \
+			NEW_PCONST (cfg, dest, (cfg)->domain); \
+		} \
 	} while (0)
 
 #define GET_VARINFO_INST(cfg,num) ((cfg)->varinfo [(num)]->inst)
@@ -4624,12 +4626,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->opt & MONO_OPT_SHARED) {
 					int temp;
 					MonoInst *iargs [3];
-
+					MonoInst* domain_var;
+					
 					if (cfg->compile_aot) {
 						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, GINT_TO_POINTER (n));
 					}
-
-					NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
+					/* avoid depending on undefined C behavior in sequence points */
+					domain_var = mono_get_domainvar (cfg);
+					NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
 					NEW_IMAGECONST (cfg, iargs [1], image);
 					NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
 					temp = mono_emit_jit_icall (cfg, bblock, mono_ldstr, iargs, ip);
@@ -5199,8 +5203,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
 				int temp;
 				MonoInst *iargs [2];
+				MonoInst *domain_var;
+				
 				g_assert (field->parent);
-				NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
+				/* avoid depending on undefined C behavior in sequence points */
+				domain_var = mono_get_domainvar (cfg);
+				NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
 				NEW_FIELDCONST (cfg, iargs [1], field);
 				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
 				NEW_TEMPLOAD (cfg, ins, temp);
