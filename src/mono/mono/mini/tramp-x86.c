@@ -349,11 +349,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 #define TRAMPOLINE_SIZE 10
 
-static MonoJitInfo*
-create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain)
+static gpointer
+create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
-	MonoJitInfo *ji;
 	
 	tramp = mono_get_trampoline_code (tramp_type);
 
@@ -365,23 +364,30 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
-	ji = g_new0 (MonoJitInfo, 1);
-	ji->code_start = code;
-	ji->code_size = buf - code;
-
-	mono_arch_flush_icache (ji->code_start, ji->code_size);
+	mono_arch_flush_icache (code, buf - code);
 
 	mono_jit_stats.method_trampolines++;
 
-	return ji;
+	if (code_len)
+		*code_len = buf - code;
+
+	return code;
 }
 
 MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
-	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get ());
+	MonoJitInfo *ji;
+	gpointer code;
+	guint32 code_size;
 
+	code = create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
+
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->code_start = code;
+	ji->code_size = code_size;
 	ji->method = method;
+
 	return ji;
 }
 
@@ -399,22 +405,13 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
-	MonoJitInfo *ji;
-	gpointer code_start;
-
-	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
+	return create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get (), NULL);
 }
 
 gpointer
 mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji;
-	gpointer code_start;
 	guint8 *buf, *start;
 
 	mono_domain_lock (domain);
@@ -425,11 +422,7 @@ mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	buf += sizeof (gpointer);
 	*(guint32*)buf = token;
 
-	ji = create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain);
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
+	return create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
 }
 
 /**
@@ -446,14 +439,7 @@ mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 gpointer
 mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
-	MonoJitInfo *ji;
-	gpointer code;
-
-	ji = create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain);
-	code = ji->code_start;
-	g_free (ji);
-
-	return code;
+	return create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
 }
 
 void

@@ -73,6 +73,7 @@ typedef struct MonoAotModule {
 	MonoImage **image_table;
 	gboolean out_of_date;
 	guint8 *code;
+	guint8 *code_end;
 	guint32 *code_offsets;
 	guint8 *method_infos;
 	guint32 *method_info_offsets;
@@ -528,6 +529,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	/* Read method and method_info tables */
 	g_module_symbol (assembly->aot_module, "method_offsets", (gpointer*)&info->code_offsets);
 	g_module_symbol (assembly->aot_module, "methods", (gpointer*)&info->code);
+	g_module_symbol (assembly->aot_module, "methods_end", (gpointer*)&info->code_end);
 	g_module_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&info->method_info_offsets);
 	g_module_symbol (assembly->aot_module, "method_infos", (gpointer*)&info->method_infos);
 	g_module_symbol (assembly->aot_module, "class_infos", (gpointer*)&info->class_infos);
@@ -747,8 +749,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	guint code_len, used_int_regs, used_strings;
 	MonoJitInfo *jinfo;
 	MonoMemPool *mp;
-	GPtrArray *patches;
-	int i, pindex, got_index;
+	int i, pindex, got_index, n_patches;
 	gboolean non_got_patches, keep_patches = TRUE;
 	gboolean has_clauses;
 	guint8 *p;
@@ -817,7 +818,10 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	keep_patches = FALSE;
 #endif
 
-	if (*p) {
+	n_patches = decode_value (p, &p);
+
+	if (n_patches) {
+		MonoJumpInfo *patches;
 		MonoImage *image;
 		gpointer *table;
 		int i;
@@ -831,10 +835,10 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 		/* First load the type + offset table */
 		last_offset = 0;
-		patches = g_ptr_array_new ();
-		
-		while (*p) {
-			MonoJumpInfo *ji = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
+		patches = mono_mempool_alloc (mp, sizeof (MonoJumpInfo) * n_patches);
+
+		for (pindex = 0; pindex < n_patches; ++pindex) {		
+			MonoJumpInfo *ji = &patches [pindex];
 
 #if defined(MONO_ARCH_HAVE_PIC_AOT)
 			ji->type = *p;
@@ -860,19 +864,14 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 			ji->next = patch_info;
 			patch_info = ji;
-
-			g_ptr_array_add (patches, ji);
 		}
 
-		/* Null terminated array */
-		p ++;
-
-		got_slots = g_malloc (sizeof (guint32) * patches->len);
-		memset (got_slots, 0xff, sizeof (guint32) * patches->len);
+		got_slots = g_malloc (sizeof (guint32) * n_patches);
+		memset (got_slots, 0xff, sizeof (guint32) * n_patches);
 
 		/* Then load the other data */
-		for (pindex = 0; pindex < patches->len; ++pindex) {
-			MonoJumpInfo *ji = g_ptr_array_index (patches, pindex);
+		for (pindex = 0; pindex < n_patches; ++pindex) {
+			MonoJumpInfo *ji = &patches [pindex];
 
 			switch (ji->type) {
 			case MONO_PATCH_INFO_CLASS:
@@ -1051,8 +1050,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		/* Do this outside the lock to avoid deadlocks */
 		LeaveCriticalSection (&aot_mutex);
 		non_got_patches = FALSE;
-		for (pindex = 0; pindex < patches->len; ++pindex) {
-			MonoJumpInfo *ji = g_ptr_array_index (patches, pindex);
+		for (pindex = 0; pindex < n_patches; ++pindex) {
+			MonoJumpInfo *ji = &patches [pindex];
 
 			if (is_got_patch (ji->type)) {
 				if (!aot_module->got [got_slots [pindex]])
@@ -1079,7 +1078,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		EnterCriticalSection (&aot_mutex);
 
 #endif
-		g_ptr_array_free (patches, TRUE);
 		g_free (got_slots);
 
 		if (!keep_patches)
@@ -1103,8 +1101,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	}
 
  cleanup:
-	g_ptr_array_free (patches, TRUE);
-
 	/* FIXME: The space in domain->mp is wasted */	
 	if (aot_module->opts & MONO_OPT_SHARED)
 		/* No need to cache patches */
@@ -1558,7 +1554,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoMethod *method;
 	GList *l;
 	FILE *tmpfp;
-	int i, j, k, pindex, buf_size;
+	int i, j, k, pindex, buf_size, n_patches;
 	guint32 debug_info_size;
 	guint8 *code;
 	char *mname, *mname_p;
@@ -1634,6 +1630,22 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	encode_value (first_got_offset, p, &p);
 #endif
 
+	n_patches = 0;
+	for (pindex = 0; pindex < patches->len; ++pindex) {
+		patch_info = g_ptr_array_index (patches, pindex);
+		
+		if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
+			(patch_info->type == MONO_PATCH_INFO_BB) ||
+			(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET) ||
+			(patch_info->type == MONO_PATCH_INFO_NONE))
+			/* Nothing to do */
+			continue;
+
+		n_patches ++;
+	}
+
+	encode_value (n_patches, p, &p);
+
 	/* First emit the type+position table */
 	last_offset = 0;
 	j = 0;
@@ -1675,13 +1687,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 #endif
 	}
-
-	/*
-	 * 0 is PATCH_INFO_BB, which can't be in the file.
-	 */
-	/* NULL terminated array */
-	*p = 0;
-	p ++;
 
 	/* Then emit the other info */
 	for (pindex = 0; pindex < patches->len; ++pindex) {
@@ -2110,11 +2115,21 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			emit_method_code (acfg, cfgs [i]);
 	}
 
+	symbol = g_strdup_printf ("methods_end");
+	emit_section_change (tmpfp, ".text", 0);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+
 	/* Emit method info */
 	symbol = g_strdup_printf ("method_infos");
 	emit_section_change (tmpfp, ".text", 1);
 	emit_global (tmpfp, symbol, FALSE);
 	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+
+	/* To reduce size of generate assembly */
+	symbol = g_strdup_printf ("mi");
 	emit_label (tmpfp, symbol);
 
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
@@ -2267,7 +2282,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			sep = ",";
 		if (cfgs [i]) {
 			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
-			fprintf (tmpfp, "%s%s - method_infos", sep, symbol);
+			fprintf (tmpfp, "%s%s - mi", sep, symbol);
 		}
 		else
 			fprintf (tmpfp, "%s0", sep);
