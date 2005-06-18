@@ -68,6 +68,7 @@ typedef struct MonoCompileArch {
 	gint32 reg_saved_ar_pfs;
 	gint32 reg_saved_b0;
 	gint32 reg_saved_sp;
+	guint32 prolog_end_offset, epilog_begin_offset, epilog_end_offset;
 	unw_dyn_region_info_t *r_pro;
 } MonoCompileArch;
 
@@ -125,9 +126,9 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 	return fp;
 }
 
-#define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (eip)); g_assert (err == 0); } while (0)
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (unw_word_t)(eip)); g_assert (err == 0); } while (0)
 #define MONO_CONTEXT_SET_BP(ctx,ebp) do { } while (0)
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (esp)); g_assert (err == 0); } while (0)
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (unw_word_t)(esp)); g_assert (err == 0); } while (0)
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
@@ -138,6 +139,16 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
+
+#define MONO_INIT_CONTEXT_FROM_CURRENT(ctx) do { \
+	int res; \
+	res = unw_getcontext (&unw_ctx); \
+	g_assert (res == 0); \
+	res = unw_init_local (&(ctx)->cursor, &unw_ctx); \
+	g_assert (res == 0); \
+} while (0)
+
+#define MONO_ARCH_CONTEXT_DEF unw_context_t unw_ctx;
 
 #define MONO_ARCH_USE_SIGACTION 1
 

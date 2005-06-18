@@ -81,14 +81,14 @@ get_real_call_filter (void)
 	static guint8 *start;
 	static gboolean inited = FALSE;
 	Ia64CodegenState code;
-	int in0, local0, out0, nout;
+	int i, in0, local0, out0, nout;
+	unw_dyn_info_t *di;
+	unw_dyn_region_info_t *r_pro;
 
 	if (inited)
 		return start;
 
 	start = mono_global_codeman_reserve (1024);
-
-	/* FIXME: add unwind info */
 
 	/* int call_filter (guint64 fp, guint64 ip) */
 
@@ -116,6 +116,18 @@ get_real_call_filter (void)
 	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
 	ia64_mov_from_br (code, local0 + 1, IA64_B0);
 
+	/* FIXME: This depends on the current instruction emitter */
+
+	r_pro = g_malloc0 (_U_dyn_region_info_size (2));
+	r_pro->op_count = 2;
+	r_pro->insn_count = 6;
+	i = 0;
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 2,
+						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + local0 + 0);
+	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 5,
+						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + local0 + 1);
+	g_assert ((unsigned) i <= r_pro->op_count);	
+
 	/* Frame pointer */
 	ia64_mov (code, IA64_R15, in0 + 0);
 	/* Target ip */
@@ -137,6 +149,16 @@ get_real_call_filter (void)
 	g_assert ((code.buf - start) <= 256);
 
 	mono_arch_flush_icache (start, code.buf - start);
+
+	di = g_malloc0 (sizeof (unw_dyn_info_t));
+	di->start_ip = (unw_word_t) start;
+	di->end_ip = (unw_word_t) code.buf;
+	di->gp = 0;
+	di->format = UNW_INFO_FORMAT_DYNAMIC;
+	di->u.pi.name_ptr = (unw_word_t)"throw_trampoline";
+	di->u.pi.regions = r_pro;
+
+	_U_dyn_register (di);
 
 	return mono_create_ftnptr (start);
 }
@@ -202,6 +224,14 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 			break;
 
 		res = unw_step (&ctx.cursor);
+
+		if (res == 0) {
+			/*
+			 * This means an unhandled exception during the compilation of a
+			 * topmost method like Main
+			 */
+			break;
+		}
 		g_assert (res >= 0);
 	}
 
@@ -255,7 +285,7 @@ get_throw_trampoline (gboolean rethrow)
 	ia64_br_call_reg (code, IA64_B0, IA64_B6);
 
 	/* Not reached */
-	ia64_break_i (code, 0);
+	ia64_break_i (code, 1000);
 	ia64_codegen_close (code);
 
 	g_assert ((code.buf - start) <= 256);
@@ -325,7 +355,7 @@ mono_arch_get_throw_exception_by_name (void)
 
 	/* Not used on ia64 */
 	ia64_codegen_init (code, start);
-	ia64_break_i (code, 0);
+	ia64_break_i (code, 1001);
 	ia64_codegen_close (code);
 
 	g_assert ((code.buf - start) <= 256);
@@ -410,7 +440,7 @@ mono_arch_get_throw_corlib_exception (void)
 	ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
 	ia64_br_call_reg (code, IA64_B0, IA64_B6);
 
-	ia64_break_i (code, 0);
+	ia64_break_i (code, 1002);
 	ia64_codegen_close (code);
 
 	g_assert ((code.buf - start) <= 1024);
@@ -511,7 +541,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		return ji;
 	}
 	else
-		return NULL;
+		return (gpointer)(gssize)-1;
 }
 
 /**

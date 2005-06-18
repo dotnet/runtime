@@ -604,8 +604,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* Allocate locals */
 	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
-		offset += (locals_stack_align - 1);
-		offset &= ~(locals_stack_align - 1);
+		offset = ALIGN_TO (offset, locals_stack_align);
 	}
 	for (i = m->locals_start; i < m->num_varinfo; i++) {
 		if (offsets [i] != -1) {
@@ -674,6 +673,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				}
 				else
 					offset += sizeof (gpointer);
+				offset = ALIGN_TO (offset, sizeof (gpointer));
 				inst->inst_offset = - offset;
 			}
 		}
@@ -2443,11 +2443,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							  (gpointer)"mono_arch_throw_exception");
+
+			/* 
+			 * This might be the last instruction in the method, so add a dummy
+			 * instruction so the unwinder will work.
+			 */
+			ia64_break_i (code, 0);
 			break;
 		case OP_RETHROW:
 			ia64_mov (code, cfg->arch.reg_out0, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							  (gpointer)"mono_arch_rethrow_exception");
+
+			ia64_break_i (code, 0);
 			break;
 
 		default:
@@ -2735,10 +2743,9 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	int alloc_size, pos, i;
 	Ia64CodegenState code;
 	CallInfo *cinfo;
 	unw_dyn_region_info_t *r_pro;
@@ -2890,6 +2897,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (inst->dreg != cfg->arch.reg_in0 + ainfo->reg)
 					ia64_mov (code, inst->dreg, cfg->arch.reg_in0 + ainfo->reg);
 				break;
+			case ArgOnStack:
+				ia64_adds_imm (code, GP_SCRATCH_REG, ainfo->offset, cfg->frame_reg);
+				ia64_ld8 (code, inst->dreg, GP_SCRATCH_REG);
+				break;
 			default:
 				NOT_IMPLEMENTED;
 			}
@@ -2911,6 +2922,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	g_assert (cfg->code_len < cfg->code_size);
 
+	cfg->arch.prolog_end_offset = cfg->code_len;
+
 	return code.buf;
 }
 
@@ -2923,6 +2936,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	Ia64CodegenState code;
 	guint8 *buf;
 	CallInfo *cinfo;
+
+	cfg->arch.epilog_begin_offset = cfg->code_len;
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
@@ -2985,6 +3000,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	int nthrows;
 	Ia64CodegenState code;
+	gboolean empty = TRUE;
 	/*
 	MonoClass *exc_classes [16];
 	guint8 *exc_throw_start [16], *exc_throw_end [16];
@@ -3044,12 +3060,18 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			ia64_movl (code, cfg->arch.reg_out0 + 1, buf - throw_ip);
 
 			ia64_br_call_reg (code, IA64_B0, IA64_B6);
+
+			empty = FALSE;
 			break;
 		}
 		default:
 			break;
 		}
 	}
+
+	if (!empty)
+		/* The unwinder needs this to work */
+		ia64_break_i (code, 0);
 
 	ia64_codegen_close (code);
 

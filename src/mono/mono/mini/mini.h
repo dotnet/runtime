@@ -809,7 +809,6 @@ gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassIn
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
-void      mono_arch_register_lowlevel_calls (void);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest);
 void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst);
@@ -901,6 +900,7 @@ gpointer*mono_arch_get_vcall_slot_addr          (guint8* code, gpointer *regs);
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs);
 void     mono_arch_create_vars                  (MonoCompile *cfg);
 void     mono_arch_save_unwind_info             (MonoCompile *cfg);
+void     mono_arch_register_lowlevel_calls      (void);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
