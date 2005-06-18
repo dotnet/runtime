@@ -1384,6 +1384,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 		obj = mono_array_get (*sockets, MonoObject *, i);
 		if (obj == NULL) {
 			mode++;
+			idx++;
 			continue;
 		}
 
