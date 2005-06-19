@@ -1795,12 +1795,16 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 	
 	if (ret < wait->num) {
 		guint32 tid=wait->threads[ret]->tid;
+		EnterCriticalSection (&threads_mutex);
 		if (mono_g_hash_table_lookup (threads, GUINT_TO_POINTER(tid))!=NULL) {
 			/* See comment in wait_for_tids about thread cleanup */
+			LeaveCriticalSection (&threads_mutex);
 			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 				   ": cleaning up after thread %d", tid));
 			thread_cleanup (wait->threads[i]);
 		}
+		else
+			LeaveCriticalSection (&threads_mutex);
 	}
 }
 
