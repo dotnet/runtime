@@ -545,7 +545,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 }
  
 void
-mono_arch_allocate_vars (MonoCompile *m)
+mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -555,11 +555,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	mono_ia64_alloc_stacked_registers (m);
+	mono_ia64_alloc_stacked_registers (cfg);
 
-	header = mono_method_get_header (m->method);
+	header = mono_method_get_header (cfg->method);
 
-	sig = mono_method_signature (m->method);
+	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (sig, FALSE);
 
@@ -569,48 +569,48 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 */
 
 	/* Locals are allocated backwards from %fp */
-	m->frame_reg = m->arch.reg_saved_sp;
+	cfg->frame_reg = cfg->arch.reg_saved_sp;
 	offset = 0;
 
-	if (m->method->save_lmf) {
+	if (cfg->method->save_lmf) {
 		/* FIXME: */
 #if 0
 		/* Reserve stack space for saving LMF + argument regs */
 		offset += sizeof (MonoLMF);
-		m->arch.lmf_offset = offset;
+		cfg->arch.lmf_offset = offset;
 #endif
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = cinfo->ret.reg;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgInFloatReg:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = cinfo->ret.reg;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgValuetypeAddrInIReg:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = m->arch.reg_in0 + cinfo->ret.reg;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cfg->arch.reg_in0 + cinfo->ret.reg;
 			break;
 		default:
 			g_assert_not_reached ();
 		}
-		m->ret->dreg = m->ret->inst_c0;
+		cfg->ret->dreg = cfg->ret->inst_c0;
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots (cfg, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
 		offset = ALIGN_TO (offset, locals_stack_align);
 	}
-	for (i = m->locals_start; i < m->num_varinfo; i++) {
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
-			MonoInst *inst = m->varinfo [i];
+			MonoInst *inst = cfg->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = m->frame_reg;
+			inst->inst_basereg = cfg->frame_reg;
 			inst->inst_offset = - (offset + offsets [i]);
 			// printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
@@ -620,11 +620,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
 		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
-		m->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
+		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		inst = m->varinfo [i];
+		inst = cfg->varinfo [i];
 		if (inst->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
@@ -635,6 +635,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			else
 				arg_type = sig->params [i - sig->hasthis];
 
+			/* FIXME: VOLATILE is only set if the liveness pass runs */
 			if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
 				inreg = FALSE;
 
@@ -643,7 +644,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			switch (ainfo->storage) {
 			case ArgInIReg:
 				inst->opcode = OP_REGVAR;
-				inst->dreg = m->arch.reg_in0 + ainfo->reg;
+				inst->dreg = cfg->arch.reg_in0 + ainfo->reg;
 				break;
 			case ArgInFloatReg:
 				/* 
@@ -654,7 +655,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				break;
 			case ArgOnStack:
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = m->frame_reg;
+				inst->inst_basereg = cfg->frame_reg;
 				inst->inst_offset = ARGS_OFFSET + ainfo->offset;
 				break;
 			case ArgValuetypeInReg:
@@ -665,7 +666,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 			if (!inreg && (ainfo->storage != ArgOnStack)) {
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = m->frame_reg;
+				inst->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
 				if (ainfo->storage == ArgValuetypeInReg) {
 					NOT_IMPLEMENTED;
@@ -679,7 +680,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 	}
 
-	m->stack_offset = offset;
+	cfg->stack_offset = offset;
 
 	g_free (cinfo);
 }
@@ -810,6 +811,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 				else
 					size = mono_type_stack_size (&in->klass->byval_arg, &align);
+
+				/* 
+				 * FIXME: The destination is 'size' long, but the source might
+				 * be smaller.
+				 */
+
 				if (ainfo->storage == ArgValuetypeInReg) {
 					NOT_IMPLEMENTED;
 				}
@@ -1004,13 +1011,11 @@ opcode_to_cond (int opcode)
 }
 
 static CompType
-opcode_to_type (int opcode)
+opcode_to_type (int opcode, int cmp_opcode)
 {
 	if ((opcode >= CEE_BEQ) && (opcode <= CEE_BLT_UN))
 		return CMP_TYPE_L;
 	else if ((opcode >= OP_CEQ) && (opcode <= OP_CLT_UN))
-		return CMP_TYPE_L;
-	else if ((opcode >= OP_COND_EXC_EQ) && (opcode <= OP_COND_EXC_LT_UN))
 		return CMP_TYPE_L;
 	else if ((opcode >= OP_IBEQ) && (opcode <= OP_IBLE_UN))
 		return CMP_TYPE_I;
@@ -1020,7 +1025,15 @@ opcode_to_type (int opcode)
 		return CMP_TYPE_F;
 	else if ((opcode >= OP_FCEQ) && (opcode <= OP_FCLT_UN))
 		return CMP_TYPE_F;
-	else {
+	else if ((opcode >= OP_COND_EXC_EQ) && (opcode <= OP_COND_EXC_LT_UN)) {
+		switch (cmp_opcode) {
+		case OP_ICOMPARE:
+		case OP_ICOMPARE_IMM:
+			return CMP_TYPE_I;
+		default:
+			return CMP_TYPE_L;
+		}
+	} else {
 		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
 		return 0;
 	}
@@ -1040,9 +1053,9 @@ int cond_to_ia64_cmp [][3] = {
 };
 
 static int
-opcode_to_ia64_cmp (int opcode)
+opcode_to_ia64_cmp (int opcode, int cmp_opcode)
 {
-	return cond_to_ia64_cmp [opcode_to_cond (opcode)][opcode_to_type (opcode)];
+	return cond_to_ia64_cmp [opcode_to_cond (opcode)][opcode_to_type (opcode, cmp_opcode)];
 }
 
 int cond_to_ia64_cmp_imm [][3] = {
@@ -1059,10 +1072,10 @@ int cond_to_ia64_cmp_imm [][3] = {
 };
 
 static int
-opcode_to_ia64_cmp_imm (int opcode)
+opcode_to_ia64_cmp_imm (int opcode, int cmp_opcode)
 {
 	/* The condition needs to be reversed */
-	return cond_to_ia64_cmp_imm [opcode_to_cond (opcode)][opcode_to_type (opcode)];
+	return cond_to_ia64_cmp_imm [opcode_to_cond (opcode)][opcode_to_type (opcode, cmp_opcode)];
 }
 
 static void
@@ -1382,14 +1395,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (next->opcode) {
 			case CEE_BGE:
 			case CEE_BLT:
-			case CEE_BGE_UN:
-			case CEE_BLT_UN:
 			case OP_COND_EXC_LT:
 			case OP_IBGE:
 			case OP_IBLT:
+				imm = ia64_is_imm8 (ins->inst_imm - 1);
+				break;
 			case OP_IBGE_UN:
 			case OP_IBLT_UN:
-				imm = ia64_is_imm8 (ins->inst_imm - 1);
+			case CEE_BGE_UN:
+			case CEE_BLT_UN:
+				imm = ia64_is_imm8 (ins->inst_imm - 1) && (ins->inst_imm > 0);
 				break;
 			default:
 				imm = ia64_is_imm8 (ins->inst_imm);
@@ -1397,11 +1412,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (imm) {
-				ins->opcode = opcode_to_ia64_cmp_imm (next->opcode);
+				ins->opcode = opcode_to_ia64_cmp_imm (next->opcode, ins->opcode);
 				ins->sreg2 = ins->sreg1;
 			}
 			else {
-				ins->opcode = opcode_to_ia64_cmp (next->opcode);
+				ins->opcode = opcode_to_ia64_cmp (next->opcode, ins->opcode);
 
 				if (ins->inst_imm == 0)
 					ins->sreg2 = IA64_R0;
@@ -1474,7 +1489,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			next = ins->next;
 
-			ins->opcode = opcode_to_ia64_cmp (next->opcode);
+			ins->opcode = opcode_to_ia64_cmp (next->opcode, ins->opcode);
 			switch (next->opcode) {
 			case CEE_BEQ:
 			case CEE_BNE_UN:
@@ -2305,6 +2320,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FNEG:
 			ia64_fmerge_ns (code, ins->dreg, ins->sreg1, ins->sreg1);
 			break;
+		case CEE_CKFINITE:
+			/* Quiet NaN */
+			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "ArithmeticException");
+			ia64_br_cond_pred (code, 6, 0);
+			/* Signaling NaN */
+			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x040);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "ArithmeticException");
+			ia64_br_cond_pred (code, 6, 0);
+			/* Positive infinity */
+			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x021);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "ArithmeticException");
+			ia64_br_cond_pred (code, 6, 0);
+			/* Negative infinity */
+			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x022);
+			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+								 MONO_PATCH_INFO_EXC, "ArithmeticException");
+			ia64_br_cond_pred (code, 6, 0);
+			break;
 
 		/* Calls */
 		case OP_CHECK_THIS:
@@ -2898,7 +2935,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					ia64_mov (code, inst->dreg, cfg->arch.reg_in0 + ainfo->reg);
 				break;
 			case ArgOnStack:
-				ia64_adds_imm (code, GP_SCRATCH_REG, ainfo->offset, cfg->frame_reg);
+				ia64_adds_imm (code, GP_SCRATCH_REG, 16 + ainfo->offset, cfg->frame_reg);
 				ia64_ld8 (code, inst->dreg, GP_SCRATCH_REG);
 				break;
 			default:
