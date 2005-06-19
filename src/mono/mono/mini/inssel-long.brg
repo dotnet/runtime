@@ -160,10 +160,6 @@ i8con: CEE_CONV_U8 (OP_ICONST) "0" {
 	tree->inst_ms_word = 0;
 }
 
-reg: OP_LCONV_TO_I4 (reg) {
-	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
-}
-
 reg: OP_FCONV_TO_I8 (freg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
@@ -178,12 +174,12 @@ reg: OP_LCONV_TO_I4 (i8con) {
 
 reg: OP_LCONV_TO_I4 (reg) {
 	/* Sign extend the value in the lower word into the upper word */
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_IMM, state->reg1, state->left->reg1, 0);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, 0);
 }
 
 reg: OP_LCONV_TO_U4 (reg) {
 	/* Clean out the upper word */
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_UN_IMM, state->reg1, state->left->reg1, 0);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, 0);
 }
 
 reg: OP_LCONV_TO_U8 (reg) {
