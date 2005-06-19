@@ -160,6 +160,19 @@ class Tests {
 
 		return (int)a;
 	}
+
+	public static int test_32_conv_to_u4 () {
+		long a = 32;
+
+		return (int)(uint)a;
+	}
+
+	public static int test_15_conv_to_u4_2 () {
+		long a = 0x10000000f;
+
+		return (int)(uint)a;
+	}
+
 	public static int test_0_conv_from_i4 () {
 		long a = 2;
 		if (a != 2)
