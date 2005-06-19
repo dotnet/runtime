@@ -1657,7 +1657,7 @@ typedef enum {
 #define ia64_fcmp_nge_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_le_sf_pred ((code), (qp), (p2), (p1), (f3), (f2), (sf))
 #define ia64_fcmp_ord_sf_pred(code, qp, p1, p2, f2, f3, sf) ia64_fcmp_unord_sf_pred ((code), (qp), (p2), (p1), (f2), (f3), (sf))
 
-#define ia64_f5(code, qp, p1, p2, f2, fclass, opcode, ta) do { check_fr ((f2)); check_preg ((p1)); check_preg ((p2)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (p1), 6, (ta), 12, (f2), 13, (fclass) & 0x7f, 20, (p2), 27, (((guint64)(fclass)) >> 7) & 0x3, 33, (opcode), 37); } while (0)
+#define ia64_f5(code, qp, p1, p2, f2, fclass, opcode, ta) do { check_fr ((f2)); check_preg ((p1)); check_preg ((p2)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_F, (qp), 0, (p1), 6, (ta), 12, (f2), 13, (((guint64)(fclass)) >> 2) & 0x7f, 20, (p2), 27, ((guint64)(fclass)) & 0x3, 33, (opcode), 37); } while (0)
 
 #define ia64_fclass_m_pred(code, qp, p1, p2, f2, fclass) ia64_f5 ((code), (qp), (p1), (p2), (f2), (fclass), 5, 0)
 #define ia64_fclass_m_unc_pred(code, qp, p1, p2, f2, fclass) ia64_f5 ((code), (qp), (p1), (p2), (f2), (fclass), 5, 1)
