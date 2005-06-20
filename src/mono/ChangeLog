@@ -1,3 +1,8 @@
+2005-06-20 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: enabled the use of mmap/munmap for solaris and linux.
+	It seems to help with memory usage.
+
 2005-06-15  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Another attempt at the portable "find libX11.so"
