@@ -1890,6 +1890,22 @@ mono_class_init (MonoClass *class)
 
 	mono_class_setup_supertypes (class);
 
+	if (MONO_CLASS_IS_INTERFACE (class)) {
+		class->init_pending = 0;
+		class->inited = 1;
+		/* 
+		 * class->interface_offsets is needed for the castclass/isinst code, so
+		 * we have to setup them for interfaces, too.
+		 */
+		setup_interface_offsets (class, 0);
+		mono_loader_unlock ();
+
+		if (mono_debugger_class_init_func)
+			mono_debugger_class_init_func (class);
+
+		return;
+	}
+
 	if (!default_ghc) {
 		if (class == mono_defaults.object_class) { 
 			mono_class_setup_vtable (class);		       
@@ -1974,14 +1990,6 @@ mono_class_init (MonoClass *class)
 
 	class->inited = 1;
 	class->init_pending = 0;
-
-	if (MONO_CLASS_IS_INTERFACE (class)) {
-		/* 
-		 * class->interface_offsets is needed for the castclass/isinst code, so
-		 * we have to setup them for interfaces, too.
-		 */
-		setup_interface_offsets (class, 0);
-	}
 	
 	mono_loader_unlock ();
 
