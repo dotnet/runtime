@@ -128,6 +128,8 @@ struct _MonoDomain {
 	 * if the hashtable contains a GC visible reference to them.
 	 */
 	GHashTable         *finalizable_objects_hash;
+	/* Used when accessing 'domain_assemblies' */
+	CRITICAL_SECTION    assemblies_lock;
 };
 
 typedef struct  {
@@ -143,6 +145,8 @@ typedef struct  {
 
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
 #define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)
+#define mono_domain_assemblies_lock(domain)   EnterCriticalSection(&(domain)->assemblies_lock)
+#define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
 
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);

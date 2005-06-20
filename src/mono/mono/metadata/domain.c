@@ -335,6 +335,7 @@ mono_domain_create (void)
 	domain->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	InitializeCriticalSection (&domain->lock);
+	InitializeCriticalSection (&domain->assemblies_lock);
 
 	EnterCriticalSection (&appdomains_mutex);
 	domain_id_alloc (domain);
@@ -764,15 +765,15 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	MonoAssembly *ass;
 	GSList *tmp;
 
-	mono_domain_lock (domain);
+	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (strcmp (name, ass->aname.name) == 0) {
-			mono_domain_unlock (domain);
+			mono_domain_assemblies_unlock (domain);
 			return ass;
 		}
 	}
-	mono_domain_unlock (domain);
+	mono_domain_assemblies_unlock (domain);
 
 	if (!(ass = mono_assembly_open (name, NULL)))
 		return NULL;
@@ -882,6 +883,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->special_static_fields);
 		domain->special_static_fields = NULL;
 	}
+	DeleteCriticalSection (&domain->assemblies_lock);
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
 

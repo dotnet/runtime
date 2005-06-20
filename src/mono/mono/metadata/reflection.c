@@ -4348,9 +4348,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 
-	mono_domain_lock (domain);
+	mono_domain_assemblies_lock (domain);
 	domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, assembly);
-	mono_domain_unlock (domain);
+	mono_domain_assemblies_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
