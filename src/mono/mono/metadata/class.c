@@ -3457,7 +3457,19 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		if (klass == mono_defaults.object_class)
 			return TRUE;
 
-	return mono_class_has_parent (oklass, klass);
+	/*
+	 * Custom version of mono_class_has_parent (oklass, klass)
+	 */
+	if (oklass->idepth >= klass->idepth) {
+		MonoClass *parent = oklass->supertypes [klass->idepth - 1];
+
+		if (parent->generic_class)
+			parent = parent->generic_class->container_class;
+
+		return klass == parent;
+	}
+
+	return FALSE;
 }	
 
 /*
