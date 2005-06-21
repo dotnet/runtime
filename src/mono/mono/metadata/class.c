@@ -642,8 +642,14 @@ class_compute_field_layout (MonoClass *class)
 		if (class->generic_container)
 			container = class->generic_container;
 		else if (class->generic_class) {
-			container = class->generic_class->container_class->generic_container;
+			MonoInflatedField *ifield = g_new0 (MonoInflatedField, 1);
+			MonoClass *gklass = class->generic_class->container_class;
+
+			container = gklass->generic_container;
 			g_assert (container);
+
+			ifield->generic_type = gklass->fields [i].type;
+			field->generic_info = ifield;
 		}
 		field->type = mono_metadata_parse_type_full (
 			m, (MonoGenericContext *) container, MONO_PARSE_FIELD,
@@ -1794,6 +1800,7 @@ mono_class_init (MonoClass *class)
 			class->methods [i] = mono_get_inflated_method (inflated);
 		}
 
+#if 0
 		g_assert (class->field.count == gklass->field.count);
 		class->fields = g_new0 (MonoClassField, class->field.count);
 
@@ -1807,6 +1814,7 @@ mono_class_init (MonoClass *class)
 			class->fields [i].type = mono_class_inflate_generic_type (
 				class->fields [i].type, gclass->context);
 		}
+#endif
 
 		class->property = gklass->property;
 		class->properties = g_new0 (MonoProperty, class->property.count);
