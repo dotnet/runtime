@@ -36,6 +36,6 @@ struct _WapiHandle_namedmutex
 	guint32 recursion;
 };
 
-extern void _wapi_mutex_check_abandoned (pid_t pid, pthread_t tid);
+extern void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);
 
 #endif /* _WAPI_MUTEX_PRIVATE_H_ */

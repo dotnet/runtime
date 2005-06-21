@@ -729,7 +729,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 		}
 	}
 
-	if (!found) {
+	if (!found && _WAPI_SHARED_HANDLE (type)) {
 		/* Not found yet, so search the shared memory too */
 #ifdef DEBUG
 		g_message ("%s: Looking at other shared handles...", __func__);
