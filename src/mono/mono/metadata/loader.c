@@ -499,16 +499,16 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	}
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->generic_class = method->klass->generic_class;
 	gmethod->container = container;
 
         if (context && context -> gmethod)
-          new_context = context -> gmethod -> container;
+		new_context = context -> gmethod -> container;
         else
-          new_context = context ? context->container : NULL;
+		new_context = context ? context->container : NULL;
 
 	gmethod->inst = mono_metadata_parse_generic_inst (
-             	image, new_context,
-		param_count, ptr, &ptr);
+             	image, new_context, param_count, ptr, &ptr);
 
 	if (context)
 		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);

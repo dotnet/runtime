@@ -379,6 +379,7 @@ struct _MonoDynamicGenericClass {
 
 struct _MonoGenericMethod {
 	MonoGenericInst *inst;
+	MonoGenericClass *generic_class;
 	MonoGenericContainer *container;
 	gpointer reflection_info;
 };

@@ -483,6 +483,7 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 
 	if (context->gmethod) {
 		res->gmethod = g_new0 (MonoGenericMethod, 1);
+		res->gmethod->generic_class = res->gclass;
 
 		res->gmethod->container = context->gmethod->container;
 		res->gmethod->inst = mono_metadata_inflate_generic_inst (context->gmethod->inst, inflate_with);

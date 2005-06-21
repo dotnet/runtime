@@ -2889,7 +2889,8 @@ mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
 gboolean
 mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2)
 {
-	return (g1->container == g2->container) && (g1->inst == g2->inst);
+	return (g1->container == g2->container) && (g1->generic_class == g2->generic_class) &&
+		(g1->inst == g2->inst);
 }
 
 

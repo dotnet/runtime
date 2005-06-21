@@ -8620,6 +8620,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->generic_class = method->klass->generic_class;
 	gmethod->container = container;
 	gmethod->inst = ginst;
 
@@ -8657,6 +8658,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	gclass = type->type.type->data.generic_class;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->generic_class = gclass;
 	gmethod->inst = g_new0 (MonoGenericInst, 1);
 	gmethod->reflection_info = obj;
 
