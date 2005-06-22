@@ -602,7 +602,8 @@ mini_trace_usage (void)
 		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
 		 "    +EXPR                Includes expression\n"
-		 "    -EXPR                Excludes expression\n");
+		 "    -EXPR                Excludes expression\n"
+		 "    disabled             Don't print any output until toggled via SIGUSR2\n");
 }
 
 static const char *info = ""
