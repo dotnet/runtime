@@ -9057,18 +9057,26 @@ MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
+	MonoDomain* domain;
 	MonoReflectionType* res;
 	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
+	domain = mono_object_domain (tb);
 	klass = my_mono_class_from_mono_type (tb->type.type);
 
 	mono_save_custom_attrs (klass->image, klass, tb->cattrs);
-
+	
+	/* 
+	 * we need to lock the domain because the lock will be taken inside
+	 * So, we need to keep the locking order correct.
+	 */
+	mono_domain_lock (domain);
 	mono_loader_lock ();
 	if (klass->wastypebuilder) {
 		mono_loader_unlock ();
+		mono_domain_unlock (domain);
 		return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	}
 	/*
@@ -9084,6 +9092,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			/* FIXME: The code below can't handle generic classes */
 			klass->wastypebuilder = TRUE;
 			mono_loader_unlock ();
+			mono_domain_unlock (domain);
 			return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 		}
 	}
@@ -9124,6 +9133,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 
 	klass->wastypebuilder = TRUE;
 	mono_loader_unlock ();
+	mono_domain_unlock (domain);
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	g_assert (res != (MonoReflectionType*)tb);
