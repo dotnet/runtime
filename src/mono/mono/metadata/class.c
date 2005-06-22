@@ -155,8 +155,10 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			&type->data.klass->byval_arg, str, FALSE, format);
+			&type->data.klass->byval_arg, str, FALSE, nested_format);
 		g_string_append (str, "[]");
+		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
 	}
 	case MONO_TYPE_PTR:
