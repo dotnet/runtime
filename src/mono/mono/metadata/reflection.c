@@ -1467,12 +1467,12 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 
 	klass = my_mono_class_from_mono_type (type);
 	if (!klass) 
-		return mono_type_get_name (type);
+		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
-	if (ta == ass || klass->image == mono_defaults.corlib)
-		return mono_type_get_name (type);
+	if (ta->dynamic || (ta == ass))
+		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 
-	return type_get_fully_qualified_name (type);
+	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 static guint32
@@ -6138,10 +6138,9 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 }
 
 static MonoType*
-_mono_reflection_get_type_from_info (MonoTypeNameParse *info, gboolean ignorecase)
+_mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, gboolean ignorecase)
 {
 	gboolean type_resolve = FALSE;
-	MonoImage *image;
 	MonoType *type;
 
 	if (info->assembly.name) {
@@ -6153,7 +6152,7 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, gboolean ignorecas
 				return NULL;
 		}
 		image = assembly->image;
-	} else {
+	} else if (!image) {
 		image = mono_defaults.corlib;
 	}
 
@@ -6216,7 +6215,7 @@ mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gb
 		for (i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = g_ptr_array_index (info->type_arguments, i);
 
-			type_args [i] = _mono_reflection_get_type_from_info (subinfo, ignorecase);
+			type_args [i] = _mono_reflection_get_type_from_info (subinfo, image, ignorecase);
 			if (!type_args [i]) {
 				g_free (type_args);
 				return NULL;
@@ -6367,7 +6366,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	
 	/*g_print ("requested type %s\n", str);*/
 	if (mono_reflection_parse_type (tmp, &info)) {
-		type = _mono_reflection_get_type_from_info (&info, FALSE);
+		type = _mono_reflection_get_type_from_info (&info, image, FALSE);
 	}
 
 	g_free (tmp);
