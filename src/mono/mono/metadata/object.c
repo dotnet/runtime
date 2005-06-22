@@ -3314,6 +3314,8 @@ mono_message_init (MonoDomain *domain,
 				arg_type |= 1;
 		} else {
 			arg_type = 1;
+			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT)
+				arg_type |= 4;
 		}
 		mono_array_set (this->arg_types, guint8, i, arg_type);
 	}
