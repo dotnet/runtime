@@ -1379,6 +1379,13 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
+	ia64-*-*)
+		TARGET=IA64
+		arch_target=ia64
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		jit_wanted=true
+		;;
 	sparc*-*-*)
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 		   TARGET=SPARC64
