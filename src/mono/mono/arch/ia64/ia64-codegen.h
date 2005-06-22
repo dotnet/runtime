@@ -1063,6 +1063,9 @@ typedef enum {
 #define ia64_st4_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x32)
 #define ia64_st8_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x33)
 
+/* Pseudo ops */
+#define ia64_st8_pred(code, qp, r3, r2) ia64_st8_hint_pred ((code), (qp), (r3), (r2), 0)
+
 #define ia64_st1_rel_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x34)
 #define ia64_st2_rel_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x35)
 #define ia64_st4_rel_hint_pred(code, qp, r3, r2, hint) ia64_m4 ((code), (qp), (r3), (r2), (hint), 0, 0, 0x36)
@@ -2413,6 +2416,9 @@ typedef enum {
 #define ia64_st2_hint(code, r3, r2, hint) ia64_st2_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st4_hint(code, r3, r2, hint) ia64_st4_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st8_hint(code, r3, r2, hint) ia64_st8_hint_pred ((code), 0, r3, r2, hint)
+
+/* Pseudo ops */
+#define ia64_st8(code, r3, r2) ia64_st8_hint ((code), (r3), (r2), 0)
 
 #define ia64_st1_rel_hint(code, r3, r2, hint) ia64_st1_rel_hint_pred ((code), 0, r3, r2, hint)
 #define ia64_st2_rel_hint(code, r3, r2, hint) ia64_st2_rel_hint_pred ((code), 0, r3, r2, hint)
