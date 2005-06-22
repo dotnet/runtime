@@ -1669,6 +1669,96 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	mono_local_regalloc (cfg, bb);
 }
 
+/*
+ * emit_load_volatile_arguments:
+ *
+ *  Load volatile arguments from the stack to the original input registers.
+ * Required before a tail call.
+ */
+static Ia64CodegenState
+emit_load_volatile_arguments (MonoCompile *cfg, Ia64CodegenState code)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoInst *ins;
+	CallInfo *cinfo;
+	guint32 i;
+
+	/* FIXME: Generate intermediate code instead */
+
+	sig = mono_method_signature (method);
+
+	cinfo = get_call_info (sig, FALSE);
+	
+	/* This is the opposite of the code in emit_prolog */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		gint32 stack_offset;
+		MonoType *arg_type;
+		ins = cfg->varinfo [i];
+
+		if (sig->hasthis && (i == 0))
+			arg_type = &mono_defaults.object_class->byval_arg;
+		else
+			arg_type = sig->params [i - sig->hasthis];
+
+		arg_type = mono_type_get_underlying_type (arg_type);
+
+		stack_offset = ainfo->offset + ARGS_OFFSET;
+
+		/* Save volatile arguments to the stack */
+		if (ins->opcode != OP_REGVAR) {
+			switch (ainfo->storage) {
+			case ArgInIReg:
+			case ArgInFloatReg:
+				/* FIXME: big offsets */
+				g_assert (ins->opcode == OP_REGOFFSET);
+				ia64_adds_imm (code, GP_SCRATCH_REG, ins->inst_offset, ins->inst_basereg);
+				if (arg_type->byref)
+					ia64_ld8 (code, cfg->arch.reg_in0 + ainfo->reg, GP_SCRATCH_REG);
+				else {
+					switch (arg_type->type) {
+					case MONO_TYPE_R4:
+						ia64_ldfs (code, ainfo->reg, GP_SCRATCH_REG);
+						break;
+					case MONO_TYPE_R8:
+						ia64_ldfd (code, ainfo->reg, GP_SCRATCH_REG);
+						break;
+					default:
+						ia64_ld8 (code, cfg->arch.reg_in0 + ainfo->reg, GP_SCRATCH_REG);
+						break;
+					}
+				}
+				break;
+			case ArgOnStack:
+				break;
+			default:
+				NOT_IMPLEMENTED;
+			}
+		}
+
+		if (ins->opcode == OP_REGVAR) {
+			/* Argument allocated to (non-volatile) register */
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				if (ins->dreg != cfg->arch.reg_in0 + ainfo->reg)
+					ia64_mov (code, cfg->arch.reg_in0 + ainfo->reg, ins->dreg);
+				break;
+			case ArgOnStack:
+				ia64_adds_imm (code, GP_SCRATCH_REG, 16 + ainfo->offset, cfg->frame_reg);
+				ia64_st8 (code, GP_SCRATCH_REG, ins->dreg);
+				break;
+			default:
+				NOT_IMPLEMENTED;
+			}
+		}
+	}
+
+	g_free (cinfo);
+
+	return code;
+}
+
 static Ia64CodegenState
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 {
@@ -2301,6 +2391,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
 			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
 			break;
+		case OP_LCONV_TO_R4:
+			/* FIXME: Difference with CEE_CONV_R4 ? */
+			ia64_setf_sig (code, ins->dreg, ins->sreg1);
+			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
+			ia64_fnorm_s_sf (code, ins->dreg, ins->dreg, 0);
+			break;
 		case OP_FCONV_TO_R4:
 			ia64_fnorm_s_sf (code, ins->dreg, ins->sreg1, 0);
 			break;
@@ -2394,6 +2490,31 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		case CEE_JMP: {
+			/*
+			 * Keep in sync with the code in emit_epilog.
+			 */
+
+			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+				NOT_IMPLEMENTED;
+
+			g_assert (!cfg->method->save_lmf);
+
+			/* Load arguments into their original registers */
+			code = emit_load_volatile_arguments (cfg, code);
+
+			if (cfg->arch.stack_alloc_size)
+				ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+			ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
+			ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
+
+			mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			ia64_movl (code, GP_SCRATCH_REG, 0);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+			ia64_br_cond_reg (code, IA64_B6);
+
+			break;
+		}
 
 		case OP_LOCALLOC:
 			/* keep alignment */
@@ -2806,6 +2927,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* scratch area */
 		alloc_size += 16;
 	alloc_size = ALIGN_TO (alloc_size, MONO_ARCH_FRAME_ALIGNMENT);
+
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		/* Force sp to be saved/restored */
+		alloc_size += MONO_ARCH_FRAME_ALIGNMENT;
 
 	cfg->arch.stack_alloc_size = alloc_size;
 
