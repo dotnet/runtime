@@ -21,6 +21,10 @@ This is Mono.
 
 		  Available from: http://www.gtk.org/
 
+	On Itanium, you must obtain libunwind:
+
+		http://www.hpl.hp.com/research/linux/libunwind/download.php4
+
 	Optional dependencies:
 
 		* libgdiplus
