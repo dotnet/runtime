@@ -161,11 +161,19 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
 	}
-	case MONO_TYPE_PTR:
+	case MONO_TYPE_PTR: {
+		MonoTypeNameFormat nested_format;
+
+		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
+			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
+
 		mono_type_get_name_recurse (
-			type->data.type, str, FALSE, format);
-		g_string_append_c (str, '*');
+			type->data.type, str, FALSE, nested_format);
+		g_string_append (str, "*");
+		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
+	}
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
