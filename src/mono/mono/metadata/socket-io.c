@@ -1854,7 +1854,7 @@ is_loopback (int family, void *ad)
 	}
 #ifdef AF_INET6
 	else {
-		return (IN6_IS_ADDR_LOOPBACK (ptr));
+		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
 	}
 #endif
 	return FALSE;
