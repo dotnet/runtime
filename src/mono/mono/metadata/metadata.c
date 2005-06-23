@@ -3723,21 +3723,22 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 }
 
 static MonoMethod*
-method_from_method_def_or_ref (MonoImage *m, guint32 tok)
+method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context)
 {
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
 	switch (tok & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
-		return mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
+		return mono_get_method_full (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context);
 	case MONO_METHODDEFORREF_METHODREF:
-		return mono_get_method (m, MONO_TOKEN_MEMBER_REF | idx, NULL);
+		return mono_get_method_full (m, MONO_TOKEN_MEMBER_REF | idx, NULL, context);
 	}
 	g_assert_not_reached ();
 	return NULL;
 }
 
 MonoMethod**
-mono_class_get_overrides (MonoImage *image, guint32 type_token, gint32 *num_overrides)
+mono_class_get_overrides_full (MonoImage *image, guint32 type_token, gint32 *num_overrides,
+			       MonoGenericContext *generic_context)
 {
 	locator_t loc;
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_METHODIMPL];
@@ -3780,8 +3781,10 @@ mono_class_get_overrides (MonoImage *image, guint32 type_token, gint32 *num_over
 	result = g_new (MonoMethod*, num * 2);
 	for (i = 0; i < num; ++i) {
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
-		result [i * 2] = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION]);
-		result [i * 2 + 1] = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_BODY]);
+		result [i * 2] = method_from_method_def_or_ref (
+			image, cols [MONO_METHODIMPL_DECLARATION], generic_context);
+		result [i * 2 + 1] = method_from_method_def_or_ref (
+			image, cols [MONO_METHODIMPL_BODY], generic_context);
 	}
 
 	if (num_overrides)

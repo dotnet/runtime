@@ -1265,6 +1265,7 @@ void
 mono_class_setup_vtable (MonoClass *class)
 {
 	MonoMethod **overrides;
+	MonoGenericContext *context;
 	int onum = 0;
 
 	if (class->vtable)
@@ -1282,7 +1283,13 @@ mono_class_setup_vtable (MonoClass *class)
 		return;
 	}
 
-	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);	
+	if (class->generic_class)
+		context = class->generic_class->context;
+	else
+		context = (MonoGenericContext *) class->generic_container;		
+
+	overrides = mono_class_get_overrides_full (
+		class->image, class->type_token, &onum, context);
 	mono_class_setup_vtable_general (class, overrides, onum);
 	g_free (overrides);
 
