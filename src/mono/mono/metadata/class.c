@@ -210,13 +210,17 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			else
 				g_string_append_c (str, '[');
 			for (i = 0; i < gclass->inst->type_argc; i++) {
+				MonoType *t = gclass->inst->type_argv [i];
+
 				if (i)
 					g_string_append_c (str, ',');
-				if (nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+				if ((nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
+				    (t->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 					g_string_append_c (str, '[');
 				mono_type_get_name_recurse (
 					gclass->inst->type_argv [i], str, FALSE, nested_format);
-				if (nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
+				if ((nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
+				    (t->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 					g_string_append_c (str, ']');
 			}
 			if (format == MONO_TYPE_NAME_FORMAT_IL)	
