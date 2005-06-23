@@ -131,7 +131,7 @@ struct MonoLMF {
 
 typedef void* MonoCompileArch;
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 # define SC_EAX sc_eax
 # define SC_EBX sc_ebx
 # define SC_ECX sc_ecx
