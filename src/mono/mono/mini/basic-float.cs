@@ -67,6 +67,9 @@ class Tests {
 		byte b = (byte)a;
 		if (b != 2)
 			return 5;
+		sbyte sb = (sbyte)a;
+		if (sb != 2)
+			return 6;
 		return 0;
 	}
 
