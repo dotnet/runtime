@@ -264,7 +264,8 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.storage = ArgInFloatReg;
 			cinfo->ret.reg = 8;
 			break;
-		case MONO_TYPE_VALUETYPE: {
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
@@ -275,12 +276,6 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 				cinfo->ret.storage = ArgValuetypeAddrInIReg;
 			break;
 		}
-		case MONO_TYPE_TYPEDBYREF:
-			/* Same as a valuetype with size 24 */
-			add_general (&gr, &stack_size, &cinfo->ret);
-			if (cinfo->ret.storage == ArgInIReg)
-				cinfo->ret.storage = ArgValuetypeAddrInIReg;
-			break;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -745,8 +740,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			MonoMethodSignature *tmp_sig;
 
-			NOT_IMPLEMENTED;
-
 			/* Emit the signature cookie just before the implicit arguments */
 			MonoInst *sig_arg;
 			/* FIXME: Add support for signature tokens to AOT */
@@ -770,6 +763,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			arg->inst_left = sig_arg;
+			arg->inst_imm = 16 + cinfo->sig_cookie.offset;
 			arg->type = STACK_PTR;
 
 			/* prepend, so they get reversed */
@@ -1623,6 +1617,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_I2:
 		case OP_FCONV_TO_U2:
+		case OP_FCONV_TO_I1:
 		case OP_FCONV_TO_U1:
 			NEW_INS (cfg, temp, OP_FCONV_TO_I8);
 			temp->sreg1 = ins->sreg1;
@@ -1637,6 +1632,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_FCONV_TO_U2:
 				ins->opcode = OP_ZEXT_I4;
+				break;
+			case OP_FCONV_TO_I1:
+				ins->opcode = OP_SEXT_I1;
 				break;
 			case OP_FCONV_TO_U1:
 				ins->opcode = OP_ZEXT_I1;
@@ -1813,8 +1811,12 @@ emit_call (MonoCompile *cfg, Ia64CodegenState code, guint32 patch_type, gconstpo
 		ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
 		ia64_br_call_reg (code, IA64_B0, IA64_B6);
 	}
-	else
-		ia64_br_call (code, IA64_B0, 0);
+	else {
+		/* Can't use a direct call since the displacement might be too small */
+		ia64_movl (code, GP_SCRATCH_REG, 0);
+		ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+		ia64_br_call_reg (code, IA64_B0, IA64_B6);
+	}
 
 	return code;
 }
@@ -2319,6 +2321,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: Is this needed */
 			ia64_zxt2 (code, ins->dreg, ins->sreg1);
 			break;
+		case CEE_CONV_U4:
+			/* FIXME: Is this needed */
+			ia64_zxt4 (code, ins->dreg, ins->sreg1);
+			break;
 		case CEE_CONV_I8:
 		case CEE_CONV_I:
 			/* FIXME: Sign extend ? */
@@ -2444,7 +2450,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* ensure ins->sreg1 is not NULL */
 			ia64_ld8 (code, GP_SCRATCH_REG, ins->sreg1);
 			break;
-
+		case OP_ARGLIST:
+			ia64_adds_imm (code, GP_SCRATCH_REG, cfg->sig_cookie, cfg->frame_reg);
+			ia64_st8 (code, ins->sreg1, GP_SCRATCH_REG);
+			break;
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL:
