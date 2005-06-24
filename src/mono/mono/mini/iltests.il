@@ -554,6 +554,15 @@ COND:   ldloc.0
 		ret
 	}		
 
+	.method public static int32 test_1234_conv_u4 () il managed {
+		.maxstack 16
+
+		ldc.i4 1234
+		conv.u4
+		conv.i4
+		ret
+	}
+
 	.method public static int32 test_0_get_type_from_handle_on_bblock_boundary () cil managed 
 	{
 		.maxstack 16
