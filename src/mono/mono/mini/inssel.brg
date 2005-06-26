@@ -998,7 +998,7 @@ reg: CEE_ISINST (reg) {
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
 				int parent_reg = mono_regstate_next_int (s->rs);
-				int const_reg;
+				int const_reg = -1;
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
@@ -1017,7 +1017,7 @@ reg: CEE_ISINST (reg) {
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
-				int const_reg;
+				int const_reg = -1;
 				
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
@@ -1231,7 +1231,7 @@ reg: CEE_CASTCLASS (reg) {
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
 				int parent_reg = mono_regstate_next_int (s->rs);
-				int const_reg;
+				int const_reg = -1;
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
