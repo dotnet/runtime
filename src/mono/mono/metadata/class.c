@@ -1310,8 +1310,8 @@ setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	mono_class_init (gklass);
 	class->vtable_size = gklass->vtable_size;
 
-	class->vtable = g_new0 (gpointer, class->vtable_size);
-	memcpy (class->vtable, gklass->vtable,  sizeof (gpointer) * class->vtable_size);
+	class->vtable = g_new0 (MonoMethod*, class->vtable_size);
+	memcpy (class->vtable, gklass->vtable,  sizeof (MonoMethod*) * class->vtable_size);
 
 	for (i = 0; i < class->vtable_size; i++) {
 		MonoMethod *m = class->vtable [i];
@@ -1324,9 +1324,9 @@ setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 
 	class->max_interface_id = gklass->max_interface_id;
-	class->interface_offsets = g_new0 (gpointer, gklass->max_interface_id + 1);
+	class->interface_offsets = g_new0 (gint, gklass->max_interface_id + 1);
 	memcpy (class->interface_offsets, gklass->interface_offsets,
-		sizeof (gpointer) * (gklass->max_interface_id + 1));
+		sizeof (gint) * (gklass->max_interface_id + 1));
 }
 
 /*
@@ -1490,7 +1490,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					continue;
 
 				if (ic->generic_class) {
-					MonoClass *the_ic = ic->generic_class->container_class;
 					the_cname = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
 					cname = the_cname;
 				} else {
@@ -2483,7 +2482,6 @@ static void
 mono_class_create_generic_2 (MonoGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;
-	GList *list;
 	int i;
 
 	klass = gclass->klass;

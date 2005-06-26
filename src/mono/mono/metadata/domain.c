@@ -235,7 +235,7 @@ mono_string_hash (MonoString *s)
 	return h;	
 }
 
-gboolean
+static gboolean
 mono_ptrarray_equal (gpointer *s1, gpointer *s2)
 {
 	int len = GPOINTER_TO_INT (s1 [0]);
@@ -245,7 +245,7 @@ mono_ptrarray_equal (gpointer *s1, gpointer *s2)
 	return memcmp (s1 + 1, s2 + 1, len * sizeof(gpointer)) == 0; 
 }
 
-guint
+static guint
 mono_ptrarray_hash (gpointer *s)
 {
 	int i;

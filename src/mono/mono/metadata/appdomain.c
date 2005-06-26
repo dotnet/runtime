@@ -581,7 +581,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 		g_assert (assembly_load_field);
 	}
 
-	mono_field_get_value (domain->domain, assembly_load_field, &load_value);
+	mono_field_get_value ((MonoObject*) domain->domain, assembly_load_field, &load_value);
 	if (load_value == NULL) {
 		/* No events waiting to be triggered */
 		return;
