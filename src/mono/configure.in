@@ -1524,7 +1524,7 @@ AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
 libsuffix=".so"
 
 case "$host" in
-     powerpc-*-darwin*)
+     *-*-darwin*)
 	libsuffix=".dylib"
 	LIBC="libc.dylib"
 	INTL="libintl.dylib"
