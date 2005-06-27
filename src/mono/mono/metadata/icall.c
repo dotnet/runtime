@@ -6059,11 +6059,11 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	for (i = 0; i < ilength; ) {
 		int k;
 
-		for (k = 0; k < 4 && i < ilength; k++) {
+		for (k = 0; k < 4 && i < ilength;) {
 			c = start [i++];
 			if (isspace (c))
 				continue;
-				
+
 			a [k] = (guchar) c;
 			if (((b [k] = dbase64 [c]) & 0x80) != 0) {
 				exc = mono_exception_from_name_msg (mono_get_corlib (),
@@ -6071,6 +6071,7 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 					"Invalid character found.");
 				mono_raise_exception (exc);
 			}
+			k++;
 		}
 
 		*res_ptr++ = (b [0] << 2) | (b [1] >> 4);
