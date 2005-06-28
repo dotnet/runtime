@@ -8551,6 +8551,136 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	return geninst;
 }
 
+static MonoType*
+do_mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types, MonoType *parent)
+{
+	MonoClass *klass;
+	MonoGenericClass *gclass, *cached;
+	MonoType *geninst;
+	int icount, i;
+
+	klass = mono_class_from_mono_type (type);
+	if (!klass->generic_container && !klass->generic_class &&
+	    !(klass->nested_in && klass->nested_in->generic_container))
+		return NULL;
+
+	mono_loader_lock ();
+
+	icount = klass->interface_count;
+
+	gclass = g_new0 (MonoGenericClass, 1);
+	gclass->inst = g_new0 (MonoGenericInst, 1);
+	gclass->inst->type_argc = type_argc;
+	gclass->inst->type_argv = types;
+	gclass->inst->is_reference = 1;
+
+	for (i = 0; i < gclass->inst->type_argc; ++i) {
+		if (!gclass->inst->is_open)
+			gclass->inst->is_open = mono_class_is_open_constructed_type (types [i]);
+		if (gclass->inst->is_reference)
+			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (types [i]);
+	}
+
+	gclass->container_class = klass;
+
+	if (klass->generic_class) {
+		MonoGenericClass *kgclass = klass->generic_class;
+		MonoGenericClass *ogclass = gclass;
+
+		ogclass->context = g_new0 (MonoGenericContext, 1);
+		ogclass->context->container = ogclass->container_class->generic_container;
+		ogclass->context->gclass = ogclass;
+
+		gclass = g_new0 (MonoGenericClass, 1);
+		gclass->inst = g_new0 (MonoGenericInst, 1);
+
+		gclass->inst->type_argc = kgclass->inst->type_argc;
+		gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
+		gclass->inst->is_reference = 1;
+
+		for (i = 0; i < gclass->inst->type_argc; i++) {
+			MonoType *t = kgclass->inst->type_argv [i];
+
+			t = mono_class_inflate_generic_type (t, ogclass->context);
+
+			if (!gclass->inst->is_open)
+				gclass->inst->is_open = mono_class_is_open_constructed_type (t);
+			if (gclass->inst->is_reference)
+				gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
+
+			gclass->inst->type_argv [i] = t;
+		}
+
+		gclass->container_class = kgclass->container_class;
+	}
+
+	geninst = g_new0 (MonoType, 1);
+	geninst->type = MONO_TYPE_GENERICINST;
+
+	cached = mono_metadata_lookup_generic_class (gclass);
+	if (cached) {
+		g_free (gclass);
+		mono_loader_unlock ();
+		geninst->data.generic_class = cached;
+		return geninst;
+	}
+
+	geninst->data.generic_class = gclass;
+
+	gclass->parent = parent;
+
+	gclass->context = g_new0 (MonoGenericContext, 1);
+	gclass->context->container = gclass->container_class->generic_container;
+	gclass->context->gclass = gclass;
+
+	gclass->ifaces = g_new0 (MonoType *, icount);
+	gclass->count_ifaces = icount;
+
+	for (i = 0; i < icount; i++) {
+		MonoType *itype;
+
+		itype = &klass->interfaces [i]->byval_arg;
+		gclass->ifaces [i] = mono_class_bind_generic_parameters (itype, type_argc, types);
+		if (!gclass->ifaces [i])
+			gclass->ifaces [i] = itype;
+	}
+
+	mono_class_create_generic (gclass);
+
+	mono_loader_unlock ();
+
+	return geninst;
+}
+
+MonoType*
+mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types)
+{
+	MonoClass *klass, *pklass = NULL;
+	MonoType *parent = NULL, *the_parent = NULL, *geninst;
+	MonoGenericClass *gclass;
+
+	klass = mono_class_from_mono_type (type);
+
+	pklass = klass->parent;
+	if (pklass)
+		parent = &pklass->byval_arg;
+	else if (klass->generic_class && klass->generic_class->parent) {
+		parent = klass->generic_class->parent;
+		pklass = mono_class_from_mono_type (klass->generic_class->parent);
+	}
+
+	if (pklass && pklass->generic_class)
+		the_parent = mono_class_bind_generic_parameters (parent, type_argc, types);
+
+	geninst = do_mono_class_bind_generic_parameters (type, type_argc, types, the_parent);
+	if (!geninst)
+		return NULL;
+
+	gclass = geninst->data.generic_class;
+
+	return geninst;
+}
+
 static inline MonoType*
 dup_type (const MonoType *original)
 {

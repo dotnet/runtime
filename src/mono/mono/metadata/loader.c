@@ -945,10 +945,13 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	
 	/* there are generic params, or a container. FIXME: be lazy here for generics*/
-	if (* sig & 0x10 || container)
+	if (* sig & 0x10 || container) {
 		result->signature = mono_metadata_parse_method_signature_full (
-		    image, (MonoGenericContext *) container, idx, sig, NULL);
+			image, (MonoGenericContext *) container, idx, sig, NULL);
 
+		if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+			result->signature->pinvoke = 1;
+	}
 
 	if (!result->klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);

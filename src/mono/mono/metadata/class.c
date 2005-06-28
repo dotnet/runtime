@@ -458,6 +458,7 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
+	res->pinvoke = sig->pinvoke;
 	res->generic_param_count = sig->generic_param_count;
 	res->sentinelpos = sig->sentinelpos;
 	res->has_type_parameters = is_open;
@@ -510,10 +511,6 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 				   MonoClass *klass)
 {
 	MonoMethodInflated *result;
-
-	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return method;
 
 	if (method->is_inflated || mono_method_signature_full (method, context)->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
@@ -1818,22 +1815,6 @@ mono_class_init (MonoClass *class)
 			class->methods [i] = mono_get_inflated_method (inflated);
 		}
 
-#if 0
-		g_assert (class->field.count == gklass->field.count);
-		class->fields = g_new0 (MonoClassField, class->field.count);
-
-		for (i = 0; i < class->field.count; i++) {
-			MonoInflatedField *ifield = g_new0 (MonoInflatedField, 1);
-			ifield->generic_type = gklass->fields [i].type;
-
-			class->fields [i] = gklass->fields [i];
-			class->fields [i].generic_info = ifield;
-			class->fields [i].parent = class;
-			class->fields [i].type = mono_class_inflate_generic_type (
-				class->fields [i].type, gclass->context);
-		}
-#endif
-
 		class->property = gklass->property;
 		class->properties = g_new0 (MonoProperty, class->property.count);
 
@@ -2831,6 +2812,18 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (image->assembly && image->assembly->dynamic && strcmp (image->assembly_name, "mscorlib") == 0) {
 		parent = mono_class_from_name (image, "System", "Array");
 		corlib_type = TRUE;
+	} else if (mono_defaults.generic_array_class) {
+		MonoType *inflated, **args;
+
+		args = g_new0 (MonoType, 1);
+		args [0] = &eclass->byval_arg;
+
+		inflated = mono_class_bind_generic_parameters (
+			&mono_defaults.generic_array_class->byval_arg, 1, args);
+		parent = mono_class_from_mono_type (inflated);
+
+		if (!parent->inited)
+			mono_class_init (parent);
 	} else {
 		parent = mono_defaults.array_class;
 		if (!parent->inited)
@@ -2924,8 +2917,6 @@ mono_class_instance_size (MonoClass *klass)
 	if (!klass->size_inited)
 		mono_class_init (klass);
 
-	g_assert (!klass->generic_container &&
-		  (!klass->generic_class || !klass->generic_class->inst->is_open));
 	return klass->instance_size;
 }
 

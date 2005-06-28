@@ -630,6 +630,26 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 }
 
 static void
+ves_icall_System_Array_InternalArray_GetGenericValueImpl (MonoObject *this, guint32 pos,
+							  gpointer value)
+{
+	MonoClass *ac;
+	MonoArray *ao;
+	gint32 esize;
+	gpointer *ea;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ao = (MonoArray *)this;
+	ac = (MonoClass *)ao->obj.vtable->klass;
+
+	esize = mono_array_element_size (ac);
+	ea = (gpointer*)((char*)ao->vector + (pos * esize));
+
+	memcpy (value, ea, esize);
+}
+
+static void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 {
 	MonoClass *klass = array->obj.vtable->klass;
@@ -6968,6 +6988,10 @@ static const IcallEntry securitymanager_icalls [] = {
 	{"set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled}
 };
 
+static const IcallEntry generic_array_icalls [] = {
+	{"GetGenericValueImpl", ves_icall_System_Array_InternalArray_GetGenericValueImpl}
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -6982,6 +7006,7 @@ static const IcallMap icall_entries [] = {
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
 	{"System.ArgIterator", argiterator_icalls, G_N_ELEMENTS (argiterator_icalls)},
 	{"System.Array", array_icalls, G_N_ELEMENTS (array_icalls)},
+	{"System.Array/InternalArray`1", generic_array_icalls, G_N_ELEMENTS (generic_array_icalls)},
 	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},
 	{"System.Char", char_icalls, G_N_ELEMENTS (char_icalls)},
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
@@ -7182,9 +7207,24 @@ mono_lookup_internal_call (MonoMethod *method)
 
 	g_assert (method != NULL);
 
-	typelen = concat_class_name (mname, sizeof (mname), method->klass);
-	if (!typelen)
-		return NULL;
+	if (method->klass->nested_in) {
+		int pos = concat_class_name (mname, sizeof (mname)-2, method->klass->nested_in);
+		if (!pos)
+			return NULL;
+
+		mname [pos++] = '/';
+		mname [pos] = 0;
+
+		typelen = concat_class_name (mname+pos, sizeof (mname)-pos-1, method->klass);
+		if (!typelen)
+			return NULL;
+
+		typelen += pos;
+	} else {
+		typelen = concat_class_name (mname, sizeof (mname), method->klass);
+		if (!typelen)
+			return NULL;
+	}
 
 	imap = find_class_icalls (mname);
 

@@ -1018,6 +1018,8 @@ void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
 void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
 
 MonoType*
+mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types);
+MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
