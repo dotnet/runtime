@@ -346,33 +346,35 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->inst_right = (gpointer)(el2);	\
 	} while (0)
 
-#define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = cfg->compile_aot ? OP_GOT_ENTRY : OP_PCONST;	\
-        if (cfg->compile_aot) { \
-            MonoInst *group, *got_var; \
-            NEW_TEMPLOAD ((cfg), got_var, mono_get_got_var (cfg)->inst_c0); \
-		    NEW_PATCH_INFO ((cfg), group, cons, patch_type); \
-            (dest)->inst_p0 = got_var; \
-            (dest)->inst_p1 = group; \
-        } else { \
-		     (dest)->inst_p0 = (cons);	\
-             (dest)->inst_i1 = (gpointer)(patch_type); \
-        } \
-		(dest)->type = STACK_PTR;	\
-    } while (0)
+#define NEW_AOTCONST(cfg,dest,patch_type,cons) do {			\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
+		(dest)->opcode = cfg->compile_aot ? OP_GOT_ENTRY : OP_PCONST; \
+		if (cfg->compile_aot) {					\
+			MonoInst *group, *got_var, *got_loc;		\
+			got_loc = mono_get_got_var (cfg);		\
+			NEW_TEMPLOAD ((cfg), got_var, got_loc->inst_c0); \
+			NEW_PATCH_INFO ((cfg), group, cons, patch_type); \
+			(dest)->inst_p0 = got_var;			\
+			(dest)->inst_p1 = group;			\
+		} else {						\
+			(dest)->inst_p0 = (cons);			\
+			(dest)->inst_i1 = (gpointer)(patch_type);	\
+		}							\
+		(dest)->type = STACK_PTR;				\
+	} while (0)
 
 #define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type) do { \
-        MonoInst *group, *got_var; \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_GOT_ENTRY;	\
-        NEW_TEMPLOAD ((cfg), got_var, mono_get_got_var (cfg)->inst_c0); \
-		NEW_PATCH_INFO ((cfg), group, NULL, patch_type); \
-        group->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token)); \
-        (dest)->inst_p0 = got_var; \
-        (dest)->inst_p1 = group; \
-		(dest)->type = (stack_type);	\
-    } while (0)
+		MonoInst *group, *got_var, *got_loc;			\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
+		(dest)->opcode = OP_GOT_ENTRY;				\
+		got_loc = mono_get_got_var (cfg);			\
+		NEW_TEMPLOAD ((cfg), got_var, got_loc->inst_c0);	\
+		NEW_PATCH_INFO ((cfg), group, NULL, patch_type);	\
+		group->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token)); \
+		(dest)->inst_p0 = got_var;				\
+		(dest)->inst_p1 = group;				\
+		(dest)->type = (stack_type);				\
+	} while (0)
 
 #else
 
