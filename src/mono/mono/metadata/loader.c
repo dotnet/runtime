@@ -477,6 +477,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		token = MONO_TOKEN_MEMBER_REF | (token >> MONO_METHODDEFORREF_BITS);
 
 	method = mono_get_method (image, token, NULL);
+	method = mono_get_inflated_method (method);
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 	
