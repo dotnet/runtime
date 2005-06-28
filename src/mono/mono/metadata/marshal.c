@@ -4702,20 +4702,16 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		mono_mb_emit_byte (mb, CEE_STLOC_0);
-		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				
-		if (spec) {
-			switch (spec->native) {
-			case MONO_NATIVE_LPWSTR:
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPWSTR_STR));
-				break;
-			default:
-				g_warning ("marshalling conversion not implemented");
-				g_assert_not_reached ();
-			}
-		} else {
-			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPSTR_STR));
+		conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
+		if (conv == -1) {
+			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			break;
 		}
+
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_byte (mb, CEE_STLOC_3);
 
 		/* free the string */
