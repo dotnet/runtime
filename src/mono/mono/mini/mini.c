@@ -2649,6 +2649,17 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
 
 static gboolean
+mini_class_is_system_array (MonoClass *klass)
+{
+	if (klass->parent == mono_defaults.array_class)
+		return TRUE;
+	else if (mono_defaults.generic_array_class && klass->parent && klass->parent->generic_class)
+		return klass->parent->generic_class->container_class == mono_defaults.generic_array_class;
+	else
+		return FALSE;
+}
+
+static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
@@ -2659,7 +2670,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 #ifdef MONO_ARCH_HAVE_LMF_OPS
 	if (((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		 (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) &&
-	    !MONO_TYPE_ISSTRUCT (signature->ret) && (method->klass->parent != mono_defaults.array_class))
+	    !MONO_TYPE_ISSTRUCT (signature->ret) && !mini_class_is_system_array (method->klass))
 		return TRUE;
 #endif
 
@@ -2816,7 +2827,7 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			return ins;
 		} else
 			return NULL;
-	} else if (cmethod->klass == mono_defaults.array_class) {
+	} else if (mini_class_is_system_array (cmethod->klass)) {
  		if (cmethod->name [0] != 'g')
  			return NULL;
 
@@ -3821,7 +3832,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
-				    cmethod->klass->parent == mono_defaults.array_class) {
+				    mini_class_is_system_array (cmethod->klass)) {
 					array_rank = cmethod->klass->rank;
 				}
 
@@ -4685,7 +4696,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-			if (cmethod->klass->parent == mono_defaults.array_class) {
+			if (mini_class_is_system_array (cmethod->klass)) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
 				temp = handle_array_new (cfg, bblock, fsig->param_count, sp, ip);
 			} else if (cmethod->string_ctor) {
