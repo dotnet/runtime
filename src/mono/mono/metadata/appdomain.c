@@ -1198,7 +1198,7 @@ typedef struct unload_data {
 	char *failure_reason;
 } unload_data;
 
-static guint32
+static guint32 WINAPI
 unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
