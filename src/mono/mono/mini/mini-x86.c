@@ -546,7 +546,7 @@ mono_arch_cpu_init (void)
 	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
 #else
-	_control87 (_PC_64, MCW_PC);
+	_control87 (_PC_53, MCW_PC);
 #endif
 }
 
