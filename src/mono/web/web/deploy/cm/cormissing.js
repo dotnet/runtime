@@ -234,16 +234,11 @@ function clickHandler (evt)
 		}
 		else if (strNamespace)
 		{
-			var re = /\./g ;
-			strNamespace = strNamespace.toLowerCase ().replace (re, '');
 			if (strClass)
-				strNamespace += strClass.toLowerCase () + 'class';
+				strNamespace += '.' + strClass.toLowerCase ();
 			if (strField)
-				strNamespace += strField;
-			if (strClass || strField)
-				strNamespace += 'topic';
-
-			window.open ('http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrf' + strNamespace + '.asp', 'MSDN');
+				strNamespace += '.' + strField;
+			window.open ('http://msdn2.microsoft.com/library/' + strNamespace + '.aspx', 'MSDN');
 		}
 	}
 	else
