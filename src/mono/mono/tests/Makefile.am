@@ -133,7 +133,6 @@ TEST_CS_SRC=			\
 	appdomain.cs        \
 	appdomain1.cs		\
 	appdomain2.cs		\
-	appdomain3.cs		\
 	appdomain-client.cs	\
 	appdomain-unload.cs \
 	loader.cs       \
