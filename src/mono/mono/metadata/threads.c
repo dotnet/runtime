@@ -1803,7 +1803,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 			LeaveCriticalSection (&threads_mutex);
 			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 				   ": cleaning up after thread %d", tid));
-			thread_cleanup (wait->threads[i]);
+			thread_cleanup (wait->threads [ret]);
 		}
 		else
 			LeaveCriticalSection (&threads_mutex);
