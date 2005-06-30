@@ -46,13 +46,13 @@ int main (int argc, char **argv)
 	guint32 i;
 	
 	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
-	if (_wapi_shared_layout == FALSE) {
+	if (_wapi_shared_layout == NULL) {
 		g_error ("Failed to attach shared memory!");
 		exit (-1);
 	}
 
 	_wapi_fileshare_layout = _wapi_shm_attach(WAPI_SHM_FILESHARE);
-	if (_wapi_fileshare_layout == FALSE) {
+	if (_wapi_fileshare_layout == NULL) {
 		g_error ("Failed to attach fileshare shared memory!");
 		exit (-1);
 	}

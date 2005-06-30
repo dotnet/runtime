@@ -1,5 +1,5 @@
 
-noinst_PROGRAMS = hps
+noinst_PROGRAMS = hps semdel
 
 INCLUDES = 				\
 	-I$(top_srcdir)			\
@@ -7,6 +7,14 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 hps_LDADD = \
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
+	$(GLIB_LIBS)			\
+	$(GMODULE_LIBS) 		\
+	-lm
+
+semdel_LDADD = \
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	$(LIBGC_LIBS)			\
