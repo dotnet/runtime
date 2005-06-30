@@ -707,7 +707,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	/*
 	 * Try loading the module using a variety of names
 	 */
-	for (i = 0; i < 3; ++i) {
+	for (i = 0; i < 4; ++i) {
 		switch (i) {
 		case 0:
 			/* Try the original name */
@@ -722,13 +722,26 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			else
 				continue;
 			break;
-		default:
+		case 2:
 			if (strstr (new_scope, "lib") != new_scope) {
 				file_name = g_strdup_printf ("lib%s", new_scope);
 			}
 			else
 				continue;
 			break;
+		default:
+#ifndef PLATFORM_WIN32
+			if (g_ascii_strcasecmp ("user32.dll", new_scope) ||
+			    g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
+			    g_ascii_strcasecmp ("user32", new_scope) ||
+			    g_ascii_strcasecmp ("kernel", new_scope)) {
+				file_name = g_strdup ("libMonoSupportW.so");
+			} else
+#endif
+				    continue;
+#ifndef PLATFORM_WIN32
+			break;
+#endif
 		}
 
 		if (!gmodule) {
