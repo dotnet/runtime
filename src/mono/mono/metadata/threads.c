@@ -201,6 +201,8 @@ static void handle_remove(guint32 tid)
 
 static void thread_cleanup (MonoThread *thread)
 {
+	g_assert (thread != NULL);
+	
 	mono_release_type_locks (thread);
 
 	if (!mono_monitor_enter (thread->synch_lock))
