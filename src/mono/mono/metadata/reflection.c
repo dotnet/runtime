@@ -2388,7 +2388,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 		return token;
 	g_assert (f->field->parent);
 	type = f->field->generic_info ? f->field->generic_info->generic_type : f->field->type;
-	token = mono_image_get_memberref_token (assembly, &f->klass->byval_arg, 
+	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
 		f->field->name,  fieldref_encode_signature (assembly, type));
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
 	return token;
@@ -4181,7 +4181,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	} else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
-		if ((f->klass->image == &assembly->image) && !f->field->generic_info) {
+		if ((f->field->parent->image == &assembly->image) && !f->field->generic_info) {
 			static guint32 field_table_idx = 0xffffff;
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
@@ -8904,6 +8904,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		ifield->reflection_info = obj;
 
 		dgclass->fields [i] = *field;
+		dgclass->fields [i].parent = klass;
 		dgclass->fields [i].generic_info = ifield;
 		dgclass->fields [i].type = mono_class_inflate_generic_type (field->type, gclass->context);
 	}
