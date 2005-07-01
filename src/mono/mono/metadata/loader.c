@@ -186,6 +186,39 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 }
 
 static MonoMethod *
+find_method_in_class (MonoClass *klass, const char *name, const char *qname,
+		      const char *fqname, MonoMethodSignature *sig)
+{
+	MonoGenericContext *context = NULL;
+	int i;
+
+	if (klass->generic_container)
+		context = &klass->generic_container->context;
+	else if (klass->generic_class)
+		context = klass->generic_class->context;
+
+	mono_class_setup_methods (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		MonoMethod *m = klass->methods [i];
+
+		if (!((fqname && !strcmp (m->name, fqname)) ||
+		      (qname && !strcmp (m->name, qname)) || !strcmp (m->name, name)))
+			continue;
+
+		if (sig->call_convention == MONO_CALL_VARARG) {
+			if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m)))
+				return m;
+		} else {
+			MonoMethodSignature *msig = mono_method_signature_full (m, context);
+			if (mono_metadata_signature_equal (sig, msig))
+				return m;
+		}
+	}
+
+	return NULL;
+}
+
+static MonoMethod *
 find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig)
 {
 	int i;
@@ -204,37 +237,20 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		class_name = qname = fqname = NULL;
 
 	while (klass) {
-		MonoGenericContext *context = NULL;
+		result = find_method_in_class (klass, name, qname, fqname, sig);
+		if (result)
+			goto out;
 
-		if (klass->generic_container)
-			context = &klass->generic_container->context;
-		else if (klass->generic_class)
-			context = klass->generic_class->context;
-
-		mono_class_setup_methods (klass);
-		for (i = 0; i < klass->method.count; ++i) {
-			MonoMethod *m = klass->methods [i];
-
-			if (!((fqname && !strcmp (m->name, fqname)) ||
-			      (qname && !strcmp (m->name, qname)) || !strcmp (m->name, name)))
-				continue;
-
-			if (sig->call_convention == MONO_CALL_VARARG) {
-				if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m))) {
-					result = m;
-					goto out;
-				}
-			} else {
-				MonoMethodSignature *msig = mono_method_signature_full (m, context);
-				if (mono_metadata_signature_equal (sig, msig)) {
-					result = m;
-					goto out;
-				}
-			}
-		}
-
-		if (name [0] == '.' && (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0))
+		if (name [0] == '.' && (!strcmp (name, ".ctor") || !strcmp (name, ".cctor")))
 			break;
+
+		for (i = 0; i < klass->interface_count; i++) {
+			MonoClass *ic = klass->interfaces [i];
+
+			result = find_method_in_class (ic, name, qname, fqname, sig);
+			if (result)
+				goto out;
+		}
 
 		klass = klass->parent;
 	}
