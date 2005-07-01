@@ -84,6 +84,7 @@ interface R2 {
 class R1 : MarshalByRefObject, R2 {
 
 	public int test_field = 5;
+	public object null_test_field;
 	
 	public virtual MyStruct Add (int a, out int c, int b) {
 		Console.WriteLine ("ADD");
@@ -203,6 +204,9 @@ class Test {
 
 		if (o3.anObject != null)
 			return 15;
+
+		if (o.null_test_field != null)
+			return 16;
 
 		return 0;
 	}
