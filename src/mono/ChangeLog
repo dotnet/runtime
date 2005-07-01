@@ -1,3 +1,7 @@
+2005-07-01  Daniel Drake  <dsd@gentoo.org>
+
+	* configure.in: Add check for FreeBSD's sys/extattr.h
+
 2005-07-01  Raja R Harinath  <rharinath@novell.com>
 
 	Avoid resource leakage on 'make clean' (see #75424).
