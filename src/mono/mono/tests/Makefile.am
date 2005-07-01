@@ -1,4 +1,6 @@
-check-local: test
+check-local:
+	ok=:; $(MAKE) test || ok=false; \
+	$(top_builddir)/runtime/semdel-wrapper || :; $$ok
 
 TEST_PROG = ../interpreter/mint
 JITTEST_PROG = ../mini/mono

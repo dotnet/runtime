@@ -343,7 +343,9 @@ stat3: mono bench.exe
 docu: mini.sgm
 	docbook2txt mini.sgm
 
-check-local: rcheck
+check-local:
+	ok=:; $(MAKE) rcheck || ok=false; \
+	$(top_builddir)/runtime/semdel-wrapper || :; $$ok
 
 clean-local:
 	rm -f mono a.out gmon.out *.o test.exe

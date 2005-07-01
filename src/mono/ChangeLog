@@ -8,6 +8,9 @@
 	(noinst_SCRIPTS): Add semdel-wrapper.
 	(MYDISTFILES, distdir): Use automake variable to get the list of
 	files to distribute.
+	(all-local, install-exec, uninstall): Call semdel-wrapper.
+	(mcs-do-test-profiles, mcs-do-run-test-profiles, mcs-compileall):
+	Likewise.
 
 2005-06-27  Geoff Norton  <gnorton@customerdna.com>
 
