@@ -1,3 +1,14 @@
+2005-07-01  Raja R Harinath  <rharinath@novell.com>
+
+	Avoid resource leakage on 'make clean' (see #75424).
+	* configure.in (AC_CONFIG_FILES): Add runtime/semdel-wrapper.
+	* runtime/semdel-wrapper.in: New.
+	* runtime/Makefile.am (clean-local): Use the semdel program before
+	nuking the .wapi directory.
+	(noinst_SCRIPTS): Add semdel-wrapper.
+	(MYDISTFILES, distdir): Use automake variable to get the list of
+	files to distribute.
+
 2005-06-27  Geoff Norton  <gnorton@customerdna.com>
 
 	* configure.in: Add support for X86 darwin.
