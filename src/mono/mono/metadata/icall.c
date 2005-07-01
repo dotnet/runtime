@@ -2563,7 +2563,6 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 					else 
 						result = *((gpointer *)((char *)this + field->offset));
 				
-					g_assert (result);
 					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 					*outArgs = out_args;
 					mono_array_set (out_args, gpointer, 0, result);
