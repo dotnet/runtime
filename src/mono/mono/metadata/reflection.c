@@ -8487,19 +8487,21 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gclass->context->container = gclass->container_class->generic_container;
 	gclass->context->gclass = gclass;
 
-	gclass->ifaces = g_new0 (MonoType *, icount);
-	gclass->count_ifaces = icount;
+	if (is_dynamic) {
+		dgclass->ifaces = g_new0 (MonoType *, icount);
+		dgclass->count_ifaces = icount;
 
-	for (i = 0; i < icount; i++) {
-		MonoReflectionType *itype;
+		for (i = 0; i < icount; i++) {
+			MonoReflectionType *itype;
 
-		if (tb)
-			itype = mono_array_get (tb->interfaces, MonoReflectionType *, i);
-		else
-			itype = mono_type_get_object (domain, &klass->interfaces [i]->byval_arg);
-		gclass->ifaces [i] = mono_reflection_bind_generic_parameters (itype, type_argc, types);
-		if (!gclass->ifaces [i])
-			gclass->ifaces [i] = itype->type;
+			if (tb)
+				itype = mono_array_get (tb->interfaces, MonoReflectionType *, i);
+			else
+				itype = mono_type_get_object (domain, &klass->interfaces [i]->byval_arg);
+			dgclass->ifaces [i] = mono_reflection_bind_generic_parameters (itype, type_argc, types);
+			if (!dgclass->ifaces [i])
+				dgclass->ifaces [i] = itype->type;
+		}
 	}
 
 	mono_class_create_generic (gclass);
@@ -8632,18 +8634,6 @@ do_mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType *
 	gclass->context = g_new0 (MonoGenericContext, 1);
 	gclass->context->container = gclass->container_class->generic_container;
 	gclass->context->gclass = gclass;
-
-	gclass->ifaces = g_new0 (MonoType *, icount);
-	gclass->count_ifaces = icount;
-
-	for (i = 0; i < icount; i++) {
-		MonoType *itype;
-
-		itype = &klass->interfaces [i]->byval_arg;
-		gclass->ifaces [i] = mono_class_bind_generic_parameters (itype, type_argc, types);
-		if (!gclass->ifaces [i])
-			gclass->ifaces [i] = itype;
-	}
 
 	mono_class_create_generic (gclass);
 

@@ -1974,7 +1974,7 @@ static MonoArray*
 ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 {
 	static MonoClass *System_Reflection_MonoGenericClass;
-	MonoGenericClass *gclass;
+	MonoDynamicGenericClass *gclass;
 	MonoDomain *domain;
 	MonoClass *klass;
 	MonoArray *res;
@@ -1990,11 +1990,12 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 
 	domain = mono_object_domain (type);
 
-	gclass = type->type.type->data.generic_class;
-	if (!gclass || !gclass->ifaces)
+	g_assert (type->type.type->data.generic_class->is_dynamic);
+	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
+	if (!gclass->ifaces)
 		return mono_array_new (domain, System_Reflection_MonoGenericClass, 0);
 
-	klass = gclass->container_class;
+	klass = gclass->generic_class.container_class;
 
 	res = mono_array_new (domain, System_Reflection_MonoGenericClass, gclass->count_ifaces);
 

@@ -357,13 +357,13 @@ struct _MonoGenericClass {
 	MonoGenericContext *context;
 	MonoClass *klass;
 	MonoType *parent;
-	guint count_ifaces  : 29;
-	guint is_dynamic    :  1;
-	MonoType **ifaces;
+	guint is_dynamic;
 };
 
 struct _MonoDynamicGenericClass {
 	MonoGenericClass generic_class;
+	int count_ifaces;
+	MonoType **ifaces;
 	int count_methods;
 	MonoMethod **methods;
 	int count_ctors;
