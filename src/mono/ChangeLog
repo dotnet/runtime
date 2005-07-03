@@ -1,3 +1,7 @@
+2005-07-03  Ben Maurer  <bmaurer@ximian.com>
+
+	* scripts/Makefile.am (bin2_SCRIPTS): Add monop2
+
 2005-07-01  Daniel Drake  <dsd@gentoo.org>
 
 	* configure.in: Add check for FreeBSD's sys/extattr.h
