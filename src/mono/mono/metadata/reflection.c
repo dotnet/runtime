@@ -5081,6 +5081,8 @@ register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly
 {
 	/* this is done only once */
 	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);
 	CACHE_OBJECT (assembly, res, NULL);
 }
 
@@ -5089,6 +5091,8 @@ register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynam
 {
 	/* this is done only once */
 	mono_domain_lock (domain);
+	if (!domain->refobject_hash)
+		domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);
 	CACHE_OBJECT (module, res, NULL);
 }
 

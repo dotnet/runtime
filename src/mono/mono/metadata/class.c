@@ -719,10 +719,6 @@ class_compute_field_layout (MonoClass *class)
 		class->instance_size = MAX (real_size, class->instance_size);
 	}
 
-	if (class->generic_container ||
-	    (class->generic_class && class->generic_class->inst->is_open))
-		return;
-
 	mono_class_layout_fields (class);
 }
 
@@ -741,6 +737,10 @@ mono_class_layout_fields (MonoClass *class)
 	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
 	MonoClassField *field;
+
+	if (class->generic_container ||
+	    (class->generic_class && class->generic_class->inst->is_open))
+		return;
 
 	/*
 	 * Enable GC aware auto layout: in this mode, reference
@@ -2517,7 +2517,10 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (param->constraints [0])) {
 		klass->parent = param->constraints [0];
 		pos++;
-	}
+	} else if (param->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
+		klass->parent = mono_class_from_name (mono_defaults.corlib, "System", "ValueType");
+	else
+		klass->parent = mono_defaults.object_class;
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
@@ -2815,7 +2818,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	} else if (mono_defaults.generic_array_class) {
 		MonoType *inflated, **args;
 
-		args = g_new0 (MonoType, 1);
+		args = g_new0 (MonoType *, 1);
 		args [0] = &eclass->byval_arg;
 
 		inflated = mono_class_bind_generic_parameters (
