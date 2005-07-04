@@ -1,3 +1,10 @@
+2005-07-04  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (EXTRA_DIST): Distribute mono-uninstalled.pc.in.
+	(noinst_DATA): Build mono-uninstalled.pc.
+	* mono-uninstalled.pc.in (Libs): Avoid ${pc_top_builddir}.
+	(Cflags): Likewise.  Let $(srcdir) to be absolute.
+
 2005-07-03  Ben Maurer  <bmaurer@ximian.com>
 
 	* scripts/Makefile.am (bin2_SCRIPTS): Add monop2

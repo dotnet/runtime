@@ -15,7 +15,6 @@ with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
-	PKG_CONFIG_TOP_BUILD_DIR=$(top_builddir) \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
 	$(RUNTIME) $(mcs_topdir)/tools/mkbundle/mkbundle.exe
 
