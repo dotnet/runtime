@@ -1,6 +1,7 @@
 #include <config.h>
 #include <glib.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
@@ -13,7 +14,7 @@
 
 int main (int argc, char **argv)
 {
-	int sem_id;
+	int sem_id, ret;
 	
 	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
 	if (_wapi_shared_layout == FALSE) {
@@ -22,7 +23,11 @@ int main (int argc, char **argv)
 
 	sem_id = semget (_wapi_shared_layout->sem_key, _WAPI_SHARED_SEM_COUNT, 0600);
 	if (sem_id != -1) {
-		semctl (sem_id, IPC_RMID, 0);
+		ret = semctl (sem_id, IPC_RMID, 0);
+		if (ret == -1) {
+			g_message ("Error deleting semaphore: %s",
+				   g_strerror (errno));
+		}
 	}
 	
 	exit (0);
