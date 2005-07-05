@@ -43,7 +43,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "20"
+#define MONO_AOT_FILE_VERSION "21"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -803,9 +803,12 @@ void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
+gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 gboolean  mono_aot_init_vtable              (MonoVTable *vtable);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
+MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
+
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);

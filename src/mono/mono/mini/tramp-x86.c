@@ -24,6 +24,8 @@
 #include "mini.h"
 #include "mini-x86.h"
 
+static guint8* nullified_class_init_trampoline;
+
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -151,24 +153,29 @@ x86_aot_trampoline (int eax, int ecx, int edx, int esi, int edi,
 {
 	MonoImage *image;
 	guint32 token;
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	gpointer addr;
 	gpointer *vtable_slot;
 	int regs [X86_NREG];
+	gboolean is_got_entry;
 
 	image = *(gpointer*)token_info;
 	token_info += sizeof (gpointer);
 	token = *(guint32*)token_info;
 
-	/* Later we could avoid allocating the MonoMethod */
-	method = mono_get_method (image, token, NULL);
-	g_assert (method);
+	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
+	if (!addr) {
+		method = mono_get_method (image, token, NULL);
+		g_assert (method);
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
+		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	addr = mono_compile_method (method);
-	g_assert (addr);
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			method = mono_marshal_get_synchronized_wrapper (method);
+
+		addr = mono_compile_method (method);
+		g_assert (addr);
+	}
 
 	regs [X86_EAX] = eax;
 	regs [X86_ECX] = ecx;
@@ -180,10 +187,16 @@ x86_aot_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (vtable_slot);
 
-	if (method->klass->valuetype)
-		addr = get_unbox_trampoline (method, addr);
+	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
 
-	if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+	if (!is_got_entry) {
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+		if (method->klass->valuetype)
+			addr = get_unbox_trampoline (method, addr);
+	}
+
+	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 		*vtable_slot = addr;
 
 	return addr;
@@ -232,7 +245,6 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			/* Then atomically change the first 4 bytes to a nop as well */
 			ops = 0x90909090;
 			InterlockedExchange ((gint32*)code, ops);
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 			/* FIXME: the calltree skin trips on the self modifying code above */
 
@@ -245,8 +257,20 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		;
 	} else if ((code [-1] == 0xff) && (x86_modrm_reg (code [0]) == 0x2)) {
 		/* call *<OFFSET>(<REG>) -> Call made from AOT code */
-		/* FIXME: Patch up the trampoline */
-		;
+		int regs [X86_NREG];
+		gpointer *vtable_slot;
+
+		regs [X86_EAX] = eax;
+		regs [X86_ECX] = ecx;
+		regs [X86_EDX] = edx;
+		regs [X86_ESI] = esi;
+		regs [X86_EDI] = edi;
+		regs [X86_EBX] = ebx;
+
+		vtable_slot = mono_arch_get_vcall_slot_addr (code + 5, (gpointer*)regs);
+		g_assert (vtable_slot);
+
+		*vtable_slot = nullified_class_init_trampoline;
 	} else {
 			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
@@ -343,6 +367,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		x86_jump_reg (buf, X86_EAX);
 
 	g_assert ((buf - code) <= 256);
+
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = buf = mono_global_codeman_reserve (16);
+		x86_ret (buf);
+	}
 
 	return code;
 }

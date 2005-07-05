@@ -2737,6 +2737,25 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	return FALSE;
 }
 
+static gboolean
+mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoVTable *vtable)
+{
+	if (vtable->initialized && !cfg->compile_aot)
+		return FALSE;
+
+	if (vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
+		return FALSE;
+
+	if (!mono_class_needs_cctor_run (vtable->klass, method))
+		return FALSE;
+
+	if (! (method->flags & METHOD_ATTRIBUTE_STATIC) && (vtable->klass == method->klass))
+		/* The initialization is already done before the method is called */
+		return FALSE;
+
+	return TRUE;
+}
+
 static MonoInst*
 mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmethod, MonoInst **sp, unsigned char *ip, gboolean is_set)
 {
@@ -3184,6 +3203,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBoolean security, pinvoke;
 	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
+	GSList *class_inits;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
@@ -3409,6 +3429,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
 	for (n = 0; n < sig->param_count; ++n)
 		param_types [n + sig->hasthis] = sig->params [n];
+	class_inits = NULL;
 
 	/* do this somewhere outside - not here */
 	NEW_ICONST (cfg, zero_int32, 0);
@@ -3458,6 +3479,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 				*sp++ = ins;
 			}
+			g_slist_free (class_inits);
+			class_inits = NULL;
 		} else {
 			if ((tblock = g_hash_table_lookup (bbhash, ip)) && (tblock != bblock)) {
 				link_bblock (cfg, bblock, tblock);
@@ -3473,6 +3496,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 					*sp++ = ins;
 				}
+				g_slist_free (class_inits);
+				class_inits = NULL;
 			}
 		}
 
@@ -5229,13 +5254,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoVTable *vtable;
 				vtable = mono_class_vtable (cfg->domain, klass);
 				if (!addr) {
-					if ((!vtable->initialized || cfg->compile_aot) && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (klass, method)) {
+					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
 						mono_emit_native_call (cfg, bblock, tramp, 
 											   helper_sig_class_init_trampoline,
 											   NULL, ip, FALSE, FALSE);
 						if (cfg->verbose_level > 2)
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
+						class_inits = g_slist_prepend (class_inits, vtable);
 					} else {
 						if (cfg->run_cctors)
 							mono_runtime_class_init (vtable);
@@ -6577,18 +6603,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_hash_table_destroy (bbhash);
 	}
 
+	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
 	return inline_costs;
 
  inline_failure:
 	if (cfg->method != method) 
 		g_hash_table_destroy (bbhash);
+	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
 
  unverified:
 	if (cfg->method != method) 
 		g_hash_table_destroy (bbhash);
+	g_slist_free (class_inits);
 	g_error ("Invalid IL code at IL%04x in %s: %s\n", (int)(ip - header->code), 
 		 mono_method_full_name (method, TRUE), mono_disasm_code_one (NULL, method, ip, NULL));
 	dont_inline = g_list_remove (dont_inline, method);
@@ -7604,7 +7633,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		gpointer *jump_table;
 		int i;
 
-		if (method->dynamic) {
+		if (method && method->dynamic) {
 			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
 			mono_domain_lock (domain);
@@ -7636,7 +7665,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
-		if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
+		if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && (method && mono_class_needs_cctor_run (vtable->klass, method)))
 			/* Done by the generated code */
 			;
 		else {
@@ -9976,6 +10005,7 @@ mini_init (const char *filename)
 	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_init_vtable (mono_aot_init_vtable);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
+ 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
 	domain = mono_init_from_assembly (filename, filename);
 	mono_icall_init ();
