@@ -747,10 +747,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			break;
 		default:
 #ifndef PLATFORM_WIN32
-			if (g_ascii_strcasecmp ("user32.dll", new_scope) ||
-			    g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
-			    g_ascii_strcasecmp ("user32", new_scope) ||
-			    g_ascii_strcasecmp ("kernel", new_scope)) {
+			if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||
+			    !g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
+			    !g_ascii_strcasecmp ("user32", new_scope) ||
+			    !g_ascii_strcasecmp ("kernel", new_scope)) {
 				file_name = g_strdup ("libMonoSupportW.so");
 			} else
 #endif
