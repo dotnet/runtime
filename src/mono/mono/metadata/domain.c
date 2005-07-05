@@ -76,7 +76,22 @@ typedef struct {
 	int startup_count;
 } AppConfigInfo;
 
+/*
+ * AotModuleInfo: Contains information about AOT modules.
+ */
+typedef struct {
+	MonoImage *image;
+	gpointer start, end;
+} AotModuleInfo;
+
 static const MonoRuntimeInfo *current_runtime = NULL;
+
+static MonoJitInfoFindInAot jit_info_find_in_aot_func = NULL;
+
+/*
+ * Contains information about AOT loaded code.
+ */
+static MonoJitInfoTable *aot_modules = NULL;
 
 /* This is the list of runtime versions supported by this JIT.
  */
@@ -95,6 +110,9 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
+
+static MonoImage*
+mono_jit_info_find_aot_module (guint8* addr);
 
 guint32
 mono_domain_get_tls_key (void)
@@ -150,6 +168,7 @@ MonoJitInfo *
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
 	MonoJitInfoTable *table = domain->jit_info_table;
+	MonoJitInfo *ji;
 	guint left = 0, right;
 
 	mono_domain_lock (domain);
@@ -157,7 +176,7 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	right = table->len;
 	while (left < right) {
 		guint pos = (left + right) / 2;
-		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
+		ji = g_array_index (table, gpointer, pos);
 
 		if (addr < (char*)ji->code_start)
 			right = pos;
@@ -171,10 +190,18 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	mono_domain_unlock (domain);
 
 	/* maybe it is shared code, so we also search in the root domain */
+	ji = NULL;
 	if (domain != mono_root_domain)
-		return mono_jit_info_table_find (mono_root_domain, addr);
+		ji = mono_jit_info_table_find (mono_root_domain, addr);
 
-	return NULL;
+	if (ji == NULL) {
+		/* Maybe its an AOT module */
+		MonoImage *image = mono_jit_info_find_aot_module (addr);
+		if (image)
+			ji = jit_info_find_in_aot_func (domain, image, addr);
+	}
+	
+	return ji;
 }
 
 void
@@ -200,11 +227,95 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 
 	mono_domain_lock (domain);
 	pos = mono_jit_info_table_index (table, start);
+	if (g_array_index (table, gpointer, pos) != ji) {
+		MonoJitInfo *ji2 = g_array_index (table, gpointer, pos);
+		g_assert (ji == ji2);
+	}
 	g_assert (g_array_index (table, gpointer, pos) == ji);
 
 	g_array_remove_index (table, pos);
 	mono_domain_unlock (domain);
 }	
+
+static int
+aot_info_table_index (MonoJitInfoTable *table, char *addr)
+{
+	int left = 0, right = table->len;
+
+	while (left < right) {
+		int pos = (left + right) / 2;
+		AotModuleInfo *ainfo = g_array_index (table, gpointer, pos);
+		char *start = ainfo->start;
+		char *end = ainfo->end;
+
+		if (addr < start)
+			right = pos;
+		else if (addr >= end) 
+			left = pos + 1;
+		else
+			return pos;
+	}
+
+	return left;
+}
+
+void
+mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
+{
+	AotModuleInfo *ainfo = g_new0 (AotModuleInfo, 1);
+	int pos;
+
+	ainfo->image = image;
+	ainfo->start = start;
+	ainfo->end = end;
+
+	EnterCriticalSection (&appdomains_mutex);
+
+	if (!aot_modules)
+		aot_modules = mono_jit_info_table_new ();
+
+	pos = aot_info_table_index (aot_modules, start);
+
+	g_array_insert_val (aot_modules, pos, ainfo);
+
+	LeaveCriticalSection (&appdomains_mutex);
+}
+
+static MonoImage*
+mono_jit_info_find_aot_module (guint8* addr)
+{
+	guint left = 0, right;
+
+	if (!aot_modules)
+		return NULL;
+
+	EnterCriticalSection (&appdomains_mutex);
+
+	right = aot_modules->len;
+	while (left < right) {
+		guint pos = (left + right) / 2;
+		AotModuleInfo *ai = g_array_index (aot_modules, gpointer, pos);
+
+		if (addr < (guint8*)ai->start)
+			right = pos;
+		else if (addr >= (guint8*)ai->end)
+			left = pos + 1;
+		else {
+			LeaveCriticalSection (&appdomains_mutex);
+			return ai->image;
+		}
+	}
+
+	LeaveCriticalSection (&appdomains_mutex);
+
+	return NULL;
+}
+
+void
+mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func)
+{
+	jit_info_find_in_aot_func = func;
+}
 
 gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)

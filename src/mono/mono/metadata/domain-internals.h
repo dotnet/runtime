@@ -154,6 +154,16 @@ mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
 void
 mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji);
 
+void
+mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);
+
+/* 
+ * Installs a new function which is used to return a MonoJitInfo for a method inside
+ * an AOT module.
+ */
+typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoDomain *domain, MonoImage *image, gpointer addr);
+void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
+
 MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain            (void);
 
