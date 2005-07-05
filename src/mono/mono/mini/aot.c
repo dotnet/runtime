@@ -2570,11 +2570,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	/* Don't make GOT global so accesses to it don't need relocations */
 	symbol = g_strdup_printf ("got");
-#ifdef __x86_64__
 	emit_section_change (tmpfp, ".bss", 1);
-#else
-	emit_section_change (tmpfp, ".data", 1);
-#endif
 	emit_alignment (tmpfp, 8);
 	emit_label(tmpfp, symbol);
 	if (acfg->got_offset > 0)
