@@ -207,8 +207,12 @@ _wapi_get_win32_file_error (gint err)
 		ret = ERROR_IO_PENDING;		/* best match I could find */
 		break;
 		
+	case EPIPE:
+		ret = ERROR_WRITE_FAULT;
+		break;
+		
 	default:
-		g_message ("Unknown errno: %s\n", strerror (err));
+		g_message ("Unknown errno: %s\n", g_strerror (err));
 		ret = ERROR_GEN_FAILURE;
 		break;
 	}

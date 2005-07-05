@@ -193,6 +193,11 @@ static const struct {
 	 NULL, NULL, NULL, NULL, NULL, NULL},
 };
 
+#define NO_SIGPIPE(x) do {			\
+		void (*old_sigpipe)(int) = signal (SIGPIPE, SIG_IGN);	\
+		x;							\
+		signal (SIGPIPE, old_sigpipe);				\
+	}  while (0)
 
 static mono_once_t io_ops_once=MONO_ONCE_INIT;
 
@@ -360,11 +365,13 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 		
-	do {
-		ret = write (fd, buffer, numbytes);
-	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending());
-
+	NO_SIGPIPE(
+		do {
+			ret = write (fd, buffer, numbytes);
+		} while (ret == -1 && errno == EINTR &&
+			 !_wapi_thread_cur_apc_pending());
+		);
+	
 	_wapi_unlock_file_region (fd, current_pos, numbytes);
 
 	if (ret == -1) {
@@ -609,10 +616,12 @@ static gboolean file_setendoffile(gpointer handle)
 		 * every system we care about conforms, then we can
 		 * drop this write.
 		 */
-		do {
-			ret=write(fd, "", 1);
-		} while (ret==-1 && errno==EINTR &&
-			 !_wapi_thread_cur_apc_pending());
+		NO_SIGPIPE(
+			do {
+				ret = write (fd, "", 1);
+			} while (ret == -1 && errno == EINTR &&
+				 !_wapi_thread_cur_apc_pending());
+			);
 
 		if(ret==-1) {
 #ifdef DEBUG
@@ -1016,9 +1025,12 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	do {
-		ret=write(fd, buffer, numbytes);
-	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	NO_SIGPIPE(
+		do {
+			ret = write(fd, buffer, numbytes);
+		} while (ret == -1 && errno == EINTR &&
+			 !_wapi_thread_cur_apc_pending());
+		);
 
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -1162,9 +1174,12 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		   handle);
 #endif
 
-	do {
-		ret=write(fd, buffer, numbytes);
-	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	NO_SIGPIPE(
+		do {
+			ret = write (fd, buffer, numbytes);
+		} while (ret == -1 && errno == EINTR &&
+			 !_wapi_thread_cur_apc_pending());
+		);
 
 	if (ret == -1) {
 		if (errno == EINTR) {
