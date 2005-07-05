@@ -1529,6 +1529,9 @@ mono_method_get_index (MonoMethod *method) {
 	MonoClass *klass = method->klass;
 	int i;
 
+	if (method->token)
+		return mono_metadata_token_index (method->token);
+
 	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		if (method == klass->methods [i])
