@@ -749,7 +749,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 				memcpy (t, field->data, mono_class_value_size (fklass, NULL));
 			} else {
 				/* it's a pointer type: add check */
-				g_assert (fklass->byval_arg.type == MONO_TYPE_PTR);
+				g_assert ((fklass->byval_arg.type == MONO_TYPE_PTR) || (fklass->byval_arg.type == MONO_TYPE_FNPTR));
 				*t = *(char *)field->data;
 			}
 			continue;
