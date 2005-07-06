@@ -1372,6 +1372,9 @@ handle_enum:
 				memcpy (dest, value, size);
 		}
 		return;
+	case MONO_TYPE_GENERICINST:
+		t = type->data.generic_class->container_class->byval_arg.type;
+		goto handle_enum;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();

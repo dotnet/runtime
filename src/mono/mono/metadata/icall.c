@@ -1432,6 +1432,13 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_SZARRAY:
 			/* Do nothing */
 			break;
+		case MONO_TYPE_GENERICINST: {
+			MonoGenericClass *gclass = cf->type->data.generic_class;
+			g_assert (!gclass->inst->is_open);
+			if (gclass->container_class->valuetype && (v != NULL))
+				v += sizeof (MonoObject);
+			break;
+		}
 		default:
 			g_error ("type 0x%x not handled in "
 				 "ves_icall_FieldInfo_SetValueInternal", cf->type->type);
