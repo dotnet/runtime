@@ -1898,22 +1898,6 @@ mono_class_init (MonoClass *class)
 
 	mono_class_setup_supertypes (class);
 
-	if (MONO_CLASS_IS_INTERFACE (class)) {
-		class->init_pending = 0;
-		class->inited = 1;
-		/* 
-		 * class->interface_offsets is needed for the castclass/isinst code, so
-		 * we have to setup them for interfaces, too.
-		 */
-		setup_interface_offsets (class, 0);
-		mono_loader_unlock ();
-
-		if (mono_debugger_class_init_func)
-			mono_debugger_class_init_func (class);
-
-		return;
-	}
-
 	if (!default_ghc) {
 		if (class == mono_defaults.object_class) { 
 			mono_class_setup_vtable (class);		       
@@ -2000,6 +1984,14 @@ mono_class_init (MonoClass *class)
 	class->init_pending = 0;
 	
 	mono_loader_unlock ();
+
+	if (MONO_CLASS_IS_INTERFACE (class)) {
+		/* 
+		 * class->interface_offsets is needed for the castclass/isinst code, so
+		 * we have to setup them for interfaces, too.
+		 */
+		setup_interface_offsets (class, 0);
+	}
 
 	if (mono_debugger_class_init_func)
 		mono_debugger_class_init_func (class);
@@ -2534,6 +2526,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->name = param->name;
 	klass->name_space = "";
 	klass->image = image;
+	klass->inited = TRUE;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
 	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
@@ -2542,7 +2535,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
-	mono_class_init (klass);
+	mono_class_setup_supertypes (klass);
 
 	return klass;
 }
@@ -2565,6 +2558,7 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 		klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
 	klass->name_space = "";
 	klass->image = mono_defaults.corlib;
+	klass->inited = TRUE;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
 	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
@@ -2573,7 +2567,7 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
-	mono_class_init (klass);
+	mono_class_setup_supertypes (klass);
 
 	return klass;
 }
