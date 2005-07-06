@@ -41,7 +41,7 @@ MonoStats mono_stats;
 gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
-static void mono_class_create_generic_2 (MonoGenericClass *gclass);
+static void mono_class_create_generic (MonoInflatedGenericClass *gclass);
 static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
 
 void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
@@ -328,20 +328,26 @@ mono_class_is_open_constructed_type (MonoType *t)
 static MonoGenericClass *
 inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 {
+	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *ngclass, *cached;
 
 	if (ogclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		ngclass = &dgclass->generic_class;
+		igclass = &dgclass->generic_class;
+		ngclass = &igclass->generic_class;
+		ngclass->is_inflated = 1;
 		ngclass->is_dynamic = 1;
-	} else
-		ngclass = g_new0 (MonoGenericClass, 1);
+	} else {
+		igclass = g_new0 (MonoInflatedGenericClass, 1);
+		ngclass = &igclass->generic_class;
+		ngclass->is_inflated = 1;
+	}
 
 	*ngclass = *ogclass;
 
 	ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
 
-	ngclass->klass = NULL;
+	igclass->klass = NULL;
 
 	ngclass->context = g_new0 (MonoGenericContext, 1);
 	ngclass->context->container = context->container;
@@ -354,8 +360,6 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 		g_free (ngclass);
 		return cached;
 	}
-
-	mono_class_create_generic (ngclass);
 
 	return ngclass;
 }
@@ -423,6 +427,14 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		return NULL;
 	}
 	return NULL;
+}
+
+MonoInflatedGenericClass*
+mono_get_inflated_generic_class (MonoGenericClass *gclass)
+{
+	g_assert (gclass->is_inflated);
+	mono_class_create_generic ((MonoInflatedGenericClass *) gclass);
+	return (MonoInflatedGenericClass *) gclass;
 }
 
 MonoType*
@@ -507,8 +519,7 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 }
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context,
-				   MonoClass *klass)
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
 	MonoMethodInflated *result;
 
@@ -1300,9 +1311,10 @@ mono_class_setup_vtable (MonoClass *class)
 static void
 setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 {
-	MonoClass *gklass = class->generic_class->container_class;
-	MonoGenericContext *gcontext = class->generic_class->context;
+	MonoClass *gklass;
 	int i;
+
+	gklass = class->generic_class->container_class;
 
 	mono_class_init (gklass);
 	class->vtable_size = gklass->vtable_size;
@@ -1316,8 +1328,8 @@ setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		if (!m)
 			continue;
 
-		m = mono_class_inflate_generic_method (m, gcontext, class);
-		class->vtable [i] = mono_get_inflated_method (m);
+		m = mono_class_inflate_generic_method (m, class->generic_class->context);
+		class->vtable [i] = m;
 	}
 
 	class->max_interface_id = gklass->max_interface_id;
@@ -1788,15 +1800,16 @@ mono_class_init (MonoClass *class)
 	mono_stats.initialized_class_count++;
 
 	if (class->generic_class && !class->generic_class->is_dynamic) {
-		MonoGenericClass *gclass = class->generic_class;
-		MonoClass *gklass = gclass->container_class;
+		MonoInflatedGenericClass *gclass;
+		MonoClass *gklass;
+
+		gclass = mono_get_inflated_generic_class (class->generic_class);
+		gklass = gclass->generic_class.container_class;
 
 		mono_stats.generic_class_count++;
 
 		class->method = gklass->method;
 		class->field = gklass->field;
-
-		mono_class_create_generic_2 (gclass);
 
 		mono_class_init (gklass);
 		mono_class_setup_methods (gklass);
@@ -1810,7 +1823,7 @@ mono_class_init (MonoClass *class)
 
 		for (i = 0; i < class->method.count; i++) {
 			MonoMethod *inflated = mono_class_inflate_generic_method (
-				gklass->methods [i], gclass->context, gclass->klass);
+				gklass->methods [i], gclass->generic_class.context);
 
 			class->methods [i] = mono_get_inflated_method (inflated);
 		}
@@ -1825,10 +1838,10 @@ mono_class_init (MonoClass *class)
 
 			if (prop->get)
 				prop->get = mono_class_inflate_generic_method (
-					prop->get, gclass->context, gclass->klass);
+					prop->get, gclass->generic_class.context);
 			if (prop->set)
 				prop->set = mono_class_inflate_generic_method (
-					prop->set, gclass->context, gclass->klass);
+					prop->set, gclass->generic_class.context);
 
 			prop->parent = class;
 		}
@@ -2141,9 +2154,6 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		return;
 	}
 
-	if (parent && parent->generic_class)
-		mono_class_create_generic_2 (parent->generic_class);
-
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		class->parent = parent;
 
@@ -2266,14 +2276,20 @@ get_shared_inst (MonoGenericContainer *container)
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
+	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *gclass;
 
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		gclass = &dgclass->generic_class;
+		igclass = &dgclass->generic_class;
+		gclass = &igclass->generic_class;
+		gclass->is_inflated = 1;
 		gclass->is_dynamic = 1;
-	} else
-		gclass = g_new0 (MonoGenericClass, 1);
+	} else {
+		igclass = g_new0 (MonoInflatedGenericClass, 1);
+		gclass = &igclass->generic_class;
+		gclass->is_inflated = 1;
+	}
 
 	gclass->context = &container->context;
 	gclass->container_class = container->klass;
@@ -2288,7 +2304,7 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 		}
 	}
 
-	gclass->klass = container->klass;
+	igclass->klass = container->klass;
 
 	return gclass;
 }
@@ -2413,16 +2429,21 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
-void
-mono_class_create_generic (MonoGenericClass *gclass)
+static void
+mono_class_create_generic (MonoInflatedGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;
+	int i;
+
+	if (gclass->is_initialized)
+		return;
+	gclass->is_initialized = TRUE;
 
 	if (!gclass->klass)
 		gclass->klass = g_malloc0 (sizeof (MonoClass));
 	klass = gclass->klass;
 
-	gklass = gclass->container_class;
+	gklass = gclass->generic_class.container_class;
 
 	klass->nested_in = gklass->nested_in;
 
@@ -2431,15 +2452,15 @@ mono_class_create_generic (MonoGenericClass *gclass)
 	klass->image = gklass->image;
 	klass->flags = gklass->flags;
 
-	klass->generic_class = gclass;
+	klass->generic_class = &gclass->generic_class;
 
 	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_GENERICINST;
-	klass->this_arg.data.generic_class = klass->byval_arg.data.generic_class = gclass;
+	klass->this_arg.data.generic_class = klass->byval_arg.data.generic_class = &gclass->generic_class;
 	klass->this_arg.byref = TRUE;
 
 	klass->cast_class = klass->element_class = klass;
 
-	if (gclass->is_dynamic) {
+	if (gclass->generic_class.is_dynamic) {
 		klass->instance_size = gklass->instance_size;
 		klass->class_size = gklass->class_size;
 		klass->size_inited = 1;
@@ -2449,22 +2470,13 @@ mono_class_create_generic (MonoGenericClass *gclass)
 
 		mono_class_setup_supertypes (klass);
 	}
-}
-
-static void
-mono_class_create_generic_2 (MonoGenericClass *gclass)
-{
-	MonoClass *klass, *gklass;
-	int i;
-
-	klass = gclass->klass;
-	gklass = gclass->container_class;
 
 	klass->interface_count = gklass->interface_count;
 	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
 	for (i = 0; i < klass->interface_count; i++) {
 		MonoType *it = &gklass->interfaces [i]->byval_arg;
-		MonoType *inflated = mono_class_inflate_generic_type (it, gclass->context);
+		MonoType *inflated = mono_class_inflate_generic_type (
+			it, gclass->generic_class.context);
 		klass->interfaces [i] = mono_class_from_mono_type (inflated);
 	}
 
@@ -2482,7 +2494,8 @@ mono_class_create_generic_2 (MonoGenericClass *gclass)
 	if (gclass->parent)
 		klass->parent = mono_class_from_mono_type (gclass->parent);
 	else if (gklass->parent) {
-		MonoType *inflated = mono_class_inflate_generic_type (&gklass->parent->byval_arg, gclass->context);
+		MonoType *inflated = mono_class_inflate_generic_type (
+			&gklass->parent->byval_arg, gclass->generic_class.context);
 
 		klass->parent = mono_class_from_mono_type (inflated);
 	}
@@ -2709,9 +2722,12 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
-	case MONO_TYPE_GENERICINST:
-		g_assert (type->data.generic_class->klass);
-		return type->data.generic_class->klass;
+	case MONO_TYPE_GENERICINST: {
+		MonoInflatedGenericClass *gclass;
+		gclass = mono_get_inflated_generic_class (type->data.generic_class);
+		g_assert (gclass->klass);
+		return gclass->klass;
+	}
 	case MONO_TYPE_VAR:
 		return my_mono_class_from_generic_parameter (type->data.generic_param, FALSE);
 	case MONO_TYPE_MVAR:
@@ -2747,10 +2763,13 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 	case MONO_TYPE_PTR:
 		class = mono_ptr_class_get (type->data.type);
 		break;
-	case MONO_TYPE_GENERICINST:
-		g_assert (type->data.generic_class->klass);
-		class = type->data.generic_class->klass;
+	case MONO_TYPE_GENERICINST: {
+		MonoInflatedGenericClass *gclass;
+		gclass = mono_get_inflated_generic_class (type->data.generic_class);
+		g_assert (gclass->klass);
+		class = gclass->klass;
 		break;
+	}
 	default:
 		/* it seems any type can be stored in TypeSpec as well */
 		class = mono_class_from_mono_type (type);
@@ -3396,13 +3415,15 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 		return TRUE;
 
 	if (klass->generic_class) {
-		MonoType *parent = klass->generic_class->parent;
-		if (!parent)
+		MonoInflatedGenericClass *igclass;
+
+		igclass = mono_get_inflated_generic_class (klass->generic_class);
+		if (!igclass->parent)
 			return FALSE;
 
-		if (mono_metadata_type_equal (parent, &klassc->byval_arg))
+		if (mono_metadata_type_equal (igclass->parent, &klassc->byval_arg))
 			return TRUE;
-		klass = mono_class_from_mono_type (parent);
+		klass = mono_class_from_mono_type (igclass->parent);
 		goto again;
 	}
 	

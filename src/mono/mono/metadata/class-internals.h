@@ -355,13 +355,19 @@ struct _MonoGenericClass {
 	MonoGenericInst *inst;
 	MonoClass *container_class;
 	MonoGenericContext *context;
+	guint is_dynamic  : 1;
+	guint is_inflated : 1;
+};
+
+struct _MonoInflatedGenericClass {
+	MonoGenericClass generic_class;
+	guint is_initialized   : 1;
 	MonoClass *klass;
 	MonoType *parent;
-	guint is_dynamic;
 };
 
 struct _MonoDynamicGenericClass {
-	MonoGenericClass generic_class;
+	MonoInflatedGenericClass generic_class;
 	int count_ifaces;
 	MonoType **ifaces;
 	int count_methods;
@@ -521,8 +527,8 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
 
-void
-mono_class_create_generic (MonoGenericClass *gclass);
+MonoInflatedGenericClass*
+mono_get_inflated_generic_class (MonoGenericClass *gclass);
 
 typedef struct {
 	MonoImage *corlib;

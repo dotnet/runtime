@@ -1951,13 +1951,13 @@ ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,
 static MonoReflectionType*
 ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 {
-	MonoGenericClass *gclass;
+	MonoInflatedGenericClass *gclass;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	gclass = type->type.type->data.generic_class;
-	if (!gclass || !gclass->parent || (gclass->parent->type != MONO_TYPE_GENERICINST))
+	gclass = mono_get_inflated_generic_class (type->type.type->data.generic_class);
+	if (!gclass->parent || (gclass->parent->type != MONO_TYPE_GENERICINST))
 		return NULL;
 
 	klass = mono_class_from_mono_type (gclass->parent);
@@ -1995,7 +1995,7 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 	if (!gclass->ifaces)
 		return mono_array_new (domain, System_Reflection_MonoGenericClass, 0);
 
-	klass = gclass->generic_class.container_class;
+	klass = gclass->generic_class.generic_class.container_class;
 
 	res = mono_array_new (domain, System_Reflection_MonoGenericClass, gclass->count_ifaces);
 

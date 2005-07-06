@@ -416,7 +416,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 				g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 			else if (klass->generic_class && (klass != method->klass))
 				method = mono_class_inflate_generic_method (
-					method, klass->generic_class->context, klass);
+					method, klass->generic_class->context);
 			mono_metadata_free_method_signature (sig);
 			break;
 		}
@@ -468,7 +468,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	}
 
 	if (gclass)
-		method = mono_class_inflate_generic_method (method, gclass->context, gclass->klass);
+		method = mono_class_inflate_generic_method (method, gclass->context);
 
 	return method;
 }
@@ -520,11 +520,11 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod->container = container;
 
 	if (context && context->gmethod)
-		new_context = context->gmethod->container;
+		new_context = &context->gmethod->container->context;
 	else if (context && context->gclass)
-		new_context = context->gclass->container_class->generic_container;
+		new_context = &context->gclass->container_class->generic_container->context;
 	else
-		new_context = context ? context->container : NULL;
+		new_context = context ? &context->container->context : NULL;
 
 	gmethod->inst = mono_metadata_parse_generic_inst (
              	image, new_context, param_count, ptr, &ptr);
@@ -560,7 +560,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method (method, context, NULL);
+	inflated = mono_class_inflate_generic_method (method, context);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	if (new_context)
@@ -1101,7 +1101,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			   image->name, token);
 
 	if (gclass)
-		result = mono_class_inflate_generic_method (result, gclass->context, gclass->klass);
+		result = mono_class_inflate_generic_method (result, gclass->context);
 
 	mono_loader_unlock ();
 	return result;
@@ -1389,6 +1389,7 @@ mono_loader_unlock (void)
 MonoMethodSignature* 
 mono_method_signature (MonoMethod *m)
 {
+	m = mono_get_inflated_method (m);
 	return mono_method_signature_full (m, NULL);
 }
 

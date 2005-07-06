@@ -1707,18 +1707,22 @@ static void
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
 				      const char *ptr, const char **rptr)
 {
-	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
-	MonoGenericClass *cached;
+	MonoInflatedGenericClass *igclass;
+	MonoGenericClass *gclass, *cached;
 	MonoClass *gklass;
 	MonoType *gtype;
 	int count;
+
+	igclass = g_new0 (MonoInflatedGenericClass, 1);
+	gclass = &igclass->generic_class;
+	gclass->is_inflated = TRUE;
 
 	type->data.generic_class = gclass;
 
 	gclass->context = g_new0 (MonoGenericContext, 1);
 	gclass->context->gclass = gclass;
 
-	gclass->klass = g_new0 (MonoClass, 1);
+	igclass->klass = g_new0 (MonoClass, 1);
 
 	gtype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
@@ -1731,8 +1735,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	 * This is required to support "recursive" definitions.
 	 * See mcs/tests/gen-23.cs for an example.
 	 */
-
-	mono_class_create_generic (gclass);
 
 	gclass->inst = mono_metadata_parse_generic_inst (m, generic_context, count, ptr, &ptr);
 
@@ -1755,7 +1757,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	cached = g_hash_table_lookup (generic_class_cache, gclass);
 	if (cached) {
-		g_free (gclass->klass);
+		g_free (igclass->klass);
 		g_free (gclass);
 
 		type->data.generic_class = cached;
@@ -2731,13 +2733,18 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoInflatedGenericClass *gclass;
+		MonoClass *container_class;
 
-		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
+		gclass = mono_get_inflated_generic_class (t->data.generic_class);
+		g_assert (!gclass->generic_class.inst->is_open);
+		g_assert (!gclass->klass->generic_container);
 
-		if (gclass->container_class->valuetype) {
-			if (gclass->container_class->enumtype)
-				return mono_type_size (gclass->container_class->enum_basetype, align);
+		container_class = gclass->generic_class.container_class;
+
+		if (container_class->valuetype) {
+			if (container_class->enumtype)
+				return mono_type_size (container_class->enum_basetype, align);
 			else
 				return mono_class_value_size (gclass->klass, align);
 		} else {
@@ -2828,13 +2835,18 @@ mono_type_stack_size (MonoType *t, gint *align)
 		}
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoInflatedGenericClass *gclass;
+		MonoClass *container_class;
 
-		g_assert (!gclass->inst->is_open && !gclass->klass->generic_container);
+		gclass = mono_get_inflated_generic_class (t->data.generic_class);
+		container_class = gclass->generic_class.container_class;
 
-		if (gclass->container_class->valuetype) {
-			if (gclass->container_class->enumtype)
-				return mono_type_stack_size (gclass->container_class->enum_basetype, align);
+		g_assert (!gclass->generic_class.inst->is_open);
+		g_assert (!gclass->klass->generic_container);
+
+		if (container_class->valuetype) {
+			if (container_class->enumtype)
+				return mono_type_stack_size (container_class->enum_basetype, align);
 			else {
 				guint32 size = mono_class_value_size (gclass->klass, align);
 
