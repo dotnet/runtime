@@ -647,7 +647,7 @@ helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericC
 	gpointer addr;
 
 	vmethod = mono_object_get_virtual_method (obj, method);
-	inflated = mono_class_inflate_generic_method (vmethod, context, NULL);
+	inflated = mono_class_inflate_generic_method (vmethod, context);
 	inflated = mono_get_inflated_method (inflated);
 	addr = mono_compile_method (inflated);
 

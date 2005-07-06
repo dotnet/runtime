@@ -9337,6 +9337,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 
 	jit_code_hash = target_domain->jit_code_hash;
 
+	method = mono_get_inflated_method (method);
+
 #ifdef MONO_USE_AOT_COMPILER
 	if (!mono_compile_aot && (opt & MONO_OPT_AOT)) {
 		MonoJitInfo *info;
@@ -9585,6 +9587,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		return NULL;
 	}
 
+	method = mono_get_inflated_method (method);
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_jit_compile_method (invoke);
 	
