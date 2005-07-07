@@ -1958,12 +1958,14 @@ ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,
 static MonoReflectionType*
 ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 {
-	MonoInflatedGenericClass *gclass;
+	MonoDynamicGenericClass *gclass;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	gclass = mono_get_inflated_generic_class (type->type.type->data.generic_class);
+	g_assert (type->type.type->data.generic_class->is_dynamic);
+	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
+
 	if (!gclass->parent || (gclass->parent->type != MONO_TYPE_GENERICINST))
 		return NULL;
 

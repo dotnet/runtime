@@ -363,11 +363,11 @@ struct _MonoInflatedGenericClass {
 	MonoGenericClass generic_class;
 	guint is_initialized   : 1;
 	MonoClass *klass;
-	MonoType *parent;
 };
 
 struct _MonoDynamicGenericClass {
 	MonoInflatedGenericClass generic_class;
+	MonoType *parent;
 	int count_ifaces;
 	MonoType **ifaces;
 	int count_methods;
