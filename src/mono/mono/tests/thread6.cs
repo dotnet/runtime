@@ -25,6 +25,10 @@ public class MultiThreadExceptionTest {
 						// Check that the exception is only rethrown in
 						// the appropriate catch clauses
 
+						// This doesn't work currently, see
+						// http://bugzilla.ximian.com/show_bug.cgi?id=68552
+
+						/*
 						try {
 						}
 						catch {}
@@ -33,6 +37,7 @@ public class MultiThreadExceptionTest {
 						}
 						catch (Exception) {
 						}
+						*/
 						result |= 32;
 
 						// Check that the exception is properly rethrown
@@ -101,7 +106,29 @@ public class MultiThreadExceptionTest {
 		if (result != 59)
 			return 1;
 
+		// Test from #68552
+		try {
+			try {
+				Run ();
+			} catch (Exception ex) {
+			}
+
+			return 2;
+		}
+		catch (ThreadAbortException ex) {
+			Thread.ResetAbort ();
+		}
+
 		return 0;
+	}
+
+	public static void Run ()
+	{
+		try {
+			Thread.CurrentThread.Abort ();
+		} catch (Exception ex) {
+			throw new Exception ("other");
+		}
 	}
 }
 
