@@ -1329,10 +1329,10 @@ mono_domain_unload (MonoDomain *domain)
 
 		g_warning (thread_data.failure_reason);
 
+		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
+
 		g_free (thread_data.failure_reason);
 		thread_data.failure_reason = NULL;
-
-		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
 
 		mono_raise_exception (ex);
 	}
