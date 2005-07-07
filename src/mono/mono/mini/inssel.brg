@@ -931,8 +931,13 @@ stmt: OP_THROW_OR_NULL (reg, reg) {
 
 	MONO_NEW_LABEL (s, dont_throw);
 
-	MONO_EMIT_NEW_BIALU (s, OP_COMPARE, 0, state->left->reg1, state->right->reg1);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, dont_throw);
+	/*
+	 * Currently, we allways rethrow the abort exception, despite the fact
+	 * that this is not correct. See thread6.cs for an example. But propagating
+	 * the abort exception is more important than getting the sematics right.
+     */
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, 0);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, dont_throw);
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
 	mono_bblock_add_inst (s->cbb, dont_throw);
 }
