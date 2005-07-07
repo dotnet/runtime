@@ -5059,6 +5059,7 @@ reflected_hash (gconstpointer a) {
 			mono_domain_unlock (domain);	\
 			return _obj;	\
 		}	\
+        mono_domain_unlock (domain); \
 	} while (0)
 
 #if HAVE_BOEHM_GC
@@ -5069,30 +5070,30 @@ reflected_hash (gconstpointer a) {
 
 #define CACHE_OBJECT(p,o,k)	\
 	do {	\
-		ReflectedEntry *e = ALLOC_REFENTRY; 	\
-		e->item = (p);	\
-		e->refclass = (k);	\
-		mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
+        ReflectedEntry pe; \
+        pe.item = (p); \
+        pe.refclass = (k); \
+        mono_domain_lock (domain); \
+		if (!domain->refobject_hash)	\
+			domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);	\
+        if (!mono_g_hash_table_lookup (domain->refobject_hash, &pe)) { \
+		    ReflectedEntry *e = ALLOC_REFENTRY; 	\
+		    e->item = (p);	\
+		    e->refclass = (k);	\
+		    mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
+        } \
 		mono_domain_unlock (domain);	\
 	} while (0)
 
 static void 
 register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	/* this is done only once */
-	mono_domain_lock (domain);
-	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);
 	CACHE_OBJECT (assembly, res, NULL);
 }
 
 static void
 register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynamicImage *module)
 {
-	/* this is done only once */
-	mono_domain_lock (domain);
-	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);
 	CACHE_OBJECT (module, res, NULL);
 }
 
