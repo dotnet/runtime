@@ -1219,7 +1219,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 #else
 		if (use_loaded_code)
 			/* disable write protection */
-			make_writable (code, code_len);
+			make_writable (code, jinfo->code_size);
 
 		/* Do this outside the lock to avoid deadlocks */
 		LeaveCriticalSection (&aot_mutex);
