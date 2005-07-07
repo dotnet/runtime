@@ -263,7 +263,14 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 char*
 mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 {
-	GString* result = g_string_new ("");
+	GString* result;
+
+	if (format == MONO_TYPE_NAME_FORMAT_FULL_NAME &&
+	    ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR) ||
+	     ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->inst->is_open)))
+		return NULL;
+
+	result = g_string_new ("");
 
 	mono_type_get_name_recurse (type, result, FALSE, format);
 
