@@ -240,16 +240,17 @@ async_invoke_io_thread (gpointer data)
 			}
 
 			domain = ((MonoObject *)ar)->vtable->domain;
+			mono_thread_push_appdomain_ref (domain);
 			if (mono_domain_set (domain, FALSE)) {
 				ASyncCall *ac;
 
-				mono_thread_push_appdomain_ref (domain);
 				mono_async_invoke (ar);
 				ac = (ASyncCall *) ar->data;
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
-				mono_thread_pop_appdomain_ref ();
+				mono_domain_set (mono_get_root_domain (), TRUE);
 			}
+			mono_thread_pop_appdomain_ref ();
 			InterlockedDecrement (&busy_io_worker_threads);
 		}
 
@@ -303,7 +304,7 @@ start_io_thread_or_queue (MonoSocketAsyncResult *ares)
 		InterlockedIncrement (&busy_io_worker_threads);
 		InterlockedIncrement (&io_worker_threads);
 		domain = ((ares) ? ((MonoObject *) ares)->vtable->domain : mono_domain_get ());
-		mono_thread_create (domain, async_invoke_io_thread, ares);
+		mono_thread_create (mono_get_root_domain (), async_invoke_io_thread, ares);
 	} else {
 		append_job (&io_queue_lock, &async_io_queue, ares);
 		ReleaseSemaphore (io_job_added, 1, NULL);
@@ -1008,7 +1009,7 @@ start_thread_or_queue (MonoAsyncResult *ares)
 		InterlockedIncrement (&mono_worker_threads);
 		InterlockedIncrement (&busy_worker_threads);
 		domain = ((MonoObject *) ares)->vtable->domain;
-		mono_thread_create (domain, async_invoke_thread, ares);
+		mono_thread_create (mono_get_root_domain (), async_invoke_thread, ares);
 	} else {
 		append_job (&mono_delegate_section, &async_call_queue, ares);
 		ReleaseSemaphore (job_added, 1, NULL);
@@ -1139,21 +1140,22 @@ async_invoke_thread (gpointer data)
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
 			domain = ((MonoObject *)ar)->vtable->domain;
+			mono_thread_push_appdomain_ref (domain);
 			if (mono_domain_set (domain, FALSE)) {
 				ASyncCall *ac;
 
-				mono_thread_push_appdomain_ref (domain);
 				mono_async_invoke (ar);
 				ac = (ASyncCall *) ar->data;
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
-				mono_thread_pop_appdomain_ref ();
+				mono_domain_set (mono_get_root_domain (), TRUE);
 			}
+			mono_thread_pop_appdomain_ref ();
 			InterlockedDecrement (&busy_worker_threads);
 		}
 
 		data = dequeue_job (&mono_delegate_section, &async_call_queue);
-	
+
 		if (!data) {
 			guint32 wr;
 			int timeout = 10000;

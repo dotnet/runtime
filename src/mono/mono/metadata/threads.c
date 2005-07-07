@@ -1470,7 +1470,7 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	MONO_ARCH_SAVE_REGS;
 	
 	mono_monitor_enter (thread->synch_lock);
-	
+
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	if (!thread->abort_exc) {
@@ -1603,7 +1603,7 @@ void mono_thread_stop (MonoThread *thread)
 	
 	/* Make sure the thread is awake */
 	mono_thread_resume (thread);
-	
+
 	thread->state |= ThreadState_StopRequested;
 	thread->state &= ~ThreadState_AbortRequested;
 	
@@ -2126,10 +2126,11 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoDomain *domain = data->domain;
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
-		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
 		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
 			return;
+
+		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
 
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
@@ -2168,7 +2169,11 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 		LeaveCriticalSection (&threads_mutex);
 
 		if (user_data.wait.num > 0)
-			wait_for_tids (&user_data.wait, timeout);
+			/*
+			 * We should wait for the threads either to abort, or to leave the
+			 * domain. We can't do the latter, so we wait with a timeout.
+			 */
+			wait_for_tids (&user_data.wait, 100);
 
 		/* Update remaining time */
 		timeout -= GetTickCount () - start_time;
@@ -2601,7 +2606,7 @@ static void mono_thread_interruption_checkpoint_request (gboolean bypass_abort_p
 	/* The thread may already be stopping */
 	if (thread == NULL)
 		return;
-	
+
 	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
 		MonoException* exc = mono_thread_execute_interruption (thread);
 		if (exc) mono_raise_exception (exc);
