@@ -161,6 +161,24 @@ public class Tests
 		return 1;
 	}
 
+	static void Worker (object x) {
+		Thread.Sleep (100000);
+	}
+
+	public static void invoke_workers () {
+		for (int i = 0; i < 1; i ++)
+			ThreadPool.QueueUserWorkItem (Worker);
+	}
+
+	public static int test_0_unload_with_threadpool () {
+		AppDomain domain = AppDomain.CreateDomain ("test_0_unload_with_threadpool");
+
+		domain.DoCallBack (new CrossAppDomainDelegate (invoke_workers));
+		AppDomain.Unload (domain);
+
+		return 0;
+	}
+
 	/*
 	 * This test is not very deterministic since the thread which enqueues
 	 * the work item might or might not be inside the domain when the unload
