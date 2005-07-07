@@ -4217,7 +4217,7 @@ typedef struct {
 	guint32 flags;
 } MonoILT;
 
-static void register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
+static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 
 static MonoDynamicImage*
 create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, char *module_name)
@@ -5068,33 +5068,37 @@ reflected_hash (gconstpointer a) {
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
 #endif
 
-#define CACHE_OBJECT(p,o,k)	\
+#define CACHE_OBJECT(t,p,o,k)	\
 	do {	\
+		t _obj;	\
         ReflectedEntry pe; \
         pe.item = (p); \
         pe.refclass = (k); \
         mono_domain_lock (domain); \
 		if (!domain->refobject_hash)	\
 			domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);	\
-        if (!mono_g_hash_table_lookup (domain->refobject_hash, &pe)) { \
+        _obj = mono_g_hash_table_lookup (domain->refobject_hash, &pe); \
+        if (!_obj) { \
 		    ReflectedEntry *e = ALLOC_REFENTRY; 	\
 		    e->item = (p);	\
 		    e->refclass = (k);	\
 		    mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
+            _obj = o; \
         } \
 		mono_domain_unlock (domain);	\
+        return _obj; \
 	} while (0)
 
-static void 
+static gpointer
 register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	CACHE_OBJECT (assembly, res, NULL);
+	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
 }
 
-static void
+static gpointer
 register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynamicImage *module)
 {
-	CACHE_OBJECT (module, res, NULL);
+	CACHE_OBJECT (MonoReflectionModuleBuilder *, module, res, NULL);
 }
 
 void
@@ -5153,8 +5157,7 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	res = (MonoReflectionAssembly *)mono_object_new (domain, System_Reflection_Assembly);
 	res->assembly = assembly;
 
-	CACHE_OBJECT (assembly, res, NULL);
-	return res;
+	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
 }
 
 
@@ -5196,8 +5199,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 
 	mono_image_addref (image);
 
-	CACHE_OBJECT (image, res, NULL);
-	return res;
+	CACHE_OBJECT (MonoReflectionModule *, image, res, NULL);
 }
 
 MonoReflectionModule*   
@@ -5431,8 +5433,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 		gret->method.method = method;
 		gret->method.name = mono_string_new (domain, method->name);
 		gret->method.reftype = mono_type_get_object (domain, &refclass->byval_arg);
-		CACHE_OBJECT (method, gret, refclass);
-		return (MonoReflectionMethod *) gret;
+		CACHE_OBJECT (MonoReflectionMethod *, method, gret, refclass);
 	}
 
 	if (!refclass)
@@ -5449,8 +5450,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	ret->method = method;
 	ret->name = mono_string_new (domain, method->name);
 	ret->reftype = mono_type_get_object (domain, &refclass->byval_arg);
-	CACHE_OBJECT (method, ret, refclass);
-	return ret;
+	CACHE_OBJECT (MonoReflectionMethod *, method, ret, refclass);
 }
 
 /*
@@ -5479,8 +5479,7 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	else
 		res->attrs = field->type->attrs;
 	res->type = mono_type_get_object (domain, field->type);
-	CACHE_OBJECT (field, res, klass);
-	return res;
+	CACHE_OBJECT (MonoReflectionField *, field, res, klass);
 }
 
 /*
@@ -5503,8 +5502,7 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 	res = (MonoReflectionProperty *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->property = property;
-	CACHE_OBJECT (property, res, klass);
-	return res;
+	CACHE_OBJECT (MonoReflectionProperty *, property, res, klass);
 }
 
 /*
@@ -5527,8 +5525,7 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	res = (MonoReflectionEvent *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->event = event;
-	CACHE_OBJECT (event, res, klass);
-	return res;
+	CACHE_OBJECT (MonoReflectionEvent *, event, res, klass);
 }
 
 /*
@@ -5624,8 +5621,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
 	
-	CACHE_OBJECT (&(method->signature), res, NULL);
-	return res;
+	CACHE_OBJECT (MonoArray *, &(method->signature), res, NULL);
 }
 
 /*
@@ -5723,7 +5719,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		mono_array_set (ret->clauses, MonoReflectionExceptionHandlingClause*, i, info);
 	}
 
-	CACHE_OBJECT (method, ret, NULL);
+	CACHE_OBJECT (MonoReflectionMethodBody *, method, ret, NULL);
 	return ret;
 }
 
