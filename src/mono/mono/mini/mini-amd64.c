@@ -230,7 +230,7 @@ typedef enum ArgumentClass {
 static ArgumentClass
 merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 {
-	ArgumentClass class2;
+	ArgumentClass class2 = ARG_CLASS_NO_CLASS;
 	MonoType *ptype;
 
 	ptype = mono_type_get_underlying_type (type);
@@ -1652,7 +1652,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
 				ins->opcode = OP_STOREI8_MEMBASE_REG;
-				ins->sreg2 = temp->dreg;
+				ins->sreg1 = temp->dreg;
 			}
 			break;
 		default:
@@ -4239,7 +4239,7 @@ void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
-	CallInfo *cinfo;
+	CallInfo *cinfo = NULL;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
 	int i, n, stack_area = 0;
