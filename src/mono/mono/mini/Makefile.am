@@ -116,7 +116,8 @@ amd64_sources = \
 	mini-amd64.c		\
 	mini-amd64.h		\
 	exceptions-amd64.c	\
-	tramp-amd64.c
+	tramp-amd64.c		\
+	mini-codegen.c
 
 ppc_sources = \
 	mini-ppc.c		\

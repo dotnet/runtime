@@ -202,15 +202,13 @@ stmt: OP_OUTARG (reg) {
 
 stmt: OP_OUTARG_REG (reg) {	
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 
 	tree->opcode = OP_SETREG;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG_REG (CEE_LDIND_I (base)),
@@ -223,7 +221,6 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I4 (base)),
 stmt: OP_OUTARG_REG (CEE_LDIND_U4 (base)),
 stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 	guint32 dreg;
 	MonoInst *base = state->left->left->tree;
 
@@ -231,22 +228,19 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode),
 				  	dreg, base->inst_basereg, base->inst_offset);
 
-	regpair = (((guint64)tree->unused) << 32) + dreg;
-	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG_REG (OP_I8CONST),
 stmt: OP_OUTARG_REG (OP_ICONST) {	
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 
 	tree->opcode = OP_ICONST;
 	tree->inst_c0 = state->left->tree->inst_c0;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG_REG (CEE_LDIND_I (OP_REGVAR)),
@@ -255,15 +249,13 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I4 (OP_REGVAR)),
 stmt: OP_OUTARG_REG (CEE_LDIND_U4 (OP_REGVAR)),
 stmt: OP_OUTARG_REG (CEE_LDIND_REF (OP_REGVAR)) {	
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 
 	tree->opcode = OP_SETREG;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
 # we need to reduce this code duplication with some burg syntax extension
@@ -360,28 +352,24 @@ stmt: OP_OUTARG_R8 (freg) {
 
 stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 
 	tree->opcode = OP_AMD64_SET_XMMREG_R4;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_freg_args = g_slist_append (call->out_freg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
-	guint64 regpair;
 
 	tree->opcode = OP_AMD64_SET_XMMREG_R8;
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	regpair = (((guint64)tree->unused) << 32) + tree->dreg;
-	call->out_freg_args = g_slist_append (call->out_freg_args, (gpointer)(regpair));
+	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
