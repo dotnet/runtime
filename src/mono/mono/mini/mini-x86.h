@@ -99,6 +99,30 @@ struct sigcontext {
 #define MONO_MAX_IREGS 8
 #define MONO_MAX_FREGS 6
 
+/* Parameters used by the register allocator */
+#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
+
+#define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
+#define MONO_ARCH_CALLEE_SAVED_REGS X86_CALLER_REGS
+
+#define MONO_ARCH_CALLEE_FREGS 0
+#define MONO_ARCH_CALLEE_SAVED_FREGS 0
+
+#define MONO_ARCH_USE_FPSTACK TRUE
+#define MONO_ARCH_FPSTACK_SIZE 6
+
+/* FIXME: Don't constrain byte regs to eax */
+#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 's') ? X86_ECX : ((desc == 'a') ? X86_EAX : ((desc == 'd') ? X86_EDX : ((desc == 'y') ? X86_EAX : ((desc == 'l') ? X86_EAX : -1)))))
+
+/* RDX is clobbered by the opcode implementation before accessing sreg2 */
+#define MONO_ARCH_INST_SREG2_MASK(ins) (((ins [MONO_INST_CLOB] == 'a') || (ins [MONO_INST_CLOB] == 'd')) ? (1 << X86_EDX) : 0)
+
+/*
+ * L is a generic register pair, while l means eax:rdx
+ */
+#define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? X86_EDX : -1)
+
 #define MONO_ARCH_FRAME_ALIGNMENT 4
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 

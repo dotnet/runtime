@@ -17,8 +17,10 @@
 #	f  floating point register
 #	a  EAX register
 #	d  EDX register
+#   s  ECX register
 #	l  long reg (forced eax:edx)
 #	L  long reg (dynamic)
+#	y  the dest reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -35,10 +37,8 @@
 #	c  clobbers caller-save registers
 #	1  clobbers the first source register
 #	a  EAX is clobbered
-#   d  EAX and EDX are clobbered
-#	s  the src2 operand needs to be in ECX (shift opcodes)
+#   d  EDX is clobbered
 #	x  both the source operands are clobbered (xchg)
-#	b  the dest reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
 #
 # flags:spec        describe if the instruction uses or sets the flags (unused)
 #
@@ -146,16 +146,16 @@ stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:2 clob:1
 sub: dest:i src1:i src2:i len:2 clob:1
 mul: dest:i src1:i src2:i len:3 clob:1
-div: dest:a src1:i src2:i len:15 clob:d
-div.un: dest:a src1:i src2:i len:15 clob:d
-rem: dest:d src1:i src2:i len:15 clob:d
-rem.un: dest:d src1:i src2:i len:15 clob:d
+div: dest:a src1:a src2:i len:15 clob:d
+div.un: dest:a src1:a src2:i len:15 clob:d
+rem: dest:d src1:a src2:i len:15 clob:a
+rem.un: dest:d src1:a src2:i len:15 clob:a
 and: dest:i src1:i src2:i len:2 clob:1
 or: dest:i src1:i src2:i len:2 clob:1
 xor: dest:i src1:i src2:i len:2 clob:1
-shl: dest:i src1:i src2:i clob:s len:2
-shr: dest:i src1:i src2:i clob:s len:2
-shr.un: dest:i src1:i src2:i clob:s len:2
+shl: dest:i src1:i src2:s clob:1 len:2
+shr: dest:i src1:i src2:s clob:1 len:2
+shr.un: dest:i src1:i src2:s clob:1 len:2
 neg: dest:i src1:i len:2 clob:1
 not: dest:i src1:i len:2 clob:1
 conv.i1: dest:i src1:i len:3
@@ -255,12 +255,12 @@ prefix2:
 prefix1:
 prefixref:
 arglist:
-ceq: dest:i len:6 clob:b
-cgt: dest:i len:6 clob:b
-cgt.un: dest:i len:6 clob:b
-clt: dest:i len:6 clob:b
-clt.un: dest:i len:6 clob:b
-cne: dest:i len:6 clob:b
+ceq: dest:y len:6
+cgt: dest:y len:6
+cgt.un: dest:y len:6
+clt: dest:y len:6
+clt.un: dest:y len:6
+cne: dest:y len:6
 ldftn:
 ldvirtftn:
 ldarg:
@@ -360,10 +360,10 @@ mul_imm: dest:i src1:i len:6
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
-div_imm: dest:a src1:i src2:i len:15 clob:d
-div_un_imm: dest:a src1:i src2:i len:15 clob:d
-rem_imm: dest:d src1:i src2:i len:15 clob:d
-rem_un_imm: dest:d src1:i src2:i len:15 clob:d
+div_imm: dest:a src1:a src2:i len:15 clob:d
+div_un_imm: dest:a src1:a src2:i len:15 clob:d
+rem_imm: dest:d src1:a src2:i len:15 clob:a
+rem_un_imm: dest:d src1:a src2:i len:15 clob:a
 and_imm: dest:i src1:i len:6 clob:1
 or_imm: dest:i src1:i len:6 clob:1
 xor_imm: dest:i src1:i len:6 clob:1
@@ -394,9 +394,9 @@ long_rem_un:
 long_and:
 long_or:
 long_xor:
-long_shl: dest:L src1:L src2:i clob:s len:21
-long_shr: dest:L src1:L src2:i clob:s len:22
-long_shr_un: dest:L src1:L src2:i clob:s len:22
+long_shl: dest:L src1:L src2:s clob:1 len:21
+long_shr: dest:L src1:L src2:s clob:1 len:22
+long_shr_un: dest:L src1:L src2:s clob:1 len:22
 long_neg:
 long_not:
 long_conv_to_i1:
@@ -443,9 +443,9 @@ long_clt:
 long_clt_un:
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
 long_conv_to_u:
-long_shr_imm: dest:L src1:L len:10
-long_shr_un_imm: dest:L src1:L len:10
-long_shl_imm: dest:L src1:L len:10
+long_shr_imm: dest:L src1:L clob:1 len:10
+long_shr_un_imm: dest:L src1:L clob:1 len:10
+long_shl_imm: dest:L src1:L clob:1 len:10
 long_add_imm:
 long_sub_imm:
 long_beq:
@@ -477,16 +477,16 @@ float_rem: dest:f src1:f src2:f len:17
 float_rem_un: dest:f src1:f src2:f len:17
 float_neg: dest:f src1:f len:2
 float_not: dest:f src1:f len:2
-float_conv_to_i1: dest:i src1:f len:39 clob:b
-float_conv_to_i2: dest:i src1:f len:39 clob:b
-float_conv_to_i4: dest:i src1:f len:39 clob:b
-float_conv_to_i8: dest:L src1:f len:39 clob:b
+float_conv_to_i1: dest:y src1:f len:39
+float_conv_to_i2: dest:y src1:f len:39
+float_conv_to_i4: dest:i src1:f len:39
+float_conv_to_i8: dest:L src1:f len:39
 float_conv_to_r4:
 float_conv_to_r8:
-float_conv_to_u4: dest:i src1:f len:39 clob:b
-float_conv_to_u8: dest:L src1:f len:39 clob:b
-float_conv_to_u2: dest:i src1:f len:39 clob:b
-float_conv_to_u1: dest:i src1:f len:39 clob:b
+float_conv_to_u4: dest:i src1:f len:39
+float_conv_to_u8: dest:L src1:f len:39
+float_conv_to_u2: dest:y src1:f len:39
+float_conv_to_u1: dest:y src1:f len:39
 float_conv_to_i: dest:i src1:f len:39
 float_conv_to_ovf_i: dest:a src1:f len:30
 float_conv_to_ovd_u: dest:a src1:f len:30
@@ -514,11 +514,11 @@ float_conv_to_ovf_i4:
 float_conv_to_ovf_u4:
 float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
-float_ceq: dest:i src1:f src2:f len:25 clob:b
-float_cgt: dest:i src1:f src2:f len:25 clob:b
-float_cgt_un: dest:i src1:f src2:f len:37 clob:b
-float_clt: dest:i src1:f src2:f len:25 clob:b
-float_clt_un: dest:i src1:f src2:f len:32 clob:b
+float_ceq: dest:y src1:f src2:f len:25
+float_cgt: dest:y src1:f src2:f len:25
+float_cgt_un: dest:y src1:f src2:f len:37
+float_clt: dest:y src1:f src2:f len:25
+float_clt_un: dest:y src1:f src2:f len:32
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:10
 aot_const: dest:i len:5

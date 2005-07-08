@@ -109,7 +109,8 @@ x86_sources = \
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
-	tramp-x86.c
+	tramp-x86.c			\
+	mini-codegen.c
 
 amd64_sources = \
 	mini-amd64.c		\
