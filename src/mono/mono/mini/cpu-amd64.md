@@ -16,8 +16,10 @@
 #	b  base register (used in address references)
 #	f  floating point register
 #	a  EAX register
-#       d  EDX register
+#   d  EDX register
 #	l  long reg (forced eax:edx)
+#   s  ECX register
+#   c  register which can be used as a byte register (RAX..RDX)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -34,8 +36,7 @@
 #	c  clobbers caller-save registers
 #	1  clobbers the first source register
 #	a  EAX is clobbered
-#   d  EAX and EDX are clobbered
-#	s  the src2 operand needs to be in ECX (shift opcodes)
+#   d  EDX is clobbered
 #	x  both the source operands are clobbered (xchg)
 #   m  sets an XMM reg
 #
@@ -98,14 +99,14 @@ sub: dest:i src1:i src2:i len:3 clob:1
 mul: dest:i src1:i src2:i len:4 clob:1
 div: dest:a src1:a src2:i len:16 clob:d
 div.un: dest:a src1:a src2:i len:16 clob:d
-rem: dest:d src1:a src2:i len:16 clob:d
-rem.un: dest:d src1:a src2:i len:16 clob:d
+rem: dest:d src1:a src2:i len:16 clob:a
+rem.un: dest:d src1:a src2:i len:16 clob:a
 and: dest:i src1:i src2:i len:3 clob:1
 or: dest:i src1:i src2:i len:3 clob:1
 xor: dest:i src1:i src2:i len:3 clob:1
-shl: dest:i src1:i src2:i clob:s len:3
-shr: dest:i src1:i src2:i clob:s len:3
-shr.un: dest:i src1:i src2:i clob:s len:3
+shl: dest:i src1:i src2:s clob:1 len:3
+shr: dest:i src1:i src2:s clob:1 len:3
+shr.un: dest:i src1:i src2:s clob:1 len:3
 neg: dest:i src1:i len:3 clob:1
 not: dest:i src1:i len:3 clob:1
 conv.i1: dest:i src1:i len:4
@@ -204,11 +205,11 @@ prefix2:
 prefix1:
 prefixref:
 arglist:
-ceq: dest:i len:8
-cgt: dest:i len:8
-cgt.un: dest:i len:8
-clt: dest:i len:8
-clt.un: dest:i len:8
+ceq: dest:c len:8
+cgt: dest:c len:8
+cgt.un: dest:c len:8
+clt: dest:c len:8
+clt.un: dest:c len:8
 ldftn:
 ldvirtftn:
 ldarg:
@@ -262,9 +263,9 @@ voidcall_membase: src1:b clob:c len:64
 fcall: dest:f len:64 clob:c
 fcall_reg: dest:f src1:i len:64 clob:c
 fcall_membase: dest:f src1:b len:64 clob:c
-lcall: dest:i len:64 clob:c
-lcall_reg: dest:i src1:i len:64 clob:c
-lcall_membase: dest:i src1:b len:64 clob:c
+lcall: dest:a len:64 clob:c
+lcall_reg: dest:a src1:i len:64 clob:c
+lcall_membase: dest:a src1:b len:64 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
@@ -283,7 +284,7 @@ store_membase_imm: dest:b len:15
 store_membase_reg: dest:b src1:i len:9
 storei8_membase_reg: dest:b src1:i len:9
 storei1_membase_imm: dest:b len:11
-storei1_membase_reg: dest:b src1:i len:9
+storei1_membase_reg: dest:b src1:c len:9
 storei2_membase_imm: dest:b len:13
 storei2_membase_reg: dest:b src1:i len:9
 storei4_membase_imm: dest:b len:13
@@ -292,8 +293,8 @@ storei8_membase_imm: dest:b len:18
 storer4_membase_reg: dest:b src1:f len:15
 storer8_membase_reg: dest:b src1:f len:10
 load_membase: dest:i src1:b len:15
-loadi1_membase: dest:i src1:b len:9
-loadu1_membase: dest:i src1:b len:9
+loadi1_membase: dest:c src1:b len:9
+loadu1_membase: dest:c src1:b len:9
 loadi2_membase: dest:i src1:b len:9
 loadu2_membase: dest:i src1:b len:9
 loadi4_membase: dest:i src1:b len:9
@@ -303,6 +304,7 @@ loadr4_membase: dest:f src1:b len:16
 loadr8_membase: dest:f src1:b len:16
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
+amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:4
 setreg: dest:i src1:i len:4
 add_imm: dest:i src1:i len:8 clob:1
@@ -313,8 +315,8 @@ mul_imm: dest:i src1:i len:8
 # to allocate a symbolic reg for src2)
 div_imm: dest:a src1:i src2:i len:16 clob:d
 div_un_imm: dest:a src1:i src2:i len:16 clob:d
-rem_imm: dest:d src1:i src2:i len:16 clob:d
-rem_un_imm: dest:d src1:i src2:i len:16 clob:d
+rem_imm: dest:d src1:i src2:i len:16 clob:a
+rem_un_imm: dest:d src1:i src2:i len:16 clob:a
 and_imm: dest:i src1:i len:8 clob:1
 or_imm: dest:i src1:i len:8 clob:1
 xor_imm: dest:i src1:i len:8 clob:1
@@ -343,14 +345,14 @@ long_mul: dest:i src1:i src2:i clob:1 len:4
 long_mul_imm: dest:i src1:i src2:i clob:1 len:8
 long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
-long_rem: dest:d src1:a src2:i len:16 clob:d
-long_rem_un: dest:d src1:a src2:i len:16 clob:d
+long_rem: dest:d src1:a src2:i len:16 clob:a
+long_rem_un: dest:d src1:a src2:i len:16 clob:a
 long_and:
 long_or:
 long_xor:
-long_shl: dest:i src1:i src2:i clob:s len:31
-long_shr: dest:i src1:i src2:i clob:s len:32
-long_shr_un: dest:i src1:i src2:i clob:s len:32
+long_shl: dest:i src1:i src2:s clob:1 len:31
+long_shr: dest:i src1:i src2:s clob:1 len:32
+long_shr_un: dest:i src1:i src2:s clob:1 len:32
 long_neg:
 long_not:
 long_conv_to_i1:
@@ -546,14 +548,14 @@ int_mul_ovf: dest:i src1:i src2:i clob:1 len:64
 int_mul_ovf_un: dest:i src1:i src2:i clob:1 len:64
 int_div: dest:a src1:a src2:i clob:d len:64
 int_div_un: dest:a src1:a src2:i clob:d len:64
-int_rem: dest:d src1:a src2:i clob:d len:64
-int_rem_un: dest:d src1:a src2:i clob:d len:64
+int_rem: dest:d src1:a src2:i clob:a len:64
+int_rem_un: dest:d src1:a src2:i clob:a len:64
 int_and: dest:i src1:i src2:i clob:1 len:64
 int_or: dest:i src1:i src2:i clob:1 len:64
 int_xor: dest:i src1:i src2:i clob:1 len:64
-int_shl: dest:i src1:i src2:i clob:s len:64
-int_shr: dest:i src1:i src2:i clob:s len:64
-int_shr_un: dest:i src1:i src2:i clob:s len:64
+int_shl: dest:i src1:i src2:s clob:1 len:64
+int_shr: dest:i src1:i src2:s clob:1 len:64
+int_shr_un: dest:i src1:i src2:s clob:1 len:64
 int_adc: dest:i src1:i src2:i clob:1 len:64
 int_adc_imm: dest:i src1:i clob:1 len:64
 int_sbb: dest:i src1:i src2:i clob:1 len:64
@@ -565,8 +567,8 @@ int_sub_imm: dest:i src1:i clob:1 len:64
 int_mul_imm: dest:i src1:i clob:1 len:64
 int_div_imm: dest:a src1:i clob:d len:64
 int_div_un_imm: dest:a src1:i clob:d len:64
-int_rem_imm: dest:d src1:i clob:d len:64
-int_rem_un_imm: dest:d src1:i clob:d len:64
+int_rem_imm: dest:d src1:i clob:a len:64
+int_rem_un_imm: dest:d src1:i clob:a len:64
 int_and_imm: dest:i src1:i clob:1 len:64
 int_or_imm: dest:i src1:i clob:1 len:64
 int_xor_imm: dest:i src1:i clob:1 len:64
@@ -575,11 +577,11 @@ int_shr_imm: dest:i src1:i clob:1 len:64
 int_shr_un_imm: dest:i src1:i clob:1 len:64
 int_neg: dest:i src1:i clob:1 len:64
 int_not: dest:i src1:i clob:1 len:64
-int_ceq: dest:i len:64
-int_cgt: dest:i len:64
-int_cgt_un: dest:i len:64
-int_clt: dest:i len:64
-int_clt_un: dest:i len:64
+int_ceq: dest:c len:64
+int_cgt: dest:c len:64
+int_cgt_un: dest:c len:64
+int_clt: dest:c len:64
+int_clt_un: dest:c len:64
 int_beq: len:64
 int_bne_un: len:64
 int_blt: len:64
