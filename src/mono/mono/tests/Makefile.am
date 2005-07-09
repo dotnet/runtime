@@ -218,7 +218,7 @@ endif
 
 if AMD64
 # bug #71273
-PLATFORM_DISABLED_TESTS=appdomain-unload.exe
+PLATFORM_DISABLED_TESTS=appdomain-unload.exe thread6.exe
 endif
 
 DISABLED_TESTS=			\
