@@ -23,8 +23,10 @@
 #include "mini.h"
 #include "mini-amd64.h"
 
+static guint8* nullified_class_init_trampoline;
+
 /*
- * get_unbox_trampoline:
+ * mono_arch_get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -33,7 +35,7 @@
  * unboxing before calling the method
  */
 static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_reg = AMD64_RDI;
@@ -57,11 +59,83 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
+static void
+mono_arch_patch_callsite (guint8 *code, guint8 *addr)
+{
+	if (((code [-13] == 0x49) && (code [-12] == 0xbb)) || (code [-5] == 0xe8)) {
+		if (code [-5] != 0xe8)
+			InterlockedExchangePointer ((gpointer*)(code - 11), addr);
+		else {
+			g_assert ((((guint64)(addr)) >> 32) == 0);
+			g_assert ((((guint64)(code)) >> 32) == 0);
+			InterlockedExchange ((guint32*)(code - 4), ((gint64)addr - (gint64)code));
+		}
+	}
+	else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
+		/* call *<OFFSET>(%rip) */
+		gpointer *got_entry = (gpointer*)((guint8*)code + (*(guint32*)(code - 4)));
+		InterlockedExchangePointer (got_entry, addr);
+	}
+}
+
+static void
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+{
+	code -= 3;
+
+	if ((code [0] == 0x49) && (code [1] == 0xff)) {
+		/* amd64_set_reg_template is 10 bytes long */
+		guint8* buf = code - 10;
+
+		/* FIXME: Make this thread safe */
+		/* Padding code suggested by the AMD64 Opt Manual */
+		buf [0] = 0x66;
+		buf [1] = 0x66;
+		buf [2] = 0x66;
+		buf [3] = 0x90;
+		buf [4] = 0x66;
+		buf [5] = 0x66;
+		buf [6] = 0x66;
+		buf [7] = 0x90;
+		buf [8] = 0x66;
+		buf [9] = 0x66;
+		buf [10] = 0x90;
+		buf [11] = 0x66;
+		buf [12] = 0x90;
+	} else if (code [-2] == 0xe8) {
+		guint8 *buf = code - 2;
+
+		buf [0] = 0x66;
+		buf [1] = 0x66;
+		buf [2] = 0x90;
+		buf [3] = 0x66;
+		buf [4] = 0x90;
+	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
+		/* Already changed by another thread */
+		;
+	else if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15)) {
+		gpointer *vtable_slot;
+
+		/* call *<OFFSET>(%rip) */
+		vtable_slot = mono_arch_get_vcall_slot_addr (code + 3, (gpointer*)regs);
+		g_assert (vtable_slot);
+
+		*vtable_slot = nullified_class_init_trampoline;
+	}
+	else {
+		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+				code [4], code [5], code [6]);
+		g_assert_not_reached ();
+	}
+}
+
 /**
- * amd64_magic_trampoline:
+ * magic_trampoline:
+ *
+ *   This trampoline handles calls from JITted code.
  */
 static gpointer
-amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
@@ -80,7 +154,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = get_unbox_trampoline (m, addr);
+			addr = mono_arch_get_unbox_trampoline (m, addr);
 
 		g_assert (*vtable_slot);
 
@@ -90,135 +164,84 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	else {
 		/* Patch calling code */
 
-		if (((code [-13] == 0x49) && (code [-12] == 0xbb)) ||
-			(code [-5] == 0xe8)) {
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
+		MonoJitInfo *ji = 
+			mono_jit_info_table_find (mono_domain_get (), code);
+		MonoJitInfo *target_ji = 
+			mono_jit_info_table_find (mono_domain_get (), addr);
 
-			if (mono_method_same_domain (ji, target_ji)) {
-				if (code [-5] != 0xe8)
-					InterlockedExchangePointer ((gpointer*)(code - 11), addr);
-				else {
-					g_assert ((((guint64)(addr)) >> 32) == 0);
-					g_assert ((((guint64)(code)) >> 32) == 0);
-					InterlockedExchange ((guint32*)(code - 4), ((gint64)addr - (gint64)code));
-				}
-			}
-		}
-		else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
-			/* call *<OFFSET>(%rip) */
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
-
-			if (mono_method_same_domain (ji, target_ji)) {
-				gpointer *got_entry = (gpointer*)((guint8*)code + (*(guint32*)(code - 4)));
-				InterlockedExchangePointer (got_entry, addr);
-			}
-		}
+		if (mono_method_same_domain (ji, target_ji))
+			mono_arch_patch_callsite (code, addr);
 	}
 
 	return addr;
 }
 
 /*
- * amd64_aot_trampoline:
+ * aot_trampoline:
  *
  *   This trampoline handles calls made from AOT code. We try to bypass the 
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
 static gpointer
-amd64_aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
-					  guint8* tramp)
+aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
+				guint8* tramp)
 {
 	MonoImage *image;
 	guint32 token;
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	gpointer addr;
 	gpointer *vtable_slot;
+	gboolean is_got_entry;
 
 	image = *(gpointer*)token_info;
 	token_info += sizeof (gpointer);
 	token = *(guint32*)token_info;
 
-	/* Later we could avoid allocating the MonoMethod */
-	method = mono_get_method (image, token, NULL);
-	g_assert (method);
+	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
+	if (!addr) {
+		method = mono_get_method (image, token, NULL);
+		g_assert (method);
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
+		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	addr = mono_compile_method (method);
-	g_assert (addr);
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			method = mono_marshal_get_synchronized_wrapper (method);
+
+		addr = mono_compile_method (method);
+		g_assert (addr);
+	}
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (vtable_slot);
 
-	if (method->klass->valuetype)
-		addr = get_unbox_trampoline (method, addr);
+	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
 
-	if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+	if (!is_got_entry) {
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+		if (method->klass->valuetype)
+			addr = mono_arch_get_unbox_trampoline (method, addr);
+	}
+
+	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 		*vtable_slot = addr;
 
 	return addr;
 }
 
 /**
- * amd64_class_init_trampoline:
+ * class_init_trampoline:
  *
  * This method calls mono_runtime_class_init () to run the static constructor
  * for the type, then patches the caller code so it is not called again.
  */
 static void
-amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
 	mono_runtime_class_init (vtable);
 
-	code -= 3;
-
-	if ((code [0] == 0x49) && (code [1] == 0xff)) {
-		if (!mono_running_on_valgrind ()) {
-			/* amd64_set_reg_template is 10 bytes long */
-			guint8* buf = code - 10;
-
-			/* FIXME: Make this thread safe */
-			/* Padding code suggested by the AMD64 Opt Manual */
-			buf [0] = 0x66;
-			buf [1] = 0x66;
-			buf [2] = 0x66;
-			buf [3] = 0x90;
-			buf [4] = 0x66;
-			buf [5] = 0x66;
-			buf [6] = 0x66;
-			buf [7] = 0x90;
-			buf [8] = 0x66;
-			buf [9] = 0x66;
-			buf [10] = 0x90;
-			buf [11] = 0x66;
-			buf [12] = 0x90;
-		}
-	} else if (code [-2] == 0xe8) {
-		guint8 *buf = code - 2;
-
-		buf [0] = 0x66;
-		buf [1] = 0x66;
-		buf [2] = 0x90;
-		buf [3] = 0x66;
-		buf [4] = 0x90;
-	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
-		/* Already changed by another thread */
-		;
-	else if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15))
-		/* call *<OFFSET>(%rip) */
-		;
-	else {
-		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-		g_assert_not_reached ();
-	}
+	if (!mono_running_on_valgrind ())
+		mono_arch_nullify_class_init_trampoline (code, regs);
 }
 
 guchar*
@@ -329,11 +352,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, tramp_offset, 8);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp = (guint8*)amd64_class_init_trampoline;
+		tramp = (guint8*)class_init_trampoline;
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		tramp = (guint8*)amd64_aot_trampoline;
+		tramp = (guint8*)aot_trampoline;
 	else
-		tramp = (guint8*)amd64_magic_trampoline;
+		tramp = (guint8*)magic_trampoline;
 
 	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
 	amd64_call_reg (code, AMD64_RAX);
@@ -364,6 +387,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	g_assert ((code - buf) <= 512);
 
 	mono_arch_flush_icache (buf, code - buf);
+
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = code = mono_global_codeman_reserve (16);
+		x86_ret (code);
+	}
 
 	return buf;
 }

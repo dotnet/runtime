@@ -1258,7 +1258,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 {
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 
-	if (mono_compile_aot) {
+	if (cfg->compile_aot) {
 		amd64_call_membase (code, AMD64_RIP, 0);
 	}
 	else {
@@ -2029,7 +2029,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
 		MonoProfileCoverageInfo *cov = cfg->coverage_info;
-		g_assert (!mono_compile_aot);
+		g_assert (!cfg->compile_aot);
 		cpos += 6;
 
 		cov->data [bb->dfn].cil_code = bb->cil_code;
@@ -2583,7 +2583,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_leave (code);
 			offset = code - cfg->native_code;
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			if (mono_compile_aot)
+			if (cfg->compile_aot)
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 			else
 				amd64_set_reg_template (code, AMD64_R11);
@@ -3662,6 +3662,7 @@ void
 mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
+	gboolean compile_aot = !run_cctors;
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
@@ -3669,23 +3670,14 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
-		if (mono_compile_aot) {
+		if (compile_aot) {
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_BB:
 			case MONO_PATCH_INFO_LABEL:
 				break;
-			default: {
-				/* Just to make code run at aot time work */
-				const unsigned char **tmp;
-
-				mono_domain_lock (domain);
-				tmp = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer));
-				mono_domain_unlock (domain);
-
-				*tmp = target;
-				target = (const unsigned char*)(guint64)((guint8*)tmp - (guint8*)ip);
-				break;
-			}
+			default:
+				/* No need to patch these */
+				continue;
 			}
 		}
 
@@ -3695,11 +3687,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			/* Might already been changed to a nop */
 			guint8* ip2 = ip;
-			if (mono_compile_aot)
-				amd64_call_membase (ip2, AMD64_RIP, 0);
-			else {
-				amd64_call_code (ip2, 0);
-			}
+			amd64_call_code (ip2, 0);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_REL:
@@ -4146,7 +4134,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 				patch_info->ip.i = code - cfg->native_code;
 
-				if (mono_compile_aot) {
+				if (cfg->compile_aot) {
 					amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
 					amd64_call_reg (code, GP_SCRATCH_REG);
 				} else {
@@ -4472,7 +4460,8 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 */
 	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
-		return NULL;
+		disp = *(guint32*)(code + 3);
+		return (gpointer*)(code + disp + 7);
 	}
 	else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
 		/* call *[reg+disp32] */
