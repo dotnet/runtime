@@ -258,6 +258,12 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base), base) {
 	mini_emit_memcpy (s, stack_addr->inst_basereg, stack_addr->inst_offset, vt->inst_basereg, vt->inst_offset, sz, 0);
 }
 
+# This handles trees like outarg_vt (refanytype)
+stmt: OP_OUTARG_VT (reg, base) {
+	MonoInst *stack_addr = state->right->tree;
+
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, stack_addr->inst_basereg, stack_addr->inst_offset, state->left->reg1);
+}
 
 stmt: OP_START_HANDLER {
      mono_bblock_add_inst (s->cbb, tree);

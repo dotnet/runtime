@@ -527,8 +527,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		/* This is an unmanaged frame, so just unwind through it */
+		/* FIXME: This returns -3 for the __clone2 frame in libc */
 		err = unw_step (&new_ctx->cursor);
-		g_assert (err >= 0);
+		if (err < 0)
+			break;
 
 		if (err == 0)
 			break;
@@ -592,6 +594,16 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	NOT_IMPLEMENTED;
-	return NULL;
+	/* On IA64, these two are equal */
+	unw_context_t *ctx = (unw_context_t*)sigctx;
+	unw_cursor_t cursor;
+	int res;
+	unw_word_t w;
+
+	res = unw_init_local (&cursor, ctx);
+	g_assert (res == 0);
+	res = unw_get_reg (&cursor, UNW_IA64_IP, &w);
+	g_assert (res == 0);
+
+	return (gpointer)w;
 }

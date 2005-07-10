@@ -25,7 +25,7 @@
 #define GP_SCRATCH_REG2 30
 
 /*
- * get_unbox_trampoline:
+ * mono_arch_get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -34,7 +34,7 @@
  * unboxing before calling the method
  */
 static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *buf;
 	gpointer func_addr, func_gp;
@@ -75,11 +75,25 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return desc;
 }
 
+static void
+mono_arch_patch_callsite (guint8 *code, guint8 *addr)
+{
+	/* FIXME: */
+}
+
+static void
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+{
+	/* FIXME: */
+}
+
 /**
- * ia64_magic_trampoline:
+ * magic_trampoline:
+ *
+ *   This trampoline handles calls from JITted code.
  */
 static gpointer
-ia64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
@@ -98,7 +112,7 @@ ia64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = get_unbox_trampoline (m, addr);
+			addr = mono_arch_get_unbox_trampoline (m, addr);
 
 		g_assert (*vtable_slot);
 
@@ -106,39 +120,86 @@ ia64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = addr;
 	}
 	else {
-		/* FIXME: Patch calling code */
+		/* Patch calling code */
+
+		MonoJitInfo *ji = 
+			mono_jit_info_table_find (mono_domain_get (), code);
+		MonoJitInfo *target_ji = 
+			mono_jit_info_table_find (mono_domain_get (), addr);
+
+		if (mono_method_same_domain (ji, target_ji))
+			mono_arch_patch_callsite (code, addr);
 	}
 
 	return addr;
 }
 
 /*
- * ia64_aot_trampoline:
+ * aot_trampoline:
  *
  *   This trampoline handles calls made from AOT code. We try to bypass the 
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
 static gpointer
-ia64_aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
-					  guint8* tramp)
+aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
+				guint8* tramp)
 {
-	NOT_IMPLEMENTED;
+	MonoImage *image;
+	guint32 token;
+	MonoMethod *method = NULL;
+	gpointer addr;
+	gpointer *vtable_slot;
+	gboolean is_got_entry;
 
-	return NULL;
+	image = *(gpointer*)(gpointer)token_info;
+	token_info += sizeof (gpointer);
+	token = *(guint32*)(gpointer)token_info;
+
+	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
+	if (!addr) {
+		method = mono_get_method (image, token, NULL);
+		g_assert (method);
+
+		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
+
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			method = mono_marshal_get_synchronized_wrapper (method);
+
+		addr = mono_compile_method (method);
+		g_assert (addr);
+	}
+
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	g_assert (vtable_slot);
+
+	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
+
+	if (!is_got_entry) {
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+		if (method->klass->valuetype)
+			addr = mono_arch_get_unbox_trampoline (method, addr);
+	}
+
+	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+		*vtable_slot = addr;
+
+	return addr;
 }
 
 /**
- * ia64_class_init_trampoline:
+ * class_init_trampoline:
  *
  * This method calls mono_runtime_class_init () to run the static constructor
  * for the type, then patches the caller code so it is not called again.
  */
 static void
-ia64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
 	mono_runtime_class_init (vtable);
-	
-	/* FIXME: Patch calling code */
+
+	if (!mono_running_on_valgrind ())
+		mono_arch_nullify_class_init_trampoline (code, regs);
 }
 
 guchar*
@@ -254,11 +315,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	ia64_mov (code, o3, 0);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp = (guint8*)ia64_class_init_trampoline;
+		tramp = (guint8*)class_init_trampoline;
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		tramp = (guint8*)ia64_aot_trampoline;
+		tramp = (guint8*)aot_trampoline;
 	else
-		tramp = (guint8*)ia64_magic_trampoline;
+		tramp = (guint8*)magic_trampoline;
 
 	/* Call the trampoline using an indirect call */
 	ia64_movl (code, l0, tramp);
