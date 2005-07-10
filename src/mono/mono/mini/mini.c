@@ -86,6 +86,7 @@ static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlo
 
 extern guint8 mono_burg_arity [];
 /* helper methods signature */
+static MonoMethodSignature *helper_sig_int_int_int = NULL;
 static MonoMethodSignature *helper_sig_long_long_long = NULL;
 static MonoMethodSignature *helper_sig_long_long_int = NULL;
 static MonoMethodSignature *helper_sig_newarr = NULL;
@@ -3203,7 +3204,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBoolean security, pinvoke;
 	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
-	GSList *class_inits;
+	GSList *class_inits = NULL;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
@@ -6799,6 +6800,9 @@ create_helper_signature (void)
 	/* void *helper_compile_generic_method (MonoObject *, MonoMethod *, MonoGenericContext *) */
 	helper_sig_compile_generic_method = make_icall_sig ("ptr object ptr ptr");
 
+	/* int amethod (int, int) */
+	helper_sig_int_int_int = make_icall_sig ("int32 int32 int32");
+
 	/* long amethod (long, long) */
 	helper_sig_long_long_long = make_icall_sig ("long long long");
 
@@ -7196,6 +7200,14 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 			*/
 		}
 		if (slot == 0xffffff) {
+			/*
+			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
+			 * efficient copying (and to work around the fact that OP_MEMCPY
+			 * and OP_MEMSET ignores alignment).
+			 */
+			if (t->type == MONO_TYPE_VALUETYPE)
+				align = sizeof (gpointer);
+
 			offset += size;
 			offset += align - 1;
 			offset &= ~(align - 1);
@@ -8679,6 +8691,10 @@ mono_codegen (MonoCompile *cfg)
 				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
 		g_free (nm);
 	}
+
+#ifdef MONO_ARCH_HAVE_SAVE_UNWIND_INFO
+	mono_arch_save_unwind_info (cfg);
+#endif
 	
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
@@ -10076,6 +10092,17 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl, TRUE);
 	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr, TRUE);
 	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un, TRUE);
+#endif
+
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", helper_sig_int_int_int, mono_imul, TRUE);
+	mono_register_opcode_emulation (CEE_DIV, "__emul_idiv", helper_sig_int_int_int, mono_idiv, TRUE);
+	mono_register_opcode_emulation (CEE_DIV_UN, "__emul_idiv_un", helper_sig_int_int_int, mono_idiv_un, TRUE);
+	mono_register_opcode_emulation (CEE_REM, "__emul_irem", helper_sig_int_int_int, mono_irem, TRUE);
+	mono_register_opcode_emulation (CEE_REM_UN, "__emul_irem_un", helper_sig_int_int_int, mono_irem_un, TRUE);
+	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", helper_sig_int_int_int, mono_imul_ovf, TRUE);
+	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", helper_sig_int_int_int, mono_imul_ovf_un, TRUE);
+	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", helper_sig_double_double_double, mono_fdiv, TRUE);
 #endif
 
 	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8, FALSE);
