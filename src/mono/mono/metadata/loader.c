@@ -223,7 +223,10 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 {
 	int i;
 	char *qname, *fqname, *class_name;
+	gboolean is_interface;
 	MonoMethod *result = NULL;
+
+	is_interface = MONO_CLASS_IS_INTERFACE (klass);
 
 	if (ic) {
 		class_name = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
@@ -254,6 +257,9 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 
 		klass = klass->parent;
 	}
+
+	if (is_interface)
+		result = find_method_in_class (mono_defaults.object_class, name, qname, fqname, sig);
 
  out:
 	g_free (class_name);
