@@ -7,7 +7,6 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -801,6 +800,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		ins = tmp->data;
 		spec = ins_spec [ins->opcode];
 		prev_dreg = -1;
+		prev_sreg2 = -1;
 		clob_dreg = -1;
 		clob_reg = -1;
 		dest_dreg = -1;
