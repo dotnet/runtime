@@ -830,6 +830,10 @@ gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
+gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp);
+gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
+									   guint8* tramp);
+void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp);
 
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
@@ -904,6 +908,9 @@ gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs);
 void     mono_arch_create_vars                  (MonoCompile *cfg);
 void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 void     mono_arch_register_lowlevel_calls      (void);
+gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
+void     mono_arch_patch_callsite               (guint8 *code, guint8 *addr);
+void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
