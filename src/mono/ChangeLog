@@ -1,3 +1,10 @@
+2005-07-11  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/script.in: Add @framework_version@ blank.
+	* scripts/script2.in: Remove.
+	* scripts/Makefile.am: Update.  Use wsdl.exe for wsdl2 and
+	monop.exe for monop2.
+
 2005-07-04  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (EXTRA_DIST): Distribute mono-uninstalled.pc.in.

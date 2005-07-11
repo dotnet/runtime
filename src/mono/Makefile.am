@@ -7,7 +7,7 @@ SUBDIRS = $(libgc_dir) mono $(ikvm_native_dir) support docs data runtime scripts
 ## 'tools' is not normally built
 DIST_SUBDIRS = libgc mono ikvm-native support docs data runtime scripts man samples web tools 
 
-EXTRA_DIST= mono.pc.in mint.pc.in
+EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in
 
 # Distribute the 'mcs' tree too
 dist-hook:
@@ -20,7 +20,8 @@ pkgconfig_DATA= mono.pc mint.pc
 else
 pkgconfig_DATA= mint.pc
 endif
-DISTCLEANFILES= mono.pc mint.pc
+noinst_DATA = mono-uninstalled.pc
+DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc
 
 .PHONY: get-monolite-latest mcs-do-compiler-tests compiler-tests bootstrap-world
 
