@@ -1860,6 +1860,8 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *type_
 	}
 
 	geninst = mono_reflection_bind_generic_parameters (type, count, types);
+	if (!geninst)
+		return NULL;
 
 	return mono_type_get_object (mono_object_domain (type), geninst);
 }
