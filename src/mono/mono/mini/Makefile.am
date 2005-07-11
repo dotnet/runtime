@@ -150,7 +150,8 @@ ia64_sources = \
 	mini-ia64.h			\
 	exceptions-ia64.c	\
 	tramp-ia64.c		\
-	mini-codegen.c
+	mini-codegen.c		\
+	mini-trampolines.c
 
 common_sources = \
 	mini.c		\
