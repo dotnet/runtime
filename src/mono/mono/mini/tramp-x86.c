@@ -27,7 +27,7 @@
 static guint8* nullified_class_init_trampoline;
 
 /*
- * get_unbox_trampoline:
+ * mono_arch_get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -36,7 +36,7 @@ static guint8* nullified_class_init_trampoline;
  * unboxing before calling the method
  */
 static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 4;
@@ -56,172 +56,36 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
-/**
- * x86_magic_trampoline:
- * @eax: saved x86 register 
- * @ecx: saved x86 register 
- * @edx: saved x86 register 
- * @esi: saved x86 register 
- * @edi: saved x86 register 
- * @ebx: saved x86 register
- * @code: pointer into caller code
- * @method: the method to translate
- *
- * This method is called by the trampoline functions for virtual
- * methods. It inspects the caller code to find the address of the
- * vtable slot, then calls the JIT compiler and writes the address
- * of the compiled method back to the vtable. All virtual methods 
- * are called with: x86_call_membase (inst, basereg, disp). We always
- * use 32 bit displacement to ensure that the length of the call 
- * instruction is 6 bytes. We need to get the value of the basereg 
- * and the constant displacement.
- */
-static gpointer
-x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-		      int ebx, guint8 *code, MonoMethod *m)
+static void
+mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 {
-	gpointer addr;
-	gpointer *vtable_slot;
-	int regs [X86_NREG];
-
-	addr = mono_compile_method (m);
-	g_assert (addr);
-
-	/* the method was jumped to */
-	if (!code)
-		return addr;
-
-	regs [X86_EAX] = eax;
-	regs [X86_ECX] = ecx;
-	regs [X86_EDX] = edx;
-	regs [X86_ESI] = esi;
-	regs [X86_EDI] = edi;
-	regs [X86_EBX] = ebx;
-
-	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
-	if (!vtable_slot) {
-		/* go to the start of the call instruction
-		 *
-		 * address_byte = (m << 6) | (o << 3) | reg
-		 * call opcode: 0xff address_byte displacement
-		 * 0xff m=1,o=2 imm8
-		 * 0xff m=2,o=2 imm32
-		 */
-		code -= 6;
-		if ((code [1] == 0xe8)) {
-			if (!mono_running_on_valgrind ()) {
-				MonoJitInfo *ji = 
-					mono_jit_info_table_find (mono_domain_get (), (char*)code);
-				MonoJitInfo *target_ji = 
-					mono_jit_info_table_find (mono_domain_get (), addr);
-
-				if (mono_method_same_domain (ji, target_ji)) {
-					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
+	/* go to the start of the call instruction
+	 *
+	 * address_byte = (m << 6) | (o << 3) | reg
+	 * call opcode: 0xff address_byte displacement
+	 * 0xff m=1,o=2 imm8
+	 * 0xff m=2,o=2 imm32
+	 */
+	code -= 6;
+	if ((code [1] == 0xe8)) {
+		if (!mono_running_on_valgrind ()) {
+			InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-					/* Tell valgrind to recompile the patched code */
-					//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+				/* Tell valgrind to recompile the patched code */
+				//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
 #endif
-				}
-			}
-			return addr;
-		} else {
-			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
-			g_assert_not_reached ();
 		}
+	} else {
+		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+				code [4], code [5], code [6]);
+		g_assert_not_reached ();
 	}
-
-	if (m->klass->valuetype && !mono_aot_is_got_entry (code, (guint8*)vtable_slot))
-		addr = get_unbox_trampoline (m, addr);
-
-	if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
-		*vtable_slot = addr;
-
-	return addr;
 }
 
-/*
- * x86_aot_trampoline:
- *
- *   This trampoline handles calls made from AOT code. We try to bypass the 
- * normal JIT compilation logic to avoid loading the metadata for the method.
- */
-static gpointer
-x86_aot_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-					int ebx, guint8 *code, guint8 *token_info)
-{
-	MonoImage *image;
-	guint32 token;
-	MonoMethod *method = NULL;
-	gpointer addr;
-	gpointer *vtable_slot;
-	int regs [X86_NREG];
-	gboolean is_got_entry;
-
-	image = *(gpointer*)token_info;
-	token_info += sizeof (gpointer);
-	token = *(guint32*)token_info;
-
-	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
-	if (!addr) {
-		method = mono_get_method (image, token, NULL);
-		g_assert (method);
-
-		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
-
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-			method = mono_marshal_get_synchronized_wrapper (method);
-
-		addr = mono_compile_method (method);
-		g_assert (addr);
-	}
-
-	regs [X86_EAX] = eax;
-	regs [X86_ECX] = ecx;
-	regs [X86_EDX] = edx;
-	regs [X86_ESI] = esi;
-	regs [X86_EDI] = edi;
-	regs [X86_EBX] = ebx;
-
-	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
-	g_assert (vtable_slot);
-
-	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
-
-	if (!is_got_entry) {
-		if (!method)
-			method = mono_get_method (image, token, NULL);
-		if (method->klass->valuetype)
-			addr = get_unbox_trampoline (method, addr);
-	}
-
-	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
-		*vtable_slot = addr;
-
-	return addr;
-}	
-
-/**
- * x86_class_init_trampoline:
- * @eax: saved x86 register 
- * @ecx: saved x86 register 
- * @edx: saved x86 register 
- * @esi: saved x86 register 
- * @edi: saved x86 register 
- * @ebx: saved x86 register
- * @code: pointer into caller code
- * @vtable: the type to initialize
- *
- * This method calls mono_runtime_class_init () to run the static constructor
- * for the type, then patches the caller code so it is not called again.
- */
 static void
-x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-						   int ebx, guint8 *code, MonoVTable *vtable)
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	mono_runtime_class_init (vtable);
-
 	code -= 5;
 	if (code [0] == 0xe8) {
 		if (!mono_running_on_valgrind ()) {
@@ -257,15 +121,7 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		;
 	} else if ((code [-1] == 0xff) && (x86_modrm_reg (code [0]) == 0x2)) {
 		/* call *<OFFSET>(<REG>) -> Call made from AOT code */
-		int regs [X86_NREG];
 		gpointer *vtable_slot;
-
-		regs [X86_EAX] = eax;
-		regs [X86_ECX] = ecx;
-		regs [X86_EDX] = edx;
-		regs [X86_ESI] = esi;
-		regs [X86_EDI] = edi;
-		regs [X86_EBX] = ebx;
 
 		vtable_slot = mono_arch_get_vcall_slot_addr (code + 5, (gpointer*)regs);
 		g_assert (vtable_slot);
@@ -278,6 +134,121 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		}
 }
 
+/**
+ * magic_trampoline:
+ *
+ *   This trampoline handles calls from JITted code.
+ */
+static gpointer
+magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+{
+	gpointer addr;
+	gpointer *vtable_slot;
+
+	addr = mono_compile_method (m);
+	g_assert (addr);
+
+	//printf ("ENTER: %s\n", mono_method_full_name (m, TRUE));
+
+	/* the method was jumped to */
+	if (!code)
+		/* FIXME: Optimize the case when the call is from a delegate wrapper */
+		return addr;
+
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+
+	if (vtable_slot) {
+		if (m->klass->valuetype)
+			addr = mono_arch_get_unbox_trampoline (m, addr);
+
+		g_assert (*vtable_slot);
+
+		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+			*vtable_slot = addr;
+	}
+	else {
+		/* Patch calling code */
+
+		MonoJitInfo *ji = 
+			mono_jit_info_table_find (mono_domain_get (), code);
+		MonoJitInfo *target_ji = 
+			mono_jit_info_table_find (mono_domain_get (), addr);
+
+		if (mono_method_same_domain (ji, target_ji))
+			mono_arch_patch_callsite (code, addr);
+	}
+
+	return addr;
+}
+
+/*
+ * aot_trampoline:
+ *
+ *   This trampoline handles calls made from AOT code. We try to bypass the 
+ * normal JIT compilation logic to avoid loading the metadata for the method.
+ */
+static gpointer
+aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
+				guint8* tramp)
+{
+	MonoImage *image;
+	guint32 token;
+	MonoMethod *method = NULL;
+	gpointer addr;
+	gpointer *vtable_slot;
+	gboolean is_got_entry;
+
+	image = *(gpointer*)token_info;
+	token_info += sizeof (gpointer);
+	token = *(guint32*)token_info;
+
+	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
+	if (!addr) {
+		method = mono_get_method (image, token, NULL);
+		g_assert (method);
+
+		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
+
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			method = mono_marshal_get_synchronized_wrapper (method);
+
+		addr = mono_compile_method (method);
+		g_assert (addr);
+	}
+
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	g_assert (vtable_slot);
+
+	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
+
+	if (!is_got_entry) {
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+		if (method->klass->valuetype)
+			addr = mono_arch_get_unbox_trampoline (method, addr);
+	}
+
+	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+		*vtable_slot = addr;
+
+	return addr;
+}
+
+/**
+ * class_init_trampoline:
+ *
+ * This method calls mono_runtime_class_init () to run the static constructor
+ * for the type, then patches the caller code so it is not called again.
+ */
+static void
+class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+{
+	mono_runtime_class_init (vtable);
+
+	if (!mono_running_on_valgrind ())
+		mono_arch_nullify_class_init_trampoline (code, regs);
+}
+
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
@@ -285,10 +256,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	code = buf = mono_global_codeman_reserve (256);
 
-	/* save caller save regs because we need to do a call */ 
+	/* Put all registers into an array on the stack */
+	x86_push_reg (buf, X86_EDI);
+	x86_push_reg (buf, X86_ESI);
+	x86_push_reg (buf, X86_EBP);
+	x86_push_reg (buf, X86_ESP);
+	x86_push_reg (buf, X86_EBX);
 	x86_push_reg (buf, X86_EDX);
-	x86_push_reg (buf, X86_EAX);
 	x86_push_reg (buf, X86_ECX);
+	x86_push_reg (buf, X86_EAX);
 
 	/* save LMF begin */
 
@@ -296,7 +272,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		x86_push_imm (buf, 0);
 	else
-		x86_push_membase (buf, X86_ESP, 16);
+		x86_push_membase (buf, X86_ESP, 8 * 4 + 4);
 
 	x86_push_reg (buf, X86_EBP);
 	x86_push_reg (buf, X86_ESI);
@@ -304,7 +280,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_push_reg (buf, X86_EBX);
 
 	/* save method info */
-	x86_push_membase (buf, X86_ESP, 32);
+	x86_push_membase (buf, X86_ESP, 13 * 4);
 	/* get the address of lmf for the current thread */
 	x86_call_code (buf, mono_get_lmf_addr);
 	/* push lmf */
@@ -315,29 +291,27 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
 	/* save LFM end */
 
+	/* FIXME: Push the trampoline address */
+	x86_push_imm (buf, 0);
+
 	/* push the method info */
-	x86_push_membase (buf, X86_ESP, 44);
+	x86_push_membase (buf, X86_ESP, 17 * 4);
 	/* push the return address onto the stack */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		x86_push_imm (buf, 0);
 	else
-		x86_push_membase (buf, X86_ESP, 52);
-
-	/* save all register values */
-	x86_push_reg (buf, X86_EBX);
-	x86_push_reg (buf, X86_EDI);
-	x86_push_reg (buf, X86_ESI);
-	x86_push_membase (buf, X86_ESP, 64); /* EDX */
-	x86_push_membase (buf, X86_ESP, 64); /* ECX */
-	x86_push_membase (buf, X86_ESP, 64); /* EAX */
+		x86_push_membase (buf, X86_ESP, 18 * 4 + 4);
+	/* push the address of the register array */
+	x86_lea_membase (buf, X86_EAX, X86_ESP, 11 * 4);
+	x86_push_reg (buf, X86_EAX);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		x86_call_code (buf, x86_class_init_trampoline);
+		x86_call_code (buf, class_init_trampoline);
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		x86_call_code (buf, x86_aot_trampoline);
+		x86_call_code (buf, aot_trampoline);
 	else
-		x86_call_code (buf, x86_magic_trampoline);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
+		x86_call_code (buf, magic_trampoline);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4*4);
 
 	/* restore LMF start */
 	/* ebx = previous_lmf */
@@ -358,7 +332,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
 	/* restore LMF end */
 
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 9 * 4);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		x86_ret (buf);
