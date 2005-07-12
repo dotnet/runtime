@@ -8408,6 +8408,11 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 		is_dynamic = TRUE;
+	} else if (klass->wastypebuilder) {
+		tb = (MonoReflectionTypeBuilder *) klass->reflection_info;
+
+		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
+		is_dynamic = TRUE;
 	} else {
 		icount = klass->interface_count;
 	}
@@ -8537,6 +8542,12 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
 		tb = (MonoReflectionTypeBuilder *) type;
 
+		if (tb->parent) {
+			parent = tb->parent;
+			pklass = mono_class_from_mono_type (parent->type);
+		}
+	} else if (klass->wastypebuilder) {
+		tb = (MonoReflectionTypeBuilder *) klass->reflection_info;
 		if (tb->parent) {
 			parent = tb->parent;
 			pklass = mono_class_from_mono_type (parent->type);
@@ -9197,6 +9208,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->has_cctor = 1;
 	klass->has_finalize = 1;
 
+#if 0
 	if (!((MonoDynamicImage*)klass->image)->run) {
 		if (klass->generic_container) {
 			/* FIXME: The code below can't handle generic classes */
@@ -9206,6 +9218,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 		}
 	}
+#endif
 
 	/* enums are done right away */
 	if (!klass->enumtype)
