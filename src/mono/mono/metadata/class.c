@@ -364,6 +364,7 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 	cached = mono_metadata_lookup_generic_class (ngclass);
 	mono_loader_unlock ();
 	if (cached) {
+		g_free (ngclass->context);
 		g_free (ngclass);
 		return cached;
 	}
@@ -1978,7 +1979,10 @@ mono_class_init (MonoClass *class)
 	
 		class->ghcimpl = 1;
 		if (class->parent) { 
-			if (class->vtable [ghc_slot] == default_ghc) {
+			MonoMethod *cmethod = class->vtable [ghc_slot];
+			if (cmethod->is_inflated)
+				cmethod = ((MonoMethodInflated*)cmethod)->declaring;
+			if (cmethod == default_ghc) {
 				class->ghcimpl = 0;
 			}
 		}
@@ -1986,8 +1990,12 @@ mono_class_init (MonoClass *class)
 		/* Object::Finalize should have empty implemenatation */
 		class->has_finalize = 0;
 		if (class->parent) { 
-			if (class->vtable [finalize_slot] != default_finalize)
+			MonoMethod *cmethod = class->vtable [finalize_slot];
+			if (cmethod->is_inflated)
+				cmethod = ((MonoMethodInflated*)cmethod)->declaring;
+			if (cmethod != default_finalize) {
 				class->has_finalize = 1;
+			}
 		}
 
 		for (i = 0; i < class->method.count; ++i) {
