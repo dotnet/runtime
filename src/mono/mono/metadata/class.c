@@ -842,7 +842,7 @@ mono_class_layout_fields (MonoClass *class)
 				real_size = field->offset + size;
 				if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
 					class->has_references = TRUE;
-				else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
+				else if (MONO_TYPE_ISSTRUCT (field->type) && mono_class_from_mono_type (field->type)->has_references)
 					class->has_references = TRUE;
 			}
 
