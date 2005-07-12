@@ -5321,6 +5321,17 @@ mymono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mymono_metadata_type_hash (t1->data.type);
+	case MONO_TYPE_GENERICINST: {
+		int i;
+		MonoGenericInst *inst = t1->data.generic_class->inst;
+		hash += g_str_hash (t1->data.generic_class->container_class->name);
+		hash *= 13;
+		for (i = 0; i < inst->type_argc; ++i) {
+			hash += mymono_metadata_type_hash (inst->type_argv [i]);
+			hash *= 13;
+		}
+		return hash;
+	}
 	}
 	return hash;
 }

@@ -1198,6 +1198,8 @@ static GHashTable *generic_inst_cache = NULL;
 static GHashTable *generic_class_cache = NULL;
 static int next_generic_inst_id = 0;
 
+static guint mono_generic_class_hash (gconstpointer data);
+
 /*
  * MonoTypes with modifies are never cached, so we never check or use that field.
  */
@@ -1205,7 +1207,10 @@ static guint
 mono_type_hash (gconstpointer data)
 {
 	const MonoType *type = (const MonoType *) data;
-	return type->type | (type->byref << 8) | (type->attrs << 9);
+	if (type->type == MONO_TYPE_GENERICINST)
+		return mono_generic_class_hash (type->data.generic_class);
+	else
+		return type->type | (type->byref << 8) | (type->attrs << 9);
 }
 
 static gint
@@ -1224,7 +1229,15 @@ static guint
 mono_generic_inst_hash (gconstpointer data)
 {
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
-	return ginst->type_argc | (ginst->is_open << 8);
+	guint hash = 0;
+	int i;
+	
+	for (i = 0; i < ginst->type_argc; ++i) {
+		hash *= 13;
+		hash += mono_metadata_type_hash (ginst->type_argv [i]);
+	}
+
+	return hash ^ (ginst->is_open << 8);
 }
 
 static gboolean
@@ -1247,7 +1260,12 @@ static guint
 mono_generic_class_hash (gconstpointer data)
 {
 	const MonoGenericClass *gclass = (const MonoGenericClass *) data;
-	return mono_metadata_type_hash (&gclass->container_class->byval_arg);
+	guint hash = mono_metadata_type_hash (&gclass->container_class->byval_arg);
+
+	hash *= 13;
+	hash += mono_generic_inst_hash (gclass->inst);
+
+	return hash;
 }
 
 static gboolean
@@ -3090,7 +3108,7 @@ mono_signature_hash (MonoMethodSignature *sig)
 	guint i, res = sig->ret->type;
 
 	for (i = 0; i < sig->param_count; i++)
-		res = (res << 5) - res + sig->params[i]->type;
+		res = (res << 5) - res + mono_type_hash (sig->params[i]);
 
 	return res;
 }
