@@ -1,3 +1,7 @@
+2005-07-12  Daniel Drake  <dsd@gentoo.org>
+
+	* configure.in: Add check for libattr's <attr/attr.h>
+
 2005-07-11  Raja R Harinath  <rharinath@novell.com>
 
 	* scripts/script.in: Add @framework_version@ blank.
