@@ -777,6 +777,20 @@ mono_class_layout_fields (MonoClass *class)
 			gc_aware_layout = TRUE;
 	}
 
+	for (i = 0; i < top; i++) {
+		MonoType *ftype;
+
+		field = &class->fields [i];
+
+		ftype = mono_type_get_underlying_type (field->type);
+		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_from_mono_type (ftype)->has_references))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				class->has_static_refs = TRUE;
+			else
+				class->has_references = TRUE;
+		}
+	}
+
 	/*
 	 * Compute field layout and total size (not considering static fields)
 	 */
@@ -801,6 +815,7 @@ mono_class_layout_fields (MonoClass *class)
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				int size, align;
+
 				field = &class->fields [i];
 
 				if (mono_field_is_deleted (field))
@@ -840,10 +855,6 @@ mono_class_layout_fields (MonoClass *class)
 				field->offset += align - 1;
 				field->offset &= ~(align - 1);
 				real_size = field->offset + size;
-				if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
-					class->has_references = TRUE;
-				else if (MONO_TYPE_ISSTRUCT (field->type) && mono_class_from_mono_type (field->type)->has_references)
-					class->has_references = TRUE;
 			}
 
 			class->instance_size = MAX (real_size, class->instance_size);
@@ -858,6 +869,7 @@ mono_class_layout_fields (MonoClass *class)
 		real_size = 0;
 		for (i = 0; i < top; i++) {
 			int size, align;
+
 			field = &class->fields [i];
 
 			/*
@@ -870,10 +882,6 @@ mono_class_layout_fields (MonoClass *class)
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
-			if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
-				class->has_references = TRUE;
-			else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
-				class->has_references = TRUE;
 			size = mono_type_size (field->type, &align);
 			
 			/*
@@ -900,6 +908,7 @@ mono_class_layout_fields (MonoClass *class)
 	 */
 	for (i = 0; i < top; i++){
 		int size, align;
+
 		field = &class->fields [i];
 			
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC) || field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
@@ -907,10 +916,6 @@ mono_class_layout_fields (MonoClass *class)
 		if (mono_field_is_deleted (field))
 			continue;
 
-		if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
-			class->has_static_refs = TRUE;
-		else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
-			class->has_static_refs = TRUE;
 		size = mono_type_size (field->type, &align);
 		field->offset = class->class_size;
 		field->offset += align - 1;
