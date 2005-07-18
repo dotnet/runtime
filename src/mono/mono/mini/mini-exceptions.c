@@ -25,6 +25,10 @@
 
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
+#ifndef MONO_ARCH_CONTEXT_DEF
+#define MONO_ARCH_CONTEXT_DEF
+#endif
+
 #ifndef mono_find_jit_info
 
 /* mono_find_jit_info:
@@ -280,8 +284,9 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
-
 	MonoContext ctx, new_ctx;
+
+	MONO_ARCH_CONTEXT_DEF
 
 #ifdef _MSC_VER
 	unsigned int stackptr, retaddr;
@@ -294,9 +299,14 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 #else
 	mono_arch_flush_register_windows ();
 
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+	MONO_INIT_CONTEXT_FROM_CURRENT(&ctx);
+#else
 	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
 	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
 #endif
+#endif
+
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
