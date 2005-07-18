@@ -129,7 +129,7 @@ static MonoMethodSignature *helper_sig_stelem_ref_check = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_compile_generic_method = NULL;
 
-static guint32 default_opt = MONO_OPT_PEEPHOLE;
+static guint32 default_opt = 0;
 
 guint32 mono_jit_tls_id = -1;
 MonoTraceSpec *mono_jit_trace_calls = NULL;
@@ -9980,6 +9980,10 @@ MonoDomain *
 mini_init (const char *filename)
 {
 	MonoDomain *domain;
+
+	/* Happens when using the embedding interface */
+	if (default_opt == 0)
+		default_opt = mono_parse_default_optimizations (NULL);
 
 	InitializeCriticalSection (&jit_mutex);
 
