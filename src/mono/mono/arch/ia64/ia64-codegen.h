@@ -166,7 +166,7 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
  * - in automatic mode, bundling and stops are handled automatically by the
  *   code generation macros.
  *   FIXME: In order to simplify things, we emit a stop after every instruction for
- *   now. Also, we emit 1 ins + 2 nops.
+ *   now.
  * - in non-automatic mode, the caller is responsible for handling bundling and
  *   stops using the appropriate macros.
  */
@@ -276,6 +276,8 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define ia64_is_imm8(imm) (((gint64)(imm) >= -128) && ((gint64)(imm) <= 127))
 #define ia64_is_imm14(imm) (((gint64)(imm) >= -8192) && ((gint64)(imm) <= 8191))
 #define ia64_is_imm21(imm) (((gint64)(imm) >= -0x100000) && ((gint64)(imm) <= (0x100000 - 1)))
+
+#define ia64_is_adds_imm(imm) ia64_is_imm14((imm))
 
 #if 1
 
