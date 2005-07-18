@@ -246,7 +246,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	ainfo->storage = ArgAggregate;
 	ainfo->reg = (*gr);
-	ainfo->offset = *gr * sizeof (gpointer);
+	ainfo->offset = *stack_size;
 	ainfo->nslots = (size + 7) / 8;
 
 	if (((*gr) + ainfo->nslots) <= 8) {
@@ -255,8 +255,10 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		(*gr) += ainfo->nregs;
 		return;
 	}
-	
-	NOT_IMPLEMENTED;
+
+	ainfo->nregs = 8 - (*gr);
+	(*gr) = 8;
+	(*stack_size) += (ainfo->nslots - ainfo->nregs) * 8;
 }
 
 /*
@@ -464,6 +466,11 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	*exclude_mask = 0;
 
 	return 0;
+}
+
+static void
+mono_arch_break (void)
+{
 }
 
 static gboolean
@@ -864,48 +871,85 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				 * be smaller.
 				 */
 				if (ainfo->storage == ArgAggregate) {
-					if (ainfo->nregs == ainfo->nslots) {
-						/* Fits entirely in registers */
-						MonoInst *vtaddr, *load, *load2, *offset_ins, *set_reg;
+					MonoInst *vtaddr, *load, *load2, *offset_ins, *set_reg;
+					int slot;
 
-						vtaddr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-						for (i = 0; i < ainfo->nregs; ++i) {
-							MONO_INST_NEW (cfg, load, CEE_LDIND_I);
-							load->ssa_op = MONO_SSA_LOAD;
-							load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
+					vtaddr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
-							NEW_ICONST (cfg, offset_ins, (i * sizeof (gpointer)));
-							MONO_INST_NEW (cfg, load2, CEE_ADD);
-							load2->inst_left = load;
-							load2->inst_right = offset_ins;
+					/* 
+					 * Part of the structure is passed in registers.
+					 */
+					for (i = 0; i < ainfo->nregs; ++i) {
+						slot = ainfo->reg + i;
 
-							MONO_INST_NEW (cfg, load, CEE_LDIND_I);
-							load->inst_left = load2;
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->ssa_op = MONO_SSA_LOAD;
+						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
 
-							if (i == 0)
-								set_reg = arg;
-							else
-								MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
-							add_outarg_reg (cfg, call, set_reg, ArgInIReg, cfg->arch.reg_out0 + ainfo->reg + i, load);
+						NEW_ICONST (cfg, offset_ins, (i * sizeof (gpointer)));
+						MONO_INST_NEW (cfg, load2, CEE_ADD);
+						load2->inst_left = load;
+						load2->inst_right = offset_ins;
 
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_left = load2;
+
+						if (i == 0)
+							set_reg = arg;
+						else
+							MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
+						add_outarg_reg (cfg, call, set_reg, ArgInIReg, cfg->arch.reg_out0 + slot, load);
+
+						if (set_reg != call->out_args) {
 							set_reg->next = call->out_args;
 							call->out_args = set_reg;
 						}
-
-						/* Trees can't be shared so make a copy */
-						MONO_INST_NEW (cfg, arg, CEE_STIND_I);
-						arg->cil_code = in->cil_code;
-						arg->ssa_op = MONO_SSA_STORE;
-						arg->inst_left = vtaddr;
-						arg->inst_right = in;
-						arg->type = in->type;
-
-						/* prepend, so they get reversed */
-						arg->next = call->out_args;
-						call->out_args = arg;
 					}
-					else
-						NOT_IMPLEMENTED;
+
+					/* 
+					 * Part of the structure is passed on the stack.
+					 */
+					for (i = ainfo->nregs; i < ainfo->nslots; ++i) {
+						MonoInst *outarg;
+
+						slot = ainfo->reg + i;
+
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->ssa_op = MONO_SSA_LOAD;
+						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
+
+						NEW_ICONST (cfg, offset_ins, (i * sizeof (gpointer)));
+						MONO_INST_NEW (cfg, load2, CEE_ADD);
+						load2->inst_left = load;
+						load2->inst_right = offset_ins;
+
+						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->inst_left = load2;
+
+						if (i == 0)
+							outarg = arg;
+						else
+							MONO_INST_NEW (cfg, outarg, OP_OUTARG);
+						outarg->inst_left = load;
+						outarg->inst_imm = 16 + ainfo->offset + (slot - 8) * 8;
+
+						if (outarg != call->out_args) {
+							outarg->next = call->out_args;
+							call->out_args = outarg;
+						}
+					}
+
+					/* Trees can't be shared so make a copy */
+					MONO_INST_NEW (cfg, arg, CEE_STIND_I);
+					arg->cil_code = in->cil_code;
+					arg->ssa_op = MONO_SSA_STORE;
+					arg->inst_left = vtaddr;
+					arg->inst_right = in;
+					arg->type = in->type;
+					
+					/* prepend, so they get reversed */
+					arg->next = call->out_args;
+					call->out_args = arg;
 				}
 				else {
 					MONO_INST_NEW (cfg, stack_addr, OP_REGOFFSET);
@@ -1258,7 +1302,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORER8_MEMBASE_REG:
 		case OP_STORE_MEMBASE_REG:
 			/* There are no store_membase instructions on ia64 */
-			if (ia64_is_imm14 (ins->inst_offset)) {
+			if (ins->inst_offset == 0) {
+				break;
+			}
+			else if (ia64_is_imm14 (ins->inst_offset)) {
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
@@ -1288,7 +1335,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
 			/* There are no load_membase instructions on ia64 */
-			if (ia64_is_imm14 (ins->inst_offset)) {
+			if (ins->inst_offset == 0) {
+				break;
+			}
+			else if (ia64_is_imm14 (ins->inst_offset)) {
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->inst_imm = ins->inst_offset;
@@ -2628,7 +2678,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_LOCALLOC:
+		case OP_LOCALLOC: {
+			gint32 abi_offset;
+
 			/* keep alignment */
 			ia64_adds_imm (code, GP_SCRATCH_REG, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->sreg1);
 			ia64_movl (code, GP_SCRATCH_REG2, ~(MONO_ARCH_FRAME_ALIGNMENT - 1));
@@ -2636,8 +2688,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
 
-			/* The first 16 bytes at sp are reserved by the ABI */
-			ia64_adds_imm (code, ins->dreg, 16, IA64_SP);
+			ia64_mov (code, ins->dreg, IA64_SP);
+
+			/* An area at sp is reserved by the ABI for parameter passing */
+			abi_offset = - ALIGN_TO (cfg->param_area + 16, MONO_ARCH_FRAME_ALIGNMENT);
+			if (ia64_is_adds_imm (abi_offset))
+				ia64_adds_imm (code, IA64_SP, abi_offset, IA64_SP);
+			else {
+				ia64_movl (code, GP_SCRATCH_REG2, abi_offset);
+				ia64_add (code, IA64_SP, IA64_SP, GP_SCRATCH_REG2);
+			}
 
 			if (ins->flags & MONO_INST_INIT) {
 				/* Upper limit */
@@ -2652,6 +2712,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			break;
+		}
 
 			/* Exception handling */
 		case OP_CALL_HANDLER:
@@ -2755,6 +2816,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
+	mono_register_jit_icall (mono_arch_break, "mono_arch_break", NULL, TRUE);
 }
 
 static Ia64InsType ins_types_in_template [32][3] = {
