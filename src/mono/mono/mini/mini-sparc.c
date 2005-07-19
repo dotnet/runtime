@@ -2171,7 +2171,7 @@ mono_sparc_is_virtual_call (guint32 *code)
 gpointer*
 mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 {
-	guint32 *code = (guint8*)(gpointer)code8;
+	guint32 *code = (guint32*)(gpointer)code8;
 	guint32 ins = code [0];
 	guint32 prev_ins = code [-1];
 

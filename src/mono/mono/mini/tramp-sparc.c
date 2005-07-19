@@ -147,15 +147,16 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		tramp_addr = &mono_class_init_trampoline;
 	else
 		tramp_addr = &mono_magic_trampoline;
-	sparc_ldi_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 200, sparc_o0);
+	sparc_ldi_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 200, sparc_o2);
 	/* pass address of register table as third argument */
-	sparc_add_imm (code, FALSE, sparc_sp, regs_offset, sparc_o2);
+	sparc_add_imm (code, FALSE, sparc_sp, regs_offset, sparc_o0);
 	sparc_set (code, tramp_addr, sparc_o7);
 	/* set %o1 to caller address */
 	if (has_caller)
 		sparc_mov_reg_reg (code, sparc_i7, sparc_o1);
 	else
 		sparc_set (code, 0, sparc_o1);
+	sparc_set (code, 0, sparc_o3);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_o7);
 	sparc_nop (code);
 
