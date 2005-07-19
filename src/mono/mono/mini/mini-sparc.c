@@ -2177,6 +2177,9 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 	mono_sparc_flushw ();
 
+	if (!mono_sparc_is_virtual_call (code))
+		return NULL;
+
 	if ((sparc_inst_op (ins) == 0x2) && (sparc_inst_op3 (ins) == 0x38)) {
 		if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_op3 (prev_ins) == 0 || sparc_inst_op3 (prev_ins) == 0xb)) {
 			/* ld [r1 + CONST ], r2; call r2 */
@@ -2198,7 +2201,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 	else
 		g_assert_not_reached ();
 
-	return FALSE;
+	return NULL;
 }
 
 /*
