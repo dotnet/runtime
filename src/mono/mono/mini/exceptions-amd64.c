@@ -246,17 +246,14 @@ mono_arch_get_call_filter (void)
 
 static void
 throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
-				 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
-				 guint64 r14, guint64 r15, guint64 rethrow)
+		 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+		 guint64 r14, guint64 r15, guint64 rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
 
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
-
-	/* adjust eip so that it point into the call instruction */
-	rip -= 1;
 
 	ctx.rsp = rsp;
 	ctx.rip = rip;
@@ -267,12 +264,27 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 	ctx.r14 = r14;
 	ctx.r15 = r15;
 
+	if (mono_debugger_throw_exception ((gpointer)(rip - 8), (gpointer)rsp, exc)) {
+		/*
+		 * The debugger wants us to stop on the `throw' instruction.
+		 * By the time we get here, it already inserted a breakpoint on
+		 * eip - 8 (which is the address of the `mov %r15,%rdi ; callq throw').
+		 */
+		ctx.rip = rip - 8;
+		ctx.rsp = rsp + 8;
+		restore_context (&ctx);
+		g_assert_not_reached ();
+	}
+
+	/* adjust eip so that it point into the call instruction */
+	ctx.rip -= 1;
+
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, (gpointer)(rip + 1), FALSE);
+	mono_handle_exception (&ctx, exc, (gpointer)rip, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
