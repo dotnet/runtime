@@ -1393,6 +1393,7 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
+		LIBC="libc.so.6.1"
 		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
 
 		;;
@@ -1432,19 +1433,6 @@ case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		INTL="intl"
 		;;
-#	ia64-*-linux* | ia64-*-hpux*)
-#		TARGET=IA64;
-#		arch_target=ia64;
-#		JIT_SUPPORTED=no;
-#		ACCESS_UNALIGNED="no";
-#		case "$host_os" in
-#			linux*) LIBC="libc.so.6.1";;
-#			hpux*)  LIBC="libc.so.1";;
-#		esac
-#		;;
-#       m68k-*-linux*)
-#		TARGET=M68K
-#		;;
 	hppa2.0w-hp-hpux11.00 | hppa64-hp-hpux11.00)
 		TARGET=HPPA;
 		arch_target=hppa; 

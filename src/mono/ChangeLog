@@ -1,3 +1,7 @@
+2005-07-19  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix definition of LIBC for ia64.
+
 2005-07-12  Daniel Drake  <dsd@gentoo.org>
 
 	* configure.in: Add check for libattr's <attr/attr.h>
