@@ -8,7 +8,7 @@
 #include "mono/utils/mono-hash.h"
 
 struct _MonoAssembly {
-	volatile gint32 ref_count; /* use atomic operations only */
+	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
 	GModule *aot_module;
