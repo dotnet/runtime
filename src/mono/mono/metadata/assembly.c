@@ -380,10 +380,7 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 void
 mono_assembly_addref (MonoAssembly *assembly)
 {
-	EnterCriticalSection (&assemblies_mutex);
-	/*g_print ("adding ref from %d to %s (%p)\n", assembly->ref_count, assembly->aname.name, assembly);*/
-	assembly->ref_count++;
-	LeaveCriticalSection (&assemblies_mutex);
+	InterlockedIncrement (&assembly->ref_count);
 }
 
 static MonoAssemblyName *
@@ -521,7 +518,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		/* Flag as not found */
 		reference = (gpointer)-1;
 	} else {
-		reference->ref_count++;
+		mono_assembly_addref (reference);
 	}	
 
 	if (!image->references [index])
@@ -1479,20 +1476,14 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
-	MonoImage *image;
-	
 	g_return_if_fail (assembly != NULL);
 
-	EnterCriticalSection (&assemblies_mutex);
-	/*g_print ("destroy assembly %p %d (%s)\n", assembly, assembly->ref_count, assembly->image->name);*/
-	g_assert (assembly->ref_count > 0);
-	if (--assembly->ref_count != 0) {
-		LeaveCriticalSection (&assemblies_mutex);
+	if (InterlockedDecrement (&assembly->ref_count))
 		return;
-	}
+	
+	EnterCriticalSection (&assemblies_mutex);
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	LeaveCriticalSection (&assemblies_mutex);
-	image = assembly->image;
 	/* assemblies belong to domains, so the domain code takes care of unloading the
 	 * referenced assemblies
 	 */

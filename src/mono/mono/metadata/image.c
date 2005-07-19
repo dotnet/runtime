@@ -995,13 +995,10 @@ mono_image_close (MonoImage *image)
 
 	g_return_if_fail (image != NULL);
 
-	EnterCriticalSection (&images_mutex);
-	/*g_print ("destroy image '%s' %p (dynamic: %d) refcount: %d\n", image->name, image, image->dynamic, image->ref_count);*/
-	g_assert (image->ref_count > 0);
-	if (--image->ref_count) {
-		LeaveCriticalSection (&images_mutex);
+	if (InterlockedDecrement (&image->ref_count))
 		return;
-	}
+	
+	EnterCriticalSection (&images_mutex);
 	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
