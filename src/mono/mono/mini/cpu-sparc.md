@@ -15,7 +15,9 @@
 #	i  integer register
 #	b  base register (used in address references)
 #	f  floating point register
-#   l  register pair (same as 'i' on v9)
+#   L  register pair (same as 'i' on v9)
+#   l  %o0:%o1 register pair (same as 'i' on v9)
+#   o  %o0
 #
 # len:number         describe the maximun length in bytes of the instruction
 # number is a positive integer
@@ -84,7 +86,6 @@ ldc.r8:
 dup:
 pop:
 jmp: len:64
-call: dest:i clob:c len:40
 calli:
 ret:
 br.s:
@@ -305,13 +306,15 @@ outarg: src1:i len:1
 outarg_imm: len:5
 retarg:
 setret: dest:a src1:i len:4
-setlret: dest:l src1:i src2:i len:8
 setreg: dest:i src1:i len:4 clob:r
 setregimm: dest:i len:64 clob:r
 setfreg: dest:f src1:f len:4 clob:r
 sparc_setfreg_float: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 oparglist: src1:i len:64
+call: dest:o clob:c len:40
+call_reg: dest:o src1:i len:64 clob:c
+call_membase: dest:o src1:b len:64 clob:c
 voidcall: len:64 clob:c
 voidcall_reg: src1:i len:64 clob:c
 voidcall_membase: src1:b len:64 clob:c
@@ -324,8 +327,6 @@ lcall_membase: dest:l src1:b len:64 clob:c
 vcall: len:40 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
-call_reg: dest:i src1:i len:64 clob:c
-call_membase: dest:i src1:b len:64 clob:c
 trap:
 iconst: dest:i len:64
 i8const: dest:i len:64
@@ -484,11 +485,11 @@ float_not: dest:f src1:f len:4
 float_conv_to_i1: dest:i src1:f len:40
 float_conv_to_i2: dest:i src1:f len:40
 float_conv_to_i4: dest:i src1:f len:40
-float_conv_to_i8: dest:l src1:f len:40
+float_conv_to_i8: dest:L src1:f len:40
 float_conv_to_r4: dest:f src1:f len:8
 float_conv_to_r8:
 float_conv_to_u4: dest:i src1:f len:40
-float_conv_to_u8: dest:l src1:f len:40
+float_conv_to_u8: dest:L src1:f len:40
 float_conv_to_u2: dest:i src1:f len:40
 float_conv_to_u1: dest:i src1:f len:40
 float_conv_to_i: dest:i src1:f len:40
@@ -534,8 +535,8 @@ adc_imm: dest:i src1:i len:64
 sbb: dest:i src1:i src2:i len:4
 sbb_imm: dest:i src1:i len:64
 br_reg: src1:i len:8
-op_bigmul: len:2 dest:l src1:a src2:i
-op_bigmul_un: len:2 dest:l src1:a src2:i
+op_bigmul: len:2 dest:L src1:a src2:i
+op_bigmul_un: len:2 dest:L src1:a src2:i
 fmove: dest:f src1:f len:8
 
 # 32 bit opcodes

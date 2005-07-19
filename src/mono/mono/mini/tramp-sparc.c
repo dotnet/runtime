@@ -62,7 +62,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * sparc_magic_trampoline:
  * @m: the method to translate
  * @code: the address of the call instruction
- * @fp: address of the stack frame for the caller
+ * @regs: caller registers
  *
  * This method is called by the trampoline functions for methods. It calls the
  * JIT compiler to compile the method, then patches the calling instruction so
@@ -70,7 +70,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * address of the vtable slot and updates it.
  */
 static gpointer
-sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
+sparc_magic_trampoline (MonoMethod *m, guint32 *code, gpointer *regs)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
@@ -78,13 +78,18 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
+	//printf ("M: %s %p\n", mono_method_full_name (m, TRUE), code);
+
+	if (!code)
+		return addr;
+
 	/*
 	 * Check whenever this is a virtual call, and call an unbox trampoline if
 	 * needed.
 	 */
 	if (mono_sparc_is_virtual_call (code)) {
 		/* Compute address of vtable slot */
-		vtable_slot = mono_sparc_get_vcall_slot_addr (code, fp);
+		vtable_slot = mono_sparc_get_vcall_slot_addr (code, regs);
 		if (m->klass->valuetype && !mono_aot_is_got_entry (code, vtable_slot))
 			addr = get_unbox_trampoline (m, addr);
 		if (mono_aot_is_got_entry (code, vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
@@ -108,7 +113,7 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 }
 
 static void
-sparc_class_init_trampoline (MonoVTable *vtable, guint32 *code)
+sparc_class_init_trampoline (MonoVTable *vtable, guint32 *code, gpointer *regs)
 {
 	mono_runtime_class_init (vtable);
 
@@ -122,11 +127,17 @@ guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp_addr;
-	guint32 lmf_offset, method_reg, i;
+	guint32 lmf_offset, regs_offset, method_reg, i;
+	gboolean has_caller;
 
-	code = buf = mono_global_codeman_reserve (512);
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
+		has_caller = FALSE;
+	else
+		has_caller = TRUE;
 
-	sparc_save_imm (code, sparc_sp, -608, sparc_sp);
+	code = buf = mono_global_codeman_reserve (1024);
+
+	sparc_save_imm (code, sparc_sp, -1608, sparc_sp);
 
 #ifdef SPARCV9
 	method_reg = sparc_g4;
@@ -166,16 +177,33 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	code = mono_sparc_emit_save_lmf (code, lmf_offset);
 
+	regs_offset = MONO_SPARC_STACK_BIAS + 1000;
+
+	if (has_caller) {
+		/* Load all registers of the caller into a table inside this frame */
+		/* first the out registers */
+		for (i = 0; i < 8; ++i)
+			sparc_sti_imm (code, sparc_i0 + i, sparc_sp, regs_offset + (i * sizeof (gpointer)));
+		/* then the in+local registers */
+		for (i = 0; i < 16; i ++) {
+			sparc_ldi_imm (code, sparc_fp, MONO_SPARC_STACK_BIAS + (i * sizeof (gpointer)), sparc_o7);
+			sparc_sti_imm (code, sparc_o7, sparc_sp, regs_offset + ((i + 8) * sizeof (gpointer)));
+		}
+	}
+
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		tramp_addr = &sparc_class_init_trampoline;
 	else
 		tramp_addr = &sparc_magic_trampoline;
 	sparc_ldi_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 200, sparc_o0);
-	/* pass parent frame address as third argument */
-	sparc_mov_reg_reg (code, sparc_fp, sparc_o2);
+	/* pass address of register table as third argument */
+	sparc_add_imm (code, FALSE, sparc_sp, regs_offset, sparc_o2);
 	sparc_set (code, tramp_addr, sparc_o7);
 	/* set %o1 to caller address */
-	sparc_mov_reg_reg (code, sparc_i7, sparc_o1);
+	if (has_caller)
+		sparc_mov_reg_reg (code, sparc_i7, sparc_o1);
+	else
+		sparc_set (code, 0, sparc_o1);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_o7);
 	sparc_nop (code);
 

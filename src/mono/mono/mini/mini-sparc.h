@@ -8,6 +8,47 @@
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
+/* Parameters used by the register allocator */
+
+#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
+
+/* 
+ * Use %o0..%o5 as local registers, plus %l7 since we need an extra register for
+ * holding the sreg1 in call instructions.
+ */
+#define MONO_ARCH_CALLEE_REGS ((1 << sparc_o0) | (1 << sparc_o1) | (1 << sparc_o2) | (1 << sparc_o3) | (1 << sparc_o4) | (1 << sparc_o5) | (1 << sparc_l7))
+
+#define MONO_ARCH_CALLEE_SAVED_REGS (~MONO_ARCH_CALLEE_REGS)
+
+#ifdef SPARCV9
+/* Use %d34..%d62 as the double precision floating point local registers */
+/* %d32 has the same encoding as %f1, so %d36%d38 == 0b1010 == 0xa */
+#define MONO_ARCH_CALLEE_FREGS (0xaaaaaaa8)
+#else
+/* Use %f2..%f30 as the double precision floating point local registers */
+#define MONO_ARCH_CALLEE_FREGS (0x55555554)
+#endif
+
+#define MONO_ARCH_CALLEE_SAVED_FREGS 0
+
+#define MONO_ARCH_USE_FPSTACK FALSE
+#define MONO_ARCH_FPSTACK_SIZE 0
+#ifdef SPARCV9
+#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? sparc_o0 : -1)
+#else
+#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? sparc_o0 : ((desc == 'l') ? sparc_o1 : -1))
+#endif
+#define MONO_ARCH_INST_SREG2_MASK(ins) (0)
+
+#ifdef SPARCV9
+#define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
+#else
+#define MONO_ARCH_INST_IS_REGPAIR(desc) ((desc == 'l') || (desc == 'L'))
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (((desc == 'l') ? sparc_o0 : (desc == 'L' ? (hreg1 + 1) : -1)))
+#endif
+
+
 #define MONO_ARCH_FRAME_ALIGNMENT (sizeof (gpointer) * 2)
 
 #define MONO_ARCH_CODE_ALIGNMENT 32
@@ -121,7 +162,7 @@ static void * __builtin_frame_address(int depth)
 
 gboolean mono_sparc_is_virtual_call (guint32 *code);
 
-gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, gpointer *fp);
+gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, gpointer *regs);
 
 void mono_sparc_flushw (void);
 
