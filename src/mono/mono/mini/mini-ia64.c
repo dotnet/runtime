@@ -2713,6 +2713,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+		case OP_TLS_GET:
+			ia64_adds_imm (code, ins->dreg, ins->inst_offset, IA64_TP);
+			ia64_ld8 (code, ins->dreg, ins->dreg);
+			break;
 
 			/* Exception handling */
 		case OP_CALL_HANDLER:
@@ -3566,15 +3570,6 @@ mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
 
 static gboolean tls_offset_inited = FALSE;
 
-/* code should be simply return <tls var>; */
-static int 
-read_tls_offset_from_method (void* method)
-{
-	NOT_IMPLEMENTED;
-
-	return 0;
-}
-
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 static void
@@ -3591,12 +3586,9 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
 
-		/* FIXME: */
-		/*
-		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
-		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
-		thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
-		*/
+		appdomain_tls_offset = mono_domain_get_tls_offset ();
+		lmf_tls_offset = mono_get_lmf_tls_offset ();
+		thread_tls_offset = mono_thread_get_tls_offset ();
 	}		
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
