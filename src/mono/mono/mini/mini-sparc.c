@@ -2164,12 +2164,12 @@ mono_sparc_is_virtual_call (guint32 *code)
 }
 
 /*
- * mono_sparc_get_vcall_slot_addr:
+ * mono_arch_get_vcall_slot_addr:
  *
  *  Determine the vtable slot used by a virtual call.
  */
 gpointer*
-mono_sparc_get_vcall_slot_addr (guint32 *code, gpointer *regs)
+mono_arch_get_vcall_slot_addr (guint32 *code, gpointer *regs)
 {
 	guint32 ins = code [0];
 	guint32 prev_ins = code [-1];
