@@ -113,20 +113,25 @@ typedef enum {
 	ArgOnStack,
 	ArgValuetypeAddrInIReg,
 	ArgAggregate,
-	ArgAggregateReturnInReg,
+	ArgSingleHFA,
+	ArgDoubleHFA,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
+
+typedef enum {
+	AggregateNormal,
+	AggregateSingleHFA,
+	AggregateDoubleHFA
+} AggregateType;
 
 typedef struct {
 	gint16 offset;
 	gint8  reg;
 	ArgStorage storage;
 
-	/* Only if storage == ArgAggregate/ArgAggregateReturnInReg */
-	int nregs;
-
 	/* Only if storage == ArgAggregate */
-	int nslots;
+	int nregs, nslots;
+	AggregateType atype;
 } ArgInfo;
 
 typedef struct {
@@ -219,32 +224,56 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	g_assert (info);
 	for (i = 0; i < info->num_fields; ++i) {
 		guint32 ftype = info->fields [i].field->type->type;
-		if ((info->fields [i].field->type->byref) && 
+		if (!(info->fields [i].field->type->byref) && 
 			((ftype == MONO_TYPE_R4) || (ftype == MONO_TYPE_R8))) {
 			if (hfa_type == 0)
 				hfa_type = ftype;
 			else if (hfa_type != ftype)
 				is_hfa = FALSE;
 		}
+		else
+			is_hfa = FALSE;
 	}
 	if (hfa_type == 0)
 		is_hfa = FALSE;
 
-	if (is_hfa)
-		NOT_IMPLEMENTED;
+	ainfo->storage = ArgAggregate;
+	ainfo->atype = AggregateNormal;
+
+	if (is_hfa) {
+		ainfo->atype = hfa_type == MONO_TYPE_R4 ? AggregateSingleHFA : AggregateDoubleHFA;
+		if (is_return) {
+			if (info->num_fields <= 8) {
+				ainfo->reg = 8;
+				ainfo->nregs = info->num_fields;
+				ainfo->nslots = ainfo->nregs;
+				return;
+			}
+			/* Fall through */
+		}
+		else {
+			if ((*fr) + info->num_fields > 8)
+				NOT_IMPLEMENTED;
+
+			ainfo->reg = 8 + (*fr);
+			ainfo->nregs = info->num_fields;
+			ainfo->nslots = ainfo->nregs;
+			(*fr) += info->num_fields;
+			return;
+		}
+	}
 
 	/* This also handles returning of TypedByRef used by some icalls */
 	if (is_return) {
 		if (size <= 32) {
-			ainfo->storage = ArgAggregateReturnInReg;
 			ainfo->reg = IA64_R8;
 			ainfo->nregs = (size + 7) / 8;
+			ainfo->nslots = ainfo->nregs;
 			return;
 		}
 		NOT_IMPLEMENTED;
 	}
 
-	ainfo->storage = ArgAggregate;
 	ainfo->reg = (*gr);
 	ainfo->offset = *stack_size;
 	ainfo->nslots = (size + 7) / 8;
@@ -644,6 +673,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cfg->arch.reg_in0 + cinfo->ret.reg;
 			break;
+		case ArgAggregate:
+			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+			offset = ALIGN_TO (offset, 8);
+			offset += cinfo->ret.nslots * 8;
+			cfg->ret->opcode = OP_REGOFFSET;
+			cfg->ret->inst_basereg = cfg->frame_reg;
+			cfg->ret->inst_offset = - offset;
+			break;
 		default:
 			g_assert_not_reached ();
 		}
@@ -708,6 +745,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->inst_offset = ARGS_OFFSET + ainfo->offset;
 				break;
 			case ArgAggregate:
+				inreg = FALSE;
 				break;
 			default:
 				NOT_IMPLEMENTED;
@@ -717,12 +755,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->opcode = OP_REGOFFSET;
 				inst->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
-				if (ainfo->storage == ArgAggregate) {
-					NOT_IMPLEMENTED;
-					offset += 2 * sizeof (gpointer);
-				}
-				else
+				switch (ainfo->storage) {
+				case ArgAggregate:
+					if (ainfo->atype == AggregateSingleHFA)
+						offset += ainfo->nslots * 4;
+					else
+						offset += ainfo->nslots * 8;
+					break;
+				default:
 					offset += sizeof (gpointer);
+					break;
+				}
 				offset = ALIGN_TO (offset, sizeof (gpointer));
 				inst->inst_offset = - offset;
 			}
@@ -737,7 +780,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
-	g_assert_not_reached ();
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	if (cinfo->ret.storage == ArgAggregate)
+		cfg->ret_var_is_local = TRUE;
+
+	g_free (cinfo);
 }
 
 static void
@@ -788,7 +841,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	cinfo = get_call_info (sig, sig->pinvoke);
 
-	if (cinfo->ret.storage == ArgAggregateReturnInReg) {
+	if (cinfo->ret.storage == ArgAggregate) {
 		/* The code in emit_this_vret_arg needs a local */
 		cfg->arch.ret_var_addr_local = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		((MonoInst*)cfg->arch.ret_var_addr_local)->flags |= MONO_INST_VOLATILE;
@@ -880,26 +933,44 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					 * Part of the structure is passed in registers.
 					 */
 					for (i = 0; i < ainfo->nregs; ++i) {
+						int offset, load_op, dest_reg, arg_storage;
+
 						slot = ainfo->reg + i;
+						
+						if (ainfo->atype == AggregateSingleHFA) {
+							load_op = CEE_LDIND_R4;
+							offset = i * 4;
+							dest_reg = ainfo->reg + i;
+							arg_storage = ArgInFloatReg;
+						} else if (ainfo->atype == AggregateDoubleHFA) {
+							load_op = CEE_LDIND_R8;
+							offset = i * 8;
+							dest_reg = ainfo->reg + i;
+							arg_storage = ArgInFloatReg;
+						} else {
+							load_op = CEE_LDIND_I;
+							offset = i * 8;
+							dest_reg = cfg->arch.reg_out0 + ainfo->reg + i;
+							arg_storage = ArgInIReg;
+						}
 
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->ssa_op = MONO_SSA_LOAD;
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
 
-						NEW_ICONST (cfg, offset_ins, (i * sizeof (gpointer)));
+						NEW_ICONST (cfg, offset_ins, offset);
 						MONO_INST_NEW (cfg, load2, CEE_ADD);
 						load2->inst_left = load;
 						load2->inst_right = offset_ins;
 
-						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						MONO_INST_NEW (cfg, load, load_op);
 						load->inst_left = load2;
 
 						if (i == 0)
 							set_reg = arg;
 						else
 							MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
-						add_outarg_reg (cfg, call, set_reg, ArgInIReg, cfg->arch.reg_out0 + slot, load);
-
+						add_outarg_reg (cfg, call, set_reg, arg_storage, dest_reg, load);
 						if (set_reg != call->out_args) {
 							set_reg->next = call->out_args;
 							call->out_args = set_reg;
@@ -1930,7 +2001,9 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
 		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
-		if (cinfo->ret.storage == ArgAggregateReturnInReg) {
+		ArgStorage storage = cinfo->ret.storage;
+
+		if (storage == ArgAggregate) {
 			MonoInst *local = (MonoInst*)cfg->arch.ret_var_addr_local;
 
 			/* Load address of stack space allocated for the return value */
@@ -1939,7 +2012,19 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 			ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
 
 			for (i = 0; i < cinfo->ret.nregs; ++i) {
-				ia64_st8_inc_imm_hint (code, GP_SCRATCH_REG, cinfo->ret.reg + i, 8, 0);
+				switch (cinfo->ret.atype) {
+				case AggregateNormal:
+					ia64_st8_inc_imm_hint (code, GP_SCRATCH_REG, cinfo->ret.reg + i, 8, 0);
+					break;
+				case AggregateSingleHFA:
+					ia64_stfs_inc_imm_hint (code, GP_SCRATCH_REG, cinfo->ret.reg + i, 4, 0);
+					break;
+				case AggregateDoubleHFA:
+					ia64_stfd_inc_imm_hint (code, GP_SCRATCH_REG, cinfo->ret.reg + i, 8, 0);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 			}
 		}
 		g_free (cinfo);
@@ -3225,8 +3310,30 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				break;
 			case ArgOnStack:
 				break;
+			case ArgAggregate:
+				if (ainfo->nslots != ainfo->nregs)
+					NOT_IMPLEMENTED;
+
+				g_assert (inst->opcode == OP_REGOFFSET);
+				ia64_adds_imm (code, GP_SCRATCH_REG, inst->inst_offset, inst->inst_basereg);
+				for (i = 0; i < ainfo->nregs; ++i) {
+					switch (ainfo->atype) {
+					case AggregateNormal:
+						ia64_st8_inc_imm_hint (code, GP_SCRATCH_REG, cfg->arch.reg_in0 + ainfo->reg + i, sizeof (gpointer), 0);
+						break;
+					case AggregateSingleHFA:
+						ia64_stfs_inc_imm_hint (code, GP_SCRATCH_REG, ainfo->reg + i, 4, 0);
+						break;
+					case AggregateDoubleHFA:
+						ia64_stfd_inc_imm_hint (code, GP_SCRATCH_REG, ainfo->reg + i, sizeof (gpointer), 0);
+						break;
+					default:
+						NOT_IMPLEMENTED;
+					}
+				}
+				break;
 			default:
-				NOT_IMPLEMENTED;
+				g_assert_not_reached ();
 			}
 		}
 
@@ -3271,11 +3378,12 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	int pos;
+	int i, pos;
 	int max_epilog_size = 16 * 4;
 	Ia64CodegenState code;
 	guint8 *buf;
 	CallInfo *cinfo;
+	ArgInfo *ainfo;
 
 	cfg->arch.epilog_begin_offset = cfg->code_len;
 
@@ -3303,8 +3411,32 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	/* Load returned vtypes into registers if needed */
 	cinfo = get_call_info (mono_method_signature (method), FALSE);
-	if (cinfo->ret.storage == ArgAggregate) {
-		NOT_IMPLEMENTED;
+	ainfo = &cinfo->ret;
+	switch (ainfo->storage) {
+	case ArgAggregate:
+		if (ainfo->nslots != ainfo->nregs)
+			NOT_IMPLEMENTED;
+
+		g_assert (cfg->ret->opcode == OP_REGOFFSET);
+		ia64_adds_imm (code, GP_SCRATCH_REG, cfg->ret->inst_offset, cfg->ret->inst_basereg);
+		for (i = 0; i < ainfo->nregs; ++i) {
+			switch (ainfo->atype) {
+			case AggregateNormal:
+				ia64_ld8_inc_imm_hint (code, ainfo->reg + i, GP_SCRATCH_REG, sizeof (gpointer), 0);
+				break;
+			case AggregateSingleHFA:
+				ia64_ldfs_inc_imm_hint (code, ainfo->reg + i, GP_SCRATCH_REG, 4, 0);
+				break;
+			case AggregateDoubleHFA:
+				ia64_ldfd_inc_imm_hint (code, ainfo->reg + i, GP_SCRATCH_REG, sizeof (gpointer), 0);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+		break;
+	default:
+		break;
 	}
 	g_free (cinfo);
 
@@ -3622,13 +3754,13 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
 		MonoInst *vtarg;
 
-		if (cinfo->ret.storage == ArgAggregateReturnInReg) {
+		if (cinfo->ret.storage == ArgAggregate) {
 			MonoInst *local = (MonoInst*)cfg->arch.ret_var_addr_local;
 
 			/* 
-			 * The valuetype is in r8..r11 after the call, need to be copied to
-			 * the stack. Save the address to a local here, so the call instruction
-			 * can access it.
+			 * The valuetype is in registers after the call, need to be copied 
+			 * to the stack. Save the address to a local here, so the call 
+			 * instruction can access it.
 			 */
 			g_assert (local->opcode == OP_REGOFFSET);
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, local->inst_basereg, local->inst_offset, vt_reg);

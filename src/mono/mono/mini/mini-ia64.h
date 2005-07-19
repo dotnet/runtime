@@ -176,5 +176,6 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 #define MONO_ARCH_HAVE_SAVE_UNWIND_INFO 1
+#define MONO_ARCH_HAVE_CREATE_VARS 1
 
 #endif /* __MONO_MINI_IA64_H__ */  
