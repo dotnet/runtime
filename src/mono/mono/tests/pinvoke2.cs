@@ -743,6 +743,50 @@ public class Tests {
 		return (s2.d1 == 6.0 && s2.d2 == -4.0) ? 0 : 1;
 	}
 
+	/*
+	 * IA64 struct tests
+	 */
+
+	/* Test 5: Float HFA */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct TestStruct5 {
+		public float d1, d2;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_ia64_pass_return_struct5")]
+	public static extern TestStruct5 mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, TestStruct5 s, double f3, double f4);
+
+	public static int test_0_ia64_struct5 () {
+		TestStruct5 s = new TestStruct5 ();
+		s.d1 = 5.0f;
+		s.d2 = -5.0f;
+
+		TestStruct5 s2 = mono_test_marshal_ia64_pass_return_struct5 (1.0, 2.0, s, 3.0, 4.0);
+
+		return (s2.d1 == 8.0 && s2.d2 == 2.0) ? 0 : 1;
+	}
+
+	/* Test 6: Double HFA */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct TestStruct6 {
+		public double d1, d2;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_ia64_pass_return_struct6")]
+	public static extern TestStruct6 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, TestStruct6 s, double f3, double f4);
+
+	public static int test_0_ia64_struct6 () {
+		TestStruct6 s = new TestStruct6 ();
+		s.d1 = 6.0;
+		s.d2 = -6.0;
+
+		TestStruct6 s2 = mono_test_marshal_ia64_pass_return_struct6 (1.0, 2.0, s, 3.0, 4.0);
+
+		return (s2.d1 == 9.0 && s2.d2 == 1.0) ? 0 : 1;
+	}
+	
 	/* Blittable class */
 	[DllImport("libtest")]
 	private static extern VectorList TestVectorList (VectorList vl);

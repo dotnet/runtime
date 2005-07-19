@@ -1316,6 +1316,35 @@ mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 	return s;
 }
 
+/*
+ * IA64 marshalling tests.
+ */
+typedef struct test_struct5 {
+	float d1, d2;
+} test_struct5;
+
+STDCALL test_struct5
+mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, test_struct5 s, double d3, double d4)
+{
+	s.d1 += d1 + d2;
+	s.d2 += d3 + d4;
+
+	return s;
+}
+
+typedef struct test_struct6 {
+	double d1, d2;
+} test_struct6;
+
+STDCALL test_struct6
+mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, double d3, double d4)
+{
+	s.d1 += d1 + d2;
+	s.d2 += d3 + d4;
+
+	return s;
+}
+
 static guint32 custom_res [2];
 
 STDCALL void*
