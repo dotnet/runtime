@@ -1,5 +1,5 @@
 /*
- * tramp-sparc.c: JIT trampoline code for Sparc 64
+ * tramp-sparc.c: JIT trampoline code for Sparc
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)
@@ -21,7 +21,7 @@
 #include "mini-sparc.h"
 
 /*
- * get_unbox_trampoline:
+ * mono_arch_get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -29,8 +29,8 @@
  * this argument. This method returns a pointer to a trampoline which does
  * unboxing before calling the method
  */
-static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+gpointer
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 4, reg;
@@ -58,65 +58,17 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
-/**
- * sparc_magic_trampoline:
- * @m: the method to translate
- * @code: the address of the call instruction
- * @regs: caller registers
- *
- * This method is called by the trampoline functions for methods. It calls the
- * JIT compiler to compile the method, then patches the calling instruction so
- * further calls will bypass the trampoline. For virtual methods, it finds the
- * address of the vtable slot and updates it.
- */
-static gpointer
-sparc_magic_trampoline (MonoMethod *m, guint32 *code, gpointer *regs)
+void
+mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 {
-	gpointer addr;
-	gpointer *vtable_slot;
-
-	addr = mono_compile_method (m);
-	g_assert (addr);
-
-	//printf ("M: %s %p\n", mono_method_full_name (m, TRUE), code);
-
-	if (!code)
-		return addr;
-
-	/*
-	 * Check whenever this is a virtual call, and call an unbox trampoline if
-	 * needed.
-	 */
-	if (mono_sparc_is_virtual_call (code)) {
-		/* Compute address of vtable slot */
-		vtable_slot = mono_sparc_get_vcall_slot_addr (code, regs);
-		if (m->klass->valuetype && !mono_aot_is_got_entry (code, vtable_slot))
-			addr = get_unbox_trampoline (m, addr);
-		if (mono_aot_is_got_entry (code, vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
-			*vtable_slot = addr;
+	if (sparc_inst_op (*code) == 0x1) {
+		sparc_call_simple (code, (guint8*)addr - (guint8*)code);
 	}
-	else {
-		/* Patch calling code */
-		if (sparc_inst_op (*code) == 0x1) {
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
-
-			if (mono_method_same_domain (ji, target_ji)) {
-				sparc_call_simple (code, (guint8*)addr - (guint8*)code);
-			}
-		}
-	}
-
-	return addr;
 }
 
-static void
-sparc_class_init_trampoline (MonoVTable *vtable, guint32 *code, gpointer *regs)
+void
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	mono_runtime_class_init (vtable);
-
 	/* Patch calling code */
 	sparc_nop (code);
 }
@@ -192,9 +144,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	}
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp_addr = &sparc_class_init_trampoline;
+		tramp_addr = &mono_class_init_trampoline;
 	else
-		tramp_addr = &sparc_magic_trampoline;
+		tramp_addr = &mono_magic_trampoline;
 	sparc_ldi_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 200, sparc_o0);
 	/* pass address of register table as third argument */
 	sparc_add_imm (code, FALSE, sparc_sp, regs_offset, sparc_o2);
