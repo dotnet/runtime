@@ -1407,6 +1407,12 @@ mono_image_get_filename (MonoImage *image)
 	return image->name;
 }
 
+const char*
+mono_image_get_guid (MonoImage *image)
+{
+	return image->guid;
+}
+
 const MonoTableInfo*
 mono_image_get_table_info (MonoImage *image, int table_id)
 {

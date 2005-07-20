@@ -59,6 +59,7 @@ MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
 
 const char*   mono_image_get_name       (MonoImage *image);
 const char*   mono_image_get_filename   (MonoImage *image);
+const char *  mono_image_get_guid       (MonoImage *image);
 MonoAssembly* mono_image_get_assembly   (MonoImage *image);
 gboolean      mono_image_is_dynamic     (MonoImage *image);
 char*         mono_image_rva_map        (MonoImage *image, guint32 rva);
