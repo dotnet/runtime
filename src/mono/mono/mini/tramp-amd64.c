@@ -284,12 +284,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 #define TRAMPOLINE_SIZE 34
 
-static MonoJitInfo*
-create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain)
+gpointer
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
-	MonoJitInfo *ji;
-	guint8 *code, *buf, *tramp;
-	int jump_offset;
+	guint8 *code, *buf, *tramp, *real_code;
+	int size, jump_offset;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
@@ -319,22 +318,25 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	 * FIXME: Changing the size to code - buf causes strange crashes during
 	 * mcs bootstrap.
 	 */
-	ji->code_start = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
-	ji->code_size = code - buf;
+	real_code = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+	size = code - buf;
 	mono_domain_unlock (domain);
 
-	memcpy (ji->code_start, buf, ji->code_size);
+	memcpy (real_code, buf, size);
 
 	/* Fix up jump */
 	g_assert ((((gint64)tramp) >> 32) == 0);
-	code = (guint8*)ji->code_start + jump_offset;
+	code = (guint8*)real_code + jump_offset;
 	amd64_jump_disp (code, tramp - code);
 
 	mono_jit_stats.method_trampolines++;
 
-	mono_arch_flush_icache (ji->code_start, ji->code_size);
+	if (code_len)
+		*code_len = size;
 
-	return ji;
+	mono_arch_flush_icache (real_code, size);
+
+	return real_code;
 }	
 
 MonoJitInfo*

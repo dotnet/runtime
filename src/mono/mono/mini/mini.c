@@ -6944,7 +6944,11 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	if (code)
 		return code;
 
+#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+	code = mono_arch_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
+#else
 	code = mono_arch_create_class_init_trampoline (vtable);
+#endif
 
 	/* store trampoline address */
 	mono_domain_lock (vtable->domain);
@@ -6967,6 +6971,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 {
 	MonoJitInfo *ji;
 	gpointer code;
+#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+	guint32 code_size;
+#endif
 
 	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_create_jump_trampoline (domain, mono_marshal_get_synchronized_wrapper (method), FALSE);
@@ -6981,7 +6988,16 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	if (code)
 		return code;
 
+#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
+
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->code_start = code;
+	ji->code_size = code_size;
+	ji->method = method;
+#else
 	ji = mono_arch_create_jump_trampoline (method);
+#endif
 
 	/*
 	 * mono_delegate_ctor needs to find the method metadata from the 
@@ -7012,7 +7028,11 @@ mono_create_jit_trampoline (MonoMethod *method)
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
+#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+	tramp =  mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get (), NULL);
+#else
 	tramp = mono_arch_create_jit_trampoline (method);
+#endif
 	
 	mono_domain_lock (domain);
 	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
@@ -7029,7 +7049,22 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 {
 	gpointer tramp;
 
+#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+	MonoDomain *domain = mono_domain_get ();
+	guint8 *buf, *start;
+
+	mono_domain_lock (domain);
+	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
+	mono_domain_unlock (domain);
+
+	*(gpointer*)buf = image;
+	buf += sizeof (gpointer);
+	*(guint32*)buf = token;
+
+	tramp = mono_arch_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
+#else
 	tramp = mono_arch_create_jit_trampoline_from_token (image, token);
+#endif
 
 	mono_jit_stats.method_trampolines++;
 
