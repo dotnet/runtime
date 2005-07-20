@@ -311,8 +311,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 
-	ji = g_new0 (MonoJitInfo, 1);
-
 	mono_domain_lock (domain);
 	/* 
 	 * FIXME: Changing the size to code - buf causes strange crashes during
@@ -338,86 +336,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	return real_code;
 }	
-
-MonoJitInfo*
-mono_arch_create_jump_trampoline (MonoMethod *method)
-{
-	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get ());
-
-	ji->method = method;
-	return ji;
-}
-
-/**
- * mono_arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. I also replaces the
- * corresponding vtable entry (see amd64_magic_trampoline).
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_jit_trampoline (MonoMethod *method)
-{
-	MonoJitInfo *ji;
-	gpointer code_start;
-
-	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
-}
-
-gpointer
-mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji;
-	gpointer code_start;
-	guint8 *buf, *start;
-
-	mono_domain_lock (domain);
-	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
-	mono_domain_unlock (domain);
-
-	*(gpointer*)buf = image;
-	buf += sizeof (gpointer);
-	*(guint32*)buf = token;
-
-	ji = create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain);
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
-}
-
-/**
- * mono_arch_create_class_init_trampoline:
- *  @vtable: the type to initialize
- *
- * Creates a trampoline function to run a type initializer. 
- * If the trampoline is called, it calls mono_runtime_class_init with the
- * given vtable, then patches the caller code so it does not get called any
- * more.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_class_init_trampoline (MonoVTable *vtable)
-{
-	MonoJitInfo *ji;
-	gpointer code;
-
-	ji = create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain);
-	code = ji->code_start;
-	g_free (ji);
-
-	return code;
-}
 
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
