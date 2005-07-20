@@ -917,6 +917,12 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
+#ifdef PLATFORM_WIN32
+		/* Detach console when executing IMAGE_SUBSYSTEM_WINDOWS_GUI on win32 */
+		if (!mono_compile_aot && ((MonoCLIImageInfo*)(mono_assembly_get_image (assembly)->image_info))->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
+			FreeConsole ();
+#endif
+
 		main_args.domain = domain;
 		main_args.file = aname;		
 		main_args.argc = argc - i;
