@@ -23,6 +23,12 @@
 
 #if defined(__GNUC__) && defined(__i386__)
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("jmp 1f; .section writetext, \"awx\"; 1: movl $" #var "@ntpoff, %0; jmp 2f; .previous; 2:" : "=r" (offset));
+#elif defined(__x86_64__)
+#if defined(PIC)
+#define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
+#else
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("jmp 1f; .section writetext, \"awx\"; 1: movl $" #var "@TPOFF, %0; jmp 2f; .previous; 2:" : "=r" (offset));
+#endif
 #elif defined(__ia64__)
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @tprel(" #var "#), r0 ;;\n" : "=r" (offset));
 #else
