@@ -2970,6 +2970,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		memset (method_slots, 0, sizeof (method_slots_default));
 	}
 handle_parent:
+	mono_class_setup_vtable (klass);
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
@@ -3136,6 +3137,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 		memset (method_slots, 0, sizeof (method_slots_default));
 	}
 handle_parent:
+	mono_class_setup_vtable (klass);
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
 		match = 0;
