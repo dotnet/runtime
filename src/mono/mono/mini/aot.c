@@ -1417,6 +1417,9 @@ mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 to
 	res = mono_aot_get_method_from_token_inner (domain, image, token, &klass);
 	LeaveCriticalSection (&aot_mutex);
 
+	if (!res)
+		return NULL;
+
 	if (klass)
 		mono_runtime_class_init (mono_class_vtable (domain, klass));
 
