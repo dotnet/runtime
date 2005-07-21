@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 public class Tests {
 
@@ -137,7 +138,7 @@ public class Tests {
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_array")]
-	public static extern int mono_test_marshal_out_array ([Out] int [] a1);
+	public static extern int mono_test_marshal_out_array ([Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int [] a1, int n);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
 	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
@@ -265,10 +266,10 @@ public class Tests {
 		return res;
 	}
 
-	public static int test_0_marshal_inout_array () {
+	public static int test_0_marshal_out_array () {
 		int [] a1 = new int [50];
 
-		int res = mono_test_marshal_out_array (a1);
+		int res = mono_test_marshal_out_array (a1, 0);
 
 		for (int i = 0; i < 50; i++)
 			if (a1 [i] != i) {
@@ -997,5 +998,54 @@ public class Tests {
 		return 0;
 	}
 
+	/*
+	 * Invoking pinvoke methods through delegates
+	 */
+
+	delegate int MyDelegate (string name);
+
+	[DllImport ("libtest", EntryPoint="mono_test_puts_static")]
+	public static extern int puts_static (string name);
+
+	public static int test_0_invoke_pinvoke_through_delegate () {
+		puts_static ("A simple Test for PInvoke 1");
+
+		MyDelegate d = new MyDelegate (puts_static);
+		d ("A simple Test for PInvoke 2");
+
+		object [] args = {"A simple Test for PInvoke 3"};
+		d.DynamicInvoke (args);
+
+		return 0;
+	}
+
+	/*
+	 * Missing virtual pinvoke methods
+	 */
+
+	public class T {
+
+		public virtual object MyClone ()
+		{
+			return null;
+		}
+	}
+
+	public class T2 : T {
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		public override extern object MyClone ();
+	}
+
+	public static int test_0_missing_virtual_pinvoke_method () {
+		T2 t = new T2 ();
+
+		try {
+			t.MyClone ();
+		} catch (Exception ex) {
+			return 0;
+		}
+		
+		return 1;
+	}
 }
 
