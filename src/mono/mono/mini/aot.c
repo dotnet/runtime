@@ -978,8 +978,12 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 					ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
 				else if (wrapper_type == MONO_WRAPPER_LDFLD_REMOTE)
 					ji->data.method = mono_marshal_get_ldfld_remote_wrapper (klass);
-				else
+				else if (wrapper_type == MONO_WRAPPER_STFLD_REMOTE)
+					ji->data.method = mono_marshal_get_stfld_remote_wrapper (klass);
+				else if (wrapper_type == MONO_WRAPPER_ISINST)
 					ji->data.method = mono_marshal_get_isinst (klass);
+				else
+					g_assert_not_reached ();
 				break;
 			}
 			case MONO_WRAPPER_STELEMREF:
