@@ -4215,16 +4215,18 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (t->byref)
-			break;
-
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
 
+		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))
+			break;
+
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref)
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
@@ -4233,6 +4235,8 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
 				
 		mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref)
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (t->type == MONO_TYPE_VALUETYPE) {
 			/*
@@ -4256,7 +4260,21 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Check for null */
 		mono_mb_emit_ldloc (mb, conv_arg);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-							
+
+		if (t->byref) {
+			mono_mb_emit_ldarg (mb, argnum);
+
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+
+			mono_mb_emit_byte (mb, CEE_CALL);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_CALLVIRT);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+			mono_mb_emit_byte (mb, CEE_STIND_I);
+		}
+
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 		mono_mb_emit_byte (mb, CEE_CALL);
@@ -4271,7 +4289,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
-		mono_mb_emit_ldloc (mb, conv_arg);
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT:
@@ -4380,7 +4401,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CALLVIRT);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
 
-		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));				
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	default:
