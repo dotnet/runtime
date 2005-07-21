@@ -96,6 +96,55 @@ public class Tests
 	}
 
 	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_out_custom (int i,  
+															[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5"), Out] out object number, int j);
+
+	public static int test_0_pass_out () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		object o = 0;
+		int res = mono_test_marshal_pass_out_custom (5, out o, 5);
+
+		/* 10 + 5 + 5 + 5 */
+		if ((int)o != 25)
+			return 1;
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 2;
+		if (Marshal1.cleanup_native_count != 1)
+			return 3;
+
+		return 0;
+	}
+
+
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_byref_custom (int i,  
+															[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] ref object number, int j);
+
+	public static int test_0_pass_ref () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		object o = 10;
+		int res = mono_test_marshal_pass_byref_custom (5, ref o, 5);
+
+		/* 10 + 5 + 5 + 5 */
+		if ((int)o != 25)
+			return 1;
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 2;
+		if (Marshal1.cleanup_native_count != 1)
+			return 3;
+
+		return 0;
+	}
+
+	[DllImport ("libtest")]
 	[return : MarshalAs(UnmanagedType.CustomMarshaler,MarshalTypeRef = typeof
 						(Marshal1), MarshalCookie = "5")]
 	private static extern object mono_test_marshal_pass_return_custom_null (int i,  

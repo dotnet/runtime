@@ -1357,6 +1357,25 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 	return &custom_res;
 }
 
+STDCALL int
+mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
+{
+	custom_res [0] = 0;
+	custom_res [1] = i + j + 10;
+
+	*ptr = custom_res;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_pass_byref_custom (int i, guint32 **ptr, int j)
+{
+	(*ptr)[1] += i + j;
+
+	return 0;
+}
+
 STDCALL void*
 mono_test_marshal_pass_return_custom2 (int i, guint32 *ptr, int j)
 {
