@@ -68,6 +68,7 @@ typedef struct MonoCompileArch {
 	gint32 reg_saved_ar_pfs;
 	gint32 reg_saved_b0;
 	gint32 reg_saved_sp;
+	gint32 reg_saved_return_val;
 	guint32 prolog_end_offset, epilog_begin_offset, epilog_end_offset;
 	void *ret_var_addr_local;
 	unw_dyn_region_info_t *r_pro;

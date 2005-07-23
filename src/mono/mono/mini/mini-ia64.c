@@ -115,7 +115,7 @@ typedef enum {
 	ArgAggregate,
 	ArgSingleHFA,
 	ArgDoubleHFA,
-	ArgNone /* only in pair_storage */
+	ArgNone
 } ArgStorage;
 
 typedef enum {
@@ -358,6 +358,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			break;
 		}
 		case MONO_TYPE_VOID:
+			cinfo->ret.storage = ArgNone;
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
@@ -473,9 +474,24 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
-	g_assert_not_reached ();
+	int k;
+	CallInfo *cinfo = get_call_info (csig, FALSE);
+	guint32 args_size = cinfo->stack_usage;
 
-	return 0;
+	/* The arguments are saved to a stack area in mono_arch_instrument_prolog */
+	if (csig->hasthis) {
+		arg_info [0].offset = 0;
+	}
+
+	for (k = 0; k < param_count; k++) {
+		arg_info [k + 1].offset = ((k + csig->hasthis) * 8);
+		/* FIXME: */
+		arg_info [k + 1].size = 0;
+	}
+
+	g_free (cinfo);
+
+	return args_size;
 }
 
 /*
@@ -565,6 +581,7 @@ static void
 mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 {
 	CallInfo *cinfo;
+	guint32 reserved_regs = 3;
 
 	if (cfg->arch.reg_local0 > 0)
 		/* Already done */
@@ -573,13 +590,29 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 	cinfo = get_call_info (mono_method_signature (cfg->method), FALSE);
 
 	/* Three registers are reserved for use by the prolog/epilog */
+	reserved_regs = 3;
+
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)) {
+		/* One registers is needed by instrument_epilog to save the return value */
+		reserved_regs ++;
+		if (cinfo->reg_usage < 2)
+			/* Number of arguments passed to function call in instrument_prolog */
+			cinfo->reg_usage = 2;
+	}
+
 	cfg->arch.reg_in0 = 32;
-	cfg->arch.reg_local0 = cfg->arch.reg_in0 + cinfo->reg_usage + 3;
+	cfg->arch.reg_local0 = cfg->arch.reg_in0 + cinfo->reg_usage + reserved_regs;
 	cfg->arch.reg_out0 = cfg->arch.reg_local0 + 8;
 
 	cfg->arch.reg_saved_ar_pfs = cfg->arch.reg_local0 - 1;
 	cfg->arch.reg_saved_b0 = cfg->arch.reg_local0 - 2;
 	cfg->arch.reg_saved_sp = cfg->arch.reg_local0 - 3;
+
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)) {
+		cfg->arch.reg_saved_return_val = cfg->arch.reg_local0 - 4;
+	}
 
 	/* 
 	 * Need to allocate at least 2 out register for use by CEE_THROW / the system
@@ -3171,13 +3204,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	unw_dyn_region_info_t *r_pro;
 	int unw_op_count;
-
+	
 	sig = mono_method_signature (method);
 	pos = 0;
 
 	cinfo = get_call_info (sig, FALSE);
 
 	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		cfg->code_size += 1024;
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		cfg->code_size += 1024;
+
 	cfg->native_code = g_malloc (cfg->code_size);
 
 	ia64_codegen_init (code, cfg->native_code);
@@ -3385,9 +3424,12 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 1024;
+
 	cfg->arch.epilog_begin_offset = cfg->code_len;
 
-	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+	while (cfg->code_len + max_epilog_size > cfg->code_size) {
 		cfg->code_size *= 2;
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 		mono_jit_stats.code_reallocs++;
@@ -3555,17 +3597,146 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
-	NOT_IMPLEMENTED;
+	Ia64CodegenState code;
+	CallInfo *cinfo = NULL;
+	MonoMethodSignature *sig;
+	MonoInst *ins;
+	int i, n, stack_area = 0;
 
-	return NULL;
+	ia64_codegen_init (code, p);
+
+	/* Keep this in sync with mono_arch_get_argument_info */
+
+	if (enable_arguments) {
+		/* Allocate a new area on the stack and save arguments there */
+		sig = mono_method_signature (cfg->method);
+
+		cinfo = get_call_info (sig, FALSE);
+
+		n = sig->param_count + sig->hasthis;
+
+		stack_area = ALIGN_TO (n * 8, 16);
+
+		ia64_movl (code, GP_SCRATCH_REG, stack_area);
+
+		ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
+
+		/* FIXME: Allocate out registers */
+
+		ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_SP);
+
+		/* Required by the ABI */
+		ia64_adds_imm (code, IA64_SP, -16, IA64_SP);
+
+		mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, cfg->method);
+		ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
+
+		/* Save arguments to the stack */
+		for (i = 0; i < n; ++i) {
+			ins = cfg->varinfo [i];
+
+			if (ins->opcode == OP_REGVAR) {
+				ia64_movl (code, GP_SCRATCH_REG, (i * 8));
+				ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
+				ia64_st8 (code, GP_SCRATCH_REG, ins->dreg);
+			}
+			else {
+				ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
+				ia64_add (code, GP_SCRATCH_REG, ins->inst_basereg, GP_SCRATCH_REG);
+				ia64_ld8 (code, GP_SCRATCH_REG2, GP_SCRATCH_REG);
+				ia64_movl (code, GP_SCRATCH_REG, (i * 8));				
+				ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
+				ia64_st8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+			}
+		}
+	}
+	else
+		ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_R0);
+
+	mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, cfg->method);
+	ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
+
+	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
+
+	if (enable_arguments) {
+		ia64_movl (code, GP_SCRATCH_REG, stack_area);
+
+		ia64_add (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
+
+		ia64_adds_imm (code, IA64_SP, 16, IA64_SP);
+
+		g_free (cinfo);
+	}
+
+	ia64_codegen_close (code);
+
+	return code.buf;
 }
 
 void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
-	NOT_IMPLEMENTED;
+	Ia64CodegenState code;
+	CallInfo *cinfo = NULL;
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 
-	return NULL;
+	ia64_codegen_init (code, p);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	/* Save return value + pass it to func */
+	switch (cinfo->ret.storage) {
+	case ArgNone:
+		break;
+	case ArgInIReg:
+		ia64_mov (code, cfg->arch.reg_saved_return_val, cinfo->ret.reg);
+		ia64_mov (code, cfg->arch.reg_out0 + 1, cinfo->ret.reg);
+		break;
+	case ArgInFloatReg:
+		ia64_adds_imm (code, IA64_SP, -16, IA64_SP);
+		ia64_adds_imm (code, GP_SCRATCH_REG, 16, IA64_SP);
+		ia64_stfd_hint (code, GP_SCRATCH_REG, cinfo->ret.reg, 0);
+		ia64_fmov (code, 8 + 1, cinfo->ret.reg);
+		break;
+	case ArgValuetypeAddrInIReg:
+		ia64_mov (code, cfg->arch.reg_out0 + 1, cfg->arch.reg_in0 + cinfo->ret.reg);
+		break;
+	case ArgAggregate:
+		NOT_IMPLEMENTED;
+		break;
+	default:
+		break;
+	}
+
+	g_free (cinfo);
+
+	mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
+	ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
+	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
+
+	/* Restore return value */
+	switch (cinfo->ret.storage) {
+	case ArgNone:
+		break;
+	case ArgInIReg:
+		ia64_mov (code, cinfo->ret.reg, cfg->arch.reg_saved_return_val);
+		break;
+	case ArgInFloatReg:
+		ia64_adds_imm (code, GP_SCRATCH_REG, 16, IA64_SP);
+		ia64_ldfd (code, cinfo->ret.reg, GP_SCRATCH_REG);
+		break;
+	case ArgValuetypeAddrInIReg:
+		break;
+	case ArgAggregate:
+		break;
+	default:
+		break;
+	}
+
+	ia64_codegen_close (code);
+
+	return code.buf;
 }
 
 void
