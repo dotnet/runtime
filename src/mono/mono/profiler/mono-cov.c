@@ -55,7 +55,7 @@ check_partial_coverage (MonoProfiler *prof, MonoMethod *method)
 	mono_profiler_coverage_get (prof, method, coverage_callback);
 	if (prof->bb_coverage) {
 		char *name = mono_method_full_name (method, TRUE);
-		g_print ("Partial coverage: %s\n", name + 3);
+		g_print ("Partial coverage: %s\n", name);
 		g_free (name);
 		for (tmp = prof->bb_coverage; tmp; tmp = tmp->next) {
 			g_print ("\t%s\n", (char*)tmp->data);
@@ -101,7 +101,7 @@ cov_shutdown (MonoProfiler *prof)
 			continue;
 		}
 		name = mono_method_full_name (method, TRUE);
-		g_print ("Not covered: %s\n", name + 3);
+		g_print ("Not covered: %s\n", name);
 		g_free (name);
 	}
 }
