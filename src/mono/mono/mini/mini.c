@@ -155,9 +155,7 @@ static MonoDebugOptions debug_options;
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
  */
-guint8 *mono_generic_trampoline_code = NULL;
-
-static guint8* trampoline_code [MONO_TRAMPOLINE_NUM];
+guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
 gboolean
 mono_running_on_valgrind (void)
@@ -6914,20 +6912,18 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 static void
 mono_init_trampolines (void)
 {
-	trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 #ifdef MONO_ARCH_HAVE_PIC_AOT
-	trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
+	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
 #endif
-
-	mono_generic_trampoline_code = trampoline_code [MONO_TRAMPOLINE_GENERIC];
 }
 
 guint8 *
 mono_get_trampoline_code (MonoTrampolineType tramp_type)
 {
-	return trampoline_code [tramp_type];
+	return mono_trampoline_code [tramp_type];
 }
 
 gpointer

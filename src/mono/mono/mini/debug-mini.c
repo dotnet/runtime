@@ -49,15 +49,6 @@ mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 b
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return;
 
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
-		return;
-	if ((method->wrapper_type != MONO_WRAPPER_NONE) &&
-	    (method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE))
-		return;
-
 	info = g_new0 (MiniDebugMethodInfo, 1);
 	info->breakpoint_id = breakpoint_id;
 
@@ -556,5 +547,5 @@ mono_debug_add_icall_wrapper (MonoMethod *method, MonoJitICallInfo* callinfo)
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return;
 
-	// mono_debug_add_wrapper (method, callinfo->func, mono_get_root_domain ());
+	// mono_debug_add_wrapper (method, callinfo->wrapper, callinfo->func);
 }
