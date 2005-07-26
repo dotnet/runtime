@@ -3930,7 +3930,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto unverified;
 			}
 
-			if (cmethod && virtual && mono_method_signature (cmethod)->generic_param_count) {
+			if (cmethod && virtual && 
+			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
+		 	    !((cmethod->flags & METHOD_ATTRIBUTE_FINAL) && 
+			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
+			    mono_method_signature (cmethod)->generic_param_count) {
 				MonoInst *this_temp, *store;
 				MonoInst *iargs [3];
 
