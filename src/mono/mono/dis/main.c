@@ -551,7 +551,7 @@ pinvoke_flags (guint32 f)
 	int cset = f & PINVOKE_ATTRIBUTE_CHAR_SET_MASK;
 	int cconv = f & PINVOKE_ATTRIBUTE_CALL_CONV_MASK;
 	char *s;
-	
+
 	g_string_append (str, map (cset, pinvoke_char_set_map));
 	g_string_append (str, map (cconv, pinvoke_call_conv_map));
 	g_string_append (str, flags (f, pinvoke_flags_map));
@@ -581,7 +581,7 @@ static dis_map_t managed_impl_flags [] = {
 	{ METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG,    "preservesig " },
 	{ METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL,   "internalcall " },
 	{ METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED,    "synchronized " },
-	{ METHOD_IMPL_ATTRIBUTE_NOINLINING,      "noinline " },
+	{ METHOD_IMPL_ATTRIBUTE_NOINLINING,      "noinlining " },
 	{ 0, NULL }
 };
 
