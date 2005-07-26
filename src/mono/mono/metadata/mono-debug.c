@@ -835,10 +835,10 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	char *res = NULL;
 	gint32 offset;
 
-	mono_loader_lock ();
+	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->handle || !minfo->handle->symfile || !minfo->handle->symfile->offset_table) {
-		mono_loader_unlock ();
+		mono_debugger_unlock ();
 		return NULL;
 	}
 
@@ -847,7 +847,7 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	if (offset >= 0)
 		res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
 
-	mono_loader_unlock ();
+	mono_debugger_unlock ();
 	return res;
 }
 
@@ -872,15 +872,15 @@ mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset, g
 	char *res;
 	MonoDebugMethodInfo *minfo;
 
-	mono_loader_lock ();
+	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->handle || !minfo->handle->symfile) {
-		mono_loader_unlock ();
+		mono_debugger_unlock ();
 		return NULL;
 	}
 
 	res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
-	mono_loader_unlock ();
+	mono_debugger_unlock ();
 	return res;
 }
 
@@ -902,16 +902,16 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomai
 	if (address < 0)
 		return -1;
 
-	mono_loader_lock ();
+	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
 	    !minfo->handle->symfile->offset_table) {
-		mono_loader_unlock ();
+		mono_debugger_unlock ();
 		return -1;
 	}
 
 	res = il_offset_from_address (minfo, domain, address);
-	mono_loader_unlock ();
+	mono_debugger_unlock ();
 	return res;
 }
 
@@ -934,21 +934,21 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDom
 	if (il_offset < 0)
 		return -1;
 
-	mono_loader_lock ();
+	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
 	    !minfo->handle->symfile->offset_table) {
-		mono_loader_unlock ();
+		mono_debugger_unlock ();
 		return -1;
 	}
 
 	jit = find_method (minfo, domain);
 	if (!jit) {
-		mono_loader_unlock ();
+		mono_debugger_unlock ();
 		return -1;
 	}
 
 	res = _mono_debug_address_from_il_offset (jit, il_offset);
-	mono_loader_unlock ();
+	mono_debugger_unlock ();
 	return res;
 }
