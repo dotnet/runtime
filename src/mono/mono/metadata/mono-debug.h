@@ -24,6 +24,7 @@ typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 typedef struct _MonoDebugVarInfo		MonoDebugVarInfo;
 typedef struct _MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct _MonoDebugMethodAddress		MonoDebugMethodAddress;
+typedef struct _MonoDebugWrapperData		MonoDebugWrapperData;
 typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
 typedef struct _MonoDebuggerMetadataInfo	MonoDebuggerMetadataInfo;
@@ -95,7 +96,8 @@ struct _MonoSymbolTable {
 typedef enum {
 	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
 	MONO_DEBUG_DATA_ITEM_METHOD,
-	MONO_DEBUG_DATA_ITEM_CLASS
+	MONO_DEBUG_DATA_ITEM_CLASS,
+	MONO_DEBUG_DATA_ITEM_WRAPPER
 } MonoDebugDataItemType;
 
 struct _MonoDebugHandle {
@@ -137,6 +139,16 @@ struct _MonoDebugMethodAddress {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
+struct _MonoDebugWrapperData {
+	guint32 size;
+	guint32 code_size;
+	MonoMethod *method;
+	const guint8 *code_start;
+	const gchar *name;
+	const gchar *cil_code;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
+};
+
 struct _MonoDebugClassEntry {
 	guint32 size;
 	guint32 symfile_id;
@@ -168,7 +180,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				50
+#define MONO_DEBUGGER_VERSION				51
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;

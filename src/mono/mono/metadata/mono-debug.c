@@ -340,6 +340,76 @@ write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
+static MonoDebugWrapperData *
+mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
+{
+	MonoMethodHeader *header;
+	MonoDebugWrapperData *wrapper;
+	char buffer [BUFSIZ];
+	guint8 *ptr, *oldptr;
+	guint32 i, size, total_size, max_size;
+	gint32 last_il_offset = 0, last_native_offset = 0;
+
+	if (!in_the_mono_debugger)
+		return NULL;
+
+	mono_debugger_lock ();
+
+	header = ((MonoMethodNormal *) method)->header;
+
+	max_size = 24 * jit->num_line_numbers;
+	if (max_size > BUFSIZ)
+		ptr = oldptr = g_malloc (max_size);
+	else
+		ptr = oldptr = buffer;
+
+	write_leb128 (jit->prologue_end, ptr, &ptr);
+	write_leb128 (jit->epilogue_begin, ptr, &ptr);
+	write_leb128 (jit->num_line_numbers, ptr, &ptr);
+	for (i = 0; i < jit->num_line_numbers; i++) {
+		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
+
+		write_sleb128 (lne->il_offset - last_il_offset, ptr, &ptr);
+		write_sleb128 (lne->native_offset - last_native_offset, ptr, &ptr);
+
+		last_il_offset = lne->il_offset;
+		last_native_offset = lne->native_offset;
+	}
+
+	size = ptr - oldptr;
+	g_assert (size < max_size);
+	total_size = size + sizeof (MonoDebugWrapperData);
+
+	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
+		// FIXME: Maybe we should print a warning here.
+		//        This should only happen for very big methods, for instance
+		//        with more than 40.000 line numbers and more than 5.000
+		//        local variables.
+		mono_debugger_unlock ();
+		return NULL;
+	}
+
+	wrapper = (MonoDebugWrapperData *) allocate_data_item (MONO_DEBUG_DATA_ITEM_WRAPPER, total_size);
+
+	wrapper->method = method;
+	wrapper->size = total_size;
+	wrapper->code_start = jit->code_start;
+	wrapper->code_size = jit->code_size;
+	wrapper->name = mono_method_full_name (method, TRUE);
+
+	wrapper->cil_code = mono_disasm_code (
+		NULL, method, header->code, header->code + header->code_size);
+
+	memcpy (&wrapper->data, oldptr, size);
+
+	if (max_size > BUFSIZ)
+		g_free (oldptr);
+
+	mono_debugger_unlock ();
+
+	return wrapper;
+}
+
 /*
  * This is called by the JIT to tell the debugging code about a newly
  * compiled method.
@@ -359,11 +429,11 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+	    (method->wrapper_type != MONO_WRAPPER_NONE)) {
+		mono_debug_add_wrapper (method, jit);
 		return NULL;
-
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		return NULL;
+	}
 
 	mono_debugger_lock ();
 
@@ -477,9 +547,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	hash->method_id = address->method_id;
 
 	g_hash_table_insert (method_hash, hash, address);
-
-	if (in_the_mono_debugger)
-		mono_debugger_add_method (jit);
 
 	mono_debugger_unlock ();
 
@@ -634,9 +701,6 @@ mono_debug_start_add_type (MonoClass *klass)
 	handle = _mono_debug_get_image (klass->image);
 	if (!handle)
 		return;
-
-	if (in_the_mono_debugger)
-		mono_debugger_add_type (handle, klass);
 }
 
 static guint32

@@ -32,7 +32,7 @@ struct _MonoDebuggerBreakpointInfo {
  * Address of the x86 trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
  */
-extern guint8 *mono_generic_trampoline_code;
+extern guint8 *mono_trampoline_code [];
 
 #ifndef PLATFORM_WIN32
 
@@ -80,15 +80,7 @@ void            mono_debugger_event                       (MonoDebuggerEvent eve
 
 void            mono_debugger_add_symbol_file             (MonoDebugHandle *handle);
 void            mono_debugger_start_add_type              (MonoDebugHandle *symfile, MonoClass *klass);
-void            mono_debugger_add_type                    (MonoDebugHandle *symfile, MonoClass *klass);
 void            mono_debugger_add_builtin_types           (MonoDebugHandle *symfile);
-
-void            mono_debugger_add_method                  (MonoDebugMethodJitInfo *jit);
-
-void            mono_debugger_add_wrapper                 (MonoMethod *wrapper,
-							   MonoDebugMethodJitInfo *jit,
-							   gpointer addr);
-
 
 int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint           (int breakpoint_id);

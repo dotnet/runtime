@@ -131,16 +131,6 @@ mono_debugger_start_add_type (MonoDebugHandle *symfile, MonoClass *klass)
 	must_reload_symtabs = TRUE;
 }
 
-void
-mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
-{
-}
-
-void
-mono_debugger_add_method (MonoDebugMethodJitInfo *jit)
-{
-}
-
 MonoReflectionMethod *
 ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token)
 {
