@@ -2848,7 +2848,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	}
 
 	/* for the building corlib use System.Array from it */
-	if (image->assembly && image->assembly->dynamic && strcmp (image->assembly_name, "mscorlib") == 0) {
+	if (image->assembly && image->assembly->dynamic && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
 		parent = mono_class_from_name (image, "System", "Array");
 		corlib_type = TRUE;
 	} else if (mono_defaults.generic_array_class) {
