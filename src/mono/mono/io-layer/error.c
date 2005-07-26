@@ -116,6 +116,8 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	case ETIMEDOUT: result = WSAENETDOWN; break;
 	case EWOULDBLOCK: result = WSAEWOULDBLOCK; break;
 	case EADDRNOTAVAIL: result = WSAEADDRNOTAVAIL; break;
+	/* This might happen with unix sockets */
+	case ENOENT: result = WSAECONNREFUSED; break;
 	default:
 		sys_error = strerror (code);
 		msg = g_locale_to_utf8 (sys_error, strlen (sys_error), NULL, NULL, NULL);
