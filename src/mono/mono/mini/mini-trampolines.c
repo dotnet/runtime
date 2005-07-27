@@ -108,7 +108,13 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 			addr = mono_arch_get_unbox_trampoline (method, addr);
 	}
 
-	if (is_got_entry || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+	/*
+	 * Since AOT code is only used in the root domain, 
+	 * mono_domain_get () != mono_get_root_domain () means the calling method
+	 * is AppDomain:InvokeInDomain, so this is the same check as in 
+	 * mono_method_same_domain () but without loading the metadata for the method.
+	 */
+	if ((is_got_entry && (mono_domain_get () == mono_get_root_domain ())) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 		*vtable_slot = addr;
 
 	return addr;
