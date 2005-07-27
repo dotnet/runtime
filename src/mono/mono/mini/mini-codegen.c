@@ -444,7 +444,7 @@ free_up_reg (MonoCompile *cfg, InstList *item, MonoInst *ins, int hreg, gboolean
 }
 
 static MonoInst*
-create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins, gboolean fp)
+create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins, const unsigned char *ip, gboolean fp)
 {
 	MonoInst *copy;
 
@@ -455,8 +455,10 @@ create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins, gboolean fp
 
 	copy->dreg = dest;
 	copy->sreg1 = src;
+	copy->cil_code = ip;
 	if (ins) {
 		copy->next = ins->next;
+		copy->cil_code = ins->cil_code;
 		ins->next = copy;
 	}
 	DEBUG (g_print ("\tforced copy from %s to %s\n", mono_regname_full (src, fp), mono_regname_full (dest, fp)));
@@ -796,6 +798,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		int dest_dreg, dest_sreg1, dest_sreg2, clob_reg;
 		int dreg_high, sreg1_high;
 		guint32 dreg_mask, sreg1_mask, sreg2_mask, mask;
+		const unsigned char *ip;
 		--i;
 		ins = tmp->data;
 		spec = ins_spec [ins->opcode];
@@ -812,6 +815,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
+
+		ip = ins->cil_code;
 
 		/*
 		 * FIXED REGS
@@ -897,7 +902,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (rs->ifree_mask & (1 << dest_sreg2)) {
 				if (is_global_ireg (ins->sreg2)) {
 					/* Argument already in hard reg, need to copy */
-					MonoInst *copy = create_copy_ins (cfg, dest_sreg2, ins->sreg2, NULL, FALSE);
+					MonoInst *copy = create_copy_ins (cfg, dest_sreg2, ins->sreg2, NULL, ip, FALSE);
 					insert_before_ins (ins, tmp, copy);
 				}
 				else {
@@ -929,12 +934,12 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					prev_dreg = ins->dreg;
 					assign_ireg (rs, ins->dreg, new_dest);
 					clob_dreg = ins->dreg;
-					create_copy_ins (cfg, dest_sreg2, new_dest, ins, FALSE);
+					create_copy_ins (cfg, dest_sreg2, new_dest, ins, ip, FALSE);
 					need_spill = FALSE;
 				}
 
 				if (is_global_ireg (ins->sreg2)) {
-					MonoInst *copy = create_copy_ins (cfg, dest_sreg2, ins->sreg2, NULL, FALSE);
+					MonoInst *copy = create_copy_ins (cfg, dest_sreg2, ins->sreg2, NULL, ip, FALSE);
 					insert_before_ins (ins, tmp, copy);
 				}
 				else {
@@ -1041,7 +1046,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						val = get_register_spilling (cfg, tmp, ins, mask, reg2, fp);
 
 					/* Reallocate hreg to the correct register */
-					create_copy_ins (cfg, rs->iassign [reg2], val, ins, fp);
+					create_copy_ins (cfg, rs->iassign [reg2], val, ins, ip, fp);
 
 					mono_regstate_free_int (rs, rs->iassign [reg2]);
 				}
@@ -1076,7 +1081,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if ((dest_dreg != -1) && (ins->dreg != dest_dreg)) {
 			/* this instruction only outputs to dest_dreg, need to copy */
-			create_copy_ins (cfg, ins->dreg, dest_dreg, ins, fp);
+			create_copy_ins (cfg, ins->dreg, dest_dreg, ins, ip, fp);
 			ins->dreg = dest_dreg;
 
 			if (fp) {
@@ -1240,7 +1245,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				if (is_global_ireg (ins->sreg1)) {
 					/* The argument is already in a hard reg, need to copy */
-					MonoInst *copy = create_copy_ins (cfg, dest_sreg1, ins->sreg1, NULL, FALSE);
+					MonoInst *copy = create_copy_ins (cfg, dest_sreg1, ins->sreg1, NULL, ip, FALSE);
 					insert_before_ins (ins, tmp, copy);
 					ins->sreg1 = dest_sreg1;
 				}
@@ -1321,7 +1326,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						val = get_register_spilling (cfg, tmp, ins, mask, reg2, fp);
 
 					/* Reallocate hreg to the correct register */
-					create_copy_ins (cfg, rs->iassign [reg2], val, ins, fp);
+					create_copy_ins (cfg, rs->iassign [reg2], val, ins, ip, fp);
 
 					mono_regstate_free_int (rs, rs->iassign [reg2]);
 #endif
@@ -1347,7 +1352,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				int reg2 = alloc_reg (cfg, tmp, ins, dreg_mask, ins->sreg2, NULL, fp);
 
 				DEBUG (g_print ("\tneed to copy sreg2 %s to reg %s\n", mono_regname_full (ins->sreg2, fp), mono_regname_full (reg2, fp)));
-				sreg2_copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL, fp);
+				sreg2_copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL, ip, fp);
 				prev_sreg2 = ins->sreg2 = reg2;
 
 				if (fp)
@@ -1371,7 +1376,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_regname_full (ins->sreg1, fp), mono_regname_full (ins->dreg, fp)));
-			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL, fp);
+			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL, ip, fp);
 			insert_before_ins (ins, tmp, copy);
 
 			if (sreg2_copy)
