@@ -727,7 +727,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-							mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
+							// mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							filtered = call_filter (ctx, ei->data.filter);
 						}
 
