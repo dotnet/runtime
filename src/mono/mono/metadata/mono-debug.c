@@ -357,7 +357,7 @@ mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 
 	header = ((MonoMethodNormal *) method)->header;
 
-	max_size = 24 * jit->num_line_numbers;
+	max_size = 28 * jit->num_line_numbers;
 	if (max_size > BUFSIZ)
 		ptr = oldptr = g_malloc (max_size);
 	else
@@ -375,6 +375,8 @@ mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 		last_il_offset = lne->il_offset;
 		last_native_offset = lne->native_offset;
 	}
+
+	write_leb128 (method->wrapper_type, ptr, &ptr);
 
 	size = ptr - oldptr;
 	g_assert (size < max_size);
