@@ -1767,6 +1767,7 @@ mono_class_init (MonoClass *class)
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
 	MonoCachedClassInfo cached_info;
+	gboolean has_cached_info;
 
 	g_assert (class);
 
@@ -1865,7 +1866,9 @@ mono_class_init (MonoClass *class)
 	if (class->parent && !class->parent->inited)
 		mono_class_init (class->parent);
 
-	if (!class->generic_class) {
+	has_cached_info = mono_class_get_cached_class_info (class, &cached_info);
+
+	if (!class->generic_class && (!has_cached_info || (has_cached_info && cached_info.has_nested_classes))) {
 		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
 		while (i) {
 			MonoClass* nclass;
@@ -1964,7 +1967,7 @@ mono_class_init (MonoClass *class)
 	 * If possible, avoid the creation of the generic vtable by requesting
 	 * cached info from the runtime.
 	 */
-	if (mono_class_get_cached_class_info (class, &cached_info)) {
+	if (has_cached_info) {
 		guint32 cur_slot = 0;
 
 		class->vtable_size = cached_info.vtable_size;
