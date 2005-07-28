@@ -859,7 +859,6 @@ gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_get_throw_corlib_exception  (void);
 guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
-gpointer  mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);

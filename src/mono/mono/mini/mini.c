@@ -4075,6 +4075,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->inst_target_bb = tblock;
 					start_new_bblock = 1;
 
+					/*
+					 * FIXME: This is incorrect since the branch should be the
+					 * last ins in the basic block.
+					 */
 					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 						/* just create a dummy - the value is never used */
 						ins = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
@@ -7049,7 +7053,6 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 {
 	gpointer tramp;
 
-#ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
 	MonoDomain *domain = mono_domain_get ();
 	guint8 *buf, *start;
 
@@ -7062,9 +7065,6 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	*(guint32*)buf = token;
 
 	tramp = mono_arch_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
-#else
-	tramp = mono_arch_create_jit_trampoline_from_token (image, token);
-#endif
 
 	mono_jit_stats.method_trampolines++;
 
