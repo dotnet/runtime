@@ -5448,7 +5448,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 		gret->method.method = method;
 		gret->method.name = mono_string_new (domain, method->name);
 		gret->method.reftype = mono_type_get_object (domain, &refclass->byval_arg);
-		CACHE_OBJECT (MonoReflectionMethod *, method, gret, refclass);
+		CACHE_OBJECT (MonoReflectionMethod *, method, (MonoReflectionMethod*)gret, refclass);
 	}
 
 	if (!refclass)
