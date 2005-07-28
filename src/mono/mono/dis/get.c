@@ -717,14 +717,15 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 {
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
-	guint32 param_index = 0;
-	const char *name = "";
+	guint32 param_index = 0, next_param_index = 0;
+	const char *name = "", *method_name = "";
 	int free_method = 0;
 	char *retval, *esname;
 	char *type = NULL;
-	char *marshal_info = NULL;
+	char *marshal_info = NULL, *ret_marshal_info = NULL;
 	char *gen_param = NULL;
 	GString *result = g_string_new ("");
+	GString *result_ret = g_string_new ("");
 	MonoGenericContainer *container = NULL;
 	int i;
         
@@ -734,7 +735,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
 		if (fully_qualified)
 			type = get_typedef (m, mono_metadata_typedef_from_method (m, methoddef_row));
-		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
+		method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		param_index = cols [MONO_METHOD_PARAMLIST];
 		if (!method) {
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
@@ -752,32 +753,28 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 
 		if (container && container->is_method)
 			gen_param = get_generic_param (m, container);
-	}
-	
-	retval = dis_stringify_param (m, method->ret);
-	if (method->hasthis)
-		g_string_append (result, "instance ");
-	g_string_append (result, map (method->call_convention, call_conv_type_map));
-	g_string_sprintfa (result, " %s ", retval);
-	if (type) {
-		char *estype = get_escaped_name (type);
-		g_string_sprintfa (result, "%s::", estype);
-		g_free (estype);
-	}
-	esname = get_escaped_name (name);
-	g_string_append (result, esname);
-	g_free (esname);
-        if (gen_param) {
-                g_string_append (result, gen_param);
-                g_free (gen_param);
-        }
-	g_string_append (result, " (");
-	g_free (retval);
-	for (i = 0; i < method->param_count; ++i) {
-		if (param_index && param_index <= m->tables [MONO_TABLE_PARAM].rows) {
-			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
-			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
-			method->params [i]->attrs = pcols [MONO_PARAM_FLAGS];
+		
+		if (methoddef_row < m->tables [MONO_TABLE_METHOD].rows) {
+			mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row, cols, MONO_METHOD_SIZE);
+			next_param_index = cols [MONO_METHOD_PARAMLIST];
+		} else {
+			next_param_index = m->tables [MONO_TABLE_PARAM].rows + 1;
+		}
+	} 
+
+	for (i = 0; i < method->param_count + 1; ++i) {
+		marshal_info = NULL;
+		name = "";
+
+		if (method->param_count == 0 && ! (param_index && param_index < next_param_index))
+			/* method has zero parameters, and no row for return val in the PARAM table */
+			continue;
+		
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
+		
+		if (i == pcols [MONO_PARAM_SEQUENCE]) {
+			if (i)
+				name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 
 			if (pcols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
 				const char *tp;
@@ -786,23 +783,54 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 				g_assert (tp);
 				spec = mono_metadata_parse_marshal_spec (m, tp);
 
-				marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
+				if (i)
+					marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
+				else
+					ret_marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
 			}
-
-			param_index++;
-		} else {
-			name = "";
+			param_index ++;
 		}
-		if (i)
+
+		if (!i)
+			continue;
+
+		if (i > 1)
 			g_string_append (result, ", ");
-		retval = dis_stringify_param (m, method->params [i]);
+
+		retval = dis_stringify_param (m, method->params [i - 1]);
 
 		esname = get_escaped_name (name);
-		g_string_append_printf (result, "%s %s%s", retval, esname, marshal_info ? marshal_info : "");
+		g_string_append_printf (result, "%s %s %s", retval, marshal_info ? marshal_info : "", esname);
 		g_free (retval);
 		g_free (esname);
+		g_free (marshal_info);
 	}
 	g_string_append (result, ") ");
+
+	retval = dis_stringify_param (m, method->ret);
+
+	if (method->hasthis)
+		g_string_append (result_ret, "instance ");
+	g_string_append (result_ret, map (method->call_convention, call_conv_type_map));
+	g_string_sprintfa (result_ret, " %s%s ", retval, ret_marshal_info ? ret_marshal_info :"");
+	g_free (ret_marshal_info);
+	if (type) {
+		char *estype = get_escaped_name (type);
+		g_string_sprintfa (result_ret, "%s::", estype);
+		g_free (estype);
+	}
+	esname = get_escaped_name (method_name);
+	g_string_append (result_ret, esname);
+	g_free (esname);
+	if (gen_param) {
+		g_string_append (result_ret, gen_param);
+		g_free (gen_param);
+	}
+	g_string_append (result_ret, " (");
+	g_free (retval);
+
+	g_string_prepend (result, result_ret->str);
+	g_string_free (result_ret, FALSE);
 
 	if (show_method_tokens && methoddef_row)
 		g_string_append_printf (result, " /* 0x%X */ ",
