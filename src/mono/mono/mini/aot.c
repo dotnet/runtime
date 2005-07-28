@@ -573,6 +573,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->ghcimpl = (flags >> 0) & 0x1;
 	info->has_finalize = (flags >> 1) & 0x1;
 	info->has_cctor = (flags >> 2) & 0x1;
+	info->has_nested_classes = (flags >> 3) & 0x1;
 	if (info->has_cctor) {
 		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, buf, &buf);
 		if (!cctor_image)
@@ -2207,7 +2208,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	if (1) {//!MONO_CLASS_IS_INTERFACE (klass)) {
 		encode_value (klass->vtable_size, p, &p);
-		encode_value ((klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		encode_value (((klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (klass->has_finalize)
