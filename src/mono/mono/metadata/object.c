@@ -558,6 +558,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	class->gc_descr_inited = TRUE;
 	class->gc_descr = GC_NO_DESCRIPTOR;
 
+	if (class->generic_class || class->generic_container)
+		/* bug #75479 */
+		return;
+
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
 		class->gc_descr = (gpointer)MAKE_STRING_DESCRIPTOR (bitmap, 2);
