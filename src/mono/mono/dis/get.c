@@ -12,6 +12,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <glib.h>
+#include <math.h>
 #include "meta.h"
 #include "util.h"
 #include "get.h"
@@ -1904,29 +1905,34 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4:
-		return g_strdup_printf ("int32(%d)", read32 (ptr));
+		return g_strdup_printf ("int32(0x%08x)", read32 (ptr));
 		
+	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
 		guint32 low, high;
 		low = read32 (ptr);
 		high = read32 (ptr + 4);
 		return g_strdup_printf ("int64(0x%08x%08x)", high, low);
 	}
-	case MONO_TYPE_U8: {
-		guint32 low, high;
-		low = read32 (ptr);
-		high = read32 (ptr + 4);
-		return g_strdup_printf ("0x%08x%08x", high, low);
-	}
 	case MONO_TYPE_R4: {
 		float r;
 		readr4 (ptr, &r);
-		return g_strdup_printf ("float32(%g)", (double) r);
-	}
+		if (! isnormal (r))
+			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));
+		else
+			return g_strdup_printf ("float32(%g)", r);
+	}	
 	case MONO_TYPE_R8: {
 		double r;
 		readr8 (ptr, &r);
-		return g_strdup_printf ("float64(%g)", r);
+		if (! isnormal (r)) {
+			guint32 low, high;
+			low = read32 (ptr);
+			high = read32 (ptr + 4);
+			return g_strdup_printf ("float64(0x%08x%08x)", high, low);
+		} else {
+			return g_strdup_printf ("float64(%g)", r);
+		}
 	}
 	case MONO_TYPE_STRING: {
 		gchar *str;
