@@ -3622,12 +3622,11 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 }
 
 static MonoObject*
-create_version (MonoDomain *domain, MonoAssemblyName *aname)
+create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision)
 {
 	static MonoClass *System_Version = NULL;
 	static MonoMethod *create_version = NULL;
 	MonoObject *result;
-	int major, minor, build, revision;
 	gpointer args [4];
 	
 	if (!System_Version) {
@@ -3642,10 +3641,6 @@ create_version (MonoDomain *domain, MonoAssemblyName *aname)
 		mono_method_desc_free (desc);
 	}
 
-	major = aname->major;
-	minor = aname->minor;
-	build = aname->build;
-	revision = aname->revision;
 	args [0] = &major;
 	args [1] = &minor;
 	args [2] = &build;
@@ -3664,6 +3659,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	MonoDomain *domain = mono_object_domain (assembly);
 	int i, count = 0;
 	static MonoMethod *create_culture = NULL;
+	MonoImage *image = assembly->assembly->image;
 	MonoTableInfo *t;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3686,52 +3682,46 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	}
 
 	for (i = 0; i < count; i++) {
-		MonoAssembly *assem;
 		MonoReflectionAssemblyName *aname;
+		guint32 cols [MONO_ASSEMBLYREF_SIZE];
 
-		/* FIXME: There is no need to load the assemblies themselves */
-		mono_assembly_load_reference (assembly->assembly->image, i);
-
-		assem = assembly->assembly->image->references [i];
-		if (assem == (gpointer)-1) {
-			char *msg = g_strdup_printf ("Assembly %d referenced from assembly %s not found ", i, assembly->assembly->image->name);
-			MonoException *ex = mono_get_exception_file_not_found2 (msg, NULL);
-			g_free (msg);
-			mono_raise_exception (ex);
-		}
+		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
 			domain, System_Reflection_AssemblyName);
 
-		aname->name = mono_string_new (domain, assem->aname.name);
+		aname->name = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]));
 
-		aname->major = assem->aname.major;
-		aname->minor = assem->aname.minor;
-		aname->build = assem->aname.build;
-		aname->revision = assem->aname.revision;
-		aname->hashalg = assem->aname.hash_alg;
-		aname->flags = assem->aname.flags;
+		aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+		aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+		aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+		aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+		aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
 		aname->versioncompat = 1; /* SameMachine (default) */
-		aname->version = create_version (domain, &assem->aname);
+		aname->hashalg = ASSEMBLY_HASH_SHA1; /* SHA1 (default) */
+		aname->version = create_version (domain, aname->major, aname->minor, aname->build, aname->revision);
 
 		if (create_culture) {
 			gpointer args [1];
-			args [0] = mono_string_new (domain, assem->aname.culture);
+			args [0] = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]));
 			aname->cultureInfo = mono_runtime_invoke (create_culture, NULL, args, NULL);
 		}
+		
+		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
+			const gchar *pkey_ptr = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
+			guint32 pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
 
-		if (assem->aname.public_key) {
-			guint32 pkey_len;
-			const char *pkey_ptr = (char*)assem->aname.public_key;
-			pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
-
-			aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
-			memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+			if ((cols [MONO_ASSEMBLYREF_FLAGS] & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG)) {
+				/* public key token isn't copied - the class library will 
+		   		automatically generate it from the public key if required */
+				aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+				memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+			} else {
+				aname->keyToken = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+				memcpy (mono_array_addr (aname->keyToken, guint8, 0), pkey_ptr, pkey_len);
+			}
 		}
-
-		/* public key token isn't copied - the class library will 
-		   automatically generate it from the public key if required */
-
+		
 		/* note: this function doesn't return the codebase on purpose (i.e. it can
 		         be used under partial trust as path information isn't present). */
 
@@ -4135,7 +4125,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->build = name->build;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
-	aname->version = create_version (domain, name);
+	aname->version = create_version (domain, name->major, name->minor, name->build, name->revision);
 	
 	codebase = g_filename_to_uri (absolute, NULL, NULL);
 	if (codebase) {
