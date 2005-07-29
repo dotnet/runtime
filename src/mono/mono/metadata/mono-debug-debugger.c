@@ -65,9 +65,12 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 
 #endif
 
+static int initialized = 0;
+
 void
 mono_debugger_lock (void)
 {
+	g_assert (initialized);
 	EnterCriticalSection (&debugger_lock_mutex);
 	debugger_lock_level++;
 }
@@ -75,6 +78,7 @@ mono_debugger_lock (void)
 void
 mono_debugger_unlock (void)
 {
+	g_assert (initialized);
 	if (debugger_lock_level == 1) {
 		if (must_reload_symtabs && mono_debugger_use_debugger) {
 			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
@@ -95,6 +99,7 @@ mono_debugger_initialize (gboolean use_debugger)
 
 	InitializeCriticalSection (&debugger_lock_mutex);
 	mono_debugger_use_debugger = use_debugger;
+	initialized = 1;
 }
 
 void
