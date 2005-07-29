@@ -3269,6 +3269,21 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	return mono_class_from_mono_type (inflated);
 }
 
+typedef struct {
+	gconstpointer key;
+	gpointer value;
+} FindUserData;
+
+static void
+find_nocase (gpointer key, gpointer value, gpointer user_data)
+{
+	char *name = (char*)key;
+	FindUserData *data = (FindUserData*)user_data;
+
+	if (!data->value && (g_strcasecmp (name, (char*)data->key) == 0))
+		data->value = value;
+}
+
 /**
  * mono_class_from_name_case:
  * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
@@ -3293,6 +3308,37 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 	const char *n;
 	const char *nspace;
 	guint32 i, visib;
+
+	if (image->dynamic) {
+		guint32 token = 0;
+		FindUserData user_data;
+
+		mono_loader_lock ();
+
+		user_data.key = name_space;
+		user_data.value = NULL;
+		g_hash_table_foreach (image->name_cache, find_nocase, &user_data);
+
+		if (user_data.value) {
+			GHashTable *nspace_table = (GHashTable*)user_data.value;
+
+			user_data.key = name;
+			user_data.value = NULL;
+
+			g_hash_table_foreach (nspace_table, find_nocase, &user_data);
+			
+			if (user_data.value)
+				token = GPOINTER_TO_UINT (user_data.value);
+		}
+
+		mono_loader_unlock ();
+		
+		if (token)
+			return mono_class_get (image, MONO_TOKEN_TYPE_DEF | token);
+		else
+			return NULL;
+
+	}
 
 	/* add a cache if needed */
 	for (i = 1; i <= t->rows; ++i) {
@@ -3332,7 +3378,7 @@ return_nested_in (MonoClass *class, char *nested) {
 
 
 /**
- * mono_class_from_name_case:
+ * mono_class_from_name:
  * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
  * @name_space: the type namespace
  * @name: the type short name.
