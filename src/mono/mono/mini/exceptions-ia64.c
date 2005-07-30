@@ -113,6 +113,8 @@ get_real_call_filter (void)
 
 	ia64_codegen_init (code, start);
 
+	ia64_codegen_set_one_ins_per_bundle (code, TRUE);
+
 	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
 	ia64_mov_from_br (code, local0 + 1, IA64_B0);
 

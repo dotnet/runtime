@@ -44,6 +44,13 @@ static const char*const * ins_spec = ia64_desc;
  * - compare instructions allways set p6 and p7
  */
 
+/*
+ * There are a lot of places where generated code is disassembled/patched.
+ * The automatic bundling of instructions done by the code generation macros
+ * could complicate things, so it is best to call 
+ * ia64_codegen_set_one_ins_per_bundle () at those places.
+ */
+
 #define SIGNAL_STACK_SIZE (64 * 1024)
 
 #define ARGS_OFFSET 16
@@ -2069,13 +2076,19 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	return code;
 }
 
+#define add_patch_info(cfg,code,patch_type,data) do { \
+    ia64_begin_bundle (code); \
+	mono_add_patch_info (cfg, code.buf - cfg->native_code, patch_type, data); \
+} while (0)
+
 static Ia64CodegenState
 emit_call (MonoCompile *cfg, Ia64CodegenState code, guint32 patch_type, gconstpointer data)
 {
-	mono_add_patch_info (cfg, code.buf - cfg->native_code, patch_type, data);
+	add_patch_info (cfg, code, patch_type, data);
 
 	if ((patch_type == MONO_PATCH_INFO_ABS) || (patch_type == MONO_PATCH_INFO_INTERNAL_METHOD)) {
 		/* Indirect call */
+		/* mono_arch_nullify_class_init_trampoline will patch this */
 		ia64_movl (code, GP_SCRATCH_REG, 0);
 		ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
 		ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
@@ -2084,6 +2097,7 @@ emit_call (MonoCompile *cfg, Ia64CodegenState code, guint32 patch_type, gconstpo
 	}
 	else {
 		/* Can't use a direct call since the displacement might be too small */
+		/* mono_arch_patch_callsite will patch this */
 		ia64_movl (code, GP_SCRATCH_REG, 0);
 		ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 		ia64_br_call_reg (code, IA64_B0, IA64_B6);
@@ -2167,17 +2181,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->inst_i0->inst_c0) {
 					NOT_IMPLEMENTED;
 				} else {
-					ia64_begin_bundle (code);
-					mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
+					add_patch_info (cfg, code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
 					ia64_br_cond_pred (code, pred, 0);
 				}
 			} else {
 				if (ins->inst_target_bb->native_offset) {
-					gint64 disp = ((gint64)ins->inst_target_bb->native_offset - offset) >> 4;
+					ia64_begin_bundle (code);
+					gint64 disp = ((gint64)ins->inst_target_bb->native_offset - (code.buf - cfg->native_code)) >> 4;
 					ia64_br_cond_pred (code, pred, disp);
 				} else {
-					ia64_begin_bundle (code);
-					mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+					add_patch_info (cfg, code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 					ia64_br_cond_pred (code, pred, 0);
 				} 
 			}
@@ -2552,18 +2565,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_COND_EXC_IOV:
 		case OP_COND_EXC_OV:
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "OverflowException");
 			ia64_br_cond_pred (code, 6, 0);
 			break;
 		case OP_COND_EXC_IC:
 		case OP_COND_EXC_C:
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "OverflowException");
 			ia64_br_cond_pred (code, 7, 0);
 			break;
 		case OP_IA64_COND_EXC:
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, ins->inst_p1);
 			ia64_br_cond_pred (code, 6, 0);
 			break;
@@ -2617,7 +2630,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else if (d == 1.0)
 				ia64_fmov (code, ins->dreg, 1);
 			else {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, ins->inst_p0);
+				add_patch_info (cfg, code, MONO_PATCH_INFO_R8, ins->inst_p0);
 				ia64_movl (code, GP_SCRATCH_REG, 0);
 				ia64_ldfd (code, ins->dreg, GP_SCRATCH_REG);
 			}
@@ -2631,7 +2644,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else if (f == 1.0)
 				ia64_fmov (code, ins->dreg, 1);
 			else {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
+				add_patch_info (cfg, code, MONO_PATCH_INFO_R4, ins->inst_p0);
 				ia64_movl (code, GP_SCRATCH_REG, 0);
 				ia64_ldfs (code, ins->dreg, GP_SCRATCH_REG);
 			}
@@ -2696,22 +2709,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CKFINITE:
 			/* Quiet NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "ArithmeticException");
 			ia64_br_cond_pred (code, 6, 0);
 			/* Signaling NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x040);
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "ArithmeticException");
 			ia64_br_cond_pred (code, 6, 0);
 			/* Positive infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x021);
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "ArithmeticException");
 			ia64_br_cond_pred (code, 6, 0);
 			/* Negative infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x022);
-			mono_add_patch_info (cfg, code.buf - cfg->native_code,
+			add_patch_info (cfg, code,
 								 MONO_PATCH_INFO_EXC, "ArithmeticException");
 			ia64_br_cond_pred (code, 6, 0);
 			break;
@@ -2750,6 +2763,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (call->virtual) {
 				/* Keep this in synch with get_vcall_slot_addr */
 
+				ia64_codegen_set_one_ins_per_bundle (code, TRUE);
+
 				/* This is a virtual call */
 				ia64_mov_to_br (code, IA64_B6, ins->sreg1);
 
@@ -2758,6 +2773,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * call.
 				 */
 				ia64_nop_i (code, 0x12345);
+				ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 			}
 			else {
 				/* Indirect call */
@@ -2788,7 +2804,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 			ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
 
-			mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			add_patch_info (cfg, code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ia64_movl (code, GP_SCRATCH_REG, 0);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 			ia64_br_cond_reg (code, IA64_B6);
@@ -2843,14 +2859,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * save the return address to a register and use a
 			 * branch.
 			 */
+			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
 			ia64_mov (code, IA64_R15, IA64_R0);
 			ia64_mov_from_ip (code, GP_SCRATCH_REG);
 			/* Add the length of OP_CALL_HANDLER */
 			ia64_adds_imm (code, GP_SCRATCH_REG, 5 * 16, GP_SCRATCH_REG);
-			mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+			add_patch_info (cfg, code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			ia64_movl (code, GP_SCRATCH_REG2, 0);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
 			ia64_br_cond_reg (code, IA64_B6);
+			ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 			break;
 		case OP_START_HANDLER: {
 			/*
@@ -2866,6 +2884,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * R15 is used since it is writable using libunwind.
 			 * R15 == 0 means we are called by OP_CALL_HANDLER or via resume_context ()
 			 */
+			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
 			ia64_cmp_eq (code, 6, 7, IA64_R15, IA64_R0);
 			/* Alloc is not predictable so we have to use a branch */
 			ia64_br_cond_pred (code, 6, 3);
@@ -2874,11 +2893,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save the return address */
 			ia64_adds_imm (code, GP_SCRATCH_REG2, spvar->inst_offset, cfg->frame_reg);
 			ia64_st8_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 0);
+			ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
 			break;
 		}
 		case CEE_ENDFINALLY: {
-			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region)
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			/* Return the saved arp_pfs value to call_filter */
 			ia64_mov (code, IA64_R9, cfg->arch.reg_saved_ar_pfs);
 			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
@@ -3023,7 +3043,7 @@ static gboolean stops_in_template [32][3] = {
 void
 ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 {
-	int i, j, ins_type, template;
+	int i, j, start_ins, ins_type, template;
 
 	if (!code->automatic) {
 		if (code->nins == 0)
@@ -3058,7 +3078,56 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 		return;
 	}
 
-	for (i = 0; i < code->nins; ++i) {
+	/*
+	 * one_ins_per_bundle is used in places where more precise code generation
+	 * is needed.
+	 */
+
+	/* Try to pack two instructions + two stops into one bundle if possible */
+	start_ins = 0;
+	if (!code->one_ins_per_bundle && (code->nins == 3)) {
+		Ia64InsType i1, i2;
+
+		i1 = code->itypes [0];
+		i2 = code->itypes [1];
+
+		if (i1 == IA64_INS_TYPE_A)
+			i1 = IA64_INS_TYPE_M;
+		if (i2 == IA64_INS_TYPE_A)
+			i2 = IA64_INS_TYPE_I;
+
+		/* Use the MISIS template */
+		if (i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_I) {
+#if 0
+			static int count = 0;
+			count ++;
+
+			if (count == atoi (getenv ("COUNT"))) {
+				printf ("FOO\n");
+			}
+
+			if (count <= atoi (getenv ("COUNT"))) {
+				//printf ("A\n");
+				ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [0], IA64_NOP_I, code->instructions [1]);
+				start_ins = 2;
+			}
+#else
+			ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [0], IA64_NOP_I, code->instructions [1]);
+			if (flush) {
+				start_ins = 2;
+			}
+			else {
+				code->instructions [0] = code->instructions [2];
+				code->itypes [0] = code->itypes [2];
+				code->stops [0] = code->stops [2];
+				code->nins -= 2;
+				return;
+			}
+#endif
+		}
+	}
+
+	for (i = start_ins; i < code->nins; ++i) {
 		switch (code->itypes [i]) {
 		case IA64_INS_TYPE_A:
 			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
@@ -3271,7 +3340,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	else
 		ia64_nop_i (code, 0);
 	ia64_stop (code);
-	ia64_end_bundle (code);
+	ia64_begin_bundle (code);
 
 	/* Finish unwind info */
 	r_pro->op_count = unw_op_count;
@@ -3290,7 +3359,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ia64_nop_m (code, 0);
 			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP); ia64_stop (code);
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
-			ia64_end_bundle (code);
+			ia64_begin_bundle (code);
 		}
 		else {
 			ia64_begin_bundle_template (code, IA64_TEMPLATE_MLXS);
@@ -3300,7 +3369,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
 			ia64_nop_i (code, 0);
 			ia64_nop_i (code, 0); ia64_stop (code);
-			ia64_end_bundle (code);
+			ia64_begin_bundle (code);
 		}
 #endif
 	}
@@ -3488,7 +3557,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	g_free (cinfo);
 
-	ia64_end_bundle (code);
+	ia64_begin_bundle (code);
 	ia64_codegen_set_automatic (code, FALSE);
 
 	ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
@@ -3498,13 +3567,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		ia64_nop_m (code, 0);
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0); ia64_stop (code);
-	ia64_end_bundle (code);
+	ia64_begin_bundle (code);
 
 	ia64_begin_bundle_template (code, IA64_TEMPLATE_BBBS);
 	ia64_br_ret_reg (code, IA64_B0);
 	ia64_nop_b (code, 0);
 	ia64_nop_b (code, 0); ia64_stop (code);
-	ia64_end_bundle (code);
+	ia64_begin_bundle (code);
 
 	ia64_codegen_set_automatic (code, TRUE);
 	ia64_codegen_close (code);
@@ -3558,6 +3627,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 			g_assert (exc_class);
 			throw_ip = cfg->native_code + patch_info->ip.i;
+
+			ia64_begin_bundle (code);
 
 			ia64_patch (cfg->native_code + patch_info->ip.i, code.buf);
 
@@ -3634,7 +3705,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		/* Required by the ABI */
 		ia64_adds_imm (code, IA64_SP, -16, IA64_SP);
 
-		mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, cfg->method);
+		add_patch_info (cfg, code, MONO_PATCH_INFO_METHODCONST, cfg->method);
 		ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
 
 		/* Save arguments to the stack */
@@ -3659,7 +3730,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	else
 		ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_R0);
 
-	mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, cfg->method);
+	add_patch_info (cfg, code, MONO_PATCH_INFO_METHODCONST, cfg->method);
 	ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
 
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
@@ -3717,7 +3788,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	g_free (cinfo);
 
-	mono_add_patch_info (cfg, code.buf - cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
+	add_patch_info (cfg, code, MONO_PATCH_INFO_METHODCONST, method);
 	ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
 
