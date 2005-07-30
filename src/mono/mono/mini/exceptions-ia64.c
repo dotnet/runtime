@@ -131,15 +131,24 @@ get_real_call_filter (void)
 	/* Frame pointer */
 	ia64_mov (code, IA64_R15, in0 + 0);
 	/* Target ip */
-	ia64_mov_to_br (code, IA64_B0, in0 + 1);
+	ia64_mov_to_br (code, IA64_B6, in0 + 1);
 	/* Return address */
 	ia64_mov_from_ip (code, GP_SCRATCH_REG);
 	ia64_adds_imm (code, GP_SCRATCH_REG, 3 * 16, GP_SCRATCH_REG);
 
 	/* Call the filter */
-	ia64_br_cond_reg (code, IA64_B0);
+	ia64_br_call_reg (code, IA64_B0, IA64_B6);
 
 	/* R8 contains the result of the filter */
+	/* R9 contains the saved apr_pfs value */
+
+	/* The filter returns using br_cond_reg, so have to do another return */
+	ia64_mov_to_ar_i (code, IA64_PFS, IA64_R9);
+	ia64_mov_from_ip (code, GP_SCRATCH_REG);	
+	ia64_adds_imm (code, GP_SCRATCH_REG, 4 * 16, GP_SCRATCH_REG);
+	ia64_mov_to_br (code, IA64_B0, GP_SCRATCH_REG);
+	ia64_br_ret_reg (code, IA64_B0);
+
 	ia64_mov_to_ar_i (code, IA64_PFS, local0 + 0);
 	ia64_mov_ret_to_br (code, IA64_B0, local0 + 1);
 	ia64_br_ret_reg (code, IA64_B0);

@@ -2859,24 +2859,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
 			/* 
-			 * We might be called by the exception handling code, in which case the
+			 * We might be called by call_filter, in which case the
 			 * the register stack is not set up correctly. So do it now.
+			 * Allocate a stack frame and set the fp register from the value 
+			 * passed in by the caller.
+			 * R15 is used since it is writable using libunwind.
+			 * R15 == 0 means we are called by OP_CALL_HANDLER or via resume_context ()
 			 */
-			ia64_alloc (code, GP_SCRATCH_REG2, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
-
-			/* Set the fp register from the value passed in by the caller */
-			/* R15 is used since it is writable using libunwind */
-			/* R15 == 0 means we are called by OP_CALL_HANDLER or via resume_context () */
 			ia64_cmp_eq (code, 6, 7, IA64_R15, IA64_R0);
-			ia64_add_pred (code, 7, cfg->frame_reg, IA64_R0, IA64_R15);
-
+			/* Alloc is not predictable so we have to use a branch */
+			ia64_br_cond_pred (code, 6, 3);
+			ia64_alloc (code, cfg->arch.reg_saved_ar_pfs, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
+			ia64_mov (code, cfg->frame_reg, IA64_R15);
+			/* Save the return address */
 			ia64_adds_imm (code, GP_SCRATCH_REG2, spvar->inst_offset, cfg->frame_reg);
 			ia64_st8_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 0);
 
 			break;
 		}
 		case CEE_ENDFINALLY: {
-			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region)
+			/* Return the saved arp_pfs value to call_filter */
+			ia64_mov (code, IA64_R9, cfg->arch.reg_saved_ar_pfs);
 			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
 			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
@@ -2886,6 +2890,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ENDFILTER: {
 			/* FIXME: Return the value */
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			/* Return the saved arp_pfs value to call_filter */
+			ia64_mov (code, IA64_R9, cfg->arch.reg_saved_ar_pfs);
 			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
 			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
