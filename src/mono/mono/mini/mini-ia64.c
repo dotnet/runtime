@@ -2837,10 +2837,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Upper limit */
 				ia64_add (code, GP_SCRATCH_REG2, ins->dreg, GP_SCRATCH_REG);
 
+				ia64_codegen_set_one_ins_per_bundle (code, TRUE);
+
 				/* Init loop */
 				ia64_st8_inc_imm_hint (code, ins->dreg, IA64_R0, 8, 0);
 				ia64_cmp_lt (code, 8, 9, ins->dreg, GP_SCRATCH_REG2);
 				ia64_br_cond_pred (code, 8, -2);
+
+				ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
 				ia64_sub (code, ins->dreg, GP_SCRATCH_REG2, GP_SCRATCH_REG);
 			}
@@ -3043,7 +3047,7 @@ static gboolean stops_in_template [32][3] = {
 void
 ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 {
-	int i, j, start_ins, ins_type, template;
+	int i, j, ins_type, template;
 
 	if (!code->automatic) {
 		if (code->nins == 0)
@@ -3078,56 +3082,77 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 		return;
 	}
 
-	/*
-	 * one_ins_per_bundle is used in places where more precise code generation
-	 * is needed.
-	 */
+	for (i = 0; i < code->nins; ++i) {
+		/* Try to pack two instructions + two stops into one bundle if possible */
+		if (!code->one_ins_per_bundle && (i + 1 < code->nins)) {
+			Ia64InsType i1, i2;
+			gboolean disable = FALSE;
+			gboolean found = FALSE;
 
-	/* Try to pack two instructions + two stops into one bundle if possible */
-	start_ins = 0;
-	if (!code->one_ins_per_bundle && (code->nins == 3)) {
-		Ia64InsType i1, i2;
-
-		i1 = code->itypes [0];
-		i2 = code->itypes [1];
-
-		if (i1 == IA64_INS_TYPE_A)
-			i1 = IA64_INS_TYPE_M;
-		if (i2 == IA64_INS_TYPE_A)
-			i2 = IA64_INS_TYPE_I;
-
-		/* Use the MISIS template */
-		if (i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_I) {
 #if 0
-			static int count = 0;
-			count ++;
+			/* Debugging support */
+			{
+				static int count = 0;
+				count ++;
 
-			if (count == atoi (getenv ("COUNT"))) {
-				printf ("FOO\n");
-			}
+				if (count == atoi (getenv ("COUNT"))) {
+					printf ("FOO\n");
+				}
 
-			if (count <= atoi (getenv ("COUNT"))) {
-				//printf ("A\n");
-				ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [0], IA64_NOP_I, code->instructions [1]);
-				start_ins = 2;
-			}
-#else
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [0], IA64_NOP_I, code->instructions [1]);
-			if (flush) {
-				start_ins = 2;
-			}
-			else {
-				code->instructions [0] = code->instructions [2];
-				code->itypes [0] = code->itypes [2];
-				code->stops [0] = code->stops [2];
-				code->nins -= 2;
-				return;
+				if (count > atoi (getenv ("COUNT"))) {
+					disable = TRUE;
+				}
 			}
 #endif
-		}
-	}
 
-	for (i = start_ins; i < code->nins; ++i) {
+			/* MISIS */
+			i1 = code->itypes [i];
+			i2 = code->itypes [i + 1];
+
+			if (i1 == IA64_INS_TYPE_A)
+				i1 = IA64_INS_TYPE_M;
+			if (i2 == IA64_INS_TYPE_A)
+				i2 = IA64_INS_TYPE_I;
+
+			if (!disable && i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_I) {
+				ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [i], IA64_NOP_I, code->instructions [i + 1]);
+				found = TRUE;
+			}
+
+			/* MSMIS */
+			i1 = code->itypes [i];
+			i2 = code->itypes [i + 1];
+
+			if (i1 == IA64_INS_TYPE_A)
+				i1 = IA64_INS_TYPE_M;
+			if (i2 == IA64_INS_TYPE_A)
+				i2 = IA64_INS_TYPE_M;
+
+			if (!disable && !found && i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_M) {
+				ia64_emit_bundle_template (code, IA64_TEMPLATE_MSMIS, code->instructions [i], code->instructions [i + 1], IA64_NOP_I);
+				found = TRUE;
+			}
+
+			if (found) {
+				//printf ("A\n");
+				if (flush || (i == 1)) {
+					i ++;
+					continue;
+				}
+				else {
+					/* 
+					 * Wait for more instructions so we can use this 
+					 * optimization again.
+					 */
+					code->instructions [i] = code->instructions [i + 2];
+					code->itypes [i] = code->itypes [i + 2];
+					code->stops [i] = code->stops [i + 2];
+					code->nins -= 2;
+					return;
+				}
+			}
+		}
+
 		switch (code->itypes [i]) {
 		case IA64_INS_TYPE_A:
 			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
