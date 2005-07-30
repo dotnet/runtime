@@ -436,6 +436,8 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 	MonoFrameSecurityInfo si;
 	MonoContext ctx;
 
+	MONO_ARCH_CONTEXT_DEF
+
 #ifdef _MSC_VER
 	/* seems that MSC doesn't like having __asm in macros */
 	unsigned int stackptr;
@@ -540,6 +542,8 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoSecurityStack ss;
 	MonoContext ctx;
+
+	MONO_ARCH_CONTEXT_DEF
 
 #ifdef _MSC_VER
 	/* seems that MSC doesn't like having __asm in macros */
