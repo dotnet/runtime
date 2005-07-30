@@ -58,6 +58,9 @@ struct _MonoImage {
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic;
 
+	/* Whenever this is a reflection only image */
+	guint8 ref_only;
+
 	char *name;
 	const char *assembly_name;
 	const char *module_name;

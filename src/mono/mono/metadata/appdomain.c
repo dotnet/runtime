@@ -919,7 +919,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 	MonoDomain *domain = ad->data;
 	MonoImageOpenStatus status;
 	guint32 raw_assembly_len = mono_array_length (raw_assembly);
-	MonoImage *image = mono_image_open_from_data (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, TRUE, NULL);
+	MonoImage *image = mono_image_open_from_data_full (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, TRUE, NULL, refonly);
 
 	if (raw_symbol_store)
 		mono_raise_exception (mono_get_exception_not_implemented ("LoadAssemblyRaw: Raw Symbol Store not Implemented"));

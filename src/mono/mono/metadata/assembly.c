@@ -784,7 +784,7 @@ absolute_dir (const gchar *filename)
  * returns NULL
  */
 static MonoImage *
-mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *status)
+mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
 	int i;
 	char *name = g_path_get_basename (filename);
@@ -797,7 +797,7 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 	EnterCriticalSection (&assemblies_mutex);
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
-			image = mono_image_open_from_data ((char*)bundles [i]->data, bundles [i]->size, FALSE, status);
+			image = mono_image_open_from_data_full ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly);
 			break;
 		}
 	}
@@ -811,18 +811,18 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 }
 
 static MonoImage*
-do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoImage *image = NULL;
 
 	if (bundles != NULL){
-		image = mono_assembly_open_from_bundle (filename, status);
+		image = mono_assembly_open_from_bundle (filename, status, refonly);
 
 		if (image != NULL)
 			return image;
 	}
 	EnterCriticalSection (&assemblies_mutex);
-	image = mono_image_open (filename, status);
+	image = mono_image_open_full (filename, status, refonly);
 	LeaveCriticalSection (&assemblies_mutex);
 
 	return image;
@@ -873,7 +873,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", filename);
-	image = do_mono_assembly_open (fname, status);
+	image = do_mono_assembly_open (fname, status, refonly);
 
 	if (!image){
 		*status = MONO_IMAGE_ERROR_ERRNO;

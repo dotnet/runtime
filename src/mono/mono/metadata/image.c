@@ -34,6 +34,8 @@
  */
 static GHashTable *loaded_images_hash;
 static GHashTable *loaded_images_guid_hash;
+static GHashTable *loaded_images_refonly_hash;
+static GHashTable *loaded_images_refonly_guid_hash;
 
 static CRITICAL_SECTION images_mutex;
 
@@ -131,6 +133,8 @@ mono_images_init (void)
 
 	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	loaded_images_refonly_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 }
 
 /**
@@ -450,6 +454,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	MonoTableInfo *t;
 	int i;
 	char *base_dir;
+	gboolean refonly = image->ref_only;
 
 	if (image->modules)
 		return;
@@ -466,7 +471,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		module_ref = g_build_filename (base_dir, name, NULL);
-		image->modules [i] = mono_image_open (module_ref, status);
+		image->modules [i] = mono_image_open_full (module_ref, status, refonly);
 		if (image->modules [i]) {
 			/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
 		}
@@ -551,9 +556,10 @@ register_guid (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-build_guid_table (void)
+build_guid_table (gboolean refonly)
 {
-	g_hash_table_foreach (loaded_images_hash, register_guid, NULL);
+	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
+	g_hash_table_foreach (loaded_images, register_guid, NULL);
 }
 
 void
@@ -761,7 +767,7 @@ invalid_image:
 
 static MonoImage *
 do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
-		    gboolean care_about_cli)
+		    gboolean care_about_cli, gboolean refonly)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -788,17 +794,37 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = canonicalize_path (fname);
+	image->ref_only = refonly;
 
 	return do_mono_image_load (image, status, care_about_cli);
 }
 
 MonoImage *
-mono_image_loaded (const char *name)
+mono_image_loaded_full (const char *name, gboolean refonly)
 {
 	MonoImage *res;
+	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
         
 	EnterCriticalSection (&images_mutex);
-	res = g_hash_table_lookup (loaded_images_hash, name);
+	res = g_hash_table_lookup (loaded_images, name);
+	LeaveCriticalSection (&images_mutex);
+	return res;
+}
+
+MonoImage *
+mono_image_loaded (const char *name)
+{
+	return mono_image_loaded_full (name, FALSE);
+}
+
+MonoImage *
+mono_image_loaded_by_guid_full (const char *guid, gboolean refonly)
+{
+	MonoImage *res;
+	GHashTable *loaded_images = refonly ? loaded_images_refonly_guid_hash : loaded_images_guid_hash;
+
+	EnterCriticalSection (&images_mutex);
+	res = g_hash_table_lookup (loaded_images, guid);
 	LeaveCriticalSection (&images_mutex);
 	return res;
 }
@@ -806,21 +832,17 @@ mono_image_loaded (const char *name)
 MonoImage *
 mono_image_loaded_by_guid (const char *guid)
 {
-	MonoImage *res;
-
-	EnterCriticalSection (&images_mutex);
-	res = g_hash_table_lookup (loaded_images_guid_hash, guid);
-	LeaveCriticalSection (&images_mutex);
-	return res;
+	return mono_image_loaded_by_guid_full (guid, FALSE);
 }
 
 static MonoImage *
 register_image (MonoImage *image)
 {
 	MonoImage *image2;
+	GHashTable *loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
 
 	EnterCriticalSection (&images_mutex);
-	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
+	image2 = g_hash_table_lookup (loaded_images, image->name);
 
 	if (image2) {
 		/* Somebody else beat us to it */
@@ -829,17 +851,17 @@ register_image (MonoImage *image)
 		mono_image_close (image);
 		return image2;
 	}
-	g_hash_table_insert (loaded_images_hash, image->name, image);
-	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == NULL))
-		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);	
-	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
+	g_hash_table_insert (loaded_images, image->name, image);
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == NULL))
+		g_hash_table_insert (loaded_images, (char *) image->assembly_name, image);	
+	g_hash_table_insert (image->ref_only ? loaded_images_refonly_guid_hash : loaded_images_guid_hash, image->guid, image);
 	LeaveCriticalSection (&images_mutex);
 
 	return image;
 }
 
 MonoImage *
-mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status)
+mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -869,8 +891,51 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	image->name = g_strdup_printf ("data-%p", datac);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
+	image->ref_only = refonly;
 
 	image = do_mono_image_load (image, status, TRUE);
+	if (image == NULL)
+		return NULL;
+
+	return register_image (image);
+}
+
+MonoImage *
+mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status)
+{
+	return mono_image_open_from_data_full (data, data_len, need_copy, status, FALSE);
+}
+
+MonoImage *
+mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean refonly)
+{
+	MonoImage *image;
+	GHashTable *loaded_images;
+	char *absfname;
+	
+	g_return_val_if_fail (fname != NULL, NULL);
+	
+	absfname = canonicalize_path (fname);
+
+	/*
+	 * The easiest solution would be to do all the loading inside the mutex,
+	 * but that would lead to scalability problems. So we let the loading
+	 * happen outside the mutex, and if multiple threads happen to load
+	 * the same image, we discard all but the first copy.
+	 */
+	EnterCriticalSection (&images_mutex);
+	loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
+	image = g_hash_table_lookup (loaded_images, absfname);
+	g_free (absfname);
+	
+	if (image){
+		mono_image_addref (image);
+		LeaveCriticalSection (&images_mutex);
+		return image;
+	}
+	LeaveCriticalSection (&images_mutex);
+
+	image = do_mono_image_open (fname, status, TRUE, refonly);
 	if (image == NULL)
 		return NULL;
 
@@ -888,35 +953,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	MonoImage *image;
-	char *absfname;
-	
-	g_return_val_if_fail (fname != NULL, NULL);
-	
-	absfname = canonicalize_path (fname);
-
-	/*
-	 * The easiest solution would be to do all the loading inside the mutex,
-	 * but that would lead to scalability problems. So we let the loading
-	 * happen outside the mutex, and if multiple threads happen to load
-	 * the same image, we discard all but the first copy.
-	 */
-	EnterCriticalSection (&images_mutex);
-	image = g_hash_table_lookup (loaded_images_hash, absfname);
-	g_free (absfname);
-	
-	if (image){
-		mono_image_addref (image);
-		LeaveCriticalSection (&images_mutex);
-		return image;
-	}
-	LeaveCriticalSection (&images_mutex);
-
-	image = do_mono_image_open (fname, status, TRUE);
-	if (image == NULL)
-		return NULL;
-
-	return register_image (image);
+	return mono_image_open_full (fname, status, FALSE);
 }
 
 /**
@@ -935,7 +972,7 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return(do_mono_image_open (fname, status, FALSE));
+	return(do_mono_image_open (fname, status, FALSE, FALSE));
 }
 
 static void
@@ -991,6 +1028,7 @@ void
 mono_image_close (MonoImage *image)
 {
 	MonoImage *image2;
+	GHashTable *loaded_images, *loaded_images_guid;
 	int i;
 
 	g_return_if_fail (image != NULL);
@@ -999,16 +1037,18 @@ mono_image_close (MonoImage *image)
 		return;
 	
 	EnterCriticalSection (&images_mutex);
-	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
+	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
+	loaded_images_guid = image->ref_only ? loaded_images_refonly_guid_hash : loaded_images_guid_hash;
+	image2 = g_hash_table_lookup (loaded_images, image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
-		g_hash_table_remove (loaded_images_hash, image->name);
-		g_hash_table_remove (loaded_images_guid_hash, image->guid);
+		g_hash_table_remove (loaded_images, image->name);
+		g_hash_table_remove (loaded_images_guid, image->guid);
 		/* Multiple images might have the same guid */
-		build_guid_table ();
+		build_guid_table (image->ref_only);
 	}
-	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == image))
-		g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == image))
+		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
 	LeaveCriticalSection (&images_mutex);
 
 	if (image->file_descr) {
