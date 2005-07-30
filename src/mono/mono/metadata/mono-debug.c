@@ -13,6 +13,24 @@
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
 #define DATA_TABLE_CHUNK_SIZE		32768
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
+#if NO_UNALIGNED_ACCESS
+#define RETURN_UNALIGNED(type, addr) \
+	{ \
+		type val; \
+		memcpy(&val, p + offset, sizeof(val)); \
+		return val; \
+	}
+#define WRITE_UNALIGNED(type, addr, val) \
+	memcpy(addr, &val, sizeof(type))
+#else
+#define RETURN_UNALIGNED(type, addr) \
+	return *(type*)(p + offset);
+#define WRITE_UNALIGNED(type, addr, val) \
+	(*(type *)(addr) = (val))
+#endif
+
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
@@ -211,16 +229,18 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 
 	g_assert (mono_symbol_table);
 
-	if (size + 12 < DATA_TABLE_CHUNK_SIZE)
+	size = ALIGN_TO (size, sizeof (gpointer));
+
+	if (size + 16 < DATA_TABLE_CHUNK_SIZE)
 		chunk_size = DATA_TABLE_CHUNK_SIZE;
 	else
-		chunk_size = size + 12;
+		chunk_size = size + 16;
 
 	/* Initialize things if necessary. */
 	if (!mono_symbol_table->current_data_table) {
 		mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
 		mono_symbol_table->current_data_table_size = chunk_size;
-		mono_symbol_table->current_data_table_offset = 4;
+		mono_symbol_table->current_data_table_offset = sizeof (gpointer);
 
 		* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
 	}
@@ -476,7 +496,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	for (i = 0; i < jit->num_lexical_blocks; i ++) {
 		MonoDebugLexicalBlockEntry *jit_lbe = &jit->lexical_blocks [i];
 		MonoSymbolFileLexicalBlockEntry *minfo_lbe = &minfo->lexical_blocks [i];
-
 		jit_lbe->il_start_offset = minfo_lbe->_start_offset;
 		jit_lbe->native_start_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_start_offset);
 
@@ -748,7 +767,7 @@ mono_debug_add_type (MonoClass *klass)
 	write_leb128 (token, ptr, &ptr);
 	write_leb128 (klass->rank, ptr, &ptr);
 	write_leb128 (klass->instance_size + base_offset, ptr, &ptr);
-	* ((gpointer *) ptr) = klass;
+	WRITE_UNALIGNED (gpointer, ptr, klass);
 	ptr += sizeof (gpointer);
 
 	size = ptr - oldptr;
