@@ -148,8 +148,9 @@ typedef enum {
  */
 
 typedef struct {
-    gboolean automatic;
 	guint8 *buf;
+    guint automatic : 1;
+	guint one_ins_per_bundle : 1;
 	guint64 instructions [3];
 	int itypes [3], stops [3];
 	int nins, template;
@@ -175,6 +176,7 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
     code.buf = codegen_buf; \
     code.nins = 0; \
     code.automatic = 1; \
+    code.one_ins_per_bundle = 0; \
 } while (0)
 
 #define ia64_codegen_close(code) do { \
@@ -185,12 +187,13 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
     ia64_emit_bundle (&code, TRUE); \
 } while (0)
 
-#define ia64_end_bundle(code) do { \
-    ia64_emit_bundle (&code, TRUE); \
-} while (0)
-
 #define ia64_codegen_set_automatic(code, is_automatic) do { \
     code.automatic = (is_automatic); \
+} while (0)
+
+#define ia64_codegen_set_one_ins_per_bundle(code, is_one) do { \
+    ia64_begin_bundle (code); \
+    code.one_ins_per_bundle = (is_one); \
 } while (0)
 
 #define ia64_stop(code) do { \
@@ -203,14 +206,20 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
     code.template = (bundle_template); \
 } while (0)
 
-/* To ease debugging, we emit instructions immediately */
+#if 0
+/* To ease debugging, emit instructions immediately */
+#define EMIT_BUNDLE(itype, code) ((itype != IA64_INS_TYPE_LX) || (code.nins == 2)) ia64_emit_bundle (&code, FALSE);
+#else
+#define EMIT_BUNDLE(itype, code) if ((itype == IA64_INS_TYPE_LX) && (code.nins == 2)) ia64_emit_bundle (&code, FALSE);
+#endif
+
 #define ia64_emit_ins(code, itype, ins) do { \
     if (G_LIKELY (code.automatic)) { \
 		code.instructions [code.nins] = ins; \
         code.itypes [code.nins] = itype; \
         code.stops [code.nins] = 1; \
         code.nins ++; \
-        if ((itype != IA64_INS_TYPE_LX) || (code.nins == 2)) ia64_emit_bundle (&code, FALSE); \
+        EMIT_BUNDLE (itype, code); \
         if (code.nins == 3) \
            ia64_emit_bundle (&code, FALSE); \
     } else { \
