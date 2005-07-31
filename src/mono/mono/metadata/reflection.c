@@ -1491,12 +1491,12 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoType *type)
 	if (!assembly->save)
 		return 0;
 
-	p = buf = g_malloc (64);
+	p = buf = g_malloc (256);
 	
 	mono_metadata_encode_value (0x06, p, &p);
 	/* encode custom attributes before the type */
 	encode_type (assembly, type, p, &p);
-	g_assert (p-buf < 64);
+	g_assert (p-buf < 256);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
 	g_free (buf);
