@@ -620,11 +620,11 @@ dis_stringify_marshal_spec (MonoMarshalSpec *spec)
 {
 	switch (spec->native) {
 	case MONO_NATIVE_BYVALTSTR:
-		return g_strdup_printf ("fixed sysstring [%d]", spec->data.array_data.num_elem);
+		return g_strdup_printf (" marshal (fixed sysstring [%d])", spec->data.array_data.num_elem);
 	case MONO_NATIVE_BYVALARRAY:
-		return g_strdup_printf ("fixed array [%d]", spec->data.array_data.num_elem);
+		return g_strdup_printf (" marshal (fixed array [%d])", spec->data.array_data.num_elem);
 	case MONO_NATIVE_LPARRAY: {
-		char *elem_type, *elems;
+		char *elem_type, *elems, *ret;
 		guint32 num_elem = spec->data.array_data.num_elem;
 		guint32 param_num = spec->data.array_data.param_num;
 
@@ -637,11 +637,19 @@ dis_stringify_marshal_spec (MonoMarshalSpec *spec)
 			elems = g_strdup_printf ("+ %d", param_num);
 		else
 			elems = g_strdup_printf ("%d + %d", num_elem, param_num);
-
-		return g_strdup_printf ("%s[%s]", elem_type, elems);
+			
+		ret = g_strdup_printf (" marshal (%s[%s])", elem_type, elems);
+		g_free (elem_type);
+		g_free (elems);
+		return ret;
 	}
-	default:
-		return dis_stringify_native_type (spec->native);
+	default: {
+		char *native_type, *ret;
+		native_type = dis_stringify_native_type (spec->native);
+		ret = g_strdup_printf (" marshal (%s)", native_type);
+		g_free (native_type);
+		return ret;
+	}	
 	}
 }
 
@@ -785,9 +793,9 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 				spec = mono_metadata_parse_marshal_spec (m, tp);
 
 				if (i)
-					marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
+					marshal_info = dis_stringify_marshal_spec (spec);
 				else
-					ret_marshal_info = g_strdup_printf (" marshal (%s)", dis_stringify_marshal_spec (spec));
+					ret_marshal_info = dis_stringify_marshal_spec (spec);
 			}
 			param_index ++;
 		}
@@ -801,7 +809,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		retval = dis_stringify_param (m, method->params [i - 1]);
 
 		esname = get_escaped_name (name);
-		g_string_append_printf (result, "%s %s %s", retval, marshal_info ? marshal_info : "", esname);
+		g_string_append_printf (result, "%s%s %s", retval, marshal_info ? marshal_info : "", esname);
 		g_free (retval);
 		g_free (esname);
 		g_free (marshal_info);

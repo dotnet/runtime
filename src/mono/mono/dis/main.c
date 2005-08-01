@@ -428,14 +428,10 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL) {
 			const char *tp;
 			MonoMarshalSpec *spec;
-			char *marshal;
 			
 			tp = mono_metadata_get_marshal_info (m, i, TRUE);
 			spec = mono_metadata_parse_marshal_spec (m, tp);
-			marshal = dis_stringify_marshal_spec (spec);
-			marshal_str = g_strdup_printf ("marshal (%s) ", marshal);
-
-			g_free (marshal);
+			marshal_str = dis_stringify_marshal_spec (spec);
 		}
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
@@ -461,12 +457,12 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 				lit = g_strdup ("not found");
 			}
 			
-			fprintf (output, "    .field %s %s%s %s = ",
+			fprintf (output, "    .field %s%s%s %s = ",
 				 flags, marshal_str ? marshal_str : " ", sig, esname);
 			fprintf (output, "%s\n", lit);
 			g_free (lit);
 		} else
-			fprintf (output, "    .field %s %s %s%s %s%s\n",
+			fprintf (output, "    .field %s %s%s%s %s%s\n",
 				 attrs? attrs: "", flags, marshal_str ? marshal_str : " ", sig, esname, rva_desc);
 		g_free (attrs);
 		g_free (flags);
