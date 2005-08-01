@@ -298,7 +298,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	buf += 4;
 
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R0);
+	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_IP);
 	
 	/* OK, code address is now on r0. Move it to the place on the stack
 	 * where IP was saved (it is now no more useful to us and it can be
@@ -361,8 +361,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	} else {
 		constants [1] = arm_magic_trampoline;
 	}
-	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr + 8));
-	ARM_LDR_IMM (load_trampoline, ARMREG_R0, ARMREG_PC, (buf + 4 - load_trampoline + 8));
+	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));
+	ARM_LDR_IMM (load_trampoline, ARMREG_IP, ARMREG_PC, (buf + 4 - load_trampoline - 8));
 
 	buf += 8;
 
@@ -495,8 +495,8 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	ARM_MOV_REG_REG (buf, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (buf, ((1 << ARMREG_IP) | (1 << ARMREG_LR)));
 	ARM_MOV_REG_REG (buf, ARMREG_R1, ARMREG_LR);
-	ARM_LDR_IMM (buf, ARMREG_R0, ARMREG_PC, 8); /* load vtable */
-	ARM_LDR_IMM (buf, ARMREG_R3, ARMREG_PC, 8); /* load the func address */
+	ARM_LDR_IMM (buf, ARMREG_R0, ARMREG_PC, 12); /* load vtable */
+	ARM_LDR_IMM (buf, ARMREG_R3, ARMREG_PC, 12); /* load the func address */
 	/* make the call */
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R3);

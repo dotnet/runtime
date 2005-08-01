@@ -207,70 +207,64 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
+stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
-	tree->opcode = OP_SETFREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused & 0xff;
-	mono_bblock_add_inst (s->cbb, tree);
+	/* FIXME: call mono_call_inst_add_outarg_reg () on the out regs */
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused, ARMREG_SP, (s->param_area - 8));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused + 1, ARMREG_SP, (s->param_area - 8 + 4));
 }
 
 stmt: OP_OUTARG_R4 (freg) {
-	tree->opcode = OP_SETFREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused, ARMREG_SP, (s->param_area - 8));
 }
 
-stmt: OP_OUTARG_R8 (freg) {
-	tree->opcode = OP_SETFREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: OP_OUTARG_MEMBASE (reg) {
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused, state->left->reg1);
+}
+
+stmt: OP_OUTARG_MEMBASE (lreg) {
+	/* FIXME: bigendian */
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused, state->left->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused + 4, state->left->reg2);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 	MonoInst *vt = state->left->left->tree;
-	int start_reg = tree->unused & 0xff;
-	int nregs = (tree->unused >> 8) & 0xff;
-	int ovf_size = (tree->unused >> 16) & 0xffff;
-	int i, tmpr, soffset;
+	int start_reg = tree->unused & 0xf;
+	int nregs = (tree->unused >> 4) & 0xf;
+	int ovf_size = (tree->unused >> 8) & 0xfff;
+	int doffset = ((tree->unused >> 20) & 0xfff) * 4;
+	int i, tmpr, soffset, dreg;
 	int size = 0;
 	soffset = vt->inst_offset;
-/*
-  Darwin needs some special handling for 1 and 2 byte arguments
-*/
-#ifdef __APPLE__
-	if (vt->inst_vtype && MONO_TYPE_ISSTRUCT (vt->inst_vtype) && vt->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-	    size =  mono_class_native_size (mono_class_from_mono_type (vt->inst_vtype), NULL);
-	if (size == 2 || size == 1) {
-		tmpr = mono_regstate_next_int (s->rs);
-		if (size == 1)
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, tmpr, vt->inst_basereg, soffset);
-		else
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI2_MEMBASE, tmpr, vt->inst_basereg, soffset);
-		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg, tmpr);
-	} else
-#endif
+
 	for (i = 0; i < nregs; ++i) {
 		tmpr = mono_regstate_next_int (s->rs);
+		dreg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, soffset);
 		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+		mono_call_inst_add_outarg_reg (call, dreg, start_reg + i, FALSE);
 		soffset += sizeof (gpointer);
 	}
-	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
+	//g_print ("vt size: %d at R%d + %d\n", doffset, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0) {
-		mini_emit_memcpy (s, ARMREG_SP, tree->inst_imm + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
+		mini_emit_memcpy (s, ARMREG_SP, doffset, vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
 	}
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
-	int start_reg = tree->unused & 0xff;
-	int nregs = (tree->unused >> 8) & 0xff;
+	int nregs = (tree->unused >> 4) & 0xf;
 	if (nregs) {
-		tree->opcode = OP_SETREGIMM;
-		tree->dreg = start_reg;
+		MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+		tree->opcode = OP_ICONST;
+		tree->dreg = mono_regstate_next_int (s->rs);
 		tree->inst_c0 = state->left->tree->inst_c0;
 		mono_bblock_add_inst (s->cbb, tree);
+
+		mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused & 0xf, FALSE);
 	} else {
 		g_assert_not_reached ();
 	}
@@ -293,54 +287,44 @@ stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 	/* nothing to do: the value is already on the FP stack */
 }
 
-stmt: CEE_BNE_UN (fpcflags) {
-	tree->opcode = OP_FBNE_UN;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BNE_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBNE_UN, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BEQ (fpcflags) {
-	tree->opcode = OP_FBEQ;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BEQ (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBEQ, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BLT (fpcflags) {
-	tree->opcode = OP_FBLT;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BLT (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBLT, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BLT_UN (fpcflags) {
-	tree->opcode = OP_FBLT_UN;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BLT_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBLT_UN, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BGT (fpcflags) {
-	tree->opcode = OP_FBGT;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BGT (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBGT, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BGT_UN (fpcflags) {
-	tree->opcode = OP_FBGT_UN;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BGT_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBGT_UN, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BGE  (fpcflags) {
-	tree->opcode = OP_FBGE;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BGE  (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBGE, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BGE_UN (fpcflags) {
-	tree->opcode = OP_FBGE_UN;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BGE_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBGE_UN, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BLE  (fpcflags) {
-	tree->opcode = OP_FBLE;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BLE  (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBLE, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
-stmt: CEE_BLE_UN (fpcflags) {
-	tree->opcode = OP_FBLE_UN;
-	mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BLE_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_BIALU (s, tree, OP_FBLE_UN, -1, state->left->left->reg1, state->left->right->reg1);
 }
 
 stmt: CEE_POP (freg) "0" {

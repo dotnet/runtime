@@ -71,6 +71,15 @@ mono_arch_fregname (int reg) {
 static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
+	/* FIXME: unroll for large sizes, but we need more registers */
+	while (size >= 4) {
+		ARM_LDR_IMM (code, ARMREG_LR, sreg, soffset);
+		ARM_STR_IMM (code, ARMREG_LR, dreg, doffset);
+		doffset += 4;
+		soffset += 4;
+		size -= 4;
+	}
+	g_assert (size == 0);
 	return code;
 }
 
@@ -149,6 +158,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
 
+	g_assert (arm_is_imm8 (8));
 	/* no arm-specific optimizations yet */
 	*exclude_mask = 0;
 	return opts;
@@ -295,9 +305,8 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		}
 	} else {
 		if (*gr > ARMREG_R2) {
-#ifdef ALIGN_DOUBLES
-			//*stack_size += (*stack_size % 8);
-#endif
+			*stack_size += 7;
+			*stack_size &= ~7;
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->regtype = RegTypeBase;
@@ -351,7 +360,6 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			continue;
 		}
 		simpletype = mono_type_get_underlying_type (sig->params [i])->type;
-	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -387,76 +395,44 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
 			break;
+		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
-			MonoClass *klass;
-			klass = mono_class_from_mono_type (sig->params [i]);
-			if (is_pinvoke)
-			    size = mono_class_native_size (klass, NULL);
-			else
-			    size = mono_class_value_size (klass, NULL);
+			int align_size;
+			int nwords;
+
+			if (simpletype == MONO_TYPE_TYPEDBYREF) {
+				size = sizeof (MonoTypedRef);
+			} else {
+				MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
+				if (is_pinvoke)
+					size = mono_class_native_size (klass, NULL);
+				else
+					size = mono_class_value_size (klass, NULL);
+			}
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
-#if 0
-#if PPC_PASS_STRUCTS_BY_VALUE
-			{
-				int align_size = size;
-				int nwords = 0;
-				align_size += (sizeof (gpointer) - 1);
-				align_size &= ~(sizeof (gpointer) - 1);
-				nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (gr > PPC_LAST_ARG_REG || (size >= 3 && size % 4 != 0)) {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
-				} else {
-					int rest = PPC_LAST_ARG_REG - gr + 1;
-					int n_in_regs = rest >= nwords? nwords: rest;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nwords - n_in_regs;
-					cinfo->args [n].reg = gr;
-					gr += n_in_regs;
-				}
-				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
-				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
-				stack_size += nwords * sizeof (gpointer);
+			align_size = size;
+			nwords = 0;
+			align_size += (sizeof (gpointer) - 1);
+			align_size &= ~(sizeof (gpointer) - 1);
+			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+			cinfo->args [n].regtype = RegTypeStructByVal;
+			/* FIXME: align gr and stack_size if needed */
+			if (gr > ARMREG_R3) {
+				cinfo->args [n].size = 0;
+				cinfo->args [n].vtsize = nwords;
+			} else {
+				int rest = ARMREG_R3 - gr + 1;
+				int n_in_regs = rest >= nwords? nwords: rest;
+				cinfo->args [n].size = n_in_regs;
+				cinfo->args [n].vtsize = nwords - n_in_regs;
+				cinfo->args [n].reg = gr;
+				gr += n_in_regs;
 			}
-#else
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-			cinfo->args [n].regtype = RegTypeStructByAddr;
-#endif
-#endif
-			n++;
-			break;
-		}
-		case MONO_TYPE_TYPEDBYREF: {
-			int size = sizeof (MonoTypedRef);
-			/* keep in sync or merge with the valuetype case */
-#if 0
-#if PPC_PASS_STRUCTS_BY_VALUE
-			{
-				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (gr <= PPC_LAST_ARG_REG) {
-					int rest = PPC_LAST_ARG_REG - gr + 1;
-					int n_in_regs = rest >= nwords? nwords: rest;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nwords - n_in_regs;
-					cinfo->args [n].reg = gr;
-					gr += n_in_regs;
-				} else {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
-				}
-				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
-				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
-				stack_size += nwords * sizeof (gpointer);
-			}
-#else
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-			cinfo->args [n].regtype = RegTypeStructByAddr;
-#endif
-#endif
+			cinfo->args [n].offset = stack_size;
+			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
+			stack_size += nwords * sizeof (gpointer);
 			n++;
 			break;
 		}
@@ -474,7 +450,6 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	{
 		simpletype = mono_type_get_underlying_type (sig->ret)->type;
-enum_retvalue:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -537,6 +512,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	int frame_reg = ARMREG_SP;
 
+	/* FIXME: this will change when we use FP as gcc does */
+	m->flags |= MONO_CFG_HAS_SPILLUP;
 
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
@@ -603,6 +580,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += m->param_area;
 	offset += 8 - 1;
 	offset &= ~(8 - 1);
+	if (m->flags & MONO_CFG_HAS_FPOUT)
+		offset += 8;
 
 	/* allow room to save the return value */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
@@ -751,10 +730,19 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				call->used_iregs |= 1 << ainfo->reg;
 				if (arg->type == STACK_I8)
 					call->used_iregs |= 1 << (ainfo->reg + 1);
+				if (arg->type == STACK_R8) {
+					if (ainfo->size == 4) {
+						arg->opcode = OP_OUTARG_R4;
+					} else {
+						call->used_iregs |= 1 << (ainfo->reg + 1);
+					}
+					cfg->flags |= MONO_CFG_HAS_FPOUT;
+				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				/* FIXME: where si the data allocated? */
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
+				g_assert_not_reached ();
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int cur_reg;
 				/* mark the used regs */
@@ -762,24 +750,23 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					call->used_iregs |= 1 << (ainfo->reg + cur_reg);
 				}
 				arg->opcode = OP_OUTARG_VT;
-				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
-				arg->inst_imm = ainfo->offset;
+				/* vtsize and offset have just 12 bits of encoding in number of words */
+				g_assert (((ainfo->vtsize | (ainfo->offset / 4)) & 0xfffff000) == 0);
+				arg->unused = ainfo->reg | (ainfo->size << 4) | (ainfo->vtsize << 8) | ((ainfo->offset / 4) << 20);
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->opcode = OP_OUTARG_MEMBASE;
-				arg->unused = ainfo->reg | (ainfo->size << 8);
-				arg->inst_imm = ainfo->offset;
+				arg->unused = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeFP) {
-				arg->opcode = OP_OUTARG_R8;
 				arg->unused = ainfo->reg;
-				call->used_fregs |= 1 << ainfo->reg;
-				if (ainfo->size == 4) {
+				/* FPA args are passed in int regs */
+				call->used_iregs |= 1 << ainfo->reg;
+				if (ainfo->size == 8) {
 					arg->opcode = OP_OUTARG_R8;
-					/* we reduce the precision */
-					/*MonoInst *conv;
-					MONO_INST_NEW (cfg, conv, OP_FCONV_TO_R4);
-					conv->inst_left = arg->inst_left;
-					arg->inst_left = conv;*/
+					call->used_iregs |= 1 << (ainfo->reg + 1);
+				} else {
+					arg->opcode = OP_OUTARG_R4;
 				}
+				cfg->flags |= MONO_CFG_HAS_FPOUT;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1627,7 +1614,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case CEE_BREAK:
-			ARM_DBRK (code);
+			*(int*)code = 0xe7f001f0;
+			*(int*)code = 0xef9f0001;
+			code += 4;
+			//ARM_DBRK (code);
 			break;
 		case OP_ADDCC:
 			ARM_ADDS_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -1993,36 +1983,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_START_HANDLER:
-#if ARM_PORT
-			ppc_mflr (code, ppc_r0);
-			if (ppc_is_imm16 (ins->inst_left->inst_offset)) {
-				ppc_stw (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
-			} else {
-				ppc_load (code, ppc_r11, ins->inst_left->inst_offset);
-				ppc_stwx (code, ppc_r0, ppc_r11, ins->inst_left->inst_basereg);
-			}
+			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
+			ARM_STR_IMM (code, ARMREG_LR, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 			break;
-#endif
 		case OP_ENDFILTER:
-#if ARM_PORT
 			if (ins->sreg1 != ARMREG_R0)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
-			if (ppc_is_imm16 (ins->inst_left->inst_offset)) {
-				ppc_lwz (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
-			} else {
-				ppc_load (code, ppc_r11, ins->inst_left->inst_offset);
-				ppc_lwzx (code, ppc_r0, ins->inst_left->inst_basereg, ppc_r11);
-			}
-			ppc_mtlr (code, ppc_r0);
-			ppc_blr (code);
-#endif
+			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
+			ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 			break;
 		case CEE_ENDFINALLY:
-#if ARM_PORT
-			ppc_lwz (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
-			ppc_mtlr (code, ppc_r0);
-			ppc_blr (code);
-#endif
+			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
+			ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 			break;
 		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
@@ -2234,7 +2208,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1)
 				ppc_mr (code, ins->dreg, ins->sreg1);
 #endif
-			g_assert_not_reached ();
+			if (ins->dreg != ins->sreg1)
+				ARM_MOV_REG_REG (code, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_FADD:
@@ -2257,76 +2232,88 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_FCOMPARE:
+			/* each fp compare op needs to do its own */
+			g_assert_not_reached ();
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
-			g_assert_not_reached ();
-			/*ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 0);
-			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 2);
-			ppc_li (code, ins->dreg, 1);*/
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_EQ);
 			break;
 		case OP_FCLT:
-			g_assert_not_reached ();
-			/*ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
-			ppc_li (code, ins->dreg, 0);*/
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			break;
 		case OP_FCLT_UN:
-			g_assert_not_reached ();
-			/*ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 3);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
-			ppc_li (code, ins->dreg, 0);*/
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_VS);
 			break;
 		case OP_FCGT:
-			g_assert_not_reached ();
-			/*ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
-			ppc_li (code, ins->dreg, 0);*/
+			/* swapped */
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			break;
 		case OP_FCGT_UN:
-			g_assert_not_reached ();
-			/*ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
-			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 3);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
-			ppc_li (code, ins->dreg, 0);*/
+			/* swapped */
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_VS);
 			break;
+		/* ARM FPA flags table:
+		 * N        Less than               ARMCOND_MI
+		 * Z        Equal                   ARMCOND_EQ
+		 * C        Greater Than or Equal   ARMCOND_CS
+		 * V        Unordered               ARMCOND_VS
+		 */
 		case OP_FBEQ:
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
 			EMIT_COND_BRANCH (ins, CEE_BEQ - CEE_BEQ);
 			break;
 		case OP_FBNE_UN:
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
 			EMIT_COND_BRANCH (ins, CEE_BNE_UN - CEE_BEQ);
 			break;
 		case OP_FBLT:
-			EMIT_COND_BRANCH (ins, CEE_BLT - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set */
 			break;
 		case OP_FBLT_UN:
-			//EMIT_COND_BRANCH_FLAGS (ins, PPC_BR_TRUE, PPC_BR_SO);
-			EMIT_COND_BRANCH (ins, CEE_BLT_UN - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set */
 			break;
 		case OP_FBGT:
-			EMIT_COND_BRANCH (ins, CEE_BGT - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set, swapped args */
 			break;
 		case OP_FBGT_UN:
-			//EMIT_COND_BRANCH_FLAGS (ins, PPC_BR_TRUE, PPC_BR_SO);
-			EMIT_COND_BRANCH (ins, CEE_BGT_UN - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set, swapped args */
 			break;
 		case OP_FBGE:
-			EMIT_COND_BRANCH (ins, CEE_BGE - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
 			break;
 		case OP_FBGE_UN:
-			EMIT_COND_BRANCH (ins, CEE_BGE_UN - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
 			break;
 		case OP_FBLE:
-			EMIT_COND_BRANCH (ins, CEE_BLE - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS); /* swapped */
 			break;
 		case OP_FBLE_UN:
-			EMIT_COND_BRANCH (ins, CEE_BLE_UN - CEE_BEQ);
+			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS); /* swapped */
 			break;
 		case CEE_CKFINITE: {
 			/*ppc_stfd (code, ins->sreg1, -8, ppc_sp);
@@ -2464,6 +2451,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	int tracing = 0;
 	int lmf_offset = 0;
+	int prev_sp_offset;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -2476,6 +2464,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		cfg->used_int_regs |= USE_EXTRA_TEMPS;
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
+	prev_sp_offset = 8; /* ip and lr */
+	for (i = 0; i < 16; ++i) {
+		if (cfg->used_int_regs & (1 << i))
+			prev_sp_offset += 4;
+	}
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
@@ -2507,10 +2500,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->stack_usage = alloc_size;
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	if (alloc_size) {
+		g_assert (arm_is_imm8 (alloc_size));
 		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, alloc_size);
 	}
 	if (cfg->frame_reg != ARMREG_SP)
 		ARM_MOV_REG_REG (code, cfg->frame_reg, ARMREG_SP);
+	prev_sp_offset += alloc_size;
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on ppc because the immediate displacement
@@ -2554,141 +2549,92 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert_not_reached ();
 				//ppc_fmr (code, inst->dreg, ainfo->reg);
 			} else if (ainfo->regtype == RegTypeBase) {
-				g_assert_not_reached ();
-				//ppc_lwz (code, ppc_r11, 0, ppc_sp);
-				//ppc_lwz (code, inst->dreg, ainfo->offset, ppc_r11);
+				//g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
+				ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 			} else
 				g_assert_not_reached ();
 
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
-#if ARM_PORT
 			/* the argument should be put on the stack: FIXME handle size != word  */
 			if (ainfo->regtype == RegTypeGeneral) {
 				switch (ainfo->size) {
 				case 1:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_stb (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stbx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
-					}
+					g_assert (arm_is_imm12 (inst->inst_offset));
+					ARM_STRB_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 2:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_sth (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_sthx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
-					}
+					g_assert (arm_is_imm8 (inst->inst_offset));
+					ARM_STRH_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 8:
-					if (ppc_is_imm16 (inst->inst_offset + 4)) {
-						ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-						ppc_stw (code, ainfo->reg + 1, inst->inst_offset + 4, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_add (code, ppc_r11, ppc_r11, inst->inst_basereg);
-						ppc_stw (code, ainfo->reg, 0, ppc_r11);
-						ppc_stw (code, ainfo->reg + 1, 4, ppc_r11);
-					}
+					g_assert (arm_is_imm12 (inst->inst_offset));
+					ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					g_assert (arm_is_imm12 (inst->inst_offset + 4));
+					ARM_STR_IMM (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
 					break;
 				default:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stwx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
-					}
+					g_assert (arm_is_imm12 (inst->inst_offset));
+					ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeBase) {
-				/* load the previous stack pointer in r11 */
-				ppc_lwz (code, ppc_r11, 0, ppc_sp);
-				ppc_lwz (code, ppc_r0, ainfo->offset, ppc_r11);
 				switch (ainfo->size) {
 				case 1:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_stb (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stbx (code, ppc_r0, ppc_r11, inst->inst_basereg);
-					}
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+					ARM_STRB_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 2:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_sth (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_sthx (code, ppc_r0, ppc_r11, inst->inst_basereg);
-					}
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+					ARM_STRH_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 8:
-					if (ppc_is_imm16 (inst->inst_offset + 4)) {
-						ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-						ppc_lwz (code, ppc_r0, ainfo->offset + 4, ppc_r11);
-						ppc_stw (code, ppc_r0, inst->inst_offset + 4, inst->inst_basereg);
-					} else {
-						/* FIXME */
-						g_assert_not_reached ();
-					}
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset + 4));
+					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
 					break;
 				default:
-					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stwx (code, ppc_r0, ppc_r11, inst->inst_basereg);
-					}
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeFP) {
-				g_assert (ppc_is_imm16 (inst->inst_offset));
+				/*g_assert (ppc_is_imm16 (inst->inst_offset));
 				if (ainfo->size == 8)
 					ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 				else if (ainfo->size == 4)
 					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-				else
+				else*/
 					g_assert_not_reached ();
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				//g_assert (ppc_is_imm16 (inst->inst_offset));
+				//g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
 				if (mono_class_from_mono_type (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
-/*
-Darwin handles 1 and 2 byte structs specially by loading h/b into the arg
-register.  Should this case include linux/ppc?
-*/
-#if __APPLE__
-					if (size == 2)
-						ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					else if (size == 1)
-						ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					else 
-#endif
-						ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
 					soffset += sizeof (gpointer);
 					doffset += sizeof (gpointer);
 				}
 				if (ainfo->vtsize) {
+					g_assert_not_reached ();
 					/* load the previous stack pointer in r11 (r0 gets overwritten by the memcpy) */
-					ppc_lwz (code, ppc_r11, 0, ppc_sp);
+					//ppc_lwz (code, ppc_r11, 0, ppc_sp);
 					/* FIXME: handle overrun! with struct sizes not multiple of 4 */
-					code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, doffset, ppc_r11, ainfo->offset + soffset);
+					//code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, doffset, ppc_r11, ainfo->offset + soffset);
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
-				g_assert (ppc_is_imm16 (inst->inst_offset));
+				g_assert_not_reached ();
 				/* FIXME: handle overrun! with struct sizes not multiple of 4 */
 				code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
 			} else
 				g_assert_not_reached ();
-#endif
 		}
 		pos++;
 	}
@@ -2698,10 +2644,12 @@ register.  Should this case include linux/ppc?
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 			     (gpointer)"mono_get_lmf_addr");
 		if (cfg->method->dynamic) {
-			/*ppc_lis (code, ppc_r0, 0);
-			ppc_ori (code, ppc_r0, ppc_r0, 0);
-			ppc_mtlr (code, ppc_r0);
-			ppc_blrl (code);*/
+			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+			ARM_B (code, 0);
+			*(gpointer*)code = NULL;
+			code += 4;
+			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 		} else {
 			ARM_BL (code, 0);
 		}
@@ -2810,6 +2758,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, cfg->stack_usage);
 		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 	} else {
+		//g_assert (arm_is_imm8 (cfg->stack_usage));
 		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, cfg->stack_usage);
 		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 	}
