@@ -36,6 +36,12 @@ extern void mono_gc_disable (void);
  */
 extern gboolean mono_gc_is_gc_thread (void);
 
+/*
+ * Try to register a foreign thread with the GC, if we fail or the backend
+ * can't cope with this concept - we return FALSE.
+ */
+extern gboolean mono_gc_register_thread (void *baseptr);
+
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
