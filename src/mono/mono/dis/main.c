@@ -416,6 +416,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 			
 	for (i = start; i < end; i++){
 		char *sig, *flags, *attrs = NULL;
+		char *marshal_str = NULL;
 		guint32 field_offset = -1;
 
 		if (!should_include_field (i + 1))
@@ -423,6 +424,19 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
 		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE], context);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
+		
+		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL) {
+			const char *tp;
+			MonoMarshalSpec *spec;
+			char *marshal;
+			
+			tp = mono_metadata_get_marshal_info (m, i, TRUE);
+			spec = mono_metadata_parse_marshal_spec (m, tp);
+			marshal = dis_stringify_marshal_spec (spec);
+			marshal_str = g_strdup_printf ("marshal (%s) ", marshal);
+
+			g_free (marshal);
+		}
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
 			mono_metadata_field_info (m, i, NULL, &rva, NULL);
@@ -447,16 +461,16 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *co
 				lit = g_strdup ("not found");
 			}
 			
-			
-			fprintf (output, "    .field %s %s %s = ",
-				 flags, sig, esname);
+			fprintf (output, "    .field %s %s%s %s = ",
+				 flags, marshal_str ? marshal_str : " ", sig, esname);
 			fprintf (output, "%s\n", lit);
 			g_free (lit);
 		} else
-			fprintf (output, "    .field %s %s %s %s%s\n",
-				 attrs? attrs: "", flags, sig, esname, rva_desc);
+			fprintf (output, "    .field %s %s %s%s %s%s\n",
+				 attrs? attrs: "", flags, marshal_str ? marshal_str : " ", sig, esname, rva_desc);
 		g_free (attrs);
 		g_free (flags);
+		g_free (marshal_str);
 		g_free (sig);
 		g_free (esname);
 		dump_cattrs (m, MONO_TOKEN_FIELD_DEF | (i + 1), "    ");
