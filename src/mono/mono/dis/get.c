@@ -1396,7 +1396,7 @@ static dis_map_t field_flags_map [] = {
 	{ FIELD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
 	{ FIELD_ATTRIBUTE_PINVOKE_IMPL,        "FIXME:pinvokeimpl " },
 	{ FIELD_ATTRIBUTE_RT_SPECIAL_NAME,        "rtspecialname " },
-	//{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "hasfieldmarshal " },
+	/*{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "hasfieldmarshal " },*/
 	{ 0, NULL }
 };
 
