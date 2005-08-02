@@ -721,6 +721,20 @@ if test x$platform_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
+	dnl *****************************
+    dnl *** Checks for IPV6_PKTINFO ***
+    dnl *****************************
+    AC_MSG_CHECKING(for IPV6_PKTINFO)
+    AC_TRY_COMPILE([#include <netdb.h>], [
+        int level = IPV6_PKTINFO;
+    ], [
+        # Yes, we have it...
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_IPV6_PKTINFO)
+    ], [
+        AC_MSG_RESULT(no)
+    ])
+ 
 	dnl *********************************
 	dnl *** Check for struct ip_mreqn ***
 	dnl *********************************

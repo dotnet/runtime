@@ -1,3 +1,7 @@
+2005-08-02  Zoltan Varga  <vargaz@freemail.hu>
+
+	* acconfig.h configure.in: Applied patch from Julien Puydt (julien.puydt@laposte.net). Add check for IPV6_PKTINFO.
+
 2005-07-19  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix definition of LIBC for ia64.
