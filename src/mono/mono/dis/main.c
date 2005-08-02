@@ -257,12 +257,13 @@ dis_directive_moduleref (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_MODULEREF_SIZE];
-		const char *name;
+		char *esc;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 
-		name = mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]);
-		fprintf (output, ".module extern %s\n", name);
+		esc = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]));
+		fprintf (output, ".module extern %s\n", esc);
+		g_free (esc);
 	}
 	
 }
