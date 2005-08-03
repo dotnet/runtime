@@ -1434,6 +1434,7 @@ mono_method_signature_full (MonoMethod *m, MonoGenericContext *context)
 		m->signature->pinvoke = 1;
 		
 		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CALL_CONV_MASK) {
+		case 0: /* no call conv, so using default */
 		case PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI:
 			conv = MONO_CALL_DEFAULT;
 			break;
@@ -1452,7 +1453,7 @@ mono_method_signature_full (MonoMethod *m, MonoGenericContext *context)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default:
-			g_warning ("unsupported calling convention");
+			g_warning ("unsupported calling convention : 0x%04x", piinfo->piflags);
 			g_assert_not_reached ();
 		}	
 		m->signature->call_convention = conv;
