@@ -539,7 +539,7 @@ static dis_map_t pinvoke_call_conv_map [] = {
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL,     "stdcall " },
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_THISCALL,    "thiscall " },
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL,    "fastcall " },
-	{ 0, NULL }
+	{ 0, "" }
 };
 
 static dis_map_t pinvoke_char_set_map [] = {
