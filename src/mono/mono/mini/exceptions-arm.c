@@ -58,7 +58,8 @@ struct user_regs {
 	unsigned long int uregs[18];
 };
 
-the companion user_fpregs seems broken: it has just 8 double registers
+the companion user_fpregs has just 8 double registers
+(it's valid for FPA mode, will need changes for VFP)
 
 typedef struct {
 	gregset_t gregs;
@@ -140,75 +141,46 @@ arch_get_call_filter (void)
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start;
 
-#if ARM_PORT
 	/* save all the regs on the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
+	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
 
-	ppc_mflr (code, ppc_r0);
-	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-
-	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to PPC_STACK_ALIGNMENT bytes
-	alloc_size += PPC_STACK_ALIGNMENT - 1;
-	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
-
-	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
-	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
-
-	/* restore all the regs from ctx (in r3), but not r1, the stack pointer */
-	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
-	/* call handler at eip (r4) and set the first arg with the exception (r5) */
-	ppc_mtctr (code, ppc_r4);
-	ppc_mr (code, ppc_r3, ppc_r5);
-	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
+	/* restore all the regs from ctx (in r0), but not sp, the stack pointer */
+	restore_regs_from_context (ARMREG_R0, ARMREG_IP, ARMREG_LR);
+	/* call handler at eip (r1) and set the first arg with the exception (r2) */
+	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_R2);
+	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
 
 	/* epilog */
-	ppc_lwz (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
-	ppc_mtlr (code, ppc_r0);
-	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
-	
-	/* restore all the regs from the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (double);
-		ppc_lfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_lmw (code, ppc_r13, ppc_sp, -pos);
+	ARM_POP_NWB (code, 0xff0 | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 
-	ppc_blr (code);
-#endif
 	g_assert ((code - start) < sizeof(start));
 	mono_arch_flush_icache (start, code - start);
 	return start;
 }
 
 static void
-throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs, gboolean rethrow)
+throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
+	gboolean rethrow = eip & 1;
 
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
 
+	eip &= ~1; /* clear the optional rethrow bit */
 	/* adjust eip so that it point into the call instruction */
 	eip -= 4;
 
-#if ARM_PORT
 	setup_context (&ctx);
 
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
-	memcpy (&ctx.regs, int_regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&ctx.regs, int_regs, sizeof (gulong) * 8);
+	/* memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS); */
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -217,7 +189,6 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	}
 	arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
-#endif
 	g_assert_not_reached ();
 }
 
@@ -238,59 +209,41 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 
 	code = start;
 
-#if ARM_PORT
 	/* save all the regs on the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
+	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
 
-	ppc_mflr (code, ppc_r0);
-	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-
-	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to PPC_STACK_ALIGNMENT bytes
-	alloc_size += PPC_STACK_ALIGNMENT - 1;
-	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
-
-	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
-	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
-
-	//ppc_break (code);
 	if (by_name) {
-		ppc_mr (code, ppc_r5, ppc_r3);
-		ppc_load (code, ppc_r3, mono_defaults.corlib);
-		ppc_load (code, ppc_r4, "System");
-		ppc_load (code, ppc_r0, mono_exception_from_name);
-		ppc_mtctr (code, ppc_r0);
-		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
+		/* r0 has the name of the exception: get the object */
+		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_R0);
+		code = mono_arm_emit_load_imm (code, ARMREG_R0, GPOINTER_TO_UINT (mono_defaults.corlib));
+		code = mono_arm_emit_load_imm (code, ARMREG_R1, GPOINTER_TO_UINT ("System"));
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_exception_from_name));
+		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
 	}
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
-	ppc_lwz (code, ppc_r5, 0, ppc_sp); 
-	/* exc is already in place in r3 */
+	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, 10 * 4); /* 10 saved regs */
+	/* exc is already in place in r0 */
 	if (by_name)
-		ppc_lwz (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5); 
+		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_SP, 9 * 4); /* pos on the stack were lr was saved */
 	else
-		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
-	/* pointer to the saved fp regs */
-	pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
-	ppc_addi (code, ppc_r7, ppc_sp, pos);
+		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
+	/* FIXME: pointer to the saved fp regs */
+	/*pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
+	ppc_addi (code, ppc_r7, ppc_sp, pos);*/
 	/* pointer to the saved int regs */
-	pos -= sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_addi (code, ppc_r6, ppc_sp, pos);
-	ppc_li (code, ppc_r8, rethrow);
+	ARM_MOV_REG_REG (code, ARMREG_R3, ARMREG_SP); /* the pushed regs */
+	/* we encode rethrow in the ip, so we avoid args on the stack */
+	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
 
-	ppc_load (code, ppc_r0, throw_exception);
-	ppc_mtctr (code, ppc_r0);
-	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
+	code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (throw_exception));
+	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
 	/* we should never reach this breakpoint */
-	ppc_break (code);
-#endif
+	ARM_DBRK (code);
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
 	return start;
@@ -546,20 +499,20 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	struct ucontext *uc = ctx;
 	MonoContext mctx;
 	gboolean result;
-	
-/*	mctx.sc_ir = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
-	mctx.sc_sp = uc->uc_mcontext.uc_regs->gregs [PT_R1];
-	memcpy (&mctx.regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
+
+	mctx.eip = uc->uc_mcontext.gregs [ARMREG_PC];
+	mctx.ebp = uc->uc_mcontext.gregs [ARMREG_SP];
+	memcpy (&mctx.regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
+	/* memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
 
 	result = arch_handle_exception (&mctx, obj, test_only);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */
-/*	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = mctx.sc_ir;
-	uc->uc_mcontext.uc_regs->gregs [PT_R1] = mctx.sc_sp;
-	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx.regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);*/
+	uc->uc_mcontext.gregs [ARMREG_PC] = mctx.eip;
+	uc->uc_mcontext.gregs [ARMREG_SP] = mctx.ebp;
+	memcpy (&uc->uc_mcontext.gregs [ARMREG_R4], &mctx.regs, sizeof (gulong) * 8);
+	/* memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);*/
 	return result;
 }
 
@@ -567,8 +520,7 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 	struct ucontext *uc = sigctx;
-	return NULL;
-//	return (gpointer)uc->uc_mcontext.uc_regs->gregs [PT_NIP];
+	return (gpointer)uc->uc_mcontext.gregs [ARMREG_PC];
 }
 
 /**

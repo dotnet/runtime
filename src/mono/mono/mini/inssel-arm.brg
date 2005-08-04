@@ -209,25 +209,46 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 
 stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	int creg;
 	/* FIXME: call mono_call_inst_add_outarg_reg () on the out regs */
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused, ARMREG_SP, (s->param_area - 8));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused + 1, ARMREG_SP, (s->param_area - 8 + 4));
+	creg = mono_regstate_next_int (s->rs);
+	mono_call_inst_add_outarg_reg (call, creg, tree->unused, FALSE);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8));
+	creg = mono_regstate_next_int (s->rs);
+	mono_call_inst_add_outarg_reg (call, creg, tree->unused + 1, FALSE);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8 + 4));
 }
 
 stmt: OP_OUTARG_R4 (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	int creg;
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, tree->unused, ARMREG_SP, (s->param_area - 8));
+	creg = mono_regstate_next_int (s->rs);
+	mono_call_inst_add_outarg_reg (call, creg, tree->unused, FALSE);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8));
 }
 
 stmt: OP_OUTARG_MEMBASE (reg) {
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused, state->left->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused >> 8, state->left->reg1);
 }
 
 stmt: OP_OUTARG_MEMBASE (lreg) {
+	int offset = tree->unused >> 8;
 	/* FIXME: bigendian */
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused, state->left->reg1);
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, tree->unused + 4, state->left->reg2);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg2);
+}
+
+stmt: OP_OUTARG_MEMBASE (freg) {
+	int offset = tree->unused >> 8;
+	if ((tree->unused & 0xff) == 8)
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+	else if ((tree->unused & 0xff) == 4)
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+	else
+		g_assert_not_reached ();
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {

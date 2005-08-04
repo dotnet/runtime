@@ -39,6 +39,7 @@
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 void arm_patch (guchar *code, guchar *target);
+guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 
 struct MonoLMF {
 	gpointer    previous_lmf;

@@ -42,7 +42,8 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
 	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
-	(guint32*)code = (guint32)addr;
+	*(guint32*)code = (guint32)addr;
+	code += 4;
 	mono_arch_flush_icache (start, code - start);
 	g_assert ((code - start) <= 16);
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
@@ -440,13 +441,13 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
  * Creates a trampoline function for virtual methods. If the created
  * code is called it first starts JIT compilation of method,
  * and then calls the newly created method. It also replaces the
- * corresponding vtable entry (see ppc_magic_trampoline).
+ * corresponding vtable entry (see arm_magic_trampoline).
  *
  * A trampoline consists of two parts: a main fragment, shared by all method
  * trampolines, and some code specific to each method, which hard-codes a
  * reference to that method and then calls the main fragment.
  *
- * The main fragment contains a call to 'ppc_magic_trampoline', which performs
+ * The main fragment contains a call to 'arm_magic_trampoline', which performs
  * call to the JIT compiler and substitutes the method-specific fragment with
  * some code that directly calls the JIT-compiled method.
  * 
