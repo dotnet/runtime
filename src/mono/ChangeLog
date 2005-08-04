@@ -1,3 +1,8 @@
+
+Thu Aug 4 19:55:33 BST 2005 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: enable the ARM jit port.
+
 2005-08-02  Zoltan Varga  <vargaz@freemail.hu>
 
 	* acconfig.h configure.in: Applied patch from Julien Puydt (julien.puydt@laposte.net). Add check for IPV6_PKTINFO.

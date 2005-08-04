@@ -1470,12 +1470,12 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
-	arm-*-linux-* | armv4l-*-linux-*)
+	arm-*-linux-* | armv*l-*-linux-*)
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
-		INTERP_SUPPORTED=yes
-		interp_wanted=true
+		JIT_SUPPORTED=yes
+		jit_wanted=true
 		;;
 	s390-*-linux*)
 		TARGET=S390;
@@ -1522,7 +1522,7 @@ if test x$JIT_SUPPORTED = xyes; then
       fi
    fi
 else
-   if $interp_wanted; then
+   if test x$interp_wanted = xtrue; then
       jit_status="interpreter"
    else
       AC_ERROR(No JIT or interpreter support available or selected.)
