@@ -102,22 +102,22 @@ enum {
 #define ARM_LDFS_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_LDR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
 #define ARM_LDFS(p,freg,base,offset)	\
-	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF(ARMCOND_AL,1,ARMOP_LDR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
+	ARM_LDFS_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_LDFD_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_LDR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
 #define ARM_LDFD(p,freg,base,offset)	\
-	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF(ARMCOND_AL,1,ARMOP_LDR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
+	ARM_LDFD_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_STFS_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_STR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
 #define ARM_STFS(p,freg,base,offset)	\
-	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF(ARMCOND_AL,1,ARMOP_STR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
+	ARM_STFS_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_STFD_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_STR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
 #define ARM_STFD(p,freg,base,offset)	\
-	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF(ARMCOND_AL,1,ARMOP_STR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
+	ARM_STFD_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_DEF_FPA_CPDO_MONADIC(cond,op,dreg,sreg,round,prec)	\
 	(1 << 8) | (14 << 24)		|	\
@@ -175,7 +175,7 @@ enum {
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FLT,(fn),0,(rd),ARM_FPA_ROUND_SINGLE,ARM_FPA_ROUND_NEAREST))
 
 #define ARM_FIXZ(p,rd,fm)	\
-	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FIX,0,(fm),(rd),0,ARM_FPA_ROUND_NEAREST))
+	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FIX,0,(fm),(rd),0,ARM_FPA_ROUND_ZERO))
 
 #define ARM_WFS(p,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_WFS,0,0,(rd),0,ARM_FPA_ROUND_NEAREST))
