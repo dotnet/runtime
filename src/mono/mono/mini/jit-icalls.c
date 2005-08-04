@@ -226,15 +226,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	return 0;
 }
 
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
-
-static gint32
-mono_imul (gint32 a, gint32 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return a * b;
-}
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 
 static gint32
 mono_idiv (gint32 a, gint32 b)
@@ -287,6 +279,18 @@ mono_irem_un (guint32 a, guint32 b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
 #endif
 	return a % b;
+}
+
+#endif
+
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+
+static gint32
+mono_imul (gint32 a, gint32 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return a * b;
 }
 
 static gint32

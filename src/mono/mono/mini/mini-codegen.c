@@ -33,6 +33,9 @@ static const char*const * ins_spec = pentium_desc;
 #elif defined(__ia64__)
 const char * const ia64_desc [OP_LAST];
 static const char*const * ins_spec = ia64_desc;
+#elif defined(__arm__)
+const char * const arm_cpu_desc [OP_LAST];
+static const char*const * ins_spec = arm_cpu_desc;
 #else
 #error "Not implemented"
 #endif
@@ -77,8 +80,13 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar)
 		if (!*si) {
 			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
 			info->next = NULL;
-			cfg->stack_offset += sizeof (gpointer);
-			info->offset = - cfg->stack_offset;
+			if (cfg->flags & MONO_CFG_HAS_SPILLUP) {
+				info->offset = cfg->stack_offset;
+				cfg->stack_offset += sizeof (gpointer);
+			} else {
+				cfg->stack_offset += sizeof (gpointer);
+				info->offset = - cfg->stack_offset;
+			}
 		}
 
 		if (i == spillvar)
@@ -110,8 +118,16 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 		if (!*si) {
 			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
 			info->next = NULL;
-			cfg->stack_offset += sizeof (double);
-			info->offset = - cfg->stack_offset;
+			if (cfg->flags & MONO_CFG_HAS_SPILLUP) {
+				cfg->stack_offset += 7;
+				cfg->stack_offset &= ~7;
+				info->offset = cfg->stack_offset;
+				cfg->stack_offset += sizeof (double);
+			} else {
+				/* FIXME: align */
+				cfg->stack_offset += sizeof (double);
+				info->offset = - cfg->stack_offset;
+			}
 		}
 
 		if (i == spillvar)

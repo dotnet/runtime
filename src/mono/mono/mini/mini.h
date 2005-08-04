@@ -596,7 +596,9 @@ typedef enum {
 	MONO_CFG_HAS_CALLS  = 1 << 1,
 	MONO_CFG_HAS_LDELEMA  = 1 << 2,
 	MONO_CFG_HAS_VARARGS  = 1 << 3,
-	MONO_CFG_HAS_TAIL     = 1 << 4
+	MONO_CFG_HAS_TAIL     = 1 << 4,
+	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
+	MONO_CFG_HAS_SPILLUP  = 1 << 6  /* spill var slots are allocated from bottom to top */
 } MonoCompileFlags;
 
 typedef struct {

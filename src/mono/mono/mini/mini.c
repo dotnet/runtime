@@ -10133,14 +10133,17 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un, TRUE);
 #endif
 
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
-	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", helper_sig_int_int_int, mono_imul, TRUE);
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 	mono_register_opcode_emulation (CEE_DIV, "__emul_idiv", helper_sig_int_int_int, mono_idiv, TRUE);
 	mono_register_opcode_emulation (CEE_DIV_UN, "__emul_idiv_un", helper_sig_int_int_int, mono_idiv_un, TRUE);
 	mono_register_opcode_emulation (CEE_REM, "__emul_irem", helper_sig_int_int_int, mono_irem, TRUE);
 	mono_register_opcode_emulation (CEE_REM_UN, "__emul_irem_un", helper_sig_int_int_int, mono_irem_un, TRUE);
+#endif
+
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
 	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", helper_sig_int_int_int, mono_imul_ovf, TRUE);
 	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", helper_sig_int_int_int, mono_imul_ovf_un, TRUE);
+	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", helper_sig_int_int_int, mono_imul, TRUE);
 	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", helper_sig_double_double_double, mono_fdiv, TRUE);
 #endif
 

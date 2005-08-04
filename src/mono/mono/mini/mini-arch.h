@@ -17,6 +17,8 @@
 # endif
 #elif defined(__ia64__)
 #include "mini-ia64.h"
+#elif defined(__arm__)
+#include "mini-arm.h"
 #else
 #error add arch specific include file in mini-arch.h
 #endif

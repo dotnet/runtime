@@ -746,7 +746,7 @@ reg: OP_TLS_GET {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_SWITCH (reg) {
+stmt: CEE_SWITCH (reg) "2" {
 	MonoInst *label;
 	int offset_reg = mono_regstate_next_int (s->rs);
 	int target_reg = mono_regstate_next_int (s->rs);

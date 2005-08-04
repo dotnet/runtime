@@ -127,6 +127,13 @@ ppc_sources = \
 	exceptions-ppc.c	\
 	tramp-ppc.c
 
+arm_sources = \
+	mini-arm.c		\
+	mini-arm.h		\
+	exceptions-arm.c	\
+	tramp-arm.c		\
+	mini-codegen.c
+
 sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
@@ -224,6 +231,14 @@ arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-g4.h
 endif
 
+if ARM
+libmono_la_SOURCES = \
+	$(common_sources) $(arm_sources)
+
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg
+arch_built=cpu-arm.h
+endif
+
 if SPARC
 libmono_la_SOURCES = \
 	$(common_sources) $(sparc_sources)
@@ -299,6 +314,9 @@ cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
 cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
 
+cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
+
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
 
@@ -369,6 +387,7 @@ EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(tes
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
+	$(arm_sources) inssel-arm.brg cpu-arm.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
 	$(s390_sources) inssel-s390.brg cpu-s390.md \
 	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
