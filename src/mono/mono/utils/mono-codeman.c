@@ -168,6 +168,9 @@ query_pagesize (void)
 #if defined(__ppc__) || defined(__powerpc__)
 #define BIND_ROOM 4
 #endif
+#if defined(__arm__)
+#define BIND_ROOM 8
+#endif
 
 static CodeChunk*
 new_codechunk (int dynamic, int size)
