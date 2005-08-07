@@ -83,7 +83,30 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
 	code -= 3;
 
-	if ((code [0] == 0x49) && (code [1] == 0xff)) {
+	/* 
+	 * A given byte sequence can match more than case here, so we have to be
+	 * really careful about the ordering of the cases. Longer sequences
+	 * come first.
+	 */
+	if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15)) {
+		gpointer *vtable_slot;
+
+		/* call *<OFFSET>(%rip) */
+		vtable_slot = mono_arch_get_vcall_slot_addr (code + 3, (gpointer*)regs);
+		g_assert (vtable_slot);
+
+		*vtable_slot = nullified_class_init_trampoline;
+	} else if (code [-2] == 0xe8) {
+		/* call <TARGET> */
+		guint8 *buf = code - 2;
+
+		buf [0] = 0x66;
+		buf [1] = 0x66;
+		buf [2] = 0x90;
+		buf [3] = 0x66;
+		buf [4] = 0x90;
+	} else if ((code [0] == 0x49) && (code [1] == 0xff)) {
+		/* call <REG> */
 		/* amd64_set_reg_template is 10 bytes long */
 		guint8* buf = code - 10;
 
@@ -102,27 +125,10 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		buf [10] = 0x90;
 		buf [11] = 0x66;
 		buf [12] = 0x90;
-	} else if (code [-2] == 0xe8) {
-		guint8 *buf = code - 2;
-
-		buf [0] = 0x66;
-		buf [1] = 0x66;
-		buf [2] = 0x90;
-		buf [3] = 0x66;
-		buf [4] = 0x90;
-	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
+	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66) {
 		/* Already changed by another thread */
 		;
-	else if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15)) {
-		gpointer *vtable_slot;
-
-		/* call *<OFFSET>(%rip) */
-		vtable_slot = mono_arch_get_vcall_slot_addr (code + 3, (gpointer*)regs);
-		g_assert (vtable_slot);
-
-		*vtable_slot = nullified_class_init_trampoline;
-	}
-	else {
+	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
 		g_assert_not_reached ();
