@@ -4990,7 +4990,7 @@ mono_image_load_module (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 	name = mono_string_to_utf8 (fileName);
 
 	image = mono_image_open (name, &status);
-	if (status) {
+	if (!image) {
 		MonoException *exc;
 		if (status == MONO_IMAGE_ERROR_ERRNO)
 			exc = mono_get_exception_file_not_found (fileName);
