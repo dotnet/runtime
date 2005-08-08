@@ -657,3 +657,9 @@ helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericC
 
 	return addr;
 }
+
+static MonoString*
+helper_ldstr (MonoImage *image, guint32 idx)
+{
+	return mono_ldstr (mono_domain_get (), image, idx);
+}

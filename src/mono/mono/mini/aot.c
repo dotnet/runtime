@@ -58,6 +58,9 @@
 #define AS_STRING_DIRECTIVE ".string"
 #endif
 
+#define N_RESERVED_GOT_SLOTS 1
+#define ICALL_GOT_SLOTS_START_INDEX N_RESERVED_GOT_SLOTS
+
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 
 typedef struct MonoAotModule {
@@ -474,6 +477,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	info->got = got;
 	info->got_size = *got_size_ptr;
+	info->got [0] = assembly->image;
 #endif
 	sscanf (opt_flags, "%d", &info->opts);
 
@@ -1024,7 +1028,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 
 #if MONO_ARCH_HAVE_PIC_AOT
 			/* GOT entries for icalls are at the start of the got */
-			(*got_slots) [pindex] = icall_index;
+			(*got_slots) [pindex] = ICALL_GOT_SLOTS_START_INDEX + icall_index;
 #endif
 			break;
 		}
@@ -1721,6 +1725,14 @@ get_got_slot (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	guint32 res;
 
 	switch (patch_info->type) {
+	case MONO_PATCH_INFO_IMAGE:
+		if (patch_info->data.image == acfg->image)
+			res = 0;
+		else {
+			res = acfg->got_offset;
+			acfg->got_offset ++;
+		}
+		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 		res = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->icall_to_got_offset_hash, patch_info->data.name));
 		break;
@@ -1945,9 +1957,17 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
 			(patch_info->type == MONO_PATCH_INFO_BB) ||
 			(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET) ||
-			(patch_info->type == MONO_PATCH_INFO_NONE))
+			(patch_info->type == MONO_PATCH_INFO_NONE)) {
+			patch_info->type = MONO_PATCH_INFO_NONE;
 			/* Nothing to do */
 			continue;
+		}
+
+		if ((patch_info->type == MONO_PATCH_INFO_IMAGE) && (patch_info->data.image == acfg->image)) {
+			/* Stored in GOT slot 0 */
+			patch_info->type = MONO_PATCH_INFO_NONE;
+			continue;
+		}
 
 		n_patches ++;
 	}
@@ -1961,10 +1981,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		guint32 offset;
 		patch_info = g_ptr_array_index (patches, pindex);
 		
-		if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
-			(patch_info->type == MONO_PATCH_INFO_BB) ||
-			(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET) ||
-			(patch_info->type == MONO_PATCH_INFO_NONE))
+		if (patch_info->type == MONO_PATCH_INFO_NONE)
 			/* Nothing to do */
 			continue;
 
@@ -2001,9 +2018,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		patch_info = g_ptr_array_index (patches, pindex);
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_LABEL:
-		case MONO_PATCH_INFO_BB:
-		case MONO_PATCH_INFO_GOT_OFFSET:
 		case MONO_PATCH_INFO_NONE:
 			break;
 		case MONO_PATCH_INFO_IMAGE:
@@ -2478,6 +2492,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	/* Compile methods */
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i)
 		compile_method (acfg, i);
+
+	/* Reserved slots */
+	acfg->got_offset = N_RESERVED_GOT_SLOTS;
 
 	collect_icalls (acfg);
 

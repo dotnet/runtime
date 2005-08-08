@@ -99,6 +99,7 @@ static MonoMethodSignature *helper_sig_compile = NULL;
 static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
+static MonoMethodSignature *helper_sig_obj_ptr_int = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_obj_obj_ptr = NULL;
@@ -3076,11 +3077,15 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 			target = start + cli_addr + 2 + (signed char)ip [1];
 			GET_BBLOCK (cfg, bbhash, bblock, target);
 			ip += 2;
+			if (ip < end)
+				GET_BBLOCK (cfg, bbhash, bblock, ip);
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
 			GET_BBLOCK (cfg, bbhash, bblock, target);
 			ip += 5;
+			if (ip < end)
+				GET_BBLOCK (cfg, bbhash, bblock, ip);
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -3103,6 +3108,19 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 			break;
 		default:
 			g_assert_not_reached ();
+		}
+
+		if (i == CEE_THROW) {
+			unsigned char *bb_start = ip - 1;
+			
+			/* Find the start of the bblock containing the throw */
+			bblock = NULL;
+			while ((bb_start > start) && !bblock) {
+				bblock = g_hash_table_lookup (bbhash, (bb_start));
+				bb_start --;
+			}
+			if (bblock)
+				bblock->out_of_line = 1;
 		}
 	}
 	return 0;
@@ -4653,7 +4671,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			n = read32 (ip + 1);
 
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
-				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, n));								
+				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, n));
 				ins->cil_code = ip;
 				ins->type = STACK_OBJ;
 				*sp = ins;
@@ -4685,15 +4703,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 					mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
 				} else {
-					if (cfg->compile_aot)
+					if (bblock->out_of_line) {
+						MonoInst *iargs [2];
+						int temp;
+
+						/* Avoid creating the string object */
+						NEW_IMAGECONST (cfg, iargs [0], image);
+						NEW_ICONST (cfg, iargs [1], mono_metadata_token_index (n));
+						temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr, iargs, ip);
+						NEW_TEMPLOAD (cfg, *sp, temp);
+					} 
+					else
+					if (cfg->compile_aot) {
 						NEW_LDSTRCONST (cfg, ins, image, n);
+						*sp = ins;
+					} 
 					else {
 						NEW_PCONST (cfg, ins, NULL);
 						ins->cil_code = ip;
 						ins->type = STACK_OBJ;
 						ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+						*sp = ins;
 					}
-					*sp = ins;
 				}
 			}
 
@@ -6816,6 +6847,8 @@ create_helper_signature (void)
 	helper_sig_obj_ptr = make_icall_sig ("object ptr");
 
 	helper_sig_obj_ptr_ptr = make_icall_sig ("object ptr ptr");
+
+	helper_sig_obj_ptr_int = make_icall_sig ("object ptr int32");
 
 	helper_sig_obj_obj_ptr_ptr = make_icall_sig ("object object ptr ptr");
 
@@ -10193,6 +10226,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
 	mono_register_jit_icall (helper_compile_generic_method, "compile_generic_method", helper_sig_compile_generic_method, FALSE);
+	mono_register_jit_icall (helper_ldstr, "helper_ldstr", helper_sig_obj_ptr_int, FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS
