@@ -105,6 +105,7 @@ typedef struct MonoAotCompile {
 	guint32 nmethods;
 	guint32 opts;
 	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
+	int code_size, info_size, ex_info_size, got_size, class_info_size;
 } MonoAotCompile;
 
 static GHashTable *aot_modules;
@@ -217,11 +218,15 @@ decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	MonoClass *klass;
 	guint32 token, rank, image_index;
 
+	token = decode_value (buf, &buf);
+	if (token == 0) {
+		*endbuf = buf;
+		return NULL;
+	}
 	image_index = decode_value (buf, &buf);
 	image = load_image (module, image_index);
 	if (!image)
 		return NULL;
-	token = decode_value (buf, &buf);
 	if (mono_metadata_token_code (token) == 0) {
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + token);
 	} else {
@@ -574,6 +579,10 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->has_finalize = (flags >> 1) & 0x1;
 	info->has_cctor = (flags >> 2) & 0x1;
 	info->has_nested_classes = (flags >> 3) & 0x1;
+	info->blittable = (flags >> 4) & 0x1;
+	info->has_references = (flags >> 5) & 0x1;
+	info->has_static_refs = (flags >> 6) & 0x1;
+
 	if (info->has_cctor) {
 		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, buf, &buf);
 		if (!cctor_image)
@@ -584,6 +593,11 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 		if (!info->finalize_image)
 			return FALSE;
 	}
+
+	info->instance_size = decode_value (buf, &buf);
+	info->class_size = decode_value (buf, &buf);
+	info->packing_size = decode_value (buf, &buf);
+	info->min_align = decode_value (buf, &buf);
 
 	*endbuf = buf;
 
@@ -1643,12 +1657,12 @@ get_image_index (MonoAotCompile *cfg, MonoImage *image)
 static void
 encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
-	encode_value (get_image_index (cfg, klass->image), buf, &buf);
 	if (!klass->type_token) {
 		/* Array class */
 		g_assert (klass->rank > 0);
 		g_assert (klass->element_class->type_token);
 		encode_value (MONO_TOKEN_TYPE_DEF, buf, &buf);
+		encode_value (get_image_index (cfg, klass->image), buf, &buf);
 		g_assert (mono_metadata_token_code (klass->element_class->type_token) == MONO_TOKEN_TYPE_DEF);
 		encode_value (klass->element_class->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
 		encode_value (klass->rank, buf, &buf);
@@ -1656,6 +1670,7 @@ encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **
 	else {
 		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
 		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
+		encode_value (get_image_index (cfg, klass->image), buf, &buf);
 	}
 	*endbuf = buf;
 }
@@ -1786,6 +1801,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
 
+	acfg->code_size += cfg->code_len;
+
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
@@ -1900,7 +1917,11 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
 	p = buf = g_malloc (buf_size);
 
-	encode_klass_info (acfg, method->klass, p, &p);
+	if (mono_class_get_cctor (method->klass))
+		encode_klass_info (acfg, method->klass, p, &p);
+	else
+		/* Not needed when loading the method */
+		encode_value (0, p, &p);
 
 	/* String table */
 	if (cfg->opt & MONO_OPT_SHARED) {
@@ -2099,6 +2120,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
+	acfg->info_size += p - buf;
+
 	/* Emit method info */
 
 	emit_label (tmpfp, symbol);
@@ -2168,6 +2191,8 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_free (debug_info);
 	}
 
+	acfg->ex_info_size += p - buf;
+
 	/* Emit info */
 
 	emit_label (tmpfp, symbol);
@@ -2208,11 +2233,16 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	if (1) {//!MONO_CLASS_IS_INTERFACE (klass)) {
 		encode_value (klass->vtable_size, p, &p);
-		encode_value (((klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		encode_value ((klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (klass->has_finalize)
 			encode_method_ref (acfg, mono_class_get_finalizer (klass), p, &p);
+ 
+		encode_value (klass->instance_size, p, &p);
+		encode_value (klass->class_size, p, &p);
+		encode_value (klass->packing_size, p, &p);
+		encode_value (klass->min_align, p, &p);
 
 		for (i = 0; i < klass->vtable_size; ++i) {
 			MonoMethod *cm = klass->vtable [i];
@@ -2223,6 +2253,8 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 				encode_value (0, p, &p);
 		}
 	}
+
+	acfg->class_info_size += p - buf;
 
 	/* Emit the info */
 	label = g_strdup_printf (".LK_I_%x", token - MONO_TOKEN_TYPE_DEF - 1);
@@ -2584,7 +2616,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->got_offset > 0)
 		fprintf (tmpfp, ".skip %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
 
-	printf ("GOT SIZE: %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
+	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d GOT: %d\n", acfg->code_size, acfg->info_size, acfg->ex_info_size, acfg->class_info_size, (int)(acfg->got_offset * sizeof (gpointer)));
 
 	symbol = g_strdup_printf ("got_addr");
 	emit_section_change (tmpfp, ".data", 1);
