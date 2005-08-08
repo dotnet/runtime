@@ -589,14 +589,14 @@ mono_get_inflated_method (MonoMethod *method)
 }
 
 /** 
- * class_compute_field_layout:
+ * mono_class_setup_fields:
  * @m: pointer to the metadata.
  * @class: The class to initialize
  *
  * Initializes the class->fields.
  */
 static void
-class_compute_field_layout (MonoClass *class)
+mono_class_setup_fields (MonoClass *class)
 {
 	MonoImage *m = class->image; 
 	const int top = class->field.count;
@@ -611,9 +611,12 @@ class_compute_field_layout (MonoClass *class)
 	if (class->size_inited)
 		return;
 
+	class->instance_size = 0;
+	class->class_size = 0;
+
 	if (class->parent) {
 		if (!class->parent->size_inited)
-			class_compute_field_layout (class->parent);
+			mono_class_setup_fields (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->min_align = class->parent->min_align;
 		/* we use |= since it may have been set already */
@@ -1884,8 +1887,18 @@ mono_class_init (MonoClass *class)
 	/*
 	 * Computes the size used by the fields, and their locations
 	 */
-	if (!class->size_inited)
-		class_compute_field_layout (class);
+	if (has_cached_info) {
+		class->instance_size = cached_info.instance_size;
+		class->class_size = cached_info.class_size;
+		class->packing_size = cached_info.packing_size;
+		class->min_align = cached_info.min_align;
+		class->blittable = cached_info.blittable;
+		class->has_references = cached_info.has_references;
+		class->has_static_refs = cached_info.has_static_refs;
+	}
+	else
+		if (!class->size_inited)
+			mono_class_setup_fields (class);
 
 	/* initialize method pointers */
 	if (class->rank) {
@@ -2439,7 +2452,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (class->enumtype)
-		class_compute_field_layout (class);
+		mono_class_setup_fields (class);
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
@@ -2896,7 +2909,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (eclass->generic_class)
 		mono_class_init (eclass);
 	if (!eclass->size_inited)
-		class_compute_field_layout (eclass);
+		mono_class_setup_fields (eclass);
 	class->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
 
 	class->rank = rank;
@@ -3027,6 +3040,8 @@ mono_class_data_size (MonoClass *klass)
 static MonoClassField *
 mono_class_get_field_idx (MonoClass *class, int idx)
 {
+	mono_class_setup_fields (class);
+
 	if (class->field.count){
 		if ((idx >= class->field.first) && (idx < class->field.last)){
 			return &class->fields [idx - class->field.first];
@@ -3064,6 +3079,7 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	int i;
 
 	while (klass) {
+		mono_class_setup_fields (klass);
 		for (i = 0; i < klass->field.count; ++i) {
 			if (strcmp (name, klass->fields [i].name) == 0)
 				return &klass->fields [i];
@@ -3080,6 +3096,7 @@ mono_class_get_field_token (MonoClassField *field)
 	int i;
 
 	while (klass) {
+		mono_class_setup_fields (klass);
 		for (i = 0; i < klass->field.count; ++i) {
 			if (&klass->fields [i] == field)
 				return mono_metadata_make_token (MONO_TABLE_FIELD, klass->field.first + i + 1);
@@ -4073,6 +4090,7 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 	if (!klass->inited)
 		mono_class_init (klass);
 	if (!*iter) {
+		mono_class_setup_fields (klass);
 		/* start from the first */
 		if (klass->field.count) {
 			return *iter = &klass->fields [0];

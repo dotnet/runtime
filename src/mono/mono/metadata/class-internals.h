@@ -429,9 +429,16 @@ typedef struct MonoCachedClassInfo {
 	guint ghcimpl : 1;
 	guint has_cctor : 1;
 	guint has_nested_classes : 1;
+	guint blittable : 1;
+	guint has_references : 1;
+	guint has_static_refs : 1;
 	guint32 cctor_token;
 	MonoImage *finalize_image;
 	guint32 finalize_token;
+	guint32 instance_size;
+	guint32 class_size;
+	guint32 packing_size;
+	guint32 min_align;
 } MonoCachedClassInfo;
 
 typedef struct {
