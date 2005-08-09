@@ -86,49 +86,8 @@ static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlo
 
 extern guint8 mono_burg_arity [];
 /* helper methods signature */
-static MonoMethodSignature *helper_sig_int_int_int = NULL;
-static MonoMethodSignature *helper_sig_long_long_long = NULL;
-static MonoMethodSignature *helper_sig_long_long_int = NULL;
-static MonoMethodSignature *helper_sig_newarr = NULL;
-static MonoMethodSignature *helper_sig_newarr_specific = NULL;
-static MonoMethodSignature *helper_sig_ldstr = NULL;
-static MonoMethodSignature *helper_sig_domain_get = NULL;
-static MonoMethodSignature *helper_sig_object_new = NULL;
-static MonoMethodSignature *helper_sig_object_new_specific = NULL;
-static MonoMethodSignature *helper_sig_compile = NULL;
-static MonoMethodSignature *helper_sig_compile_virt = NULL;
-static MonoMethodSignature *helper_sig_obj_ptr = NULL;
-static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_obj_ptr_int = NULL;
-static MonoMethodSignature *helper_sig_obj_obj_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_obj_obj_obj_ptr = NULL;
-static MonoMethodSignature *helper_sig_void_obj_obj_ptr = NULL;
-static MonoMethodSignature *helper_sig_obj_void = NULL;
-static MonoMethodSignature *helper_sig_ptr_void = NULL;
-static MonoMethodSignature *helper_sig_void_void = NULL;
-static MonoMethodSignature *helper_sig_void_ptr = NULL;
-static MonoMethodSignature *helper_sig_void_obj = NULL;
-static MonoMethodSignature *helper_sig_void_obj_ptr_int = NULL;
-static MonoMethodSignature *helper_sig_void_obj_ptr_ptr_obj = NULL;
-static MonoMethodSignature *helper_sig_void_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_void_ptr_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_ptr_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_ptr_ptr_ptr_ptr = NULL;
-static MonoMethodSignature *helper_sig_ptr_obj = NULL;
-static MonoMethodSignature *helper_sig_ptr_obj_int = NULL;
-static MonoMethodSignature *helper_sig_ptr_int = NULL;
-static MonoMethodSignature *helper_sig_ulong_double = NULL;
-static MonoMethodSignature *helper_sig_long_double = NULL;
-static MonoMethodSignature *helper_sig_double_long = NULL;
-static MonoMethodSignature *helper_sig_double_int = NULL;
-static MonoMethodSignature *helper_sig_float_long = NULL;
-static MonoMethodSignature *helper_sig_double_double_double = NULL;
-static MonoMethodSignature *helper_sig_uint_double = NULL;
-static MonoMethodSignature *helper_sig_int_double = NULL;
-static MonoMethodSignature *helper_sig_stelem_ref = NULL;
-static MonoMethodSignature *helper_sig_stelem_ref_check = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_compile_generic_method = NULL;
+static MonoMethodSignature *helper_sig_domain_get = NULL;
 
 static guint32 default_opt = 0;
 
@@ -6799,130 +6758,11 @@ mono_print_tree_nl (MonoInst *tree)
 	printf ("\n");
 }
 
-#define make_icall_sig mono_create_icall_signature
-
 static void
 create_helper_signature (void)
 {
-	/* MonoArray * mono_array_new (MonoDomain *domain, MonoClass *klass, gint32 len) */
-	helper_sig_newarr = make_icall_sig ("object ptr ptr int32");
-
-	/* MonoArray * mono_array_new_specific (MonoVTable *vtable, guint32 len) */
-	helper_sig_newarr_specific = make_icall_sig ("object ptr int32");
-
-	/* MonoObject * mono_object_new (MonoDomain *domain, MonoClass *klass) */
-	helper_sig_object_new = make_icall_sig ("object ptr ptr");
-
-	/* MonoObject * mono_object_new_specific (MonoVTable *vtable) */
-	helper_sig_object_new_specific = make_icall_sig ("object ptr");
-
-	/* void* mono_method_compile (MonoMethod*) */
-	helper_sig_compile = make_icall_sig ("ptr ptr");
-
-	/* void* mono_ldvirtfn (MonoObject *, MonoMethod*) */
-	helper_sig_compile_virt = make_icall_sig ("ptr object ptr");
-
-	/* MonoString* mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 str_index) */
-	helper_sig_ldstr = make_icall_sig ("object ptr ptr int32");
-
-	/* MonoDomain *mono_domain_get (void) */
-	helper_sig_domain_get = make_icall_sig ("ptr");
-
-	/* void stelem_ref (MonoArray *, int index, MonoObject *) */
-	helper_sig_stelem_ref = make_icall_sig ("void ptr int32 object");
-
-	/* void stelem_ref_check (MonoArray *, MonoObject *) */
-	helper_sig_stelem_ref_check = make_icall_sig ("void object object");
-
-	/* void *helper_compile_generic_method (MonoObject *, MonoMethod *, MonoGenericContext *) */
-	helper_sig_compile_generic_method = make_icall_sig ("ptr object ptr ptr");
-
-	/* int amethod (int, int) */
-	helper_sig_int_int_int = make_icall_sig ("int32 int32 int32");
-
-	/* long amethod (long, long) */
-	helper_sig_long_long_long = make_icall_sig ("long long long");
-
-	/* object  amethod (intptr) */
-	helper_sig_obj_ptr = make_icall_sig ("object ptr");
-
-	helper_sig_obj_ptr_ptr = make_icall_sig ("object ptr ptr");
-
-	helper_sig_obj_ptr_int = make_icall_sig ("object ptr int32");
-
-	helper_sig_obj_obj_ptr_ptr = make_icall_sig ("object object ptr ptr");
-
-	helper_sig_void_void = make_icall_sig ("void");
-
-	/* void amethod (intptr) */
-	helper_sig_void_ptr = make_icall_sig ("void ptr");
-
-	/* void amethod (MonoObject *obj) */
-	helper_sig_void_obj = make_icall_sig ("void object");
-
-	/* void amethod (MonoObject *obj, void *ptr, int i) */
-	helper_sig_void_obj_ptr_int = make_icall_sig ("void object ptr int");
-
-	helper_sig_void_obj_ptr_ptr_obj = make_icall_sig ("void object ptr ptr object");
-
-	/* intptr amethod (void) */
-	helper_sig_ptr_void = make_icall_sig ("ptr");
-
-	/* object amethod (void) */
-	helper_sig_obj_void = make_icall_sig ("object");
-
-	/* void  amethod (intptr, intptr) */
-	helper_sig_void_ptr_ptr = make_icall_sig ("void ptr ptr");
-
-	/* void  amethod (intptr, intptr, intptr) */
-	helper_sig_void_ptr_ptr_ptr = make_icall_sig ("void ptr ptr ptr");
-
-	/* intptr  amethod (intptr, intptr) */
-	helper_sig_ptr_ptr_ptr = make_icall_sig ("ptr ptr ptr");
-
-	helper_sig_ptr_ptr_ptr_ptr = make_icall_sig ("ptr ptr ptr ptr");
-
-	/* IntPtr  amethod (object) */
-	helper_sig_ptr_obj = make_icall_sig ("ptr object");
-
-	/* IntPtr  amethod (object, int) */
-	helper_sig_ptr_obj_int = make_icall_sig ("ptr object int");
-
-	/* IntPtr  amethod (int) */
-	helper_sig_ptr_int = make_icall_sig ("ptr int32");
-
-	/* long amethod (long, guint32) */
-	helper_sig_long_long_int = make_icall_sig ("long long int32");
-
-	/* ulong amethod (double) */
-	helper_sig_ulong_double = make_icall_sig ("ulong double");
-
-	/* long amethod (double) */
-	helper_sig_long_double = make_icall_sig ("long double");
-
-	/* double amethod (long) */
-	helper_sig_double_long = make_icall_sig ("double long");
-
-	/* double amethod (int) */
-	helper_sig_double_int = make_icall_sig ("double int32");
-
-	/* float amethod (long) */
-	helper_sig_float_long = make_icall_sig ("float long");
-
-	/* double amethod (double, double) */
-	helper_sig_double_double_double = make_icall_sig ("double double double");
-
-	/* uint amethod (double) */
-	helper_sig_uint_double = make_icall_sig ("uint32 double");
-
-	/* int amethod (double) */
-	helper_sig_int_double = make_icall_sig ("int32 double");
-
-	helper_sig_class_init_trampoline = make_icall_sig ("void");
-
-	helper_sig_obj_obj_obj_ptr = make_icall_sig ("object object object ptr");
-
-	helper_sig_void_obj_obj_ptr = make_icall_sig ("void object object ptr");
+	helper_sig_domain_get = mono_create_icall_signature ("ptr");
+	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
 }
 
 gconstpointer
@@ -7304,9 +7144,10 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 }
 
 void
-mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func, gboolean no_throw)
+mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
 {
 	MonoJitICallInfo *info;
+	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	if (!emul_opcode_map)
 		emul_opcode_map = g_new0 (MonoJitICallInfo*, OP_LAST + 1);
@@ -7317,6 +7158,19 @@ mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignatur
 	info = mono_register_jit_icall (func, name, sig, no_throw);
 
 	emul_opcode_map [opcode] = info;
+}
+
+static void
+register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall (func, name, sig, save);
 }
 
 static void
@@ -10123,27 +9977,26 @@ mini_init (const char *filename)
 	mono_marshal_init ();
 
 	mono_arch_register_lowlevel_calls ();
-	mono_register_jit_icall (mono_profiler_method_enter, "mono_profiler_method_enter", NULL, TRUE);
-	mono_register_jit_icall (mono_profiler_method_leave, "mono_profiler_method_leave", NULL, TRUE);
-	mono_register_jit_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
-	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
-	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
-	mono_register_jit_icall (mono_jit_thread_attach, "mono_jit_thread_attach", helper_sig_void_void, TRUE);
-	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
+	register_icall (mono_profiler_method_enter, "mono_profiler_method_enter", NULL, TRUE);
+	register_icall (mono_profiler_method_leave, "mono_profiler_method_leave", NULL, TRUE);
+	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
+	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
+	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "void", TRUE);
+	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
-	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
-	mono_register_jit_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", helper_sig_void_obj, TRUE);
-	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
-				 helper_sig_void_ptr, TRUE);
+	register_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
+	register_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
+	register_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", "void ptr", TRUE); 
 #if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
-	mono_register_jit_icall (mono_arch_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
-				 helper_sig_void_ptr, TRUE);
+	register_icall (mono_arch_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
+				 "void ptr", TRUE);
 #endif
-	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
-	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", helper_sig_void_void, FALSE);
-	mono_register_jit_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", helper_sig_void_void, FALSE);
-	mono_register_jit_icall (mono_load_remote_field_new, "mono_load_remote_field_new", helper_sig_obj_obj_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_store_remote_field_new, "mono_store_remote_field_new", helper_sig_void_obj_ptr_ptr_obj, FALSE);
+	register_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", "object", FALSE);
+	register_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", "void", FALSE);
+	register_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", "void", FALSE);
+	register_icall (mono_load_remote_field_new, "mono_load_remote_field_new", "object object ptr ptr", FALSE);
+	register_icall (mono_store_remote_field_new, "mono_store_remote_field_new", "void object ptr ptr object", FALSE);
 
 	/* 
 	 * NOTE, NOTE, NOTE, NOTE:
@@ -10151,82 +10004,82 @@ mini_init (const char *filename)
 	 * rule to the burg files, because we need the arity information to be correct.
 	 */
 #ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
-	mono_register_opcode_emulation (OP_LMUL, "__emul_lmul", helper_sig_long_long_long, mono_llmult, TRUE);
-	mono_register_opcode_emulation (OP_LDIV, "__emul_ldiv", helper_sig_long_long_long, mono_lldiv, FALSE);
-	mono_register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", helper_sig_long_long_long, mono_lldiv_un, FALSE);
-	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", helper_sig_long_long_long, mono_llrem, FALSE);
-	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", helper_sig_long_long_long, mono_llrem_un, FALSE);
-	mono_register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", helper_sig_long_long_long, mono_llmult_ovf_un, FALSE);
-	mono_register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", helper_sig_long_long_long, mono_llmult_ovf, FALSE);
+	mono_register_opcode_emulation (OP_LMUL, "__emul_lmul", "long long long", mono_llmult, TRUE);
+	mono_register_opcode_emulation (OP_LDIV, "__emul_ldiv", "long long long", mono_lldiv, FALSE);
+	mono_register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", "long long long", mono_lldiv_un, FALSE);
+	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", "long long long", mono_llrem, FALSE);
+	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", "long long long", mono_llrem_un, FALSE);
+	mono_register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", "long long long", mono_llmult_ovf_un, FALSE);
+	mono_register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", "long long long", mono_llmult_ovf, FALSE);
 #endif
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
-	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl, TRUE);
-	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr, TRUE);
-	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un, TRUE);
+	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", "long long int32", mono_lshl, TRUE);
+	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", "long long int32", mono_lshr, TRUE);
+	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", "long long int32", mono_lshr_un, TRUE);
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
-	mono_register_opcode_emulation (CEE_DIV, "__emul_idiv", helper_sig_int_int_int, mono_idiv, TRUE);
-	mono_register_opcode_emulation (CEE_DIV_UN, "__emul_idiv_un", helper_sig_int_int_int, mono_idiv_un, TRUE);
-	mono_register_opcode_emulation (CEE_REM, "__emul_irem", helper_sig_int_int_int, mono_irem, TRUE);
-	mono_register_opcode_emulation (CEE_REM_UN, "__emul_irem_un", helper_sig_int_int_int, mono_irem_un, TRUE);
+	mono_register_opcode_emulation (CEE_DIV, "__emul_idiv", "int32 int32 int32", mono_idiv, TRUE);
+	mono_register_opcode_emulation (CEE_DIV_UN, "__emul_idiv_un", "int32 int32 int32", mono_idiv_un, TRUE);
+	mono_register_opcode_emulation (CEE_REM, "__emul_irem", "int32 int32 int32", mono_irem, TRUE);
+	mono_register_opcode_emulation (CEE_REM_UN, "__emul_irem_un", "int32 int32 int32", mono_irem_un, TRUE);
 #endif
 
 #ifdef MONO_ARCH_EMULATE_MUL_DIV
-	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", helper_sig_int_int_int, mono_imul_ovf, TRUE);
-	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", helper_sig_int_int_int, mono_imul_ovf_un, TRUE);
-	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", helper_sig_int_int_int, mono_imul, TRUE);
-	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", helper_sig_double_double_double, mono_fdiv, TRUE);
+	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", "int32 int32 int32", mono_imul_ovf, TRUE);
+	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", "int32 int32 int32", mono_imul_ovf_un, TRUE);
+	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", "int32 int32 int32", mono_imul, TRUE);
+	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", "double double double", mono_fdiv, TRUE);
 #endif
 
-	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8, FALSE);
-	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4, FALSE);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8, FALSE);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", "ulong double", mono_fconv_u8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", "uint32 double", mono_fconv_u4, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", "long double", mono_fconv_ovf_i8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", "ulong double", mono_fconv_ovf_u8, FALSE);
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
-	mono_register_opcode_emulation (OP_FCONV_TO_I8, "__emul_fconv_to_i8", helper_sig_long_double, mono_fconv_i8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_I8, "__emul_fconv_to_i8", "long double", mono_fconv_i8, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_CONV_R8_UN
-	mono_register_opcode_emulation (CEE_CONV_R_UN, "__emul_conv_r_un", helper_sig_double_int, mono_conv_to_r8_un, FALSE);
+	mono_register_opcode_emulation (CEE_CONV_R_UN, "__emul_conv_r_un", "double int32", mono_conv_to_r8_un, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
-	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", helper_sig_double_long, mono_lconv_to_r8, FALSE);
+	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", "double long", mono_lconv_to_r8, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R4
-	mono_register_opcode_emulation (OP_LCONV_TO_R4, "__emul_lconv_to_r4", helper_sig_float_long, mono_lconv_to_r4, FALSE);
+	mono_register_opcode_emulation (OP_LCONV_TO_R4, "__emul_lconv_to_r4", "float long", mono_lconv_to_r4, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
-	mono_register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", helper_sig_double_long, mono_lconv_to_r8_un, FALSE);
+	mono_register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", "double long", mono_lconv_to_r8_un, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
-	mono_register_opcode_emulation (OP_FREM, "__emul_frem", helper_sig_double_double_double, fmod, FALSE);
+	mono_register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", fmod, FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4
-	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4, TRUE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "uint32 double", mono_fconv_u4, TRUE);
 #endif
 
 	/* other jit icalls */
-	mono_register_jit_icall (mono_delegate_ctor, "mono_delegate_ctor", helper_sig_void_obj_obj_ptr, FALSE);
-	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
-				 helper_sig_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_get_special_static_data, "mono_get_special_static_data", helper_sig_ptr_int, FALSE);
-	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
-	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
-	mono_register_jit_icall (helper_stelem_ref_check, "helper_stelem_ref_check", helper_sig_stelem_ref_check, FALSE);
-	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
-	mono_register_jit_icall (mono_object_new_specific, "mono_object_new_specific", helper_sig_object_new_specific, FALSE);
-	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
-	mono_register_jit_icall (mono_array_new_specific, "mono_array_new_specific", helper_sig_newarr_specific, FALSE);
-	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
-	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
-	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);
-	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
-	mono_register_jit_icall (helper_compile_generic_method, "compile_generic_method", helper_sig_compile_generic_method, FALSE);
-	mono_register_jit_icall (helper_ldstr, "helper_ldstr", helper_sig_obj_ptr_int, FALSE);
+	register_icall (mono_delegate_ctor, "mono_delegate_ctor", "void object object ptr", FALSE);
+	register_icall (mono_class_static_field_address , "mono_class_static_field_address", 
+				 "ptr ptr ptr", FALSE);
+	register_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", "ptr ptr ptr ptr", FALSE);
+	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
+	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
+	register_icall (helper_stelem_ref, "helper_stelem_ref", "void ptr int32 object", FALSE);
+	register_icall (helper_stelem_ref_check, "helper_stelem_ref_check", "void object object", FALSE);
+	register_icall (mono_object_new, "mono_object_new", "object ptr ptr", FALSE);
+	register_icall (mono_object_new_specific, "mono_object_new_specific", "object ptr", FALSE);
+	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
+	register_icall (mono_array_new_specific, "mono_array_new_specific", "object ptr int32", FALSE);
+	register_icall (mono_runtime_class_init, "mono_runtime_class_init", "void ptr", FALSE);
+	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
+	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
+	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
+	register_icall (helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
+	register_icall (helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS
