@@ -910,8 +910,10 @@ mono_async_invoke (MonoAsyncResult *ares)
 		MonoObject *exc = NULL;
 		void *pa = &ares;
 		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
-		if (!ac->msg->exc)
-			ac->msg->exc = exc;
+		/* 'exc' will be the previous ac->msg->exc if not NULL and not
+		 * catched. If catched, this will be set to NULL and the
+		 * exception will not be printed. */
+		ac->msg->exc = exc;
 	}
 
 	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
