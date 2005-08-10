@@ -984,6 +984,18 @@ dump_table_exported (MonoImage *m)
 	
 }
 
+static void
+dump_blob (MonoImage *m, const char* blob)
+{
+	int j, bsize;
+
+	bsize = mono_metadata_decode_blob_size (blob, &blob);
+
+	for (j = 0; j < bsize; j++) {
+		fprintf (output, "%02x ", blob [j] & 0xff);
+	}
+}
+
 void
 dump_table_field_marshal (MonoImage *m)
 {
@@ -1002,6 +1014,9 @@ dump_table_field_marshal (MonoImage *m)
 		is_field = (cols [MONO_FIELD_MARSHAL_PARENT] & MONO_HAS_FIELD_MARSHAL_MASK) == MONO_HAS_FIELD_MARSHAL_FIELDSREF;
 		idx = cols [MONO_FIELD_MARSHAL_PARENT] >> MONO_HAS_FIELD_MARSHAL_BITS;
 		fprintf (output, "%d: (0x%04x) %s %d: %s\n", i, cols [MONO_FIELD_MARSHAL_PARENT], is_field? "Field" : "Param", idx, native);
+		fprintf (output, "\tblob encoding: ");
+		dump_blob (m, blob);
+		fprintf (output, "\n");
 		g_free (native);
 	}
 	
@@ -1191,7 +1206,7 @@ dump_table_standalonesig (MonoImage *m)
 		fprintf (output, "%d: blob[0x%x] = ", i, cols [MONO_STAND_ALONE_SIGNATURE]);
 
 		for (j = 0; j < bsize; j++) {
-			fprintf (output, "%02x ", locals_ptr [j]);
+			fprintf (output, "%02x ", locals_ptr [j] & 0xff);
 		}
 		fprintf (output, "\n");
 	}
