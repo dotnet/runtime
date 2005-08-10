@@ -1876,6 +1876,16 @@ ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
 	return klass->generic_class != NULL;
 }
 
+static gboolean
+ves_icall_Type_get_IsGenericType (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+	return klass->generic_class != NULL;
+}
+
 static gint32
 ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 {
@@ -6931,6 +6941,7 @@ static const IcallEntry type_icalls [] = {
 	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
 	{"MakePointerType", ves_icall_Type_MakePointerType},
 	{"get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance},
+	{"get_IsGenericType", ves_icall_Type_get_IsGenericType},
 	{"get_IsGenericTypeDefinition", ves_icall_Type_get_IsGenericTypeDefinition},
 	{"internal_from_handle", ves_icall_type_from_handle},
 	{"internal_from_name", ves_icall_type_from_name},
