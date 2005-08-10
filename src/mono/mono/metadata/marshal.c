@@ -1640,7 +1640,7 @@ mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *sp
 #ifdef PLATFORM_WIN32
 		return MONO_NATIVE_LPWSTR;
 #else
-		return MONO_NATIVE_LPTSTR;
+		return MONO_NATIVE_LPSTR;
 #endif
 	default:
 		return MONO_NATIVE_LPSTR;
