@@ -446,7 +446,7 @@ static dis_map_t element_type_map [] = {
 	{ MONO_TYPE_R4         , "float32" },
 	{ MONO_TYPE_R8         , "float64" },
 	{ MONO_TYPE_STRING     , "string" },
-	{ MONO_TYPE_TYPEDBYREF , "TypedByRef" },
+	{ MONO_TYPE_TYPEDBYREF , "typedref" },
 	{ MONO_TYPE_I          , "native int" },
 	{ MONO_TYPE_U          , "native unsigned int" },
 	{ MONO_TYPE_OBJECT     , "object" },
@@ -1251,7 +1251,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type, MonoGenericContext
 	}
 
 	if (*ptr == MONO_TYPE_TYPEDBYREF){
-		g_string_append (str, "typedbyref");
+		g_string_append (str, "typedref");
 		ptr++;
 	} else if (*ptr == MONO_TYPE_VOID){
 		 g_string_append (str, "void");
@@ -1297,7 +1297,7 @@ get_param (MonoImage *m, const char *ptr, char **retval, MonoGenericContext *con
 	}
 	
 	if (*ptr == MONO_TYPE_TYPEDBYREF){
-		g_string_append (str, " typedbyref ");
+		g_string_append (str, " typedref ");
 		ptr++;
 	} else {
 		gboolean by_ref = 0;
