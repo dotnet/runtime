@@ -197,11 +197,39 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
+#ifdef _MSC_VER
+
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx, start_func) do { \
+    unsigned int stackptr; \
+	mono_arch_flush_register_windows (); \
+    { \
+	   __asm mov stackptr, ebp \
+    } \
+	MONO_CONTEXT_SET_IP ((ctx), (start_func)); \
+	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
+} while (0)
+
+#define MONO_INIT_CONTEXT_FROM_CALLER(ctx) do { \
+	unsigned int stackptr, retaddr; \
+    { \
+	    __asm mov stackptr, ebp \
+        __asm mov eax, DWORD PTR [ebp + 4] \
+	    __asm mov retaddr, eax \
+    } \
+	MONO_CONTEXT_SET_IP ((ctx), retaddr); \
+	/* FIXME: NOT WORKING -- THIS IS __builtin_frame_address (0) NOT (1) */ \
+	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
+} while (0)
+
+#else
+
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
 		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
+
+#endif
 
 #define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_NEED_DIV_CHECK 1

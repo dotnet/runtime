@@ -28,7 +28,11 @@ static const char*const * ins_spec = amd64_desc;
 const char * const sparc_desc [OP_LAST];
 static const char*const * ins_spec = sparc_desc;
 #elif defined(__i386__)
+#ifdef _MSC_VER
+extern const char * const pentium_desc [OP_LAST];
+#else
 const char * const pentium_desc [OP_LAST];
+#endif
 static const char*const * ins_spec = pentium_desc;
 #elif defined(__ia64__)
 const char * const ia64_desc [OP_LAST];
