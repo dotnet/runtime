@@ -1983,6 +1983,10 @@
 				>
 			</File>
 			<File
+				RelativePath="mono\mini\mini-codegen.c"
+				>
+			</File>
+			<File
 				RelativePath="mono\mini\mini-exceptions.c"
 				>
 				<FileConfiguration
@@ -2009,6 +2013,10 @@
 			</File>
 			<File
 				RelativePath="mono\mini\mini-ops.h"
+				>
+			</File>
+			<File
+				RelativePath="mono\mini\mini-trampolines.c"
 				>
 			</File>
 			<File

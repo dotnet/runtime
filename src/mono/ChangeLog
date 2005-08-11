@@ -1,3 +1,6 @@
+2005-08-11  Zoltan Varga  <vargaz@freemail.hu>
+
+	* libmono.vcproj: Fix VC build.
 
 Thu Aug 4 19:55:33 BST 2005 Paolo Molaro <lupus@ximian.com>
 
