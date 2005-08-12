@@ -2781,6 +2781,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "wchar", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "winapi", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "with", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "xor", GINT_TO_POINTER (TRUE));
 }
 
 guint32
