@@ -837,6 +837,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
 	guint32 param_index = 0, next_param_index = 0;
+	gboolean has_param_row;
 	const char *name = "", *method_name = "";
 	int free_method = 0;
 	char *retval, *esname;
@@ -846,7 +847,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	GString *result = g_string_new ("");
 	GString *result_ret = g_string_new ("");
 	MonoGenericContainer *container = NULL;
-	int i;
+	int i, start;
         
 	g_assert (method || methoddef_row);
 
@@ -881,17 +882,20 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		}
 	} 
 
+	start = method->hasthis ? 0 : 1;
 	for (i = 0; i < method->param_count + 1; ++i) {
 		marshal_info = NULL;
 		name = "";
+		has_param_row = param_index && param_index < next_param_index;
 
-		if (method->param_count == 0 && ! (param_index && param_index < next_param_index))
+		if (method->param_count == 0 && !has_param_row)
 			/* method has zero parameters, and no row for return val in the PARAM table */
 			continue;
 		
-		mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
+		if (has_param_row)
+			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
 		
-		if (i == pcols [MONO_PARAM_SEQUENCE]) {
+		if (has_param_row && i == pcols [MONO_PARAM_SEQUENCE]) {
 			if (i)
 				name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 
@@ -908,6 +912,9 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 					ret_marshal_info = dis_stringify_marshal_spec (spec);
 			}
 			param_index ++;
+		} else {
+			if (i)
+				name = g_strdup_printf ("A_%i", i - start);
 		}
 
 		if (!i)
