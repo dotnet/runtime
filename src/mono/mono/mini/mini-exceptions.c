@@ -332,6 +332,8 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 
+	MONO_ARCH_CONTEXT_DEF;
+
 	mono_arch_flush_register_windows ();
 
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
