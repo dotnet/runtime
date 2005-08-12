@@ -3564,6 +3564,14 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 		res->data.custom_data.cookie = g_strndup (ptr, len);
 	}
 
+	if (res->native == MONO_NATIVE_SAFEARRAY) {
+		res->data.safearray_data.elem_type = 0;
+		res->data.safearray_data.num_elem = 0;
+		if (ptr - start <= len)
+			res->data.safearray_data.elem_type = *ptr++;
+		if (ptr - start <= len)
+			res->data.safearray_data.num_elem = *ptr++;
+	}
 	return res;
 }
 

@@ -541,6 +541,106 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 }
 
 static char*
+dis_stringify_variant_type (MonoMarshalVariant variant)
+{
+	switch (variant) {
+	case MONO_VARIANT_EMPTY:
+		return g_strdup ("");
+	case MONO_VARIANT_NULL:
+		return g_strdup ("null");
+	case MONO_VARIANT_I2:
+		return g_strdup ("int16");
+	case MONO_VARIANT_I4:
+		return g_strdup ("int32");
+	case MONO_VARIANT_R4:
+		return g_strdup ("float32");
+	case MONO_VARIANT_R8:
+		return g_strdup ("float64");
+	case MONO_VARIANT_CY:
+		return g_strdup ("currency");
+	case MONO_VARIANT_DATE:
+		return g_strdup ("date");
+	case MONO_VARIANT_BSTR:
+		return g_strdup ("bstr");
+	case MONO_VARIANT_DISPATCH:
+		return g_strdup ("idispatch");
+	case MONO_VARIANT_ERROR:
+		return g_strdup ("error");
+	case MONO_VARIANT_BOOL:
+		return g_strdup ("bool");
+	case MONO_VARIANT_VARIANT:
+		return g_strdup ("variant");
+	case MONO_VARIANT_UNKNOWN:
+		return g_strdup ("iunknown");
+	case MONO_VARIANT_DECIMAL:
+		return g_strdup ("decimal");
+	case MONO_VARIANT_I1:
+		return g_strdup ("int8");
+	case MONO_VARIANT_UI1:
+		return g_strdup ("unsigned int8");
+	case MONO_VARIANT_UI2:
+		return g_strdup ("unsigned int16");
+	case MONO_VARIANT_UI4:
+		return g_strdup ("unsigned int32");
+	case MONO_VARIANT_I8:
+		return g_strdup ("int64");
+	case MONO_VARIANT_UI8:
+		return g_strdup ("unsigned int64");
+	case MONO_VARIANT_INT:
+		return g_strdup ("int");
+	case MONO_VARIANT_UINT:
+		return g_strdup ("unsigned int");
+	case MONO_VARIANT_VOID:
+		return g_strdup ("void");
+	case MONO_VARIANT_HRESULT:
+		return g_strdup ("hresult");
+	case MONO_VARIANT_PTR:
+		return g_strdup ("*");
+	case MONO_VARIANT_SAFEARRAY:
+		return g_strdup ("safearray");
+	case MONO_VARIANT_CARRAY:
+		return g_strdup ("carray");
+	case MONO_VARIANT_USERDEFINED:
+		return g_strdup ("userdefined");
+	case MONO_VARIANT_LPSTR:
+		return g_strdup ("lpstr");
+	case MONO_VARIANT_LPWSTR:
+		return g_strdup ("lpwstr");
+	case MONO_VARIANT_RECORD:
+		return g_strdup ("record");
+	case MONO_VARIANT_FILETIME:
+		return g_strdup ("filetime");
+	case MONO_VARIANT_BLOB:
+		return g_strdup ("blob");
+	case MONO_VARIANT_STREAM:
+		return g_strdup ("stream");
+	case MONO_VARIANT_STORAGE:
+		return g_strdup ("storage");
+	case MONO_VARIANT_STREAMED_OBJECT:
+		return g_strdup ("streamed_object");
+	case MONO_VARIANT_STORED_OBJECT:
+		return g_strdup ("stored_object");
+	case MONO_VARIANT_BLOB_OBJECT:
+		return g_strdup ("blob_object");
+	case MONO_VARIANT_CF:
+		return g_strdup ("cf");
+	case MONO_VARIANT_CLSID:
+		return g_strdup ("clsid");
+	case MONO_VARIANT_VECTOR:
+		/* FIXME: output: <v_type> vector */
+		return g_strdup ("vector");
+	case MONO_VARIANT_ARRAY:
+		/* FIXME: output: <v_type> [ ] */
+		return g_strdup ("[]");
+	case MONO_VARIANT_BYREF:
+		/* FIXME: output: <v_type> & */
+		return g_strdup ("&");
+	default:
+		return g_strdup ("unknown");
+	}
+}
+
+static char*
 dis_stringify_native_type (MonoMarshalNative native)
 {
 	switch (native) {
@@ -641,6 +741,16 @@ dis_stringify_marshal_spec (MonoMarshalSpec *spec)
 		ret = g_strdup_printf (" marshal (%s[%s])", elem_type, elems);
 		g_free (elem_type);
 		g_free (elems);
+		return ret;
+	}
+	case MONO_NATIVE_SAFEARRAY: {
+		char *elem_type = NULL, *ret;
+		
+		if (spec->data.safearray_data.elem_type != 0)
+			elem_type = dis_stringify_variant_type (spec->data.safearray_data.elem_type);
+		ret = g_strdup_printf (" marshal (safearray %s)", elem_type ? elem_type : "");
+		
+		g_free (elem_type);
 		return ret;
 	}
 	default: {
