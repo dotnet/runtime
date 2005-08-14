@@ -9455,11 +9455,10 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class)
 		result = mono_class_from_mono_type (tb->type);
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
-	} else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0) {
-		result = ((MonoReflectionMethod*)obj)->method;
-		*handle_class = mono_defaults.methodhandle_class;
-		g_assert (result);
-	} else if (strcmp (obj->vtable->klass->name, "MonoCMethod") == 0) {
+	} else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0 ||
+		   strcmp (obj->vtable->klass->name, "MonoCMethod") == 0 ||
+		   strcmp (obj->vtable->klass->name, "MonoGenericCMethod") == 0 ||
+		   strcmp (obj->vtable->klass->name, "MonoGenericMethod") == 0) {
 		result = ((MonoReflectionMethod*)obj)->method;
 		*handle_class = mono_defaults.methodhandle_class;
 		g_assert (result);
