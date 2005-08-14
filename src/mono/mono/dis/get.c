@@ -2151,9 +2151,11 @@ get_token (MonoImage *m, guint32 token, MonoGenericContext *context)
 			result = g_strdup_printf ("field %s", temp);
 			g_free (temp);
 			return result;
-		}
-		else {
-			g_error ("Do not know how to decode tokens of type 0x%08x", token);
+		} else {
+			temp = get_method (m, token, context);
+			result = g_strdup_printf ("method %s", temp);
+			g_free (temp);
+			return result;
 		}
 		break;
 	}
