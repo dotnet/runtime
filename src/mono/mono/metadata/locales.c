@@ -45,6 +45,8 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 
 static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
+static const RegionInfoEntry* region_info_entry_from_lcid (int lcid);
+
 static int
 culture_lcid_locator (const void *a, const void *b)
 {
@@ -55,10 +57,31 @@ culture_lcid_locator (const void *a, const void *b)
 }
 
 static int
+region_lcid_locator (const void *a, const void *b)
+{
+	const int *lcid = a;
+	const RegionLCIDMap *bb = b;
+
+	return *lcid - bb->lcid;
+}
+
+static int
 culture_name_locator (const void *a, const void *b)
 {
 	const char *aa = a;
 	const CultureInfoNameEntry *bb = b;
+	int ret;
+	
+	ret = strcmp (aa, idx2string (bb->name));
+
+	return ret;
+}
+
+static int
+region_name_locator (const void *a, const void *b)
+{
+	const char *aa = a;
+	const RegionInfoNameEntry *bb = b;
 	int ret;
 	
 	ret = strcmp (aa, idx2string (bb->name));
@@ -236,6 +259,23 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	return TRUE;
 }
 
+static MonoBoolean
+construct_region (MonoRegionInfo *this, const RegionInfoEntry *ri)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	this->region_id = ri->region_id;
+	this->iso2name = mono_string_new (domain, idx2string (ri->iso2name));
+	this->iso3name = mono_string_new (domain, idx2string (ri->iso3name));
+	this->win3name = mono_string_new (domain, idx2string (ri->win3name));
+	this->english_name = mono_string_new (domain, idx2string (ri->english_name));
+	this->currency_symbol = mono_string_new (domain, idx2string (ri->currency_symbol));
+	this->iso_currency_symbol = mono_string_new (domain, idx2string (ri->iso_currency_symbol));
+	this->currency_english_name = mono_string_new (domain, idx2string (ri->currency_english_name));
+	
+	return TRUE;
+}
+
 static gboolean
 construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 {
@@ -259,6 +299,25 @@ construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 	return construct_culture (ci, entry);
 }
 
+static gboolean
+construct_region_from_specific_name (MonoRegionInfo *ri, gchar *name)
+{
+	const RegionInfoEntry *entry;
+	const RegionInfoNameEntry *ne;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ne = bsearch (name, region_name_entries, NUM_REGION_ENTRIES,
+			sizeof (RegionInfoNameEntry), region_name_locator);
+
+	if (ne == NULL)
+		return FALSE;
+
+	entry = &region_entries [ne->region_entry_index];
+
+	return construct_region (ri, entry);
+}
+
 static const CultureInfoEntry*
 culture_info_entry_from_lcid (int lcid)
 {
@@ -269,6 +328,25 @@ culture_info_entry_from_lcid (int lcid)
 	ci = bsearch (&key, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
 	return ci;
+}
+
+static const RegionInfoEntry*
+region_info_entry_from_lcid (int lcid)
+{
+	const RegionInfoEntry *entry;
+	const RegionLCIDMap *ne;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ne = bsearch (&lcid, region_lcid_map, NUM_REGION_LCID_MAP,
+			sizeof (RegionLCIDMap), region_lcid_locator);
+
+	if (ne == NULL)
+		return FALSE;
+
+	entry = &region_entries [ne->region_entry_index];
+
+	return entry;
 }
 
 /*
@@ -434,6 +512,44 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specif
 	return ret;
 }
 
+MonoBoolean
+ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (MonoRegionInfo *this,
+		gint lcid)
+{
+	const RegionInfoEntry *ri;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	ri = region_info_entry_from_lcid (lcid);
+	if(ri == NULL)
+		return FALSE;
+
+	return construct_region (this, ri);
+}
+
+MonoBoolean
+ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this,
+		MonoString *name)
+{
+	const RegionInfoNameEntry *ne;
+	char *n;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	n = mono_string_to_utf8 (name);
+	ne = bsearch (n, region_name_entries, NUM_REGION_ENTRIES,
+			sizeof (RegionInfoNameEntry), region_name_locator);
+
+	if (ne == NULL) {
+                /*g_print ("ne (%s) is null\n", n);*/
+        	g_free (n);
+		return FALSE;
+        }
+        g_free (n);
+
+	return construct_region (this, &region_entries [ne->region_entry_index]);
+}
+
 MonoArray*
 ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral,
 		MonoBoolean specific, MonoBoolean installed)
@@ -510,6 +626,7 @@ ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral (gint lcid, 
 
 	return TRUE;
 }
+
 
 #ifdef HAVE_ICU
 

@@ -115,5 +115,28 @@ typedef struct {
 	gint16 culture_entry_index;
 } CultureInfoNameEntry;
 
+typedef struct {
+	gint16 region_id;
+	/* gint8 measurement_system; // 0:metric 1:US 2:UK */
+	/* gint16 geo_id; */
+	const stridx_t iso2name;
+	const stridx_t iso3name;
+	const stridx_t win3name;
+	const stridx_t english_name;
+	const stridx_t currency_symbol;
+	const stridx_t iso_currency_symbol;
+	const stridx_t currency_english_name;
+} RegionInfoEntry;
+
+typedef struct {
+	const stridx_t name;
+	gint16 region_entry_index;
+} RegionInfoNameEntry;
+
+typedef struct {
+	gint16 lcid;
+	gint16 region_entry_index;
+} RegionLCIDMap;
+
 #endif
 

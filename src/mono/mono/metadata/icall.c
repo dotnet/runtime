@@ -6333,6 +6333,11 @@ static const IcallEntry cultureinfo_icalls [] = {
 	{"internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral}
 };
 
+static const IcallEntry regioninfo_icalls [] = {
+	{"construct_internal_region_from_lcid", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid},
+	{"construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name}
+};
+
 static const IcallEntry compareinfo_icalls [] = {
 	{"assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey},
 	{"construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo},
@@ -7044,6 +7049,7 @@ static const IcallMap icall_entries [] = {
 	{"System.GC", gc_icalls, G_N_ELEMENTS (gc_icalls)},
 	{"System.Globalization.CompareInfo", compareinfo_icalls, G_N_ELEMENTS (compareinfo_icalls)},
 	{"System.Globalization.CultureInfo", cultureinfo_icalls, G_N_ELEMENTS (cultureinfo_icalls)},
+	{"System.Globalization.RegionInfo", regioninfo_icalls, G_N_ELEMENTS (regioninfo_icalls)},
 	{"System.IO.FAMWatcher", famwatcher_icalls, G_N_ELEMENTS (famwatcher_icalls)},
 	{"System.IO.FileSystemWatcher", filewatcher_icalls, G_N_ELEMENTS (filewatcher_icalls)},
 	{"System.IO.MonoIO", monoio_icalls, G_N_ELEMENTS (monoio_icalls)},

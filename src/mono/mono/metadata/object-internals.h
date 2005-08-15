@@ -373,6 +373,18 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
+	gint32 region_id;
+	MonoString *iso2name;
+	MonoString *iso3name;
+	MonoString *win3name;
+	MonoString *english_name;
+	MonoString *currency_symbol;
+	MonoString *iso_currency_symbol;
+	MonoString *currency_english_name;
+} MonoRegionInfo;
+
+typedef struct {
+	MonoObject obj;
 	MonoString *str;
 	gint32 options;
 	MonoArray *key;
