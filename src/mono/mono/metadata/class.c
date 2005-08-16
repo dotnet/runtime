@@ -183,8 +183,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				g_string_append_c (str, '.');
 			else
 				g_string_append_c (str, '+');
-		}
-		if (*klass->name_space) {
+		} else if (*klass->name_space) {
 			g_string_append (str, klass->name_space);
 			g_string_append_c (str, '.');
 		}
