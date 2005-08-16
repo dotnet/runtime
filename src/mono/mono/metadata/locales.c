@@ -487,11 +487,11 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL) {
-                /*g_print ("ne (%s) is null\n", n);*/
-        	g_free (n);
+		/*g_print ("ne (%s) is null\n", n);*/
+		g_free (n);
 		return FALSE;
-        }
-        g_free (n);
+	}
+	g_free (n);
 
 	return construct_culture (this, &culture_entries [ne->culture_entry_index]);
 }
@@ -538,14 +538,14 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
 
 	n = mono_string_to_utf8 (name);
 	ne = bsearch (n, region_name_entries, NUM_REGION_ENTRIES,
-			sizeof (RegionInfoNameEntry), region_name_locator);
+		sizeof (RegionInfoNameEntry), region_name_locator);
 
 	if (ne == NULL) {
-                /*g_print ("ne (%s) is null\n", n);*/
-        	g_free (n);
+		/*g_print ("ne (%s) is null\n", n);*/
+		g_free (n);
 		return FALSE;
-        }
-        g_free (n);
+	}
+	g_free (n);
 
 	return construct_region (this, &region_entries [ne->region_entry_index]);
 }
