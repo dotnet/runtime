@@ -2512,6 +2512,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SEXT_I2:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
 			break;
+		case OP_SEXT_I4:
+			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_ICONST:
 		case OP_I8CONST:
 			if ((((guint64)ins->inst_c0) >> 32) == 0)

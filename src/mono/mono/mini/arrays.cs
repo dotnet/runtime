@@ -215,6 +215,18 @@ class Tests {
 		new Foo ();
 		return 0;
 	}
+
+	public static int test_0_regress_75832 () {
+		int[] table = new int[] { 0, 0 };
+		
+		int x = 0;
+		
+		int temp = -1 ^ x;
+		temp = 2 + temp;
+		int y = table[temp];
+
+		return y;
+	}
 }
 
 
