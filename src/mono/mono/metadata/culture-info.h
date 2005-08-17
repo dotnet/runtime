@@ -11,7 +11,7 @@
 
 #define NUM_SHORT_DATE_PATTERNS 14
 #define NUM_LONG_DATE_PATTERNS 8
-#define NUM_SHORT_TIME_PATTERNS 10
+#define NUM_SHORT_TIME_PATTERNS 11
 #define NUM_LONG_TIME_PATTERNS 10
 
 #define idx2string(idx) (locale_strings + (idx))
@@ -93,6 +93,7 @@ typedef struct {
 	gint lcid;
 	gint parent_lcid;
 	gint specific_lcid;
+	gint16 region_entry_index;
 	const stridx_t name;
 	const stridx_t icu_name;
 	const stridx_t englishname;
@@ -132,11 +133,6 @@ typedef struct {
 	const stridx_t name;
 	gint16 region_entry_index;
 } RegionInfoNameEntry;
-
-typedef struct {
-	gint16 lcid;
-	gint16 region_entry_index;
-} RegionLCIDMap;
 
 #endif
 

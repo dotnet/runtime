@@ -60,7 +60,7 @@ static int
 region_lcid_locator (const void *a, const void *b)
 {
 	const int *lcid = a;
-	const RegionLCIDMap *bb = b;
+	const CultureInfoEntry *bb = b;
 
 	return *lcid - bb->lcid;
 }
@@ -334,12 +334,12 @@ static const RegionInfoEntry*
 region_info_entry_from_lcid (int lcid)
 {
 	const RegionInfoEntry *entry;
-	const RegionLCIDMap *ne;
+	const CultureInfoEntry *ne;
 
 	MONO_ARCH_SAVE_REGS;
 
-	ne = bsearch (&lcid, region_lcid_map, NUM_REGION_LCID_MAP,
-			sizeof (RegionLCIDMap), region_lcid_locator);
+	ne = bsearch (&lcid, culture_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoEntry), region_lcid_locator);
 
 	if (ne == NULL)
 		return FALSE;
