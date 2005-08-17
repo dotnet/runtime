@@ -276,7 +276,7 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 	/* .... allocate a new current_data_table. */
 	mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
 	mono_symbol_table->current_data_table_size = chunk_size;
-	mono_symbol_table->current_data_table_offset = 4;
+	mono_symbol_table->current_data_table_offset = sizeof (gpointer);
 	* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
 
 	goto again;
