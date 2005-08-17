@@ -114,6 +114,14 @@ mono_arch_fregname (int reg)
 		return "unknown";
 }
 
+G_GNUC_UNUSED static void
+break_count (void)
+{
+}
+
+static void 
+ia64_patch (unsigned char* code, gpointer target);
+
 typedef enum {
 	ArgInIReg,
 	ArgInFloatReg,
@@ -1370,13 +1378,21 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI8_MEMBASE_IMM:
 		case OP_STORE_MEMBASE_IMM:
 			/* There are no store_membase instructions on ia64 */
-			NEW_INS (cfg, temp, OP_I8CONST);
-			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
-			NEW_INS (cfg, temp2, CEE_ADD);
-			temp2->sreg1 = ins->inst_destbasereg;
-			temp2->sreg2 = temp->dreg;
-			temp2->dreg = mono_regstate_next_int (cfg->rs);
+			if (ia64_is_imm14 (ins->inst_offset)) {
+				NEW_INS (cfg, temp2, OP_ADD_IMM);
+				temp2->sreg1 = ins->inst_destbasereg;
+				temp2->inst_imm = ins->inst_offset;
+				temp2->dreg = mono_regstate_next_int (cfg->rs);
+			}
+			else {
+				NEW_INS (cfg, temp, OP_I8CONST);
+				temp->inst_c0 = ins->inst_offset;
+				temp->dreg = mono_regstate_next_int (cfg->rs);
+				NEW_INS (cfg, temp2, CEE_ADD);
+				temp2->sreg1 = ins->inst_destbasereg;
+				temp2->sreg2 = temp->dreg;
+				temp2->dreg = mono_regstate_next_int (cfg->rs);
+			}
 
 			switch (ins->opcode) {
 			case OP_STOREI1_MEMBASE_IMM:
@@ -1470,54 +1486,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ins->inst_offset = 0;
 			ins->inst_basereg = temp2->dreg;
-			break;
-		case OP_FCALL_MEMBASE:
-		case OP_LCALL_MEMBASE:
-		case OP_VCALL_MEMBASE:
-		case OP_VOIDCALL_MEMBASE:
-		case OP_CALL_MEMBASE:
-			/* There are no membase instructions on ia64 */
-			if (ia64_is_imm14 (ins->inst_offset)) {
-				NEW_INS (cfg, temp2, OP_ADD_IMM);
-				temp2->sreg1 = ins->sreg1;
-				temp2->inst_imm = ins->inst_offset;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
-			}
-			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
-				temp->inst_c0 = ins->inst_offset;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp2, CEE_ADD);
-				temp2->sreg1 = ins->sreg1;
-				temp2->sreg2 = temp->dreg;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
-			}
-
-			NEW_INS (cfg, temp, OP_LOADI8_MEMBASE);
-			temp->sreg1 = temp2->dreg;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
-
-			ins->sreg1 = temp->dreg;
-
-			switch (ins->opcode) {
-			case OP_FCALL_MEMBASE:
-				ins->opcode = OP_FCALL_REG;
-				break;
-			case OP_LCALL_MEMBASE:
-				ins->opcode = OP_LCALL_REG;
-				break;
-			case OP_VCALL_MEMBASE:
-				ins->opcode = OP_VCALL_REG;
-				break;
-			case OP_VOIDCALL_MEMBASE:
-				ins->opcode = OP_VOIDCALL_REG;
-				break;
-			case OP_CALL_MEMBASE:
-				ins->opcode = OP_CALL_REG;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
@@ -2080,8 +2048,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 }
 
 #define add_patch_info(cfg,code,patch_type,data) do { \
-    ia64_begin_bundle (code); \
-	mono_add_patch_info (cfg, code.buf - cfg->native_code, patch_type, data); \
+	mono_add_patch_info (cfg, code.buf + code.nins - cfg->native_code, patch_type, data); \
 } while (0)
 
 static Ia64CodegenState
@@ -2143,6 +2110,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	ia64_codegen_init (code, code_start);
 
+#if 0
+	if (strstr (cfg->method->name, "conv_ovf_i1") && (bb->block_num == 2))
+		break_count ();
+#endif
+
 	ins = bb->code;
 	while (ins) {
 		offset = code.buf - cfg->native_code;
@@ -2189,9 +2161,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			} else {
 				if (ins->inst_target_bb->native_offset) {
+					guint8 *pos = code.buf + code.nins;
+
+					ia64_br_cond_pred (code, pred, 0);
 					ia64_begin_bundle (code);
-					gint64 disp = ((gint64)ins->inst_target_bb->native_offset - (code.buf - cfg->native_code)) >> 4;
-					ia64_br_cond_pred (code, pred, disp);
+					ia64_patch (pos, cfg->native_code + ins->inst_target_bb->native_offset);
 				} else {
 					add_patch_info (cfg, code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 					ia64_br_cond_pred (code, pred, 0);
@@ -2763,29 +2737,50 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_REG:
 			call = (MonoCallInst*)ins;
 
-			if (call->virtual) {
-				/* Keep this in synch with get_vcall_slot_addr */
-
-				ia64_codegen_set_one_ins_per_bundle (code, TRUE);
-
-				/* This is a virtual call */
-				ia64_mov_to_br (code, IA64_B6, ins->sreg1);
-
-				/*
-				 * This nop will tell get_vcall_slot_addr that this is a virtual 
-				 * call.
-				 */
-				ia64_nop_i (code, 0x12345);
-				ia64_codegen_set_one_ins_per_bundle (code, FALSE);
-			}
-			else {
-				/* Indirect call */
-				ia64_mov (code, GP_SCRATCH_REG, ins->sreg1);
-				ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
-				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
-				ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
-			}
+			/* Indirect call */
+			ia64_mov (code, GP_SCRATCH_REG, ins->sreg1);
+			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+			ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
 			ia64_br_call_reg (code, IA64_B0, IA64_B6);
+
+			code = emit_move_return_value (cfg, ins, code);
+			break;
+
+		case OP_FCALL_MEMBASE:
+		case OP_LCALL_MEMBASE:
+		case OP_VCALL_MEMBASE:
+		case OP_VOIDCALL_MEMBASE:
+		case OP_CALL_MEMBASE:
+			/* 
+			 * There are no membase instructions on ia64, but we can't 
+			 * lower this since get_vcall_slot_addr () needs to decode it.
+			 */
+
+			/* Keep this in synch with get_vcall_slot_addr */
+			if (ia64_is_imm14 (ins->inst_offset))
+				ia64_adds_imm (code, IA64_R8, ins->inst_offset, ins->sreg1);
+			else {
+				ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
+				ia64_add (code, IA64_R8, GP_SCRATCH_REG, ins->sreg1);
+			}
+
+			ia64_begin_bundle (code);
+			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
+
+			ia64_ld8 (code, GP_SCRATCH_REG, IA64_R8);
+
+			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+
+			/*
+			 * This nop will tell get_vcall_slot_addr that this is a virtual 
+			 * call.
+			 */
+			ia64_nop_i (code, 0x12345);
+
+			ia64_br_call_reg (code, IA64_B0, IA64_B6);
+
+			ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3047,142 +3042,450 @@ static gboolean stops_in_template [32][3] = {
 	{ FALSE, FALSE, FALSE }
 };
 
-void
-ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
-{
-	int i, j, ins_type, template;
+static int last_stop_in_template [32] = {
+	-1, 2, 1, 2, -1, 2, -1, -1,
+	-1, 2, 0, 2, -1, 2, -1, 2,
+	-1, 2, -1, 2, -1, -1, -1, 2,
+	-1, 2, -1, -1, -1, 2, -1, -1
+};
 
-	if (!code->automatic) {
-		if (code->nins == 0)
-			return;
+static guint64 nops_for_ins_types [6] = {
+	IA64_NOP_I,
+	IA64_NOP_I,
+	IA64_NOP_M,
+	IA64_NOP_F,
+	IA64_NOP_B,
+	IA64_NOP_X
+};
 
-		g_assert (code->nins == 3);
+#define ITYPE_MATCH(itype1, itype2) (((itype1) == (itype2)) || (((itype2) == IA64_INS_TYPE_A) && (((itype1) == IA64_INS_TYPE_I) || ((itype1) == IA64_INS_TYPE_M))))
 
-		/* Verify template is correct */
-		template = code->template;
-		for (j = 0; j < 3; ++j) {
-			if (code->stops [j])
-				g_assert (stops_in_template [template]);
-
-			ins_type = ins_types_in_template [template][j];
-			switch (code->itypes [j]) {
-			case IA64_INS_TYPE_A:
-				g_assert ((ins_type == IA64_INS_TYPE_I) || (ins_type == IA64_INS_TYPE_M));
-				break;
-			case IA64_INS_TYPE_LX:
-				g_assert (j == 1);
-				g_assert (ins_type == IA64_INS_TYPE_LX);
-				j ++;
-				break;
-			default:
-				g_assert (ins_type == code->itypes [j]);
-			}
-		}
-
-		ia64_emit_bundle_template (code, template, code->instructions [0], code->instructions [1], code->instructions [2]);
-		code->template = 0;
-		code->nins = 0;
-		return;
-	}
-
-	for (i = 0; i < code->nins; ++i) {
-		/* Try to pack two instructions + two stops into one bundle if possible */
-		if (!code->one_ins_per_bundle && (i + 1 < code->nins)) {
-			Ia64InsType i1, i2;
-			gboolean disable = FALSE;
-			gboolean found = FALSE;
+/* 
+ * Debugging support
+ */
 
 #if 0
-			/* Debugging support */
-			{
-				static int count = 0;
-				count ++;
-
-				if (count == atoi (getenv ("COUNT"))) {
-					printf ("FOO\n");
-				}
-
-				if (count > atoi (getenv ("COUNT"))) {
-					disable = TRUE;
-				}
-			}
+#define DEBUG_INS_SCHED(a) do { a; } while (0)
+#else
+#define DEBUG_INS_SCHED(a)
 #endif
 
-			/* MISIS */
-			i1 = code->itypes [i];
-			i2 = code->itypes [i + 1];
+static gboolean
+debug_count (void)
+{
+#if 0
+	static int count = 0;
+	count ++;
 
-			if (i1 == IA64_INS_TYPE_A)
-				i1 = IA64_INS_TYPE_M;
-			if (i2 == IA64_INS_TYPE_A)
-				i2 = IA64_INS_TYPE_I;
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
 
-			if (!disable && i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_I) {
-				ia64_emit_bundle_template (code, IA64_TEMPLATE_MISIS, code->instructions [i], IA64_NOP_I, code->instructions [i + 1]);
-				found = TRUE;
-			}
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
 
-			/* MSMIS */
-			i1 = code->itypes [i];
-			i2 = code->itypes [i + 1];
+	return TRUE;
+#endif
+	return TRUE;
+}
 
-			if (i1 == IA64_INS_TYPE_A)
-				i1 = IA64_INS_TYPE_M;
-			if (i2 == IA64_INS_TYPE_A)
-				i2 = IA64_INS_TYPE_M;
+static void
+ia64_emit_bundle_manual (Ia64CodegenState *code)
+{
+	int j, ins_type, template;
 
-			if (!disable && !found && i1 == IA64_INS_TYPE_M && i2 == IA64_INS_TYPE_M) {
-				ia64_emit_bundle_template (code, IA64_TEMPLATE_MSMIS, code->instructions [i], code->instructions [i + 1], IA64_NOP_I);
-				found = TRUE;
-			}
+	if (code->nins == 0)
+		return;
 
-			if (found) {
-				//printf ("A\n");
-				if (flush || (i == 1)) {
-					i ++;
-					continue;
-				}
-				else {
-					/* 
-					 * Wait for more instructions so we can use this 
-					 * optimization again.
-					 */
-					code->instructions [i] = code->instructions [i + 2];
-					code->itypes [i] = code->itypes [i + 2];
-					code->stops [i] = code->stops [i + 2];
-					code->nins -= 2;
-					return;
-				}
-			}
-		}
+	g_assert (code->nins == 3);
 
-		switch (code->itypes [i]) {
+	/* Verify template is correct */
+	template = code->template;
+	for (j = 0; j < 3; ++j) {
+		if (code->stops [j])
+			g_assert (stops_in_template [template]);
+
+		ins_type = ins_types_in_template [template][j];
+		switch (code->itypes [j]) {
 		case IA64_INS_TYPE_A:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
-			break;
-		case IA64_INS_TYPE_I:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, IA64_NOP_M, code->instructions [i], IA64_NOP_I);
-			break;
-		case IA64_INS_TYPE_M:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIIS, code->instructions [i], IA64_NOP_I, IA64_NOP_I);
-			break;
-		case IA64_INS_TYPE_B:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [i]);
-			break;
-		case IA64_INS_TYPE_F:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [i], IA64_NOP_I);
+			g_assert ((ins_type == IA64_INS_TYPE_I) || (ins_type == IA64_INS_TYPE_M));
 			break;
 		case IA64_INS_TYPE_LX:
-			ia64_emit_bundle_template (code, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [i], code->instructions [i + 1]);
-			i ++;
+			g_assert (j == 1);
+			g_assert (ins_type == IA64_INS_TYPE_LX);
+			j ++;
+			break;
+		default:
+			g_assert (ins_type == code->itypes [j]);
+		}
+	}
+
+	ia64_emit_bundle_template (code, template, code->instructions [0], code->instructions [1], code->instructions [2]);
+	code->template = 0;
+	code->nins = 0;
+	code->dep_info_pos = 0;
+}
+
+static void
+ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
+{
+	int i, pos, ins_index, current_deps_start, current_ins_start, reg;
+	guint8 *deps = code->dep_info;
+	gboolean need_stop;
+
+	for (i = 0; i < code->nins; ++i)
+		code->stops [i] = FALSE;
+	
+	ins_index = 0;
+	current_deps_start = 0;
+	current_ins_start = 0;
+	deps_start [ins_index] = current_ins_start;
+	pos = 0;
+	DEBUG_INS_SCHED (printf ("BEGIN.\n"));
+	while (pos < code->dep_info_pos) {
+		need_stop = FALSE;
+		switch (deps [pos]) {
+		case IA64_END_OF_INS:
+			ins_index ++;
+			current_ins_start = pos + 2;
+			deps_start [ins_index] = current_ins_start;
+			DEBUG_INS_SCHED (printf ("(%d) END INS.\n", ins_index - 1));
+			break;
+		case IA64_NONE:
+			break;
+		case IA64_READ_GR:
+			reg = deps [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("READ GR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_GR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_GR:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE GR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_GR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_READ_PR:
+			reg = deps [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("READ PR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_PR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_READ_PR_BRANCH:
+			reg = deps [pos + 1];
+
+			/* Writes to prs by non-float instructions are visible to branches */
+			DEBUG_INS_SCHED (printf ("READ PR BRANCH: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_PR_FLOAT && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_PR:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE PR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (((deps [i] == IA64_WRITE_PR) || (deps [i] == IA64_WRITE_PR_FLOAT)) && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_PR_FLOAT:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE PR FP: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (((deps [i] == IA64_WRITE_GR) || (deps [i] == IA64_WRITE_PR_FLOAT)) && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_READ_BR:
+			reg = deps [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("READ BR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_BR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_BR:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE BR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_BR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_READ_FR:
+			reg = deps [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("READ BR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_FR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_FR:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE BR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_FR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_READ_AR:
+			reg = deps [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("READ AR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_AR && deps [i + 1] == reg)
+					need_stop = TRUE;
+			break;
+		case IA64_WRITE_AR:
+			reg = code->dep_info [pos + 1];
+
+			DEBUG_INS_SCHED (printf ("WRITE AR: %d\n", reg));
+			for (i = current_deps_start; i < current_ins_start; i += 2)
+				if (deps [i] == IA64_WRITE_AR && deps [i + 1] == reg)
+					need_stop = TRUE;
 			break;
 		default:
 			g_assert_not_reached ();
 		}
+		pos += 2;
+
+		if (need_stop) {
+			g_assert (ins_index > 0);
+			code->stops [ins_index - 1] = 1;
+
+			DEBUG_INS_SCHED (printf ("STOP\n"));
+			current_deps_start = current_ins_start;
+
+			/* Skip remaining deps for this instruction */
+			while (deps [pos] != IA64_END_OF_INS)
+				pos += 2;
+		}
 	}
 
-	code->nins = 0;
+	if (code->nins > 0) {
+		/* No dependency info for the last instruction */
+		code->stops [code->nins - 1] = 1;
+	}
+
+	deps_start [code->nins] = code->dep_info_pos;
 }
+
+static void
+ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int n, guint64 template, guint64 ins1, guint64 ins2, guint64 ins3, guint8 nops)
+{
+	g_assert (n <= code->nins);
+	int stop_pos, i, deps_to_shift, dep_shift;
+
+	// if (n > 1) printf ("FOUND: %ld.\n", template);
+
+	ia64_emit_bundle_template (code, template, ins1, ins2, ins3);
+
+	stop_pos = last_stop_in_template [template] + 1;
+	if (stop_pos > n)
+		stop_pos = n;
+
+	/* Compute the number of 'real' instructions before the stop */
+	deps_to_shift = stop_pos;
+	if (stop_pos >= 3 && (nops & (1 << 2)))
+		deps_to_shift --;
+	if (stop_pos >= 2 && (nops & (1 << 1)))
+		deps_to_shift --;
+	if (stop_pos >= 1 && (nops & (1 << 0)))
+		deps_to_shift --;
+
+	/* 
+	 * We have to keep some dependencies whose instructions have been shifted
+	 * out of the buffer. So nullify the end_of_ins markers in the dependency
+	 * array.
+	 */
+	for (i = deps_start [deps_to_shift]; i < deps_start [n]; i += 2)
+		if (code->dep_info [i] == IA64_END_OF_INS)
+			code->dep_info [i] = IA64_NONE;
+
+	g_assert (deps_start [deps_to_shift] <= code->dep_info_pos);
+	memcpy (code->dep_info, &code->dep_info [deps_start [deps_to_shift]], code->dep_info_pos - deps_start [deps_to_shift]);
+	code->dep_info_pos = code->dep_info_pos - deps_start [deps_to_shift];
+
+	dep_shift = deps_start [deps_to_shift];
+	for (i = 0; i < code->nins + 1 - n; ++i)
+		deps_start [i] = deps_start [n + i] - dep_shift;
+
+	if (n == code->nins) {
+		code->template = 0;
+		code->nins = 0;
+	}		
+	else {
+		memcpy (&code->instructions [0], &code->instructions [n], (code->nins - n) * sizeof (guint64));
+		memcpy (&code->itypes [0], &code->itypes [n], (code->nins - n) * sizeof (int));
+		memcpy (&code->stops [0], &code->stops [n], (code->nins - n) * sizeof (int));
+		code->nins -= n;
+	}
+}
+
+void
+ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
+{
+	int i, ins_type, template, nins_to_emit;
+	int deps_start [16];
+	gboolean found;
+
+	if (!code->automatic) {
+		ia64_emit_bundle_manual (code);
+		return;
+	}
+
+	/*
+	 * We implement a simple scheduler which tries to put three instructions 
+	 * per bundle, then two, then one.
+	 */
+
+	ia64_analyze_deps (code, deps_start);
+
+	if ((code->nins >= 3) && !code->one_ins_per_bundle) {
+		/* Find a suitable template */
+		for (template = 0; template < 32; ++template) {
+			if (stops_in_template [template][0] != code->stops [0] ||
+				stops_in_template [template][1] != code->stops [1] ||
+				stops_in_template [template][2] != code->stops [2])
+				continue;
+
+			found = TRUE;
+			for (i = 0; i < 3; ++i) {
+				ins_type = ins_types_in_template [template][i];
+				switch (code->itypes [i]) {
+				case IA64_INS_TYPE_A:
+					found &= (ins_type == IA64_INS_TYPE_I) || (ins_type == IA64_INS_TYPE_M);
+					break;
+				default:
+					found &= (ins_type == code->itypes [i]);
+					break;
+				}
+			}
+
+			if (found)
+				found = debug_count ();
+
+			if (found) {
+				ia64_real_emit_bundle (code, deps_start, 3, template, code->instructions [0], code->instructions [1], code->instructions [2], 0);
+				return;
+			}
+		}
+	}
+
+	if (code->nins < IA64_INS_BUFFER_SIZE && !flush)
+		/* Wait for more instructions */
+		return;
+
+	/* If it didn't work out, try putting two instructions into one bundle */
+	if ((code->nins >= 2) && !code->one_ins_per_bundle) {
+		/* Try a nop at the end */
+		for (template = 0; template < 32; ++template) {
+			if (stops_in_template [template][0] != code->stops [0] ||
+				((stops_in_template [template][1] != code->stops [1]) &&
+				 (stops_in_template [template][2] != code->stops [1])))
+				 
+				continue;
+
+			if (!ITYPE_MATCH (ins_types_in_template [template][0], code->itypes [0]) ||
+				!ITYPE_MATCH (ins_types_in_template [template][1], code->itypes [1]))
+				continue;
+
+			if (!debug_count ())
+				continue;
+
+			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], code->instructions [1], nops_for_ins_types [ins_types_in_template [template][2]], 1 << 2);
+			break;
+		}
+	}
+
+	if (code->nins < IA64_INS_BUFFER_SIZE && !flush)
+		/* Wait for more instructions */
+		return;
+
+	if ((code->nins >= 2) && !code->one_ins_per_bundle) {
+		/* Try a nop in the middle */
+		for (template = 0; template < 32; ++template) {
+			if (((stops_in_template [template][0] != code->stops [0]) &&
+				 (stops_in_template [template][1] != code->stops [0])) ||
+				stops_in_template [template][2] != code->stops [1])
+				continue;
+
+			if (!ITYPE_MATCH (ins_types_in_template [template][0], code->itypes [0]) ||
+				!ITYPE_MATCH (ins_types_in_template [template][2], code->itypes [1]))
+				continue;
+
+			if (!debug_count ())
+				continue;
+
+			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], nops_for_ins_types [ins_types_in_template [template][1]], code->instructions [1], 1 << 1);
+			break;
+		}
+	}
+
+	if (code->nins < IA64_INS_BUFFER_SIZE && !flush)
+		/* Wait for more instructions */
+		return;
+
+	if (flush)
+		nins_to_emit = code->nins;
+	else
+		nins_to_emit = 1;
+
+	while (nins_to_emit > 0) {
+		if (!debug_count ())
+			code->stops [0] = 1;
+		switch (code->itypes [0]) {
+		case IA64_INS_TYPE_A:
+			if (code->stops [0])
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			break;
+		case IA64_INS_TYPE_I:
+			if (code->stops [0])
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			break;
+		case IA64_INS_TYPE_M:
+			if (code->stops [0])
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			break;
+		case IA64_INS_TYPE_B:
+			if (code->stops [0])
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIB, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
+			break;
+		case IA64_INS_TYPE_F:
+			if (code->stops [0])
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MFI, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			break;
+		case IA64_INS_TYPE_LX:
+			if (code->stops [0] || code->stops [1])
+				ia64_real_emit_bundle (code, deps_start, 2, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
+			else
+				ia64_real_emit_bundle (code, deps_start, 2, IA64_TEMPLATE_MLX, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
+			nins_to_emit --;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		nins_to_emit --;
+	}
+}
+
 
 static void 
 ia64_patch (unsigned char* code, gpointer target)
@@ -3191,6 +3494,22 @@ ia64_patch (unsigned char* code, gpointer target)
 	guint64 instructions [3];
 	guint8 gen_buf [16];
 	Ia64CodegenState gen;
+	int ins_to_skip;
+	gboolean found;
+
+	/* 
+	 * code encodes both the position inside the buffer and code.nins when
+	 * the instruction was emitted.
+	 */
+	ins_to_skip = (guint64)code % 16;
+	code = (unsigned char*)((guint64)code & ~15);
+
+	/*
+	 * Search for the first instruction which is 'patchable', skipping
+	 * ins_to_skip instructions.
+	 */
+
+	while (TRUE) {
 
 	template = ia64_bundle_template (code);
 	instructions [0] = ia64_bundle_ins1 (code);
@@ -3199,27 +3518,18 @@ ia64_patch (unsigned char* code, gpointer target)
 
 	ia64_codegen_init (gen, gen_buf);
 
+	found = FALSE;
 	for (i = 0; i < 3; ++i) {
 		guint64 ins = instructions [i];
 		int opcode = ia64_ins_opcode (ins);
 
-		/* Skip nops */
-		gboolean nop = FALSE;
-		switch (ins_types_in_template [template][i]) {
-		case IA64_INS_TYPE_I:
-			nop = (ins == IA64_NOP_I);
-			break;
-		case IA64_INS_TYPE_M:
-			nop = (ins == IA64_NOP_M);
-			break;
-		case IA64_INS_TYPE_LX:
-			break;
-		default:
-			break;
-		}
-
-		if (nop)
+		if (ins == nops_for_ins_types [ins_types_in_template [template][i]])
 			continue;
+
+		if (ins_to_skip) {
+			ins_to_skip --;
+			continue;
+		}
 
 		switch (ins_types_in_template [template][i]) {
 		case IA64_INS_TYPE_A:
@@ -3228,6 +3538,7 @@ ia64_patch (unsigned char* code, gpointer target)
 				/* adds */
 				ia64_adds_imm_pred (gen, ia64_ins_qp (ins), ia64_ins_r1 (ins), (guint64)target, ia64_ins_r3 (ins));
 				instructions [i] = gen.instructions [0];
+				found = TRUE;
 			}
 			else
 				NOT_IMPLEMENTED;
@@ -3241,6 +3552,7 @@ ia64_patch (unsigned char* code, gpointer target)
 				ia64_br_cond_hint_pred (gen, ia64_ins_qp (ins), disp, 0, 0, 0);
 				
 				instructions [i] = gen.instructions [0];
+				found = TRUE;
 			}
 			else if (opcode == 5) {
 				/* br.call */
@@ -3249,6 +3561,7 @@ ia64_patch (unsigned char* code, gpointer target)
 				/* FIXME: hints */
 				ia64_br_call_hint_pred (gen, ia64_ins_qp (ins), ia64_ins_b1 (ins), disp, 0, 0, 0);
 				instructions [i] = gen.instructions [0];
+				found = TRUE;
 			}
 			else
 				NOT_IMPLEMENTED;
@@ -3262,6 +3575,7 @@ ia64_patch (unsigned char* code, gpointer target)
 				ia64_movl_pred (gen, ia64_ins_qp (ins), ia64_ins_r1 (ins), target);
 				instructions [1] = gen.instructions [0];
 				instructions [2] = gen.instructions [1];
+				found = TRUE;
 			}
 			else
 				NOT_IMPLEMENTED;
@@ -3270,11 +3584,17 @@ ia64_patch (unsigned char* code, gpointer target)
 		default:
 			NOT_IMPLEMENTED;
 		}
+
+		if (found) {
+			/* Rewrite code */
+			ia64_codegen_init (gen, code);
+			ia64_emit_bundle_template (&gen, template, instructions [0], instructions [1], instructions [2]);
+			return;
+		}
 	}
 
-	/* Rewrite code */
-	ia64_codegen_init (gen, code);
-	ia64_emit_bundle_template (&gen, template, instructions [0], instructions [1], instructions [2]);
+	code += 16;
+	}
 }
 
 void
@@ -3383,10 +3703,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 
 		if (ia64_is_imm14 (-alloc_size)) {
-			ia64_begin_bundle_template (code, IA64_TEMPLATE_MISI);
+			ia64_begin_bundle_template (code, IA64_TEMPLATE_MISIS);
 			ia64_nop_m (code, 0);
 			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP); ia64_stop (code);
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+			ia64_stop (code);
 			ia64_begin_bundle (code);
 		}
 		else {
@@ -3396,7 +3717,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
 			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
 			ia64_nop_i (code, 0);
-			ia64_nop_i (code, 0); ia64_stop (code);
+			ia64_nop_i (code, 0);
+			ia64_stop (code);
 			ia64_begin_bundle (code);
 		}
 #endif
@@ -3910,24 +4232,28 @@ mono_arch_get_patch_offset (guint8 *code)
 gpointer*
 mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 {
-	guint8 *bundle1 = code - 48;
-	guint8 *bundle2 = code - 32;
-	guint8 *bundle3 = code - 16;
-	guint64 ins11 = ia64_bundle_ins1 (bundle1);
-	guint64 ins12 = ia64_bundle_ins2 (bundle1);
-	guint64 ins13 = ia64_bundle_ins3 (bundle1);
+	guint8 *bundle2 = code - 48;
+	guint8 *bundle3 = code - 32;
+	guint8 *bundle4 = code - 16;
 	guint64 ins21 = ia64_bundle_ins1 (bundle2);
 	guint64 ins22 = ia64_bundle_ins2 (bundle2);
 	guint64 ins23 = ia64_bundle_ins3 (bundle2);
 	guint64 ins31 = ia64_bundle_ins1 (bundle3);
 	guint64 ins32 = ia64_bundle_ins2 (bundle3);
 	guint64 ins33 = ia64_bundle_ins3 (bundle3);
+	guint64 ins41 = ia64_bundle_ins1 (bundle4);
+	guint64 ins42 = ia64_bundle_ins2 (bundle4);
+	guint64 ins43 = ia64_bundle_ins3 (bundle4);
 	int reg;
 
 	/* 
 	 * Virtual calls are made with:
+	 *
+	 * [MII]       ld8 r31=[r8]
+	 *             nop.i 0x0
+	 *             nop.i 0x0;;
 	 * [MII]       nop.m 0x0
-	 *             mov.sptk b6=r8,0x2000000000f32a80
+	 *             mov.sptk b6=r31,0x2000000000f32a80
 	 *             nop.i 0x0;;
 	 * [MII]       nop.m 0x0
 	 *             nop.i 0x123456
@@ -3937,23 +4263,23 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 *             br.call.sptk.few b0=b6;;
 	 */
 
-	if ((ia64_bundle_template (bundle2) == IA64_TEMPLATE_MIIS) &&
-		(ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIBS) &&
-		(ins21 == IA64_NOP_M) && 
-		(ia64_ins_opcode (ins22) == 0) && (ia64_ins_x3 (ins22) == 0) && (ia64_ins_x6 (ins22) == 0x1) && (ia64_ins_y (ins22) == 0) &&
-		(ins23 == IA64_NOP_I) &&
-		(ins31 == IA64_NOP_M) &&
-		(ins32 == IA64_NOP_I) &&
-		(ia64_ins_opcode (ins33) == 1) && (ia64_ins_b1 (ins33) == 0) && (ia64_ins_b2 (ins33) == 6) &&
-		((ins22 >> 6) & 0xfffff) == 0x12345) {
-		g_assert (ins11 == IA64_NOP_M);
-		g_assert (ins13 == IA64_NOP_I);
-		g_assert (ia64_ins_opcode (ins12) == 0);
-		g_assert (ia64_ins_x3 (ins12) == 7);
-		g_assert (ia64_ins_x (ins12) == 0);
-		g_assert (ia64_ins_b1 (ins12) == IA64_B6);
+	if ((ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIIS) &&
+		(ia64_bundle_template (bundle4) == IA64_TEMPLATE_MIBS) &&
+		(ins31 == IA64_NOP_M) && 
+		(ia64_ins_opcode (ins32) == 0) && (ia64_ins_x3 (ins32) == 0) && (ia64_ins_x6 (ins32) == 0x1) && (ia64_ins_y (ins32) == 0) &&
+		(ins33 == IA64_NOP_I) &&
+		(ins41 == IA64_NOP_M) &&
+		(ins42 == IA64_NOP_I) &&
+		(ia64_ins_opcode (ins43) == 1) && (ia64_ins_b1 (ins43) == 0) && (ia64_ins_b2 (ins43) == 6) &&
+		((ins32 >> 6) & 0xfffff) == 0x12345) {
+		g_assert (ins21 == IA64_NOP_M);
+		g_assert (ins23 == IA64_NOP_I);
+		g_assert (ia64_ins_opcode (ins22) == 0);
+		g_assert (ia64_ins_x3 (ins22) == 7);
+		g_assert (ia64_ins_x (ins22) == 0);
+		g_assert (ia64_ins_b1 (ins22) == IA64_B6);
 
-		reg = ia64_ins_r2 (ins12);
+		reg = IA64_R8;
 
 		/* 
 		 * Must be a scratch register, since only those are saved by the trampoline

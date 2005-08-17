@@ -118,8 +118,6 @@ get_real_call_filter (void)
 	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
 	ia64_mov_from_br (code, local0 + 1, IA64_B0);
 
-	/* FIXME: This depends on the current instruction emitter */
-
 	r_pro = g_malloc0 (_U_dyn_region_info_size (2));
 	r_pro->op_count = 2;
 	r_pro->insn_count = 6;
@@ -134,6 +132,7 @@ get_real_call_filter (void)
 	ia64_mov (code, IA64_R15, in0 + 0);
 	/* Target ip */
 	ia64_mov_to_br (code, IA64_B6, in0 + 1);
+
 	/* Return address */
 	ia64_mov_from_ip (code, GP_SCRATCH_REG);
 	ia64_adds_imm (code, GP_SCRATCH_REG, 3 * 16, GP_SCRATCH_REG);
@@ -154,6 +153,8 @@ get_real_call_filter (void)
 	ia64_mov_to_ar_i (code, IA64_PFS, local0 + 0);
 	ia64_mov_ret_to_br (code, IA64_B0, local0 + 1);
 	ia64_br_ret_reg (code, IA64_B0);
+
+	ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
 	ia64_codegen_close (code);
 

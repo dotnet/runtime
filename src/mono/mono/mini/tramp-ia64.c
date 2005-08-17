@@ -181,6 +181,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Save the calling address */
 	ia64_mov_from_br (code, l7, IA64_B0);
 
+	/* FIXME: Emit prolog/epilog manually */
+
 	/* Create unwind info for the prolog */
 	r_pro = g_malloc0 (_U_dyn_region_info_size (3));
 	r_pro->op_count = 3;
