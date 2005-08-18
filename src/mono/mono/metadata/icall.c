@@ -6057,6 +6057,7 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	gint ignored;
 	gint i;
 	gunichar2 c;
+	gunichar2 last, prev_last;
 	gint olength;
 	MonoArray *result;
 	guchar *res_ptr;
@@ -6064,6 +6065,7 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	MonoException *exc;
 
 	ignored = 0;
+	last = prev_last = 0;
 	for (i = 0; i < ilength; i++) {
 		c = start [i];
 		if (isspace (c)) {
@@ -6073,6 +6075,9 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 				"System", "FormatException",
 				"Invalid character found.");
 			mono_raise_exception (exc);
+		} else {
+			prev_last = last;
+			last = c;
 		}
 	}
 
@@ -6084,10 +6089,10 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	}
 
 	olength = (olength * 3) / 4;
-	if (start [ilength - 1] == '=')
+	if (last == '=')
 		olength--;
 
-	if (start [ilength - 2] == '=')
+	if (prev_last == '=')
 		olength--;
 
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, olength);
