@@ -6833,6 +6833,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 			type_name [type_len] = 0;
 			named += type_len;
 			/* FIXME: lookup the type and check type consistency */
+			g_free (type_name);
 		} else if (data_type == MONO_TYPE_SZARRAY && (named_type == 0x54 || named_type == 0x53)) {
 			/* this seems to be the type of the element of the array */
 			/* g_print ("skipping 0x%02x after prop\n", *named); */
@@ -6940,6 +6941,7 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const char *data,
 			type_name [type_len] = 0;
 			named += type_len;
 			/* FIXME: lookup the type and check type consistency */
+			g_free (type_name);
 		} else if (data_type == MONO_TYPE_SZARRAY && (named_type == 0x54 || named_type == 0x53)) {
 			/* this seems to be the type of the element of the array */
 			/* g_print ("skipping 0x%02x after prop\n", *named); */
