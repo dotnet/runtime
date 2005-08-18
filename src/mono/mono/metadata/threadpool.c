@@ -246,8 +246,10 @@ async_invoke_io_thread (gpointer data)
 
 				mono_async_invoke (ar);
 				ac = (ASyncCall *) ar->data;
+				/*
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
+				*/
 				mono_domain_set (mono_get_root_domain (), TRUE);
 			}
 			mono_thread_pop_appdomain_ref ();
@@ -1148,8 +1150,10 @@ async_invoke_thread (gpointer data)
 
 				mono_async_invoke (ar);
 				ac = (ASyncCall *) ar->data;
+				/*
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
+				*/
 				mono_domain_set (mono_get_root_domain (), TRUE);
 			}
 			mono_thread_pop_appdomain_ref ();
