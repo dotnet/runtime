@@ -1397,6 +1397,8 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	MonoAssembly *result;
 	char *fullpath, *filename;
 	MonoAssemblyName maped_aname;
+	int ext_index;
+	const char *ext;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 	
@@ -1417,33 +1419,39 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
-	if (strstr (aname->name, ".dll"))
-		filename = g_strdup (aname->name);
-	else
-		filename = g_strconcat (aname->name, ".dll", NULL);
+	for (ext_index = 0; ext_index < 2; ext_index ++) {
+		ext = ext_index == 0 ? ".dll" : ".exe";
+		if (strstr (aname->name, ".dll"))
+			filename = g_strdup (aname->name);
+		else
+			filename = g_strconcat (aname->name, ext, NULL);
 
-	result = mono_assembly_load_from_gac (aname, filename, status, refonly);
-	if (result) {
-		g_free (filename);
-		return result;
-	}
-
-	if (basedir) {
-		fullpath = g_build_filename (basedir, filename, NULL);
-		result = mono_assembly_open_full (fullpath, status, refonly);
-		g_free (fullpath);
+		result = mono_assembly_load_from_gac (aname, filename, status, refonly);
 		if (result) {
-			result->in_gac = FALSE;
 			g_free (filename);
 			return result;
 		}
+
+		if (basedir) {
+			fullpath = g_build_filename (basedir, filename, NULL);
+			result = mono_assembly_open_full (fullpath, status, refonly);
+			g_free (fullpath);
+			if (result) {
+				result->in_gac = FALSE;
+				g_free (filename);
+				return result;
+			}
+		}
+
+		result = load_in_path (filename, default_path, status, refonly);
+		if (result)
+			result->in_gac = FALSE;
+		g_free (filename);
+		if (result)
+			return result;
 	}
 
-	result = load_in_path (filename, default_path, status, refonly);
-	if (result)
-		result->in_gac = FALSE;
-	g_free (filename);
-	return result;
+	return NULL;
 }
 
 MonoAssembly*
