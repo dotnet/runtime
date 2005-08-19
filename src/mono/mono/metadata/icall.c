@@ -1318,6 +1318,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	MonoClassField *cf = field->field;
 	MonoClass *klass;
 	MonoVTable *vtable;
+	MonoType *t;
 	MonoDomain *domain = mono_object_domain (field); 
 	gchar *v;
 	gboolean is_static = FALSE;
@@ -1331,7 +1332,8 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	
 	mono_class_init (field->klass);
 
-	switch (cf->type->type) {
+	t = mono_type_get_underlying_type (cf->type);
+	switch (t->type) {
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
@@ -1354,11 +1356,11 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = cf->type->byref;
+		is_ref = t->byref;
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
-			 "ves_icall_Monofield_GetValue", cf->type->type);
+			 "ves_icall_Monofield_GetValue", t->type);
 		return NULL;
 	}
 
