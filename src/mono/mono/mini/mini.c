@@ -3504,10 +3504,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		switch (*ip) {
 		case CEE_NOP:
-			++ip;
-			break;
 		case CEE_BREAK:
-			MONO_INST_NEW (cfg, ins, CEE_BREAK);
+			MONO_INST_NEW (cfg, ins, *ip);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
 			break;
