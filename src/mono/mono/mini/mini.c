@@ -3109,9 +3109,14 @@ emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8
 }
 
 static inline MonoMethod *
-mini_get_method (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context)
+mini_get_method (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
-	MonoMethod *method = mono_get_method_full (image, token, klass, context);
+	MonoMethod *method;
+
+	if (m->wrapper_type != MONO_WRAPPER_NONE)
+		return mono_method_get_wrapper_data (m, token);
+
+	method = mono_get_method_full (m->klass->image, token, klass, context);
 
 	if (method->is_inflated)
 		method = mono_get_inflated_method (method);
@@ -3766,7 +3771,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
-			cmethod = mini_get_method (image, token, NULL, generic_context);
+			cmethod = mini_get_method (method, token, NULL, generic_context);
 
 			if (mono_use_security_manager) {
 				check_linkdemand (cfg, method, cmethod, bblock, ip);
@@ -3806,7 +3811,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context);
 					cmethod = mono_get_inflated_method (cmethod);
 				} else {
-					cmethod = mini_get_method (image, token, NULL, generic_context);
+					cmethod = mini_get_method (method, token, NULL, generic_context);
 				}
 
 				g_assert (cmethod);
@@ -4696,10 +4701,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				cmethod = mono_method_get_wrapper_data (method, token);
-			} else
-				cmethod = mini_get_method (image, token, NULL, generic_context);
+			cmethod = mini_get_method (method, token, NULL, generic_context);
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
@@ -5743,7 +5745,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			n = read32 (ip + 1);
 
-			handle = mono_ldtoken (image, n, &handle_class, generic_context);
+			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				handle = mono_method_get_wrapper_data (method, n);
+				handle_class = mono_method_get_wrapper_data (method, n + 1);
+			}
+			else {
+				handle = mono_ldtoken (image, n, &handle_class, generic_context);
+			}
 			mono_class_init (handle_class);
 
 			if (cfg->opt & MONO_OPT_SHARED) {
@@ -5762,7 +5770,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip [5] == CEE_CALL) && (cmethod = mini_get_method (image, read32 (ip + 6), NULL, generic_context)) &&
+				if ((ip [5] == CEE_CALL) && (cmethod = mini_get_method (method, read32 (ip + 6), NULL, generic_context)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && ip_in_bb (cfg, bblock, ip + 5)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
@@ -6158,11 +6166,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					cmethod = mono_method_get_wrapper_data (method, n);
-				else {
-					cmethod = mini_get_method (image, n, NULL, generic_context);
-				}
+				cmethod = mini_get_method (method, n, NULL, generic_context);
 
 				mono_class_init (cmethod->klass);
 
@@ -6191,10 +6195,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					cmethod = mono_method_get_wrapper_data (method, n);
-				else
-					cmethod = mini_get_method (image, n, NULL, generic_context);
+				cmethod = mini_get_method (method, n, NULL, generic_context);
 
 				mono_class_init (cmethod->klass);
 
