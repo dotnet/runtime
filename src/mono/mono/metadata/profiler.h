@@ -73,7 +73,7 @@ typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *ass
 
 typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
 
-typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, guint32 tid);
+typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, gsize tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, guchar *ip, void *context);
 typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);

@@ -1255,7 +1255,8 @@ static void
 mono_domain_unload (MonoDomain *domain)
 {
 	HANDLE thread_handle;
-	guint32 tid, res;
+	gsize tid;
+	guint32 res;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	MonoObject *exc;

@@ -321,7 +321,7 @@ void
 mono_release_type_locks (MonoThread *thread)
 {
 	EnterCriticalSection (&type_initialization_section);
-	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, GUINT_TO_POINTER (thread->tid));
+	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, (gpointer)(gsize)(thread->tid));
 	LeaveCriticalSection (&type_initialization_section);
 }
 

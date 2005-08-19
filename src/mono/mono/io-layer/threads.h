@@ -42,11 +42,11 @@ typedef guint32 (*WapiApcProc)(gpointer);
 
 extern gpointer CreateThread(WapiSecurityAttributes *security,
 			     guint32 stacksize, WapiThreadStart start,
-			     gpointer param, guint32 create, guint32 *tid);
-extern gpointer OpenThread (guint32 access, gboolean inherit, guint32 tid);
+			     gpointer param, guint32 create, gsize *tid); /* NB tid is 32bit in MS API */
+extern gpointer OpenThread (guint32 access, gboolean inherit, gsize tid); /* NB tid is 32bit in MS API */
 extern void ExitThread(guint32 exitcode) G_GNUC_NORETURN;
 extern gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode);
-extern guint32 GetCurrentThreadId(void);
+extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern gpointer GetCurrentThread(void);
 extern guint32 ResumeThread(gpointer handle);
 extern guint32 SuspendThread(gpointer handle);

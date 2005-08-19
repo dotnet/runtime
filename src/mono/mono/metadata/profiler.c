@@ -217,14 +217,14 @@ mono_profiler_stat_hit (guchar *ip, void *context)
 }
 
 void
-mono_profiler_thread_start (guint32 tid)
+mono_profiler_thread_start (gsize tid)
 {
 	if ((mono_profiler_events & MONO_PROFILE_THREADS) && thread_start)
 		thread_start (current_profiler, tid);
 }
 
 void 
-mono_profiler_thread_end (guint32 tid)
+mono_profiler_thread_end (gsize tid)
 {
 	if ((mono_profiler_events & MONO_PROFILE_THREADS) && thread_end)
 		thread_end (current_profiler, tid);

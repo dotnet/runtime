@@ -53,7 +53,7 @@
 
 struct _MonoThreadsSync
 {
-	guint32 owner;			/* thread ID */
+	gsize owner;			/* thread ID */
 	guint32 nest;
 	volatile guint32 entry_count;
 	HANDLE entry_sem;
@@ -105,7 +105,7 @@ mon_finalize (MonoThreadsSync *mon)
 
 /* LOCKING: this is called with monitor_mutex held */
 static MonoThreadsSync *
-mon_new (guint32 id)
+mon_new (gsize id)
 {
 	MonoThreadsSync *new;
 
@@ -169,7 +169,7 @@ static gint32
 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	MonoThreadsSync *mon;
-	guint32 id = GetCurrentThreadId ();
+	gsize id = GetCurrentThreadId ();
 	HANDLE sem;
 	guint32 then = 0, now, delta;
 	guint32 waitms;
@@ -213,7 +213,7 @@ retry:
 		 * should have been left at 1 by the previous unlock
 		 * operation
 		 */
-		if (InterlockedCompareExchange (&mon->owner, id, 0) == 0) {
+		if (InterlockedCompareExchangePointer ((gpointer *)&mon->owner, (gpointer)id, 0) == 0) {
 			/* Success */
 			g_assert (mon->nest == 1);
 			return 1;

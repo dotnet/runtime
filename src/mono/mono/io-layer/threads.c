@@ -155,7 +155,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 	
-	g_hash_table_remove (thread_hash, GUINT_TO_POINTER (thread_handle->thread->id));
+	g_hash_table_remove (thread_hash, (gpointer)(thread_handle->thread->id));
 
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
@@ -180,7 +180,9 @@ static void thread_hash_init(void)
  * @create: If 0, the new thread is ready to run immediately.  If
  * %CREATE_SUSPENDED, the new thread will be in the suspended state,
  * requiring a ResumeThread() call to continue running.
- * @tid: If non-NULL, the ID of the new thread is stored here.
+ * @tid: If non-NULL, the ID of the new thread is stored here.  NB
+ * this is defined as a DWORD (ie 32bit) in the MS API, but we need to
+ * cope with 64 bit IDs for s390x and amd64.
  *
  * Creates a new threading handle.
  *
@@ -188,7 +190,7 @@ static void thread_hash_init(void)
  */
 gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize,
 		      WapiThreadStart start, gpointer param, guint32 create,
-		      guint32 *tid) 
+		      gsize *tid) 
 {
 	struct _WapiHandle_thread thread_handle = {0}, *thread_handle_p;
 	pthread_attr_t attr;
@@ -293,7 +295,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	ct_ret = handle;
 	
 	g_hash_table_insert (thread_hash,
-			     GUINT_TO_POINTER (thread_handle_p->thread->id),
+			     (gpointer)(thread_handle_p->thread->id),
 			     handle);
 	
 #ifdef DEBUG
@@ -304,7 +306,11 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	
 	if (tid != NULL) {
 #ifdef PTHREAD_POINTER_ID
-		*tid = GPOINTER_TO_UINT (thread_handle_p->thread->id);
+		/* Don't use GPOINTER_TO_UINT here, it can't cope with
+		 * sizeof(void *) > sizeof(uint) when a cast to uint
+		 * would overflow
+		 */
+		*tid = (gsize)(thread_handle_p->thread->id);
 #else
 		*tid = thread_handle_p->thread->id;
 #endif
@@ -330,7 +336,7 @@ cleanup:
 	return(ct_ret);
 }
 
-gpointer _wapi_thread_handle_from_id (guint32 tid)
+gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
 	gpointer ret=NULL;
 	int thr_ret;
@@ -340,7 +346,7 @@ gpointer _wapi_thread_handle_from_id (guint32 tid)
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 	
-	ret = g_hash_table_lookup (thread_hash, GUINT_TO_POINTER (tid));
+	ret = g_hash_table_lookup (thread_hash, (gpointer)(tid));
 
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
@@ -349,7 +355,10 @@ gpointer _wapi_thread_handle_from_id (guint32 tid)
 	return(ret);
 }
 
-gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 tid)
+/* NB tid is 32bit in MS API, but we need 64bit on amd64 and s390x
+ * (and probably others)
+ */
+gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, gsize tid)
 {
 	gpointer ret=NULL;
 	
@@ -357,10 +366,10 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	mono_once (&thread_ops_once, thread_ops_init);
 	
 #ifdef DEBUG
-	g_message ("%s: looking up thread %d", __func__, tid);
+	g_message ("%s: looking up thread %"G_GSIZE_FORMAT, __func__, tid);
 #endif
 
-	ret = _wapi_thread_handle_from_id (tid);
+	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
 	if(ret!=NULL) {
 		_wapi_handle_ref (ret);
 	}
@@ -442,20 +451,27 @@ gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
  * Looks up the thread ID of the current thread.  This ID can be
  * passed to OpenThread() to create a new handle on this thread.
  *
- * Return value: the thread ID.
+ * Return value: the thread ID.  NB this is defined as DWORD (ie 32
+ * bit) in the MS API, but we need to cope with 64 bit IDs for s390x
+ * and amd64.  This doesn't really break the API, it just embraces and
+ * extends it on 64bit platforms :)
  */
-guint32 GetCurrentThreadId(void)
+gsize GetCurrentThreadId(void)
 {
 	pthread_t tid = pthread_self();
 	
 #ifdef PTHREAD_POINTER_ID
-	return(GPOINTER_TO_UINT(tid));
+	/* Don't use GPOINTER_TO_UINT here, it can't cope with
+	 * sizeof(void *) > sizeof(uint) when a cast to uint would
+	 * overflow
+	 */
+	return((gsize)tid);
 #else
 	return(tid);
 #endif
 }
 
-static gpointer thread_attach(guint32 *tid)
+static gpointer thread_attach(gsize *tid)
 {
 	struct _WapiHandle_thread thread_handle = {0}, *thread_handle_p;
 	gpointer handle;
@@ -524,7 +540,7 @@ static gpointer thread_attach(guint32 *tid)
 	ta_ret = handle;
 	
 	g_hash_table_insert (thread_hash,
-			     GUINT_TO_POINTER (thread_handle_p->thread->id),
+			     (gpointer)(thread_handle_p->thread->id),
 			     handle);
 
 #ifdef DEBUG
@@ -535,7 +551,11 @@ static gpointer thread_attach(guint32 *tid)
 
 	if (tid != NULL) {
 #ifdef PTHREAD_POINTER_ID
-		*tid = GPOINTER_TO_UINT(thread_handle_p->thread->id);
+		/* Don't use GPOINTER_TO_UINT here, it can't cope with
+		 * sizeof(void *) > sizeof(uint) when a cast to uint
+		 * would overflow
+		 */
+		*tid = (gsize)(thread_handle_p->thread->id);
 #else
 		*tid = thread_handle_p->thread->id;
 #endif
@@ -575,14 +595,14 @@ cleanup:
 gpointer GetCurrentThread(void)
 {
 	gpointer ret=NULL;
-	guint32 tid;
+	gsize tid;
 	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 	
-	tid=GetCurrentThreadId();
+	tid = GetCurrentThreadId();
 	
-	ret = _wapi_thread_handle_from_id (tid);
+	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
 	if (!ret) {
 		ret = thread_attach (NULL);
 	}

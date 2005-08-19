@@ -44,14 +44,14 @@ extern void mono_thread_stop (MonoThread *thread);
 
 typedef struct {
 	gpointer (* thread_start_compile_func) (MonoMethod *delegate);
-	void (* thread_created) (guint32 tid, gpointer stack_start, gpointer func);
-	void (* start_resume) (guint32 tid);
-	void (* end_resume) (guint32 tid);
+	void (* thread_created) (gsize tid, gpointer stack_start, gpointer func);
+	void (* start_resume) (gsize tid);
+	void (* end_resume) (gsize tid);
 } MonoThreadCallbacks;
 
 extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);
 
-extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
+extern void mono_thread_new_init (gsize tid, gpointer stack_start,
 				  gpointer func);
 extern void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
