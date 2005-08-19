@@ -9401,9 +9401,13 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	/*
 	 * Resolve references.
 	 */
+	/* 
+	 * Every second entry in the refs array is reserved for storing handle_class,
+	 * which is needed by the ldtoken implementation in the JIT.
+	 */
 	rmb.nrefs = mb->nrefs;
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
-	for (i = 0; i < mb->nrefs; ++i) {
+	for (i = 0; i < mb->nrefs; i += 2) {
 		MonoClass *handle_class;
 		gpointer ref = resolve_object (mb->module->image, 
 					       mono_array_get (mb->refs, MonoObject*, i), &handle_class);
@@ -9413,6 +9417,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			return;
 		}
 		rmb.refs [i] = ref;
+		rmb.refs [i + 1] = handle_class;
 	}		
 
 	/* FIXME: class */
