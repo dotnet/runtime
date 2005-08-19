@@ -6900,7 +6900,7 @@ MonoMethod *
 mono_marshal_get_ptr_to_struct (MonoClass *klass)
 {
 	MonoMethodBuilder *mb;
-	static MonoMethod *ptostr = NULL;
+	static MonoMethodSignature *ptostr = NULL;
 	MonoMethod *res;
 
 	g_assert (klass != NULL);
@@ -6910,11 +6910,19 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	if (klass->marshal_info->ptr_to_str)
 		return klass->marshal_info->ptr_to_str;
 
-	if (!ptostr) 
-		ptostr = mono_class_get_method_from_name (mono_defaults.marshal_class, "PtrToStructure", 2);
+	if (!ptostr) {
+		/* Create the signature corresponding to
+		 	  static void PtrToStructure (IntPtr ptr, object structure);
+		   defined in class/corlib/System.Runtime.InteropServices/Marshal.cs */
+		ptostr = mono_metadata_signature_alloc (klass->image, 2);
+		ptostr->pinvoke = 1;
+		ptostr->ret = &mono_defaults.void_class->byval_arg;
+		ptostr->params [0] = &mono_defaults.int_class->byval_arg;
+		ptostr->params [1] = &mono_defaults.object_class->byval_arg;
+	}	
 	g_assert (ptostr);
 
-	mb = mono_mb_new (klass, ptostr->name, MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
 
 	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
@@ -6944,7 +6952,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, mono_method_signature (ptostr), 0);
+	res = mono_mb_create_method (mb, ptostr, 0);
 	mono_mb_free (mb);
 
 	klass->marshal_info->ptr_to_str = res;
