@@ -5,6 +5,7 @@
 #include "mono/metadata/image.h"
 #include "mono/metadata/blob.h"
 #include "mono/metadata/mempool.h"
+#include "mono/metadata/domain-internals.h"
 #include "mono/utils/mono-hash.h"
 
 struct _MonoAssembly {
@@ -236,6 +237,22 @@ struct _MonoDynamicImage {
 	MonoDynamicTable tables [MONO_TABLE_NUM];
 };
 
+/* Contains information about assembly binding */
+typedef struct _MonoAssemblyBindingInfo {
+	char *name;
+	char *culture;
+	guchar public_key_token [MONO_PUBLIC_KEY_TOKEN_LENGTH];
+	int major;
+	int minor;
+	AssemblyVersionSet old_version_bottom;
+	AssemblyVersionSet old_version_top;
+	AssemblyVersionSet new_version;
+	guint has_old_version_bottom : 1;
+	guint has_old_version_top : 1;
+	guint has_new_version : 1;
+	guint is_valid : 1;
+} MonoAssemblyBindingInfo;
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr);
 
@@ -310,6 +327,8 @@ mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
 
 void mono_dynamic_stream_reset (MonoDynamicStream* stream);
 void mono_assembly_addref      (MonoAssembly *assembly);
+
+void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

@@ -418,3 +418,127 @@ mono_get_config_dir (void)
 	return mono_cfg_dir;
 }
 
+static void
+publisher_policy_start (gpointer user_data,
+		const gchar *element_name,
+		const gchar **attribute_names,
+		const gchar **attribute_values)
+{
+	MonoAssemblyBindingInfo *info;
+	int n;
+
+	info = user_data;
+	if (!strcmp (element_name, "assemblyIdentity")) {
+		for (n = 0; attribute_names [n]; n++) {
+			const gchar *attribute_name = attribute_names [n];
+			
+			if (!strcmp (attribute_name, "name"))
+				info->name = g_strdup (attribute_values [n]);
+			else if (!strcmp (attribute_name, "publicKeyToken")) {
+				if (strlen (attribute_values [n]) == MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)
+					g_strlcpy ((char *) info->public_key_token, attribute_values [n], MONO_PUBLIC_KEY_TOKEN_LENGTH);
+			} else if (!strcmp (attribute_name, "culture")) {
+				if (!strcmp (attribute_values [n], "neutral"))
+					info->culture = g_strdup ("");
+				else
+					info->culture = g_strdup (attribute_values [n]);
+			}
+		}
+	} else if (!strcmp (element_name, "bindingRedirect")) {
+		for (n = 0; attribute_names [n]; n++) {
+			const gchar *attribute_name = attribute_names [n];
+
+			if (!strcmp (attribute_name, "oldVersion")) {
+				gchar **numbers, **version, **versions;
+				gint major, minor, build, revision;
+
+				/* Invalid value */
+				if (!strcmp (attribute_values [n], ""))
+					return;
+				
+				versions = g_strsplit (attribute_values [n], "-", 2);
+				version = g_strsplit (*versions, ".", 4);
+
+				/* We assign the values to gint vars to do the checks */
+				numbers = version;
+				major = *numbers ? atoi (*numbers++) : -1;
+				minor = *numbers ? atoi (*numbers++) : -1;
+				build = *numbers ? atoi (*numbers++) : -1;
+				revision = *numbers ? atoi (*numbers) : -1;
+				g_strfreev (version);
+				if (major < 0 || minor < 0 || build < 0 || revision < 0) {
+					g_strfreev (versions);
+					return;
+				}
+
+				info->old_version_bottom.major = major;
+				info->old_version_bottom.minor = minor;
+				info->old_version_bottom.build = build;
+				info->old_version_bottom.revision = revision;
+				info->has_old_version_bottom = TRUE;
+
+				if (!*(versions + 1)) {
+					g_strfreev (versions);
+					continue;
+				}
+				
+				numbers = version = g_strsplit (*(versions + 1), ".", 4);
+				major = *numbers ? atoi (*numbers++) : -1;
+				minor = *numbers ? atoi (*numbers++) : -1;
+				build = *numbers ? atoi (*numbers++) : -1;
+				revision = *numbers ? atoi (*numbers) : 1;
+				g_strfreev (version);
+				if (major < 0 || minor < 0 || build < 0 || revision < 0) {
+					g_strfreev (versions);
+					return;
+				}
+
+				info->old_version_top.major = major;
+				info->old_version_top.minor = minor;
+				info->old_version_top.build = build;
+				info->old_version_top.revision = revision;
+				info->has_old_version_top = TRUE;
+
+				g_strfreev (versions);
+			} else if (!strcmp (attribute_name, "newVersion")) {
+				gchar **numbers, **version;
+
+				/* Invalid value */
+				if (!strcmp (attribute_values [n], ""))
+					return;
+
+				numbers = version = g_strsplit (attribute_values [n], ".", 4);
+				info->new_version.major = *numbers ? atoi (*numbers++) : -1;
+				info->new_version.minor = *numbers ? atoi (*numbers++) : -1;
+				info->new_version.build = *numbers ? atoi (*numbers++) : -1;
+				info->new_version.revision = *numbers ? atoi (*numbers) : -1;
+				info->has_new_version = TRUE;
+				g_strfreev (version);
+			}
+		}
+	}
+}
+
+static MonoParseHandler
+publisher_policy_parser = {
+	"", /* We don't need to use declare an xml element */
+	NULL,
+	publisher_policy_start,
+	NULL,
+	NULL,
+	NULL
+};
+
+void
+mono_config_parse_publisher_policy (const gchar *filename, MonoAssemblyBindingInfo *info)
+{
+	ParseState state = {
+		&publisher_policy_parser, /* MonoParseHandler */
+		info, /* user_data */
+		NULL, /* MonoImage (we don't need it right now)*/
+		TRUE /* We are already inited */
+	};
+	
+	mono_config_parse_file_with_context (&state, filename);
+}
+

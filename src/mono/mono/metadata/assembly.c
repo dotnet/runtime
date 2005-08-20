@@ -20,6 +20,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
@@ -128,6 +129,9 @@ const MonoBundledAssembly **bundles;
 /* Reflection only private hook functions */
 static MonoAssembly* mono_assembly_refonly_invoke_search_hook (MonoAssemblyName *aname);
 
+/* Loaded assembly binding info */
+static GSList *loaded_assembly_bindings = NULL;
+
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
@@ -191,6 +195,131 @@ check_extra_gac_path_env (void) {
 
 		splitted++;
 	}
+}
+
+static gboolean
+assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
+{
+	if (strcmp (info->name, aname->name))
+		return FALSE;
+
+	if (info->major != aname->major || info->minor != aname->minor)
+		return FALSE;
+
+	if ((info->culture != NULL) != (aname->culture != NULL))
+		return FALSE;
+	
+	if (info->culture && strcmp (info->culture, aname->culture))
+		return FALSE;
+	
+	if (strcmp ((const char *)info->public_key_token, (const char *)aname->public_key_token))
+		return FALSE;
+
+	return TRUE;
+}
+
+static void
+mono_assembly_binding_info_free (MonoAssemblyBindingInfo *info)
+{
+	g_free (info->name);
+	g_free (info->culture);
+}
+
+static void
+get_publisher_policy_info (MonoImage *image, MonoAssemblyName *aname, MonoAssemblyBindingInfo *binding_info)
+{
+	MonoTableInfo *t;
+	guint32 cols [MONO_MANIFEST_SIZE];
+	const gchar *filename;
+	gchar *subpath, *fullpath;
+
+	t = &image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	/* MS Impl. accepts policy assemblies with more than
+	 * one manifest resource, and only takes the first one */
+	if (t->rows < 1) {
+		binding_info->is_valid = FALSE;
+		return;
+	}
+	
+	mono_metadata_decode_row (t, 0, cols, MONO_MANIFEST_SIZE);
+	if ((cols [MONO_MANIFEST_IMPLEMENTATION] & MONO_IMPLEMENTATION_MASK) != MONO_IMPLEMENTATION_FILE) {
+		binding_info->is_valid = FALSE;
+		return;
+	}
+	
+	filename = mono_metadata_string_heap (image, cols [MONO_MANIFEST_NAME]);
+	g_assert (filename != NULL);
+	
+	subpath = g_path_get_dirname (image->name);
+	fullpath = g_build_path (G_DIR_SEPARATOR_S, subpath, filename, NULL);
+	mono_config_parse_publisher_policy (fullpath, binding_info);
+	g_free (subpath);
+	g_free (fullpath);
+	
+	/* Define the optional elements/attributes before checking */
+	if (!binding_info->culture)
+		binding_info->culture = g_strdup ("");
+	
+	/* Check that the most important elements/attributes exist */
+	if (!binding_info->name || !binding_info->public_key_token [0] || !binding_info->has_old_version_bottom ||
+			!binding_info->has_new_version || !assembly_binding_maps_name (binding_info, aname)) {
+		mono_assembly_binding_info_free (binding_info);
+		binding_info->is_valid = FALSE;
+		return;
+	}
+
+	binding_info->is_valid = TRUE;
+}
+
+static int
+compare_versions (AssemblyVersionSet *v, MonoAssemblyName *aname)
+{
+	if (v->major > aname->major)
+		return 1;
+	else if (v->major < aname->major)
+		return -1;
+
+	if (v->minor > aname->minor)
+		return 1;
+	else if (v->minor < aname->minor)
+		return -1;
+
+	if (v->build > aname->build)
+		return 1;
+	else if (v->build < aname->build)
+		return -1;
+
+	if (v->revision > aname->revision)
+		return 1;
+	else if (v->revision < aname->revision)
+		return -1;
+
+	return 0;
+}
+
+static gboolean
+check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
+{
+	if (!info->is_valid)
+		return FALSE;
+	
+	/* If has_old_version_top doesn't exist, we don't have an interval */
+	if (!info->has_old_version_top) {
+		if (compare_versions (&info->old_version_bottom, name) == 0)
+			return TRUE;
+
+		return FALSE;
+	}
+
+	/* Check that the version defined by name is valid for the interval */
+	if (compare_versions (&info->old_version_top, name) < 0)
+		return FALSE;
+
+	/* We should be greater or equal than the small version */
+	if (compare_versions (&info->old_version_bottom, name) > 0)
+		return FALSE;
+
+	return TRUE;
 }
 
 gboolean
@@ -1287,6 +1416,149 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	return res;
 }
 
+static MonoImage*
+mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
+{
+	MonoImage *image;
+	gchar *filename, *pname, *name, *culture, *version, *fullpath, *subpath;
+	gchar **paths;
+	gint32 len;
+
+	if (strstr (aname->name, ".dll")) {
+		len = strlen (aname->name) - 4;
+		name = g_malloc (len);
+		strncpy (name, aname->name, len);
+	} else
+		name = g_strdup (aname->name);
+	
+	if (aname->culture) {
+		culture = g_strdup (aname->culture);
+		g_strdown (culture);
+	} else
+		culture = g_strdup ("");
+	
+	pname = g_strdup_printf ("policy.%d.%d.%s", aname->major, aname->minor, name);
+	version = g_strdup_printf ("0.0.0.0_%s_%s", culture, aname->public_key_token);
+	g_free (name);
+	g_free (culture);
+	
+	filename = g_strconcat (pname, ".dll", NULL);
+	subpath = g_build_path (G_DIR_SEPARATOR_S, pname, version, filename, NULL);
+	g_free (pname);
+	g_free (version);
+	g_free (filename);
+
+	image = NULL;
+	if (extra_gac_paths) {
+		paths = extra_gac_paths;
+		while (!image && *paths) {
+			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths,
+					"lib", "mono", "gac", subpath, NULL);
+			image = mono_image_open (fullpath, NULL);
+			g_free (fullpath);
+			paths++;
+		}
+	}
+
+	if (image) {
+		g_free (subpath);
+		return image;
+	}
+
+	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), 
+			"mono", "gac", subpath, NULL);
+	image = mono_image_open (fullpath, NULL);
+	g_free (subpath);
+	g_free (fullpath);
+	
+	return image;
+}
+
+static MonoAssemblyName*
+mono_assembly_bind_version (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname, MonoAssemblyName *dest_name)
+{
+	memcpy (dest_name, aname, sizeof (MonoAssemblyName));
+	dest_name->major = info->new_version.major;
+	dest_name->minor = info->new_version.minor;
+	dest_name->build = info->new_version.build;
+	dest_name->revision = info->new_version.revision;
+	
+	return dest_name;
+}
+
+/* LOCKING: Assumes that we are already locked */
+static MonoAssemblyBindingInfo*
+search_binding_loaded (MonoAssemblyName *aname)
+{
+	GSList *tmp;
+
+	for (tmp = loaded_assembly_bindings; tmp; tmp = tmp->next) {
+		MonoAssemblyBindingInfo *info = tmp->data;
+		if (assembly_binding_maps_name (info, aname))
+			return info;
+	}
+
+	return NULL;
+}
+
+static MonoAssemblyName*
+mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
+{
+	MonoAssemblyBindingInfo *info, *info2;
+	MonoImage *ppimage;
+
+	if (aname->public_key_token [0] == 0)
+		return aname;
+
+	mono_loader_lock ();
+	info = search_binding_loaded (aname);
+	mono_loader_unlock ();
+	if (info) {
+		if (!check_policy_versions (info, aname))
+			return aname;
+		
+		mono_assembly_bind_version (info, aname, dest_name);
+		return dest_name;
+	}
+
+	info = g_new0 (MonoAssemblyBindingInfo, 1);
+	info->major = aname->major;
+	info->minor = aname->minor;
+	
+	ppimage = mono_assembly_load_publisher_policy (aname);
+	if (ppimage) {
+		get_publisher_policy_info (ppimage, aname, info);
+		mono_image_close (ppimage);
+	}
+
+	/* Define default error value if needed */
+	if (!info->is_valid) {
+		info->name = g_strdup (aname->name);
+		info->culture = g_strdup (aname->culture);
+		g_strlcpy ((char *)info->public_key_token, (const char *)aname->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	}
+	
+	mono_loader_lock ();
+	info2 = search_binding_loaded (aname);
+	if (info2) {
+		/* This binding was added by another thread 
+		 * before us */
+		mono_assembly_binding_info_free (info);
+		g_free (info);
+		
+		info = info2;
+	} else
+		loaded_assembly_bindings = g_slist_prepend (loaded_assembly_bindings, info);
+		
+	mono_loader_unlock ();
+	
+	if (!info->is_valid || !check_policy_versions (info, aname))
+		return aname;
+
+	mono_assembly_bind_version (info, aname, dest_name);
+	return dest_name;
+}
+
 /**
  * mono_assembly_load_from_gac
  *
@@ -1396,11 +1668,15 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
-	MonoAssemblyName maped_aname;
+	MonoAssemblyName maped_aname, maped_name_pp;
 	int ext_index;
 	const char *ext;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
+	
+	/* Reflection only assemblies don't get assembly binding */
+	if (!refonly)
+		aname = mono_assembly_apply_binding (aname, &maped_name_pp);
 	
 	result = mono_assembly_loaded_full (aname, refonly);
 	if (result)
