@@ -130,6 +130,31 @@ mono_running_on_valgrind (void)
 #endif
 }
 
+/*
+ * mono_create_ftnptr:
+ *
+ *   Given a function address, create a function descriptor for it.
+ * This is only needed on IA64.
+ */
+gpointer
+mono_create_ftnptr (MonoDomain *domain, gpointer addr)
+{
+#ifdef __ia64__
+	gpointer *desc;
+
+	mono_domain_lock (domain);
+	desc = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
+	mono_domain_unlock (domain);
+
+	desc [0] = addr;
+	desc [1] = NULL;
+
+	return desc;
+#else
+	return addr;
+#endif
+}
+
 /* debug function */
 G_GNUC_UNUSED static char*
 get_method_from_ip (void *ip)
@@ -2728,6 +2753,9 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	rank = mono_method_signature (cmethod)->param_count - (is_set? 1: 0);
 
 	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+		/* OP_LDELEMA2D depends on OP_LMUL */
+#else
 		MonoInst *indexes;
 		NEW_GROUP (cfg, indexes, sp [1], sp [2]);
 		MONO_INST_NEW (cfg, addr, OP_LDELEMA2D);
@@ -2737,6 +2765,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		addr->type = STACK_MP;
 		addr->klass = cmethod->klass;
 		return addr;
+#endif
 	}
 
 	/* Need to register the icall so it gets an icall wrapper */
@@ -2802,9 +2831,13 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			ins->inst_i0 = args [0];
 			return ins;
 		} else if (strcmp (cmethod->name, "InternalGetHashCode") == 0) {
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+		/* The OP_GETHASHCODE rule depends on OP_MUL */
+#else
  			MONO_INST_NEW (cfg, ins, OP_GETHASHCODE);
 			ins->inst_i0 = args [0];
 			return ins;
+#endif
 		} else
 			return NULL;
 	} else if (mini_class_is_system_array (cmethod->klass)) {
@@ -6810,16 +6843,16 @@ mono_get_trampoline_code (MonoTrampolineType tramp_type)
 gpointer
 mono_create_class_init_trampoline (MonoVTable *vtable)
 {
-	gpointer code;
+	gpointer code, ptr;
 
 	/* previously created trampoline code */
 	mono_domain_lock (vtable->domain);
-	code = 
+	ptr = 
 		g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
 								  vtable);
 	mono_domain_unlock (vtable->domain);
-	if (code)
-		return code;
+	if (ptr)
+		return ptr;
 
 #ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
 	code = mono_arch_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
@@ -6827,10 +6860,12 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	code = mono_arch_create_class_init_trampoline (vtable);
 #endif
 
+	ptr = mono_create_ftnptr (vtable->domain, code);
+
 	/* store trampoline address */
 	mono_domain_lock (vtable->domain);
 	g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
-							  vtable, code);
+							  vtable, ptr);
 	mono_domain_unlock (vtable->domain);
 
 	EnterCriticalSection (&jit_mutex);
@@ -6839,7 +6874,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	g_hash_table_insert (class_init_hash_addr, code, vtable);
 	LeaveCriticalSection (&jit_mutex);
 
-	return code;
+	return ptr;
 }
 
 gpointer
@@ -6933,9 +6968,9 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
 	mono_domain_unlock (domain);
 
-	*(gpointer*)buf = image;
+	*(gpointer*)(gpointer)buf = image;
 	buf += sizeof (gpointer);
-	*(guint32*)buf = token;
+	*(guint32*)(gpointer)buf = token;
 
 	tramp = mono_arch_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
 
@@ -9312,7 +9347,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 					mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 			nm = mono_marshal_get_native_wrapper (method);
-			return mono_compile_method (nm);
+			return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 
 			//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
 			//mono_debug_add_wrapper (method, nm);
@@ -9324,16 +9359,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_delegate_ctor");
 				g_assert (mi);
-				return (gpointer)mono_icall_get_wrapper (mi);
+				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper (mi));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 			        nm = mono_marshal_get_delegate_invoke (method);
-				return mono_jit_compile_method (nm);
+					return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);
-				return mono_jit_compile_method (nm);
+				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 			} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_end_invoke (method);
-				return mono_jit_compile_method (nm);
+				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 			}
 		}
 		return NULL;
@@ -9404,13 +9439,13 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
 			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
-			return info->code_start;
+			return mono_create_ftnptr (domain, info->code_start);
 		}
 	}
 
 	mono_domain_unlock (target_domain);
 	p = mono_jit_compile_method_inner (method, target_domain);
-	return p;
+	return mono_create_ftnptr (domain, p);
 }
 
 static gpointer
@@ -9867,7 +9902,7 @@ mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget targ
 	} else {
 		addr = mono_compile_method (method);
 	}
-	return addr;
+	return mono_get_addr_from_ftnptr (addr);
 }
 
 static void

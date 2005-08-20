@@ -818,6 +818,7 @@ void      mono_register_opcode_emulation    (int opcode, const char* name, const
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest);
 void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst);
+gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr);
 
 int               mono_find_method_opcode      (MonoMethod *method);
 MonoJitICallInfo *mono_find_jit_icall_by_name  (const char *name);

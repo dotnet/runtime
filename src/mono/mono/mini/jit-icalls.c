@@ -19,7 +19,7 @@ mono_ldftn (MonoMethod *method)
 
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, TRUE);
 
-	return addr;
+	return mono_create_ftnptr (mono_domain_get (), addr);
 }
 
 /*
@@ -35,7 +35,7 @@ mono_ldftn_nosync (MonoMethod *method)
 
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
 
-	return addr;
+	return mono_create_ftnptr (mono_domain_get (), addr);
 }
 
 static void*
