@@ -215,11 +215,6 @@ if X86
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
-if AMD64
-# bug #71273
-PLATFORM_DISABLED_TESTS=appdomain-unload.exe thread6.exe
-endif
-
 DISABLED_TESTS=			\
 	delegate-async-exception.cs	\
 	delegate-delegate-exception.cs	\
