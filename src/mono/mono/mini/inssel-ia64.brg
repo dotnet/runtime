@@ -253,8 +253,6 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base), base) {
 	if (!sz)
 		return;
 
-	sz += 7;
-	sz &= ~7;
 	mini_emit_memcpy (s, stack_addr->inst_basereg, stack_addr->inst_offset, vt->inst_basereg, vt->inst_offset, sz, 0);
 }
 

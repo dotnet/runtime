@@ -27,8 +27,6 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	//printf ("ENTER: %s\n", mono_method_full_name (m, TRUE));
-
 	/* the method was jumped to */
 	if (!code)
 		/* FIXME: Optimize the case when the call is from a delegate wrapper */
@@ -43,7 +41,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		g_assert (*vtable_slot);
 
 		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
-			*vtable_slot = addr;
+			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 	}
 	else {
 		/* Patch calling code */
@@ -51,7 +49,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		MonoJitInfo *ji = 
 			mono_jit_info_table_find (mono_domain_get (), code);
 		MonoJitInfo *target_ji = 
-			mono_jit_info_table_find (mono_domain_get (), addr);
+			mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
 
 		if (mono_method_same_domain (ji, target_ji))
 			mono_arch_patch_callsite (code, addr);
@@ -78,9 +76,9 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 	gpointer *vtable_slot;
 	gboolean is_got_entry;
 
-	image = *(gpointer*)token_info;
+	image = *(gpointer*)(gpointer)token_info;
 	token_info += sizeof (gpointer);
-	token = *(guint32*)token_info;
+	token = *(guint32*)(gpointer)token_info;
 
 	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
 	if (!addr) {

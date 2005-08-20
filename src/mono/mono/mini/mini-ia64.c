@@ -699,12 +699,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	offset = 0;
 
 	if (cfg->method->save_lmf) {
-		/* FIXME: */
-#if 0
-		/* Reserve stack space for saving LMF + argument regs */
-		offset += sizeof (MonoLMF);
-		cfg->arch.lmf_offset = offset;
-#endif
+		/* No LMF on IA64 */
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
@@ -3662,7 +3657,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (method->save_lmf) {
-		/* FIXME: */
+		/* No LMF on IA64 */
 	}
 
 	alloc_size -= pos;
@@ -3819,7 +3814,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
-		/* FIXME: */
+		/* No LMF on IA64 */
 	}
 
 	ia64_codegen_close (code);
@@ -3873,7 +3868,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 	
 	if (method->save_lmf) {
-		/* FIXME: */
+		/* No LMF on IA64 */
 	}
 
 	/* Load returned vtypes into registers if needed */

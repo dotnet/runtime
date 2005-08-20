@@ -45,12 +45,7 @@
 #define MONO_ARCH_FRETREG1 8
 
 struct MonoLMF {
-	gpointer    previous_lmf;
-	gpointer    lmf_addr;
-	MonoMethod *method;
-	gpointer    ip;
-	gpointer    sp;
-	gpointer    ebp;
+	guint64    ebp;
 };
 
 typedef struct MonoContext {
