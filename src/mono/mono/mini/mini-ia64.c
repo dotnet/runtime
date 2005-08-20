@@ -3214,6 +3214,12 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 				if (deps [i] == IA64_WRITE_BR && deps [i + 1] == reg)
 					need_stop = TRUE;
 			break;
+		case IA64_READ_BR_BRANCH:
+			reg = deps [pos + 1];
+
+			/* Writes to brs are visible to branches */
+			DEBUG_INS_SCHED (printf ("READ BR BRACH: %d\n", reg));
+			break;
 		case IA64_READ_FR:
 			reg = deps [pos + 1];
 
@@ -3369,7 +3375,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 
 			if (found) {
 				ia64_real_emit_bundle (code, deps_start, 3, template, code->instructions [0], code->instructions [1], code->instructions [2], 0);
-				return;
+				break;
 			}
 		}
 	}
@@ -3420,6 +3426,25 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 				continue;
 
 			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], nops_for_ins_types [ins_types_in_template [template][1]], code->instructions [1], 1 << 1);
+			break;
+		}
+	}
+
+	if ((code->nins >= 2) && flush && !code->one_ins_per_bundle) {
+		/* Try a nop at the beginning */
+		for (template = 0; template < 32; ++template) {
+			if ((stops_in_template [template][1] != code->stops [0]) ||
+				(stops_in_template [template][2] != code->stops [1]))
+				continue;
+
+			if (!ITYPE_MATCH (ins_types_in_template [template][1], code->itypes [0]) ||
+				!ITYPE_MATCH (ins_types_in_template [template][2], code->itypes [1]))
+				continue;
+
+			if (!debug_count ())
+				continue;
+
+			ia64_real_emit_bundle (code, deps_start, 2, template, nops_for_ins_types [ins_types_in_template [template][0]], code->instructions [0], code->instructions [1], 1 << 0);
 			break;
 		}
 	}
@@ -3691,6 +3716,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->arch.r_pro = r_pro;
 
+	ia64_codegen_set_automatic (code, TRUE);
+
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
 #if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
@@ -3698,27 +3725,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 
 		if (ia64_is_imm14 (-alloc_size)) {
-			ia64_begin_bundle_template (code, IA64_TEMPLATE_MISIS);
-			ia64_nop_m (code, 0);
-			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP); ia64_stop (code);
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
-			ia64_stop (code);
-			ia64_begin_bundle (code);
 		}
 		else {
-			ia64_begin_bundle_template (code, IA64_TEMPLATE_MLXS);
-			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
 			ia64_movl (code, GP_SCRATCH_REG, -alloc_size); ia64_stop (code);
-			ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
 			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
-			ia64_nop_i (code, 0);
-			ia64_nop_i (code, 0);
-			ia64_stop (code);
-			ia64_begin_bundle (code);
 		}
 #endif
 	}
-	ia64_codegen_set_automatic (code, TRUE);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
@@ -3905,13 +3919,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	ia64_begin_bundle (code);
 	ia64_codegen_set_automatic (code, FALSE);
 
-	ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
+	ia64_begin_bundle_template (code, IA64_TEMPLATE_MII);
 	if (cfg->arch.stack_alloc_size)
 		ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
 	else
 		ia64_nop_m (code, 0);
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
-	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0); ia64_stop (code);
+	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
 	ia64_begin_bundle (code);
 
 	ia64_begin_bundle_template (code, IA64_TEMPLATE_BBBS);
@@ -4249,7 +4263,7 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 *             nop.i 0x0;;
 	 * [MII]       nop.m 0x0
 	 *             mov.sptk b6=r31,0x2000000000f32a80
-	 *             nop.i 0x0;;
+	 *             nop.i 0x0
 	 * [MII]       nop.m 0x0
 	 *             nop.i 0x123456
 	 *             nop.i 0x0
@@ -4258,7 +4272,8 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 *             br.call.sptk.few b0=b6;;
 	 */
 
-	if ((ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIIS) &&
+	if (((ia64_bundle_template (bundle3) == IA64_TEMPLATE_MII) ||
+		 (ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIIS)) &&
 		(ia64_bundle_template (bundle4) == IA64_TEMPLATE_MIBS) &&
 		(ins31 == IA64_NOP_M) && 
 		(ia64_ins_opcode (ins32) == 0) && (ia64_ins_x3 (ins32) == 0) && (ia64_ins_x6 (ins32) == 0x1) && (ia64_ins_y (ins32) == 0) &&
