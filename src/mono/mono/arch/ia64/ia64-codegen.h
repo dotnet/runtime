@@ -158,6 +158,7 @@ typedef enum {
 	IA64_WRITE_PR_FLOAT,
 	IA64_READ_BR,
 	IA64_WRITE_BR,
+	IA64_READ_BR_BRANCH,
 	IA64_READ_FR,
 	IA64_WRITE_FR,
 	IA64_READ_AR,
@@ -417,6 +418,12 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define write_br(code,reg) do { \
     check_breg ((reg)); \
     code.dep_info [code.dep_info_pos ++] = IA64_WRITE_BR; \
+    code.dep_info [code.dep_info_pos ++] = (reg); \
+} while (0)
+
+#define read_br_branch(code,reg) do { \
+    check_breg ((reg)); \
+    code.dep_info [code.dep_info_pos ++] = IA64_READ_BR_BRANCH; \
     code.dep_info [code.dep_info_pos ++] = (reg); \
 } while (0)
 
@@ -725,7 +732,7 @@ typedef enum {
 #define ia64_pshr2_u_imm_pred(code, qp, r1, r3, count) ia64_i6 ((code), (qp), (r1), (count), (r3), 0, 1, 0, 1, 1, 0)
 #define ia64_pshr4_u_imm_pred(code, qp, r1, r3, count) ia64_i6 ((code), (qp), (r1), (count), (r3), 1, 0, 0, 1, 1, 0)
 
-#define ia64_i7(code, qp, r1, r2, r3, za, zb, ve, x2a, x2b, x2c) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r2)); read_gr ((code), (r2)); ia64_emit_ins_11 ((code), IA64_INS_TYPE_I, (qp), 0, (r1), 6, (r2), 13, (r3), 20, (x2b), 28, (x2c), 30, (ve), 32, (zb), 33, (x2a), 34, (za), 36, (7), 37); } while (0)
+#define ia64_i7(code, qp, r1, r2, r3, za, zb, ve, x2a, x2b, x2c) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r2)); read_gr ((code), (r3)); ia64_emit_ins_11 ((code), IA64_INS_TYPE_I, (qp), 0, (r1), 6, (r2), 13, (r3), 20, (x2b), 28, (x2c), 30, (ve), 32, (zb), 33, (x2a), 34, (za), 36, (7), 37); } while (0)
 
 #define ia64_pshl2_pred(code, qp, r1, r2, r3) ia64_i7 ((code), (qp), (r1), (r2), (r3), 0, 1, 0, 0, 0, 1)
 #define ia64_pshl4_pred(code, qp, r1, r2, r3) ia64_i7 ((code), (qp), (r1), (r2), (r3), 1, 0, 0, 0, 0, 1)
@@ -736,7 +743,7 @@ typedef enum {
 #define ia64_pshl2_imm_pred(code, qp, r1, r2, count) ia64_i8 ((code), (qp), (r1), (r2), (count), 0, 1, 0, 3, 1, 1)
 #define ia64_pshl4_imm_pred(code, qp, r1, r2, count) ia64_i8 ((code), (qp), (r1), (r2), (count), 1, 0, 0, 3, 1, 1)
 
-#define ia64_i9(code, qp, r1, r3, za, zb, ve, x2a, x2b, x2c) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r2)); ia64_emit_ins_11 ((code), IA64_INS_TYPE_I, (qp), 0, (r1), 6, 0, 13, (r3), 20, (x2b), 28, (x2c), 30, (ve), 32, (zb), 33, (x2a), 34, (za), 36, (7), 37); } while (0)
+#define ia64_i9(code, qp, r1, r3, za, zb, ve, x2a, x2b, x2c) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); ia64_emit_ins_11 ((code), IA64_INS_TYPE_I, (qp), 0, (r1), 6, 0, 13, (r3), 20, (x2b), 28, (x2c), 30, (ve), 32, (zb), 33, (x2a), 34, (za), 36, (7), 37); } while (0)
 
 #define ia64_popcnt_pred(code, qp, r1, r3) ia64_i9 ((code), (qp), (r1), (r3), 0, 1, 0, 1, 1, 2)
 
@@ -1674,7 +1681,7 @@ typedef enum {
 #define ia64_br_cexit_hint_pred(code, qp, disp, bwh, ph, dh) ia64_b2 ((code), (qp), (disp), (bwh), (ph), (dh), 6)
 #define ia64_br_ctop_hint_pred(code, qp, disp, bwh, ph, dh) ia64_b2 ((code), (qp), (disp), (bwh), (ph), (dh), 7)
 
-#define ia64_b3(code, qp, b1, imm, bwh, ph, dh) do { read_pr ((code), (qp)); write_br ((code), (b1)); check_imm21 ((imm)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_B, (qp), 0, (b1), 6, (ph), 12, (imm) & 0xfffff, 13, (bwh), 33, (dh), 35, sign_bit ((imm)), 36, (5), 37); } while (0)
+#define ia64_b3(code, qp, b1, imm, bwh, ph, dh) do { read_pr ((code), (qp)); write_br ((code), (b1)); check_imm21 ((imm)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_B, (qp), 0, (b1), 6, (ph), 12, (imm) & 0xfffff, 13, (bwh), 33, (dh), 35, sign_bit ((imm)), 36, (5), 37); ia64_begin_bundle ((code)); } while (0)
 
 #define ia64_br_call_hint_pred(code, qp, b1, disp, bwh, ph, dh) ia64_b3 ((code), (qp), (b1), (disp), (bwh), (ph), (dh))
 
@@ -1684,7 +1691,7 @@ typedef enum {
 #define ia64_br_ia_reg_hint_pred(code, qp, b1, bwh, ph, dh) ia64_b4 ((code), (qp), (b1), (bwh), (ph), (dh), 0x20, 1)
 #define ia64_br_ret_reg_hint_pred(code, qp, b1, bwh, ph, dh) ia64_b4 ((code), (qp), (b1), (bwh), (ph), (dh), 0x21, 4)
 
-#define ia64_b5(code, qp, b1, b2, bwh, ph, dh) do { read_pr ((code), (qp)); write_br ((code), (b1)); read_br ((code), (b2)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_B, (qp), 0, (b1), 6, (ph), 12, (b2), 13, ((bwh) * 2) + 1, 32, (dh), 35, (1), 37); } while (0)
+#define ia64_b5(code, qp, b1, b2, bwh, ph, dh) do { read_pr ((code), (qp)); write_br ((code), (b1)); read_br_branch ((code), (b2)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_B, (qp), 0, (b1), 6, (ph), 12, (b2), 13, ((bwh) * 2) + 1, 32, (dh), 35, (1), 37); ia64_begin_bundle ((code)); } while (0)
 
 #define ia64_br_call_reg_hint_pred(code, qp, b1, b2, bwh, ph, dh) ia64_b5 ((code), (qp), (b1), (b2), (bwh), (ph), (dh))
 
@@ -1885,7 +1892,7 @@ typedef enum {
 
 #define ia64_break_x_pred(code, qp, imm) ia64_x1 ((code), (qp), (imm), 0, 0x00)
 
-#define ia64_x2(code, qp, r1, imm, vc) do { if (code.automatic) ia64_begin_bundle ((code)); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((guint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (guint64)(imm) & 0x7f, (13), (vc), 20, ((guint64)(imm) >> 21) & 0x1, 21, ((guint64)(imm) >> 16) & 0x1f, 22, ((guint64)(imm) >> 7) & 0x1ff, 27, ((guint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
+#define ia64_x2(code, qp, r1, imm, vc) do { if (code.automatic && (code.nins > IA64_INS_BUFFER_SIZE - 2)) ia64_emit_bundle (&(code), FALSE); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((guint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (guint64)(imm) & 0x7f, (13), (vc), 20, ((guint64)(imm) >> 21) & 0x1, 21, ((guint64)(imm) >> 16) & 0x1f, 22, ((guint64)(imm) >> 7) & 0x1ff, 27, ((guint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
 
 #define ia64_movl_pred(code, qp, r1, imm) ia64_x2 ((code), (qp), (r1), (imm), 0)
 
