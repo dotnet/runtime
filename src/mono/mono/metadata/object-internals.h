@@ -1076,5 +1076,8 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
 
+gpointer
+mono_get_addr_from_ftnptr (gpointer descr);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

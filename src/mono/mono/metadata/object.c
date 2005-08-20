@@ -3477,7 +3477,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 
 	class = this->vtable->klass;
 
-	if ((ji = mono_jit_info_table_find (domain, addr))) {
+	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
 		method = ji->method;
 		delegate->method_info = mono_method_get_object (domain, method, NULL);
 	}
@@ -3849,3 +3849,18 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 }
 
+/*
+ * mono_get_addr_from_ftnptr:
+ *
+ *   Given a pointer to a function descriptor, return the function address.
+ * This is only needed on IA64.
+ */
+gpointer
+mono_get_addr_from_ftnptr (gpointer descr)
+{
+#ifdef __ia64__
+	return *(gpointer*)descr;
+#else
+	return descr;
+#endif
+}	
