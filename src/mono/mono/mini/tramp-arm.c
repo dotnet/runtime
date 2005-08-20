@@ -33,11 +33,14 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 0;
+	MonoDomain *domain = mono_domain_get ();
 
 	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 1;
-	    
-	start = code = g_malloc (16);
+
+	mono_domain_lock (domain);
+	start = code = mono_code_manager_reserve (domain->code_mp, 16);
+	mono_domain_unlock (domain);
 
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
 	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
@@ -54,7 +57,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 /* Stack size for trampoline function 
  */
-#define STACK (448)
+#define STACK (sizeof (MonoLMF))
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -77,7 +80,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * 'arch_create_jit_trampoline' 
  */
 static gpointer
-arm_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
+arm_magic_trampoline (MonoMethod *method, guint32 *code, gchar **sp)
 {
 	char *o = NULL;
 	gpointer addr;
@@ -105,6 +108,9 @@ arm_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 		ldr rA, rX, #offset
 		mov lr, pc
 		mov pc, rA
+	or better:
+		mov lr, pc
+		ldr pc, rX, #offset
 
 	The call sequence could be also:
 		ldr ip, pc, 0
@@ -131,50 +137,15 @@ arm_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 		return addr;
 	}
 
-#if 0
-	/* Sanity check: instruction must be 'blrl' */
-	g_assert(*code == 0x4e800021);
-
-	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
-	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
-		ppc_patch ((char*)code, addr);
-		return addr;
+	/* ldr pc, rX, #offset */
+#define LDR_MASK ((0xf << ARMCOND_SHIFT) | (3 << 26) | (1 << 22) | (1 << 20) | (15 << 12))
+#define LDR_PC_VAL ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 26) | (0 << 22) | (1 << 20) | (15 << 12))
+	if ((*code & LDR_MASK) == LDR_PC_VAL) {
+		reg = (*code >> 16 ) & 0xf;
+		offset = *code & 0xfff;
+		/*g_print ("found vcall at r%d + %d\n", reg, offset);*/
+		o = sp [reg];
 	}
-
-	/* OK, we're now at the 'mov pc' instruction. Now walk backwards
-	till we get to a 'ldr rA' */
-	for(; --code;) {
-		if((*code & 0x7c0803a6) == 0x7c0803a6) {
-			gint16 soff;
-			gint reg_offset;
-			/* Here we are: we reached the 'mtlr rA'.
-			Extract the register from the instruction */
-			reg = (*code & 0x03e00000) >> 21;
-			--code;
-			/* ok, this is a lwz reg, offset (vtreg) 
-			 * it is emitted with:
-			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
-			 */
-			soff = (*code & 0xffff);
-			offset = soff;
-			reg = (*code >> 16) & 0x1f;
-			g_assert (reg != ppc_r1);
-			/*g_print ("patching reg is %d\n", reg);*/
-			if (reg >= 13) {
-				/* saved in the MonoLMF structure */
-				reg_offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
-				reg_offset += (reg - 13) * sizeof (gulong);
-			} else {
-				/* saved in the stack, see frame diagram below */
-				reg_offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
-				reg_offset += reg * sizeof (gulong);
-			}
-			/* o contains now the value of register reg */
-			o = *((char**) (sp + reg_offset));
-			break;
-		}
-	}
-#endif
 
 	/* this is not done for non-virtual calls, because in that case
 	   we won't have an object, but the actual pointer to the 
@@ -183,11 +154,15 @@ arm_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	if (method->klass->valuetype && !mono_aot_is_got_entry (code, o))
 		addr = get_unbox_trampoline (method, addr);
 
-#if 0
-	o += offset;
-	if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
-		*((gpointer *)o) = addr;
-#endif
+	if (o) {
+		o += offset;
+		if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
+			*((gpointer *)o) = addr;
+	} else {
+		/*g_print ("no callsite patching\n");
+		mono_disassemble_code (code -3, 16, "callsite");*/
+	}
+
 	return addr;
 }
 
@@ -213,17 +188,9 @@ arm_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 /*
  * Stack frame description when the generic trampoline is called.
  * caller frame
- * --------------------
+ * ------------------- old sp
  *  MonoLMF
- *  -------------------
- *  Saved FP registers 0-13
- *  -------------------
- *  Saved general registers 0-12
- *  -------------------
- *  param area for 3 args to ppc_magic_trampoline
- *  -------------------
- *  linkage area
- *  -------------------
+ * ------------------- sp
  */
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
@@ -248,34 +215,37 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
 	 * from emit_prolog in mini-arm.c
+	 * This is a sinthetized call to mono_get_lmf_addr ()
 	 */
 	load_get_lmf_addr = buf;
 	buf += 4;
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R0);
 
-	/* we build the MonoLMF structure on the stack - see mini-ppc.h
-	 * The pointer to the struct is put in ppc_r11.
+	/* we build the MonoLMF structure on the stack - see mini-arm.h
+	 * The pointer to the struct is put in r1.
+	 * the iregs array is already allocated on the stack by push.
 	 */
-#if 0
-	ppc_addi (buf, ppc_r11, ppc_sp, STACK - sizeof (MonoLMF));
-	ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+	ARM_SUB_REG_IMM8 (buf, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
+	ARM_ADD_REG_IMM8 (buf, ARMREG_R1, ARMREG_SP, STACK - sizeof (MonoLMF));
+	/* r0 is the result from mono_get_lmf_addr () */
+	ARM_STR_IMM (buf, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* new_lmf->previous_lmf = *lmf_addr */
-	ppc_lwz (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-	ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-	/* *(lmf_addr) = r11 */
-	ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-	/* save method info (it's in r13) */
-	ppc_stw (buf, ppc_r13, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
-	ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+	ARM_LDR_IMM (buf, ARMREG_R2, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (buf, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* *(lmf_addr) = r1 */
+	ARM_STR_IMM (buf, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* save method info (it's in v2) */
+	ARM_STR_IMM (buf, ARMREG_V2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, method));
+	ARM_STR_IMM (buf, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ebp));
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-		ppc_li (buf, ppc_r0, 0);
+		ARM_MOV_REG_IMM8 (buf, ARMREG_R2, 0);
 	} else {
-		ppc_lwz (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+		/* assumes STACK == sizeof (MonoLMF) */
+		ARM_LDR_IMM (buf, ARMREG_R2, ARMREG_SP, (G_STRUCT_OFFSET (MonoLMF, iregs) + 13*4));
 	}
-	ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
-#endif
+	ARM_STR_IMM (buf, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
 
 	/*
 	 * Now we're ready to call arm_magic_trampoline ().
@@ -306,50 +276,29 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * clobbered). This way we can just restore all the regs in one inst
 	 * and branch to IP.
 	 */
-	ARM_STR_IMM (buf, ARMREG_R0, ARMREG_V1, (12 * 4));
+	ARM_STR_IMM (buf, ARMREG_R0, ARMREG_V1, (ARMREG_R12 * 4));
 
 	/*
-	 * Now we restore the MonoLMF (see emit_epilogue in mini-ppc.c)
+	 * Now we restore the MonoLMF (see emit_epilogue in mini-arm.c)
 	 * and the rest of the registers, so the method called will see
 	 * the same state as before we executed.
-	 * The pointer to MonoLMF is in ppc_r11.
+	 * The pointer to MonoLMF is in r2.
 	 */
-#if 0
-	ppc_addi (buf, ppc_r11, ppc_r1, STACK - sizeof (MonoLMF));
-	/* r5 = previous_lmf */
-	ppc_lwz (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-	/* r6 = lmf_addr */
-	ppc_lwz (buf, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+	ARM_MOV_REG_REG (buf, ARMREG_R2, ARMREG_SP);
+	/* ip = previous_lmf */
+	ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* lr = lmf_addr */
+	ARM_LDR_IMM (buf, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* *(lmf_addr) = previous_lmf */
-	ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
-	/* restore iregs: this time include r13 */
-	ppc_lmw (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
-	/* restore fregs */
-	for (i = 14; i < 32; i++) {
-		ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
-	}
-
-	/* restore the volatile registers, we skip r1, of course */
-	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
-	for (i = 0; i < 14; i++) {
-		ppc_lfd (buf, i, offset, ppc_r1);
-		offset += sizeof (double);
-	}
-	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
-	ppc_lwz (buf, ppc_r0, offset, ppc_r1);
-	offset += 2 * sizeof (gulong);
-	for (i = 2; i < 13; i++) {
-		ppc_lwz (buf, i, offset, ppc_r1);
-		offset += sizeof (gulong);
-	}
-#endif
+	ARM_STR_IMM (buf, ARMREG_LR, ARMREG_IP, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 
 	/* Non-standard function epilogue. Instead of doing a proper
-	 * return, we just hump to the compiled code.
+	 * return, we just jump to the compiled code.
 	 */
 	/* Restore the registers and jump to the code:
 	 * Note that IP has been conveniently set to the method addr.
 	 */
+	ARM_ADD_REG_IMM8 (buf, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
 	ARM_POP_NWB (buf, 0x5fff);
 	/* do we need to set sp? */
 	ARM_ADD_REG_IMM8 (buf, ARMREG_SP, ARMREG_SP, (14 * 4));
@@ -362,6 +311,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	} else {
 		constants [1] = arm_magic_trampoline;
 	}
+
+	/* backpatch by emitting the missing instructions skipped above */
 	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));
 	ARM_LDR_IMM (load_trampoline, ARMREG_IP, ARMREG_PC, (buf + 4 - load_trampoline - 8));
 

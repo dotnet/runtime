@@ -38,17 +38,21 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-void arm_patch (guchar *code, guchar *target);
+void arm_patch (guchar *code, const guchar *target);
 guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
+	int dummy; /* to keep the structure a multiple of 8 */
 	gulong     ebp;
 	gulong     eip;
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 8..15 */
-	gulong     iregs [10]; /* all but r0-r3, sp and pc: matches the PUSH instruction layout */
+	/* all but sp and pc: matches the PUSH instruction layout in the trampolines
+	 * 0-4 should be considered undefined (execpt in the magic tramp)
+	 */
+	gulong     iregs [14];
 };
 
 /* we define our own structure and we'll copy the data
@@ -59,7 +63,7 @@ struct MonoLMF {
  */
 typedef struct {
 	gulong eip;          // pc 
-	gulong ebp;          // r1
+	gulong ebp;          // sp
 	gulong regs [MONO_SAVED_GREGS];
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;

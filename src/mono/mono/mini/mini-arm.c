@@ -69,9 +69,37 @@ mono_arch_fregname (int reg) {
 }
 
 static guint8*
+emit_big_add (guint8 *code, int dreg, int sreg, int imm)
+{
+	int imm8, rot_amount;
+	if ((imm8 = mono_arm_is_rotated_imm8 (imm, &rot_amount)) >= 0) {
+		ARM_ADD_REG_IMM (code, dreg, sreg, imm8, rot_amount);
+		return code;
+	}
+	g_assert (dreg != sreg);
+	code = mono_arm_emit_load_imm (code, dreg, imm);
+	ARM_ADD_REG_REG (code, dreg, dreg, sreg);
+	return code;
+}
+
+static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
-	/* FIXME: unroll for large sizes, but we need more registers */
+	/* we can use r0-r3, since this is called only for incoming args on the stack */
+	if (0 && size > sizeof (gpointer) * 5) {
+		guint8 *start_loop;
+		code = emit_big_add (code, ARMREG_R0, sreg, soffset);
+		code = emit_big_add (code, ARMREG_R1, dreg, doffset);
+		start_loop = code = mono_arm_emit_load_imm (code, ARMREG_R2, size);
+		ARM_LDR_IMM (code, ARMREG_R3, ARMREG_R0, 0);
+		ARM_STR_IMM (code, ARMREG_R3, ARMREG_R1, 0);
+		ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, 4);
+		ARM_ADD_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, 4);
+		ARM_SUBS_REG_IMM8 (code, ARMREG_R2, ARMREG_R2, 4);
+		ARM_B_COND (code, ARMCOND_LT, 0);
+		arm_patch (code - 4, start_loop);
+		return code;
+	}
 	g_assert (arm_is_imm12 (doffset));
 	g_assert (arm_is_imm12 (doffset + size));
 	g_assert (arm_is_imm12 (soffset));
@@ -1261,6 +1289,17 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_MOVE;
 				break;
 			}
+			if (ins->inst_imm == 0) {
+				ins->opcode = OP_ICONST;
+				ins->inst_c0 = 0;
+				break;
+			}
+			imm8 = mono_is_power_of_two (ins->inst_imm);
+			if (imm8 > 0) {
+				ins->opcode = OP_SHL_IMM;
+				ins->inst_imm = imm8;
+				break;
+			}
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
@@ -1351,7 +1390,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 
 typedef struct {
 	guchar *code;
-	guchar *target;
+	const guchar *target;
 	int absolute;
 	int found;
 } PatchData;
@@ -1412,7 +1451,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 }
 
 static void
-handle_thunk (int absolute, guchar *code, guchar *target) {
+handle_thunk (int absolute, guchar *code, const guchar *target) {
 	MonoDomain *domain = mono_domain_get ();
 	PatchData pdata;
 
@@ -1437,7 +1476,7 @@ handle_thunk (int absolute, guchar *code, guchar *target) {
 }
 
 void
-arm_patch (guchar *code, guchar *target)
+arm_patch (guchar *code, const guchar *target)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = (ins >> 25) & 7;
@@ -1906,55 +1945,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ARM_MVFS (code, ins->dreg, ins->sreg1);
 			break;
-		case CEE_JMP: {
-#if ARM_PORT
-			int i, pos = 0;
-			
+		case CEE_JMP:
 			/*
 			 * Keep in sync with mono_arch_emit_epilog
 			 */
 			g_assert (!cfg->method->save_lmf);
-			if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-				if (ppc_is_imm16 (cfg->stack_usage + PPC_RET_ADDR_OFFSET)) {
-					ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
-				} else {
-					ppc_load (code, ppc_r11, cfg->stack_usage + PPC_RET_ADDR_OFFSET);
-					ppc_lwzx (code, ppc_r0, cfg->frame_reg, ppc_r11);
-				}
-				ppc_mtlr (code, ppc_r0);
-			}
-			if (ppc_is_imm16 (cfg->stack_usage)) {
-				ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
-			} else {
-				ppc_load (code, ppc_r11, cfg->stack_usage);
-				ppc_add (code, ppc_sp, cfg->frame_reg, ppc_r11);
-			}
-			if (!cfg->method->save_lmf) {
-				/*for (i = 31; i >= 14; --i) {
-					if (cfg->used_float_regs & (1 << i)) {
-						pos += sizeof (double);
-						ppc_lfd (code, i, -pos, cfg->frame_reg);
-					}
-				}*/
-				for (i = 31; i >= 13; --i) {
-					if (cfg->used_int_regs & (1 << i)) {
-						pos += sizeof (gulong);
-						ppc_lwz (code, i, -pos, cfg->frame_reg);
-					}
-				}
-			} else {
-				/* FIXME restore from MonoLMF: though this can't happen yet */
-			}
-			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			ppc_b (code, 0);
-#endif
-			//g_assert (arm_is_imm8 (cfg->stack_usage));
+			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
 			ARM_ADD_REG_IMM8 (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
 			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ARM_B (code, 0);
 			break;
-		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			ARM_LDR_IMM (code, ARMREG_LR, ins->sreg1, 0);
@@ -2005,10 +2006,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
-			g_assert (ins->inst_offset >= 0 && ins->inst_offset < 4096);
-			ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
+			g_assert (arm_is_imm12 (ins->inst_offset));
+			g_assert (ins->sreg1 != ARMREG_LR);
 			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+			ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
 			break;
 		case OP_OUTARG:
 			g_assert_not_reached ();
@@ -2558,35 +2559,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size = 256 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	if (cfg->max_ireg >= 29)
-		cfg->used_int_regs |= USE_EXTRA_TEMPS;
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
-	ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
-	prev_sp_offset = 8; /* ip and lr */
-	for (i = 0; i < 16; ++i) {
-		if (cfg->used_int_regs & (1 << i))
-			prev_sp_offset += 4;
-	}
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
 
-	if (!method->save_lmf) {
-		/*for (i = 31; i >= 14; --i) {
-			if (cfg->used_float_regs & (1 << i)) {
-				pos += sizeof (gdouble);
-				ppc_stfd (code, i, -pos, ppc_sp);
-			}
-		}*/
+	if (1 || !method->save_lmf) {
+		ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
+		prev_sp_offset = 8; /* ip and lr */
+		for (i = 0; i < 16; ++i) {
+			if (cfg->used_int_regs & (1 << i))
+				prev_sp_offset += 4;
+		}
 	} else {
-		/*int ofs;
-		pos += sizeof (MonoLMF);
+		ARM_PUSH (code, 0x5ff0);
+		prev_sp_offset = 4 * 10; /* all but r0-r3, sp and pc */
+		pos += sizeof (MonoLMF) - prev_sp_offset;
 		lmf_offset = pos;
-		ofs = -pos + G_STRUCT_OFFSET(MonoLMF, iregs);
-		ppc_stmw (code, ppc_r13, ppc_r1, ofs);
-		for (i = 14; i < 32; i++) {
-			ppc_stfd (code, i, (-pos + G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble))), ppc_r1);
-		}*/
 	}
 	alloc_size += pos;
 	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
@@ -2754,29 +2743,29 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ARM_BL (code, 0);
 		}
 #if ARM_PORT
-		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
+		/* we build the MonoLMF structure on the stack - see mini-arm.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
 		 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
-		 * The pointer to the struct is put in ppc_r11 (new_lmf).
+		 * The pointer to the struct is put in r1 (new_lmf).
+		 * r2 is used as scratch
 		 * The callee-saved registers are already in the MonoLMF structure
 		 */
-		ppc_addi (code, ppc_r11, ppc_sp, alloc_size - lmf_offset);
-		/* ppc_r3 is the result from mono_get_lmf_addr () */
-		ppc_stw (code, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		code = emit_big_add (code, ARMREG_R1, ARMREG_SP, alloc_size - lmf_offset);
+		/* r0 is the result from mono_get_lmf_addr () */
+		ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 		/* new_lmf->previous_lmf = *lmf_addr */
-		ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-		/* *(lmf_addr) = r11 */
-		ppc_stw (code, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+		ARM_LDR_IMM (code, ARMREG_R2, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		/* *(lmf_addr) = r1 */
+		ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* save method info */
-		ppc_load (code, ppc_r0, method);
-		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
-		ppc_stw (code, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+		code = mono_arm_emit_load_imm (code, ARMREG_R2, method);
+		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, method));
+		ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ebp));
 		/* save the current IP */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		ppc_load (code, ppc_r0, 0x01010101);
-		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
+		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
+		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
 #endif
 	}
 
@@ -2829,31 +2818,18 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		int lmf_offset;
 		pos +=  sizeof (MonoLMF);
 		lmf_offset = pos;
-		/* save the frame reg in r8 */
-		ppc_mr (code, ppc_r8, cfg->frame_reg);
-		ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage - lmf_offset);
-		/* r5 = previous_lmf */
-		ppc_lwz (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-		/* r6 = lmf_addr */
-		ppc_lwz (code, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		/* r2 contains the pointer to the current LMF */
+		code = emit_big_add (code, ARMREG_R2, cfg->frame_reg, cfg->stack_usage - lmf_offset);
+		/* ip = previous_lmf */
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		/* lr = lmf_addr */
+		ARM_LDR_IMM (code, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 		/* *(lmf_addr) = previous_lmf */
-		ppc_stw (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+		ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* FIXME: speedup: there is no actual need to restore the registers if
 		 * we didn't actually change them (idea from Zoltan).
 		 */
 		/* restore iregs */
-		ppc_lmw (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
-		/* restore fregs */
-		/*for (i = 14; i < 32; i++) {
-			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
-		}*/
-		g_assert (ppc_is_imm16 (cfg->stack_usage + PPC_RET_ADDR_OFFSET));
-		/* use the saved copy of the frame reg in r8 */
-		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-			ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, ppc_r8);
-			ppc_mtlr (code, ppc_r0);
-		}
-		ppc_addic (code, ppc_sp, ppc_r8, cfg->stack_usage);
 #endif
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
