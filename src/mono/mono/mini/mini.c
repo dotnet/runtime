@@ -6871,7 +6871,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	EnterCriticalSection (&jit_mutex);
 	if (!class_init_hash_addr)
 		class_init_hash_addr = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (class_init_hash_addr, code, vtable);
+	g_hash_table_insert (class_init_hash_addr, ptr, vtable);
 	LeaveCriticalSection (&jit_mutex);
 
 	return ptr;
