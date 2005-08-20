@@ -2045,7 +2045,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		if (! isnormal (r))
 			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));
 		else
-			return g_strdup_printf ("float32(%g)", r);
+			return g_strdup_printf ("float32(%.20g)", r);
 	}	
 	case MONO_TYPE_R8: {
 		double r;
@@ -2056,7 +2056,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 			high = read32 (ptr + 4);
 			return g_strdup_printf ("float64(0x%08x%08x)", high, low);
 		} else {
-			return g_strdup_printf ("float64(%g)", r);
+			return g_strdup_printf ("float64(%.20g)", r);
 		}
 	}
 	case MONO_TYPE_STRING: {
