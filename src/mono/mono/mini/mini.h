@@ -473,6 +473,7 @@ typedef enum {
 	MONO_TRAMPOLINE_JUMP,
 	MONO_TRAMPOLINE_CLASS_INIT,
 	MONO_TRAMPOLINE_AOT,
+	MONO_TRAMPOLINE_DELEGATE,
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
@@ -835,6 +836,7 @@ gpointer          mono_create_jit_trampoline (MonoMethod *method);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp);
+gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp);
 gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp);
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp);
@@ -865,6 +867,7 @@ guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
+gpointer  mono_create_delegate_trampoline       (MonoMethod *method, gpointer addr);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
@@ -914,6 +917,7 @@ void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *code, guint8 *addr);
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs);
+void     mono_arch_patch_delegate_trampoline    (guint8 *code, gssize *regs, guint8 *addr);
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 
 /* Exception handling */

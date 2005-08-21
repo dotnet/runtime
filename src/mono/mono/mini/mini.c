@@ -6832,6 +6832,9 @@ mono_init_trampolines (void)
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
 #endif
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
+#endif
 }
 
 guint8 *
@@ -6979,6 +6982,46 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	return tramp;
 }	
 #endif
+
+gpointer
+mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
+{
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	MonoJitInfo *ji;
+	gpointer code, ptr;
+	guint32 code_size;
+	MonoDomain *domain = mono_domain_get ();
+
+	code = mono_jit_find_compiled_method (domain, method);
+	if (code)
+		return code;
+
+	mono_domain_lock (domain);
+	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (ptr)
+		return ptr;
+
+	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_DELEGATE, domain, &code_size);
+
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->code_start = code;
+	ji->code_size = code_size;
+	ji->method = method;
+
+	ptr = mono_create_ftnptr (domain, code);
+
+	/* store trampoline address */
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->delegate_trampoline_hash,
+							  method, ptr);
+	mono_domain_unlock (domain);
+
+	return ptr;
+#else
+	return addr;
+#endif
+}
 
 MonoVTable*
 mono_find_class_init_trampoline_by_addr (gconstpointer addr)
@@ -9976,6 +10019,7 @@ mini_init (const char *filename)
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
+	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
 #endif
 #define JIT_INVOKE_WORKS
 #ifdef JIT_INVOKE_WORKS

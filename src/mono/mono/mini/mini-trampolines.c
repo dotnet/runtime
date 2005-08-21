@@ -14,7 +14,7 @@
 #include "mini.h"
 
 /**
- * magic_trampoline:
+ * mono_magic_trampoline:
  *
  *   This trampoline handles calls from JITted code.
  */
@@ -29,7 +29,6 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	/* the method was jumped to */
 	if (!code)
-		/* FIXME: Optimize the case when the call is from a delegate wrapper */
 		return addr;
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
@@ -59,7 +58,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 }
 
 /*
- * aot_trampoline:
+ * mono_aot_trampoline:
  *
  *   This trampoline handles calls made from AOT code. We try to bypass the 
  * normal JIT compilation logic to avoid loading the metadata for the method.
@@ -132,4 +131,24 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 
 	if (!mono_running_on_valgrind ())
 		mono_arch_nullify_class_init_trampoline (code, regs);
+}
+
+/**
+ * mono_delegate_trampoline:
+ *
+ *   This trampoline handles calls made from the delegate invoke wrapper. It patches
+ * the function address inside the delegate.
+ */
+gpointer
+mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+{
+	gpointer addr;
+	gpointer *vtable_slot;
+
+	addr = mono_compile_method (m);
+	g_assert (addr);
+
+	mono_arch_patch_delegate_trampoline (code, regs, addr);
+
+	return addr;
 }
