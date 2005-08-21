@@ -2733,10 +2733,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			/* Indirect call */
-			ia64_mov (code, GP_SCRATCH_REG, ins->sreg1);
-			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+			/* 
+			 * mono_arch_patch_delegate_trampoline will patch this, this is why R8 is 
+			 * used.
+			 */
+			ia64_mov (code, IA64_R8, ins->sreg1);
+			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, IA64_R8, 8);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
-			ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+			ia64_ld8 (code, IA64_GP, IA64_R8);
 			ia64_br_call_reg (code, IA64_B0, IA64_B6);
 
 			code = emit_move_return_value (cfg, ins, code);

@@ -138,7 +138,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 }
 
 void
-mono_arch_patch_delegate_trampoline (guint8 *code, gssize *regs, guint8 *addr)
+mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp, gssize *regs, guint8 *addr)
 {
 	guint8 rex = 0;
 	guint32 reg;

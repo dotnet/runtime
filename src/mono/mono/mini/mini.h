@@ -917,7 +917,7 @@ void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *code, guint8 *addr);
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs);
-void     mono_arch_patch_delegate_trampoline    (guint8 *code, gssize *regs, guint8 *addr);
+void     mono_arch_patch_delegate_trampoline    (guint8 *code, guint8 *tramp, gssize *regs, guint8 *addr);
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 
 /* Exception handling */

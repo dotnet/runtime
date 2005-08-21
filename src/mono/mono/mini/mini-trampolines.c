@@ -145,12 +145,11 @@ gpointer
 mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
-	gpointer *vtable_slot;
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	mono_arch_patch_delegate_trampoline (code, regs, addr);
+	mono_arch_patch_delegate_trampoline (code, tramp, regs, addr);
 
 	return addr;
 }
