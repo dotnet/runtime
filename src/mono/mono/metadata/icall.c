@@ -6054,7 +6054,7 @@ static guchar dbase64 [] = {
 	};
 
 static MonoArray *
-base64_to_byte_array (gunichar2 *start, gint ilength)
+base64_to_byte_array (gunichar2 *start, gint ilength, MonoBoolean allowWhitespaceOnly)
 {
 	gint ignored;
 	gint i;
@@ -6084,6 +6084,11 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 	}
 
 	olength = ilength - ignored;
+
+	if (allowWhitespaceOnly && olength == 0) {
+		return mono_array_new (mono_domain_get (), mono_defaults.byte_class, 0);
+	}
+
 	if ((olength & 3) != 0 || olength <= 0) {
 		exc = mono_exception_from_name_msg (mono_get_corlib (), "System",
 					"FormatException", "Invalid length.");
@@ -6131,11 +6136,12 @@ base64_to_byte_array (gunichar2 *start, gint ilength)
 }
 
 static MonoArray *
-InternalFromBase64String (MonoString *str)
+InternalFromBase64String (MonoString *str, MonoBoolean allowWhitespaceOnly)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return base64_to_byte_array (mono_string_chars (str), mono_string_length (str));
+	return base64_to_byte_array (mono_string_chars (str), 
+		mono_string_length (str), allowWhitespaceOnly);
 }
 
 static MonoArray *
@@ -6143,7 +6149,8 @@ InternalFromBase64CharArray (MonoArray *input, gint offset, gint length)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return base64_to_byte_array (mono_array_addr (input, gunichar2, offset), length);
+	return base64_to_byte_array (mono_array_addr (input, gunichar2, offset),
+		length, FALSE);
 }
 
 /* icall map */
