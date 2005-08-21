@@ -123,6 +123,7 @@ struct _MonoDomain {
 	GHashTable         *class_init_trampoline_hash;
 	GHashTable         *jump_trampoline_hash;
 	GHashTable         *jit_trampoline_hash;
+	GHashTable         *delegate_trampoline_hash;
 	/* 
 	 * This must be a GHashTable, since these objects can't be finalized
 	 * if the hashtable contains a GC visible reference to them.

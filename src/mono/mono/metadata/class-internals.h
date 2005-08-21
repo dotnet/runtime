@@ -469,6 +469,7 @@ extern MonoStats mono_stats;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 typedef gpointer (*MonoRemotingTrampoline)       (MonoMethod *method, MonoRemotingTarget target);
+typedef gpointer (*MonoDelegateTrampoline)       (MonoMethod *method, gpointer addr);
 
 typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token, MonoClass **handle_class);
 
@@ -522,6 +523,9 @@ mono_install_trampoline (MonoTrampoline func);
 
 void
 mono_install_remoting_trampoline (MonoRemotingTrampoline func);
+
+void
+mono_install_delegate_trampoline (MonoDelegateTrampoline func);
 
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token);

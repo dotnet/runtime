@@ -338,8 +338,16 @@ default_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 	return NULL;
 }
 
+static gpointer
+default_delegate_trampoline (MonoMethod *method, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
+static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 
 void
 mono_install_trampoline (MonoTrampoline func) 
@@ -351,6 +359,12 @@ void
 mono_install_remoting_trampoline (MonoRemotingTrampoline func) 
 {
 	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
+}
+
+void
+mono_install_delegate_trampoline (MonoDelegateTrampoline func) 
+{
+	arch_create_delegate_trampoline = func? func: default_delegate_trampoline;
 }
 
 static MonoCompileFunc default_mono_compile_method = NULL;
@@ -3492,6 +3506,14 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 		delegate->method_ptr = mono_compile_method (method);
 		delegate->target = target;
 	} else {
+		if (method) {
+			/* 
+			 * Replace the original trampoline with a delegate trampoline
+			 * which will patch delegate->method_ptr with the address of the
+			 * compiled method.
+			 */
+			addr = arch_create_delegate_trampoline (method, addr);
+		}
 		delegate->method_ptr = addr;
 		delegate->target = target;
 	}
