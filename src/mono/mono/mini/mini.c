@@ -6992,10 +6992,6 @@ mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
 	guint32 code_size;
 	MonoDomain *domain = mono_domain_get ();
 
-	code = mono_jit_find_compiled_method (domain, method);
-	if (code)
-		return code;
-
 	mono_domain_lock (domain);
 	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, method);
 	mono_domain_unlock (domain);
