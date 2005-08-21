@@ -133,6 +133,8 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 		mono_arch_nullify_class_init_trampoline (code, regs);
 }
 
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+
 /**
  * mono_delegate_trampoline:
  *
@@ -152,3 +154,5 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tra
 
 	return addr;
 }
+
+#endif
