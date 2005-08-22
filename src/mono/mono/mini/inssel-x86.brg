@@ -756,6 +756,14 @@ reg: OP_LCALL_REG (CEE_LDIND_I (base)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+lreg: OP_LCALL_REG (CEE_LDIND_I (base)) {
+	tree->opcode = call_reg_to_call_membase (tree->opcode);
+	tree->inst_basereg = state->left->left->tree->inst_basereg;
+	tree->inst_offset = state->left->left->tree->inst_offset;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_VOIDCALL_REG (CEE_LDIND_I (base)) {
 	tree->opcode = call_reg_to_call_membase (tree->opcode);
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
