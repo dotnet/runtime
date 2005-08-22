@@ -718,7 +718,7 @@ reg: OP_ATOMIC_EXCHANGE_I8 (base, reg) {
 # Optimized call instructions
 # mono_arch_patch_delegate_trampoline depends on these
 reg: OP_CALL_REG (CEE_LDIND_I (base)),
-reg: OP_FCALL_REG (CEE_LDIND_I (base)),
+freg: OP_FCALL_REG (CEE_LDIND_I (base)),
 reg: OP_LCALL_REG (CEE_LDIND_I (base)) {
 	tree->opcode = call_reg_to_call_membase (tree->opcode);
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
