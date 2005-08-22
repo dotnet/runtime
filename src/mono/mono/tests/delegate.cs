@@ -113,5 +113,30 @@ class Tests {
 
 		return (int)l (55);
 	}
+
+	delegate float FloatDelegate (float l);
+
+	static float float_delegate (float l) {
+		return l + 1;
+	}
+
+	public static int test_56_float () {
+		FloatDelegate l = new FloatDelegate (float_delegate);
+
+		return (int)l (55);
+	}
+
+	delegate double DoubleDelegate (double l);
+
+	static double double_delegate (double l) {
+		return l + 1;
+	}
+
+	public static int test_56_double () {
+		DoubleDelegate l = new DoubleDelegate (double_delegate);
+
+		return (int)l (55);
+	}
+
 }
 }
