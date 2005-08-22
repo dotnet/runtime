@@ -203,7 +203,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Now we'll create in 'buf' the ARM trampoline code. This
 	 is the trampoline code common to all methods  */
 	
-	code = buf = g_malloc(512);
+	code = buf = g_malloc (148);
 
 	/*
 	 * At this point r0 has the method and sp points to the saved
@@ -290,7 +290,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* lr = lmf_addr */
 	ARM_LDR_IMM (buf, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* *(lmf_addr) = previous_lmf */
-	ARM_STR_IMM (buf, ARMREG_LR, ARMREG_IP, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (buf, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 
 	/* Non-standard function epilogue. Instead of doing a proper
 	 * return, we just jump to the compiled code.
