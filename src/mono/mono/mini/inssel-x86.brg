@@ -37,6 +37,7 @@
 		} \
 	} while (0)
 
+int call_reg_to_call_membase (int opcode);
 
 %%
 
@@ -743,4 +744,54 @@ reg: OP_ATOMIC_EXCHANGE_I4 (base, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+# Optimized call instructions
+# mono_arch_patch_delegate_trampoline depends on these
+reg: OP_CALL_REG (CEE_LDIND_I (base)),
+reg: OP_FCALL_REG (CEE_LDIND_I (base)),
+reg: OP_LCALL_REG (CEE_LDIND_I (base)) {
+	tree->opcode = call_reg_to_call_membase (tree->opcode);
+	tree->inst_basereg = state->left->left->tree->inst_basereg;
+	tree->inst_offset = state->left->left->tree->inst_offset;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VOIDCALL_REG (CEE_LDIND_I (base)) {
+	tree->opcode = call_reg_to_call_membase (tree->opcode);
+	tree->inst_basereg = state->left->left->tree->inst_basereg;
+	tree->inst_offset = state->left->left->tree->inst_offset;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VCALL_REG (CEE_LDIND_I (base), reg) {
+	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->right->reg1);
+	
+	tree->opcode = call_reg_to_call_membase (tree->opcode);
+	tree->inst_basereg = state->left->left->tree->inst_basereg;
+	tree->inst_offset = state->left->left->tree->inst_offset;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 %%
+
+int
+call_reg_to_call_membase (int opcode)
+{
+	switch (opcode) {
+	case OP_CALL_REG:
+		return OP_CALL_MEMBASE;
+	case OP_FCALL_REG:
+		return OP_FCALL_MEMBASE;
+	case OP_VCALL_REG:
+		return OP_VCALL_MEMBASE;
+	case OP_LCALL_REG:
+		return OP_LCALL_MEMBASE;
+	case OP_VOIDCALL_REG:
+		return OP_VOIDCALL_MEMBASE;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return -1;
+}
