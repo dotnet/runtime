@@ -8113,7 +8113,10 @@ optimize_branches (MonoCompile *cfg)
 	 * loop, see bug #53003 for an example. To prevent this, we put an upper
 	 * bound on the number of iterations.
 	 */
-	niterations = 1000;
+	if (cfg->num_bblocks > 1000)
+		niterations = cfg->num_bblocks * 2;
+	else
+		niterations = 1000;
 	do {
 		MonoBasicBlock *previous_bb;
 		changed = FALSE;
