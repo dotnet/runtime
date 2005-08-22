@@ -1784,6 +1784,11 @@ tools/locale-builder/Makefile
 runtime/Makefile
 ])
 
+if test x$platform_win32 = xyes; then
+   # Get rid of 'cyg' prefixes in library names
+   sed -e "s/\/cyg\//\/\//" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
+fi
+
 (
   case $prefix in
   NONE) prefix=$ac_default_prefix ;;
