@@ -343,8 +343,8 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 8;
 		} else {
-			if ((*gr) & 1)
-				(*gr) ++;
+			/*if ((*gr) & 1)
+				(*gr) ++;*/
 			ainfo->reg = *gr;
 		}
 		(*gr) ++;
@@ -1244,6 +1244,14 @@ map_to_reg_reg_op (int op)
 		return OP_STORER4_MEMINDEX;
 	case OP_STORER8_MEMBASE_REG:
 		return OP_STORER8_MEMINDEX;
+	case OP_STORE_MEMBASE_IMM:
+		return OP_STORE_MEMBASE_REG;
+	case OP_STOREI1_MEMBASE_IMM:
+		return OP_STOREI1_MEMBASE_REG;
+	case OP_STOREI2_MEMBASE_IMM:
+		return OP_STOREI2_MEMBASE_REG;
+	case OP_STOREI4_MEMBASE_IMM:
+		return OP_STOREI4_MEMBASE_REG;
 	}
 	g_assert_not_reached ();
 }
@@ -1257,7 +1265,7 @@ static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next, *temp, *last_ins = NULL;
-	int rot_amount, imm8;
+	int rot_amount, imm8, low_imm;
 
 	/* setup the virtual reg allocator */
 	if (bb->max_ireg > cfg->rs->next_vireg)
@@ -1265,6 +1273,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	ins = bb->code;
 	while (ins) {
+loop_start:
 		switch (ins->opcode) {
 		case OP_ADD_IMM:
 		case OP_SUB_IMM:
@@ -1338,14 +1347,68 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADR8_MEMBASE:
 			if (arm_is_fpimm8 (ins->inst_offset))
 				break;
-			g_assert_not_reached ();
+			low_imm = ins->inst_offset & 0x1ff;
+			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_offset & ~0x1ff, &rot_amount)) >= 0) {
+				NEW_INS (cfg, temp, OP_ADD_IMM);
+				temp->inst_imm = ins->inst_offset & ~0x1ff;
+				temp->sreg1 = ins->inst_basereg;
+				temp->dreg = mono_regstate_next_int (cfg->rs);
+				ins->inst_basereg = temp->dreg;
+				ins->inst_offset = low_imm;
+				break;
+			}
 			/* FPA doesn't have indexed load instructions */
+			g_assert_not_reached ();
+			break;
+		case OP_STORE_MEMBASE_REG:
+		case OP_STOREI4_MEMBASE_REG:
+		case OP_STOREI1_MEMBASE_REG:
+			if (arm_is_imm12 (ins->inst_offset))
+				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
+		case OP_STOREI2_MEMBASE_REG:
+			if (arm_is_imm8 (ins->inst_offset))
+				break;
+			NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_offset;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			ins->sreg2 = temp->dreg;
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			break;
+		case OP_STORER4_MEMBASE_REG:
+		case OP_STORER8_MEMBASE_REG:
+			if (arm_is_fpimm8 (ins->inst_offset))
+				break;
+			low_imm = ins->inst_offset & 0x1ff;
+			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_offset & ~ 0x1ff, &rot_amount)) >= 0 && arm_is_fpimm8 (low_imm)) {
+				NEW_INS (cfg, temp, OP_ADD_IMM);
+				temp->inst_imm = ins->inst_offset & ~0x1ff;
+				temp->sreg1 = ins->inst_destbasereg;
+				temp->dreg = mono_regstate_next_int (cfg->rs);
+				ins->inst_destbasereg = temp->dreg;
+				ins->inst_offset = low_imm;
+				break;
+			}
+			/*g_print ("fail with: %d (%d, %d)\n", ins->inst_offset, ins->inst_offset & ~0x1ff, low_imm);*/
+			/* FPA doesn't have indexed store instructions */
+			g_assert_not_reached ();
+			break;
+		case OP_STORE_MEMBASE_IMM:
+		case OP_STOREI1_MEMBASE_IMM:
+		case OP_STOREI2_MEMBASE_IMM:
+		case OP_STOREI4_MEMBASE_IMM:
+			NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			ins->sreg1 = temp->dreg;
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			last_ins = temp;
+			goto loop_start; /* make it handle the possibly big ins->inst_offset */
 		}
 		last_ins = ins;
 		ins = ins->next;
@@ -1666,8 +1729,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORE_MEMBASE_REG:
 		case OP_STOREI4_MEMBASE_REG:
-			g_assert (arm_is_imm12 (ins->inst_offset));
-			ARM_STR_IMM (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+			/* this case is special, since it happens for spill code after lowering has been called */
+			if (arm_is_imm12 (ins->inst_offset)) {
+				ARM_STR_IMM (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+			} else {
+				code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+				ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
+			}
+			break;
+		case OP_STOREI1_MEMINDEX:
+			ARM_STRB_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
+			break;
+		case OP_STOREI2_MEMINDEX:
+			/* note: the args are reversed in the macro */
+			ARM_STRH_REG_REG (code, ins->inst_destbasereg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_STORE_MEMINDEX:
+		case OP_STOREI4_MEMINDEX:
+			ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case CEE_LDIND_I:
 		case CEE_LDIND_I4:
@@ -1689,16 +1768,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_LDRB_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI2_MEMINDEX:
-			ARM_LDRSH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
+			ARM_LDRSH_REG_REG (code, ins->inst_basereg, ins->sreg2, ins->dreg);
 			break;
 		case OP_LOADU2_MEMINDEX:
-			ARM_LDRH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
+			ARM_LDRH_REG_REG (code, ins->inst_basereg, ins->sreg2, ins->dreg);
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
-			g_assert (arm_is_imm12 (ins->inst_offset));
-			ARM_LDR_IMM (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			/* this case is special, since it happens for spill code after lowering has been called */
+			if (arm_is_imm12 (ins->inst_offset)) {
+				ARM_LDR_IMM (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			} else {
+				code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+				ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+			}
 			break;
 		case OP_LOADI1_MEMBASE:
 			g_assert (arm_is_imm8 (ins->inst_offset));
@@ -2080,19 +2164,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_START_HANDLER:
-			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
-			ARM_STR_IMM (code, ARMREG_LR, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			if (arm_is_imm12 (ins->inst_left->inst_offset)) {
+				ARM_STR_IMM (code, ARMREG_LR, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			} else {
+				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_left->inst_offset);
+				ARM_STR_REG_REG (code, ARMREG_LR, ins->inst_left->inst_basereg, ARMREG_IP);
+			}
 			break;
 		case OP_ENDFILTER:
 			if (ins->sreg1 != ARMREG_R0)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
-			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
-			ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			if (arm_is_imm12 (ins->inst_left->inst_offset)) {
+				ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			} else {
+				g_assert (ARMREG_IP != ins->inst_left->inst_basereg);
+				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_left->inst_offset);
+				ARM_LDR_REG_REG (code, ARMREG_IP, ins->inst_left->inst_basereg, ARMREG_IP);
+			}
 			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 			break;
 		case CEE_ENDFINALLY:
-			g_assert (arm_is_imm12 (ins->inst_left->inst_offset));
-			ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			if (arm_is_imm12 (ins->inst_left->inst_offset)) {
+				ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
+			} else {
+				g_assert (ARMREG_IP != ins->inst_left->inst_basereg);
+				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_left->inst_offset);
+				ARM_LDR_REG_REG (code, ARMREG_IP, ins->inst_left->inst_basereg, ARMREG_IP);
+			}
 			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 			break;
 		case OP_CALL_HANDLER: 
@@ -2584,8 +2682,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 	}
 
+	/* the stack used in the pushed regs */
+	if (prev_sp_offset & 4)
+		alloc_size += 4;
 	cfg->stack_usage = alloc_size;
-	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	if (alloc_size) {
 		if ((i = mono_arm_is_rotated_imm8 (alloc_size, &rot_amount)) >= 0) {
 			ARM_SUB_REG_IMM (code, ARMREG_SP, ARMREG_SP, i, rot_amount);
@@ -2652,8 +2752,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (ainfo->regtype == RegTypeGeneral) {
 				switch (ainfo->size) {
 				case 1:
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_STRB_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm12 (inst->inst_offset))
+						ARM_STRB_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_STRB_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_IP);
+					}
 					break;
 				case 2:
 					g_assert (arm_is_imm8 (inst->inst_offset));
@@ -2666,8 +2770,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					ARM_STR_IMM (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
 					break;
 				default:
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm12 (inst->inst_offset)) {
+						ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_STR_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_IP);
+					}
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeBase) {
@@ -2842,7 +2950,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
 		} else {
-			code = mono_arm_emit_load_imm (code, cfg->frame_reg, cfg->stack_usage);
+			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
 			ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
 		}
 		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));

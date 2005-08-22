@@ -234,8 +234,8 @@ add_ovf_carry: dest:i src1:i src2:i len:16
 sub_ovf_carry: dest:i src1:i src2:i len:16
 add_ovf_un_carry: dest:i src1:i src2:i len:16
 sub_ovf_un_carry: dest:i src1:i src2:i len:16
-start_handler: len:8
-endfinally: len:12
+start_handler: len:12
+endfinally: len:20
 leave:
 leave.s:
 stind.i:
@@ -263,7 +263,7 @@ ldloc:
 ldloca:
 stloc:
 localloc: dest:i src1:i len:60
-endfilter: len:12
+endfilter: len:20
 unaligned.:
 volatile.:
 tail.:
@@ -340,9 +340,7 @@ store_memindex: dest:b src1:i src2:i len:4
 storei1_memindex: dest:b src1:i src2:i len:4
 storei2_memindex: dest:b src1:i src2:i len:4
 storei4_memindex: dest:b src1:i src2:i len:4
-storer4_memindex: dest:b src1:f src2:i len:4
-storer8_memindex: dest:b src1:f src2:i len:4
-load_membase: dest:i src1:b len:4
+load_membase: dest:i src1:b len:12
 loadi1_membase: dest:i src1:b len:4
 loadu1_membase: dest:i src1:b len:4
 loadi2_membase: dest:i src1:b len:4
@@ -359,8 +357,6 @@ loadi2_memindex: dest:i src1:b src2:i len:4
 loadu2_memindex: dest:i src1:b src2:i len:4
 loadi4_memindex: dest:i src1:b src2:i len:4
 loadu4_memindex: dest:i src1:b src2:i len:4
-loadr4_memindex: dest:f src1:b src2:i len:4
-loadr8_memindex: dest:f src1:b src2:i len:4
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:4
