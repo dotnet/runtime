@@ -6919,7 +6919,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	 * trampoline address, so we save it here.
 	 */
 
-	mono_jit_info_table_add (mono_get_root_domain (), ji);
+	mono_jit_info_table_add (domain, ji);
 
 	mono_domain_lock (domain);
 	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
@@ -6987,10 +6987,20 @@ gpointer
 mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
 {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-	MonoJitInfo *ji;
 	gpointer code, ptr;
 	guint32 code_size;
 	MonoDomain *domain = mono_domain_get ();
+
+#ifndef __ia64__
+	code = mono_jit_find_compiled_method (domain, method);
+	if (code)
+		return code;
+#else
+	/* 
+	 * FIXME: We should return a function descriptor here but it is not stored
+	 * anywhere so it would be leaked.
+	 */
+#endif
 
 	mono_domain_lock (domain);
 	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, method);
@@ -6999,11 +7009,6 @@ mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
 		return ptr;
 
 	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_DELEGATE, domain, &code_size);
-
-	ji = g_new0 (MonoJitInfo, 1);
-	ji->code_start = code;
-	ji->code_size = code_size;
-	ji->method = method;
 
 	ptr = mono_create_ftnptr (domain, code);
 
