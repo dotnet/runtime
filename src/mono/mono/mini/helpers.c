@@ -18,6 +18,12 @@ opnames[] = {
 };
 #undef MINI_OP
 
+#ifdef __i386__
+static gboolean emit_debug_info = TRUE;
+#else
+static gboolean emit_debug_info = FALSE;
+#endif
+
 const char*
 mono_inst_name (int op) {
 	if (op >= OP_LOAD && op <= OP_LAST)
@@ -48,15 +54,17 @@ mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint 
 
 /**
  * mono_disassemble_code:
+ * @cfg: compilation context
  * @code: a pointer to the code
  * @size: the code size in bytes
  *
  * Disassemble to code to stdout.
  */
 void
-mono_disassemble_code (guint8 *code, int size, char *id)
+mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 {
-	int i;
+	GHashTable *offset_to_bb_hash = NULL;
+	int i, bb_num;
 	FILE *ofd;
 	const char *tmp = g_get_tmp_dir ();
 	const char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
@@ -77,21 +85,44 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, ":\n");
 
-	for (i = 0; i < size; ++i) 
-		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
+	if (emit_debug_info) {
+		MonoBasicBlock *bb;
 
+		fprintf (ofd, ".stabs	\"\",100,0,0,.Ltext0\n");
+		fprintf (ofd, ".stabs	\"<BB>\",100,0,0,.Ltext0\n");
+		fprintf (ofd, ".Ltext0:\n");
+
+		offset_to_bb_hash = g_hash_table_new (NULL, NULL);
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			g_hash_table_insert (offset_to_bb_hash, GINT_TO_POINTER (bb->native_offset), GINT_TO_POINTER (bb->block_num + 1));
+		}
+	}
+
+	for (i = 0; i < size; ++i) {
+		if (emit_debug_info) {
+			bb_num = GPOINTER_TO_INT (g_hash_table_lookup (offset_to_bb_hash, GINT_TO_POINTER (i)));
+			if (bb_num)
+				fprintf (ofd, ".stabd 68,0,%d\n", bb_num - 1);
+		}
+		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
+	}
 	fclose (ofd);
 #ifdef __APPLE__
 #define DIS_CMD "otool -v -t"
 #else
 #if defined(sparc) && !defined(__GNUC__)
 #define DIS_CMD "dis"
+#elif defined(__i386__)
+#define DIS_CMD "objdump -l -d"
 #else
 #define DIS_CMD "objdump -d"
 #endif
 #endif
+
 #if defined(sparc)
 #define AS_CMD "as -xarch=v9"
+#elif defined(__i386__)
+#define AS_CMD "as -gstabs"
 #else
 #define AS_CMD "as"
 #endif

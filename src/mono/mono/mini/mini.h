@@ -785,7 +785,7 @@ void      mono_print_method_from_ip         (void *ip);
 void      mono_select_instructions          (MonoCompile *cfg);
 const char* mono_inst_name                  (int op);
 void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data);
-void      mono_disassemble_code             (guint8 *code, int size, char *id);
+void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
 guint     mono_type_to_ldind                (MonoType *t);
 guint     mono_type_to_stind                (MonoType *t);
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);

@@ -780,4 +780,45 @@ COND:   ldloc.0
 		ldc.i4.s 0
 		ret
 	}
+
+	.method public static int32 test_1_filters () {
+		.maxstack 16
+		.locals init (
+			int32 res
+		)
+
+		.try { // 0
+			.try {
+			  	ldstr "OnErrorSub test Exception"
+			  	newobj instance void class [mscorlib]System.Exception::.ctor(string)
+		  		throw 
+		  		leave.s IL_0033
+			}
+			filter {
+				pop
+				ldc.i4.0
+				endfilter
+			} {
+				pop
+				// Should not be called
+				ldc.i4.2
+				stloc res
+				leave.s IL_0033
+			}
+		}
+		filter {
+			pop
+		  	ldc.i4.1
+			endfilter 
+		} {
+		  pop
+		  ldc.i4.1
+		  stloc res	  
+		  leave.s IL_0033
+
+		}
+		IL_0033:
+		ldloc res
+		ret
+	}
 }

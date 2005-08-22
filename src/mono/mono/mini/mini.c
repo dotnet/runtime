@@ -3320,7 +3320,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tblock->real_offset = clause->data.filter_offset;
 					tblock->in_scount = 1;
 					tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
-					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->data.filter_offset);
+					/* The filter block shares the exvar with the handler block */
+					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 					MONO_ADD_INS (tblock, ins);
 				}
@@ -6367,7 +6368,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (cc = 0; cc < header->num_clauses; ++cc) {
 					clause = &header->clauses [cc];
 					if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) &&
-					    (!nearest || (clause->data.filter_offset > nearest->data.filter_offset))) {
+						((ip - header->code) > clause->data.filter_offset && (ip - header->code) <= clause->handler_offset) &&
+					    (!nearest || (clause->data.filter_offset < nearest->data.filter_offset))) {
 						nearest = clause;
 						nearest_num = cc;
 					}
@@ -9234,7 +9236,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_codegen (cfg);
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);
-		mono_disassemble_code (cfg->native_code, cfg->code_len, id + 3);
+		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
 		g_free (id);
 	}
 	
