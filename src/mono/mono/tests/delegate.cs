@@ -16,7 +16,7 @@ class B {
 delegate void DoIt ();
 
 namespace Bah {
-class Test {
+class Tests {
 	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
 	public static extern int puts (string name);
 
@@ -46,16 +46,21 @@ class Test {
 		Console.WriteLine ("Test.VF from delegate");
 	}
 	
-	public Test () {
+	public Tests () {
 		data = 5;
 	}
-	static int Main () {
+
+	static int Main (String[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
+	}
+
+	public static int test_0_tests () {
 		// Check that creation of delegates do not runs the class cctor
 		DoIt doit = new DoIt (B.method);
 		if (A.b_cctor_run)
 			return 1;
 
-		Test test = new Test ();
+		Tests test = new Tests ();
 		SimpleDelegate d = new SimpleDelegate (F);
 		SimpleDelegate d1 = new SimpleDelegate (test.VF);
 		NotSimpleDelegate d2 = new NotSimpleDelegate (G);
@@ -87,16 +92,26 @@ class Test {
 		Console.WriteLine (d4.Method);
 		Console.WriteLine (d4.Method.Name);
 		Console.WriteLine (d4.Method.DeclaringType);
-
-		// Check unboxing of this argument
-		int x = 10;
-		StringDelegate d5 = new StringDelegate (x.ToString);
-		if (d5 () != "10")
-			return 1;
 		
 		return 0;
+	}
 
+	public static int test_0_unbox_this () {
+		int x = 10;
+		StringDelegate d5 = new StringDelegate (x.ToString);
+		return d5 () == "10" ? 0 : 1;
+	}
 
+	delegate long LongDelegate (long l);
+
+	static long long_delegate (long l) {
+		return l + 1;
+	}
+
+	public static int test_56_long () {
+		LongDelegate l = new LongDelegate (long_delegate);
+
+		return (int)l (55);
 	}
 }
 }
