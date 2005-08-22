@@ -492,36 +492,12 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		mono_monitor_exit (this->synch_lock);
 		return this;
 	}
-/* FIXME: remove the code inside BROKEN_THREAD_START once martin gets rid of the
- * thread_start_compile_func stuff.
- */
-#define BROKEN_THREAD_START
-#ifdef BROKEN_THREAD_START
-	im = mono_get_delegate_invoke (start->vtable->klass);
-	im = mono_marshal_get_delegate_invoke (im);
-	if (mono_thread_callbacks)
-		start_func = (* mono_thread_callbacks->thread_start_compile_func) (im);
-	else
-		start_func = mono_compile_method (im);
-
-	if(start_func==NULL) {
-		mono_monitor_exit (this->synch_lock);
-		g_warning(G_GNUC_PRETTY_FUNCTION
-			  ": Can't locate start method!");
-		return(NULL);
-	} else {
-#else
 	start_func = NULL;
 	{
-#endif
 		/* This is freed in start_wrapper */
 		start_info = g_new0 (struct StartInfo, 1);
 		start_info->func = start_func;
-#ifdef BROKEN_THREAD_START
-		start_info->start_arg = start;
-#else
 		start_info->start_arg = this->start_obj;
-#endif
 		start_info->delegate = start;
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
