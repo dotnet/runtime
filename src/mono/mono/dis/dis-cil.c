@@ -45,33 +45,6 @@ isinf (double num)
 
 #endif
 
-/*
- * Strings on the US heap are encoded using UTF-16.  Poor man's
- * UTF-16 to UTF-8.  I know its broken, use libunicode later.
- */
-static char *
-get_encoded_user_string (const char *ptr)
-{
-	char *res, *result;
-	int len, i, j;
-
-	len = mono_metadata_decode_blob_size (ptr, &ptr);
-	res = g_malloc (len + 1);
-
-	/*
-	 * I should really use some kind of libunicode here
-	 */
-	for (i = 0, j = 0; i < len; j++, i += 2)
-		res [j] = ptr [i];
-
-	res [j] = 0;
-
-	result = g_strescape (res, NULL);
-	g_free (res);
-	
-	return result;
-}
-
 #define CODE_INDENT g_assert (indent_level < 512); \
 	indent[indent_level*2] = ' ';	\
 	indent[indent_level*2+1] = ' ';	\
@@ -235,13 +208,13 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 		case MonoInlineString: {
 			guint32 token = read32 (ptr);
 			
-			char *s = get_encoded_user_string (
+			char *s = get_encoded_user_string_or_bytearray (
 				mono_metadata_user_string (m, token & 0xffffff));
 			
 			/*
 			 * See section 23.1.4 on the encoding of the #US heap
 			 */
-			fprintf (output, "\"%s\"", s);
+			fprintf (output, "%s", s);
 			g_free (s);
 			ptr += 4;
 			break;

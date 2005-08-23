@@ -21,6 +21,7 @@ char *get_methodref_signature (MonoImage *m, guint32 blob_signature, const char 
 char *get_methodspec          (MonoImage *m, int idx, guint32 token, const char *fancy,
 			       MonoGenericContext *context);
 char *get_constant            (MonoImage *m, MonoTypeEnum t, guint32 blob_index);
+char *get_encoded_user_string_or_bytearray (const unsigned char *ptr);
 char *get_token               (MonoImage *m, guint32 token, MonoGenericContext *context);
 char *get_token_type          (MonoImage *m, guint32 token, MonoGenericContext *context);
 char *get_typespec            (MonoImage *m, guint32 blob_idx, gboolean is_def, MonoGenericContext *context);

@@ -1995,6 +1995,95 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
 	return s;
 }
 
+/*
+ * get_encoded_user_string_bytearray:
+ * @ptr: pointer into the US heap
+ * @len: length of string in the heap.
+ *
+ * Strings on the US heap are encoded using UTF-16. Print a bytearray.
+ */
+static char*
+get_encoded_user_string_bytearray (const unsigned char* ptr, int len)
+{
+	gchar *str;
+	int i, j, tspaces = (len % 16);
+	GString *res;
+
+	if (len == 0)
+		return g_strdup_printf ("\"\"");
+
+	res = g_string_new ("bytearray (\n\t");
+
+	for (i = 1; i <= len; ++i) {
+		g_string_append_printf (res, "%02x ", ptr [i-1]);
+
+		if (i % 16 == 0) {
+			if (i == len)
+				g_string_append (res, ")// ");
+			else
+				g_string_append (res, " // ");
+
+			for(j = i - 16; j < i; ++j) 
+				g_string_append_printf (res, "%c", isprint (ptr [j]) ? ptr [j] : '.');
+			g_string_append (res, "\n\t");
+		}
+	}
+
+	if (tspaces) {
+		g_string_append (res, ")  ");
+		for (i = tspaces + 1; i < 16; ++i)
+			g_string_append_printf (res, "   ");
+
+		g_string_append (res, " // ");
+		for(i = len - tspaces; i < len; ++i)
+			g_string_append_printf (res, "%c", isprint (ptr [i]) ? ptr [i] : '.');
+		g_string_append (res, "\n\t");
+	} 
+
+	str = res->str;
+	g_string_free (res, FALSE);
+	return str;
+}
+
+/*
+ * get_encoded_user_string_or_bytearray:
+ * @ptr: pointer into the US heap
+ *
+ * Strings on the US heap are encoded using UTF-16. Print as string
+ * if possible, else emit a bytearray.
+ */
+char*
+get_encoded_user_string_or_bytearray (const unsigned char *ptr)
+{
+	unsigned char *res, *eres, *result;
+	int len, i;
+
+	len = mono_metadata_decode_blob_size (ptr, (const char**)&ptr);
+	res = g_malloc ((len >> 1) + 1);
+
+	/*
+	 * I should really use some kind of libunicode here
+	 */
+	for (i = 0; i + 1 < len; i += 2) {
+		if (ptr [i + 1] || 
+		    (!isprint (ptr [i]) && ptr [i] != '\\' && ptr [i] != '"' && 
+		     ptr [i] != '\r' && ptr [i] != '\n' && ptr [i] != '\t')) {
+			g_free (res);
+			return get_encoded_user_string_bytearray (ptr, len);
+		}
+
+		res [i >> 1] = ptr [i];
+	}	
+
+	res [len >> 1] = 0;
+
+	eres = g_strescape (res, NULL);
+	result = g_strdup_printf ("\"%s\"", eres);
+	g_free (res);
+	g_free (eres);
+	
+	return result;
+}
 
 /**
  * get_constant:
@@ -2059,46 +2148,8 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 			return g_strdup_printf ("float64(%.20g)", r);
 		}
 	}
-	case MONO_TYPE_STRING: {
-		gchar *str;
-		int i, j, tspaces = (len%16);
-		GString *res;
-
-		if (len == 0)
-			return g_strdup_printf ("\"\"");
-
-		res = g_string_new ("bytearray (\n\t");
-
-		for(i = 1; i <= len; ++i) {
-			g_string_append_printf(res, "%02x ", ptr[i-1]);
-
-			if(i%16 == 0) {
-				if(i == len)
-					g_string_append(res, ")// ");
-				else
-					g_string_append(res, " // ");
-
-				for(j = i-16; j < i; ++j) 
-					g_string_append_printf(res, "%c", isprint(ptr[j]) ? ptr[j] : '.');
-				g_string_append(res, "\n\t");
-			}
-		}
-
-		if(tspaces) {
-			g_string_append(res, ")  ");
-			for(i = tspaces+1; i < 16; ++i)
-				g_string_append_printf(res, "   ");
-
-			g_string_append(res, " // ");
-			for(i = len-tspaces; i < len; ++i)
-				g_string_append_printf(res, "%c", isprint(ptr[i]) ? ptr[i] : '.');
-			g_string_append(res, "\n\t");
-		} 
-
-		str = res->str;
-		g_string_free(res, FALSE);
-		return str;
-	}
+	case MONO_TYPE_STRING:
+		return get_encoded_user_string_or_bytearray (ptr);	
 		
 	case MONO_TYPE_CLASS:
 		return g_strdup ("nullref");
