@@ -1359,6 +1359,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type, MonoGenericContext
 	GString *str = g_string_new ("");
 	char *mod = NULL;
 	char *allocated_type_string;
+	int has_byref = 0;
 	
 	ptr = get_custom_mod (m, ptr, &mod);
 	if (mod){
@@ -1375,12 +1376,14 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type, MonoGenericContext
 		 ptr++;
 	} else {
                 if (*ptr == MONO_TYPE_BYREF){
-			g_string_append (str, "[out] ");
+			has_byref = 1;
 			ptr++;
 		}
 
 		ptr = get_type (m, ptr, &allocated_type_string, context);
 		g_string_append (str, allocated_type_string);
+		if (has_byref)
+			g_string_append (str, "& ");
 		g_free (allocated_type_string);
 	}
 
