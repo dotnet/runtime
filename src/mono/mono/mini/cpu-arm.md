@@ -162,7 +162,7 @@ ldstr:
 newobj:
 castclass:
 isinst:
-conv.r.un: dest:f src1:i len:32
+conv.r.un: dest:f src1:i len:48
 unbox:
 throw: src1:i len:20
 op_rethrow: src1:i len:20

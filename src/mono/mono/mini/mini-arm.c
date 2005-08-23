@@ -86,7 +86,7 @@ static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
 	/* we can use r0-r3, since this is called only for incoming args on the stack */
-	if (0 && size > sizeof (gpointer) * 5) {
+	if (size > sizeof (gpointer) * 4) {
 		guint8 *start_loop;
 		code = emit_big_add (code, ARMREG_R0, sreg, soffset);
 		code = emit_big_add (code, ARMREG_R1, dreg, doffset);
@@ -96,7 +96,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, 4);
 		ARM_ADD_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, 4);
 		ARM_SUBS_REG_IMM8 (code, ARMREG_R2, ARMREG_R2, 4);
-		ARM_B_COND (code, ARMCOND_LT, 0);
+		ARM_B_COND (code, ARMCOND_NE, 0);
 		arm_patch (code - 4, start_loop);
 		return code;
 	}
@@ -2324,15 +2324,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_LDFS (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case CEE_CONV_R_UN: {
-			/*static const guint64 adjust_val = 0x4330000000000000ULL;
-			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
-			ppc_stw (code, ppc_r0, -8, ppc_sp);
-			ppc_stw (code, ins->sreg1, -4, ppc_sp);
-			ppc_load (code, ppc_r11, &adjust_val);
-			ppc_lfd (code, ins->dreg, -8, ppc_sp);
-			ppc_lfd (code, ppc_f0, 0, ppc_r11);
-			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);*/
-			g_assert_not_reached ();
+			int tmpreg;
+			tmpreg = ins->dreg == 0? 1: 0;
+			ARM_CMP_REG_IMM8 (code, ins->sreg1, 0);
+			ARM_FLTD (code, ins->dreg, ins->sreg1);
+			ARM_B_COND (code, ARMCOND_GE, 8);
+			/* save the temp register */
+			ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
+			ARM_STFD (code, tmpreg, ARMREG_SP, 0);
+			ARM_LDFD (code, tmpreg, ARMREG_PC, 4);
+			ARM_FPA_ADFD (code, ins->dreg, ins->dreg, tmpreg);
+			ARM_LDFD (code, tmpreg, ARMREG_SP, 0);
+			ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
+			/* skip the constant pool */
+			ARM_B (code, 4);
+			*(int*)code = 0x41f00000;
+			code += 4;
+			*(int*)code = 0;
+			code += 4;
+			/* FIXME: adjust:
+			 * ldfltd  ftemp, [pc, #8] 0x41f00000 0x00000000
+			 * adfltd  fdest, fdest, ftemp
+			 */
 			break;
 		}
 		case CEE_CONV_R4:
@@ -2662,7 +2675,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size = cfg->stack_offset;
 	pos = 0;
 
-	if (1 || !method->save_lmf) {
+	if (!method->save_lmf) {
 		ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
 		prev_sp_offset = 8; /* ip and lr */
 		for (i = 0; i < 16; ++i) {
@@ -2700,8 +2713,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	prev_sp_offset += alloc_size;
 
         /* compute max_offset in order to use short forward jumps
-	 * we always do it on ppc because the immediate displacement
-	 * for jumps is too small 
+	 * we could skip do it on arm because the immediate displacement
+	 * for jumps is large enough, it may be useful later for constant pools
 	 */
 	max_offset = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -2850,7 +2863,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		} else {
 			ARM_BL (code, 0);
 		}
-#if ARM_PORT
 		/* we build the MonoLMF structure on the stack - see mini-arm.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
@@ -2874,7 +2886,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* save the current IP */
 		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
 		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
-#endif
 	}
 
 	if (tracing)
@@ -2922,9 +2933,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 
 	if (method->save_lmf) {
-#if ARM_PORT
 		int lmf_offset;
-		pos +=  sizeof (MonoLMF);
+		/* all but r0-r3, sp and pc */
+		pos += sizeof (MonoLMF) - (4 * 10);
 		lmf_offset = pos;
 		/* r2 contains the pointer to the current LMF */
 		code = emit_big_add (code, ARMREG_R2, cfg->frame_reg, cfg->stack_usage - lmf_offset);
@@ -2933,19 +2944,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* lr = lmf_addr */
 		ARM_LDR_IMM (code, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 		/* *(lmf_addr) = previous_lmf */
-		ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* FIXME: speedup: there is no actual need to restore the registers if
 		 * we didn't actually change them (idea from Zoltan).
 		 */
 		/* restore iregs */
-#endif
-		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
-			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
-		} else {
-			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
-			ARM_ADD_REG_REG (code, ARMREG_SP, cfg->frame_reg, ARMREG_IP);
-		}
-		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
+		/* point sp at the registers to restore: 10 is 14 -4, because we skip r0-r3 */
+		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_R2, (sizeof (MonoLMF) - 10 * sizeof (gulong)));
+		ARM_POP_NWB (code, 0xaff0); /* restore ip to sp and lr to pc */
 	} else {
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
