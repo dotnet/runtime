@@ -405,7 +405,7 @@ long_conv_to_u8:
 long_conv_to_u2:
 long_conv_to_u1:
 long_conv_to_i:
-long_conv_to_ovf_i: dest:i src1:i src2:i len:30
+long_conv_to_ovf_i: dest:i src1:i src2:i len:32
 long_conv_to_ovf_u:
 long_add_ovf:
 long_add_ovf_un:
