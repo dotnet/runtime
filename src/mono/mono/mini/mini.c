@@ -6583,7 +6583,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				   ((t == MONO_TYPE_GENERICINST) && mono_metadata_generic_class_is_valuetype (ptype->data.generic_class))) {
 				NEW_LOCLOADA (cfg, ins, i);
 				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (ptype), NULL, NULL);
-				break;
 			} else {
 				NEW_PCONST (cfg, ins, NULL);
 				NEW_LOCSTORE (cfg, store, i, ins);
