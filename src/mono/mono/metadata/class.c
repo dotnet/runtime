@@ -74,11 +74,27 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	case MONO_RESOLTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;
-		mono_class_init (enclosing);
-		for (tmp = enclosing->nested_classes; tmp; tmp = tmp->next) {
-			res = tmp->data;
-			if (strcmp (res->name, name) == 0)
-				return res;
+
+		if (enclosing->inited) {
+			/* Micro-optimization: don't scan the metadata tables if enclosing is already inited */
+			for (tmp = enclosing->nested_classes; tmp; tmp = tmp->next) {
+				res = tmp->data;
+				if (strcmp (res->name, name) == 0)
+					return res;
+			}
+		} else {
+			/* Don't call mono_class_init as we might've been called by it recursively */
+			int i = mono_metadata_nesting_typedef (enclosing->image, enclosing->type_token, 1);
+			while (i) {
+				guint32 class_nested = mono_metadata_decode_row_col (&enclosing->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, MONO_NESTED_CLASS_NESTED);
+				guint32 string_offset = mono_metadata_decode_row_col (&enclosing->image->tables [MONO_TABLE_TYPEDEF], class_nested - 1, MONO_TYPEDEF_NAME);
+				const char *nname = mono_metadata_string_heap (enclosing->image, string_offset);
+
+				if (strcmp (nname, name) == 0)
+					return mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested);
+
+				i = mono_metadata_nesting_typedef (enclosing->image, enclosing->type_token, i + 1);
+			}
 		}
 		g_warning ("TypeRef ResolutionScope not yet handled (%d)", idx);
 		return NULL;
@@ -1788,17 +1804,7 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (class->init_pending) {
-		/*
-		 * We might be called recursively from mono_class_from_typeref if
-		 * one of our fields has a type which is a nested type of this class,
-		 * and the compiler encodes it as a typeref, like older versions of
-		 * MS ilasm do.
-		 */
-		if (class->size_inited) {
-			mono_loader_unlock ();
-			return;
-		}
-
+		mono_loader_unlock ();
 		/* this indicates a cyclic dependency */
 		g_error ("pending init %s.%s\n", class->name_space, class->name);
 	}
