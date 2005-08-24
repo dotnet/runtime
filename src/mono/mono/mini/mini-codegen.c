@@ -220,9 +220,16 @@ print_ins (int i, MonoInst *ins)
 
 	if (spec [MONO_INST_DEST]) {
 		gboolean fp = dreg_is_fp (ins);
-		if (is_soft_reg (ins->dreg, fp))
-			g_print (" R%d <-", ins->dreg);
-		else if (spec [MONO_INST_DEST] == 'b') {
+		if (is_soft_reg (ins->dreg, fp)) {
+			if (spec [MONO_INST_DEST] == 'b') {
+				if (ins->inst_offset == 0)
+					g_print (" [R%d] <-", ins->dreg);
+				else
+					g_print (" [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+			}
+			else
+				g_print (" R%d <-", ins->dreg);
+		} else if (spec [MONO_INST_DEST] == 'b') {
 			if (ins->inst_offset == 0)
 				g_print (" [%s] <-", mono_arch_regname (ins->dreg));
 			else
@@ -994,6 +1001,17 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (spec [MONO_INST_DEST] && (!fp || (fp && !use_fpstack)) && is_soft_reg (ins->dreg, fp))
 			prev_dreg = ins->dreg;
 
+		if (spec [MONO_INST_DEST] == 'b') {
+			/* 
+			 * The dest reg is read by the instruction, not written, so
+			 * avoid allocating sreg1/sreg2 to the same reg.
+			 */
+			if (dest_sreg1 != -1)
+				dreg_mask &= ~ (1 << dest_sreg1);
+			if (dest_sreg2 != -1)
+				dreg_mask &= ~ (1 << dest_sreg2);
+		}
+
 		/*
 		 * If dreg is a fixed regpair, free up both of the needed hregs to avoid
 		 * various complex situations.
@@ -1112,6 +1130,15 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (rs->isymbolic [dest_dreg] >= MONO_MAX_IREGS)
 					free_up_reg (cfg, tmp, ins, dest_dreg, fp);
 			}
+		}
+
+		if (spec [MONO_INST_DEST] == 'b') {
+			/* 
+			 * The dest reg is read by the instruction, not written, so
+			 * avoid allocating sreg1/sreg2 to the same reg.
+			 */
+			sreg1_mask &= ~ (1 << ins->dreg);
+			sreg2_mask &= ~ (1 << ins->dreg);
 		}
 
 		/*

@@ -781,6 +781,15 @@ stmt: OP_VCALL_REG (CEE_LDIND_I (base), reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+# Optimized ldind(reg) rules
+reg: CEE_LDIND_REF (OP_REGVAR),
+reg: CEE_LDIND_I (OP_REGVAR),
+reg: CEE_LDIND_I4 (OP_REGVAR),
+reg: CEE_LDIND_U4 (OP_REGVAR) "0" {
+	state->reg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+}
+
 %%
 
 int

@@ -20,7 +20,7 @@
 #   s  ECX register
 #	l  long reg (forced eax:edx)
 #	L  long reg (dynamic)
-#	y  the dest reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
+#	y  the reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -158,7 +158,7 @@ shr: dest:i src1:i src2:s clob:1 len:2
 shr.un: dest:i src1:i src2:s clob:1 len:2
 neg: dest:i src1:i len:2 clob:1
 not: dest:i src1:i len:2 clob:1
-conv.i1: dest:i src1:i len:3
+conv.i1: dest:i src1:y len:3
 conv.i2: dest:i src1:i len:3
 conv.i4: dest:i src1:i len:2
 conv.i8:
@@ -166,6 +166,11 @@ conv.r4: dest:f src1:i len:7
 conv.r8: dest:f src1:i len:7
 conv.u4: dest:i src1:i
 conv.u8:
+conv.u2: dest:i src1:i len:3
+conv.u1: dest:i src1:y len:3
+conv.i: dest:i src1:i len:3
+conv.ovf.i:
+conv.ovf.u:
 callvirt:
 cpobj:
 ldobj:
@@ -229,11 +234,6 @@ refanyval:
 ckfinite: dest:f src1:f len:22
 mkrefany:
 ldtoken:
-conv.u2: dest:i src1:i len:3
-conv.u1: dest:i src1:i len:3
-conv.i: dest:i src1:i len:3
-conv.ovf.i:
-conv.ovf.u:
 add.ovf:
 add.ovf.un:
 mul.ovf: dest:i src1:i src2:i clob:1 len:9
@@ -330,7 +330,7 @@ label:
 store_membase_imm: dest:b len:10
 store_membase_reg: dest:b src1:i len:7
 storei1_membase_imm: dest:b len:10
-storei1_membase_reg: dest:b src1:i len:7
+storei1_membase_reg: dest:b src1:y len:7
 storei2_membase_imm: dest:b len:11
 storei2_membase_reg: dest:b src1:i len:7
 storei4_membase_imm: dest:b len:10
@@ -340,8 +340,8 @@ storei8_membase_reg: dest:b src1:i
 storer4_membase_reg: dest:b src1:f len:7
 storer8_membase_reg: dest:b src1:f len:6
 load_membase: dest:i src1:b len:6
-loadi1_membase: dest:i src1:b len:7
-loadu1_membase: dest:i src1:b len:7
+loadi1_membase: dest:y src1:b len:7
+loadu1_membase: dest:y src1:b len:7
 loadi2_membase: dest:i src1:b len:7
 loadu2_membase: dest:i src1:b len:7
 loadi4_membase: dest:i src1:b len:6

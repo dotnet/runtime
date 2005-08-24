@@ -598,11 +598,23 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 
 		/* idiv REG */
 		switch (x86_modrm_rm (ip [1])) {
+		case X86_EAX:
+			reg = ctx.eax;
+			break;
 		case X86_ECX:
 			reg = ctx.ecx;
 			break;
+		case X86_EDX:
+			reg = ctx.edx;
+			break;
 		case X86_EBX:
 			reg = ctx.ebx;
+			break;
+		case X86_ESI:
+			reg = ctx.esi;
+			break;
+		case X86_EDI:
+			reg = ctx.edi;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1369,7 +1381,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
 			 * CONV_I2/U2 reg1, reg2
 			 */
-			if (last_ins && (last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
+			if (last_ins && X86_IS_BYTE_REG (last_ins->sreg1) &&
+				(last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
 				ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? CEE_CONV_I1 : CEE_CONV_U1;
