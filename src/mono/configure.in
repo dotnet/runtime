@@ -1409,7 +1409,7 @@ case "$host" in
 		jit_wanted=true
 		LIBC="libc.so.6.1"
 		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
-
+		libmono_ldflags="-lunwind"
 		;;
 	sparc*-*-*)
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
