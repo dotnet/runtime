@@ -9990,7 +9990,13 @@ mini_init (const char *filename)
 
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
-	
+
+	if (mono_running_on_valgrind ()) {
+		gsize stack_bottom = (gsize)&domain;
+		stack_bottom += 4095;
+		stack_bottom &= ~4095;
+		GC_stackbottom = (char*)stack_bottom;
+	}
 	MONO_GC_PRE_INIT ();
 
 	mono_jit_tls_id = TlsAlloc ();
