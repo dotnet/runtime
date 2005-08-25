@@ -18,7 +18,7 @@
 #define __USE_W32_SOCKETS
 #include <winsock2.h>
 #include <windows.h>
-#include <WinBase.h>
+#include <winbase.h>
 #include <ws2tcpip.h>
 #include <psapi.h>
 #include <shlobj.h>
