@@ -1,3 +1,7 @@
+2005-08-25  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Pass --enable-win32-dllmain to libgc configure. Build the runtime as a dll under windows.
+
 2005-08-24  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add -lunwind to ldflags on IA64.
