@@ -3142,11 +3142,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			guint8 *buf;
 
 			code = emit_tls_get ( code, X86_EAX, lmf_tls_offset);
-#ifdef PLATFORM_WIN32
-			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-			/* FIXME: Add a separate key for LMF to avoid this */
-			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#endif
 			x86_test_reg_reg (code, X86_EAX, X86_EAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -3154,6 +3149,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			x86_patch (buf, code);
+#ifdef PLATFORM_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			/* FIXME: Add a separate key for LMF to avoid this */
+			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
 		}
 		else {
 			g_assert (!cfg->compile_aot);
