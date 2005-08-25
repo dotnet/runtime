@@ -95,7 +95,7 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
 #if defined (PLATFORM_WIN32)
 
 #include <windows.h>
-#include <WinCrypt.h>
+#include <wincrypt.h>
 
 #ifndef PROV_INTEL_SEC
 #define PROV_INTEL_SEC		22
