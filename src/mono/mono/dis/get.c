@@ -2056,12 +2056,11 @@ get_encoded_user_string_bytearray (const unsigned char* ptr, int len)
  * if possible, else emit a bytearray.
  */
 char*
-get_encoded_user_string_or_bytearray (const unsigned char *ptr)
+get_encoded_user_string_or_bytearray (const unsigned char *ptr, int len)
 {
 	unsigned char *res, *eres, *result;
-	int len, i;
+	int i;
 
-	len = mono_metadata_decode_blob_size (ptr, (const char**)&ptr);
 	res = g_malloc ((len >> 1) + 1);
 
 	/*
@@ -2152,7 +2151,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		}
 	}
 	case MONO_TYPE_STRING:
-		return get_encoded_user_string_or_bytearray (ptr);	
+		return get_encoded_user_string_or_bytearray (ptr, len);
 		
 	case MONO_TYPE_CLASS:
 		return g_strdup ("nullref");
