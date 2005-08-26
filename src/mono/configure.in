@@ -1595,8 +1595,8 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 		#
 		rm -f conftest.c conftest.so conftest
 		echo "static __thread int foo; void main () { foo = 5; }" > conftest.c
-		gcc -fPIC --shared -o conftest.so conftest.c > /dev/null 2>&1
-		gcc -o conftest conftest.so > /dev/null 2>&1
+		$CC -fPIC --shared -o conftest.so conftest.c > /dev/null 2>&1
+		$CC -o conftest conftest.so > /dev/null 2>&1
 		if test ! -f conftest; then
 		   AC_MSG_WARN([Disabling usage of __thread.]);
 		   with_tls=pthread
