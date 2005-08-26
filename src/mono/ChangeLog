@@ -1,3 +1,7 @@
+2005-08-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add ability to cross-compile from linux to win32.
+
 2005-08-26  Kornél Pál  <kornelpal@hotmail.com>
 
 	* configure.in: Generating Consts.cs from Consts.cs.in instead of MonoVersion.cs.
