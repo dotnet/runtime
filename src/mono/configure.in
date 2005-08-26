@@ -1476,7 +1476,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
-	arm-*-linux-* | armv*l-*-linux-*)
+	arm*-linux-*)
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"

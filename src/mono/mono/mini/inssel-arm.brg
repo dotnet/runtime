@@ -175,16 +175,23 @@ stmt: OP_OUTARG (lreg) {
 	int tdreg;
 	tdreg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
-
-	/* FIXME: switch the +1 if big endian */
-	mono_call_inst_add_outarg_reg (call, tdreg, tree->unused + 1, FALSE);
+	
+	/* An #if would be better here, but monoburg
+	   strips them out as comments */
+	if (G_BYTE_ORDER == G_BIG_ENDIAN)
+		mono_call_inst_add_outarg_reg (call, tdreg, tree->unused, FALSE);
+	else
+		mono_call_inst_add_outarg_reg (call, tdreg, tree->unused + 1, FALSE);
 
 	tree->opcode = OP_SETREG;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
-
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	
+	if (G_BYTE_ORDER == G_BIG_ENDIAN)
+		mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused + 1, FALSE);
+	else
+		mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (OP_ICONST) {
@@ -236,9 +243,13 @@ stmt: OP_OUTARG_MEMBASE (reg) {
 
 stmt: OP_OUTARG_MEMBASE (lreg) {
 	int offset = tree->unused >> 8;
-	/* FIXME: bigendian */
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg2);
+	if (G_BYTE_ORDER == G_BIG_ENDIAN) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg2);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg1);
+	} else {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg2);
+	}
 }
 
 stmt: OP_OUTARG_MEMBASE (freg) {
