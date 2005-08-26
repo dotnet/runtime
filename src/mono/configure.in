@@ -1816,18 +1816,12 @@ fi
 
   export VERSION
   [myver=$($AWK 'BEGIN {
-    split (ENVIRON["VERSION"] ".0.0.0.0", vsplit, ".")
+    split (ENVIRON["VERSION"] ".0.0.0", vsplit, ".")
     print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
   }')]
-  
-  cat > $srcdir/$mcsdir/build/common/MonoVersion.cs <<EOF
-//
-// This version number is generated from configure.in in the mono source tree.
-//
-using System.Reflection;
 
-[[assembly: AssemblyVersion("${myver}")]]
-EOF
+  # Generate Consts.cs
+  sed -e "s/@MONO_VERSION@/$myver/" $srcdir/$mcsdir/build/common/Consts.cs.in > $srcdir/$mcsdir/build/common/Consts.cs
 )
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}

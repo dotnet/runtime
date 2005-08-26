@@ -1,3 +1,7 @@
+2005-08-26  Kornél Pál  <kornelpal@hotmail.com>
+
+	* configure.in: Generating Consts.cs from Consts.cs.in instead of MonoVersion.cs.
+
 2005-08-25  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Use CC instead of gcc for __thread tests.
@@ -743,7 +747,7 @@ Fri Nov 12 17:56:26 CET 2004 Paolo Molaro <lupus@ximian.com>
 
 	* runtime/net_2_0/Makefile.am (install-data-local): 
 	* runtime/net_1_1/Makefile.am (install-data-local): Applied patch
-	from G�tz Waschk (waschk@informatik.uni-rostock.de). Make this work 
+	from Götz Waschk (waschk@informatik.uni-rostock.de). Make this work 
 	with DESTDIR.
 
 2004-10-31  Zoltan Varga  <vargaz@freemail.hu>
