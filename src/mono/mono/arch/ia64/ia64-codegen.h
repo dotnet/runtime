@@ -550,7 +550,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 #define ia64_cmp4_gtu_pred(code, qp, p1, p2, r2, r3) ia64_cmp4_ltu_pred ((code), (qp), (p1), (p2), (r3), (r2))
 #define ia64_cmp4_geu_pred(code, qp, p1, p2, r2, r3) ia64_cmp4_ltu_pred ((code), (qp), (p2), (p1), (r2), (r3))
 
-#define ia64_a7(code, qp, p1, p2, r2, r3, opcode, x2, tb, ta, c) do { read_pr ((code), (qp)); write_pr ((code), (p1)); write_pr ((code), (p2)); read_gr ((code), (r2)); read_gr ((code, (r3)); check_assert ((r2) == 0); ia64_emit_ins_10 ((code), IA64_INS_TYPE_A, (qp), 0, (p1), 6, (c), 12, (r2), 13, (r3), 20, (p2), 27, (ta), 33, (x2), 34, (tb), 36, (opcode), 37); } while (0)
+#define ia64_a7(code, qp, p1, p2, r2, r3, opcode, x2, tb, ta, c) do { read_pr ((code), (qp)); write_pr ((code), (p1)); write_pr ((code), (p2)); read_gr ((code), (r2)); read_gr ((code), (r3)); check_assert ((r2) == 0); ia64_emit_ins_10 ((code), IA64_INS_TYPE_A, (qp), 0, (p1), 6, (c), 12, (r2), 13, (r3), 20, (p2), 27, (ta), 33, (x2), 34, (tb), 36, (opcode), 37); } while (0)
 
 #define ia64_cmp_gt_and_pred(code, qp, p1, p2, r2, r3) ia64_a7 ((code), (qp), (p1), (p2), (r2), (r3), 0xc, 0, 1, 0, 0)
 #define ia64_cmp_gt_or_pred(code, qp, p1, p2, r2, r3) ia64_a7 ((code), (qp), (p1), (p2), (r2), (r3), 0xd, 0, 1, 0, 0)
@@ -1540,7 +1540,7 @@ typedef enum {
 
 #define encode_inc3(inc3) ((inc3) == 16 ? 0 : ((inc3) == 8 ? 1 : ((inc3) == 4 ? 2 : 3)))
 
-#define ia64_m17(code, qp, r1, r3, imm, hint, m, x, x6) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); int aimm = (imm) < 0 ? - (imm) : (imm); check_assert ((aimm) == 16 || (aimm) == 8 || (aimm) == 4 || (aimm) == 1); ia64_emit_ins_10_ns ((code), IA64_INS_TYPE_M, (qp), 0, (r1), 6, encode_inc3 (aimm), 13, sign_bit ((imm)), 15, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
+#define ia64_m17(code, qp, r1, r3, imm, hint, m, x, x6) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); int aimm = (imm) < 0 ? - (imm) : (imm); check_assert ((aimm) == 16 || (aimm) == 8 || (aimm) == 4 || (aimm) == 1); ia64_emit_ins_10 ((code), IA64_INS_TYPE_M, (qp), 0, (r1), 6, encode_inc3 (aimm), 13, sign_bit ((imm)), 15, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
 
 #define ia64_fetchadd4_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
 #define ia64_fetchadd8_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
@@ -1892,7 +1892,7 @@ typedef enum {
 
 #define ia64_break_x_pred(code, qp, imm) ia64_x1 ((code), (qp), (imm), 0, 0x00)
 
-#define ia64_x2(code, qp, r1, imm, vc) do { if (code.automatic && (code.nins > IA64_INS_BUFFER_SIZE - 2)) ia64_emit_bundle (&(code), FALSE); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((guint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (guint64)(imm) & 0x7f, (13), (vc), 20, ((guint64)(imm) >> 21) & 0x1, 21, ((guint64)(imm) >> 16) & 0x1f, 22, ((guint64)(imm) >> 7) & 0x1ff, 27, ((guint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
+#define ia64_x2(code, qp, r1, imm, vc) do { if (code.automatic && (code.nins > IA64_INS_BUFFER_SIZE - 2)) ia64_emit_bundle (&(code), FALSE); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((gint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (gint64)(imm) & 0x7f, (13), (vc), 20, ((gint64)(imm) >> 21) & 0x1, 21, ((gint64)(imm) >> 16) & 0x1f, 22, ((gint64)(imm) >> 7) & 0x1ff, 27, ((gint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
 
 #define ia64_movl_pred(code, qp, r1, imm) ia64_x2 ((code), (qp), (r1), (imm), 0)
 

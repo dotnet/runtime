@@ -4,6 +4,10 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <ctype.h>
+
+#define IA64_SIMPLE_EMIT_BUNDLE
+
 #include <mono/arch/ia64/ia64-codegen.h>
 
 void
@@ -817,7 +821,9 @@ main ()
 
 	ia64_fchkf_sf_pred ((code), 1, -1, 3);
 
-	ia64_break_f_pred ((code), 1, 0x123456);
+	ia64_break_f_pred ((code), 1, 0x1234);
+
+	ia64_movl (code, 31, -123456);
 
 	ia64_codegen_close (code);
 
