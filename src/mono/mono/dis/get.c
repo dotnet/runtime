@@ -2647,6 +2647,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "ldc.i8", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "ldc.r4", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "ldc.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "ldelem", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "ldelema", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "ldelem.i1", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "ldelem.i2", GINT_TO_POINTER (TRUE));
@@ -2788,6 +2789,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "starg.s", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "static", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stdcall", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stelem", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stelem.i1", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stelem.i2", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stelem.i4", GINT_TO_POINTER (TRUE));
@@ -2804,6 +2806,8 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "stind.i", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stind.r4", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stind.r8", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stloc", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stobj", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "storage", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "stored_object", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "streamed_object", GINT_TO_POINTER (TRUE));
@@ -2811,6 +2815,10 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "strict", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "string", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "struct", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "stsfld", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sub", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sub.ovf", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "sub.ovf.un", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "synchronized", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "syschar", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "sysstring", GINT_TO_POINTER (TRUE));
@@ -2821,6 +2829,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "true", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "type", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "typedref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "unbox", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unicode", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unmanagedexp", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unmanaged", GINT_TO_POINTER (TRUE));
