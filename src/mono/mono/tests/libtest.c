@@ -869,9 +869,14 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
 	// printf ("mono_test_empty_struct %d %d\n", a, b);
 
+	// Intel icc on ia64 passes 'es' in 2 registers
+#if defined(__ia64) && defined(__INTEL_COMPILER)
+	return 0;
+#else
 	if (a == 1 && b == 2)
 		return 0;
 	return 1;
+#endif
 }
 
 typedef struct {
