@@ -610,14 +610,22 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 #elif defined(__ia64__)
 #define WAPI_ATOMIC_ASM
 
+#ifdef __INTEL_COMPILER
+#include <ia64intrin.h>
+#endif
+
 static inline gint32 InterlockedCompareExchange(gint32 volatile *dest,
 						gint32 exch, gint32 comp)
 {
 	gint32 old;
 
+#ifdef __INTEL_COMPILER
+	old = _InterlockedCompareExchange (dest, exch, comp);
+#else
 	asm volatile ("mov ar.ccv = %2 ;;\n\t"
 				  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
 				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
+#endif
 
 	return(old);
 }
@@ -627,15 +635,22 @@ static inline gpointer InterlockedCompareExchangePointer(gpointer volatile *dest
 {
 	gpointer old;
 
+#ifdef __INTEL_COMPILER
+	old = _InterlockedCompareExchangePointer (dest, exch, comp);
+#else
 	asm volatile ("mov ar.ccv = %2 ;;\n\t"
 				  "cmpxchg8.acq %0 = [%1], %3, ar.ccv\n\t"
 				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
+#endif
 
 	return(old);
 }
 
 static inline gint32 InterlockedIncrement(gint32 volatile *val)
 {
+#ifdef __INTEL_COMPILER
+	return _InterlockedIncrement (val);
+#else
 	gint32 old;
 
 	do {
@@ -643,10 +658,14 @@ static inline gint32 InterlockedIncrement(gint32 volatile *val)
 	} while (InterlockedCompareExchange (val, old + 1, old) != old);
 
 	return old + 1;
+#endif
 }
 
 static inline gint32 InterlockedDecrement(gint32 volatile *val)
 {
+#ifdef __INTEL_COMPILER
+	return _InterlockedDecrement (val);
+#else
 	gint32 old;
 
 	do {
@@ -654,10 +673,14 @@ static inline gint32 InterlockedDecrement(gint32 volatile *val)
 	} while (InterlockedCompareExchange (val, old - 1, old) != old);
 
 	return old - 1;
+#endif
 }
 
 static inline gint32 InterlockedExchange(gint32 volatile *dest, gint32 new_val)
 {
+#ifdef __INTEL_COMPILER
+	return _InterlockedExchange (dest, new_val);
+#else
 	gint32 res;
 
 	do {
@@ -665,10 +688,14 @@ static inline gint32 InterlockedExchange(gint32 volatile *dest, gint32 new_val)
 	} while (InterlockedCompareExchange (dest, new_val, res) != res);
 
 	return res;
+#endif
 }
 
 static inline gpointer InterlockedExchangePointer(gpointer volatile *dest, gpointer new_val)
 {
+#ifdef __INTEL_COMPILER
+	return (gpointer)_InterlockedExchange64 ((gint64*)dest, (gint64)new_val);
+#else
 	gpointer res;
 
 	do {
@@ -676,17 +703,22 @@ static inline gpointer InterlockedExchangePointer(gpointer volatile *dest, gpoin
 	} while (InterlockedCompareExchangePointer (dest, new_val, res) != res);
 
 	return res;
+#endif
 }
 
 static inline gint32 InterlockedExchangeAdd(gint32 volatile *val, gint32 add)
 {
 	gint32 old;
 
+#ifdef __INTEL_COMPILER
+	old = _InterlockedExchangeAdd (val, add);
+#else
 	do {
 		old = *val;
 	} while (InterlockedCompareExchange (val, old + add, old) != old);
 
 	return old;
+#endif
 }
 
 #else
