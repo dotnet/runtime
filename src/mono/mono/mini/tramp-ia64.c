@@ -271,7 +271,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			if ((1 << i) & MONO_ARCH_CALLEE_REGS) {
 				if (last_offset != i * 8)
 					ia64_adds_imm (code, l1, saved_regs_offset + (i * 8), IA64_SP);
-				ia64_st8_inc_imm_hint (code, l1, i, 8, 0);
+				ia64_st8_spill_inc_imm_hint (code, l1, i, 8, 0);
 				last_offset = (i + 1) * 8;
 			}
 	}

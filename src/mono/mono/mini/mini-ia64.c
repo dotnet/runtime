@@ -12,6 +12,10 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#ifdef __INTEL_COMPILER
+#include <ia64intrin.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
@@ -23,7 +27,6 @@
 #include "inssel.h"
 #include "cpu-ia64.h"
 
-static gint lmf_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
@@ -4203,10 +4206,19 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	guint8* p = (guint8*)((guint64)code & ~(0x3f));
 	guint8* end = (guint8*)((guint64)code + size);
 
+#ifdef __INTEL_COMPILER
+	/* icc doesn't define an fc.i instrinsic, but fc==fc.i on itanium 2 */
 	while (p < end) {
-		__asm__ __volatile__ ("fc.i %0"::"r"(p));
+		__fc ((guint64)p);
 		p += 32;
 	}
+#else
+	while (p < end) {
+		__asm__ __volatile__ ("fc.i %0"::"r"(p));
+		/* FIXME: This could be increased to 128 on some cpus */
+		p += 32;
+	}
+#endif
 }
 
 void
@@ -4335,7 +4347,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 		tls_offset_inited = TRUE;
 
 		appdomain_tls_offset = mono_domain_get_tls_offset ();
-		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		thread_tls_offset = mono_thread_get_tls_offset ();
 	}		
 
