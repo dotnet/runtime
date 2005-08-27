@@ -268,8 +268,8 @@ Exactly one of IEEE_8087, IEEE_MC68k, VAX, or IBM should be defined.
  * #define Storeinc(a,b,c) (*a++ = b << 16 | c & 0xffff)
  */
 #if defined(IEEE_8087) + defined(VAX)
-#define Storeinc(a,b,c) (((unsigned short *)a)[1] = (unsigned short)b, \
-((unsigned short *)a)[0] = (unsigned short)c, a++)
+#define Storeinc(a,b,c) do { (((unsigned short *)a)[1] = (unsigned short)b, \
+((unsigned short *)a)[0] = (unsigned short)c); a ++; } while (0)
 #else
 #define Storeinc(a,b,c) (((unsigned short *)a)[0] = (unsigned short)b, \
 ((unsigned short *)a)[1] = (unsigned short)c, a++)
@@ -658,6 +658,7 @@ mult
 	xb = b->x;
 	xbe = xb + wb;
 	xc0 = c->x;
+
 #ifdef Pack_32
 	for (; xb < xbe; xb++, xc0++) {
 		if ( (y = *xb & 0xffff) ) {
