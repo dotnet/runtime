@@ -4420,7 +4420,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ADD_BINOP (*ip);
 
 #ifdef MONO_ARCH_NO_EMULATE_MUL_IMM
-			if (ins->inst_right->opcode == OP_ICONST) {
+			/* FIXME: This breaks with ssapre (mono -O=ssapre loader.exe) */
+			if ((ins->inst_right->opcode == OP_ICONST) && !(cfg->opt & MONO_OPT_SSAPRE)) {
 				switch (ins->opcode) {
 				case CEE_MUL:
 					ins->opcode = OP_IMUL_IMM;
@@ -4431,6 +4432,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 #endif
+
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
