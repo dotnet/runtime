@@ -153,7 +153,8 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 #endif
 
 
-#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
+#define MONO_ARCH_NO_EMULATE_MUL_IMM 1
 
 #define MONO_ARCH_EMULATE_CONV_R8_UN     1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1

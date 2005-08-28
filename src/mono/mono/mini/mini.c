@@ -4415,9 +4415,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 			inline_costs += 1;
 			break;
+		case CEE_MUL:
+			CHECK_STACK (2);
+			ADD_BINOP (*ip);
+
+#ifdef MONO_ARCH_NO_EMULATE_MUL_IMM
+			if (ins->inst_right->opcode == OP_ICONST) {
+				switch (ins->opcode) {
+				case CEE_MUL:
+					ins->opcode = OP_IMUL_IMM;
+					ins->inst_imm = ins->inst_right->inst_c0;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+#endif
+			if (mono_find_jit_opcode_emulation (ins->opcode)) {
+				--sp;
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
+				mono_get_got_var (cfg);
+			}
+			ip++;
+			break;
 		case CEE_ADD:
 		case CEE_SUB:
-		case CEE_MUL:
 		case CEE_DIV:
 		case CEE_DIV_UN:
 		case CEE_REM:

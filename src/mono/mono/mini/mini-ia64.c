@@ -1151,6 +1151,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_MUL_IMM: 
+		case OP_IMUL_IMM: 
 			/* remove unnecessary multiplication with 1 */
 			if (ins->inst_imm == 1) {
 				if (ins->dreg != ins->sreg1) {
@@ -1772,9 +1773,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case OP_MUL_IMM: {
+		case OP_MUL_IMM:
+		case OP_IMUL_IMM: {
 			/* This should be emulated, but rules in inssel.brg generate it */
 			int i, sum_reg;
+			gboolean found = FALSE;
+			int shl_op = ins->opcode == OP_MUL_IMM ? OP_SHL_IMM : OP_ISHL_IMM;
 
 			/* First the easy cases */
 			if (ins->inst_imm == 1) {
@@ -1783,17 +1787,18 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			for (i = 1; i < 64; ++i)
 				if (ins->inst_imm == (((gint64)1) << i)) {
-					ins->opcode = OP_SHL_IMM;
+					ins->opcode = shl_op;
 					ins->inst_imm = i;
+					found = TRUE;;
 					break;
 				}
 
 			/* This could be optimized */
-			if (ins->opcode == OP_MUL_IMM) {
+			if (!found) {
 				sum_reg = 0;
 				for (i = 0; i < 64; ++i) {
 					if (ins->inst_imm & (((gint64)1) << i)) {
-						NEW_INS (cfg, temp, OP_SHL_IMM);
+						NEW_INS (cfg, temp, shl_op);
 						temp->dreg = mono_regstate_next_int (cfg->rs);
 						temp->sreg1 = ins->sreg1;
 						temp->inst_imm = i;
