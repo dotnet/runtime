@@ -1775,7 +1775,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_MUL_IMM:
 		case OP_IMUL_IMM: {
-			/* This should be emulated, but rules in inssel.brg generate it */
 			int i, sum_reg;
 			gboolean found = FALSE;
 			int shl_op = ins->opcode == OP_MUL_IMM ? OP_SHL_IMM : OP_ISHL_IMM;
@@ -1789,7 +1788,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->inst_imm == (((gint64)1) << i)) {
 					ins->opcode = shl_op;
 					ins->inst_imm = i;
-					found = TRUE;;
+					found = TRUE;
 					break;
 				}
 
@@ -2343,6 +2342,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORE_MEMBASE_REG:
 			ia64_st8_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
 			break;
+
+		case OP_IA64_STOREI1_MEMBASE_INC_REG:
+			ia64_st1_inc_imm_hint (code, ins->inst_destbasereg, ins->sreg1, 1, 0);
+			break;
+		case OP_IA64_STOREI2_MEMBASE_INC_REG:
+			ia64_st2_inc_imm_hint (code, ins->inst_destbasereg, ins->sreg1, 2, 0);
+			break;
+		case OP_IA64_STOREI4_MEMBASE_INC_REG:
+			ia64_st4_inc_imm_hint (code, ins->inst_destbasereg, ins->sreg1, 4, 0);
+			break;
+		case OP_IA64_STOREI8_MEMBASE_INC_REG:
+			ia64_st8_inc_imm_hint (code, ins->inst_destbasereg, ins->sreg1, 8, 0);
+			break;
+
 		case OP_LOADU1_MEMBASE:
 			ia64_ld1 (code, ins->dreg, ins->inst_basereg);
 			break;
@@ -2368,6 +2381,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADI8_MEMBASE:
 			ia64_ld8 (code, ins->dreg, ins->inst_basereg);
 			break;
+
+		case OP_IA64_LOADU1_MEMBASE_INC:
+			ia64_ld1_inc_imm_hint (code, ins->dreg, ins->inst_basereg, 1, 0);
+			break;
+		case OP_IA64_LOADU2_MEMBASE_INC:
+			ia64_ld2_inc_imm_hint (code, ins->dreg, ins->inst_basereg, 2, 0);
+			break;
+		case OP_IA64_LOADU4_MEMBASE_INC:
+			ia64_ld4_inc_imm_hint (code, ins->dreg, ins->inst_basereg, 4, 0);
+			break;
+		case OP_IA64_LOADI8_MEMBASE_INC:
+			ia64_ld8_inc_imm_hint (code, ins->dreg, ins->inst_basereg, 8, 0);
+			break;
+
 		case OP_SEXT_I1:
 			ia64_sxt1 (code, ins->dreg, ins->sreg1);
 			break;

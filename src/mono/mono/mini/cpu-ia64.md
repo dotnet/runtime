@@ -508,3 +508,20 @@ ia64_br_cond: len:48
 ia64_cond_exc: len:48
 ia64_cset: dest:i len:48
 
+ia64_storei8_membase_inc_reg: dest:b src1:i len:48
+ia64_storei1_membase_inc_reg: dest:b src1:c len:48
+ia64_storei2_membase_inc_reg: dest:b src1:i len:48
+ia64_storei4_membase_inc_reg: dest:b src1:i len:48
+ia64_storer4_membase_inc_reg: dest:b src1:f len:48
+ia64_storer8_membase_inc_reg: dest:b src1:f len:48
+# 'b' tells the register allocator to avoid allocating sreg1 and dreg to the
+# same physical register
+ia64_loadi1_membase_inc: dest:b src1:i len:48
+ia64_loadu1_membase_inc: dest:b src1:i len:48
+ia64_loadi2_membase_inc: dest:b src1:i len:48
+ia64_loadu2_membase_inc: dest:b src1:i len:48
+ia64_loadi4_membase_inc: dest:b src1:i len:48
+ia64_loadu4_membase_inc: dest:b src1:i len:48
+ia64_loadi8_membase_inc: dest:b src1:i len:48
+ia64_loadr4_membase_inc: dest:b src1:i len:48
+ia64_loadr8_membase_inc: dest:b src1:i len:48
