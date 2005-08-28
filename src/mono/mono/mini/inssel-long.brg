@@ -659,7 +659,7 @@ reg: CEE_REM_UN (reg, reg) {
 #}
 
 reg: OP_IMUL_IMM (reg) {
-	tree->sreg1 = state->left->tree->dreg;
+	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
