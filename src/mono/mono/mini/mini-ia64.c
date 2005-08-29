@@ -122,6 +122,43 @@ break_count (void)
 {
 }
 
+G_GNUC_UNUSED static gboolean
+debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+debug_ins_sched (void)
+{
+#if 0
+	return debug_count ();
+#else
+	return TRUE;
+#endif
+}
+
+static gboolean
+debug_omit_fp (void)
+{
+#if 0
+	return debug_count ();
+#else
+	return TRUE;
+#endif
+}
+
 static void 
 ia64_patch (unsigned char* code, gpointer target);
 
@@ -570,6 +607,30 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
 	GList *vars = NULL;
 	int i;
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	CallInfo *cinfo;
+
+	header = mono_method_get_header (cfg->method);
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		MonoInst *ins = cfg->varinfo [i];
+
+		ArgInfo *ainfo = &cinfo->args [i];
+
+		if (ins->flags & (MONO_INST_IS_DEAD|MONO_INST_VOLATILE|MONO_INST_INDIRECT))
+			continue;
+
+		if (ainfo->storage == ArgInIReg) {
+			/* The input registers are non-volatile */
+			ins->opcode = OP_REGVAR;
+			ins->dreg = 32 + ainfo->reg;
+		}
+	}
 
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
@@ -684,8 +745,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	mono_ia64_alloc_stacked_registers (cfg);
-
 	header = mono_method_get_header (cfg->method);
 
 	sig = mono_method_signature (cfg->method);
@@ -693,13 +752,48 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cinfo = get_call_info (sig, FALSE);
 
 	/*
+	 * Determine whenever the frame pointer can be eliminated.
+	 * FIXME: Remove some of the restrictions.
+	 */
+	cfg->arch.omit_fp = TRUE;
+
+	if (!debug_omit_fp ())
+		cfg->arch.omit_fp = FALSE;
+
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		cfg->arch.omit_fp = FALSE;
+	if (header->num_clauses)
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->param_area)
+		cfg->arch.omit_fp = FALSE;
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = &cinfo->args [i];
+
+		if (ainfo->storage == ArgOnStack) {
+			/* 
+			 * The stack offset can only be determined when the frame
+			 * size is known.
+			 */
+			cfg->arch.omit_fp = FALSE;
+		}
+	}
+
+	mono_ia64_alloc_stacked_registers (cfg);
+
+	/*
 	 * We use the ABI calling conventions for managed code as well.
 	 * Exception: valuetypes are never passed or returned in registers.
 	 */
 
-	/* Locals are allocated backwards from %fp */
-	cfg->frame_reg = cfg->arch.reg_saved_sp;
-	offset = 0;
+	if (cfg->arch.omit_fp) {
+		cfg->frame_reg = IA64_SP;
+		offset = ARGS_OFFSET;
+	}
+	else {
+		/* Locals are allocated backwards from %fp */
+		cfg->frame_reg = cfg->arch.reg_saved_sp;
+		offset = 0;
+	}
 
 	if (cfg->method->save_lmf) {
 		/* No LMF on IA64 */
@@ -721,6 +815,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgAggregate:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+			if (cfg->arch.omit_fp)
+				g_assert_not_reached ();
 			offset = ALIGN_TO (offset, 8);
 			offset += cinfo->ret.nslots * 8;
 			cfg->ret->opcode = OP_REGOFFSET;
@@ -734,7 +830,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots (cfg, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE : TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
 		offset = ALIGN_TO (offset, locals_stack_align);
 	}
@@ -743,7 +839,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			MonoInst *inst = cfg->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = cfg->frame_reg;
-			inst->inst_offset = - (offset + offsets [i]);
+			if (cfg->arch.omit_fp)
+				inst->inst_offset = (offset + offsets [i]);
+			else
+				inst->inst_offset = - (offset + offsets [i]);
 			// printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
 	}
@@ -751,6 +850,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	offset += locals_stack_size;
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
+		if (cfg->arch.omit_fp)
+			g_assert_not_reached ();
 		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
 		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
@@ -786,6 +887,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inreg = FALSE;
 				break;
 			case ArgOnStack:
+				if (cfg->arch.omit_fp)
+					g_assert_not_reached ();
 				inst->opcode = OP_REGOFFSET;
 				inst->inst_basereg = cfg->frame_reg;
 				inst->inst_offset = ARGS_OFFSET + ainfo->offset;
@@ -813,10 +916,16 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					break;
 				}
 				offset = ALIGN_TO (offset, sizeof (gpointer));
-				inst->inst_offset = - offset;
+				if (cfg->arch.omit_fp)
+					inst->inst_offset = offset;
+				else
+					inst->inst_offset = - offset;
 			}
 		}
 	}
+
+	if (cfg->arch.omit_fp && offset == 16)
+		offset = 0;
 
 	cfg->stack_offset = offset;
 
@@ -2831,8 +2940,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Load arguments into their original registers */
 			code = emit_load_volatile_arguments (cfg, code);
 
-			if (cfg->arch.stack_alloc_size)
-				ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+			if (cfg->arch.stack_alloc_size) {
+				if (cfg->arch.omit_fp) {
+					if (ia64_is_imm14 (cfg->arch.stack_alloc_size))
+						ia64_adds_imm (code, IA64_SP, (cfg->arch.stack_alloc_size), IA64_SP);
+					else {
+						ia64_movl (code, GP_SCRATCH_REG, cfg->arch.stack_alloc_size);
+						ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+					}
+				}
+				else
+					ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+			}
 			ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 			ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
 
@@ -3104,26 +3223,6 @@ static guint64 nops_for_ins_types [6] = {
 #define DEBUG_INS_SCHED(a)
 #endif
 
-static gboolean
-debug_count (void)
-{
-#if 0
-	static int count = 0;
-	count ++;
-
-	if (count == atoi (getenv ("COUNT"))) {
-		break_count ();
-	}
-
-	if (count > atoi (getenv ("COUNT"))) {
-		return FALSE;
-	}
-
-	return TRUE;
-#endif
-	return TRUE;
-}
-
 static void
 ia64_emit_bundle_manual (Ia64CodegenState *code)
 {
@@ -3132,7 +3231,7 @@ ia64_emit_bundle_manual (Ia64CodegenState *code)
 	if (code->nins == 0)
 		return;
 
-	g_assert (code->nins == 3);
+	g_assert (code->nins == 3 || ((code->nins == 2) && code->itypes [1] == IA64_INS_TYPE_LX));
 
 	/* Verify template is correct */
 	template = code->template;
@@ -3410,7 +3509,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 			}
 
 			if (found)
-				found = debug_count ();
+				found = debug_ins_sched ();
 
 			if (found) {
 				ia64_real_emit_bundle (code, deps_start, 3, template, code->instructions [0], code->instructions [1], code->instructions [2], 0);
@@ -3437,7 +3536,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 				!ITYPE_MATCH (ins_types_in_template [template][1], code->itypes [1]))
 				continue;
 
-			if (!debug_count ())
+			if (!debug_ins_sched ())
 				continue;
 
 			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], code->instructions [1], nops_for_ins_types [ins_types_in_template [template][2]], 1 << 2);
@@ -3461,7 +3560,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 				!ITYPE_MATCH (ins_types_in_template [template][2], code->itypes [1]))
 				continue;
 
-			if (!debug_count ())
+			if (!debug_ins_sched ())
 				continue;
 
 			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], nops_for_ins_types [ins_types_in_template [template][1]], code->instructions [1], 1 << 1);
@@ -3480,7 +3579,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 				!ITYPE_MATCH (ins_types_in_template [template][2], code->itypes [1]))
 				continue;
 
-			if (!debug_count ())
+			if (!debug_ins_sched ())
 				continue;
 
 			ia64_real_emit_bundle (code, deps_start, 2, template, nops_for_ins_types [ins_types_in_template [template][0]], code->instructions [0], code->instructions [1], 1 << 0);
@@ -3498,7 +3597,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 		nins_to_emit = 1;
 
 	while (nins_to_emit > 0) {
-		if (!debug_count ())
+		if (!debug_ins_sched ())
 			code->stops [0] = 1;
 		switch (code->itypes [0]) {
 		case IA64_INS_TYPE_A:
@@ -3739,13 +3838,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 1,
 						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + cfg->arch.reg_saved_b0);
 
-	if (alloc_size || cinfo->stack_usage) {
+	if ((alloc_size || cinfo->stack_usage) && !cfg->arch.omit_fp) {
 		ia64_mov (code, cfg->frame_reg, IA64_SP);
 		_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 2,
 							/* reg=*/ UNW_IA64_SP, /* dst=*/ UNW_IA64_GR + cfg->frame_reg);
 	}
-	else
-		ia64_nop_i (code, 0);
+	else {
+		if (cfg->arch.omit_fp && alloc_size && ia64_is_imm14 (-alloc_size)) {
+			/* FIXME: Add unwind info */
+			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+		}
+		else
+			ia64_nop_i (code, 0);
+	}
 	ia64_stop (code);
 	ia64_begin_bundle (code);
 
@@ -3764,7 +3869,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 
 		if (ia64_is_imm14 (-alloc_size)) {
-			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
+			if (cfg->arch.omit_fp)
+				/* Already done */
+				;
+			else
+				ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
 		}
 		else {
 			ia64_movl (code, GP_SCRATCH_REG, -alloc_size); ia64_stop (code);
@@ -3958,10 +4067,27 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	ia64_begin_bundle (code);
 	ia64_codegen_set_automatic (code, FALSE);
 
+	if (cfg->arch.stack_alloc_size && cfg->arch.omit_fp && !ia64_is_imm14 (cfg->arch.stack_alloc_size)) {
+		ia64_begin_bundle_template (code, IA64_TEMPLATE_MLXS);
+		ia64_nop_m (code, 0);
+		ia64_movl (code, GP_SCRATCH_REG, cfg->arch.stack_alloc_size);
+		ia64_stop (code);
+		ia64_begin_bundle (code);
+	}
+
 	ia64_begin_bundle_template (code, IA64_TEMPLATE_MII);
-	if (cfg->arch.stack_alloc_size)
-		ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+	if (cfg->arch.stack_alloc_size) {
+		if (cfg->arch.omit_fp) {
+			if (ia64_is_imm14 (cfg->arch.stack_alloc_size))
+				ia64_adds_imm (code, IA64_SP, (cfg->arch.stack_alloc_size), IA64_SP);
+			else
+				ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+		}
+		else
+			ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+	}
 	else
+		/* FIXME: Optimize this away */
 		ia64_nop_m (code, 0);
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);

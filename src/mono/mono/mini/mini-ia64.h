@@ -67,6 +67,9 @@ typedef struct MonoCompileArch {
 	guint32 prolog_end_offset, epilog_begin_offset, epilog_end_offset;
 	void *ret_var_addr_local;
 	unw_dyn_region_info_t *r_pro;
+	void *last_bb;
+	Ia64CodegenState code;
+	gboolean omit_fp;
 } MonoCompileArch;
 
 static inline unw_word_t
