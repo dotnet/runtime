@@ -753,6 +753,10 @@ dis_stringify_marshal_spec (MonoMarshalSpec *spec)
 		g_free (elem_type);
 		return ret;
 	}
+	case MONO_NATIVE_CUSTOM:
+		return g_strdup_printf (" marshal (custom (\"%s\", \"%s\"))", 
+			spec->data.custom_data.custom_name ? spec->data.custom_data.custom_name : "", 
+			spec->data.custom_data.cookie ? spec->data.custom_data.cookie : "");
 	default: {
 		char *native_type, *ret;
 		native_type = dis_stringify_native_type (spec->native);
