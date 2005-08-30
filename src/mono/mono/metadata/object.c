@@ -1983,16 +1983,13 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	domain = mono_object_domain (args);
 	if (!domain->entry_assembly) {
 		gchar *str;
-		gchar *config_suffix;
 		MonoAssembly *assembly;
 
 		assembly = method->klass->image->assembly;
 		domain->entry_assembly = assembly;
 		domain->setup->application_base = mono_string_new (domain, assembly->basedir);
 
-		config_suffix = g_strconcat (assembly->aname.name, ".exe.config", NULL);
-		str = g_build_filename (assembly->basedir, config_suffix, NULL);
-		g_free (config_suffix);
+		str = g_strconcat (assembly->image->name, ".config", NULL);
 		domain->setup->configuration_file = mono_string_new (domain, str);
 		g_free (str);
 	}
