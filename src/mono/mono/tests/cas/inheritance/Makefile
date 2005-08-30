@@ -1,5 +1,5 @@
 RUNTIME = mono --debug --security
-CSCOMPILE = mcs --debug
+CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
 all:	notused.exe cas1a.exe cas2a.exe cas3a.exe \

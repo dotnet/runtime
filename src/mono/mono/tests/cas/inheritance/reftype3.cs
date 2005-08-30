@@ -15,7 +15,7 @@ public class Program {
 			Console.WriteLine ("*0* Get null for type '{0}' with security.", typename);
 			return 0;
 		} else {
-			Console.WriteLine ("*1* Can get type '{0}' with security.", typename);
+			Console.WriteLine ("*1* Can get type '{0}' with security (false).", typename);
 			return 1;
 		}
 	}
@@ -25,7 +25,7 @@ public class Program {
 		try {
 			string typename = "InheritanceDemand";
 			Type t = a.GetType (typename, true);
-			Console.WriteLine ("*1* Can get type '{0}' with security.", t);
+			Console.WriteLine ("*1* Can get type '{0}' with security (true).", t);
 			return 1;
 		}
 		catch (SecurityException se) {
