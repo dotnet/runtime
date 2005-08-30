@@ -2838,6 +2838,9 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			ins->inst_i0 = args [0];
 			return ins;
 #endif
+		} else if (strcmp (cmethod->name, ".ctor") == 0) {
+ 			MONO_INST_NEW (cfg, ins, CEE_NOP);
+			return ins;
 		} else
 			return NULL;
 	} else if (mini_class_is_system_array (cmethod->klass)) {
