@@ -7079,7 +7079,7 @@ typedef struct {
 } StackSlotInfo;
 
 /*
- * mono_allocate_stack_slots:
+ * mono_allocate_stack_slots_full:
  *
  *  Allocate stack slots for all non register allocated variables using a
  * linear scan algorithm.
@@ -7088,7 +7088,7 @@ typedef struct {
  * STACK_ALIGN is set to the alignment needed by the locals area.
  */
 gint32*
-mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
+mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
 	int i, slot, offset, size, align;
 	MonoMethodVar *vmv;
@@ -7209,10 +7209,18 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 			if (t->type == MONO_TYPE_VALUETYPE)
 				align = sizeof (gpointer);
 
-			offset += size;
-			offset += align - 1;
-			offset &= ~(align - 1);
-			slot = offset;
+			if (backward) {
+				offset += size;
+				offset += align - 1;
+				offset &= ~(align - 1);
+				slot = offset;
+			}
+			else {
+				offset += align - 1;
+				offset &= ~(align - 1);
+				slot = offset;
+				offset += size;
+			}
 
 			if (*stack_align == 0)
 				*stack_align = align;
@@ -7234,6 +7242,12 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 
 	*stack_size = offset;
 	return offsets;
+}
+
+gint32*
+mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
+{
+	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
 }
 
 void
