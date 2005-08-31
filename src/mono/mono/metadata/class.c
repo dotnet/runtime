@@ -2799,7 +2799,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:
-		class = mono_array_class_get (type->data.array->eklass, type->data.array->rank);
+		class = mono_bounded_array_class_get (type->data.array->eklass, type->data.array->rank, TRUE);
 		break;
 	case MONO_TYPE_SZARRAY:
 		class = mono_array_class_get (type->data.klass, 1);
