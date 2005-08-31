@@ -498,7 +498,12 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
-		lower_bounds = NULL;
+		if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+			lower_bounds = alloca (sizeof (guint32) * rank);
+			memset (lower_bounds, 0, sizeof (guint32) * rank);
+		} else {
+			lower_bounds = NULL;
+		}
 	} else {
 		g_assert (pcount == (rank * 2));
 		/* lower bounds are first. */
