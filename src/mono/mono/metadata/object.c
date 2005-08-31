@@ -2510,8 +2510,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	byte_len = mono_array_element_size (array_class);
 	len = 1;
 
-	if (array_class->rank == 1 &&
-	    (lower_bounds == NULL || lower_bounds [0] == 0)) {
+	if (array_class->rank == 1 && array_class->byval_arg.type == MONO_TYPE_SZARRAY) {
 		len = lengths [0];
 		if ((int) len < 0)
 			arith_overflow ();
