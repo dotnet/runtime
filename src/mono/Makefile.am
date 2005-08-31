@@ -9,7 +9,7 @@ DIST_SUBDIRS = libgc mono ikvm-native support docs data runtime scripts man samp
 
 vs_files = genmdesc.vcproj libmono.vcproj mono.vcproj mono.sln
 
-EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in $(vs_files)
+EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in $(vs_files)
 
 # Distribute the 'mcs' tree too
 dist-hook:
@@ -23,7 +23,7 @@ else
 pkgconfig_DATA= mint.pc
 endif
 noinst_DATA = mono-uninstalled.pc
-DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc
+DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc dotnet.pc
 
 .PHONY: get-monolite-latest mcs-do-compiler-tests compiler-tests bootstrap-world
 
