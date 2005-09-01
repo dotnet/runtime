@@ -4,6 +4,14 @@
 #include <mono/arch/arm/arm-codegen.h>
 #include <glib.h>
 
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define ARM_LSW_REG ARMREG_R0
+#define ARM_MSW_REG ARMREG_R1
+#else
+#define ARM_LSW_REG ARMREG_R1
+#define ARM_MSW_REG ARMREG_R0
+#endif
+
 #define MONO_MAX_IREGS 16
 #define MONO_MAX_FREGS 16
 
@@ -25,11 +33,11 @@
 #define MONO_ARCH_USE_FPSTACK FALSE
 #define MONO_ARCH_FPSTACK_SIZE 0
 
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARMREG_R0: -1)
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARM_LSW_REG: -1)
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
 #define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
-#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? ARMREG_R1 : -1)
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? ARM_MSW_REG : -1)
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
@@ -41,11 +49,12 @@
 void arm_patch (guchar *code, const guchar *target);
 guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 
+/* keep the size of the structure a multiple of 8 */
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	int dummy; /* to keep the structure a multiple of 8 */
+	gulong     esp;
 	gulong     ebp;
 	gulong     eip;
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 8..15 */
@@ -63,7 +72,8 @@ struct MonoLMF {
  */
 typedef struct {
 	gulong eip;          // pc 
-	gulong ebp;          // sp
+	gulong ebp;          // fp
+	gulong esp;          // sp
 	gulong regs [MONO_SAVED_GREGS];
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
@@ -91,18 +101,16 @@ typedef struct MonoCompileArch {
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (int)bp; } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->esp = (int)bp; } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->ebp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\
-		MONO_CONTEXT_SET_BP ((ctx), 0);	\
-		MONO_CONTEXT_SET_IP ((ctx), 0);	\
+		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
+		MONO_CONTEXT_SET_IP ((ctx), (func));	\
 	} while (0)
-
-#define mono_find_jit_info mono_arch_find_jit_info
-#define CUSTOM_EXCEPTION_HANDLING 1
 
 #endif /* __MONO_MINI_ARM_H__ */
 

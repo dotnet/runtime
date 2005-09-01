@@ -9322,6 +9322,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	cfg->jit_info = jinfo;
+#if defined(__arm__)
+	mono_arch_fixup_jinfo (cfg);
+#endif
 
 	mono_domain_lock (cfg->domain);
 	mono_jit_info_table_add (cfg->domain, jinfo);

@@ -549,17 +549,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
-	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg 
-	 * call convs needs to be handled this way.
-	 */
-	if (m->flags & MONO_CFG_HAS_VARARGS)
-		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
-	/* gtk-sharp and other broken code will dllimport vararg functions even with
-	 * non-varargs signatures. Since there is little hope people will get this right
-	 * we assume they won't.
-	 */
-	if (m->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
 	header = mono_method_get_header (m->method);
 
@@ -2012,14 +2001,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SETLRET: {
 			int saved = ins->sreg2;
-			if (ins->sreg2 == ARMREG_R0) {
+			if (ins->sreg2 == ARM_LSW_REG) {
 				ARM_MOV_REG_REG (code, ARMREG_LR, ins->sreg2);
 				saved = ARMREG_LR;
 			}
-			if (ins->sreg1 != ARMREG_R0)
-				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
-			if (saved != ARMREG_R1)
-				ARM_MOV_REG_REG (code, ARMREG_R1, saved);
+			if (ins->sreg1 != ARM_LSW_REG)
+				ARM_MOV_REG_REG (code, ARM_LSW_REG, ins->sreg1);
+			if (saved != ARM_MSW_REG)
+				ARM_MOV_REG_REG (code, ARM_MSW_REG, saved);
 			break;
 		}
 		case OP_SETFREG:
@@ -2035,7 +2024,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			g_assert (!cfg->method->save_lmf);
 			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
-			ARM_ADD_REG_IMM8 (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
 			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ARM_B (code, 0);
@@ -3030,6 +3018,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
+			const char *ex_name = patch_info->data.target;
 			i = exception_id_by_name (patch_info->data.target);
 			if (exc_throw_pos [i]) {
 				arm_patch (ip, exc_throw_pos [i]);
@@ -3039,6 +3028,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				exc_throw_pos [i] = code;
 			}
 			arm_patch (ip, code);
+			//*(int*)code = 0xef9f0001;
+			code += 4;
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
 			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
 			/* we got here from a conditional call, so the calling ip is set in lr already */
@@ -3046,7 +3037,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
 			ARM_B (code, 0);
-			*(gpointer*)code = patch_info->data.target;
+			*(gpointer*)code = ex_name;
 			code += 4;
 			break;
 		}
@@ -3129,5 +3120,13 @@ mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 void
 mono_arch_flush_register_windows (void)
 {
+}
+
+void
+mono_arch_fixup_jinfo (MonoCompile *cfg)
+{
+	/* max encoded stack usage is 64KB * 4 */
+	g_assert ((cfg->stack_usage & ~(0xffff << 2)) == 0);
+	cfg->jit_info->used_regs |= cfg->stack_usage << 14;
 }
 
