@@ -3130,8 +3130,7 @@ emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8
 	MonoInst *store, *temp, *load;
 	
 	if (ip_in_bb (cfg, bblock, ip_next) &&
-		(CODE_IS_STLOC (ip_next) || *ip_next == CEE_BRTRUE || *ip_next == CEE_BRFALSE ||
-		*ip_next == CEE_BRTRUE_S || *ip_next == CEE_BRFALSE_S || *ip_next == CEE_RET))
+		(CODE_IS_STLOC (ip_next) || *ip_next == CEE_RET))
 			return ins;
 	
 	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
@@ -4170,8 +4169,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (ip_in_bb (cfg, bblock, ip + 5) 
 				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
 				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
-				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_BRTRUE || ip [5] == CEE_BRFALSE ||
-					ip [5] == CEE_BRTRUE_S || ip [5] == CEE_BRFALSE_S || ip [5] == CEE_RET)) {
+				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_RET)) {
 					/* no need to spill */
 					ins = (MonoInst*)mono_emit_method_call (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
