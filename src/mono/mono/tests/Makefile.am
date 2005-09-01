@@ -235,6 +235,7 @@ TEST_IL_SRC=			\
 	vararg.il			\
 	bug-29859.il		\
 	static-fields-nonconst.il	\
+	reload-at-bb-end.il	\
 	even-odd.il
 
 
