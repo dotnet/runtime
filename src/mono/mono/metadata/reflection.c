@@ -1659,8 +1659,14 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		} else {
 			mono_metadata_encode_value (0, p, &p);
 		}
-		if (minfo->marshaltype) {
-			str = mono_string_to_utf8 (minfo->marshaltype);
+		/* native type name */
+		mono_metadata_encode_value (0, p, &p);
+		/* custom marshaler type name */
+		if (minfo->marshaltype || minfo->marshaltyperef) {
+			if (minfo->marshaltyperef)
+				str = type_get_fully_qualified_name (minfo->marshaltyperef->type);
+			else
+				str = mono_string_to_utf8 (minfo->marshaltype);
 			len = strlen (str);
 			mono_metadata_encode_value (len, p, &p);
 			if (p + len >= buf + bufsize) {
@@ -1673,22 +1679,7 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 			p += len;
 			g_free (str);
 		} else {
-			mono_metadata_encode_value (0, p, &p);
-		}
-		if (minfo->marshaltyperef) {
-			str = type_get_fully_qualified_name (minfo->marshaltyperef->type);
-			len = strlen (str);
-			mono_metadata_encode_value (len, p, &p);
-			if (p + len >= buf + bufsize) {
-				idx = p - buf;
-				bufsize *= 2;
-				buf = g_realloc (buf, bufsize);
-				p = buf + idx;
-			}
-			memcpy (p, str, len);
-			p += len;
-			g_free (str);
-		} else {
+			/* FIXME: Actually a bug, since this field is required.  Punting for now ... */
 			mono_metadata_encode_value (0, p, &p);
 		}
 		if (minfo->mcookie) {
