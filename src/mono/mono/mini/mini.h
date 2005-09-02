@@ -844,6 +844,7 @@ void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVT
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
 const char       *mono_regname_full (int reg, gboolean fp);
+gint32*           mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align);
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align);
 void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb);
 
