@@ -14,6 +14,7 @@
 
 #include "object.h"
 #include "metadata-internals.h"
+#include "domain-internals.h"
 #include "tokentype.h"
 #include "threads.h"
 #include "marshal.h"

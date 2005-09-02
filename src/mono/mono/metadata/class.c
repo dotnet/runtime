@@ -4598,7 +4598,7 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		MonoDomain *domain = mono_domain_get ();
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
 		MonoMethod *method = klass->exception_data;
-		guint32 error = (method) ? MONO_METADATA_INHERITANCEDEMAND_CLASS : MONO_METADATA_INHERITANCEDEMAND_METHOD;
+		guint32 error = (method) ? MONO_METADATA_INHERITANCEDEMAND_METHOD : MONO_METADATA_INHERITANCEDEMAND_CLASS;
 		MonoObject *exc = NULL;
 		gpointer args [4];
 

@@ -47,7 +47,7 @@ mono_security_manager_get_methods (void)
 	g_assert (secman.demandunmanaged);
 
 	secman.inheritancedemand = mono_class_get_method_from_name (secman.securitymanager,
-		"InheritanceDemand", 2);	
+		"InheritanceDemand", 3);	
 	g_assert (secman.inheritancedemand);
 
 	secman.inheritsecurityexception = mono_class_get_method_from_name (secman.securitymanager,
@@ -89,10 +89,11 @@ mono_secman_inheritance_check (MonoClass *klass, MonoDeclSecurityActions *demand
 	MonoAssembly *assembly = mono_image_get_assembly (klass->image);
 	MonoReflectionAssembly *refass = mono_assembly_get_object (domain, assembly);
 	MonoObject *res;
-	gpointer args [2];
+	gpointer args [3];
 
-	args [0] = refass;
-	args [1] = demands;
+	args [0] = domain->domain;
+	args [1] = refass;
+	args [2] = demands;
 
 	res = mono_runtime_invoke (secman->inheritancedemand, NULL, args, NULL);
 	return (*(MonoBoolean *) mono_object_unbox (res));
