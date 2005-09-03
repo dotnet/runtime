@@ -70,6 +70,7 @@ typedef struct MonoCompileArch {
 	void *last_bb;
 	Ia64CodegenState code;
 	gboolean omit_fp;
+	GHashTable *branch_targets;
 } MonoCompileArch;
 
 static inline unw_word_t

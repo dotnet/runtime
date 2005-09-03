@@ -589,6 +589,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_BOOLEAN:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
@@ -682,7 +683,7 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 
 	cfg->arch.reg_in0 = 32;
 	cfg->arch.reg_local0 = cfg->arch.reg_in0 + cinfo->reg_usage + reserved_regs;
-	cfg->arch.reg_out0 = cfg->arch.reg_local0 + 8;
+	cfg->arch.reg_out0 = cfg->arch.reg_local0 + 16;
 
 	cfg->arch.reg_saved_ar_pfs = cfg->arch.reg_local0 - 1;
 	cfg->arch.reg_saved_b0 = cfg->arch.reg_local0 - 2;
@@ -2697,8 +2698,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_br_cond_pred (code, 6, 0);
 			break;
 		case OP_IA64_CSET:
-			/* FIXME: Do this with one instruction ? */
-			ia64_mov (code, ins->dreg, IA64_R0);
+			ia64_mov_pred (code, 7, ins->dreg, IA64_R0);
+			ia64_no_stop (code);
 			ia64_add1_pred (code, 6, ins->dreg, IA64_R0, IA64_R0);
 			break;
 		case CEE_CONV_I1:
@@ -3265,7 +3266,7 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 {
 	int i, pos, ins_index, current_deps_start, current_ins_start, reg;
 	guint8 *deps = code->dep_info;
-	gboolean need_stop;
+	gboolean need_stop, no_stop;
 
 	for (i = 0; i < code->nins; ++i)
 		code->stops [i] = FALSE;
@@ -3275,6 +3276,7 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 	current_ins_start = 0;
 	deps_start [ins_index] = current_ins_start;
 	pos = 0;
+	no_stop = FALSE;
 	DEBUG_INS_SCHED (printf ("BEGIN.\n"));
 	while (pos < code->dep_info_pos) {
 		need_stop = FALSE;
@@ -3283,6 +3285,7 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 			ins_index ++;
 			current_ins_start = pos + 2;
 			deps_start [ins_index] = current_ins_start;
+			no_stop = FALSE;
 			DEBUG_INS_SCHED (printf ("(%d) END INS.\n", ins_index - 1));
 			break;
 		case IA64_NONE:
@@ -3308,7 +3311,7 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 
 			DEBUG_INS_SCHED (printf ("READ PR: %d\n", reg));
 			for (i = current_deps_start; i < current_ins_start; i += 2)
-				if (deps [i] == IA64_WRITE_PR && deps [i + 1] == reg)
+				if (((deps [i] == IA64_WRITE_PR) || (deps [i] == IA64_WRITE_PR_FLOAT)) && deps [i + 1] == reg)
 					need_stop = TRUE;
 			break;
 		case IA64_READ_PR_BRANCH:
@@ -3390,12 +3393,20 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 				if (deps [i] == IA64_WRITE_AR && deps [i + 1] == reg)
 					need_stop = TRUE;
 			break;
+		case IA64_NO_STOP:
+			/* 
+			 * Explicitly indicate that a stop is not required. Useful for
+			 * example when two predicated instructions with negated predicates
+			 * write the same registers.
+			 */
+			no_stop = TRUE;
+			break;
 		default:
 			g_assert_not_reached ();
 		}
 		pos += 2;
 
-		if (need_stop) {
+		if (need_stop && !no_stop) {
 			g_assert (ins_index > 0);
 			code->stops [ins_index - 1] = 1;
 
@@ -4218,38 +4229,42 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 		stack_area = ALIGN_TO (n * 8, 16);
 
-		ia64_movl (code, GP_SCRATCH_REG, stack_area);
+		if (n) {
+			ia64_movl (code, GP_SCRATCH_REG, stack_area);
 
-		ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
+			ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
 
-		/* FIXME: Allocate out registers */
+			/* FIXME: Allocate out registers */
 
-		ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_SP);
+			ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_SP);
 
-		/* Required by the ABI */
-		ia64_adds_imm (code, IA64_SP, -16, IA64_SP);
+			/* Required by the ABI */
+			ia64_adds_imm (code, IA64_SP, -16, IA64_SP);
 
-		add_patch_info (cfg, code, MONO_PATCH_INFO_METHODCONST, cfg->method);
-		ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
+			add_patch_info (cfg, code, MONO_PATCH_INFO_METHODCONST, cfg->method);
+			ia64_movl (code, cfg->arch.reg_out0 + 0, 0);
 
-		/* Save arguments to the stack */
-		for (i = 0; i < n; ++i) {
-			ins = cfg->varinfo [i];
+			/* Save arguments to the stack */
+			for (i = 0; i < n; ++i) {
+				ins = cfg->varinfo [i];
 
-			if (ins->opcode == OP_REGVAR) {
-				ia64_movl (code, GP_SCRATCH_REG, (i * 8));
-				ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
-				ia64_st8 (code, GP_SCRATCH_REG, ins->dreg);
-			}
-			else {
-				ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
-				ia64_add (code, GP_SCRATCH_REG, ins->inst_basereg, GP_SCRATCH_REG);
-				ia64_ld8 (code, GP_SCRATCH_REG2, GP_SCRATCH_REG);
-				ia64_movl (code, GP_SCRATCH_REG, (i * 8));				
-				ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
-				ia64_st8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+				if (ins->opcode == OP_REGVAR) {
+					ia64_movl (code, GP_SCRATCH_REG, (i * 8));
+					ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
+					ia64_st8 (code, GP_SCRATCH_REG, ins->dreg);
+				}
+				else {
+					ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
+					ia64_add (code, GP_SCRATCH_REG, ins->inst_basereg, GP_SCRATCH_REG);
+					ia64_ld8 (code, GP_SCRATCH_REG2, GP_SCRATCH_REG);
+					ia64_movl (code, GP_SCRATCH_REG, (i * 8));				
+					ia64_add (code, GP_SCRATCH_REG, cfg->arch.reg_out0 + 1, GP_SCRATCH_REG);
+					ia64_st8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+				}
 			}
 		}
+		else
+			ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_R0);
 	}
 	else
 		ia64_mov (code, cfg->arch.reg_out0 + 1, IA64_R0);
@@ -4259,7 +4274,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func);
 
-	if (enable_arguments) {
+	if (enable_arguments && stack_area) {
 		ia64_movl (code, GP_SCRATCH_REG, stack_area);
 
 		ia64_add (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
