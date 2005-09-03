@@ -163,6 +163,7 @@ typedef enum {
 	IA64_WRITE_FR,
 	IA64_READ_AR,
 	IA64_WRITE_AR,
+	IA64_NO_STOP,
 	IA64_END_OF_INS,
 	IA64_NONE
 } Ia64Dependency;
@@ -260,6 +261,11 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
         code.itypes [code.nins] = itype; \
         code.nins ++; \
     } \
+} while (0)
+
+#define ia64_no_stop(code) do { \
+     code.dep_info [code.dep_info_pos ++] = IA64_NO_STOP; \
+     code.dep_info [code.dep_info_pos ++] = 0; \
 } while (0)
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
