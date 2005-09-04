@@ -1613,6 +1613,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			gboolean is_imm = FALSE;
 			gboolean switched = FALSE;
 
+			if (ins->opcode == OP_AND_IMM && ins->inst_imm == 255) {
+				ins->opcode = OP_ZEXT_I1;
+				break;
+			}
+
 			switch (ins->opcode) {
 			case OP_ADD_IMM:
 			case OP_IADD_IMM:
