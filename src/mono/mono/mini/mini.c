@@ -9860,6 +9860,7 @@ mono_runtime_install_handlers (void)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
 
 	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
+	signal (SIGPIPE, SIG_IGN);
 
 	/* catch SIGSEGV */
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
