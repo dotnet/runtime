@@ -1383,7 +1383,10 @@ handle_enum:
 			goto handle_enum;
 		} else {
 			int size;
-			size = mono_class_value_size (type->data.klass, NULL);
+			if (type->type == MONO_TYPE_GENERICINST)
+				size = mono_class_value_size (type->data.generic_class->container_class, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
 			if (value == NULL)
 				memset (dest, 0, size);
 			else
