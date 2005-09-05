@@ -2302,6 +2302,9 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 	case MONO_TABLE_ASSEMBLY:
 		idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
 		break;
+	case MONO_TABLE_ASSEMBLYREF:
+		idx |= MONO_CUSTOM_ATTR_ASSEMBLYREF;
+		break;
 	case MONO_TABLE_MODULE:
 		idx |= MONO_CUSTOM_ATTR_MODULE;
 		break;

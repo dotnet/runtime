@@ -211,7 +211,7 @@ dis_directive_assemblyref (MonoImage *m)
 			 cols [MONO_ASSEMBLYREF_MAJOR_VERSION], cols [MONO_ASSEMBLYREF_MINOR_VERSION], 
 			 cols [MONO_ASSEMBLYREF_BUILD_NUMBER], cols [MONO_ASSEMBLYREF_REV_NUMBER]
 			);
-		dump_cattrs (m, MONO_TOKEN_ASSEMBLY | 1, "  ");
+		dump_cattrs (m, MONO_TOKEN_ASSEMBLY_REF | 1, "  ");
 		if (cols [MONO_ASSEMBLYREF_CULTURE]){
 			fprintf (output, "  .locale %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_CULTURE]));
 		}
