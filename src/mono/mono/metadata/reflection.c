@@ -5766,14 +5766,13 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	if (!methodsig->param_count)
 		return;
 
-	if (klass->generic_class) {
-		return; /* FIXME - ??? */
-	}
-
 	mono_class_init (klass);
 
 	if (klass->image->dynamic) {
-		MonoReflectionMethodAux *aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+		MonoReflectionMethodAux *aux;
+		if (method->is_inflated)
+			method = ((MonoMethodInflated*)method)->declaring;
+		aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (aux && aux->param_defaults) {
 			memcpy (blobs, &(aux->param_defaults [1]), methodsig->param_count * sizeof (char*));
 			memcpy (types, &(aux->param_default_types [1]), methodsig->param_count * sizeof (guint32));
@@ -8687,6 +8686,10 @@ dup_type (const MonoType *original)
 	r->byref = original->byref;
 	if (original->type == MONO_TYPE_PTR)
 		r->data.type = dup_type (original->data.type);
+	else if (original->type == MONO_TYPE_ARRAY)
+		r->data.array = mono_dup_array_type (original->data.array);
+	else if (original->type == MONO_TYPE_FNPTR)
+		r->data.method = mono_metadata_signature_deep_dup (original->data.method);
 	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
 }

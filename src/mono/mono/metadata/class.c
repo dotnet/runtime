@@ -123,8 +123,39 @@ dup_type (MonoType* t, const MonoType *original)
 	r->byref = original->byref;
 	if (t->type == MONO_TYPE_PTR)
 		t->data.type = dup_type (t->data.type, original->data.type);
+	else if (t->type == MONO_TYPE_ARRAY)
+		t->data.array = mono_dup_array_type (t->data.array);
+	else if (t->type == MONO_TYPE_FNPTR)
+		t->data.method = mono_metadata_signature_deep_dup (t->data.method);
 	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
+}
+
+/* Copy everything mono_metadata_free_array free. */
+MonoArrayType *
+mono_dup_array_type (MonoArrayType *a)
+{
+	a = g_memdup (a, sizeof (MonoArrayType));
+	if (a->sizes)
+		a->sizes = g_memdup (a->sizes, a->numsizes * sizeof (int));
+	if (a->lobounds)
+		a->lobounds = g_memdup (a->lobounds, a->numlobounds * sizeof (int));
+	return a;
+}
+
+/* Copy everything mono_metadata_free_method_signature free. */
+MonoMethodSignature*
+mono_metadata_signature_deep_dup (MonoMethodSignature *sig)
+{
+	int i;
+	
+	sig = mono_metadata_signature_dup (sig);
+	
+	sig->ret = dup_type (sig->ret, sig->ret);
+	for (i = 0; i < sig->param_count; ++i)
+		sig->params [i] = dup_type (sig->params [i], sig->params [i]);
+	
+	return sig;
 }
 
 static void

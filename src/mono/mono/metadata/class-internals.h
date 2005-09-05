@@ -660,5 +660,8 @@ mono_class_get_exception_for_failure (MonoClass *klass);
 char*
 mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 
+MonoArrayType *mono_dup_array_type (MonoArrayType *a);
+MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig);
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 
