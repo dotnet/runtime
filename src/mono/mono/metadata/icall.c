@@ -5978,6 +5978,12 @@ ves_icall_MonoDebugger_check_runtime_version (MonoString *fname)
 }
 
 static gint32
+ves_icall_MonoDebugger_GetMethodToken (MonoReflectionMethod *method)
+{
+	return method->method->token;
+}
+
+static gint32
 ves_icall_MonoDebugger_GetMethodIndex (MonoReflectionMethod *rmethod)
 {
 	guint32 index;
@@ -5989,6 +5995,61 @@ ves_icall_MonoDebugger_GetMethodIndex (MonoReflectionMethod *rmethod)
 		return -1;
 
 	return index - rmethod->method->klass->method.first;
+}
+
+static MonoReflectionMethod *
+ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token)
+{
+	MonoMethod *method;
+
+	MONO_ARCH_SAVE_REGS;
+
+	method = mono_get_method (mono_assembly_get_image (assembly->assembly), token, NULL);
+
+	return mono_method_get_object (mono_domain_get (), method, NULL);
+}
+
+static MonoReflectionType *
+ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
+{
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_get (mono_assembly_get_image (assembly->assembly), token);
+	if (!klass) {
+		g_warning (G_STRLOC ": %x", token);
+		return NULL;
+	}
+
+	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
+}
+
+static MonoReflectionType *
+ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature)
+{
+	MonoDomain *domain; 
+	MonoImage *image;
+	MonoType *type;
+	const char *ptr;
+	int len = 0;
+
+	MONO_ARCH_SAVE_REGS;
+
+	MONO_CHECK_ARG_NULL (assembly);
+	MONO_CHECK_ARG_NULL (signature);
+
+	domain = mono_domain_get();
+	image = mono_assembly_get_image (assembly->assembly);
+
+	ptr = mono_array_addr (signature, char, 0);
+	g_assert (*ptr++ == 0x07);
+	len = mono_metadata_decode_value (ptr, &ptr);
+	g_assert (len == 1);
+
+	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
+
+	return mono_type_get_object (domain, type);
 }
 
 static MonoReflectionType*

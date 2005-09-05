@@ -136,61 +136,6 @@ mono_debugger_start_add_type (MonoDebugHandle *symfile, MonoClass *klass)
 	must_reload_symtabs = TRUE;
 }
 
-MonoReflectionMethod *
-ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token)
-{
-	MonoMethod *method;
-
-	method = mono_get_method (mono_assembly_get_image (assembly->assembly), token, NULL);
-
-	return mono_method_get_object (mono_domain_get (), method, NULL);
-}
-
-int
-ves_icall_MonoDebugger_GetMethodToken (MonoReflectionAssembly *assembly, MonoReflectionMethod *method)
-{
-	return method->method->token;
-}
-
-MonoReflectionType *
-ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
-{
-	MonoClass *klass;
-
-	klass = mono_class_get (mono_assembly_get_image (assembly->assembly), token);
-	if (!klass) {
-		g_warning (G_STRLOC ": %x", token);
-		return NULL;
-	}
-
-	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
-}
-
-MonoReflectionType *
-ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature)
-{
-	MonoDomain *domain; 
-	MonoImage *image;
-	MonoType *type;
-	const char *ptr;
-	int len = 0;
-
-	MONO_CHECK_ARG_NULL (assembly);
-	MONO_CHECK_ARG_NULL (signature);
-
-	domain = mono_domain_get();
-	image = mono_assembly_get_image (assembly->assembly);
-
-	ptr = mono_array_addr (signature, char, 0);
-	g_assert (*ptr++ == 0x07);
-	len = mono_metadata_decode_value (ptr, &ptr);
-	g_assert (len == 1);
-
-	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
-
-	return mono_type_get_object (domain, type);
-}
-
 void
 mono_debugger_event (MonoDebuggerEvent event, guint64 data, guint64 arg)
 {

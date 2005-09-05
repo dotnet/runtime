@@ -104,19 +104,6 @@ gboolean        mono_debugger_throw_exception             (gpointer addr, gpoint
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
 
-
-MonoReflectionMethod *
-ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token);
-
-int
-ves_icall_MonoDebugger_GetMethodToken (MonoReflectionAssembly *assembly, MonoReflectionMethod *method);
-
-MonoReflectionType *
-ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature);
-
-MonoReflectionType *
-ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token);
-
 gchar *
 mono_debugger_check_runtime_version (const char *filename);
 
