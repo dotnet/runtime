@@ -1846,7 +1846,7 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 }
 
 static MonoReflectionType*
-ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *type_array)
+ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 {
 	MonoType *geninst, **types;
 	int i, count;
@@ -1928,18 +1928,6 @@ ves_icall_Type_GetGenericParameterConstraints (MonoReflectionType *type)
 
 
 	return res;
-}
-
-static MonoBoolean
-ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
-{
-	MonoClass *klass;
-	MONO_ARCH_SAVE_REGS;
-
-	klass = mono_class_from_mono_type (type->type);
-	if (klass->generic_container || klass->generic_class)
-		return TRUE;
-	return FALSE;
 }
 
 static MonoBoolean
@@ -6549,7 +6537,6 @@ static const IcallEntry monotype_icalls [] = {
 	{"get_BaseType", ves_icall_get_type_parent},
 	{"get_DeclaringMethod", ves_icall_MonoType_get_DeclaringMethod},
 	{"get_DeclaringType", ves_icall_MonoType_get_DeclaringType},
-	{"get_HasGenericArguments", ves_icall_MonoType_get_HasGenericArguments},
 	{"get_IsGenericParameter", ves_icall_MonoType_get_IsGenericParameter},
 	{"get_Module", ves_icall_MonoType_get_Module},
 	{"get_Name", ves_icall_MonoType_get_Name},
@@ -6661,11 +6648,11 @@ static const IcallEntry generictypeparambuilder_icalls [] = {
 };
 
 static const IcallEntry monomethod_icalls [] = {
-	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
 	{"GetDllImportAttribute", ves_icall_MonoMethod_GetDllImportAttribute},
 	{"GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments},
   	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
 	{"InternalInvoke", ves_icall_InternalInvoke},
+	{"MakeGenericMethod", mono_reflection_bind_generic_method_parameters},
 	{"get_HasGenericParameters", ves_icall_MonoMethod_get_HasGenericParameters},
 	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
 	{"get_Mono_IsInflatedMethod", ves_icall_MonoMethod_get_Mono_IsInflatedMethod},
@@ -6740,7 +6727,7 @@ static const IcallEntry dynamicmethod_icalls [] = {
 };
 
 static const IcallEntry methodbuilder_icalls [] = {
-	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters}
+	{"MakeGenericMethod", mono_reflection_bind_generic_method_parameters}
 };
 
 static const IcallEntry modulebuilder_icalls [] = {
@@ -7007,7 +6994,6 @@ static const IcallEntry waithandle_icalls [] = {
 };
 
 static const IcallEntry type_icalls [] = {
-	{"BindGenericParameters", ves_icall_Type_BindGenericParameters},
 	{"Equals", ves_icall_type_Equals},
 	{"GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes},
 	{"GetGenericParameterConstraints_impl", ves_icall_Type_GetGenericParameterConstraints},
@@ -7019,6 +7005,7 @@ static const IcallEntry type_icalls [] = {
 	{"GetTypeCodeInternal", ves_icall_type_GetTypeCodeInternal},
 	{"IsArrayImpl", ves_icall_Type_IsArrayImpl},
 	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
+	{"MakeGenericType", ves_icall_Type_MakeGenericType},
 	{"MakePointerType", ves_icall_Type_MakePointerType},
 	{"get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance},
 	{"get_IsGenericType", ves_icall_Type_get_IsGenericType},

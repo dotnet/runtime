@@ -9333,7 +9333,7 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 
 	MONO_ARCH_SAVE_REGS;
 
-	p = buf = g_malloc (size = 30 + na * 30);
+	p = buf = g_malloc (size = 50 + na * 50);
 
 	mono_metadata_encode_value (0x07, p, &p);
 	mono_metadata_encode_value (na, p, &p);
