@@ -770,7 +770,7 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 	char *b = blob_size;
 	int i;
 
-	size = 10 + nl * 30;
+	size = 50 + nl * 30;
 	p = buf = g_malloc (size);
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
@@ -9333,7 +9333,7 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 
 	MONO_ARCH_SAVE_REGS;
 
-	p = buf = g_malloc (size = 10 + na * 10);
+	p = buf = g_malloc (size = 30 + na * 30);
 
 	mono_metadata_encode_value (0x07, p, &p);
 	mono_metadata_encode_value (na, p, &p);
