@@ -36,8 +36,8 @@ typedef struct {
 	const stridx_t month_names [NUM_MONTHS];
 	const stridx_t abbreviated_month_names [NUM_MONTHS];
 
-	gint calendar_week_rule;
-	gint first_day_of_week;
+	gint8 calendar_week_rule;
+	gint8 first_day_of_week;
 
 	const stridx_t date_separator;
 	const stridx_t time_separator;	
@@ -66,15 +66,15 @@ typedef struct {
 	const stridx_t negative_sign;
 	const stridx_t positive_sign;
 
-	gint currency_negative_pattern;
-	gint currency_positive_pattern;
-	gint percent_negative_pattern;
-	gint percent_positive_pattern;
-	gint number_negative_pattern;
+	gint8 currency_negative_pattern;
+	gint8 currency_positive_pattern;
+	gint8 percent_negative_pattern;
+	gint8 percent_positive_pattern;
+	gint8 number_negative_pattern;
 
-	gint currency_decimal_digits;
-	gint percent_decimal_digits;
-	gint number_decimal_digits;
+	gint8 currency_decimal_digits;
+	gint8 percent_decimal_digits;
+	gint8 number_decimal_digits;
 
 	const gint currency_group_sizes [GROUP_SIZE];
 	const gint percent_group_sizes [GROUP_SIZE];
@@ -90,9 +90,9 @@ typedef struct {
 } TextInfoEntry;
 
 typedef struct {
-	gint lcid;
-	gint parent_lcid;
-	gint specific_lcid;
+	gint16 lcid;
+	gint16 parent_lcid;
+	gint16 specific_lcid;
 	gint16 region_entry_index;
 	const stridx_t name;
 	const stridx_t icu_name;
