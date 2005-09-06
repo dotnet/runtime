@@ -1597,6 +1597,14 @@ guint8*
 mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 {
 	int imm8, rot_amount;
+#if 0
+	ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
+	/* skip the constant pool */
+	ARM_B (code, 0);
+	*(int*)code = val;
+	code += 4;
+	return code;
+#endif
 	if ((imm8 = mono_arm_is_rotated_imm8 (val, &rot_amount)) >= 0) {
 		ARM_MOV_REG_IMM (code, dreg, imm8, rot_amount);
 	} else if ((imm8 = mono_arm_is_rotated_imm8 (~val, &rot_amount)) >= 0) {
@@ -1757,10 +1765,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_LDRB_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI2_MEMINDEX:
-			ARM_LDRSH_REG_REG (code, ins->inst_basereg, ins->sreg2, ins->dreg);
+			ARM_LDRSH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADU2_MEMINDEX:
-			ARM_LDRH_REG_REG (code, ins->inst_basereg, ins->sreg2, ins->dreg);
+			ARM_LDRH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
@@ -1947,16 +1955,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_SHL_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SHL_IMM:
-			ARM_SHL_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			if (ins->inst_imm)
+				ARM_SHL_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case CEE_SHR:
 			ARM_SAR_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SHR_IMM:
-			ARM_SAR_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			if (ins->inst_imm)
+				ARM_SAR_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_SHR_UN_IMM:
-			ARM_SHR_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			if (ins->inst_imm)
+				ARM_SHR_IMM (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case CEE_SHR_UN:
 			ARM_SHR_REG (code, ins->dreg, ins->sreg1, ins->sreg2);

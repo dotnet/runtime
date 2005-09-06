@@ -234,7 +234,7 @@ add_ovf_carry: dest:i src1:i src2:i len:16
 sub_ovf_carry: dest:i src1:i src2:i len:16
 add_ovf_un_carry: dest:i src1:i src2:i len:16
 sub_ovf_un_carry: dest:i src1:i src2:i len:16
-start_handler: len:12
+start_handler: len:20
 endfinally: len:20
 leave:
 leave.s:
@@ -325,13 +325,13 @@ reg:
 regoffset:
 label:
 store_membase_imm: dest:b len:20
-store_membase_reg: dest:b src1:i len:12
+store_membase_reg: dest:b src1:i len:20
 storei1_membase_imm: dest:b len:20
 storei1_membase_reg: dest:b src1:i len:12
 storei2_membase_imm: dest:b len:20
 storei2_membase_reg: dest:b src1:i len:12
 storei4_membase_imm: dest:b len:20
-storei4_membase_reg: dest:b src1:i len:12
+storei4_membase_reg: dest:b src1:i len:20
 storei8_membase_imm: dest:b 
 storei8_membase_reg: dest:b src1:i 
 storer4_membase_reg: dest:b src1:f len:12
@@ -340,7 +340,7 @@ store_memindex: dest:b src1:i src2:i len:4
 storei1_memindex: dest:b src1:i src2:i len:4
 storei2_memindex: dest:b src1:i src2:i len:4
 storei4_memindex: dest:b src1:i src2:i len:4
-load_membase: dest:i src1:b len:12
+load_membase: dest:i src1:b len:20
 loadi1_membase: dest:i src1:b len:4
 loadu1_membase: dest:i src1:b len:4
 loadi2_membase: dest:i src1:b len:4

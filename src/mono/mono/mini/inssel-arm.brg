@@ -277,7 +277,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		tmpr = mono_regstate_next_int (s->rs);
 		dreg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, soffset);
-		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, tmpr);
 		mono_call_inst_add_outarg_reg (call, dreg, start_reg + i, FALSE);
 		soffset += sizeof (gpointer);
 	}
