@@ -209,10 +209,9 @@ new_codechunk (int dynamic, int size)
 	bsize += MIN_ALIGN -1;
 	bsize &= ~ (MIN_ALIGN - 1);
 	if (chunk_size - size < bsize) {
-		if (dynamic)
-			chunk_size = size + bsize;
-		else
-			chunk_size += pagesize;
+		chunk_size = size + bsize;
+		chunk_size += pagesize - 1;
+		chunk_size &= ~ (pagesize - 1);
 	}
 #endif
 
@@ -333,8 +332,9 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 		return NULL;
 	chunk->next = cman->current;
 	cman->current = chunk;
+	ptr = chunk->data + chunk->pos;
 	chunk->pos += size;
-	return chunk->data;
+	return ptr;
 }
 
 /* 
