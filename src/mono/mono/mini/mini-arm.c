@@ -638,6 +638,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 
+		/* FIXME: if a structure is misaligned, our memcpy doesn't work,
+		 * since it loads/stores misaligned words, which don't do the right thing.
+		 */
+		if (align < 4 && size >= 4)
+			align = 4;
 		offset += align - 1;
 		offset &= ~(align - 1);
 		inst->inst_offset = offset;
@@ -669,6 +674,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
 			size = mono_type_size (sig->params [i], &align);
+			/* FIXME: if a structure is misaligned, our memcpy doesn't work,
+			 * since it loads/stores misaligned words, which don't do the right thing.
+			 */
+			if (align < 4 && size >= 4)
+				align = 4;
 			offset += align - 1;
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
