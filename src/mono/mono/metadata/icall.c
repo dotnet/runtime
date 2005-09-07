@@ -78,8 +78,13 @@ mono_double_ParseImpl (char *ptr)
 
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef __arm__
+	if (*ptr)
+		result = strtod (ptr, &endptr);
+#else
 	if (*ptr)
 		result = bsd_strtod (ptr, &endptr);
+#endif
 
 	if (!*ptr || (endptr && *endptr))
 		mono_raise_exception (mono_exception_from_name (mono_get_corlib (),
