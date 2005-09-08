@@ -267,6 +267,14 @@ dis_directive_moduleref (MonoImage *m)
 }
 
 static void
+dis_nt_header (MonoImage *m)
+{
+	MonoCLIImageInfo *image_info = m->image_info;
+	if (image_info && image_info->cli_header.nt.pe_stack_reserve != 0x100000)
+		fprintf (output, ".stackreserve 0x%x\n", image_info->cli_header.nt.pe_stack_reserve);
+}
+
+static void
 dis_directive_file (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FILE];
@@ -1420,6 +1428,7 @@ disassemble_file (const char *file)
 		dis_directive_mresource (img);
 		dis_directive_module (img);
 		dis_directive_moduleref (img);
+		dis_nt_header (img);
                 if (dump_managed_resources)
         		dis_mresource (img);
 		if (dump_forward_decls) {
