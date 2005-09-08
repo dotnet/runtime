@@ -76,8 +76,11 @@ class Sample {
 [StructLayout ( LayoutKind.Explicit )]
 struct StructWithBigOffsets {
 		[ FieldOffset(10000) ] public byte b;
+		[ FieldOffset(10001) ] public sbyte sb;
 		[ FieldOffset(11000) ] public short s;
+		[ FieldOffset(11002) ] public ushort us;
 		[ FieldOffset(12000) ] public uint i;
+		[ FieldOffset(12004) ] public int si;
 		[ FieldOffset(13000) ] public long l;
 		[ FieldOffset(14000) ] public float f;
 		[ FieldOffset(15000) ] public double d;
@@ -290,15 +293,21 @@ class Tests {
 		StructWithBigOffsets s2 = new StructWithBigOffsets ();
 
 		s.b = 0xde;
+		s.sb = 0xe;
 		s.s = 0x12de;
+		s.us = 0x12da;
 		s.i = 0xdeadbeef;
+		s.si = 0xcafe;
 		s.l = 0xcafebabe;
 		s.f = 3.14F;
 		s.d = 3.14;
 
 		s2.b = s.b;
+		s2.sb = s.sb;
 		s2.s = s.s;
+		s2.us = s.us;
 		s2.i = s.i;
+		s2.si = s.si;
 		s2.l = s.l;
 		s2.f = s.f;
 		s2.d = s.d;
@@ -315,6 +324,12 @@ class Tests {
 			return 5;
 		if (s2.d != 3.14)
 			return 6;
+		if (s2.sb != 0xe)
+			return 7;
+		if (s2.us != 0x12da)
+			return 9;
+		if (s2.si != 0xdeadcafe)
+			return 10;
 
 		return 0;
 	}

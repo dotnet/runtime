@@ -1769,16 +1769,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI1_MEMINDEX:
-			ARM_LDRSB_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
+			/* note: the args are reversed in the macro */
+			ARM_LDRSB_REG_REG (code, ins->inst_basereg, ins->dreg, ins->sreg2);
 			break;
 		case OP_LOADU1_MEMINDEX:
 			ARM_LDRB_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI2_MEMINDEX:
-			ARM_LDRSH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
+			/* note: the args are reversed in the macro */
+			ARM_LDRSH_REG_REG (code, ins->inst_basereg, ins->dreg, ins->sreg2);
 			break;
 		case OP_LOADU2_MEMINDEX:
-			ARM_LDRH_REG_REG (code, ins->dreg, ins->inst_basereg, ins->sreg2);
+			/* note: the args are reversed in the macro */
+			ARM_LDRH_REG_REG (code, ins->inst_basereg, ins->dreg, ins->sreg2);
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
