@@ -328,7 +328,7 @@ class Tests {
 			return 7;
 		if (s2.us != 0x12da)
 			return 9;
-		if (s2.si != 0xdeadcafe)
+		if (s2.si != 0xcafe)
 			return 10;
 
 		return 0;
