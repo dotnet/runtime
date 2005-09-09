@@ -48,6 +48,7 @@
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/security-manager.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/os/gc_wrapper.h>
@@ -2800,6 +2801,38 @@ mono_find_jit_opcode_emulation (int opcode)
 		return NULL;
 }
 
+static MonoException*
+mini_loader_error_to_exception (MonoLoaderError *error)
+{
+	MonoException *ex = NULL;
+
+	switch (error->kind) {
+	case MONO_LOADER_ERROR_TYPE: {
+		MonoString *class_name = mono_string_new (mono_domain_get (), error->class_name);
+		
+		ex = mono_get_exception_type_load (class_name, error->assembly_name);
+		break;
+	}
+	case MONO_LOADER_ERROR_METHOD:
+	case MONO_LOADER_ERROR_FIELD: {
+		char *class_name;
+		
+		class_name = g_strdup_printf ("%s%s%s", error->klass->name_space, *error->klass->name_space ? "." : "", error->klass->name);
+
+		if (error->kind == MONO_LOADER_ERROR_METHOD)
+			ex = mono_get_exception_missing_method (class_name, error->member_name);
+		else
+			ex = mono_get_exception_missing_field (class_name, error->member_name);
+		g_free (class_name);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	return ex;
+}
+
 static MonoInst*
 mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -3153,10 +3186,24 @@ mini_get_method (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericCont
 
 	method = mono_get_method_full (m->klass->image, token, klass, context);
 
-	if (method->is_inflated)
+	if (method && method->is_inflated)
 		method = mono_get_inflated_method (method);
 
 	return method;
+}
+
+static inline MonoClass*
+mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
+{
+	MonoClass *klass;
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		klass = mono_method_get_wrapper_data (method, token);
+	else
+		klass = mono_class_get_full (method->klass->image, token, context);
+	if (klass)
+		mono_class_init (klass);
+	return klass;
 }
 
 static
@@ -3809,6 +3856,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: check the signature matches */
 			cmethod = mini_get_method (method, token, NULL, generic_context);
 
+			if (!cmethod)
+				goto load_error;
+
 			if (mono_use_security_manager) {
 				check_linkdemand (cfg, method, cmethod, bblock, ip);
 			}
@@ -3850,7 +3900,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mini_get_method (method, token, NULL, generic_context);
 				}
 
-				g_assert (cmethod);
+				if (!cmethod)
+					goto load_error;
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
 					/* MS.NET seems to silently convert this to a callvirt */
@@ -4543,12 +4594,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			CHECK_STACK (2);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 			sp -= 2;
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoInst *store, *load;
@@ -4596,12 +4644,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
@@ -4747,6 +4792,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			cmethod = mini_get_method (method, token, NULL, generic_context);
+			if (!cmethod)
+				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
@@ -4849,11 +4896,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -4907,11 +4952,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
-			else 
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				/* CASTCLASS */
@@ -5003,11 +5046,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
-			else 
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5034,11 +5075,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5122,6 +5161,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			if (!field)
+				goto load_error;
 			mono_class_init (klass);
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
@@ -5264,6 +5305,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			if (!field)
+				goto load_error;
 			mono_class_init (klass);
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
@@ -5439,11 +5482,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 			n = mono_type_to_stind (&klass->byval_arg);
 			if (n == CEE_STOBJ) {
 				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE);
@@ -5468,11 +5509,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			val = *sp;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				*sp++ = val;
@@ -5503,12 +5542,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Ditto */
 			mono_get_got_var (cfg);
 
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
-			else
-				klass = mono_class_get_full (image, token, generic_context);
-
-			mono_class_init (klass);
+			klass = mini_get_class (method, token, generic_context);
+			if (!klass)
+				goto load_error;
 			ins->inst_newa_class = klass;
 			ins->inst_newa_len = *sp;
 			ins->type = STACK_OBJ;
@@ -5545,11 +5581,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			CHECK_OPSIZE (5);
 
-			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = (MonoClass*)mono_method_get_wrapper_data (method, read32 (ip + 1));
-			else
-				klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
-			
+			klass = mini_get_class (method, read32 (ip + 1), generic_context);
+			if (!klass)
+				goto load_error;			
 			/* we need to make sure that this array is exactly the type it needs
 			 * to be for correctness. the wrappers are lax with their usage
 			 * so we need to ignore them here
@@ -5577,6 +5611,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
+			if (!klass)
+				goto load_error;
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
@@ -5658,6 +5694,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
+			if (!klass)
+				goto load_error;
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoMethod* helper = mono_marshal_get_stelemref ();
@@ -5748,6 +5786,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			if (!klass)
+				goto load_error;
 			mono_class_init (klass);
 			ins->type = STACK_MP;
 			ins->inst_left = *sp;
@@ -5765,6 +5805,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			if (!klass)
+				goto load_error;
 			mono_class_init (klass);
 			ins->cil_code = ip;
 
@@ -5797,6 +5839,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else {
 				handle = mono_ldtoken (image, n, &handle_class, generic_context);
 			}
+			if (!handle)
+				goto load_error;
 			mono_class_init (handle_class);
 
 			if (cfg->opt & MONO_OPT_SHARED) {
@@ -6212,7 +6256,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				cmethod = mini_get_method (method, n, NULL, generic_context);
-
+				if (!cmethod)
+					goto load_error;
 				mono_class_init (cmethod->klass);
 
 				if (mono_use_security_manager) {
@@ -6241,7 +6286,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				cmethod = mini_get_method (method, n, NULL, generic_context);
-
+				if (!cmethod)
+					goto load_error;
 				mono_class_init (cmethod->klass);
 
 				if (mono_use_security_manager) {
@@ -6413,10 +6459,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					klass = mono_method_get_wrapper_data (method, token);
-				else
-					klass = mono_class_get_full (image, token, generic_context);
+				klass = mini_get_class (method, token, generic_context);
+				if (!klass)
+					goto load_error;
 				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
@@ -6439,6 +6484,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				constrained_call = mono_class_get_full (image, token, generic_context);
+				if (!constrained_call)
+					goto load_error;
 				ip += 6;
 				break;
 			case CEE_CPBLK:
@@ -6517,9 +6564,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &align);
 				} else {
-					MonoClass *szclass = mono_class_get_full (image, token, generic_context);
-					mono_class_init (szclass);
-					token = mono_class_value_size (szclass, &align);
+					MonoClass *klass = mono_class_get_full (image, token, generic_context);
+					if (!klass)
+						goto load_error;
+					mono_class_init (klass);
+					token = mono_class_value_size (klass, &align);
 				}
 				NEW_ICONST (cfg, ins, token);
 				ins->cil_code = ip;
@@ -6651,6 +6700,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
  inline_failure:
 	if (cfg->method != method) 
+		g_hash_table_destroy (bbhash);
+	g_slist_free (class_inits);
+	dont_inline = g_list_remove (dont_inline, method);
+	return -1;
+
+ load_error:
+	if (cfg->method != method)
 		g_hash_table_destroy (bbhash);
 	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
@@ -9058,10 +9114,15 @@ MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
-	guint8 *ip = (guint8 *)header->code;
+	guint8 *ip;
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
 	int dfn = 0, i, code_size_ratio;
+
+	if (!header)
+		return NULL;
+
+	ip = (guint8 *)header->code;
 
 	mono_jit_stats.methods_compiled++;
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -9451,6 +9512,19 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 	}
 
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
+
+	if (!cfg) {
+		/* Throw a type load exception if needed */
+		MonoLoaderError *error = mono_loader_get_last_error ();
+
+		if (error) {
+			MonoException *ex = mini_loader_error_to_exception (error);
+			mono_loader_clear_error ();
+			mono_raise_exception (ex);
+		}
+		else
+			g_assert_not_reached ();
+	}
 
 	mono_domain_lock (target_domain);
 
