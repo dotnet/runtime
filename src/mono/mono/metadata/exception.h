@@ -70,10 +70,13 @@ MonoException *
 mono_get_exception_array_type_mismatch (void);
 
 MonoException *
-mono_get_exception_type_load           (MonoString *type_name);
+mono_get_exception_type_load           (MonoString *class_name, char *assembly_name);
 
 MonoException *
-mono_get_exception_missing_method      (void);
+mono_get_exception_missing_method      (const char *class_name, const char *member_name);
+
+MonoException *
+mono_get_exception_missing_field       (const char *class_name, const char *member_name);
 
 MonoException *
 mono_get_exception_not_implemented     (const char *msg);

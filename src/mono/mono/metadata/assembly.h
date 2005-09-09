@@ -30,6 +30,7 @@ MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageO
 
 MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
 MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly);
+void          mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname);
 void          mono_assembly_load_reference (MonoImage *image, int index);
 void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
 MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, guint32 idx);

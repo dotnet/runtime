@@ -448,6 +448,22 @@ typedef struct {
 	MonoMethodSignature *sig;
 } MonoJitICallInfo;
 
+/*
+ * Information about a type load error encountered by the loader.
+ */
+typedef enum {
+	MONO_LOADER_ERROR_TYPE,
+	MONO_LOADER_ERROR_METHOD,
+	MONO_LOADER_ERROR_FIELD
+} MonoLoaderErrorKind;
+
+typedef struct {
+	MonoLoaderErrorKind kind;
+	char *class_name, *assembly_name; /* If kind == TYPE */
+	MonoClass *klass; /* If kind != TYPE */
+	const char *member_name; /* If kind != TYPE */
+} MonoLoaderError;
+
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
 
 typedef struct {
@@ -608,6 +624,21 @@ mono_loader_lock           (void);
 
 void
 mono_loader_unlock         (void);
+
+void
+mono_loader_set_error_type_load (char *class_name, char *assembly_name);
+
+void
+mono_loader_set_error_method_load (MonoClass *klass, const char *member_name);
+
+void
+mono_loader_set_error_field_load (MonoClass *klass, const char *member_name);
+
+MonoLoaderError*
+mono_loader_get_last_error (void);
+
+void
+mono_loader_clear_error    (void);
 
 void 
 mono_icall_init            (void);

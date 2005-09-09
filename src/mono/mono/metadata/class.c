@@ -158,6 +158,17 @@ mono_metadata_signature_deep_dup (MonoMethodSignature *sig)
 	return sig;
 }
 
+static char*
+_mono_stringify_aname (MonoAssemblyName *aname)
+{
+	return g_strdup_printf (
+		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s",
+		aname->name,
+		aname->major, aname->minor, aname->build, aname->revision,
+		aname->culture && *aname->culture? aname->culture: "neutral",
+		aname->public_key_token [0] ? (char *)aname->public_key_token : "null");
+}
+
 static void
 _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 {
@@ -2431,9 +2442,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		context->gclass = mono_get_shared_generic_class (context->container, FALSE);
 	}
 
-	if (cols [MONO_TYPEDEF_EXTENDS])
+	if (cols [MONO_TYPEDEF_EXTENDS]) {
 		parent = mono_class_get_full (
 			image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]), context);
+	}
 
 	mono_class_setup_parent (class, parent);
 
@@ -3248,6 +3260,53 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericCon
 	return NULL;
 }
 
+static char *
+mono_assembly_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+{
+	if (image->dynamic)
+		return g_strdup_printf ("DynamicAssembly %s", image->name);
+	
+	switch (type_token & 0xff000000){
+	case MONO_TOKEN_TYPE_DEF:
+		return _mono_stringify_aname (&image->assembly->aname);
+		break;
+	case MONO_TOKEN_TYPE_REF: {
+		MonoAssemblyName aname;
+		guint32 cols [MONO_TYPEREF_SIZE];
+		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+		guint32 idx;
+	
+		mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+
+		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
+		switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
+		case MONO_RESOLTION_SCOPE_MODULE:
+			/* FIXME: */
+			return g_strdup ("");
+		case MONO_RESOLTION_SCOPE_MODULEREF:
+			/* FIXME: */
+			return g_strdup ("");
+		case MONO_RESOLTION_SCOPE_TYPEREF:
+			/* FIXME: */
+			return g_strdup ("");
+		case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
+			mono_assembly_get_assemblyref (image, idx - 1, &aname);
+			return _mono_stringify_aname (&aname);
+		default:
+			g_assert_not_reached ();
+		}
+		break;
+	}
+	case MONO_TOKEN_TYPE_SPEC:
+		/* FIXME: */
+		return g_strdup ("");
+	default:
+		g_assert_not_reached ();
+	}
+
+	return NULL;
+}
+
 /**
  * mono_class_get:
  * @image: the image where the class resides
@@ -3281,8 +3340,8 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContext *conte
 
 	if (!class){
 		char *name = mono_class_name_from_token (image, type_token, context);
-		g_warning ("The class %s could not be loaded, used in %s (token 0x%08x)", name, image->name, type_token);
-		g_free (name);
+		char *assembly = mono_assembly_name_from_token (image, type_token, context);
+		mono_loader_set_error_type_load (name, assembly);
 	}
 
 	return class;
@@ -3798,6 +3857,8 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		class = mono_class_get_full (image, token, context);
+		if (!class)
+			return NULL;
 		mono_class_init (class);
 		/* We return a MonoType* as handle */
 		return &class->byval_arg;
@@ -3807,16 +3868,20 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		class = mono_class_create_from_typespec (image, token, context);
+		if (!class)
+			return NULL;
 		mono_class_init (class);
 		return &class->byval_arg;
 	}
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
-		class = mono_class_get_full (image, MONO_TOKEN_TYPE_DEF | type, context);
-		mono_class_init (class);
 		if (handle_class)
 			*handle_class = mono_defaults.fieldhandle_class;
+		class = mono_class_get_full (image, MONO_TOKEN_TYPE_DEF | type, context);
+		if (!class)
+			return NULL;
+		mono_class_init (class);
 		return mono_class_get_field (class, token);
 	}
 	case MONO_TOKEN_METHOD_DEF: {

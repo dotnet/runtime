@@ -240,16 +240,12 @@ mono_get_exception_array_type_mismatch ()
 }
 
 MonoException *
-mono_get_exception_type_load (MonoString *type_name)
+mono_get_exception_type_load (MonoString *class_name, char *assembly_name)
 {
-	MonoTypeLoadException *exc;
-	
-	exc = (MonoTypeLoadException *) mono_exception_from_name (mono_get_corlib (),
-					"System",
-					"TypeLoadException");
+	MonoString *s = assembly_name ? mono_string_new (mono_domain_get (), assembly_name) : mono_string_new (mono_domain_get (), "");
 
-	exc->type_name = type_name;
-	return (MonoException *) exc;
+	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
+												 "TypeLoadException", class_name, s);
 }
 
 MonoException *
@@ -267,10 +263,23 @@ mono_get_exception_not_implemented (const char *msg)
 }
 
 MonoException *
-mono_get_exception_missing_method ()
+mono_get_exception_missing_method (const char *class_name, const char *member_name)
 {
-	return mono_exception_from_name (mono_get_corlib (), "System",
-					 "MissingMethodException");
+	MonoString *s1 = mono_string_new (mono_domain_get (), class_name);
+	MonoString *s2 = mono_string_new (mono_domain_get (), member_name);
+
+	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
+												 "MissingMethodException", s1, s2);
+}
+
+MonoException *
+mono_get_exception_missing_field (const char *class_name, const char *member_name)
+{
+	MonoString *s1 = mono_string_new (mono_domain_get (), class_name);
+	MonoString *s2 = mono_string_new (mono_domain_get (), member_name);
+
+	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
+												 "MissingFieldException", s1, s2);
 }
 
 MonoException*

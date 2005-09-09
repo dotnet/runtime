@@ -561,12 +561,45 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	return aname;
 }
 
+/*
+ * mono_assembly_get_assemblyref:
+ *
+ *   Fill out ANAME with the assembly name of the INDEXth assembly reference in IMAGE.
+ */
 void
-mono_assembly_load_reference (MonoImage *image, int index)
+mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname)
 {
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
+
+	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+
+	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
+		
+	hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+	aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
+	aname->hash_value = hash;
+	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
+	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
+	aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
+	aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+	aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+	aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+	aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+
+	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
+		gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname->flags);
+		g_strlcpy (aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free (token);
+	} else {
+		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	}
+}
+
+void
+mono_assembly_load_reference (MonoImage *image, int index)
+{
 	MonoAssembly *reference;
 	MonoAssemblyName aname;
 	MonoImageOpenStatus status;
@@ -581,28 +614,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (reference)
 		return;
 
-	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-
-	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
-		
-	hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
-	aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
-	aname.hash_value = hash;
-	aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
-	aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
-	aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
-	aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-	aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-	aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-	aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
-
-	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
-		gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname.flags);
-		g_strlcpy (aname.public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-		g_free (token);
-	} else {
-		memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-	}
+	mono_assembly_get_assemblyref (image, index, &aname);
 
 	if (image->assembly->ref_only) {
 		/* We use the loaded corlib */

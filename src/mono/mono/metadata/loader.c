@@ -43,10 +43,133 @@ MonoDefaults mono_defaults;
  */
 static CRITICAL_SECTION loader_mutex;
 
+
+/*
+ * This TLS variable contains the last type load error encountered by the loader.
+ */
+guint32 loader_error_thread_id;
+
 void
 mono_loader_init ()
 {
 	InitializeCriticalSection (&loader_mutex);
+
+	loader_error_thread_id = TlsAlloc ();
+}
+
+/*
+ * Handling of type load errors should be done as follows:
+ *
+ *   If something could not be loaded, the loader should call one of the
+ * mono_loader_set_error_XXX functions ()
+ * with the appropriate arguments, then return NULL to report the failure. The error 
+ * should be propagated until it reaches code which can throw managed exceptions. At that
+ * point, an exception should be thrown based on the information returned by
+ * mono_loader_get_error (). Then the error should be cleared by calling 
+ * mono_loader_clear_error ().
+ */
+
+static void
+set_loader_error (MonoLoaderError *error)
+{
+	TlsSetValue (loader_error_thread_id, error);
+}	
+
+/*
+ * mono_loader_set_error_type_load:
+ *
+ *   Set the loader error for this thread. CLASS_NAME and ASSEMBLY_NAME should be
+ * dynamically allocated strings whose ownership is passed to this function.
+ */
+void
+mono_loader_set_error_type_load (char *class_name, char *assembly_name)
+{
+	MonoLoaderError *error;
+
+	if (mono_loader_get_last_error ()) {
+		g_free (class_name);
+		g_free (assembly_name);
+		return;
+	}
+
+	error = g_new0 (MonoLoaderError, 1);
+	error->kind = MONO_LOADER_ERROR_TYPE;
+	error->class_name = class_name;
+	error->assembly_name = assembly_name;
+	
+	set_loader_error (error);
+}
+
+/*
+ * mono_loader_set_error_method_load:
+ *
+ *   Set the loader error for this thread. MEMBER_NAME should point to a string
+ * inside metadata.
+ */
+void
+mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
+{
+	MonoLoaderError *error;
+
+	/* FIXME: Store the signature as well */
+	if (mono_loader_get_last_error ())
+		return;
+
+	error = g_new0 (MonoLoaderError, 1);
+	error->kind = MONO_LOADER_ERROR_METHOD;
+	error->klass = klass;
+	error->member_name = member_name;
+	
+	set_loader_error (error);
+}
+
+/*
+ * mono_loader_set_error_field_load:
+ *
+ *   Set the loader error for this thread. MEMBER_NAME should point to a string
+ * inside metadata.
+ */
+void
+mono_loader_set_error_field_load (MonoClass *klass, const char *member_name)
+{
+	MonoLoaderError *error;
+
+	/* FIXME: Store the signature as well */
+	if (mono_loader_get_last_error ())
+		return;
+
+	error = g_new0 (MonoLoaderError, 1);
+	error->kind = MONO_LOADER_ERROR_FIELD;
+	error->klass = klass;
+	error->member_name = member_name;
+	
+	set_loader_error (error);
+}
+
+/*
+ * mono_loader_get_last_error:
+ *
+ *   Returns information about the last type load exception encountered by the loader, or
+ * NULL. After use, the exception should be cleared by calling mono_loader_clear_error.
+ */
+MonoLoaderError*
+mono_loader_get_last_error (void)
+{
+	return (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
+}
+
+void
+mono_loader_clear_error (void)
+{
+	MonoLoaderError *ex = (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
+
+	g_assert (ex);	
+
+	g_free (ex->class_name);
+	g_free (ex->assembly_name);
+	g_free (ex);
+
+	TlsSetValue (loader_error_thread_id, NULL);
 }
 
 static MonoClassField*
@@ -54,6 +177,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		      MonoGenericContext *context)
 {
 	MonoClass *klass;
+	MonoClassField *field;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
 	guint32 nindex, class;
@@ -89,7 +213,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
-		return mono_class_get_field_from_name (klass, fname);
+		field = mono_class_get_field_from_name (klass, fname);
+		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		/*guint32 bcols [MONO_TYPESPEC_SIZE];
 		guint32 len;
@@ -108,12 +233,18 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
-		return mono_class_get_field_from_name (klass, fname);
+		field = mono_class_get_field_from_name (klass, fname);
+		break;
 	}
 	default:
 		g_warning ("field load from %x", class);
 		return NULL;
 	}
+
+	if (!field)
+		mono_loader_set_error_field_load (klass, fname);
+
+	return field;
 }
 
 MonoClassField*
@@ -154,7 +285,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	mono_loader_lock ();
-	if (!field->parent->generic_class)
+	if (field && !field->parent->generic_class)
 		g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 	mono_loader_unlock ();
 	return field;
@@ -407,7 +538,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		method = find_method (klass, NULL, mname, sig);
 		if (!method)
-			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
+			mono_loader_set_error_method_load (klass, mname);
 		mono_metadata_free_method_signature (sig);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
