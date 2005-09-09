@@ -252,7 +252,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC) $(STRESS_TESTS_
 %.exe: %.cs TestDriver.dll
 	$(CSC) -r:TestDriver.dll -out:$@ $<
 
-test:	testjit testbundle
+test:	testjit testbundle test-type-load
 
 TestDriver.dll:
 	$(CSC) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
@@ -382,6 +382,13 @@ testbundle: console.exe
 	$(MKBUNDLE) --static console.exe
 	$(with_mono_path) ./a.out
 	- rm -rf a.out
+
+test-type-load: TestDriver.dll
+	$(ILASM) /dll load-missing.il
+	$(CSC) /target:library /out:t.dll /d:FOUND t-missing.cs
+	$(CSC) /r:TestDriver.dll /r:load-missing.dll /r:t.dll load-exceptions.cs
+	$(CSC) /target:library /out:t.dll t-missing.cs
+	$(RUNTIME) load-exceptions.exe
 
 noinst_LTLIBRARIES = libtest.la
 
