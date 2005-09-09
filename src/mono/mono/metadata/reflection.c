@@ -9407,7 +9407,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 					       mono_array_get (mb->refs, MonoObject*, i), &handle_class);
 		if (!ref) {
 			g_free (rmb.refs);
-			mono_raise_exception (mono_get_exception_type_load (NULL));
+			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
 			return;
 		}
 		rmb.refs [i] = ref;

@@ -1027,7 +1027,7 @@ ves_icall_type_from_name (MonoString *name,
 	g_free (str);
 	if (type == NULL){
 		if (throwOnError)
-			mono_raise_exception (mono_get_exception_type_load (name));
+			mono_raise_exception (mono_get_exception_type_load (name, NULL));
 	}
 	
 	return type;
@@ -3448,7 +3448,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		g_list_free (info.modifiers);
 		g_list_free (info.nested);
 		if (throwOnError) /* uhm: this is a parse error, though... */
-			mono_raise_exception (mono_get_exception_type_load (name));
+			mono_raise_exception (mono_get_exception_type_load (name, NULL));
 		/*g_print ("failed parse\n");*/
 		return NULL;
 	}
@@ -3491,7 +3491,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	g_list_free (info.nested);
 	if (!type) {
 		if (throwOnError)
-			mono_raise_exception (mono_get_exception_type_load (name));
+			mono_raise_exception (mono_get_exception_type_load (name, NULL));
 		/* g_print ("failed find\n"); */
 		return NULL;
 	}
