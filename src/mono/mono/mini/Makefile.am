@@ -53,8 +53,10 @@ genmdesc_CFLAGS = $(AM_CFLAGS)
 
 if NO_VERSION_SCRIPT
 monoldflags=
+monobinldflags=
 else
 monoldflags=-Wl,-version-script=$(srcdir)/ldscript
+monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono
 endif
 
 if PLATFORM_WIN32
@@ -91,7 +93,7 @@ mono_LDADD = \
 	$(ICU_LIBS)
 
 mono_LDFLAGS = \
-	$(static_flags) -export-dynamic $(monoldflags)
+	$(static_flags) -export-dynamic $(monobinldflags)
 
 genmdesc_SOURCES = \
 	mini.h		\
@@ -382,7 +384,7 @@ BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(test_sources) \
+EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript ldscript.mono $(test_sources) \
 	inssel-long.brg inssel-long32.brg \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
