@@ -3895,7 +3895,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (cmethod && cmethod->klass->generic_container) {
-				G_BREAKPOINT ();
+				// G_BREAKPOINT ();
 				goto unverified;
 			}
 
@@ -3943,7 +3943,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp)) {
-				G_BREAKPOINT ();
+				// G_BREAKPOINT ();
 				goto unverified;
 			}
 
