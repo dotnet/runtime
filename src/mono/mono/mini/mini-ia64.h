@@ -3,9 +3,6 @@
 
 #include <glib.h>
 
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
-
 #include <mono/arch/ia64/ia64-codegen.h>
 
 /* FIXME: regset -> 128 bits ! */
@@ -156,6 +153,7 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 //#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #endif
 
+unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_MUL_IMM 1

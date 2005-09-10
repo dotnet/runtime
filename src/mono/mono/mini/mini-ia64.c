@@ -3230,51 +3230,14 @@ static guint64 nops_for_ins_types [6] = {
 #endif
 
 static void
-ia64_emit_bundle_manual (Ia64CodegenState *code)
-{
-	int j, ins_type, template;
-
-	if (code->nins == 0)
-		return;
-
-	g_assert (code->nins == 3 || ((code->nins == 2) && code->itypes [1] == IA64_INS_TYPE_LX));
-
-	/* Verify template is correct */
-	template = code->template;
-	for (j = 0; j < 3; ++j) {
-		if (code->stops [j])
-			g_assert (stops_in_template [template]);
-
-		ins_type = ins_types_in_template [template][j];
-		switch (code->itypes [j]) {
-		case IA64_INS_TYPE_A:
-			g_assert ((ins_type == IA64_INS_TYPE_I) || (ins_type == IA64_INS_TYPE_M));
-			break;
-		case IA64_INS_TYPE_LX:
-			g_assert (j == 1);
-			g_assert (ins_type == IA64_INS_TYPE_LX);
-			j ++;
-			break;
-		default:
-			g_assert (ins_type == code->itypes [j]);
-		}
-	}
-
-	ia64_emit_bundle_template (code, template, code->instructions [0], code->instructions [1], code->instructions [2]);
-	code->template = 0;
-	code->nins = 0;
-	code->dep_info_pos = 0;
-}
-
-static void
-ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
+ia64_analyze_deps (Ia64CodegenState *code, int *deps_start, int *stops)
 {
 	int i, pos, ins_index, current_deps_start, current_ins_start, reg;
 	guint8 *deps = code->dep_info;
 	gboolean need_stop, no_stop;
 
 	for (i = 0; i < code->nins; ++i)
-		code->stops [i] = FALSE;
+		stops [i] = FALSE;
 	
 	ins_index = 0;
 	current_deps_start = 0;
@@ -3413,7 +3376,7 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 
 		if (need_stop && !no_stop) {
 			g_assert (ins_index > 0);
-			code->stops [ins_index - 1] = 1;
+			stops [ins_index - 1] = 1;
 
 			DEBUG_INS_SCHED (printf ("STOP\n"));
 			current_deps_start = current_ins_start;
@@ -3426,14 +3389,14 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start)
 
 	if (code->nins > 0) {
 		/* No dependency info for the last instruction */
-		code->stops [code->nins - 1] = 1;
+		stops [code->nins - 1] = 1;
 	}
 
 	deps_start [code->nins] = code->dep_info_pos;
 }
 
 static void
-ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int n, guint64 template, guint64 ins1, guint64 ins2, guint64 ins3, guint8 nops)
+ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int *stops, int n, guint64 template, guint64 ins1, guint64 ins2, guint64 ins3, guint8 nops)
 {
 	g_assert (n <= code->nins);
 	int stop_pos, i, deps_to_shift, dep_shift;
@@ -3472,6 +3435,30 @@ ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int n, guint64 t
 	for (i = 0; i < code->nins + 1 - n; ++i)
 		deps_start [i] = deps_start [n + i] - dep_shift;
 
+	/* Determine the exact positions of instructions with unwind ops */
+	if (code->unw_op_count) {
+		int ins_pos [16];
+		int curr_ins, curr_ins_pos;
+
+		curr_ins = 0;
+		curr_ins_pos = ((code->buf - code->region_start - 16) / 16) * 3;
+		for (i = 0; i < 3; ++i) {
+			if (! (nops & (1 << i))) {
+				ins_pos [curr_ins] = curr_ins_pos + i;
+				curr_ins ++;
+			}
+		}
+
+		for (i = code->unw_op_pos; i < code->unw_op_count; ++i) {
+			if (code->unw_ops_pos [i] < n) {
+				code->unw_ops [i].when = ins_pos [code->unw_ops_pos [i]];
+				//printf ("UNW-OP: %d -> %d\n", code->unw_ops_pos [i], code->unw_ops [i].when);
+			}
+		}
+		if (code->unw_op_pos < code->unw_op_count)
+			code->unw_op_pos += n;
+	}
+
 	if (n == code->nins) {
 		code->template = 0;
 		code->nins = 0;
@@ -3479,7 +3466,7 @@ ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int n, guint64 t
 	else {
 		memcpy (&code->instructions [0], &code->instructions [n], (code->nins - n) * sizeof (guint64));
 		memcpy (&code->itypes [0], &code->itypes [n], (code->nins - n) * sizeof (int));
-		memcpy (&code->stops [0], &code->stops [n], (code->nins - n) * sizeof (int));
+		memcpy (&stops [0], &stops [n], (code->nins - n) * sizeof (int));
 		code->nins -= n;
 	}
 }
@@ -3489,26 +3476,21 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 {
 	int i, ins_type, template, nins_to_emit;
 	int deps_start [16];
+	int stops [16];
 	gboolean found;
-
-	if (!code->automatic) {
-		ia64_emit_bundle_manual (code);
-		return;
-	}
 
 	/*
 	 * We implement a simple scheduler which tries to put three instructions 
 	 * per bundle, then two, then one.
 	 */
-
-	ia64_analyze_deps (code, deps_start);
+	ia64_analyze_deps (code, deps_start, stops);
 
 	if ((code->nins >= 3) && !code->one_ins_per_bundle) {
 		/* Find a suitable template */
 		for (template = 0; template < 32; ++template) {
-			if (stops_in_template [template][0] != code->stops [0] ||
-				stops_in_template [template][1] != code->stops [1] ||
-				stops_in_template [template][2] != code->stops [2])
+			if (stops_in_template [template][0] != stops [0] ||
+				stops_in_template [template][1] != stops [1] ||
+				stops_in_template [template][2] != stops [2])
 				continue;
 
 			found = TRUE;
@@ -3528,7 +3510,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 				found = debug_ins_sched ();
 
 			if (found) {
-				ia64_real_emit_bundle (code, deps_start, 3, template, code->instructions [0], code->instructions [1], code->instructions [2], 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 3, template, code->instructions [0], code->instructions [1], code->instructions [2], 0);
 				break;
 			}
 		}
@@ -3542,9 +3524,9 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 	if ((code->nins >= 2) && !code->one_ins_per_bundle) {
 		/* Try a nop at the end */
 		for (template = 0; template < 32; ++template) {
-			if (stops_in_template [template][0] != code->stops [0] ||
-				((stops_in_template [template][1] != code->stops [1]) &&
-				 (stops_in_template [template][2] != code->stops [1])))
+			if (stops_in_template [template][0] != stops [0] ||
+				((stops_in_template [template][1] != stops [1]) &&
+				 (stops_in_template [template][2] != stops [1])))
 				 
 				continue;
 
@@ -3555,7 +3537,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 			if (!debug_ins_sched ())
 				continue;
 
-			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], code->instructions [1], nops_for_ins_types [ins_types_in_template [template][2]], 1 << 2);
+			ia64_real_emit_bundle (code, deps_start, stops, 2, template, code->instructions [0], code->instructions [1], nops_for_ins_types [ins_types_in_template [template][2]], 1 << 2);
 			break;
 		}
 	}
@@ -3567,9 +3549,9 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 	if ((code->nins >= 2) && !code->one_ins_per_bundle) {
 		/* Try a nop in the middle */
 		for (template = 0; template < 32; ++template) {
-			if (((stops_in_template [template][0] != code->stops [0]) &&
-				 (stops_in_template [template][1] != code->stops [0])) ||
-				stops_in_template [template][2] != code->stops [1])
+			if (((stops_in_template [template][0] != stops [0]) &&
+				 (stops_in_template [template][1] != stops [0])) ||
+				stops_in_template [template][2] != stops [1])
 				continue;
 
 			if (!ITYPE_MATCH (ins_types_in_template [template][0], code->itypes [0]) ||
@@ -3579,7 +3561,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 			if (!debug_ins_sched ())
 				continue;
 
-			ia64_real_emit_bundle (code, deps_start, 2, template, code->instructions [0], nops_for_ins_types [ins_types_in_template [template][1]], code->instructions [1], 1 << 1);
+			ia64_real_emit_bundle (code, deps_start, stops, 2, template, code->instructions [0], nops_for_ins_types [ins_types_in_template [template][1]], code->instructions [1], 1 << 1);
 			break;
 		}
 	}
@@ -3587,8 +3569,8 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 	if ((code->nins >= 2) && flush && !code->one_ins_per_bundle) {
 		/* Try a nop at the beginning */
 		for (template = 0; template < 32; ++template) {
-			if ((stops_in_template [template][1] != code->stops [0]) ||
-				(stops_in_template [template][2] != code->stops [1]))
+			if ((stops_in_template [template][1] != stops [0]) ||
+				(stops_in_template [template][2] != stops [1]))
 				continue;
 
 			if (!ITYPE_MATCH (ins_types_in_template [template][1], code->itypes [0]) ||
@@ -3598,7 +3580,7 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 			if (!debug_ins_sched ())
 				continue;
 
-			ia64_real_emit_bundle (code, deps_start, 2, template, nops_for_ins_types [ins_types_in_template [template][0]], code->instructions [0], code->instructions [1], 1 << 0);
+			ia64_real_emit_bundle (code, deps_start, stops, 2, template, nops_for_ins_types [ins_types_in_template [template][0]], code->instructions [0], code->instructions [1], 1 << 0);
 			break;
 		}
 	}
@@ -3614,43 +3596,43 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 
 	while (nins_to_emit > 0) {
 		if (!debug_ins_sched ())
-			code->stops [0] = 1;
+			stops [0] = 1;
 		switch (code->itypes [0]) {
 		case IA64_INS_TYPE_A:
-			if (code->stops [0])
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			if (stops [0])
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
 			break;
 		case IA64_INS_TYPE_I:
-			if (code->stops [0])
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			if (stops [0])
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MIIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MII, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
 			break;
 		case IA64_INS_TYPE_M:
-			if (code->stops [0])
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+			if (stops [0])
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MIIS, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MII, code->instructions [0], IA64_NOP_I, IA64_NOP_I, 0);
 			break;
 		case IA64_INS_TYPE_B:
-			if (code->stops [0])
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
+			if (stops [0])
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MIBS, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MIB, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MIB, IA64_NOP_M, IA64_NOP_I, code->instructions [0], 0);
 			break;
 		case IA64_INS_TYPE_F:
-			if (code->stops [0])
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+			if (stops [0])
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MFIS, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 1, IA64_TEMPLATE_MFI, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 1, IA64_TEMPLATE_MFI, IA64_NOP_M, code->instructions [0], IA64_NOP_I, 0);
 			break;
 		case IA64_INS_TYPE_LX:
-			if (code->stops [0] || code->stops [1])
-				ia64_real_emit_bundle (code, deps_start, 2, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
+			if (stops [0] || stops [1])
+				ia64_real_emit_bundle (code, deps_start, stops, 2, IA64_TEMPLATE_MLXS, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
 			else
-				ia64_real_emit_bundle (code, deps_start, 2, IA64_TEMPLATE_MLX, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
+				ia64_real_emit_bundle (code, deps_start, stops, 2, IA64_TEMPLATE_MLX, IA64_NOP_M, code->instructions [0], code->instructions [1], 0);
 			nins_to_emit --;
 			break;
 		default:
@@ -3660,6 +3642,22 @@ ia64_emit_bundle (Ia64CodegenState *code, gboolean flush)
 	}
 }
 
+unw_dyn_region_info_t*
+mono_ia64_create_unwind_region (Ia64CodegenState *code)
+{
+	unw_dyn_region_info_t *r;
+
+	g_assert (code->nins == 0);
+	r = g_malloc0 (_U_dyn_region_info_size (code->unw_op_count));
+	memcpy (&r->op, &code->unw_ops, sizeof (unw_dyn_op_t) * code->unw_op_count);
+	r->op_count = code->unw_op_count;
+	r->insn_count = (code->buf - code->region_start) >> 4;
+	code->unw_op_count = 0;
+	code->unw_op_pos = 0;
+	code->region_start = code->buf;
+
+	return r;
+}
 
 static void 
 ia64_patch (unsigned char* code, gpointer target)
@@ -3799,8 +3797,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, i;
 	Ia64CodegenState code;
 	CallInfo *cinfo;
-	unw_dyn_region_info_t *r_pro;
-	int unw_op_count;
 	
 	sig = mono_method_signature (method);
 	pos = 0;
@@ -3817,7 +3813,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->native_code = g_malloc (cfg->code_size);
 
 	ia64_codegen_init (code, cfg->native_code);
-	ia64_codegen_set_automatic (code, FALSE);
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 	if (cfg->param_area)
@@ -3841,42 +3836,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size -= pos;
 
-	/* Initialize unwind info */
-	r_pro = g_malloc0 (_U_dyn_region_info_size (3));
-	unw_op_count = 0;
-
-	ia64_begin_bundle_template (code, IA64_TEMPLATE_MIIS);
+	ia64_unw_save_reg (code, UNW_IA64_AR_PFS, UNW_IA64_GR + cfg->arch.reg_saved_ar_pfs);
 	ia64_alloc (code, cfg->arch.reg_saved_ar_pfs, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
+	ia64_unw_save_reg (code, UNW_IA64_RP, UNW_IA64_GR + cfg->arch.reg_saved_b0);
 	ia64_mov_from_br (code, cfg->arch.reg_saved_b0, IA64_B0);
 
-	_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 0,
-						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + cfg->arch.reg_saved_ar_pfs);
-	_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 1,
-						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + cfg->arch.reg_saved_b0);
-
 	if ((alloc_size || cinfo->stack_usage) && !cfg->arch.omit_fp) {
+		ia64_unw_save_reg (code, UNW_IA64_SP, UNW_IA64_GR + cfg->frame_reg);
 		ia64_mov (code, cfg->frame_reg, IA64_SP);
-		_U_dyn_op_save_reg (&r_pro->op[unw_op_count++], _U_QP_TRUE, /* when=*/ 2,
-							/* reg=*/ UNW_IA64_SP, /* dst=*/ UNW_IA64_GR + cfg->frame_reg);
 	}
 	else {
 		if (cfg->arch.omit_fp && alloc_size && ia64_is_imm14 (-alloc_size)) {
-			/* FIXME: Add unwind info */
+			ia64_unw_add (code, UNW_IA64_SP, (-alloc_size));
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
 		}
-		else
-			ia64_nop_i (code, 0);
 	}
-	ia64_stop (code);
 	ia64_begin_bundle (code);
 
-	/* Finish unwind info */
-	r_pro->op_count = unw_op_count;
-	r_pro->insn_count = (code.buf - cfg->native_code) >> 4;
-
-	cfg->arch.r_pro = r_pro;
-
-	ia64_codegen_set_automatic (code, TRUE);
+	/* Initialize unwind info */
+	cfg->arch.r_pro = mono_ia64_create_unwind_region (&code);
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
@@ -3892,7 +3870,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
 		}
 		else {
-			ia64_movl (code, GP_SCRATCH_REG, -alloc_size); ia64_stop (code);
+			ia64_movl (code, GP_SCRATCH_REG, -alloc_size);
 			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
 		}
 #endif
@@ -4081,17 +4059,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	g_free (cinfo);
 
 	ia64_begin_bundle (code);
-	ia64_codegen_set_automatic (code, FALSE);
 
 	if (cfg->arch.stack_alloc_size && cfg->arch.omit_fp && !ia64_is_imm14 (cfg->arch.stack_alloc_size)) {
-		ia64_begin_bundle_template (code, IA64_TEMPLATE_MLXS);
-		ia64_nop_m (code, 0);
 		ia64_movl (code, GP_SCRATCH_REG, cfg->arch.stack_alloc_size);
-		ia64_stop (code);
-		ia64_begin_bundle (code);
 	}
 
-	ia64_begin_bundle_template (code, IA64_TEMPLATE_MII);
 	if (cfg->arch.stack_alloc_size) {
 		if (cfg->arch.omit_fp) {
 			if (ia64_is_imm14 (cfg->arch.stack_alloc_size))
@@ -4102,20 +4074,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		else
 			ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
 	}
-	else
-		/* FIXME: Optimize this away */
-		ia64_nop_m (code, 0);
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
-	ia64_begin_bundle (code);
-
-	ia64_begin_bundle_template (code, IA64_TEMPLATE_BBBS);
 	ia64_br_ret_reg (code, IA64_B0);
-	ia64_nop_b (code, 0);
-	ia64_nop_b (code, 0); ia64_stop (code);
-	ia64_begin_bundle (code);
 
-	ia64_codegen_set_automatic (code, TRUE);
 	ia64_codegen_close (code);
 
 	cfg->code_len = code.buf - cfg->native_code;

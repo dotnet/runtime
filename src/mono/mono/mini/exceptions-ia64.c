@@ -78,15 +78,16 @@ mono_arch_get_restore_context (void)
 static gpointer
 get_real_call_filter (void)
 {
-	static guint8 *start;
-	static gboolean inited = FALSE;
+	static gpointer filter;
+	guint8 *start;
+	gboolean inited = FALSE;
 	Ia64CodegenState code;
-	int i, in0, local0, out0, nout;
+	int in0, local0, out0, nout;
 	unw_dyn_info_t *di;
-	unw_dyn_region_info_t *r_pro;
+	unw_dyn_region_info_t *r_pro, *r_body, *r_epilog;
 
 	if (inited)
-		return start;
+		return filter;
 
 	start = mono_global_codeman_reserve (1024);
 
@@ -115,18 +116,14 @@ get_real_call_filter (void)
 
 	ia64_codegen_set_one_ins_per_bundle (code, TRUE);
 
+	ia64_unw_save_reg (code, UNW_IA64_AR_PFS, UNW_IA64_GR + local0 + 0);
 	ia64_alloc (code, local0 + 0, local0 - in0, out0 - local0, nout, 0);
+	ia64_unw_save_reg (code, UNW_IA64_RP, UNW_IA64_GR + local0 + 1);
 	ia64_mov_from_br (code, local0 + 1, IA64_B0);
 
-	r_pro = g_malloc0 (_U_dyn_region_info_size (2));
-	r_pro->op_count = 2;
-	r_pro->insn_count = 6;
-	i = 0;
-	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 2,
-						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + local0 + 0);
-	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 5,
-						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + local0 + 1);
-	g_assert ((unsigned) i <= r_pro->op_count);	
+	ia64_begin_bundle (code);
+
+	r_pro = mono_ia64_create_unwind_region (&code);
 
 	/* Frame pointer */
 	ia64_mov (code, IA64_R15, in0 + 0);
@@ -143,6 +140,8 @@ get_real_call_filter (void)
 	/* R8 contains the result of the filter */
 	/* R9 contains the saved apr_pfs value */
 
+	/* FIXME: Add unwind info for this */
+
 	/* The filter returns using br_cond_reg, so have to do another return */
 	ia64_mov_to_ar_i (code, IA64_PFS, IA64_R9);
 	ia64_mov_from_ip (code, GP_SCRATCH_REG);	
@@ -150,9 +149,19 @@ get_real_call_filter (void)
 	ia64_mov_to_br (code, IA64_B0, GP_SCRATCH_REG);
 	ia64_br_ret_reg (code, IA64_B0);
 
+	ia64_begin_bundle (code);
+
+	r_body = mono_ia64_create_unwind_region (&code);
+	r_pro->next = r_body;
+
 	ia64_mov_to_ar_i (code, IA64_PFS, local0 + 0);
 	ia64_mov_ret_to_br (code, IA64_B0, local0 + 1);
 	ia64_br_ret_reg (code, IA64_B0);
+
+	ia64_begin_bundle (code);
+
+	r_epilog = mono_ia64_create_unwind_region (&code);
+	r_body->next = r_epilog;
 
 	ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
@@ -168,22 +177,24 @@ get_real_call_filter (void)
 	di->gp = 0;
 	di->format = UNW_INFO_FORMAT_DYNAMIC;
 	di->u.pi.name_ptr = (unw_word_t)"throw_trampoline";
-	di->u.pi.regions = r_pro;
+	di->u.pi.regions = r_body;
 
 	_U_dyn_register (di);
 
-	return ia64_create_ftnptr (start);
+    filter = ia64_create_ftnptr (start);
+
+	inited = TRUE;
+
+	return filter;
 }
 
 static int
 call_filter (MonoContext *ctx, gpointer ip)
 {
-	static int (*filter) (MonoContext *, gpointer) = NULL;
+	int (*filter) (MonoContext *, gpointer);
 	gpointer fp = MONO_CONTEXT_GET_BP (ctx);
 
-	/* FIXME: thread safety */
-	if (!filter)
-		filter = get_real_call_filter ();
+	filter = get_real_call_filter ();
 
 	return filter (fp, ip);
 }
@@ -198,6 +209,9 @@ call_filter (MonoContext *ctx, gpointer ip)
 gpointer
 mono_arch_get_call_filter (void)
 {
+	/* Initialize the real filter non-lazily */
+	get_real_call_filter ();
+
 	return call_filter;
 }
 

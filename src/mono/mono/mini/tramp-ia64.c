@@ -230,7 +230,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * 16 locals
 	 * 4 output (number of parameters passed to trampoline)
 	 */
+	ia64_unw_save_reg (code, UNW_IA64_AR_PFS, UNW_IA64_GR + l5);
 	ia64_alloc (code, l5, local0 - in0, out0 - local0, 4, 0);
+	ia64_unw_save_reg (code, UNW_IA64_SP, UNW_IA64_GR + l8);
 	ia64_mov (code, l8, IA64_SP);
 	ia64_adds_imm (code, IA64_SP, (-framesize), IA64_SP);
 
@@ -240,22 +242,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	ia64_mov (code, l6, GP_SCRATCH_REG);
 
 	/* Save the calling address */
+	ia64_unw_save_reg (code, UNW_IA64_RP, UNW_IA64_GR + local0 + 7);
 	ia64_mov_from_br (code, l7, IA64_B0);
 
-	/* FIXME: Emit prolog/epilog manually */
-
 	/* Create unwind info for the prolog */
-	r_pro = g_malloc0 (_U_dyn_region_info_size (3));
-	r_pro->op_count = 3;
-	r_pro->insn_count = 16;
-	i = 0;
-	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 2,
-						/* reg=*/ UNW_IA64_AR_PFS, /* dst=*/ UNW_IA64_GR + local0 + 5);
-	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 5,
-						/* reg=*/ UNW_IA64_SP, /* dst=*/ UNW_IA64_GR + local0 + 8);
-	_U_dyn_op_save_reg (&r_pro->op[i++], _U_QP_TRUE, /* when=*/ 14,
-						/* reg=*/ UNW_IA64_RP, /* dst=*/ UNW_IA64_GR + local0 + 7);
-	g_assert ((unsigned) i <= r_pro->op_count);	
+	ia64_begin_bundle (code);
+	r_pro = mono_ia64_create_unwind_region (&code);
 
 	/* Save registers */
 	/* Not needed for jump trampolines */
