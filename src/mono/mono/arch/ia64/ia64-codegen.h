@@ -11,6 +11,10 @@
 #define _IA64_CODEGEN_H_
 
 #include <glib.h>
+#include <string.h>
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 typedef enum {
 	IA64_INS_TYPE_A,
@@ -176,15 +180,19 @@ typedef enum {
  */
 
 #define IA64_INS_BUFFER_SIZE 4
+#define MAX_UNW_OPS 8
 
 typedef struct {
 	guint8 *buf;
-    guint automatic : 1;
 	guint one_ins_per_bundle : 1;
+	int nins, template, dep_info_pos, unw_op_pos, unw_op_count;
 	guint64 instructions [IA64_INS_BUFFER_SIZE];
-	int itypes [IA64_INS_BUFFER_SIZE], stops [IA64_INS_BUFFER_SIZE];
+	int itypes [IA64_INS_BUFFER_SIZE];
+	guint8 *region_start;
 	guint8 dep_info [128];
-	int nins, template, dep_info_pos;
+	unw_dyn_op_t unw_ops [MAX_UNW_OPS];
+	/* The index of the instruction to which the given unw op belongs */
+    guint8 unw_ops_pos [MAX_UNW_OPS];
 } Ia64CodegenState;
 
 #ifdef IA64_SIMPLE_EMIT_BUNDLE
@@ -193,22 +201,14 @@ G_GNUC_UNUSED static void ia64_emit_bundle (Ia64CodegenState *code, gboolean flu
 void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
 #endif
 
-/*
- * There are two code generation modes:
- * - in automatic mode, bundling and stops are handled automatically by the
- *   code generation macros.
- *   FIXME: In order to simplify things, we emit a stop after every instruction for
- *   now.
- * - in non-automatic mode, the caller is responsible for handling bundling and
- *   stops using the appropriate macros.
- */
-
 #define ia64_codegen_init(code, codegen_buf) do { \
     code.buf = codegen_buf; \
+    code.region_start = code.buf; \
     code.nins = 0; \
-    code.automatic = 1; \
     code.one_ins_per_bundle = 0; \
     code.dep_info_pos = 0; \
+    code.unw_op_count = 0; \
+    code.unw_op_pos = 0; \
 } while (0)
 
 #define ia64_codegen_close(code) do { \
@@ -219,23 +219,26 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
     ia64_emit_bundle (&code, TRUE); \
 } while (0)
 
-#define ia64_codegen_set_automatic(code, is_automatic) do { \
-    code.automatic = (is_automatic); \
-} while (0)
-
 #define ia64_codegen_set_one_ins_per_bundle(code, is_one) do { \
     ia64_begin_bundle (code); \
     code.one_ins_per_bundle = (is_one); \
 } while (0)
 
-#define ia64_stop(code) do { \
-    g_assert ((code.nins > 0)); \
-    code.stops [code.nins - 1] = 1; \
-} while (0)
-
 #define ia64_begin_bundle_template(code, bundle_template) do { \
     ia64_emit_bundle (&code, TRUE); \
     code.template = (bundle_template); \
+} while (0)
+
+#define ia64_unw_save_reg(code, reg, dreg) do { \
+    g_assert (code.unw_op_count <= MAX_UNW_OPS); \
+    code.unw_ops_pos [code.unw_op_count] = code.nins; \
+	_U_dyn_op_save_reg (&(code.unw_ops [code.unw_op_count ++]), _U_QP_TRUE, -1, reg, dreg); \
+} while (0)
+
+#define ia64_unw_add(code, reg, val) do { \
+    g_assert (code.unw_op_count <= MAX_UNW_OPS); \
+    code.unw_ops_pos [code.unw_op_count] = code.nins; \
+	_U_dyn_op_add (&(code.unw_ops [code.unw_op_count ++]), _U_QP_TRUE, code.nins, reg, val); \
 } while (0)
 
 #if 0
@@ -246,21 +249,14 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
 #endif
 
 #define ia64_emit_ins(code, itype, ins) do { \
-    if (G_LIKELY (code.automatic)) { \
-		code.instructions [code.nins] = ins; \
-        code.itypes [code.nins] = itype; \
-        code.nins ++; \
-        code.dep_info [code.dep_info_pos ++] = IA64_END_OF_INS; \
-        code.dep_info [code.dep_info_pos ++] = 0; \
-        EMIT_BUNDLE (itype, code); \
-        if (code.nins == IA64_INS_BUFFER_SIZE) \
-           ia64_emit_bundle (&code, FALSE); \
-    } else { \
-        g_assert (code.nins < 3); \
-        code.instructions [code.nins] = ins; \
-        code.itypes [code.nins] = itype; \
-        code.nins ++; \
-    } \
+    code.instructions [code.nins] = ins; \
+    code.itypes [code.nins] = itype; \
+    code.nins ++; \
+    code.dep_info [code.dep_info_pos ++] = IA64_END_OF_INS; \
+    code.dep_info [code.dep_info_pos ++] = 0; \
+    EMIT_BUNDLE (itype, code); \
+    if (code.nins == IA64_INS_BUFFER_SIZE) \
+        ia64_emit_bundle (&code, FALSE); \
 } while (0)
 
 #define ia64_no_stop(code) do { \
@@ -1691,7 +1687,7 @@ typedef enum {
 
 #define ia64_br_call_hint_pred(code, qp, b1, disp, bwh, ph, dh) ia64_b3 ((code), (qp), (b1), (disp), (bwh), (ph), (dh))
 
-#define ia64_b4(code, qp, b2, bwh, ph, dh, x6, btype) do { read_pr ((code), (qp)); read_br ((code), (b2)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_B, (qp), 0, (btype), 6, (ph), 12, (b2), 13, (x6), 27, (bwh), 33, (dh), 35, (0), 37); } while (0)
+#define ia64_b4(code, qp, b2, bwh, ph, dh, x6, btype) do { read_pr ((code), (qp)); read_br_branch ((code), (b2)); check_bwh ((bwh)); check_ph ((ph)); check_dh ((dh)); ia64_emit_ins_8 ((code), IA64_INS_TYPE_B, (qp), 0, (btype), 6, (ph), 12, (b2), 13, (x6), 27, (bwh), 33, (dh), 35, (0), 37); } while (0)
 
 #define ia64_br_cond_reg_hint_pred(code, qp, b1, bwh, ph, dh) ia64_b4 ((code), (qp), (b1), (bwh), (ph), (dh), 0x20, 0)
 #define ia64_br_ia_reg_hint_pred(code, qp, b1, bwh, ph, dh) ia64_b4 ((code), (qp), (b1), (bwh), (ph), (dh), 0x20, 1)
@@ -1898,7 +1894,7 @@ typedef enum {
 
 #define ia64_break_x_pred(code, qp, imm) ia64_x1 ((code), (qp), (imm), 0, 0x00)
 
-#define ia64_x2(code, qp, r1, imm, vc) do { if (code.automatic && (code.nins > IA64_INS_BUFFER_SIZE - 2)) ia64_emit_bundle (&(code), FALSE); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((gint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (gint64)(imm) & 0x7f, (13), (vc), 20, ((gint64)(imm) >> 21) & 0x1, 21, ((gint64)(imm) >> 16) & 0x1f, 22, ((gint64)(imm) >> 7) & 0x1ff, 27, ((gint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
+#define ia64_x2(code, qp, r1, imm, vc) do { if (code.nins > IA64_INS_BUFFER_SIZE - 2) ia64_emit_bundle (&(code), FALSE); read_pr ((code), (qp)); write_gr ((code), (r1)); ia64_emit_ins_1 ((code), IA64_INS_TYPE_LX, ((gint64)(imm) >> 22) & 0x1ffffffffffULL, 0); ia64_emit_ins_9 ((code), IA64_INS_TYPE_LX, (qp), 0, (r1), 6, (gint64)(imm) & 0x7f, (13), (vc), 20, ((gint64)(imm) >> 21) & 0x1, 21, ((gint64)(imm) >> 16) & 0x1f, 22, ((gint64)(imm) >> 7) & 0x1ff, 27, ((gint64)(imm) >> 63) & 0x1, 36, (6), 37); } while (0)
 
 #define ia64_movl_pred(code, qp, r1, imm) ia64_x2 ((code), (qp), (r1), (imm), 0)
 
