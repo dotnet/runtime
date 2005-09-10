@@ -6905,6 +6905,20 @@ mono_init_trampolines (void)
 #endif
 }
 
+static void
+mono_init_exceptions (void)
+{
+	mono_arch_get_restore_context ();
+	mono_arch_get_call_filter ();
+	mono_arch_get_throw_exception ();
+	mono_arch_get_rethrow_exception ();
+	mono_arch_get_throw_exception_by_name ();
+
+#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
+	mono_arch_get_throw_corlib_exception ();
+#endif
+}
+
 guint8 *
 mono_get_trampoline_code (MonoTrampolineType tramp_type)
 {
@@ -10101,6 +10115,8 @@ mini_init (const char *filename)
 	mono_arch_cpu_init ();
 
 	mono_init_trampolines ();
+
+	mono_init_exceptions ();
 
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
