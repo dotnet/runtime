@@ -6913,10 +6913,6 @@ mono_init_exceptions (void)
 	mono_arch_get_throw_exception ();
 	mono_arch_get_rethrow_exception ();
 	mono_arch_get_throw_exception_by_name ();
-
-#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
-	mono_arch_get_throw_corlib_exception ();
-#endif
 }
 
 guint8 *
