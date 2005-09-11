@@ -115,6 +115,7 @@ typedef enum {
 } Ia64BranchRegister;
 
 typedef enum {
+	IA64_CCV = 32,
 	IA64_PFS = 64
 } Ia64ApplicationRegister;
 
@@ -239,6 +240,12 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
     g_assert (code.unw_op_count <= MAX_UNW_OPS); \
     code.unw_ops_pos [code.unw_op_count] = code.nins; \
 	_U_dyn_op_add (&(code.unw_ops [code.unw_op_count ++]), _U_QP_TRUE, code.nins, reg, val); \
+} while (0)
+
+#define ia64_unw_pop_frames(code, nframes) do { \
+    g_assert (code.unw_op_count <= MAX_UNW_OPS); \
+    code.unw_ops_pos [code.unw_op_count] = code.nins; \
+	_U_dyn_op_pop_frames (&(code.unw_ops [code.unw_op_count ++]), _U_QP_TRUE, code.nins, (nframes)); \
 } while (0)
 
 #if 0
