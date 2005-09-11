@@ -2899,7 +2899,6 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	} else if (cmethod->klass == mono_defaults.thread_class) {
 		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg)))
 			return ins;
-		return NULL;
 	}
 
 	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);

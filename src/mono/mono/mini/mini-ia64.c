@@ -3013,6 +3013,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_ld8 (code, ins->dreg, ins->dreg);
 			break;
 
+			/* Synchronization */
+		case OP_MEMORY_BARRIER:
+			ia64_mf (code);
+			break;
+
 			/* Exception handling */
 		case OP_CALL_HANDLER:
 			/*
@@ -4564,116 +4569,12 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 {
 	MonoInst *ins = NULL;
 
-	/* FIXME: */
-	return NULL;
-
-	if (cmethod->klass == mono_defaults.math_class) {
-		if (strcmp (cmethod->name, "Sin") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_SIN);
-			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Cos") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_COS);
-			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Tan") == 0) {
-				return ins;
-			MONO_INST_NEW (cfg, ins, OP_TAN);
-			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Atan") == 0) {
-				return ins;
-			MONO_INST_NEW (cfg, ins, OP_ATAN);
-			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_SQRT);
-			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
-			MONO_INST_NEW (cfg, ins, OP_ABS);
-			ins->inst_i0 = args [0];
-		}
-#if 0
-		/* OP_FREM is not IEEE compatible */
-		else if (strcmp (cmethod->name, "IEEERemainder") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_FREM);
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
-		}
-#endif
-	} else if(cmethod->klass->image == mono_defaults.corlib &&
-			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
-			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
-
-		if (strcmp (cmethod->name, "Increment") == 0) {
-			MonoInst *ins_iconst;
-			guint32 opcode;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
-			else
-				g_assert_not_reached ();
-			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_c0 = 1;
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
-		} else if (strcmp (cmethod->name, "Decrement") == 0) {
-			MonoInst *ins_iconst;
-			guint32 opcode;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
-			else
-				g_assert_not_reached ();
-			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_c0 = -1;
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
-		} else if (strcmp (cmethod->name, "Add") == 0) {
-			guint32 opcode;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_I8;
-			else
-				g_assert_not_reached ();
-			
-			MONO_INST_NEW (cfg, ins, opcode);
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
-		} else if (strcmp (cmethod->name, "Exchange") == 0) {
-			guint32 opcode;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_EXCHANGE_I4;
-			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
-					 (fsig->params [0]->type == MONO_TYPE_I) ||
-					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
-				opcode = OP_ATOMIC_EXCHANGE_I8;
-			else
-				return NULL;
-
-			MONO_INST_NEW (cfg, ins, opcode);
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
-		} else if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
-			/* 64 bit reads are already atomic */
-			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
-			ins->inst_i0 = args [0];
-		}
-
-		/* 
-		 * Can't implement CompareExchange methods this way since they have
-		 * three arguments.
-		 */
+	if (cmethod->klass == mono_defaults.thread_class &&
+		strcmp (cmethod->name, "MemoryBarrier") == 0) {
+		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
 	}
+
+	/* FIXME: Add interlocked ops */
 
 	return ins;
 }
