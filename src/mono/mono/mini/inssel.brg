@@ -408,6 +408,10 @@ stmt: OP_DUMMY_STORE {
 stmt: OP_NOT_REACHED {
 }
 
+stmt: OP_MEMORY_BARRIER {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 #
 # load/store operations
 #
