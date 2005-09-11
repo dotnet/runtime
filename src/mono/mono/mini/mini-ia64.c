@@ -1598,6 +1598,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IA64_FETCHADD4_IMM:
 		case OP_IA64_FETCHADD8_IMM:
+		case OP_ATOMIC_EXCHANGE_I4:
+		case OP_ATOMIC_EXCHANGE_I8:
 			/* There are no membase instructions on ia64 */
 			if (ia64_is_imm14 (ins->inst_offset)) {
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
@@ -3042,6 +3044,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->inst_offset == 0);
 			ia64_fetchadd4_acq_hint (code, ins->dreg, ins->inst_basereg, ins->inst_imm, 0);
 			ia64_adds_imm (code, ins->dreg, ins->inst_imm, ins->dreg);
+			break;
+		case OP_IA64_FETCHADD8_IMM:
+			g_assert (ins->inst_offset == 0);
+			ia64_fetchadd8_acq_hint (code, ins->dreg, ins->inst_basereg, ins->inst_imm, 0);
+			ia64_adds_imm (code, ins->dreg, ins->inst_imm, ins->dreg);
+			break;
+		case OP_ATOMIC_EXCHANGE_I4:
+			ia64_xchg4_hint (code, ins->dreg, ins->inst_basereg, ins->sreg2, 0);
+			ia64_sxt4 (code, ins->dreg, ins->dreg);
+			break;
+		case OP_ATOMIC_EXCHANGE_I8:
+			ia64_xchg8_hint (code, ins->dreg, ins->inst_basereg, ins->sreg2, 0);
 			break;
 
 			/* Exception handling */
@@ -4634,7 +4648,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = ins_iconst;
-#if 0
 			/* FIXME: */
 		} else if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
@@ -4652,7 +4665,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
-#endif
 		} else if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
 			/* 64 bit reads are already atomic */
 			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
