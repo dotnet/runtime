@@ -4725,7 +4725,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 		}
 #endif
 	} else if (cmethod->klass == mono_defaults.thread_class &&
-			   strcmp (cmethod->name, "MemoryBarrier")) {
+			   strcmp (cmethod->name, "MemoryBarrier") == 0) {
 		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
 	} else if(cmethod->klass->image == mono_defaults.corlib &&
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
