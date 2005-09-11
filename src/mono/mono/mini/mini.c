@@ -6911,7 +6911,6 @@ mono_init_exceptions (void)
 	mono_arch_get_call_filter ();
 	mono_arch_get_throw_exception ();
 	mono_arch_get_rethrow_exception ();
-	mono_arch_get_throw_exception_by_name ();
 }
 
 guint8 *
