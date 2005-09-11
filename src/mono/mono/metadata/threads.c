@@ -471,7 +471,6 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 {
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
-	MonoMethod *im;
 	HANDLE thread;
 	gsize tid;
 	
@@ -1299,6 +1298,13 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 
 	return res;
 #endif
+}
+
+void
+ves_icall_System_Threading_Thread_MemoryBarrier (void)
+{
+	/* Should be implemented as a JIT intrinsic */
+	mono_raise_exception (mono_get_exception_not_implemented (NULL));
 }
 
 void

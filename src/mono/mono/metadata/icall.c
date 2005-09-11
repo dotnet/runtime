@@ -6944,6 +6944,7 @@ static const IcallEntry thread_icalls [] = {
 	{"GetSerializedCurrentUICulture", ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture},
 	{"GetState", ves_icall_System_Threading_Thread_GetState},
 	{"Join_internal", ves_icall_System_Threading_Thread_Join_internal},
+	{"MemoryBarrier", ves_icall_System_Threading_Thread_MemoryBarrier},
 	{"ResetAbort_internal()", ves_icall_System_Threading_Thread_ResetAbort},
 	{"Resume_internal()", ves_icall_System_Threading_Thread_Resume},
 	{"SetCachedCurrentCulture", ves_icall_System_Threading_Thread_SetCachedCurrentCulture},

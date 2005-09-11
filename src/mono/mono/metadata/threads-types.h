@@ -106,5 +106,6 @@ void ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32);
 void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64);
 void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *);
 
+void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
