@@ -54,7 +54,7 @@ static const char*const * ins_spec = ia64_desc;
  * ia64_codegen_set_one_ins_per_bundle () at those places.
  */
 
-#define SIGNAL_STACK_SIZE (64 * 1024)
+#define SIGNAL_STACK_SIZE SIGSTKSZ
 
 #define ARGS_OFFSET 16
 
@@ -2991,9 +2991,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+		case CEE_BREAK:
+			code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, mono_arch_break);
+			break;
 
 		case OP_LOCALLOC: {
 			gint32 abi_offset;
+
+			/* FIXME: Sigaltstack support */
 
 			/* keep alignment */
 			ia64_adds_imm (code, GP_SCRATCH_REG, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->sreg1);
@@ -3890,36 +3895,41 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ia64_unw_save_reg (code, UNW_IA64_SP, UNW_IA64_GR + cfg->frame_reg);
 		ia64_mov (code, cfg->frame_reg, IA64_SP);
 	}
-	else {
-		if (cfg->arch.omit_fp && alloc_size && ia64_is_imm14 (-alloc_size)) {
-			ia64_unw_add (code, UNW_IA64_SP, (-alloc_size));
+
+	if (alloc_size) {
+		int pagesize = getpagesize ();
+
+#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+		if (alloc_size >= pagesize) {
+			gint32 remaining_size = alloc_size;
+
+			/* Generate stack touching code */
+			ia64_mov (code, GP_SCRATCH_REG, IA64_SP);			
+			while (remaining_size >= pagesize) {
+				ia64_movl (code, GP_SCRATCH_REG2, pagesize);
+				ia64_sub (code, GP_SCRATCH_REG, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+				ia64_ld8 (code, GP_SCRATCH_REG2, GP_SCRATCH_REG);
+				remaining_size -= pagesize;
+			}
+		}
+#endif
+		if (ia64_is_imm14 (-alloc_size)) {
+			if (cfg->arch.omit_fp)
+				ia64_unw_add (code, UNW_IA64_SP, (-alloc_size));
 			ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
 		}
+		else {
+			ia64_movl (code, GP_SCRATCH_REG, -alloc_size);
+			if (cfg->arch.omit_fp)
+				ia64_unw_add (code, UNW_IA64_SP, (-alloc_size));
+			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+		}
 	}
+
 	ia64_begin_bundle (code);
 
 	/* Initialize unwind info */
 	cfg->arch.r_pro = mono_ia64_create_unwind_region (&code);
-
-	if (alloc_size) {
-		/* See mono_emit_stack_alloc */
-#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
-		NOT_IMPLEMENTED;
-#else
-
-		if (ia64_is_imm14 (-alloc_size)) {
-			if (cfg->arch.omit_fp)
-				/* Already done */
-				;
-			else
-				ia64_adds_imm (code, IA64_SP, (-alloc_size), IA64_SP);
-		}
-		else {
-			ia64_movl (code, GP_SCRATCH_REG, -alloc_size);
-			ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
-		}
-#endif
-	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
@@ -4018,6 +4028,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* No LMF on IA64 */
 	}
 
+	if (strstr (cfg->method->name, "end_invoke_int_IAsyncResult"))
+		code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, mono_arch_break);
+
 	ia64_codegen_close (code);
 
 	g_free (cinfo);
@@ -4105,25 +4118,33 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	ia64_begin_bundle (code);
 
-	if (cfg->arch.stack_alloc_size && cfg->arch.omit_fp && !ia64_is_imm14 (cfg->arch.stack_alloc_size)) {
-		ia64_movl (code, GP_SCRATCH_REG, cfg->arch.stack_alloc_size);
-	}
+	code.region_start = cfg->native_code;
 
 	if (cfg->arch.stack_alloc_size) {
 		if (cfg->arch.omit_fp) {
-			if (ia64_is_imm14 (cfg->arch.stack_alloc_size))
+			if (ia64_is_imm14 (cfg->arch.stack_alloc_size)) {
+				ia64_unw_pop_frames (code, 1);
 				ia64_adds_imm (code, IA64_SP, (cfg->arch.stack_alloc_size), IA64_SP);
-			else
+			} else {
+				ia64_movl (code, GP_SCRATCH_REG, cfg->arch.stack_alloc_size);
+				ia64_unw_pop_frames (code, 1);
 				ia64_add (code, IA64_SP, GP_SCRATCH_REG, IA64_SP);
+			}
 		}
-		else
+		else {
+			ia64_unw_pop_frames (code, 1);
 			ia64_mov (code, IA64_SP, cfg->arch.reg_saved_sp);
+		}
 	}
 	ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
 	ia64_mov_ret_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
 	ia64_br_ret_reg (code, IA64_B0);
 
 	ia64_codegen_close (code);
+
+	/* FIXME: This doesn't work yet */
+	cfg->arch.r_epilog = mono_ia64_create_unwind_region (&code);
+	//	cfg->arch.r_pro->next = cfg->arch.r_epilog;
 
 	cfg->code_len = code.buf - cfg->native_code;
 
@@ -4520,7 +4541,59 @@ static gboolean tls_offset_inited = FALSE;
 static void
 setup_stack (MonoJitTlsData *tls)
 {
-	NOT_IMPLEMENTED;
+	pthread_t self = pthread_self();
+	pthread_attr_t attr;
+	size_t stsize = 0;
+	struct sigaltstack sa;
+	guint8 *staddr = NULL;
+	guint8 *current = (guint8*)&staddr;
+	int res;
+
+	if (mono_running_on_valgrind ())
+		return;
+
+	/* Determine stack boundaries */
+#ifdef HAVE_PTHREAD_GETATTR_NP
+	pthread_getattr_np( self, &attr );
+#else
+#ifdef HAVE_PTHREAD_ATTR_GET_NP
+	pthread_attr_get_np( self, &attr );
+#elif defined(sun)
+	pthread_attr_init( &attr );
+	pthread_attr_getstacksize( &attr, &stsize );
+#else
+#error "Not implemented"
+#endif
+#endif
+#ifndef sun
+	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
+#endif
+
+	g_assert (staddr);
+
+	g_assert ((current > staddr) && (current < staddr + stsize));
+
+	tls->end_of_stack = staddr + stsize;
+
+	/*
+	 * threads created by nptl does not seem to have a guard page, and
+	 * since the main thread is not created by us, we can't even set one.
+	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
+	 * is a stack overflow exception.
+	 */
+	tls->stack_size = stsize + getpagesize ();
+
+	/* Setup an alternate signal stack */
+	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	tls->signal_stack_size = SIGNAL_STACK_SIZE;
+
+	g_assert (tls->signal_stack);
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_ONSTACK;
+	res = sigaltstack (&sa, NULL);
+	g_assert (res == 0);
 }
 
 #endif

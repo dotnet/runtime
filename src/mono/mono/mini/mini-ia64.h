@@ -63,7 +63,7 @@ typedef struct MonoCompileArch {
 	gint32 reg_saved_return_val;
 	guint32 prolog_end_offset, epilog_begin_offset, epilog_end_offset;
 	void *ret_var_addr_local;
-	unw_dyn_region_info_t *r_pro;
+	unw_dyn_region_info_t *r_pro, *r_epilog;
 	void *last_bb;
 	Ia64CodegenState code;
 	gboolean omit_fp;
@@ -149,8 +149,7 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 #define MONO_ARCH_USE_SIGACTION 1
 
 #ifdef HAVE_WORKING_SIGALTSTACK
-/* FIXME: */
-//#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #endif
 
 unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
