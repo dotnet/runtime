@@ -3701,7 +3701,7 @@ mono_ia64_create_unwind_region (Ia64CodegenState *code)
 	r = g_malloc0 (_U_dyn_region_info_size (code->unw_op_count));
 	memcpy (&r->op, &code->unw_ops, sizeof (unw_dyn_op_t) * code->unw_op_count);
 	r->op_count = code->unw_op_count;
-	r->insn_count = (code->buf - code->region_start) >> 4;
+	r->insn_count = ((code->buf - code->region_start) >> 4) * 3;
 	code->unw_op_count = 0;
 	code->unw_op_pos = 0;
 	code->region_start = code->buf;
@@ -4120,6 +4120,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	code.region_start = cfg->native_code;
 
+	/* Label the unwind state at the start of the exception throwing region */
+	//ia64_unw_label_state (code, 1234);
+
 	if (cfg->arch.stack_alloc_size) {
 		if (cfg->arch.omit_fp) {
 			if (ia64_is_imm14 (cfg->arch.stack_alloc_size)) {
@@ -4142,9 +4145,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	ia64_codegen_close (code);
 
-	/* FIXME: This doesn't work yet */
 	cfg->arch.r_epilog = mono_ia64_create_unwind_region (&code);
-	//	cfg->arch.r_pro->next = cfg->arch.r_epilog;
+	cfg->arch.r_pro->next = cfg->arch.r_epilog;
 
 	cfg->code_len = code.buf - cfg->native_code;
 
@@ -4158,6 +4160,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	int nthrows;
 	Ia64CodegenState code;
 	gboolean empty = TRUE;
+	//unw_dyn_region_info_t *r_exceptions;
+
 	/*
 	MonoClass *exc_classes [16];
 	guint8 *exc_throw_start [16], *exc_throw_end [16];
@@ -4174,6 +4178,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			code_size += 4 + 7; /* sizeof (float) + alignment */
 	}
 
+	if (code_size == 0)
+		return;
+
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
@@ -4181,6 +4188,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	}
 
 	ia64_codegen_init (code, cfg->native_code + cfg->code_len);
+
+	/* The unwind state here is the same as before the epilog */
+	//ia64_unw_copy_state (code, 1234);
 
 	/* add code to raise exceptions */
 	/* FIXME: Optimize this */
@@ -4233,6 +4243,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		ia64_break_i (code, 0);
 
 	ia64_codegen_close (code);
+
+	/* FIXME: */
+	//r_exceptions = mono_ia64_create_unwind_region (&code);
+	//cfg->arch.r_epilog = r_exceptions;
 
 	cfg->code_len = code.buf - cfg->native_code;
 
@@ -4404,6 +4418,18 @@ mono_arch_save_unwind_info (MonoCompile *cfg)
 	di->u.pi.regions = cfg->arch.r_pro;
 
 	_U_dyn_register (di);
+
+	/*
+	{
+		unw_dyn_region_info_t *region = di->u.pi.regions;
+
+		printf ("Unwind info for method %s:\n", mono_method_full_name (cfg->method, TRUE));
+		while (region) {
+			printf ("    [Region: %d]\n", region->insn_count);
+			region = region->next;
+		}
+	}
+	*/
 }
 
 void

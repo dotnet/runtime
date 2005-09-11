@@ -42,6 +42,24 @@
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 
+static void
+print_ctx (MonoContext *ctx)
+{
+	char name[256];
+	unw_word_t off, ip, sp;
+	unw_proc_info_t pi;
+	int res;
+
+	unw_get_proc_name (&ctx->cursor, name, 256, &off);
+	unw_get_proc_info(&ctx->cursor, &pi);
+	res = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
+	g_assert (res == 0);
+	res = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
+	g_assert (res == 0);
+
+	printf ("%s:%lx [%lx-%lx] SP: %lx\n", name, ip - pi.start_ip, pi.start_ip, pi.end_ip, sp);
+}
+
 static gpointer
 ia64_create_ftnptr (gpointer ptr)
 {
@@ -56,6 +74,10 @@ static void
 restore_context (MonoContext *ctx)
 {
 	int res;
+	unw_word_t ip;
+
+	res = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
+	g_assert (res == 0);
 
 	/* Set this to 0 to tell OP_START_HANDLER that it doesn't have to set the frame pointer */
 	res = unw_set_reg (&ctx->cursor, UNW_IA64_GR + 15, 0);
@@ -221,7 +243,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 	unw_context_t unw_ctx;
 	MonoContext ctx;
 	MonoJitInfo *ji;
-	unw_word_t ip;
+	unw_word_t ip, sp;
 	int res;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
@@ -244,7 +266,12 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 		res = unw_get_reg (&ctx.cursor, UNW_IA64_IP, &ip);
 		g_assert (res == 0);
 
+		res = unw_get_reg (&ctx.cursor, UNW_IA64_SP, &sp);
+		g_assert (res == 0);
+
 		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)ip);
+
+		//printf ("UN: %s %lx %lx\n", ji ? ji->method->name : "", ip, sp);
 
 		if (ji)
 			break;
@@ -548,8 +575,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	}
 
 	if (ji) {
+		//print_ctx (new_ctx);
+
 		err = unw_step (&new_ctx->cursor);
 		g_assert (err >= 0);
+
+		//print_ctx (new_ctx);
 
 		return ji;
 	}
