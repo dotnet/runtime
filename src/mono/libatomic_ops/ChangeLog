@@ -1,0 +1,78 @@
+2005-03-21 Hans Boehm <Hans.Boehm@hp.com>
+	Fix various acquire_release_volatile.h files to reflect the fact
+	that both icc and gcc seem to reorder ordinary memory accesses around
+	volatile accesses early in the compilation. Modify the acquire
+	release test to catch this problem (with high probablity, and only on
+	a multiprocessor).
+
+2005-03	Hans Boehm <Hans.Boehm@hp.com>
+	Fixes for recently introduced bugs.  Update x86 and x86-64 assembly
+	syntax to deal with complaints by some recent gcc versions.
+	
+2005-02	Hans Boehm <Hans.Boehm@hp.com>
+	Added libatomic_ops_gpl library with support for mostly
+	lock-free stack and malloc().
+
+2005-01 Ian Wienand <ianw@gelato.unsw.edu.au>, Al Stone <ahs3@debian.org>,
+	Hans Boehm <Hans.Boehm@hp.com>
+	Use autoconf, automake, starting with code from Debian package.
+	Don't use libtool.
+
+2005-01	Hans Boehm <Hans.Boehm@hp.com>
+	* test_and_set_t_is_ao_t.h, test_and_set_t_is_char.h, others:
+	Change most platforms to use byte-wide test-and-set locations.
+	
+2005-01	Hans Boehm <Hans.Boehm@hp.com>
+	* ao_t_is_int.h: Add to trivially support int-wide operations
+	on platforms with int-sized pointers.
+
+2004-12	Hans Boehm <Hans.Boehm@hp.com>
+	* gcc/powerpc.h: First serious attempt to support PowerPC (with
+	help from Maged Michael and others).
+
+2004-12	Hans Boehm <Hans.Boehm@hp.com>
+	* sunc/sparc.[hS]: Added minimal supprt for the Sun SPARC compiler.
+	* atomic_ops_sysdeps.S: Add support for platforms that require
+	out-of-line assmebly code.
+
+2004-10 Hans Boehm <Hans.Boehm@hp.com>
+	More work on char, short, int sized data.  Add both
+	compare_double_and_swap_double and compare_and_swap_double.
+	Typically each platform will provide at most one of these.
+
+2004-07-02 Ranko Zivojnovic
+	Replace both instances of AO_HAVE_NOP_FULL with AO_HAVE_nop_full.
+
+2004-06 Hans Boehm <Hans.Boehm@hp.com>
+	Start to add atomic_ops primitives for different sized data.
+
+2003-12-18  Hans Boehm  <Hans.Boehm@hp.com>
+	* atomic_ops/sysdeps/acquire_release_volatile.h, atomic_ops.h:
+	Fix support for ecc on IA64.  Remove compiler_barrier workaround
+	for gcc 3.4 and later.
+
+2003-12-17  Hans Boehm  <Hans.Boehm@hp.com>
+	* atomic_ops/sysdeps/hpc/{ia64.h,hppa.h},
+	atomic_ops/sysdeps/msftc/x86.h, Makefile, Makefile.atomic_ops,
+	Makefile.atomic_ops.msft, atomic_ops.h: Add initial support
+	for atomic_ops for VC++/Windows/X86 and HP/UX with the HP
+	compiler on PA_RISC and IA64.
+
+2003-12-09  Hans Boehm  <Hans.Boehm@hp.com>
+
+	* many: Install under "atomic_ops" instead of "ao".
+	Change atomic_ops include file structure.  Auxiliary include
+	files are all under include/atomic_ops.
+	Fix (hopefully) "make dist" in atomic_ops distribution.
+	Renamed various types to end in _t, though the old versions
+	are still defined for backward compatibility.
+
+2003-12-08  Carlos O'Donell  <carlos@baldric.uwo.ca>
+
+	* ao_sysdeps/gcc/hppa.h: Define AO_CLEAR macro. Change 
+	AO_pa_clearable_loc type. Add __ldcw, and __ldcw_align
+	helper macros. AO_test_and_set_full uses helper macros.
+
+
+Started sometime after version 0.4 release.  Currently the format is
+informal.  Eventually should become more GNU-like.

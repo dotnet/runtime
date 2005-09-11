@@ -1,0 +1,203 @@
+/*
+ * Copyright (c) 2003 by Hewlett-Packard Company.  All rights reserved.
+ *
+ * This file is covered by the GNU general public license, version 2.
+ * see doc/COPYING for details.
+ */
+
+/* Some basic sanity tests.  These do not test the barrier semantics. */
+
+#undef TA_assert
+#define TA_assert(e) \
+  if (!(e)) { fprintf(stderr, "Assertion failed %s:%d (barrier: XX)\n", \
+		    __FILE__, __LINE__), exit(1); }
+
+#undef MISSING
+#define MISSING(name) \
+  fprintf(stderr, "Missing: %s\n", #name "XX")
+
+void test_atomicXX(void)
+{
+  AO_t x;
+  unsigned char b;
+  unsigned short s;
+  unsigned int zz;
+# if defined(AO_HAVE_test_and_setXX)
+    AO_TS_t z = AO_TS_INITIALIZER;
+# endif
+# if defined(AO_HAVE_double_t)
+    AO_double_t w;
+    w.AO_val1 = 0;
+    w.AO_val2 = 0;
+# endif
+
+# if defined(AO_HAVE_nopXX)
+    AO_nopXX();
+# else
+    MISSING(AO_nop);
+# endif
+# if defined(AO_HAVE_storeXX)
+    AO_storeXX(&x, 13);
+    TA_assert (x == 13);
+# else
+    MISSING(AO_store);
+    x = 13;
+# endif
+# if defined(AO_HAVE_loadXX)
+    TA_assert(AO_loadXX(&x) == 13);
+# else
+    MISSING(AO_load);
+# endif
+# if defined(AO_HAVE_test_and_setXX)
+    assert(AO_test_and_setXX(&z) == AO_TS_CLEAR);
+    assert(AO_test_and_setXX(&z) == AO_TS_SET);
+    assert(AO_test_and_setXX(&z) == AO_TS_SET);
+    AO_CLEAR(&z);
+# else
+    MISSING(AO_test_and_set);
+# endif
+# if defined(AO_HAVE_fetch_and_addXX)
+    TA_assert(AO_fetch_and_addXX(&x, 42) == 13);
+    TA_assert(AO_fetch_and_addXX(&x, -42) == 55);
+# else
+    MISSING(AO_fetch_and_add);
+# endif
+# if defined(AO_HAVE_fetch_and_add1XX)
+    TA_assert(AO_fetch_and_add1XX(&x) == 13);
+# else
+    MISSING(AO_fetch_and_add1);
+    ++x;
+# endif
+# if defined(AO_HAVE_fetch_and_sub1XX)
+    TA_assert(AO_fetch_and_sub1XX(&x) == 14);
+# else
+    MISSING(AO_fetch_and_sub1);
+    --x;
+# endif
+# if defined(AO_HAVE_short_storeXX)
+    AO_short_storeXX(&s, 13);
+# else
+    MISSING(AO_short_store);
+    s = 13;
+# endif
+# if defined(AO_HAVE_short_loadXX)
+    TA_assert(AO_short_load(&s) == 13);
+# else
+    MISSING(AO_short_load);
+# endif
+# if defined(AO_HAVE_short_fetch_and_addXX)
+    TA_assert(AO_short_fetch_and_addXX(&s, 42) == 13);
+    TA_assert(AO_short_fetch_and_addXX(&s, -42) == 55);
+# else
+    MISSING(AO_short_fetch_and_add);
+# endif
+# if defined(AO_HAVE_short_fetch_and_add1XX)
+    TA_assert(AO_short_fetch_and_add1XX(&s) == 13);
+# else
+    MISSING(AO_short_fetch_and_add1);
+    ++s;
+# endif
+# if defined(AO_HAVE_short_fetch_and_sub1XX)
+    TA_assert(AO_short_fetch_and_sub1XX(&s) == 14);
+# else
+    MISSING(AO_short_fetch_and_sub1);
+    --s;
+# endif
+# if defined(AO_HAVE_char_storeXX)
+    AO_char_storeXX(&b, 13);
+# else
+    MISSING(AO_char_store);
+    b = 13;
+# endif
+# if defined(AO_HAVE_char_loadXX)
+    TA_assert(AO_char_load(&b) == 13);
+# else
+    MISSING(AO_char_load);
+# endif
+# if defined(AO_HAVE_char_fetch_and_addXX)
+    TA_assert(AO_char_fetch_and_addXX(&b, 42) == 13);
+    TA_assert(AO_char_fetch_and_addXX(&b, -42) == 55);
+# else
+    MISSING(AO_char_fetch_and_add);
+# endif
+# if defined(AO_HAVE_char_fetch_and_add1XX)
+    TA_assert(AO_char_fetch_and_add1XX(&b) == 13);
+# else
+    MISSING(AO_char_fetch_and_add1);
+    ++b;
+# endif
+# if defined(AO_HAVE_char_fetch_and_sub1XX)
+    TA_assert(AO_char_fetch_and_sub1XX(&b) == 14);
+# else
+    MISSING(AO_char_fetch_and_sub1);
+    --b;
+# endif
+# if defined(AO_HAVE_int_storeXX)
+    AO_int_storeXX(&zz, 13);
+# else
+    MISSING(AO_int_store);
+    zz = 13;
+# endif
+# if defined(AO_HAVE_int_loadXX)
+    TA_assert(AO_int_load(&zz) == 13);
+# else
+    MISSING(AO_int_load);
+# endif
+# if defined(AO_HAVE_int_fetch_and_addXX)
+    TA_assert(AO_int_fetch_and_addXX(&zz, 42) == 13);
+    TA_assert(AO_int_fetch_and_addXX(&zz, -42) == 55);
+# else
+    MISSING(AO_int_fetch_and_add);
+# endif
+# if defined(AO_HAVE_int_fetch_and_add1XX)
+    TA_assert(AO_int_fetch_and_add1XX(&zz) == 13);
+# else
+    MISSING(AO_int_fetch_and_add1);
+    ++zz;
+# endif
+# if defined(AO_HAVE_int_fetch_and_sub1XX)
+    TA_assert(AO_int_fetch_and_sub1XX(&zz) == 14);
+# else
+    MISSING(AO_int_fetch_and_sub1);
+    --zz;
+# endif
+# if defined(AO_HAVE_compare_and_swapXX)
+    TA_assert(!AO_compare_and_swapXX(&x, 14, 42));
+    TA_assert(x == 13);
+    TA_assert(AO_compare_and_swapXX(&x, 13, 42));
+    TA_assert(x == 42);
+# else
+    MISSING(AO_compare_and_swap);
+# endif
+# if defined(AO_HAVE_orXX)
+    AO_orXX(&x, 66);
+    TA_assert(x == 106);
+# else
+    MISSING(AO_or);
+    x |= 34;
+# endif
+# if defined(AO_HAVE_compare_double_and_swap_doubleXX)
+    TA_assert(!AO_compare_double_and_swap_doubleXX(&w, 17, 42, 12, 13));
+    TA_assert(w.AO_val1 == 0 && w.AO_val2 == 0);
+    TA_assert(AO_compare_double_and_swap_doubleXX(&w, 0, 0, 12, 13));
+    TA_assert(w.AO_val1 == 12 && w.AO_val2 == 13);
+    TA_assert(AO_compare_double_and_swap_doubleXX(&w, 12, 13, 17, 42));
+    TA_assert(w.AO_val1 == 17 && w.AO_val2 == 42);
+    w.AO_val1 = 0; w.AO_val2 = 0;
+# else
+    MISSING(AO_compare_double_and_swap_double);
+# endif
+# if defined(AO_HAVE_compare_and_swap_doubleXX)
+    TA_assert(!AO_compare_and_swap_doubleXX(&w, 17, 12, 13));
+    TA_assert(w.AO_val1 == 0 && w.AO_val2 == 0);
+    TA_assert(AO_compare_and_swap_doubleXX(&w, 0, 12, 13));
+    TA_assert(w.AO_val1 == 12 && w.AO_val2 == 13);
+    TA_assert(AO_compare_and_swap_doubleXX(&w, 12, 17, 42));
+    TA_assert(w.AO_val1 == 17 && w.AO_val2 == 42);
+# else
+    MISSING(AO_compare_and_swap_double);
+# endif
+}
+
+
+    
