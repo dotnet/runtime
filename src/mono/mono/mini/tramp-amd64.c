@@ -235,10 +235,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Save fp */
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
 	/* Save method */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC)
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
-	else
-		amd64_mov_reg_imm (code, AMD64_R11, 0);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
 	/* Save callee saved regs */
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
