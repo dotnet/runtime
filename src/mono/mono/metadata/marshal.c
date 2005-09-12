@@ -5793,9 +5793,10 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		src = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 		dest = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		dest = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			
 		mono_mb_emit_stloc (mb, src);
+		mono_mb_emit_ldloc (mb, src);
+		mono_mb_emit_stloc (mb, 3);
 
 		/* Check for null */
 		mono_mb_emit_ldloc (mb, src);
