@@ -1752,6 +1752,9 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 	char **arr = d (2);
 	int res;
 
+	if (arr == NULL)
+		return 3;
+
 	if (strcmp (arr [0], "ABC") || strcmp (arr [1], "DEF"))
 		res = 1;
 	else

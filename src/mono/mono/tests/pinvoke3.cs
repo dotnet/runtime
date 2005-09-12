@@ -865,9 +865,16 @@ public class Tests {
 		return arr;
 	}
 
+	public static String[] return_array_delegate_null (int i) {
+		return null;
+	}
+
 	public static int test_0_marshal_return_string_array_delegate () {	
-		string[] arr = new string [] { "", "" };
 		return mono_test_marshal_return_string_array_delegate (new ReturnArrayDelegate (return_array_delegate));
+	}
+
+	public static int test_3_marshal_return_string_array_delegate_null () {	
+		return mono_test_marshal_return_string_array_delegate (new ReturnArrayDelegate (return_array_delegate_null));
 	}
 
 }
