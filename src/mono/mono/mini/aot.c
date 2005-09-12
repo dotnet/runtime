@@ -1484,7 +1484,7 @@ mono_aot_is_got_entry (guint8 *code, guint8 *addr)
 static void
 emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 {
-#if defined(sparc)
+#if defined(sparc) || defined(PLATFORM_WIN32)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (fp, ".section \"%s\"\n", section_name);
 #elif defined(__ppc__) && defined(__MACH__)
