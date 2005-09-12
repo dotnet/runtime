@@ -848,4 +848,26 @@ public class Tests {
 		return mono_test_marshal_out_string_array_delegate (arr, 2, new ArrayDelegate10 (array_delegate10));
 	}
 
+	/*
+	 * Returning string arrays
+	 */
+	public delegate string[] ReturnArrayDelegate (int i);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_string_array_delegate")]
+	public static extern int mono_test_marshal_return_string_array_delegate (ReturnArrayDelegate d);
+
+	public static String[] return_array_delegate (int i) {
+		String[] arr = new String [2];
+
+		arr [0] = "ABC";
+		arr [1] = "DEF";
+
+		return arr;
+	}
+
+	public static int test_0_marshal_return_string_array_delegate () {	
+		string[] arr = new string [] { "", "" };
+		return mono_test_marshal_return_string_array_delegate (new ReturnArrayDelegate (return_array_delegate));
+	}
+
 }

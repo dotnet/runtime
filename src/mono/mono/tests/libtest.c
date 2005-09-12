@@ -1743,3 +1743,21 @@ mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 
 	return 0;
 }
+
+typedef char** (*ReturnStringArrayDelegate) (int i);
+
+STDCALL int
+mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
+{
+	char **arr = d (2);
+	int res;
+
+	if (strcmp (arr [0], "ABC") || strcmp (arr [1], "DEF"))
+		res = 1;
+	else
+		res = 0;
+
+	marshal_free (arr);
+
+	return res;
+}
