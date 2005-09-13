@@ -383,11 +383,12 @@ testbundle: console.exe
 	$(with_mono_path) ./a.out
 	- rm -rf a.out
 
+EXTRA_DIST += load-missing.il t-missing.cs load-exceptions.cs
 test-type-load: TestDriver.dll
-	$(ILASM) /dll load-missing.il
-	$(CSC) /target:library /out:t.dll /d:FOUND t-missing.cs
-	$(CSC) /r:TestDriver.dll /r:load-missing.dll /r:t.dll load-exceptions.cs
-	$(CSC) /target:library /out:t.dll t-missing.cs
+	$(ILASM) /dll /output:load-missing.dll $(srcdir)/load-missing.il
+	$(CSC) /target:library /out:t.dll /d:FOUND $(srcdir)/t-missing.cs
+	$(CSC) /r:TestDriver.dll /r:load-missing.dll /r:t.dll /out:load-exceptions.exe $(srcdir)/load-exceptions.cs
+	$(CSC) /target:library /out:t.dll $(srcdir)/t-missing.cs
 	$(RUNTIME) load-exceptions.exe
 
 noinst_LTLIBRARIES = libtest.la
