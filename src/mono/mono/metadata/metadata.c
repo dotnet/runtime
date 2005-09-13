@@ -3879,7 +3879,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	MonoClass *klass, **res;
 	GList *cons = NULL, *tmp;
 	
-	*contraints = NULL;
+	*constraints = NULL;
 	found = 0;
 	for (i = 0; i < tdef->rows; ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
