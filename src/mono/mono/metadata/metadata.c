@@ -2432,33 +2432,36 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 }
 
 /*
- * mono_metadata_interfaces_from_typedef:
+ * mono_metadata_interfaces_from_typedef_full:
  * @meta: metadata context
  * @index: typedef token
  * 
- * Returns: and array of interfaces that the @index typedef token implements.
- * The number of elemnts in the array is returned in @count.
+ * The array of interfaces that the @index typedef token implements is returned in
+ * @interfaces. The number of elemnts in the array is returned in @count.
+ *
+ * Returns: TRUE on success, FALSE on failure.
  */
-MonoClass**
-mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, guint *count, MonoGenericContext *context)
+gboolean
+mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, MonoClass ***interfaces, guint *count, MonoGenericContext *context)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
 	locator_t loc;
 	guint32 start, i;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	MonoClass **result;
-	
+
+	*interfaces = NULL;
 	*count = 0;
 
 	if (!tdef->base)
-		return NULL;
+		return TRUE;
 
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
 	loc.t = tdef;
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return NULL;
+		return TRUE;
 
 	start = loc.result;
 	/*
@@ -2482,13 +2485,21 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, guin
 		*count = ++i;
 		++start;
 	}
-	return result;
+	*interfaces = result;
+	return TRUE;
 }
 
 MonoClass**
 mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
-	return mono_metadata_interfaces_from_typedef_full (meta, index, count, NULL);
+	MonoClass **interfaces;
+	gboolean rv;
+
+    rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, NULL);
+	if (rv)
+		return interfaces;
+	else
+		return NULL;
 }
 
 /*
@@ -3777,8 +3788,16 @@ method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *co
 	return NULL;
 }
 
-MonoMethod**
-mono_class_get_overrides_full (MonoImage *image, guint32 type_token, gint32 *num_overrides,
+/*
+ * mono_class_get_overrides_full:
+ *
+ *   Return the method overrides belonging to class @type_token in @overrides, and
+ * the number of overrides in @num_overrides.
+ *
+ * Returns: TRUE on success, FALSE on failure.
+ */
+gboolean
+mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides,
 			       MonoGenericContext *generic_context)
 {
 	locator_t loc;
@@ -3788,18 +3807,19 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, gint32 *num
 	guint32 cols [MONO_METHODIMPL_SIZE];
 	MonoMethod **result;
 
+	*overrides = NULL;
 	if (num_overrides)
 		*num_overrides = 0;
 
 	if (!tdef->base)
-		return NULL;
+		return TRUE;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_METHODIMPL_CLASS;
 	loc.idx = mono_metadata_token_index (type_token);
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return NULL;
+		return TRUE;
 
 	start = loc.result;
 	end = start + 1;
@@ -3828,9 +3848,10 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, gint32 *num
 			image, cols [MONO_METHODIMPL_BODY], generic_context);
 	}
 
+	*overrides = result;
 	if (num_overrides)
 		*num_overrides = num;
-	return result;
+	return TRUE;
 }
 
 /**
@@ -3849,8 +3870,8 @@ mono_guid_to_string (const guint8 *guid)
 				guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]);
 }
 
-static MonoClass**
-get_constraints (MonoImage *image, int owner, MonoGenericContext *context)
+static gboolean
+get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContext *context)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
@@ -3858,7 +3879,7 @@ get_constraints (MonoImage *image, int owner, MonoGenericContext *context)
 	MonoClass *klass, **res;
 	GList *cons = NULL, *tmp;
 	
-
+	*contraints = NULL;
 	found = 0;
 	for (i = 0; i < tdef->rows; ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
@@ -3874,13 +3895,14 @@ get_constraints (MonoImage *image, int owner, MonoGenericContext *context)
 		}
 	}
 	if (!found)
-		return NULL;
+		return TRUE;
 	res = g_new0 (MonoClass*, found + 1);
 	for (i = 0, tmp = cons; i < found; ++i, tmp = tmp->next) {
 		res [i] = tmp->data;
 	}
 	g_list_free (cons);
-	return res;
+	*constraints = res;
+	return TRUE;
 }
 
 gboolean
@@ -3969,7 +3991,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	container->context.container = container;
 
 	for (i = 0; i < n; i++)
-		params [i].constraints = get_constraints (image, last_num + i + 1, &container->context);
+		get_constraints (image, last_num + i + 1, &params [i].constraints, &container->context);
 
 	return container;
 }

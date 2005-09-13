@@ -259,11 +259,12 @@ guint mono_aligned_addr_hash (gconstpointer ptr);
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
 
-MonoClass**
+gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
-					     guint32                table_index,
-					     guint                 *count,
-					     MonoGenericContext    *context);
+											 guint32                table_index,
+											 MonoClass           ***interfaces,
+											 guint                 *count,
+											 MonoGenericContext    *context);
 
 MonoArrayType *
 mono_metadata_parse_array_full              (MonoImage             *image,

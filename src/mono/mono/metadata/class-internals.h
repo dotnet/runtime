@@ -521,8 +521,8 @@ mono_class_get_implemented_interfaces (MonoClass *klass);
 gboolean
 mono_class_is_open_constructed_type (MonoType *t);
 
-MonoMethod**
-mono_class_get_overrides_full (MonoImage *image, guint32 type_token, gint32 *num_overrides,
+gboolean
+mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides,
 			       MonoGenericContext *generic_context);
 
 MonoMethod*
