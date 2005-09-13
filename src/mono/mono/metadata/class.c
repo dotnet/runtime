@@ -1373,8 +1373,7 @@ mono_class_setup_vtable (MonoClass *class)
 	else
 		context = (MonoGenericContext *) class->generic_container;		
 
-	overrides = mono_class_get_overrides_full (
-		class->image, class->type_token, &onum, context);
+	mono_class_get_overrides_full (class->image, class->type_token, &overrides, &onum, context);
 	mono_class_setup_vtable_general (class, overrides, onum);
 	g_free (overrides);
 
@@ -2451,7 +2450,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	mono_class_setup_mono_type (class);
 
-	interfaces = mono_metadata_interfaces_from_typedef_full (image, type_token, &icount, context);
+	mono_metadata_interfaces_from_typedef_full (image, type_token, &interfaces, &icount, context);
 
 	class->interfaces = interfaces;
 	class->interface_count = icount;
