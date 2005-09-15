@@ -73,6 +73,8 @@ struct sigcontext {
 };
 #endif  // sun, Solaris x86
 
+#define MONO_ARCH_SIGNAL_STACK_SIZE (64 * 1024)
+
 #define MONO_MAX_IREGS 16
 
 #define MONO_MAX_FREGS AMD64_XMM_NREG
