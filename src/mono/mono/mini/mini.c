@@ -6911,10 +6911,12 @@ mono_init_trampolines (void)
 static void
 mono_init_exceptions (void)
 {
+#ifndef CUSTOM_EXCEPTION_HANDLING
 	mono_arch_get_restore_context ();
 	mono_arch_get_call_filter ();
 	mono_arch_get_throw_exception ();
 	mono_arch_get_rethrow_exception ();
+#endif
 }
 
 guint8 *
