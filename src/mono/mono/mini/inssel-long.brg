@@ -664,6 +664,12 @@ reg: OP_IMUL_IMM (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_LMUL_IMM (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 c32flags: OP_COMPARE (reg, reg) {
 	tree->opcode = OP_ICOMPARE;
 	tree->sreg1 = state->left->reg1;

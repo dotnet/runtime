@@ -4478,6 +4478,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->opcode = OP_IMUL_IMM;
 					ins->inst_imm = ins->inst_right->inst_c0;
 					break;
+				case OP_LMUL:
+					ins->opcode = OP_LMUL_IMM;
+					ins->inst_imm = ins->inst_right->inst_c0;
+					break;
 				default:
 					g_assert_not_reached ();
 				}

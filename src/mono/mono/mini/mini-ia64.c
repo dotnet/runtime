@@ -1910,10 +1910,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MUL_IMM:
+		case OP_LMUL_IMM:
 		case OP_IMUL_IMM: {
 			int i, sum_reg;
 			gboolean found = FALSE;
-			int shl_op = ins->opcode == OP_MUL_IMM ? OP_SHL_IMM : OP_ISHL_IMM;
+			int shl_op = ins->opcode == OP_IMUL_IMM ? OP_ISHL_IMM : OP_SHL_IMM;
 
 			/* First the easy cases */
 			if (ins->inst_imm == 1) {
