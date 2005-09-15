@@ -41,6 +41,8 @@
 #define MONO_ARCH_RETREG1 IA64_R8
 #define MONO_ARCH_FRETREG1 8
 
+#define MONO_ARCH_SIGNAL_STACK_SIZE SIGSTKSZ
+
 struct MonoLMF {
 	guint64    ebp;
 };

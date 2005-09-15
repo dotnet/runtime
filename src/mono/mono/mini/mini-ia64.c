@@ -54,8 +54,6 @@ static const char*const * ins_spec = ia64_desc;
  * ia64_codegen_set_one_ins_per_bundle () at those places.
  */
 
-#define SIGNAL_STACK_SIZE SIGSTKSZ
-
 #define ARGS_OFFSET 16
 
 #define GP_SCRATCH_REG 31
@@ -4562,68 +4560,6 @@ mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
 
 static gboolean tls_offset_inited = FALSE;
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-
-static void
-setup_stack (MonoJitTlsData *tls)
-{
-	pthread_t self = pthread_self();
-	pthread_attr_t attr;
-	size_t stsize = 0;
-	struct sigaltstack sa;
-	guint8 *staddr = NULL;
-	guint8 *current = (guint8*)&staddr;
-	int res;
-
-	if (mono_running_on_valgrind ())
-		return;
-
-	/* Determine stack boundaries */
-#ifdef HAVE_PTHREAD_GETATTR_NP
-	pthread_getattr_np( self, &attr );
-#else
-#ifdef HAVE_PTHREAD_ATTR_GET_NP
-	pthread_attr_get_np( self, &attr );
-#elif defined(sun)
-	pthread_attr_init( &attr );
-	pthread_attr_getstacksize( &attr, &stsize );
-#else
-#error "Not implemented"
-#endif
-#endif
-#ifndef sun
-	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
-#endif
-
-	g_assert (staddr);
-
-	g_assert ((current > staddr) && (current < staddr + stsize));
-
-	tls->end_of_stack = staddr + stsize;
-
-	/*
-	 * threads created by nptl does not seem to have a guard page, and
-	 * since the main thread is not created by us, we can't even set one.
-	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
-	 * is a stack overflow exception.
-	 */
-	tls->stack_size = stsize + getpagesize ();
-
-	/* Setup an alternate signal stack */
-	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	tls->signal_stack_size = SIGNAL_STACK_SIZE;
-
-	g_assert (tls->signal_stack);
-
-	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_ONSTACK;
-	res = sigaltstack (&sa, NULL);
-	g_assert (res == 0);
-}
-
-#endif
-
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
@@ -4633,26 +4569,11 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 		appdomain_tls_offset = mono_domain_get_tls_offset ();
 		thread_tls_offset = mono_thread_get_tls_offset ();
 	}		
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	setup_stack (tls);
-#endif
 }
 
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	struct sigaltstack sa;
-
-	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_DISABLE;
-	sigaltstack  (&sa, NULL);
-
-	if (tls->signal_stack)
-		munmap (tls->signal_stack, SIGNAL_STACK_SIZE);
-#endif
 }
 
 void
