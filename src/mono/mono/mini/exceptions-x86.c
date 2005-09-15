@@ -30,6 +30,8 @@
 #endif 
 
 #ifdef PLATFORM_WIN32
+static void (*restore_stack) (void *);
+
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
@@ -38,6 +40,122 @@ static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler((int)sctx)
+
+/*
+ * mono_win32_get_handle_stackoverflow (void):
+ *
+ * Returns a pointer to a method which restores the current context stack
+ * and calls handle_exceptions, when done restores the original stack.
+ */
+static gpointer
+mono_win32_get_handle_stackoverflow (void)
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	/* restore_contect (void *sigctx) */
+	start = code = mono_global_codeman_reserve (128);
+
+	/* load context into ebx */
+	x86_mov_reg_membase (code, X86_EBX, X86_ESP, 4, 4);
+
+	/* move current stack into edi for later restore */
+	x86_mov_reg_reg (code, X86_EDI, X86_ESP, 4);
+
+	/* use the new freed stack from sigcontext */
+	x86_mov_reg_membase (code, X86_ESP, X86_EBX,  G_STRUCT_OFFSET (struct sigcontext, esp), 4);
+
+	/* get the current domain */
+	x86_call_code (code, mono_domain_get);
+
+	/* get stack overflow exception from domain object */
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoDomain, stack_overflow_ex), 4);
+
+	/* call mono_arch_handle_exception (sctx, stack_overflow_exception_obj, FALSE) */
+	x86_push_imm (code, 0);
+	x86_push_reg (code, X86_EAX);
+	x86_push_reg (code, X86_EBX);
+	x86_call_code (code, mono_arch_handle_exception);
+
+	/* restore the SEH handler stack */
+	x86_mov_reg_reg (code, X86_ESP, X86_EDI, 4);
+
+	/* return */
+	x86_ret (code);
+
+	return start;
+}
+
+/* Special hack to workaround the fact that the
+ * when the SEH handler is called the stack is
+ * to small to recover.
+ *
+ * Stack walking part of this method is from mono_handle_exception
+ *
+ * The idea is simple; 
+ *  - walk the stack to free some space (64k)
+ *  - set esp to new stack location
+ *  - call mono_arch_handle_exception with stack overflow exception
+ *  - set esp to SEH handlers stack
+ *  - done
+ */
+static void 
+win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx) 
+{
+    SYSTEM_INFO si;
+    DWORD page_size;
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitInfo *ji, rji;
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;		
+	MonoContext initial_ctx;
+	MonoContext ctx;
+	guint32 free_stack = 0;
+
+	/* convert sigcontext to MonoContext (due to reuse of stack walking helpers */
+	mono_arch_sigctx_to_monoctx (sctx, &ctx);
+	
+	/* get our os page size */
+    GetSystemInfo(&si);
+	page_size = si.dwPageSize;
+
+	/* Let's walk the stack to recover
+	 * the needed stack space (if possible)
+	 */
+	memset (&rji, 0, sizeof (rji));
+
+	initial_ctx = ctx;
+	free_stack = (guint8*)(MONO_CONTEXT_GET_BP (&ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
+
+	/* try to free 64kb from our stack */
+	do {
+		MonoContext new_ctx;
+
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, NULL, &lmf, NULL, NULL);
+		if (!ji) {
+			g_warning ("Exception inside function without unwind info");
+			g_assert_not_reached ();
+		}
+
+		if (ji != (gpointer)-1) {
+			free_stack = (guint8*)(MONO_CONTEXT_GET_BP (&ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
+		}
+
+		/* todo: we should call abort if ji is -1 */
+		ctx = new_ctx;
+	} while (free_stack < 64 * 1024 && ji != (gpointer) -1);
+
+	/* convert into sigcontext to be used in mono_arch_handle_exception */
+	mono_arch_monoctx_to_sigctx (&ctx, sctx);
+
+	/* todo: install new stack-guard page */
+
+	/* use the new stack and call mono_arch_handle_exception () */
+	restore_stack (sctx);
+}
 
 /*
  * Unhandled Exception Filter
@@ -68,6 +186,9 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	sctx->eip = ctx->Eip;
 
 	switch (er->ExceptionCode) {
+	case EXCEPTION_STACK_OVERFLOW:
+		win32_handle_stack_overflow (ep, sctx);
+		break;
 	case EXCEPTION_ACCESS_VIOLATION:
 		W32_SEH_HANDLE_EX(segv);
 		break;
@@ -102,6 +223,10 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 
 void win32_seh_init()
 {
+	/* install restore stack helper */
+	if (!restore_stack)
+		restore_stack = mono_win32_get_handle_stackoverflow ();
+
 	old_handler = SetUnhandledExceptionFilter(seh_handler);
 }
 
