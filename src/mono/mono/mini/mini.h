@@ -925,6 +925,8 @@ gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineTy
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
+void     mono_setup_altstack                    (MonoJitTlsData *tls);
+void     mono_free_altstack                     (MonoJitTlsData *tls);
 
 /* the new function to do stack walks */
 typedef gboolean (*MonoStackFrameWalk)          (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data);

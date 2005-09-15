@@ -12,11 +12,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifndef PLATFORM_WIN32
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
@@ -41,8 +36,6 @@ static gint thread_tls_offset = -1;
 #else
 #define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL)
 #endif
-
-#define SIGNAL_STACK_SIZE (64 * 1024)
 
 #define NOT_IMPLEMENTED g_assert_not_reached ()
 
@@ -3583,66 +3576,6 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-
-static void
-setup_stack (MonoJitTlsData *tls)
-{
-	pthread_t self = pthread_self();
-	pthread_attr_t attr;
-	size_t stsize = 0;
-	struct sigaltstack sa;
-	guint8 *staddr = NULL;
-	guint8 *current = (guint8*)&staddr;
-
-	if (mono_running_on_valgrind ())
-		return;
-
-	/* Determine stack boundaries */
-	pthread_attr_init( &attr );
-#ifdef HAVE_PTHREAD_GETATTR_NP
-	pthread_getattr_np( self, &attr );
-#else
-#ifdef HAVE_PTHREAD_ATTR_GET_NP
-	pthread_attr_get_np( self, &attr );
-#elif defined(sun)
-	pthread_attr_getstacksize( &attr, &stsize );
-#else
-#error "Not implemented"
-#endif
-#endif
-#ifndef sun
-	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
-#endif
-
-	g_assert (staddr);
-
-	g_assert ((current > staddr) && (current < staddr + stsize));
-
-	tls->end_of_stack = staddr + stsize;
-
-	/*
-	 * threads created by nptl does not seem to have a guard page, and
-	 * since the main thread is not created by us, we can't even set one.
-	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
-	 * is a stack overflow exception.
-	 */
-	tls->stack_size = stsize + getpagesize ();
-
-	/* Setup an alternate signal stack */
-	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	tls->signal_stack_size = SIGNAL_STACK_SIZE;
-
-	g_assert (tls->signal_stack);
-
-	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_ONSTACK;
-	sigaltstack (&sa, NULL);
-}
-
-#endif
-
 /*
  * Support for fast access to the thread-local lmf structure using the GS
  * segment register on NPTL + kernel 2.6.x.
@@ -3679,26 +3612,11 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #endif
 		}
 	}		
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	setup_stack (tls);
-#endif
 }
 
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	struct sigaltstack sa;
-
-	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_DISABLE;
-	sigaltstack  (&sa, NULL);
-
-	if (tls->signal_stack)
-		munmap (tls->signal_stack, SIGNAL_STACK_SIZE);
-#endif
 }
 
 void

@@ -23,6 +23,11 @@
 
 #include "mini.h"
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
 #ifndef MONO_ARCH_CONTEXT_DEF
@@ -758,9 +763,11 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 				if (IS_ON_SIGALTSTACK (jit_tls)) {
 					/* Switch back to normal stack */
-					if (stack_overflow)
+					if (stack_overflow) {
 						/* Free up some stack space */
 						MONO_CONTEXT_SET_SP (&initial_ctx, (gssize)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
+						g_assert ((gssize)MONO_CONTEXT_GET_SP (&initial_ctx) < (gssize)jit_tls->end_of_stack);
+					}
 					MONO_CONTEXT_SET_IP (&initial_ctx, (gssize)jit_tls->abort_func);
 					restore_context (&initial_ctx);
 				}
@@ -785,3 +792,78 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 }
 #endif /* CUSTOM_EXECPTION_HANDLING */
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+void
+mono_setup_altstack (MonoJitTlsData *tls)
+{
+	pthread_t self = pthread_self();
+	pthread_attr_t attr;
+	size_t stsize = 0;
+	struct sigaltstack sa;
+	guint8 *staddr = NULL;
+	guint8 *current = (guint8*)&staddr;
+
+	if (mono_running_on_valgrind ())
+		return;
+
+	/* Determine stack boundaries */
+	pthread_attr_init( &attr );
+#ifdef HAVE_PTHREAD_GETATTR_NP
+	pthread_getattr_np( self, &attr );
+#else
+#ifdef HAVE_PTHREAD_ATTR_GET_NP
+	pthread_attr_get_np( self, &attr );
+#elif defined(sun)
+	pthread_attr_getstacksize( &attr, &stsize );
+#else
+#error "Not implemented"
+#endif
+#endif
+#ifndef sun
+	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
+#endif
+
+	g_assert (staddr);
+
+	g_assert ((current > staddr) && (current < staddr + stsize));
+
+	tls->end_of_stack = staddr + stsize;
+
+	/*
+	 * threads created by nptl does not seem to have a guard page, and
+	 * since the main thread is not created by us, we can't even set one.
+	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
+	 * is a stack overflow exception.
+	 */
+	tls->stack_size = stsize + getpagesize ();
+
+	/* Setup an alternate signal stack */
+	tls->signal_stack = mmap (0, MONO_ARCH_SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	tls->signal_stack_size = MONO_ARCH_SIGNAL_STACK_SIZE;
+
+	g_assert (tls->signal_stack);
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = MONO_ARCH_SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_ONSTACK;
+	sigaltstack (&sa, NULL);
+}
+
+void
+mono_free_altstack (MonoJitTlsData *tls)
+{
+	struct sigaltstack sa;
+	int err;
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = MONO_ARCH_SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_DISABLE;
+	err = sigaltstack  (&sa, NULL);
+	g_assert (err == 0);
+
+	if (tls->signal_stack)
+		munmap (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE);
+}
+
+#endif /* MONO_ARCH_SIGSEGV_ON_ALTSTACK */

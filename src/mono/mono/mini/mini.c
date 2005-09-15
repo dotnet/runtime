@@ -7607,6 +7607,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	mono_arch_setup_jit_tls_data (jit_tls);
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	mono_setup_altstack (jit_tls);
+#endif
+
 	return jit_tls;
 }
 
@@ -7653,6 +7657,10 @@ mini_thread_cleanup (MonoThread *thread)
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
 		thread->jit_data = NULL;
+
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+		mono_free_altstack (jit_tls);
+#endif
 	}
 }
 
