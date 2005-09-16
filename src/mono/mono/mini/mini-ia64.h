@@ -15,11 +15,11 @@
 #define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
 /* r8..r11, r14..r29 */
-#define MONO_ARCH_CALLEE_REGS (0x700UL | 0x3fffc000UL)
+#define MONO_ARCH_CALLEE_REGS ((regmask_t)(0x700UL) | (regmask_t)(0x3fffc000UL))
 
 /* f6..f15, f33..f127 */
 /* FIXME: Use the upper 64 bits as well */
-#define MONO_ARCH_CALLEE_FREGS (0xfffffffe00000000UL | (0x3ffUL << 6))
+#define MONO_ARCH_CALLEE_FREGS ((regmask_t)(0xfffffffe00000000UL) | ((regmask_t)(0x3ffUL) << 6))
 
 #define MONO_ARCH_CALLEE_SAVED_REGS ~(MONO_ARCH_CALLEE_REGS)
 
@@ -33,6 +33,8 @@
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 #define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
+
+#define MONO_ARCH_IS_GLOBAL_IREG(reg) (is_hard_ireg (reg) && ((reg) >= cfg->arch.reg_local0) && ((reg) < cfg->arch.reg_out0))
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
