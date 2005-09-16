@@ -1232,7 +1232,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		switch (ins->opcode) {
 		case OP_MOVE:
 		case OP_FMOVE:
-		case OP_SETREG:
 			/*
 			 * Removes:
 			 *
