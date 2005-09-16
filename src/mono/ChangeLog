@@ -1,3 +1,9 @@
+2005-09-16  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (all-local, install-exec, uninstall)
+	(mcs-do-test-profiles, mcs-do-run-test-profiles, mcs-compileall):
+	Don't call semdel-wrapper.
+
 2005-09-06  Chris Toshok  <toshok@ximian.com>
 
 	* data/browscap.ini: Add the ecmascriptversion/w3cdomversion
