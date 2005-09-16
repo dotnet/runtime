@@ -1331,7 +1331,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 }
 
 /* FIXME: Add more instructions */
-#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG) || ((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_SETREG) || ((ins)->opcode == OP_ICONST) || ((ins)->opcode == OP_I8CONST) || ((ins)->opcode == OP_LOAD_MEMBASE))
+#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG) || ((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_ICONST) || ((ins)->opcode == OP_I8CONST) || ((ins)->opcode == OP_LOAD_MEMBASE))
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -1522,7 +1522,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			/*
 			 * Removes:
 			 *
@@ -2525,7 +2524,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
 			break;
 		case OP_AMD64_SET_XMMREG_R4: {
@@ -4582,7 +4580,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 		}
 		else {
-			MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 			vtarg->sreg1 = vt_reg;
 			vtarg->dreg = mono_regstate_next_int (cfg->rs);
 			mono_bblock_add_inst (cfg->cbb, vtarg);
@@ -4598,7 +4596,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_SETREG);
+		MONO_INST_NEW (cfg, this, OP_MOVE);
 		this->type = this_type;
 		this->sreg1 = this_reg;
 		this->dreg = mono_regstate_next_int (cfg->rs);

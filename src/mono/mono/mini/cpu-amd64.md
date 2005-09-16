@@ -11,7 +11,6 @@
 # src1:register       describes the first source register of an instruction
 # src2:register       describes the second source register of an instruction
 #
-# register may have the following values:
 #	i  integer register
 #	b  base register (used in address references)
 #	f  floating point register
@@ -32,7 +31,6 @@
 #
 # clob:spec          describe if the instruction clobbers registers or has special needs
 #
-# spec can be one of the following characters:
 #	c  clobbers caller-save registers
 #	1  clobbers the first source register
 #	a  EAX is clobbered
@@ -42,7 +40,6 @@
 #
 # flags:spec        describe if the instruction uses or sets the flags (unused)
 #
-# spec can be one of the following chars:
 # 	s  sets the flags
 #       u  uses the flags
 #       m  uses and modifies the flags
@@ -56,15 +53,9 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
-nop:
 break: len:2
 jmp: len:42
-br.s:
-brfalse.s:
-brtrue.s:
 br: len:6
-brfalse:
-brtrue:
 beq: len:8
 bge: len:8
 bgt: len:8
@@ -75,23 +66,19 @@ bge.un: len:8
 bgt.un: len:8
 ble.un: len:8
 blt.un: len:8
-switch:
+label:
 ldind.i1: dest:i len:8
 ldind.u1: dest:i len:8
 ldind.i2: dest:i len:8
 ldind.u2: dest:i len:8
 ldind.i4: dest:i len:9
 ldind.u4: dest:i len:8
-ldind.i8:
 ldind.i: dest:i len:8
-ldind.r4:
-ldind.r8:
 ldind.ref: dest:i len:8
 stind.ref: src1:b src2:i
 stind.i1: src1:b src2:i
 stind.i2: src1:b src2:i
 stind.i4: src1:b src2:i
-stind.i8:
 stind.r4: dest:f src1:b
 stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:3 clob:1
@@ -117,141 +104,35 @@ conv.r4: dest:f src1:i len:9
 conv.r8: dest:f src1:i len:9
 conv.u4: dest:i src1:i len:3
 conv.u8: dest:i src1:i len:3
-callvirt:
-cpobj:
-ldobj:
-ldstr:
-castclass:
-isinst:
 conv.r.un: dest:f src1:i len:8
-unbox:
 throw: src1:i len:18
 op_rethrow: src1:i len:18
-ldfld:
-ldflda:
-stfld:
-ldsfld:
-ldsflda:
-stsfld:
-stobj:
-conv.ovf.i1.un:
-conv.ovf.i2.un:
 conv.ovf.i4.un: dest:i src1:i len:16
-conv.ovf.i8.un:
-conv.ovf.u1.un:
-conv.ovf.u2.un:
 conv.ovf.u4.un: 
-conv.ovf.u8.un:
-conv.ovf.i.un:
-conv.ovf.u.un:
-box:
-newarr:
-ldlen:
-ldelema:
-ldelem.i1:
-ldelem.u1:
-ldelem.i2:
-ldelem.u2:
-ldelem.i4:
-ldelem.u4:
-ldelem.i8:
-ldelem.i:
-ldelem.r4:
-ldelem.r8:
-ldelem.ref:
-stelem.i:
-stelem.i1:
-stelem.i2:
-stelem.i4:
-stelem.i8:
-stelem.r4:
-stelem.r8:
-stelem.ref:
-conv.ovf.i1:
-conv.ovf.u1:
-conv.ovf.i2:
-conv.ovf.u2:
-conv.ovf.i4:
 conv.ovf.u4: dest:i src1:i len:15
-conv.ovf.i8:
-conv.ovf.u8:
-refanyval:
 ckfinite: dest:f src1:f len:43
-mkrefany:
-ldtoken:
 conv.u2: dest:i src1:i len:4
 conv.u1: dest:i src1:i len:4
 conv.i: dest:i src1:i len:4
-conv.ovf.i:
-conv.ovf.u:
-add.ovf:
-add.ovf.un:
 mul.ovf: dest:i src1:i src2:i clob:1 len:10
 # this opcode is handled specially in the code generator
 mul.ovf.un: dest:i src1:i src2:i len:18
-sub.ovf:
-sub.ovf.un:
-endfinally:
-leave:
-leave.s:
-stind.i:
 conv.u: dest:i src1:i len:4
-prefix7:
-prefix6:
-prefix5:
-prefix4:
-prefix3:
-prefix2:
-prefix1:
-prefixref:
-arglist:
 ceq: dest:c len:8
 cgt: dest:c len:8
 cgt.un: dest:c len:8
 clt: dest:c len:8
 clt.un: dest:c len:8
-ldftn:
-ldvirtftn:
-ldarg:
-ldarga:
-starg:
-ldloc:
-ldloca:
-stloc:
 localloc: dest:i src1:i len:84
-endfilter:
-unaligned.:
-volatile.:
-tail.:
-initobj:
-cpblk:
-initblk:
-sizeof:
-refanytype:
-illegal:
-endmac:
-mono_objaddr:
-mono_ldptr:
-mono_vtaddr:
-mono_newobj:
-mono_retobj:
-load:
-ldaddr:
-store:
-phi:
-rename:
 compare: src1:i src2:i len:3
 lcompare: src1:i src2:i len:3
 icompare: src1:i src2:i len:3
 compare_imm: src1:i len:13
 icompare_imm: src1:i len:8
 fcompare: src1:f src2:f clob:a len:13
-local:
-arg:
 oparglist: src1:b len:11
 outarg: src1:i len:2
 outarg_imm: len:6
-retarg:
 setret: dest:a src1:i len:3
 setlret: dest:i src1:i src2:i len:5
 checkthis: src1:b len:5
@@ -271,15 +152,10 @@ vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
 call_reg: dest:a src1:i len:64 clob:c
 call_membase: dest:a src1:b len:64 clob:c
-trap:
 iconst: dest:i len:10
 i8const: dest:i len:18
 r4const: dest:f len:13
 r8const: dest:f len:9
-regvar:
-reg:
-regoffset:
-label:
 store_membase_imm: dest:b len:15
 store_membase_reg: dest:b src1:i len:9
 storei8_membase_reg: dest:b src1:i len:9
@@ -306,7 +182,6 @@ loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:4
-setreg: dest:i src1:i len:4
 add_imm: dest:i src1:i len:8 clob:1
 sub_imm: dest:i src1:i len:8 clob:1
 mul_imm: dest:i src1:i len:8
@@ -339,81 +214,24 @@ cond_exc_c: len:8
 cond_exc_nc: len:8
 cond_exc_iov: len:8
 cond_exc_ic: len:8
-long_add:
-long_sub:
 long_mul: dest:i src1:i src2:i clob:1 len:4
 long_mul_imm: dest:i src1:i src2:i clob:1 len:8
 long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
 long_rem: dest:d src1:a src2:i len:16 clob:a
 long_rem_un: dest:d src1:a src2:i len:16 clob:a
-long_and:
-long_or:
-long_xor:
 long_shl: dest:i src1:i src2:s clob:1 len:31
 long_shr: dest:i src1:i src2:s clob:1 len:32
 long_shr_un: dest:i src1:i src2:s clob:1 len:32
-long_neg:
-long_not:
-long_conv_to_i1:
-long_conv_to_i2:
-long_conv_to_i4:
-long_conv_to_i8:
 long_conv_to_r4: dest:f src1:i len:8
 long_conv_to_r8: dest:f src1:i len:8
-long_conv_to_u4:
-long_conv_to_u8:
-long_conv_to_u2:
-long_conv_to_u1:
-long_conv_to_i:
 long_conv_to_ovf_i: dest:i src1:i src2:i len:40
-long_conv_to_ovf_u:
-long_add_ovf:
-long_add_ovf_un:
 long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
 long_mul_ovf_un: dest:i src1:i src2:i len:22
-long_sub_ovf:
-long_sub_ovf_un:
-long_conv_to_ovf_i1_un:
-long_conv_to_ovf_i2_un:
-long_conv_to_ovf_i4_un:
-long_conv_to_ovf_i8_un:
-long_conv_to_ovf_u1_un:
-long_conv_to_ovf_u2_un:
-long_conv_to_ovf_u4_un:
-long_conv_to_ovf_u8_un:
-long_conv_to_ovf_i_un:
-long_conv_to_ovf_u_un:
-long_conv_to_ovf_i1:
-long_conv_to_ovf_u1:
-long_conv_to_ovf_i2:
-long_conv_to_ovf_u2:
-long_conv_to_ovf_i4:
-long_conv_to_ovf_u4:
-long_conv_to_ovf_i8:
-long_conv_to_ovf_u8:
-long_ceq:
-long_cgt:
-long_cgt_un:
-long_clt:
-long_clt_un:
 long_conv_to_r_un: dest:f src1:i src2:i len:48 
-long_conv_to_u:
 long_shr_imm: dest:i src1:i clob:1 len:11
 long_shr_un_imm: dest:i src1:i clob:1 len:11
 long_shl_imm: dest:i src1:i clob:1 len:11
-long_add_imm:
-long_sub_imm:
-long_beq:
-long_bne_un:
-long_blt:
-long_blt_un:
-long_bgt:
-long_btg_un:
-long_bge:
-long_bge_un:
-long_ble:
-long_ble_un:
 float_beq: len:13
 float_bne_un: len:18
 float_blt: len:13
@@ -437,8 +255,6 @@ float_conv_to_i1: dest:i src1:f len:49
 float_conv_to_i2: dest:i src1:f len:49
 float_conv_to_i4: dest:i src1:f len:49
 float_conv_to_i8: dest:i src1:f len:49
-float_conv_to_r4:
-float_conv_to_r8:
 float_conv_to_u4: dest:i src1:f len:49
 float_conv_to_u8: dest:i src1:f len:49
 float_conv_to_u2: dest:i src1:f len:49
@@ -446,30 +262,7 @@ float_conv_to_u1: dest:i src1:f len:49
 float_conv_to_i: dest:i src1:f len:49
 float_conv_to_ovf_i: dest:a src1:f len:40
 float_conv_to_ovd_u: dest:a src1:f len:40
-float_add_ovf:
-float_add_ovf_un:
 float_mul_ovf: 
-float_mul_ovf_un:
-float_sub_ovf:
-float_sub_ovf_un:
-float_conv_to_ovf_i1_un:
-float_conv_to_ovf_i2_un:
-float_conv_to_ovf_i4_un:
-float_conv_to_ovf_i8_un:
-float_conv_to_ovf_u1_un:
-float_conv_to_ovf_u2_un:
-float_conv_to_ovf_u4_un:
-float_conv_to_ovf_u8_un:
-float_conv_to_ovf_i_un:
-float_conv_to_ovf_u_un:
-float_conv_to_ovf_i1:
-float_conv_to_ovf_u1:
-float_conv_to_ovf_i2:
-float_conv_to_ovf_u2:
-float_conv_to_ovf_i4:
-float_conv_to_ovf_u4:
-float_conv_to_ovf_i8:
-float_conv_to_ovf_u8:
 float_ceq: dest:i src1:f src2:f len:35
 float_cgt: dest:i src1:f src2:f len:35
 float_cgt_un: dest:i src1:f src2:f len:48
