@@ -264,11 +264,22 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 	ctx.r14 = r14;
 	ctx.r15 = r15;
 
-	if (mono_debugger_throw_exception ((gpointer)(rip - 8), (gpointer)rsp, exc)) {
+	if (!rethrow && mono_debugger_throw_exception ((gpointer)(rip - 8), (gpointer)rsp, exc)) {
 		/*
 		 * The debugger wants us to stop on the `throw' instruction.
 		 * By the time we get here, it already inserted a breakpoint on
 		 * eip - 8 (which is the address of the `mov %r15,%rdi ; callq throw').
+		 */
+
+		/* FIXME FIXME
+		 *
+		 * In case of a rethrow, the JIT is emitting code like this:
+		 *
+		 *    mov    0xffffffffffffffd0(%rbp),%rax'
+		 *    mov    %rax,%rdi
+		 *    callq  throw
+		 *
+		 * Here, restore_context() wouldn't restore the %rax register correctly.
 		 */
 		ctx.rip = rip - 8;
 		ctx.rsp = rsp + 8;
