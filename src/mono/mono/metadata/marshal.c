@@ -7823,8 +7823,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 
 	if (string == NULL)
 		return NULL;
-	else
-		return g_memdup (mono_string_chars (string), mono_string_length (string)*2);
+	else {
+		gunichar2 *res = g_malloc (mono_string_length (string) * 2);
+		memcpy (res, mono_string_chars (string), mono_string_length (string) * 2);
+		res [mono_string_length (string)] = 0;
+		return res;
+	}
 }
 
 static void
