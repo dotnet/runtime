@@ -32,6 +32,20 @@ namespace Test {
 
 		public char[] Prop2;
 	}
+
+	class XAttribute : Attribute {
+		public XAttribute () 
+		{
+			throw new Exception ("X");
+		}
+	}
+
+	class ZAttribute : Attribute {
+	}
+
+	[X, Z, Serializable]
+	class Y {
+	}
 			
 	[My("testclass")]
 	[My2("testclass", 22)]
@@ -61,6 +75,24 @@ namespace Test {
 					}
 				}
 			}
+
+			//
+			// Test that requesting a specific custom attributes does not
+			// create all the others
+			//
+
+			typeof (Y).IsDefined (typeof (ZAttribute), true);
+			typeof (Y).IsDefined (typeof (XAttribute), true);
+
+			typeof (Y).GetCustomAttributes (typeof (ZAttribute), true);
+
+			try {
+				typeof (Y).GetCustomAttributes (true);
+				return 4;
+			}
+			catch {
+			}
+
 			return 0;
 		}
 	}
