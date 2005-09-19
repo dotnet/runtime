@@ -6999,6 +6999,33 @@ mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 }
 
 MonoArray*
+mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass)
+{
+	MonoArray *result;
+	MonoObject *attr;
+	MonoClass *klass;
+	int i, n;
+
+	n = 0;
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass))
+			n ++;
+	}
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
+	result = mono_array_new (mono_domain_get (), klass, n);
+	n = 0;
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass)) {
+			attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
+			mono_array_set (result, gpointer, n, attr);
+			n ++;
+		}
+	}
+	return result;
+}
+
+MonoArray*
 mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
 {
 	MonoArray *result;
@@ -7316,21 +7343,25 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 }
 
 /*
- * mono_reflection_get_custom_attrs:
+ * mono_reflection_get_custom_attrs_by_type:
  * @obj: a reflection object handle
  *
  * Return an array with all the custom attributes defined of the
- * reflection handle @obj. The objects are fully build.
+ * reflection handle @obj. If @attr_klass is non-NULL, only custom attributes 
+ * of that type are returned. The objects are fully build.
  */
 MonoArray*
-mono_reflection_get_custom_attrs (MonoObject *obj)
+mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass)
 {
 	MonoArray *result;
 	MonoCustomAttrInfo *cinfo;
 
 	cinfo = mono_reflection_get_custom_attrs_info (obj);
 	if (cinfo) {
-		result = mono_custom_attrs_construct (cinfo);
+		if (attr_klass)
+			result = mono_custom_attrs_construct_by_type (cinfo, attr_klass);
+		else
+			result = mono_custom_attrs_construct (cinfo);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
@@ -7340,6 +7371,19 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	}
 
 	return result;
+}
+
+/*
+ * mono_reflection_get_custom_attrs:
+ * @obj: a reflection object handle
+ *
+ * Return an array with all the custom attributes defined of the
+ * reflection handle @obj. The objects are fully build.
+ */
+MonoArray*
+mono_reflection_get_custom_attrs (MonoObject *obj)
+{
+	return mono_reflection_get_custom_attrs_by_type (obj, NULL);
 }
 
 /*
