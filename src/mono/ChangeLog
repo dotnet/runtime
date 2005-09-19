@@ -1,3 +1,7 @@
+2005-09-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/exception-handling.txt: New file.
+
 2005-09-16  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (all-local, install-exec, uninstall)
