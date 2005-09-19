@@ -12,9 +12,11 @@ $output =~ s/\.exe$/.output/;
 $| = 0;
 print "Testing $test... ";
 
-if (index ($disabled_tests, $test) >= 0) {
-	print "disabled.\n";
-	exit (0);
+foreach $disabled (split (/ /, $disabled_tests)) {
+	if ($disabled eq $test) {
+		print "disabled.\n";
+		exit (0);
+	}
 }
 
 my $res = system("$interpreter @ARGV $test 2>$stderr 1>$stdout");

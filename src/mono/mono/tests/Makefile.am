@@ -214,8 +214,8 @@ PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-ex
 endif
 
 DISABLED_TESTS=			\
-	delegate-async-exception.cs	\
-	delegate-delegate-exception.cs	\
+	delegate-async-exception.exe	\
+	delegate-delegate-exception.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
