@@ -1754,6 +1754,7 @@ main (int argc, char *argv [])
 						 argv [i]+9, strerror (errno));
 					exit (1);
 				}
+				dump_managed_resources = TRUE;
 				continue;
 			} else if (strncmp (argv [i], "--filter=", 9) == 0) {
 				load_filter (argv [i]+9);
