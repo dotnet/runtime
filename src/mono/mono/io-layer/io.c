@@ -1428,6 +1428,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	mode_t perms=0644;
 	gchar *filename;
 	int fd, ret;
+	int handle_type;
 	struct stat statbuf;
 	
 	mono_once (&io_ops_once, io_ops_init);
@@ -1540,8 +1541,12 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	file_handle.fileaccess=fileaccess;
 	file_handle.sharemode=sharemode;
 	file_handle.attrs=attrs;
-	
-	handle = _wapi_handle_new_fd (WAPI_HANDLE_FILE, fd, &file_handle);
+
+#ifndef S_ISFIFO
+#define S_ISFIFO(m) ((m & S_IFIFO) != 0)
+#endif
+	handle_type = (S_ISFIFO (statbuf.st_mode)) ? WAPI_HANDLE_PIPE : WAPI_HANDLE_FILE;
+	handle = _wapi_handle_new_fd (handle_type, fd, &file_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating file handle", __func__);
 		g_free (filename);

@@ -33,6 +33,13 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 	while (1) {
 		//_wapi_handle_dump ();
 		_wapi_handle_update_refs ();
+
+		/* This is an abuse of the collection thread, but it's
+		 * better than creating a new thread just for one more
+		 * function.
+		 */
+		_wapi_process_reap ();
+
 		nanosleep (&sleepytime, NULL);
 	}
 
