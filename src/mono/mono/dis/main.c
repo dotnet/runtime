@@ -1380,6 +1380,7 @@ struct {
 	{ "--methodspec",  MONO_TABLE_METHODSPEC,       dump_table_methodspec },
 	{ "--moduleref",   MONO_TABLE_MODULEREF,   	dump_table_moduleref },
 	{ "--module",      MONO_TABLE_MODULE,      	dump_table_module },
+	{ "--mresources",  0,	dis_mresource },
 	{ "--nested",      MONO_TABLE_NESTEDCLASS, 	dump_table_nestedclass },
 	{ "--param",       MONO_TABLE_PARAM,       	dump_table_param },
 	{ "--parconst",    MONO_TABLE_GENERICPARAMCONSTRAINT, dump_table_parconstraint },
@@ -1717,7 +1718,7 @@ usage (void)
 		if (((i-2) % 5) == 0)
 			g_string_append_c (args, '\n');
 	}
-	g_string_append (args, "[--forward-decls]\n[--mresources]");
+	g_string_append (args, "[--forward-decls]");
 	fprintf (stderr,
 		 "monodis -- Mono Common Intermediate Language Dissassembler\n" 
 		 "Usage is: monodis %s file ..\n", args->str);
@@ -1761,9 +1762,6 @@ main (int argc, char *argv [])
 				continue;
 			} else if (strcmp (argv [i], "--forward-decls") == 0) {
 				dump_forward_decls = TRUE;
-				continue;
-			} else if (strcmp (argv [i], "--mresources") == 0) {
-				dump_managed_resources = TRUE;
 				continue;
 			} else if (strcmp (argv [i], "--help") == 0)
 				usage ();
