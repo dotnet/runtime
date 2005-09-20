@@ -56,13 +56,92 @@ static void process_ops_init (void)
 					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
 }
 
+static gboolean process_set_termination_details (gpointer handle, int status)
+{
+	struct _WapiHandleShared shared_handle;
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	
+	ok = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up process handle %p",
+			   __func__, handle);
+		return(FALSE);
+	}
+	
+	process_handle = &shared_handle.u.process;
+
+	if (WIFSIGNALED(status)) {
+		process_handle->exitstatus = 128 + WTERMSIG(status);
+	} else {
+		process_handle->exitstatus = WEXITSTATUS(status);
+	}
+	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
+	
+	ok = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
+				   &shared_handle);
+	
+	_wapi_shared_handle_set_signal_state (handle, TRUE);
+
+	return (ok);
+}
+
+/* See if any child processes have terminated and wait() for them,
+ * updating process handle info.  This function is called from the
+ * collection thread every few seconds.
+ */
+static gboolean waitfor_pid (gpointer test, gpointer user_data G_GNUC_UNUSED)
+{
+	struct _WapiHandle_process *process;
+	gboolean ok;
+	int status;
+	pid_t ret;
+	
+	ok = _wapi_lookup_handle (test, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process);
+	if (ok == FALSE) {
+		return (FALSE);
+	}
+	
+	do {
+		ret == waitpid (process->id, &status, WNOHANG);
+	} while (errno == EINTR);
+	
+	if (ret <= 0) {
+		/* Process not ready for wait */
+#ifdef DEBUG
+		g_message ("%s: Process %d not ready for waiting for",
+			   __func__, ret);
+#endif
+
+		return (FALSE);
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: Process %d finished", __func__, ret);
+#endif
+
+	process_set_termination_details (test, status);
+	
+	/* return FALSE to keep searching */
+	return (FALSE);
+}
+
+void _wapi_process_reap (void)
+{
+#ifdef DEBUG
+	g_message ("%s: Reaping child processes", __func__);
+#endif
+
+	_wapi_search_handle (WAPI_HANDLE_PROCESS, waitfor_pid, NULL, NULL);
+}
+
 /* Limitations: This can only wait for processes that are our own
  * children.  Fixing this means resurrecting a daemon helper to manage
  * processes.
  */
 static guint32 process_wait (gpointer handle, guint32 timeout)
 {
-	struct _WapiHandleShared shared_handle;
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid, ret;
@@ -122,30 +201,11 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 	g_message ("%s: Wait done", __func__);
 #endif
 
-	ok = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up process handle %p",
-			   __func__, handle);
-		return(WAIT_FAILED);
-	}
-	
-	process_handle = &shared_handle.u.process;
-
-	if (WIFSIGNALED(status)) {
-		process_handle->exitstatus = 128 + WTERMSIG(status);
-	} else {
-		process_handle->exitstatus = WEXITSTATUS(status);
-	}
-	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
-	
-	ok = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
-				   &shared_handle);
+	ok = process_set_termination_details (handle, status);
 	if (ok == FALSE) {
 		SetLastError (ERROR_OUTOFMEMORY);
 		return (WAIT_FAILED);
 	}
-	
-	_wapi_shared_handle_set_signal_state (handle, TRUE);
 
 	return(WAIT_OBJECT_0);
 }
@@ -176,6 +236,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	GError *gerr = NULL;
 	int in_fd, out_fd, err_fd;
 	pid_t pid;
+	int lockpipe [2];
 	
 	mono_once (&process_ops_once, process_ops_init);
 	
@@ -543,11 +604,22 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);
 	}
 	
+	pipe (lockpipe);
+	
 	pid = fork ();
 	if (pid == -1) {
 		/* Error */
+		SetLastError (ERROR_OUTOFMEMORY);
+		_wapi_handle_unref (handle);
+		goto cleanup;
 	} else if (pid == 0) {
 		/* Child */
+		char c [1];
+		
+		/* Wait for the parent to finish setting up the handle */
+		close (lockpipe [1]);
+		while (read (lockpipe [0], c, 1) == -1 &&
+		       errno == EINTR);
 
 		/* should we detach from the process group? */
 
@@ -609,6 +681,8 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		goto cleanup;
 	}
 	
+	write (lockpipe [1], cmd, 1);
+	
 	if (process_info != NULL) {
 		process_info->hProcess = handle;
 		process_info->dwProcessId = pid;
@@ -621,6 +695,9 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	}
 
 cleanup:
+	close (lockpipe [0]);
+	close (lockpipe [1]);
+	
 	if (cmd != NULL) {
 		g_free (cmd);
 	}

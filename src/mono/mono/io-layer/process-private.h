@@ -27,4 +27,6 @@ struct _WapiHandle_process
 	size_t max_working_set;
 };
 
+extern void _wapi_process_reap (void);
+
 #endif /* _WAPI_PROCESS_PRIVATE_H_ */
