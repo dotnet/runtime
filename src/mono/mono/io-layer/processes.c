@@ -620,7 +620,8 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		close (lockpipe [1]);
 		while (read (lockpipe [0], c, 1) == -1 &&
 		       errno == EINTR);
-
+		close (lockpipe [0]);
+		
 		/* should we detach from the process group? */
 
 		/* Connect stdin, stdout and stderr */
