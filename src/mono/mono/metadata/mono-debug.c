@@ -727,15 +727,6 @@ mono_debug_start_add_type (MonoClass *klass)
 		return;
 }
 
-static guint32
-get_token (MonoClass *klass)
-{
-	while (klass->rank)
-		klass = klass->element_class;
-
-	return klass->type_token;
-}
-
 static void
 mono_debug_add_type (MonoClass *klass)
 {
@@ -743,14 +734,14 @@ mono_debug_add_type (MonoClass *klass)
 	MonoDebugClassEntry *entry;
 	char buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
-	guint32 token, size, total_size, max_size;
+	guint32 size, total_size, max_size;
 	int base_offset = 0;
 
 	handle = _mono_debug_get_image (klass->image);
 	if (!handle)
 		return;
 
-	if (klass->generic_class ||
+	if (klass->generic_class || klass->rank ||
 	    (klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
 		return;
 
@@ -760,15 +751,10 @@ mono_debug_add_type (MonoClass *klass)
 	else
 		ptr = oldptr = buffer;
 
-	token = get_token (klass);
-	if (!token)
-		return;
-
 	if (klass->valuetype)
 		base_offset = - (int)(sizeof (MonoObject));
 
-	write_leb128 (token, ptr, &ptr);
-	write_leb128 (klass->rank, ptr, &ptr);
+	write_leb128 (klass->type_token, ptr, &ptr);
 	write_leb128 (klass->instance_size + base_offset, ptr, &ptr);
 	WRITE_UNALIGNED (gpointer, ptr, klass);
 	ptr += sizeof (gpointer);
@@ -777,13 +763,7 @@ mono_debug_add_type (MonoClass *klass)
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugClassEntry);
 
-	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
-		// FIXME: Maybe we should print a warning here.
-		//        This should only happen for very big methods, for instance
-		//        with more than 40.000 line numbers and more than 5.000
-		//        local variables.
-		return;
-	}
+	g_assert (total_size + 9 < DATA_TABLE_CHUNK_SIZE);
 
 	entry = (MonoDebugClassEntry *) allocate_data_item (MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
