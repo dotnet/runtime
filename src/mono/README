@@ -141,8 +141,6 @@ This is Mono.
 	* runtime engine
 
 		mono program.exe
-	  or
-		mint program.exe
 
 	* C# compiler
 
