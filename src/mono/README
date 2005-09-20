@@ -156,9 +156,6 @@ This is Mono.
 3. Directory Roadmap
 ====================
 
-	doc/
-		Contains the web site contents.
-
 	docs/
 		Technical documents about the Mono runtime.
 
