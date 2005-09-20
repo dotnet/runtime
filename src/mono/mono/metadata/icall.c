@@ -5953,117 +5953,10 @@ ves_icall_System_Char_GetDataTablePointers (guint8 const **category_data,
 	*to_upper_data_high = ToUpperDataHigh;
 }
 
-static MonoString *
-ves_icall_MonoDebugger_check_runtime_version (MonoString *fname)
-{
-	gchar *filename, *error = NULL;
-
-	MONO_ARCH_SAVE_REGS;
-
-	filename = mono_string_to_utf8 (fname);
-	error = mono_debugger_check_runtime_version (filename);
-	g_free (filename);
-
-	if (error)
-		return mono_string_new (mono_domain_get (), error);
-	else
-		return NULL;
-}
-
 static gint32
 ves_icall_MonoDebugger_GetMethodToken (MonoReflectionMethod *method)
 {
 	return method->method->token;
-}
-
-static gint32
-ves_icall_MonoDebugger_GetMethodIndex (MonoReflectionMethod *rmethod)
-{
-	guint32 index;
-
-	MONO_ARCH_SAVE_REGS;
-
-	index = mono_method_get_index (rmethod->method);
-	if (!index)
-		return -1;
-
-	return index - rmethod->method->klass->method.first;
-}
-
-static MonoReflectionMethod *
-ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token)
-{
-	MonoMethod *method;
-
-	MONO_ARCH_SAVE_REGS;
-
-	method = mono_get_method (mono_assembly_get_image (assembly->assembly), token, NULL);
-
-	return mono_method_get_object (mono_domain_get (), method, NULL);
-}
-
-static MonoReflectionType *
-ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
-{
-	MonoClass *klass;
-
-	MONO_ARCH_SAVE_REGS;
-
-	klass = mono_class_get (mono_assembly_get_image (assembly->assembly), token);
-	if (!klass) {
-		g_warning (G_STRLOC ": %x", token);
-		return NULL;
-	}
-
-	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
-}
-
-static MonoReflectionType *
-ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature)
-{
-	MonoDomain *domain; 
-	MonoImage *image;
-	MonoType *type;
-	const char *ptr;
-	int len = 0;
-
-	MONO_ARCH_SAVE_REGS;
-
-	MONO_CHECK_ARG_NULL (assembly);
-	MONO_CHECK_ARG_NULL (signature);
-
-	domain = mono_domain_get();
-	image = mono_assembly_get_image (assembly->assembly);
-
-	ptr = mono_array_addr (signature, char, 0);
-	g_assert (*ptr++ == 0x07);
-	len = mono_metadata_decode_value (ptr, &ptr);
-	g_assert (len == 1);
-
-	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
-
-	return mono_type_get_object (domain, type);
-}
-
-static MonoReflectionType*
-ves_icall_MonoDebugger_MakeArrayType (MonoReflectionType *type, int rank)
-{
-	MonoClass *klass, *aklass;
-
-	MONO_ARCH_SAVE_REGS;
-
-	klass = mono_class_from_mono_type (type->type);
-	aklass = mono_array_class_get (klass, rank);
-
-	return mono_type_get_object (mono_object_domain (type), &aklass->byval_arg);
-}
-
-static int
-ves_icall_MonoDebugger_GetTypeToken (MonoObject *obj)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_reflection_get_token (obj);
 }
 
 static MonoBoolean
@@ -6578,14 +6471,7 @@ static const IcallEntry assembly_icalls [] = {
 	/*
 	 * Private icalls for the Mono Debugger
 	 */
-	{"MonoDebugger_CheckRuntimeVersion", ves_icall_MonoDebugger_check_runtime_version},
-	{"MonoDebugger_GetLocalTypeFromSignature", ves_icall_MonoDebugger_GetLocalTypeFromSignature},
-	{"MonoDebugger_GetMethod", ves_icall_MonoDebugger_GetMethod},
-	{"MonoDebugger_GetMethodIndex", ves_icall_MonoDebugger_GetMethodIndex},
 	{"MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken},
-	{"MonoDebugger_GetType", ves_icall_MonoDebugger_GetType},
-	{"MonoDebugger_GetTypeToken", ves_icall_MonoDebugger_GetTypeToken},
-	{"MonoDebugger_MakeArrayType", ves_icall_MonoDebugger_MakeArrayType},
 
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
