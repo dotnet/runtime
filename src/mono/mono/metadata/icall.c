@@ -6081,6 +6081,12 @@ custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 	return found;
 }
 
+static MonoArray*
+custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
+{
+	return mono_reflection_get_custom_attrs_by_type (obj, attr_type ? mono_class_from_mono_type (attr_type->type) : NULL);
+}
+
 static MonoBoolean
 GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
@@ -6500,7 +6506,7 @@ static const IcallEntry math_icalls [] = {
 
 static const IcallEntry customattrs_icalls [] = {
 	{"GetCustomAttributesDataInternal", mono_reflection_get_custom_attrs_data},
-	{"GetCustomAttributesInternal", mono_reflection_get_custom_attrs},
+	{"GetCustomAttributesInternal", custom_attrs_get_by_type},
 	{"IsDefinedInternal", custom_attrs_defined_internal}
 };
 
