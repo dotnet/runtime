@@ -1582,7 +1582,7 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	struct in_addr inaddr;
 	MonoClassField *field;
 	
-	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "address");
+	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "m_Address");
 
 	/* No idea why .net uses a 64bit type to hold a 32bit value...
 	 *
@@ -1603,7 +1603,7 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	MonoArray *data;
 	int i;
 
-	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "_numbers");
+	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "m_Numbers");
 	data=*(MonoArray **)(((char *)ipaddr) + field->offset);
 
 /* Solaris has only the 8 bit version. */
