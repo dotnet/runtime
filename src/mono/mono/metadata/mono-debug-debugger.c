@@ -25,9 +25,18 @@ struct _MonoDebuggerMetadataInfo {
 	int size;
 	int mono_defaults_size;
 	MonoDefaults *mono_defaults;
+	int type_size;
+	int array_type_size;
+	int klass_size;
+	int klass_instance_size_offset;
+	int klass_token_offset;
 	int klass_field_offset;
 	int klass_methods_offset;
 	int klass_method_count_offset;
+	int klass_this_arg_offset;
+	int klass_byval_arg_offset;
+	int klass_generic_class_offset;
+	int klass_generic_container_offset;
 	int field_info_size;
 };
 
@@ -124,9 +133,18 @@ mono_debugger_add_builtin_types (MonoDebugHandle *symfile)
 	info->size = sizeof (MonoDebuggerMetadataInfo);
 	info->mono_defaults = &mono_defaults;
 	info->mono_defaults_size = sizeof (MonoDefaults);
+	info->type_size = sizeof (MonoType);
+	info->array_type_size = sizeof (MonoArrayType);
+	info->klass_size = sizeof (MonoClass);
+	info->klass_instance_size_offset = (guint8*)&klass.instance_size - (guint8*)&klass;
+	info->klass_token_offset = (guint8*)&klass.type_token - (guint8*)&klass;
 	info->klass_field_offset = (guint8*)&klass.fields - (guint8*)&klass;
 	info->klass_methods_offset = (guint8*)&klass.methods - (guint8*)&klass;
 	info->klass_method_count_offset = (guint8*)&klass.method.count - (guint8*)&klass;
+	info->klass_this_arg_offset = (guint8*)&klass.this_arg - (guint8*)&klass;
+	info->klass_byval_arg_offset = (guint8*)&klass.byval_arg - (guint8*)&klass;
+	info->klass_generic_class_offset = (guint8*)&klass.generic_class - (guint8*)&klass;
+	info->klass_generic_container_offset = (guint8*)&klass.generic_container - (guint8*)&klass;
 	info->field_info_size = sizeof (MonoClassField);
 }
 
