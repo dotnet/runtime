@@ -30,6 +30,8 @@ static gint thread_tls_offset = -1;
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
+#define ARGS_OFFSET 8
+
 #ifdef PLATFORM_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
 #define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT))
@@ -723,72 +725,19 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	guint32 locals_stack_size, locals_stack_align;
-	int i, offset, curinst, size, align;
+	int i, offset;
 	gint32 *offsets;
 	CallInfo *cinfo;
 
 	header = mono_method_get_header (cfg->method);
 	sig = mono_method_signature (cfg->method);
 
-	offset = 8;
-	curinst = 0;
-
 	cinfo = get_call_info (sig, FALSE);
 
-	switch (cinfo->ret.storage) {
-	case ArgOnStack:
-		cfg->ret->opcode = OP_REGOFFSET;
-		cfg->ret->inst_basereg = X86_EBP;
-		cfg->ret->inst_offset = offset;
-		offset += sizeof (gpointer);
-		break;
-	case ArgValuetypeInReg:
-		break;
-	case ArgInIReg:
-		cfg->ret->opcode = OP_REGVAR;
-		cfg->ret->inst_c0 = cinfo->ret.reg;
-		break;
-	case ArgNone:
-	case ArgOnFloatFpStack:
-	case ArgOnDoubleFpStack:
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	if (sig->hasthis) {
-		inst = cfg->varinfo [curinst];
-		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = X86_EBP;
-		}
-		inst->inst_offset = offset;
-		offset += sizeof (gpointer);
-		curinst++;
-	}
-
-	if (sig->call_convention == MONO_CALL_VARARG) {
-		cfg->sig_cookie = offset;
-		offset += sizeof (gpointer);
-	}
-
-	for (i = 0; i < sig->param_count; ++i) {
-		inst = cfg->varinfo [curinst];
-		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = X86_EBP;
-		}
-		inst->inst_offset = offset;
-		size = mono_type_size (sig->params [i], &align);
-		size += 4 - 1;
-		size &= ~(4 - 1);
-		offset += size;
-		curinst++;
-	}
-
+	cfg->frame_reg = MONO_ARCH_BASEREG;
 	offset = 0;
 
-	/* reserve space to save LMF and caller saved registers */
+	/* Reserve space to save LMF and caller saved registers */
 
 	if (cfg->method->save_lmf) {
 		offset += sizeof (MonoLMF);
@@ -836,14 +785,52 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	g_free (offsets);
 	offset += locals_stack_size;
 
+
+	/*
+	 * Allocate arguments+return value
+	 */
+
+	switch (cinfo->ret.storage) {
+	case ArgOnStack:
+		cfg->ret->opcode = OP_REGOFFSET;
+		cfg->ret->inst_basereg = X86_EBP;
+		cfg->ret->inst_offset = cinfo->ret.offset + ARGS_OFFSET;
+		break;
+	case ArgValuetypeInReg:
+		break;
+	case ArgInIReg:
+		cfg->ret->opcode = OP_REGVAR;
+		cfg->ret->inst_c0 = cinfo->ret.reg;
+		break;
+	case ArgNone:
+	case ArgOnFloatFpStack:
+	case ArgOnDoubleFpStack:
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
+		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
+	}
+
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = &cinfo->args [i];
+		inst = cfg->varinfo [i];
+		if (inst->opcode != OP_REGVAR) {
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = X86_EBP;
+		}
+		inst->inst_offset = ainfo->offset + ARGS_OFFSET;
+	}
+
 	offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
 	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
-	g_free (cinfo);
-
-	cfg->frame_reg = MONO_ARCH_BASEREG;
-
 	cfg->stack_offset = offset;
+
+	g_free (cinfo);
 }
 
 void
