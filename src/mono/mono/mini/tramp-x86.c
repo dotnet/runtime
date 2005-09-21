@@ -243,6 +243,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
 	/* restore LMF end */
 
+	/* Restore caller saved registers */
+	x86_mov_reg_membase (buf, X86_ECX, X86_ESP, 1 * 4, 4);
+	x86_mov_reg_membase (buf, X86_EDX, X86_ESP, 2 * 4, 4);
+
+	/* Pop saved reg array + method ptr */
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 9 * 4);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
