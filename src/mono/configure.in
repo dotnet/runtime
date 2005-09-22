@@ -1825,8 +1825,7 @@ fi
     print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
   }')]
 
-  # Generate Consts.cs
-  sed -e "s/@MONO_VERSION@/$myver/" $srcdir/$mcsdir/build/common/Consts.cs.in > $srcdir/$mcsdir/build/common/Consts.cs
+  echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
 )
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}

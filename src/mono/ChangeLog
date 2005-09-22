@@ -1,3 +1,8 @@
+2005-09-22  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (MONO_VERSION): Emit it into config.make.  Don't
+	build Consts.cs.
+
 2005-09-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/exception-handling.txt: Add section about libunwind.
