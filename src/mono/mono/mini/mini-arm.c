@@ -1574,6 +1574,21 @@ arm_patch (guchar *code, const guchar *target)
 		/* branch and exchange: the address is constructed in a reg */
 		g_assert_not_reached ();
 	} else {
+		guint32 ccode [3];
+		guint32 *tmp = ccode;
+		ARM_LDR_IMM (tmp, ARMREG_IP, ARMREG_PC, 0);
+		ARM_MOV_REG_REG (tmp, ARMREG_LR, ARMREG_PC);
+		ARM_MOV_REG_REG (tmp, ARMREG_PC, ARMREG_IP);
+		if (ins == ccode [2]) {
+			tmp = (guint32*)code;
+			tmp [-1] = (guint32)target;
+			return;
+		}
+		if (ins == ccode [0]) {
+			tmp = (guint32*)code;
+			tmp [2] = (guint32)target;
+			return;
+		}
 		g_assert_not_reached ();
 	}
 //	g_print ("patched with 0x%08x\n", ins);
@@ -2344,12 +2359,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* save the temp register */
 			ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
 			ARM_STFD (code, tmpreg, ARMREG_SP, 0);
-			ARM_LDFD (code, tmpreg, ARMREG_PC, 4);
+			ARM_LDFD (code, tmpreg, ARMREG_PC, 12);
 			ARM_FPA_ADFD (code, ins->dreg, ins->dreg, tmpreg);
 			ARM_LDFD (code, tmpreg, ARMREG_SP, 0);
 			ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
 			/* skip the constant pool */
-			ARM_B (code, 4);
+			ARM_B (code, 8);
+			code += 4;
 			*(int*)code = 0x41f00000;
 			code += 4;
 			*(int*)code = 0;
