@@ -37,6 +37,8 @@
 static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
 static CRITICAL_SECTION mmap_mutex;
+static gboolean make_unreadable = FALSE;
+static guint32 n_pagefaults = 0;
 
 static void
 get_alignment (void)
@@ -158,7 +160,12 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	if (mprotect (ptr, end - start, prot | PROT_EXEC) != 0)
 		g_warning (G_GNUC_PRETTY_FUNCTION
 				   ": mprotect failed: %s", g_strerror (errno));
-	
+
+	if (make_unreadable) {
+		int res = mprotect (ptr, end - start, 0);
+		g_assert (res == 0);
+	}
+
 	EnterCriticalSection (&mmap_mutex);
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (size));
 	LeaveCriticalSection (&mmap_mutex);
@@ -236,3 +243,103 @@ mono_raw_buffer_free (void *buffer)
 		mono_raw_buffer_free_malloc (buffer);
 }
 
+/*
+ * mono_raw_buffer_set_make_unreadable:
+ *
+ *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
+ */
+void
+mono_raw_buffer_set_make_unreadable (gboolean unreadable)
+{
+	make_unreadable = unreadable;
+}
+
+typedef struct {
+	gboolean found;
+	void *ptr;
+} FindMapUserData;
+
+static void
+find_map (void *start, guint32 size, gpointer user_data)
+{
+	FindMapUserData *data = (FindMapUserData*)user_data;
+
+	if (!data->found)
+		if (((guint8*)data->ptr >= (guint8*)start) && ((guint8*)data->ptr < (guint8*)start + size))
+			data->found = TRUE;
+}
+
+/*
+ * mono_raw_buffer_is_pagefault:
+ *
+ *   Should be called from a SIGSEGV signal handler to find out whenever @ptr is
+ * within memory allocated by this module.
+ */
+gboolean
+mono_raw_buffer_is_pagefault (void *ptr)
+{
+	FindMapUserData data;
+
+	if (!make_unreadable)
+		return FALSE;
+
+	data.found = FALSE;
+	data.ptr = ptr;
+
+	EnterCriticalSection (&mmap_mutex);
+	g_hash_table_foreach (mmap_map, (GHFunc)find_map, &data);
+	LeaveCriticalSection (&mmap_mutex);
+
+	return data.found;
+}
+
+/*
+ * mono_raw_buffer_handle_pagefault:
+ *
+ *   Handle a pagefault caused by an unreadable page by making it readable again.
+ */
+void
+mono_raw_buffer_handle_pagefault (void *ptr)
+{
+#ifndef PLATFORM_WIN32
+	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), alignment);
+	int res;
+
+	EnterCriticalSection (&mmap_mutex);
+	res = mprotect (start, alignment, PROT_READ);
+	g_assert (res == 0);
+
+	n_pagefaults ++;
+	LeaveCriticalSection (&mmap_mutex);
+#endif
+}
+
+/*
+ * mono_raw_buffer_get_n_pagefaults:
+ *
+ *   Return the number of times handle_pagefault is called.
+ */
+guint32
+mono_raw_buffer_get_n_pagefaults (void)
+{
+	return n_pagefaults;
+}
+
+/*
+ * mono_raw_buffer_set_n_pagefaults:
+ *
+ *   Reset the value returned by get_n_pagefaults () to @n. Useful for counting the
+ * number of pagefaults caused by a block of code like this:
+ * 
+ *  int prev_pagefaults = mono_raw_buffer_get_n_pagefaults ();
+ *  mono_raw_buffer_set_n_pagefaults (0);
+ *  <CODE>
+ *  int new_pagefaults = mono_raw_buffer_get_n_pagefaults ();
+ *  mono_raw_buffer_set_n_pagefaults (prev_pagefaults);
+ */
+void
+mono_raw_buffer_set_n_pagefaults (guint32 n)
+{
+	n_pagefaults = n;
+}
