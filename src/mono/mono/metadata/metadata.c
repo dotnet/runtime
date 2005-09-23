@@ -456,6 +456,7 @@ inverse of this mapping.
  * @result_bitfield return value along with the number of columns in the table.
  * the resulting bitfield should be handed to the mono_metadata_table_size()
  * and mono_metadata_table_count() macros.
+ * This is a Mono runtime internal only function.
  */
 int
 mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bitfield)
@@ -784,14 +785,14 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 	int i;
 	const char *base = meta->tables_base;
 	
-	for (i = 0; i < MONO_TABLE_NUM; i++){
-		if (meta->tables [i].rows == 0)
+	for (i = 0; i < MONO_TABLE_NUM; i++) {
+		MonoTableInfo *table = &meta->tables [i];
+		if (table->rows == 0)
 			continue;
 
-		meta->tables [i].row_size = mono_metadata_compute_size (
-			meta, i, &meta->tables [i].size_bitfield);
-		meta->tables [i].base = base;
-		base += meta->tables [i].rows * meta->tables [i].row_size;
+		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
+		table->base = base;
+		base += table->rows * table->row_size;
 	}
 }
 
@@ -913,7 +914,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 	
 	g_assert (res_size == count);
 	
-	for (i = 0; i < count; i++){
+	for (i = 0; i < count; i++) {
 		int n = mono_metadata_table_size (bitfield, i);
 
 		switch (n){
@@ -921,10 +922,8 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			res [i] = *data; break;
 		case 2:
 			res [i] = read16 (data); break;
-			
 		case 4:
 			res [i] = read32 (data); break;
-			
 		default:
 			g_assert_not_reached ();
 		}
@@ -956,7 +955,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 		data += n;
 		n = mono_metadata_table_size (bitfield, i + 1);
 	}
-	switch (n){
+	switch (n) {
 	case 1:
 		return *data;
 	case 2:
@@ -1072,8 +1071,7 @@ int
 mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
 {
 	MonoCustomMod local;
-	if ((*ptr == MONO_TYPE_CMOD_OPT) ||
-	    (*ptr == MONO_TYPE_CMOD_REQD)) {
+	if ((*ptr == MONO_TYPE_CMOD_OPT) || (*ptr == MONO_TYPE_CMOD_REQD)) {
 		if (!dest)
 			dest = &local;
 		dest->required = *ptr == MONO_TYPE_CMOD_REQD ? 1 : 0;
@@ -1280,7 +1278,8 @@ mono_generic_class_equal (gconstpointer ka, gconstpointer kb)
 /**
  * mono_metadata_init:
  *
- *  Initialize the global variables of this module.
+ * Initialize the global variables of this module.
+ * This is a Mono runtime internal function.
  */
 void
 mono_metadata_init (void)
@@ -1314,6 +1313,7 @@ mono_metadata_init (void)
  * (the `generic_container' field in the MonoMethodNormal) generic container.
  * When we encounter any MONO_TYPE_VAR or MONO_TYPE_MVAR's, they're looked up in
  * this MonoGenericContainer.
+ * This is a Mono runtime internal function.
  *
  * Returns: a #MonoType structure representing the decoded type.
  */
@@ -1435,15 +1435,16 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 }
 
 /*
- * mono_metadata_parse_signature:
+ * mono_metadata_parse_signature_full:
  * @image: metadata context
+ * @generic_context: generics context
  * @toke: metadata token
  *
  * Decode a method signature stored in the STANDALONESIG table
  *
  * Returns: a MonoMethodSignature describing the signature.
  */
-MonoMethodSignature *
+MonoMethodSignature*
 mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContext *generic_context, guint32 token)
 {
 	MonoTableInfo *tables = image->tables;
@@ -1464,12 +1465,32 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContext *generi
 	return mono_metadata_parse_method_signature_full (image, generic_context, FALSE, ptr, NULL); 
 }
 
-MonoMethodSignature *
+/*
+ * mono_metadata_parse_signature:
+ * @image: metadata context
+ * @toke: metadata token
+ *
+ * Decode a method signature stored in the STANDALONESIG table
+ *
+ * Returns: a MonoMethodSignature describing the signature.
+ */
+MonoMethodSignature*
 mono_metadata_parse_signature (MonoImage *image, guint32 token)
 {
 	return mono_metadata_parse_signature_full (image, NULL, token);
 }
 
+/*
+ * mono_metadata_signature_alloc:
+ * @image: metadata context
+ * @nparmas: number of parameters in the signature
+ *
+ * Allocate a MonoMethodSignature structure with the specified number of params.
+ * The return type and the params types need to be filled later.
+ * This is a Mono runtime internal function.
+ *
+ * Returns: the new MonoMethodSignature structure.
+ */
 MonoMethodSignature*
 mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 {
@@ -1483,6 +1504,15 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	return sig;
 }
 
+/*
+ * mono_metadata_signature_dup:
+ * @sig: method signature
+ *
+ * Duplicate an existing MonoMethodSignature so it can be modified.
+ * This is a Mono runtime internal function.
+ *
+ * Returns: the new MonoMethodSignature structure.
+ */
 MonoMethodSignature*
 mono_metadata_signature_dup (MonoMethodSignature *sig)
 {
@@ -1495,11 +1525,13 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 /*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
+ * @generic_context: generics context
  * @def: the MethodDef index or 0 for Ref signatures.
  * @ptr: pointer to the signature metadata representation
  * @rptr: pointer updated to match the end of the decoded stream
  *
  * Decode a method signature stored at @ptr.
+ * This is a Mono runtime internal function.
  *
  * Returns: a MonoMethodSignature describing the signature.
  */
@@ -1571,8 +1603,9 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 			container->type_params [i].owner = container;
 			container->type_params [i].num = i;
 		}
-	} else
+	} else {
 		context = generic_context;
+	}
 
 	if (call_convention != 0xa) {
 		method->ret = mono_metadata_parse_type_full (m, context, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
@@ -1585,7 +1618,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 		for (i = 0; i < method->param_count; ++i) {
 			if (*ptr == MONO_TYPE_SENTINEL) {
 				if (method->call_convention != MONO_CALL_VARARG || def)
-						g_error ("found sentinel for methoddef or no vararg method");
+					g_error ("found sentinel for methoddef or no vararg method");
 				method->sentinelpos = i;
 				ptr++;
 			}
@@ -1611,6 +1644,18 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 	return method;
 }
 
+/*
+ * mono_metadata_parse_method_signature:
+ * @m: metadata context
+ * @def: the MethodDef index or 0 for Ref signatures.
+ * @ptr: pointer to the signature metadata representation
+ * @rptr: pointer updated to match the end of the decoded stream
+ *
+ * Decode a method signature stored at @ptr.
+ * This is a Mono runtime internal function.
+ *
+ * Returns: a MonoMethodSignature describing the signature.
+ */
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
@@ -1839,7 +1884,11 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
- * @
+ * @m: image context
+ * @generic_context: generics_context
+ * @ptr: pointer to the encoded type
+ * @rptr: pointer where the end of the encoded type is saved
+ * 
  * Internal routine used to "fill" the contents of @type from an 
  * allocated pointer.  This is done this way to avoid doing too
  * many mini-allocations (particularly for the MonoFieldType which
@@ -1898,19 +1947,15 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *g
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array_full (m, generic_context, ptr, &ptr);
 		break;
-
 	case MONO_TYPE_MVAR:
 		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, TRUE, ptr, &ptr);
 		break;
-
 	case MONO_TYPE_VAR:
 		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, FALSE, ptr, &ptr);
 		break;
-
 	case MONO_TYPE_GENERICINST:
 		do_mono_metadata_parse_generic_class (type, m, generic_context, ptr, &ptr);
 		break;
-		
 	default:
 		g_error ("type 0x%02x not handled in do_mono_metadata_parse_type", type->type);
 	}
@@ -2024,30 +2069,20 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 				guint32 tof_value;
 				if (is_fat) {
 					ec->flags = read32 (p);
-					p += 4;
-					ec->try_offset = read32 (p);
-					p += 4;
-					ec->try_len = read32 (p);
-					p += 4;
-					ec->handler_offset = read32 (p);
-					p += 4;
-					ec->handler_len = read32 (p);
-					p += 4;
-					tof_value = read32 (p);
-					p += 4;
+					ec->try_offset = read32 (p + 4);
+					ec->try_len = read32 (p + 8);
+					ec->handler_offset = read32 (p + 12);
+					ec->handler_len = read32 (p + 16);
+					tof_value = read32 (p + 20);
+					p += 24;
 				} else {
 					ec->flags = read16 (p);
-					p += 2;
-					ec->try_offset = read16 (p);
-					p += 2;
-					ec->try_len = *p;
-					++p;
-					ec->handler_offset = read16 (p);
-					p += 2;
-					ec->handler_len = *p;
-					++p;
-					tof_value = read32 (p);
-					p += 4;
+					ec->try_offset = read16 (p + 2);
+					ec->try_len = *(p + 4);
+					ec->handler_offset = read16 (p + 5);
+					ec->handler_len = *(p + 7);
+					tof_value = read32 (p + 8);
+					p += 12;
 				}
 				if (ec->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					ec->data.filter_offset = tof_value;
@@ -2068,12 +2103,14 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 }
 
 /*
- * mono_metadata_parse_mh:
+ * mono_metadata_parse_mh_full:
  * @m: metadata context
+ * @generic_context: generics context
  * @ptr: pointer to the method header.
  *
  * Decode the method header at @ptr, including pointer to the IL code,
  * info about local variables and optional exception tables.
+ * This is a Mono runtime internal function.
  *
  * Returns: a MonoMethodHeader.
  */
@@ -2090,7 +2127,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContext *generic_context, 
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 
-	switch (format){
+	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
 		mh = g_new0 (MonoMethodHeader, 1);
 		ptr++;
@@ -2137,9 +2174,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContext *generic_context, 
 		 * There are more sections
 		 */
 		ptr = code + code_size;
-		
 		break;
-		
 	default:
 		return NULL;
 	}
@@ -2174,6 +2209,17 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContext *generic_context, 
 	return mh;
 }
 
+/*
+ * mono_metadata_parse_mh:
+ * @generic_context: generics context
+ * @ptr: pointer to the method header.
+ *
+ * Decode the method header at @ptr, including pointer to the IL code,
+ * info about local variables and optional exception tables.
+ * This is a Mono runtime internal function.
+ *
+ * Returns: a MonoMethodHeader.
+ */
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
@@ -2185,6 +2231,7 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
  * @mh: a method header
  *
  * Free the memory allocated for the method header.
+ * This is a Mono runtime internal function.
  */
 void
 mono_metadata_free_mh (MonoMethodHeader *mh)
@@ -2194,6 +2241,103 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 		mono_metadata_free_type (mh->locals[i]);
 	g_free (mh->clauses);
 	g_free (mh);
+}
+
+/*
+ * mono_method_header_get_code:
+ * @header: a MonoMethodHeader pointer
+ * @code_size: memory location for returning the code size
+ * @max_stack: memory location for returning the max stack
+ *
+ * Method header accessor to retreive info about the IL code properties:
+ * a pointer to the IL code itself, the size of the code and the max number
+ * of stack slots used by the code.
+ *
+ * Returns: pointer to the IL code represented by the method header.
+ */
+const unsigned char*
+mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint32* max_stack)
+{
+	if (code_size)
+		*code_size = header->code_size;
+	if (max_stack)
+		*max_stack = header->max_stack;
+	return header->code;
+}
+
+/*
+ * mono_method_header_get_locals:
+ * @header: a MonoMethodHeader pointer
+ * @num_locals: memory location for returning the number of local variables
+ * @init_locals: memory location for returning the init_locals flag
+ *
+ * Method header accessor to retreive info about the local variables:
+ * an array of local types, the number of locals and whether the locals
+ * are supposed to be initialized to 0 on method entry
+ *
+ * Returns: pointer to an array of types of the local variables
+ */
+MonoType**
+mono_method_header_get_locals (MonoMethodHeader *header, guint32* num_locals, gboolean *init_locals)
+{
+	if (num_locals)
+		*num_locals = header->num_locals;
+	if (init_locals)
+		*init_locals = header->init_locals;
+	return header->locals;
+}
+
+/*
+ * mono_method_header_get_num_clauses:
+ * @header: a MonoMethodHeader pointer
+ *
+ * Method header accessor to retreive the number of exception clauses.
+ *
+ * Returns: the number of exception clauses present
+ */
+int
+mono_method_header_get_num_clauses (MonoMethodHeader *header)
+{
+	return header->num_clauses;
+}
+
+/*
+ * mono_method_header_get_clauses:
+ * @header: a MonoMethodHeader pointer
+ * @method: MonoMethod the header belongs to
+ * @iter: pointer to a iterator
+ * @clause: pointer to a MonoExceptionClause structure which will be filled with the info
+ *
+ * Get the info about the exception clauses in the method. Set *iter to NULL to
+ * initiate the iteration, then call the method repeatedly until it returns FALSE.
+ * At each iteration, the structure pointed to by clause if filled with the
+ * exception clause information.
+ *
+ * Returns: TRUE if clause was filled with info, FALSE if there are no more exception
+ * clauses.
+ */
+int
+mono_method_header_get_clauses (MonoMethodHeader *header, MonoMethod *method, gpointer *iter, MonoExceptionClause *clause)
+{
+	MonoExceptionClause *sc;
+	/* later we'll be able to use this interface to parse the clause info on demand,
+	 * without allocating anything.
+	 */
+	if (!iter || !header->num_clauses)
+		return FALSE;
+	if (!*iter) {
+		*iter = sc = header->clauses;
+		*clause = *sc;
+		return TRUE;
+	}
+	sc = *iter;
+	sc++;
+	if (sc < header->clauses + header->num_clauses) {
+		*iter = sc;
+		*clause = *sc;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 /**
@@ -2249,13 +2393,10 @@ mono_metadata_token_from_dor (guint32 dor_index)
 	switch (table){
 	case 0: /* TypeDef */
 		return MONO_TOKEN_TYPE_DEF | idx;
-
 	case 1: /* TypeRef */
 		return MONO_TOKEN_TYPE_REF | idx;
-
 	case 2: /* TypeSpec */
 		return MONO_TOKEN_TYPE_SPEC | idx;
-
 	default:
 		g_assert_not_reached ();
 	}
@@ -2495,7 +2636,7 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 	MonoClass **interfaces;
 	gboolean rv;
 
-    rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, NULL);
+	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, NULL);
 	if (rv)
 		return interfaces;
 	else
@@ -2783,6 +2924,7 @@ mono_type_size (MonoType *t, gint *align)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
+		/* FIXME: Martin, this is wrong. */
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 	default:
@@ -3013,8 +3155,7 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 static gboolean
 do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	if (t1->type != t2->type ||
-	    t1->byref != t2->byref)
+	if (t1->type != t2->type || t1->byref != t2->byref)
 		return FALSE;
 
 	switch (t1->type) {
@@ -3084,8 +3225,7 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 {
 	int i;
 
-	if (sig1->hasthis != sig2->hasthis ||
-	    sig1->param_count != sig2->param_count)
+	if (sig1->hasthis != sig2->hasthis || sig1->param_count != sig2->param_count)
 		return FALSE;
 
 	/*
@@ -3727,9 +3867,7 @@ handle_enum:
 					*conv = MONO_MARSHAL_CONV_DEL_FTN;
 					return MONO_NATIVE_FUNC;
 				}
-				else
-					/* Fall through */
-					;
+				/* Fall through */
 			default:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}

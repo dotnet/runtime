@@ -33,6 +33,7 @@ G_BEGIN_DECLS
 
 typedef struct _MonoClass MonoClass;
 typedef struct _MonoDomain MonoDomain;
+typedef struct _MonoMethod MonoMethod;
 
 typedef enum {
 	MONO_EXCEPTION_CLAUSE_NONE,
@@ -306,6 +307,9 @@ struct _MonoArrayType {
 	int *lobounds;
 };
 
+/* This structure is internal to the runtime: use the mono_type*
+ * accessors below, because it will soon ago away from the public header file.
+ */
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
@@ -323,6 +327,10 @@ struct _MonoType {
 	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 };
 
+/*
+ * This structure is an internal runtime detail: use the mono_signature_*
+ * accessors below, because it will go away from the public header.
+ */
 struct _MonoMethodSignature {
 	unsigned int  hasthis : 1;
 	unsigned int  explicit_this   : 1;
@@ -338,6 +346,10 @@ struct _MonoMethodSignature {
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
+/*
+ * This structure is an internal runtime detail: use the mono_method_header_*
+ * accessors below, because it will go away from the public header.
+ */
 typedef struct {
 	guint32      code_size;
 	const unsigned char  *code;
@@ -461,6 +473,19 @@ guint             mono_signature_hash (MonoMethodSignature *sig);
 
 MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 void              mono_metadata_free_mh  (MonoMethodHeader *mh);
+
+/* MonoMethodHeader acccessors */
+const unsigned char*
+mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint32* max_stack);
+
+MonoType**
+mono_method_header_get_locals (MonoMethodHeader *header, guint32* num_locals, gboolean *init_locals);
+
+int
+mono_method_header_get_num_clauses (MonoMethodHeader *header);
+
+int
+mono_method_header_get_clauses (MonoMethodHeader *header, MonoMethod *method, gpointer *iter, MonoExceptionClause *clause);
 
 guint32 
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, 

@@ -6,8 +6,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _MonoMethod MonoMethod;
-
 typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
 
 MonoMethod *
