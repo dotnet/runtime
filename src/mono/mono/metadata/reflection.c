@@ -3938,6 +3938,27 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		table->rows += types->len;
 		alloc_table (table, table->rows);
 
+		/*
+		 * Emit type names + namespaces at one place inside the string heap,
+		 * so load_class_names () needs to touch fewer pages.
+		 */
+		for (i = 0; i < types->len; ++i) {
+			MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+			char *n;
+
+			n = mono_string_to_utf8 (tb->nspace);
+			string_heap_insert (&assembly->sheap, n);
+			g_free (n);
+		}
+		for (i = 0; i < types->len; ++i) {
+			MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+			char *n;
+
+			n = mono_string_to_utf8 (tb->name);
+			string_heap_insert (&assembly->sheap, n);
+			g_free (n);
+		}
+
 		for (i = 0; i < types->len; ++i) {
 			MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
 			mono_image_get_type_info (domain, type, assembly);
