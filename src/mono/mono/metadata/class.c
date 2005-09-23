@@ -646,6 +646,62 @@ mono_get_inflated_method (MonoMethod *method)
 }
 
 /** 
+ * mono_class_find_enum_basetype:
+ * @class: The enum class
+ *
+ *   Determine the basetype of an enum by iterating through its fields. We do this
+ * in a separate function since it is cheaper than calling mono_class_setup_fields.
+ */
+static MonoType*
+mono_class_find_enum_basetype (MonoClass *class)
+{
+	MonoImage *m = class->image; 
+	const int top = class->field.count;
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
+	int i;
+
+	g_assert (class->enumtype);
+
+	/*
+	 * Fetch all the field information.
+	 */
+	for (i = 0; i < top; i++){
+		const char *sig;
+		guint32 cols [MONO_FIELD_SIZE];
+		int idx = class->field.first + i;
+		MonoGenericContainer *container = NULL;
+		MonoType *ftype;
+
+		mono_metadata_decode_row (t, idx, cols, MONO_FIELD_SIZE);
+		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
+		mono_metadata_decode_value (sig, &sig);
+		/* FIELD signature == 0x06 */
+		g_assert (*sig == 0x06);
+		if (class->generic_container)
+			container = class->generic_container;
+		else if (class->generic_class) {
+			MonoClass *gklass = class->generic_class->container_class;
+
+			container = gklass->generic_container;
+			g_assert (container);
+		}
+		ftype = mono_metadata_parse_type_full (
+			m, (MonoGenericContext *) container, MONO_PARSE_FIELD,
+			cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+		if (class->generic_class) {
+			ftype = mono_class_inflate_generic_type (
+				ftype, class->generic_class->context);
+			ftype->attrs = cols [MONO_FIELD_FLAGS];
+		}
+
+		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
+			return ftype;
+	}
+
+	return NULL;
+}
+
+/** 
  * mono_class_setup_fields:
  * @class: The class to initialize
  *
@@ -2483,10 +2539,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	mono_class_setup_mono_type (class);
 
-	mono_metadata_interfaces_from_typedef_full (image, type_token, &interfaces, &icount, context);
+	if (!class->enumtype) {
+		mono_metadata_interfaces_from_typedef_full (image, type_token, &interfaces, &icount, context);
 
-	class->interfaces = interfaces;
-	class->interface_count = icount;
+		class->interfaces = interfaces;
+		class->interface_count = icount;
+	}
 
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
 		class->unicode = 1;
@@ -2531,8 +2589,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		g_assert (class->field.count == 0);
 	}
 
-	if (class->enumtype)
-		mono_class_setup_fields (class);
+	if (class->enumtype) {
+		class->enum_basetype = mono_class_find_enum_basetype (class);
+		class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
+	}
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
