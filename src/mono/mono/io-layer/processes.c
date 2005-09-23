@@ -97,6 +97,11 @@ static gboolean waitfor_pid (gpointer test, gpointer user_data G_GNUC_UNUSED)
 	int status;
 	pid_t ret;
 	
+	if (_wapi_handle_issignalled (test)) {
+		/* We've already done this one */
+		return (FALSE);
+	}
+	
 	ok = _wapi_lookup_handle (test, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process);
 	if (ok == FALSE) {
@@ -104,14 +109,14 @@ static gboolean waitfor_pid (gpointer test, gpointer user_data G_GNUC_UNUSED)
 	}
 	
 	do {
-		ret == waitpid (process->id, &status, WNOHANG);
+		ret = waitpid (process->id, &status, WNOHANG);
 	} while (errno == EINTR);
 	
 	if (ret <= 0) {
 		/* Process not ready for wait */
 #ifdef DEBUG
-		g_message ("%s: Process %d not ready for waiting for",
-			   __func__, ret);
+		g_message ("%s: Process %d not ready for waiting for: %s",
+			   __func__, process->id, g_strerror (errno));
 #endif
 
 		return (FALSE);

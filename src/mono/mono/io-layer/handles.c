@@ -351,10 +351,6 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
 	}
 		
-	thr_ret = mono_mutex_unlock (&scan_mutex);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
-		
 	/* Make sure we left the space for fd mappings */
 	g_assert (handle_idx >= _wapi_fd_reserve);
 	
@@ -375,7 +371,8 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 							  handle_specific);
 			if (offset == 0) {
 				/* FIXME: grow the arrays */
-				return (_WAPI_HANDLE_INVALID);
+				handle = _WAPI_HANDLE_INVALID;
+				goto done;
 			}
 		}
 		
@@ -386,7 +383,8 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 
 			if (ref == 0) {
 				/* FIXME: grow the arrays */
-				return (_WAPI_HANDLE_INVALID);
+				handle = _WAPI_HANDLE_INVALID;
+				goto done;
 			}
 		}
 		
@@ -396,6 +394,11 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 			   ref);
 #endif
 	}
+		
+done:
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	return(handle);
 }
@@ -403,7 +406,7 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset)
 {
 	guint32 handle_idx = 0;
-	gpointer handle;
+	gpointer handle = INVALID_HANDLE_VALUE;
 	int thr_ret, i, k;
 	
 	mono_once (&shared_init_once, shared_init);
@@ -417,6 +420,11 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset)
 	g_assert(_WAPI_SHARED_HANDLE(type));
 	g_assert(offset != 0);
 		
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	g_assert (thr_ret == 0);
+
 	for (i = SLOT_INDEX (0); _wapi_private_handles [i] != NULL; i++) {
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles [i][k];
@@ -424,14 +432,24 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset)
 			if (handle_data->type == type &&
 			    handle_data->u.shared.offset == offset) {
 				handle = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
-				_wapi_handle_ref (handle);
-
-#ifdef DEBUG
-				g_message ("%s: Returning old handle %p referencing 0x%x", __func__, handle, offset);
-#endif
-				return (handle);
+				goto first_pass_done;
 			}
 		}
+	}
+
+first_pass_done:
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+
+	if (handle != INVALID_HANDLE_VALUE) {
+		_wapi_handle_ref (handle);
+
+#ifdef DEBUG
+		g_message ("%s: Returning old handle %p referencing 0x%x",
+			   __func__, handle, offset);
+#endif
+		return (handle);
 	}
 
 	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
@@ -713,8 +731,13 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	gpointer ret = NULL;
 	guint32 i, k;
 	gboolean found = FALSE;
+	int thr_ret;
 
-
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	
 	for (i = SLOT_INDEX (0); !found && _wapi_private_handles [i] != NULL; i++) {
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 			handle_data = &_wapi_private_handles [i][k];
@@ -728,6 +751,10 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			}
 		}
 	}
+
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
 	if (!found && _WAPI_SHARED_HANDLE (type)) {
 		/* Not found yet, so search the shared memory too */
@@ -1564,7 +1591,13 @@ void _wapi_handle_dump (void)
 {
 	struct _WapiHandleUnshared *handle_data;
 	guint32 i, k;
-
+	int thr_ret;
+	
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	
 	for(i = SLOT_INDEX (0); _wapi_private_handles [i] != NULL; i++) {
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 			handle_data = &_wapi_private_handles [i][k];
@@ -1582,6 +1615,10 @@ void _wapi_handle_dump (void)
 			g_print ("\n");
 		}
 	}
+
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 }
 
 static void _wapi_shared_details (gpointer handle_info)
@@ -1602,6 +1639,10 @@ void _wapi_handle_update_refs (void)
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARE);
 	g_assert(thr_ret == 0);
 
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&scan_mutex);
+	thr_ret = mono_mutex_lock (&scan_mutex);
+	
 	for(i = SLOT_INDEX (0); _wapi_private_handles [i] != NULL; i++) {
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 			struct _WapiHandleUnshared *handle = &_wapi_private_handles [i][k];
@@ -1644,6 +1685,10 @@ void _wapi_handle_update_refs (void)
 			}
 		}
 	}
+
+	thr_ret = mono_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARE);
 
