@@ -49,6 +49,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/rawbuffer.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/os/gc_wrapper.h>
@@ -9820,6 +9821,13 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 #endif
 	GET_CONTEXT
 
+	if (debug_options.collect_pagefault_stats) {
+		if (mono_raw_buffer_is_pagefault (info->si_addr)) {
+			mono_raw_buffer_handle_pagefault (info->si_addr);
+			return;
+		}
+	}
+
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
@@ -10098,9 +10106,11 @@ mini_parse_debug_options (void)
 			debug_options.keep_delegates = TRUE;
 		else if (!strcmp (arg, "abort-on-sigsegv"))
 			debug_options.abort_on_sigsegv = TRUE;
+		else if (!strcmp (arg, "collect-pagefault-stats"))
+			debug_options.collect_pagefault_stats = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'abort-on-sigsegv'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'abort-on-sigsegv', 'collect-pagefault-stats'\n");
 			exit (1);
 		}
 	}
@@ -10168,6 +10178,9 @@ mini_init (const char *filename)
 	mono_install_init_vtable (mono_aot_init_vtable);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
+
+	if (debug_options.collect_pagefault_stats)
+		mono_raw_buffer_set_make_unreadable (TRUE);
 
 	domain = mono_init_from_assembly (filename, filename);
 	mono_icall_init ();
@@ -10356,6 +10369,8 @@ print_jit_stats (void)
 			g_print ("LinkDemand (aptc)     : %ld\n", mono_jit_stats.cas_linkdemand_aptc);
 			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
 		}
+		if (debug_options.collect_pagefault_stats)
+			g_print ("Metadata pagefaults   : %d\n", mono_raw_buffer_get_n_pagefaults ());
 	}
 }
 

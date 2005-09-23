@@ -733,6 +733,7 @@ typedef struct {
 	gboolean handle_sigint;
 	gboolean keep_delegates;
 	gboolean abort_on_sigsegv;
+	gboolean collect_pagefault_stats;
 } MonoDebugOptions;
 
 enum {
