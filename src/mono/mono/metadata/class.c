@@ -647,10 +647,10 @@ mono_get_inflated_method (MonoMethod *method)
 
 /** 
  * mono_class_setup_fields:
- * @m: pointer to the metadata.
  * @class: The class to initialize
  *
  * Initializes the class->fields.
+ * Assumes the loader lock is held.
  */
 static void
 mono_class_setup_fields (MonoClass *class)
@@ -667,6 +667,9 @@ mono_class_setup_fields (MonoClass *class)
 
 	if (class->size_inited)
 		return;
+
+	if (class->inited)
+		mono_class_init (class);
 
 	class->instance_size = 0;
 	class->class_size = 0;
@@ -708,7 +711,7 @@ mono_class_setup_fields (MonoClass *class)
 	/* Prevent infinite loops if the class references itself */
 	class->size_inited = 1;
 
-	class->fields = g_new0 (MonoClassField, top);
+	class->fields = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoClassField) * top);
 
 	/*
 	 * Fetch all the field information.
@@ -799,6 +802,21 @@ mono_class_setup_fields (MonoClass *class)
 	}
 
 	mono_class_layout_fields (class);
+}
+
+/** 
+ * mono_class_setup_fields_locking:
+ * @class: The class to initialize
+ *
+ * Initializes the class->fields.
+ * Aquires the loader lock.
+ */
+static void
+mono_class_setup_fields_locking (MonoClass *class)
+{
+	mono_loader_lock ();
+	mono_class_setup_fields (class);
+	mono_loader_unlock ();
 }
 
 /* useful until we keep track of gc-references in corlib etc. */
@@ -1010,10 +1028,9 @@ mono_class_setup_methods (MonoClass *class)
 	//printf ("INIT: %s.%s\n", class->name_space, class->name);
 
 	if (!class->generic_class && !class->methods) {
-		methods = g_new (MonoMethod*, class->method.count);
+		methods = mono_mempool_alloc (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
 		for (i = 0; i < class->method.count; ++i) {
-			methods [i] = mono_get_method (class->image,
-										   MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
 		}
 	}
 
@@ -1021,6 +1038,7 @@ mono_class_setup_methods (MonoClass *class)
 		for (i = 0; i < class->method.count; ++i)
 			methods [i]->slot = i;
 
+	/* Leave this assignment as the last op in this function */
 	class->methods = methods;
 
 	mono_loader_unlock ();
@@ -1053,7 +1071,7 @@ mono_class_setup_properties (MonoClass *class)
 	if (class->property.count)
 		mono_class_setup_methods (class);
 
-	properties = g_new0 (MonoProperty, class->property.count);
+	properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
 	for (i = class->property.first; i < last; ++i) {
 		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
 		properties [i - class->property.first].parent = class;
@@ -1076,6 +1094,7 @@ mono_class_setup_properties (MonoClass *class)
 		}
 	}
 
+	/* Leave this assignment as the last op in the function */
 	class->properties = properties;
 
 	mono_loader_unlock ();
@@ -1089,19 +1108,26 @@ mono_class_setup_events (MonoClass *class)
 	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_EVENT];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 last;
+	MonoEvent *events;
 
 	if (class->events)
 		return;
 
+	mono_loader_lock ();
+
+	if (class->events) {
+		mono_loader_unlock ();
+		return;
+	}
 	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
 	class->event.count = last - class->event.first;
 
 	if (class->event.count)
 		mono_class_setup_methods (class);
 
-	class->events = g_new0 (MonoEvent, class->event.count);
+	events = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoEvent) * class->event.count);
 	for (i = class->event.first; i < last; ++i) {
-		MonoEvent *event = &class->events [i - class->event.first];
+		MonoEvent *event = &events [i - class->event.first];
 			
 		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
 		event->parent = class;
@@ -1139,6 +1165,10 @@ mono_class_setup_events (MonoClass *class)
 			}
 		}
 	}
+	/* Leave this assignment as the last op in the function */
+	class->events = events;
+
+	mono_loader_unlock ();
 }
 
 static guint
@@ -3090,18 +3120,17 @@ mono_class_data_size (MonoClass *klass)
 static MonoClassField *
 mono_class_get_field_idx (MonoClass *class, int idx)
 {
-	mono_class_setup_fields (class);
+	mono_class_setup_fields_locking (class);
 
-	if (class->field.count){
-		if ((idx >= class->field.first) && (idx < class->field.first + class->field.count)){
-			return &class->fields [idx - class->field.first];
+	while (class) {
+		if (class->field.count) {
+			if ((idx >= class->field.first) && (idx < class->field.first + class->field.count)){
+				return &class->fields [idx - class->field.first];
+			}
 		}
+		class = class->parent;
 	}
-
-	if (!class->parent)
-		return NULL;
-	
-	return mono_class_get_field_idx (class->parent, idx);
+	return NULL;
 }
 
 /**
@@ -3123,13 +3152,22 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 	return mono_class_get_field_idx (class, idx - 1);
 }
 
+/**
+ * mono_class_get_field_from_name:
+ * @klass: the class to lookup the field.
+ * @name: the field name
+ *
+ * Search the class @klass and it's parents for a field with the name @name.
+ * 
+ * Returns: the MonoClassField pointer of the named field or NULL
+ */
 MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name)
 {
 	int i;
 
+	mono_class_setup_fields_locking (klass);
 	while (klass) {
-		mono_class_setup_fields (klass);
 		for (i = 0; i < klass->field.count; ++i) {
 			if (strcmp (name, klass->fields [i].name) == 0)
 				return &klass->fields [i];
@@ -3139,14 +3177,23 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	return NULL;
 }
 
+/**
+ * mono_class_get_field_token:
+ * @field: the field we need the token of
+ *
+ * Get the token of a field. Note that the tokesn is only valid for the image
+ * the field was loaded from. Don't use this function for fields in dynamic types.
+ * 
+ * Returns: the token representing the field in the image it was loaded from.
+ */
 guint32
 mono_class_get_field_token (MonoClassField *field)
 {
 	MonoClass *klass = field->parent;
 	int i;
 
+	mono_class_setup_fields_locking (klass);
 	while (klass) {
-		mono_class_setup_fields (klass);
 		for (i = 0; i < klass->field.count; ++i) {
 			if (&klass->fields [i] == field)
 				return mono_metadata_make_token (MONO_TABLE_FIELD, klass->field.first + i + 1);
@@ -4190,10 +4237,8 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 	MonoClassField* field;
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
+	mono_class_setup_fields_locking (klass);
 	if (!*iter) {
-		mono_class_setup_fields (klass);
 		/* start from the first */
 		if (klass->field.count) {
 			return *iter = &klass->fields [0];
