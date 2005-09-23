@@ -9821,12 +9821,14 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 #endif
 	GET_CONTEXT
 
+#ifdef MONO_ARCH_USE_SIGACTION
 	if (debug_options.collect_pagefault_stats) {
 		if (mono_raw_buffer_is_pagefault (info->si_addr)) {
 			mono_raw_buffer_handle_pagefault (info->si_addr);
 			return;
 		}
 	}
+#endif
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	/* Can't allocate memory using Boehm GC on altstack */
