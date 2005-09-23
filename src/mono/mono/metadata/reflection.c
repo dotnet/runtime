@@ -9096,7 +9096,6 @@ typebuilder_setup_fields (MonoClass *klass)
 
 	klass->field.count = tb->num_fields;
 	klass->field.first = 0;
-	klass->field.last = klass->field.count;
 
 	if (!klass->field.count)
 		return;
@@ -9146,7 +9145,6 @@ typebuilder_setup_properties (MonoClass *klass)
 
 	klass->property.count = tb->properties ? mono_array_length (tb->properties) : 0;
 	klass->property.first = 0;
-	klass->property.last = klass->property.count;
 
 	klass->properties = g_new0 (MonoProperty, klass->property.count);
 	for (i = 0; i < klass->property.count; ++i) {
@@ -9202,7 +9200,6 @@ typebuilder_setup_events (MonoClass *klass)
 
 	klass->event.count = tb->events ? mono_array_length (tb->events) : 0;
 	klass->event.first = 0;
-	klass->event.last = klass->event.count;
 
 	klass->events = g_new0 (MonoEvent, klass->event.count);
 	for (i = 0; i < klass->event.count; ++i) {

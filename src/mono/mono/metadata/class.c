@@ -1035,6 +1035,7 @@ mono_class_setup_properties (MonoClass *class)
 	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_PROPERTY];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoProperty *properties;
+	guint32 last;
 
 	if (class->properties)
 		return;
@@ -1046,14 +1047,14 @@ mono_class_setup_properties (MonoClass *class)
 		return;
 	}
 
-	class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->property.last);
-	class->property.count = class->property.last - class->property.first;
+	class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
+	class->property.count = last - class->property.first;
 
 	if (class->property.count)
 		mono_class_setup_methods (class);
 
 	properties = g_new0 (MonoProperty, class->property.count);
-	for (i = class->property.first; i < class->property.last; ++i) {
+	for (i = class->property.first; i < last; ++i) {
 		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
 		properties [i - class->property.first].parent = class;
 		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
@@ -1087,18 +1088,19 @@ mono_class_setup_events (MonoClass *class)
 	guint32 cols [MONO_EVENT_SIZE];
 	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_EVENT];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 last;
 
 	if (class->events)
 		return;
 
-	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->event.last);
-	class->event.count = class->event.last - class->event.first;
+	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
+	class->event.count = last - class->event.first;
 
 	if (class->event.count)
 		mono_class_setup_methods (class);
 
 	class->events = g_new0 (MonoEvent, class->event.count);
-	for (i = class->event.first; i < class->event.last; ++i) {
+	for (i = class->event.first; i < last; ++i) {
 		MonoEvent *event = &class->events [i - class->event.first];
 			
 		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
@@ -2407,6 +2409,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	const char *name, *nspace;
 	guint icount = 0; 
 	MonoClass **interfaces;
+	guint32 field_last, method_last;
 
 	mono_loader_lock ();
 
@@ -2474,21 +2477,21 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (tt->rows > tidx){		
 		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
-		class->field.last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
-		class->method.last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
+		field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+		method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
 	} else {
-		class->field.last  = image->tables [MONO_TABLE_FIELD].rows;
-		class->method.last = image->tables [MONO_TABLE_METHOD].rows;
+		field_last  = image->tables [MONO_TABLE_FIELD].rows;
+		method_last = image->tables [MONO_TABLE_METHOD].rows;
 	}
 
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
 	    cols [MONO_TYPEDEF_FIELD_LIST] <= image->tables [MONO_TABLE_FIELD].rows)
-		class->field.count = class->field.last - class->field.first;
+		class->field.count = field_last - class->field.first;
 	else
 		class->field.count = 0;
 
 	if (cols [MONO_TYPEDEF_METHOD_LIST] <= image->tables [MONO_TABLE_METHOD].rows)
-		class->method.count = class->method.last - class->method.first;
+		class->method.count = method_last - class->method.first;
 	else
 		class->method.count = 0;
 
@@ -3090,7 +3093,7 @@ mono_class_get_field_idx (MonoClass *class, int idx)
 	mono_class_setup_fields (class);
 
 	if (class->field.count){
-		if ((idx >= class->field.first) && (idx < class->field.last)){
+		if ((idx >= class->field.first) && (idx < class->field.first + class->field.count)){
 			return &class->fields [idx - class->field.first];
 		}
 	}

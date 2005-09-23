@@ -250,9 +250,9 @@ struct _MonoClass {
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 
-	guint32    declsec_flags;	/* declarative security attributes flags */
-	guint32    exception_type;	/* MONO_EXCEPTION_* */
+	guint8     exception_type;	/* MONO_EXCEPTION_* */
 	void*      exception_data;	/* Additional information about the exception */
+	guint32    declsec_flags;	/* declarative security attributes flags */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -284,8 +284,7 @@ struct _MonoClass {
 	 */
 	guint32    flags;
 	struct {
-		guint32 first, last;
-		int count;
+		guint32 first, count;
 	} field, method, property, event;
 
 	/* loaded on demand */
