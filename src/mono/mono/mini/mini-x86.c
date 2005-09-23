@@ -858,7 +858,6 @@ mono_arch_create_vars (MonoCompile *cfg)
  * instructions to properly call the function in call.
  * This includes pushing, moving arguments to the right register
  * etc.
- * Issue: who does the spilling if needed, and when?
  */
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
@@ -866,28 +865,48 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	MonoMethodSignature *sig;
 	int i, n;
 	CallInfo *cinfo;
+	int sentinelpos;
 
-	/* add the vararg cookie before the non-implicit args */
-	if (call->signature->call_convention == MONO_CALL_VARARG) {
-		MonoInst *sig_arg;
-		/* FIXME: Add support for signature tokens to AOT */
-		cfg->disable_aot = TRUE;
-		MONO_INST_NEW (cfg, arg, OP_OUTARG);
-		MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-		sig_arg->inst_p0 = call->signature;
-		arg->inst_left = sig_arg;
-		arg->type = STACK_PTR;
-		/* prepend, so they get reversed */
-		arg->next = call->out_args;
-		call->out_args = arg;
-	}
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (sig, FALSE);
 
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		sentinelpos = sig->sentinelpos + (is_virtual ? 1 : 0);
+
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
+
+		/* Emit the signature cookie just before the implicit arguments */
+		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sentinelpos)) {
+			MonoMethodSignature *tmp_sig;
+			MonoInst *sig_arg;
+
+			/* FIXME: Add support for signature tokens to AOT */
+			cfg->disable_aot = TRUE;
+			MONO_INST_NEW (cfg, arg, OP_OUTARG);
+
+			/*
+			 * mono_ArgIterator_Setup assumes the signature cookie is 
+			 * passed first and all the arguments which were before it are
+			 * passed on the stack after the signature. So compensate by 
+			 * passing a different signature.
+			 */
+			tmp_sig = mono_metadata_signature_dup (call->signature);
+			tmp_sig->param_count -= call->signature->sentinelpos;
+			tmp_sig->sentinelpos = 0;
+			memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+			sig_arg->inst_p0 = tmp_sig;
+
+			arg->inst_left = sig_arg;
+			arg->type = STACK_PTR;
+			/* prepend, so they get reversed */
+			arg->next = call->out_args;
+			call->out_args = arg;
+		}
 
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
