@@ -319,27 +319,14 @@ mono_raw_buffer_handle_pagefault (void *ptr)
  * mono_raw_buffer_get_n_pagefaults:
  *
  *   Return the number of times handle_pagefault is called.
+ * To count the number of pagefaults caused by a block of code use code like this:
+ * 
+ *  int prev_pagefaults = mono_raw_buffer_get_n_pagefaults ();
+ *  <CODE>
+ *  int new_pagefaults = mono_raw_buffer_get_n_pagefaults () - prev_pagefaults;
  */
 guint32
 mono_raw_buffer_get_n_pagefaults (void)
 {
 	return n_pagefaults;
-}
-
-/*
- * mono_raw_buffer_set_n_pagefaults:
- *
- *   Reset the value returned by get_n_pagefaults () to @n. Useful for counting the
- * number of pagefaults caused by a block of code like this:
- * 
- *  int prev_pagefaults = mono_raw_buffer_get_n_pagefaults ();
- *  mono_raw_buffer_set_n_pagefaults (0);
- *  <CODE>
- *  int new_pagefaults = mono_raw_buffer_get_n_pagefaults ();
- *  mono_raw_buffer_set_n_pagefaults (prev_pagefaults);
- */
-void
-mono_raw_buffer_set_n_pagefaults (guint32 n)
-{
-	n_pagefaults = n;
 }

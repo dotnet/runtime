@@ -11,6 +11,5 @@ void mono_raw_buffer_set_make_unreadable (gboolean unreadable);
 gboolean mono_raw_buffer_is_pagefault (void *ptr);
 void mono_raw_buffer_handle_pagefault (void *ptr);
 guint32 mono_raw_buffer_get_n_pagefaults (void);
-void mono_raw_buffer_set_n_pagefaults (guint32 n);
 
 #endif /* __MONO_RAWBUFFER_H__ */
