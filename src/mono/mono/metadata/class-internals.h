@@ -249,6 +249,7 @@ struct _MonoClass {
 	/* next byte */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
+	guint no_special_static_fields : 1; /* has no thread/context static fields */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 	void*      exception_data;	/* Additional information about the exception */
@@ -431,6 +432,7 @@ typedef struct MonoCachedClassInfo {
 	guint blittable : 1;
 	guint has_references : 1;
 	guint has_static_refs : 1;
+	guint no_special_static_fields : 1;
 	guint32 cctor_token;
 	MonoImage *finalize_image;
 	guint32 finalize_token;
@@ -532,6 +534,9 @@ mono_class_get_finalizer (MonoClass *klass);
 
 gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
+
+gboolean
+mono_class_has_special_static_fields (MonoClass *klass);
 
 void
 mono_install_trampoline (MonoTrampoline func);

@@ -747,7 +747,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		if (mono_field_is_deleted (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-			gint32 special_static = field_is_special_static (class, field);
+			gint32 special_static = class->no_special_static_fields ? SPECIAL_STATIC_NONE : field_is_special_static (class, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
 				guint32 size, offset;
 				int align;
@@ -1005,6 +1005,41 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	return pvt;
+}
+
+/**
+ * mono_class_has_special_static_fields:
+ * 
+ *   Returns whenever @klass has any thread/context static fields.
+ */
+gboolean
+mono_class_has_special_static_fields (MonoClass *klass)
+{
+	MonoVTable *vt;
+	MonoClassRuntimeInfo *runtime_info, *old_info;
+	MonoClassField *field;
+	char *t;
+	int i;
+	gboolean inited = FALSE;
+	guint32 vtable_size;
+	guint32 cindex;
+	guint32 constant_cols [MONO_CONSTANT_SIZE];
+	gpointer iter;
+
+	cindex = -1;
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
+			if (field_is_special_static (klass, field) != SPECIAL_STATIC_NONE)
+				return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 /**
