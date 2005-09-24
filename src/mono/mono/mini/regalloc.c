@@ -60,8 +60,8 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 	int i;
 	regmask_t mask = allow & rs->ifree_mask;
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
-		if (mask & (1 << i)) {
-			rs->ifree_mask &= ~ (1 << i);
+		if (mask & ((regmask_t)1 << i)) {
+			rs->ifree_mask &= ~ ((regmask_t)1 << i);
 			rs->max_ireg = MAX (rs->max_ireg, i);
 			return i;
 		}
@@ -73,7 +73,7 @@ void
 mono_regstate_free_int (MonoRegState *rs, int reg)
 {
 	if (reg >= 0) {
-		rs->ifree_mask |= 1 << reg;
+		rs->ifree_mask |= (regmask_t)1 << reg;
 		rs->isymbolic [reg] = 0;
 	}
 }
@@ -84,8 +84,8 @@ mono_regstate_alloc_float (MonoRegState *rs, regmask_t allow)
 	int i;
 	regmask_t mask = allow & rs->ffree_mask;
 	for (i = 0; i < MONO_MAX_FREGS; ++i) {
-		if (mask & (1 << i)) {
-			rs->ffree_mask &= ~ (1 << i);
+		if (mask & ((regmask_t)1 << i)) {
+			rs->ffree_mask &= ~ ((regmask_t)1 << i);
 			return i;
 		}
 	}
@@ -96,7 +96,7 @@ void
 mono_regstate_free_float (MonoRegState *rs, int reg)
 {
 	if (reg >= 0) {
-		rs->ffree_mask |= 1 << reg;
+		rs->ffree_mask |= (regmask_t)1 << reg;
 		rs->fsymbolic [reg] = 0;
 	}
 }
