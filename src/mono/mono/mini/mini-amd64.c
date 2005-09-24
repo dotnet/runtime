@@ -4560,9 +4560,10 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo * cinfo = get_call_info (inst->signature, FALSE);
+	int out_reg = param_regs [0];
 
 	if (vt_reg != -1) {
+		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
@@ -4584,8 +4585,12 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 			vtarg->dreg = mono_regstate_next_int (cfg->rs);
 			mono_bblock_add_inst (cfg->cbb, vtarg);
 
-			mono_call_inst_add_outarg_reg (call, vtarg->dreg, cinfo->ret.reg, FALSE);
+			mono_call_inst_add_outarg_reg (call, vtarg->dreg, out_reg, FALSE);
+
+			out_reg = param_regs [1];
 		}
+
+		g_free (cinfo);
 	}
 
 	/* add the this argument */
@@ -4597,10 +4602,8 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		this->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, this);
 
-		mono_call_inst_add_outarg_reg (call, this->dreg, cinfo->args [0].reg, FALSE);
+		mono_call_inst_add_outarg_reg (call, this->dreg, out_reg, FALSE);
 	}
-
-	g_free (cinfo);
 }
 
 MonoInst*
