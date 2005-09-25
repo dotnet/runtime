@@ -322,6 +322,17 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
 	return TRUE;
 }
 
+/**
+ * mono_assembly_names_equal:
+ * @l: first assembly
+ * @r: second assembly.
+ *
+ * Compares two MonoAssemblyNames and returns whether they are equal.
+ * This compares the names, the cultures, the release version and their
+ * public tokens.
+ *
+ * Returns: TRUE if both assembly names are equal.
+ */
 gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 {
@@ -411,6 +422,11 @@ mono_assembly_setrootdir (const char *root_dir)
 	default_path [0] = g_strdup (root_dir);
 }
 
+/**
+ * mono_assembly_getrootdir:
+ *
+ * Returns: The internal root directory used for looking up assemblies
+ */
 G_CONST_RETURN gchar *
 mono_assembly_getrootdir (void)
 {
@@ -506,6 +522,14 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 	return encode_public_tok (public_tok, len);
 }
 
+/**
+ * mono_assembly_addref:
+ * @assemnly: the assembly to reference
+ *
+ * This routine increments the reference count on a MonoAssembly.
+ * The reference count is reduced every time the method mono_assembly_close() is
+ * invoked.
+ */
 void
 mono_assembly_addref (MonoAssembly *assembly)
 {
@@ -1769,6 +1793,13 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 	return mono_assembly_loaded_full (aname, FALSE);
 }
 
+/**
+ * mono_assembly_close:
+ * @assembly: the assembly to release.
+ *
+ * This method releases a reference to the @assembly.  The assembly is
+ * only released when all the outstanding references to it are released.
+ */
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
@@ -1840,6 +1871,8 @@ mono_assembly_get_main (void)
 	return(main_assembly);
 }
 
+/*
+ */
 MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
 {

@@ -177,7 +177,13 @@ mono_context_init (MonoDomain *domain)
 	domain->default_context = context;
 }
 
-/* This must not be called while there are still running threads executing
+/**
+ * mono_runtime_cleanup:
+ * @domain: unused.
+ *
+ * Internal routine.
+ *
+ * This must not be called while there are still running threads executing
  * managed code.
  */
 void
@@ -206,18 +212,40 @@ mono_runtime_quit ()
 		quit_function (mono_get_root_domain (), NULL);
 }
 
+/** 
+ * mono_runtime_set_shutting_down:
+ *
+ * Invoked by System.Environment.Exit to flag that the runtime
+ * is shutting down.
+ */
 void
 mono_runtime_set_shutting_down (void)
 {
 	shutting_down = TRUE;
 }
 
+/**
+ * mono_runtime_is_shutting_down:
+ *
+ * Returns whether the runtime has been flagged for shutdown.
+ *
+ * This is consumed by the P:System.Environment.HasShutdownStarted
+ * property.
+ *
+ */
 gboolean
 mono_runtime_is_shutting_down (void)
 {
 	return shutting_down;
 }
 
+/**
+ * mono_domain_has_type_resolve:
+ * @domain: application domains being looked up
+ *
+ * Returns true if the AppDomain.TypeResolve field has been
+ * set.
+ */
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain)
 {
@@ -233,6 +261,19 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 	return o != NULL;
 }
 
+/**
+ * mono_domain_try_type_resolve:
+ * @domain: application domainwhere the name where the type is going to be resolved
+ * @name: the name of the type to resolve or NULL.
+ * @tb: A System.Reflection.Emit.TypeBuilder, used if name is NULL.
+ *
+ * This routine invokes the internal System.AppDomain.DoTypeResolve and returns
+ * the assembly that matches name.
+ *
+ * If @name is null, the value of ((TypeBuilder)tb).FullName is used instead
+ *
+ * Returns: A MonoReflectionAssembly or NULL if not found
+ */
 MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 {
@@ -263,7 +304,7 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 /**
  * mono_domain_owns_vtable_slot:
  *
- *   Returns whenever VTABLE_SLOT is inside a vtable which belongs to DOMAIN.
+ *  Returns whenever VTABLE_SLOT is inside a vtable which belongs to DOMAIN.
  */
 gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
@@ -281,7 +322,7 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
  * @domain: domain
  * @force: force setting.
  *
- *   Set the current appdomain to @domain. If @force is set, set it even
+ * Set the current appdomain to @domain. If @force is set, set it even
  * if it is being unloaded.
  *
  * Returns:
@@ -1244,9 +1285,11 @@ unload_thread_main (void *arg)
 
 /*
  * mono_domain_unload:
+ * @domain: The domain to unload
  *
  *  Unloads an appdomain. Follows the process outlined in:
  *  http://blogs.gotdotnet.com/cbrumme
+ *
  *  If doing things the 'right' way is too hard or complex, we do it the 
  *  'simple' way, which means do everything needed to avoid crashes and
  *  memory leaks, but not much else.
