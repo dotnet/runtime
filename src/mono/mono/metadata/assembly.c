@@ -22,6 +22,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
@@ -1208,9 +1209,85 @@ mono_assembly_name_free (MonoAssemblyName *aname)
 }
 
 static gboolean
-build_assembly_name (const char *name, const char *version, const char *culture, const char *token, MonoAssemblyName *aname)
+parse_public_key (const gchar *key, gchar** pubkey)
+{
+	const gchar *pkey;
+	gchar header [16], val, *arr;
+	gint i, j, offset, bitlen, keylen, pkeylen;
+	
+	keylen = strlen (key) >> 1;
+	if (keylen < 1)
+		return FALSE;
+	
+	val = g_ascii_xdigit_value (key [0]) << 4;
+	val |= g_ascii_xdigit_value (key [1]);
+	switch (val) {
+		case 0x00:
+			if (keylen < 13)
+				return FALSE;
+			val = g_ascii_xdigit_value (key [24]);
+			val |= g_ascii_xdigit_value (key [25]);
+			if (val != 0x06)
+				return FALSE;
+			pkey = key + 24;
+			break;
+		case 0x06:
+			pkey = key;
+			break;
+		default:
+			return FALSE;
+	}
+		
+	/* We need the first 16 bytes
+	* to check whether this key is valid or not */
+	pkeylen = strlen (pkey) >> 1;
+	if (pkeylen < 16)
+		return FALSE;
+		
+	for (i = 0, j = 0; i < 16; i++) {
+		header [i] = g_ascii_xdigit_value (pkey [j++]) << 4;
+		header [i] |= g_ascii_xdigit_value (pkey [j++]);
+	}
+
+	if (header [0] != 0x06 || /* PUBLICKEYBLOB (0x06) */
+			header [1] != 0x02 || /* Version (0x02) */
+			header [2] != 0x00 || /* Reserved (word) */
+			header [3] != 0x00 ||
+			(guint)(read32 (header + 8)) != 0x31415352) /* DWORD magic = RSA1 */
+		return FALSE;
+
+	/* Based on this length, we _should_ be able to know if the length is right */
+	bitlen = read32 (header + 12) >> 3;
+	if ((bitlen + 16 + 4) != pkeylen)
+		return FALSE;
+		
+	/* Encode the size of the blob */
+	offset = 0;
+	if (keylen <= 127) {
+		arr = g_malloc (keylen + 1);
+		arr [offset++] = keylen;
+	} else {
+		arr = g_malloc (keylen + 2);
+		arr [offset++] = 0x80; /* 10bs */
+		arr [offset++] = keylen;
+	}
+		
+	for (i = offset, j = 0; i < keylen + offset; i++) {
+		arr [i] = g_ascii_xdigit_value (key [j++]) << 4;
+		arr [i] |= g_ascii_xdigit_value (key [j++]);
+	}
+	if (pubkey)
+		*pubkey = arr;
+
+	return TRUE;
+}
+
+static gboolean
+build_assembly_name (const char *name, const char *version, const char *culture, const char *token, const char *key, MonoAssemblyName *aname, gboolean save_public_key)
 {
 	gint major, minor, build, revision;
+	gint len;
+	gchar *pkey, *pkeyptr, *encoded, tok [8];
 
 	memset (aname, 0, sizeof (MonoAssemblyName));
 
@@ -1235,6 +1312,25 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	
 	if (token && strncmp (token, "null", 4) != 0)
 		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+
+	if (key && strncmp (key, "null", 4) != 0) {
+		if (!parse_public_key (key, &pkey)) {
+			mono_assembly_name_free (aname);
+			return FALSE;
+		}
+		
+		len = mono_metadata_decode_blob_size ((const gchar *) pkey, (const gchar **) &pkeyptr);
+		// We also need to generate the key token
+		mono_digest_get_public_token ((guchar*) tok, (guint8*) pkeyptr, len);
+		encoded = encode_public_tok ((guchar*) tok, 8);
+		g_strlcpy ((gchar*)aname->public_key_token, encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free (encoded);
+
+		if (save_public_key)
+			aname->public_key = (guint8*) pkey;
+		else
+			g_free (pkey);
+	}
 	
 	return TRUE;
 }
@@ -1251,27 +1347,19 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 		return FALSE;
 	}
 	
-	res = build_assembly_name (name, parts[0], parts[1], parts[2], aname);
+	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, aname, FALSE);
 	g_strfreev (parts);
 	return res;
 }
 
-/**
-* mono_assembly_name_parse:
-* @name: name to parse
-* @aname: the destination assembly name
-* Returns: true if the name could be parsed.
-* 
-* Parses an assembly qualified type name and assigns the name,
-* version, culture and token to the provided assembly name object.
-*/
 gboolean
-mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
+mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key)
 {
 	gchar *dllname;
 	gchar *version = NULL;
 	gchar *culture = NULL;
 	gchar *token = NULL;
+	gchar *key = NULL;
 	gboolean res;
 	gchar *value;
 	gchar **parts;
@@ -1306,14 +1394,35 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 			tmp++;
 			continue;
 		}
+
+		if (!g_ascii_strncasecmp (value, "PublicKey=", 10)) {
+			key = g_strstrip (value + 10);
+			tmp++;
+			continue;
+		}
 		
 		g_strfreev (parts);
 		return FALSE;
 	}
 
-	res = build_assembly_name (dllname, version, culture, token, aname);
+	res = build_assembly_name (dllname, version, culture, token, key, aname, save_public_key);
 	g_strfreev (parts);
 	return res;
+}
+
+/**
+* mono_assembly_name_parse:
+* @name: name to parse
+* @aname: the destination assembly name
+* Returns: true if the name could be parsed.
+* 
+* Parses an assembly qualified type name and assigns the name,
+* version, culture and token to the provided assembly name object.
+*/
+gboolean
+mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
+{
+	return mono_assembly_name_parse_full (name, aname, FALSE);
 }
 
 static MonoAssembly*

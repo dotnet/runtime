@@ -331,5 +331,10 @@ void mono_assembly_addref      (MonoAssembly *assembly);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
 
+gboolean
+mono_assembly_name_parse_full 		     (const char	   *name,
+					      MonoAssemblyName	   *aname,
+					      gboolean save_public_key);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

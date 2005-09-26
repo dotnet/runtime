@@ -4145,9 +4145,10 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 		mono_method_desc_free (desc);
 	}
 
-	args [0] = mono_string_new (domain, name->culture);
-	aname->cultureInfo = 
-		mono_runtime_invoke (create_culture, NULL, args, NULL);
+	if (name->culture) {
+		args [0] = mono_string_new (domain, name->culture);
+		aname->cultureInfo = mono_runtime_invoke (create_culture, NULL, args, NULL);
+	}
 
 	if (name->public_key) {
 		pkey_ptr = (char*)name->public_key;
@@ -4436,6 +4437,26 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	}
 		
 	return res;
+}
+
+static gboolean
+ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *name, MonoString *assname)
+{
+	MonoAssemblyName aname;
+	MonoDomain *domain = mono_object_domain (name);
+	char *val;
+
+	val = mono_string_to_utf8 (assname);
+	if (!mono_assembly_name_parse_full (val, &aname, TRUE))
+		return FALSE;
+	
+	fill_reflection_assembly_name (domain, name, &aname, "");
+
+	mono_assembly_name_free (&aname);
+	g_free ((guint8*) aname.public_key);
+	g_free (val);
+
+	return TRUE;
 }
 
 static MonoReflectionType*
@@ -6484,6 +6505,10 @@ static const IcallEntry assembly_icalls [] = {
 	{"load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name}
 };
 
+static const IcallEntry assembly_name_icalls [] = {
+	{"ParseName", ves_icall_System_Reflection_AssemblyName_ParseName}
+};
+
 static const IcallEntry methodbase_icalls [] = {
 	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
 	{"GetMethodBodyInternal", ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal},
@@ -7023,6 +7048,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Net.Sockets.SocketException", socketex_icalls, G_N_ELEMENTS (socketex_icalls)},
 	{"System.Object", object_icalls, G_N_ELEMENTS (object_icalls)},
 	{"System.Reflection.Assembly", assembly_icalls, G_N_ELEMENTS (assembly_icalls)},
+	{"System.Reflection.AssemblyName", assembly_name_icalls, G_N_ELEMENTS (assembly_name_icalls)},
 	{"System.Reflection.Emit.AssemblyBuilder", assemblybuilder_icalls, G_N_ELEMENTS (assemblybuilder_icalls)},
 	{"System.Reflection.Emit.CustomAttributeBuilder", customattrbuilder_icalls, G_N_ELEMENTS (customattrbuilder_icalls)},
 	{"System.Reflection.Emit.DynamicMethod", dynamicmethod_icalls, G_N_ELEMENTS (dynamicmethod_icalls)},
