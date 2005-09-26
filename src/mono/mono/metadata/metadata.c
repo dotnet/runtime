@@ -3193,7 +3193,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 			t1->data.generic_class, t2->data.generic_class, signature_only);
 	case MONO_TYPE_VAR:
 		return mono_metadata_generic_param_equal (
-			t1->data.generic_param, t2->data.generic_param, FALSE);
+			t1->data.generic_param, t2->data.generic_param, signature_only);
 	case MONO_TYPE_MVAR:
 		return mono_metadata_generic_param_equal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);

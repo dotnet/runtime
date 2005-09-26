@@ -2727,6 +2727,8 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
+	klass->generic_container = param->owner;
+
 	mono_class_setup_supertypes (klass);
 
 	return klass;
@@ -2758,6 +2760,8 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
+
+	klass->generic_container = param->owner;
 
 	mono_class_setup_supertypes (klass);
 
@@ -3077,6 +3081,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (corlib_type) {
 		class->inited = 1;
 	}
+
+	class->generic_container = eclass->generic_container;
 
 	list = g_slist_append (rootlist, class);
 	g_hash_table_insert (image->array_cache, eclass, list);

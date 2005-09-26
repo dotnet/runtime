@@ -318,15 +318,9 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname,
-		      const char *fqname, MonoMethodSignature *sig)
+		      const char *fqname, MonoMethodSignature *sig, MonoGenericContext *context)
 {
-	MonoGenericContext *context = NULL;
 	int i;
-
-	if (klass->generic_container)
-		context = &klass->generic_container->context;
-	else if (klass->generic_class)
-		context = klass->generic_class->context;
 
 	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
@@ -350,7 +344,8 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname,
 }
 
 static MonoMethod *
-find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig)
+find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig,
+	     MonoGenericContext *context)
 {
 	int i;
 	char *qname, *fqname, *class_name;
@@ -371,7 +366,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		class_name = qname = fqname = NULL;
 
 	while (klass) {
-		result = find_method_in_class (klass, name, qname, fqname, sig);
+		result = find_method_in_class (klass, name, qname, fqname, sig, context);
 		if (result)
 			goto out;
 
@@ -381,7 +376,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		for (i = 0; i < klass->interface_count; i++) {
 			MonoClass *ic = klass->interfaces [i];
 
-			result = find_method_in_class (ic, name, qname, fqname, sig);
+			result = find_method_in_class (ic, name, qname, fqname, sig, context);
 			if (result)
 				goto out;
 		}
@@ -390,7 +385,8 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 	}
 
 	if (is_interface)
-		result = find_method_in_class (mono_defaults.object_class, name, qname, fqname, sig);
+		result = find_method_in_class (
+			mono_defaults.object_class, name, qname, fqname, sig, context);
 
  out:
 	g_free (class_name);
@@ -472,8 +468,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
 	guint32 nindex, class;
-	MonoGenericClass *gclass = NULL;
-	MonoGenericContainer *container = NULL;
 	const char *mname;
 	MonoMethodSignature *sig;
 	const char *ptr;
@@ -497,6 +491,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		}
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC:
+		/*
+		 * Parse the TYPESPEC in the parent's context.
+		 */
 		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
@@ -521,22 +518,24 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		g_assert_not_reached ();
 	}
 	g_assert (klass);
-
-	if (klass->generic_class) {
-		gclass = klass->generic_class;
-		klass = gclass->container_class;
-	}
-	if (klass->generic_container)
-		container = klass->generic_container;
 	mono_class_init (klass);
+
+	/*
+	 * Correctly set the context before parsing the method.
+	 */
+	if (klass->generic_class)
+		context = klass->generic_class->context;
+	else if (klass->generic_container)
+		context = klass->generic_container;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	sig = mono_metadata_parse_method_signature_full (image, (MonoGenericContext *) container, 0, ptr, NULL);
+	sig = mono_metadata_parse_method_signature_full (image, context, 0, ptr, NULL);
+	sig = mono_class_inflate_generic_signature (image, sig, context);
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
-		method = find_method (klass, NULL, mname, sig);
+		method = find_method (klass, NULL, mname, sig, context);
 		if (!method)
 			mono_loader_set_error_method_load (klass, mname);
 		mono_metadata_free_method_signature (sig);
@@ -548,7 +547,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		type = &klass->byval_arg;
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
-			method = find_method (klass, NULL, mname, sig);
+			method = find_method (klass, NULL, mname, sig, context);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 			else if (klass->generic_class && (klass != method->klass))
@@ -559,7 +558,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		}
 
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
-		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
+		result->klass = klass;
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		result->signature = sig;
 		result->name = mname;
@@ -594,7 +593,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		break;
 	}
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		method = find_method (klass, NULL, mname, sig);
+		method = find_method (klass, NULL, mname, sig, context);
 		if (!method)
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 		mono_metadata_free_method_signature (sig);
@@ -603,9 +602,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);
 		g_assert_not_reached ();
 	}
-
-	if (gclass)
-		method = mono_class_inflate_generic_method (method, gclass->context);
 
 	return method;
 }
@@ -1232,7 +1228,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if (constrained_class->generic_class)
 		gclass = constrained_class->generic_class;
 
-	result = find_method (constrained_class, ic, method->name, mono_method_signature (method));
+	result = find_method (constrained_class, ic, method->name, mono_method_signature (method), context);
 	if (!result)
 		g_warning ("Missing method %s in assembly %s token %x", method->name,
 			   image->name, token);
