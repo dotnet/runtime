@@ -1015,18 +1015,9 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 gboolean
 mono_class_has_special_static_fields (MonoClass *klass)
 {
-	MonoVTable *vt;
-	MonoClassRuntimeInfo *runtime_info, *old_info;
 	MonoClassField *field;
-	char *t;
-	int i;
-	gboolean inited = FALSE;
-	guint32 vtable_size;
-	guint32 cindex;
-	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	gpointer iter;
 
-	cindex = -1;
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
