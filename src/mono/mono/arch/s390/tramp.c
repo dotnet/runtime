@@ -1117,6 +1117,7 @@ DEBUG(printf("Returns: %d\n",sig->ret->type));
 					/*-------------------------------------------------*/
 					/* stackval_to_data has placed data in result area */
 					/*-------------------------------------------------*/
+					break;
 			}
 			break;
 		default:
