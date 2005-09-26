@@ -586,6 +586,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->blittable = (flags >> 4) & 0x1;
 	info->has_references = (flags >> 5) & 0x1;
 	info->has_static_refs = (flags >> 6) & 0x1;
+	info->no_special_static_fields = (flags >> 7) & 0x1;
 
 	if (info->has_cctor) {
 		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, buf, &buf);
@@ -2231,6 +2232,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	int i, buf_size;
 	char *label;
 	FILE *tmpfp = acfg->fp;
+	gboolean no_special_static;
 
 	buf_size = 10240;
 	p = buf = g_malloc (buf_size);
@@ -2245,9 +2247,11 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	 * take up a lot of space.
 	 */
 
-	if (1) {//!MONO_CLASS_IS_INTERFACE (klass)) {
+	no_special_static = !mono_class_has_special_static_fields (klass);
+
+	if (1) {
 		encode_value (klass->vtable_size, p, &p);
-		encode_value ((klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		encode_value ((no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (klass->has_finalize)
