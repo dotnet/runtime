@@ -62,6 +62,7 @@
 #define ICALL_GOT_SLOTS_START_INDEX N_RESERVED_GOT_SLOTS
 
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
+#define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
 typedef struct MonoAotModule {
 	char *aot_name;
@@ -75,6 +76,8 @@ typedef struct MonoAotModule {
 	char **image_guids;
 	MonoImage **image_table;
 	gboolean out_of_date;
+	guint8 *mem_begin;
+	guint8 *mem_end;
 	guint8 *code;
 	guint8 *code_end;
 	guint32 *code_offsets;
@@ -137,6 +140,9 @@ static gboolean use_aot_cache = FALSE;
 
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
+
+static gboolean make_unreadable = FALSE;
+static guint32 n_pagefaults = 0;
 
 static MonoJitInfo*
 mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info, guint8 *ex_info);
@@ -549,6 +555,26 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "ex_infos", (gpointer*)&info->ex_infos);
 	g_module_symbol (assembly->aot_module, "class_infos", (gpointer*)&info->class_infos);
 	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
+	g_module_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
+
+	info->mem_begin = info->code;
+
+	if (make_unreadable) {
+#ifndef PLATFORM_WIN32
+		guint8 *addr;
+		guint8 *page_start;
+		int pages, err, len;
+
+		addr = info->mem_begin;
+		len = info->mem_end - info->mem_begin;
+
+		/* Round down in both directions to avoid modifying data which is not ours */
+		page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1)) + PAGESIZE;
+		pages = ((addr + len - page_start + PAGESIZE - 1) / PAGESIZE) - 1;
+		err = mprotect (page_start, pages * PAGESIZE, 0);
+		g_assert (err == 0);
+#endif
+	}
 
 	mono_aot_lock ();
 	g_hash_table_insert (aot_modules, assembly, info);
@@ -1477,6 +1503,99 @@ mono_aot_is_got_entry (guint8 *code, guint8 *addr)
 	mono_aot_unlock ();
 	
 	return user_data.res;
+}
+
+/*
+ * mono_aot_set_make_unreadable:
+ *
+ *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
+ */
+void
+mono_aot_set_make_unreadable (gboolean unreadable)
+{
+	make_unreadable = unreadable;
+}
+
+typedef struct {
+	MonoAotModule *module;
+	guint8 *ptr;
+} FindMapUserData;
+
+static void
+find_map (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoAotModule *module = (MonoAotModule*)value;
+	FindMapUserData *data = (FindMapUserData*)user_data;
+
+	if (!data->module)
+		if ((data->ptr >= module->mem_begin) && (data->ptr < module->mem_end))
+			data->module = module;
+}
+
+static MonoAotModule*
+find_module_for_addr (void *ptr)
+{
+	FindMapUserData data;
+
+	if (!make_unreadable)
+		return NULL;
+
+	data.module = NULL;
+	data.ptr = (guint8*)ptr;
+
+	mono_aot_lock ();
+	g_hash_table_foreach (aot_modules, (GHFunc)find_map, &data);
+	mono_aot_unlock ();
+
+	return data.module;
+}
+
+/*
+ * mono_aot_is_pagefault:
+ *
+ *   Should be called from a SIGSEGV signal handler to find out whenever @ptr is
+ * within memory allocated by this module.
+ */
+gboolean
+mono_aot_is_pagefault (void *ptr)
+{
+	if (!make_unreadable)
+		return FALSE;
+
+	return find_module_for_addr (ptr) != NULL;
+}
+
+/*
+ * mono_aot_handle_pagefault:
+ *
+ *   Handle a pagefault caused by an unreadable page by making it readable again.
+ */
+void
+mono_aot_handle_pagefault (void *ptr)
+{
+#ifndef PLATFORM_WIN32
+	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), PAGESIZE);
+	int res;
+
+	mono_aot_lock ();
+	res = mprotect (start, PAGESIZE, PROT_READ|PROT_WRITE|PROT_EXEC);
+	g_assert (res == 0);
+
+	n_pagefaults ++;
+	mono_aot_unlock ();
+#endif
+}
+
+/*
+ * mono_aot_get_n_pagefaults:
+ *
+ *   Return the number of times handle_pagefault is called.
+ */
+guint32
+mono_aot_get_n_pagefaults (void)
+{
+	return n_pagefaults;
 }
 
 /*****************************************************/
@@ -2723,6 +2842,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			fprintf (tmpfp, "%s0", sep);
 	}
 	fprintf (tmpfp, "\n");
+
+	symbol = g_strdup_printf ("mem_end");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
 
 	fclose (tmpfp);
 

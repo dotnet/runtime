@@ -9829,6 +9829,10 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 			mono_raw_buffer_handle_pagefault (info->si_addr);
 			return;
 		}
+		if (mono_aot_is_pagefault (info->si_addr)) {
+			mono_aot_handle_pagefault (info->si_addr);
+			return;
+		}
 	}
 #endif
 
@@ -10183,8 +10187,10 @@ mini_init (const char *filename)
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-	if (debug_options.collect_pagefault_stats)
+	if (debug_options.collect_pagefault_stats) {
 		mono_raw_buffer_set_make_unreadable (TRUE);
+		mono_aot_set_make_unreadable (TRUE);
+	}
 
 	domain = mono_init_from_assembly (filename, filename);
 	mono_icall_init ();
@@ -10373,8 +10379,10 @@ print_jit_stats (void)
 			g_print ("LinkDemand (aptc)     : %ld\n", mono_jit_stats.cas_linkdemand_aptc);
 			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
 		}
-		if (debug_options.collect_pagefault_stats)
+		if (debug_options.collect_pagefault_stats) {
 			g_print ("Metadata pagefaults   : %d\n", mono_raw_buffer_get_n_pagefaults ());
+			g_print ("AOT pagefaults        : %d\n", mono_aot_get_n_pagefaults ());
+		}
 	}
 }
 

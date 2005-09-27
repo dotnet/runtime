@@ -804,6 +804,7 @@ void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, 
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, const char *aot_options);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
+
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
@@ -812,6 +813,10 @@ gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 gboolean  mono_aot_init_vtable              (MonoVTable *vtable);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
+void mono_aot_set_make_unreadable           (gboolean unreadable);
+gboolean mono_aot_is_pagefault              (void *ptr);
+void mono_aot_handle_pagefault              (void *ptr);
+guint32 mono_aot_get_n_pagefaults           (void);
 
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
