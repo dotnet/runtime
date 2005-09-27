@@ -16,7 +16,9 @@
 #include <mono/metadata/filewatcher.h>
 
 #if (defined (PLATFORM_WIN32) && WINVER >= 0x0400)
-/* TODO:
+
+/*
+ * TODO:
  * We use the managed watcher on windows, so the code inside this #if is never used
  */
 gint
@@ -54,12 +56,12 @@ ves_icall_System_IO_FSW_CloseDirectory (gpointer handle)
 }
 
 gboolean
-ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
-						MonoArray *buffer,
-						gboolean includeSubdirs,
-						gint filters,
-						gpointer overlap,
-						gpointer callback)
+ves_icall_System_IO_FSW_ReadDirectoryChanges (gpointer handle,
+					      MonoArray *buffer,
+					      gboolean includeSubdirs,
+					      gint filters,
+					      gpointer overlap,
+					      gpointer callback)
 {
 	return FALSE;
 	/*
@@ -84,9 +86,9 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 
 gboolean
 ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
-						MonoString **filename,
-						gint *code,
-						gint *reqnum)
+					       MonoString **filename,
+					       gint *code,
+					       gint *reqnum)
 {
 	return FALSE;
 }
@@ -132,12 +134,12 @@ ves_icall_System_IO_FSW_CloseDirectory (gpointer handle)
 }
 
 gboolean
-ves_icall_System_IO_FSW_ReadDirectoryChanges (	gpointer handle,
-						MonoArray *buffer,
-						gboolean includeSubdirs,
-						gint filters,
-						gpointer overlap,
-						gpointer callback)
+ves_icall_System_IO_FSW_ReadDirectoryChanges (gpointer handle,
+					      MonoArray *buffer,
+					      gboolean includeSubdirs,
+					      gint filters,
+					      gpointer overlap,
+					      gpointer callback)
 {
 	return FALSE;
 }
@@ -148,19 +150,19 @@ typedef struct {
 } FAMRequest;
 
 typedef struct FAMEvent {
-    gpointer fc;
-    FAMRequest fr;
-    gchar *hostname;
-    gchar filename [PATH_MAX];
-    gpointer userdata;
-    gint code;
+	gpointer fc;
+	FAMRequest fr;
+	gchar *hostname;
+	gchar filename [PATH_MAX];
+	gpointer userdata;
+	gint code;
 } FAMEvent;
 
 gboolean
 ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
-						MonoString **filename,
-						gint *code,
-						gint *reqnum)
+					       MonoString **filename,
+					       gint *code,
+					       gint *reqnum)
 {
 	FAMEvent ev;
 
