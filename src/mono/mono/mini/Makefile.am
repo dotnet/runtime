@@ -34,7 +34,7 @@ RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162
 ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
-INCLUDES = \
+AM_CFLAGS = \
 	-I$(top_srcdir) 	\
 	$(LIBGC_CFLAGS)		\
 	$(GMODULE_CFLAGS)		\
@@ -44,7 +44,7 @@ if PLATFORM_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
-AM_CFLAGS = -O
+AM_CFLAGS += -O
 PLATFORM_LIB = ../os/libmonoos.la
 endif
 
@@ -234,6 +234,10 @@ arch_built=cpu-g4.h
 endif
 
 if ARM
+
+# pick up arm_dpimacros.h and arm_fpamacros.h
+AM_CFLAGS += -I../arch/arm
+
 libmono_la_SOURCES = \
 	$(common_sources) $(arm_sources)
 
