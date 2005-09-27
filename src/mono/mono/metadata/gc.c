@@ -157,6 +157,14 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 #endif
 }
 
+/**
+ * mono_object_register_finalizer:
+ * @obj: object to register
+ *
+ * Records that object @obj has a finalizer, this will call the
+ * Finalize method when the garbage collector disposes the object.
+ * 
+ */
 void
 mono_object_register_finalizer (MonoObject *obj)
 {
@@ -164,11 +172,14 @@ mono_object_register_finalizer (MonoObject *obj)
 	object_register_finalizer (obj, run_finalize);
 }
 
-/*
+/**
  * mono_domain_finalize:
+ * @domain: the domain to finalize
+ * @timeout: msects to wait for the finalization to complete
  *
  *  Request finalization of all finalizable objects inside @domain. Wait
  * @timeout msecs for the finalization to complete.
+ *
  * Returns: TRUE if succeeded, FALSE if there was a timeout
  */
 
@@ -490,19 +501,64 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 	return (slot << 3) | (handles->type + 1);
 }
 
+/**
+ * mono_gchandle_new:
+ * @obj: managed object to get a handle for
+ * @pinned: whether the object should be pinned
+ *
+ * This returns a handle that wraps the object, this is used to keep a
+ * reference to a managed object from the unmanaged world and preventing the
+ * object from being disposed.
+ * 
+ * If @pinned is false the address of the object can not be obtained, if it is
+ * true the address of the object can be obtained.  This will also pin the
+ * object so it will not be possible by a moving garbage collector to move the
+ * object. 
+ * 
+ * Returns: a handle that can be used to access the object from
+ * unmanaged code.
+ */
 guint32
 mono_gchandle_new (MonoObject *obj, gboolean pinned)
 {
 	return alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj);
 }
 
+/**
+ * mono_gchandle_new_weakref:
+ * @obj: managed object to get a handle for
+ * @pinned: whether the object should be pinned
+ *
+ * This returns a weak handle that wraps the object, this is used to
+ * keep a reference to a managed object from the unmanaged world.
+ * Unlike the mono_gchandle_new the object can be reclaimed by the
+ * garbage collector.  In this case the value of the GCHandle will be
+ * set to zero.
+ * 
+ * If @pinned is false the address of the object can not be obtained, if it is
+ * true the address of the object can be obtained.  This will also pin the
+ * object so it will not be possible by a moving garbage collector to move the
+ * object. 
+ * 
+ * Returns: a handle that can be used to access the object from
+ * unmanaged code.
+ */
 guint32
 mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 {
 	return alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj);
 }
 
-/* This will return NULL for a collected object if using a weakref handle */
+/**
+ * mono_gchandle_get_target:
+ * @gchandle: a GCHandle's handle.
+ *
+ * The handle was previously created by calling mono_gchandle_new or
+ * mono_gchandle_new_weakref. 
+ *
+ * Returns a pointer to the MonoObject represented by the handle or
+ * NULL for a collected object if using a weakref handle.
+ */
 MonoObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
@@ -551,6 +607,13 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	unlock_handles (handles);
 }
 
+/**
+ * mono_gchandle_is_in_domain:
+ * @gchandle: a GCHandle's handle.
+ * @domain: An application domain.
+ *
+ * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
+ */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 {
@@ -579,6 +642,14 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 	return result;
 }
 
+/**
+ * mono_gchandle_free:
+ * @gchandle: a GCHandle's handle.
+ *
+ * Frees the @gchandle handle.  If there are no outstanding
+ * references, the garbage collector can reclaim the memory of the
+ * object wrapped. 
+ */
 void
 mono_gchandle_free (guint32 gchandle)
 {
@@ -838,6 +909,16 @@ void mono_gc_cleanup (void)
 
 #endif
 
+/**
+ * mono_gc_is_finalizer_thread:
+ * @thread: the thread to test.
+ *
+ * In Mono objects are finalized asynchronously on a separate thread.
+ * This routine tests whether the @thread argument represents the
+ * finalization thread.
+ * 
+ * Returns true if @thread is the finalization thread.
+ */
 gboolean
 mono_gc_is_finalizer_thread (MonoThread *thread)
 {
