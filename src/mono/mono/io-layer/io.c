@@ -491,7 +491,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 			  offset, movedistance);
 #endif
 	} else {
-		offset=((gint64) *highmovedistance << 32) | (unsigned long)movedistance;
+		offset=((gint64) *highmovedistance << 32) | (guint32)movedistance;
 		
 #ifdef DEBUG
 		g_message("%s: setting offset to %lld 0x%llx (high %d 0x%x, low %d 0x%x)", __func__, offset, offset, *highmovedistance, *highmovedistance, movedistance, movedistance);
