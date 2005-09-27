@@ -620,6 +620,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
 	guint32 token, param_count;
+	int i;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
@@ -628,16 +629,31 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	else
 		token = MONO_TOKEN_MEMBER_REF | (token >> MONO_METHODDEFORREF_BITS);
 
-	method = mono_get_method (image, token, NULL);
-	method = mono_get_inflated_method (method);
-
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 	
 	mono_metadata_decode_value (ptr, &ptr);
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
-
 	g_assert (param_count);
+
+	container = g_new0 (MonoGenericContainer, 1);
+
+	container->parent = context ? context->container : NULL;
+	container->is_signature = 1;
+
+	container->context.container = container;
+
+	container->type_argc = param_count;
+	container->type_params = g_new0 (MonoGenericParam, param_count);
+
+	for (i = 0; i < param_count; i++) {
+		container->type_params [i].owner = container;
+		container->type_params [i].num = i;
+	}
+
+	method = mono_get_method_full (image, token, NULL, container);
+	method = mono_get_inflated_method (method);
+
 	if (method->is_inflated)
 		container = ((MonoMethodNormal *) ((MonoMethodInflated *) method)->declaring)->generic_container;
 	else
