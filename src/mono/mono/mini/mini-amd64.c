@@ -1086,8 +1086,15 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				else
 				if (sig->pinvoke)
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
-				else
-					size = mono_type_stack_size (&in->klass->byval_arg, &align);
+				else {
+					/* 
+					 * Other backends use mono_type_stack_size (), but that
+					 * aligns the size to 8, which is larger than the size of
+					 * the source, leading to reads of invalid memory if the
+					 * source is at the end of address space.
+					 */
+					size = mono_class_value_size (in->klass, &align);
+				}
 				if (ainfo->storage == ArgValuetypeInReg) {
 					if (ainfo->pair_storage [1] == ArgNone) {
 						MonoInst *load;
