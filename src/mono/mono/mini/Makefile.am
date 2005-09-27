@@ -311,6 +311,15 @@ libmono_la_LIBADD = \
 TestDriver.dll: $(srcdir)/TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library $(srcdir)/TestDriver.cs
 
+if CROSS_COMPILING
+
+## Gross hack.  Making 'genmdesc' a host binary takes more effort
+$(arch_built):
+	echo "*** please build $(arch_built) on a native build tree and copy it here"
+	exit 1
+
+else !CROSS_COMPILING
+
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium_desc
 
@@ -334,6 +343,8 @@ cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc
+
+endif !CROSS_COMPILING
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c

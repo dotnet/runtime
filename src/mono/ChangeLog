@@ -2,7 +2,10 @@
 
 	* configure.in (BUILD_MCS): New automake conditional.  Used to
 	disable building the mcs/ tree if cross-compiling.
-	($mcsdir/build/config.make): Don't clobber if we're cross-compiling.
+	(CROSS_COMPILING): New automake conditional.
+	($mcsdir/build/config.make): Don't clobber when cross-compiling.
+	(GLIB_CFLAGS, GLIB_LIBS, GMODULE_CFLAGS, GMODULE_LIBS):
+	Define even when cross-compiling.
 	* runtime/Makefile.am (all-local, install, uninstall, clean-local):
 	Disable building in the mcs/ tree if !BUILD_MCS.
 

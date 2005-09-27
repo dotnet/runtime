@@ -253,6 +253,8 @@ AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_EXEEXT)
 
+AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
+
 # Set STDC_HEADERS
 AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
@@ -398,19 +400,17 @@ GLIB_REQUIRED_VERSION=1.3.11
 
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 
-if test "x$cross_compiling" = "xno"; then
-   GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-   GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-   GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
-   GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
-fi
+GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
+GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
 
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-if test x$platform_win32 = xyes -a x$cross_compiling = xno; then   
+if test x$cross_compiling$platform_win32 = xnoyes; then
    AC_MSG_CHECKING(for cygwin glib2-dev package)
    if [ cygcheck --f /usr/lib/libglib-2.0.dll.a | grep -q glib2-devel ]; then
       AC_MSG_RESULT(found)
