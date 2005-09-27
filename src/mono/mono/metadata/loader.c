@@ -318,7 +318,7 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname,
-		      const char *fqname, MonoMethodSignature *sig, MonoGenericContext *context)
+		      const char *fqname, MonoMethodSignature *sig, MonoGenericContainer *container)
 {
 	int i;
 
@@ -334,7 +334,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname,
 			if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m)))
 				return m;
 		} else {
-			MonoMethodSignature *msig = mono_method_signature_full (m, context);
+			MonoMethodSignature *msig = mono_method_signature_full (m, container);
 			if (mono_metadata_signature_equal (sig, msig))
 				return m;
 		}
@@ -345,7 +345,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname,
 
 static MonoMethod *
 find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig,
-	     MonoGenericContext *context)
+	     MonoGenericContainer *container)
 {
 	int i;
 	char *qname, *fqname, *class_name;
@@ -366,7 +366,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		class_name = qname = fqname = NULL;
 
 	while (klass) {
-		result = find_method_in_class (klass, name, qname, fqname, sig, context);
+		result = find_method_in_class (klass, name, qname, fqname, sig, container);
 		if (result)
 			goto out;
 
@@ -376,7 +376,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		for (i = 0; i < klass->interface_count; i++) {
 			MonoClass *ic = klass->interfaces [i];
 
-			result = find_method_in_class (ic, name, qname, fqname, sig, context);
+			result = find_method_in_class (ic, name, qname, fqname, sig, container);
 			if (result)
 				goto out;
 		}
@@ -386,7 +386,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 
 	if (is_interface)
 		result = find_method_in_class (
-			mono_defaults.object_class, name, qname, fqname, sig, context);
+			mono_defaults.object_class, name, qname, fqname, sig, container);
 
  out:
 	g_free (class_name);
@@ -435,7 +435,8 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	
 		ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (ptr, &ptr);
-		sig = mono_metadata_parse_method_signature_full (image, context, 0, ptr, NULL);
+		sig = mono_metadata_parse_method_signature_full (
+			image, context ? context->container : NULL, 0, ptr, NULL);
 
 		mono_loader_lock ();
 		prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token));
@@ -470,6 +471,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	guint32 nindex, class;
 	const char *mname;
 	MonoMethodSignature *sig;
+	MonoGenericContainer *container;
 	const char *ptr;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
@@ -526,16 +528,17 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	if (klass->generic_class)
 		context = klass->generic_class->context;
 	else if (klass->generic_container)
-		context = klass->generic_container;
+		context = (MonoGenericContext *) klass->generic_container;
+	container = context ? context->container : NULL;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	sig = mono_metadata_parse_method_signature_full (image, context, 0, ptr, NULL);
+	sig = mono_metadata_parse_method_signature_full (image, container, 0, ptr, NULL);
 	sig = mono_class_inflate_generic_signature (image, sig, context);
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
-		method = find_method (klass, NULL, mname, sig, context);
+		method = find_method (klass, NULL, mname, sig, container);
 		if (!method)
 			mono_loader_set_error_method_load (klass, mname);
 		mono_metadata_free_method_signature (sig);
@@ -547,7 +550,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		type = &klass->byval_arg;
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
-			method = find_method (klass, NULL, mname, sig, context);
+			method = find_method (klass, NULL, mname, sig, container);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 			else if (klass->generic_class && (klass != method->klass))
@@ -593,7 +596,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		break;
 	}
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		method = find_method (klass, NULL, mname, sig, context);
+		method = find_method (klass, NULL, mname, sig, container);
 		if (!method)
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 		mono_metadata_free_method_signature (sig);
@@ -1110,7 +1113,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	/* there are generic params, or a container. FIXME: be lazy here for generics*/
 	if (* sig & 0x10 || container) {
 		result->signature = mono_metadata_parse_method_signature_full (
-			image, (MonoGenericContext *) container, idx, sig, NULL);
+			image, container, idx, sig, NULL);
 
 		if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 			result->signature->pinvoke = 1;
@@ -1228,7 +1231,9 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if (constrained_class->generic_class)
 		gclass = constrained_class->generic_class;
 
-	result = find_method (constrained_class, ic, method->name, mono_method_signature (method), context);
+	result = find_method (
+		constrained_class, ic, method->name, mono_method_signature (method),
+		context ? context->container : NULL);
 	if (!result)
 		g_warning ("Missing method %s in assembly %s token %x", method->name,
 			   image->name, token);
@@ -1527,7 +1532,7 @@ mono_method_signature (MonoMethod *m)
 }
 
 MonoMethodSignature* 
-mono_method_signature_full (MonoMethod *m, MonoGenericContext *context)
+mono_method_signature_full (MonoMethod *m, MonoGenericContainer *container)
 {
 	int idx;
 	int size;
@@ -1551,7 +1556,7 @@ mono_method_signature_full (MonoMethod *m, MonoGenericContext *context)
 	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	
-	m->signature = mono_metadata_parse_method_signature_full (img, context, idx, sig, NULL);
+	m->signature = mono_metadata_parse_method_signature_full (img, container, idx, sig, NULL);
 	
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		m->signature->pinvoke = 1;

@@ -287,12 +287,12 @@ mono_type_create_from_typespec_full         (MonoImage             *image,
 
 MonoMethodSignature *
 mono_metadata_parse_signature_full          (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *generic_container,
 					     guint32                token);
 
 MonoMethodSignature *
 mono_metadata_parse_method_signature_full   (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *generic_container,
 					     int                     def,
 					     const char             *ptr,
 					     const char            **rptr);

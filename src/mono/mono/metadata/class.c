@@ -414,7 +414,7 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 	igclass->klass = NULL;
 
 	ngclass->context = g_new0 (MonoGenericContext, 1);
-	ngclass->context->container = context->container;
+	ngclass->context->container = ngclass->container_class->generic_container;
 	ngclass->context->gclass = ngclass;
 
 	mono_loader_lock ();
@@ -587,8 +587,9 @@ MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
 	MonoMethodInflated *result;
+	MonoGenericContainer *container = context ? context->container : NULL;
 
-	if (method->is_inflated || mono_method_signature_full (method, context)->is_inflated) {
+	if (method->is_inflated || (mono_method_signature_full (method, container)->is_inflated)) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		context = inflate_generic_context (imethod->context, context);

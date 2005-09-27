@@ -1445,7 +1445,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature*
-mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContext *generic_context, guint32 token)
+mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *generic_container, guint32 token)
 {
 	MonoTableInfo *tables = image->tables;
 	guint32 idx = mono_metadata_token_index (token);
@@ -1462,7 +1462,7 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContext *generi
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	return mono_metadata_parse_method_signature_full (image, generic_context, FALSE, ptr, NULL); 
+	return mono_metadata_parse_method_signature_full (image, generic_container, FALSE, ptr, NULL); 
 }
 
 /*
@@ -1536,7 +1536,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature *
-mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *generic_context,
+mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *generic_container,
 					   int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
@@ -1544,7 +1544,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
-	MonoGenericContext *context = NULL;
+	MonoGenericContainer *container;
 
 	if (*ptr & 0x10)
 		gen_param_count = 1;
@@ -1586,14 +1586,12 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 	if (gen_param_count)
 		method->has_type_parameters = 1;
 
-	if (gen_param_count && (!generic_context || !generic_context->container->is_method)) {
-		MonoGenericContainer *container = g_new0 (MonoGenericContainer, 1);
+	if (gen_param_count && (!generic_container || !generic_container->is_method)) {
+		container = g_new0 (MonoGenericContainer, 1);
 
-		if (generic_context)
-			container->parent = generic_context->container;
+		container->parent = generic_container;
 		container->is_signature = 1;
 
-		context = &container->context;
 		container->context.container = container;
 
 		container->type_argc = gen_param_count;
@@ -1604,11 +1602,11 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 			container->type_params [i].num = i;
 		}
 	} else {
-		context = generic_context;
+		container = generic_container;
 	}
 
 	if (call_convention != 0xa) {
-		method->ret = mono_metadata_parse_type_full (m, context, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
+		method->ret = mono_metadata_parse_type_full (m, (MonoGenericContext *) container, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
 		is_open = mono_class_is_open_constructed_type (method->ret);
 	}
 
@@ -1623,7 +1621,8 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 				ptr++;
 			}
 			method->params [i] = mono_metadata_parse_type_full (
-				m, context, MONO_PARSE_PARAM, pattrs [i], ptr, &ptr);
+				m, (MonoGenericContext *) container, MONO_PARSE_PARAM,
+				pattrs [i], ptr, &ptr);
 			if (!is_open)
 				is_open = mono_class_is_open_constructed_type (method->params [i]);
 		}
@@ -1641,6 +1640,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContext *gen
 	/*
 	 * Add signature to a cache and increase ref count...
 	 */
+
 	return method;
 }
 
@@ -1941,9 +1941,11 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *g
 	case MONO_TYPE_PTR:
 		type->data.type = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		break;
-	case MONO_TYPE_FNPTR:
-		type->data.method = mono_metadata_parse_method_signature_full (m, generic_context, 0, ptr, &ptr);
+	case MONO_TYPE_FNPTR: {
+		MonoGenericContainer *container = generic_context ? generic_context->container : NULL;
+		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
 		break;
+	}
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array_full (m, generic_context, ptr, &ptr);
 		break;

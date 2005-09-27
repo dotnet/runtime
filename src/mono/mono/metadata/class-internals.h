@@ -681,7 +681,7 @@ MonoMethodSignature*
 mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context);
 
 MonoMethodSignature *
-mono_method_signature_full (MonoMethod *image, MonoGenericContext *context);
+mono_method_signature_full (MonoMethod *image, MonoGenericContainer *container);
 
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic);
