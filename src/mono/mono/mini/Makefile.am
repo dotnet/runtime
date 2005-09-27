@@ -313,6 +313,15 @@ TestDriver.dll: $(srcdir)/TestDriver.cs
 
 if CROSS_COMPILING
 
+cpu-pentium.h: cpu-pentium.md
+cpu-amd64.h: cpu-amd64.md
+cpu-g4.h: cpu-g4.md
+cpu-arm.h: cpu-arm.md
+cpu-sparc.h: cpu-sparc.md
+cpu-s390.h: cpu-s390.md
+cpu-s390x.h: cpu-s390x.md
+cpu-ia64.h: cpu-ia64.md
+
 ## Gross hack.  Making 'genmdesc' a host binary takes more effort
 $(arch_built):
 	echo "*** please build $(arch_built) on a native build tree and copy it here"
