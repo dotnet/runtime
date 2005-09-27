@@ -54,6 +54,8 @@ static MonoProfileFunc shutdown_callback;
 static MonoProfileGCFunc        gc_event;
 static MonoProfileGCResizeFunc  gc_heap_resize;
 
+#define mono_profiler_coverage_lock() EnterCriticalSection (&profiler_coverage_mutex)
+#define mono_profiler_coverage_unlock() LeaveCriticalSection (&profiler_coverage_mutex)
 static CRITICAL_SECTION profiler_coverage_mutex;
 
 /* this is directly accessible to other mono libs. */
@@ -394,7 +396,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 		if (! (*coverage_filter_cb) (current_profiler, method))
 			return NULL;
 
-	EnterCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_lock ();
 	if (!coverage_hash)
 		coverage_hash = g_hash_table_new (NULL, NULL);
 
@@ -403,7 +405,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 	res->entries = entries;
 
 	g_hash_table_insert (coverage_hash, method, res);
-	LeaveCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_unlock ();
 
 	return res;
 }
@@ -414,9 +416,9 @@ mono_profiler_coverage_free (MonoMethod *method)
 {
 	MonoProfileCoverageInfo* info;
 
-	EnterCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_lock ();
 	if (!coverage_hash) {
-		LeaveCriticalSection (&profiler_coverage_mutex);
+		mono_profiler_coverage_unlock ();
 		return;
 	}
 
@@ -425,7 +427,7 @@ mono_profiler_coverage_free (MonoMethod *method)
 		g_free (info);
 		g_hash_table_remove (coverage_hash, method);
 	}
-	LeaveCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_unlock ();
 }
 
 void 
@@ -438,9 +440,9 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	MonoMethodHeader *header;
 	MonoProfileCoverageEntry entry;
 
-	EnterCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_lock ();
 	info = g_hash_table_lookup (coverage_hash, method);
-	LeaveCriticalSection (&profiler_coverage_mutex);
+	mono_profiler_coverage_unlock ();
 
 	if (!info)
 		return;

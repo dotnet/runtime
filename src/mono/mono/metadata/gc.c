@@ -36,6 +36,8 @@ extern int __imp_GC_finalize_on_demand;
 
 static gboolean gc_disabled = FALSE;
 
+#define mono_finalizer_lock() EnterCriticalSection (&finalizer_mutex)
+#define mono_finalizer_unlock() LeaveCriticalSection (&finalizer_mutex)
 static CRITICAL_SECTION finalizer_mutex;
 
 static GSList *domains_to_finalize= NULL;
@@ -213,11 +215,11 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	req->domain = domain;
 	req->done_event = done_event;
 	
-	EnterCriticalSection (&finalizer_mutex);
+	mono_finalizer_lock ();
 
 	domains_to_finalize = g_slist_append (domains_to_finalize, req);
 
-	LeaveCriticalSection (&finalizer_mutex);
+	mono_finalizer_unlock ();
 
 	/* Tell the finalizer thread to finalize this appdomain */
 	finalize_notify ();
@@ -301,7 +303,8 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 #else
 #endif
 }
-
+#define mono_allocator_lock() EnterCriticalSection (&allocator_section)
+#define mono_allocator_unlock() LeaveCriticalSection (&allocator_section)
 static CRITICAL_SECTION allocator_section;
 static CRITICAL_SECTION handle_section;
 
@@ -747,16 +750,16 @@ static guint32 finalizer_thread (gpointer unused)
 		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 
 		if (domains_to_finalize) {
-			EnterCriticalSection (&finalizer_mutex);
+			mono_finalizer_lock ();
 			if (domains_to_finalize) {
 				DomainFinalizationReq *req = domains_to_finalize->data;
 				domains_to_finalize = g_slist_remove (domains_to_finalize, req);
-				LeaveCriticalSection (&finalizer_mutex);
+				mono_finalizer_unlock ();
 
 				finalize_domain_objects (req);
 			}
 			else
-				LeaveCriticalSection (&finalizer_mutex);
+				mono_finalizer_unlock ();
 		}				
 
 #ifdef DEBUG
@@ -797,12 +800,12 @@ extern void mono_gc_push_all_stacks (void);
 
 static void mono_gc_lock (void)
 {
-	EnterCriticalSection (&allocator_section);
+	mono_allocator_lock ();
 }
 
 static void mono_gc_unlock (void)
 {
-	LeaveCriticalSection (&allocator_section);
+	mono_allocator_unlock ();
 }
 
 static GCThreadFunctions mono_gc_thread_vtable = {

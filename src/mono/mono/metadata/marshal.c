@@ -86,6 +86,8 @@ static MonoDisHelper marshal_dh = {
 #endif 
 
 /* This mutex protects the various marshalling related caches in MonoImage */
+#define mono_marshal_lock() EnterCriticalSection (&marshal_mutex)
+#define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
 static CRITICAL_SECTION marshal_mutex;
 
 /* Maps wrapper methods to the methods they wrap */
@@ -239,21 +241,21 @@ delegate_hash_table_new (void) {
 static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 }
 
 void
 delegate_hash_table_add (MonoDelegate *d) 
 {
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 }
 
 MonoDelegate*
@@ -261,12 +263,12 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
 	MonoDelegate *d;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 
 	d = g_hash_table_lookup (delegate_hash_table, ftn);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (d == NULL) {
 		/* This is a native function, so construct a delegate for it */
 		static MonoClass *UnmanagedFunctionPointerAttribute;
@@ -1764,9 +1766,9 @@ mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 {
 	MonoMethod *res;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, key);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	return res;
 }
 
@@ -1778,7 +1780,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 {
 	MonoMethod *res;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, key);
 	if (!res) {
 		/* This does not acquire any locks */
@@ -1786,7 +1788,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		g_hash_table_insert (cache, key, res);
 		g_hash_table_insert (wrapper_hash, res, key);
 	}
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 
 	return res;
 }		
@@ -1798,7 +1800,7 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 	MonoMethod *res = NULL;
 	MonoRemotingMethods *wrps;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (method->klass->image->remoting_invoke_cache, method);
 
 	if (wrps) {
@@ -1810,7 +1812,7 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 		}
 	}
 
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	return res;
 }
 
@@ -1823,7 +1825,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	MonoRemotingMethods *wrps;
 	GHashTable *cache = key->klass->image->remoting_invoke_cache;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (cache, key);
 	if (!wrps) {
 		wrps = g_new0 (MonoRemotingMethods, 1);
@@ -1844,7 +1846,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 		g_hash_table_insert (wrapper_hash, *res, key);
 	}
 
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 
 	return *res;
 }		
@@ -1857,9 +1859,9 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	if (wrapper->wrapper_type == MONO_WRAPPER_NONE)
 		return wrapper;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	res = g_hash_table_lookup (wrapper_hash, wrapper);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	return res;
 }
 
@@ -3320,7 +3322,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	target_klass = method->klass;
 	
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 
 	if (method->string_ctor) {
 		static GSList *strsig_list = NULL;
@@ -3358,7 +3360,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	/* from mono_marshal_find_in_cache */
 	res = g_hash_table_lookup (cache, callsig);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 
 	if (res) {
 		return res;
@@ -3600,7 +3602,7 @@ handle_enum:
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* taken from mono_mb_create_and_cache */
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 
 	res = g_hash_table_lookup (cache, callsig);
 	/* Somebody may have created it before us */
@@ -3610,7 +3612,7 @@ handle_enum:
 		g_hash_table_insert (wrapper_hash, res, callsig);
 	}
 
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	/* end mono_mb_create_and_cache */
 
 	mono_mb_free (mb);
@@ -3647,11 +3649,11 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	static GHashTable *ldfld_hash = NULL; 
 	char *name;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!ldfld_hash) 
 		ldfld_hash = g_hash_table_new (NULL, NULL);
 	res = g_hash_table_lookup (ldfld_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -3736,11 +3738,11 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!ldfld_hash) 
 		ldfld_hash = g_hash_table_new (NULL, NULL);
 	res = g_hash_table_lookup (ldfld_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -3869,11 +3871,11 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	static GHashTable *stfld_hash = NULL; 
 	char *name;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!stfld_hash) 
 		stfld_hash = g_hash_table_new (NULL, NULL);
 	res = g_hash_table_lookup (stfld_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -3962,11 +3964,11 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!stfld_hash) 
 		stfld_hash = g_hash_table_new (NULL, NULL);
 	res = g_hash_table_lookup (stfld_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -6666,12 +6668,12 @@ mono_marshal_get_isinst (MonoClass *klass)
 	char *name;
 	MonoMethodBuilder *mb;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!isinst_hash) 
 		isinst_hash = g_hash_table_new (NULL, NULL);
 	
 	res = g_hash_table_lookup (isinst_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -6754,12 +6756,12 @@ mono_marshal_get_castclass (MonoClass *klass)
 	char *name;
 	MonoMethodBuilder *mb;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!castclass_hash) 
 		castclass_hash = g_hash_table_new (NULL, NULL);
 	
 	res = g_hash_table_lookup (castclass_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 
@@ -6827,12 +6829,12 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	MonoMethodDesc *desc;
 	MonoMethodBuilder *mb;
 
-	EnterCriticalSection (&marshal_mutex);
+	mono_marshal_lock ();
 	if (!proxy_isinst_hash) 
 		proxy_isinst_hash = g_hash_table_new (NULL, NULL);
 	
 	res = g_hash_table_lookup (proxy_isinst_hash, klass);
-	LeaveCriticalSection (&marshal_mutex);
+	mono_marshal_unlock ();
 	if (res)
 		return res;
 

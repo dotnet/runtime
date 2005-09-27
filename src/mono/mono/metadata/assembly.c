@@ -116,6 +116,8 @@ static GList *loaded_assemblies = NULL;
 static MonoAssembly *corlib;
 
 /* This protects loaded_assemblies and image->references */
+#define mono_assemblies_lock() EnterCriticalSection (&assemblies_mutex)
+#define mono_assemblies_unlock() LeaveCriticalSection (&assemblies_mutex)
 static CRITICAL_SECTION assemblies_mutex;
 
 /* A hastable of thread->assembly list mappings */
@@ -633,9 +635,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	 * image->references is shared between threads, so we need to access
 	 * it inside a critical section.
 	 */
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	reference = image->references [index];
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 	if (reference)
 		return;
 
@@ -679,7 +681,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		g_free (extra_msg);
 	}
 
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	if (reference == NULL) {
 		/* Flag as not found */
 		reference = (gpointer)-1;
@@ -689,7 +691,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 
 	if (!image->references [index])
 		image->references [index] = reference;
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	if (image->references [index] != reference) {
 		/* Somebody loaded it before us */
@@ -960,14 +962,14 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 	 * we do a very simple search for bundled assemblies: it's not a general 
 	 * purpose assembly loading mechanism.
 	 */
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
 			image = mono_image_open_from_data_full ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly);
 			break;
 		}
 	}
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 	g_free (name);
 	if (image) {
 		mono_image_addref (image);
@@ -987,9 +989,9 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status, gboole
 		if (image != NULL)
 			return image;
 	}
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	image = mono_image_open_full (filename, status, refonly);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	return image;
 }
@@ -1127,7 +1129,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	/* 
 	 * Atomically search the loaded list and add ourselves to it if necessary.
 	 */
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	if (ass->aname.name) {
 		/* avoid loading the same assembly twice for now... */
 		ass2 = search_loaded (&ass->aname, refonly);
@@ -1136,7 +1138,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 			g_free (base_dir);
 			mono_image_close (image);
 			*status = MONO_IMAGE_OK;
-			LeaveCriticalSection (&assemblies_mutex);
+			mono_assemblies_unlock ();
 			return ass2;
 		}
 	}
@@ -1144,13 +1146,13 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
 	loading = g_list_prepend (loading, ass);
 	g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	image->assembly = ass;
 
 	mono_assembly_load_references (image, status);
 
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 
 	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
 	loading = g_list_remove (loading, ass);
@@ -1160,7 +1162,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	else
 		g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
 	if (*status != MONO_IMAGE_OK) {
-		LeaveCriticalSection (&assemblies_mutex);
+		mono_assemblies_unlock ();
 		mono_assembly_close (ass);
 		return NULL;
 	}
@@ -1169,14 +1171,14 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		ass2 = search_loaded (&ass->aname, refonly);
 		if (ass2) {
 			/* Somebody else has loaded the assembly before us */
-			LeaveCriticalSection (&assemblies_mutex);
+			mono_assemblies_unlock ();
 			mono_assembly_close (ass);
 			return ass2;
 		}
 	}
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	mono_assembly_invoke_load_hook (ass);
 
@@ -1889,9 +1891,9 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	res = search_loaded (aname, refonly);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	return res;
 }
@@ -1917,9 +1919,9 @@ mono_assembly_close (MonoAssembly *assembly)
 	if (InterlockedDecrement (&assembly->ref_count))
 		return;
 	
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 	/* assemblies belong to domains, so the domain code takes care of unloading the
 	 * referenced assemblies
 	 */
@@ -1953,9 +1955,9 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 	 * We make a copy of the list to avoid calling the callback inside the 
 	 * lock, which could lead to deadlocks.
 	 */
-	EnterCriticalSection (&assemblies_mutex);
+	mono_assemblies_lock ();
 	copy = g_list_copy (loaded_assemblies);
-	LeaveCriticalSection (&assemblies_mutex);
+	mono_assemblies_unlock ();
 
 	g_list_foreach (loaded_assemblies, func, user_data);
 

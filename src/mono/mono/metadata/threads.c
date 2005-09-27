@@ -75,9 +75,13 @@ typedef struct {
 static MonoClassField *wait_handle_os_handle_field = NULL;
 
 /* Controls access to the 'threads' hash table */
+#define mono_threads_lock() EnterCriticalSection (&threads_mutex)
+#define mono_threads_unlock() LeaveCriticalSection (&threads_mutex)
 static CRITICAL_SECTION threads_mutex;
 
 /* Controls access to context static data */
+#define mono_contexts_lock() EnterCriticalSection (&contexts_mutex)
+#define mono_contexts_unlock() LeaveCriticalSection (&contexts_mutex)
 static CRITICAL_SECTION contexts_mutex;
 
 /* Holds current status of static data heap */
@@ -130,6 +134,8 @@ static gboolean mono_thread_resume (MonoThread* thread);
 static void mono_thread_start (MonoThread *thread);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
+#define mono_interlocked_lock() EnterCriticalSection (&interlocked_mutex)
+#define mono_interlocked_unlock() LeaveCriticalSection (&interlocked_mutex)
 static CRITICAL_SECTION interlocked_mutex;
 
 /* global count of thread interruptions requested */
@@ -157,7 +163,7 @@ mono_thread_get_tls_offset (void)
  */
 static void handle_store(MonoThread *thread)
 {
-	EnterCriticalSection(&threads_mutex);
+	mono_threads_lock ();
 
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread %p ID %"G_GSIZE_FORMAT, thread, (gsize)thread->tid));
 
@@ -171,19 +177,21 @@ static void handle_store(MonoThread *thread)
 	 */
 	mono_g_hash_table_insert(threads, (gpointer)(gsize)(thread->tid),
 				 thread);
-	LeaveCriticalSection(&threads_mutex);
+
+	mono_threads_unlock ();
 }
 
 static void handle_remove(gsize tid)
 {
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread ID %"G_GSIZE_FORMAT, tid));
 
-	EnterCriticalSection(&threads_mutex);
+	mono_threads_lock ();
+	
 
 	if (threads)
 		mono_g_hash_table_remove (threads, (gpointer)tid);
 	
-	LeaveCriticalSection(&threads_mutex);
+	mono_threads_unlock ();
 
 	/* Don't close the handle here, wait for the object finalizer
 	 * to do it. Otherwise, the following race condition applies:
@@ -1071,11 +1079,11 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 
 	ret = ++ *location;
 	
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	
 	return ret;
@@ -1094,11 +1102,11 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 
 	ret = -- *location;
 	
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return ret;
 }
@@ -1141,10 +1149,10 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 v
 	 * According to MSDN, this function is only atomic with regards to the 
 	 * other Interlocked functions on 32 bit platforms.
 	 */
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	res = *location;
 	*location = value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return res;
 #endif
@@ -1167,10 +1175,10 @@ ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdoub
 	 * According to MSDN, this function is only atomic with regards to the 
 	 * other Interlocked functions on 32 bit platforms.
 	 */
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	res = *location;
 	*location = value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return res;
 #endif
@@ -1217,11 +1225,11 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location
 #else
 	gdouble old;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	old = *location;
 	if (old == comparand)
 		*location = value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return old;
 #endif
@@ -1235,11 +1243,11 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, g
 #else
 	gint64 old;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	old = *location;
 	if (old == comparand)
 		*location = value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 	
 	return old;
 #endif
@@ -1255,10 +1263,10 @@ ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 #else
 	gint32 orig;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	orig = *location;
 	*location = orig + value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return orig;
 #endif
@@ -1274,10 +1282,10 @@ ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 #else
 	gint64 orig;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	orig = *location;
 	*location = orig + value;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return orig;
 #endif
@@ -1292,9 +1300,9 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 #else
 	gint64 res;
 
-	EnterCriticalSection(&interlocked_mutex);
+	mono_interlocked_lock ();
 	res = *location;
-	LeaveCriticalSection(&interlocked_mutex);
+	mono_interlocked_unlock ();
 
 	return res;
 #endif
@@ -1784,16 +1792,15 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 	
 	if (ret < wait->num) {
 		gsize tid = wait->threads[ret]->tid;
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 		if (mono_g_hash_table_lookup (threads, (gpointer)tid)!=NULL) {
 			/* See comment in wait_for_tids about thread cleanup */
-			LeaveCriticalSection (&threads_mutex);
+			mono_threads_unlock ();
 			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 				   ": cleaning up after thread %"G_GSIZE_FORMAT, tid));
 			thread_cleanup (wait->threads [ret]);
-		}
-		else
-			LeaveCriticalSection (&threads_mutex);
+		} else
+			mono_threads_unlock ();
 	}
 }
 
@@ -1876,16 +1883,16 @@ void mono_thread_manage (void)
 	/* join each thread that's still running */
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Joining each running thread..."));
 	
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	if(threads==NULL) {
 		THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION ": No threads"));
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 		return;
 	}
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 	
 	do {
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
 			  ":There are %d threads to join", mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
@@ -1893,7 +1900,7 @@ void mono_thread_manage (void)
 		ResetEvent (background_change_event);
 		wait->num=0;
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 		if(wait->num>0) {
 			/* Something to wait for */
 			wait_for_tids_or_state_change (wait, INFINITE);
@@ -1906,7 +1913,7 @@ void mono_thread_manage (void)
 	THREAD_DEBUG (g_message ("threadpool cleanup"));
 	mono_thread_pool_cleanup ();
 
-	EnterCriticalSection(&threads_mutex);
+	mono_threads_lock ();
 
 	/* 
 	 * Remove everything but the finalizer thread and self.
@@ -1915,7 +1922,7 @@ void mono_thread_manage (void)
 	wait->num = 0;
 	mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
 
-	LeaveCriticalSection(&threads_mutex);
+	mono_threads_unlock ();
 
 	THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
 	if(wait->num>0) {
@@ -1947,14 +1954,14 @@ void mono_thread_abort_all_other_threads (void)
 {
 	gsize self = GetCurrentThreadId ();
 
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ":There are %d threads to abort",
 		  mono_g_hash_table_size (threads));
 		mono_g_hash_table_foreach (threads, print_tids, NULL));
 
 	mono_g_hash_table_foreach (threads, terminate_thread, (gpointer)self);
 	
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 static void
@@ -1992,9 +1999,9 @@ void mono_thread_suspend_all_other_threads (void)
 	 * Make a copy of the hashtable since we can't do anything with
 	 * threads while threads_mutex is held.
 	 */
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	mono_g_hash_table_foreach (threads, collect_threads, wait);
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 
 	events = g_new0 (gpointer, wait->num);
 	waitnum = 0;
@@ -2067,9 +2074,9 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 
 	if (thread) {
 		/* printf ("PUSH REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 	}
 }
 
@@ -2080,11 +2087,11 @@ mono_thread_pop_appdomain_ref (void)
 
 	if (thread) {
 		/* printf ("POP REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 		/* FIXME: How can the list be empty ? */
 		if (thread->appdomain_refs)
 			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 	}
 }
 
@@ -2092,9 +2099,9 @@ gboolean
 mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain)
 {
 	gboolean res;
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	res = g_slist_find (thread->appdomain_refs, domain) != NULL;
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 	return res;
 }
 
@@ -2146,12 +2153,12 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 
 	start_time = GetTickCount ();
 	do {
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 
 		user_data.domain = domain;
 		user_data.wait.num = 0;
 		mono_g_hash_table_foreach (threads, abort_appdomain_thread, &user_data);
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 
 		if (user_data.wait.num > 0)
 			/*
@@ -2206,9 +2213,9 @@ clear_cached_culture (gpointer key, gpointer value, gpointer user_data)
 void
 mono_threads_clear_cached_culture (MonoDomain *domain)
 {
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	mono_g_hash_table_foreach (threads, clear_cached_culture, domain);
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 /*
@@ -2328,13 +2335,13 @@ thread_adjust_static_data (MonoThread *thread)
 {
 	guint32 offset;
 
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 	if (thread_static_info.offset || thread_static_info.idx > 0) {
 		/* get the current allocated size */
 		offset = thread_static_info.offset | ((thread_static_info.idx + 1) << 24);
 		mono_alloc_static_data (&(thread->static_data), offset);
 	}
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 static void 
@@ -2360,19 +2367,19 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 	guint32 offset;
 	if (static_type == SPECIAL_STATIC_THREAD)
 	{
-		EnterCriticalSection (&threads_mutex);
+		mono_threads_lock ();
 		offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
 		/* This can be called during startup */
 		if (threads != NULL)
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
-		LeaveCriticalSection (&threads_mutex);
+		mono_threads_unlock ();
 	}
 	else
 	{
 		g_assert (static_type == SPECIAL_STATIC_CONTEXT);
-		EnterCriticalSection (&contexts_mutex);
+		mono_contexts_lock ();
 		offset = mono_alloc_static_data_slot (&context_static_info, size, align);
-		LeaveCriticalSection (&contexts_mutex);
+		mono_contexts_unlock ();
 		offset |= 0x80000000;	/* Set the high bit to indicate context static data */
 	}
 	return offset;
@@ -2401,9 +2408,9 @@ mono_get_special_static_data (guint32 offset)
 		*/
 		MonoAppContext *context = mono_context_get ();
 		if (!context->static_data || !context->static_data [idx]) {
-			EnterCriticalSection (&contexts_mutex);
+			mono_contexts_lock ();
 			mono_alloc_static_data (&(context->static_data), offset);
-			LeaveCriticalSection (&contexts_mutex);
+			mono_contexts_unlock ();
 		}
 		return ((char*) context->static_data [idx]) + (offset & 0xffffff);	
 	}
@@ -2427,12 +2434,12 @@ void mono_gc_stop_world (void)
 
 	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %p", self, threads));
 
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 
 	if (threads != NULL)
 		mono_g_hash_table_foreach (threads, gc_stop_world, (gpointer)self);
 	
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 static void gc_start_world (gpointer key, gpointer value, gpointer user)
@@ -2453,12 +2460,12 @@ void mono_gc_start_world (void)
 
 	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %p", self, threads));
 
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 
 	if (threads != NULL)
 		mono_g_hash_table_foreach (threads, gc_start_world, (gpointer)self);
 	
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 #ifdef __MINGW32__
@@ -2655,12 +2662,12 @@ void mono_gc_push_all_stacks (void)
 
 	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %p", self, threads));
 
-	EnterCriticalSection (&threads_mutex);
+	mono_threads_lock ();
 
 	if (threads != NULL)
 		mono_g_hash_table_foreach (threads, gc_push_all_stacks, &self);
 	
-	LeaveCriticalSection (&threads_mutex);
+	mono_threads_unlock ();
 }
 
 #endif /* WITH_INCLUDED_LIBGC */

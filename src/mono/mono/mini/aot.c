@@ -112,7 +112,8 @@ typedef struct MonoAotCompile {
 } MonoAotCompile;
 
 static GHashTable *aot_modules;
-
+#define mono_aot_lock() EnterCriticalSection (&aot_mutex)
+#define mono_aot_unlock() LeaveCriticalSection (&aot_mutex)
 static CRITICAL_SECTION aot_mutex;
 
 /*
@@ -549,9 +550,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "class_infos", (gpointer*)&info->class_infos);
 	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
 
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 	g_hash_table_insert (aot_modules, assembly, info);
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 
 	mono_jit_info_add_aot_module (assembly->image, info->code, info->code_end);
 
@@ -622,11 +623,11 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
 		return FALSE;
 
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 
 	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
 	if (!aot_module) {
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		return FALSE;
 	}
 
@@ -635,7 +636,7 @@ mono_aot_init_vtable (MonoVTable *vtable)
 
 	err = decode_cached_class_info (aot_module, &class_info, p, &p);
 	if (!err) {
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		return FALSE;
 	}
 
@@ -658,7 +659,7 @@ mono_aot_init_vtable (MonoVTable *vtable)
 
 		image = load_image (aot_module, image_index);
 		if (!image) {
-			LeaveCriticalSection (&aot_mutex);
+			mono_aot_unlock ();
 			return FALSE;
 		}
 
@@ -673,7 +674,7 @@ mono_aot_init_vtable (MonoVTable *vtable)
 #endif
 	}
 
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 
 	return TRUE;
 }
@@ -688,11 +689,11 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 	if (klass->rank || !klass->image->assembly->aot_module)
 		return FALSE;
 
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 
 	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
 	if (!aot_module) {
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		return FALSE;
 	}
 
@@ -700,11 +701,11 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 
 	err = decode_cached_class_info (aot_module, res, p, &p);
 	if (!err) {
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		return FALSE;
 	}
 
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 
 	return TRUE;
 }
@@ -1221,7 +1222,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 #if MONO_ARCH_HAVE_PIC_AOT
 		/* Do this outside the lock to avoid deadlocks */
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		non_got_patches = FALSE;
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
@@ -1239,16 +1240,16 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			make_writable (code, jinfo->code_size);
 			mono_arch_patch_code (method, domain, code, patch_info, TRUE);
 		}
-		EnterCriticalSection (&aot_mutex);
+		mono_aot_lock ();
 #else
 		if (use_loaded_code)
 			/* disable write protection */
 			make_writable (code, jinfo->code_size);
 
 		/* Do this outside the lock to avoid deadlocks */
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 		mono_arch_patch_code (method, domain, code, patch_info, TRUE);
-		EnterCriticalSection (&aot_mutex);
+		mono_aot_lock ();
 #endif
 		g_free (got_slots);
 
@@ -1280,9 +1281,9 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitInfo *info;
 
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 	info = mono_aot_get_method_inner (domain, method);
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 
 	/* Do this outside the lock */
 	if (info) {
@@ -1390,7 +1391,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 			goto cleanup;
 
 		/* Do this outside the lock to avoid deadlocks */
-		LeaveCriticalSection (&aot_mutex);
+		mono_aot_unlock ();
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
@@ -1402,7 +1403,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 			}
 		}
 
-		EnterCriticalSection (&aot_mutex);
+		mono_aot_lock ();
 
 		g_free (got_slots);
 
@@ -1433,9 +1434,9 @@ mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 to
 	gpointer res;	
 	MonoClass *klass;
 
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 	res = mono_aot_get_method_from_token_inner (domain, image, token, &klass);
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 
 	if (!res)
 		return NULL;
@@ -1471,9 +1472,9 @@ mono_aot_is_got_entry (guint8 *code, guint8 *addr)
 
 	user_data.addr = addr;
 	user_data.res = FALSE;
-	EnterCriticalSection (&aot_mutex);
+	mono_aot_lock ();
 	g_hash_table_foreach (aot_modules, check_is_got_entry, &user_data);
-	LeaveCriticalSection (&aot_mutex);
+	mono_aot_unlock ();
 	
 	return user_data.res;
 }

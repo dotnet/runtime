@@ -36,6 +36,8 @@
 
 static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
+#define mono_mmap_lock() EnterCriticalSection (&mmap_mutex)
+#define mono_mmap_unlock() LeaveCriticalSection (&mmap_mutex)
 static CRITICAL_SECTION mmap_mutex;
 static gboolean make_unreadable = FALSE;
 static guint32 n_pagefaults = 0;
@@ -121,9 +123,9 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 		return 0;
 	}
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (mapping));
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 	
 	return ((char *)ptr) + (base - start);
 
@@ -166,9 +168,9 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 		g_assert (res == 0);
 	}
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (size));
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 
 	return ((char *)ptr) + (base - start);
 #endif
@@ -179,9 +181,9 @@ mono_raw_buffer_free_mmap (void *base)
 {
 	int value;
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	value = GPOINTER_TO_INT (g_hash_table_lookup (mmap_map, base));
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 
 #ifdef USE_WIN32_API
 	UnmapViewOfFile (base);
@@ -221,9 +223,9 @@ mono_raw_buffer_update (void *buffer, size_t size)
 
 	mmap_base =  (gpointer)(ROUND_DOWN ((UINTPTR_TYPE) (buffer), alignment));
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	exists = g_hash_table_lookup (mmap_map, mmap_base) != NULL;
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 	if (exists)
 		mono_raw_buffer_update_mmap (mmap_base, size);
 }
@@ -287,9 +289,9 @@ mono_raw_buffer_is_pagefault (void *ptr)
 	data.found = FALSE;
 	data.ptr = ptr;
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	g_hash_table_foreach (mmap_map, (GHFunc)find_map, &data);
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 
 	return data.found;
 }
@@ -306,12 +308,12 @@ mono_raw_buffer_handle_pagefault (void *ptr)
 	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), alignment);
 	int res;
 
-	EnterCriticalSection (&mmap_mutex);
+	mono_mmap_lock ();
 	res = mprotect (start, alignment, PROT_READ);
 	g_assert (res == 0);
 
 	n_pagefaults ++;
-	LeaveCriticalSection (&mmap_mutex);
+	mono_mmap_unlock ();
 #endif
 }
 

@@ -69,6 +69,8 @@ struct _MonitorArray {
 	MonoThreadsSync monitors [MONO_ZERO_LEN_ARRAY];
 };
 
+#define mono_monitor_allocator_lock() EnterCriticalSection (&monitor_mutex)
+#define mono_monitor_allocator_unlock() LeaveCriticalSection (&monitor_mutex)
 static CRITICAL_SECTION monitor_mutex;
 static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
@@ -183,16 +185,16 @@ retry:
 
 	/* If the object has never been locked... */
 	if (mon == NULL) {
-		EnterCriticalSection (&monitor_mutex);
+		mono_monitor_allocator_lock ();
 		mon = mon_new (id);
 		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL) == NULL) {
 			mono_gc_weak_link_add (&mon->data, obj);
-			LeaveCriticalSection (&monitor_mutex);
+			mono_monitor_allocator_unlock ();
 			/* Successfully locked */
 			return 1;
 		} else {
 			mon_finalize (mon);
-			LeaveCriticalSection (&monitor_mutex);
+			mono_monitor_allocator_unlock ();
 			goto retry;
 		}
 	}

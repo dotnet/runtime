@@ -103,6 +103,8 @@ gboolean mono_use_security_manager = FALSE;
 
 static int mini_verbose = 0;
 
+#define mono_jit_lock() EnterCriticalSection (&jit_mutex)
+#define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
@@ -256,9 +258,9 @@ void *mono_global_codeman_reserve (int size)
 		return mono_code_manager_reserve (global_codeman, size);
 	}
 	else {
-		EnterCriticalSection (&jit_mutex);
+		mono_jit_lock ();
 		ptr = mono_code_manager_reserve (global_codeman, size);
-		LeaveCriticalSection (&jit_mutex);
+		mono_jit_unlock ();
 		return ptr;
 	}
 }
@@ -2339,7 +2341,7 @@ mono_get_element_address_signature (int arity)
 	MonoMethodSignature *res;
 	int i;
 
-	EnterCriticalSection (&jit_mutex);
+	mono_jit_lock ();
 	if (!sighash) {
 		sighash = g_hash_table_new (NULL, NULL);
 	}
@@ -2363,7 +2365,7 @@ mono_get_element_address_signature (int arity)
 	res->ret = &mono_defaults.int_class->byval_arg;
 
 	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
-	LeaveCriticalSection (&jit_mutex);
+	mono_jit_unlock ();
 
 	return res;
 }
@@ -2375,12 +2377,12 @@ mono_get_array_new_va_signature (int arity)
 	MonoMethodSignature *res;
 	int i;
 
-	EnterCriticalSection (&jit_mutex);
+	mono_jit_lock ();
 	if (!sighash) {
 		sighash = g_hash_table_new (NULL, NULL);
 	}
 	else if ((res = g_hash_table_lookup (sighash, GINT_TO_POINTER (arity)))) {
-		LeaveCriticalSection (&jit_mutex);
+		mono_jit_unlock ();
 		return res;
 	}
 
@@ -2399,7 +2401,7 @@ mono_get_array_new_va_signature (int arity)
 	res->ret = &mono_defaults.int_class->byval_arg;
 
 	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
-	LeaveCriticalSection (&jit_mutex);
+	mono_jit_unlock ();
 
 	return res;
 }
@@ -2591,9 +2593,9 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
 
-		EnterCriticalSection (&jit_mutex);
+		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
-		LeaveCriticalSection (&jit_mutex);
+		mono_jit_unlock ();
 	}
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
@@ -2779,9 +2781,9 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (ves_array_element_address, name, esig, FALSE);
 
-		EnterCriticalSection (&jit_mutex);
+		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
-		LeaveCriticalSection (&jit_mutex);
+		mono_jit_unlock ();
 	}
 
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
@@ -6954,11 +6956,11 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 							  vtable, ptr);
 	mono_domain_unlock (vtable->domain);
 
-	EnterCriticalSection (&jit_mutex);
+	mono_jit_lock ();
 	if (!class_init_hash_addr)
 		class_init_hash_addr = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (class_init_hash_addr, ptr, vtable);
-	LeaveCriticalSection (&jit_mutex);
+	mono_jit_unlock ();
 
 	return ptr;
 }
@@ -7112,12 +7114,12 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 {
 	MonoVTable *res;
 
-	EnterCriticalSection (&jit_mutex);
+	mono_jit_lock ();
 	if (class_init_hash_addr)
 		res = g_hash_table_lookup (class_init_hash_addr, addr);
 	else
 		res = NULL;
-	LeaveCriticalSection (&jit_mutex);
+	mono_jit_unlock ();
 	return res;
 }
 

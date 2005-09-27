@@ -125,6 +125,8 @@ typedef struct
 } TypeInitializationLock;
 
 /* for locking access to type_initialization_hash and blocked_thread_hash */
+#define mono_type_initialization_lock() EnterCriticalSection (&type_initialization_section)
+#define mono_type_initialization_unlock() LeaveCriticalSection (&type_initialization_section)
 static CRITICAL_SECTION type_initialization_section;
 
 /* from vtable to lock */
@@ -197,10 +199,10 @@ mono_runtime_class_init (MonoVTable *vtable)
 		int do_initialization = 0;
 		MonoDomain *last_domain = NULL;
 
-		EnterCriticalSection (&type_initialization_section);
+		mono_type_initialization_lock ();
 		/* double check... */
 		if (vtable->initialized) {
-			LeaveCriticalSection (&type_initialization_section);
+			mono_type_initialization_unlock ();
 			return;
 		}
 		lock = g_hash_table_lookup (type_initialization_hash, vtable);
@@ -211,7 +213,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 				last_domain = mono_domain_get ();
 				if (!mono_domain_set (domain, FALSE)) {
 					vtable->initialized = 1;
-					LeaveCriticalSection (&type_initialization_section);
+					mono_type_initialization_unlock ();
 					mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 				}
 			}
@@ -229,7 +231,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			TypeInitializationLock *pending_lock;
 
 			if (lock->initializing_tid == tid || lock->done) {
-				LeaveCriticalSection (&type_initialization_section);
+				mono_type_initialization_unlock ();
 				return;
 			}
 			/* see if the thread doing the initialization is already blocked on this thread */
@@ -237,7 +239,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			while ((pending_lock = (TypeInitializationLock*) g_hash_table_lookup (blocked_thread_hash, blocked))) {
 				if (pending_lock->initializing_tid == tid) {
 					if (!pending_lock->done) {
-						LeaveCriticalSection (&type_initialization_section);
+						mono_type_initialization_unlock ();
 						return;
 					} else {
 						/* the thread doing the initialization is blocked on this thread,
@@ -252,7 +254,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			/* record the fact that we are waiting on the initializing thread */
 			g_hash_table_insert (blocked_thread_hash, GUINT_TO_POINTER (tid), lock);
 		}
-		LeaveCriticalSection (&type_initialization_section);
+		mono_type_initialization_unlock ();
 
 		if (do_initialization) {
 			mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
@@ -266,7 +268,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			LeaveCriticalSection (&lock->initialization_section);
 		}
 
-		EnterCriticalSection (&type_initialization_section);
+		mono_type_initialization_lock ();
 		if (lock->initializing_tid != tid)
 			g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
 		--lock->waiting_count;
@@ -277,7 +279,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 		}
 		vtable->initialized = 1;
 		/* FIXME: if the cctor fails, the type must be marked as unusable */
-		LeaveCriticalSection (&type_initialization_section);
+		mono_type_initialization_unlock ();
 	} else {
 		vtable->initialized = 1;
 		return;
@@ -320,9 +322,9 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 void
 mono_release_type_locks (MonoThread *thread)
 {
-	EnterCriticalSection (&type_initialization_section);
+	mono_type_initialization_lock ();
 	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, (gpointer)(gsize)(thread->tid));
-	LeaveCriticalSection (&type_initialization_section);
+	mono_type_initialization_unlock ();
 }
 
 static gpointer

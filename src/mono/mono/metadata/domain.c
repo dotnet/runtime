@@ -62,6 +62,8 @@ static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
 
+#define mono_appdomains_lock() EnterCriticalSection (&appdomains_mutex)
+#define mono_appdomains_unlock() LeaveCriticalSection (&appdomains_mutex)
 static CRITICAL_SECTION appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
@@ -270,7 +272,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 	ainfo->start = start;
 	ainfo->end = end;
 
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 
 	if (!aot_modules)
 		aot_modules = mono_jit_info_table_new ();
@@ -279,7 +281,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 
 	g_array_insert_val (aot_modules, pos, ainfo);
 
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 }
 
 static MonoImage*
@@ -290,7 +292,7 @@ mono_jit_info_find_aot_module (guint8* addr)
 	if (!aot_modules)
 		return NULL;
 
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 
 	right = aot_modules->len;
 	while (left < right) {
@@ -302,12 +304,12 @@ mono_jit_info_find_aot_module (guint8* addr)
 		else if (addr >= (guint8*)ai->end)
 			left = pos + 1;
 		else {
-			LeaveCriticalSection (&appdomains_mutex);
+			mono_appdomains_unlock ();
 			return ai->image;
 		}
 	}
 
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 
 	return NULL;
 }
@@ -450,9 +452,9 @@ mono_domain_create (void)
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
 
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 	domain_id_alloc (domain);
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 
 	return domain;
 }
@@ -859,11 +861,11 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	 * inside the lock because that could lead to deadlocks.
 	 * We can do this because this function is not perf. critical.
 	 */
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 	size = appdomain_list_size;
 	copy = mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), NULL);
 	memcpy (copy, appdomains_list, appdomain_list_size * sizeof (void*));
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 
 	for (i = 0; i < size; ++i) {
 		if (copy [i])
@@ -925,9 +927,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		return;
 	}
 
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 
 	/* FIXME: free delegate_hash_table when it's used */
 	if (domain->search_path) {
@@ -1028,12 +1030,12 @@ mono_domain_get_by_id (gint32 domainid)
 {
 	MonoDomain * domain;
 
-	EnterCriticalSection (&appdomains_mutex);
+	mono_appdomains_lock ();
 	if (domainid < appdomain_list_size)
 		domain = appdomains_list [domainid];
 	else
 		domain = NULL;
-	LeaveCriticalSection (&appdomains_mutex);
+	mono_appdomains_unlock ();
 
 	return domain;
 }
