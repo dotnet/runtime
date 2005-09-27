@@ -350,6 +350,9 @@ fi
 mcs_topdir='$(top_srcdir)/'$mcsdir
 mcs_topdir_from_srcdir='$(top_builddir)/'$mcsdir
 
+## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
+AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno])
+
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
@@ -1810,22 +1813,29 @@ fi
 
   test -w $srcdir/$mcsdir/build || chmod +w $srcdir/$mcsdir/build
 
-  echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
-  echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
-  echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$mcsdir/build/config.make
-  echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
-  echo 'IL_FLAGS = /debug' >> $srcdir/$mcsdir/build/config.make
-  echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
-  echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
-  echo "INSTALL = $INSTALL" >> $srcdir/$mcsdir/build/config.make
+  #
+  # If we are cross compiling, we don't build in the mcs/ tree.  Let us not clobber
+  # any existing config.make.  This allows people to share the same source tree
+  # with different build directories, one native and one cross
+  #
+  if test x$cross_compiling = xno; then
+    echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
+    echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
+    echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$mcsdir/build/config.make
+    echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
+    echo 'IL_FLAGS = /debug' >> $srcdir/$mcsdir/build/config.make
+    echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
+    echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
+    echo "INSTALL = $INSTALL" >> $srcdir/$mcsdir/build/config.make
 
-  export VERSION
-  [myver=$($AWK 'BEGIN {
-    split (ENVIRON["VERSION"] ".0.0.0", vsplit, ".")
-    print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
-  }')]
+    export VERSION
+    [myver=$($AWK 'BEGIN {
+      split (ENVIRON["VERSION"] ".0.0.0", vsplit, ".")
+      print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
+    }')]
 
-  echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
+    echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
+  fi
 )
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}

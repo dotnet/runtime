@@ -1,3 +1,11 @@
+2005-09-27  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (BUILD_MCS): New automake conditional.  Used to
+	disable building the mcs/ tree if cross-compiling.
+	($mcsdir/build/config.make): Don't clobber if we're cross-compiling.
+	* runtime/Makefile.am (all-local, install, uninstall, clean-local):
+	Disable building in the mcs/ tree if !BUILD_MCS.
+
 2005-09-22  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (MONO_VERSION): Emit it into config.make.  Don't
