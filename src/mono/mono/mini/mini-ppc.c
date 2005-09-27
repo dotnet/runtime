@@ -214,7 +214,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 
 	/* no ppc-specific optimizations yet */
-	*exclude_mask = MONO_OPT_INLINE;
+	*exclude_mask = 0;
 	return opts;
 }
 
@@ -2422,6 +2422,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
 			ppc_mulhwu (code, ppc_r3, ins->sreg1, ins->sreg2);
 			break;
+		case OP_MEMORY_BARRIER:
+			ppc_sync (code);
+			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			ppc_li (code, ppc_r0, ins->inst_imm);
 			if (ppc_is_imm16 (ins->inst_offset)) {
@@ -4223,18 +4226,19 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	/*
 	MonoInst *ins = NULL;
 
-	if (cmethod->klass == mono_defaults.math_class) {
+	if (cmethod->klass == mono_defaults.thread_class &&
+			strcmp (cmethod->name, "MemoryBarrier") == 0) {
+		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+	}
+	/*if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Sqrt") == 0) {
 			MONO_INST_NEW (cfg, ins, OP_SQRT);
 			ins->inst_i0 = args [0];
 		}
-	}
+	}*/
 	return ins;
-	*/
-	return NULL;
 }
 
 gboolean

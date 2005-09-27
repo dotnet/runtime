@@ -45,6 +45,7 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
+memory_barrier: len:4
 nop: len:4
 break: len:4
 ldarg.0:
