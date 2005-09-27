@@ -284,20 +284,6 @@ stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG (CEE_LDIND_I4 (base)) {
-	tree->opcode = OP_X86_PUSH_MEMBASE;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_U4 (base)) {
-	tree->opcode = OP_X86_PUSH_MEMBASE;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: OP_OUTARG (CEE_LDIND_I (base)) {
 	tree->opcode = OP_X86_PUSH_MEMBASE;
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
@@ -380,15 +366,16 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	if (!tree->inst_imm)
 		return;
 
-	if (tree->inst_imm <= 8) {
+	if (tree->inst_imm == 8) {
+		/* Can't use this for < 8 since it does an 8 byte memory load */
 		tree->opcode = OP_X86_PUSH_MEMBASE;
 		tree->inst_basereg = vt->inst_basereg;
 		tree->inst_offset = vt->inst_offset;
 		mono_bblock_add_inst (s->cbb, tree);
 	} else if (tree->inst_imm <= 20) {
 		int sz = tree->inst_imm;
-		sz += 8;
-		sz &= ~8;
+		sz += 7;
+		sz &= ~7;
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, sz);
 		mini_emit_memcpy (s, X86_ESP, 0, vt->inst_basereg, vt->inst_offset, tree->inst_imm, 0);
 	} else {
