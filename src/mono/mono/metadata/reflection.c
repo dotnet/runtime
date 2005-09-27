@@ -495,7 +495,10 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		MonoClass *k = mono_class_from_mono_type (type);
-		mono_metadata_encode_value (type->type, p, &p);
+		/*
+		 * Make sure we use the correct type.
+		 */
+		mono_metadata_encode_value (k->byval_arg.type, p, &p);
 		/*
 		 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
 		 * otherwise two typerefs could point to the same type, leading to

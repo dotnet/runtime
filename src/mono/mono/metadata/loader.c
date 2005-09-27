@@ -654,19 +654,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	method = mono_get_method_full (image, token, NULL, container);
 	method = mono_get_inflated_method (method);
 
-	if (method->is_inflated)
-		container = ((MonoMethodNormal *) ((MonoMethodInflated *) method)->declaring)->generic_container;
-	else
-		container = ((MonoMethodNormal *) method)->generic_container;
-	g_assert (container && container->is_method);
-
-	if (context) {
-		g_assert (context->container);
-		container->parent = context->container;
-		if (container->parent->is_method)
-			container->parent = container->parent->parent;
-	}
-
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_class = method->klass->generic_class;
 	gmethod->container = container;
@@ -1082,11 +1069,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
-		MonoGenericContainer *generic_container = NULL;
-		if (context) {
-			g_assert (context->container);
-			generic_container = context->container;
-		}
 		if (table == MONO_TABLE_METHODSPEC)
 			return method_from_methodspec (image, context, idx);
 		if (table != MONO_TABLE_MEMBERREF)
