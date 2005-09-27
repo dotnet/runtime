@@ -649,6 +649,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 				/* The callee has already placed the result */
 				/* in the required area			    */
 				/*------------------------------------------*/
+				break;
 			}
 			break;
 		case MONO_TYPE_VOID:
