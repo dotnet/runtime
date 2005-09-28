@@ -651,8 +651,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		container->type_params [i].num = i;
 	}
 
-	method = mono_get_method_full (image, token, NULL, container);
-	method = mono_get_inflated_method (method);
+	method = mono_get_inflated_method (mono_get_method_full (image, token, NULL, container));
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_class = method->klass->generic_class;
