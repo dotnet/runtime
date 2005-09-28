@@ -462,7 +462,8 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 }
 
 static MonoMethod *
-method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context)
+method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context,
+		       MonoGenericContext *class_context)
 {
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
@@ -496,7 +497,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		/*
 		 * Parse the TYPESPEC in the parent's context.
 		 */
-		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
+		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, class_context);
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
@@ -619,15 +620,12 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	MonoGenericContainer *container = NULL;
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
-	guint32 token, param_count;
+	guint32 token, nindex, param_count;
 	int i;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
-	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
-		token = MONO_TOKEN_METHOD_DEF | (token >> MONO_METHODDEFORREF_BITS);
-	else
-		token = MONO_TOKEN_MEMBER_REF | (token >> MONO_METHODDEFORREF_BITS);
+	nindex = token >> MONO_METHODDEFORREF_BITS;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 	
@@ -639,6 +637,8 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	container = g_new0 (MonoGenericContainer, 1);
 
 	container->parent = context ? context->container : NULL;
+	if (container->parent && (container->parent->is_method || container->parent->is_signature))
+		container->parent = container->parent->parent;
 	container->is_signature = 1;
 
 	container->context.container = container;
@@ -651,7 +651,12 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		container->type_params [i].num = i;
 	}
 
-	method = mono_get_inflated_method (mono_get_method_full (image, token, NULL, container));
+	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
+		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, container);
+	else
+		method = method_from_memberref (image, nindex, container, context);
+
+	method = mono_get_inflated_method (method);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_class = method->klass->generic_class;
@@ -1073,7 +1078,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		result = method_from_memberref (image, idx, context);
+		result = method_from_memberref (image, idx, context, context);
 
 		return result;
 	}
