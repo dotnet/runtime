@@ -9475,7 +9475,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 	method = mono_get_inflated_method (method);
 
 #ifdef MONO_USE_AOT_COMPILER
-	if (!mono_compile_aot && (opt & MONO_OPT_AOT)) {
+	if (!mono_compile_aot && (opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
 		MonoJitInfo *info;
 		MonoDomain *domain = mono_domain_get ();
 
