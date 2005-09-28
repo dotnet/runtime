@@ -39,12 +39,13 @@ AM_CFLAGS = \
 	$(LIBGC_CFLAGS)		\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
+	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS)
 
 if PLATFORM_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
-AM_CFLAGS += -O
+PLATFORM_CFLAGS = -O
 PLATFORM_LIB = ../os/libmonoos.la
 endif
 
@@ -236,7 +237,7 @@ endif
 if ARM
 
 # pick up arm_dpimacros.h and arm_fpamacros.h
-AM_CFLAGS += -I../arch/arm
+ARCH_CFLAGS = -I../arch/arm
 
 libmono_la_SOURCES = \
 	$(common_sources) $(arm_sources)
