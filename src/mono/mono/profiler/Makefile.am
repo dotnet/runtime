@@ -7,9 +7,11 @@ INCLUDES = \
 
 if JIT_SUPPORTED
 
-lib_LTLIBRARIES = libmono-profiler-cov.la
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la
 endif
 
 libmono_profiler_cov_la_SOURCES = mono-cov.c
 libmono_profiler_cov_la_LIBADD = $(top_builddir)/mono/mini/libmono.la
+libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
+libmono_profiler_aot_la_LIBADD = $(top_builddir)/mono/mini/libmono.la
 
