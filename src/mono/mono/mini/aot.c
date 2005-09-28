@@ -85,6 +85,8 @@ typedef struct MonoAotModule {
 	guint32 *method_info_offsets;
 	guint8 *ex_infos;
 	guint32 *ex_info_offsets;
+	guint32 *method_order;
+	guint32 *method_order_end;
 	guint8 *class_infos;
 	guint32 *class_info_offsets;
 	guint32 *methods_loaded;
@@ -105,6 +107,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *icall_table;
 	GHashTable *image_hash;
 	GPtrArray *image_table;
+	GList *method_order;
 	guint32 got_offset;
 	guint32 *method_got_offsets;
 	MonoAotOptions aot_opts;
@@ -553,6 +556,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "method_infos", (gpointer*)&info->method_infos);
 	g_module_symbol (assembly->aot_module, "ex_info_offsets", (gpointer*)&info->ex_info_offsets);
 	g_module_symbol (assembly->aot_module, "ex_infos", (gpointer*)&info->ex_infos);
+	g_module_symbol (assembly->aot_module, "method_order", (gpointer*)&info->method_order);
+	g_module_symbol (assembly->aot_module, "method_order_end", (gpointer*)&info->method_order_end);
 	g_module_symbol (assembly->aot_module, "class_infos", (gpointer*)&info->class_infos);
 	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
 	g_module_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
@@ -802,12 +807,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
 	MonoAssembly *ass = image->assembly;
 	GModule *module = ass->aot_module;
-	int pos, pos2, orig_pos, left, right, len, offset, offset1, offset2;
+	int pos, left, right, offset, offset1, offset2, last_offset, new_offset, page_index, method_index, table_len;
 	guint32 token;
 	MonoAotModule *aot_module;
 	MonoMethod *method;
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info;
+	guint32 *table, *ptr;
+	gboolean found;
 
 	if (!module)
 		return NULL;
@@ -818,46 +825,85 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		/* FIXME: */
 		return NULL;
 
-	/* Binary search inside the code_offsets table to find the method */
-
-	len = image->tables [MONO_TABLE_METHOD].rows;
-	left = 0;
-	right = len;
 	offset = (guint8*)addr - aot_module->code;
 
-	if (len == 0)
-		return NULL;
+	/* First search through the index */
+	ptr = aot_module->method_order;
+	last_offset = 0;
+	page_index = 0;
+	found = FALSE;
 
+	if (*ptr == 0xffffff)
+		return NULL;
+	ptr ++;
+
+	while (*ptr != 0xffffff) {
+		guint32 method_index = ptr [0];
+		new_offset = aot_module->code_offsets [method_index];
+
+		if (offset >= last_offset && offset < new_offset) {
+			found = TRUE;
+			break;
+		}
+
+		ptr ++;
+		last_offset = new_offset;
+		page_index ++;
+	}
+
+	/* Skip rest of index */
+	while (*ptr != 0xffffff)
+		ptr ++;
+	ptr ++;
+
+	table = ptr;
+	table_len = aot_module->method_order_end - table;
+
+	g_assert (table <= aot_module->method_order_end);
+
+	if (found) {
+		left = (page_index * 1024);
+		right = left + 1024;
+
+		if (right > table_len)
+			right = table_len;
+
+		offset1 = aot_module->code_offsets [table [left]];
+		g_assert (offset1 <= offset);
+
+		//printf ("Found in index: 0x%x 0x%x 0x%x\n", offset, last_offset, new_offset);
+	}
+	else {
+		//printf ("Not found in index: 0x%x\n", offset);
+		left = 0;
+		right = table_len;
+	}
+
+	/* Binary search inside the method_order table to find the method */
 	while (TRUE) {
 		pos = (left + right) / 2;
-		orig_pos = pos;
 
-		while ((pos < len) && (aot_module->code_offsets [pos] == 0xffffffff))
-			pos ++;
-		if (pos >= len) {
-			right = orig_pos;
-			continue;
-		}			
-		offset1 = aot_module->code_offsets [pos];
+		g_assert (table + pos <= aot_module->method_order_end);
 
-		/* Find the end of the method by searching for the next valid entry */
-		pos2 = pos + 1;
-		while ((pos2 < len) && (aot_module->code_offsets [pos2] == 0xffffffff))
-			pos2 ++;
-		if (pos2 >= len)
-			offset2 = 0xfffffff;
+		//printf ("Pos: %5d < %5d < %5d Offset: 0x%05x < 0x%05x < 0x%05x\n", left, pos, right, aot_module->code_offsets [table [left]], offset, aot_module->code_offsets [table [right]]);
+
+		offset1 = aot_module->code_offsets [table [pos]];
+		if (table + pos + 1 >= aot_module->method_order_end)
+			offset2 = aot_module->code_end - aot_module->code;
 		else
-			offset2 = aot_module->code_offsets [pos2];
+			offset2 = aot_module->code_offsets [table [pos + 1]];
 
 		if (offset < offset1)
-			right = orig_pos;
+			right = pos;
 		else if (offset >= offset2)
 			left = pos + 1;
 		else
 			break;
 	}
 
-	token = mono_metadata_make_token (MONO_TABLE_METHOD, pos + 1);
+	method_index = table [pos];
+
+	token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
 	method = mono_get_method (image, token, NULL);
 
 	/* FIXME: */
@@ -865,8 +911,8 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	code = &aot_module->code [aot_module->code_offsets [pos]];
-	ex_info = &aot_module->ex_infos [aot_module->ex_info_offsets [pos]];
+	code = &aot_module->code [aot_module->code_offsets [method_index]];
+	ex_info = &aot_module->ex_infos [aot_module->ex_info_offsets [method_index]];
 
 	jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
 
@@ -2571,6 +2617,102 @@ compile_method (MonoAotCompile *acfg, int index)
 	acfg->ccount++;
 }
 
+static void
+load_profile_files (MonoAotCompile *acfg)
+{
+	FILE *infile;
+	char *tmp;
+	int file_index, res, method_index, i;
+	char ver [256];
+	guint32 token;
+
+	file_index = 0;
+	while (TRUE) {
+		tmp = g_strdup_printf ("%s/.mono/aot-profile-data/%s-%s-%d", g_get_home_dir (), acfg->image->assembly_name, acfg->image->guid, file_index);
+
+		if (!g_file_test (tmp, G_FILE_TEST_IS_REGULAR))
+			break;
+
+		infile = fopen (tmp, "r");
+		g_assert (infile);
+
+		printf ("Using profile data file '%s'\n", tmp);
+
+		file_index ++;
+
+		res = fscanf (infile, "%32s\n", ver);
+		if ((res != 1) || strcmp (ver, "#VER:1") != 0) {
+			printf ("Profile file has wrong version or invalid.\n");
+			continue;
+		}
+
+		while (TRUE) {
+			res = fscanf (infile, "%d\n", &token);
+			if (res < 1)
+				break;
+
+			method_index = mono_metadata_token_index (token) - 1;
+
+			if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (method_index)))
+				acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (method_index));
+		}
+	}
+
+	/* Add missing methods */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (i)))
+			acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (i));
+	}		
+}
+
+static void
+emit_method_order (MonoAotCompile *acfg)
+{
+	int i, index, len;
+	char *symbol;
+	GList *l;
+
+	symbol = g_strdup_printf ("method_order");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	/* First emit an index table */
+	index = 0;
+	len = 0;
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
+		if (acfg->cfgs [i]) {
+			if ((index % 1024) == 0) {
+				fprintf (acfg->fp, ".long %d\n", i);
+			}
+
+			index ++;
+		}
+
+		len ++;
+	}
+	fprintf (acfg->fp, ".long 0xffffff\n");
+
+	/* Then emit the whole method order */
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
+		if (acfg->cfgs [i]) {
+			fprintf (acfg->fp, ".long %d\n", i);
+		}
+	}	
+	fprintf (acfg->fp, "\n");
+
+	symbol = g_strdup_printf ("method_order_end");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+}
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
@@ -2581,6 +2723,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	MonoAotCompile *acfg;
 	MonoCompile **cfgs;
 	char *outfile_name, *tmp_outfile_name;
+	GList *l;
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
@@ -2594,6 +2737,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->opts = opts;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
+
+	load_profile_files (acfg);
 
 	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
 	tmpfp = fdopen (i, "w+");
@@ -2629,7 +2774,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_alignment (tmpfp, 8);
 	emit_label (tmpfp, symbol);
 
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
 		if (cfgs [i])
 			emit_method_code (acfg, cfgs [i]);
 	}
@@ -2640,6 +2787,30 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_alignment (tmpfp, 8);
 	emit_label (tmpfp, symbol);
 
+	/* Emit method_offsets table */
+	symbol = g_strdup_printf ("method_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x", i + 1);
+			fprintf (tmpfp, "%s%s-methods", sep, symbol);
+		}
+		else
+			fprintf (tmpfp, "%s0xffffffff", sep);
+	}
+	fprintf (tmpfp, "\n");
+
 	/* Emit method info */
 	symbol = g_strdup_printf ("method_infos");
 	emit_section_change (tmpfp, ".text", 1);
@@ -2647,14 +2818,39 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_alignment (tmpfp, 8);
 	emit_label (tmpfp, symbol);
 
-	/* To reduce size of generate assembly */
+	/* To reduce size of generated assembly code */
 	symbol = g_strdup_printf ("mi");
 	emit_label (tmpfp, symbol);
 
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
 		if (cfgs [i])
 			emit_method_info (acfg, cfgs [i]);
 	}
+
+	symbol = g_strdup_printf ("method_info_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
+			fprintf (tmpfp, "%s%s - mi", sep, symbol);
+		}
+		else
+			fprintf (tmpfp, "%s0", sep);
+	}
+	fprintf (tmpfp, "\n");
 
 	/* Emit exception info */
 	symbol = g_strdup_printf ("ex_infos");
@@ -2671,6 +2867,32 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		if (cfgs [i])
 			emit_exception_debug_info (acfg, cfgs [i]);
 	}
+
+	symbol = g_strdup_printf ("ex_info_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (cfgs [i]) {
+			symbol = g_strdup_printf (".Le_%x_p", i + 1);
+			fprintf (tmpfp, "%s%s - ex", sep, symbol);
+		}
+		else
+			fprintf (tmpfp, "%s0", sep);
+	}
+	fprintf (tmpfp, "\n");
+
+	/* Emit method_order table */
+	emit_method_order (acfg);
 
 	/* Emit class info */
 	symbol = g_strdup_printf ("class_infos");
@@ -2773,75 +2995,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_label(tmpfp, symbol);
 	fprintf (tmpfp, ".long %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
 #endif
-
-	symbol = g_strdup_printf ("method_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x", i + 1);
-			fprintf (tmpfp, "%s%s-methods", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0xffffffff", sep);
-	}
-	fprintf (tmpfp, "\n");
-
-	symbol = g_strdup_printf ("method_info_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
-			fprintf (tmpfp, "%s%s - mi", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0", sep);
-	}
-	fprintf (tmpfp, "\n");
-
-	symbol = g_strdup_printf ("ex_info_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Le_%x_p", i + 1);
-			fprintf (tmpfp, "%s%s - ex", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0", sep);
-	}
-	fprintf (tmpfp, "\n");
 
 	symbol = g_strdup_printf ("mem_end");
 	emit_section_change (tmpfp, ".text", 1);
