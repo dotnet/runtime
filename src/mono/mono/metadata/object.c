@@ -2113,11 +2113,14 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	if (NULL != params) {
 		pa = alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
-			if (sig->params [i]->byref) {
+			MonoType *t = sig->params [i];
+
+		again:
+			if (t->byref) {
 				/* nothing to do */
 			}
 
-			switch (sig->params [i]->type) {
+			switch (t->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
 			case MONO_TYPE_BOOLEAN:
@@ -2143,11 +2146,14 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				if (sig->params [i]->byref)
+				if (t->byref)
 					pa [i] = &(((gpointer *)params->vector)[i]);
 				else
 					pa [i] = (char *)(((gpointer *)params->vector)[i]);
 				break;
+			case MONO_TYPE_GENERICINST:
+				t = &t->data.generic_class->container_class->byval_arg;
+				goto again;
 			default:
 				g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
 			}
