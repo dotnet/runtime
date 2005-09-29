@@ -580,6 +580,11 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 	} else
 		res->gmethod = inflate_with->gmethod;
 
+	if (res->gmethod) {
+		res->gmethod->container->parent = res->container;
+		res->container = res->gmethod->container;
+	}
+
 	return res;
 }
 

@@ -1853,12 +1853,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 		*rptr = ptr;
 
 	g_assert (generic_context);
-	if (generic_context->gmethod)
-		generic_container = generic_context->gmethod->container;
-	else if (generic_context->gclass)
-		generic_container = generic_context->gclass->container_class->generic_container;
-	else
-		generic_container = generic_context->container;
+	generic_container = generic_context->container;
 
 	if (!is_mvar) {
 		g_assert (generic_container);

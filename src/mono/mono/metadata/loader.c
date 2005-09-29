@@ -652,7 +652,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	}
 
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
-		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, container);
+		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
 	else
 		method = method_from_memberref (image, nindex, container, context);
 
@@ -662,15 +662,13 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod->generic_class = method->klass->generic_class;
 	gmethod->container = container;
 
-	if (context && context->gmethod)
-		new_context = &context->gmethod->container->context;
-	else if (context && context->gclass)
-		new_context = &context->gclass->container_class->generic_container->context;
-	else
-		new_context = context ? &context->container->context : NULL;
+	new_context = g_new0 (MonoGenericContext, 1);
+	new_context->container = container;
+	new_context->gmethod = gmethod;
+	if (container->parent)
+		new_context->gclass = container->parent->context.gclass;
 
-	gmethod->inst = mono_metadata_parse_generic_inst (
-             	image, new_context, param_count, ptr, &ptr);
+	gmethod->inst = mono_metadata_parse_generic_inst (image, context, param_count, ptr, &ptr);
 
 	if (context)
 		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);
@@ -685,29 +683,15 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		return inflated;
 	}
 
-	if (!context) {
-		new_context = g_new0 (MonoGenericContext, 1);
-		new_context->container = container;
-		new_context->gmethod = gmethod;
-
-		context = new_context;
-	} else {
-		new_context = g_new0 (MonoGenericContext, 1);
-		new_context->container = container;
-		new_context->gmethod = gmethod;
-		new_context->gclass = context->gclass;
-
-		context = new_context;
-	}
+	context = new_context;
 
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method (method, context);
+	inflated = mono_class_inflate_generic_method (method, new_context);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
-	if (new_context)
-		context->gclass = inflated->klass->generic_class;
+	new_context->gclass = inflated->klass->generic_class;
 	return inflated;
 }
 
