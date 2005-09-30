@@ -356,7 +356,7 @@ addcc_imm: dest:i src1:i len:6 clob:1
 add_imm: dest:i src1:i len:6 clob:1
 subcc_imm: dest:i src1:i len:6 clob:1
 sub_imm: dest:i src1:i len:6 clob:1
-mul_imm: dest:i src1:i len:6
+mul_imm: dest:i src1:i len:9
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
