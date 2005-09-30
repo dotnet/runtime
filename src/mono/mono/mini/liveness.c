@@ -365,7 +365,10 @@ mono_analyze_liveness (MonoCompile *cfg)
 		}
 	}
 
-	handle_exception_clauses (cfg);
+	/* todo: remove code when we have verified that the liveness for try/catch blocks
+	 * works perfectly 
+	 */
+	/* handle_exception_clauses (cfg); */
 
 	/*
 	 * Arguments need to have their live ranges extended to the beginning of

@@ -852,7 +852,7 @@ df_visit (MonoBasicBlock *start, int *dfn, MonoBasicBlock **array)
 	int i;
 
 	array [*dfn] = start;
-	/*g_print ("visit %d at %p\n", *dfn, start->cil_code);*/
+	/*g_print ("visit %d at %p (BB%ld)\n", *dfn, start->cil_code, start->block_num);*/
 	for (i = 0; i < start->out_count; ++i) {
 		if (start->out_bb [i]->dfn)
 			continue;
@@ -3330,12 +3330,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
-			//unsigned char *p = ip;
+			MonoBasicBlock *try_bb;
 			MonoExceptionClause *clause = &header->clauses [i];
-			GET_BBLOCK (cfg, bbhash, tblock, ip + clause->try_offset);
-			tblock->real_offset = clause->try_offset;
+			GET_BBLOCK (cfg, bbhash, try_bb, ip + clause->try_offset);
+			try_bb->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, bbhash, tblock, ip + clause->handler_offset);
 			tblock->real_offset = clause->handler_offset;
+
+			link_bblock (cfg, try_bb, tblock);
 
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
@@ -5141,6 +5143,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip - 1;
 			MONO_ADD_INS (bblock, ins);
 			sp = stack_start;
+			
 			link_bblock (cfg, bblock, end_bblock);
 			start_new_bblock = 1;
 			mono_get_got_var (cfg);
