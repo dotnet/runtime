@@ -58,7 +58,14 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 			}
 			g_free (utf8);
 		} else {
-			res=g_convert (in, -1, "UTF16", encodings[i], NULL, bytes, NULL);
+			/* Don't use UTF16 here. It returns the <FF FE> prepended to the string */
+			res = g_convert (in, strlen (in), "UTF8", encodings[i], NULL, bytes, NULL);
+			if (res != NULL) {
+				gchar *ptr = res;
+				res = (gchar *) g_utf8_to_utf16 (res, -1, NULL, &lbytes, NULL);
+				*bytes = (gsize) lbytes;
+				g_free (ptr);
+			}
 		}
 
 		if(res!=NULL) {
