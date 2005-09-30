@@ -67,26 +67,27 @@ typedef struct {
 
 static const OptName 
 opt_names [] = {
-	{"peephole", "Peephole postpass"},
-	{"branch",   "Branch optimizations"},
-	{"inline",   "Inline method calls"},
-	{"cfold",    "Constant folding"},
-	{"consprop", "Constant propagation"},
-	{"copyprop", "Copy propagation"},
-	{"deadce",   "Dead code elimination"},
-	{"linears",  "Linear scan global reg allocation"},
-	{"cmov",     "Conditional moves"},
-	{"shared",   "Emit per-domain code"},
-	{"sched",    "Instruction scheduling"},
-	{"intrins",  "Intrinsic method implementations"},
-	{"tailc",    "Tail recursion and tail calls"},
-	{"loop",     "Loop related optimizations"},
-	{"fcmov",    "Fast x86 FP compares"},
-	{"leaf",     "Leaf procedures optimizations"},
-	{"aot",      "Usage of Ahead Of Time compiled code"},
-	{"precomp",  "Precompile all methods before executing Main"},
-	{"abcrem",   "Array bound checks removal"},	
-	{"ssapre",   "SSA based Partial Redundancy Elimination"}
+	{"peephole",   "Peephole postpass"},
+	{"branch",     "Branch optimizations"},
+	{"inline",     "Inline method calls"},
+	{"cfold",      "Constant folding"},
+	{"consprop",   "Constant propagation"},
+	{"copyprop",   "Copy propagation"},
+	{"deadce",     "Dead code elimination"},
+	{"linears",    "Linear scan global reg allocation"},
+	{"cmov",       "Conditional moves"},
+	{"shared",     "Emit per-domain code"},
+	{"sched",      "Instruction scheduling"},
+	{"intrins",    "Intrinsic method implementations"},
+	{"tailc",      "Tail recursion and tail calls"},
+	{"loop",       "Loop related optimizations"},
+	{"fcmov",      "Fast x86 FP compares"},
+	{"leaf",       "Leaf procedures optimizations"},
+	{"aot",        "Usage of Ahead Of Time compiled code"},
+	{"precomp",    "Precompile all methods before executing Main"},
+	{"abcrem",     "Array bound checks removal"},	
+	{"ssapre",     "SSA based Partial Redundancy Elimination"},
+	{"exception",  "Optimize exception catch blocks"}
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -234,6 +235,9 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_CFOLD,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM | MONO_OPT_SSAPRE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_SSAPRE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM | MONO_OPT_SHARED

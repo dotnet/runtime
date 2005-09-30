@@ -192,7 +192,8 @@ common_sources = \
 	graph.c		\
 	mini-exceptions.c	\
 	declsec.c	\
-	declsec.h
+	declsec.h	\
+	branch-opts.c
 
 test_sources = 		\
 	basic-calls.cs 	\

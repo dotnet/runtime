@@ -1156,12 +1156,20 @@ if (ins->flags & MONO_INST_BRLABEL) { \
         } \
 }
 
-/* emit an exception if condition is fail */
+/*  
+ *	Emit an exception if condition is fail and
+ *  if possible do a directly branch to target 
+ */
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
-        do {                                                        \
-		mono_add_patch_info (cfg, code - cfg->native_code,   \
-				    MONO_PATCH_INFO_EXC, exc_name);  \
-	        x86_branch32 (code, cond, 0, signed);               \
+	do {                                                        \
+		MonoInst *tins = mono_branch_optimize_exception_target (cfg, bb, exc_name); \
+		if (tins == NULL) {										\
+			mono_add_patch_info (cfg, code - cfg->native_code,   \
+					MONO_PATCH_INFO_EXC, exc_name);  \
+			x86_branch32 (code, cond, 0, signed);               \
+		} else {	\
+			EMIT_COND_BRANCH (tins, cond, signed);	\
+		}			\
 	} while (0); 
 
 #define EMIT_FPCOMPARE(code) do { \
@@ -2405,8 +2413,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
 		case OP_COND_EXC_NC:
-			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], 
-						    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
 			break;
 		case CEE_BEQ:
 		case CEE_BNE_UN:
@@ -2554,6 +2561,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_LCONV_TO_OVF_I: {
 			guint8 *br [3], *label [1];
+			MonoInst *tins;
 
 			/* 
 			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
@@ -2568,8 +2576,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			label [0] = code;
 
 			/* throw exception */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "OverflowException");
-		        x86_jump32 (code, 0);
+			tins = mono_branch_optimize_exception_target (cfg, bb, "OverflowException");
+			if (tins) {
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, tins->inst_true_bb);
+				if ((cfg->opt & MONO_OPT_BRANCH) && x86_is_imm8 (tins->inst_true_bb->max_offset - cpos))
+					x86_jump8 (code, 0);
+				else
+					x86_jump32 (code, 0);
+			} else {
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "OverflowException");
+				x86_jump32 (code, 0);
+			}
+	
 	
 			x86_patch (br [0], code);
 			/* our top bit is set, check that top word is 0xfffffff */

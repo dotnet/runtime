@@ -3339,11 +3339,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			link_bblock (cfg, try_bb, tblock);
 
+			if (*(ip + clause->handler_offset) == CEE_POP)
+				tblock->flags |= BB_EXCEPTION_DEAD_OBJ;
+
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 				MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 				MONO_ADD_INS (tblock, ins);
+
+				/* todo: is a fault block unsafe to optimize? */
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
+					tblock->flags |= BB_EXCEPTION_UNSAFE;
 			}
+
 
 			/*g_print ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
 			  while (p < end) {
@@ -6548,6 +6556,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
 						handler_offset = clause->handler_offset;
 				}
+
+				bblock->flags |= BB_EXCEPTION_UNSAFE;
 
 				g_assert (handler_offset != -1);
 

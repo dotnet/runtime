@@ -236,6 +236,8 @@ struct MonoBasicBlock {
 /* BBlock flags */
 #define BB_VISITED 1
 #define BB_REACHABLE 2
+#define BB_EXCEPTION_DEAD_OBJ 4
+#define BB_EXCEPTION_UNSAFE 8
 
 struct MonoInst {
 	union {
@@ -498,7 +500,8 @@ enum {
 	MONO_OPT_AOT      = 1 << 16,
 	MONO_OPT_PRECOMP  = 1 << 17,
 	MONO_OPT_ABCREM   = 1 << 18,
-	MONO_OPT_SSAPRE   = 1 << 19
+	MONO_OPT_SSAPRE   = 1 << 19,
+	MONO_OPT_EXCEPTION= 1 << 20
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -853,6 +856,7 @@ const char       *mono_regname_full (int reg, gboolean fp);
 gint32*           mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align);
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align);
 void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb);
+MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, char * exname);		  
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);
