@@ -1426,7 +1426,8 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_AbortRequested) != 0 || 
-		(thread->state & ThreadState_StopRequested) != 0) 
+		(thread->state & ThreadState_StopRequested) != 0 ||
+		(thread->state & ThreadState_Stopped) != 0)
 	{
 		mono_monitor_exit (thread->synch_lock);
 		return;
