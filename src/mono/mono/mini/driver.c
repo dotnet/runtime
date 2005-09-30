@@ -631,11 +631,6 @@ static const char *info = ""
 #else
     "\tSIGSEGV      : normal\n"
 #endif
-#ifdef HAVE_ICU
-	"\tGlobalization: ICU (unsupported, don't use)\n"
-#else
-	"\tGlobalization: normal\n"
-#endif /* HAVE_ICU */
 	"";
 
 int
