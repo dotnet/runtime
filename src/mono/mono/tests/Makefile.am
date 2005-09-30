@@ -24,6 +24,7 @@ BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 STRESS_TESTS_SRC=	\
 	abort-stress-1.cs	\
 	abort-stress-2.cs	\
+	abort-stress-3.cs	\
 	domain-stress.cs	\
 	gchandle-stress.cs	\
 	monitor-stress.cs	\
