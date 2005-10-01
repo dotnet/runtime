@@ -113,5 +113,11 @@ typedef struct MonoCompileArch {
 		MONO_CONTEXT_SET_IP ((ctx), (func));	\
 	} while (0)
 
+/* __builtin_frame_address (1) is miscompiled with optimizations by gcc, this is just as good. */
+#define MONO_INIT_CONTEXT_FROM_CALLER(ctx) do { \
+		MONO_CONTEXT_SET_IP ((ctx), __builtin_return_address (0)); \
+		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0)); \
+	} while (0)
+
 #endif /* __MONO_MINI_ARM_H__ */
 
