@@ -827,7 +827,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		if (container)
 			method_context = (MonoGenericContext *) container;
 
-		ms = mono_metadata_parse_method_signature_full (m, method_context, i + 1, sig, &sig);
+		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
 
 		fprintf (output, "    // method line %d\n", i + 1);

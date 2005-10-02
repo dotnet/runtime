@@ -870,7 +870,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 				context = (MonoGenericContext *) container;
 
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);
+			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig);
 			free_method = 1;
 		} else if (context)
 			container = context->container;
@@ -1452,7 +1452,6 @@ char*
 get_escaped_name (const char *name)
 {
 	const char *s;
-	char *tmp, *tmp2;
 
 	g_assert (key_table);
 
