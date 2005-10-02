@@ -36,12 +36,6 @@
 #define inst_ms_word data.op[0].const_val
 #endif
 
-#if SIZEOF_VOID_P == 8
-#define OP_PCONST OP_I8CONST
-#else
-#define OP_PCONST OP_ICONST
-#endif
-
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "25"
 
@@ -664,6 +658,7 @@ enum {
 #undef MINI_OP
 
 #if SIZEOF_VOID_P == 8
+#define OP_PCONST OP_I8CONST
 #define OP_PADD OP_LADD
 #define OP_PNEG OP_LNEG
 #define OP_PCONV_TO_U2 OP_LCONV_TO_U2
@@ -673,6 +668,7 @@ enum {
 #define OP_STOREP_MEMBASE_REG OP_STOREI8_MEMBASE_REG
 #define OP_STOREP_MEMBASE_IMM OP_STOREI8_MEMBASE_IMM
 #else
+#define OP_PCONST OP_ICONST
 #define OP_PADD CEE_ADD
 #define OP_PNEG CEE_NEG
 #define OP_PCONV_TO_U2 CEE_CONV_U2
