@@ -1039,6 +1039,68 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int test_0_mul_imm_opt ()
+	{
+		int i;
+
+		i = 1;
+		if ((i * 2) != 2)
+			return 1;
+		i = -1;
+		if ((i * 2) != -2)
+			return 2;
+		i = 1;
+		if ((i * 3) != 3)
+			return 3;
+		i = -1;
+		if ((i * 3) != -3)
+			return 4;
+		i = 1;
+		if ((i * 5) != 5)
+			return 5;
+		i = -1;
+		if ((i * 5) != -5)
+			return 6;
+		i = 1;
+		if ((i * 6) != 6)
+			return 7;
+		i = -1;
+		if ((i * 6) != -6)
+			return 8;
+		i = 1;
+		if ((i * 9) != 9)
+			return 9;
+		i = -1;
+		if ((i * 9) != -9)
+			return 10;
+		i = 1;
+		if ((i * 10) != 10)
+			return 11;
+		i = -1;
+		if ((i * 10) != -10)
+			return 12;
+		i = 1;
+		if ((i * 12) != 12)
+			return 13;
+		i = -1;
+		if ((i * 12) != -12)
+			return 14;
+		i = 1;
+		if ((i * 25) != 25)
+			return 15;
+		i = -1;
+		if ((i * 25) != -25)
+			return 16;
+		i = 1;
+		if ((i * 100) != 100)
+			return 17;
+		i = -1;
+		if ((i * 100) != -100)
+			return 18;
+		
+		return 0;
+	}
 	
 	public static int test_0_cne ()
 	{

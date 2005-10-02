@@ -2254,8 +2254,67 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_MUL_IMM:
 		case OP_LMUL_IMM:
-			amd64_imul_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
+		case OP_IMUL_IMM: {
+			guint32 size = (ins->opcode == OP_IMUL_IMM) ? 4 : 8;
+			
+			switch (ins->inst_imm) {
+			case 2:
+				/* MOV r1, r2 */
+				/* ADD r1, r1 */
+				if (ins->dreg != ins->sreg1)
+					amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, size);
+				amd64_alu_reg_reg (code, X86_ADD, ins->dreg, ins->dreg);
+				break;
+			case 3:
+				/* LEA r1, [r2 + r2*2] */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 1);
+				break;
+			case 5:
+				/* LEA r1, [r2 + r2*4] */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 2);
+				break;
+			case 6:
+				/* LEA r1, [r2 + r2*2] */
+				/* ADD r1, r1          */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 1);
+				amd64_alu_reg_reg (code, X86_ADD, ins->dreg, ins->dreg);
+				break;
+			case 9:
+				/* LEA r1, [r2 + r2*8] */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 3);
+				break;
+			case 10:
+				/* LEA r1, [r2 + r2*4] */
+				/* ADD r1, r1          */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 2);
+				amd64_alu_reg_reg (code, X86_ADD, ins->dreg, ins->dreg);
+				break;
+			case 12:
+				/* LEA r1, [r2 + r2*2] */
+				/* SHL r1, 2           */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 1);
+				amd64_shift_reg_imm (code, X86_SHL, ins->dreg, 2);
+				break;
+			case 25:
+				/* LEA r1, [r2 + r2*4] */
+				/* LEA r1, [r1 + r1*4] */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 2);
+				amd64_lea_memindex (code, ins->dreg, ins->dreg, 0, ins->dreg, 2);
+				break;
+			case 100:
+				/* LEA r1, [r2 + r2*4] */
+				/* SHL r1, 2           */
+				/* LEA r1, [r1 + r1*4] */
+				amd64_lea_memindex (code, ins->dreg, ins->sreg1, 0, ins->sreg1, 2);
+				amd64_shift_reg_imm (code, X86_SHL, ins->dreg, 2);
+				amd64_lea_memindex (code, ins->dreg, ins->dreg, 0, ins->dreg, 2);
+				break;
+			default:
+				amd64_imul_reg_reg_imm_size (code, ins->dreg, ins->sreg1, ins->inst_imm, size);
+				break;
+			}
 			break;
+		}
 		case CEE_DIV:
 		case OP_LDIV:
 			amd64_cdq (code);
@@ -2410,9 +2469,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IMUL:
 			amd64_imul_reg_reg_size (code, ins->sreg1, ins->sreg2, 4);
-			break;
-		case OP_IMUL_IMM:
-			amd64_imul_reg_reg_imm_size (code, ins->dreg, ins->sreg1, ins->inst_imm, 4);
 			break;
 		case OP_IMUL_OVF:
 			amd64_imul_reg_reg_size (code, ins->sreg1, ins->sreg2, 4);

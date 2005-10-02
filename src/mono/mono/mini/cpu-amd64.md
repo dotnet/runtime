@@ -184,7 +184,7 @@ amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:4
 add_imm: dest:i src1:i len:8 clob:1
 sub_imm: dest:i src1:i len:8 clob:1
-mul_imm: dest:i src1:i len:8
+mul_imm: dest:i src1:i len:11
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
@@ -215,7 +215,7 @@ cond_exc_nc: len:8
 cond_exc_iov: len:8
 cond_exc_ic: len:8
 long_mul: dest:i src1:i src2:i clob:1 len:4
-long_mul_imm: dest:i src1:i src2:i clob:1 len:8
+long_mul_imm: dest:i src1:i clob:1 len:12
 long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
 long_rem: dest:d src1:a src2:i len:16 clob:a
