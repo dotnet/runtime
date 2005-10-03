@@ -1651,7 +1651,9 @@ mono_aot_get_n_pagefaults (void)
 static void
 emit_section_change (FILE *fp, const char *section_name, int subsection_index)
 {
-#if defined(sparc) || defined(PLATFORM_WIN32)
+#if defined(PLATFORM_WIN32)
+	fprintf (fp, ".section %s\n", section_name);
+#elif defined(sparc)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (fp, ".section \"%s\"\n", section_name);
 #elif defined(__ppc__) && defined(__MACH__)
