@@ -1,3 +1,7 @@
+2005-10-04  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Remove 'Globalization:' entry from final message.
+
 2005-09-27  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (BUILD_MCS): New automake conditional.  Used to

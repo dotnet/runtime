@@ -1843,7 +1843,6 @@ libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}
 echo "
         mcs source:  $mcs_topdir
 	GC:	     $gc
-	Globalization:     $enable_glob
 	TLS:         $with_tls
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status
