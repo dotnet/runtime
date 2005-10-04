@@ -2474,29 +2474,30 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 }
 
 static guint32
-mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
+mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 {
 	MonoMethodInflated *imethod;
+	MonoMethod *inflated;
 	guint32 token;
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, m));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
 	if (token)
 		return token;
 
-	g_assert (m->is_inflated);
-	m = mono_get_inflated_method (m);
-	imethod = (MonoMethodInflated *) m;
+	g_assert (method->is_inflated);
+	inflated = mono_get_inflated_method (method);
+	imethod = (MonoMethodInflated *) inflated;
 
 	if (mono_method_signature (imethod->declaring)->generic_param_count) {
-		token = method_encode_methodspec (assembly, m);
+		token = method_encode_methodspec (assembly, inflated);
 	} else {
 		guint32 sig = method_encode_signature (
 			assembly, mono_method_signature (imethod->declaring));
 		token = mono_image_get_memberref_token (
-			assembly, &m->klass->byval_arg, m->name, sig);
+			assembly, &inflated->klass->byval_arg, inflated->name, sig);
 	}
 
-	g_hash_table_insert (assembly->handleref, m, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	return token;
 }
 
