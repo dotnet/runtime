@@ -3338,7 +3338,7 @@ mono_class_get_property_token (MonoProperty *prop)
 }
 
 char *
-mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+mono_class_name_from_token (MonoImage *image, guint32 type_token)
 {
 	const char *name, *nspace;
 	if (image->dynamic)
@@ -3382,7 +3382,7 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericCon
 }
 
 static char *
-mono_assembly_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 {
 	if (image->dynamic)
 		return g_strdup_printf ("DynamicAssembly %s", image->name);
@@ -3460,8 +3460,8 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContext *conte
 	}
 
 	if (!class){
-		char *name = mono_class_name_from_token (image, type_token, context);
-		char *assembly = mono_assembly_name_from_token (image, type_token, context);
+		char *name = mono_class_name_from_token (image, type_token);
+		char *assembly = mono_assembly_name_from_token (image, type_token);
 		mono_loader_set_error_type_load (name, assembly);
 	}
 

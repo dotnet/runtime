@@ -250,7 +250,7 @@ MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
 char *
-mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context);
+mono_class_name_from_token (MonoImage *image, guint32 type_token);
 
 G_END_DECLS
 
