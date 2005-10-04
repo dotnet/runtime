@@ -1798,6 +1798,10 @@ runtime/Makefile
 if test x$platform_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names
    sed -e "s/\/cyg\//\/\//" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
+   # libtool seems to inherit -mno-cygwin from our CFLAGS, and uses it to compile its executable
+   # wrapper scripts which use exec(). gcc has no problem compiling+linking this, but the resulting
+   # executable doesn't work...
+   sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
 fi
 
 (
