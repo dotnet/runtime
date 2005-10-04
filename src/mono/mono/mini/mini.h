@@ -228,10 +228,13 @@ struct MonoBasicBlock {
 };
 
 /* BBlock flags */
-#define BB_VISITED 1
-#define BB_REACHABLE 2
-#define BB_EXCEPTION_DEAD_OBJ 4
-#define BB_EXCEPTION_UNSAFE 8
+enum {
+	BB_VISITED            = 1 << 0,
+	BB_REACHABLE          = 1 << 1,
+	BB_EXCEPTION_DEAD_OBJ = 1 << 2,
+	BB_EXCEPTION_UNSAFE   = 1 << 3,
+	BB_EXCEPTION_HANDLER  = 1 << 4
+};
 
 struct MonoInst {
 	union {

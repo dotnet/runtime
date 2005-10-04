@@ -1802,6 +1802,9 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		found = FALSE;
 		for (i = 0; i < bb->out_count; ++i) {
 			outb = bb->out_bb [i];
+			/* exception handlers are linked, but they should not be considered for stack args */
+			if (outb->flags & BB_EXCEPTION_HANDLER)
+				continue;
 			//g_print (" %d", outb->block_num);
 			if (outb->in_stack) {
 				found = TRUE;
@@ -1835,8 +1838,14 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 
 	for (i = 0; i < bb->out_count; ++i) {
 		outb = bb->out_bb [i];
-		if (outb->in_scount)
+		/* exception handlers are linked, but they should not be considered for stack args */
+		if (outb->flags & BB_EXCEPTION_HANDLER)
+			continue;
+		if (outb->in_scount) {
+			if (outb->in_scount != bb->out_scount)
+				G_BREAKPOINT ();
 			continue; /* check they are the same locals */
+		}
 		outb->in_scount = count;
 		outb->in_stack = bb->out_stack;
 	}
@@ -1869,6 +1878,11 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		found = FALSE;
 		while (bindex < bb->out_count) {
 			outb = bb->out_bb [bindex];
+			/* exception handlers are linked, but they should not be considered for stack args */
+			if (outb->flags & BB_EXCEPTION_HANDLER) {
+				bindex++;
+				continue;
+			}
 			if (outb->in_stack != locals) {
 				/* 
 				 * Instead of storing sp [i] to locals [i], we need to store
@@ -3336,6 +3350,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			try_bb->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, bbhash, tblock, ip + clause->handler_offset);
 			tblock->real_offset = clause->handler_offset;
+			tblock->flags |= BB_EXCEPTION_HANDLER;
 
 			link_bblock (cfg, try_bb, tblock);
 
