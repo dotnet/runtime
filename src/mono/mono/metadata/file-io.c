@@ -3,8 +3,10 @@
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
+ *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001,2002,2003 Ximian, Inc.
+ * Copyright (c) 2004,2005 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -20,6 +22,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
+#include <mono/utils/strenc.h>
 
 #undef DEBUG
 
@@ -230,91 +233,237 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 	return(ret);
 }
 
-HANDLE 
-ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
-					  gint32 *error)
+static gint
+get_error_from_g_file_error (gint error)
 {
-	WIN32_FIND_DATA data;
-	HANDLE result;
-	gboolean r = TRUE;
+	switch (error) {
+	case G_FILE_ERROR_ACCES:
+		error = ERROR_ACCESS_DENIED;
+		break;
+	case G_FILE_ERROR_NAMETOOLONG:
+		error = ERROR_FILENAME_EXCED_RANGE;
+		break;
+	case G_FILE_ERROR_NOENT:
+		error = ERROR_FILE_NOT_FOUND;
+		break;
+	case G_FILE_ERROR_NOTDIR:
+		error = ERROR_FILE_NOT_FOUND;
+		break;
+	case G_FILE_ERROR_ROFS:
+		error = ERROR_ACCESS_DENIED;
+		break;
+	case G_FILE_ERROR_TXTBSY:
+		error = ETXTBSY;
+		break;
+	case G_FILE_ERROR_NOSPC:
+		error = ERROR_HANDLE_DISK_FULL;
+		break;
+	case G_FILE_ERROR_NFILE:
+	case G_FILE_ERROR_MFILE:
+		error = ERROR_TOO_MANY_OPEN_FILES;
+		break;
+	case G_FILE_ERROR_BADF:
+		error = ERROR_INVALID_HANDLE;
+		break;
+	case G_FILE_ERROR_INVAL:
+		error = ERROR_INVALID_PARAMETER;
+		break;
+	case G_FILE_ERROR_AGAIN:
+		error = ERROR_SHARING_VIOLATION;
+		break;
+	case G_FILE_ERROR_INTR:
+		error = ERROR_IO_PENDING;
+		break;
+	case G_FILE_ERROR_PERM:
+		error = ERROR_ACCESS_DENIED;
+		break;
+	case G_FILE_ERROR_FAILED:
+		error = ERROR_INVALID_PARAMETER;
+		break;
+	case G_FILE_ERROR_NXIO:
+	case G_FILE_ERROR_NOMEM:
+	case G_FILE_ERROR_NODEV:
+	case G_FILE_ERROR_FAULT:
+	case G_FILE_ERROR_LOOP:
+	case G_FILE_ERROR_PIPE:
+	case G_FILE_ERROR_IO:
+	default:
+		error = ERROR_GEN_FAILURE;
+		break;
 
-	MONO_ARCH_SAVE_REGS;
+	}
 
-	*error=ERROR_SUCCESS;
+	return error;
+}
 
-	result = FindFirstFile (mono_string_chars (path), &data);
+static gint
+file_compare (gconstpointer a, gconstpointer b)
+{
+	gchar *astr = *(gchar **) a;
+	gchar *bstr = *(gchar **) b;
 
-	/* note: WIN32_FIND_DATA is an extension of WIN32_FILE_ATTRIBUTE_DATA */
-	while (result != INVALID_HANDLE_VALUE && r) {
-		if ((data.cFileName [0] == '.' && data.cFileName [1] == 0) ||
-		    (data.cFileName [0] == '.' && data.cFileName [1] == '.' && data.cFileName [2] == 0)) {
-			r = FindNextFile (result, &data);
-		} else {
-			convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
-							   &data.cFileName [0], stat);
-			break;
-		} 
+	return strcmp (astr, bstr);
+}
+
+static gboolean
+test_file (const char *filename, int attrs, int mask)
+{
+/* This is in glib since 2.6 */
+#ifdef false
+/*#ifdef g_stat */
+	/* This code performs a lot faster, but is disabled by now */
+	struct stat buf;
+	int res;
+	int file_attrs;
+
+	file_attrs = 0;
+	res = g_stat (filename, &buf);
+	if (res != 0)
+		return FALSE;
+
+	if ((buf.st_mode & S_IFDIR) != 0)
+		file_attrs |= FILE_ATTRIBUTE_DIRECTORY;
+	else
+		file_attrs |= FILE_ATTRIBUTE_ARCHIVE;
+
+	if ((buf.st_mode & S_IWUSR) == 0)
+		file_attrs |= FILE_ATTRIBUTE_READONLY;
+
+	return ((file_attrs & mask) == attrs);
+#else /* Slow path when no g_stat */
+	gunichar2 *full16;
+	gsize nbytes;
+	int file_attr;
+
+#if PLATFORM_WIN32
+	full16 = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+#else
+	full16 = mono_unicode_from_external (filename, &nbytes);
+#endif
+	if (full16 == NULL) {
+		g_message ("Bad encoding for '%s'\n", filename);
+		g_free (full16);
+		return FALSE;
+	}
+
+	file_attr = GetFileAttributes (full16);
+	if (file_attr == FALSE) {
+		g_message ("Error %d in GetFileAttributes ('%s')\n", GetLastError (), filename);
+		g_free (full16);
+		return FALSE;
+	}
+
+	g_free (full16);
+	return ((file_attr & mask) == attrs);
+#endif /* g_stat */
+}
+
+/* scandir using glib */
+static gint
+mono_io_scandir (const gchar *dirname, const gchar *pattern, int attrs,
+		int mask, gchar ***namelist)
+{
+	GError *error = NULL;
+	GDir *dir;
+	GPtrArray *names;
+	const gchar *name;
+	gint result;
+	GPatternSpec *patspec;
+	gchar *full_name;
+
+	mask = convert_attrs (mask);
+	*namelist = NULL;
+	dir = g_dir_open (dirname, 0, &error);
+	if (dir == NULL) {
+		/* g_dir_open returns ENOENT on directories on which we don't
+		 * have read/x permission */
+		gint errnum = get_error_from_g_file_error (error->code);
+		g_error_free (error);
+		if (errnum == ERROR_FILE_NOT_FOUND && g_file_test (dirname, G_FILE_TEST_IS_DIR))
+			errnum = ERROR_ACCESS_DENIED;
+
+		SetLastError (errnum);
+		return -1;
+	}
+
+	patspec = g_pattern_spec_new (pattern);
+	names = g_ptr_array_new ();
+	while ((name = g_dir_read_name (dir)) != NULL) {
+		if (!g_pattern_match_string (patspec, name))
+			continue;
+
+		full_name = g_build_filename (dirname, name, NULL);
+		if (FALSE == test_file (full_name, attrs, mask)) {
+			g_free (full_name);
+			continue;
+		}
+
+		g_ptr_array_add (names, full_name);
 	}
 	
-	if (result == INVALID_HANDLE_VALUE) {
-		*error=GetLastError ();
-	}
-	
-	if (r == FALSE) {
-		/* No more files were found, after we discarded . and .. */
-		FindClose(result);
-		result = INVALID_HANDLE_VALUE;
-		*error = ERROR_NO_MORE_FILES;
+	g_pattern_spec_free (patspec);
+	g_dir_close (dir);
+	result = names->len;
+	if (result > 0) {
+		g_ptr_array_sort (names, file_compare);
+		g_ptr_array_set_size (names, result + 1);
+
+		*namelist = (gchar **) g_ptr_array_free (names, FALSE);
+	} else {
+		g_ptr_array_free (names, TRUE);
 	}
 
 	return result;
 }
 
-MonoBoolean
-ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
-					 gint32 *error)
+MonoArray *
+ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *_pattern,
+					gint attrs, gint mask, gint32 *error)
 {
-	WIN32_FIND_DATA data;
-	gboolean result;
+	MonoDomain *domain;
+	MonoArray *result;
+	gchar **namelist;
+	gchar *path;
+	gchar *pattern;
+	int i, nnames;
+	MonoString *str_name;
+#ifndef PLATFORM_WIN32
+	gunichar2 *utf16;
+	gsize nbytes;
+#endif
 
 	MONO_ARCH_SAVE_REGS;
 
-	*error=ERROR_SUCCESS;
-	
-	result = FindNextFile (find, &data);
-	while (result != FALSE) {
-		if ((data.cFileName [0] == '.' && data.cFileName [1] == 0) ||
-		    (data.cFileName [0] == '.' && data.cFileName [1] == '.' && data.cFileName [2] == 0)) {
-			result = FindNextFile (find, &data);
-		} else {
-			convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
-							   &data.cFileName [0], stat);
-			break;
-		} 
-	}
-	
-	if (result == FALSE) {
-		*error=GetLastError ();
+	*error = ERROR_SUCCESS;
+
+	path = mono_string_to_utf8 (_path);
+	pattern = mono_string_to_utf8 (_pattern);
+	nnames = mono_io_scandir (path, pattern, attrs, mask, &namelist);
+	if (nnames < 0) {
+		*error = GetLastError ();
+		g_free (pattern);
+		g_free (path);
+		return NULL;
 	}
 
+	domain = mono_domain_get ();
+	result = mono_array_new (domain, mono_defaults.string_class, nnames);
+	for (i = 0; i < nnames; i++) {
+#if PLATFORM_WIN32
+		str_name = mono_string_new (domain, namelist [i]);
+#else
+		utf16 = mono_unicode_from_external (namelist [i], &nbytes);
+		str_name = mono_string_from_utf16 (utf16);
+		g_free (utf16);
+#endif
+		mono_array_set (result, MonoString *, i, str_name);
+
+	}
+
+	g_strfreev (namelist);
+	g_free (pattern);
+	g_free (path);
 	return result;
-}
-
-MonoBoolean
-ves_icall_System_IO_MonoIO_FindClose (HANDLE find, gint32 *error)
-{
-	gboolean ret;
-	
-	MONO_ARCH_SAVE_REGS;
-
-	*error=ERROR_SUCCESS;
-	
-	ret=FindClose (find);
-	if(ret==FALSE) {
-		*error=GetLastError ();
-	}
-	
-	return(ret);
 }
 
 MonoString *

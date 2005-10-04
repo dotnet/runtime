@@ -105,16 +105,9 @@ ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error);
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error);
 
-extern HANDLE 
-ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
-					  gint32 *error);
-
-extern MonoBoolean
-ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
-					 gint32 *error);
-
-extern MonoBoolean
-ves_icall_System_IO_MonoIO_FindClose (HANDLE find, gint32 *error);
+MonoArray *
+ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *_pattern,
+					gint mask, gint attrs, gint32 *error);
 
 extern MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error);
