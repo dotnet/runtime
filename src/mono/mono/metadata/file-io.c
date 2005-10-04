@@ -252,9 +252,11 @@ get_error_from_g_file_error (gint error)
 	case G_FILE_ERROR_ROFS:
 		error = ERROR_ACCESS_DENIED;
 		break;
+#if !PLATFORM_WIN32
 	case G_FILE_ERROR_TXTBSY:
 		error = ETXTBSY;
 		break;
+#endif
 	case G_FILE_ERROR_NOSPC:
 		error = ERROR_HANDLE_DISK_FULL;
 		break;
