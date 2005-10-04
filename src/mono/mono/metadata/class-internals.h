@@ -660,8 +660,13 @@ mono_install_stack_walk (MonoStackWalkImpl func);
 gboolean
 mono_metadata_has_generic_params (MonoImage *image, guint32 token);
 
-MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token,
-							 MonoGenericContainer *parent_container);
+MonoGenericContainer *
+mono_metadata_load_generic_params (MonoImage *image, guint32 token,
+				   MonoGenericContainer *parent_container);
+
+void
+mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container);
 
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr);

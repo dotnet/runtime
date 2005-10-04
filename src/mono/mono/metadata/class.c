@@ -2600,6 +2600,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 	}
 
+	if (class->generic_container)
+		mono_metadata_load_generic_param_constraints (
+			image, type_token, class->generic_container);
+
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
 

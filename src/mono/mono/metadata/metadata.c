@@ -4070,6 +4070,40 @@ mono_metadata_has_generic_params (MonoImage *image, guint32 token)
 	return TRUE;
 }
 
+void
+mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container)
+{
+	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	guint32 i, owner = 0, last_num, n;
+
+	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
+		owner = MONO_TYPEORMETHOD_TYPE;
+	else if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+		owner = MONO_TYPEORMETHOD_METHOD;
+	else {
+		g_error ("wrong token %x to load_generics_param_constraints", token);
+		return;
+	}
+	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
+	if (!tdef->base)
+		return;
+
+	for (i = 0; i < tdef->rows; ++i) {
+		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
+		if (cols [MONO_GENERICPARAM_OWNER] == owner)
+			break;
+	}
+	last_num = i;
+	if (i >= tdef->rows)
+		return;
+
+	for (i = 0; i < container->type_argc; i++)
+		get_constraints (image, last_num + i + 1, &container->type_params [i].constraints,
+				 &container->context);
+}
+
 MonoGenericContainer *
 mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericContainer *parent_container)
 {
@@ -4111,6 +4145,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
+		params [n - 1].constraints = NULL;
 		if (++i >= tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
@@ -4124,9 +4159,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		container->is_method = 1;
 
 	container->context.container = container;
-
-	for (i = 0; i < n; i++)
-		get_constraints (image, last_num + i + 1, &params [i].constraints, &container->context);
 
 	return container;
 }
