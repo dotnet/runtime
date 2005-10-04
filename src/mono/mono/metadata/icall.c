@@ -1980,9 +1980,6 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 	if (!klass->generic_class && !klass->generic_container)
 		return NULL;
 
-	if (!klass->generic_class->is_dynamic)
-		return NULL;
-
 	return mono_type_get_object (mono_object_domain (type), gclass->parent);
 }
 
