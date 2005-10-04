@@ -634,22 +634,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	g_assert (param_count);
 
-	container = g_new0 (MonoGenericContainer, 1);
-
-	container->parent = context ? context->container : NULL;
-	if (container->parent && (container->parent->is_method || container->parent->is_signature))
-		container->parent = container->parent->parent;
-	container->is_signature = 1;
-
-	container->context.container = container;
-
-	container->type_argc = param_count;
-	container->type_params = g_new0 (MonoGenericParam, param_count);
-
-	for (i = 0; i < param_count; i++) {
-		container->type_params [i].owner = container;
-		container->type_params [i].num = i;
-	}
+	container = context ? context->container : NULL;
+	if (container && (container->is_method || container->is_signature))
+		container = container->parent;
 
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
@@ -657,6 +644,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		method = method_from_memberref (image, nindex, container, context);
 
 	method = mono_get_inflated_method (method);
+
+	container = ((MonoMethodNormal *) method)->generic_container;
+	g_assert (container);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_class = method->klass->generic_class;
@@ -680,6 +670,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	inflated = g_hash_table_lookup (container->method_hash, gmethod);
 	if (inflated) {
 		g_free (gmethod);
+		g_free (new_context);
 		return inflated;
 	}
 
