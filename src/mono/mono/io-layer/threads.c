@@ -1016,6 +1016,8 @@ void _wapi_thread_own_mutex (pthread_t tid, gpointer mutex)
 		return;
 	}
 
+	_wapi_handle_ref (mutex);
+	
 	g_ptr_array_add (thread_handle->owned_mutexes, mutex);
 }
 
@@ -1039,6 +1041,8 @@ void _wapi_thread_disown_mutex (pthread_t tid, gpointer mutex)
 		return;
 	}
 
+	_wapi_handle_unref (mutex);
+	
 	g_ptr_array_remove (thread_handle->owned_mutexes, mutex);
 }
 
