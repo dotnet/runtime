@@ -790,20 +790,6 @@ mono_class_setup_fields (MonoClass *class)
 	mono_class_layout_fields (class);
 }
 
-/*
- * mono_class_has_references:
- *
- *   Returns whenever @klass->has_references is set, initializing it if needed.
- * Assumes the loader lock is held.
- */
-static gboolean
-mono_class_has_references (MonoClass *klass)
-{
-	mono_class_setup_fields (klass);
-
-	return klass->has_references;
-}
-
 /* useful until we keep track of gc-references in corlib etc. */
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
 
@@ -846,7 +832,7 @@ mono_class_layout_fields (MonoClass *class)
 		field = &class->fields [i];
 
 		ftype = mono_type_get_underlying_type (field->type);
-		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
+		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_from_mono_type (ftype)->has_references))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				class->has_static_refs = TRUE;
 			else
