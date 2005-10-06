@@ -15,6 +15,12 @@
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
@@ -252,11 +258,9 @@ get_error_from_g_file_error (gint error)
 	case G_FILE_ERROR_ROFS:
 		error = ERROR_ACCESS_DENIED;
 		break;
-#if !PLATFORM_WIN32
 	case G_FILE_ERROR_TXTBSY:
-		error = ETXTBSY;
+		error = ERROR_SHARING_VIOLATION;
 		break;
-#endif
 	case G_FILE_ERROR_NOSPC:
 		error = ERROR_HANDLE_DISK_FULL;
 		break;
@@ -307,22 +311,42 @@ file_compare (gconstpointer a, gconstpointer b)
 	return strcmp (astr, bstr);
 }
 
-static gboolean
-test_file (const char *filename, int attrs, int mask)
+static gint
+get_file_attributes (const char *filename)
 {
-/* This is in glib since 2.6 */
-#ifdef false
-/*#ifdef g_stat */
-	/* This code performs a lot faster, but is disabled by now */
+#ifdef PLATFORM_WIN32
+	gunichar2 *full16;
+	gint result;
+
+	full16 = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
+	if (full16 == NULL) {
+		g_message ("Bad encoding for '%s'\n", filename);
+		return FALSE;
+	}
+
+	result = GetFileAttributes (full16);
+	g_free (full16);
+	return result;
+#else
 	struct stat buf;
-	int res;
+	struct stat linkbuf;
+	int result;
 	int file_attrs;
 
-	file_attrs = 0;
-	res = g_stat (filename, &buf);
-	if (res != 0)
+	result = lstat (filename, &buf);
+	if (result == -1)
 		return FALSE;
 
+	if ((buf.st_mode & S_IFLNK) != 0) {
+		result = stat (filename, &linkbuf);
+		if (result != -1) {
+			buf = linkbuf;
+		} else {
+			buf.st_mode |= ~S_IFDIR; /* force it to be returned as regular file */
+		}
+	}
+
+	file_attrs = 0;
 	if ((buf.st_mode & S_IFDIR) != 0)
 		file_attrs |= FILE_ATTRIBUTE_DIRECTORY;
 	else
@@ -331,33 +355,23 @@ test_file (const char *filename, int attrs, int mask)
 	if ((buf.st_mode & S_IWUSR) == 0)
 		file_attrs |= FILE_ATTRIBUTE_READONLY;
 
-	return ((file_attrs & mask) == attrs);
-#else /* Slow path when no g_stat */
-	gunichar2 *full16;
-	gsize nbytes;
+	if (*filename == '.')
+		file_attrs |= FILE_ATTRIBUTE_HIDDEN;
+
+	return file_attrs;
+#endif
+}
+
+static gboolean
+test_file (const char *filename, int attrs, int mask)
+{
 	int file_attr;
 
-#if PLATFORM_WIN32
-	full16 = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
-#else
-	full16 = mono_unicode_from_external (filename, &nbytes);
-#endif
-	if (full16 == NULL) {
-		g_message ("Bad encoding for '%s'\n", filename);
-		g_free (full16);
+	file_attr = get_file_attributes (filename);
+	if (file_attr == FALSE)
 		return FALSE;
-	}
 
-	file_attr = GetFileAttributes (full16);
-	if (file_attr == FALSE) {
-		g_message ("Error %d in GetFileAttributes ('%s')\n", GetLastError (), filename);
-		g_free (full16);
-		return FALSE;
-	}
-
-	g_free (full16);
 	return ((file_attr & mask) == attrs);
-#endif /* g_stat */
 }
 
 /* scandir using glib */
@@ -428,6 +442,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *
 	gchar *path;
 	gchar *pattern;
 	int i, nnames;
+	int removed;
 	MonoString *str_name;
 #ifndef PLATFORM_WIN32
 	gunichar2 *utf16;
@@ -450,16 +465,33 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *
 
 	domain = mono_domain_get ();
 	result = mono_array_new (domain, mono_defaults.string_class, nnames);
+	removed = 0;
 	for (i = 0; i < nnames; i++) {
 #if PLATFORM_WIN32
 		str_name = mono_string_new (domain, namelist [i]);
 #else
 		utf16 = mono_unicode_from_external (namelist [i], &nbytes);
+		if (utf16 == NULL) {
+			g_message ("Bad encoding for '%s'\nConsider using MONO_EXTERNAL_ENCODING\n",
+				namelist [i]);
+			removed++;
+			continue;
+		}
 		str_name = mono_string_from_utf16 (utf16);
 		g_free (utf16);
 #endif
-		mono_array_set (result, MonoString *, i, str_name);
+		mono_array_set (result, MonoString *, i - removed, str_name);
+	}
 
+	if (removed > 0) {
+		MonoArray *shrinked;
+		shrinked = mono_array_new (domain, mono_defaults.string_class, nnames - removed);
+		for (i = 0; i < (nnames - removed); i++) {
+			MonoString *str;
+			str = mono_array_get (result, MonoString *, i);
+			mono_array_set (shrinked, MonoString *,i, str);
+		}
+		result = shrinked;
 	}
 
 	g_strfreev (namelist);
