@@ -463,7 +463,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context,
-		       MonoGenericContext *class_context)
+		       MonoGenericContext *typespec_context)
 {
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
@@ -497,7 +497,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		/*
 		 * Parse the TYPESPEC in the parent's context.
 		 */
-		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, class_context);
+		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, typespec_context);
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
@@ -524,7 +524,19 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	mono_class_init (klass);
 
 	/*
-	 * Correctly set the context before parsing the method.
+	 * Generics: Correctly set the context before parsing the method.
+	 *
+	 * For MONO_MEMBERREF_PARENT_TYPEDEF or MONO_MEMBERREF_PARENT_TYPEREF, our parent
+	 * is "context-free"; ie. `klass' will always be the same generic instantation.
+	 *
+	 * For MONO_MEMBERREF_PARENT_TYPESPEC, we have to parse the typespec in the
+	 * `typespec_context' and thus `klass' may have different generic instantiations.
+	 *
+	 * After parsing the `klass', we have to distinguish two cases:
+	 * Either this class introduces new type parameters (or a new generic instantiation)
+	 * or it does not.  If it does, we parse the signature in this new context; otherwise
+	 * we parse it in the current context.
+	 *
 	 */
 	if (klass->generic_class)
 		context = klass->generic_class->context;
@@ -634,10 +646,43 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	g_assert (param_count);
 
+	/*
+	 * Check whether we're in a generic type or method.
+	 */
 	container = context ? context->container : NULL;
-	if (container && (container->is_method || container->is_signature))
+	if (container && (container->is_method || container->is_signature)) {
+		/*
+		 * If we're in a generic method, use the containing class'es context.
+		 */
 		container = container->parent;
+	}
 
+	/*
+	 * Be careful with the two contexts here:
+	 *
+	 * ----------------------------------------
+	 * class Foo<S> {
+	 *   static void Hello<T> (S s, T t) { }
+	 *
+	 *   static void Test<U> (U u) {
+	 *     Foo<U>.Hello<string> (u, "World");
+	 *   }
+	 * }
+	 * ----------------------------------------
+	 *
+	 * Let's assume we're currently JITing Foo<int>.Test<long>
+	 * (ie. `S' is instantiated as `int' and `U' is instantiated as `long').
+	 *
+	 * The call to Hello() is encoded with a MethodSpec with a TypeSpec as parent
+	 * (MONO_MEMBERREF_PARENT_TYPESPEC).
+	 *
+	 * The TypeSpec is encoded as `Foo<!!0>', so we need to parse it in the current
+	 * context (S=int, U=long) to get the correct `Foo<long>'.
+	 * 
+	 * After that, we parse the memberref signature in the new context
+	 * (S=int, T=uninstantiated) and get the open generic method `Foo<long>.Hello<T>'.
+	 *
+	 */
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
 	else
@@ -657,6 +702,27 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	new_context->gmethod = gmethod;
 	if (container->parent)
 		new_context->gclass = container->parent->context.gclass;
+
+	/*
+	 * When parsing the methodspec signature, we're in the old context again:
+	 *
+	 * ----------------------------------------
+	 * class Foo {
+	 *   static void Hello<T> (T t) { }
+	 *
+	 *   static void Test<U> (U u) {
+	 *     Foo.Hello<U> (u);
+	 *   }
+	 * }
+	 * ----------------------------------------
+	 *
+	 * Let's assume we're currently JITing "Foo.Test<float>".
+	 *
+	 * In this case, we already parsed the memberref as "Foo.Hello<T>" and the methodspec
+	 * signature is "<!!0>".  This means that we must instantiate the method type parameter
+	 * `T' from the new method with the method type parameter `U' from the current context;
+	 * ie. instantiate the method as `Foo.Hello<float>.
+	 */
 
 	gmethod->inst = mono_metadata_parse_generic_inst (image, context, param_count, ptr, &ptr);
 
@@ -1185,6 +1251,11 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 	return result;
 }
 
+/**
+ * mono_get_method_constrained:
+ *
+ * This is used when JITing the `constrained.' opcode.
+ */
 MonoMethod *
 mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
 			     MonoGenericContext *context)

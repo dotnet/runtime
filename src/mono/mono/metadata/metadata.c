@@ -1437,7 +1437,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 /*
  * mono_metadata_parse_signature_full:
  * @image: metadata context
- * @generic_context: generics context
+ * @generic_container: generic container
  * @toke: metadata token
  *
  * Decode a method signature stored in the STANDALONESIG table
@@ -1525,7 +1525,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 /*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
- * @generic_context: generics context
+ * @generic_container: generics container
  * @def: the MethodDef index or 0 for Ref signatures.
  * @ptr: pointer to the signature metadata representation
  * @rptr: pointer updated to match the end of the decoded stream
@@ -1679,6 +1679,18 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	g_free (sig);
 }
 
+/*
+ * mono_metadata_lookup_generic_inst:
+ *
+ * Check whether the newly created generic instantiation @ginst already exists
+ * in the cache and return the cached value in this case.  Otherwise insert
+ * it into the cache.
+ *
+ * Use this method each time you create a new `MonoGenericInst' to ensure
+ * proper caching.  Only use the returned value as the argument passed to this
+ * method may be freed.
+ *
+ */
 MonoGenericInst *
 mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
 {
@@ -1700,6 +1712,17 @@ mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
 	return ginst;
 }
 
+/*
+ * mono_metadata_lookup_generic_class:
+ *
+ * Check whether the newly created generic class @gclass already exists
+ * in the cache and return the cached value in this case.  Otherwise insert
+ * it into the cache and return NULL.
+ *
+ * Returns: the previosly cached generic class or NULL if it has been newly
+ *          inserted into the cache.
+ *
+ */
 MonoGenericClass *
 mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
 {
@@ -1713,6 +1736,12 @@ mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
 	return NULL;
 }
 
+/*
+ * mono_metadata_inflate_generic_inst:
+ *
+ * Instantiate the generic instance @ginst with the context @context.
+ *
+ */
 MonoGenericInst *
 mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context)
 {
@@ -1785,6 +1814,11 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	gclass->context = g_new0 (MonoGenericContext, 1);
 	gclass->context->gclass = gclass;
 
+	/*
+	 * Create the klass before parsing the type arguments.
+	 * This is required to support "recursive" definitions.
+	 * See mcs/tests/gen-23.cs for an example.
+	 */
 	igclass->klass = g_new0 (MonoClass, 1);
 
 	gtype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
@@ -1792,12 +1826,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	g_assert ((gclass->context->container = gklass->generic_container) != NULL);
 	count = mono_metadata_decode_value (ptr, &ptr);
-
-	/*
-	 * Create the klass before parsing the type arguments.
-	 * This is required to support "recursive" definitions.
-	 * See mcs/tests/gen-23.cs for an example.
-	 */
 
 	gclass->inst = mono_metadata_parse_generic_inst (m, generic_context, count, ptr, &ptr);
 
@@ -4070,6 +4098,13 @@ mono_metadata_has_generic_params (MonoImage *image, guint32 token)
 	return TRUE;
 }
 
+/*
+ * mono_metadata_load_generic_param_constraints:
+ *
+ * Load the generic parameter constraints for the newly created generic type or method
+ * represented by @token and @container.  The @container is the new container which has
+ * been returned by a call to mono_metadata_load_generic_params() with this @token.
+ */
 void
 mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container)
@@ -4104,6 +4139,21 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 				 &container->context);
 }
 
+/*
+ * mono_metadata_load_generic_params:
+ *
+ * Load the type parameters from the type or method definition @token.
+ *
+ * Use this method after parsing a type or method definition to figure out whether it's a generic
+ * type / method.  When parsing a method definition, @parent_container points to the generic container
+ * of the current class, if any.
+ *
+ * Note: This method does not load the constraints: for typedefs, this has to be done after fully
+ *       creating the type.
+ *
+ * Returns: NULL if @token is not a generic type or method definition or the new generic container.
+ *
+ */
 MonoGenericContainer *
 mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericContainer *parent_container)
 {

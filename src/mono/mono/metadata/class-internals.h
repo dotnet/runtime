@@ -74,7 +74,7 @@ struct _MonoMethod {
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	unsigned int dynamic:1; /* created & destroyed during runtime */
-	unsigned int is_inflated:1;
+	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	signed int slot : 21;
 };
 
@@ -89,10 +89,23 @@ struct _MonoMethodWrapper {
 	void *method_data;
 };
 
+/*
+ * Inflated generic method.
+ */
 struct _MonoMethodInflated {
 	MonoMethodNormal nmethod;
-	MonoGenericContext *context;
-	MonoMethod *declaring;
+	MonoGenericContext *context;	/* The current context. */
+	MonoMethod *declaring;		/* the generic method definition. */
+	/* This is a big performance optimization:
+	 *
+	 * mono_class_inflate_generic_method() just creates a copy of the method
+	 * and computes its new context, but it doesn't actually inflate the
+	 * method's signature and header.  Very often, we don't actually need them
+	 * (for instance because the method is stored in a class'es vtable).
+	 *
+	 * If the `inflated' field in non-NULL, mono_get_inflated_method() already
+	 * inflated the signature and header and stored it there.
+	 */
 	MonoMethodInflated *inflated;
 };
 
@@ -344,28 +357,47 @@ struct MonoVTable {
 /*
  * Generic instantiation data type encoding.
  */
+
+/*
+ * A particular generic instantiation:
+ *
+ * All instantiations are cached and we don't distinguish between class and method
+ * instantiations here.
+ */
 struct _MonoGenericInst {
-	guint id;
-	guint type_argc    : 22;
-	guint is_open      :  1;
-	guint is_reference :  1;
+	guint id;			/* unique ID for debugging */
+	guint type_argc    : 22;	/* number of type arguments */
+	guint is_open      :  1;	/* if this is an open type */
+	guint is_reference :  1;	/* if this is a reference type */
 	MonoType **type_argv;
 };
 
+/*
+ * A particular instantiation of a generic type.
+ */
 struct _MonoGenericClass {
-	MonoGenericInst *inst;
-	MonoClass *container_class;
-	MonoGenericContext *context;
-	guint is_dynamic  : 1;
-	guint is_inflated : 1;
+	MonoGenericInst *inst;		/* the instantiation */
+	MonoClass *container_class;	/* the generic type definition */
+	MonoGenericContext *context;	/* current context */
+	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
+	guint is_inflated : 1;		/* We're a MonoInflatedGenericClass */
 };
 
+/*
+ * Performance optimization:
+ * We don't create the `MonoClass' for a `MonoGenericClass' until we really
+ * need it.
+ */
 struct _MonoInflatedGenericClass {
 	MonoGenericClass generic_class;
 	guint is_initialized   : 1;
 	MonoClass *klass;
 };
 
+/*
+ * This is used when instantiating a generic type definition which is
+ * a TypeBuilder.
+ */
 struct _MonoDynamicGenericClass {
 	MonoInflatedGenericClass generic_class;
 	MonoType *parent;
@@ -384,34 +416,62 @@ struct _MonoDynamicGenericClass {
 	guint initialized;
 };
 
+/*
+ * A particular instantiation of a generic method.
+ */
 struct _MonoGenericMethod {
-	MonoGenericInst *inst;
-	MonoGenericClass *generic_class;
-	MonoGenericContainer *container;
+	MonoGenericInst *inst;			/* the instantiation */
+	MonoGenericClass *generic_class;	/* if we're in a generic type */
+	MonoGenericContainer *container;	/* type parameters */
 	gpointer reflection_info;
 };
 
+/*
+ * The generic context.
+ */
 struct _MonoGenericContext {
+	/*
+	 * The current container:
+	 *
+	 * If we're in a generic method, the generic method definition's container.
+	 * Otherwise the generic type's container.
+	 */
 	MonoGenericContainer *container;
+	/* The current generic class */
 	MonoGenericClass *gclass;
+	/* The current generic method */
 	MonoGenericMethod *gmethod;
 };
 
+/*
+ * The generic container.
+ *
+ * Stores the type parameters of a generic type definition or a generic method definition.
+ */
 struct _MonoGenericContainer {
 	MonoGenericContext context;
+	/* If we're a generic method definition, the containing class'es context. */
 	MonoGenericContainer *parent;
+	/* If we're a generic method definition, caches all their instantiations. */
 	GHashTable *method_hash;
+	/* If we're a generic type definition, its `MonoClass'. */
 	MonoClass *klass;
 	int type_argc    : 6;
+	/* If true, we're a generic method, otherwise a generic type definition. */
 	int is_method    : 1;
+	/* If true, we're a temporary container which is used while parsing signatures. */
 	int is_signature : 1;
+	/* Our type parameters. */
 	MonoGenericParam *type_params;
 };
 
+/*
+ * A type parameter.
+ */
 struct _MonoGenericParam {
-	MonoGenericContainer *owner;
-	MonoClass *pklass;
-	MonoMethod *method;
+	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
+	MonoClass *pklass;		/* The corresponding `MonoClass'. */
+	MonoMethod *method;		/* If we're a method type parameter, the method. */
 	const char *name;
 	guint16 flags;
 	guint16 num;

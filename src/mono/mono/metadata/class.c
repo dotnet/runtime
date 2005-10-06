@@ -232,6 +232,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (type->data.generic_param->name);
+		g_string_append (str, type->data.generic_param->name);
+		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
@@ -588,12 +593,18 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 	return res;
 }
 
+/**
+ * mono_class_inflate_generic_method:
+ *
+ * Instantiate method @method with the generic context @context.
+ */
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
 	MonoMethodInflated *result;
 	MonoGenericContainer *container = context ? context->container : NULL;
 
+	/* The `method' has already been instantiated before -> we need to create a new context. */
 	if (method->is_inflated || (mono_method_signature_full (method, container)->is_inflated)) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
@@ -603,6 +614,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 
 	mono_stats.inflated_method_count++;
 
+	/* Just create a copy, but don't actually inflate the method for performance reasons. */
 	result = g_new0 (MonoMethodInflated, 1);
 	result->nmethod = *(MonoMethodNormal*)method;
 	result->nmethod.method.is_inflated = 1;
@@ -615,6 +627,13 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	return (MonoMethod *) result;
 }
 
+/**
+ * mono_get_inflated_method:
+ *
+ * For performance reasons, mono_class_inflate_generic_method() does not actually instantiate the
+ * method, it just "prepares" it for that.  If you really need to fully instantiate the method
+ * (including its signature and header), call this method.
+ */
 MonoMethod *
 mono_get_inflated_method (MonoMethod *method)
 {
@@ -2497,6 +2516,9 @@ get_shared_inst (MonoGenericContainer *container)
 	return mono_metadata_lookup_generic_inst (nginst);
 }
 
+/*
+ * In preparation for implementing shared code.
+ */
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
@@ -2576,6 +2598,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
+	/*
+	 * Check whether we're a generic type definition.
+	 */
 	class->generic_container = mono_metadata_load_generic_params (image, class->type_token, NULL);
 	if (class->generic_container) {
 		class->generic_container->klass = class;
@@ -2648,6 +2673,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 	}
 
+	/*
+	 * If we're a generic type definition, load the constraints.
+	 * We must do this after the class has been constructed to make certain recursive scenarios
+	 * work.
+	 */
 	if (class->generic_container)
 		mono_metadata_load_generic_param_constraints (
 			image, type_token, class->generic_container);
@@ -2655,6 +2685,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
 
+	/*
+	 * If we inherit any type parameters from our containing class, we need to modify
+	 * their `owner'.
+	 */
 	if (class->nested_in && class->generic_container)
 		set_generic_param_owner (class->generic_container, class->nested_in, 0);
 
@@ -2663,6 +2697,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
+/*
+ * Create the `MonoClass' for an instantiation of a generic type.
+ * We only do this if we actually need it.
+ */
 static void
 mono_class_create_generic (MonoInflatedGenericClass *gclass)
 {
