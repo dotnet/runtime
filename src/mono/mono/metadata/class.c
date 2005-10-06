@@ -881,6 +881,25 @@ mono_class_setup_fields_locking (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+/*
+ * mono_class_has_references:
+ *
+ *   Returns whenever @klass->has_references is set, initializing it if needed.
+ * Aquires the loader lock.
+ */
+static gboolean
+mono_class_has_references (MonoClass *klass)
+{
+	if (klass->init_pending) {
+		/* Be conservative */
+		return TRUE;
+	} else {
+		mono_class_init (klass);
+
+		return klass->has_references;
+	}
+}
+
 /* useful until we keep track of gc-references in corlib etc. */
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
 
@@ -917,13 +936,42 @@ mono_class_layout_fields (MonoClass *class)
 			gc_aware_layout = TRUE;
 	}
 
+	/* Compute klass->has_references */
+	/* 
+	 * Process non-static fields first, since static fields might recursively
+	 * refer to the class itself.
+	 */
+	for (i = 0; i < top; i++) {
+		MonoType *ftype;
+
+		field = &class->fields [i];
+
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			ftype = mono_type_get_underlying_type (field->type);
+			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+				class->has_references = TRUE;
+		}
+	}
+
+	for (i = 0; i < top; i++) {
+		MonoType *ftype;
+
+		field = &class->fields [i];
+
+		if (!field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+			ftype = mono_type_get_underlying_type (field->type);
+			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+				class->has_static_refs = TRUE;
+		}
+	}
+
 	for (i = 0; i < top; i++) {
 		MonoType *ftype;
 
 		field = &class->fields [i];
 
 		ftype = mono_type_get_underlying_type (field->type);
-		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_from_mono_type (ftype)->has_references))) {
+		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				class->has_static_refs = TRUE;
 			else
