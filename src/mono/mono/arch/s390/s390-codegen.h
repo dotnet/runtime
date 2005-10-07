@@ -261,14 +261,14 @@ typedef struct {
 	char	op2;
 } RXF_Format;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char 	op1;
 	char	r1 : 4;
 	char	x2 : 4;
 	char	b2 : 4;
 	int	d2 : 20;
 	char	op2;
-} RXY_Format __attribute__ ((packed));
+} RXY_Format;
 
 typedef struct {
 	char 	op;
@@ -294,23 +294,23 @@ typedef struct {
 	int	d2 : 12;
 } RS_Format_3;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char 	op1;
 	char	r1 : 4;
 	char	r3 : 4;
 	char	b2 : 4;
 	int	d2 : 20;
 	char 	op2;
-} RSY_Format_1 __attribute__ ((packed));
+} RSY_Format_1;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char 	op1;
 	char	r1 : 4;
 	char	m3 : 4;
 	char	b2 : 4;
 	int	d2 : 20;
 	char 	op2;
-} RSY_Format_2 __attribute__ ((packed));
+} RSY_Format_2;
 
 typedef struct {
 	char 	op1;
@@ -345,19 +345,19 @@ typedef struct {
 	char	op2;
 } RIE_Format;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char 	op1;
 	char	r1 : 4;
 	char	op2 : 4;
 	int	i2;
-} RIL_Format_1 __attribute__ ((packed));
+} RIL_Format_1;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char 	op1;
 	char	m1 : 4;
 	char	op2 : 4;
 	int	i2;
-} RIL_Format_2 __attribute__ ((packed));
+} RIL_Format_2;
 
 typedef struct {
 	char	op;
@@ -366,13 +366,13 @@ typedef struct {
 	short	d1 : 12;
 } SI_Format;
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	char	op1;
 	char	i2;
 	char	b1 : 4;
 	int	d1 : 20;
 	char	op2;
-} SIY_Format __attribute__ ((packed));
+} SIY_Format;
 
 typedef struct {
 	short	op;
@@ -419,13 +419,13 @@ typedef struct {
 	short	d4 : 12;
 } SS_Format_4;	
 
-typedef struct {
+typedef struct __attribute__ ((packed)) {
 	short	op;
 	char	b1 : 4;
 	short	d1 : 12;
 	char	b2 : 4;
 	short	d2 : 12;
-} SSE_Format __attribute__ ((packed));
+} SSE_Format;
 
 #define s390_emit16(c, x) do 			\
 {						\
