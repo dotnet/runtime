@@ -1057,6 +1057,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 				break;
 			}
 			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_STFLD:
 			case MONO_WRAPPER_LDFLD_REMOTE:
 			case MONO_WRAPPER_STFLD_REMOTE:
@@ -1067,6 +1068,8 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 				ji->type = MONO_PATCH_INFO_METHOD;
 				if (wrapper_type == MONO_WRAPPER_LDFLD)
 					ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
+				else if (wrapper_type == MONO_WRAPPER_LDFLDA)
+					ji->data.method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
 				else if (wrapper_type == MONO_WRAPPER_STFLD)
 					ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
 				else if (wrapper_type == MONO_WRAPPER_LDFLD_REMOTE)
@@ -2282,6 +2285,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			}
 			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_STFLD:
 			case MONO_WRAPPER_LDFLD_REMOTE:
 			case MONO_WRAPPER_STFLD_REMOTE:
@@ -2562,6 +2566,7 @@ compile_method (MonoAotCompile *acfg, int index)
 			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 			case MONO_WRAPPER_STFLD:
 			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_LDFLD_REMOTE:
 			case MONO_WRAPPER_STFLD_REMOTE:
 			case MONO_WRAPPER_STELEMREF:

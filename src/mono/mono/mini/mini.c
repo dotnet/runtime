@@ -5256,7 +5256,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			} else {
 				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
-					MonoMethod *ldfld_wrapper = mono_marshal_get_ldfld_wrapper (field->type); 
+					MonoMethod *wrapper = (*ip == CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
 					MonoInst *iargs [4];
 					int temp;
 					
@@ -5264,8 +5264,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (mono_method_signature (ldfld_wrapper)->ret)) {
-						costs = inline_method (cfg, ldfld_wrapper, mono_method_signature (ldfld_wrapper), bblock, 
+					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (mono_method_signature (wrapper)->ret)) {
+						costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
 						      
@@ -5278,12 +5278,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						temp = iargs [0]->inst_i0->inst_c0;
 
-						if (*ip == CEE_LDFLDA) {
-							/* not sure howto handle this */
-							NEW_TEMPLOADA (cfg, *sp, temp);
-						} else {
-							NEW_TEMPLOAD (cfg, *sp, temp);
-						}
+						NEW_TEMPLOAD (cfg, *sp, temp);
 						sp++;
 
 						/* indicates start of a new block, and triggers a load of
@@ -5293,13 +5288,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						inline_costs += costs;
 						break;
 					} else {
-						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, mono_method_signature (ldfld_wrapper), iargs, ip, NULL);
-						if (*ip == CEE_LDFLDA) {
-							/* not sure howto handle this */
-							NEW_TEMPLOADA (cfg, *sp, temp);
-						} else {
-							NEW_TEMPLOAD (cfg, *sp, temp);
-						}
+						temp = mono_emit_method_call_spilled (cfg, bblock, wrapper, mono_method_signature (wrapper), iargs, ip, NULL);
+						NEW_TEMPLOAD (cfg, *sp, temp);
 						sp++;
 					}
 				} else {
