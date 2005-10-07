@@ -158,17 +158,6 @@ mono_metadata_signature_deep_dup (MonoMethodSignature *sig)
 	return sig;
 }
 
-static char*
-_mono_stringify_aname (MonoAssemblyName *aname)
-{
-	return g_strdup_printf (
-		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s",
-		aname->name,
-		aname->major, aname->minor, aname->build, aname->revision,
-		aname->culture && *aname->culture? aname->culture: "neutral",
-		aname->public_key_token [0] ? (char *)aname->public_key_token : "null");
-}
-
 static void
 _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 {
@@ -3479,7 +3468,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 	
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		return _mono_stringify_aname (&image->assembly->aname);
+		return mono_stringify_assembly_name (&image->assembly->aname);
 		break;
 	case MONO_TOKEN_TYPE_REF: {
 		MonoAssemblyName aname;
@@ -3502,7 +3491,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 			return g_strdup ("");
 		case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
 			mono_assembly_get_assemblyref (image, idx - 1, &aname);
-			return _mono_stringify_aname (&aname);
+			return mono_stringify_assembly_name (&aname);
 		default:
 			g_assert_not_reached ();
 		}
