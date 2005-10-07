@@ -3856,6 +3856,90 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 }
 
 /*
+ * mono_marshal_get_ldflda_wrapper:
+ * @type: the type of the field
+ *
+ * This method generates a function which can be used to load a field address
+ * from an object. The generated function has the following signature:
+ * gpointer ldflda_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset);
+ */
+MonoMethod *
+mono_marshal_get_ldflda_wrapper (MonoType *type)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	MonoClass *klass;
+	static GHashTable *ldflda_hash = NULL; 
+	char *name;
+	int t, pos0, pos1 = 0;
+
+	t = type->type;
+
+	if (!type->byref) {
+		if (type->type == MONO_TYPE_SZARRAY) {
+			klass = mono_defaults.array_class;
+		} else if (type->type == MONO_TYPE_VALUETYPE) {
+			klass = type->data.klass;
+			if (klass->enumtype) {
+				t = klass->enum_basetype->type;
+				klass = mono_class_from_mono_type (klass->enum_basetype);
+			}
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
+			   t == MONO_TYPE_CLASS) { 
+			klass = mono_defaults.object_class;
+		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
+			klass = mono_defaults.int_class;
+		} else {
+			klass = mono_class_from_mono_type (type);			
+		}
+	} else {
+		klass = mono_defaults.int_class;
+	}
+
+	mono_marshal_lock ();
+	if (!ldflda_hash) 
+		ldflda_hash = g_hash_table_new (NULL, NULL);
+	res = g_hash_table_lookup (ldflda_hash, klass);
+	mono_marshal_unlock ();
+	if (res)
+		return res;
+
+	name = g_strdup_printf ("__ldflda_wrapper_%s.%s", klass->name_space, klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLDA);
+	g_free (name);
+
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->params [3] = &mono_defaults.int_class->byval_arg;
+	sig->ret = &mono_defaults.int_class->byval_arg;
+
+	mono_mb_emit_ldarg (mb, 0);
+	pos0 = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
+
+	/* FIXME: Only throw this if the object is in another appdomain */
+	mono_mb_emit_exception_full (mb, "System", "InvalidOperationException", "Attempt to load field address from object in another appdomain.");
+
+	mono_mb_patch_addr (mb, pos0, mb->pos - (pos0 + 4));
+
+	mono_mb_emit_ldarg (mb, 0);
+        mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+        mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+	mono_mb_emit_ldarg (mb, 3);
+	mono_mb_emit_byte (mb, CEE_ADD);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+       
+	res = mono_mb_create_and_cache (ldflda_hash, klass,
+										 mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	
+	return res;
+}
+
+/*
  * mono_marshal_get_stfld_remote_wrapper:
  * klass: The type of the field
  *

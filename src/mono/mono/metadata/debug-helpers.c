@@ -38,6 +38,7 @@ static const char *wrapper_type_names [] = {
 	"proxy_isinst",
 	"stelemref",
 	"unbox",
+	"ldflda",
 	"unknown"
 };
 
