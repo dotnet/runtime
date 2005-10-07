@@ -3,9 +3,6 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
-	public static extern int puts (string name);
-
 	[DllImport ("libtest", EntryPoint="mono_test_many_int_arguments")]
 	public static extern int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							       int f, int g, int h, int i, int j);
@@ -25,12 +22,6 @@ public class Test {
 	public static extern double mono_test_split_double_arguments (double a, double b, float c, double d, double e);
 
 	public static int Main () {
-		try {
-			puts ("A simple Test for PInvoke");
-		}
-		catch (DllNotFoundException) {
-		}
-
 		if (Math.Cos (Math.PI) != -1)
 			return 1;
 		if (Math.Acos (1) != 0)
