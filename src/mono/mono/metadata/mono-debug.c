@@ -464,6 +464,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	handle = _mono_debug_get_image (method->klass->image);
 	if (!handle || !handle->symfile || !handle->symfile->offset_table) {
+		mono_debug_add_wrapper (method, jit);
 		mono_debugger_unlock ();
 		return NULL;
 	}
