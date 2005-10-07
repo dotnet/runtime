@@ -60,8 +60,13 @@ class MyProxy : RealProxy {
 	}
 }
 
+public struct TestStruct {
+  public int F;
+}
 	
 class R1 : MarshalByRefObject {
+
+	public TestStruct S;
 
 	public int test_field = 5;
 	
@@ -84,6 +89,11 @@ class Test {
 	
 	static int Main () {
 		R1 myobj = new R1 ();
+
+		// Test ldflda on MarshalByRefObjects
+		myobj.S.F = -1;
+		if (myobj.S.F != -1)
+			return 1;
 
 		return myobj.ldfield_test ();
 	}
