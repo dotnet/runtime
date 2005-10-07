@@ -48,6 +48,10 @@ static MonoAssembly *
 mono_domain_assembly_search (MonoAssemblyName *aname,
 							 gpointer user_data);
 
+static MonoAssembly *
+mono_domain_assembly_postload_search (MonoAssemblyName *aname,
+									  gpointer user_data);
+
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
@@ -87,6 +91,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_install_assembly_refonly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
+	mono_install_assembly_postload_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
+	mono_install_assembly_postload_refonly_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
@@ -557,6 +563,28 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly)
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
+static MonoAssembly *
+mono_domain_assembly_postload_search (MonoAssemblyName *aname,
+									  gpointer user_data)
+{
+	gboolean refonly = GPOINTER_TO_UINT (user_data);
+	MonoReflectionAssembly *assembly;
+	MonoDomain *domain = mono_domain_get ();
+	char *aname_str;
+
+	aname_str = mono_stringify_assembly_name (aname);
+
+	/* FIXME: We invoke managed code here, so there is a potential for deadlocks */
+	assembly = try_assembly_resolve (domain, mono_string_new (domain, aname_str), refonly);
+
+	g_free (aname_str);
+
+	if (assembly)
+		return assembly->assembly;
+	else
+		return NULL;
+}
+	
 /*
  * LOCKING: assumes assemblies_lock in the domain is already locked.
  */

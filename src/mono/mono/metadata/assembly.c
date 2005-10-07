@@ -129,11 +129,11 @@ static GHashTable *assemblies_refonly_loading;
 /* If defined, points to the bundled assembly information */
 const MonoBundledAssembly **bundles;
 
-/* Reflection only private hook functions */
-static MonoAssembly* mono_assembly_refonly_invoke_search_hook (MonoAssemblyName *aname);
-
 /* Loaded assembly binding info */
 static GSList *loaded_assembly_bindings = NULL;
+
+static MonoAssembly*
+mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, gboolean refonly, gboolean postload);
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -369,7 +369,7 @@ search_loaded (MonoAssemblyName* aname, gboolean refonly)
 	MonoAssembly *ass;
 	GList *loading;
 
-	ass = refonly ? mono_assembly_refonly_invoke_search_hook (aname) : mono_assembly_invoke_search_hook (aname);
+	ass = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
 	if (ass)
 		return ass;
 	
@@ -505,6 +505,24 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 		aname->public_key = 0;
 
 	return TRUE;
+}
+
+/*
+ * mono_stringify_assembly_name:
+ *
+ *   Convert @aname into its string format. The returned string is dynamically
+ * allocated and should be freed by the caller.
+ */
+char*
+mono_stringify_assembly_name (MonoAssemblyName *aname)
+{
+	return g_strdup_printf (
+		"%s, Version=%d.%d.%d.%d, Culture=%s%s%s",
+		aname->name,
+		aname->major, aname->minor, aname->build, aname->revision,
+		aname->culture && *aname->culture? aname->culture: "neutral",
+		aname->public_key_token [0] ? ", PublicKeyToken=" : "",
+		aname->public_key_token [0] ? (char *)aname->public_key_token : "");
 }
 
 static gchar*
@@ -757,42 +775,37 @@ typedef struct AssemblySearchHook AssemblySearchHook;
 struct AssemblySearchHook {
 	AssemblySearchHook *next;
 	MonoAssemblySearchFunc func;
+	gboolean refonly;
+	gboolean postload;
 	gpointer user_data;
 };
 
 AssemblySearchHook *assembly_search_hook = NULL;
-static AssemblySearchHook *assembly_refonly_search_hook = NULL;
 
-MonoAssembly*
-mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
+static MonoAssembly*
+mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, gboolean refonly, gboolean postload)
 {
 	AssemblySearchHook *hook;
 
 	for (hook = assembly_search_hook; hook; hook = hook->next) {
-		MonoAssembly *ass = hook->func (aname, hook->user_data);
-		if (ass)
-			return ass;
+		if ((hook->refonly == refonly) && (hook->postload == postload)) {
+			MonoAssembly *ass = hook->func (aname, hook->user_data);
+			if (ass)
+				return ass;
+		}
 	}
 
 	return NULL;
 }
 
-static MonoAssembly*
-mono_assembly_refonly_invoke_search_hook (MonoAssemblyName *aname)
+MonoAssembly*
+mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
 {
-	AssemblySearchHook *hook;
-
-	for (hook = assembly_refonly_search_hook; hook; hook = hook->next) {
-		MonoAssembly *ass = hook->func (aname, hook->user_data);
-		if (ass)
-			return ass;
-	}
-
-	return NULL;
+	return mono_assembly_invoke_search_hook_internal (aname, FALSE, FALSE);
 }
 
-void          
-mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+static void
+mono_install_assembly_search_hook_internal (MonoAssemblySearchFunc func, gpointer user_data, gboolean refonly, gboolean postload)
 {
 	AssemblySearchHook *hook;
 	
@@ -801,22 +814,34 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 	hook = g_new0 (AssemblySearchHook, 1);
 	hook->func = func;
 	hook->user_data = user_data;
+	hook->refonly = refonly;
+	hook->postload = postload;
 	hook->next = assembly_search_hook;
 	assembly_search_hook = hook;
+}
+
+void          
+mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+{
+	mono_install_assembly_search_hook_internal (func, user_data, FALSE, FALSE);
 }	
 
 void
 mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
-	AssemblySearchHook *hook;
+	mono_install_assembly_search_hook_internal (func, user_data, TRUE, FALSE);
+}
 
-	g_return_if_fail (func != NULL);
+void          
+mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+{
+	mono_install_assembly_search_hook_internal (func, user_data, FALSE, TRUE);
+}	
 
-	hook = g_new0 (AssemblySearchHook, 1);
-	hook->func = func;
-	hook->user_data = user_data;
-	hook->next = assembly_refonly_search_hook;
-	assembly_refonly_search_hook = hook;
+void
+mono_install_assembly_postload_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+{
+	mono_install_assembly_search_hook_internal (func, user_data, TRUE, TRUE);
 }
 
 typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
@@ -1874,7 +1899,10 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 			return result;
 	}
 
-	return NULL;
+	/* Try a postload search hook */
+	result = mono_assembly_invoke_search_hook_internal (aname, refonly, TRUE);
+
+	return result;
 }
 
 MonoAssembly*
