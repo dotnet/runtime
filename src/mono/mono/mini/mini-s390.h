@@ -169,7 +169,7 @@ typedef struct
 #define MONO_CONTEXT_SET_BP(ctx,bp) 					\
 	do {		 						\
 		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-		(ctx)->uc_stack.ss_sp	     = (unsigned long)bp;	\
+		(ctx)->uc_stack.ss_sp	     = (void*)bp;	\
 	} while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) context_get_ip ((ctx))

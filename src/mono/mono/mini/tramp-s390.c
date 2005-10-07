@@ -145,7 +145,8 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 {
 	gpointer addr;
 	gint32 displace;
-	int reg, base;
+	int reg;
+	guchar* base;
 	unsigned short opcode;
 	char *fname;
 	MonoJitInfo *codeJi, 
@@ -173,10 +174,10 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 					reg      = *code >> 4;
 					displace = *((short *)code) & 0x0fff;
 					if (reg > 5) 
-						base = *((int *) (sp + S390_REG_SAVE_OFFSET+
+						base = *((guchar **) (sp + S390_REG_SAVE_OFFSET+
 								       sizeof(int)*(reg-6)));
 					else
-						base = *((int *) (sp + CREATE_GR_OFFSET+
+						base = *((guchar **) (sp + CREATE_GR_OFFSET+
 								       sizeof(int)*(reg-2)));
 
 					if ((method->klass->valuetype) && 

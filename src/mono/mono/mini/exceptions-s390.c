@@ -629,7 +629,7 @@ mono_arch_is_int_overflow (void *uc, void *info)
 		case 0x5d :		/* Divide		    */
 			regNo   = (code[2] & 0xf0 >> 8);	
 			offset  = *((guint16 *) code+2) & 0x0fff;
-			operand = ctx->uc_mcontext.gregs[regNo] + offset;
+			operand = (guint32*)(ctx->uc_mcontext.gregs[regNo] + offset);
 			if (*operand == 0)
 				arithExc = FALSE; 
 		break;
@@ -644,7 +644,7 @@ mono_arch_is_int_overflow (void *uc, void *info)
 			if (code[1] == 0x97) {	
 				regNo   = (code[2] & 0xf0 >> 8);	
 				offset  = *((guint32 *) code+1) & 0x000fffff;
-				operand = ctx->uc_mcontext.gregs[regNo] + offset;
+				operand = (guint32*)(ctx->uc_mcontext.gregs[regNo] + offset);
 				if (*operand == 0)
 					arithExc = FALSE; 
 			}
@@ -652,7 +652,7 @@ mono_arch_is_int_overflow (void *uc, void *info)
 		default:
 			arithExc = TRUE;
 	}
-	ctx->uc_mcontext.psw.addr = code;
+	ctx->uc_mcontext.psw.addr = (guint32)code;
 	return (arithExc);
 }
 
