@@ -644,7 +644,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 			case 8:
 				s390_stg (p, s390_r2, 0, s390_r8, 0);
 				break;
-			default:
+			default: ;
 				/*------------------------------------------*/
 				/* The callee has already placed the result */
 				/* in the required area			    */
@@ -1110,7 +1110,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 				case 8:
 					s390_lg (p, s390_r2, 0, s390_r10, 0);
 					break;
-				default:
+				default: ;
 					/*-------------------------------------------------*/
 					/* stackval_to_data has placed data in result area */
 					/*-------------------------------------------------*/

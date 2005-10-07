@@ -159,7 +159,7 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 	if (code) {
 
 		/* The top bit needs to be ignored on S/390 */
-		(guint32) code &= 0x7fffffff;
+		code = (guchar*)((guint32)code & 0x7fffffff);
 
 		fname  = mono_method_full_name (method, TRUE);
 		codeJi = mono_jit_info_table_find (mono_domain_get(), code);

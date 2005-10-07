@@ -644,7 +644,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 			case 8:
 				s390_stm (p, s390_r2, s390_r3, s390_r8, 0);
 				break;
-			default:
+			default: ;
 				/*------------------------------------------*/
 				/* The callee has already placed the result */
 				/* in the required area			    */
@@ -1114,7 +1114,7 @@ DEBUG(printf("Returns: %d\n",sig->ret->type));
 				case 8:
 					s390_lm (p, s390_r2, s390_r3, s390_r10, 0);
 					break;
-				default:
+				default: ;
 					/*-------------------------------------------------*/
 					/* stackval_to_data has placed data in result area */
 					/*-------------------------------------------------*/
