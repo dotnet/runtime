@@ -553,7 +553,7 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
  * the first filter clause which caught the exception.
  */
 static gboolean
-mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, guint32 *out_filter_idx)
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gint32 *out_filter_idx)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -569,7 +569,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
 	gboolean has_dynamic_methods = FALSE;
-	guint32 filter_idx, first_filter_idx;
+	gint32 filter_idx, first_filter_idx;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -647,7 +647,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		}
 	}
 
-	filter_idx = 0;
+	filter_idx = -1;
 	initial_ctx = *ctx;
 	memset (&rji, 0, sizeof (rji));
 
