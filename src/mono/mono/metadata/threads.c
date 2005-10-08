@@ -1852,6 +1852,9 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread = (MonoThread *) value;
 	HANDLE handle;
 
+	if (wait->num >= MAXIMUM_WAIT_OBJECTS)
+		return FALSE;
+
 	/* The finalizer thread is not a background thread */
 	if (thread->tid != self && (thread->state & ThreadState_Background) != 0) {
 	
@@ -1865,6 +1868,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 			return(TRUE);
 		}
 
+		printf ("A: %d\n", wait->num);
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
@@ -1914,22 +1918,25 @@ void mono_thread_manage (void)
 	THREAD_DEBUG (g_message ("threadpool cleanup"));
 	mono_thread_pool_cleanup ();
 
-	mono_threads_lock ();
-
 	/* 
 	 * Remove everything but the finalizer thread and self.
 	 * Also abort all the background threads
 	 * */
-	wait->num = 0;
-	mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
+	do {
+		mono_threads_lock ();
 
-	mono_threads_unlock ();
+		wait->num = 0;
+		mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
 
-	THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
-	if(wait->num>0) {
-		/* Something to wait for */
-		wait_for_tids (wait, INFINITE);
-	}
+		mono_threads_unlock ();
+
+		THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
+		if(wait->num>0) {
+			/* Something to wait for */
+			wait_for_tids (wait, INFINITE);
+		}
+	} while (wait->num > 0);
+	
 	/* 
 	 * give the subthreads a chance to really quit (this is mainly needed
 	 * to get correct user and system times from getrusage/wait/time(1)).
