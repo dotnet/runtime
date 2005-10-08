@@ -2801,13 +2801,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_stfd_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			ia64_stfs_hint (code, ins->inst_destbasereg, ins->sreg1, 0);
+			ia64_fnorm_s_sf (code, FP_SCRATCH_REG, ins->sreg1, 0);
+			ia64_stfs_hint (code, ins->inst_destbasereg, FP_SCRATCH_REG, 0);
 			break;
 		case OP_LOADR8_MEMBASE:
 			ia64_ldfd (code, ins->dreg, ins->inst_basereg);
 			break;
 		case OP_LOADR4_MEMBASE:
 			ia64_ldfs (code, ins->dreg, ins->inst_basereg);
+			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case CEE_CONV_R4:
 			ia64_setf_sig (code, ins->dreg, ins->sreg1);
