@@ -633,8 +633,8 @@ struct _MethodCallProfile {
 struct _AllocInfo {
 	AllocInfo *next;
 	MonoClass *klass;
-	guint count;
-	guint mem;
+	guint64 count;
+	guint64 mem;
 };
 
 struct _CallerInfo {
@@ -745,13 +745,16 @@ output_profile (GList *funcs)
 
 typedef struct {
 	MethodProfile *mp;
-	guint count;
+	guint64 count;
 } NewobjProfile;
 
 static gint
 compare_newobj_profile (NewobjProfile *profa, NewobjProfile *profb)
 {
-	return (gint)profb->count - (gint)profa->count;
+	if (profb->count == profa->count)
+		return 0;
+	else
+		return profb->count > profa->count ? 1 : -1;
 }
 
 static void
@@ -759,7 +762,7 @@ build_newobj_profile (MonoClass *class, MethodProfile *mprof, GList **funcs)
 {
 	NewobjProfile *prof = g_new (NewobjProfile, 1);
 	AllocInfo *tmp;
-	guint count = 0;
+	guint64 count = 0;
 	
 	prof->mp = mprof;
 	/* we use the total amount of memory to sort */
@@ -827,6 +830,11 @@ output_callers (MethodProfile *p) {
 	}
 }
 
+/* This isn't defined on older glib versions and on some platforms */
+#ifndef G_GUINT64_FORMAT
+#define G_GUINT64_FORMAT "ul"
+#endif
+
 static void
 output_newobj_profile (GList *proflist)
 {
@@ -838,7 +846,7 @@ output_newobj_profile (GList *proflist)
 	const char* isarray;
 	char buf [256];
 	char *m;
-	guint total = 0;
+	guint64 total = 0;
 	GSList *sorted, *tmps;
 
 	g_print ("\nAllocation profiler\n");
@@ -852,7 +860,7 @@ output_newobj_profile (GList *proflist)
 			continue;
 		mp = p->mp;
 		m = method_get_name (mp->method);
-		g_print ("########################\n%8d KB %s\n", p->count / 1024, m);
+		g_print ("########################\n%8" G_GUINT64_FORMAT " KB %s\n", (p->count / 1024), m);
 		g_free (m);
 		sorted = sort_alloc_list (mp->alloc_info);
 		for (tmps = sorted; tmps; tmps = tmps->next) {
@@ -868,12 +876,12 @@ output_newobj_profile (GList *proflist)
 			}
 			g_snprintf (buf, sizeof (buf), "%s.%s%s",
 				klass->name_space, klass->name, isarray);
-			g_print ("    %8d KB %8d %-48s\n", ainfo->mem / 1024, ainfo->count, buf);
+			g_print ("    %8" G_GUINT64_FORMAT " KB %8" G_GUINT64_FORMAT " %-48s\n", (ainfo->mem / 1024), ainfo->count, buf);
 		}
 		/* callers */
 		output_callers (mp);
 	}
-	g_print ("Total memory allocated: %d KB\n", total / 1024);
+	g_print ("Total memory allocated: %" G_GUINT64_FORMAT " KB\n", (long)(total / 1024));
 }
 
 static void
