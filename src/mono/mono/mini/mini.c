@@ -9632,13 +9632,13 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
 			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
-			return mono_create_ftnptr (domain, info->code_start);
+			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
 
 	mono_domain_unlock (target_domain);
 	p = mono_jit_compile_method_inner (method, target_domain);
-	return mono_create_ftnptr (domain, p);
+	return mono_create_ftnptr (target_domain, p);
 }
 
 static gpointer
