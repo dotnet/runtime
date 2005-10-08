@@ -714,7 +714,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							// mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							if (test_only) {
 								filtered = call_filter (ctx, ei->data.filter);
-								if (filtered)
+								if (filtered && out_filter_idx)
 									*out_filter_idx = filter_idx;
 							}
 							else {
