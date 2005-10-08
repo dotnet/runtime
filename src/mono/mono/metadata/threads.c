@@ -1868,7 +1868,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 			return(TRUE);
 		}
 
-		printf ("A: %d\n", wait->num);
+		/* printf ("A: %d\n", wait->num); */
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
