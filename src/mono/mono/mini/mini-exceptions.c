@@ -545,14 +545,15 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 #ifndef CUSTOM_EXCEPTION_HANDLING
 
 /**
- * mono_handle_exception:
+ * mono_handle_exception_internal:
  * @ctx: saved processor state
  * @obj: the exception object
  * @test_only: only test if the exception is caught, but dont call handlers
- *
+ * @out_filter_idx: out parameter. if test_only is true, set to the index of 
+ * the first filter clause which caught the exception.
  */
-gboolean
-mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only)
+static gboolean
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, guint32 *out_filter_idx)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -568,6 +569,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
 	gboolean has_dynamic_methods = FALSE;
+	guint32 filter_idx, first_filter_idx;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -625,7 +627,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 		MonoContext ctx_cp = *ctx;
 		if (mono_jit_trace_calls != NULL)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
-		if (!mono_handle_exception (&ctx_cp, obj, original_ip, TRUE)) {
+		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			mono_unhandled_exception (obj);
@@ -645,6 +647,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 		}
 	}
 
+	filter_idx = 0;
 	initial_ctx = *ctx;
 	memset (&rji, 0, sizeof (rji));
 
@@ -709,7 +712,19 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 							// mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
-							filtered = call_filter (ctx, ei->data.filter);
+							if (test_only) {
+								filtered = call_filter (ctx, ei->data.filter);
+								if (filtered)
+									*out_filter_idx = filter_idx;
+							}
+							else {
+								/* 
+								 * Filter clauses should only be run in the 
+								 * first pass of exception handling.
+								 */
+								filtered = (filter_idx == first_filter_idx);
+							}
+							filter_idx ++;
 						}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
@@ -790,7 +805,20 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 	g_assert_not_reached ();
 }
-#endif /* CUSTOM_EXECPTION_HANDLING */
+
+/**
+ * mono_handle_exception:
+ * @ctx: saved processor state
+ * @obj: the exception object
+ * @test_only: only test if the exception is caught, but dont call handlers
+ */
+gboolean
+mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only)
+{
+	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL);
+}
+
+#endif /* CUSTOM_EXCEPTION_HANDLING */
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
