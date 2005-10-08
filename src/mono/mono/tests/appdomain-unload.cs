@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Reflection;
 
 [Serializable]
 public class Foo {
@@ -82,6 +83,10 @@ public class UnloadThread {
 	}
 }
 
+class CrossDomainTester : MarshalByRefObject
+{
+}
+
 public class Tests
 {
 	public static int Main() {
@@ -91,6 +96,10 @@ public class Tests
 	public static int test_0_unload () {
 		for (int i = 0; i < 10; ++i) {
 			AppDomain appDomain = AppDomain.CreateDomain("Test-unload" + i);
+
+			appDomain.CreateInstanceAndUnwrap (
+				typeof (CrossDomainTester).Assembly.FullName, "CrossDomainTester");
+
 			AppDomain.Unload(appDomain);
 		}
 
