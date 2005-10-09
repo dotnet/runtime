@@ -647,7 +647,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		}
 	}
 
-	filter_idx = -1;
+	if (out_filter_idx)
+		*out_filter_idx = -1;
+	filter_idx = 0;
 	initial_ctx = *ctx;
 	memset (&rji, 0, sizeof (rji));
 
