@@ -881,7 +881,7 @@ output_newobj_profile (GList *proflist)
 		/* callers */
 		output_callers (mp);
 	}
-	g_print ("Total memory allocated: %" G_GUINT64_FORMAT " KB\n", (long)(total / 1024));
+	g_print ("Total memory allocated: %" G_GUINT64_FORMAT " KB\n", total / 1024);
 }
 
 static void
