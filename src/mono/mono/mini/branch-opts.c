@@ -16,7 +16,7 @@
  *
  */
 MonoInst *
-mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, char * exname)
+mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, const char * exname)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodHeader *header = mono_method_get_header (method);

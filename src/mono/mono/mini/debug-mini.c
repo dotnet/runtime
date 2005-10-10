@@ -43,7 +43,6 @@ record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 void
 mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 breakpoint_id)
 {
-	MonoMethod *method = cfg->method;
 	MiniDebugMethodInfo *info;
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
