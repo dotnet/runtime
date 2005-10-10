@@ -1253,6 +1253,16 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 	}
 }
 
+/**
+ * mono_image_lookup_resource:
+ * @image: the image to look up the resource in
+ * @res_id: A MONO_PE_RESOURCE_ID_ that represents the resource ID to lookup.
+ * @lang_id: The language id.
+ * @name: the resource name to lookup.
+ *
+ * Returns: NULL if not found, otherwise a pointer to the in-memory representation
+ * of the given resource.
+ */
 gpointer
 mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, gunichar2 *name)
 {
@@ -1311,12 +1321,33 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 	return(NULL);
 }
 
+/** 
+ * mono_image_get_entry_point:
+ * @image: the image where the entry point will be looked up.
+ *
+ * Use this routine to determine the metadata token for method that
+ * has been flagged as the entry point.
+ *
+ * Returns: the token for the entry point method in the image
+ */
 guint32
 mono_image_get_entry_point (MonoImage *image)
 {
 	return ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
 }
 
+/**
+ * mono_image_get_resource:
+ * @image: the image where the resource will be looked up.
+ * @offset: The offset to add to the resource
+ * @size: a pointer to an int where the size of the resource will be stored
+ *
+ * This is a low-level routine that fetches a resource from the
+ * metadata that starts at a given @offset.  The @size parameter is
+ * filled with the data field as encoded in the metadata.
+ *
+ * Returns: the pointer to the resource whose offset is @offset.
+ */
 const char*
 mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 {

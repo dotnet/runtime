@@ -307,9 +307,21 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 /**
  * mono_type_get_name:
  * @type: a type
+ * @format: the format for the return string.
  *
- * Returns: the string representation for type as required by System.Reflection.
- * The inverse of mono_reflection_parse_type ().
+ * 
+ * Returns: the string representation in a number of formats:
+ *
+ * if format is MONO_TYPE_NAME_FORMAT_REFLECTION, the return string is
+ * returned in the formatrequired by System.Reflection, this is the
+ * inverse of mono_reflection_parse_type ().
+ *
+ * if format is MONO_TYPE_NAME_FORMAT_IL, it returns a syntax that can
+ * be used by the IL assembler.
+ *
+ * if format is MONO_TYPE_NAME_FORMAT_FULL_NAME
+ *
+ * if format is MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
  */
 char*
 mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
@@ -329,6 +341,19 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 		g_string_append_c (result, '&');
 
 	return g_string_free (result, FALSE);
+}
+
+/**
+ * mono_type_get_name:
+ * @class: a class
+ *
+ * Returns: the string representation for type as required by System.Reflection.
+ * The inverse of mono_reflection_parse_type ().
+ */
+char *
+mono_type_get_full_name (MonoClass *class)
+{
+	return mono_type_get_name_full (mono_class_get_type (class), MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
 
 char*
