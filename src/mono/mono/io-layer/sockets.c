@@ -429,6 +429,13 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 		*((int *) optval)  = tv.tv_sec * 1000 + tv.tv_usec;
 		*optlen = sizeof (int);
 	}
+
+	if (optname == SO_ERROR) {
+		if (*((int *)optval) != 0) {
+			*((int *) optval) = errno_to_WSA (*((int *)optval),
+							  __func__);
+		}
+	}
 	
 	return(ret);
 }

@@ -70,6 +70,7 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	gchar *msg;
 
 	switch (code) {
+	case 0: result = ERROR_SUCCESS; break;
 	case EACCES: result = WSAEACCES; break;
 	case EADDRINUSE: result = WSAEADDRINUSE; break;
 	case EAFNOSUPPORT: result = WSAEAFNOSUPPORT; break;
