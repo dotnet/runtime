@@ -489,6 +489,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 			      gpointer handle_specific)
 {
 	struct _WapiHandleUnshared *handle;
+	int thr_ret;
 	
 	mono_once (&shared_init_once, shared_init);
 	
@@ -523,7 +524,15 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	g_message ("%s: Assigning new fd handle %d", __func__, fd);
 #endif
 
+	/* Prevent file share entries racing with us, when the file
+	 * handle is only half initialised
+	 */
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARE);
+	g_assert(thr_ret == 0);
+
 	_wapi_handle_init (handle, type, handle_specific);
+
+	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARE);
 
 	return(GUINT_TO_POINTER(fd));
 }
@@ -963,6 +972,9 @@ void _wapi_handle_unref (gpointer handle)
 		WapiHandleType type = _WAPI_PRIVATE_HANDLES(idx).type;
 		void (*close_func)(gpointer, gpointer) = _wapi_handle_ops_get_close_func (type);
 
+		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&scan_mutex);
+		thr_ret = mono_mutex_lock (&scan_mutex);
+
 #ifdef DEBUG
 		g_message ("%s: Destroying handle %p", __func__, handle);
 #endif
@@ -987,6 +999,10 @@ void _wapi_handle_unref (gpointer handle)
 			thr_ret = pthread_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
 			g_assert (thr_ret == 0);
 		}
+
+		thr_ret = mono_mutex_unlock (&scan_mutex);
+		g_assert (thr_ret == 0);
+		pthread_cleanup_pop (0);
 
 		/* The garbage collector will take care of shared data
 		 * if this is a shared handle
@@ -1491,12 +1507,6 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	int pid;
 	int thr_ret, i;
 	
-	/* If there is no /proc, there's nothing more we can do here */
-	if (access ("/proc", F_OK) == -1) {
-		_wapi_handle_check_share_by_pid (share_info);
-		return;
-	}
-	
 	/* Marking this as COLLECTION_UNSAFE prevents entries from
 	 * expiring under us if we remove this one
 	 */
@@ -1505,6 +1515,34 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	/* Prevent new entries racing with us */
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARE);
 	g_assert (thr_ret == 0);
+	
+	/* If there is no /proc, there's nothing more we can do here */
+	if (access ("/proc", F_OK) == -1) {
+		_wapi_handle_check_share_by_pid (share_info);
+		goto done;
+	}
+
+	/* If there's another handle that thinks it owns this fd, then even
+	 * if the fd has been closed behind our back consider it still owned.
+	 * See bugs 75764 and 75891
+	 */
+	for (i = 0; i < _wapi_fd_reserve; i++) {
+		struct _WapiHandleUnshared *handle = &_WAPI_PRIVATE_HANDLES(i);
+
+		if (i != fd &&
+		    handle->type == WAPI_HANDLE_FILE) {
+			struct _WapiHandle_file *file_handle = &handle->u.file;
+
+			if (file_handle->share_info == share_info) {
+#ifdef DEBUG
+				g_message ("%s: handle 0x%x has this file open!",
+					   __func__, i);
+#endif
+
+				goto done;
+			}
+		}
+	}
 
 	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
 		struct _WapiHandleShared *shared;
@@ -1582,6 +1620,7 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 		memset (share_info, '\0', sizeof(struct _WapiFileShare));
 	}
 
+done:
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARE);
 
 	_WAPI_HANDLE_COLLECTION_SAFE;
