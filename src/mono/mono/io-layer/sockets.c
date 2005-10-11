@@ -479,9 +479,6 @@ int _wapi_recv(guint32 fd, void *buf, size_t len, int recv_flags)
 int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		   struct sockaddr *from, socklen_t *fromlen)
 {
-#ifndef HAVE_MSG_NOSIGNAL
-	void (*old_sigpipe)(int);	// old SIGPIPE handler
-#endif
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
@@ -495,20 +492,10 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		return(SOCKET_ERROR);
 	}
 	
-#ifdef HAVE_MSG_NOSIGNAL
-	do {
-		ret = recvfrom (fd, buf, len, recv_flags | MSG_NOSIGNAL, from,
-				fromlen);
-	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
-#else
-	old_sigpipe = signal (SIGPIPE, SIG_IGN);
 	do {
 		ret = recvfrom (fd, buf, len, recv_flags, from, fromlen);
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
-	signal (SIGPIPE, old_sigpipe);
-#endif
 
 	if (ret == -1) {
 		gint errnum = errno;
@@ -526,9 +513,6 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 
 int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 {
-#ifndef HAVE_MSG_NOSIGNAL
-	void (*old_sigpipe)(int);	// old SIGPIPE handler
-#endif
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
@@ -542,19 +526,11 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 		return(SOCKET_ERROR);
 	}
 
-#ifdef HAVE_MSG_NOSIGNAL
-	do {
-		ret = send (fd, msg, len, send_flags | MSG_NOSIGNAL);
-	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
-#else
-	old_sigpipe = signal (SIGPIPE, SIG_IGN);
 	do {
 		ret = send (fd, msg, len, send_flags);
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
-	signal (SIGPIPE, old_sigpipe);
-#endif
+
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG
@@ -572,9 +548,6 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 		 const struct sockaddr *to, socklen_t tolen)
 {
-#ifndef HAVE_MSG_NOSIGNAL
-	void (*old_sigpipe)(int);	// old SIGPIPE handler
-#endif
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
@@ -588,20 +561,11 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 		return(SOCKET_ERROR);
 	}
 	
-#ifdef HAVE_MSG_NOSIGNAL
-	do {
-		ret = sendto (fd, msg, len, send_flags | MSG_NOSIGNAL, to,
-			      tolen);
-	} while (ret == -1 && errno == EINTR &&
-		 !_wapi_thread_cur_apc_pending ());
-#else
-	old_sigpipe = signal (SIGPIPE, SIG_IGN);
 	do {
 		ret = sendto (fd, msg, len, send_flags, to, tolen);
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
-	signal (SIGPIPE, old_sigpipe);
-#endif
+
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG

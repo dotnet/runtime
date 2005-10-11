@@ -193,12 +193,6 @@ static const struct {
 	 NULL, NULL, NULL, NULL, NULL, NULL},
 };
 
-#define NO_SIGPIPE(x) do {			\
-		void (*old_sigpipe)(int) = signal (SIGPIPE, SIG_IGN);	\
-		x;							\
-		signal (SIGPIPE, old_sigpipe);				\
-	}  while (0)
-
 static mono_once_t io_ops_once=MONO_ONCE_INIT;
 
 static void io_ops_init (void)
