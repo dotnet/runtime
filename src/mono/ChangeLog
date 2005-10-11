@@ -1,3 +1,7 @@
+2005-10-11  John Luke  <john.luke@gmail.com>
+
+	* man/monop.1: update for new monop options
+	
 2005-10-04  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Fix up problems with the latest libtool on win32.
