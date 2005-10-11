@@ -365,12 +365,10 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 		
-	NO_SIGPIPE(
-		do {
-			ret = write (fd, buffer, numbytes);
-		} while (ret == -1 && errno == EINTR &&
-			 !_wapi_thread_cur_apc_pending());
-		);
+	do {
+		ret = write (fd, buffer, numbytes);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending());
 	
 	_wapi_unlock_file_region (fd, current_pos, numbytes);
 
@@ -616,12 +614,10 @@ static gboolean file_setendoffile(gpointer handle)
 		 * every system we care about conforms, then we can
 		 * drop this write.
 		 */
-		NO_SIGPIPE(
-			do {
-				ret = write (fd, "", 1);
-			} while (ret == -1 && errno == EINTR &&
-				 !_wapi_thread_cur_apc_pending());
-			);
+		do {
+			ret = write (fd, "", 1);
+		} while (ret == -1 && errno == EINTR &&
+			 !_wapi_thread_cur_apc_pending());
 
 		if(ret==-1) {
 #ifdef DEBUG
@@ -1025,12 +1021,10 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	NO_SIGPIPE(
-		do {
-			ret = write(fd, buffer, numbytes);
-		} while (ret == -1 && errno == EINTR &&
-			 !_wapi_thread_cur_apc_pending());
-		);
+	do {
+		ret = write(fd, buffer, numbytes);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending());
 
 	if (ret == -1) {
 		if (errno == EINTR) {
@@ -1174,12 +1168,10 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		   handle);
 #endif
 
-	NO_SIGPIPE(
-		do {
-			ret = write (fd, buffer, numbytes);
-		} while (ret == -1 && errno == EINTR &&
-			 !_wapi_thread_cur_apc_pending());
-		);
+	do {
+		ret = write (fd, buffer, numbytes);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending());
 
 	if (ret == -1) {
 		if (errno == EINTR) {
