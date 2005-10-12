@@ -44,6 +44,7 @@ char *dis_stringify_param     (MonoImage *m, MonoType *param);
 char *dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
 				      MonoGenericContext *context, gboolean fully_qualified);
 char *dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method);
+char *dis_stringify_marshal_spec (MonoMarshalSpec *spec);
 
 guint32 method_dor_to_token (guint32 idx);
 
