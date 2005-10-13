@@ -334,7 +334,8 @@ void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindi
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
 					      MonoAssemblyName	   *aname,
-					      gboolean save_public_key);
+					      gboolean save_public_key,
+					      gboolean *is_version_defined);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

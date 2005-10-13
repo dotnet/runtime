@@ -4111,7 +4111,7 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 }
 
 static void
-fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute)
+fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version)
 {
 	static MonoMethod *create_culture = NULL;
 	gpointer args [1];
@@ -4127,7 +4127,8 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->build = name->build;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
-	aname->version = create_version (domain, name->major, name->minor, name->build, name->revision);
+	if (by_default_version)
+		aname->version = create_version (domain, name->major, name->minor, name->build, name->revision);
 	
 	codebase = g_filename_to_uri (absolute, NULL, NULL);
 	if (codebase) {
@@ -4181,7 +4182,7 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 	absolute = g_build_filename (assembly->assembly->basedir, assembly->assembly->image->module_name, NULL);
 
 	fill_reflection_assembly_name (mono_object_domain (assembly), aname, 
-								   &assembly->assembly->aname, absolute);
+								   &assembly->assembly->aname, absolute, TRUE);
 
 	g_free (absolute);
 }
@@ -4216,7 +4217,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 		mono_raise_exception (mono_get_exception_argument ("assemblyFile", "The file does not contain a manifest"));
 	}
 
-	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename);
+	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename, TRUE);
 
 	g_free (filename);
 	mono_image_close (image);
@@ -4442,12 +4443,13 @@ ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *
 	MonoAssemblyName aname;
 	MonoDomain *domain = mono_object_domain (name);
 	char *val;
+	gboolean is_version_defined;
 
 	val = mono_string_to_utf8 (assname);
-	if (!mono_assembly_name_parse_full (val, &aname, TRUE))
+	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined))
 		return FALSE;
 	
-	fill_reflection_assembly_name (domain, name, &aname, "");
+	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined);
 
 	mono_assembly_name_free (&aname);
 	g_free ((guint8*) aname.public_key);

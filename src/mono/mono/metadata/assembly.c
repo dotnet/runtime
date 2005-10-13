@@ -1380,7 +1380,7 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 }
 
 gboolean
-mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key)
+mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key, gboolean *is_version_defined)
 {
 	gchar *dllname;
 	gchar *version = NULL;
@@ -1391,7 +1391,12 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gchar *value;
 	gchar **parts;
 	gchar **tmp;
+	gboolean version_defined;
 
+	if (!is_version_defined)
+		is_version_defined = &version_defined;
+	*is_version_defined = FALSE;
+	
 	parts = tmp = g_strsplit (name, ",", 4);
 	if (!tmp || !*tmp) {
 		g_strfreev (tmp);
@@ -1405,6 +1410,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	while (*tmp) {
 		value = g_strstrip (*tmp);
 		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
+			*is_version_defined = TRUE;
 			version = g_strstrip (value + 8);
 			tmp++;
 			continue;
@@ -1449,7 +1455,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 {
-	return mono_assembly_name_parse_full (name, aname, FALSE);
+	return mono_assembly_name_parse_full (name, aname, FALSE, NULL);
 }
 
 static MonoAssembly*
