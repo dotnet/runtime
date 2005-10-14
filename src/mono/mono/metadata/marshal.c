@@ -3715,6 +3715,8 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	char *name;
 	int t, pos0, pos1 = 0;
 
+	type = mono_type_get_underlying_type (type);
+
 	t = type->type;
 
 	if (!type->byref) {
@@ -3726,8 +3728,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 				t = klass->enum_basetype->type;
 				klass = mono_class_from_mono_type (klass->enum_basetype);
 			}
-		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
-			   t == MONO_TYPE_CLASS) { 
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING) {
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;
@@ -3872,8 +3873,9 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	MonoClass *klass;
 	static GHashTable *ldflda_hash = NULL; 
 	char *name;
-	int t, pos0, pos1 = 0;
+	int t, pos0;
 
+	type = mono_type_get_underlying_type (type);
 	t = type->type;
 
 	if (!type->byref) {
@@ -4025,6 +4027,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	char *name;
 	int t, pos;
 
+	type = mono_type_get_underlying_type (type);
 	t = type->type;
 
 	if (!type->byref) {
@@ -4036,8 +4039,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 				t = klass->enum_basetype->type;
 				klass = mono_class_from_mono_type (klass->enum_basetype);
 			}
-		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
-			   t == MONO_TYPE_CLASS) { 
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING) {
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;
