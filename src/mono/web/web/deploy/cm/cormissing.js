@@ -149,10 +149,8 @@ function clickHandler (evt)
 		var strField;
 		var strNamespace;
 		var strAssembly;
-		var targetType;
 
 		elt = getParentDiv (elt);
-		targetType = elt.className;
 		var strEltClass = elt.className;
 		if (strEltClass.charAt (strEltClass.length - 1) == '_')
 			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
@@ -168,7 +166,7 @@ function clickHandler (evt)
 			strEltClass == 'e' ||	// event
 			strEltClass == 'f')	// field
 		{
-			strField = getName (elt);
+			strField = getName (elt).toLowerCase ();
 			var match = strField.match ( /[\.A-Z0-9_]*/i );
 			if (match)
 				strField = match [0];
@@ -236,24 +234,11 @@ function clickHandler (evt)
 		}
 		else if (strNamespace)
 		{
-			switch (targetType.toString ()) {
-			case "c":
-			case "i":
-			case "e":
-			case "s":
-			case "d":
-				targetType = 'T'; break;
-			case "f":
-			case "p":
-			case "e":
-			case "m":
-				targetType = 'M'; break;
-			}
 			if (strClass)
-				strNamespace += '_' + strClass;
+				strNamespace += '.' + strClass.toLowerCase ();
 			if (strField)
-				strNamespace += '_' + strField;
-			window.open ('http://windowssdk.msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/' + targetType.toUpperCase () + strNamespace.replace ('.', '_') + '.asp', 'MSDN');
+				strNamespace += '.' + strField;
+			window.open ('http://msdn2.microsoft.com/library/' + strNamespace + '.aspx', 'MSDN');
 		}
 	}
 	else
