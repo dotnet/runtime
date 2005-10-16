@@ -809,6 +809,48 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 }
 
 /**
+ * mono_debugger_run_finally:
+ * @start_ctx: saved processor state
+ *
+ * This method is called by the Mono Debugger to call all `finally' clauses of the
+ * current stack frame.  It's used when the user issues a `return' command to make
+ * the current stack frame return.  After returning from this method, the debugger
+ * unwinds the stack one frame and gives control back to the user.
+ *
+ * NOTE: This method is only used when running inside the Mono Debugger.
+ */
+void
+mono_debugger_run_finally (MonoContext *start_ctx)
+{
+	static int (*call_filter) (MonoContext *, gpointer) = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;
+	MonoContext ctx, new_ctx;
+	MonoJitInfo *ji, rji;
+	int i;
+
+	ctx = *start_ctx;
+
+	ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, NULL);
+	if (!ji || ji == (gpointer)-1)
+		return;
+
+	if (!call_filter)
+		call_filter = mono_arch_get_call_filter ();
+
+	for (i = 0; i < ji->num_clauses; i++) {
+		MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+		if ((ei->try_start <= MONO_CONTEXT_GET_IP (&ctx)) && 
+		    (MONO_CONTEXT_GET_IP (&ctx) < ei->try_end) &&
+		    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+			call_filter (&ctx, ei->handler_start);
+		}
+	}
+}
+
+/**
  * mono_handle_exception:
  * @ctx: saved processor state
  * @obj: the exception object
