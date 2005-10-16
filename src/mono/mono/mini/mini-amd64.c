@@ -104,6 +104,41 @@ mono_arch_fregname (int reg)
 		return "unknown";
 }
 
+G_GNUC_UNUSED static void
+break_count (void)
+{
+}
+
+G_GNUC_UNUSED static gboolean
+debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (!getenv ("COUNT"))
+		return TRUE;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+debug_omit_fp (void)
+{
+#if 0
+	return debug_count ();
+#else
+	return TRUE;
+#endif
+}
+
 static inline void 
 amd64_patch (unsigned char* code, gpointer target)
 {
@@ -745,10 +780,73 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	return vars;
 }
 
+/**
+ * mono_arch_compute_omit_fp:
+ *
+ *   Determine whenever the frame pointer can be eliminated.
+ */
+static void
+mono_arch_compute_omit_fp (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	int i;
+	CallInfo *cinfo;
+
+	if (cfg->arch.omit_fp_computed)
+		return;
+
+	header = mono_method_get_header (cfg->method);
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	/*
+	 * FIXME: Remove some of the restrictions.
+	 */
+	cfg->arch.omit_fp = TRUE;
+	cfg->arch.omit_fp_computed = TRUE;
+
+	/* FIXME: The exception handling code can't yet handle fp elimination */
+	cfg->arch.omit_fp = FALSE;
+
+	if (!debug_omit_fp ())
+		cfg->arch.omit_fp = FALSE;
+
+	if (cfg->method->save_lmf)
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		cfg->arch.omit_fp = FALSE;
+	if (header->num_clauses)
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->param_area)
+		cfg->arch.omit_fp = FALSE;
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+		cfg->arch.omit_fp = FALSE;
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = &cinfo->args [i];
+
+		if (ainfo->storage == ArgOnStack) {
+			/* 
+			 * The stack offset can only be determined when the frame
+			 * size is known.
+			 */
+			cfg->arch.omit_fp = FALSE;
+		}
+	}
+}
+
 GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
+
+	mono_arch_compute_omit_fp (cfg);
+
+	if (cfg->arch.omit_fp)
+		regs = g_list_prepend (regs, (gpointer)AMD64_RBP);
 
 	/* We use the callee saved registers for global allocation */
 	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
@@ -782,7 +880,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 }
  
 void
-mono_arch_allocate_vars (MonoCompile *m)
+mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -792,34 +890,44 @@ mono_arch_allocate_vars (MonoCompile *m)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (m->method);
+	header = mono_method_get_header (cfg->method);
 
-	sig = mono_method_signature (m->method);
+	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (sig, FALSE);
+
+	mono_arch_compute_omit_fp (cfg);
 
 	/*
 	 * We use the ABI calling conventions for managed code as well.
 	 * Exception: valuetypes are never passed or returned in registers.
 	 */
 
-	/* Locals are allocated backwards from %fp */
-	m->frame_reg = AMD64_RBP;
-	offset = 0;
+	if (cfg->arch.omit_fp) {
+		cfg->flags |= MONO_CFG_HAS_SPILLUP;
+		cfg->frame_reg = AMD64_RSP;
+		offset = ARGS_OFFSET;
+	} else {
+		/* Locals are allocated backwards from %fp */
+		cfg->frame_reg = AMD64_RBP;
+		offset = 0;
+	}
+
+	cfg->arch.reg_save_area_offset = offset;
 
 	/* Reserve space for caller saved registers */
 	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_CALLEE_SAVED_REG (i) && (m->used_int_regs & (1 << i))) {
+		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 			offset += sizeof (gpointer);
 		}
 
-	if (m->method->save_lmf) {
+	if (cfg->method->save_lmf) {
 		/* Reserve stack space for saving LMF + argument regs */
 		offset += sizeof (MonoLMF);
 		if (lmf_tls_offset == -1)
 			/* Need to save argument regs too */
 			offset += (AMD64_NREG * 8) + (8 * 8);
-		m->arch.lmf_offset = offset;
+		cfg->arch.lmf_offset = offset;
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
@@ -829,41 +937,50 @@ mono_arch_allocate_vars (MonoCompile *m)
 		case ArgInDoubleSSEReg:
 			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
 				/* The register is volatile */
-				m->ret->opcode = OP_REGOFFSET;
-				m->ret->inst_basereg = AMD64_RBP;
-				offset += 8;
-				m->ret->inst_offset = - offset;
+				cfg->ret->opcode = OP_REGOFFSET;
+				cfg->ret->inst_basereg = cfg->frame_reg;
+				if (cfg->arch.omit_fp) {
+					cfg->ret->inst_offset = offset;
+					offset += 8;
+				} else {
+					offset += 8;
+					cfg->ret->inst_offset = -offset;
+				}
 			}
 			else {
-				m->ret->opcode = OP_REGVAR;
-				m->ret->inst_c0 = cinfo->ret.reg;
+				cfg->ret->opcode = OP_REGVAR;
+				cfg->ret->inst_c0 = cinfo->ret.reg;
 			}
 			break;
 		case ArgValuetypeInReg:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+			g_assert (!cfg->arch.omit_fp);
 			offset += 16;
-			m->ret->opcode = OP_REGOFFSET;
-			m->ret->inst_basereg = AMD64_RBP;
-			m->ret->inst_offset = - offset;
+			cfg->ret->opcode = OP_REGOFFSET;
+			cfg->ret->inst_basereg = cfg->frame_reg;
+			cfg->ret->inst_offset = - offset;
 			break;
 		default:
 			g_assert_not_reached ();
 		}
-		m->ret->dreg = m->ret->inst_c0;
+		cfg->ret->dreg = cfg->ret->inst_c0;
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
 		offset += (locals_stack_align - 1);
 		offset &= ~(locals_stack_align - 1);
 	}
-	for (i = m->locals_start; i < m->num_varinfo; i++) {
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
-			MonoInst *inst = m->varinfo [i];
+			MonoInst *inst = cfg->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = AMD64_RBP;
-			inst->inst_offset = - (offset + offsets [i]);
+			inst->inst_basereg = cfg->frame_reg;
+			if (cfg->arch.omit_fp)
+				inst->inst_offset = (offset + offsets [i]);
+			else
+				inst->inst_offset = - (offset + offsets [i]);
 			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
 	}
@@ -871,12 +988,13 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += locals_stack_size;
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG)) {
+		g_assert (!cfg->arch.omit_fp);
 		g_assert (cinfo->sig_cookie.storage == ArgOnStack);
-		m->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
+		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		inst = m->varinfo [i];
+		inst = cfg->varinfo [i];
 		if (inst->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
@@ -909,8 +1027,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 				inst->dreg = ainfo->reg;
 				break;
 			case ArgOnStack:
+				g_assert (!cfg->arch.omit_fp);
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = AMD64_RBP;
+				inst->inst_basereg = cfg->frame_reg;
 				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 				break;
 			case ArgValuetypeInReg:
@@ -921,18 +1040,23 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 			if (!inreg && (ainfo->storage != ArgOnStack)) {
 				inst->opcode = OP_REGOFFSET;
-				inst->inst_basereg = AMD64_RBP;
+				inst->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
-				if (ainfo->storage == ArgValuetypeInReg)
-					offset += 2 * sizeof (gpointer);
-				else
-					offset += sizeof (gpointer);
-				inst->inst_offset = - offset;
+				if (cfg->arch.omit_fp) {
+					inst->inst_offset = offset;
+					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+				} else {
+					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					inst->inst_offset = - offset;
+				}
 			}
 		}
 	}
 
-	m->stack_offset = offset;
+	if (cfg->arch.omit_fp && offset == ARGS_OFFSET)
+		offset = 0;
+
+	cfg->stack_offset = offset;
 
 	g_free (cinfo);
 }
@@ -2619,6 +2743,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			int pos = 0, i;
 
+			if (cfg->arch.omit_fp)
+				g_assert_not_reached ();
+
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
@@ -2655,7 +2782,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
 			break;
 		case OP_ARGLIST: {
-			amd64_lea_membase (code, AMD64_R11, AMD64_RBP, cfg->sig_cookie);
+			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, cfg->sig_cookie);
 			amd64_mov_membase_reg (code, ins->sreg1, 0, AMD64_R11, 8);
 			break;
 		}
@@ -3782,25 +3909,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	amd64_push_reg (code, AMD64_RBP);
-	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
-
-	/* Stack alignment check */
-#if 0
-	{
-		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RSP, 8);
-		amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, 0xf);
-		amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, 0);
-		x86_branch8 (code, X86_CC_EQ, 2, FALSE);
-		amd64_breakpoint (code);
+	if (!cfg->arch.omit_fp) {
+		amd64_push_reg (code, AMD64_RBP);
+		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 	}
-#endif
 
 	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 	pos = 0;
 
 	if (method->save_lmf) {
 		gint32 lmf_offset;
+
+		g_assert (!cfg->arch.omit_fp);
 
 		pos = ALIGN_TO (pos + sizeof (MonoLMF), 16);
 
@@ -3828,15 +3948,27 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
 	} else {
-
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-				amd64_push_reg (code, i);
-				pos += sizeof (gpointer);
-			}
+		if (!cfg->arch.omit_fp) {
+			for (i = 0; i < AMD64_NREG; ++i)
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+					amd64_push_reg (code, i);
+					if (!cfg->arch.omit_fp)
+						pos += sizeof (gpointer);
+				}
+		}
 	}
 
 	alloc_size -= pos;
+
+	if (cfg->arch.omit_fp)
+		/* 
+		 * On enter, the stack is misaligned by the the pushing of the return
+		 * address. It is either made aligned by the pushing of %rbp, or by
+		 * this.
+		 */
+		alloc_size += 8;
+
+	cfg->arch.stack_alloc_size = alloc_size;
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
@@ -3852,6 +3984,29 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
 #endif
+	}
+
+	/* Stack alignment check */
+#if 0
+	{
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RSP, 8);
+		amd64_alu_reg_imm (code, X86_AND, AMD64_RAX, 0xf);
+		amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, 0);
+		x86_branch8 (code, X86_CC_EQ, 2, FALSE);
+		amd64_breakpoint (code);
+	}
+#endif
+
+	if (cfg->arch.omit_fp) {
+		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
+
+		/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
+		/* Save caller saved registers after sp is adjusted */
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
+				save_area_offset += 8;
+			}
 	}
 
 	/* compute max_offset in order to use short forward jumps */
@@ -4071,26 +4226,37 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 	} else {
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
-				pos -= sizeof (gpointer);
+		if (cfg->arch.omit_fp) {
+			gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 
-		if (pos) {
-			if (pos == - sizeof (gpointer)) {
-				/* Only one register, so avoid lea */
-				for (i = AMD64_NREG - 1; i > 0; --i)
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-						amd64_mov_reg_membase (code, i, AMD64_RBP, pos, 8);
-					}
-			}
-			else {
-				amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
+			for (i = 0; i < AMD64_NREG; ++i)
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+					amd64_mov_reg_membase (code, i, AMD64_RSP, save_area_offset, 8);
+					save_area_offset += 8;
+				}
+		}
+		else {
+			for (i = 0; i < AMD64_NREG; ++i)
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
+					pos -= sizeof (gpointer);
 
-				/* Pop registers in reverse order */
-				for (i = AMD64_NREG - 1; i > 0; --i)
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-						amd64_pop_reg (code, i);
-					}
+			if (pos) {
+				if (pos == - sizeof (gpointer)) {
+					/* Only one register, so avoid lea */
+					for (i = AMD64_NREG - 1; i > 0; --i)
+						if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+							amd64_mov_reg_membase (code, i, AMD64_RBP, pos, 8);
+						}
+				}
+				else {
+					amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
+
+					/* Pop registers in reverse order */
+					for (i = AMD64_NREG - 1; i > 0; --i)
+						if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+							amd64_pop_reg (code, i);
+						}
+				}
 			}
 		}
 	}
@@ -4121,7 +4287,12 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	g_free (cinfo);
 
-	amd64_leave (code);
+	if (cfg->arch.omit_fp) {
+		if (cfg->arch.stack_alloc_size)
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
+	} else {
+		amd64_leave (code);
+	}
 	amd64_ret (code);
 
 	cfg->code_len = code - cfg->native_code;

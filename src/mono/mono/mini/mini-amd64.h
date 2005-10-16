@@ -134,7 +134,10 @@ struct MonoLMF {
 
 typedef struct MonoCompileArch {
 	gint32 lmf_offset;
-	gint32 localloc_offset;    
+	gint32 localloc_offset;
+	gint32 reg_save_area_offset;
+	gint32 stack_alloc_size;
+	gboolean omit_fp, omit_fp_computed;
 } MonoCompileArch;
 
 typedef struct {
