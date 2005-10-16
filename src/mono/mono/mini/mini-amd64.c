@@ -808,9 +808,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	cfg->arch.omit_fp = TRUE;
 	cfg->arch.omit_fp_computed = TRUE;
 
-	/* FIXME: The exception handling code can't yet handle fp elimination */
-	cfg->arch.omit_fp = FALSE;
-
 	if (!debug_omit_fp ())
 		cfg->arch.omit_fp = FALSE;
 
@@ -906,7 +903,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (cfg->arch.omit_fp) {
 		cfg->flags |= MONO_CFG_HAS_SPILLUP;
 		cfg->frame_reg = AMD64_RSP;
-		offset = ARGS_OFFSET;
+		offset = 0;
 	} else {
 		/* Locals are allocated backwards from %fp */
 		cfg->frame_reg = AMD64_RBP;
@@ -1052,9 +1049,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			}
 		}
 	}
-
-	if (cfg->arch.omit_fp && offset == ARGS_OFFSET)
-		offset = 0;
 
 	cfg->stack_offset = offset;
 
@@ -2743,9 +2737,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			int pos = 0, i;
 
-			if (cfg->arch.omit_fp)
-				g_assert_not_reached ();
-
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
@@ -2754,20 +2745,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = emit_load_volatile_arguments (cfg, code);
 
-			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
-					pos -= sizeof (gpointer);
+			if (cfg->arch.omit_fp) {
+				guint32 save_offset = 0;
+				/* Pop callee-saved registers */
+				for (i = 0; i < AMD64_NREG; ++i)
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+						amd64_mov_reg_membase (code, i, AMD64_RSP, save_offset, 8);
+						save_offset += 8;
+					}
+				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
+			}
+			else {
+				for (i = 0; i < AMD64_NREG; ++i)
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
+						pos -= sizeof (gpointer);
 			
-			if (pos)
-				amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
+				if (pos)
+					amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
 
-			/* Pop registers in reverse order */
-			for (i = AMD64_NREG - 1; i > 0; --i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-					amd64_pop_reg (code, i);
-				}
+				/* Pop registers in reverse order */
+				for (i = AMD64_NREG - 1; i > 0; --i)
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+						amd64_pop_reg (code, i);
+					}
 
-			amd64_leave (code);
+				amd64_leave (code);
+			}
+
 			offset = code - cfg->native_code;
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			if (cfg->compile_aot)
@@ -3998,10 +4002,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 
 	if (cfg->arch.omit_fp) {
-		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
+		gint32 save_area_offset = 0;
 
-		/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
 		/* Save caller saved registers after sp is adjusted */
+		/* The registers are saved at the bottom of the frame */
+		/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
@@ -4227,7 +4232,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	} else {
 
 		if (cfg->arch.omit_fp) {
-			gint32 save_area_offset = cfg->arch.reg_save_area_offset;
+			gint32 save_area_offset = 0;
 
 			for (i = 0; i < AMD64_NREG; ++i)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
@@ -4299,6 +4304,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	g_assert (cfg->code_len < cfg->code_size);
 
+	if (cfg->arch.omit_fp) {
+		/* 
+		 * Encode the stack size into used_int_regs so the exception handler
+		 * can access it.
+		 */
+		g_assert (cfg->arch.stack_alloc_size < (1 << 16));
+		cfg->used_int_regs |= (1 << 31) | (cfg->arch.stack_alloc_size << 16);
+	}
 }
 
 void

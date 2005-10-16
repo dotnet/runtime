@@ -21,6 +21,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-amd64.h"
@@ -481,6 +482,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 	if (ji != NULL) {
 		int offset;
+		gboolean omit_fp = (ji->used_regs & (1 << 31)) > 0;
 
 		*new_ctx = *ctx;
 
@@ -507,12 +509,21 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			}
 		}
 		else {
-			offset = -1;
+			offset = omit_fp ? 0 : -1;
 			/* restore caller saved registers */
 			for (i = 0; i < AMD64_NREG; i ++)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && (ji->used_regs & (1 << i))) {
-					guint64 reg = *((guint64 *)ctx->SC_EBP + offset);
-					offset --;
+					guint64 reg;
+
+					if (omit_fp) {
+						reg = *((guint64*)ctx->rsp + offset);
+						offset ++;
+					}
+					else {
+						reg = *((guint64 *)ctx->SC_EBP + offset);
+						offset --;
+					}
+
 					switch (i) {
 					case AMD64_RBX:
 						new_ctx->rbx = reg;
@@ -529,6 +540,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 					case AMD64_R15:
 						new_ctx->r15 = reg;
 						break;
+					case AMD64_RBP:
+						new_ctx->rbp = reg;
+						break;
 					default:
 						g_assert_not_reached ();
 					}
@@ -540,11 +554,20 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			*lmf = (*lmf)->previous_lmf;
 		}
 
-		/* Pop EBP and the return address */
-		new_ctx->SC_ESP = ctx->SC_EBP + (2 * sizeof (gpointer));
-		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->SC_EIP = *((guint64 *)ctx->SC_EBP + 1) - 1;
-		new_ctx->SC_EBP = *((guint64 *)ctx->SC_EBP);
+		if (omit_fp) {
+			/* Pop frame */
+			new_ctx->rsp += (ji->used_regs >> 16) & (0x7fff);
+			new_ctx->SC_EIP = *((guint64 *)new_ctx->rsp) - 1;
+			/* Pop return address */
+			new_ctx->rsp += 8;
+		}
+		else {
+			/* Pop EBP and the return address */
+			new_ctx->SC_ESP = ctx->SC_EBP + (2 * sizeof (gpointer));
+			/* we substract 1, so that the IP points into the call instruction */
+			new_ctx->SC_EIP = *((guint64 *)ctx->SC_EBP + 1) - 1;
+			new_ctx->SC_EBP = *((guint64 *)ctx->SC_EBP);
+		}
 
 		/* Pop arguments off the stack */
 		{
