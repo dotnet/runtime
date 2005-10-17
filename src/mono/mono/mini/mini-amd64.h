@@ -126,6 +126,7 @@ struct MonoLMF {
 	guint64     rip;
 	guint64     rbx;
 	guint64     ebp;
+	guint64     rsp;
 	guint64     r12;
 	guint64     r13;
 	guint64     r14;

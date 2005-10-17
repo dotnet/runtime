@@ -593,16 +593,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		new_ctx->SC_RIP = (*lmf)->rip;
 		new_ctx->SC_RBP = (*lmf)->ebp;
+		new_ctx->SC_ESP = (*lmf)->rsp;
 
 		new_ctx->SC_RBX = (*lmf)->rbx;
 		new_ctx->SC_R12 = (*lmf)->r12;
 		new_ctx->SC_R13 = (*lmf)->r13;
 		new_ctx->SC_R14 = (*lmf)->r14;
 		new_ctx->SC_R15 = (*lmf)->r15;
-
-		/* the lmf is always stored on the stack, so the following
-		 * expression points to a stack location which can be used as ESP */
-		new_ctx->SC_ESP = ALIGN_TO ((guint64)&((*lmf)->rip), 16);
 
 		*lmf = (*lmf)->previous_lmf;
 

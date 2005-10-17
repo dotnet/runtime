@@ -3937,6 +3937,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, 8);
 		/* Save fp */
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
+		/* Save sp */
+		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 		/* Save method */
 		/* FIXME: add a relocation for this */
 		if (IS_IMM32 (cfg->method))
