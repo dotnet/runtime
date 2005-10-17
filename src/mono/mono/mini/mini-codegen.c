@@ -357,6 +357,11 @@ get_register_force_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, in
 	return sel;
 }
 
+/* This isn't defined on older glib versions and on some platforms */
+#ifndef G_GUINT64_FORMAT
+#define G_GUINT64_FORMAT "ul"
+#endif
+
 static int
 get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, regmask_t regmask, int reg, gboolean fp)
 {
@@ -373,7 +378,7 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, regmask_
 		symbolic = cfg->rs->isymbolic;
 	}
 
-	DEBUG (g_print ("\tstart regmask to assign R%d: 0x%08lx (R%d <- R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2));
+	DEBUG (g_print ("\tstart regmask to assign R%d: 0x%08" G_GUINT64_FORMAT " (R%d <- R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2));
 	/* exclude the registers in the current instruction */
 	if ((sreg1_is_fp (ins) == fp) && (reg != ins->sreg1) && (reg_is_freeable (ins->sreg1, fp) || (is_soft_reg (ins->sreg1, fp) && rassign (cfg, ins->sreg1, fp) >= 0))) {
 		if (is_soft_reg (ins->sreg1, fp))
@@ -394,7 +399,7 @@ get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, regmask_
 		DEBUG (g_print ("\t\texcluding dreg %s\n", mono_regname_full (ins->dreg, fp)));
 	}
 
-	DEBUG (g_print ("\t\tavailable regmask: 0x%08lx\n", (guint64)regmask));
+	DEBUG (g_print ("\t\tavailable regmask: 0x%08" G_GUINT64_FORMAT "\n", (guint64)regmask));
 	g_assert (regmask); /* need at least a register we can free */
 	sel = -1;
 	/* we should track prev_use and spill the register that's farther */
