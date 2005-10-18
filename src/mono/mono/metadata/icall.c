@@ -2866,7 +2866,7 @@ handle_parent:
 		}
 		g_free (utf8_name);
 		
-		return mono_field_get_object (domain, startklass, field);
+		return mono_field_get_object (domain, klass, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
