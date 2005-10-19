@@ -1,3 +1,7 @@
+2005-10-20  Robert Jordan  <robertj@gmx.net>
+
+	* data/net_2_0/machine.config: Added IPC channel templates.
+
 2005-10-11  John Luke  <john.luke@gmail.com>
 
 	* man/monop.1: update for new monop options
