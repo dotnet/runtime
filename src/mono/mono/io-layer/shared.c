@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <sys/utsname.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -33,19 +34,33 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 	static guchar file[_POSIX_PATH_MAX];
 	guchar *name = NULL, *filename, *dir, *wapi_dir;
 	gchar machine_name[256];
-
+	struct utsname ubuf;
+	int ret;
+	
+	ret = uname (&ubuf);
+	if (ret == -1) {
+		ubuf.machine[0] = '\0';
+		ubuf.sysname[0] = '\0';
+	}
+	
 	if (gethostname(machine_name, sizeof(machine_name)) != 0)
 		machine_name[0] = '\0';
 	
 	switch (type) {
 	case WAPI_SHM_DATA:
-		name = g_strdup_printf ("shared_data-%s-%d-%d",
-					machine_name, _WAPI_HANDLE_VERSION, 0);
+		name = g_strdup_printf ("shared_data-%s-%s-%s-%d-%d-%d",
+					machine_name, ubuf.sysname,
+					ubuf.machine,
+					sizeof(struct _WapiHandleShared),
+					_WAPI_HANDLE_VERSION, 0);
 		break;
 		
 	case WAPI_SHM_FILESHARE:
-		name = g_strdup_printf ("shared_fileshare-%s-%d-%d",
-					machine_name, _WAPI_HANDLE_VERSION, 0);
+		name = g_strdup_printf ("shared_fileshare-%s-%s-%s-%d-%d-%d",
+					machine_name, ubuf.sysname,
+					ubuf.machine,
+					sizeof(struct _WapiFileShare),
+					_WAPI_HANDLE_VERSION, 0);
 		break;
 	}
 

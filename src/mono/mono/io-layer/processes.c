@@ -58,18 +58,20 @@ static void process_ops_init (void)
 
 static gboolean process_set_termination_details (gpointer handle, int status)
 {
-	struct _WapiHandleShared shared_handle;
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+	int thr_ret;
 	
-	ok = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up process handle %p",
 			   __func__, handle);
 		return(FALSE);
 	}
-	
-	process_handle = &shared_handle.u.process;
 
 	if (WIFSIGNALED(status)) {
 		process_handle->exitstatus = 128 + WTERMSIG(status);
@@ -78,10 +80,9 @@ static gboolean process_set_termination_details (gpointer handle, int status)
 	}
 	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
 	
-	ok = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
-				   &shared_handle);
-	
 	_wapi_shared_handle_set_signal_state (handle, TRUE);
+
+	_wapi_handle_unlock_shared_handles ();
 
 	return (ok);
 }
@@ -236,12 +237,12 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	guint32 i, env_count = 0;
 	gboolean ret = FALSE;
 	gpointer handle;
-	struct _WapiHandleShared shared_handle;
-	struct _WapiHandle_process process_handle = {0};
+	struct _WapiHandle_process process_handle = {0}, *process_handle_data;
 	GError *gerr = NULL;
 	int in_fd, out_fd, err_fd;
 	pid_t pid;
 	int lockpipe [2];
+	int thr_ret;
 	
 	mono_once (&process_ops_once, process_ops_init);
 	
@@ -526,7 +527,8 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		err_fd = GPOINTER_TO_UINT (GetStdHandle (STD_ERROR_HANDLE));
 	}
 	
-	g_strlcpy (process_handle.proc_name, prog, _POSIX_PATH_MAX-1);
+	g_strlcpy (process_handle.proc_name, prog,
+		   _WAPI_PROC_NAME_MAX_LEN - 1);
 
 	process_set_defaults (&process_handle);
 	
@@ -669,23 +671,21 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	}
 	/* parent */
 
-	ret = _wapi_copy_handle (handle, WAPI_HANDLE_PROCESS, &shared_handle);
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
+	
+	ret = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
+				   (gpointer *)&process_handle_data);
 	if (ret == FALSE) {
-		g_warning ("%s: error copying process handle %p", __func__,
+		g_warning ("%s: error looking up process handle %p", __func__,
 			   handle);
 		_wapi_handle_unref (handle);
 		goto cleanup;
 	}
 	
-	shared_handle.u.process.id = pid;
-
-	ret = _wapi_replace_handle (handle, WAPI_HANDLE_PROCESS,
-				    &shared_handle);
-	if (ret == FALSE) {
-		SetLastError (ERROR_OUTOFMEMORY);
-		_wapi_handle_unref (handle);
-		goto cleanup;
-	}
+	process_handle_data->id = pid;
+	
+	_wapi_handle_unlock_shared_handles ();
 	
 	write (lockpipe [1], cmd, 1);
 	
@@ -738,10 +738,10 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 		slash=strrchr (utf8_progname, '/');
 		if(slash!=NULL) {
 			g_strlcpy (process_handle->proc_name, slash+1,
-				   _POSIX_PATH_MAX-1);
+				   _WAPI_PROC_NAME_MAX_LEN - 1);
 		} else {
 			g_strlcpy (process_handle->proc_name, utf8_progname,
-				   _POSIX_PATH_MAX-1);
+				   _WAPI_PROC_NAME_MAX_LEN - 1);
 		}
 
 		g_free (utf8_progname);
@@ -786,7 +786,7 @@ static void process_set_current (void)
 		guchar *procname = NULL;
 		gboolean ok;
 		
-		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env));
+		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env), TRUE);
 		
 #ifdef DEBUG
 		g_message ("%s: Found my process handle: %p (offset %d)",

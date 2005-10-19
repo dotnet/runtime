@@ -494,7 +494,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 {
 	GHashTable *dups;
 	gboolean duplicate = FALSE, bogustype = FALSE, done;
-	gboolean shared_wait = FALSE;
 	guint32 count, lowest;
 	struct timespec abstime;
 	guint i;
@@ -535,10 +534,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 #endif
 
 			bogustype = TRUE;
-		}
-
-		if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handles[i]))) {
-			shared_wait = TRUE;
 		}
 
 		g_hash_table_insert (dups, handles[i], handles[i]);
@@ -604,18 +599,10 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		thr_ret = _wapi_handle_lock_signal_mutex ();
 		g_assert (thr_ret == 0);
 		
-		if (shared_wait == TRUE) {
-			if (timeout == INFINITE) {
-				ret = _wapi_handle_wait_signal_poll_share ();
-			} else {
-				ret = _wapi_handle_timedwait_signal_poll_share (&abstime);
-			}
+		if (timeout == INFINITE) {
+			ret = _wapi_handle_wait_signal ();
 		} else {
-			if (timeout == INFINITE) {
-				ret = _wapi_handle_wait_signal ();
-			} else {
-				ret = _wapi_handle_timedwait_signal (&abstime);
-			}
+			ret = _wapi_handle_timedwait_signal (&abstime);
 		}
 
 #ifdef DEBUG

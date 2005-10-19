@@ -79,14 +79,15 @@ void _wapi_collection_init (void)
 void _wapi_handle_collect (void)
 {
 	guint32 count = _wapi_shared_layout->collection_count;
-	int i;
+	int i, thr_ret;
 	
 #ifdef DEBUG
 	g_message ("%s: (%d) Starting a collection", __func__, getpid ());
 #endif
 
 	/* Become the collection master */
-	_WAPI_HANDLE_COLLECTION_UNSAFE;
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
 	g_message ("%s: (%d) Master set", __func__, getpid ());
@@ -94,36 +95,22 @@ void _wapi_handle_collect (void)
 	
 	/* If count has changed, someone else jumped in as master */
 	if (count == _wapi_shared_layout->collection_count) {
-		for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
-			struct _WapiHandleShared *shared;
-			struct _WapiHandleSharedMetadata *meta;
-			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL;
-			
-			meta = &_wapi_shared_layout->metadata[i];
-			if (meta->timestamp < too_old && meta->offset != 0) {
-#ifdef DEBUG
-				g_message ("%s: (%d) Deleting metadata slot 0x%x handle 0x%x", __func__, getpid (), i, meta->offset);
-#endif
-				memset (&_wapi_shared_layout->handles[meta->offset], '\0', sizeof(struct _WapiHandleShared));
-				memset (&_wapi_shared_layout->metadata[i], '\0', sizeof(struct _WapiHandleSharedMetadata));
-			}
+		guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL;
 
-			/* Need to blank any handles data that is no
-			 * longer pointed to by a metadata entry too
-			 */
-			shared = &_wapi_shared_layout->handles[i];
-			if (shared->stale == TRUE) {
+		for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
+			struct _WapiHandleShared *data;
+			
+			data = &_wapi_shared_layout->handles[i];
+			if (data->timestamp < too_old) {
 #ifdef DEBUG
-				g_message ("%s: (%d) Deleting stale handle 0x%x", __func__, getpid (), i);
+				g_message ("%s: (%d) Deleting handle 0x%x", __func__, getpid (), i);
 #endif
-				memset (&_wapi_shared_layout->handles[i], '\0',
-					sizeof(struct _WapiHandleShared));
+				memset (&_wapi_shared_layout->handles[i], '\0', sizeof(struct _WapiHandleShared));
 			}
 		}
 
 		for (i = 0; i < _wapi_fileshare_layout->hwm; i++) {
 			struct _WapiFileShare *file_share = &_wapi_fileshare_layout->share_info[i];
-			guint32 too_old = (guint32)(time(NULL) & 0xFFFFFFFF) - _WAPI_HANDLE_COLLECTION_EXPIRED_INTERVAL;
 			
 			if (file_share->timestamp < too_old) {
 				memset (file_share, '\0',
@@ -134,7 +121,7 @@ void _wapi_handle_collect (void)
 		InterlockedIncrement (&_wapi_shared_layout->collection_count);
 	}
 	
-	_WAPI_HANDLE_COLLECTION_SAFE;
+	_wapi_handle_unlock_shared_handles ();
 
 #ifdef DEBUG
 	g_message ("%s: (%d) Collection done", __func__, getpid ());

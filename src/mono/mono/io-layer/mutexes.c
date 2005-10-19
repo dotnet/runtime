@@ -171,9 +171,9 @@ static void namedmutex_signal (gpointer handle)
 	ReleaseMutex(handle);
 }
 
+/* NB, always called with the shared handle lock held */
 static gboolean namedmutex_own (gpointer handle)
 {
-	struct _WapiHandleShared shared_handle;
 	struct _WapiHandle_namedmutex *namedmutex_handle;
 	gboolean ok;
 	
@@ -181,8 +181,8 @@ static gboolean namedmutex_own (gpointer handle)
 	g_message ("%s: owning named mutex handle %p", __func__, handle);
 #endif
 	
-	ok = _wapi_copy_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
-				&shared_handle);
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
+				  (gpointer *)&namedmutex_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up named mutex handle %p",
 			   __func__, handle);
@@ -191,19 +191,10 @@ static gboolean namedmutex_own (gpointer handle)
 
 	_wapi_thread_own_mutex (pthread_self (), handle);
 
-	namedmutex_handle = &shared_handle.u.namedmutex;
-
 	namedmutex_handle->pid = getpid ();
 	namedmutex_handle->tid = pthread_self ();
 	namedmutex_handle->recursion++;
 
-	ok = _wapi_replace_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
-				   &shared_handle);
-	if (ok == FALSE) {
-		SetLastError (ERROR_OUTOFMEMORY);
-		return (FALSE);
-	}
-	
 	_wapi_shared_handle_set_signal_state (handle, FALSE);
 
 #ifdef DEBUG
@@ -445,7 +436,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		 * create the private part
 		 */
 		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX,
-						       offset);
+						       offset, TRUE);
 	}
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
@@ -477,8 +468,9 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 
 cleanup:
 	g_free (utf8_name);
-	/* Releases the timestamp */
-	pthread_cleanup_pop (1);
+
+	_wapi_namespace_unlock (NULL);
+	pthread_cleanup_pop (0);
 	
 	return(ret);
 }

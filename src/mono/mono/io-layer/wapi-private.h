@@ -24,7 +24,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-#define _WAPI_HANDLE_VERSION 7
+#define _WAPI_HANDLE_VERSION 8
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
@@ -110,7 +110,6 @@ struct _WapiHandle_shared_ref
 };
 
 #define _WAPI_HANDLE_INITIAL_COUNT 4096
-#define _WAPI_HEADROOM 16
 
 struct _WapiHandleUnshared
 {
@@ -137,17 +136,12 @@ struct _WapiHandleUnshared
 	} u;
 };
 
-struct _WapiHandleSharedMetadata
-{
-	volatile guint32 offset;
-	guint32 timestamp;
-	volatile gboolean signalled;
-};
-
 struct _WapiHandleShared
 {
 	WapiHandleType type;
-	gboolean stale;
+	guint32 timestamp;
+	guint32 handle_refs;
+	volatile gboolean signalled;
 	
 	union
 	{
@@ -161,18 +155,16 @@ struct _WapiHandleShared
 };
 
 #define _WAPI_SHARED_SEM_NAMESPACE 0
-#define _WAPI_SHARED_SEM_COLLECTION 1
-#define _WAPI_SHARED_SEM_SHARE 2
-#define _WAPI_SHARED_SEM_HANDLE 3
+/*#define _WAPI_SHARED_SEM_COLLECTION 1*/
+#define _WAPI_SHARED_SEM_FILESHARE 2
+#define _WAPI_SHARED_SEM_SHARED_HANDLES 3
 #define _WAPI_SHARED_SEM_COUNT 8	/* Leave some future expansion space */
 
 struct _WapiHandleSharedLayout
 {
-	volatile guint32 signal_count;
 	volatile guint32 collection_count;
 	volatile key_t sem_key;
 	
-	struct _WapiHandleSharedMetadata metadata[_WAPI_HANDLE_INITIAL_COUNT];
 	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
 };
 

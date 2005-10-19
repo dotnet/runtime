@@ -63,32 +63,21 @@ int main (int argc, char **argv)
 		_wapi_handle_collect ();
 	}
 	
-	g_print ("collection: %d signals: %d sem: 0x%x\n",
+	g_print ("collection: %d sem: 0x%x\n",
 		 _wapi_shared_layout->collection_count,
-		 _wapi_shared_layout->signal_count,
 		 _wapi_shared_layout->sem_key);
 	
+	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
 	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
 		struct _WapiHandleShared *shared;
-		struct _WapiHandleSharedMetadata *meta;
-		guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
-		
-		meta = &_wapi_shared_layout->metadata[i];
 		
 		shared = &_wapi_shared_layout->handles[i];
-		if (shared->stale == TRUE) {
-			g_print ("    (%3x) [%7s]  *STALE*  (%s)\n", i,
-				 _wapi_handle_typename[shared->type],
-				 details[shared->type](shared));
-		}
-		
-		shared = &_wapi_shared_layout->handles[meta->offset];
 		if (shared->type != WAPI_HANDLE_UNUSED) {
-			g_print ("%3x (%3x) [%7s] %4u %s (%s)\n",
-				 i, meta->offset,
+			g_print ("%3x (%3d) [%7s] %4u %s (%s)\n",
+				 i, shared->handle_refs,
 				 _wapi_handle_typename[shared->type],
-				 now - meta->timestamp,
-				 meta->signalled?"Sg":"Un",
+				 now - shared->timestamp,
+				 shared->signalled?"Sg":"Un",
 				 details[shared->type](shared));
 		}
 	}
@@ -155,7 +144,7 @@ static const guchar *process_details (struct _WapiHandleShared *handle)
 	
 	name = proc->proc_name;
 	
-	g_snprintf (buf, sizeof(buf), "[%15s] pid: %5u exit: %u",
+	g_snprintf (buf, sizeof(buf), "[%25.25s] pid: %5u exit: %u",
 		    name==NULL?(gchar *)"":name, proc->id, proc->exitstatus);
 	
 	return(buf);

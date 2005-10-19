@@ -15,6 +15,8 @@
 
 extern struct _WapiHandleOps _wapi_process_ops;
 
+#define _WAPI_PROC_NAME_MAX_LEN _POSIX_PATH_MAX
+
 struct _WapiHandle_process
 {
 	pid_t id;
@@ -22,7 +24,7 @@ struct _WapiHandle_process
 	gpointer main_thread;
 	WapiFileTime create_time;
 	WapiFileTime exit_time;
-	gchar proc_name[_POSIX_PATH_MAX];
+	gchar proc_name[_WAPI_PROC_NAME_MAX_LEN];
 	size_t min_working_set;
 	size_t max_working_set;
 };

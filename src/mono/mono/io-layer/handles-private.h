@@ -41,13 +41,10 @@ extern gpointer _wapi_handle_new (WapiHandleType type,
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 				     gpointer handle_specific);
 extern gpointer _wapi_handle_new_from_offset (WapiHandleType type,
-					      guint32 offset);
+					      guint32 offset,
+					      gboolean timestamp);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 				     gpointer *handle_specific);
-extern gboolean _wapi_copy_handle (gpointer handle, WapiHandleType type,
-				   struct _WapiHandleShared *handle_specific);
-extern gboolean _wapi_replace_handle (gpointer handle, WapiHandleType type,
-				  struct _WapiHandleShared *handle_specific);
 extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gboolean (*check)(gpointer, gpointer),
 				     gpointer user_data,
@@ -76,8 +73,6 @@ extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
 extern int _wapi_handle_wait_signal (void);
 extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
-extern int _wapi_handle_wait_signal_poll_share (void);
-extern int _wapi_handle_timedwait_signal_poll_share (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_handle (gpointer handle);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 						 struct timespec *timeout);
@@ -98,14 +93,9 @@ extern void _wapi_handle_foreach (WapiHandleType type,
 /* This is OK to use for atomic writes of individual struct members, as they
  * are independent
  */
-#define WAPI_SHARED_HANDLE_METADATA(handle) _wapi_shared_layout->metadata[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset]
+#define WAPI_SHARED_HANDLE_DATA(handle) _wapi_shared_layout->handles[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset]
 
-/* Use this for read-only accesses to shared handle structs, so that
- * if a handle is updated we always look at the latest copy.  For
- * write access, use handle_copy/handle_replace so that all the
- * handle-type-specific data is updated atomically.
- */
-#define WAPI_SHARED_HANDLE_TYPED_DATA(handle, type) _wapi_shared_layout->handles[_wapi_shared_layout->metadata[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset].offset].u.type
+#define WAPI_SHARED_HANDLE_TYPED_DATA(handle, type) _wapi_shared_layout->handles[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset].u.type
 
 static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
@@ -171,22 +161,20 @@ static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	struct _WapiHandleUnshared *handle_data;
 	struct _WapiHandle_shared_ref *ref;
-	struct _WapiHandleSharedMetadata *shared_meta;
+	struct _WapiHandleShared *shared_data;
 	
 	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
 	
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 	ref = &handle_data->u.shared;
-	shared_meta = &_wapi_shared_layout->metadata[ref->offset];
-	shared_meta->signalled = state;
+	shared_data = &_wapi_shared_layout->handles[ref->offset];
+	shared_data->signalled = state;
 
 #ifdef DEBUG
 	g_message ("%s: signalled shared handle offset 0x%x", __func__,
 		   ref->offset);
 #endif
-
-	InterlockedIncrement (&_wapi_shared_layout->signal_count);
 }
 
 static inline gboolean _wapi_handle_issignalled (gpointer handle)
@@ -194,7 +182,7 @@ static inline gboolean _wapi_handle_issignalled (gpointer handle)
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	
 	if (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle))) {
-		return(WAPI_SHARED_HANDLE_METADATA(handle).signalled);
+		return(WAPI_SHARED_HANDLE_DATA(handle).signalled);
 	} else {
 		return(_WAPI_PRIVATE_HANDLES(idx).signalled);
 	}
@@ -288,17 +276,17 @@ static inline void _wapi_handle_spin (guint32 ms)
 
 static inline int _wapi_handle_lock_shared_handles (void)
 {
-	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_HANDLE));
+	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARED_HANDLES));
 }
 
 static inline int _wapi_handle_trylock_shared_handles (void)
 {
-	return(_wapi_shm_sem_trylock (_WAPI_SHARED_SEM_HANDLE));
+	return(_wapi_shm_sem_trylock (_WAPI_SHARED_SEM_SHARED_HANDLES));
 }
 
 static inline int _wapi_handle_unlock_shared_handles (void)
 {
-	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_HANDLE));
+	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARED_HANDLES));
 }
 
 static inline int _wapi_namespace_lock (void)
@@ -319,14 +307,14 @@ static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 	g_assert (info->handle_refs > 0);
 	
 	/* Prevent new entries racing with us */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARE);
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert(thr_ret == 0);
 
 	if (InterlockedDecrement (&info->handle_refs) == 0) {
 		memset (info, '\0', sizeof(struct _WapiFileShare));
 	}
 
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARE);
+	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */
