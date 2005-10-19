@@ -706,7 +706,8 @@ method_get_name (MonoMethod* method)
 	char *sig, *res;
 	
 	sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
-	res = g_strdup_printf ("%s.%s::%s(%s)", method->klass->name_space, method->klass->name,
+	res = g_strdup_printf ("%s%s%s::%s(%s)", method->klass->name_space,
+			method->klass->name_space ? "." : "", method->klass->name,
 		method->name, sig);
 	g_free (sig);
 	return res;
@@ -874,8 +875,8 @@ output_newobj_profile (GList *proflist)
 			} else {
 				isarray = "";
 			}
-			g_snprintf (buf, sizeof (buf), "%s.%s%s",
-				klass->name_space, klass->name, isarray);
+			g_snprintf (buf, sizeof (buf), "%s%%s%s",
+				klass->name_space, klass->name_space ? "." : "", klass->name, isarray);
 			g_print ("    %8" G_GUINT64_FORMAT " KB %8" G_GUINT64_FORMAT " %-48s\n", (ainfo->mem / 1024), ainfo->count, buf);
 		}
 		/* callers */
