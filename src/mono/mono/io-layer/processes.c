@@ -754,35 +754,11 @@ static void process_set_current (void)
 {
 	pid_t pid = getpid ();
 	char *handle_env;
+	struct _WapiHandle_process process_handle = {0};
 	
 	handle_env = getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
-	if (handle_env == NULL) {
-		struct _WapiHandle_process process_handle = {0};
-
-#ifdef DEBUG
-		g_message ("%s: Need to create my own process handle",
-			   __func__);
-#endif
-
-		process_handle.id = pid;
-
-		process_set_defaults (&process_handle);
-		process_set_name (&process_handle);
-
-		current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
-						    &process_handle);
-		if (current_process == _WAPI_HANDLE_INVALID) {
-			g_warning ("%s: error creating process handle",
-				   __func__);
-			return;
-		}
-		
-		/* Make sure the new handle has a reference so it wont go away
-		 * until this process exits
-		 */
-		_wapi_handle_ref (current_process);
-	} else {
-		struct _WapiHandle_process *process_handle;
+	if (handle_env != NULL) {
+		struct _WapiHandle_process *process_handlep;
 		guchar *procname = NULL;
 		gboolean ok;
 		
@@ -794,29 +770,63 @@ static void process_set_current (void)
 #endif
 
 		ok = _wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
-					  (gpointer *)&process_handle);
+					  (gpointer *)&process_handlep);
 		if (ok == FALSE) {
 			g_warning ("%s: error looking up process handle %p",
 				   __func__, current_process);
 			return;
 		}
 
-		procname = process_handle->proc_name;
-		if (!strcmp (procname, "mono")) {
-			/* Set a better process name */
+		/* This test will break on linuxthreads, but that
+		 * should be ancient history on all distros we care
+		 * about by now
+		 */
+		if (process_handlep->id == pid) {
+			procname = process_handlep->proc_name;
+			if (!strcmp (procname, "mono")) {
+				/* Set a better process name */
 #ifdef DEBUG
-			g_message ("%s: Setting better process name",
-				   __func__);
+				g_message ("%s: Setting better process name",
+					   __func__);
 #endif
 
-			process_set_name (process_handle);
-		} else {
+				process_set_name (process_handlep);
+			} else {
 #ifdef DEBUG
-			g_message ("%s: Leaving process name: %s", __func__,
-				   procname);
+				g_message ("%s: Leaving process name: %s",
+					   __func__, procname);
 #endif
+			}
+
+			return;
 		}
+
+		/* Wrong pid, so drop this handle and fall through to
+		 * create a new one
+		 */
+		_wapi_handle_unref (current_process);
 	}
+
+#ifdef DEBUG
+	g_message ("%s: Need to create my own process handle", __func__);
+#endif
+
+	process_handle.id = pid;
+
+	process_set_defaults (&process_handle);
+	process_set_name (&process_handle);
+
+	current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
+					    &process_handle);
+	if (current_process == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error creating process handle", __func__);
+		return;
+	}
+		
+	/* Make sure the new handle has a reference so it wont go away
+	 * until this process exits
+	 */
+	_wapi_handle_ref (current_process);
 }
 
 /* Returns a pseudo handle that doesn't need to be closed afterwards */

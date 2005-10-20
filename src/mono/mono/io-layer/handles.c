@@ -671,6 +671,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	}
 	
 	if (!found) {
+		ret = NULL;
 		goto done;
 	}
 	
@@ -760,6 +761,12 @@ void _wapi_handle_ref (gpointer handle)
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 	struct _WapiHandleUnshared *handle_data = &_WAPI_PRIVATE_HANDLES(idx);
+
+	if (_wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
+		g_warning ("%s: Attempting to ref unused handle %p", __func__,
+			   handle);
+		return;
+	}
 	
 	InterlockedIncrement (&handle_data->ref);
 
@@ -786,6 +793,12 @@ void _wapi_handle_unref (gpointer handle)
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	gboolean destroy = FALSE;
 	int thr_ret;
+
+	if (_wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
+		g_warning ("%s: Attempting to unref unused handle %p",
+			   __func__, handle);
+		return;
+	}
 
 	/* Possible race condition here if another thread refs the
 	 * handle between here and setting the type to UNUSED.  I
@@ -835,7 +848,7 @@ void _wapi_handle_unref (gpointer handle)
 
 		_WAPI_PRIVATE_HANDLES(idx).type = WAPI_HANDLE_UNUSED;
 		
-		if (!_WAPI_SHARED_HANDLE(type)) {
+		if (!is_shared) {
 			/* Destroy the mutex and cond var.  We hope nobody
 			 * tried to grab them between the handle unlock and
 			 * now, but pthreads doesn't have a
