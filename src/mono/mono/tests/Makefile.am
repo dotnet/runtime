@@ -269,7 +269,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
-	echo; echo ".cs: $${passed} test(s) passed. $${failed} test(s) failed."; echo
+	echo; echo ".cs: $${passed} test(s) passed. $${failed} test(s) did not pass."; echo
 
 test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	@failed=0; \
@@ -284,7 +284,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 			failed=`expr $${failed} + 1`; \
 		fi \
 	done; \
-	echo; echo ".il: $${passed} test(s) passed. $${failed} test(s) failed."; echo
+	echo; echo ".il: $${passed} test(s) passed. $${failed} test(s) did not pass."; echo
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
@@ -306,7 +306,7 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 			failed_tests="$${failed_tests} $$i"; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
@@ -327,7 +327,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 			failed_tests="$${failed_tests} $$i"; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
@@ -349,7 +349,7 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 			failed_tests="$${failed_tests} $$i"; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
@@ -373,7 +373,7 @@ stresstest: $(STRESS_TESTS)
 			failed_tests="$${failed_tests} $$i"; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
