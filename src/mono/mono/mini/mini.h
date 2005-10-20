@@ -734,7 +734,6 @@ typedef struct {
 typedef struct {
 	gboolean handle_sigint;
 	gboolean keep_delegates;
-	gboolean abort_on_sigsegv;
 	gboolean collect_pagefault_stats;
 } MonoDebugOptions;
 
@@ -933,7 +932,8 @@ gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineTy
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only);
-void      mono_jit_walk_stack                   (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
+void     mono_handle_native_sigsegv             (void *sigctx);
+void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 void     mono_setup_altstack                    (MonoJitTlsData *tls);
 void     mono_free_altstack                     (MonoJitTlsData *tls);
 

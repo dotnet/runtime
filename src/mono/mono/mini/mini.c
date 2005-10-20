@@ -9836,6 +9836,8 @@ static void
 SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
 	MonoException *exc = NULL;
+	MonoJitInfo *ji;
+
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 #endif
@@ -9864,13 +9866,9 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 		exc = mono_domain_get ()->null_reference_ex;
 #endif
 
-	if (debug_options.abort_on_sigsegv) {
-		MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
-		if (!ji) {
-			fprintf (stderr, "Got SIGSEGV while in unmanaged code, and the 'abort-on-sigsegv' MONO_DEBUG option is set. Aborting...\n");
-			/* Segfault in unmanaged code */
-			abort ();
-		}
+	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+	if (!ji) {
+		mono_handle_native_sigsegv (ctx);
 	}
 			
 	mono_arch_handle_exception (ctx, exc, FALSE);
@@ -10130,13 +10128,11 @@ mini_parse_debug_options (void)
 			debug_options.handle_sigint = TRUE;
 		else if (!strcmp (arg, "keep-delegates"))
 			debug_options.keep_delegates = TRUE;
-		else if (!strcmp (arg, "abort-on-sigsegv"))
-			debug_options.abort_on_sigsegv = TRUE;
 		else if (!strcmp (arg, "collect-pagefault-stats"))
 			debug_options.collect_pagefault_stats = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'abort-on-sigsegv', 'collect-pagefault-stats'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats'\n");
 			exit (1);
 		}
 	}

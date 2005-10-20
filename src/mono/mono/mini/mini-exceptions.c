@@ -939,3 +939,47 @@ mono_free_altstack (MonoJitTlsData *tls)
 }
 
 #endif /* MONO_ARCH_SIGSEGV_ON_ALTSTACK */
+
+static gboolean
+print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data)
+{
+	if (method) {
+		if (il_offset != -1)
+			printf ("in [0x%lx] %s\n", (long)il_offset, mono_method_full_name (method, TRUE));
+		else
+			printf ("in <0x%lx> %s\n", (long)native_offset, mono_method_full_name (method, TRUE));
+	} else
+		printf ("in <%lx> <unknown>\n", (long)native_offset);
+
+	return FALSE;
+}
+
+/*
+ * mono_handle_native_sigsegv:
+ *
+ *   Handle a SIGSEGV received while in native code by printing diagnostic 
+ * information and aborting.
+ */
+void
+mono_handle_native_sigsegv (void *ctx)
+{
+	/*
+	 * A SIGSEGV indicates something went very wrong so we can no longer depend
+	 * on anything working. So try to print out lots of diagnostics, starting 
+	 * with ones which have a greater change of working.
+	 */
+	fprintf (stderr,
+			 "\n"
+			 "=================================================================\n"
+			 "Got a SIGSEGV while executing native code. This usually indicates\n"
+			 "a fatal error in the mono runtime or one of the native libraries \n"
+			 "used by your application.\n"
+			 "=================================================================\n"
+			 "\n");
+
+	fprintf (stderr, "Stacktrace:\n\n");
+
+	mono_jit_walk_stack (print_stack_frame, TRUE, NULL);
+
+	abort ();
+}
