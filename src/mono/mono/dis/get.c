@@ -1780,6 +1780,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 	char *name;
 
 	MonoMethod *mh;
+	MonoGenericContext *gc = context;
 
 	mh = mono_get_method_full (m, token, NULL, context);
 	if (mh) {
@@ -1819,7 +1820,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
                 mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
                                 idx - 1, member_cols, MONO_METHODSPEC_SIZE);
 		token = member_cols [MONO_METHODSPEC_METHOD];
-                sig = get_methodspec (m, idx, token, name, context);
+                sig = get_methodspec (m, idx, token, name, gc);
 		break;
 	}
 
@@ -1924,6 +1925,8 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
         const char *ptr;
 	guint32 sig = 0;
 	int param_count, cconv, i, gen_count = 0;
+	MonoGenericContainer *container = NULL;
+	MonoGenericContext *parent_context = context;
 
 	switch (token & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
@@ -1944,6 +1947,10 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
 
 	ptr = mono_metadata_blob_heap (m, sig);
 	mono_metadata_decode_value (ptr, &ptr);
+	
+	container = mono_metadata_load_generic_params (m, method_dor_to_token (token), context);
+	if (container)
+		context = (MonoGenericContext*) container;
 
 	if (*ptr & 0x20){
 		if (*ptr & 0x40)
@@ -1974,7 +1981,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
         mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
                         idx - 1, member_cols, MONO_METHODSPEC_SIZE);
         token = member_cols [MONO_METHODSPEC_SIGNATURE];
-        type_param = get_method_type_param (m, token, context);
+        type_param = get_method_type_param (m, token, parent_context);
         g_string_append (res, type_param);
 	g_string_append (res, " (");
 
