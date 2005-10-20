@@ -1,3 +1,10 @@
+2005-10-20  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (DISTCHECK_CONFIGURE_FLAGS): New.  Make 'distcheck'
+	compile with the 'monolite' in the distribution tarball.
+	(compiler-tests-net_2_0): Avoid deleting
+	$(mcs_topdir)/build/common/Consts.cs.
+
 2005-10-20  Robert Jordan  <robertj@gmx.net>
 
 	* data/net_2_0/machine.config: Added IPC channel templates.

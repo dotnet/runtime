@@ -11,6 +11,8 @@ vs_files = genmdesc.vcproj libmono.vcproj mono.vcproj mono.sln
 
 EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in $(vs_files)
 
+DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
+
 # Distribute the 'mcs' tree too
 dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
@@ -42,8 +44,11 @@ compiler-tests: mcs-do-clean
 	$(MAKE) mcs-do-compiler-tests
 
 compiler-tests-net_2_0:
+	-rm -f $(mcs_topdir)/build/common/Consts.cs.save
+	-mv -f $(mcs_topdir)/build/common/Consts.cs $(mcs_topdir)/build/common/Consts.cs.save
 	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0_bootstrap clean
 	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0 clean
+	-mv -f $(mcs_topdir)/build/common/Consts.cs.save $(mcs_topdir)/build/common/Consts.cs
 	$(MAKE) all
 	$(MAKE) build_profiles=net_2_0 mcs-do-compiler-tests
 
