@@ -379,7 +379,7 @@ stresstest: $(STRESS_TESTS)
 
 testbundle: console.exe
 	$(MKBUNDLE) --static console.exe
-	$(with_mono_path) ./a.out
+	$(with_mono_path) MONO_CFG_DIR=$(mono_cfg_dir) MONO_SHARED_DIR=$(mono_build_root)/runtime ./a.out
 	- rm -rf a.out
 
 EXTRA_DIST += load-missing.il t-missing.cs load-exceptions.cs
