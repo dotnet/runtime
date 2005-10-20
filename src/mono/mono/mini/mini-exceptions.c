@@ -12,6 +12,10 @@
 #include <signal.h>
 #include <string.h>
 
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -980,6 +984,23 @@ mono_handle_native_sigsegv (void *ctx)
 	fprintf (stderr, "Stacktrace:\n\n");
 
 	mono_jit_walk_stack (print_stack_frame, TRUE, NULL);
+
+#ifdef HAVE_BACKTRACE_SYMBOLS
+ {
+	void *array [256];
+	char **names;
+	int i, size;
+
+	fprintf (stderr, "\nNative stacktrace:\n\n");
+
+	size = backtrace (array, 256);
+	names = backtrace_symbols (array, size);
+	for (i =0; i < size; ++i) {
+		g_print ("\t%s\n", names [i]);
+	}
+	free (names);
+ }
+#endif
 
 	abort ();
 }
