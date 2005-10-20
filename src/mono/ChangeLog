@@ -1,3 +1,7 @@
+2005-10-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add test for execinfo.h.
+
 2005-10-20  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (DISTCHECK_CONFIGURE_FLAGS): New.  Make 'distcheck'
