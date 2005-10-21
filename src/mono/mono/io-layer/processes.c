@@ -62,9 +62,6 @@ static gboolean process_set_termination_details (gpointer handle, int status)
 	gboolean ok;
 	int thr_ret;
 	
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process_handle);
 	if (ok == FALSE) {
@@ -72,6 +69,9 @@ static gboolean process_set_termination_details (gpointer handle, int status)
 			   __func__, handle);
 		return(FALSE);
 	}
+	
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
 
 	if (WIFSIGNALED(status)) {
 		process_handle->exitstatus = 128 + WTERMSIG(status);
@@ -106,6 +106,7 @@ static gboolean waitfor_pid (gpointer test, gpointer user_data G_GNUC_UNUSED)
 	ok = _wapi_lookup_handle (test, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process);
 	if (ok == FALSE) {
+		/* The handle must have been too old and was reaped */
 		return (FALSE);
 	}
 	
@@ -871,8 +872,12 @@ static pid_t signal_process_if_gone (gpointer handle)
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process_handle);
 	if (ok == FALSE) {
-		g_warning ("%s: error looking up process handle %p",
-			   __func__, handle);
+		/* It's possible that the handle has vanished during
+		 * the _wapi_search_handle before it gets here, so
+		 * don't spam the console with warnings.
+		 */
+/*		g_warning ("%s: error looking up process handle %p",
+  __func__, handle);*/
 		
 		return (0);
 	}
@@ -969,6 +974,10 @@ static gboolean process_open_compare (gpointer handle, gpointer user_data)
 	 */
 	if (checking_pid == wanted_pid &&
 	    _wapi_handle_issignalled (handle) == FALSE) {
+		/* If the handle is blown away in the window between
+		 * returning TRUE here and _wapi_search_handle pinging
+		 * the timestamp, the search will continue
+		 */
 		return(TRUE);
 	} else {
 		return(FALSE);

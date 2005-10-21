@@ -523,7 +523,11 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 		ref = &handle_data->u.shared;
 		shared_handle_data = &_wapi_shared_layout->handles[ref->offset];
 		
-		g_assert(shared_handle_data->type == type);
+		if (shared_handle_data->type != type) {
+			/* The handle must have been deleted on us
+			 */
+			return (FALSE);
+		}
 		
 		*handle_specific = &shared_handle_data->u;
 	} else {
@@ -636,6 +640,15 @@ gpointer _wapi_search_handle (WapiHandleType type,
 				g_message ("%s: Opened tmp handle %p (type %s) from offset %d", __func__, ret, _wapi_handle_typename[type], i);
 #endif
 
+				/* It's possible that the shared part
+				 * of this handle has now been blown
+				 * away (after new_from_offset
+				 * successfully opened it,) if its
+				 * timestamp is too old.  The check
+				 * function needs to be aware of this,
+				 * and cope if the handle has
+				 * vanished.
+				 */
 				if (check (ret, user_data) == TRUE) {
 					/* Timestamp this handle, but make
 					 * sure it still exists first
