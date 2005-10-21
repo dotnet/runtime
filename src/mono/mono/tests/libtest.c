@@ -401,6 +401,19 @@ mono_test_marshal_struct (simplestruct ss)
 	return 1;
 }
 
+STDCALL int
+mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
+{
+	gboolean res = (ss->a == a && ss->b == b && ss->c == c && strcmp (ss->d, d) == 0);
+
+	ss->a = !ss->a;
+	ss->b = !ss->b;
+	ss->c = !ss->c;
+	ss->d = g_strdup ("DEF");
+
+	return res ? 0 : 1;
+}
+
 typedef struct {
 	int a;
 	int b;

@@ -152,6 +152,15 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2_2")]
 	public static extern int mono_test_marshal_struct2_2 (int i, int j, int k, SimpleStruct2 ss);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_byref_struct")]
+	public static extern int mono_test_marshal_byref_struct (ref SimpleStruct ss, bool a, bool b, bool c, String d);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_byref_struct")]
+	public static extern int mono_test_marshal_byref_struct_in ([In] ref SimpleStruct ss, bool a, bool b, bool c, String d);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_byref_struct")]
+	public static extern int mono_test_marshal_byref_struct_inout ([In, Out] ref SimpleStruct ss, bool a, bool b, bool c, String d);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_point")]
 	public static extern int mono_test_marshal_point (Point p);
 
@@ -451,6 +460,54 @@ public class Tests {
 		if (res.del2 (2) != 0)
 			return 3;
 
+		return 0;
+	}
+
+	public static int test_0_marshal_byref_struct () {
+		SimpleStruct s = new SimpleStruct ();
+		s.a = true;
+		s.b = false;
+		s.c = true;
+		s.d = "ABC";
+		s.d2 = "DEF";
+
+		int res = mono_test_marshal_byref_struct (ref s, true, false, true, "ABC");
+		if (res != 0)
+			return 1;
+		if (s.a != false || s.b != true || s.c != false || s.d != "DEF")
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_marshal_byref_struct_in () {
+		SimpleStruct s = new SimpleStruct ();
+		s.a = true;
+		s.b = false;
+		s.c = true;
+		s.d = "ABC";
+		s.d2 = "DEF";
+
+		int res = mono_test_marshal_byref_struct_in (ref s, true, false, true, "ABC");
+		if (res != 0)
+			return 1;
+		if (s.a != true || s.b != false || s.c != true || s.d != "ABC")
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_marshal_byref_struct_inout () {
+		SimpleStruct s = new SimpleStruct ();
+		s.a = true;
+		s.b = false;
+		s.c = true;
+		s.d = "ABC";
+		s.d2 = "DEF";
+
+		int res = mono_test_marshal_byref_struct_inout (ref s, true, false, true, "ABC");
+		if (res != 0)
+			return 1;
+		if (s.a != false || s.b != true || s.c != false || s.d != "DEF")
+			return 2;
 		return 0;
 	}
 
