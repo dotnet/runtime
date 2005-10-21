@@ -500,6 +500,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			 * We only need to do this if the exception was raised in managed
 			 * code, since otherwise the lmf was already popped of the stack.
 			 */
+			/* This works because save_lmf prevents fp elimination */
 			if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 				new_ctx->rbx = (*lmf)->rbx;
 				new_ctx->r12 = (*lmf)->r12;
@@ -549,7 +550,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				}
 		}
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
 			/* remove any unused lmf */
 			*lmf = (*lmf)->previous_lmf;
 		}
