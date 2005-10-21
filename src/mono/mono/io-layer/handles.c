@@ -875,9 +875,14 @@ void _wapi_handle_unref (gpointer handle)
 		} else {
 			struct _WapiHandleShared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
 			
-			if (InterlockedDecrement (&shared->handle_refs) == 0) {
-				memset (shared, '\0',
-					sizeof (struct _WapiHandleShared));
+			/* It's possible that this handle is already
+			 * pointing at a deleted shared section
+			 */
+			if (shared->handle_refs > 0) {
+				shared->handle_refs--;
+				if (shared->handle_refs == 0) {
+					memset (shared, '\0', sizeof (struct _WapiHandleShared));
+				}
 			}
 		}
 
