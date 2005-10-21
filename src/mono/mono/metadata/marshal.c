@@ -4585,7 +4585,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_i4 (mb, 0);
 		}
 
-		if (!(t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+		if (!(t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
 			/* set dst_ptr */
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
@@ -4627,12 +4627,14 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			pos = mb->pos;
 			mono_mb_emit_i4 (mb, 0);
 
-			/* src = tmp_locals [i] */
-			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_stloc (mb, 0);
+			if (!((t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))) {
+				/* src = tmp_locals [i] */
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_stloc (mb, 0);
 
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, TRUE);
+				/* emit valuetype conversion code */
+				emit_struct_conv (mb, klass, TRUE);
+			}
 		}
 
 		emit_struct_free (mb, klass, conv_arg);
