@@ -6043,13 +6043,13 @@ base64_to_byte_array (gunichar2 *start, gint ilength, MonoBoolean allowWhitespac
 	last = prev_last = 0;
 	for (i = 0; i < ilength; i++) {
 		c = start [i];
-		if (isspace (c)) {
-			ignored++;
-		} else if (c >= sizeof (dbase64)) {
+		if (c >= sizeof (dbase64)) {
 			exc = mono_exception_from_name_msg (mono_get_corlib (),
 				"System", "FormatException",
 				"Invalid character found.");
 			mono_raise_exception (exc);
+		} else if (isspace (c)) {
+			ignored++;
 		} else {
 			prev_last = last;
 			last = c;
