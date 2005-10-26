@@ -44,6 +44,7 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 int main (int argc, char **argv)
 {
 	guint32 i;
+	guint32 now;
 	
 	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
 	if (_wapi_shared_layout == NULL) {
@@ -67,7 +68,7 @@ int main (int argc, char **argv)
 		 _wapi_shared_layout->collection_count,
 		 _wapi_shared_layout->sem_key);
 	
-	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
+	now = (guint32)(time(NULL) & 0xFFFFFFFF);
 	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
 		struct _WapiHandleShared *shared;
 		
