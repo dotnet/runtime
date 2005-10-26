@@ -784,6 +784,7 @@ void      mono_print_tree                   (MonoInst *tree);
 void      mono_print_tree_nl                (MonoInst *tree);
 void      mono_print_code                   (MonoCompile *cfg);
 void      mono_print_method_from_ip         (void *ip);
+char     *mono_pmip                         (void *ip);
 void      mono_select_instructions          (MonoCompile *cfg);
 const char* mono_inst_name                  (int op);
 void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data);
