@@ -29,6 +29,7 @@ struct _MonoDebuggerMetadataInfo {
 	int array_type_size;
 	int klass_size;
 	int klass_instance_size_offset;
+	int klass_parent_offset;
 	int klass_token_offset;
 	int klass_field_offset;
 	int klass_methods_offset;
@@ -137,6 +138,7 @@ mono_debugger_add_builtin_types (MonoDebugHandle *symfile)
 	info->array_type_size = sizeof (MonoArrayType);
 	info->klass_size = sizeof (MonoClass);
 	info->klass_instance_size_offset = (guint8*)&klass.instance_size - (guint8*)&klass;
+	info->klass_parent_offset = (guint8*)&klass.parent - (guint8*)&klass;
 	info->klass_token_offset = (guint8*)&klass.type_token - (guint8*)&klass;
 	info->klass_field_offset = (guint8*)&klass.fields - (guint8*)&klass;
 	info->klass_methods_offset = (guint8*)&klass.methods - (guint8*)&klass;
