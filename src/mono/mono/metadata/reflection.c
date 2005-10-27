@@ -7374,6 +7374,15 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 	} else if (strcmp ("ModuleBuilder", klass->name) == 0) {
 		MonoReflectionModuleBuilder *mb = (MonoReflectionModuleBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (&mb->dynamic_image->image, mb->cattrs);
+	} else if (strcmp ("ConstructorBuilder", klass->name) == 0) {
+		MonoReflectionCtorBuilder *cb = (MonoReflectionCtorBuilder*)obj;
+		cinfo = mono_custom_attrs_from_builders (cb->mhandle->klass->image, cb->cattrs);
+	} else if (strcmp ("MethodBuilder", klass->name) == 0) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)obj;
+		cinfo = mono_custom_attrs_from_builders (mb->mhandle->klass->image, mb->cattrs);
+	} else if (strcmp ("FieldBuilder", klass->name) == 0) {
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder*)obj;
+		cinfo = mono_custom_attrs_from_builders (&((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image->image, fb->cattrs);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
