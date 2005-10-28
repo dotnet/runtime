@@ -1,0 +1,3 @@
+2005-10-28  Ankit Jain  <jankit@novell.com>
+
+	* gen-prop.cs: New test case (for r52316).
