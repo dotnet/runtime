@@ -834,6 +834,14 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
         return retval;
 }
 
+/* 
+ * @m: metadata context
+ * @method: MonoMethodSignature to dis-stringify
+ * @methoddef_row: row index in the Method table
+ * @context: generic context, generic method's context in case of a Generic method
+ *	     or a generic type's context. if !@context, treats it as a non-generic method
+ * @fully_qualified: TRUE to print type name also.
+ */
 char*
 dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
 				MonoGenericContext *context, gboolean fully_qualified)
@@ -870,7 +878,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 				context = (MonoGenericContext *) container;
 
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig);
+			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);
 			free_method = 1;
 		} else if (context)
 			container = context->container;
