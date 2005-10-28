@@ -841,6 +841,8 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
  * @context: generic context, generic method's context in case of a Generic method
  *	     or a generic type's context. if !@context, treats it as a non-generic method
  * @fully_qualified: TRUE to print type name also.
+ *
+ * Returns: Allocated stringified method signature
  */
 char*
 dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
