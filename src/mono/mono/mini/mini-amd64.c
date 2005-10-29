@@ -826,6 +826,8 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if (cfg->param_area)
 		cfg->arch.omit_fp = FALSE;
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		cfg->arch.omit_fp = FALSE;
 	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
 		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
 		cfg->arch.omit_fp = FALSE;
