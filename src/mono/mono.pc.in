@@ -1,8 +1,7 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
+prefix=${pcfiledir}/../..
+exec_prefix=${pcfiledir}/../..
+libdir=${prefix}/@reloc_libdir@
+includedir=${prefix}/include
 
 Name: Mono
 Description: Mono Runtime

@@ -1,3 +1,9 @@
+2005-10-28  Wade Berrier <wberrier@novell.com>
+
+	* mono.pc.in, mint.pc.in, configure.in: Make these relocatable.
+	* scripts: Makefile.am mono-nunit.pc.in script.in mono-service.in 
+	Make all the wrappers relocatable.
+
 2005-10-21  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add test for execinfo.h.

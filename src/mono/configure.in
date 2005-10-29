@@ -42,6 +42,11 @@ libmono_ldflags=""
 AC_SUBST(libmono_cflags)
 AC_SUBST(libmono_ldflags)
 
+# Variable to have relocatable .pc files (lib, or lib64)
+reloc_libdir=`basename ${libdir}`
+AC_SUBST(reloc_libdir)
+
+
 dnl if linker handles the version script
 no_version_script=no
 
