@@ -135,7 +135,12 @@ debug_omit_fp (void)
 #if 0
 	return debug_count ();
 #else
-	return TRUE;
+	/* Temporarily disable this when running in the debugger until we have support
+	 * for this in the debugger. */
+	if (mono_debug_using_mono_debugger ())
+		return FALSE;
+	else
+		return TRUE;
 #endif
 }
 
