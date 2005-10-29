@@ -18,6 +18,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-math.h>
 
 #include "trace.h"
@@ -135,12 +136,7 @@ debug_omit_fp (void)
 #if 0
 	return debug_count ();
 #else
-	/* Temporarily disable this when running in the debugger until we have support
-	 * for this in the debugger. */
-	if (mono_debug_using_mono_debugger ())
-		return FALSE;
-	else
-		return TRUE;
+	return TRUE;
 #endif
 }
 
@@ -813,9 +809,13 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	cfg->arch.omit_fp = TRUE;
 	cfg->arch.omit_fp_computed = TRUE;
 
-	if (!debug_omit_fp ())
+	/* Temporarily disable this when running in the debugger until we have support
+	 * for this in the debugger. */
+	if (mono_debug_using_mono_debugger ())
 		cfg->arch.omit_fp = FALSE;
 
+	if (!debug_omit_fp ())
+		cfg->arch.omit_fp = FALSE;
 	if (cfg->method->save_lmf)
 		cfg->arch.omit_fp = FALSE;
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
