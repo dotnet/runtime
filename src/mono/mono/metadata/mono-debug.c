@@ -133,6 +133,12 @@ mono_debug_init_2 (MonoAssembly *assembly)
 	mono_debug_open_image (mono_assembly_get_image (assembly));
 }
 
+gboolean
+mono_debug_using_mono_debugger (void)
+{
+	return in_the_mono_debugger;
+}
+
 void
 mono_debug_cleanup (void)
 {

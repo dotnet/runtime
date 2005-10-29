@@ -192,6 +192,8 @@ void mono_debug_init_1 (MonoDomain *domain);
 void mono_debug_init_2 (MonoAssembly *assembly);
 void mono_debug_cleanup (void);
 
+gboolean mono_debug_using_mono_debugger (void);
+
 MonoDebugMethodAddress *mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 					       MonoDomain *domain);
 MonoDebugMethodJitInfo *mono_debug_read_method (MonoDebugMethodAddress *address);
