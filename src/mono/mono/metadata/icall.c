@@ -1227,14 +1227,9 @@ ves_icall_get_attributes (MonoReflectionType *type)
 static MonoReflectionMarshal*
 ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *field)
 {
-	MonoClass *klass;
+	MonoClass *klass = field->field->parent;
 	MonoMarshalType *info;
 	int i;
-
-	if (strcmp (field->object.vtable->klass->name, "FieldBuilder") == 0)
-		return ((MonoReflectionFieldBuilder*)field)->marshal_info;
-
-	klass = field->field->parent;
 
 	if (klass->generic_container ||
 	    (klass->generic_class && klass->generic_class->inst->is_open))
