@@ -9787,7 +9787,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #define GET_CONTEXT \
     ucontext_t *uctx = context; \
     struct sigcontext *ctx = (struct sigcontext *)&(uctx->uc_mcontext);
-#elif defined(__ppc__) || defined (__powerpc__) || defined (__s390__) || defined (MONO_ARCH_USE_SIGACTION)
+#elif defined (MONO_ARCH_USE_SIGACTION)
 #define GET_CONTEXT \
     void *ctx = context;
 #else
@@ -9828,7 +9828,8 @@ static void
 SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 {
 	MonoException *exc;
-	GET_CONTEXT
+	GET_CONTEXT;
+
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
@@ -9851,7 +9852,7 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 #endif
-	GET_CONTEXT
+	GET_CONTEXT;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	if (debug_options.collect_pagefault_stats) {
@@ -9919,19 +9920,19 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 {
-       MonoException *exc;
-       GET_CONTEXT
+	MonoException *exc;
+	GET_CONTEXT;
 
-       exc = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
+	exc = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
        
-       mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
 static void
 SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 {
 	MonoException *exc;
-	GET_CONTEXT
+	GET_CONTEXT;
 
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	
