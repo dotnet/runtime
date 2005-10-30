@@ -42,7 +42,7 @@
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 
-static void
+G_GNUC_UNUSED static void
 print_ctx (MonoContext *ctx)
 {
 	char name[256];
@@ -636,16 +636,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	/* On IA64, these two are equal */
-	unw_context_t *ctx = (unw_context_t*)sigctx;
-	unw_cursor_t cursor;
-	int res;
-	unw_word_t w;
+	ucontext_t *ctx = (ucontext_t*)sigctx;
 
-	res = unw_init_local (&cursor, ctx);
-	g_assert (res == 0);
-	res = unw_get_reg (&cursor, UNW_IA64_IP, &w);
-	g_assert (res == 0);
-
-	return (gpointer)w;
+	return (gpointer)ctx->uc_mcontext.sc_ip;
 }
