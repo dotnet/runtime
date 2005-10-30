@@ -248,6 +248,19 @@ void ia64_emit_bundle (Ia64CodegenState *code, gboolean flush);
 	_U_dyn_op_pop_frames (&(code.unw_ops [code.unw_op_count ++]), _U_QP_TRUE, code.nins, (nframes)); \
 } while (0)
 
+#define ia64_unw_label_state(code, id) do { \
+    g_assert (code.unw_op_count <= MAX_UNW_OPS); \
+    code.unw_ops_pos [code.unw_op_count] = code.nins; \
+	_U_dyn_op_label_state (&(code.unw_ops [code.unw_op_count ++]), (id)); \
+} while (0)
+
+
+#define ia64_unw_copy_state(code, id) do { \
+    g_assert (code.unw_op_count <= MAX_UNW_OPS); \
+    code.unw_ops_pos [code.unw_op_count] = code.nins; \
+	_U_dyn_op_copy_state (&(code.unw_ops [code.unw_op_count ++]), (id)); \
+} while (0)
+
 #if 0
 /* To ease debugging, emit instructions immediately */
 #define EMIT_BUNDLE(itype, code) ((itype != IA64_INS_TYPE_LX) || (code.nins == 2)) ia64_emit_bundle (&code, FALSE);
@@ -1549,7 +1562,7 @@ typedef enum {
 
 #define encode_inc3(inc3) ((inc3) == 16 ? 0 : ((inc3) == 8 ? 1 : ((inc3) == 4 ? 2 : 3)))
 
-#define ia64_m17(code, qp, r1, r3, imm, hint, m, x, x6) do { read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); int aimm = (imm) < 0 ? - (imm) : (imm); check_assert ((aimm) == 16 || (aimm) == 8 || (aimm) == 4 || (aimm) == 1); ia64_emit_ins_10 ((code), IA64_INS_TYPE_M, (qp), 0, (r1), 6, encode_inc3 (aimm), 13, sign_bit ((imm)), 15, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
+#define ia64_m17(code, qp, r1, r3, imm, hint, m, x, x6) do { int aimm; read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); aimm = (imm) < 0 ? - (imm) : (imm); check_assert ((aimm) == 16 || (aimm) == 8 || (aimm) == 4 || (aimm) == 1); ia64_emit_ins_10 ((code), IA64_INS_TYPE_M, (qp), 0, (r1), 6, encode_inc3 (aimm), 13, sign_bit ((imm)), 15, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
 
 #define ia64_fetchadd4_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
 #define ia64_fetchadd8_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
