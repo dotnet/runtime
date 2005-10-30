@@ -35,7 +35,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, bb->real_offset)) {
-			if (exclass == clause->data.catch_class) {
+			if (clause->data.catch_class && mono_class_is_assignable_from (clause->data.catch_class, exclass)) {
 				MonoBasicBlock *tbb;
 
 				/* get the basic block for the handler and 
@@ -48,7 +48,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 					MonoBasicBlock *targetbb = tbb;
 					gboolean unsafe = FALSE;
 
-					/* Check if this catch clause is ok to optmize by
+					/* Check if this catch clause is ok to optimize by
 					 * looking for the BB_EXCEPTION_UNSAFE in every BB that
 					 * belongs to the same region. 
 					 *

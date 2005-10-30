@@ -1374,9 +1374,14 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 /* emit an exception if condition is fail */
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
         do {                                                        \
-		mono_add_patch_info (cfg, code - cfg->native_code,   \
-				    MONO_PATCH_INFO_EXC, exc_name);  \
-	        x86_branch32 (code, cond, 0, signed);               \
+		MonoInst *tins = mono_branch_optimize_exception_target (cfg, bb, exc_name); \
+		if (tins == NULL) {										\
+			mono_add_patch_info (cfg, code - cfg->native_code,   \
+					MONO_PATCH_INFO_EXC, exc_name);  \
+			x86_branch32 (code, cond, 0, signed);               \
+		} else {	\
+			EMIT_COND_BRANCH (tins, cond, signed);	\
+		}			\
 	} while (0); 
 
 #define EMIT_FPCOMPARE(code) do { \
@@ -3213,41 +3218,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fld80_membase (code, AMD64_RSP, 0);
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 12);
 
-			break;
-		}
-		case OP_LCONV_TO_OVF_I: {
-			guint8 *br [3], *label [1];
-
-			if (use_sse2)
-				g_assert_not_reached ();
-
-			/* 
-			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
-			 */
-			amd64_test_reg_reg (code, ins->sreg1, ins->sreg1);
-
-			/* If the low word top bit is set, see if we are negative */
-			br [0] = code; x86_branch8 (code, X86_CC_LT, 0, TRUE);
-			/* We are not negative (no top bit set, check for our top word to be zero */
-			amd64_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br [1] = code; x86_branch8 (code, X86_CC_EQ, 0, TRUE);
-			label [0] = code;
-
-			/* throw exception */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "OverflowException");
-		        x86_jump32 (code, 0);
-	
-			amd64_patch (br [0], code);
-			/* our top bit is set, check that top word is 0xfffffff */
-			amd64_alu_reg_imm (code, X86_CMP, ins->sreg2, 0xffffffff);
-		
-			amd64_patch (br [1], code);
-			/* nope, emit exception */
-			br [2] = code; x86_branch8 (code, X86_CC_NE, 0, TRUE);
-			amd64_patch (br [2], label [0]);
-
-			if (ins->dreg != ins->sreg1)
-				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
 			break;
 		}
 		case CEE_CONV_OVF_U4:
