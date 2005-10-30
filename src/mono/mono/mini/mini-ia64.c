@@ -2149,9 +2149,11 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 		break;
 	case OP_VCALL:
 	case OP_VCALL_REG:
-	case OP_VCALL_MEMBASE:
+	case OP_VCALL_MEMBASE: {
+		ArgStorage storage;
+
 		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
-		ArgStorage storage = cinfo->ret.storage;
+		storage = cinfo->ret.storage;
 
 		if (storage == ArgAggregate) {
 			MonoInst *local = (MonoInst*)cfg->arch.ret_var_addr_local;
@@ -2179,6 +2181,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 		}
 		g_free (cinfo);
 		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -3449,8 +3452,9 @@ ia64_analyze_deps (Ia64CodegenState *code, int *deps_start, int *stops)
 static void
 ia64_real_emit_bundle (Ia64CodegenState *code, int *deps_start, int *stops, int n, guint64 template, guint64 ins1, guint64 ins2, guint64 ins3, guint8 nops)
 {
-	g_assert (n <= code->nins);
 	int stop_pos, i, deps_to_shift, dep_shift;
+
+	g_assert (n <= code->nins);
 
 	// if (n > 1) printf ("FOUND: %ld.\n", template);
 
