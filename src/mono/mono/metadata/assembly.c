@@ -28,13 +28,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger.h>
-#ifdef PLATFORM_WIN32
 #include <mono/os/util.h>
-#ifdef _MSC_VER
-	/* not used on Windows - see mono_set_rootdir () */
-	#define MONO_ASSEMBLIES		NULL
-#endif
-#endif
 
 /* AssemblyVersionMap: an assembly name and the assembly version set on which it is based */
 typedef struct  {
@@ -42,10 +36,10 @@ typedef struct  {
 	guint8 version_set_index;
 } AssemblyVersionMap;
 
-/* the default search path is just MONO_ASSEMBLIES */
+/* the default search path is empty, the first slot is replaced with the computed value */
 static const char*
 default_path [] = {
-	MONO_ASSEMBLIES,
+	NULL,
 	NULL
 };
 
@@ -444,9 +438,12 @@ mono_assembly_getrootdir (void)
 void
 mono_assemblies_init (void)
 {
-#ifdef PLATFORM_WIN32
-	mono_set_rootdir ();
-#endif
+	/*
+	 * Initialize our internal paths if we have not been initialized yet.
+	 * This happens when embedders use Mono.
+	 */
+	if (mono_assembly_getrootdir () == NULL)
+		mono_set_rootdir ();
 
 	check_path_env ();
 	check_extra_gac_path_env ();

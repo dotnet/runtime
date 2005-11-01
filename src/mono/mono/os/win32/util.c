@@ -40,7 +40,7 @@ void
 mono_set_rootdir (void)
 {
 	gunichar2 moddir [MAXPATHLEN];
-	gchar *bindir, *installdir, *root, *utf8name;
+	gchar *bindir, *installdir, *root, *utf8name, *config;
 
 	GetModuleFileNameW (NULL, moddir, MAXPATHLEN);
 	utf8name = g_utf16_to_utf8 (moddir, -1, NULL, NULL, NULL);
@@ -49,10 +49,16 @@ mono_set_rootdir (void)
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
 	mono_assembly_setrootdir (root);
+
+	config = g_build_filename (root, "etc", NULL);
+	mono_internal_set_config_dir (etc);
+
+	g_free (config);
 	g_free (root);
 	g_free (installdir);
 	g_free (bindir);
 	g_free (utf8name);
+
 }
 
  

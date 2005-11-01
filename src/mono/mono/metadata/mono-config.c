@@ -390,31 +390,19 @@ mono_config_parse (const char *filename) {
 
 static const char *mono_cfg_dir = NULL;
 
-static void    
-mono_install_get_config_dir (void)
+/* Invoked during startup */
+void
+mono_internal_set_config_dir (const char *dir)
 {
-#ifdef PLATFORM_WIN32
-  gchar *prefix;
-#endif
-
-  mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
-
-  if (!mono_cfg_dir) {
-#ifndef PLATFORM_WIN32
-    mono_cfg_dir = MONO_CFG_DIR;
-#else
-    prefix = g_path_get_dirname (mono_assembly_getrootdir ());
-    mono_cfg_dir = g_build_filename (prefix, "etc", NULL);
-    g_free (prefix);
-#endif
-  }
+	/* If this variable is set, overrides the directory computed */
+	mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
+	if (mono_cfg_dir == NULL)
+		mono_cfg_dir = g_strdup (dir);
 }
 
 const char* 
 mono_get_config_dir (void)
 {
-	if (!mono_cfg_dir)
-		mono_install_get_config_dir ();
 	return mono_cfg_dir;
 }
 

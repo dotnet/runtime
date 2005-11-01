@@ -46,8 +46,9 @@ export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 PLATFORM_CFLAGS = -O
-PLATFORM_LIB = ../os/libmonoos.la
 endif
+
+PLATFORM_LIB = ../os/libmonoos.la
 
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
