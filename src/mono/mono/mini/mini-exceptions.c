@@ -949,11 +949,11 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
 {
 	if (method) {
 		if (il_offset != -1)
-			printf ("in [0x%lx] %s\n", (long)il_offset, mono_method_full_name (method, TRUE));
+			fprintf (stderr, "in [0x%lx] %s\n", (long)il_offset, mono_method_full_name (method, TRUE));
 		else
-			printf ("in <0x%lx> %s\n", (long)native_offset, mono_method_full_name (method, TRUE));
+			fprintf (stderr, "in <0x%lx> %s\n", (long)native_offset, mono_method_full_name (method, TRUE));
 	} else
-		printf ("in <%lx> <unknown>\n", (long)native_offset);
+		fprintf (stderr, "in <%lx> <unknown>\n", (long)native_offset);
 
 	return FALSE;
 }
@@ -985,6 +985,8 @@ mono_handle_native_sigsegv (void *ctx)
 
 	mono_jit_walk_stack (print_stack_frame, TRUE, NULL);
 
+	fflush (stderr);
+
 #ifdef HAVE_BACKTRACE_SYMBOLS
  {
 	void *array [256];
@@ -996,10 +998,12 @@ mono_handle_native_sigsegv (void *ctx)
 	size = backtrace (array, 256);
 	names = backtrace_symbols (array, size);
 	for (i =0; i < size; ++i) {
-		g_print ("\t%s\n", names [i]);
+		fprintf (stderr, "\t%s\n", names [i]);
 	}
 	free (names);
  }
+
+	fflush (stderr);
 #endif
 
 	abort ();
