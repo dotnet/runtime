@@ -202,7 +202,7 @@ ves_icall_System_String_ctor_chara_int_int (gpointer dummy, MonoArray *value,
 
 MonoString *
 ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, 
-				    gint32 length, MonoObject *enc)
+				       gint32 length, MonoObject *enc)
 {
 	MonoArray *arr;
 	MonoString *s;
@@ -210,6 +210,7 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethod *get_string;
 	gpointer args [1];
+	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -225,7 +226,11 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 	arr = mono_array_new (domain, mono_defaults.byte_class, length);
 	memcpy (mono_array_addr (arr, guint8*, 0), value + sindex, length);
 
-	get_string = mono_class_get_method_from_name (enc->vtable->klass, "GetString", 1);
+	/* Find the System.Text.Encoding class */
+	for (klass = enc->vtable->klass; klass->parent->parent != NULL; klass = klass->parent)
+		;
+	
+	get_string = mono_class_get_method_from_name (klass, "GetString", 1);
 	args [0] = arr;
 	s = (MonoString*)mono_runtime_invoke (get_string, enc, args, &exc);
 	if (!s || exc)
