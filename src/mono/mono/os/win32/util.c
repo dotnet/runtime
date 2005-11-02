@@ -50,7 +50,7 @@ mono_set_rootdir (void)
 
 	mono_assembly_setrootdir (root);
 
-	config = g_build_filename (root, "etc", NULL);
+	config = g_build_filename (root, "..", "etc", NULL);
 	mono_internal_set_config_dir (config);
 
 	g_free (config);
