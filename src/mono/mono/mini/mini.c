@@ -2372,6 +2372,7 @@ mono_get_element_address_signature (int arity)
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
+	res->pinvoke = 1;
 #ifdef MONO_ARCH_VARARG_ICALLS
 	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
 	res->call_convention = MONO_CALL_VARARG;
@@ -2407,6 +2408,7 @@ mono_get_array_new_va_signature (int arity)
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
+	res->pinvoke = 1;
 #ifdef MONO_ARCH_VARARG_ICALLS
 	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
 	res->call_convention = MONO_CALL_VARARG;
@@ -4830,12 +4832,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
-
-			if (mono_method_signature (cmethod)->pinvoke) {
-				/* Happens with String ctors */
-				cmethod = mono_marshal_get_native_wrapper (cmethod);
-				fsig = mono_method_signature (cmethod);
-			}
 
 			mono_class_init (cmethod->klass);
 

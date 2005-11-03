@@ -886,12 +886,6 @@ mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethod
 void
 mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpointer func)
 {
-	if (mono_find_jit_icall_by_addr (func) && 	(mb->method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE))
-		/* This will be converted to a call to an icall wrapper by the JIT */
-		g_assert (!sig->pinvoke);
-	else
-		g_assert (sig->pinvoke);
-
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_SAVE_LMF);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -1900,7 +1894,6 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 		csig->ret = &mono_defaults.object_class->byval_arg;
 		csig->params [0] = &mono_defaults.object_class->byval_arg;
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
-		csig->pinvoke = 1;
 	}
 
 	name = mono_signature_to_name (sig, "begin_invoke");
@@ -2098,7 +2091,6 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 		csig->ret = &mono_defaults.object_class->byval_arg;
 		csig->params [0] = &mono_defaults.object_class->byval_arg;
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
-		csig->pinvoke = 1;
 	}
 
 	name = mono_signature_to_name (sig, "end_invoke");
@@ -2508,6 +2500,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 		csig->ret = sig->ret;
 	else
 		csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->pinvoke = 1;
 	csig->hasthis = FALSE;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_XDOMAIN_DISPATCH);
@@ -3346,7 +3339,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		if (!callsig) {
 			callsig = mono_metadata_signature_dup (mono_method_signature (method));
 			callsig->ret = &mono_defaults.string_class->byval_arg;
-			callsig->pinvoke = 0;
 			cs = g_new (CtorSigPair, 1);
 			cs->sig = callsig;
 			cs->ctor = method;
@@ -3360,10 +3352,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			 */
 			callsig = signature_dup_add_this (mono_method_signature (method), method->klass);
 		}
-		else {
+		else
 			callsig = mono_method_signature (method);
-			callsig = signature_no_pinvoke (callsig);
-		}
 	}
 
 	cache = method->klass->image->runtime_invoke_cache;
@@ -3379,7 +3369,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	if (!dealy_abort_sig) {
 		dealy_abort_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 		dealy_abort_sig->ret = &mono_defaults.void_class->byval_arg;
-		dealy_abort_sig->pinvoke = 1;
+		dealy_abort_sig->pinvoke = 0;
 	}
 	
 	target_klass = mono_defaults.object_class;
@@ -3402,9 +3392,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
 	csig->params [3] = &mono_defaults.int_class->byval_arg;
-
-	/* This is called from native code */
-	csig->pinvoke = 1;
 
 	name = mono_signature_to_name (callsig, "runtime_invoke");
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
@@ -3656,7 +3643,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 MonoMethod *
 mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 {
-	MonoMethodSignature *sig;
+	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static GHashTable *ldfld_hash = NULL; 
@@ -3690,7 +3677,14 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 
-	mono_mb_emit_icall (mb, mono_load_remote_field_new);
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->ret = &klass->this_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
 	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -3957,7 +3951,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 MonoMethod *
 mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 {
-	MonoMethodSignature *sig;
+	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static GHashTable *stfld_hash = NULL; 
@@ -3994,7 +3988,16 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
 	}
 
-	mono_mb_emit_icall (mb, mono_store_remote_field_new);
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &klass->byval_arg;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
+	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
@@ -4147,17 +4150,6 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	return res;
 }
 
-static MonoMethodSignature*
-signature_pinvoke (MonoMethodSignature* sig)
-{
-	if (!sig->pinvoke) {
-		sig = mono_metadata_signature_dup (sig);
-		sig->pinvoke = TRUE;
-	}
-	
-	return sig;
-}
-
 /*
  * generates IL code for the icall wrapper (the generated method
  * calls the unmanaged code in func)
@@ -4165,12 +4157,12 @@ signature_pinvoke (MonoMethodSignature* sig)
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func)
 {
-	MonoMethodSignature *csig, *native_sig;
+	MonoMethodSignature *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i;
 	
-	g_assert (!sig->pinvoke);
+	g_assert (sig->pinvoke);
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
@@ -4184,12 +4176,12 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	native_sig = signature_pinvoke (sig);
-	mono_mb_emit_native_call (mb, native_sig, (gpointer) func);
+	mono_mb_emit_native_call (mb, sig, (gpointer) func);
 	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	csig = mono_metadata_signature_dup (sig);
+	csig->pinvoke = 0;
 	if (csig->call_convention == MONO_CALL_VARARG)
 		csig->call_convention = 0;
 
@@ -6092,7 +6084,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	m.mb = mb;
 	m.piinfo = piinfo;
 
-	/* we copy the signature, so that we can set pinvoke to 1 */
+	/* we copy the signature, so that we can set pinvoke to 0 */
 	csig = mono_metadata_signature_dup (sig);
 	csig->pinvoke = 1;
 
@@ -6371,8 +6363,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
-
-		mb->method->string_ctor = method->string_ctor;
 
 		/* hack - string constructors returns a value */
 		if (method->string_ctor) {
@@ -6946,7 +6936,6 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
 		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
-		from_handle_sig->pinvoke = 1;
 	
 		isint_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 		isint_sig->params [0] = &mono_defaults.object_class->byval_arg;
@@ -7216,7 +7205,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
 		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
-		from_handle_sig->pinvoke = 1;
 	}
 
 	/* Push this or the type object */

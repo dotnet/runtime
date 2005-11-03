@@ -7357,6 +7357,7 @@ mono_create_icall_signature (const char *sigstr)
 	}
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
+	res->pinvoke = 1;
 
 #ifdef PLATFORM_WIN32
 	/* 
@@ -7413,17 +7414,6 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_loader_unlock ();
 }
 
-static MonoMethodSignature*
-signature_pinvoke (MonoMethodSignature* sig)
-{
-	if (!sig->pinvoke) {
-		sig = mono_metadata_signature_dup (sig);
-		sig->pinvoke = TRUE;
-	}
-	
-	return sig;
-}
-
 MonoJitICallInfo *
 mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
 {
@@ -7452,7 +7442,6 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 
 	if (is_save) {
 		info->wrapper = func;
-		info->sig = sig ? signature_pinvoke (sig) : NULL;
 	} else {
 		info->wrapper = NULL;
 	}
