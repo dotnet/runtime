@@ -194,6 +194,7 @@ static const struct {
 };
 
 static mono_once_t io_ops_once=MONO_ONCE_INIT;
+static gboolean lock_while_writing = FALSE;
 
 static void io_ops_init (void)
 {
@@ -201,6 +202,10 @@ static void io_ops_init (void)
 /* 					    WAPI_HANDLE_CAP_WAIT); */
 /* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
 /* 					    WAPI_HANDLE_CAP_WAIT); */
+
+	if (g_getenv ("MONO_STRICT_IO_EMULATION") != NULL) {
+		lock_while_writing = TRUE;
+	}
 }
 
 /* Some utility functions.
@@ -341,22 +346,26 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	/* Need to lock the region we're about to write to, because we
-	 * only do advisory locking on POSIX systems
-	 */
-	current_pos = lseek (fd, (off_t)0, SEEK_CUR);
-	if (current_pos == -1) {
+	if (lock_while_writing) {
+		/* Need to lock the region we're about to write to,
+		 * because we only do advisory locking on POSIX
+		 * systems
+		 */
+		current_pos = lseek (fd, (off_t)0, SEEK_CUR);
+		if (current_pos == -1) {
 #ifdef DEBUG
-		g_message ("%s: handle %p lseek failed: %s", __func__, handle,
-			   strerror (errno));
+			g_message ("%s: handle %p lseek failed: %s", __func__,
+				   handle, strerror (errno));
 #endif
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
-	}
+			_wapi_set_last_error_from_errno ();
+			return(FALSE);
+		}
 		
-	if (_wapi_lock_file_region (fd, current_pos, numbytes) == FALSE) {
-		/* The error has already been set */
-		return(FALSE);
+		if (_wapi_lock_file_region (fd, current_pos,
+					    numbytes) == FALSE) {
+			/* The error has already been set */
+			return(FALSE);
+		}
 	}
 		
 	do {
@@ -364,7 +373,9 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending());
 	
-	_wapi_unlock_file_region (fd, current_pos, numbytes);
+	if (lock_while_writing) {
+		_wapi_unlock_file_region (fd, current_pos, numbytes);
+	}
 
 	if (ret == -1) {
 		if (errno == EINTR) {
