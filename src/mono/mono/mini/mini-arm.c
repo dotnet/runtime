@@ -2540,7 +2540,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBGE_UN:
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
-			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE);
 			break;
 		case OP_FBLE:
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
@@ -2549,7 +2549,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBLE_UN:
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
-			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS); /* swapped */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE); /* swapped */
 			break;
 		case CEE_CKFINITE: {
 			/*ppc_stfd (code, ins->sreg1, -8, ppc_sp);
