@@ -817,35 +817,33 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 		return(SOCKET_ERROR);
 	}
 
-	if (command != FIONBIO &&
-	    command != FIONREAD &&
-	    command != SIOCATMARK) {
-		/* Not listed in the MSDN specs, but ioctl(2) returns
-		 * this if command is invalid
-		 */
-		WSASetLastError (WSAEINVAL);
-		return(SOCKET_ERROR);
+	switch(command){
+		case FIONBIO:
+#ifdef O_NONBLOCK
+			/* This works better than ioctl(...FIONBIO...) 
+			 * on Linux (it causes connect to return
+			 * EINPROGRESS, but the ioctl doesn't seem to)
+			 */
+			ret = fcntl(fd, F_GETFL, 0);
+			if (ret != -1) {
+				if (*(gboolean *)arg) {
+					ret |= O_NONBLOCK;
+				} else {
+					ret &= ~O_NONBLOCK;
+				}
+				ret = fcntl(fd, F_SETFL, ret);
+			}
+			break;
+#endif /* O_NONBLOCK */
+		case FIONREAD:
+		case SIOCATMARK:
+			ret = ioctl (fd, command, arg);
+			break;
+		default:
+			WSASetLastError (WSAEINVAL);
+			return(SOCKET_ERROR);
 	}
 
-#ifdef O_NONBLOCK
-	/* This works better than ioctl(...FIONBIO...) on Linux (it causes
-	 * connect to return EINPROGRESS, but the ioctl doesn't seem to)
-	 */
-	if (command == FIONBIO) {
-		ret = fcntl (fd, F_GETFL, 0);
-		if (ret != -1) {
-			if (*(gboolean *)arg) {
-				ret |= O_NONBLOCK;
-			} else {
-				ret &= ~O_NONBLOCK;
-			}
-			ret = fcntl (fd, F_SETFL, ret);
-		}
-	} else
-#endif /* O_NONBLOCK */
-	{
-		ret = ioctl (fd, command, arg);
-	}
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG
