@@ -7096,21 +7096,15 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	if (klass->marshal_info->ptr_to_str)
 		return klass->marshal_info->ptr_to_str;
 
-	if (!ptostr) {
+	if (!ptostr)
 		/* Create the signature corresponding to
 		 	  static void PtrToStructure (IntPtr ptr, object structure);
 		   defined in class/corlib/System.Runtime.InteropServices/Marshal.cs */
-		ptostr = mono_metadata_signature_alloc (klass->image, 2);
-		ptostr->pinvoke = 1;
-		ptostr->ret = &mono_defaults.void_class->byval_arg;
-		ptostr->params [0] = &mono_defaults.int_class->byval_arg;
-		ptostr->params [1] = &mono_defaults.object_class->byval_arg;
-	}	
-	g_assert (ptostr);
+		ptostr = mono_create_icall_signature ("void ptr object");
 
 	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
 
-	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
+	if (klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
