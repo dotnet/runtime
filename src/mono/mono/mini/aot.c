@@ -3103,4 +3103,51 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	return 0;
 }
+
+gboolean
+mono_aot_init_vtable (MonoVTable *vtable)
+{
+	return FALSE;
+}
+
+gboolean
+mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
+{
+	return FALSE;
+}
+
+MonoJitInfo *
+mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
+{
+	return NULL;
+}
+
+gpointer
+mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 token)
+{
+	return NULL;
+}
+
+gboolean
+mono_aot_is_pagefault (void *ptr)
+{
+	return FALSE;
+}
+
+void
+mono_aot_set_make_unreadable (gboolean unreadable)
+{
+}
+
+guint32
+mono_aot_get_n_pagefaults (void)
+{
+	return 0;
+}
+
+void
+mono_aot_handle_pagefault (void *ptr)
+{
+}
+
 #endif
