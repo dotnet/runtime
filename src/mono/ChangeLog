@@ -1,3 +1,8 @@
+2005-11-07  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/jit-regalloc: Merge forgotten documentation updates from
+	the mini-xp-local-regalloc branch.
+
 2005-10-28  Wade Berrier <wberrier@novell.com>
 
 	* mono.pc.in, mint.pc.in, configure.in: Make these relocatable.
