@@ -14,11 +14,7 @@ namespace Transform
 			XslTransform xsl = new XslTransform ();
 			xsl.Load (rgstrArgs [1]);
 
-			XmlTextWriter xtw = new XmlTextWriter (Console.Out);
-			xtw.Formatting = Formatting.Indented;
-			XmlWriter w = new Mono.Xml.Ext.XhtmlWriter (xtw);
-			xsl.Transform (xml, null, w);
-			w.Close ();
+			xsl.Transform (xml, null, Console.Out);
 		}
 	}
 }
