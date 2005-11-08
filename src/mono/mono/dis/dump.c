@@ -17,6 +17,7 @@
 #include "get.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/class.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-compiler.h"
 
 #ifndef HAVE_ISINF
@@ -558,6 +559,9 @@ dump_table_method (MonoImage *m)
 	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
 	int i, current_type;
 	guint32 first_m, last_m;
+	/* Generic container for Type & method */
+	MonoGenericContainer *type_container = NULL, *method_container = NULL;
+
 	fprintf (output, "Method Table (1..%d)\n", t->rows);
 
 	current_type = 1;
@@ -579,12 +583,15 @@ dump_table_method (MonoImage *m)
 				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAMESPACE)),
 				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAME)));
 			first_m = last_m;
+			type_container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (current_type - 1), NULL);
 		}
+
+		method_container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | i, type_container);
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SIZE);
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
-		method = mono_metadata_parse_method_signature (m, i, sigblob, &sigblob);
-		sig = dis_stringify_method_signature (m, method, i, NULL, FALSE);
+		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob);
+		sig = dis_stringify_method_signature (m, method, i, (MonoGenericContext *) (method_container ? method_container : type_container), FALSE);
 		fprintf (output, "%d: %s (param: %d)\n", i, sig, cols [MONO_METHOD_PARAMLIST]);
 		g_free (sig);
 		mono_metadata_free_method_signature (method);
