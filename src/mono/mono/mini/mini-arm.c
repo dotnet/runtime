@@ -336,8 +336,8 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		}
 	} else {
 		if (*gr > ARMREG_R2) {
-			*stack_size += 7;
-			*stack_size &= ~7;
+			/**stack_size += 7;
+			*stack_size &= ~7;*/
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->regtype = RegTypeBase;
