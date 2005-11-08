@@ -1,3 +1,7 @@
+2005-11-08  Ankit Jain  <jankit@novell.com>
+
+	* gen-dump-table.cs: New test case (for r52695).
+
 2005-10-28  Ankit Jain  <jankit@novell.com>
 
 	* gen-prop.cs: New test case (for r52316).
