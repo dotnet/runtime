@@ -19,14 +19,14 @@ my $menu = "";
 
 open COMMANDS, $ARGV[0] || die "Can not open $ARGV[0]";
 while (<COMMANDS>) {
-  chop;
+  chomp;
   my @command = split /,/;
   if ($command[0] != -1) {
       $menu .= "\t\t";
 	  $menu .= "<tr><td valign=\"top\" class=\"navi" . $command[0];
 	  $menu .= "\"><a class=\"navi" . $command[0];
 	  $menu .= "\"";
-	  $menu .= " HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
+	  $menu .= " HREF=\"$command[2]\">$command[1]</a></td></tr>\n\n";
   } 
 }
 close COMMANDS;
@@ -39,7 +39,7 @@ close TEMPLATE;
 
 open COMMANDS, $ARGV[0] || die "Can not open $ARGV[0]";
 while (<COMMANDS>) {
-  chop;
+  chomp;
   my @command = split /,/;
 
   if ($command[2] =~ /^http:/){
@@ -72,13 +72,13 @@ while (<COMMANDS>) {
 	    $temp =~ s/#CONTENT#/$content/;
 	    $temp =~ s/#MENU#/$menu/;
 	    if ($css) {
-	      $temp =~ s/#CSS#/<LINK rel="stylesheet" type="text\/css" href="$css">/;
+	      $temp =~ s/#CSS#/<link rel="stylesheet" type="text\/css" href="$css" \/>/;
 	    } else {
 	      $temp =~ s/#CSS#//;
 	    }
 		
 	    if ($script) {
-	      $temp =~ s/#SCRIPT#/<SCRIPT src="$script"><\/SCRIPT>/;
+	      $temp =~ s/#SCRIPT#/<script src="$script"><\/script>/;
 	    } else {
 	      $temp =~ s/#SCRIPT#//;
 	    }

@@ -2,7 +2,7 @@
 $q = 1;
 
 while (<>){
-	chop;
+	chomp;
 	if (/^\* (.*)$/){
 		print "<h1>$1</h1>\n";
 	} elsif (/^\*\* (.*)$/) {
@@ -12,9 +12,9 @@ while (<>){
 	} elsif (/^\*\*\*\* (.*)$/) {
 		print "<h4>$1</h4>\n";
 	} elsif (/^$/) {
-		print "<p>\n";
+		print "<p>$1</p>\n";
 	} elsif (/^\t\t\* (.*)$/) {
-		print "<li>$1\n";
+		print "<li>$1</li>\n";
 	} elsif (/^\@item (.*)$/){
 	        $name = $link = $1;
 		$link =~ s/ //g;

@@ -163,7 +163,7 @@ push2:
 $(OBJECTS): $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
 
 transform.exe: transform.cs
-	$(CSC) transform.cs
+	$(CSC) transform.cs XhtmlWriter.cs
 
 
 .PRECIOUS: src/%.src
