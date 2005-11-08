@@ -406,6 +406,7 @@ function onLoad ()
 	var eltExtra = document.getElementById ('extra');
 	var eltErrors = document.getElementById ('errors');
 	eltMissing.checked = eltTodo.checked = eltExtra.checked = eltErrors.checked = true;
+	filterTree ();
 }
 
 if (document.layers)
