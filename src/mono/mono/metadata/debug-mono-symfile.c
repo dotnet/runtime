@@ -52,7 +52,7 @@ get_class_name (MonoClass *klass)
 }
 
 static int
-load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
+load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_debugger)
 {
 	const char *ptr, *start;
 	gchar *guid;
@@ -66,16 +66,18 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	magic = read64(ptr);
 	ptr += sizeof(guint64);
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
-		g_warning ("Symbol file %s is not a mono symbol file", symfile->filename);
+		if (!in_the_debugger)
+			g_warning ("Symbol file %s is not a mono symbol file", symfile->filename);
 		return FALSE;
 	}
 
 	version = read32(ptr);
 	ptr += sizeof(guint32);
 	if (version != MONO_SYMBOL_FILE_VERSION) {
-		g_warning ("Symbol file %s has incorrect version "
-			   "(expected %d, got %ld)", symfile->filename,
-			   MONO_SYMBOL_FILE_VERSION, version);
+		if (!in_the_debugger)
+			g_warning ("Symbol file %s has incorrect version "
+				   "(expected %d, got %ld)", symfile->filename,
+				   MONO_SYMBOL_FILE_VERSION, version);
 		return FALSE;
 	}
 
@@ -83,8 +85,9 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	ptr += 16;
 
 	if (strcmp (handle->image->guid, guid)) {
-		g_warning ("Symbol file %s doesn't match image %s", symfile->filename,
-			   handle->image_file);
+		if (!in_the_debugger)
+			g_warning ("Symbol file %s doesn't match image %s", symfile->filename,
+				   handle->image_file);
 		return FALSE;
 	}
 
@@ -97,7 +100,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 }
 
 MonoSymbolFile *
-mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfile)
+mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean in_the_debugger)
 {
 	MonoSymbolFile *symfile;
 	FILE* f;
@@ -111,7 +114,9 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 		struct stat stat_buf;
 			
 		if (fstat (fileno (f), &stat_buf) < 0) {
-			g_warning ("stat of %s failed: %s", symfile->filename,  g_strerror (errno));
+			if (!in_the_debugger)
+				g_warning ("stat of %s failed: %s",
+					   symfile->filename,  g_strerror (errno));
 		} else {	
 			symfile->raw_contents_size = stat_buf.st_size;
 			symfile->raw_contents = mono_raw_buffer_load (fileno (f), FALSE, 0, stat_buf.st_size);
@@ -120,10 +125,10 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 		fclose (f);
 	}
 	
-	if (load_symfile (handle, symfile)) {
+	if (load_symfile (handle, symfile, in_the_debugger)) {
 		mono_debugger_unlock ();
 		return symfile;
-	} else if (!create_symfile) {
+	} else if (!in_the_debugger) {
 		mono_debug_close_mono_symbol_file (symfile);
 		mono_debugger_unlock ();
 		return NULL;
