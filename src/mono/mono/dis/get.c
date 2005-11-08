@@ -2526,6 +2526,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "bytearray", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "byvalstr", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "call", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "callconv", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "calli", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "callmostderived", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "callvirt", GINT_TO_POINTER (TRUE));
@@ -2612,6 +2613,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "final", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "finally", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "fixed", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "flags", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "float32", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "float64", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "float", GINT_TO_POINTER (TRUE));
