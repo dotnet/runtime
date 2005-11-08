@@ -69,9 +69,10 @@ function getChildrenByTagName (elt, strTag)
 	return rgChildren;
 }
 
-function viewAll (elt, dictTypes)
+function viewAll (elt, dictTypes, attrFilters)
 {
 	var fView = false;
+
 	var rgImages = getChildrenByTagName (elt, 'IMG');
 	var cImages = rgImages.length;
 	for (var iImage = 0; iImage < cImages; iImage++)
@@ -89,8 +90,20 @@ function viewAll (elt, dictTypes)
 	{
 		var iElt;
 		for (iElt = 0; iElt < cElts; iElt ++)
-			fView |= viewAll (rgElts [iElt], dictTypes);
+			fView |= viewAll (rgElts [iElt], dictTypes, attrFilters);
 	}
+
+	// ... except for those attributes that are being filtered out.
+	var rgSpans = getChildrenByTagName (elt, 'SPAN');
+	var cSpans = rgSpans.length;
+	for (var iSpan = 0; iSpan < cSpans; iSpan++)
+	{
+		var strSpan = rgSpans [iSpan].firstChild.nodeValue;
+		for (strzzz in attrFilters)
+			if (strSpan == strzzz)
+				fView = false;
+	}
+
 	elt.style.display = fView ? '' : 'none';
 	return fView;
 }
@@ -317,6 +330,8 @@ function filterTree ()
 	var eltTodo = document.getElementById ('todo');
 	var eltExtra = document.getElementById ('extra');
 	var eltErrors = document.getElementById ('errors');
+	var eltComVisible = document.getElementById ('ComVisible');
+	var eltDebuggerDisplay = document.getElementById ('DebuggerDisplay');
 
 	var dictTypes = new Object ();
 	if (eltMissing.checked)
@@ -329,7 +344,12 @@ function filterTree ()
 		dictTypes ['sx'] = true;
 //	dictTypes ['sc'] = true;
 
-	viewAll (document.getElementById ('ROOT'), dictTypes);
+	var attrFilters = new Object ();
+	if (!eltComVisible.checked)
+		attrFilters ['System.Runtime.InteropServices.ComVisibleAttribute'] = true;
+	if (!eltDebuggerDisplay.checked)
+		attrFilters ['System.Diagnostics.DebuggerDisplayAttribute'] = true;
+	viewAll (document.getElementById ('ROOT'), dictTypes, attrFilters);
 }
 
 function selectMissing ()
@@ -350,6 +370,11 @@ function selectExtra ()
 function selectErrors ()
 {
 	toggleFilter ('errors');
+}
+
+function toggleAttributeFilter (attrName)
+{
+	toggleFilter (attrName);
 }
 
 function toggleFilter (strFilter)
