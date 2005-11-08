@@ -3,7 +3,7 @@ function toggle (elt)
 	if (elt == null)
 		return;
 
-	var eltLink = elt.firstChild;
+	var eltLink = firstElement (elt);
 	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
 		var ich = elt.className.indexOf ('_');
@@ -22,7 +22,7 @@ function toggle (elt)
 
 function setView (elt, fView)
 {
-	var eltLink = elt.firstChild;
+	var eltLink = firstElement (elt);
 	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
 		var ich = elt.className.indexOf ('_');
@@ -39,6 +39,17 @@ function setView (elt, fView)
 	}
 }
 
+function firstElement (elt)
+{
+	var c = elt.firstChild;
+	while (c != null) {
+		if (c.nodeType == 1) // Node.ELEMENT_NODE (IE6 does not recognize it)
+			return c;
+		c = c.nextSibling;
+	}
+	return null;
+}
+
 function trimSrc (strSrc)
 {
 	return strSrc.slice (strSrc.lastIndexOf ('/') + 1, strSrc.lastIndexOf ('.'));
@@ -48,7 +59,7 @@ function getChildrenByTagName (elt, strTag)
 {
 	strTag = strTag.toLowerCase ();
 	var rgChildren = new Array ();
-	var eltChild = elt.firstChild;
+	var eltChild = firstElement (elt);
 	while (eltChild)
 	{
 		if (eltChild.tagName && eltChild.tagName.toLowerCase () == strTag)
@@ -86,7 +97,7 @@ function viewAll (elt, dictTypes)
 
 function getView (elt)
 {
-	var eltLink = elt.firstChild;
+	var eltLink = firstElement (elt);
 	if (eltLink != null && eltLink.className == 't')	// toggle
 	{
 		var ich = elt.className.indexOf ('_');
@@ -121,7 +132,7 @@ function getName (elt)
 			if (span.innerText)
 				return span.innerText;
 			else
-				return span.firstChild.nodeValue;
+				return firstElement (elt).nodeValue;
 		}
 	}
 	return null;
