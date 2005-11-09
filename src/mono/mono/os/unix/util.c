@@ -47,7 +47,7 @@ set_dirs (char *exe)
 	/*
 	 * Only /usr prefix is treated specially
 	 */
-	if (strncmp (exe, "/usr/bin/", 9) == 0 || (base = compute_base (exe)) == NULL){
+	if (strncmp (exe, MONO_BINDIR, strlen (MONO_BINDIR)) == 0 || (base = compute_base (exe)) == NULL){
 		fallback ();
 		return;
 	} else {

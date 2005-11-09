@@ -9,7 +9,7 @@ assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
 
-INCLUDES = -I$(top_srcdir) -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" $(GLIB_CFLAGS) 
+INCLUDES = -I$(top_srcdir) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" $(GLIB_CFLAGS) 
 
 noinst_LTLIBRARIES = libmonoos.la
 
