@@ -42,12 +42,12 @@ fallback ()
 static void
 set_dirs (char *exe)
 {
-	char *base = compute_base (exe);
+	char *base;
 	
 	/*
 	 * Only /usr prefix is treated specially
 	 */
-	if (base == NULL || strncmp (exe, "/usr/bin/", 9) == 0){
+	if (strncmp (exe, "/usr/bin/", 9) == 0 || (base = compute_base (exe)) == NULL){
 		fallback ();
 		return;
 	} else {
