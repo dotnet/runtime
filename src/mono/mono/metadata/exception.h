@@ -81,6 +81,9 @@ mono_get_exception_missing_field       (const char *class_name, const char *memb
 MonoException *
 mono_get_exception_not_implemented     (const char *msg);
 
+MonoException *
+mono_get_exception_not_supported       (const char *msg);
+
 MonoException*
 mono_get_exception_argument_null       (const char *arg);
 

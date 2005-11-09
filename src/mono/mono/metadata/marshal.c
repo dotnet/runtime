@@ -319,6 +319,9 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		mono_delegate_ctor ((MonoObject*)d, NULL, mono_compile_method (wrapper));
 	}
 
+	if (d->object.vtable->domain != mono_domain_get ())
+		mono_raise_exception (mono_get_exception_not_supported ("Delegates cannot be marshalled from native code into a domain other than their home domain"));
+
 	return d;
 }
 

@@ -337,15 +337,19 @@ mono_get_exception_type_load (MonoString *class_name, char *assembly_name)
 MonoException *
 mono_get_exception_not_implemented (const char *msg)
 {
-	MonoException *ex;
-	
-	ex = mono_exception_from_name (mono_get_corlib (), "System",
-				       "NotImplementedException");
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "NotImplementedException", msg);
+}
 
-	if (msg)
-		ex->message = mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg);
-
-	return ex;
+/**
+ * mono_get_exception_not_supported:
+ * @msg: the message to pass to the user
+ *
+ * Returns: a new instance of the System.NotSupportedException
+ */
+MonoException *
+mono_get_exception_not_supported (const char *msg)
+{
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "NotSupportedException", msg);
 }
 
 /**
