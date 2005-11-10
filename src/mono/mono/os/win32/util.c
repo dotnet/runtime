@@ -48,10 +48,8 @@ mono_set_rootdir (void)
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
-	mono_assembly_setrootdir (root);
-
 	config = g_build_filename (root, "..", "etc", NULL);
-	mono_internal_set_config_dir (config);
+	mono_set_dirs (root, config);
 
 	g_free (config);
 	g_free (root);

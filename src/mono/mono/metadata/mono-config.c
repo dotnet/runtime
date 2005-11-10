@@ -392,7 +392,7 @@ static const char *mono_cfg_dir = NULL;
 
 /* Invoked during startup */
 void
-mono_internal_set_config_dir (const char *dir)
+mono_set_config_dir (const char *dir)
 {
 	/* If this variable is set, overrides the directory computed */
 	mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
@@ -403,6 +403,9 @@ mono_internal_set_config_dir (const char *dir)
 const char* 
 mono_get_config_dir (void)
 {
+	if (mono_cfg_dir == NULL)
+		mono_set_rootdir ();
+
 	return mono_cfg_dir;
 }
 

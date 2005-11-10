@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <mono/os/util.h>
 #include <mono/metadata/assembly.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static char *
 compute_base (char *path)
@@ -21,6 +23,11 @@ compute_base (char *path)
 	char *p = rindex (path, '/');
 	if (p == NULL)
 		return NULL;
+
+	/* Not a well known Mono executable, we are embedded, cant guess the base  */
+	if (strcmp (p, "/mono") && strcmp (p, "/monodis") && strcmp (p, "/mint") && strcmp (p, "monodiet"))
+		return NULL;
+	    
 	*p = 0;
 	p = rindex (path, '/');
 	if (p == NULL)
@@ -35,14 +42,15 @@ compute_base (char *path)
 static void
 fallback ()
 {
-	mono_assembly_setrootdir (MONO_ASSEMBLIES);
-	mono_internal_set_config_dir (MONO_CFG_DIR);
+	mono_set_dirs (MONO_ASSEMBLIES, MONO_CFG_DIR);
 }
 
 static void
 set_dirs (char *exe)
 {
 	char *base;
+	char *config, *lib, *mono;
+	struct stat buf;
 	
 	/*
 	 * Only /usr prefix is treated specially
@@ -50,15 +58,20 @@ set_dirs (char *exe)
 	if (strncmp (exe, MONO_BINDIR, strlen (MONO_BINDIR)) == 0 || (base = compute_base (exe)) == NULL){
 		fallback ();
 		return;
-	} else {
-		char *config, *lib;
-		config = g_build_filename (base, "etc", NULL);
-		lib = g_build_filename (base, "lib", NULL);
-		mono_assembly_setrootdir (lib);
-		mono_internal_set_config_dir (config);
-		g_free (config);
-		g_free (lib);
 	}
+
+	config = g_build_filename (base, "etc", NULL);
+	lib = g_build_filename (base, "lib", NULL);
+	mono = g_build_filename (lib, "mono/1.0", NULL);
+	if (stat (mono, &buf) == -1)
+		fallback ();
+	else {
+		mono_set_dirs (lib, config);
+	}
+	
+	g_free (config);
+	g_free (lib);
+	g_free (mono);
 }
 	
 

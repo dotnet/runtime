@@ -1,8 +1,16 @@
 if PLATFORM_WIN32
+# Use -m here. This will use / as directory separator (C:/WINNT).
+# The files that use MONO_ASSEMBLIES and/or MONO_CFG_DIR replace the
+# / by \ if running under WIN32.
+assembliesdir = `cygpath -m "${libdir}"`
+confdir = `cygpath -m "${sysconfdir}"`
 export HOST_CC
+else
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
+assembliesdir = $(exec_prefix)/lib
+confdir = $(sysconfdir)
 endif
 
 PLATFORM_LIB = ../os/libmonoos.la 
@@ -16,7 +24,7 @@ bin_PROGRAMS = pedump monodiet
 noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 #
 # Make sure any prefix changes are updated in the binaries too.

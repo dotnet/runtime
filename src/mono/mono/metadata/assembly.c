@@ -431,6 +431,41 @@ mono_assembly_getrootdir (void)
 }
 
 /**
+ * mono_set_dirs:
+ * @assembly_dir: the base directory for assemblies
+ * @config_dir: the base directory for configuration files
+ *
+ * This routine is used internally and by developers embedding
+ * the runtime into their own applications.  There are a number
+ * of cases to consider: Mono as a system-installed package that
+ * is available on the location preconfigured or Mono in a relocated
+ * location.
+ *
+ * If you are using a system-installed Mono, you can pass NULL
+ * to both parameters.  If you are not, you should compute both
+ * directory values and call this routine.
+ *
+ * The values for a given PREFIX are:
+ *
+ *    assembly_dir: PREFIX/lib
+ *    config_dir:   PREFIX/etc
+ *
+ * Notice that embedders that use Mono in a relocated way must
+ * compute the location at runtime, as they will be in control
+ * of where Mono is installed.
+ */
+void
+mono_set_dirs (const char *assembly_dir, const char *config_dir)
+{
+	if (assembly_dir == NULL)
+		assembly_dir = MONO_ASSEMBLIES;
+	if (config_dir == NULL)
+		config_dir = MONO_CFG_DIR;
+	mono_assembly_setrootdir (assembly_dir);
+	mono_set_config_dir (config_dir);
+}
+
+/**
  * mono_assemblies_init:
  *
  *  Initialize global variables used by this module.
