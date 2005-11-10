@@ -2854,6 +2854,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "true", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "type", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "typedref", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "uint", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unbox", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unicode", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unmanagedexp", GINT_TO_POINTER (TRUE));
