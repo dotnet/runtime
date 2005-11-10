@@ -404,7 +404,7 @@ const char*
 mono_get_config_dir (void)
 {
 	if (mono_cfg_dir == NULL)
-		mono_set_rootdir ();
+		mono_set_dirs (NULL, NULL);
 
 	return mono_cfg_dir;
 }
