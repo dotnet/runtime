@@ -876,8 +876,11 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 
 			container = mono_metadata_load_generic_params (
 				m, MONO_TOKEN_METHOD_DEF | methoddef_row, context ? context->container : NULL);
-			if (container)
+			if (container) {
+				mono_metadata_load_generic_param_constraints (
+					m, MONO_TOKEN_METHOD_DEF | methoddef_row, container);
 				context = (MonoGenericContext *) container;
+			}
 
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);

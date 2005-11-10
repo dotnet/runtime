@@ -824,8 +824,11 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 		container = mono_metadata_load_generic_params (
 			m, MONO_TOKEN_METHOD_DEF | (i + 1), context ? context->container : NULL);
-		if (container)
+		if (container) {
+			mono_metadata_load_generic_param_constraints (
+					m, MONO_TOKEN_METHOD_DEF | (i + 1), container);
 			method_context = (MonoGenericContext *) container;
+		}
 
 		ms = mono_metadata_parse_method_signature_full (m, method_context ? method_context->container : NULL, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
@@ -1136,6 +1139,8 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 		fprintf (output, ".namespace %s\n{\n", nspace);
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
+	if (container)
+		mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_TYPE_DEF | (n + 1), container);
 
 	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){

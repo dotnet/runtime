@@ -584,9 +584,13 @@ dump_table_method (MonoImage *m)
 				mono_metadata_string_heap (m, mono_metadata_decode_row_col (td, current_type - 2, MONO_TYPEDEF_NAME)));
 			first_m = last_m;
 			type_container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (current_type - 1), NULL);
+			if (type_container)
+				mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_TYPE_DEF | (current_type - 1), type_container);
 		}
 
 		method_container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | i, type_container);
+		if (method_container)
+			mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | i, method_container);
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SIZE);
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
