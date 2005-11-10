@@ -25,7 +25,7 @@ compute_base (char *path)
 		return NULL;
 
 	/* Not a well known Mono executable, we are embedded, cant guess the base  */
-	if (strcmp (p, "/mono") && strcmp (p, "/monodis") && strcmp (p, "/mint") && strcmp (p, "monodiet"))
+	if (strcmp (p, "/mono") && strcmp (p, "/monodis") && strcmp (p, "/mint") && strcmp (p, "/monodiet"))
 		return NULL;
 	    
 	*p = 0;
