@@ -344,7 +344,7 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 }
 
 /**
- * mono_type_get_name:
+ * mono_type_get_full_name:
  * @class: a class
  *
  * Returns: the string representation for type as required by System.Reflection.
