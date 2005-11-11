@@ -45,6 +45,7 @@ typedef enum {
 extern const char *_wapi_handle_typename[];
 
 #define _WAPI_SHARED_HANDLE(type) (type == WAPI_HANDLE_PROCESS || \
+				   type == WAPI_HANDLE_THREAD || \
 				   type == WAPI_HANDLE_NAMEDMUTEX)
 
 #define _WAPI_FD_HANDLE(type) (type == WAPI_HANDLE_FILE || \
@@ -128,11 +129,6 @@ struct _WapiHandleUnshared
 		struct _WapiHandle_sem sem;
 		struct _WapiHandle_socket sock;
 		struct _WapiHandle_shared_ref shared;
-
-		/* Move thread data into the private set, while
-		 * problems with cleaning up shared handles are fixed
-		 */
-		struct _WapiHandle_thread thread;
 	} u;
 };
 
@@ -145,9 +141,6 @@ struct _WapiHandleShared
 	
 	union
 	{
-		/* Leave this one while the thread is in the private
-		 * set, so the shared space doesn't change size
-		 */
 		struct _WapiHandle_thread thread;
 		struct _WapiHandle_process process;
 		struct _WapiHandle_namedmutex namedmutex;

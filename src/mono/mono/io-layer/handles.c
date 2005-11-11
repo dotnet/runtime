@@ -833,6 +833,7 @@ void _wapi_handle_unref (gpointer handle)
 		 * same fd racing the memset())
 		 */
 		struct _WapiHandleUnshared handle_data;
+		struct _WapiHandleShared shared_handle_data;
 		WapiHandleType type = _WAPI_PRIVATE_HANDLES(idx).type;
 		void (*close_func)(gpointer, gpointer) = _wapi_handle_ops_get_close_func (type);
 		gboolean is_shared = _WAPI_SHARED_HANDLE(type);
@@ -874,6 +875,9 @@ void _wapi_handle_unref (gpointer handle)
 			g_assert (thr_ret == 0);
 		} else {
 			struct _WapiHandleShared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
+
+			memcpy (&shared_handle_data, shared,
+				sizeof (struct _WapiHandleShared));
 			
 			/* It's possible that this handle is already
 			 * pointing at a deleted shared section
@@ -895,7 +899,11 @@ void _wapi_handle_unref (gpointer handle)
 		}
 		
 		if (close_func != NULL) {
-			close_func (handle, &handle_data.u);
+			if (is_shared) {
+				close_func (handle, &shared_handle_data.u);
+			} else {
+				close_func (handle, &handle_data.u);
+			}
 		}
 	}
 }

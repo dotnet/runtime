@@ -11,9 +11,7 @@
 
 static const guchar *unused_details (struct _WapiHandleShared *handle);
 static const guchar *unshared_details (struct _WapiHandleShared *handle);
-#if 0
 static const guchar *thread_details (struct _WapiHandleShared *handle);
-#endif
 static const guchar *namedmutex_details (struct _WapiHandleShared *handle);
 static const guchar *process_details (struct _WapiHandleShared *handle);
 
@@ -25,11 +23,7 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 	unused_details,
 	unshared_details,		/* file */
 	unshared_details,		/* console */
-#if 0
 	thread_details,
-#else
-	unshared_details,		/* thread */
-#endif
 	unshared_details,		/* sem */
 	unshared_details,		/* mutex */
 	unshared_details,		/* event */
@@ -107,7 +101,6 @@ static const guchar *unshared_details (struct _WapiHandleShared *handle)
 	return("unshared details");
 }
 
-#if 0
 static const guchar *thread_details (struct _WapiHandleShared *handle)
 {
 	static guchar buf[80];
@@ -120,7 +113,6 @@ static const guchar *thread_details (struct _WapiHandleShared *handle)
 	
 	return(buf);
 }
-#endif
 
 static const guchar *namedmutex_details (struct _WapiHandleShared *handle)
 {
