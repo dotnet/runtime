@@ -96,6 +96,13 @@ mono_loader_set_error_type_load (char *class_name, char *assembly_name)
 	error->kind = MONO_LOADER_ERROR_TYPE;
 	error->class_name = class_name;
 	error->assembly_name = assembly_name;
+
+	/* 
+	 * This is not strictly needed, but some (most) of the loader code still
+	 * can't deal with load errors, and this message is more helpful than an
+	 * assert.
+	 */
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_TYPE, "The class %s could not be loaded, used in %s", class_name, assembly_name);
 	
 	set_loader_error (error);
 }
@@ -119,6 +126,8 @@ mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
 	error->kind = MONO_LOADER_ERROR_METHOD;
 	error->klass = klass;
 	error->member_name = member_name;
+
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_TYPE, "Missing member %s in type %s, assembly %s", member_name, mono_class_get_name (klass), klass->image->name);
 	
 	set_loader_error (error);
 }
