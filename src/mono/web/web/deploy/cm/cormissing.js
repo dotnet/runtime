@@ -145,7 +145,7 @@ function getName (elt)
 			if (span.innerText)
 				return span.innerText;
 			else
-				return elt.firstChild.nodeValue;
+				return span.firstChild.nodeValue;
 		}
 	}
 	return null;
