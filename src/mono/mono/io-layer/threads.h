@@ -59,5 +59,11 @@ extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
 					gpointer param);
+
+/* Kludge alert! Making this visible outside io-layer is broken, but I
+ * can't find any w32 call that will let me do this.
+ */
+extern void _wapi_thread_abandon_mutexes (gpointer handle);
+
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */

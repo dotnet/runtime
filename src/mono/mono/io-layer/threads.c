@@ -120,16 +120,12 @@ static gboolean thread_own (gpointer handle)
 	return(TRUE);
 }
 
-/* Called by the timed_thread code as a thread is finishing up */
-static void thread_exit(guint32 exitstatus, gpointer handle)
+/* Called by thread_exit(), but maybe by mono_thread_manage() too */
+void _wapi_thread_abandon_mutexes (gpointer handle)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
-	int thr_ret;
 	int i;
-	
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
@@ -140,7 +136,32 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	}
 	
 	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
-		_wapi_mutex_abandon (g_ptr_array_index (thread_handle->owned_mutexes, i), getpid (), thread_handle->thread->id);
+		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
+		
+		_wapi_mutex_abandon (mutex, getpid (),
+				     thread_handle->thread->id);
+		_wapi_thread_disown_mutex (thread_handle->thread->id, mutex);
+	}
+}
+
+/* Called by the timed_thread code as a thread is finishing up */
+static void thread_exit(guint32 exitstatus, gpointer handle)
+{
+	struct _WapiHandle_thread *thread_handle;
+	gboolean ok;
+	int thr_ret;
+	
+	_wapi_thread_abandon_mutexes (handle);
+	
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up thread handle %p", __func__,
+			   handle);
+		return;
 	}
 
 #ifdef DEBUG

@@ -311,7 +311,10 @@ static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 	_wapi_handle_unlock_shared_handles ();
 }
 
-/* When a thread exits, any mutexes it still holds need to be signalled */
+/* When a thread exits, any mutexes it still holds need to be
+ * signalled.  This function must not be called with the shared handle
+ * lock held, as namedmutex_abandon () will try to acquire it
+ */
 void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid)
 {
 	WapiHandleType type = _wapi_handle_type (data);

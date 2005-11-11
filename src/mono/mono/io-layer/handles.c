@@ -720,6 +720,11 @@ gint32 _wapi_search_handle_namespace (WapiHandleType type,
 		   utf8_name, _wapi_handle_typename[type]);
 #endif
 
+	/* Do a handle collection before starting to look, so that any
+	 * stale cruft gets removed
+	 */
+	_wapi_handle_collect ();
+	
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
