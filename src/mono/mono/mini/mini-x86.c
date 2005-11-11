@@ -3366,6 +3366,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		gint32 prev_lmf_reg;
+		gint32 lmf_offset = -sizeof (MonoLMF);
 
 		/* Find a spare register */
 		switch (sig->ret->type) {
@@ -3380,24 +3381,24 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 
 		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, prev_lmf_reg, X86_EBP, -32, 4);
+		x86_mov_reg_membase (code, prev_lmf_reg, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
 
 		/* ecx = lmf */
-		x86_mov_reg_membase (code, X86_ECX, X86_EBP, -28, 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
 
 		/* *(lmf) = previous_lmf */
 		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
-			x86_mov_reg_membase (code, X86_EBX, X86_EBP, -20, 4);
+			x86_mov_reg_membase (code, X86_EBX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx), 4);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
-			x86_mov_reg_membase (code, X86_EDI, X86_EBP, -16, 4);
+			x86_mov_reg_membase (code, X86_EDI, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi), 4);
 		}
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
-			x86_mov_reg_membase (code, X86_ESI, X86_EBP, -12, 4);
+			x86_mov_reg_membase (code, X86_ESI, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi), 4);
 		}
 
 		/* EBP is restored by LEAVE */
