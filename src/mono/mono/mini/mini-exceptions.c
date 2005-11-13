@@ -775,7 +775,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 		*ctx = new_ctx;
 
-		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
+		if (ji == (gpointer)-1) {
 			if (gc_disabled)
 				mono_gc_enable ();
 
