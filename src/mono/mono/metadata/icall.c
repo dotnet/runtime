@@ -70,28 +70,26 @@ static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAs
 /*
  * We expect a pointer to a char, not a string
  */
-static double
-mono_double_ParseImpl (char *ptr)
+static gboolean
+mono_double_ParseImpl (char *ptr, double *result)
 {
 	gchar *endptr = NULL;
-	gdouble result = 0.0;
+	*result = 0.0;
 
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef __arm__
 	if (*ptr)
-		result = strtod (ptr, &endptr);
+		*result = strtod (ptr, &endptr);
 #else
 	if (*ptr)
-		result = bsd_strtod (ptr, &endptr);
+		*result = bsd_strtod (ptr, &endptr);
 #endif
 
 	if (!*ptr || (endptr && *endptr))
-		mono_raise_exception (mono_exception_from_name (mono_get_corlib (),
-								"System",
-								"FormatException"));
+		return FALSE;
 	
-	return result;
+	return TRUE;
 }
 
 static void
