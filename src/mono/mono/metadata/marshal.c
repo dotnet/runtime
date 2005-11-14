@@ -4876,6 +4876,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass = t->data.klass;
 	int pos, pos2, loc;
 
+	if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
+		mono_raise_exception (mono_get_exception_not_implemented ("Marshalling of type object is not implemented"));
+	}
+
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
