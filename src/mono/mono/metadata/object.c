@@ -506,7 +506,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 				*max_set = MAX (*max_set, pos);
 				break;
 			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = field->type->data.klass;
+				MonoClass *fclass = mono_class_from_mono_type (field->type);
 				if (fclass->has_references) {
 					/* remove the object header */
 					compute_class_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)), max_set);
@@ -574,9 +574,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	class->gc_descr_inited = TRUE;
 	class->gc_descr = GC_NO_DESCRIPTOR;
 
-	if (class->generic_class || class->generic_container)
+	if (class->generic_class || class->generic_container) {
 		/* bug #75479 */
 		return;
+	}
 
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
@@ -1411,10 +1412,7 @@ handle_enum:
 			goto handle_enum;
 		} else {
 			int size;
-			if (type->type == MONO_TYPE_GENERICINST)
-				size = mono_class_value_size (type->data.generic_class->container_class, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
+			size = mono_class_value_size (mono_class_from_mono_type (type), NULL);
 			if (value == NULL)
 				memset (dest, 0, size);
 			else
