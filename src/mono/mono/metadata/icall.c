@@ -4506,6 +4506,17 @@ ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind,
 	}
 }
 
+static gint32
+ves_icall_System_Reflection_Module_get_MDStreamVersion (MonoReflectionModule *module)
+{
+	MonoImage *image = module->image;
+
+	if (!image)
+		mono_raise_exception (mono_get_exception_not_supported (""));
+	
+	return (image->md_version_major << 16) | (image->md_version_minor);
+}
+
 static MonoArray*
 ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
 {
@@ -6492,7 +6503,6 @@ static const IcallEntry assembly_icalls [] = {
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
 	{"get_ManifestModule", ves_icall_System_Reflection_Assembly_get_ManifestModule},
-	{"get_MetadataToken", mono_reflection_get_token},
 	{"get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly},
 	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
 	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
@@ -6521,6 +6531,7 @@ static const IcallEntry module_icalls [] = {
 	{"ResolveMethodToken", ves_icall_System_Reflection_Module_ResolveMethodToken},
 	{"ResolveStringToken", ves_icall_System_Reflection_Module_ResolveStringToken},
 	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken},
+	{"get_MDStreamVersion", ves_icall_System_Reflection_Module_get_MDStreamVersion},
 	{"get_MetadataToken", mono_reflection_get_token}
 };
 

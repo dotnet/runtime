@@ -3359,8 +3359,8 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	*p++ = 'B'; *p++ = 'S'; *p++ = 'J'; *p++ = 'B';
 	/* version numbers and 4 bytes reserved */
 	int16val = (guint16*)p;
-	*int16val++ = GUINT16_TO_LE (1);
-	*int16val = GUINT16_TO_LE (1);
+	*int16val++ = GUINT16_TO_LE (meta->md_version_major);
+	*int16val = GUINT16_TO_LE (meta->md_version_minor);
 	p += 8;
 	/* version string */
 	int32val = (guint32*)p;
@@ -4285,6 +4285,8 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.assembly_name = image->image.name; /* they may be different */
 	image->image.module_name = module_name;
 	image->image.version = version;
+	image->image.md_version_major = 1;
+	image->image.md_version_minor = 0;
 	image->image.dynamic = TRUE;
 	image->image.ref_count = 1;
 

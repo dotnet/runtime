@@ -319,7 +319,12 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	if (strncmp (ptr, "BSJB", 4) == 0){
 		guint32 version_string_len;
 
-		ptr += 12;
+		ptr += 4;
+		image->md_version_major = read16 (ptr);
+		ptr += 4;
+		image->md_version_minor = read16 (ptr);
+		ptr += 4;
+
 		version_string_len = read32 (ptr);
 		ptr += 4;
 		image->version = g_strndup (ptr, version_string_len);

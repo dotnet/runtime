@@ -66,6 +66,7 @@ struct _MonoImage {
 	const char *assembly_name;
 	const char *module_name;
 	const char *version;
+	gint16 md_version_major, md_version_minor;
 	char *guid;
 	void *image_info;
 	MonoMemPool         *mempool;
