@@ -3624,6 +3624,63 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 }
 
 /**
+ * @ptr: MonoType to unwrap
+ *
+ * Recurses in array/szarray to get the element type.
+ * Returns the element MonoType or the @ptr itself if its not an array/szarray.
+ */
+static MonoType*
+unwrap_arrays (MonoType *ptr)
+{
+	while (ptr->type == MONO_TYPE_ARRAY || ptr->type == MONO_TYPE_SZARRAY)
+		/* Found an array/szarray, recurse to get the element type */
+		if (ptr->type == MONO_TYPE_ARRAY)
+			ptr = &ptr->data.array->eklass->byval_arg;
+		else
+			ptr = &ptr->data.klass->byval_arg;
+	return ptr;
+}
+
+/**
+ * @inst: GENERIC_INST
+ * @context: context to compare against
+ *
+ * Check if the VARs or MVARs in the GENERIC_INST @inst refer to the context @context.
+ */
+static gboolean
+has_same_context (MonoGenericInst *inst, MonoGenericContext *context)
+{
+	int i = 0, count = inst->type_argc;
+	MonoType **ptr = inst->type_argv;
+
+	if (!context)
+		return FALSE;
+
+	restart_loop:	
+	for (i = 0; i < count; i++) {
+		MonoType *ctype;
+
+		ctype = unwrap_arrays (ptr [i]);
+
+		if (ctype->type == MONO_TYPE_MVAR || ctype->type == MONO_TYPE_VAR) {
+			MonoGenericContainer *owner = ctype->data.generic_param->owner;
+			MonoGenericContainer *gc = (MonoGenericContainer *) context;
+			return owner == gc || (ctype->type == MONO_TYPE_VAR && owner == gc->parent);
+		}
+
+		if (ctype->type == MONO_TYPE_GENERICINST && ctype->data.generic_class->inst->is_open) {
+			/* Found an open GenericInst recurse into it. We care about
+			   finding the first argument that is a generic parameter. */
+			count = ctype->data.generic_class->inst->type_argc;
+			ptr = ctype->data.generic_class->inst->type_argv;
+			goto restart_loop;
+		}
+	}
+	g_assert_not_reached ();
+	return TRUE;
+}
+
+/**
  * @image: context where the image is created
  * @type_spec:  typespec token
  *
@@ -3642,7 +3699,29 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	mono_loader_lock ();
 
-	if ((type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec)))) {
+	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
+
+	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open &&
+	    !has_same_context (type->data.generic_class->inst, generic_context))
+		/* is_open AND does not have the same context as generic_context,
+		   so don't use cached MonoType */
+		type = NULL;
+
+	if (type && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+		g_assert (generic_context);
+		if (((MonoGenericContext *) type->data.generic_param->owner) != generic_context) {
+			/* cached MonoType's context differs from generic_context */
+			MonoGenericContainer *gc = generic_context->container;
+			if (type->type == MONO_TYPE_VAR && gc->parent)
+				gc = gc->parent;
+
+			g_assert (type->type == MONO_TYPE_VAR || gc->is_method);
+
+			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
+		}
+	}
+
+	if (type) {
 		mono_loader_unlock ();
 		return type;
 	}
@@ -3663,6 +3742,18 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 	}
 
 	do_mono_metadata_parse_type (type, image, generic_context, ptr, &ptr);
+
+	if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
+		MonoGenericContainer *container;
+
+		g_assert (type->data.generic_param->owner);
+		container = type->data.generic_param->owner;
+		if (!container->types)
+			container->types = g_new0 (MonoType*, container->type_argc);
+
+		container->types [type->data.generic_param->num] = type;
+	}
+
 
 	mono_loader_unlock ();
 

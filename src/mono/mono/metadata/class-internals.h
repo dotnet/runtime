@@ -464,6 +464,8 @@ struct _MonoGenericContainer {
 	int is_signature : 1;
 	/* Our type parameters. */
 	MonoGenericParam *type_params;
+	/* Cache for MonoTypes */
+	MonoType **types;
 };
 
 /*
