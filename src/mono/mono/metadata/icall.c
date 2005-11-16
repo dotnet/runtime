@@ -6580,7 +6580,7 @@ static const IcallEntry monomethod_icalls [] = {
 	{"GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments},
   	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
 	{"InternalInvoke", ves_icall_InternalInvoke},
-	{"MakeGenericMethod", mono_reflection_bind_generic_method_parameters},
+	{"MakeGenericMethod_impl", mono_reflection_bind_generic_method_parameters},
 	{"get_HasGenericParameters", ves_icall_MonoMethod_get_HasGenericParameters},
 	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
 	{"get_Mono_IsInflatedMethod", ves_icall_MonoMethod_get_Mono_IsInflatedMethod},
