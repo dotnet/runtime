@@ -4286,7 +4286,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.module_name = module_name;
 	image->image.version = version;
 	image->image.md_version_major = 1;
-	image->image.md_version_minor = 0;
+	image->image.md_version_minor = 1;
 	image->image.dynamic = TRUE;
 	image->image.ref_count = 1;
 
