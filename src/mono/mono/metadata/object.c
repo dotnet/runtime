@@ -579,6 +579,10 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		return;
 	}
 
+	if ((class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_EXPLICIT_LAYOUT && (class->packing_size != 0) && class->packing_size != sizeof (gpointer))
+		/* reference fields might be placed on non-aligned offsets */
+		return;
+
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
 		class->gc_descr = (gpointer)MAKE_STRING_DESCRIPTOR (bitmap, 2);
