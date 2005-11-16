@@ -2852,8 +2852,6 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 	if (param->pklass)
 		return param->pklass;
 
-	g_assert (param->owner);
-
 	klass = g_new0 (MonoClass, 1);
 
 	if (param->name)

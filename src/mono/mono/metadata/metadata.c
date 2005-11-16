@@ -1880,7 +1880,14 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 	if (rptr)
 		*rptr = ptr;
 
-	g_assert (generic_context);
+	if (!generic_context) {
+		/* Create dummy MonoGenericParam */
+		MonoGenericParam *param = g_new0 (MonoGenericParam, 1);
+		param->name = g_strdup_printf ("%d", index);
+		param->num = index;
+
+		return param;
+	}
 	generic_container = generic_context->container;
 
 	if (!is_mvar) {
@@ -3138,7 +3145,6 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	if (p1->num != p2->num)
 		return FALSE;
 
-	g_assert (p1->owner && p2->owner);
 	if (p1->owner == p2->owner)
 		return TRUE;
 
@@ -3743,7 +3749,7 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	do_mono_metadata_parse_type (type, image, generic_context, ptr, &ptr);
 
-	if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
+	if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->owner) {
 		MonoGenericContainer *container;
 
 		g_assert (type->data.generic_param->owner);
