@@ -1456,6 +1456,36 @@ get_param (MonoImage *m, const char *ptr, char **retval, MonoGenericContext *con
 }
 
 /**
+ * str_escape 
+ * 
+ * @str: string to process
+ * @list: list of chars to escape
+ * 
+ * Returns: an allocated escaped string.
+ */
+static char*
+str_escape (const char *str, const char *list)
+{
+	const char *p = str;
+	GString *res;
+
+	res = g_string_sized_new (strlen (str));
+
+	for (;;) {
+		while (*p && !strchr (list, *p))
+			++p;
+		g_string_append_len (res, str, p - str);
+		if (!*p)
+			break;
+		g_string_append_c (res, '\\');
+		str = p;
+		++p;
+	}
+			
+	return g_string_free (res, FALSE);
+}
+
+/**
  * get_escaped_name
  *
  * Returns: An allocated escaped name. A name needs to be escaped
@@ -1465,6 +1495,7 @@ char*
 get_escaped_name (const char *name)
 {
 	const char *s;
+	char *ret, *esc;
 
 	g_assert (key_table);
 
@@ -1486,16 +1517,19 @@ get_escaped_name (const char *name)
 
 	for (s = name; *s; s++) {
 		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' ||
-		    *s == '?' || *s == '.' || *s == 0 || *s == '!')
+		    *s == '?' || *s == '.' || *s == 0 || *s == '!' || *s == '`')
 			continue;
 
-		return g_strdup_printf ("'%s'", name);
+		esc = str_escape (name, "'\\");
+		ret = g_strdup_printf ("'%s'", esc);
+		g_free (esc);
+		return ret;
 	}
 	
 	if (g_hash_table_lookup (key_table, name))
 		return g_strdup_printf ("'%s'", name);
 			
-	return g_strdup (name);
+	return str_escape (name, "'\\");
 }
 
 static dis_map_t param_map [] = {
