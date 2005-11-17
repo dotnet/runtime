@@ -718,7 +718,46 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	return TRUE;
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *appname, MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
+MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
+{
+	SHELLEXECUTEINFO shellex = {0};
+	gboolean ret;
+
+	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
+	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE;
+	shellex.lpFile = mono_string_chars (proc_start_info->filename);
+	shellex.lpParameters = mono_string_chars (proc_start_info->arguments);
+	shellex.nShow = SW_SHOWNORMAL;
+
+	if(mono_string_length (proc_start_info->verb)==0) {
+		shellex.lpVerb = NULL;
+	} else {
+		shellex.lpVerb = mono_string_chars (proc_start_info->verb);
+	}
+
+	if(mono_string_length (proc_start_info->working_directory)==0) {
+		shellex.lpDirectory = NULL;
+	} else {
+		shellex.lpDirectory = mono_string_chars (proc_start_info->working_directory);
+	}
+
+	ret = ShellExecuteEx (&shellex);
+	if (ret == FALSE) {
+		process_info->pid = -GetLastError ();
+	} else {
+		process_info->process_handle = shellex.hProcess;
+		process_info->thread_handle = NULL;
+		/* It appears that there's no way to get the pid from a
+		 * process handle before windows xp.  Really.
+		 */
+		process_info->pid = 0;
+		process_info->tid = 0;
+	}
+
+	return (ret);
+}
+
+MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInfo *proc_start_info, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
 	gunichar2 *dir;
@@ -727,7 +766,11 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	gunichar2 *shell_path = NULL;
 	gchar *env_vars = NULL;
 	gboolean free_shell_path = TRUE;
+#ifdef PLATFORM_WIN32
 	gchar *newcmd, *tmp;
+#endif
+	gchar *spath = NULL;
+	MonoString *cmd = proc_start_info->arguments;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -737,62 +780,26 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	startinfo.hStdOutput=stdout_handle;
 	startinfo.hStdError=stderr_handle;
 	
-	if (process_info->use_shell) {
-		const gchar *spath;
-		const gchar *shell_args;
-#ifdef PLATFORM_WIN32
-		spath = g_getenv ("COMSPEC");
-		shell_args = "/c %s";
-#else
-		spath = g_getenv ("SHELL");
-		shell_args = "-c %s";
-#endif
-		if (spath != NULL) {
-			gsize dummy;
-			gchar *quoted;
-
-			shell_path = mono_unicode_from_external (spath, &dummy);
-			tmp = mono_string_to_utf8 (cmd);
-			quoted = g_shell_quote (tmp);
-#ifdef PLATFORM_WIN32
-			{
-				gchar *q = quoted;
-				while (*q) {
-					if (*q == '\'')
-						*q = '\"';
-					q++;
-				}
-			}
-#endif
-			newcmd = g_strdup_printf (shell_args, quoted);
-			g_free (quoted);
-			g_free (tmp);
-			cmd = mono_string_new (mono_domain_get (), newcmd);
-			g_free (newcmd);
-		}
-	} else {
-		gchar *spath = NULL;
-		shell_path = mono_string_chars (appname);
-		complete_path (shell_path, &spath);
-		if (spath == NULL) {
-			process_info->pid = -ERROR_FILE_NOT_FOUND;
-			return FALSE;
-		}
-#ifdef PLATFORM_WIN32
-		/* Seems like our CreateProcess does not work as the windows one.
-		 * This hack is needed to deal with paths containing spaces */
-		shell_path = NULL;
-		free_shell_path = FALSE;
-		tmp = mono_string_to_utf8 (cmd);
-		newcmd = g_strdup_printf ("%s %s", spath, tmp);
-		cmd = mono_string_new_wrapper (newcmd);
-		g_free (newcmd);
-		g_free (tmp);
-#else
-		shell_path = g_utf8_to_utf16 (spath, -1, NULL, NULL, NULL);
-#endif
-		g_free (spath);
+	shell_path = mono_string_chars (proc_start_info->filename);
+	complete_path (shell_path, &spath);
+	if (spath == NULL) {
+		process_info->pid = -ERROR_FILE_NOT_FOUND;
+		return FALSE;
 	}
+#ifdef PLATFORM_WIN32
+	/* Seems like our CreateProcess does not work as the windows one.
+	 * This hack is needed to deal with paths containing spaces */
+	shell_path = NULL;
+	free_shell_path = FALSE;
+	tmp = mono_string_to_utf8 (cmd);
+	newcmd = g_strdup_printf ("%s %s", spath, tmp);
+	cmd = mono_string_new_wrapper (newcmd);
+	g_free (newcmd);
+	g_free (tmp);
+#else
+	shell_path = g_utf8_to_utf16 (spath, -1, NULL, NULL, NULL);
+#endif
+	g_free (spath);
 
 	if (process_info->env_keys != NULL) {
 		gint i, len; 
@@ -838,10 +845,10 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	/* The default dir name is "".  Turn that into NULL to mean
 	 * "current directory"
 	 */
-	if(mono_string_length (dirname)==0) {
+	if(mono_string_length (proc_start_info->working_directory)==0) {
 		dir=NULL;
 	} else {
-		dir=mono_string_chars (dirname);
+		dir=mono_string_chars (proc_start_info->working_directory);
 	}
 	
 	ret=CreateProcess (shell_path, mono_string_chars (cmd), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, env_vars, dir, &startinfo, &procinfo);

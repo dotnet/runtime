@@ -6269,6 +6269,7 @@ static const IcallEntry fileversion_icalls [] = {
 };
 
 static const IcallEntry process_icalls [] = {
+	{"CreateProcess_internal(System.Diagnostics.ProcessStartInfo,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_CreateProcess_internal},
 	{"ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal},
 	{"ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal},
 	{"GetModules_internal()", ves_icall_System_Diagnostics_Process_GetModules_internal},
@@ -6280,8 +6281,8 @@ static const IcallEntry process_icalls [] = {
 	{"ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal},
 	{"Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal},
 	{"SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal},
+	{"ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal},
 	{"StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal},
-	{"Start_internal(string,string,string,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal},
 	{"WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal}
 };
 

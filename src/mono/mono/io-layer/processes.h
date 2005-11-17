@@ -64,6 +64,65 @@ struct _WapiProcessInformation
 	guint32 dwThreadId;
 };
 
+typedef enum {
+	SEE_MASK_CLASSNAME	= 0x01,
+	SEE_MASK_CLASSKEY	= 0x03,
+	SEE_MASK_IDLIST		= 0x04,
+	SEE_MASK_INVOKEIDLIST	= 0x0c,
+	SEE_MASK_ICON		= 0x10,
+	SEE_MASK_HOTKEY		= 0x20,
+	SEE_MASK_NOCLOSEPROCESS	= 0x40,
+	SEE_MASK_CONNECTNETDRV	= 0x80,
+	SEE_MASK_FLAG_DDEWAIT	= 0x100,
+	SEE_MASK_DOENVSUBST	= 0x200,
+	SEE_MASK_FLAG_NO_UI	= 0x400,
+	SEE_MASK_NO_CONSOLE	= 0x8000,
+	SEE_MASK_UNICODE	= 0x10000,
+	SEE_MASK_HMONITOR	= 0x200000,
+	/*SEE_MASK_FLAG_LOG_USAGE,*/
+	/*SEE_MASK_NOZONECHECKS,*/
+} WapiShellExecuteInfoFlags;
+
+typedef enum {
+	SW_HIDE = 0,
+	SW_SHOWNORMAL = 1,
+	SW_SHOWMINIMIZED = 2,
+	SW_MAXIMIZE = 3,
+	SW_SHOWMAXIMIZED = 3,
+	SW_SHOWNOACTIVATE = 4,
+	SW_SHOW = 5,
+	SW_MINIMIZE = 6,
+	SW_SHOWMINNOACTIVE = 7,
+	SW_SHOWNA = 8,
+	SW_RESTORE = 9,
+	SW_SHOWDEFAULT = 10,
+} WapiShellExecuteShowFlags;
+
+typedef struct _WapiShellExecuteInfo WapiShellExecuteInfo;
+
+struct _WapiShellExecuteInfo
+{
+	guint32 cbSize;
+	WapiShellExecuteInfoFlags fMask;
+	gpointer hwnd;
+	const gunichar2 *lpVerb;
+	const gunichar2 *lpFile;
+	const gunichar2 *lpParameters;
+	const gunichar2 *lpDirectory;
+	WapiShellExecuteShowFlags nShow;
+	gpointer hInstApp;
+	gpointer lpIDList;
+	const gunichar2 *lpClass;
+	gpointer hkeyClass;
+	guint32 dwHotKey;
+	union 
+	{
+		gpointer hIcon;
+		gpointer hMonitor;
+	} u;
+	gpointer hProcess;
+};
+
 	
 #define DEBUG_PROCESS 0x00000001
 #define DEBUG_ONLY_THIS_PROCESS 0x00000002
@@ -103,7 +162,9 @@ struct _WapiProcessInformation
 #define	PROCESS_QUERY_INFORMATION	0x0400
 #define	PROCESS_ALL_ACCESS		(STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xfff)
 
-extern gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
+extern gboolean ShellExecuteEx (WapiShellExecuteInfo *sei);
+extern gboolean CreateProcess (const gunichar2 *appname,
+			       const gunichar2 *cmdline,
 			       WapiSecurityAttributes *process_attrs,
 			       WapiSecurityAttributes *thread_attrs,
 			       gboolean inherit_handles, guint32 create_flags,

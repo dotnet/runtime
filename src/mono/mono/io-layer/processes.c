@@ -226,7 +226,78 @@ static void process_set_defaults (struct _WapiHandle_process *process_handle)
 	_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
 }
 
-gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
+/* Implemented as just a wrapper around CreateProcess () */
+gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
+{
+	gboolean ret;
+	WapiProcessInformation process_info;
+	gunichar2 *args;
+	gchar *u8file, *u8params, *u8args;
+	
+	if (sei == NULL) {
+		/* w2k just segfaults here, but we can do better than
+		 * that
+		 */
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return (FALSE);
+	}
+	
+	/* Put both executable and parameters into the second argument
+	 * to CreateProcess (), so it searches $PATH.  The conversion
+	 * into and back out of utf8 is because there is no
+	 * g_strdup_printf () equivalent for gunichar2 :-(
+	 */
+	u8file = g_utf16_to_utf8 (sei->lpFile, -1, NULL, NULL, NULL);
+	if (u8file == NULL) {
+		SetLastError (ERROR_INVALID_DATA);
+		return (FALSE);
+	}
+	
+	u8params = g_utf16_to_utf8 (sei->lpParameters, -1, NULL, NULL, NULL);
+	if (u8params == NULL) {
+		SetLastError (ERROR_INVALID_DATA);
+		g_free (u8file);
+		return (FALSE);
+	}
+	
+	u8args = g_strdup_printf ("%s %s", u8file, u8params);
+	if (u8args == NULL) {
+		SetLastError (ERROR_INVALID_DATA);
+		g_free (u8params);
+		g_free (u8file);
+		return (FALSE);
+	}
+	
+	args = g_utf8_to_utf16 (u8args, -1, NULL, NULL, NULL);
+	
+	g_free (u8file);
+	g_free (u8params);
+	g_free (u8args);
+
+	if (args == NULL) {
+		SetLastError (ERROR_INVALID_DATA);
+		return (FALSE);
+	}
+	
+	ret = CreateProcess (NULL, args, NULL, NULL, TRUE,
+			     CREATE_UNICODE_ENVIRONMENT, NULL,
+			     sei->lpDirectory, NULL, &process_info);
+	g_free (args);
+	
+	if (!ret) {
+		return (FALSE);
+	}
+	
+	if (sei->fMask & SEE_MASK_NOCLOSEPROCESS) {
+		sei->hProcess = process_info.hProcess;
+	} else {
+		CloseHandle (process_info.hProcess);
+	}
+	
+	return (ret);
+}
+
+gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,
 			gboolean inherit_handles, guint32 create_flags,
@@ -364,6 +435,17 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			prog = g_strdup_printf ("%s/%s", curdir, unquoted);
 			g_free (unquoted);
 			g_free (curdir);
+
+			/* And make sure it's executable */
+			if (access (prog, X_OK) != 0) {
+#ifdef DEBUG
+				g_message ("%s: Couldn't find executable %s",
+					   __func__, prog);
+#endif
+				g_free (prog);
+				SetLastError (ERROR_FILE_NOT_FOUND);
+				goto cleanup;
+			}
 		}
 
 		args_after_prog = args;

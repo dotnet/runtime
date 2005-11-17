@@ -37,6 +37,9 @@ typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;
 typedef guint32 SOCKET;
 typedef gpointer HMODULE;
+typedef gpointer HINSTANCE;
+typedef gpointer HWND;
+typedef gpointer HKEY;
 
 typedef WapiSecurityAttributes SECURITY_ATTRIBUTES;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
@@ -68,6 +71,8 @@ typedef WapiStartupInfo *LPSTARTUPINFO;
 typedef WapiProcessInformation PROCESS_INFORMATION;
 typedef WapiFixedFileInfo VS_FIXEDFILEINFO;
 typedef WapiApcProc PAPCFUNC;
+typedef WapiShellExecuteInfo SHELLEXECUTEINFO;
+typedef WapiShellExecuteInfo *LPSHELLEXECUTEINFO;
 
 #define CONST const
 #define VOID void
