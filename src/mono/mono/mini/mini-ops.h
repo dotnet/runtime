@@ -144,6 +144,22 @@ MINI_OP(OP_COND_EXC_NO, "cond_exc_no")
 MINI_OP(OP_COND_EXC_C, "cond_exc_c")
 MINI_OP(OP_COND_EXC_NC, "cond_exc_nc")
 
+MINI_OP(OP_COND_EXC_IEQ, "cond_exc_ieq")
+MINI_OP(OP_COND_EXC_IGE, "cond_exc_ige")
+MINI_OP(OP_COND_EXC_IGT, "cond_exc_igt")
+MINI_OP(OP_COND_EXC_ILE, "cond_exc_ile")
+MINI_OP(OP_COND_EXC_ILT, "cond_exc_ilt")
+MINI_OP(OP_COND_EXC_INE_UN, "cond_exc_ine_un")
+MINI_OP(OP_COND_EXC_IGE_UN, "cond_exc_ige_un")
+MINI_OP(OP_COND_EXC_IGT_UN, "cond_exc_igt_un")
+MINI_OP(OP_COND_EXC_ILE_UN, "cond_exc_ile_un")
+MINI_OP(OP_COND_EXC_ILT_UN, "cond_exc_ilt_un")
+
+MINI_OP(OP_COND_EXC_IOV, "cond_exc_iov")
+MINI_OP(OP_COND_EXC_INO, "cond_exc_ino")
+MINI_OP(OP_COND_EXC_IC, "cond_exc_ic")
+MINI_OP(OP_COND_EXC_INC, "cond_exc_inc")
+
 /* 64 bit opcodes: must be in the same order as the matching CEE_ opcodes: binops_op_map */
 MINI_OP(OP_LADD,    "long_add")
 MINI_OP(OP_LSUB,    "long_sub")
@@ -229,12 +245,12 @@ MINI_OP(OP_LBGE_UN, "long_bge_un")
 MINI_OP(OP_LBLE,    "long_ble")
 MINI_OP(OP_LBLE_UN, "long_ble_un")
 
-/* 32 bit opcodes on 64 bit machines */
+MINI_OP(OP_LONG_SHRUN_32, "long_shr_un_32")
+
+/* 32 bit opcodes: must be in the same order as the matching CEE_ opcodes: binops_op_map */
 MINI_OP(OP_IADD,    "int_add")
 MINI_OP(OP_ISUB,    "int_sub")
 MINI_OP(OP_IMUL,    "int_mul")
-MINI_OP(OP_IMUL_OVF,    "int_mul_ovf")
-MINI_OP(OP_IMUL_OVF_UN, "int_mul_ovf_un")
 MINI_OP(OP_IDIV,    "int_div")
 MINI_OP(OP_IDIV_UN, "int_div_un")
 MINI_OP(OP_IREM,    "int_rem")
@@ -245,6 +261,54 @@ MINI_OP(OP_IXOR,    "int_xor")
 MINI_OP(OP_ISHL,    "int_shl")
 MINI_OP(OP_ISHR,    "int_shr")
 MINI_OP(OP_ISHR_UN, "int_shr_un")
+
+/* 32 bit opcodes: must be in the same order as the matching CEE_ opcodes: unops_op_map */
+MINI_OP(OP_INEG,       "int_neg")
+MINI_OP(OP_INOT,       "int_not")
+MINI_OP(OP_ICONV_TO_I1,"int_conv_to_i1")
+MINI_OP(OP_ICONV_TO_I2,"int_conv_to_i2")
+MINI_OP(OP_ICONV_TO_I4,"int_conv_to_i4")
+MINI_OP(OP_ICONV_TO_I8,"int_conv_to_i8")
+MINI_OP(OP_ICONV_TO_R4,"int_conv_to_r4")
+MINI_OP(OP_ICONV_TO_R8,"int_conv_to_r8")
+MINI_OP(OP_ICONV_TO_U4,"int_conv_to_u4")
+MINI_OP(OP_ICONV_TO_U8,"int_conv_to_u8")
+
+/* 32 bit opcodes: must be in the same order as the matching CEE_ opcodes: ovfops_op_map */
+MINI_OP(OP_ICONV_TO_U2,   "int_conv_to_u2")
+MINI_OP(OP_ICONV_TO_U1,   "int_conv_to_u1")
+MINI_OP(OP_ICONV_TO_I,    "int_conv_to_i")
+MINI_OP(OP_ICONV_TO_OVF_I,"int_conv_to_ovf_i")
+MINI_OP(OP_ICONV_TO_OVF_U,"int_conv_to_ovf_u")
+MINI_OP(OP_IADD_OVF,      "int_add_ovf")
+MINI_OP(OP_IADD_OVF_UN,   "int_add_ovf_un")
+MINI_OP(OP_IMUL_OVF,      "int_mul_ovf")
+MINI_OP(OP_IMUL_OVF_UN,   "int_mul_ovf_un")
+MINI_OP(OP_ISUB_OVF,      "int_sub_ovf")
+MINI_OP(OP_ISUB_OVF_UN,   "int_sub_ovf_un")
+
+/* 32 bit opcodes: must be in the same order as the matching CEE_ opcodes: ovf2ops_op_map */
+MINI_OP(OP_ICONV_TO_OVF_I1_UN,"int_conv_to_ovf_i1_un")
+MINI_OP(OP_ICONV_TO_OVF_I2_UN,"int_conv_to_ovf_i2_un")
+MINI_OP(OP_ICONV_TO_OVF_I4_UN,"int_conv_to_ovf_i4_un")
+MINI_OP(OP_ICONV_TO_OVF_I8_UN,"int_conv_to_ovf_i8_un")
+MINI_OP(OP_ICONV_TO_OVF_U1_UN,"int_conv_to_ovf_u1_un")
+MINI_OP(OP_ICONV_TO_OVF_U2_UN,"int_conv_to_ovf_u2_un")
+MINI_OP(OP_ICONV_TO_OVF_U4_UN,"int_conv_to_ovf_u4_un")
+MINI_OP(OP_ICONV_TO_OVF_U8_UN,"int_conv_to_ovf_u8_un")
+MINI_OP(OP_ICONV_TO_OVF_I_UN, "int_conv_to_ovf_i_un")
+MINI_OP(OP_ICONV_TO_OVF_U_UN, "int_conv_to_ovf_u_un")
+
+/* 32 bit opcodes: must be in the same order as the matching CEE_ opcodes: ovf3ops_op_map */
+MINI_OP(OP_ICONV_TO_OVF_I1,"int_conv_to_ovf_i1")
+MINI_OP(OP_ICONV_TO_OVF_U1,"int_conv_to_ovf_u1")
+MINI_OP(OP_ICONV_TO_OVF_I2,"int_conv_to_ovf_i2")
+MINI_OP(OP_ICONV_TO_OVF_U2,"int_conv_to_ovf_u2")
+MINI_OP(OP_ICONV_TO_OVF_I4,"int_conv_to_ovf_i4")
+MINI_OP(OP_ICONV_TO_OVF_U4,"int_conv_to_ovf_u4")
+MINI_OP(OP_ICONV_TO_OVF_I8,"int_conv_to_ovf_i8")
+MINI_OP(OP_ICONV_TO_OVF_U8,"int_conv_to_ovf_u8")
+
 MINI_OP(OP_IADC,     "int_adc")
 MINI_OP(OP_IADC_IMM, "int_adc_imm")
 MINI_OP(OP_ISBB,     "int_sbb")
@@ -266,9 +330,6 @@ MINI_OP(OP_ISHL_IMM,    "int_shl_imm")
 MINI_OP(OP_ISHR_IMM,    "int_shr_imm")
 MINI_OP(OP_ISHR_UN_IMM, "int_shr_un_imm")
 
-MINI_OP(OP_INEG,       "int_neg")
-MINI_OP(OP_INOT,       "int_not")
-
 MINI_OP(OP_ICEQ,   "int_ceq")
 MINI_OP(OP_ICGT,   "int_cgt")
 MINI_OP(OP_ICGT_UN,"int_cgt_un")
@@ -286,9 +347,6 @@ MINI_OP(OP_IBGE_UN, "int_bge_un")
 MINI_OP(OP_IBLE,    "int_ble")
 MINI_OP(OP_IBLE_UN, "int_ble_un")
 
-MINI_OP(OP_COND_EXC_IOV, "cond_exc_iov")
-MINI_OP(OP_COND_EXC_IC, "cond_exc_ic")
-
 MINI_OP(OP_FBEQ,   "float_beq")
 MINI_OP(OP_FBNE_UN,"float_bne_un")
 MINI_OP(OP_FBLT,   "float_blt")
@@ -299,8 +357,6 @@ MINI_OP(OP_FBGE,   "float_bge")
 MINI_OP(OP_FBGE_UN,"float_bge_un")
 MINI_OP(OP_FBLE,   "float_ble")
 MINI_OP(OP_FBLE_UN,"float_ble_un")
-
-MINI_OP(OP_LONG_SHRUN_32, "long_shr_un_32")
 
 /* float opcodes: must be in the same order as the matching CEE_ opcodes: binops_op_map */
 MINI_OP(OP_FADD,   "float_add")
