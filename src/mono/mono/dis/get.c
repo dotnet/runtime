@@ -1170,14 +1170,14 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 	case MONO_TYPE_MVAR:
 		if (is_def) {
 			g_assert (type->data.generic_param->name);
-			bare = g_strdup_printf ("!!%s", type->data.generic_param->name);
+			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
 		} else
 			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
 		if (is_def) {
 			g_assert (type->data.generic_param->name);
-			bare = g_strdup_printf ("!%s", type->data.generic_param->name);
+			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
 		} else
 			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
 		break;
