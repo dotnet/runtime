@@ -3750,10 +3750,8 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 	do_mono_metadata_parse_type (type, image, generic_context, ptr, &ptr);
 
 	if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->owner) {
-		MonoGenericContainer *container;
+		MonoGenericContainer *container = type->data.generic_param->owner;
 
-		g_assert (type->data.generic_param->owner);
-		container = type->data.generic_param->owner;
 		if (!container->types)
 			container->types = g_new0 (MonoType*, container->type_argc);
 
