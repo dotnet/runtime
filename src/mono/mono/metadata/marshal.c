@@ -949,8 +949,7 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 }
 
 static void
-emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, 
-		      int usize, int msize, MonoMarshalSpec *mspec)
+emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
 	switch (conv) {
 	case MONO_MARSHAL_CONV_BOOL_I4:
@@ -1152,8 +1151,7 @@ conv_to_icall (MonoMarshalConv conv)
 }
 
 static void
-emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, int usize, int msize,
-		      MonoMarshalSpec *mspec)
+emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
 	int pos;
 
@@ -1207,13 +1205,12 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR: {
-		if (!usize)
-			break;
+		g_assert (mspec);
 
 		mono_mb_emit_ldloc (mb, 1); /* dst */
 		mono_mb_emit_ldloc (mb, 0);	
 		mono_mb_emit_byte (mb, CEE_LDIND_I); /* src String */
-		mono_mb_emit_icon (mb, usize);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		break;
 	}
@@ -1231,9 +1228,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			esize = mono_class_native_size (eclass, NULL);
 		else
 			esize = sizeof (gpointer);
-
-		if (!usize) 
-			break;
 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);		
@@ -1350,11 +1344,8 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
-		if ((msize < 0) || (usize < 0))
-			/* This happens with GC aware auto layout */
+		if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 			g_error ("Type %s which is passed to unmanaged code must have a StructLayout attribute", mono_type_full_name (&klass->byval_arg));
-
-		g_assert ((msize >= 0) && (usize >= 0));
 
 		switch (conv) {
 		case MONO_MARSHAL_CONV_NONE: {
@@ -1435,9 +1426,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		}
 		default:
 			if (to_object) 
-				emit_ptr_to_object_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);
+				emit_ptr_to_object_conv (mb, ftype, conv, info->fields [i].mspec);
 			else
-				emit_object_to_ptr_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);	
+				emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);	
 		}
 		
 		if (to_object) {
