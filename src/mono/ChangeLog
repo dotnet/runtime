@@ -1,3 +1,8 @@
+2005-11-09 Michael Hutchinson <m.j.hutchinson@gmail.com>
+
+	* data/net_1_1/machine.config, data/net_2_0/machine.config: Set 
+	default values for http proxy
+
 2005-11-07  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/jit-regalloc: Merge forgotten documentation updates from
