@@ -1,3 +1,9 @@
+// FIXME:
+//	It still does not update icons previous to a type/member name when
+//	certain icon kinds are unchecked (when an item has "todo" and "missing",
+//	the default display is "missing" and when "missing" is unchecked it
+//	should turn into "todo").
+
 function toggle (elt)
 {
 	if (elt == null)
@@ -71,29 +77,57 @@ function getChildrenByTagName (elt, strTag)
 
 function viewAll (elt, dictTypes, attrFilters)
 {
-	var fView = false;
+	var fView = isShown (elt, dictTypes, attrFilters);
 
-	var rgImages = getChildrenByTagName (elt, 'IMG');
-	var cImages = rgImages.length;
-	for (var iImage = 0; iImage < cImages; iImage++)
-	{
-		var strImage = trimSrc (rgImages [iImage].src);
-		if (dictTypes [strImage])
-		{
+	var aCounts = new Array (4);
+	for (i = 0; i < 4; i++)
+		aCounts [i] = 0;
+	var rgElts = getChildrenByTagName (elt, 'DIV');
+	for (iElt in rgElts) {
+		var aChildRet = viewAll (rgElts [iElt], dictTypes, attrFilters);
+		if (aChildRet != null) {
 			fView = true;
-			break;
+			for (i = 0; i < 4; i++)
+				aCounts [i] += aChildRet [i];
 		}
 	}
-	var rgElts = getChildrenByTagName (elt, 'DIV');
-	var cElts = rgElts.length;
-	if (cElts != 0)
-	{
-		var iElt;
-		for (iElt = 0; iElt < cElts; iElt ++)
-			fView |= viewAll (rgElts [iElt], dictTypes, attrFilters);
+
+	elt.style.display = fView ? '' : 'none';
+
+	if (!fView)
+		return null;
+
+	rgShownDivs = getChildrenByTagName (elt, 'DIV');
+	for (i = 0; i < rgShownDivs.length; i++) {
+		var cDiv = rgShownDivs [i];
+		if (cDiv.style.display == 'none')
+			continue;
+		incrementCount (cDiv, aCounts, dictTypes);
 	}
 
-	// ... except for those attributes that are being filtered out.
+	// update the numbers
+	rgSpans = getChildrenByTagName (elt, 'SPAN');
+	for (iSpan in rgSpans) {
+		var cSpan = rgSpans [iSpan];
+		var cImage = firstElement (cSpan);
+		if (cImage == null)
+			continue;
+		switch (trimSrc (cImage.src)) {
+		case 'st': cSpan.lastChild.nodeValue = ": " + aCounts [0]; break;
+		case 'sm': cSpan.lastChild.nodeValue = ": " + aCounts [1]; break;
+		case 'sx': cSpan.lastChild.nodeValue = ": " + aCounts [2]; break;
+		case 'se': cSpan.lastChild.nodeValue = ": " + aCounts [3]; break;
+		}
+	}
+	return aCounts;
+}
+
+function isShown (elt, dictTypes, attrFilters)
+{
+	if (!isShownMarkType (elt, dictTypes))
+		return false;
+
+	// Check attributes that are being filtered out.
 	var rgSpans = getChildrenByTagName (elt, 'SPAN');
 	var cSpans = rgSpans.length;
 	for (var iSpan = 0; iSpan < cSpans; iSpan++)
@@ -101,12 +135,77 @@ function viewAll (elt, dictTypes, attrFilters)
 		var strSpan = rgSpans [iSpan].firstChild.nodeValue;
 		for (strzzz in attrFilters)
 			if (strSpan == strzzz)
-				fView = false;
+				return false;
 	}
-
-	elt.style.display = fView ? '' : 'none';
-	return fView;
+	return true;
 }
+
+function isShownMarkType (elt, dictTypes)
+{
+	var rgImages = getChildrenByTagName (elt, 'IMG');
+	var cImages = rgImages.length;
+	for (var iImage = 0; iImage < cImages; iImage++)
+	{
+		var strImage = trimSrc (rgImages [iImage].src);
+		if (dictTypes [strImage])
+			return true;
+	}
+	return false;
+}
+
+function incrementCount (cDiv, aCounts, dictTypes)
+{
+	switch (cDiv.className) {
+	case 'y': case 'y_': // assembly
+	case 'n': case 'n_': // namespace
+	// types
+	case 'c': case 'c_': case 'i': case 'i_':
+	case 'en': case 'en_': case 'd': case 'd_':
+	// members
+	case 'r': case 'r_': case 'x': case 'x_': case 'm': case 'm_':
+	case 'f': 	case 'f_': case 'e': case 'e_': case 'p': 	case 'p_':
+	case 'o': case 'o_':
+		var rgImgs = getChildrenByTagName (cDiv, 'IMG');
+		for (iImg = 0; iImg < rgImgs.length; iImg++) {
+			var cImg = rgImgs [iImg];
+			if (cImg.className != 't')
+				continue;
+			var stype = trimSrc (cImg.src);
+			if (!dictTypes [stype])
+				continue;
+			switch (stype) {
+			case "st": aCounts [0]++; break;
+			case "sm": aCounts [1]++; break;
+			case "sx": aCounts [2]++; break;
+			case "se": aCounts [3]++; break;
+			default:
+				continue;
+			}
+			break;
+		}
+		break;
+	}
+}
+
+/* just for debugging use now.
+function firstInnerText (elt)
+{
+	var s = elt.innerText;
+	if (s != null)
+		return s;
+	var n = elt.firstChild;
+	while (n != null) {
+		s = n.nodeValue;
+		if (s != null && s.replace (/^\s+/g, '') != '')
+			return s;
+		s = firstInnerText (n);
+		if (s != null)
+			return s;
+		n = n.nextSibling;
+	}
+	return s;
+}
+*/
 
 function getView (elt)
 {
@@ -345,11 +444,36 @@ function filterTree ()
 //	dictTypes ['sc'] = true;
 
 	var attrFilters = new Object ();
-	if (!eltComVisible.checked)
-		attrFilters ['System.Runtime.InteropServices.ComVisibleAttribute'] = true;
-	if (!eltDebuggerDisplay.checked)
-		attrFilters ['System.Diagnostics.DebuggerDisplayAttribute'] = true;
+	var rgOptions = getChildrenByTagName (document.getElementById ('FilteredAttributes'), "option");
+	for (i = 0; i < rgOptions.length; i++)
+		attrFilters [rgOptions [i].firstChild.nodeValue] = true;
 	viewAll (document.getElementById ('ROOT'), dictTypes, attrFilters);
+}
+
+function addAndFilter ()
+{
+	var newInput = document.getElementById ('NewFilterTarget');
+	var newAttr = newInput.value;
+	if (newAttr.length > 0) {
+		var selection = document.getElementById ('FilteredAttributes');
+		var newElem = document.createElement ('option');
+		newElem.appendChild (document.createTextNode (newAttr));
+		selection.appendChild (newElem);
+		newInput.value = '';
+		filterTree ();
+	}
+}
+
+function removeAndFilter ()
+{
+	var selection = document.getElementById ('FilteredAttributes');
+	if (selection.selectedIndex >= 0) {
+		var newInput = document.getElementById ('NewFilterTarget');
+		if (newInput.value.length == 0)
+			newInput.value = selection.options [selection.selectedIndex].firstChild.nodeValue;
+		selection.removeChild (selection.options [selection.selectedIndex]);
+		filterTree ();
+	}
 }
 
 function selectMissing ()
