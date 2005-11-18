@@ -62,6 +62,8 @@
 
 #include "jit-icalls.c"
 
+#include "aliasing.h"
+
 /* 
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
  * because they have weird semantics with NaNs.
@@ -449,7 +451,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_LOCLOADA(cfg,dest,num) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->ssa_op = MONO_SSA_MAYBE_LOAD;	\
+		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
 		(dest)->opcode = OP_LDADDR;	\
@@ -461,7 +463,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_RETLOADA(cfg,dest) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->ssa_op = MONO_SSA_MAYBE_LOAD;	\
+		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = (cfg)->ret;	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
 		(dest)->opcode = cfg->ret_var_is_local ? OP_LDADDR : CEE_LDIND_I;	\
@@ -473,7 +475,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define NEW_ARGLOADA(cfg,dest,num) do {	\
                 if (arg_array [(num)]->opcode == OP_ICONST) goto inline_failure; \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->ssa_op = MONO_SSA_MAYBE_LOAD;	\
+		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
 		(dest)->opcode = OP_LDADDR;	\
@@ -493,7 +495,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_TEMPLOADA(cfg,dest,num) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->ssa_op = MONO_SSA_MAYBE_LOAD;	\
+		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
 		(dest)->opcode = OP_LDADDR;	\
@@ -8901,7 +8903,7 @@ mono_cprop_invalidate_values (MonoInst *tree, MonoInst **acp, int acp_size)
 	case CEE_STIND_R4:
 	case CEE_STIND_R8:
 	case CEE_STOBJ:
-		if (tree->ssa_op == MONO_SSA_NOP) {
+		if ((tree->ssa_op == MONO_SSA_NOP) || (tree->ssa_op & MONO_SSA_ADDRESS_TAKEN)) {
 			memset (acp, 0, sizeof (MonoInst *) * acp_size);
 			return;
 		}
@@ -9167,6 +9169,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
 	int dfn = 0, i, code_size_ratio;
+	gboolean deadce_has_run = FALSE;
 
 	if (!header)
 		return NULL;
@@ -9189,7 +9192,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->compile_aot = compile_aot;
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * 
 					    mono_method_get_header (method)->max_stack);
-
+	cfg->aliasing_info = NULL;
+	
 	if (cfg->verbose_level > 2)
 		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 
@@ -9274,7 +9278,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #else 
 
 	/* fixme: add all optimizations which requires SSA */
-	if (cfg->opt & (MONO_OPT_DEADCE | MONO_OPT_ABCREM | MONO_OPT_SSAPRE)) {
+	if (cfg->opt & (MONO_OPT_SSA | MONO_OPT_ABCREM | MONO_OPT_SSAPRE)) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
 			mono_local_cprop (cfg);
 			mono_ssa_compute (cfg);
@@ -9299,15 +9303,22 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (cfg->comp_done & MONO_COMP_SSA) {			
-		mono_ssa_deadce (cfg);
+		//mono_ssa_deadce (cfg);
 
 		//mono_ssa_strength_reduction (cfg);
 
+		if (cfg->opt & MONO_OPT_SSAPRE) {
+			mono_perform_ssapre (cfg);
+			//mono_local_cprop (cfg);
+		}
+		
+		if (cfg->opt & MONO_OPT_DEADCE) {
+			mono_ssa_deadce (cfg);
+			deadce_has_run = TRUE;
+		}
+		
 		if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
 			mono_perform_abc_removal (cfg);
-		
-		if (cfg->opt & MONO_OPT_SSAPRE)
-			mono_perform_ssapre (cfg);
 		
 		mono_ssa_remove (cfg);
 
@@ -9344,17 +9355,32 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs;
+		
+		/* For now, compute aliasing info only if needed for deadce... */
+		if ((cfg->opt & MONO_OPT_DEADCE) && (! deadce_has_run) && (header->num_clauses == 0)) {
+			//cfg->aliasing_info = mono_build_aliasing_information (cfg);
+		}
 
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */
 		cfg->comp_done &= ~MONO_COMP_LIVENESS;
 		if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 			mono_analyze_liveness (cfg);
 
+		if (cfg->aliasing_info != NULL) {
+			//mono_aliasing_deadce (cfg->aliasing_info);
+			deadce_has_run = TRUE;
+		}
+		
 		if ((vars = mono_arch_get_allocatable_int_vars (cfg))) {
 			regs = mono_arch_get_global_int_regs (cfg);
 			if (cfg->got_var)
 				regs = g_list_delete_link (regs, regs);
 			mono_linear_scan (cfg, vars, regs, &cfg->used_int_regs);
+		}
+		
+		if (cfg->aliasing_info != NULL) {
+			mono_destroy_aliasing_information (cfg->aliasing_info);
+			cfg->aliasing_info = NULL;
 		}
 	}
 

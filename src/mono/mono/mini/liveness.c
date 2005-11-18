@@ -9,6 +9,7 @@
 
 #include "mini.h"
 #include "inssel.h"
+#include "aliasing.h"
 
 //#define DEBUG_LIVENESS
 
@@ -68,37 +69,75 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 	if (arity > 1)
 		update_gen_kill_set (cfg, bb, inst->inst_i1, inst_num);
 
-	if (inst->ssa_op == MONO_SSA_LOAD) {
-		int idx = inst->inst_i0->inst_c0;
-		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-		g_assert (idx < max_vars);
-		if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
-			/*
-			 * Variables used in exception regions can't be allocated to 
-			 * registers.
-			 */
-			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+	if ((inst->ssa_op & MONO_SSA_LOAD_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
+		MonoLocalVariableList* affected_variables;
+		MonoLocalVariableList local_affected_variable;
+		
+		if (cfg->aliasing_info == NULL) {
+			if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
+				local_affected_variable.variable_index = inst->inst_i0->inst_c0;
+				local_affected_variable.next = NULL;
+				affected_variables = &local_affected_variable;
+			} else {
+				affected_variables = NULL;
+			}
+		} else {
+			affected_variables = mono_aliasing_get_affected_variables_for_inst_traversing_code (cfg->aliasing_info, inst);
 		}
-		update_live_range (cfg, idx, bb->dfn, inst_num); 
-		if (!mono_bitset_test (bb->kill_set, idx))
-			mono_bitset_set (bb->gen_set, idx);
-		vi->spill_costs += 1 + (bb->nesting * 2);
-	} else if ((inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
-		int idx = inst->inst_i0->inst_c0;
-		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-		g_assert (idx < max_vars);
-		if (arity > 0)
-			g_assert (inst->inst_i1->opcode != OP_PHI);
-		if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
-			/*
-			 * Variables used in exception regions can't be allocated to 
-			 * registers.
-			 */
-			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+		
+		if (inst->ssa_op & MONO_SSA_LOAD) {
+			MonoLocalVariableList* affected_variable = affected_variables;
+			while (affected_variable != NULL) {
+				int idx = affected_variable->variable_index;
+				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+				g_assert (idx < max_vars);
+				if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
+					/*
+					 * Variables used in exception regions can't be allocated to 
+					 * registers.
+					 */
+					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+				}
+				update_live_range (cfg, idx, bb->dfn, inst_num); 
+				if (!mono_bitset_test (bb->kill_set, idx))
+					mono_bitset_set (bb->gen_set, idx);
+				if (inst->ssa_op == MONO_SSA_LOAD)
+					vi->spill_costs += 1 + (bb->nesting * 2);
+				
+				affected_variable = affected_variable->next;
+			}
+		} else if ((inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
+			MonoLocalVariableList* affected_variable = affected_variables;
+			while (affected_variable != NULL) {
+				int idx = affected_variable->variable_index;
+				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+				g_assert (idx < max_vars);
+				//if (arity > 0)
+					//g_assert (inst->inst_i1->opcode != OP_PHI);
+				if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
+					/*
+					 * Variables used in exception regions can't be allocated to 
+					 * registers.
+					 */
+					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+				}
+				update_live_range (cfg, idx, bb->dfn, inst_num); 
+				mono_bitset_set (bb->kill_set, idx);
+				if (inst->ssa_op == MONO_SSA_STORE)
+					vi->spill_costs += 1 + (bb->nesting * 2);
+				
+				affected_variable = affected_variable->next;
+			}
 		}
-		update_live_range (cfg, idx, bb->dfn, inst_num); 
-		mono_bitset_set (bb->kill_set, idx);
-		vi->spill_costs += 1 + (bb->nesting * 2);
+	} else if (inst->opcode == CEE_JMP) {
+		/* Keep arguments live! */
+		int i;
+		for (i = 0; i < cfg->num_varinfo; i++) {
+			if (cfg->varinfo [i]->opcode == OP_ARG) {
+				if (!mono_bitset_test (bb->kill_set, i))
+					mono_bitset_set (bb->gen_set, i);
+			}
+		}
 	}
 } 
 
@@ -114,11 +153,30 @@ update_volatile (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int inst_
 	if (arity > 1)
 		update_volatile (cfg, bb, inst->inst_i1, inst_num);
 
-	if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE)) {
-		int idx = inst->inst_i0->inst_c0;
-		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-		g_assert (idx < max_vars);
-		cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+	if (inst->ssa_op & MONO_SSA_LOAD_STORE) {
+		MonoLocalVariableList* affected_variables;
+		MonoLocalVariableList local_affected_variable;
+		
+		if (cfg->aliasing_info == NULL) {
+			if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE)) {
+				local_affected_variable.variable_index = inst->inst_i0->inst_c0;
+				local_affected_variable.next = NULL;
+				affected_variables = &local_affected_variable;
+			} else {
+				affected_variables = NULL;
+			}
+		} else {
+			affected_variables = mono_aliasing_get_affected_variables_for_inst_traversing_code (cfg->aliasing_info, inst);
+		}
+		
+		while (affected_variables != NULL) {
+			int idx = affected_variables->variable_index;
+			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+			g_assert (idx < max_vars);
+			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+			
+			affected_variables = affected_variables->next;
+		}
 	}
 } 
 
@@ -131,6 +189,9 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 	if (g_slist_find (*visited, bb))
 		return;
 
+	if (cfg->aliasing_info != NULL)
+		mono_aliasing_initialize_code_traversal (cfg->aliasing_info, bb);
+	
 	for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
 		update_volatile (cfg, bb, inst, tree_num);
 	}
@@ -215,6 +276,9 @@ mono_analyze_liveness (MonoCompile *cfg)
 		MonoInst *inst;
 		int tree_num;
 
+		if (cfg->aliasing_info != NULL)
+			mono_aliasing_initialize_code_traversal (cfg->aliasing_info, bb);
+		
 		for (tree_num = 0, inst = bb->code; inst; inst = inst->next, tree_num++) {
 #ifdef DEBUG_LIVENESS
 			mono_print_tree (inst); printf ("\n");
@@ -397,4 +461,3 @@ mono_analyze_liveness (MonoCompile *cfg)
 	}
 #endif
 }
-

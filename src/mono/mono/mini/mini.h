@@ -498,7 +498,8 @@ enum {
 	MONO_OPT_PRECOMP  = 1 << 17,
 	MONO_OPT_ABCREM   = 1 << 18,
 	MONO_OPT_SSAPRE   = 1 << 19,
-	MONO_OPT_EXCEPTION= 1 << 20
+	MONO_OPT_EXCEPTION= 1 << 20,
+	MONO_OPT_SSA      = 1 << 21
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -544,6 +545,8 @@ typedef struct {
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
+	
+	struct MonoAliasingInformation *aliasing_info;
 
 	/* A hashtable of region ID-> SP var mappings */
 	/* An SP var is a place to store the stack pointer (used by handlers)*/
@@ -634,11 +637,15 @@ extern MonoJitStats mono_jit_stats;
 
 /* values for MonoInst.ssa_op */
 enum {
-	MONO_SSA_NOP,
-	MONO_SSA_LOAD,
-	MONO_SSA_STORE,
-	MONO_SSA_MAYBE_LOAD,
-	MONO_SSA_MAYBE_STORE
+	MONO_SSA_NOP = 0,
+	MONO_SSA_ADDRESS_TAKEN = 1,
+	MONO_SSA_LOAD = 2,
+	MONO_SSA_STORE = 4,
+	MONO_SSA_LOAD_STORE = MONO_SSA_LOAD|MONO_SSA_STORE,
+	MONO_SSA_INDIRECT_LOAD = MONO_SSA_LOAD|MONO_SSA_ADDRESS_TAKEN,
+	MONO_SSA_INDIRECT_STORE = MONO_SSA_STORE|MONO_SSA_ADDRESS_TAKEN,
+	MONO_SSA_INDIRECT_LOAD_STORE =
+	MONO_SSA_LOAD|MONO_SSA_STORE|MONO_SSA_ADDRESS_TAKEN
 };
 
 #define OP_CEQ    (256+CEE_CEQ)

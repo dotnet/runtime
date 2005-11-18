@@ -104,7 +104,7 @@ replace_usage (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **
 
 	arity = mono_burg_arity [inst->opcode];
 
-	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_MAYBE_LOAD) && 
+	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_ADDRESS_TAKEN) && 
 	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		MonoInst *new_var;
 		int idx = inst->inst_i0->inst_c0;
@@ -418,7 +418,7 @@ mono_ssa_replace_copies (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, c
 
 	arity = mono_burg_arity [inst->opcode];
 
-	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_MAYBE_LOAD || inst->ssa_op == MONO_SSA_STORE) && 
+	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_ADDRESS_TAKEN || inst->ssa_op == MONO_SSA_STORE) && 
 	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		MonoInst *new_var;
 		int idx = inst->inst_i0->inst_c0;
@@ -621,7 +621,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 		}
 	}
 
-	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_MAYBE_LOAD) && 
+	if ((inst->ssa_op == MONO_SSA_LOAD || inst->ssa_op == MONO_SSA_ADDRESS_TAKEN) && 
 	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		MonoVarUsageInfo *ui = mono_mempool_alloc (cfg->mempool, sizeof (MonoVarUsageInfo));
 		idx = inst->inst_i0->inst_c0;	
@@ -1173,6 +1173,8 @@ mono_ssa_deadce (MonoCompile *cfg)
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoMethodVar *info = cfg->vars [i];
 		work_list = g_list_prepend (work_list, info);
+		
+		//if ((info->def != NULL) && (info->def->inst_i1->opcode != OP_PHI)) printf ("SSA DEADCE TOTAL LOCAL\n");
 	}
 
 	while (work_list) {
@@ -1195,6 +1197,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 					MonoMethodVar *u = cfg->vars [i1->inst_i0->inst_c0];
 					add_to_dce_worklist (cfg, info, u, &work_list);
 			}
+			//if (i1->opcode != OP_PHI) printf ("SSA DEADCE DEAD LOCAL\n");
 
 			info->def->opcode = CEE_NOP;
 			info->def->ssa_op = MONO_SSA_NOP;

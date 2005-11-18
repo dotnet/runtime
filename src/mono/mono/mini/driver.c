@@ -87,7 +87,8 @@ opt_names [] = {
 	{"precomp",    "Precompile all methods before executing Main"},
 	{"abcrem",     "Array bound checks removal"},	
 	{"ssapre",     "SSA based Partial Redundancy Elimination"},
-	{"exception",  "Optimize exception catch blocks"}
+	{"exception",  "Optimize exception catch blocks"},
+	{"ssa",        "Build and use SSA form"}
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -235,6 +236,7 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_CFOLD,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_SSA,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM | MONO_OPT_SSAPRE,
@@ -410,6 +412,7 @@ enum {
 typedef struct CompileAllThreadArgs {
 	MonoAssembly *ass;
 	int verbose;
+	guint32 opts;
 } CompileAllThreadArgs;
 
 static void
@@ -448,19 +451,20 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		cfg = mini_method_compile (method, DEFAULT_OPTIMIZATIONS, mono_get_root_domain (), FALSE, FALSE, 0);
+		cfg = mini_method_compile (method, args->opts, mono_get_root_domain (), FALSE, FALSE, 0);
 		mono_destroy_compile (cfg);
 	}
 
 }
 
 static void
-compile_all_methods (MonoAssembly *ass, int verbose)
+compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts)
 {
 	CompileAllThreadArgs args;
 
 	args.ass = ass;
 	args.verbose = verbose;
+	args.opts = opts;
 
 	/* 
 	 * Need to create a mono thread since compilation might trigger
@@ -946,7 +950,7 @@ mono_main (int argc, char* argv[])
 		i = mono_environment_exitcode_get ();
 		return i;
 	} else if (action == DO_COMPILE) {
-		compile_all_methods (assembly, mini_verbose);
+		compile_all_methods (assembly, mini_verbose, opt);
 		mini_cleanup (domain);
 		return 0;
 	}
