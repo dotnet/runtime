@@ -9358,7 +9358,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		
 		/* For now, compute aliasing info only if needed for deadce... */
 		if ((cfg->opt & MONO_OPT_DEADCE) && (! deadce_has_run) && (header->num_clauses == 0)) {
-			//cfg->aliasing_info = mono_build_aliasing_information (cfg);
+			cfg->aliasing_info = mono_build_aliasing_information (cfg);
 		}
 
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */
@@ -9367,7 +9367,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_analyze_liveness (cfg);
 
 		if (cfg->aliasing_info != NULL) {
-			//mono_aliasing_deadce (cfg->aliasing_info);
+			mono_aliasing_deadce (cfg->aliasing_info);
 			deadce_has_run = TRUE;
 		}
 		
