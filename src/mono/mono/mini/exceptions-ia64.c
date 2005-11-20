@@ -423,7 +423,7 @@ mono_arch_get_throw_exception_by_name (void)
  *
  * Returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * signature: void (*func) (guint32 ex_token_index, guint32 offset); 
  * Here, offset is the offset which needs to be substracted from the caller IP 
  * to get the IP of the throw. Passing the offset has the advantage that it 
  * needs no relocations in the caller.
@@ -466,6 +466,8 @@ mono_arch_get_throw_corlib_exception (void)
 	/* Call exception_from_token */
 	ia64_movl (code, out0 + 0, mono_defaults.exception_class->image);
 	ia64_mov (code, out0 + 1, in0 + 0);
+	ia64_movl (code, GP_SCRATCH_REG, MONO_TOKEN_TYPE_DEF);
+	ia64_add (code, out0 + 1, in0 + 0, GP_SCRATCH_REG);
 	ptr = mono_exception_from_token;
 	ia64_movl (code, GP_SCRATCH_REG, ptr);
 	ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);

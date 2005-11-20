@@ -2193,6 +2193,15 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	mono_add_patch_info (cfg, code.buf + code.nins - cfg->native_code, patch_type, data); \
 } while (0)
 
+#define emit_cond_system_exception(cfg,code,exc_name,predicate) do { \
+	MonoInst *tins = mono_branch_optimize_exception_target (cfg, bb, exc_name); \
+    if (tins == NULL) \
+        add_patch_info (cfg, code, MONO_PATCH_INFO_EXC, exc_name); \
+    else \
+		add_patch_info (cfg, code, MONO_PATCH_INFO_BB, tins->inst_true_bb); \
+	ia64_br_cond_pred (code, (predicate), 0); \
+} while (0)
+
 static Ia64CodegenState
 emit_call (MonoCompile *cfg, Ia64CodegenState code, guint32 patch_type, gconstpointer data)
 {
@@ -2712,20 +2721,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_COND_EXC_IOV:
 		case OP_COND_EXC_OV:
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "OverflowException");
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			break;
 		case OP_COND_EXC_IC:
 		case OP_COND_EXC_C:
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "OverflowException");
-			ia64_br_cond_pred (code, 7, 0);
+			emit_cond_system_exception (cfg, code, "OverflowException", 7);
 			break;
 		case OP_IA64_COND_EXC:
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, ins->inst_p1);
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, ins->inst_p1, 6);
 			break;
 		case OP_IA64_CSET:
 			ia64_mov_pred (code, 7, ins->dreg, IA64_R0);
@@ -2858,24 +2861,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CKFINITE:
 			/* Quiet NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "ArithmeticException");
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
 			/* Signaling NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x040);
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "ArithmeticException");
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
 			/* Positive infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x021);
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "ArithmeticException");
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
 			/* Negative infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x022);
-			add_patch_info (cfg, code,
-								 MONO_PATCH_INFO_EXC, "ArithmeticException");
-			ia64_br_cond_pred (code, 6, 0);
+			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
 			break;
 
 		/* Calls */
@@ -3835,6 +3830,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
+		if (patch_info->type == MONO_PATCH_INFO_NONE)
+			continue;
 		if (mono_compile_aot) {
 			NOT_IMPLEMENTED;
 		}
@@ -4162,15 +4159,12 @@ void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
-	int nthrows;
+	int i, nthrows;
 	Ia64CodegenState code;
 	gboolean empty = TRUE;
 	//unw_dyn_region_info_t *r_exceptions;
-
-	/*
 	MonoClass *exc_classes [16];
 	guint8 *exc_throw_start [16], *exc_throw_end [16];
-	*/
 	guint32 code_size = 0;
 
 	/* Compute needed space */
@@ -4206,34 +4200,77 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			MonoClass *exc_class;
 			guint8* throw_ip;
 			guint8* buf;
+			guint64 exc_token_index;
 
 			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 			g_assert (exc_class);
+			exc_token_index = mono_metadata_token_index (exc_class->type_token);
 			throw_ip = cfg->native_code + patch_info->ip.i;
 
 			ia64_begin_bundle (code);
 
 			ia64_patch (cfg->native_code + patch_info->ip.i, code.buf);
 
-			ia64_movl (code, cfg->arch.reg_out0 + 0, exc_class->type_token);
+			/* Find a throw sequence for the same exception class */
+			for (i = 0; i < nthrows; ++i)
+				if (exc_classes [i] == exc_class)
+					break;
 
-			ia64_begin_bundle (code);
+			if (i < nthrows) {
+				gint64 offset = exc_throw_end [i] - 16 - throw_ip;
 
-			patch_info->data.name = "mono_arch_throw_corlib_exception";
-			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->ip.i = code.buf - cfg->native_code;
+				if (ia64_is_adds_imm (offset))
+					ia64_adds_imm (code, cfg->arch.reg_out0 + 1, offset, IA64_R0);
+				else
+					ia64_movl (code, cfg->arch.reg_out0 + 1, offset);
 
-			/* Indirect call */
-			ia64_movl (code, GP_SCRATCH_REG, 0);
-			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
-			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
-			ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+				buf = code.buf + code.nins;
+				ia64_br_cond_pred (code, 0, 0);
+				ia64_begin_bundle (code);
+				ia64_patch (buf, exc_throw_start [i]);
 
-			/* Compute the offset */
-			buf = code.buf + 32;
-			ia64_movl (code, cfg->arch.reg_out0 + 1, buf - throw_ip);
+				patch_info->type = MONO_PATCH_INFO_NONE;
+			}
+			else {
+				/* Arg1 */
+				buf = code.buf;
+				ia64_movl (code, cfg->arch.reg_out0 + 1, 0);
 
-			ia64_br_call_reg (code, IA64_B0, IA64_B6);
+				ia64_begin_bundle (code);
+
+				if (nthrows < 16) {
+					exc_classes [nthrows] = exc_class;
+					exc_throw_start [nthrows] = code.buf;
+				}
+
+				/* Arg2 */
+				if (ia64_is_adds_imm (exc_token_index))
+					ia64_adds_imm (code, cfg->arch.reg_out0 + 0, exc_token_index, IA64_R0);
+				else
+					ia64_movl (code, cfg->arch.reg_out0 + 0, exc_token_index);
+
+				patch_info->data.name = "mono_arch_throw_corlib_exception";
+				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+				patch_info->ip.i = code.buf + code.nins - cfg->native_code;
+
+				/* Indirect call */
+				ia64_movl (code, GP_SCRATCH_REG, 0);
+				ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 8);
+				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
+				ia64_ld8 (code, IA64_GP, GP_SCRATCH_REG);
+
+				ia64_br_call_reg (code, IA64_B0, IA64_B6);
+
+				/* Patch up the throw offset */
+				ia64_begin_bundle (code);
+
+				ia64_patch (buf, (gpointer)(code.buf - 16 - throw_ip));
+
+				if (nthrows < 16) {
+					exc_throw_end [nthrows] = code.buf;
+					nthrows ++;
+				}
+			}
 
 			empty = FALSE;
 			break;
