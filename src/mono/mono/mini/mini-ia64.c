@@ -659,7 +659,8 @@ static void
 mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 {
 	CallInfo *cinfo;
-	guint32 reserved_regs = 3;
+	guint32 reserved_regs;
+	MonoMethodHeader *header;
 
 	if (cfg->arch.reg_local0 > 0)
 		/* Already done */
@@ -667,8 +668,10 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 
 	cinfo = get_call_info (mono_method_signature (cfg->method), FALSE);
 
-	/* Three registers are reserved for use by the prolog/epilog */
-	reserved_regs = 3;
+	header = mono_method_get_header (cfg->method);
+	
+	/* Some registers are reserved for use by the prolog/epilog */
+	reserved_regs = header->num_clauses ? 4 : 3;
 
 	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
 		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)) {
@@ -685,11 +688,20 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 
 	cfg->arch.reg_saved_ar_pfs = cfg->arch.reg_local0 - 1;
 	cfg->arch.reg_saved_b0 = cfg->arch.reg_local0 - 2;
-	cfg->arch.reg_saved_sp = cfg->arch.reg_local0 - 3;
+	cfg->arch.reg_fp = cfg->arch.reg_local0 - 3;
+
+	/* 
+	 * Frames without handlers save sp to fp, frames with handlers save it into
+	 * a dedicated register.
+	 */
+	if (header->num_clauses)
+		cfg->arch.reg_saved_sp = cfg->arch.reg_local0 - 4;
+	else
+		cfg->arch.reg_saved_sp = cfg->arch.reg_fp;
 
 	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
 		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)) {
-		cfg->arch.reg_saved_return_val = cfg->arch.reg_local0 - 4;
+		cfg->arch.reg_saved_return_val = cfg->arch.reg_local0 - reserved_regs;
 	}
 
 	/* 
@@ -790,7 +802,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 	else {
 		/* Locals are allocated backwards from %fp */
-		cfg->frame_reg = cfg->arch.reg_saved_sp;
+		cfg->frame_reg = cfg->arch.reg_fp;
 		offset = 0;
 	}
 
@@ -3087,19 +3099,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
 			/* 
-			 * We might be called by call_filter, in which case the
-			 * the register stack is not set up correctly. So do it now.
-			 * Allocate a stack frame and set the fp register from the value 
-			 * passed in by the caller.
-			 * R15 is used since it is writable using libunwind.
+			 * R15 determines our caller. It is used since it is writable using
+			 * libunwind.
 			 * R15 == 0 means we are called by OP_CALL_HANDLER or via resume_context ()
+			 * R15 != 0 means we are called by call_filter ().
 			 */
 			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
 			ia64_cmp_eq (code, 6, 7, IA64_R15, IA64_R0);
-			/* Alloc is not predictable so we have to use a branch */
-			ia64_br_cond_pred (code, 6, 3);
+
+			ia64_br_cond_pred (code, 6, 6);
+
+			/*
+			 * Called by call_filter:
+			 * Allocate a new stack frame, and set the fp register from the 
+			 * value passed in by the caller.
+			 * We allocate a similar frame as is done by the prolog, so
+			 * if an exception is thrown while executing the filter, the
+			 * unwinder can unwind through the filter frame using the unwind
+			 * info for the prolog. 
+			 */
 			ia64_alloc (code, cfg->arch.reg_saved_ar_pfs, cfg->arch.reg_local0 - cfg->arch.reg_in0, cfg->arch.reg_out0 - cfg->arch.reg_local0, cfg->arch.n_out_regs, 0);
+			ia64_mov_from_br (code, cfg->arch.reg_saved_b0, IA64_B0);
+			ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
 			ia64_mov (code, cfg->frame_reg, IA64_R15);
+			/* Signal to endfilter that we are called by call_filter */
+			ia64_mov (code, GP_SCRATCH_REG, IA64_R0);
+
 			/* Save the return address */
 			ia64_adds_imm (code, GP_SCRATCH_REG2, spvar->inst_offset, cfg->frame_reg);
 			ia64_st8_hint (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, 0);
@@ -3107,23 +3132,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
-		case CEE_ENDFINALLY: {
-			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
-			/* Return the saved arp_pfs value to call_filter */
-			ia64_mov (code, IA64_R9, cfg->arch.reg_saved_ar_pfs);
-			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
-			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
-			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
-			ia64_br_cond_reg (code, IA64_B6);
-			break;
-		}
+		case CEE_ENDFINALLY:
 		case OP_ENDFILTER: {
-			/* FIXME: Return the value */
+			/* FIXME: Return the value in ENDFILTER */
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
-			/* Return the saved arp_pfs value to call_filter */
-			ia64_mov (code, IA64_R9, cfg->arch.reg_saved_ar_pfs);
+
+			/* Load the return address */
 			ia64_adds_imm (code, GP_SCRATCH_REG, spvar->inst_offset, cfg->frame_reg);
 			ia64_ld8_hint (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0);
+
+			/* Test caller */
+			ia64_cmp_eq (code, 6, 7, GP_SCRATCH_REG, IA64_R0);
+			ia64_br_cond_pred (code, 7, 4);
+
+			/* Called by call_filter */
+			/* Pop frame */
+			ia64_mov_to_ar_i (code, IA64_PFS, cfg->arch.reg_saved_ar_pfs);
+			ia64_mov_to_br (code, IA64_B0, cfg->arch.reg_saved_b0);
+			ia64_br_ret_reg (code, IA64_B0);			
+
+			/* Called by CALL_HANDLER */
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 			ia64_br_cond_reg (code, IA64_B6);
 			break;
@@ -3894,8 +3922,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	ia64_mov_from_br (code, cfg->arch.reg_saved_b0, IA64_B0);
 
 	if ((alloc_size || cinfo->stack_usage) && !cfg->arch.omit_fp) {
-		ia64_unw_save_reg (code, UNW_IA64_SP, UNW_IA64_GR + cfg->frame_reg);
-		ia64_mov (code, cfg->frame_reg, IA64_SP);
+		ia64_unw_save_reg (code, UNW_IA64_SP, UNW_IA64_GR + cfg->arch.reg_saved_sp);
+		ia64_mov (code, cfg->arch.reg_saved_sp, IA64_SP);
+		if (cfg->frame_reg != cfg->arch.reg_saved_sp)
+			ia64_mov (code, cfg->frame_reg, IA64_SP);
 	}
 
 	if (alloc_size) {
