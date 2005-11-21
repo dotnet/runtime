@@ -1,3 +1,9 @@
+2005-11-21  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/Makefile.am (bin_SCRIPTS): Move 'gmcs' to ...
+	(scripts_2_0): ... here.
+	(gmcs): Remove special-case rule.
+
 2005-11-09 Michael Hutchinson <m.j.hutchinson@gmail.com>
 
 	* data/net_1_1/machine.config, data/net_2_0/machine.config: Set 
