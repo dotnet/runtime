@@ -699,7 +699,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	method = mono_get_inflated_method (method);
 
-	container = ((MonoMethodNormal *) method)->generic_container;
+	container = method->generic_container;
 	g_assert (container);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
@@ -1151,13 +1151,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (klass)
 		container = klass->generic_container;
 
-	if (!(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-	    (!(cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) || cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-		generic_container = mono_metadata_load_generic_params (image, token, container);
-		if (generic_container) {
-			mono_metadata_load_generic_param_constraints (image, token, generic_container);
-			container = generic_container;
-		}
+	generic_container = mono_metadata_load_generic_params (image, token, container);
+	if (generic_container) {
+		mono_metadata_load_generic_param_constraints (image, token, generic_container);
+		container = generic_container;
 	}
 
 	if (!sig) /* already taken from the methodref */
@@ -1187,42 +1184,43 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
-	} else {
-		if (result->signature && result->signature->generic_param_count) {
-			MonoMethodSignature *sig = result->signature;
-
-			for (i = 0; i < sig->generic_param_count; i++) {
-				generic_container->type_params [i].method = result;
-
-				mono_class_from_generic_parameter (
-					&generic_container->type_params [i], image, TRUE);
-			}
-
-			if (sig->ret->type == MONO_TYPE_MVAR) {
-				int num = sig->ret->data.generic_param->num;
-				sig->ret->data.generic_param = &generic_container->type_params [num];
-			}
-
-			for (i = 0; i < sig->param_count; i++) {
-				MonoType *t = sig->params [i];
-				if (t->type == MONO_TYPE_MVAR) {
-					int num = t->data.generic_param->num;
-					sig->params [i]->data.generic_param = &generic_container->type_params [num];
-				}
-			}
-		}
-		
-		/* FIXME: lazyness for generics too, but how? */
-		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
-		    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
-			gpointer loc = mono_image_rva_map (image, cols [0]);
-			g_assert (loc);
-			((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (
-				image, (MonoGenericContext *) container, loc);
-		}
-		
-		((MonoMethodNormal *) result)->generic_container = generic_container;
 	}
+
+	if (result->signature && result->signature->generic_param_count) {
+		MonoMethodSignature *sig = result->signature;
+
+		for (i = 0; i < sig->generic_param_count; i++) {
+			generic_container->type_params [i].method = result;
+
+			mono_class_from_generic_parameter (
+				&generic_container->type_params [i], image, TRUE);
+		}
+
+		if (sig->ret->type == MONO_TYPE_MVAR) {
+			int num = sig->ret->data.generic_param->num;
+			sig->ret->data.generic_param = &generic_container->type_params [num];
+		}
+
+		for (i = 0; i < sig->param_count; i++) {
+			MonoType *t = sig->params [i];
+			if (t->type == MONO_TYPE_MVAR) {
+				int num = t->data.generic_param->num;
+				sig->params [i]->data.generic_param = &generic_container->type_params [num];
+			}
+		}
+	}
+		
+	/* FIXME: lazyness for generics too, but how? */
+	if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+	    !(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
+		gpointer loc = mono_image_rva_map (image, cols [0]);
+		g_assert (loc);
+		((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (
+			image, (MonoGenericContext *) container, loc);
+	}
+		
+	result->generic_container = generic_container;
 
 	return result;
 }
@@ -1681,15 +1679,15 @@ mono_method_get_header (MonoMethod *method)
 	gpointer loc;
 	MonoMethodNormal* mn = (MonoMethodNormal*) method;
 	
+	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		return NULL;
+	
 #ifdef G_LIKELY
 	if (G_LIKELY (mn->header))
 #else
 	if (mn->header)
 #endif
 		return mn->header;
-	
-	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		return NULL;
 	
 	mono_loader_lock ();
 	
@@ -1706,7 +1704,7 @@ mono_method_get_header (MonoMethod *method)
 	
 	g_assert (loc);
 	
-	mn->header = mono_metadata_parse_mh_full (img, (MonoGenericContext *) mn->generic_container, loc);
+	mn->header = mono_metadata_parse_mh_full (img, (MonoGenericContext *) method->generic_container, loc);
 	
 	mono_loader_unlock ();
 	return mn->header;

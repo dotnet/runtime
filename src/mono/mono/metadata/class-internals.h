@@ -66,6 +66,7 @@ struct _MonoMethod {
 	guint32 token;
 	MonoClass *klass;
 	MonoMethodSignature *signature;
+	MonoGenericContainer *generic_container;
 	/* name is useful mostly for debugging */
 	const char *name;
 	/* this is used by the inlining algorithm */
@@ -81,7 +82,6 @@ struct _MonoMethod {
 
 struct _MonoMethodNormal {
 	MonoMethod method;
-	MonoGenericContainer *generic_container;
 	MonoMethodHeader *header;
 };
 
@@ -90,11 +90,23 @@ struct _MonoMethodWrapper {
 	void *method_data;
 };
 
+struct _MonoMethodPInvoke {
+	MonoMethod method;
+	gpointer addr;
+	/* add marshal info */
+	guint16 piflags;  /* pinvoke flags */
+	guint16 implmap_idx;  /* index into IMPLMAP */
+};
+
 /*
  * Inflated generic method.
  */
 struct _MonoMethodInflated {
-	MonoMethodNormal nmethod;
+	union {
+		MonoMethod method;
+		MonoMethodNormal normal;
+		MonoMethodPInvoke pinvoke;
+	} method;
 	MonoGenericContext *context;	/* The current context. */
 	MonoMethod *declaring;		/* the generic method definition. */
 	/* This is a big performance optimization:
@@ -108,14 +120,6 @@ struct _MonoMethodInflated {
 	 * inflated the signature and header and stored it there.
 	 */
 	MonoMethodInflated *inflated;
-};
-
-struct _MonoMethodPInvoke {
-	MonoMethod method;
-	gpointer addr;
-	/* add marshal info */
-	guint16 piflags;  /* pinvoke flags */
-	guint16 implmap_idx;  /* index into IMPLMAP */
 };
 
 typedef struct {

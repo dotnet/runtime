@@ -8300,7 +8300,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		int count = mono_array_length (rmb->generic_params);
 		MonoGenericContainer *container;
 
-		pm->generic_container = container = rmb->generic_container;
+		m->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
 
@@ -8830,7 +8830,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	if (count != mono_array_length (types))
 		return NULL;
 
-	container = ((MonoMethodNormal*) method)->generic_container;
+	container = method->generic_container;
 	g_assert (container);
 
 	if (!container->method_hash)
@@ -8900,8 +8900,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	gmethod->inst->type_argv = g_new0 (MonoType *, gmethod->inst->type_argc);
 
 	for (i = 0; i < gmethod->inst->type_argc; i++) {
-		MonoMethodNormal *mn = (MonoMethodNormal *) method;
-		MonoGenericParam *gparam = &mn->generic_container->type_params [i];
+		MonoGenericParam *gparam = &method->generic_container->type_params [i];
 
 		g_assert (gparam->pklass);
 		gmethod->inst->type_argv [i] = &gparam->pklass->byval_arg;

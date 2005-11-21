@@ -1253,6 +1253,13 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, g
 #endif
 }
 
+gpointer ves_icall_System_Threading_Interlocked_CompareExchange_T (gpointer *location, gpointer value, gpointer comparand)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return InterlockedCompareExchangePointer (location, value, comparand);
+}
+
 gint32 
 ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 {

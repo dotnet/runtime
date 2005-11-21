@@ -3294,7 +3294,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
-	generic_container = ((MonoMethodNormal *)method)->generic_container;
+	generic_container = method->generic_container;
 	sig = mono_method_signature (method);
 	num_args = sig->hasthis + sig->param_count;
 	ip = (unsigned char*)header->code;

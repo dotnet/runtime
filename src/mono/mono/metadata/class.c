@@ -617,9 +617,11 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 {
 	MonoMethodInflated *result;
 	MonoGenericContainer *container = context ? context->container : NULL;
+	MonoMethodSignature *sig;
 
 	/* The `method' has already been instantiated before -> we need to create a new context. */
-	if (method->is_inflated || (mono_method_signature_full (method, container)->is_inflated)) {
+	sig = mono_method_signature_full (method, container);
+	if (method->is_inflated || sig->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		context = inflate_generic_context (imethod->context, context);
@@ -630,13 +632,16 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 
 	/* Just create a copy, but don't actually inflate the method for performance reasons. */
 	result = g_new0 (MonoMethodInflated, 1);
-	result->nmethod = *(MonoMethodNormal*)method;
-	result->nmethod.method.is_inflated = 1;
+	if (sig->pinvoke)
+		result->method.pinvoke = *(MonoMethodPInvoke*)method;
+	else
+		result->method.normal = *(MonoMethodNormal*)method;
+	result->method.method.is_inflated = 1;
 	result->context = context;
 	result->declaring = method;
 
-	if (result->nmethod.method.klass->generic_class)
-		result->nmethod.method.klass = result->nmethod.method.klass->generic_class->container_class;
+	if (result->method.method.klass->generic_class)
+		result->method.method.klass = result->method.method.klass->generic_class->container_class;
 
 	return (MonoMethod *) result;
 }
@@ -673,12 +678,12 @@ mono_get_inflated_method (MonoMethod *method)
 
 	mh = mono_method_get_header (method);
 	if (mh)
-		res->nmethod.header = inflate_generic_header (mh, imethod->context);
+		res->method.normal.header = inflate_generic_header (mh, imethod->context);
 
 	dtype = mono_class_inflate_generic_type (&method->klass->byval_arg, imethod->context);
-	rklass = res->nmethod.method.klass = mono_class_from_mono_type (dtype);
+	rklass = res->method.method.klass = mono_class_from_mono_type (dtype);
 
-	res->nmethod.method.signature = mono_class_inflate_generic_signature (
+	res->method.method.signature = mono_class_inflate_generic_signature (
 		method->klass->image, mono_method_signature (method), imethod->context);
 
 	return (MonoMethod *) res;

@@ -2397,10 +2397,6 @@ ves_icall_MonoMethod_get_HasGenericParameters (MonoReflectionMethod *method)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return FALSE;
-
 	return mono_method_signature (method->method)->generic_param_count != 0;
 }
 
@@ -2408,10 +2404,6 @@ static gboolean
 ves_icall_MonoMethod_get_Mono_IsInflatedMethod (MonoReflectionMethod *method)
 {
 	MONO_ARCH_SAVE_REGS;
-
-	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return FALSE;
 
 	return method->method->is_inflated;
 }
@@ -2421,10 +2413,6 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return FALSE;
-
 	return mono_method_signature (method->method)->generic_param_count != 0;
 }
 
@@ -2433,15 +2421,10 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 {
 	MonoArray *res;
 	MonoDomain *domain;
-	MonoMethodNormal *mn;
 	int count, i;
 	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_object_domain (method);
-
-	if ((method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 
 	if (method->method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method->method;
@@ -2461,12 +2444,11 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 		}
 	}
 
-	mn = (MonoMethodNormal *) method->method;
 	count = mono_method_signature (method->method)->generic_param_count;
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 	for (i = 0; i < count; i++) {
-		MonoGenericParam *param = &mn->generic_container->type_params [i];
+		MonoGenericParam *param = &method->method->generic_container->type_params [i];
 		MonoClass *pklass = mono_class_from_generic_parameter (
 			param, method->method->klass->image, TRUE);
 		mono_array_set (res, gpointer, i,
@@ -6823,9 +6805,10 @@ static const IcallEntry monitor_icalls [] = {
 };
 
 static const IcallEntry interlocked_icalls [] = {
-    {"Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int},
+	{"Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int},
 	{"Add(long&,long)", ves_icall_System_Threading_Interlocked_Add_Long},
-    {"CompareExchange(double&,double,double)", ves_icall_System_Threading_Interlocked_CompareExchange_Double},
+	{"CompareExchange(T&,T,T)", ves_icall_System_Threading_Interlocked_CompareExchange_T},
+	{"CompareExchange(double&,double,double)", ves_icall_System_Threading_Interlocked_CompareExchange_Double},
 	{"CompareExchange(int&,int,int)", ves_icall_System_Threading_Interlocked_CompareExchange_Int},
 	{"CompareExchange(intptr&,intptr,intptr)", ves_icall_System_Threading_Interlocked_CompareExchange_Object},
 	{"CompareExchange(long&,long,long)", ves_icall_System_Threading_Interlocked_CompareExchange_Long},
@@ -7222,6 +7205,9 @@ mono_lookup_internal_call (MonoMethod *method)
 	const IcallMap *imap;
 
 	g_assert (method != NULL);
+
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 
 	if (method->klass->nested_in) {
 		int pos = concat_class_name (mname, sizeof (mname)-2, method->klass->nested_in);
