@@ -598,7 +598,7 @@ update_aliasing_information_on_inst (MonoAliasingInformation *info, MonoAliasing
 		}
 		
 		info->number_of_arguments = 0;
-	} else if (inst->opcode == CEE_ADD) {
+	} else if ((inst->opcode == CEE_ADD) || (inst->opcode == OP_LADD)){
 		if ((context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL) || (context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL_FIELD)) {
 			int variable_index = context.subtree_aliases [0].variable_index;
 			//ADD_BAD_ALIAS (info, variable_index);
