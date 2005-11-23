@@ -1253,11 +1253,20 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, g
 #endif
 }
 
-gpointer ves_icall_System_Threading_Interlocked_CompareExchange_T (gpointer *location, gpointer value, gpointer comparand)
+MonoObject*
+ves_icall_System_Threading_Interlocked_CompareExchange_T (MonoObject **location, MonoObject *value, MonoObject *comparand)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return InterlockedCompareExchangePointer (location, value, comparand);
+	return InterlockedCompareExchangePointer ((gpointer *)location, value, comparand);
+}
+
+MonoObject*
+ves_icall_System_Threading_Interlocked_Exchange_T (MonoObject **location, MonoObject *value)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return InterlockedExchangePointer ((gpointer *)location, value);
 }
 
 gint32 

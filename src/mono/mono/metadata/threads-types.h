@@ -75,7 +75,8 @@ extern gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64
 extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location, MonoObject *value, MonoObject *comparand);
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location, gfloat value, gfloat comparand);
 extern gdouble ves_icall_System_Threading_Interlocked_CompareExchange_Double(gdouble *location, gdouble value, gdouble comparand);
-extern gpointer ves_icall_System_Threading_Interlocked_CompareExchange_T(gpointer *location, gpointer value, gpointer comparand);
+extern MonoObject* ves_icall_System_Threading_Interlocked_CompareExchange_T(MonoObject **location, MonoObject *value, MonoObject *comparand);
+extern MonoObject* ves_icall_System_Threading_Interlocked_Exchange_T(MonoObject **location, MonoObject *value);
 
 extern gint32 ves_icall_System_Threading_Interlocked_Add_Int(gint32 *location, gint32 value);
 extern gint64 ves_icall_System_Threading_Interlocked_Add_Long(gint64 *location, gint64 value);

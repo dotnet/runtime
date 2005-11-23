@@ -6819,6 +6819,7 @@ static const IcallEntry interlocked_icalls [] = {
 	{"CompareExchange(single&,single,single)", ves_icall_System_Threading_Interlocked_CompareExchange_Single},
 	{"Decrement(int&)", ves_icall_System_Threading_Interlocked_Decrement_Int},
 	{"Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long},
+	{"Exchange(T&,T)", ves_icall_System_Threading_Interlocked_Exchange_T},
 	{"Exchange(double&,double)", ves_icall_System_Threading_Interlocked_Exchange_Double},
 	{"Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int},
 	{"Exchange(intptr&,intptr)", ves_icall_System_Threading_Interlocked_Exchange_Object},
