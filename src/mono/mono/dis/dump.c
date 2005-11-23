@@ -767,6 +767,9 @@ has_cattr_get_table (MonoImage *m, guint32 val)
 	case MONO_CUSTOM_ATTR_MANIFEST:
 		table = "Manifest";
 		break;
+	case MONO_CUSTOM_ATTR_GENERICPAR:
+		table = "GenericParam";
+		break;
 	default:
 		table = "Unknown";
 		break;

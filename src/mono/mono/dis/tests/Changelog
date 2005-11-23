@@ -1,3 +1,8 @@
+2005-11-23  Ankit Jain  <jankit@novell.com>
+
+	* gen-cattr.cs: New test case for custom attributes on
+	type parameters.
+
 2005-11-15  Ankit Jain  <jankit@novell.com>
 
 	* test1.cs, test2.cs, test3.cs: New test cases for Bug #76671.

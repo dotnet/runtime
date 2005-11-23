@@ -739,6 +739,39 @@ pinvoke_info (MonoImage *m, guint32 mindex)
 	return NULL;
 }
 
+/*
+ * dump_cattrs_for_type_params
+ *
+ * @m: 
+ * @token: TypeOrMethodDef token, owner for GenericParam
+ *
+ * Dumps the custom attributes for @token's type parameters
+ */
+static void
+dump_cattrs_for_type_params (MonoImage *m, guint32 token, const char *indent)
+{
+	MonoTableInfo *tdef  = &m->tables [MONO_TABLE_GENERICPARAM];
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	guint32 owner = 0, i;
+	GList *list = NULL;
+
+	if (! (i = mono_metadata_get_generic_param_row (m, token, &owner)))
+		return;
+
+	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
+	do {
+		list = dis_get_custom_attrs (m, mono_metadata_make_token (MONO_TABLE_GENERICPARAM, i));
+		if (list) {
+			fprintf (output, "%s.param type %s\n", indent, mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+			dump_cattrs_list (list, indent);
+		}
+
+		if (++i > tdef->rows)
+			break;
+		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
+	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
+}
+
 static void
 dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 	MonoTableInfo *methodt;
@@ -853,8 +886,9 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		
 		fprintf (output, "    {\n");
 		dump_cattrs (m, token, "        ");
+		dump_cattrs_for_type_params (m, MONO_TOKEN_METHOD_DEF | (i + 1), "        ");
 		dump_cattrs_for_method_params (m, i, ms);
-		/* FIXME: need to sump also param custom attributes */
+
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dump_declarative_security (m, OBJECT_TYPE_METHODDEF, i + 1, "        ");
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
@@ -1173,6 +1207,7 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	dis_interfaces (m, n + 1, (MonoGenericContext *) container);
 	fprintf (output, "  {\n");
         if (!forward) {
+        	dump_cattrs_for_type_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
         	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 	        dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
 

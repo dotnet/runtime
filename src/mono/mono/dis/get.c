@@ -2376,6 +2376,9 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 	case MONO_TABLE_PARAM:
 		idx |= MONO_CUSTOM_ATTR_PARAMDEF;
 		break;
+	case MONO_TABLE_GENERICPARAM:
+		idx |= MONO_CUSTOM_ATTR_GENERICPAR;
+		break;
 	default:
 		g_print ("Missing custom attr get support for token 0x%08x\n", token);
 		return NULL;
