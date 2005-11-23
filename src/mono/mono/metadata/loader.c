@@ -1154,6 +1154,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
+
+		for (i = 0; i < generic_container->type_argc; i++) {
+			generic_container->type_params [i].method = result;
+
+			mono_class_from_generic_parameter (
+				&generic_container->type_params [i], image, TRUE);
+		}
+
 		container = generic_container;
 	}
 
@@ -1165,6 +1173,16 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (* sig & 0x10 || container) {
 		result->signature = mono_metadata_parse_method_signature_full (
 			image, container, idx, sig, NULL);
+
+		/* Verify metadata consistency */
+		if (result->signature->generic_param_count) {
+			if (!container || !container->is_method)
+				g_error ("Signature claims method has generic parameters, but generic_params table says it doesn't");
+			if (container->type_argc != result->signature->generic_param_count)
+				g_error ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %d",
+					 result->signature->generic_param_count, container->type_argc);
+		} else if (container && container->is_method && container->type_argc)
+			g_error ("generic_params table claims method has generic parameters, but signature says it doesn't");
 
 		if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 			result->signature->pinvoke = 1;
@@ -1184,30 +1202,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
-	}
-
-	if (result->signature && result->signature->generic_param_count) {
-		MonoMethodSignature *sig = result->signature;
-
-		for (i = 0; i < sig->generic_param_count; i++) {
-			generic_container->type_params [i].method = result;
-
-			mono_class_from_generic_parameter (
-				&generic_container->type_params [i], image, TRUE);
-		}
-
-		if (sig->ret->type == MONO_TYPE_MVAR) {
-			int num = sig->ret->data.generic_param->num;
-			sig->ret->data.generic_param = &generic_container->type_params [num];
-		}
-
-		for (i = 0; i < sig->param_count; i++) {
-			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_MVAR) {
-				int num = t->data.generic_param->num;
-				sig->params [i]->data.generic_param = &generic_container->type_params [num];
-			}
-		}
 	}
 		
 	/* FIXME: lazyness for generics too, but how? */
