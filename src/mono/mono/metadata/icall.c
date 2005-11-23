@@ -2297,10 +2297,11 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
-	method = type->type->data.generic_param->method;
-	if (!method)
+	if (type->type->type != MONO_TYPE_MVAR)
 		return NULL;
 
+	method = type->type->data.generic_param->method;
+	g_assert (method);
 	klass = mono_class_from_mono_type (type->type);
 	return mono_method_get_object (mono_object_domain (type), method, klass);
 }
@@ -2436,6 +2437,8 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 
 			for (i = 0; i < count; i++) {
 				MonoType *t = gmethod->inst->type_argv [i];
+				/* Ensure that our dummy null-owner types don't leak into userspace.  */
+				g_assert ((t->type != MONO_TYPE_VAR && t->type != MONO_TYPE_MVAR) || t->data.generic_param->owner);
 				mono_array_set (
 					res, gpointer, i, mono_type_get_object (domain, t));
 			}
