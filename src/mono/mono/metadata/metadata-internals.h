@@ -338,5 +338,7 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 					      gboolean save_public_key,
 					      gboolean *is_version_defined);
 
+guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

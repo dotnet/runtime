@@ -4163,34 +4163,51 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	return TRUE;
 }
 
-gboolean
-mono_metadata_has_generic_params (MonoImage *image, guint32 token)
+/*
+ * mono_metadata_get_generic_param_row:
+ *
+ * @image:
+ * @token: TypeOrMethodDef token, owner for GenericParam
+ * @owner: coded token, set on return
+ * 
+ * Returns: 1-based row-id in the GenericParam table whose
+ * owner is @token. 0 if not found.
+ */
+guint32
+mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 i, owner = 0;
+	guint32 i;
+
+	g_assert (owner);
+	if (!tdef->base)
+		return 0;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
-		owner = MONO_TYPEORMETHOD_TYPE;
+		*owner = MONO_TYPEORMETHOD_TYPE;
 	else if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-		owner = MONO_TYPEORMETHOD_METHOD;
+		*owner = MONO_TYPEORMETHOD_METHOD;
 	else {
-		g_error ("wrong token %x to load_generics_params", token);
-		return FALSE;
+		g_error ("wrong token %x to get_generic_param_row", token);
+		return 0;
 	}
-	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
-	if (!tdef->base)
-		return FALSE;
+	*owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
 
 	for (i = 0; i < tdef->rows; ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-		if (cols [MONO_GENERICPARAM_OWNER] == owner)
-			break;
+		if (cols [MONO_GENERICPARAM_OWNER] == *owner)
+			return i + 1;
 	}
-	if (i >= tdef->rows)
-		return FALSE;
 
-	return TRUE;
+	return 0;
+}
+
+gboolean
+mono_metadata_has_generic_params (MonoImage *image, guint32 token)
+{
+	guint32 owner;
+	return mono_metadata_get_generic_param_row (image, token, &owner);
 }
 
 /*
@@ -4204,33 +4221,11 @@ void
 mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container)
 {
-	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
-	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 i, owner = 0, last_num, n;
-
-	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
-		owner = MONO_TYPEORMETHOD_TYPE;
-	else if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-		owner = MONO_TYPEORMETHOD_METHOD;
-	else {
-		g_error ("wrong token %x to load_generics_param_constraints", token);
+	guint32 start_row, i, owner;
+	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return;
-	}
-	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
-	if (!tdef->base)
-		return;
-
-	for (i = 0; i < tdef->rows; ++i) {
-		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-		if (cols [MONO_GENERICPARAM_OWNER] == owner)
-			break;
-	}
-	last_num = i;
-	if (i >= tdef->rows)
-		return;
-
 	for (i = 0; i < container->type_argc; i++)
-		get_constraints (image, last_num + i + 1, &container->type_params [i].constraints,
+		get_constraints (image, start_row + i, &container->type_params [i].constraints,
 				 &container->context);
 }
 
@@ -4254,30 +4249,13 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 i, owner = 0, last_num, n;
+	guint32 i, owner = 0, n;
 	MonoGenericContainer *container;
 	MonoGenericParam *params;
 
-	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
-		owner = MONO_TYPEORMETHOD_TYPE;
-	else if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-		owner = MONO_TYPEORMETHOD_METHOD;
-	else {
-		g_error ("wrong token %x to load_generics_params", token);
+	if (!(i = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return NULL;
-	}
-	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
-	if (!tdef->base)
-		return NULL;
-
-	for (i = 0; i < tdef->rows; ++i) {
-		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-		if (cols [MONO_GENERICPARAM_OWNER] == owner)
-			break;
-	}
-	last_num = i;
-	if (i >= tdef->rows)
-		return NULL;
+	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	params = NULL;
 	n = 0;
 	container = g_new0 (MonoGenericContainer, 1);
@@ -4291,9 +4269,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		params [n - 1].constraints = NULL;
-		if (++i >= tdef->rows)
+		if (++i > tdef->rows)
 			break;
-		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
+		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
 	container->type_argc = n;
