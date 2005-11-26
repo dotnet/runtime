@@ -6836,6 +6836,11 @@ static const IcallEntry mutex_icalls [] = {
 	{"ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal}
 };
 
+static const IcallEntry semaphore_icalls [] = {
+	{"CreateSemaphore_internal(int,int,string,bool&)", ves_icall_System_Threading_Semaphore_CreateSemaphore_internal},
+	{"ReleaseSemaphore_internal(intptr,int,bool&)", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal}
+};
+
 static const IcallEntry nativeevents_icalls [] = {
 	{"CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal},
 	{"CreateEvent_internal", ves_icall_System_Threading_Events_CreateEvent_internal},
@@ -7086,6 +7091,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Threading.Monitor", monitor_icalls, G_N_ELEMENTS (monitor_icalls)},
 	{"System.Threading.Mutex", mutex_icalls, G_N_ELEMENTS (mutex_icalls)},
 	{"System.Threading.NativeEventCalls", nativeevents_icalls, G_N_ELEMENTS (nativeevents_icalls)},
+	{"System.Threading.Semaphore", semaphore_icalls, G_N_ELEMENTS (semaphore_icalls)},
 	{"System.Threading.Thread", thread_icalls, G_N_ELEMENTS (thread_icalls)},
 	{"System.Threading.ThreadPool", threadpool_icalls, G_N_ELEMENTS (threadpool_icalls)},
 	{"System.Threading.WaitHandle", waithandle_icalls, G_N_ELEMENTS (waithandle_icalls)},

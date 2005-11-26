@@ -1040,6 +1040,39 @@ void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) {
 	ReleaseMutex(handle);
 }
 
+HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, MonoBoolean *created)
+{ 
+	HANDLE sem;
+	
+	MONO_ARCH_SAVE_REGS;
+   
+	*created = TRUE;
+	
+	if (name == NULL) {
+		sem = CreateSemaphore (NULL, initialCount, maximumCount, NULL);
+	} else {
+		sem = CreateSemaphore (NULL, initialCount, maximumCount,
+				       mono_string_chars (name));
+		
+		if (GetLastError () == ERROR_ALREADY_EXISTS) {
+			*created = FALSE;
+		}
+	}
+
+	return(sem);
+}                                                                   
+
+gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE handle, gint32 releaseCount, MonoBoolean *fail)
+{ 
+	gint32 prevcount;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	*fail = !ReleaseSemaphore (handle, releaseCount, &prevcount);
+
+	return (prevcount);
+}
+
 HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name) {
 	MONO_ARCH_SAVE_REGS;
 
