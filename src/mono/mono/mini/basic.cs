@@ -1117,22 +1117,7 @@ class Tests {
 		
 		return 0;
 	}
-	
-	static byte b;
-	public static int test_0_byte_compares ()
-	{
-		b = 0xff;
-		if (b == -1)
-			return 1;
-		b = 0;
-		if (!(b < System.Byte.MaxValue))
-			return 2;
-		
-		if (!(b <= System.Byte.MaxValue))
-			return 3;
-		
-		return 0;
-	}
+
 	public static int test_0_cmp_regvar_zero ()
 	{
 		int n = 10;
