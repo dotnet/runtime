@@ -912,5 +912,19 @@ ncells ) {
 	{
 		return arg_only_written ("md.in", null);
 	}		
+
+	static long position = 0;
+
+	public static int test_4_static_inc_long () {
+
+		int count = 4;
+
+		position = 0;
+
+		position += count;
+
+		return (int)position;
+	}
+
 }
 

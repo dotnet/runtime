@@ -260,5 +260,38 @@ class Tests {
 			return 2;
 		return 1;
 	}
+
+	static long return_5low () {
+		return 5;
+	}
+	
+	static long return_5high () {
+		return 0x500000000;
+	}
+
+	public static int test_3_long_ret () {
+		long val = return_5low ();
+		return (int) (val - 2);
+	}
+
+	public static int test_1_long_ret2 () {
+		long val = return_5high ();
+		if (val > 0xffffffff)
+			return 1;
+		return 0;
+	}
+
+	static void doit (double value, out long m) {
+		m = (long) value;
+	}
+
+	public static int test_0_ftol_clobber () {
+		long m;
+		doit (1.3, out m);
+		if (m != 1)
+			return 2;
+		return 0;
+	}
+
 }
 
