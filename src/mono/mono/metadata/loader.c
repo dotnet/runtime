@@ -471,9 +471,9 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 }
 
 static MonoMethod *
-method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context,
-		       MonoGenericContext *typespec_context)
+method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context)
 {
+	MonoGenericContext *context = NULL;
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
 	MonoTableInfo *tables = image->tables;
@@ -542,10 +542,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	 * `typespec_context' and thus `klass' may have different generic instantiations.
 	 *
 	 * After parsing the `klass', we have to distinguish two cases:
-	 * Either this class introduces new type parameters (or a new generic instantiation)
-	 * or it does not.  If it does, we parse the signature in this new context; otherwise
-	 * we parse it in the current context.
-	 *
+	 * If this class introduces new type parameters (or a new generic instantiation)
+	 * we parse the signature in this new context.
 	 */
 	if (klass->generic_class)
 		context = klass->generic_class->context;
@@ -695,7 +693,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
 	else
-		method = method_from_memberref (image, nindex, container, context);
+		method = method_from_memberref (image, nindex, context);
 
 	method = mono_get_inflated_method (method);
 
@@ -1128,7 +1126,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		result = method_from_memberref (image, idx, context, context);
+		result = method_from_memberref (image, idx, context);
 
 		return result;
 	}
