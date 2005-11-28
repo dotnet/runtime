@@ -32,7 +32,7 @@ static_libs=	\
 RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default $(top_builddir)/runtime/mono-wrapper
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162
-ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
+ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/default/ilasm.exe
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
