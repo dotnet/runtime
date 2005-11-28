@@ -1536,7 +1536,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature *
-mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *generic_container,
+mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *container,
 					   int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
@@ -1544,7 +1544,6 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
-	MonoGenericContainer *container;
 
 	if (*ptr & 0x10)
 		gen_param_count = 1;
@@ -1585,25 +1584,6 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 
 	if (gen_param_count)
 		method->has_type_parameters = 1;
-
-	if (gen_param_count && (!generic_container || !generic_container->is_method)) {
-		container = g_new0 (MonoGenericContainer, 1);
-
-		container->parent = generic_container;
-		container->is_signature = 1;
-
-		container->context.container = container;
-
-		container->type_argc = gen_param_count;
-		container->type_params = g_new0 (MonoGenericParam, gen_param_count);
-
-		for (i = 0; i < gen_param_count; i++) {
-			container->type_params [i].owner = container;
-			container->type_params [i].num = i;
-		}
-	} else {
-		container = generic_container;
-	}
 
 	if (call_convention != 0xa) {
 		method->ret = mono_metadata_parse_type_full (m, (MonoGenericContext *) container, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
@@ -1901,8 +1881,8 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 		generic_container = generic_container->parent;
 
 	/* Ensure that we have the correct type of GenericContainer */
-	g_assert (is_mvar || !(generic_container->is_method || generic_container->is_signature));
-	g_assert (!is_mvar || (generic_container->is_method || generic_container->is_signature));
+	g_assert (is_mvar || !generic_container->is_method);
+	g_assert (!is_mvar || generic_container->is_method);
 
 	g_assert (index < generic_container->type_argc);
 	return &generic_container->type_params [index];
@@ -3716,8 +3696,8 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 			if (type->type == MONO_TYPE_VAR && gc->parent)
 				gc = gc->parent;
 
-			g_assert (type->type != MONO_TYPE_MVAR || (gc->is_method || gc->is_signature));
-			g_assert (type->type != MONO_TYPE_VAR || !(gc->is_method || gc->is_signature));
+			g_assert (type->type != MONO_TYPE_MVAR || gc->is_method);
+			g_assert (type->type != MONO_TYPE_VAR || !gc->is_method);
 
 			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
 			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;

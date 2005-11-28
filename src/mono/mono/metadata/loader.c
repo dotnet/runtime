@@ -477,7 +477,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	guint32 nindex, class;
 	const char *mname;
 	MonoMethodSignature *sig;
-	MonoGenericContainer *container;
 	const char *ptr;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
@@ -528,29 +527,19 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	g_assert (klass);
 	mono_class_init (klass);
 
-	/*
-	 * Generics: Correctly set the context before parsing the method.
-	 *
-	 * For MONO_MEMBERREF_PARENT_TYPEDEF or MONO_MEMBERREF_PARENT_TYPEREF, our parent
-	 * is "context-free"; ie. `klass' will always be the same generic instantation.
-	 *
-	 * For MONO_MEMBERREF_PARENT_TYPESPEC, we have to parse the typespec in the
-	 * `typespec_context' and thus `klass' may have different generic instantiations.
-	 *
-	 * After parsing the `klass', we have to distinguish two cases:
-	 * If this class introduces new type parameters (or a new generic instantiation)
-	 * we parse the signature in this new context.
-	 */
-	if (klass->generic_class)
-		context = klass->generic_class->context;
-	else if (klass->generic_container)
-		context = (MonoGenericContext *) klass->generic_container;
-	container = context ? context->container : NULL;
-
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	sig = mono_metadata_parse_method_signature_full (image, container, 0, ptr, NULL);
-	sig = mono_class_inflate_generic_signature (image, sig, context);
+
+	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+
+	/* If the class is a generic instantiation, ensure that all VAR references in the signature
+	   are replaced by the corresponding type argument.  Note that MVARs are left alone. */
+	if (klass->generic_class) {
+		MonoMethodSignature *old_sig = sig;
+		sig = mono_class_inflate_generic_signature (image, sig, klass->generic_class->context);
+		g_assert (sig != old_sig);
+		mono_metadata_free_method_signature (old_sig);
+	}
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
@@ -649,17 +638,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	g_assert (param_count);
-
-	/*
-	 * Check whether we're in a generic type or method.
-	 */
-	container = context ? context->container : NULL;
-	if (container && (container->is_method || container->is_signature)) {
-		/*
-		 * If we're in a generic method, use the containing class'es context.
-		 */
-		container = container->parent;
-	}
 
 	/*
 	 * Be careful with the two contexts here:

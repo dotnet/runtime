@@ -464,8 +464,6 @@ struct _MonoGenericContainer {
 	int type_argc    : 6;
 	/* If true, we're a generic method, otherwise a generic type definition. */
 	int is_method    : 1;
-	/* If true, we're a temporary container which is used while parsing signatures. */
-	int is_signature : 1;
 	/* Our type parameters. */
 	MonoGenericParam *type_params;
 	/* Cache for MonoTypes */
