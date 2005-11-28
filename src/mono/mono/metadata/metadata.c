@@ -3704,6 +3704,7 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 	const char *ptr;
 	guint32 len;
 	MonoType *type;
+	gboolean cache_type = TRUE;
 
 	mono_loader_lock ();
 
@@ -3711,21 +3712,33 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open &&
 	    !has_same_context (type->data.generic_class->inst, generic_context))
-		/* is_open AND does not have the same context as generic_context,
-		   so don't use cached MonoType */
+		/* is_open AND does not have the same context as generic_context, so don't use cached MonoType */
 		type = NULL;
 
 	if (type && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		g_assert (generic_context);
-		if (((MonoGenericContext *) type->data.generic_param->owner) != generic_context) {
-			/* cached MonoType's context differs from generic_context */
+		if (generic_context) {
 			MonoGenericContainer *gc = generic_context->container;
 			if (type->type == MONO_TYPE_VAR && gc->parent)
 				gc = gc->parent;
 
 			g_assert (type->type == MONO_TYPE_VAR || gc->is_method);
 
+			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
 			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
+
+			/* Either way, some other variant of this generic-parameter is already in the typespec cache. */
+			cache_type = FALSE;
+		} else if (type->data.generic_param->owner) {
+			/*
+			 * We need a null-owner generic-parameter, but the one in the cache has an owner.
+			 * Ensure that the null-owner generic-parameter goes into the cache.
+			 *
+			 * Together with the 'cache_type = FALSE;' line in the other arm of this condition,
+			 * this ensures that a null-owner generic-parameter, once created, doesn't need to be re-created.
+			 * The generic-parameters with owners are cached in their respective owners, and thus don't
+			 * need to be re-created either.
+			 */
+			type = NULL;
 		}
 	}
 
@@ -3742,7 +3755,8 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	type = g_new0 (MonoType, 1);
 
-	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
+	if (!cache_type)
+		g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
 
 	if (*ptr == MONO_TYPE_BYREF) {
 		type->byref = 1; 
@@ -3759,7 +3773,6 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 		container->types [type->data.generic_param->num] = type;
 	}
-
 
 	mono_loader_unlock ();
 
