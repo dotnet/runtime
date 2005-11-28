@@ -1891,26 +1891,21 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 		return param;
 	}
 	generic_container = generic_context->container;
+	g_assert (generic_container);
 
-	if (!is_mvar) {
-		g_assert (generic_container);
-		if (generic_container->parent) {
-			/*
-			 * The current MonoGenericContainer is a generic method -> its `parent'
-			 * points to the containing class'es container.
-			 */
-			generic_container = generic_container->parent;
-		}
-		g_assert (generic_container && !generic_container->is_method);
-		g_assert (index < generic_container->type_argc);
+	if (!is_mvar && generic_container->parent)
+		/*
+		 * The current MonoGenericContainer is a generic method -> its `parent'
+		 * points to the containing class'es container.
+		 */
+		generic_container = generic_container->parent;
 
-		return &generic_container->type_params [index];
-	} else {
-		g_assert (generic_container && (generic_container->is_method || generic_container->is_signature));
-		g_assert (index < generic_container->type_argc);
+	/* Ensure that we have the correct type of GenericContainer */
+	g_assert (is_mvar || !(generic_container->is_method || generic_container->is_signature));
+	g_assert (!is_mvar || (generic_container->is_method || generic_container->is_signature));
 
-		return &generic_container->type_params [index];
-	}
+	g_assert (index < generic_container->type_argc);
+	return &generic_container->type_params [index];
 }
 
 /* 
@@ -3721,7 +3716,8 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 			if (type->type == MONO_TYPE_VAR && gc->parent)
 				gc = gc->parent;
 
-			g_assert (type->type == MONO_TYPE_VAR || gc->is_method);
+			g_assert (type->type != MONO_TYPE_MVAR || (gc->is_method || gc->is_signature));
+			g_assert (type->type != MONO_TYPE_VAR || !(gc->is_method || gc->is_signature));
 
 			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
 			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
