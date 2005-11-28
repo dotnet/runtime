@@ -1140,6 +1140,11 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
 	else 
 		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
+
+	if (!klass) {
+		guint32 type = mono_metadata_typedef_from_method (image, token);
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+	}
 	
 	result->slot = -1;
 	result->klass = klass;
@@ -1148,9 +1153,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [3]);
 
-	if (klass)
-		container = klass->generic_container;
-
+	container = klass->generic_container;
 	generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
@@ -1186,11 +1189,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 		if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 			result->signature->pinvoke = 1;
-	}
-
-	if (!result->klass) {
-		guint32 type = mono_metadata_typedef_from_method (image, token);
-		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 	}
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {

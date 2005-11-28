@@ -1824,7 +1824,9 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	gtype = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
-	g_assert ((gclass->context->container = gklass->generic_container) != NULL);
+	g_assert (gklass->generic_container);
+	gclass->context->container = gklass->generic_container;
+
 	count = mono_metadata_decode_value (ptr, &ptr);
 
 	gclass->inst = mono_metadata_parse_generic_inst (m, generic_context, count, ptr, &ptr);
