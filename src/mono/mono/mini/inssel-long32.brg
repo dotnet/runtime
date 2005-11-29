@@ -625,12 +625,8 @@ lreg: CEE_CONV_I8 (OP_ICONST) {
 }
 
 lreg: CEE_CONV_I8 (reg) {
-	MonoInst *is_negative, *end_label;
 	int tmpreg = mono_regstate_next_int (s->rs);
 	
-	MONO_NEW_LABEL (s, is_negative);
-	MONO_NEW_LABEL (s, end_label);
-
 	/* branchless code:
 	 * low = reg;
 	 * tmp = low > -1 ? 1: 0;
