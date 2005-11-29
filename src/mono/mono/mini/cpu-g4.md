@@ -335,7 +335,7 @@ storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:12
 storei8_membase_imm: dest:b 
 storei8_membase_reg: dest:b src1:i 
-storer4_membase_reg: dest:b src1:f len:12
+storer4_membase_reg: dest:b src1:f len:16
 storer8_membase_reg: dest:b src1:f len:12
 load_membase: dest:i src1:b len:12
 loadi1_membase: dest:i src1:b len:12
