@@ -272,6 +272,7 @@ function clickHandler (evt)
 		var strField;
 		var strNamespace;
 		var strAssembly;
+		var strFieldType;
 
 		elt = getParentDiv (elt);
 		var strEltClass = elt.className;
@@ -289,7 +290,8 @@ function clickHandler (evt)
 			strEltClass == 'e' ||	// event
 			strEltClass == 'f')	// field
 		{
-			strField = getName (elt).toLowerCase ();
+			strFieldType = strEltClass;
+			strField = getName (elt);
 			var match = strField.match ( /[\.A-Z0-9_]*/i );
 			if (match)
 				strField = match [0];
@@ -357,11 +359,49 @@ function clickHandler (evt)
 		}
 		else if (strNamespace)
 		{
-			if (strClass)
-				strNamespace += '.' + strClass.toLowerCase ();
-			if (strField)
-				strNamespace += '.' + strField;
-			window.open ('http://msdn2.microsoft.com/library/' + strNamespace + '.aspx', 'MSDN');
+			if (document.getElementById ('TargetMsdn1').checked)
+			{
+				var re = /\./g ;
+				strNamespace = strNamespace.toLowerCase ().replace (re, '');
+				if (strClass)
+					strNamespace += strClass.toLowerCase () + 'class';
+				if (strField)
+					strNamespace += strField;
+				if (strClass || strField)
+					strNamespace += 'topic';
+
+				window.open ('http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrf' + strNamespace + '.asp', 'MSDN');
+
+			}
+			else
+			{
+				if (strClass)
+					strNamespace += '.' + strClass;
+				if (strField)
+					strNamespace += '.' + strField;
+				if (document.getElementById ('TargetMonodoc').checked)
+				{
+					var category = null;
+					if (strClass == null)
+						category = "N:";
+					else if (strField == null)
+						category = "T:";
+					else {
+						switch (strFieldType) {
+						case 'f': category = "F:"; break;
+						case 'p': category = "P:"; break;
+						case 'm': category = "M:"; break;
+						case 'e': category = "E:"; break;
+						}
+					}
+					if (category != null)
+						window.open ('http://www.go-mono.com/docs/monodoc.ashx?link=' + category + strNamespace);
+				}
+				else
+				{
+					window.open ('http://msdn2.microsoft.com/library/' + strNamespace + '.aspx', 'MSDN');
+				}
+			}
 		}
 	}
 	else
