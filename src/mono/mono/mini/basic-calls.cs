@@ -232,22 +232,6 @@ class Tests {
 		return isnan (f) ? 1 : 0;
 	}
 
-	struct FooStruct {
-
-		public FooStruct (long l) {
-		}
-	}
-
-	static int test_0_calls_opcode_emulation () {
-		// Test that emulated opcodes do not clobber arguments already in
-		// out registers
-		checked {
-			long val = 10000;
-			new FooStruct (val * 10000);
-		}
-		return 0;
-	}
-
 	static int first_is_zero (int v1, int v2) {
 		if (v1 != 0)
 			return -1;
