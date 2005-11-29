@@ -635,22 +635,13 @@ lreg: CEE_CONV_I8 (reg) {
 	 * low = reg;
 	 * tmp = low > -1 ? 1: 0;
 	 * high = tmp - 1; if low is zero or pos high becomes 0, else -1
-	 * not sure why it doesn't work in practice
 	 */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg1);
-	/*MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->reg1, -1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->reg1, -1);
 	tree->dreg = tmpreg;
 	tree->opcode = OP_CGT;
 	mono_bblock_add_inst (s->cbb, tree);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, state->reg2, tmpreg, -1);*/
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->reg1, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT, is_negative);
-	MONO_EMIT_NEW_ICONST (s, tmpreg, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
-	mono_bblock_add_inst (s->cbb, is_negative);
-	MONO_EMIT_NEW_ICONST (s, tmpreg, -1);
-	mono_bblock_add_inst (s->cbb, end_label);
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg2, tmpreg);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, state->reg2, tmpreg, 1);
 }
 
 lreg: CEE_CONV_U8 (reg) {
