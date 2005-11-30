@@ -2647,13 +2647,73 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 	return result;
 }
 
+static guint64
+read_enum_value (char *mem, int type)
+{
+	switch (type) {
+	case MONO_TYPE_U1:
+		return *(guint8*)mem;
+	case MONO_TYPE_I1:
+		return *(gint8*)mem;
+	case MONO_TYPE_U2:
+		return *(guint16*)mem;
+	case MONO_TYPE_I2:
+		return *(gint16*)mem;
+	case MONO_TYPE_U4:
+		return *(guint32*)mem;
+	case MONO_TYPE_I4:
+		return *(gint32*)mem;
+	case MONO_TYPE_U8:
+		return *(guint64*)mem;
+	case MONO_TYPE_I8:
+		return *(gint64*)mem;
+	default:
+		g_assert_not_reached ();
+	}
+	return 0;
+}
+
+static void
+write_enum_value (char *mem, int type, guint64 value)
+{
+	switch (type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1: {
+		guint8 *p = mem;
+		*p = value;
+		break;
+	}
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2: {
+		guint16 *p = (void*)mem;
+		*p = value;
+		break;
+	}
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4: {
+		guint32 *p = (void*)mem;
+		*p = value;
+		break;
+	}
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8: {
+		guint64 *p = (void*)mem;
+		*p = value;
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+	return;
+}
+
 static MonoObject *
 ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 {
 	MonoDomain *domain; 
 	MonoClass *enumc, *objc;
-	gint32 s1, s2;
 	MonoObject *res;
+	guint64 val;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -2667,19 +2727,11 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	MONO_CHECK_ARG (obj, enumc->enumtype == TRUE);
 	MONO_CHECK_ARG (obj, (objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_I1 &&
 						  objc->byval_arg.type <= MONO_TYPE_U8));
-	
-	s1 = mono_class_value_size (enumc, NULL);
-	s2 = mono_class_value_size (objc, NULL);
 
 	res = mono_object_new (domain, enumc);
+	val = read_enum_value ((char *)obj + sizeof (MonoObject), objc->enumtype? objc->enum_basetype->type: objc->byval_arg.type);
+	write_enum_value ((char *)res + sizeof (MonoObject), enumc->enum_basetype->type, val);
 
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	memcpy ((char *)res + sizeof (MonoObject), (char *)obj + sizeof (MonoObject), MIN (s1, s2));
-#else
-	memcpy ((char *)res + sizeof (MonoObject) + (s1 > s2 ? s1 - s2 : 0),
-		(char *)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
-		MIN (s1, s2));
-#endif
 	return res;
 }
 
