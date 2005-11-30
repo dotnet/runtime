@@ -1,3 +1,7 @@
+2005-11-29 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: define PLATFORM_MACOSX.
+
 2005-11-24  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Test for GetProcessId() on windows
