@@ -354,7 +354,7 @@ mark_bad_fds (mono_pollfd *pfds, int nfds)
 		if (pfd->fd == -1)
 			continue;
 
-		ret = mono_poll (pfds, 1, 0);
+		ret = mono_poll (pfd, 1, 0);
 		if (ret == -1 && errno == EBADF) {
 			pfd->revents |= MONO_POLLNVAL;
 			count++;
