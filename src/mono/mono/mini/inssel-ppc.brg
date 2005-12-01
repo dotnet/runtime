@@ -274,6 +274,16 @@ stmt: OP_OUTARG_R8 (freg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG_R8 (CEE_LDOBJ (base)) {
+	/* small struct with fp value goes in a fp register */
+	MonoInst *vt = state->left->left->tree;
+	int tmpr, soffset;
+	soffset = vt->inst_offset;
+	tmpr = mono_regstate_next_float (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR4_MEMBASE, tmpr, vt->inst_basereg, soffset);
+	MONO_EMIT_NEW_UNALU (s, OP_SETFREG, tree->unused, tmpr);
+}
+
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	MonoInst *vt = state->left->left->tree;
 	int start_reg = tree->unused & 0xff;

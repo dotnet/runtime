@@ -407,6 +407,25 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 	(*gr) ++;
 }
 
+#if __APPLE__
+/* size == 4 is checked already */
+static gboolean
+has_only_a_r4_field (MonoClass *klass)
+{
+	gpointer iter;
+	MonoClassField *f;
+	iter = NULL;
+	while ((f = mono_class_get_fields (klass, &iter))) {
+		if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			if (!f->type->byref && f->type->type == MONO_TYPE_R4)
+				return TRUE;
+			return FALSE;
+		}
+	}
+	return FALSE;
+}
+#endif
+
 static CallInfo*
 calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
@@ -490,6 +509,27 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			    size = mono_class_native_size (klass, NULL);
 			else
 			    size = mono_class_value_size (klass, NULL);
+#if __APPLE__
+			if (size == 4 && has_only_a_r4_field (klass)) {
+				cinfo->args [n].size = 4;
+
+				/* It was 7, now it is 8 in LinuxPPC */
+				if (fr <= PPC_LAST_FPARG_REG) {
+					cinfo->args [n].regtype = RegTypeFP;
+					cinfo->args [n].reg = fr;
+					fr ++;
+					FP_ALSO_IN_REG (gr ++);
+					ALWAYS_ON_STACK (stack_size += 4);
+				} else {
+					cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
+					cinfo->args [n].regtype = RegTypeBase;
+					cinfo->args [n].reg = ppc_sp; /* in the caller*/
+					stack_size += 4;
+				}
+				n++;
+				break;
+			}
+#endif
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
 #if PPC_PASS_STRUCTS_BY_VALUE
