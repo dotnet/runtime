@@ -104,12 +104,20 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 #else
 	GModule *fam_module;
 	gchar *filename;
+	int lib_used = 4; /* gamin */
 
 	MONO_ARCH_SAVE_REGS;
 
-	filename = g_module_build_path (NULL, "libfam.so.0");
+	filename = g_module_build_path (NULL, "libgamin-1.so.0");
 	fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
 	g_free (filename);
+	if (fam_module == NULL) {
+		lib_used = 2; /* FAM */
+		filename = g_module_build_path (NULL, "libfam.so.0");
+		fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
+		g_free (filename);
+	}
+
 	if (fam_module == NULL)
 		return 0;
 
@@ -117,7 +125,7 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	if (FAMNextEvent == NULL)
 		return 0;
 
-	return 2;
+	return lib_used;
 #endif
 }
 
