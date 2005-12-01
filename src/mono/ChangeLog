@@ -1,3 +1,8 @@
+2005-12-01  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Check for setkey(3) in -lcrypt and define CRYPT_LIBS
+	  accordingly.
+
 2005-12-01 Mike Kestner <mkestner@novell.com>
 
 	* scripts/mono-find-provides.in: support policy assemblies.
