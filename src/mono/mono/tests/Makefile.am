@@ -214,6 +214,11 @@ if X86
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
+if POWERPC
+# bug #71274
+PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+endif
+
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	delegate-delegate-exception.exe	\
@@ -251,7 +256,12 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC) $(STRESS_TESTS_
 %.exe: %.cs TestDriver.dll
 	$(CSC) -r:TestDriver.dll -out:$@ $<
 
+# mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
+if POWERPC
+test:	testjit test-type-load
+else
 test:	testjit testbundle test-type-load
+endif
 
 TestDriver.dll:
 	$(CSC) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
