@@ -1725,12 +1725,19 @@ ves_icall_MonoType_get_Assembly (MonoReflectionType *type)
 static MonoReflectionType*
 ves_icall_MonoType_get_DeclaringType (MonoReflectionType *type)
 {
-	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *class = mono_class_from_mono_type (type->type);
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *class;
 
 	MONO_ARCH_SAVE_REGS;
 
-	return class->nested_in ? mono_type_get_object (domain, &class->nested_in->byval_arg) : NULL;
+	if (type->type->type == MONO_TYPE_VAR)
+		class = type->type->data.generic_param->owner->klass;
+	else if (type->type->type == MONO_TYPE_MVAR)
+		class = type->type->data.generic_param->method->klass;
+	else
+		class = mono_class_from_mono_type (type->type)->nested_in;
+
+	return class ? mono_type_get_object (domain, &class->byval_arg) : NULL;
 }
 
 static MonoReflectionType*

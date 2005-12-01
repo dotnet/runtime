@@ -2505,10 +2505,13 @@ set_generic_param_owner (MonoGenericContainer *container, MonoClass *klass, int 
 		return pos;
 
 	gc = klass->generic_container;
+
+	/* No enclosing class can have more type arguments */
+	g_assert (pos <= gc->type_argc);
 	for (i = pos; i < gc->type_argc; i++)
 		container->type_params [i].owner = gc;
 
-	return pos + gc->type_argc;
+	return gc->type_argc;
 }
 
 static MonoGenericInst *
