@@ -1,3 +1,7 @@
+2005-12-01 Mike Kestner <mkestner@novell.com>
+
+	* scripts/mono-find-provides.in: support policy assemblies.
+
 2005-11-29 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: define PLATFORM_MACOSX.
