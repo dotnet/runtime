@@ -1528,8 +1528,8 @@ ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->declaring_type = mono_type_get_object (domain, &event->klass->byval_arg);
-	info->reflected_type = mono_type_get_object (domain, &event->event->parent->byval_arg);
+	info->reflected_type = mono_type_get_object (domain, &event->klass->byval_arg);
+	info->declaring_type = mono_type_get_object (domain, &event->event->parent->byval_arg);
 
 	info->name = mono_string_new (domain, event->event->name);
 	info->attrs = event->event->attrs;
@@ -3369,7 +3369,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
+		l = g_slist_prepend (l, mono_event_get_object (domain, startklass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
