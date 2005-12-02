@@ -133,18 +133,6 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 
 #define MAX_EXC	16
 
-/*----------------------------------------*/
-/* use s390_r2-s390_r5 as temp registers  */
-/*----------------------------------------*/
-#define S390_CALLER_REGS  (0x10fc)
-#define reg_is_freeable(r) (S390_CALLER_REGS & 1 << (r))
-
-/*----------------------------------------*/
-/* use s390_f1/s390_f3-s390_f15 as temps  */
-/*----------------------------------------*/
-#define S390_CALLER_FREGS (0xfffa)
-#define freg_is_freeable(r) ((r) >= 1 && (r) <= 14)
-
 #define S390_TRACE_STACK_SIZE (5*sizeof(gint32)+3*sizeof(gdouble))
 
 #define MAX (a, b) ((a) > (b) ? (a) : (b))
@@ -177,6 +165,7 @@ typedef struct {
 	guint stack_size,
 	      local_size,
 	      code_size,
+	      parm_size,
 	      retStruct;
 } size_data;	
 
@@ -191,13 +180,6 @@ enum {
 	SAVE_TWO,
 	SAVE_FP
 };
-
-typedef struct {
-	int born_in;
-	int killed_in;
-	int last_use;
-	int prev_use;
-} RegTrack;
 
 typedef struct InstList InstList;
 
@@ -217,7 +199,7 @@ enum {
 
 typedef struct {
 	gint32  offset;		/* offset from caller's stack */
-	gint32	offparm;	/* offset on callee's stack */
+	gint32  offparm;	/* offset from callee's stack */
 	guint16 vtsize; 	/* in param area */
 	guint8  reg;
 	guint8  regtype;     	/* See RegType* */
@@ -228,6 +210,7 @@ typedef struct {
 	int nargs;
 	guint32 stack_usage;
 	guint32 struct_ret;
+	guint32 offStruct;
 	ArgInfo ret;
 	ArgInfo sigCookie;
 	ArgInfo args [1];
@@ -252,25 +235,14 @@ static void enter_method (MonoMethod *, RegParm *, char *);
 static void leave_method (MonoMethod *, ...);
 static gboolean is_regsize_var (MonoType *);
 static inline void add_general (guint *, size_data *, ArgInfo *, gboolean);
+static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
 static CallInfo * calculate_sizes (MonoMethodSignature *, size_data *, gboolean);
 static void peephole_pass (MonoCompile *, MonoBasicBlock *);
-static int mono_spillvar_offset (MonoCompile *, int);
-static int mono_spillvar_offset_float (MonoCompile *, int);
-static void print_ins (int, MonoInst *);
-static void print_regtrack (RegTrack *, int);
-static InstList * inst_list_prepend (MonoMemPool *, InstList *, MonoInst *);
-static int get_register_force_spilling (MonoCompile *, InstList *, MonoInst *, int);
-static int get_register_spilling (MonoCompile *, InstList *, MonoInst *, guint32, int);
-static int get_float_register_spilling (MonoCompile *, InstList *, MonoInst *, guint32, int);
-static MonoInst * create_copy_ins (MonoCompile *, int, int, MonoInst *);
-static MonoInst * create_copy_ins_float (MonoCompile *, int, int, MonoInst *);
-static MonoInst * create_spilled_store (MonoCompile *, int, int, int, MonoInst *);
-static MonoInst * create_spilled_store_float (MonoCompile *, int, int, int, MonoInst *);
-static void insert_before_ins (MonoInst *, InstList *, MonoInst *);
-static int alloc_int_reg (MonoCompile *, InstList *, MonoInst *, int, guint32);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 static unsigned char * mono_emit_stack_alloc (guchar *, MonoInst *);
+static void mono_arch_break(void);
+gpointer mono_arch_get_lmf_addr (void);
 
 /*========================= End of Prototypes ======================*/
 
@@ -282,13 +254,17 @@ int mono_exc_esp_offset = 0;
 
 static int indent_level = 0;
 
-static const char*const * ins_spec = s390;
+static const char*const * ins_spec = s390_cpu_desc;
 
 static gboolean tls_offset_inited = FALSE;
 
 static int appdomain_tls_offset = -1,
        	   lmf_tls_offset = -1,
            thread_tls_offset = -1;
+
+pthread_key_t lmf_addr_key;
+
+gboolean lmf_addr_key_inited = FALSE; 
 
 #if 0
 
@@ -317,9 +293,37 @@ mono_arch_regname (int reg) {
 		"s390_r10", "s390_r11", "s390_r12", "s390_r13", "s390_r14",
 		"s390_r15"
 	};
+
 	if (reg >= 0 && reg < 16)
 		return rnames [reg];
-	return "unknown";
+	else
+		return "unknown";
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_fregname                                */
+/*                                                                  */
+/* Function	- Returns the name of the register specified by     */
+/*		  the input parameter.         		 	    */
+/*		                               		 	    */
+/*------------------------------------------------------------------*/
+
+const char*
+mono_arch_fregname (int reg) {
+	static const char * rnames[] = {
+		"s390_f0", "s390_f1", "s390_f2", "s390_f3", "s390_f4",
+		"s390_f5", "s390_f6", "s390_f7", "s390_f8", "s390_f9",
+		"s390_f10", "s390_f11", "s390_f12", "s390_f13", "s390_f14",
+		"s390_f15"
+	};
+
+	if (reg >= 0 && reg < 16)
+		return rnames [reg];
+	else
+		return "unknown";
 }
 
 /*========================= End of Function ========================*/
@@ -586,15 +590,16 @@ enum_parmtype:
 				if ((obj) && (obj->vtable)) {
 					printf("[CLASS/OBJ:");
 					class = obj->vtable->klass;
-					if (class == mono_defaults.string_class) {
-						printf("[STRING:%p:%s]", 
-						       *obj, mono_string_to_utf8 (obj));
-					} else if (class == mono_defaults.int32_class) { 
-						printf("[INT32:%p:%d]", 
-							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
-					} else
-						printf("[%s.%s:%p]", 
-						       class->name_space, class->name, obj);
+					printf("%p [%p] ",obj,curParm);
+//					if (class == mono_defaults.string_class) {
+//						printf("[STRING:%p:%s]", 
+//						       *obj, mono_string_to_utf8 (obj));
+//					} else if (class == mono_defaults.int32_class) { 
+//						printf("[INT32:%p:%d]", 
+//							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
+//					} else
+//						printf("[%s.%s:%p]", 
+//						       class->name_space, class->name, obj);
 					printf("], ");
 				} else {
 					printf("[OBJECT:null], ");
@@ -617,7 +622,7 @@ enum_parmtype:
 				printf("[INT8:%lld], ", *((gint64 *) (curParm)));
 				break;
 			case MONO_TYPE_R4 :
-				printf("[FLOAT4:%f], ", *((float *) (curParm)));
+				printf("[FLOAT4:%g], ", *((double *) (curParm)));
 				break;
 			case MONO_TYPE_R8 :
 				printf("[FLOAT8:%g], ", *((double *) (curParm)));
@@ -637,7 +642,7 @@ enum_parmtype:
 				if ((info->native_size == sizeof(float)) &&
 				    (info->num_fields  == 1) &&
 				    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
-					printf("[FLOAT4:%f], ", *((float *) (curParm)));
+						printf("[FLOAT4:%f], ", *((float *) (curParm)));
 					break;
 				}
 
@@ -670,6 +675,7 @@ enum_parmtype:
 
 /*========================= End of Function ========================*/
 
+static int lc = 0;
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- enter_method                                      */
@@ -685,7 +691,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	int i, oParm = 0, iParm = 0;
 	MonoClass *class;
 	MonoObject *obj;
-	MonoJitArgumentInfo *arg_info;
 	MonoMethodSignature *sig;
 	char *fname;
 	guint32 ip;
@@ -694,6 +699,12 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	size_data sz;
 	void *curParm;
 
+
+lc++;
+if (lc > 50000) {
+fseek(stdout, 0L, SEEK_SET);
+lc = 0;
+}
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
 	printf ("ENTER: %s(", fname);
@@ -725,14 +736,15 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				printf ("this:[NULL], ");
 		} else {
 			if (obj) {
-				class = obj->vtable->klass;
-				if (class == mono_defaults.string_class) {
-					printf ("this:[STRING:%p:%s], ", 
-						obj, mono_string_to_utf8 ((MonoString *)obj));
-				} else {
-					printf ("this:%p[%s.%s], ", 
-						obj, class->name_space, class->name);
-				}
+//				class = obj->vtable->klass;
+//				if (class == mono_defaults.string_class) {
+//					printf ("this:[STRING:%p:%s], ", 
+//						obj, mono_string_to_utf8 ((MonoString *)obj));
+//				} else {
+//					printf ("this:%p[%s.%s], ", 
+//						obj, class->name_space, class->name);
+//				}
+printf("this:%p, ",obj);
 			} else 
 				printf ("this:NULL, ");
 		}
@@ -740,7 +752,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	}
 					
 	for (i = 0; i < sig->param_count; ++i) {
-		ainfo = cinfo->args + (i + oParm);
+		ainfo = &cinfo->args[i + oParm];
 		switch (ainfo->regtype) {
 			case RegTypeGeneral :
 				decodeParm(sig->params[i], &(rParm->gr[ainfo->reg-2]), ainfo->size);
@@ -886,16 +898,16 @@ handle_enum:
 	case MONO_TYPE_OBJECT: {
 		MonoObject *o = va_arg (ap, MonoObject *);
 
-		if ((o) && (o->vtable)) {
-			if (o->vtable->klass == mono_defaults.boolean_class) {
-				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
-			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
-			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
-			} else
-				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
-		} else
+//		if ((o) && (o->vtable)) {
+//			if (o->vtable->klass == mono_defaults.boolean_class) {
+//				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+//			} else if  (o->vtable->klass == mono_defaults.int32_class) {
+//				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
+//			} else if  (o->vtable->klass == mono_defaults.int64_class) {
+//				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
+//			} else
+//				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
+//		} else
 			printf ("[OBJECT:%p]", o);
 	       
 		break;
@@ -919,8 +931,9 @@ handle_enum:
 		break;
 	}
 	case MONO_TYPE_R4: {
-		double f = va_arg (ap, double);
-		printf ("[FLOAT4:%f]\n", (float) f);
+		float f;
+		f = va_arg (ap, double);
+		printf ("[FLOAT4:%f]\n", f);
 		break;
 	}
 	case MONO_TYPE_R8: {
@@ -943,7 +956,7 @@ handle_enum:
 			    (info->num_fields  == 1) &&
 			    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
 				double f = va_arg (ap, double);
-				printf("[FLOAT4:%f]\n", (float) f);
+				printf("[FLOAT4:%g]\n", (double) f);
 				break;
 			}
 
@@ -1083,10 +1096,11 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
 		/* unused vars */
-		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
+		if (vmv->range.first_use.abs_pos >= vmv->range.last_use.abs_pos)
 			continue;
 
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || 
+		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
 		/* we can only allocate 32 bit values */
@@ -1165,6 +1179,7 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg	= STK_BASE;
 			ainfo->regtype  = RegTypeBase;
 			sz->stack_size += sizeof(int);
+			sz->local_size += sizeof(int);
 			sz->code_size  += 12;    
 		} else {
 			ainfo->reg      = *gr;
@@ -1177,6 +1192,7 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg	= STK_BASE;
 			ainfo->regtype  = RegTypeBase;
 			sz->stack_size += sizeof(long long);
+			sz->local_size += sizeof(long long);
 			sz->code_size  += 10;   
 		} else {
 			ainfo->reg      = *gr;
@@ -1185,6 +1201,38 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 		(*gr) ++;
 	}
 	(*gr) ++;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- add_stackParm                                     */
+/*                                                                  */
+/* Function	- Determine code and stack size incremements for a  */
+/* 		  parameter.                                        */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static void inline
+add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
+{
+	if (*gr > S390_LAST_ARG_REG) {
+		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
+		ainfo->offset   = sz->stack_size;
+		ainfo->reg	= STK_BASE;
+//		sz->parm_size  += sizeof(gpointer);
+	} else {
+		ainfo->reg      = *gr;
+//		sz->parm_size  += size;
+	}
+	(*gr) ++;
+	ainfo->offparm  = sz->parm_size;
+	ainfo->size     = sizeof(gpointer);
+	ainfo->regtype  = RegTypeStructByAddr; 
+	ainfo->vtsize   = size;
+	sz->local_size += (size + sizeof(gpointer));
+	sz->parm_size  += size;
 }
 
 /*========================= End of Function ========================*/
@@ -1213,6 +1261,7 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 		ainfo->regtype  = RegTypeBase;
 		sz->code_size  += 4;
 		sz->stack_size += ainfo->size;
+		sz->local_size += ainfo->size;
 	}
 }
 
@@ -1242,9 +1291,11 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	gr                = s390_r2;
 	nParm 		  = 0;
 	cinfo->struct_ret = 0;
+	cinfo->offStruct  = 0;
 	sz->retStruct     = 0;
 	sz->stack_size    = S390_MINIMAL_STACK_SIZE;
 	sz->code_size     = 0;
+	sz->parm_size     = 0;
 	sz->local_size    = 0;
 
 	/*----------------------------------------------------------*/
@@ -1301,8 +1352,6 @@ enum_retvalue:
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
-			cinfo->ret.offset = sz->stack_size;
-			sz->stack_size   += S390_ALIGN(size, align);
 			gr++;
                         break;
 		}
@@ -1312,8 +1361,6 @@ enum_retvalue:
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
-			cinfo->ret.offset = sz->stack_size;
-			sz->stack_size   += S390_ALIGN(size, align);
 			gr++;
 			break;
 		case MONO_TYPE_VOID:
@@ -1351,6 +1398,7 @@ enum_retvalue:
 			nParm++;
 			continue;
 		}
+
 		simpletype = mono_type_get_underlying_type(sig->params [i])->type;
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -1430,7 +1478,6 @@ enum_retvalue:
 
 			cinfo->args[nParm].vtsize  = 0;
 			cinfo->args[nParm].size    = 0;
-			cinfo->args[nParm].offparm = sz->local_size;
 
 			switch (size) {
 				/*----------------------------------*/
@@ -1456,14 +1503,7 @@ enum_retvalue:
 					sz->local_size 		  += sizeof(long);
 					break;
 				default:
-					add_general(&gr, sz, cinfo->args+nParm, TRUE);
-					cinfo->args[nParm].size    = sizeof(int);
-					cinfo->args[nParm].regtype = RegTypeStructByAddr; 
-					cinfo->args[nParm].vtsize  = size;
-					sz->code_size  		  += 40;
-					sz->local_size 		  += size;
-					if (cinfo->args[nParm].reg == STK_BASE)
-						sz->local_size += sizeof(gpointer);
+					add_stackParm(&gr, sz, cinfo->args+nParm, size);
 					nParm++;
 			}
 		}
@@ -1473,7 +1513,6 @@ enum_retvalue:
 
 			cinfo->args[nParm].vtsize  = 0;
 			cinfo->args[nParm].size    = 0;
-			cinfo->args[nParm].offparm = sz->local_size;
 
 			switch (size) {
 				/*----------------------------------*/
@@ -1499,14 +1538,7 @@ enum_retvalue:
 					sz->local_size 		  += sizeof(long);
 					break;
 				default:
-					add_general(&gr, sz, cinfo->args+nParm, TRUE);
-					cinfo->args[nParm].size    = sizeof(int);
-					cinfo->args[nParm].regtype = RegTypeStructByAddr; 
-					cinfo->args[nParm].vtsize  = size;
-					sz->code_size  		  += 40;
-					sz->local_size 		  += size;
-					if (cinfo->args[nParm].reg == STK_BASE)
-						sz->local_size += sizeof(gpointer);
+					add_stackParm(&gr, sz, cinfo->args+nParm, size);
 					nParm++;
 			}
 		}
@@ -1516,8 +1548,28 @@ enum_retvalue:
 		}
 	}
 
-	cinfo->stack_usage = S390_ALIGN(sz->stack_size+sz->local_size, 
-					S390_STACK_ALIGNMENT);
+	/*----------------------------------------------------------*/
+	/* If we are passing a structure back then if it won't be   */
+	/* in a register(s) then we make room at the end of the     */
+	/* parameters that may have been placed on the stack        */
+	/*----------------------------------------------------------*/
+	if (cinfo->struct_ret) {
+		cinfo->ret.offset = sz->stack_size;
+		switch (cinfo->ret.size) {
+		case 0:
+		case 1:
+		case 2:
+		case 4:
+		case 8:
+			break;
+		default:
+			sz->stack_size   += S390_ALIGN(cinfo->ret.size, align);
+		}
+	}
+
+	cinfo->offStruct   = sz->stack_size;
+//	cinfo->stack_usage = S390_ALIGN(sz->stack_size+sz->local_size, 
+//					S390_STACK_ALIGNMENT);
 	return (cinfo);
 }
 
@@ -1630,11 +1682,19 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (inst->opcode != OP_REGVAR) {
 			switch (cinfo->args[iParm].regtype) {
 				case RegTypeStructByAddr :
+				if (cinfo->args[iParm].reg == STK_BASE) {
 					inst->opcode       = OP_S390_LOADARG;
 					inst->inst_basereg = frame_reg;
 					size		   = abs(cinfo->args[iParm].vtsize);
-					offset 		   = S390_ALIGN(offset, size);
+					offset 		   = S390_ALIGN(offset, sizeof(long));
 					inst->inst_offset  = offset; 
+				} else {
+					inst->opcode 	   = OP_S390_ARGREG;
+					inst->inst_basereg = frame_reg;
+					size		   = sizeof(gpointer);
+					offset		   = S390_ALIGN(offset, size);
+					inst->inst_offset  = offset;
+				}
 					break;
 				case RegTypeStructByVal :
 					inst->opcode	   = OP_S390_ARGPTR;
@@ -1729,11 +1789,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 /*		  includes pushing, moving argments to the correct  */
 /*		  etc.                                              */
 /*		                               			    */
-/* Note         - FIXME: We need an alignment solution for 	    */
-/*		  enter_method and mono_arch_call_opcode, currently */
-/*		  alignment in mono_arch_call_opcode is computed    */
-/*		  without arch_get_argument_info.                   */
-/*		                               			    */
 /*------------------------------------------------------------------*/
 
 MonoCallInst*
@@ -1741,6 +1796,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 		       MonoCallInst *call, int is_virtual) {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
+	MonoS390ArgParm *argParm;
 	int i, n, lParamArea;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
@@ -1752,8 +1808,10 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
-	call->stack_usage = cinfo->stack_usage;
-	lParamArea        = MAX((cinfo->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
+//	call->stack_usage = cinfo->stack_usage;
+//	lParamArea        = MAX((cinfo->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
+	call->stack_usage = MAX((sz.stack_size + sz.local_size), call->stack_usage);
+	lParamArea        = MAX((call->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
 	cfg->param_area   = MAX (((signed) cfg->param_area), lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 
@@ -1771,9 +1829,14 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			MONO_INST_NEW (cfg, sigArg, OP_ICONST);
 			sigArg->inst_p0 = call->signature;
 
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
-			arg->inst_imm  = cinfo->sigCookie.offset;
-			arg->inst_left = sigArg;
+			MONO_INST_NEW (cfg, arg, OP_OUTARG_MEMBASE);
+			arg->inst_left  = sigArg;
+			arg->inst_right = (MonoInst *) call;
+			argParm         = g_malloc(sizeof(MonoS390ArgParm));
+			argParm->size   = ainfo->size;
+			argParm->offset = cinfo->sigCookie.offset;
+			arg->unused	= (gint32) argParm;
+			call->used_iregs |= 1 << ainfo->reg;
 
 			arg->next      = call->out_args;
 			call->out_args = arg;
@@ -1786,12 +1849,13 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
-			arg->cil_code  = in->cil_code;
-			arg->inst_left = in;
-			arg->type      = in->type;
+			arg->cil_code   = in->cil_code;
+			arg->inst_left  = in;
+			arg->type       = in->type;
 			/* prepend, we'll need to reverse them later */
-			arg->next      = call->out_args;
-			call->out_args = arg;
+			arg->next       = call->out_args;
+			call->out_args  = arg;
+			arg->inst_right = (MonoInst *) call;
 			if (ainfo->regtype == RegTypeGeneral) {
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
@@ -1799,11 +1863,13 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 					call->used_iregs |= 1 << (ainfo->reg + 1);
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				call->used_iregs |= 1 << ainfo->reg;
-				arg->sreg1     = ainfo->reg;
-				arg->opcode    = OP_OUTARG_VT;
-				arg->unused    = -ainfo->vtsize;
-				arg->inst_imm  = ainfo->offset;
-				arg->sreg2     = ainfo->offparm + S390_MINIMAL_STACK_SIZE;
+				arg->sreg1      = ainfo->reg;
+				arg->opcode     = OP_OUTARG_VT;
+				argParm         = g_malloc(sizeof(MonoS390ArgParm));
+				argParm->size   = -ainfo->vtsize;
+				argParm->offset = ainfo->offset;
+				argParm->offPrm = ainfo->offparm + cinfo->offStruct;
+				arg->unused	= (gint32) argParm;
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				if (ainfo->reg != STK_BASE) {
 					switch (ainfo->size) {
@@ -1821,26 +1887,26 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 						call->used_iregs |= 1 << ainfo->reg;
 					}
 				} 
-				arg->sreg1     = ainfo->reg;
-				arg->opcode    = OP_OUTARG_VT;
-				arg->unused    = ainfo->size;
-				arg->inst_imm  = ainfo->offset;
-				arg->sreg2     = ainfo->offparm + S390_MINIMAL_STACK_SIZE;
+				arg->sreg1      = ainfo->reg;
+				arg->opcode     = OP_OUTARG_VT;
+				argParm         = g_malloc(sizeof(MonoS390ArgParm));
+				argParm->size   = ainfo->size;
+				argParm->offset = ainfo->offset;
+				argParm->offPrm = ainfo->offparm + cinfo->offStruct;
+				arg->unused	= (gint32) argParm;
 			} else if (ainfo->regtype == RegTypeBase) {
-				arg->opcode = OP_OUTARG;
-				arg->unused = ainfo->reg | (ainfo->size << 8);
-				arg->inst_imm = ainfo->offset;
-				call->used_fregs |= 1 << ainfo->reg;
+				arg->opcode = OP_OUTARG_MEMBASE;
+				arg->sreg1      = ainfo->reg;
+				argParm         = g_malloc(sizeof(MonoS390ArgParm));
+				argParm->size   = ainfo->size;
+				argParm->offset = ainfo->offset;
+				arg->unused	= (gint32) argParm;
+				call->used_iregs |= 1 << ainfo->reg;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->unused = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
-				if (ainfo->size == 4) {
-					MonoInst *conv;
+				if (ainfo->size == 4)
 					arg->opcode     = OP_OUTARG_R4;
-					MONO_INST_NEW (cfg, conv, OP_FCONV_TO_R4);
-					conv->inst_left = arg->inst_left;
-					arg->inst_left  = conv;
-				}
 				else
 					arg->opcode = OP_OUTARG_R8;
 			} else {
@@ -1900,7 +1966,7 @@ void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, 
 			     gboolean enable_arguments)
 {
-	guchar *code = p;
+	guchar 	*code = p;
 	int 	parmOffset, 
 	    	fpOffset;
 
@@ -2094,7 +2160,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins = ins->next;				
 					continue;
 				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->sreg1;
 				}
@@ -2209,539 +2274,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_spillvar_offset                              */
-/*                                                                  */
-/* Function	- Returns the offset used by spillvar. It allocates */
-/*		  a new spill variable if necessary.		    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-mono_spillvar_offset (MonoCompile *cfg, int spillvar)
-{
-	MonoSpillInfo **si, *info;
-	int i = 0;
-
-	si = &cfg->spill_info; 
-	
-	while (i <= spillvar) {
-
-		if (!*si) {
-			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
-			info->next = NULL;
-			info->offset = cfg->stack_offset;
-			cfg->stack_offset += sizeof (gpointer);
-		}
-
-		if (i == spillvar)
-			return (*si)->offset;
-
-		i++;
-		si = &(*si)->next;
-	}
-
-	g_assert_not_reached ();
-	return 0;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_spillvar_offset_float                        */
-/*                                                                  */
-/* Function	-                                                   */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
-{
-	MonoSpillInfo **si, *info;
-	int i = 0;
-
-	si = &cfg->spill_info_float; 
-	
-	while (i <= spillvar) {
-
-		if (!*si) {
-			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
-			info->next 	   = NULL;
-			cfg->stack_offset  = S390_ALIGN(cfg->stack_offset, S390_STACK_ALIGNMENT);
-			info->offset       = cfg->stack_offset;
-			cfg->stack_offset += sizeof (double);
-		}
-
-		if (i == spillvar)
-			return (*si)->offset;
-
-		i++;
-		si = &(*si)->next;
-	}
-
-	g_assert_not_reached ();
-	return 0;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- print_ins                                         */
-/*                                                                  */
-/* Function	- Decode and print the instruction for tracing.     */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-print_ins (int i, MonoInst *ins)
-{
-	const char *spec = ins_spec [ins->opcode];
-	g_print ("\t%-2d %s", i, mono_inst_name (ins->opcode));
-	if (spec [MONO_INST_DEST]) {
-		if (ins->dreg >= MONO_MAX_IREGS)
-			g_print (" R%d <-", ins->dreg);
-		else
-			g_print (" %s <-", mono_arch_regname (ins->dreg));
-	}
-	if (spec [MONO_INST_SRC1]) {
-		if (ins->sreg1 >= MONO_MAX_IREGS)
-			g_print (" R%d", ins->sreg1);
-		else
-			g_print (" %s", mono_arch_regname (ins->sreg1));
-	}
-	if (spec [MONO_INST_SRC2]) {
-		if (ins->sreg2 >= MONO_MAX_IREGS)
-			g_print (" R%d", ins->sreg2);
-		else
-			g_print (" %s", mono_arch_regname (ins->sreg2));
-	}
-	if (spec [MONO_INST_CLOB])
-		g_print (" clobbers: %c", spec [MONO_INST_CLOB]);
-	g_print ("\n");
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- print_regtrack.                                   */
-/*                                                                  */
-/* Function	-                                                   */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-print_regtrack (RegTrack *t, int num)
-{
-	int i;
-	char buf [32];
-	const char *r;
-	
-	for (i = 0; i < num; ++i) {
-		if (!t [i].born_in)
-			continue;
-		if (i >= MONO_MAX_IREGS) {
-			g_snprintf (buf, sizeof(buf), "R%d", i);
-			r = buf;
-		} else
-			r = mono_arch_regname (i);
-		g_print ("liveness: %s [%d - %d]\n", r, t [i].born_in, t[i].last_use);
-	}
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- inst_list_prepend                                 */
-/*                                                                  */
-/* Function	- Prepend an instruction to the list.               */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static inline InstList*
-inst_list_prepend (MonoMemPool *pool, InstList *list, MonoInst *data)
-{
-	InstList *item = mono_mempool_alloc (pool, sizeof (InstList));
-	item->data = data;
-	item->prev = NULL;
-	item->next = list;
-	if (list)
-		list->prev = item;
-	return item;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- get_register_force_spilling                       */
-/*                                                                  */
-/* Function	- Force the spilling of the variable in the         */
-/*		  symbolic register 'reg'.     			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-get_register_force_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, int reg)
-{
-	MonoInst *load;
-	int i, sel, spill;
-	
-	sel = cfg->rs->iassign [reg];
-	i = reg;
-	spill = ++cfg->spill_count;
-	cfg->rs->iassign [i] = -spill - 1;
-	mono_regstate_free_int (cfg->rs, sel);
-	/*----------------------------------------------------------*/
-	/* we need to create a spill var and insert a load to sel   */
-	/* after the current instruction 			    */
-	/*----------------------------------------------------------*/
-	MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
-	load->dreg = sel;
-	load->inst_basereg = cfg->frame_reg;
-	load->inst_offset = mono_spillvar_offset (cfg, spill);
-	if (item->prev) {
-		while (ins->next != item->prev->data)
-			ins = ins->next;
-	}
-	load->next = ins->next;
-	ins->next  = load;
-	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%sp)) R%d (freed %s)\n", 
-			spill, load->inst_offset, i, mono_arch_regname (sel)));
-	i = mono_regstate_alloc_int (cfg->rs, 1 << sel);
-	g_assert (i == sel);
-
-	return sel;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		-  get_register_spilling                            */
-/*                                                                  */
-/* Function	-                                                   */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-get_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 regmask, int reg)
-{
-	MonoInst *load;
-	int i, sel, spill;
-
-	DEBUG (g_print ("start regmask to assign R%d: 0x%08x (R%d <- R%d R%d)\n", reg, regmask, ins->dreg, ins->sreg1, ins->sreg2));
-	/* exclude the registers in the current instruction */
-	if (reg != ins->sreg1 && 
-	    (reg_is_freeable (ins->sreg1) || 
-	     (ins->sreg1 >= MONO_MAX_IREGS && 
-	      cfg->rs->iassign [ins->sreg1] >= 0))) {
-		if (ins->sreg1 >= MONO_MAX_IREGS)
-			regmask &= ~ (1 << cfg->rs->iassign [ins->sreg1]);
-		else
-			regmask &= ~ (1 << ins->sreg1);
-		DEBUG (g_print ("excluding sreg1 %s\n", mono_arch_regname (ins->sreg1)));
-	}
-	if (reg != ins->sreg2 && 
-	    (reg_is_freeable (ins->sreg2) || 
-             (ins->sreg2 >= MONO_MAX_IREGS && 
-              cfg->rs->iassign [ins->sreg2] >= 0))) {
-		if (ins->sreg2 >= MONO_MAX_IREGS)
-			regmask &= ~ (1 << cfg->rs->iassign [ins->sreg2]);
-		else
-			regmask &= ~ (1 << ins->sreg2);
-		DEBUG (g_print ("excluding sreg2 %s %d\n", mono_arch_regname (ins->sreg2), ins->sreg2));
-	}
-	if (reg != ins->dreg && reg_is_freeable (ins->dreg)) {
-		regmask &= ~ (1 << ins->dreg);
-		DEBUG (g_print ("excluding dreg %s\n", mono_arch_regname (ins->dreg)));
-	}
-
-	DEBUG (g_print ("available regmask: 0x%08x\n", regmask));
-	g_assert (regmask); /* need at least a register we can free */
-	sel = -1;
-	/* we should track prev_use and spill the register that's farther */
-	for (i = 0; i < MONO_MAX_IREGS; ++i) {
-		if (regmask & (1 << i)) {
-			sel = i;
-			DEBUG (g_print ("selected register %s has assignment %d\n", mono_arch_regname (sel), cfg->rs->iassign [sel]));
-			break;
-		}
-	}
-	i = cfg->rs->isymbolic [sel];
-	spill = ++cfg->spill_count;
-	cfg->rs->iassign [i] = -spill - 1;
-	mono_regstate_free_int (cfg->rs, sel);
-	/* we need to create a spill var and insert a load to sel after the current instruction */
-	MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
-	load->dreg = sel;
-	load->inst_basereg = cfg->frame_reg;
-	load->inst_offset = mono_spillvar_offset (cfg, spill);
-	if (item->prev) {
-		while (ins->next != item->prev->data)
-			ins = ins->next;
-	}
-	load->next = ins->next;
-	ins->next = load;
-	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%sp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
-	i = mono_regstate_alloc_int (cfg->rs, 1 << sel);
-	g_assert (i == sel);
-	
-	return sel;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- get_float_register_spilling                       */
-/*                                                                  */
-/* Function	-                                                   */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-get_float_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, guint32 regmask, int reg)
-{
-	MonoInst *load;
-	int i, sel, spill;
-
-	DEBUG (g_print ("start regmask to assign R%d: 0x%08x (R%d <- R%d R%d)\n", reg, regmask, ins->dreg, ins->sreg1, ins->sreg2));
-	/* exclude the registers in the current instruction */
-	if (reg != ins->sreg1 && 
-	    (freg_is_freeable (ins->sreg1) || 
-             (ins->sreg1 >= MONO_MAX_FREGS && 
-              cfg->rs->fassign [ins->sreg1] >= 0))) {
-		if (ins->sreg1 >= MONO_MAX_FREGS)
-			regmask &= ~ (1 << cfg->rs->fassign [ins->sreg1]);
-		else
-			regmask &= ~ (1 << ins->sreg1);
-		DEBUG (g_print ("excluding sreg1 %s\n", mono_arch_regname (ins->sreg1)));
-	}
-	if (reg != ins->sreg2 && 
-            (freg_is_freeable (ins->sreg2) || 
-             (ins->sreg2 >= MONO_MAX_FREGS &&
-              cfg->rs->fassign [ins->sreg2] >= 0))) {
-		if (ins->sreg2 >= MONO_MAX_FREGS)
-			regmask &= ~ (1 << cfg->rs->fassign [ins->sreg2]);
-		else
-			regmask &= ~ (1 << ins->sreg2);
-		DEBUG (g_print ("excluding sreg2 %s %d\n", mono_arch_regname (ins->sreg2), ins->sreg2));
-	}
-	if (reg != ins->dreg && freg_is_freeable (ins->dreg)) {
-		regmask &= ~ (1 << ins->dreg);
-		DEBUG (g_print ("excluding dreg %s\n", mono_arch_regname (ins->dreg)));
-	}
-
-	DEBUG (g_print ("available regmask: 0x%08x\n", regmask));
-	g_assert (regmask); /* need at least a register we can free */
-	sel = -1;
-	/* we should track prev_use and spill the register that's farther */
-	for (i = 0; i < MONO_MAX_FREGS; ++i) {
-		if (regmask & (1 << i)) {
-			sel = i;
-			DEBUG (g_print ("selected register %s has assignment %d\n", 
-					mono_arch_regname (sel), cfg->rs->fassign [sel]));
-			break;
-		}
-	}
-	i = cfg->rs->fsymbolic [sel];
-	spill = ++cfg->spill_count;
-	cfg->rs->fassign [i] = -spill - 1;
-	mono_regstate_free_float(cfg->rs, sel);
-	/* we need to create a spill var and insert a load to sel after the current instruction */
-	MONO_INST_NEW (cfg, load, OP_LOADR8_MEMBASE);
-	load->dreg = sel;
-	load->inst_basereg = cfg->frame_reg;
-	load->inst_offset = mono_spillvar_offset_float (cfg, spill);
-	if (item->prev) {
-		while (ins->next != item->prev->data)
-			ins = ins->next;
-	}
-	load->next = ins->next;
-	ins->next = load;
-	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%sp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
-	i = mono_regstate_alloc_float (cfg->rs, 1 << sel);
-	g_assert (i == sel);
-	
-	return sel;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- create_copy_ins                                   */
-/*                                                                  */
-/* Function	- Create an instruction to copy from reg to reg.    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static MonoInst*
-create_copy_ins (MonoCompile *cfg, int dest, int src, MonoInst *ins)
-{
-	MonoInst *copy;
-	MONO_INST_NEW (cfg, copy, OP_MOVE);
-	copy->dreg = dest;
-	copy->sreg1 = src;
-	if (ins) {
-		copy->next = ins->next;
-		ins->next = copy;
-	}
-	DEBUG (g_print ("\tforced copy from %s to %s\n", 
-			mono_arch_regname (src), mono_arch_regname (dest)));
-	return copy;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- create_copy_ins_float                             */
-/*                                                                  */
-/* Function	- Create an instruction to copy from float reg to   */
-/*		  float reg.                   			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static MonoInst*
-create_copy_ins_float (MonoCompile *cfg, int dest, int src, MonoInst *ins)
-{
-	MonoInst *copy;
-	MONO_INST_NEW (cfg, copy, OP_FMOVE);
-	copy->dreg = dest;
-	copy->sreg1 = src;
-	if (ins) {
-		copy->next = ins->next;
-		ins->next = copy;
-	}
-	DEBUG (g_print ("\tforced copy from %s to %s\n", 
-			mono_arch_regname (src), mono_arch_regname (dest)));
-	return copy;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- create_spilled_store                              */
-/*                                                                  */
-/* Function	- Spill register to storage.                        */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static MonoInst*
-create_spilled_store (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoInst *ins)
-{
-	MonoInst *store;
-	MONO_INST_NEW (cfg, store, OP_STORE_MEMBASE_REG);
-	store->sreg1 = reg;
-	store->inst_destbasereg = cfg->frame_reg;
-	store->inst_offset = mono_spillvar_offset (cfg, spill);
-	if (ins) {
-		store->next = ins->next;
-		ins->next = store;
-	}
-	DEBUG (g_print ("SPILLED STORE (%d at 0x%08x(%%sp)) R%d (from %s)\n", 
-			spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
-	return store;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- create_spilled_store_float                        */
-/*                                                                  */
-/* Function	- Spill floating point register to storage.         */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static MonoInst*
-create_spilled_store_float (MonoCompile *cfg, int spill, int reg, int prev_reg, MonoInst *ins)
-{
-	MonoInst *store;
-	MONO_INST_NEW (cfg, store, OP_STORER8_MEMBASE_REG);
-	store->sreg1 = reg;
-	store->inst_destbasereg = cfg->frame_reg;
-	store->inst_offset = mono_spillvar_offset_float (cfg, spill);
-	if (ins) {
-		store->next = ins->next;
-		ins->next = store;
-	}
-	DEBUG (g_print ("SPILLED STORE (%d at 0x%08x(%%sp)) R%d (from %s)\n", 
-			spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
-	return store;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- insert_before_ins                                 */
-/*                                                                  */
-/* Function	- Insert an instruction before another.             */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-insert_before_ins (MonoInst *ins, InstList *item, MonoInst* to_insert)
-{
-	MonoInst *prev;
-	g_assert (item->next);
-	prev = item->next->data;
-
-	while (prev->next != ins)
-		prev = prev->next;
-	to_insert->next = ins;
-	prev->next = to_insert;
-	/* 
-	 * needed otherwise in the next instruction we can add an ins to the 
-	 * end and that would get past this instruction.
-	 */
-	item->data = to_insert; 
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- alloc_int_reg                                     */
-/*                                                                  */
-/* Function	- Allocate a general register.                      */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static int
-alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, guint32 allow_mask)
-{
-	int val = cfg->rs->iassign [sym_reg];
-	DEBUG (g_print ("Allocating a general register for %d (%d) with mask %08x\n",val,sym_reg,allow_mask));
-	if (val < 0) {
-		int spill = 0;
-		if (val < -1) {
-			/* the register gets spilled after this inst */
-			spill = -val -1;
-		}
-		val = mono_regstate_alloc_int (cfg->rs, allow_mask);
-		if (val < 0)
-			val = get_register_spilling (cfg, curinst, ins, allow_mask, sym_reg);
-		cfg->rs->iassign [sym_reg] = val;
-		/* add option to store before the instruction for src registers */
-		if (spill)
-			create_spilled_store (cfg, spill, val, sym_reg, ins);
-	}
-	DEBUG (g_print ("Allocated %d for %d\n",val,sym_reg));
-	cfg->rs->isymbolic [val] = sym_reg;
-	return val;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_local_regalloc.                         */
 /*                                                                  */
 /* Function	- We first scan the list of instructions and we     */
@@ -2757,380 +2289,7 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 void
 mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins;
-	MonoRegState *rs = cfg->rs;
-	int i, val;
-	RegTrack *reginfo, *reginfof;
-	RegTrack *reginfo1, *reginfo2, *reginfod;
-	InstList *tmp, *reversed = NULL;
-	const char *spec;
-	guint32 src1_mask, src2_mask, dest_mask;
-	guint32 cur_iregs, cur_fregs;
-
-	if (!bb->code)
-		return;
-	rs->next_vireg = bb->max_ireg;
-	rs->next_vfreg = bb->max_freg;
-	mono_regstate_assign (rs);
-	reginfo = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vireg);
-	reginfof = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vfreg);
-	rs->ifree_mask = S390_CALLER_REGS;
-	rs->ffree_mask = S390_CALLER_FREGS;
-
-	ins = bb->code;
-	i = 1;
-	DEBUG (g_print ("LOCAL regalloc: basic block: %d\n", bb->block_num));
-	/* forward pass on the instructions to collect register liveness info */
-	while (ins) {
-		spec = ins_spec [ins->opcode];
-		DEBUG (print_ins (i, ins));
-//		if (spec [MONO_INST_CLOB] == 'c') {
-//			MonoCallInst * call = (MonoCallInst*)ins;
-//			int j;
-//		}
-		if (spec [MONO_INST_SRC1]) {
-			if (spec [MONO_INST_SRC1] == 'f')
-				reginfo1 = reginfof;
-			else
-				reginfo1 = reginfo;
-			reginfo1 [ins->sreg1].prev_use = reginfo1 [ins->sreg1].last_use;
-			reginfo1 [ins->sreg1].last_use = i;
-		} else {
-			ins->sreg1 = -1;
-		}
-		if (spec [MONO_INST_SRC2]) {
-			if (spec [MONO_INST_SRC2] == 'f')
-				reginfo2 = reginfof;
-			else
-				reginfo2 = reginfo;
-			reginfo2 [ins->sreg2].prev_use = reginfo2 [ins->sreg2].last_use;
-			reginfo2 [ins->sreg2].last_use = i;
-		} else {
-			ins->sreg2 = -1;
-		}
-		if (spec [MONO_INST_DEST]) {
-			if (spec [MONO_INST_DEST] == 'f')
-				reginfod = reginfof;
-			else
-				reginfod = reginfo;
-			if (spec [MONO_INST_DEST] != 'b') /* it's not just a base register */
-				reginfod [ins->dreg].killed_in = i;
-			reginfod [ins->dreg].prev_use = reginfod [ins->dreg].last_use;
-			reginfod [ins->dreg].last_use = i;
-			if (reginfod [ins->dreg].born_in == 0 || reginfod [ins->dreg].born_in > i)
-				reginfod [ins->dreg].born_in = i;
-			if (spec [MONO_INST_DEST] == 'l') {
-				/* result in R2/R3, the virtual register is allocated sequentially */
-				reginfod [ins->dreg + 1].prev_use = reginfod [ins->dreg + 1].last_use;
-				reginfod [ins->dreg + 1].last_use = i;
-				if (reginfod [ins->dreg + 1].born_in == 0 || reginfod [ins->dreg + 1].born_in > i)
-					reginfod [ins->dreg + 1].born_in = i;
-			}
-		} else {
-			ins->dreg = -1;
-		}
-		reversed = inst_list_prepend (cfg->mempool, reversed, ins);
-		++i;
-		ins = ins->next;
-	}
-
-	cur_iregs = S390_CALLER_REGS;
-	cur_fregs = S390_CALLER_FREGS;
-
-	DEBUG (print_regtrack (reginfo, rs->next_vireg));
-	DEBUG (print_regtrack (reginfof, rs->next_vfreg));
-	tmp = reversed;
-	while (tmp) {
-		int prev_dreg, prev_sreg1, prev_sreg2;
-		--i;
-		ins = tmp->data;
-		spec = ins_spec [ins->opcode];
-		DEBUG (g_print ("processing:"));
-		DEBUG (print_ins (i, ins));
-		/* make the register available for allocation: FIXME add fp reg */
-		if (ins->opcode == OP_SETREG || ins->opcode == OP_SETREGIMM) {
-			cur_iregs |= 1 << ins->dreg;
-			DEBUG (g_print ("adding %d to cur_iregs\n", ins->dreg));
-		} else if (ins->opcode == OP_SETFREG) {
-			cur_fregs |= 1 << ins->dreg;
-			DEBUG (g_print ("adding %d to cur_fregs\n", ins->dreg));
-		} else if (spec [MONO_INST_CLOB] == 'c') {
-			MonoCallInst *cinst = (MonoCallInst*)ins;
-			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", 
-					cinst->used_iregs, cur_iregs));
-			DEBUG (g_print ("excluding fpregs 0x%x from cur_fregs (0x%x)\n", 
-					cinst->used_fregs, cur_fregs));
-			cur_iregs &= ~cinst->used_iregs;
-			cur_fregs &= ~cinst->used_fregs;
-			DEBUG (g_print ("available cur_iregs: 0x%x\n", cur_iregs));
-			DEBUG (g_print ("available cur_fregs: 0x%x\n", cur_fregs));
-			/*------------------------------------------------------------*/
-			/* registers used by the calling convention are excluded from */ 
-			/* allocation: they will be selectively enabled when they are */ 
-			/* assigned by the special SETREG opcodes.		      */
-			/*------------------------------------------------------------*/
-		}
-		dest_mask = src1_mask = src2_mask = cur_iregs;
-		/*------------------------------------------------------*/
-		/* update for use with FP regs... 			*/
-		/*------------------------------------------------------*/
-		if (spec [MONO_INST_DEST] == 'f') {
-			dest_mask = cur_fregs;
-			if (ins->dreg >= MONO_MAX_FREGS) {
-				val = rs->fassign [ins->dreg];
-				prev_dreg = ins->dreg;
-				if (val < 0) {
-					int spill = 0;
-					if (val < -1) {
-						/* the register gets spilled after this inst */
-						spill = -val -1;
-					}
-					val = mono_regstate_alloc_float (rs, dest_mask);
-					if (val < 0)
-						val = get_float_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
-					rs->fassign [ins->dreg] = val;
-					if (spill)
-						create_spilled_store_float (cfg, spill, val, prev_dreg, ins);
-				}
-				DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", 
-						mono_arch_regname (val), ins->dreg));
-				rs->fsymbolic [val] = prev_dreg;
-				ins->dreg = val;
-				if (spec [MONO_INST_CLOB] == 'c' && ins->dreg != s390_f0) {
-					/* this instruction only outputs to s390_f0, need to copy */
-					create_copy_ins_float (cfg, ins->dreg, s390_f0, ins);
-				}
-			} else {
-				prev_dreg = -1;
-			}
-			if (freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i || !(cur_fregs & (1 << ins->dreg)))) {
-				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
-				mono_regstate_free_float (rs, ins->dreg);
-			}
-		} else if (ins->dreg >= MONO_MAX_IREGS) {
-			val = rs->iassign [ins->dreg];
-			prev_dreg = ins->dreg;
-			if (val < 0) {
-				int spill = 0;
-				if (val < -1) {
-					/* the register gets spilled after this inst */
-					spill = -val -1;
-				}
-				val = mono_regstate_alloc_int (rs, dest_mask);
-				if (val < 0)
-					val = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
-				rs->iassign [ins->dreg] = val;
-				if (spill)
-					create_spilled_store (cfg, spill, val, prev_dreg, ins);
-			}
-			DEBUG (g_print ("\tassigned dreg %s to dest R%d (prev: R%d)\n", 
-					mono_arch_regname (val), ins->dreg, prev_dreg));
-			rs->isymbolic [val] = prev_dreg;
-			ins->dreg = val;
-			if (spec [MONO_INST_DEST] == 'l') {
-				int hreg = prev_dreg + 1;
-				val = rs->iassign [hreg];
-				if (val < 0) {
-					int spill = 0;
-					if (val < -1) {
-						/* the register gets spilled after this inst */
-						spill = -val -1;
-					}
-					val = mono_regstate_alloc_int (rs, dest_mask);
-					if (val < 0)
-						val = get_register_spilling (cfg, tmp, ins, dest_mask, hreg);
-					rs->iassign [hreg] = val;
-					if (spill)
-						create_spilled_store (cfg, spill, val, hreg, ins);
-				}
-				DEBUG (g_print ("\tassigned hreg %s to dest R%d\n", mono_arch_regname (val), hreg));
-				rs->isymbolic [val] = hreg;
-				/* FIXME:? ins->dreg = val; */
-				if (ins->dreg == s390_r3) {
-					if (val != s390_r2)
-						create_copy_ins (cfg, val, s390_r2, ins);
-				} else if (ins->dreg == s390_r2) {
-					if (val == s390_r3) {
-						/* swap */
-						create_copy_ins (cfg, s390_r3, s390_r0, ins);
-						create_copy_ins (cfg, s390_r2, s390_r3, ins);
-						create_copy_ins (cfg, s390_r0, s390_r2, ins);
-					} else {
-						/* two forced copies */
-						create_copy_ins (cfg, ins->dreg, s390_r3, ins);
-						create_copy_ins (cfg, val, s390_r2, ins);
-					}
-				} else {
-					if (val == s390_r2) {
-						create_copy_ins (cfg, ins->dreg, s390_r2, ins);
-					} else {
-						/* two forced copies */
-						create_copy_ins (cfg, val, s390_r2, ins);
-						create_copy_ins (cfg, ins->dreg, s390_r3, ins);
-					}
-				}
-				if (reg_is_freeable (val) && 
-				    hreg >= 0 && 
-                                    (reginfo [hreg].born_in >= i && 
-                                     !(cur_iregs & (1 << val)))) {
-					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
-					mono_regstate_free_int (rs, val);
-				}
-			} else if (spec [MONO_INST_DEST] == 'a' && ins->dreg != s390_r2 && spec [MONO_INST_CLOB] != 'd') {
-				/* this instruction only outputs to s390_r2, need to copy */
-				create_copy_ins (cfg, ins->dreg, s390_r2, ins);
-			}
-		} else {
-			prev_dreg = -1;
-		}
-		if (spec [MONO_INST_DEST] == 'f' && 
-		    freg_is_freeable (ins->dreg) && 
-		    prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i)) {
-			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
-			mono_regstate_free_float (rs, ins->dreg);
-		} else if (spec [MONO_INST_DEST] != 'f' && 
-			   reg_is_freeable (ins->dreg) && 
-			   prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
-			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
-			 mono_regstate_free_int (rs, ins->dreg);
-		}
-		if (spec [MONO_INST_SRC1] == 'f') {
-			src1_mask = cur_fregs;
-			if (ins->sreg1 >= MONO_MAX_FREGS) {
-				val = rs->fassign [ins->sreg1];
-				prev_sreg1 = ins->sreg1;
-				if (val < 0) {
-					int spill = 0;
-					if (val < -1) {
-						/* the register gets spilled after this inst */
-						spill = -val -1;
-					}
-					val = mono_regstate_alloc_float (rs, src1_mask);
-					if (val < 0)
-						val = get_float_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
-					rs->fassign [ins->sreg1] = val;
-					DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
-					if (spill) {
-						MonoInst *store = create_spilled_store_float (cfg, spill, val, prev_sreg1, NULL);
-						insert_before_ins (ins, tmp, store);
-					}
-				}
-				rs->fsymbolic [val] = prev_sreg1;
-				ins->sreg1 = val;
-			} else {
-				prev_sreg1 = -1;
-			}
-		} else if (ins->sreg1 >= MONO_MAX_IREGS) {
-			val = rs->iassign [ins->sreg1];
-			prev_sreg1 = ins->sreg1;
-			if (val < 0) {
-				int spill = 0;
-				if (val < -1) {
-					/* the register gets spilled after this inst */
-					spill = -val -1;
-				}
-				val = mono_regstate_alloc_int (rs, src1_mask);
-				if (val < 0)
-					val = get_register_spilling (cfg, tmp, ins, 
-								     src1_mask, 
-								     ins->sreg1);
-				rs->iassign [ins->sreg1] = val;
-				DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", 
-						mono_arch_regname (val), ins->sreg1));
-				if (spill) {
-					MonoInst *store; 
-					store = create_spilled_store (cfg, spill, val, 
-								      prev_sreg1, NULL);
-					insert_before_ins (ins, tmp, store);
-				}
-			}
-			rs->isymbolic [val] = prev_sreg1;
-			ins->sreg1 = val;
-		} else {
-			prev_sreg1 = -1;
-		}
-		/*----------------------------------------------*/
-		/* handle clobbering of sreg1 			*/
-		/*----------------------------------------------*/
-		if ((spec [MONO_INST_CLOB] == '1' || 
-		     spec [MONO_INST_CLOB] == 's') && 
-                    ins->dreg != ins->sreg1) {
-			MonoInst *copy; 
-			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
-			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", 
-					mono_arch_regname (ins->sreg1), 
-					mono_arch_regname (ins->dreg)));
-			if (ins->sreg2 == -1 || spec [MONO_INST_CLOB] == 's') {
-				/* note: the copy is inserted before the current instruction! */
-				insert_before_ins (ins, tmp, copy);
-				/* we set sreg1 to dest as well */
-				prev_sreg1 = ins->sreg1 = ins->dreg;
-			} else {
-				/* inserted after the operation */
-				copy->next = ins->next;
-				ins->next  = copy;
-			}
-		}
-
-		if (spec [MONO_INST_SRC2] == 'f') {
-			src2_mask = cur_fregs;
-			if (ins->sreg2 >= MONO_MAX_FREGS) {
-				val = rs->fassign [ins->sreg2];
-				prev_sreg2 = ins->sreg2;
-				if (val < 0) {
-					int spill = 0;
-					if (val < -1) {
-						/* the register gets spilled after this inst */
-						spill = -val -1;
-					}
-					val = mono_regstate_alloc_float (rs, src2_mask);
-					if (val < 0)
-						val = get_float_register_spilling (cfg, tmp, ins, src2_mask, ins->sreg2);
-					rs->fassign [ins->sreg2] = val;
-					DEBUG (g_print ("\tassigned sreg2 %s to R%d\n", mono_arch_regname (val), ins->sreg2));
-					if (spill)
-						create_spilled_store_float (cfg, spill, val, prev_sreg2, ins);
-				}
-				rs->fsymbolic [val] = prev_sreg2;
-				ins->sreg2 = val;
-			} else {
-				prev_sreg2 = -1;
-			}
-		} else if (ins->sreg2 >= MONO_MAX_IREGS) {
-			val = rs->iassign [ins->sreg2];
-			prev_sreg2 = ins->sreg2;
-			if (val < 0) {
-				int spill = 0;
-				if (val < -1) {
-					/* the register gets spilled after this inst */
-					spill = -val -1;
-				}
-				val = mono_regstate_alloc_int (rs, src2_mask);
-				if (val < 0)
-					val = get_register_spilling (cfg, tmp, ins, src2_mask, ins->sreg2);
-				rs->iassign [ins->sreg2] = val;
-				DEBUG (g_print ("\tassigned sreg2 %s to R%d\n", mono_arch_regname (val), ins->sreg2));
-				if (spill)
-					create_spilled_store (cfg, spill, val, prev_sreg2, ins);
-			}
-			rs->isymbolic [val] = prev_sreg2;
-			ins->sreg2 = val;
-		} else {
-			prev_sreg2 = -1;
-		}
-
-		if (spec [MONO_INST_CLOB] == 'c') {
-			int j, s;
-			guint32 clob_mask = S390_CALLER_REGS;
-			for (j = 0; j < MONO_MAX_IREGS; ++j) {
-				s = 1 << j;
-				if ((clob_mask & s) && !(rs->ifree_mask & s) && j != ins->sreg1) {
-					//g_warning ("register %s busy at call site\n", mono_arch_regname (j));
-				}
-			}
-		}
-		tmp = tmp->next;
-	}
+	mono_local_regalloc(cfg, bb);
 }
 
 /*========================= End of Function ========================*/
@@ -3532,7 +2691,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case CEE_BREAK: {
-			s390_break (code);
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, mono_arch_break);
+                        s390_brasl (code, s390_r14, 0);
 		}
 			break;
 		case OP_ADDCC: {
@@ -3604,6 +2764,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_ADD_OVF_UN: {
 			CHECK_SRCDST_COM;
 			s390_alr  (code, ins->dreg, src2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
+		}
+			break;
+		case OP_LADD_OVF: {
+			short int *o[1];
+			CHECK_SRCDST_COM;
+			s390_alr  (code, ins->dreg, src2);
+			s390_jnc  (code, 0); CODEPTR(code, o[0]);
+			s390_ahi  (code, ins->dreg+1, 1);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			PTRSLOT   (code, o[0]);
+			s390_ar   (code, ins->dreg+1, src2+1);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case OP_LADD_OVF_UN: {
+			CHECK_SRCDST_COM;
+			s390_alr  (code, ins->dreg, src2);
+			s390_alcr (code, ins->dreg+1, src2+1);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 		}
 			break;
@@ -3698,6 +2877,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			CHECK_SRCDST_NCOM;
 			s390_slr  (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
+		}
+			break;
+		case OP_LSUB_OVF: {
+			short int *o[3];
+			CHECK_SRCDST_COM;
+			s390_lr   (code, s390_r1, src2+1);
+			s390_slr  (code, ins->dreg, src2);
+			s390_jnl  (code, 0); CODEPTR(code, o[0]);
+			s390_ahi  (code, s390_r1, 1);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			PTRSLOT   (code, o[0]);
+			s390_sr   (code, ins->dreg+1, s390_r1);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case OP_LSUB_OVF_UN: {
+			CHECK_SRCDST_COM;
+			s390_slr  (code, ins->dreg, src2);
+			s390_slbr (code, ins->dreg+1, src2+1);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_LT, "OverflowException");
 		}
 			break;
 		case OP_SUB_OVF_CARRY: {
@@ -3945,10 +3144,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_basr (code, s390_r13, 0);
 				s390_j	  (code, 4);
 				s390_word (code, ins->inst_imm);
-				if (ins->dreg != ins->sreg1) {
-					s390_lr   (code, ins->dreg, ins->sreg1);
-				}
+//				if (ins->dreg != ins->sreg1) {
+//					s390_lr   (code, ins->dreg, ins->sreg1);
+//				}
 				s390_l    (code, s390_r13, 0, s390_r13, 4);
+			}
+			if (ins->dreg != ins->sreg1) {
+				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_msr  (code, ins->dreg, s390_r13);
 		}
@@ -4064,7 +3266,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_R4: {
 			if ((ins->next) &&
-			    (ins->next->opcode != OP_STORER4_MEMBASE_REG))
+			     (ins->next->opcode != OP_FMOVE) &&
+			     (ins->next->opcode != OP_STORER4_MEMBASE_REG))
 				s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
@@ -4178,9 +3381,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC: {
-			int alloca_skip = S390_MINIMAL_STACK_SIZE + cfg->param_area + 
-					  S390_STACK_ALIGNMENT - 1;
-			int area_offset = S390_ALIGN(alloca_skip, S390_STACK_ALIGNMENT);
+//			int alloca_skip = S390_MINIMAL_STACK_SIZE + cfg->param_area + 
+//					  S390_STACK_ALIGNMENT - 1;
+//			int area_offset = S390_ALIGN(alloca_skip, S390_STACK_ALIGNMENT);
+			int area_offset = S390_MINIMAL_STACK_SIZE;
 			s390_lr   (code, s390_r1, ins->sreg1);
 			if (ins->flags & MONO_INST_INIT)
 				s390_lr   (code, s390_r0, ins->sreg1);
@@ -4188,8 +3392,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_srl  (code, s390_r1, 0, 3);
 			s390_sll  (code, s390_r1, 0, 3);
 			s390_l	  (code, s390_r13, 0, STK_BASE, 0);
-			s390_lcr  (code, s390_r1, s390_r1);
-			s390_la	  (code, STK_BASE, STK_BASE, s390_r1, 0);
+			s390_sr	  (code, STK_BASE, s390_r1);
 			s390_st   (code, s390_r13, 0, STK_BASE, 0);
 			s390_la   (code, ins->dreg, 0, STK_BASE, area_offset);
 			s390_srl  (code, ins->dreg, 0, 3);
@@ -4745,8 +3948,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
-	mono_register_jit_icall (enter_method, "mono_enter_method", NULL, TRUE);
-	mono_register_jit_icall (leave_method, "mono_leave_method", NULL, TRUE);
+	mono_register_jit_icall (mono_arch_break, "mono_arch_break", NULL, TRUE);
+	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_patch_code                              */
+/*                                                                  */
+/* Function	- Process the patch data created during the         */
+/*		  instruction build process. This resolves jumps,   */
+/*		  calls, variables etc.        			    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+static void
+mono_arch_break(void) {
 }
 
 /*========================= End of Function ========================*/
@@ -4835,12 +4054,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	size_data sz;
 	int tracing = 0;
 	int lmfOffset;								\
+	int	lFname,
+		lJump;
+	char	*fname;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
 	cfg->code_size   = 512;
 	cfg->native_code = code = g_malloc (cfg->code_size);
+
+	fname = mono_method_full_name (method, TRUE);
+	lFname = strlen(fname);
+	lJump  = (((lFname + 1) >> 1) << 1);
+	s390_j (code, lJump/2+2);
+	memcpy (code, fname, lFname);
+	code  += lJump;
+	g_free (fname);
 
 	if (cfg->flags & MONO_CFG_HAS_TAIL) {
 		s390_stm (code, s390_r2, s390_r14, STK_BASE, S390_PARM_SAVE_OFFSET);
@@ -4994,15 +4224,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					s390_lr  (code, s390_r13, ainfo->reg);
 					s390_ahi (code, s390_r13, alloc_size);
 					s390_l   (code, s390_r13, 0, s390_r13, 
-						  ainfo->offparm + S390_MINIMAL_STACK_SIZE);
+						  ainfo->offparm + cinfo->offStruct);
 					code = emit_memcpy (code, abs(ainfo->vtsize), 
 							    inst->inst_basereg, 
 							    inst->inst_offset, s390_r13, 0);
 				} else {
-					code = emit_memcpy (code, abs(ainfo->vtsize), 
-							    inst->inst_basereg, 
-							    inst->inst_offset, 
-						    	    ainfo->reg, 0);
+					s390_st  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+//					code = emit_memcpy (code, abs(ainfo->vtsize), 
+//							    inst->inst_basereg, 
+//							    inst->inst_offset, 
+//						    	    ainfo->reg, 0);
 				}
 			} else
 				g_assert_not_reached ();
@@ -5012,22 +4243,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (method->save_lmf) {
 		/*---------------------------------------------------------------*/
-		/* Preserve the parameter registers while we fix up the lmf	 */
-		/*---------------------------------------------------------------*/
-		s390_lr (code, s390_r7, s390_r2);
-		s390_lr (code, s390_r8, s390_r3);
-		s390_lr (code, s390_r9, s390_r4);
-		s390_lr (code, s390_r10, s390_r5);
-
-		mono_add_patch_info (cfg, code - cfg->native_code, 
-				     MONO_PATCH_INFO_INTERNAL_METHOD, 
-				     (gpointer)"mono_get_lmf_addr");
-		/*---------------------------------------------------------------*/
-		/* On return from this call r2 have the address of the &lmf	 */
-		/*---------------------------------------------------------------*/
-		s390_brasl (code, s390_r14, 0);
-
-		/*---------------------------------------------------------------*/
 		/* we build the MonoLMF structure on the stack - see mini-s390.h */
 		/*---------------------------------------------------------------*/
 		lmfOffset = alloc_size - sizeof(MonoLMF);	
@@ -5035,6 +4250,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		s390_lr    (code, s390_r13, cfg->frame_reg);		
 		s390_ahi   (code, s390_r13, lmfOffset);					
 											
+		/*---------------------------------------------------------------*/
+		/* Preserve the parameter registers while we fix up the lmf	 */
+		/*---------------------------------------------------------------*/
+		s390_stm   (code, s390_r2, s390_r6, s390_r13,
+			    G_STRUCT_OFFSET(MonoLMF, pregs[0]));
+
+		/*---------------------------------------------------------------*/
+		/* On return from this call r2 have the address of the &lmf	 */
+		/*---------------------------------------------------------------*/
+		mono_add_patch_info (cfg, code - cfg->native_code, 
+				     MONO_PATCH_INFO_INTERNAL_METHOD, 
+				     (gpointer)"mono_get_lmf_addr");
+		s390_brasl (code, s390_r14, 0);
+
 		/*---------------------------------------------------------------*/	
 		/* Set lmf.lmf_addr = jit_tls->lmf				 */	
 		/*---------------------------------------------------------------*/	
@@ -5089,14 +4318,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* Restore the parameter registers now that we've set up the lmf */
 		/*---------------------------------------------------------------*/
-		s390_lr (code, s390_r2, s390_r7);
-		s390_lr (code, s390_r3, s390_r8);
-		s390_lr (code, s390_r4, s390_r9);
-		s390_lr (code, s390_r5, s390_r10);
+		s390_lm    (code, s390_r2, s390_r6, s390_r13, 				
+			    G_STRUCT_OFFSET(MonoLMF, pregs[0]));			
 	}
 
 	if (tracing)
-		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
+		code = mono_arch_instrument_prolog(cfg, enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
 	g_free (cinfo);
@@ -5334,7 +4561,9 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	/* Setup an alternate signal stack 			    */
 	/*----------------------------------------------------------*/
 	tls->stack_size	       = stSize;
-	tls->signal_stack      = g_malloc (SIGNAL_STACK_SIZE);
+	tls->signal_stack      = mmap (0, SIGNAL_STACK_SIZE, 
+				       PROT_READ|PROT_WRITE|PROT_EXEC, 
+				       MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	tls->signal_stack_size = SIGNAL_STACK_SIZE;
 
 	sa.ss_sp    = tls->signal_stack;
@@ -5342,6 +4571,11 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	sa.ss_flags = SS_ONSTACK;
 	sigaltstack (&sa, NULL);
 #endif
+	if (!lmf_addr_key_inited) {
+		lmf_addr_key_inited = TRUE;
+		pthread_key_create (&lmf_addr_key, NULL);
+	}
+	pthread_setspecific (lmf_addr_key, &tls->lmf);
 
 }
 
@@ -5367,7 +4601,7 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 	sigaltstack (&sa, NULL);
 
 	if (tls->signal_stack)
-		g_free (tls->signal_stack);
+		munmap(tls->signal_stack, SIGNAL_STACK_SIZE);
 #endif
 
 }
@@ -5394,19 +4628,21 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	if (this_reg != -1) {
 		MonoInst *this;
 		MONO_INST_NEW (cfg, this, OP_SETREG);
-		this->type = this_type;
+		this->type  = this_type;
 		this->sreg1 = this_reg;
-		this->dreg = this_dreg;
+		this->dreg  = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, this);
+		mono_call_inst_add_outarg_reg (inst, this->dreg, this_dreg, FALSE);
 	}
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;
 		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
-		vtarg->type = STACK_MP;
+		vtarg->type  = STACK_MP;
 		vtarg->sreg1 = vt_reg;
-		vtarg->dreg = s390_r2;
+		vtarg->dreg  = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, vtarg);
+		mono_call_inst_add_outarg_reg (inst, vtarg->dreg, s390_r2, FALSE);
 	}
 }
 
@@ -5493,6 +4729,7 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 
 	switch (tree->opcode) {
 		case OP_S390_LOADARG:
+		case OP_S390_ARGREG:
 		case OP_S390_ARGPTR:
 			printf ("[0x%x(%s)]", tree->inst_offset, 
 				mono_arch_regname (tree->inst_basereg));
@@ -5615,5 +4852,24 @@ void
 mono_arch_flush_register_windows (void)
 {
 }
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_lmf_addr                            */
+/*                                                                  */
+/* Function	- 						    */
+/*		                               			    */
+/* Returns	-     						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_lmf_addr (void)
+{
+        return pthread_getspecific (lmf_addr_key);
+}
+
 
 /*========================= End of Function ========================*/

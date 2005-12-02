@@ -150,6 +150,7 @@ s390_sources = \
 	mini-s390.c		\
 	mini-s390.h		\
 	exceptions-s390.c	\
+	mini-codegen.c		\
 	tramp-s390.c
 
 s390x_sources = \
@@ -350,10 +351,10 @@ cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
 
 cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-s390.md cpu-s390.h s390
+	./genmdesc $(srcdir)/cpu-s390.md cpu-s390.h s390_cpu_desc
 
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-s390x.md cpu-s390x.h s390x
+	./genmdesc $(srcdir)/cpu-s390x.md cpu-s390x.h s390x_cpu_desc
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc

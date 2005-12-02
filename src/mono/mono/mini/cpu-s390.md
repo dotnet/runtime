@@ -48,9 +48,9 @@
 
 adc: dest:i src1:i src2:i len:6
 adc_imm: dest:i src1:i len:18
-add.ovf.un: len: 8 dest:i src1:i src2:i
+add.ovf.un: len: 10 dest:i src1:i src2:i
 add.ovf: len: 24 dest:i src1:i src2:i
-add: dest:i src1:i src2:i len:4 clob:1
+add: dest:i src1:i src2:i len:6 clob:1
 add_imm: dest:i src1:i len:18
 addcc_imm: dest:i src1:i len:18
 add_ovf_carry: dest:i src1:1 src2:i len:28
@@ -93,10 +93,10 @@ brfalse.s:
 brfalse:
 brtrue.s:
 brtrue:
-call: dest:a clob:c len:6
+call: dest:o len:6 clob:c
 call_handler: len:12
-call_membase: dest:a src1:b len:12 clob:c
-call_reg: dest:a src1:i len:8 clob:c
+call_membase: dest:o src1:b len:12 clob:c
+call_reg: dest:o src1:i len:8 clob:c
 calli:
 callvirt:
 castclass:
@@ -123,8 +123,8 @@ cond_exc_nc: len:8
 cond_exc_ne_un: len:8
 cond_exc_no: len:8
 cond_exc_ov: len:8
-conv.i1: dest:i src1:i len:24
-conv.i2: dest:i src1:i len:24
+conv.i1: dest:i src1:i len:26
+conv.i2: dest:i src1:i len:26
 conv.i4: dest:i src1:i len:2
 conv.i8:
 conv.i: dest:i src1:i len:2
@@ -158,17 +158,17 @@ conv.u8:
 conv.u: dest:i src1:i len:4
 cpblk:
 cpobj:
-div.un: dest:a src1:i src2:i len:12 clob:d
-div: dest:a src1:i src2:i len:10 clob:d
+div.un: dest:a src1:i src2:i len:12 
+div: dest:a src1:i src2:i len:10
 div_imm: dest:i src1:i src2:i len:24
 div_un_imm: dest:i src1:i src2:i len:24
 dup:
 endfilter: len:20
 endfinally: len: 20
 endmac:
-fcall: dest:f len:10 clob:c
-fcall_membase: dest:f src1:b len:14 clob:c
-fcall_reg: dest:f src1:i len:10 clob:c
+fcall: dest:g len:10 clob:c
+fcall_membase: dest:g src1:b len:14 clob:c
+fcall_reg: dest:g src1:i len:10 clob:c
 fcompare: src1:f src2:f len:14
 float_add: dest:f src1:f src2:f len:6
 float_add_ovf:
@@ -241,9 +241,9 @@ initobj:
 isinst:
 jmp: len:40
 label:
-lcall: dest:l len:8 clob:c
-lcall_membase: dest:l src1:b len:12 clob:c
-lcall_reg: dest:l src1:i len:8 clob:c
+lcall: dest:L len:8 clob:c
+lcall_membase: dest:L src1:b len:12 clob:c
+lcall_reg: dest:L src1:i len:8 clob:c
 lcompare:
 ldaddr:
 ldarg.0:
@@ -329,8 +329,8 @@ local:
 localloc: dest:i src1:i len:62
 long_add:
 long_add_imm:
-long_add_ovf:
-long_add_ovf_un:
+long_add_ovf_un: len:18 dest:l src1:l src2:i
+long_add_ovf: len:24 dest:l src1:l src2:i
 long_and:
 long_beq:
 long_bge:
@@ -398,8 +398,8 @@ long_shr_un:
 long_shr_un_imm:
 long_sub:
 long_sub_imm:
-long_sub_ovf:
-long_sub_ovf_un:
+long_sub_ovf_un: len:18 dest:l src1:l src2:i
+long_sub_ovf: len:36 dest:l src1:l src2:i
 long_xor:
 mkrefany:
 mono_ldptr:
@@ -408,21 +408,21 @@ mono_objaddr:
 mono_retobj:
 mono_vtaddr:
 move: dest:i src1:i len:4
-mul.ovf.un: dest:i src1:i src2:i len:20 clob:1
-mul.ovf: dest:i src1:i src2:i len:42 clob:1
-mul: dest:i src1:i src2:i len:4 clob:1
+mul.ovf.un: dest:i src1:i src2:i len:20
+mul.ovf: dest:i src1:i src2:i len:42
+mul: dest:i src1:i src2:i len:6
 mul_imm: dest:i src1:i len:18
-neg: dest:i src1:i len:4 clob:1
+neg: dest:i src1:i len:4
 newarr:
 newobj:
 nop: len:4
-not: dest:i src1:i len:8 clob:1
+not: dest:i src1:i len:8
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 op_endfilter: src1:i len:12
 op_rethrow: src1:i len:8
 oparglist: src1:i len:20
-or: dest:i src1:i src2:i len:4 clob:1
+or: dest:i src1:i src2:i len:4
 or_imm: dest:i src1:i len:16
 outarg: src1:i len:1
 outarg_imm: len:5
@@ -443,27 +443,27 @@ refanyval:
 reg:
 regoffset:
 regvar:
-rem.un: dest:d src1:i src2:i len:12 clob:d
-rem: dest:d src1:i src2:i len:10 clob:d
+rem.un: dest:d src1:i src2:i len:12
+rem: dest:d src1:i src2:i len:10
 rem_imm: dest:i src1:i src2:i len:24
 rem_un_imm: dest:i src1:i src2:i len:24
 rename:
 ret:
 retarg:
 s390_move: len:48 dest:b src1:b
-s390_setf4ret: dest:f src1:f len:4 clob:r
+s390_setf4ret: dest:f src1:f len:4
 tls_get: dest:i len:44
 sbb: dest:i src1:i src2:i len:8
-sbb_imm: dest:i src1:i len:16
-setfreg: dest:f src1:f len:4 clob:r
+sbb_imm: dest:i src1:i len:18
+setfreg: dest:f src1:f len:4
 setlret: src1:i src2:i len:12
-setreg: dest:i src1:i len:4 clob:r
-setregimm: dest:i len:18 clob:r
+setreg: dest:i src1:i len:4
+setregimm: dest:i len:18
 setret: dest:a src1:i len:6
-shl: dest:i src1:i src2:i clob:s len:6
+shl: dest:i src1:i src2:i clob:s len:8
 shl_imm: dest:i src1:i len:8
-shr.un: dest:i src1:i src2:i clob:s len:6
-shr: dest:i src1:i src2:i clob:s len:6
+shr.un: dest:i src1:i src2:i clob:s len:8
+shr: dest:i src1:i src2:i clob:s len:8
 shr_imm: dest:i src1:i len:8
 shr_un_imm: dest:i src1:i len:8
 sizeof:
@@ -511,7 +511,7 @@ storer8_membase_reg: dest:b src1:f len:22
 stsfld:
 sub.ovf.un: len:10 dest:i src1:i src2:i 
 sub.ovf: len:24 dest:i src1:i src2:i
-sub: dest:i src1:i src2:i len:4 clob:1
+sub: dest:i src1:i src2:i len:6
 sub_imm: dest:i src1:i len:18
 subcc_imm: dest:i src1:i len:18
 sub_ovf_carry: dest:i src1:1 src2:i len:28
@@ -530,5 +530,5 @@ voidcall: len:8 clob:c
 voidcall_membase: src1:b len:12 clob:c
 voidcall_reg: src1:i len:8 clob:c
 volatile.:
-xor: dest:i src1:i src2:i len:4 clob:1
+xor: dest:i src1:i src2:i len:4
 xor_imm: dest:i src1:i len:16

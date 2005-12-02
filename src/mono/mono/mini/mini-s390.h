@@ -7,7 +7,10 @@
 #define MONO_MAX_IREGS 16
 #define MONO_MAX_FREGS 16
 
-#define MONO_ARCH_FRAME_ALIGNMENT 8
+/*-------------------------------------------*/
+/* Parameters used by the register allocator */
+/*-------------------------------------------*/
+#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC 1
 
 #define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
                 MonoInst *inst; 						\
@@ -51,25 +54,32 @@
 	} while (0)
 
 #define MONO_OUTPUT_VTR(cfg, size, dr, sr, so) do {				\
+	int reg = mono_regstate_next_int (cfg->rs);				\
 	switch (size) {								\
 		case 1:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
-				dr, sr, so);					\
+				reg, sr, so);					\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
 		break;								\
 		case 2:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU2_MEMBASE,	\
-				dr, sr, so);					\
+				reg, sr, so);					\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
 		break;								\
 		case 4:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
-				dr, sr, so);					\
+				reg, sr, so);					\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
 		break;								\
 		case 8:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
-				dr, sr, so);					\
+				reg, sr, so);					\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
 			dr++; so += sizeof(guint32);				\
+			reg = mono_regstate_next_int (cfg->rs);			\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
-				dr, sr, so);					\
+				reg, sr, so);					\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
 		break;								\
 	}									\
 } while (0)
@@ -98,16 +108,13 @@
 	}									\
 } while (0)
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
- * reproduceable results for benchmarks */
-#define MONO_ARCH_CODE_ALIGNMENT 32
-
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
 	gulong      ebp;
 	gulong      eip;
+	gulong	    pregs[6];
 	gulong	    gregs[16];
 	gdouble     fregs[16];
 };
@@ -119,11 +126,18 @@ typedef struct MonoCompileArch {
 
 typedef struct
 {
-  void *prev;
-  void *unused[5];
-  void *regs[8];
-  void *return_address;
+	void *prev;
+	void *unused[5];
+	void *regs[8];
+	void *return_address;
 } MonoS390StackFrame;
+
+typedef struct
+{
+	gint32	size;
+	gint32	offset;
+	gint32	offPrm;
+} MonoS390ArgParm;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 		1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 		1
@@ -150,6 +164,56 @@ typedef struct
 #define S390_NUM_REG_ARGS (S390_LAST_ARG_REG-S390_FIRST_ARG_REG+1)
 #define S390_NUM_REG_FPARGS (S390_LAST_FPARG_REG-S390_FIRST_FPARG_REG)
 
+/*===============================================*/
+/* Definitions used by mini-codegen.c            */
+/*===============================================*/
+
+/*--------------------------------------------*/
+/* use s390_r2-s390_r6 as parm registers      */
+/* s390_r0, s390_r1, s390_r13 used internally */
+/* s390_r15 is the stack pointer              */
+/*--------------------------------------------*/
+#define MONO_ARCH_CALLEE_REGS (0x1ffc)
+
+#define MONO_ARCH_CALLEE_SAVED_REGS 0xff80
+
+/*----------------------------------------*/
+/* use s390_f1/s390_f3-s390_f15 as temps  */
+/*----------------------------------------*/
+
+#define MONO_ARCH_CALLEE_FREGS (0xfffe)
+
+#define MONO_ARCH_CALLEE_SAVED_FREGS 0
+
+#define MONO_ARCH_USE_FPSTACK FALSE
+#define MONO_ARCH_FPSTACK_SIZE 0
+
+#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? s390_r2 : 		\
+					((desc == 'L') ? s390_r3 :		\
+					((desc == 'g') ? s390_f0 : - 1)))
+
+#define MONO_ARCH_INST_IS_FLOAT(desc)  ((desc == 'f') || (desc == 'g'))
+
+#define MONO_ARCH_INST_SREG2_MASK(ins) (0)
+
+#define MONO_ARCH_INST_IS_REGPAIR(desc) ((desc == 'l') || (desc == 'L'))
+//#define MONO_ARCH_INST_IS_REGPAIR(desc) (0)
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hr) ((desc == 'l') ? (hr + 1) : 	\
+					      ((desc == 'L') ? s390_r2 : -1))
+
+#define MONO_ARCH_IS_GLOBAL_IREG(reg) 0
+
+#define MONO_ARCH_FRAME_ALIGNMENT (sizeof (glong))
+#define MONO_ARCH_CODE_ALIGNMENT 32
+
+#define MONO_ARCH_BASEREG s390_r15
+#define MONO_ARCH_RETREG1 s390_r2
+
+#define MONO_SPARC_STACK_BIAS 0
+
+/*-----------------------------------------------*/
+/* Macros used to generate instructions          */
+/*-----------------------------------------------*/
 #define S390_OFFSET(b, t)	(guchar *) ((gint32) (b) - (gint32) (t))
 #define S390_RELATIVE(b, t)     (guchar *) ((((gint32) (b) - (gint32) (t))) / 2)
 
