@@ -2113,6 +2113,11 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				break;
 			}
 		}
+		else {
+			g_assert (ainfo->storage == ArgInIReg);
+
+			amd64_mov_reg_reg (code, ainfo->reg, inst->dreg, 8);
+		}
 	}
 
 	g_free (cinfo);
