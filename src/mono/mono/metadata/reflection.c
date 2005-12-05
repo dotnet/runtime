@@ -1536,6 +1536,12 @@ encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type)
 	char *p, *box_val;
 	char* buf;
 	guint32 idx = 0, len = 0, dummy = 0;
+#ifdef ARM_FPU_FPA
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+	guint32 fpa_double [2];
+	guint32 *fpa_p;
+#endif
+#endif
 	
 	p = buf = g_malloc (64);
 	if (!val) {
@@ -1565,8 +1571,18 @@ handle_enum:
 		break;
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
+		len = 8;
+		break;
 	case MONO_TYPE_R8:
 		len = 8;
+#ifdef ARM_FPU_FPA
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+		fpa_p = (guint32*)box_val;
+		fpa_double [0] = fpa_p [1];
+		fpa_double [1] = fpa_p [0];
+		box_val = (char*)fpa_double;
+#endif
+#endif
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (val->vtable->klass->enumtype) {
