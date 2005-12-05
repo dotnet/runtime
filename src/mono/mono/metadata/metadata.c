@@ -1845,24 +1845,49 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	}
 }
 
+/*
+ * select_container:
+ * @gc: The generic container to normalize
+ * @type: The kind of generic parameters the resulting generic-container should contain
+ */
+
+static MonoGenericContainer *
+select_container (MonoGenericContainer *gc, MonoTypeEnum type)
+{
+	if (!gc)
+		return NULL;
+
+	if (type == MONO_TYPE_VAR && gc->parent)
+		/*
+		 * The current MonoGenericContainer is a generic method -> its `parent'
+		 * points to the containing class'es container.
+		 */
+		gc = gc->parent;
+
+	/*
+	 * Ensure that we have the correct type of GenericContainer.
+	 */
+	g_assert ((type == MONO_TYPE_VAR) == !gc->is_method);
+
+	return gc;
+}
+
 /* 
- * do_mono_metadata_parse_generic_param:
+ * mono_metadata_parse_generic_param:
  * @generic_container: Our MonoClass's or MonoMethodNormal's MonoGenericContainer;
  *                     see mono_metadata_parse_type_full() for details.
  * Internal routine to parse a generic type parameter.
  */
 static MonoGenericParam *
-mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_context,
-				   gboolean is_mvar, const char *ptr, const char **rptr)
+mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
+				   MonoTypeEnum type, const char *ptr, const char **rptr)
 {
-	MonoGenericContainer *generic_container;
-	int index;
-
-	index = mono_metadata_decode_value (ptr, &ptr);
+	int index = mono_metadata_decode_value (ptr, &ptr);
 	if (rptr)
 		*rptr = ptr;
 
-	if (!generic_context) {
+	generic_container = select_container (generic_container, type);
+	if (!generic_container) {
 		/* Create dummy MonoGenericParam */
 		MonoGenericParam *param = g_new0 (MonoGenericParam, 1);
 		param->name = g_strdup_printf ("%d", index);
@@ -1870,19 +1895,6 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContext *generic_con
 
 		return param;
 	}
-	generic_container = generic_context->container;
-	g_assert (generic_container);
-
-	if (!is_mvar && generic_container->parent)
-		/*
-		 * The current MonoGenericContainer is a generic method -> its `parent'
-		 * points to the containing class'es container.
-		 */
-		generic_container = generic_container->parent;
-
-	/* Ensure that we have the correct type of GenericContainer */
-	g_assert (is_mvar || !generic_container->is_method);
-	g_assert (!is_mvar || generic_container->is_method);
 
 	g_assert (index < generic_container->type_argc);
 	return &generic_container->type_params [index];
@@ -1910,6 +1922,7 @@ static void
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
 			     const char *ptr, const char **rptr)
 {
+	MonoGenericContainer *container = generic_context ? generic_context->container : NULL;
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
@@ -1948,19 +1961,15 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *g
 	case MONO_TYPE_PTR:
 		type->data.type = mono_metadata_parse_type_full (m, generic_context, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		break;
-	case MONO_TYPE_FNPTR: {
-		MonoGenericContainer *container = generic_context ? generic_context->container : NULL;
+	case MONO_TYPE_FNPTR:
 		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
 		break;
-	}
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array_full (m, generic_context, ptr, &ptr);
 		break;
 	case MONO_TYPE_MVAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, TRUE, ptr, &ptr);
-		break;
 	case MONO_TYPE_VAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, generic_context, FALSE, ptr, &ptr);
+		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
 		break;
 	case MONO_TYPE_GENERICINST:
 		do_mono_metadata_parse_generic_class (type, m, generic_context, ptr, &ptr);
@@ -3615,52 +3624,51 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 static MonoType*
 unwrap_arrays (MonoType *ptr)
 {
-	while (ptr->type == MONO_TYPE_ARRAY || ptr->type == MONO_TYPE_SZARRAY)
-		/* Found an array/szarray, recurse to get the element type */
+	for (;;) {
 		if (ptr->type == MONO_TYPE_ARRAY)
 			ptr = &ptr->data.array->eklass->byval_arg;
-		else
+		else if (ptr->type == MONO_TYPE_SZARRAY)
 			ptr = &ptr->data.klass->byval_arg;
-	return ptr;
+		else
+			return ptr;
+	}
 }
 
 /**
- * @inst: GENERIC_INST
- * @context: context to compare against
+ * @inst: MonoGenericClass to search in
+ * @prefer_mvar: Whether to try harder to find an MVAR
  *
- * Check if the VARs or MVARs in the GENERIC_INST @inst refer to the context @context.
+ * Return some occurance of a generic parameter in this instantiation, if any.  Return NULL otherwise.
+ * If @prefer_mvar is set, it tries to find if there's an MVAR generic parameter, and returns that
+ * in preference to any VAR generic parameter.
  */
-static gboolean
-has_same_context (MonoGenericInst *inst, MonoGenericContext *context)
+static MonoType *
+find_generic_param (MonoGenericClass *gclass, gboolean prefer_mvar)
 {
-	int i = 0, count = inst->type_argc;
-	MonoType **ptr = inst->type_argv;
+	int i = 0, count = gclass->inst->type_argc;
+	MonoType **ptr = gclass->inst->type_argv;
+	MonoType *fallback = NULL;
 
-	if (!context)
-		return FALSE;
+	g_assert (gclass->inst->is_open);
 
-	restart_loop:	
 	for (i = 0; i < count; i++) {
-		MonoType *ctype;
+		MonoType *ctype = unwrap_arrays (ptr [i]);
 
-		ctype = unwrap_arrays (ptr [i]);
+		if (ctype->type == MONO_TYPE_GENERICINST && ctype->data.generic_class->inst->is_open)
+			ctype = find_generic_param (ctype->data.generic_class, prefer_mvar);
 
-		if (ctype->type == MONO_TYPE_MVAR || ctype->type == MONO_TYPE_VAR) {
-			MonoGenericContainer *owner = ctype->data.generic_param->owner;
-			MonoGenericContainer *gc = (MonoGenericContainer *) context;
-			return owner == gc || (ctype->type == MONO_TYPE_VAR && owner == gc->parent);
-		}
+		if (ctype->type == MONO_TYPE_MVAR)
+			return ctype;
 
-		if (ctype->type == MONO_TYPE_GENERICINST && ctype->data.generic_class->inst->is_open) {
-			/* Found an open GenericInst recurse into it. We care about
-			   finding the first argument that is a generic parameter. */
-			count = ctype->data.generic_class->inst->type_argc;
-			ptr = ctype->data.generic_class->inst->type_argv;
-			goto restart_loop;
+		if (ctype->type == MONO_TYPE_VAR) {
+			if (prefer_mvar)
+				fallback = ctype;
+			else
+				return ctype;
 		}
 	}
-	g_assert_not_reached ();
-	return TRUE;
+
+	return fallback;
 }
 
 /**
@@ -3680,25 +3688,22 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 	guint32 len;
 	MonoType *type;
 	gboolean cache_type = TRUE;
+	MonoGenericContainer *gc = generic_context ? generic_context->container : NULL;
 
 	mono_loader_lock ();
 
 	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
 
-	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open &&
-	    !has_same_context (type->data.generic_class->inst, generic_context))
-		/* is_open AND does not have the same context as generic_context, so don't use cached MonoType */
-		type = NULL;
+	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open) {
+		MonoType *gtype = find_generic_param (type->data.generic_class, gc ? gc->is_method : FALSE);
+		gc = select_container (gc, gtype->type == MONO_TYPE_MVAR);
+		if (gtype->data.generic_param->owner != gc)
+			type = NULL;
+	}
 
 	if (type && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		if (generic_context) {
-			MonoGenericContainer *gc = generic_context->container;
-			if (type->type == MONO_TYPE_VAR && gc->parent)
-				gc = gc->parent;
-
-			g_assert (type->type != MONO_TYPE_MVAR || gc->is_method);
-			g_assert (type->type != MONO_TYPE_VAR || !gc->is_method);
-
+		gc = select_container (gc, type->type == MONO_TYPE_MVAR);
+		if (gc) {
 			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
 			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
 
