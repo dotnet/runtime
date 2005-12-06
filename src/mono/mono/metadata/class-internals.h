@@ -682,6 +682,7 @@ typedef struct {
 	MonoClass *runtimesecurityframe_class;
 	MonoClass *executioncontext_class;
 	MonoClass *generic_array_class;
+	MonoClass *generic_nullable_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;
@@ -771,6 +772,9 @@ mono_type_get_full_name (MonoClass *class);
 
 MonoArrayType *mono_dup_array_type (MonoArrayType *a);
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig);
+
+gboolean mono_class_is_nullable (MonoClass *klass);
+MonoClass *mono_class_get_nullable_param (MonoClass *klass);
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

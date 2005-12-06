@@ -1068,6 +1068,10 @@ reg: CEE_ISINST (reg) {
 				/* the object_is_null target simply copies the input register to the output */
 				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
+		} else if (mono_class_is_nullable (klass)) {
+			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+			/* the object_is_null target simply copies the input register to the output */
+			mini_emit_isninst_cast (s, klass_reg, klass->cast_class, false_label, object_is_null);
 		} else {
 			if (!s->compile_aot && !(s->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
 				/* the remoting code is broken, access the class for now */

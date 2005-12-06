@@ -2719,6 +2719,23 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
+/** is klass Nullable<T>? */
+gboolean
+mono_class_is_nullable (MonoClass *klass)
+{
+       return klass->generic_class != NULL &&
+               klass->generic_class->container_class == mono_defaults.generic_nullable_class;
+}
+
+
+/** if klass is T? return T */
+MonoClass*
+mono_class_get_nullable_param (MonoClass *klass)
+{
+       g_assert (mono_class_is_nullable (klass));
+       return mono_class_from_mono_type (klass->generic_class->inst->type_argv [0]);
+}
+
 /*
  * Create the `MonoClass' for an instantiation of a generic type.
  * We only do this if we actually need it.
@@ -2753,6 +2770,9 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 	klass->this_arg.byref = TRUE;
 
 	klass->cast_class = klass->element_class = klass;
+
+	if (mono_class_is_nullable (klass))
+		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
 
 	if (gclass->generic_class.is_dynamic) {
 		klass->instance_size = gklass->instance_size;

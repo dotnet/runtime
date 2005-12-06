@@ -2568,12 +2568,34 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 
 	return mono_emit_jit_icall (cfg, bblock, alloc_ftn, iargs, ip);
 }
+
+/**
+ * Handles unbox of a Nullable<T>, returning a temp variable
+ * where the result is stored
+ */
+static int
+handle_unbox_nullable (MonoCompile* cfg, MonoBasicBlock* bblock, MonoInst* val, const guchar *ip, MonoClass* klass)
+{
+       MonoMethod* method = mono_class_get_method_from_name (klass, "Unbox", 1);
+       return mono_emit_method_call_spilled (cfg, bblock, method, mono_method_signature (method), &val, ip, NULL);
 	
+}
+
+
+
 static MonoInst *
 handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
 {
 	MonoInst *dest, *vtoffset, *add, *vstore;
 	int temp;
+
+       if (mono_class_is_nullable (klass)) {
+               MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
+               temp = mono_emit_method_call_spilled (cfg, bblock, method, mono_method_signature (method), &val, ip, NULL);
+               NEW_TEMPLOAD (cfg, dest, temp);
+               return dest;
+       }
+
 
 	temp = handle_alloc (cfg, bblock, klass, TRUE, ip);
 	NEW_TEMPLOAD (cfg, dest, temp);
@@ -5039,6 +5061,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
+			if (mono_class_is_nullable (klass)) {
+				int v = handle_unbox_nullable (cfg, bblock, *sp, ip, klass);
+				NEW_TEMPLOAD (cfg, *sp, v);
+				sp ++;
+				ip += 5;
+				break;
+			}
+
 			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
 			ins->type = STACK_OBJ;
 			ins->inst_left = *sp;
@@ -5088,6 +5118,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			if (!klass)
 				goto load_error;
+
+			if (mono_class_is_nullable (klass)) {
+				int v = handle_unbox_nullable (cfg, bblock, *sp, ip, klass);
+				NEW_TEMPLOAD (cfg, *sp, v);
+				sp ++;
+				ip += 5;
+				break;
+			}
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
