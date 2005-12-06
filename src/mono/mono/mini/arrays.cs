@@ -188,6 +188,110 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_multi_dimension_arrays () {
+		int sum;
+
+		byte[,] a1 = new byte [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a1 [i, i] = (byte)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a1 [i, i];
+		if (sum != 45)
+			return 1;
+
+		sbyte[,] a2 = new sbyte [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a2 [i, i] = (sbyte)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a2 [i, i];
+		if (sum != 45)
+			return 3;
+
+		short[,] a3 = new short [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a3 [i, i] = (short)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a3 [i, i];
+		if (sum != 45)
+			return 4;
+
+		ushort[,] a4 = new ushort [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a4 [i, i] = (ushort)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a4 [i, i];
+		if (sum != 45)
+			return 5;
+
+		int[,] a5 = new int [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a5 [i, i] = (int)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a5 [i, i];
+		if (sum != 45)
+			return 6;
+
+		uint[,] a6 = new uint [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a6 [i, i] = (uint)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a6 [i, i];
+		if (sum != 45)
+			return 6;
+
+		long[,] a7 = new long [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a7 [i, i] = i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a7 [i, i];
+		if (sum != 45)
+			return 7;
+
+		ulong[,] a8 = new ulong [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a8 [i, i] = (ulong)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a8 [i, i];
+		if (sum != 45)
+			return 8;
+
+		float[,] a9 = new float [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a9 [i, i] = (float)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a9 [i, i];
+		if (sum != 45)
+			return 9;
+
+		double[,] a10 = new double [10, 10];
+		for (int i = 0; i < 10; ++i)
+			a10 [i, i] = i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a10 [i, i];
+		if (sum != 45)
+			return 10;
+
+		object[,] a11 = new object [10, 10];
+		object o = new Object ();
+		for (int i = 0; i < 10; ++i)
+			a11 [i, i] = o;
+		for (int i = 0; i < 10; ++i)
+		   if (a11 [i, i] != o)
+				 return 11;
+
+		return 0;
+	}
+
 	public static int test_0_bug_71454 () {
 		int[,] a = new int[4,4];
 		int[,] b = new int[4,4];
