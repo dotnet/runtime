@@ -3476,10 +3476,12 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	gchar *str;
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
-	gboolean type_resolve = FALSE;
+	gboolean type_resolve;
 
 	MONO_ARCH_SAVE_REGS;
 
+	/* On MS.NET, this does not fire a TypeResolve event */
+	type_resolve = TRUE;
 	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
 	if (!mono_reflection_parse_type (str, &info)) {
