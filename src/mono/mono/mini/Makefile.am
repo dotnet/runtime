@@ -218,6 +218,8 @@ test_sources = 		\
 	iltests.il		\
 	test.cs
 
+test_sources2 = generics.2.cs
+
 regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 regtests2=generics.exe
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
@@ -318,13 +320,13 @@ libmono_la_LIBADD = \
 	$(GMCS) -out:$@ $< -r:TestDriver.dll 
 
 %.exe: %.cs TestDriver.dll
-	$(MCS) /out:$*.exe /unsafe $< /r:TestDriver.dll
+	$(MCS) -out:$@ -unsafe $< -r:TestDriver.dll
 
 %.exe: %.il
-	$(ILASM) /output=$*.exe $<
+	$(ILASM) -output=$@ $<
 
 TestDriver.dll: $(srcdir)/TestDriver.cs
-	$(MCS) /out:TestDriver.dll /target:library $(srcdir)/TestDriver.cs
+	$(MCS) -out:$@ -target:library $<
 
 if CROSS_COMPILING
 
@@ -427,7 +429,8 @@ BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript ldscript.mono $(test_sources) \
+EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript ldscript.mono \
+	$(test_sources) $(test_sources2) \
 	inssel-long.brg inssel-long32.brg \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
