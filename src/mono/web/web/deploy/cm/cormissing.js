@@ -486,7 +486,7 @@ function filterTree ()
 	var attrFilters = new Object ();
 	var rgOptions = getChildrenByTagName (document.getElementById ('FilteredAttributes'), "option");
 	for (i = 0; i < rgOptions.length; i++)
-		attrFilters [rgOptions [i].firstChild.nodeValue] = true;
+		attrFilters [rgOptions [i].firstChild.nodeValue.replace (/\s+/g, '')] = true;
 	viewAll (document.getElementById ('ROOT'), dictTypes, attrFilters);
 }
 
