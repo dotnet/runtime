@@ -13,6 +13,7 @@ static const guchar *unused_details (struct _WapiHandleShared *handle);
 static const guchar *unshared_details (struct _WapiHandleShared *handle);
 static const guchar *thread_details (struct _WapiHandleShared *handle);
 static const guchar *namedmutex_details (struct _WapiHandleShared *handle);
+static const guchar *namedsem_details (struct _WapiHandleShared *handle);
 static const guchar *process_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
@@ -32,6 +33,7 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 	process_details,
 	unshared_details,		/* pipe */
 	namedmutex_details,
+	namedsem_details,
 	unused_details,
 };
 
@@ -39,7 +41,7 @@ int main (int argc, char **argv)
 {
 	guint32 i;
 	guint32 now;
-	
+
 	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
 	if (_wapi_shared_layout == NULL) {
 		g_error ("Failed to attach shared memory!");
@@ -125,6 +127,20 @@ static const guchar *namedmutex_details (struct _WapiHandleShared *handle)
 	g_snprintf (buf, sizeof(buf), "[%15s] own: %5d:%5ld, count: %5u",
 		    name==NULL?(gchar *)"":name, mut->pid, mut->tid,
 		    mut->recursion);
+
+	return(buf);
+}
+
+static const guchar *namedsem_details (struct _WapiHandleShared *handle)
+{
+	static guchar buf[80];
+	gchar *name;
+	struct _WapiHandle_namedsem *sem = &handle->u.namedsem;
+	
+	name = sem->sharedns.name;
+	
+	g_snprintf (buf, sizeof(buf), "[%15s] val: %5u, max: %5d",
+		    name == NULL?(gchar *)"":name, sem->val, sem->max);
 
 	return(buf);
 }

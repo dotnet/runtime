@@ -385,10 +385,9 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	guint32 namelen;
 	gint32 offset;
 
-	/* w32 seems to guarantee that opening named mutexes can't
+	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
 	 */
-	pthread_cleanup_push ((void(*)(void *))_wapi_namespace_unlock, NULL);
 	thr_ret = _wapi_namespace_lock ();
 	g_assert (thr_ret == 0);
 
@@ -473,7 +472,6 @@ cleanup:
 	g_free (utf8_name);
 
 	_wapi_namespace_unlock (NULL);
-	pthread_cleanup_pop (0);
 	
 	return(ret);
 }

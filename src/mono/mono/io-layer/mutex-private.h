@@ -30,7 +30,6 @@ struct _WapiHandle_mutex
 struct _WapiHandle_namedmutex 
 {
 	WapiSharedNamespace sharedns;
-	guint32 is_owned;
 	pid_t pid;
 	pthread_t tid;
 	guint32 recursion;
