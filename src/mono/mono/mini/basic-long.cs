@@ -913,19 +913,6 @@ class Tests {
 
 		return (int)res;
 	}
-
-	static long position = 0;
-
-	public static int test_4_static_inc_long () {
-
-		int count = 4;
-
-		position = 0;
-
-		position += count;
-
-		return (int)position;
-	}
 	
 	static void doit (double value, out long m) {
 		m = (long) value;
