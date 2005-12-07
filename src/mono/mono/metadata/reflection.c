@@ -879,8 +879,8 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb)
 	gint maybe_small;
 	guint32 fat_flags;
 	char fat_header [12];
-	guint32 *intp;
-	guint16 *shortp;
+	guint32 int_value;
+	guint16 short_value;
 	guint32 local_sig = 0;
 	guint32 header_size = 12;
 	MonoArray *code;
@@ -946,12 +946,12 @@ fat_header:
 		fat_flags |= METHOD_HEADER_INIT_LOCALS;
 	fat_header [0] = fat_flags;
 	fat_header [1] = (header_size / 4 ) << 4;
-	shortp = (guint16*)(fat_header + 2);
-	*shortp = GUINT16_TO_LE (max_stack);
-	intp = (guint32*)(fat_header + 4);
-	*intp = GUINT32_TO_LE (code_size);
-	intp = (guint32*)(fat_header + 8);
-	*intp = GUINT32_TO_LE (local_sig);
+	short_value = GUINT16_TO_LE (max_stack);
+	memcpy (fat_header + 2, &short_value, 2);
+	int_value = GUINT32_TO_LE (code_size);
+	memcpy (fat_header + 4, &int_value, 4);
+	int_value = GUINT32_TO_LE (local_sig);
+	memcpy (fat_header + 8, &int_value, 4);
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
 	/* add to the fixup todo list */
 	if (mb->ilgen && mb->ilgen->num_token_fixups)
@@ -3750,7 +3750,7 @@ load_public_key (MonoArray *pkey, MonoDynamicImage *assembly) {
 		assembly->strong_name_size = len - MONO_PUBLIC_KEY_HEADER_LENGTH;
 	} else {
 		/* FIXME - verifier */
-		g_warning ("Invalid public key length: %d bits (total: %d)", MONO_PUBLIC_KEY_BIT_SIZE (len), len);
+		g_warning ("Invalid public key length: %d bits (total: %d)", (int)MONO_PUBLIC_KEY_BIT_SIZE (len), (int)len);
 		assembly->strong_name_size = MONO_DEFAULT_PUBLIC_KEY_LENGTH; /* to be safe */
 	}
 	assembly->strong_name = g_malloc0 (assembly->strong_name_size);
