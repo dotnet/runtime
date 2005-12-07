@@ -887,6 +887,7 @@ typedef struct {
 	guint32 index;
 	MonoReflectionType *base_type;
 	MonoArray *iface_constraints;
+	MonoArray *cattrs;
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
