@@ -188,6 +188,128 @@ class Tests {
 		return 0;
 	}
 
+	struct FooStruct {
+		public int i;
+
+		public FooStruct (int i) {
+			this.i = i;
+		}
+	}
+
+	public static int test_0_arrays () {
+
+		int sum;
+
+		byte[] a1 = new byte [10];
+		for (int i = 0; i < 10; ++i)
+			a1 [i] = (byte)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a1 [i];
+		if (sum != 45)
+			return 1;
+
+		sbyte[] a2 = new sbyte [10];
+		for (int i = 0; i < 10; ++i)
+			a2 [i] = (sbyte)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a2 [i];
+		if (sum != 45)
+			return 2;
+
+		short[] a3 = new short [10];
+		for (int i = 0; i < 10; ++i)
+			a3 [i] = (short)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a3 [i];
+		if (sum != 45)
+			return 3;
+
+		ushort[] a4 = new ushort [10];
+		for (int i = 0; i < 10; ++i)
+			a4 [i] = (ushort)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a4 [i];
+		if (sum != 45)
+			return 4;
+
+		int[] a5 = new int [10];
+		for (int i = 0; i < 10; ++i)
+			a5 [i] = (int)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a5 [i];
+		if (sum != 45)
+			return 5;
+
+		uint[] a6 = new uint [10];
+		for (int i = 0; i < 10; ++i)
+			a6 [i] = (uint)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a6 [i];
+		if (sum != 45)
+			return 6;
+
+		long[] a7 = new long [10];
+		for (int i = 0; i < 10; ++i)
+			a7 [i] = i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a7 [i];
+		if (sum != 45)
+			return 7;
+
+		ulong[] a8 = new ulong [10];
+		for (int i = 0; i < 10; ++i)
+			a8 [i] = (ulong)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a8 [i];
+		if (sum != 45)
+			return 8;
+
+		float[] a9 = new float [10];
+		for (int i = 0; i < 10; ++i)
+			a9 [i] = (float)i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a9 [i];
+		if (sum != 45)
+			return 9;
+
+		double[] a10 = new double [10];
+		for (int i = 0; i < 10; ++i)
+			a10 [i] = i;
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += (int)a10 [i];
+		if (sum != 45)
+			return 10;
+
+		object[] a11 = new object [10];
+		object o = new Object ();
+		for (int i = 0; i < 10; ++i)
+			a11 [i] = o;
+		for (int i = 0; i < 10; ++i)
+		   if (a11 [i] != o)
+				 return 11;
+
+		FooStruct[] a12 = new FooStruct [10];
+		for (int i = 0; i < 10; ++i)
+			a12 [i] = new FooStruct (i);
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			sum += a12 [i].i;
+		if (sum != 45)
+			return 12;
+
+		return 0;
+	}
+
 	public static int test_0_multi_dimension_arrays () {
 		int sum;
 
@@ -207,7 +329,7 @@ class Tests {
 		for (int i = 0; i < 10; ++i)
 			sum += a2 [i, i];
 		if (sum != 45)
-			return 3;
+			return 2;
 
 		short[,] a3 = new short [10, 10];
 		for (int i = 0; i < 10; ++i)
@@ -216,7 +338,7 @@ class Tests {
 		for (int i = 0; i < 10; ++i)
 			sum += a3 [i, i];
 		if (sum != 45)
-			return 4;
+			return 3;
 
 		ushort[,] a4 = new ushort [10, 10];
 		for (int i = 0; i < 10; ++i)
@@ -225,7 +347,7 @@ class Tests {
 		for (int i = 0; i < 10; ++i)
 			sum += a4 [i, i];
 		if (sum != 45)
-			return 5;
+			return 4;
 
 		int[,] a5 = new int [10, 10];
 		for (int i = 0; i < 10; ++i)
@@ -234,7 +356,7 @@ class Tests {
 		for (int i = 0; i < 10; ++i)
 			sum += a5 [i, i];
 		if (sum != 45)
-			return 6;
+			return 5;
 
 		uint[,] a6 = new uint [10, 10];
 		for (int i = 0; i < 10; ++i)
@@ -288,6 +410,29 @@ class Tests {
 		for (int i = 0; i < 10; ++i)
 		   if (a11 [i, i] != o)
 				 return 11;
+
+		FooStruct[,] a12 = new FooStruct [10, 10];
+		for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j) {
+				/* This one calls Address */
+				a12 [i, j] = new FooStruct (i + j);
+
+				/* Test Set as well */
+				FooStruct s = new FooStruct (i + j);
+				a12 [i, j] = s;
+			}
+		sum = 0;
+		for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j) {
+				/* This one calls Address */
+				sum += a12 [i, j].i;
+
+				/* Test Get as well */
+				FooStruct s = a12 [i, j];
+				sum += s.i;
+			}
+		if (sum != 1800)
+			return 12;
 
 		return 0;
 	}
