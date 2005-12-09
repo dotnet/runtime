@@ -2865,8 +2865,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
-	klass->generic_container = param->owner;
-
 	mono_class_setup_supertypes (klass);
 
 	return klass;
@@ -2896,8 +2894,6 @@ my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
-
-	klass->generic_container = param->owner;
 
 	mono_class_setup_supertypes (klass);
 
