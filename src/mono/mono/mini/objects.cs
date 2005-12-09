@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 /*
  * Regression tests for the mono JIT.
@@ -940,6 +941,58 @@ ncells ) {
 			new FooStruct (val * 10000);
 		}
 		return 0;
+	}
+
+	static int test_0_intrins_string_length () {
+		string s = "ABC";
+
+		return (s.Length == 3) ? 0 : 1;
+	}
+
+	static int test_0_intrins_string_chars () {
+		string s = "ABC";
+
+		return (s [0] == 'A' && s [1] == 'B' && s [2] == 'C') ? 0 : 1;
+	}
+
+	static int test_0_intrins_object_gettype () {
+		object o = 1;
+
+		return (o.GetType () == typeof (int)) ? 0 : 1;
+	}
+
+	static int test_0_intrins_object_gethashcode () {
+		object o = new Object ();
+
+		return (o.GetHashCode () == o.GetHashCode ()) ? 0 : 1;
+	}
+
+	class FooClass {
+	}
+
+	static int test_0_intrins_object_ctor () {
+		object o = new FooClass ();
+
+		return (o != null) ? 0 : 1;
+	}
+
+	static int test_0_intrins_array_rank () {
+		int[,] a = new int [10, 10];
+
+		return (a.Rank == 2) ? 0 : 1;
+	}
+
+	static int test_0_intrins_array_length () {
+		int[,] a = new int [10, 10];
+		Array a2 = a;
+
+		return (a2.Length == 100) ? 0 : 1;
+	}
+
+	static int test_0_intrins_runtimehelpers_offset_to_string_data () {
+		int i = RuntimeHelpers.OffsetToStringData;
+		
+		return i - i;
 	}
 }
 
