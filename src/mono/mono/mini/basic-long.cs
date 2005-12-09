@@ -1035,5 +1035,14 @@ class Tests {
 
 		return ((a >> (b - c)) == 0) ? 0 : 1;
 	}
+
+	public static int test_1234_conv_ovf_u8 () {
+		int i = 1234;
+
+		checked {
+			ulong l = (ulong)i;
+			return (int)l;
+		}
+	}
 }
 
