@@ -2923,7 +2923,7 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			return ins;
 		} else
 			return NULL;
-	} else if (mini_class_is_system_array (cmethod->klass)) {
+	} else if (cmethod->klass == mono_defaults.array_class) {
  		if (cmethod->name [0] != 'g')
  			return NULL;
 
