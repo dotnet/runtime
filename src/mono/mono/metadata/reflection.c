@@ -1044,10 +1044,20 @@ find_index_in_table (MonoDynamicImage *assembly, int table_idx, int col, guint32
 
 static GHashTable *dynamic_custom_attrs = NULL;
 
+static gboolean
+custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
+{
+	/* FIXME: Need to do more checks */
+	if ((cattr->ctor->method->klass->image != image) && ((cattr->ctor->method->klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) != TYPE_ATTRIBUTE_PUBLIC))
+		return FALSE;
+	else
+		return TRUE;
+}
+
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 {
-	int i, count;
+	int i, index, count, not_visible;
 	MonoCustomAttrInfo *ainfo;
 	MonoReflectionCustomAttr *cattr;
 
@@ -1057,16 +1067,30 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 
 	count = mono_array_length (cattrs);
 
+	/* Skip nonpublic attributes since MS.NET seems to do the same */
+	/* FIXME: This needs to be done more globally */
+	not_visible = 0;
+	for (i = 0; i < count; ++i) {
+		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
+		if (!custom_attr_visible (image, cattr))
+			not_visible ++;
+	}
+	count -= not_visible;
+
 	ainfo = g_malloc0 (sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (count - MONO_ZERO_LEN_ARRAY));
 
 	ainfo->image = image;
 	ainfo->num_attrs = count;
+	index = 0;
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
-		ainfo->attrs [i].ctor = cattr->ctor->method;
-		/* FIXME: might want to memdup the data here */
-		ainfo->attrs [i].data = mono_array_addr (cattr->data, char, 0);
-		ainfo->attrs [i].data_size = mono_array_length (cattr->data);
+		if (custom_attr_visible (image, cattr)) {
+			ainfo->attrs [index].ctor = cattr->ctor->method;
+			/* FIXME: might want to memdup the data here */
+			ainfo->attrs [index].data = mono_array_addr (cattr->data, char, 0);
+			ainfo->attrs [index].data_size = mono_array_length (cattr->data);
+			index ++;
+		}
 	}
 
 	return ainfo;
