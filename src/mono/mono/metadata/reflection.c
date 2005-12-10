@@ -8299,7 +8299,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					m->signature->params [i - 1]->attrs = pb->attrs;
 				}
 
-				if (pb->def_value) {
+				if (pb->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) {
 					MonoDynamicImage *assembly;
 					guint32 idx, def_type, len;
 					char *p;
