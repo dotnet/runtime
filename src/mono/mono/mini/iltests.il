@@ -460,6 +460,14 @@ COND:   ldloc.0
 		extends [mscorlib]System.ValueType {
 		.field public int32 a
 		.field public int32 b
+		.field public int32 b1
+		.field public int32 b2
+		.field public int32 b3
+		.field public int32 b4
+		.field public int32 b5
+		.field public int32 b6
+		.field public int32 b7
+		.field public int32 b8
 	}
 
 	.method static valuetype Tests/TailCallStruct tail1 (valuetype Tests/TailCallStruct arg) {
@@ -480,6 +488,9 @@ COND:   ldloc.0
 	}
 
 	.method static valuetype Tests/TailCallStruct tail2 (valuetype Tests/TailCallStruct arg) {
+		ldarg.0
+		call valuetype Tests/TailCallStruct Tests::tail1 (valuetype Tests/TailCallStruct)
+
 		ldarg.0
 		tail.
 		call valuetype Tests/TailCallStruct Tests::tail1 (valuetype Tests/TailCallStruct)
