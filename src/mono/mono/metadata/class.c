@@ -2489,31 +2489,6 @@ mono_class_setup_supertypes (MonoClass *class)
 	}
 }	
 
-/*
- * If we inherit a type parameter from an outer class, set its owner to that class.
- */
-static int
-set_generic_param_owner (MonoGenericContainer *container, MonoClass *klass, int pos)
-{
-	MonoGenericContainer *gc;
-	int i;
-
-	if (klass->nested_in)
-		pos = set_generic_param_owner (container, klass->nested_in, pos);
-
-	if (!klass->generic_container)
-		return pos;
-
-	gc = klass->generic_container;
-
-	/* No enclosing class can have more type arguments */
-	g_assert (pos <= gc->type_argc);
-	for (i = pos; i < gc->type_argc; i++)
-		container->type_params [i].owner = gc;
-
-	return gc->type_argc;
-}
-
 static MonoGenericInst *
 get_shared_inst (MonoGenericContainer *container)
 {
@@ -2706,13 +2681,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
-
-	/*
-	 * If we inherit any type parameters from our containing class, we need to modify
-	 * their `owner'.
-	 */
-	if (class->nested_in && class->generic_container)
-		set_generic_param_owner (class->generic_container, class->nested_in, 0);
 
 	mono_loader_unlock ();
 

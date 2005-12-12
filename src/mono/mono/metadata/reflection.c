@@ -9372,22 +9372,8 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			gparam->mbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
-		MonoReflectionTypeBuilder *nesting = (MonoReflectionTypeBuilder*) gparam->tbuilder->nesting_type;
-		MonoGenericContainer *container = gparam->tbuilder->generic_container;
-
-		while (nesting) {
-			int count;
-
-			count = nesting->generic_params ? mono_array_length (nesting->generic_params) : 0;
-			if (gparam->index >= count)
-				break;
-
-			container = nesting->generic_container;
-			nesting = (MonoReflectionTypeBuilder*) nesting->nesting_type;
-		}
-
-		g_assert (container);
-		param->owner = container;
+		g_assert (gparam->tbuilder->generic_container);
+		param->owner = gparam->tbuilder->generic_container;
 	}
 
 	param->method = NULL;
