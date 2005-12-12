@@ -1,3 +1,11 @@
+2005-12-12 Mike Kestner <mkestner@novell.com>
+
+	* mono-cairo.pc.in: pkgconfig support for Mono.Cairo. Mono.Cairo.dll
+	and this file can be extracted post-build to be packaged separately 
+	on win32.
+	* configure.in: expand mono-cairo.pc
+	* Makefile.am: dist and install mono-cairo.pc
+
 2005-12-01  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Check for setkey(3) in -lcrypt and define CRYPT_LIBS

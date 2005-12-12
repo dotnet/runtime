@@ -1767,6 +1767,7 @@ AC_OUTPUT([
 Makefile
 mint.pc
 mono.pc
+mono-cairo.pc
 dotnet.pc
 mono-uninstalled.pc
 scripts/mono-nunit.pc

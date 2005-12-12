@@ -1,0 +1,9 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${pcfiledir}/../..
+libdir=${prefix}/@reloc_libdir@
+includedir=${prefix}/include
+
+Name: Mono.Cairo
+Description: Cairo bindings for Mono
+Version: @VERSION@
+Libs: -r:${libdir}/mono/1.0/Mono.Cairo.dll
