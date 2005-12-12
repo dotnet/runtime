@@ -84,6 +84,11 @@ enum {
 		(dest)->inst.opcode = (op);	\
 	} while (0)
 
+#define MONO_INST_NEW_CALL_ARG(cfg,dest,op) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallArgParm));	\
+		(dest)->ins.opcode = (op);	\
+	} while (0)
+
 #define MONO_ADD_INS(b,inst) do {	\
 		if ((b)->last_ins) {	\
 			(b)->last_ins->next = (inst);	\
@@ -95,6 +100,7 @@ enum {
 
 typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
+typedef struct MonoCallArgParm MonoCallArgParm;
 typedef struct MonoEdge MonoEdge;
 typedef struct MonoMethodVar MonoMethodVar;
 typedef struct MonoBasicBlock MonoBasicBlock;
@@ -283,6 +289,13 @@ struct MonoCallInst {
 	GSList *out_ireg_args;
 	GSList *out_freg_args;
 #endif
+};
+
+struct MonoCallArgParm {
+	MonoInst ins;
+	gint32 size;
+	gint32 offset;
+	gint32 offPrm;
 };
 
 /* 
