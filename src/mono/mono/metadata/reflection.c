@@ -1048,7 +1048,7 @@ static gboolean
 custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
 {
 	/* FIXME: Need to do more checks */
-	if (cattr->ctor->method && (cattr->ctor->method->klass->image != image) && ((cattr->ctor->method->klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) != TYPE_ATTRIBUTE_PUBLIC))
+	if (cattr->ctor->method && (cattr->ctor->method->klass->image != image) && !((cattr->ctor->method->klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) & (TYPE_ATTRIBUTE_PUBLIC|TYPE_ATTRIBUTE_NESTED_PUBLIC)))
 		return FALSE;
 	else
 		return TRUE;
