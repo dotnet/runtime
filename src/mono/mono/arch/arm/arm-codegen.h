@@ -31,7 +31,7 @@ arminstr_t* arm_mov_reg_imm32(arminstr_t* p, int reg, armword_t imm32);
 	void __inline _arm_emit(arminstr_t** p, arminstr_t i) {**p = i; (*p)++;}
 #	define ARM_EMIT(p, i) _arm_emit((arminstr_t**)&p, (arminstr_t)(i))
 #else
-#	define ARM_EMIT(p, i) do {*(arminstr_t*)p = (arminstr_t)i; ((arminstr_t*)p)++;} while (0)
+#	define ARM_EMIT(p, i) do { arminstr_t *__ainstrp = (void*)(p); *__ainstrp = (arminstr_t)(i); (p) = (void*)(__ainstrp+1);} while (0)
 #endif
 
 #if defined(_MSC_VER) && !defined(ARM_NOIASM)
