@@ -333,7 +333,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 
 	delegate_hash_table_remove (delegate);
 
-	ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
+	ptr = (gpointer)InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
 
 	if (!delegate->target) {
 		/* The wrapper method is shared between delegates -> no need to free it */

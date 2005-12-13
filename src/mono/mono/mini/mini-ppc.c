@@ -3034,7 +3034,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC: {
-			guint32 * zero_loop_jump, zero_loop_start;
+			guint32 * zero_loop_jump, * zero_loop_start;
 			/* keep alignment */
 			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 31;
 			int area_offset = alloca_waste;
@@ -3986,6 +3986,7 @@ exception_id_by_name (const char *name)
 	if (strcmp (name, "ArrayTypeMismatchException") == 0)
 		return MONO_EXC_ARRAY_TYPE_MISMATCH;
 	g_error ("Unknown intrinsic exception %s\n", name);
+	return 0;
 }
 
 void
