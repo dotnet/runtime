@@ -235,10 +235,13 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	shm_seg = mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE,
 			MAP_SHARED, fd, 0);
 	if (shm_seg == MAP_FAILED) {
-		g_critical ("%s: mmap error: %s", __func__,
-			    g_strerror (errno));
-		close (fd);
-		return(NULL);
+		shm_seg = mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE,
+			MAP_PRIVATE, fd, 0);
+		if (shm_seg == MAP_FAILED) {
+			g_critical ("%s: mmap error: %s", __func__, g_strerror (errno));
+			close (fd);
+			return(NULL);
+		}
 	}
 		
 	close (fd);
