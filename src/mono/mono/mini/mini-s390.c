@@ -4044,23 +4044,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	size_data sz;
 	int tracing = 0;
 	int lmfOffset;								\
-	int	lFname,
-		lJump;
-	char	*fname;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
 	cfg->code_size   = 512;
 	cfg->native_code = code = g_malloc (cfg->code_size);
-
-	fname = mono_method_full_name (method, TRUE);
-	lFname = strlen(fname);
-	lJump  = (((lFname + 1) >> 1) << 1);
-	s390_j (code, lJump/2+2);
-	memcpy (code, fname, lFname);
-	code  += lJump;
-	g_free (fname);
 
 	if (cfg->flags & MONO_CFG_HAS_TAIL) {
 		s390_stm (code, s390_r2, s390_r14, STK_BASE, S390_PARM_SAVE_OFFSET);
