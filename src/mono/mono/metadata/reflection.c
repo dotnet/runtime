@@ -9090,9 +9090,15 @@ ensure_runtime_vtable (MonoClass *klass)
 		for (i = 0; i < klass->method.count; ++i)
 			klass->methods [i]->slot = i;
 
+	/* 
+	 * FIXME: This doesn't work, because some runtime code like 
+	 * ves_icall_Type_GetMethodsByName depends on method->slot being defined.
+	 */
+#if 0	
 	if (!((MonoDynamicImage*)klass->image)->run)
 		/* No need to create a generic vtable */
 		return;
+#endif
 
 	/* Overrides */
 	onum = 0;
