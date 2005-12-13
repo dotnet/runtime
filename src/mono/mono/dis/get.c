@@ -2190,17 +2190,33 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("int64(0x%08x%08x)", high, low);
 	}
 	case MONO_TYPE_R4: {
+		gboolean normal;
 		float r;
 		readr4 (ptr, &r);
-		if (! isnormal (r))
+
+		/* Crazy solaris systems doesn't have isnormal */
+#ifdef HAVE_FINITE
+		normal = finite (r);
+#else
+		normal = isnormal (r);
+#endif
+		if (!normal)
 			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));
 		else
 			return g_strdup_printf ("float32(%.20g)", r);
 	}	
 	case MONO_TYPE_R8: {
+		gboolean normal;
 		double r;
 		readr8 (ptr, &r);
-		if (! isnormal (r)) {
+
+		/* Crazy solaris systems doesn't have isnormal */
+#ifdef HAVE_FINITE
+		normal = finite (r);
+#else
+		normal = isnormal (r);
+#endif
+		if (!normal) {
 			guint32 low, high;
 			low = read32 (ptr);
 			high = read32 (ptr + 4);
