@@ -50,13 +50,13 @@ adc: dest:i src1:i src2:i len:6
 adc_imm: dest:i src1:i len:18
 add.ovf.un: len: 10 dest:i src1:i src2:i
 add.ovf: len: 24 dest:i src1:i src2:i
-add: dest:i src1:i src2:i len:6 clob:1
+add: dest:i src1:i src2:i len:6
 add_imm: dest:i src1:i len:18
 addcc_imm: dest:i src1:i len:18
 add_ovf_carry: dest:i src1:1 src2:i len:28
 add_ovf_un_carry: dest:i src1:1 src2:i len:28
 addcc: dest:i src1:i src2:i len:6
-and: dest:i src1:i src2:i len:6 clob:1
+and: dest:i src1:i src2:i len:6
 and_imm: dest:i src1:i len:16
 aot_const: dest:i len:8
 arg:

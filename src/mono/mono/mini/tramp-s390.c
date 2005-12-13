@@ -22,11 +22,11 @@
 
 #define GR_SAVE_SIZE		4*sizeof(long)
 #define FP_SAVE_SIZE		16*sizeof(double)
-#define CREATE_GR_OFFSET	S390_MINIMAL_STACK_SIZE
+#define METHOD_SAVE_OFFSET	S390_MINIMAL_STACK_SIZE
+#define CREATE_GR_OFFSET	METHOD_SAVE_OFFSET+sizeof(gpointer)
 #define CREATE_FP_OFFSET	CREATE_GR_OFFSET+GR_SAVE_SIZE
 #define CREATE_LMF_OFFSET	CREATE_FP_OFFSET+FP_SAVE_SIZE
 #define CREATE_STACK_SIZE	(CREATE_LMF_OFFSET+2*sizeof(long)+sizeof(MonoLMF))
-#define METHOD_SAVE_OFFSET	S390_RET_ADDR_OFFSET-4
 
 /*------------------------------------------------------------------*/
 /* Method-specific trampoline code fragment sizes		    */
@@ -264,6 +264,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		s390_lr	  (buf, s390_r11, s390_r15);
 		s390_ahi  (buf, STK_BASE, -CREATE_STACK_SIZE);
 		s390_st	  (buf, s390_r11, 0, STK_BASE, 0);
+		s390_st	  (buf, s390_r1, 0, STK_BASE, METHOD_SAVE_OFFSET);
 		s390_stm  (buf, s390_r2, s390_r5, STK_BASE, CREATE_GR_OFFSET);
 
 		/* Save the FP registers */
@@ -320,7 +321,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/*---------------------------------------------------------------*/	
 		/* save method info						 */	
 		/*---------------------------------------------------------------*/	
-		s390_l     (buf, s390_r1, 0, s390_r11, METHOD_SAVE_OFFSET);
+		s390_l     (buf, s390_r1, 0, STK_BASE, METHOD_SAVE_OFFSET);
 		s390_st    (buf, s390_r1, 0, s390_r13, 				
 			    G_STRUCT_OFFSET(MonoLMF, method));				
 									
@@ -358,10 +359,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 				
 		/* Set arguments */
 		
-		/* Arg 1: MonoMethod *method. It was put in r11 by the
+		/* Arg 1: MonoMethod *method. It was put in r1 by the
 		method-specific trampoline code, and then saved before the call
-		to mono_get_lmf_addr()'. Restore r13, by the way :-) */
-		s390_l  (buf, s390_r2, 0, s390_r11, METHOD_SAVE_OFFSET);
+		to mono_get_lmf_addr()'. */
+		s390_l  (buf, s390_r2, 0, STK_BASE, METHOD_SAVE_OFFSET);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -450,10 +451,10 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
 	mono_domain_unlock (domain);
 
-	s390_basr (buf, s390_r13, 0);
+	s390_basr (buf, s390_r1, 0);
 	s390_j	  (buf, 4);
 	s390_word (buf, method);
-	s390_l    (buf, s390_r13, 0, s390_r13, 4);
+	s390_l    (buf, s390_r1, 0, s390_r1, 4);
 	displace = (tramp - buf) / 2;
 	s390_jcl  (buf, S390_CC_UN, displace);
 
@@ -510,17 +511,17 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 
 	vc = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
-	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with the MonoMethod *method pointer. We'll
-	use r13 to keep that value, for instance. However, the generic part of
-	the trampoline relies on r11 having the same value it had before coming
-	here, so we must save it before. */
+	/*----------------------------------------------------------*/
+	/* This is the method-specific part of the trampoline. Its  */
+	/* purpose is to provide the generic part with the          */
+	/* MonoMethod *method pointer. We'll use r1 to keep it.     */
+	/*----------------------------------------------------------*/
 	code = buf = mono_global_codeman_reserve(METHOD_TRAMPOLINE_SIZE);
 
-	s390_basr (buf, s390_r13, 0);
+	s390_basr (buf, s390_r1, 0);
 	s390_j	  (buf, 4);
 	s390_word (buf, method);
-	s390_l    (buf, s390_r13, 0, s390_r13, 4);
+	s390_l    (buf, s390_r1, 0, s390_r1, 4);
 	displace = (vc - buf) / 2;
 	s390_jcl  (buf, S390_CC_UN, displace);
 

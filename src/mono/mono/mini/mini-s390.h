@@ -92,14 +92,14 @@
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
 				tmpr, sr, so);					\
 			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
-				tmpr, dr, dx);					\
+				dr, dx, tmpr);					\
 		break;								\
 		case 2:								\
 			tmpr = mono_regstate_next_int (cfg->rs);		\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU2_MEMBASE,	\
 				tmpr, sr, so);					\
 			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
-				tmpr, dr, dx);					\
+				dr, dx, tmpr);					\
 		break;								\
 		case 4:								\
 		case 8:								\

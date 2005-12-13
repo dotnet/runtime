@@ -155,6 +155,7 @@ typedef enum {
 #define S390_CC_LT			4
 #define S390_CC_GT			2
 #define S390_CC_GE			11
+#define S390_CC_NM			11
 #define S390_CC_LE			13
 #define S390_CC_OV			1
 #define S390_CC_NO			14
@@ -575,6 +576,7 @@ typedef struct __attribute__ ((packed)) {
 #define s390_alr(c, r1, r2)		S390_RR(c, 0x1e, r1, r2)
 #define s390_ar(c, r1, r2)		S390_RR(c, 0x1a, r1, r2)
 #define s390_basr(c, r1, r2)		S390_RR(c, 0x0d, r1, r2)
+#define s390_bctr(c, r1, r2)		S390_RR(c, 0x06, r1, r2)
 #define s390_bras(c, r, o)		S390_RI(c, 0xa75, r, o)
 #define s390_brasl(c, r, o)		S390_RIL_1(c, 0xc05, r, o)
 #define s390_brc(c, m, d)		S390_RI(c, 0xa74, m, d)
@@ -615,8 +617,11 @@ typedef struct __attribute__ ((packed)) {
 #define s390_jnl(c, d)			s390_brc(c, S390_CC_GE, d)
 #define s390_jnz(c, d)			s390_brc(c, S390_CC_NZ, d)
 #define s390_jo(c, d)			s390_brc(c, S390_CC_OV, d)
+#define s390_jno(c, d)			s390_brc(c, S390_CC_NO, d)
 #define s390_jp(c, d)			s390_brc(c, S390_CC_GT, d)
 #define s390_jz(c, d)			s390_brc(c, S390_CC_ZR, d)
+#define s390_jcy(c, d)			s390_brc(c, S390_CC_CY, d)
+#define s390_jnc(c, d)			s390_brc(c, S390_CC_NC, d)
 #define s390_la(c, r, x, b, d)		S390_RX(c, 0x41, r, x, b, d)
 #define s390_lam(c, r1, r2, b, d)	S390_RS_1(c, 0x9a, r1, r2, b, d)
 #define s390_larl(c, r, o)		S390_RIL_1(c, 0xc00, r, o)

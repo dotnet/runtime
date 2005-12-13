@@ -187,16 +187,15 @@ stmt: OP_OUTARG (reg) {
 }
 
 stmt: OP_OUTARG_MEMBASE (reg) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
 
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
-				     argParm->offset, state->left->reg1);
-
-	g_free(argParm);
+				     arg->offset, state->left->reg1);
 }
 
 stmt: OP_OUTARG (OP_REGVAR) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
+
 	tree->opcode       = OP_SETREG;
 	tree->dreg         = mono_regstate_next_int (s->rs);
 	tree->sreg1        = state->left->tree->dreg;
@@ -206,12 +205,10 @@ stmt: OP_OUTARG (OP_REGVAR) {
 }
 
 stmt: OP_OUTARG_MEMBASE (OP_REGVAR) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallArgParm *arg = (MonoCallArgParm *)  tree;
 
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
-				     argParm->offset, state->left->tree->dreg);
-
-	g_free(argParm);
+				     arg->offset, state->left->tree->dreg);
 }
 
 #stmt: OP_OUTARG (reg) {
@@ -239,6 +236,7 @@ stmt: OP_OUTARG_MEMBASE (OP_REGVAR) {
 stmt: OP_OUTARG (lreg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 	int tdreg;
+
 	tdreg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
 	
@@ -254,13 +252,12 @@ stmt: OP_OUTARG (lreg) {
 }
 
 stmt: OP_OUTARG_MEMBASE (lreg) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
-	
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
-				     argParm->offset, state->left->reg2);
+				     arg->offset, state->left->reg2);
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
-				     argParm->offset + 4, state->left->reg1);
-	g_free(argParm);
+				     arg->offset + 4, state->left->reg1);
 }
 
 #stmt: OP_OUTARG (lreg) {
@@ -278,6 +275,7 @@ stmt: OP_OUTARG_MEMBASE (lreg) {
 
 stmt: OP_OUTARG (OP_ICONST) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
 	tree->opcode       = OP_ICONST;
 	tree->dreg 	   = mono_regstate_next_int (s->rs);
 	tree->inst_c0 	   = state->left->tree->inst_c0;
@@ -287,16 +285,15 @@ stmt: OP_OUTARG (OP_ICONST) {
 }
 
 stmt: OP_OUTARG_MEMBASE (OP_ICONST) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
 
 	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, STK_BASE, 
-				         argParm->offset, state->left->tree->inst_c0);
-
-	g_free (argParm);
+				         arg->offset, state->left->tree->inst_c0);
 }
 
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
+
 	tree->opcode       = OP_SETREG;
 	tree->sreg1        = state->left->left->tree->dreg;
 	tree->dreg         = mono_regstate_next_int (s->rs);
@@ -306,12 +303,10 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 }
 
 stmt: OP_OUTARG_MEMBASE (CEE_LDIND_REF (OP_REGVAR)) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
 
 	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, STK_BASE, 
-				         argParm->offset, state->left->tree->inst_c0);
-
-	g_free(argParm);
+				         arg->offset, state->left->tree->inst_c0);
 }
 
 #stmt: OP_OUTARG (OP_ICONST) {
@@ -343,12 +338,10 @@ stmt: OP_OUTARG (OP_LDADDR (OP_S390_LOADARG)) {
 }
 
 stmt: OP_OUTARG_MEMBASE (OP_LDADDR (OP_S390_LOADARG)) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
 
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
-				     argParm->offset, state->left->left->tree->dreg);
-
-	g_free(argParm);
+				     arg->offset, state->left->left->tree->dreg);
 }
 
 #stmt: OP_OUTARG (OP_LDADDR (OP_S390_LOADARG)) {
@@ -385,22 +378,21 @@ stmt: OP_OUTARG (freg) {
 }
 
 stmt: OP_OUTARG_MEMBASE (freg) {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
-	
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+
 	/*----------------------------------------------*/
 	/* The length stored in size tells us whether   */
 	/* we need to store a float or a double		*/
 	/*----------------------------------------------*/
-	if (argParm->size == 4) {
+	if (arg->size == 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, 
-					     STK_BASE, argParm->offset,
+					     STK_BASE, arg->offset,
 					     state->left->reg1);
 	} else {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, 
-					     STK_BASE, argParm->offset,
+					     STK_BASE, arg->offset,
 					     state->left->reg1);
 	}
-	g_free(argParm);
 }
 
 #stmt: OP_OUTARG_R4 (freg) {
@@ -467,12 +459,12 @@ freg: OP_FCONV_TO_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
 
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoInst *vt  		 = state->left->left->tree;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+	MonoInst *vt  	     = state->left->left->tree;
 	
 	int start_reg = tree->sreg1;
-	int size      = argParm->size;
+	int size      = arg->size;
 	int soffset   = vt->inst_offset;
 	int treg;
 	
@@ -480,37 +472,35 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		size = -size;
 		treg = mono_regstate_next_int (s->rs);
 		if (start_reg != STK_BASE) {
-			MONO_EMIT_NEW_MOVE(s, STK_BASE, argParm->offPrm,
+			MONO_EMIT_NEW_MOVE(s, STK_BASE, arg->offPrm,
 					   vt->inst_basereg, soffset, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, 
-						 STK_BASE, argParm->offPrm);
+						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else { 
-			MONO_EMIT_NEW_MOVE(s, STK_BASE, argParm->offPrm+sizeof(gpointer),
+			MONO_EMIT_NEW_MOVE(s, STK_BASE, arg->offPrm,
 					   vt->inst_basereg, soffset, size);
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, 
-						 argParm->offPrm+sizeof(gpointer));
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, arg->offPrm);
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
-						     STK_BASE, argParm->offPrm, treg);
+						     STK_BASE, arg->offset, treg);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, vt->inst_basereg, soffset);
 		} else {
-			MONO_OUTPUT_VTS (s, size, STK_BASE, argParm->offset,
+			MONO_OUTPUT_VTS (s, size, STK_BASE, arg->offset,
 					 vt->inst_basereg, soffset);
 		}	
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoInst *vt  		 = state->left->left->tree;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+	MonoInst *vt  	     = state->left->left->tree;
 	
 	int start_reg = tree->sreg1;
-	int size      = argParm->size;
+	int size      = arg->size;
 	int soffset   = vt->inst_offset;
 	int treg;
 
@@ -519,38 +509,35 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
 		size = -size;
 		treg = mono_regstate_next_int (s->rs);
 		if (start_reg != STK_BASE) {
-			MONO_EMIT_NEW_MOVE (s, STK_BASE, argParm->offset,
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offset,
 					    vt->inst_basereg, soffset, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
-						 STK_BASE, argParm->offPrm);
+						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
-			MONO_EMIT_NEW_MOVE (s, STK_BASE, 
-					    argParm->offset+sizeof(gpointer),
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm,
 					    vt->inst_basereg, soffset, size);
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
-						 argParm->offset+sizeof(gpointer));
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, arg->offPrm);
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
-						     STK_BASE, argParm->offset, treg);
+						     STK_BASE, arg->offset, treg);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, vt->inst_basereg, soffset);
 		} else {
-			MONO_OUTPUT_VTS (s, size, STK_BASE, argParm->offset,
+			MONO_OUTPUT_VTS (s, size, STK_BASE, arg->offset,
 				  	 vt->inst_basereg, soffset);
 		}	
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_REGOFFSET)) "0" {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoInst *vt  		 = state->left->left->tree;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+	MonoInst *vt  	     = state->left->left->tree;
 	
 	int start_reg = tree->sreg1;
-	int size      = argParm->size;
+	int size      = arg->size;
 	int soffset   = vt->inst_offset;
 	int treg;
 
@@ -561,38 +548,35 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_REGOFFSET)) "0" {
 		if (start_reg != STK_BASE) {
 //			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
 //						 STK_BASE, soffset);
-			MONO_EMIT_NEW_MOVE (s, STK_BASE, argParm->offPrm,
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm,
 					    vt->inst_basereg, soffset, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
-						 STK_BASE, argParm->offPrm);
+						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
-			MONO_EMIT_NEW_MOVE (s, STK_BASE, 
-					    argParm->offPrm+sizeof(gpointer),
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm,
 					    vt->inst_basereg, soffset, size);
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
-						 argParm->offPrm+sizeof(gpointer));
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, arg->offPrm);
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
-						     STK_BASE, argParm->offPrm, treg);
+						     STK_BASE, arg->offset, treg);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR(s, size, start_reg, vt->inst_basereg, soffset);
 		} else {
-			MONO_OUTPUT_VTS(s, size, STK_BASE, argParm->offset,
+			MONO_OUTPUT_VTS(s, size, STK_BASE, arg->offset,
 				 	  vt->inst_basereg, soffset);
 		}	
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoInst *vt  		 = state->left->left->tree;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+	MonoInst *vt  	     = state->left->left->tree;
 	
 	int start_reg = tree->sreg1;
-	int size      = -argParm->size;
+	int size      = -arg->size;
 	int soffset   = vt->inst_offset;
 	int treg;
 
@@ -600,27 +584,25 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) {
 	treg = mono_regstate_next_int (s->rs);
 	if (start_reg != STK_BASE) {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, soffset);
-		MONO_EMIT_NEW_MOVE (s, STK_BASE, argParm->offPrm, treg, 0, size);
+		MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm, treg, 0, size);
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
-					 STK_BASE, argParm->offPrm);
+					 STK_BASE, arg->offPrm);
 		mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 	} else {
-		MONO_EMIT_NEW_MOVE (s, STK_BASE, 
-				    argParm->offset+sizeof(gpointer),
+		MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm,
 				    vt->inst_basereg, soffset, size);
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
-					 argParm->offset+sizeof(gpointer));
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, arg->offPrm);
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
-					     STK_BASE, argParm->offset, treg);
+					     STK_BASE, arg->offset, treg);
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+
 	int start_reg = tree->sreg1;
-	int size      = argParm->size;
+	int size      = arg->size;
 	int nregs     = size / 4;
 
 //printf("OP_OUTARG_VT(OP_ICONST)\n");
@@ -636,26 +618,25 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 		MONO_OUTPUT_VTS (s, size, STK_BASE, tree->inst_c0, 
 				 s->frame_reg, tree->inst_offset);
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (reg) {
-	MonoCallInst *call       = (MonoCallInst*) tree->inst_right;
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
-	MonoInst *vt  		 = state->left->left->tree;
-	int start_reg = tree->sreg1;
-	int size      = argParm->size;
-	int soffset   = vt->inst_offset;
+	MonoCallInst *call   = (MonoCallInst*) tree->inst_right;
+	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
+	MonoInst *vt  	     = state->left->left->tree;
+	int start_reg        = tree->sreg1;
+	int size             = arg->size;
+	int soffset          = vt->inst_offset;
 	int treg;
 
 	if (size < 0) { 
 		size = -size;
 		treg = mono_regstate_next_int (s->rs);
 		if (start_reg != STK_BASE) {
-			MONO_EMIT_NEW_MOVE (s, STK_BASE, argParm->offPrm, state->left->reg1,
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm, state->left->reg1,
 					    0, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
-						 STK_BASE, argParm->offPrm);
+						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
 			MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset+size, state->left->reg1,
@@ -663,7 +644,7 @@ stmt: OP_OUTARG_VT (reg) {
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
 						 soffset+size);
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
-						     STK_BASE, argParm->offset, treg);
+						     STK_BASE, arg->offset, treg);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
@@ -676,16 +657,12 @@ stmt: OP_OUTARG_VT (reg) {
 			 			 s->stack_offset);
 		}
 	}
-	g_free(argParm);
 }
 
 stmt: OP_OUTARG_VT (OP_REFANYTYPE (reg)) "0" {
-	MonoS390ArgParm *argParm = (MonoS390ArgParm *) tree->unused;
-
 //printf("OP_OUTARG_VT (OP_REFANYTYPE (base))\n");
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->tree->sreg1, state->left->left->reg1, 
 				    G_STRUCT_OFFSET (MonoTypedRef, type));
-	g_free(argParm);
 }	
 
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
@@ -799,8 +776,6 @@ base: OP_S390_STKARG "0" {
 
 reg: OP_LDADDR (OP_S390_ARGREG),
 reg: CEE_LDOBJ (OP_S390_ARGREG) "0" {
-	int treg;
-
 	MONO_EMIT_LOAD_MEMBASE (s, tree, state->reg1, s->frame_reg, state->left->tree->inst_offset);
 }
 
