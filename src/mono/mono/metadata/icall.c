@@ -3007,6 +3007,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
 	}
 
+	mono_class_setup_vtable (klass);
+
 	if (klass->vtable_size >= sizeof (method_slots_default) * 8) {
 		method_slots = g_new0 (guint32, klass->vtable_size / 32 + 1);
 	} else {
