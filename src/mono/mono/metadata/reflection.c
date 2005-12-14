@@ -9125,6 +9125,10 @@ ensure_runtime_vtable (MonoClass *klass)
 				overrides [onum * 2 + 1] =
 					mb->mhandle;
 
+				if ((overrides [onum * 2] == 0) || (overrides [(onum * 2) + 1] == 0))
+					/* FIXME: This happens during corlib compilation */
+					return;
+
 				g_assert (mb->mhandle);
 
 				onum ++;
