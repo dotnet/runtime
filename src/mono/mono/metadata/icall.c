@@ -1018,7 +1018,6 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 			assembly = dest->klass->image->assembly;
 		else {
 			g_warning (G_STRLOC);
-			raise (19);
 		}
 	}
 
