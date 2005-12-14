@@ -706,6 +706,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	if (!class->inited)
 		mono_class_init (class);
 
+	mono_class_setup_vtable (class);
+
 	mono_stats.used_class_count++;
 	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 

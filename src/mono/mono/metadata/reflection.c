@@ -9057,8 +9057,7 @@ static void
 ensure_runtime_vtable (MonoClass *klass)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
-	int i, num, j, onum;
-	MonoMethod **overrides;
+	int i, num, j;
 
 	if (!tb || klass->wastypebuilder)
 		return;
@@ -9090,15 +9089,36 @@ ensure_runtime_vtable (MonoClass *klass)
 		for (i = 0; i < klass->method.count; ++i)
 			klass->methods [i]->slot = i;
 
-	/* 
-	 * FIXME: This doesn't work, because some runtime code like 
-	 * ves_icall_Type_GetMethodsByName depends on method->slot being defined.
+	/*
+	 * The generic vtable is needed even if image->run is not set since some
+	 * runtime code like ves_icall_Type_GetMethodsByName depends on 
+	 * method->slot being defined.
 	 */
-	if (!((MonoDynamicImage*)klass->image)->run)
-		/* No need to create a generic vtable */
+
+	/* 
+	 * tb->methods could not be freed since it is used for determining 
+	 * overrides during dynamic vtable construction.
+	 */
+}
+
+void
+mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
+{
+	MonoReflectionTypeBuilder *tb;
+	int i, onum;
+
+	*overrides = NULL;
+	*num_overrides = 0;
+
+	g_assert (klass->image->dynamic);
+
+	if (!klass->reflection_info)
 		return;
 
-	/* Overrides */
+	g_assert (strcmp (((MonoObject*)klass->reflection_info)->vtable->klass->name, "TypeBuilder") == 0);
+
+	tb = (MonoReflectionTypeBuilder*)klass->reflection_info;
+
 	onum = 0;
 	if (tb->methods) {
 		for (i = 0; i < tb->num_methods; ++i) {
@@ -9109,20 +9129,21 @@ ensure_runtime_vtable (MonoClass *klass)
 		}
 	}
 
-	overrides = g_new0 (MonoMethod*, onum * 2);
+	if (onum) {
+		*overrides = g_new0 (MonoMethod*, onum * 2);
 
-	if (tb->methods) {
 		onum = 0;
 		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_method) {
-				/* FIXME: What if 'override_method' is a MethodBuilder ? */
-				overrides [onum * 2] = 
+				(*overrides) [onum * 2] = 
 					mb->override_method->method;
-				overrides [onum * 2 + 1] =
+				(*overrides) [onum * 2 + 1] =
 					mb->mhandle;
 
+				/* FIXME: What if 'override_method' is a MethodBuilder ? */
+				g_assert (mb->override_method->method);
 				g_assert (mb->mhandle);
 
 				onum ++;
@@ -9130,8 +9151,7 @@ ensure_runtime_vtable (MonoClass *klass)
 		}
 	}
 
-	mono_class_setup_vtable_general (klass, overrides, onum);
-	g_free (overrides);
+	*num_overrides = onum;
 }
 
 static void
