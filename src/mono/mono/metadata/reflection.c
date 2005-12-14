@@ -9094,11 +9094,9 @@ ensure_runtime_vtable (MonoClass *klass)
 	 * FIXME: This doesn't work, because some runtime code like 
 	 * ves_icall_Type_GetMethodsByName depends on method->slot being defined.
 	 */
-#if 0	
 	if (!((MonoDynamicImage*)klass->image)->run)
 		/* No need to create a generic vtable */
 		return;
-#endif
 
 	/* Overrides */
 	onum = 0;
@@ -9124,10 +9122,6 @@ ensure_runtime_vtable (MonoClass *klass)
 					mb->override_method->method;
 				overrides [onum * 2 + 1] =
 					mb->mhandle;
-
-				if ((overrides [onum * 2] == 0) || (overrides [(onum * 2) + 1] == 0))
-					/* FIXME: This happens during corlib compilation */
-					return;
 
 				g_assert (mb->mhandle);
 
