@@ -328,11 +328,6 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 {
 	GString* result;
 
-	if (format == MONO_TYPE_NAME_FORMAT_FULL_NAME &&
-	    ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR) ||
-	     ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->inst->is_open)))
-		return NULL;
-
 	result = g_string_new ("");
 
 	mono_type_get_name_recurse (type, result, FALSE, format);
@@ -1163,7 +1158,7 @@ mono_class_setup_methods (MonoClass *class)
 	int i;
 	MonoMethod **methods;
 
-	if (class->methods || class->generic_class)
+	if (class->methods)
 		return;
 
 	mono_loader_lock ();
@@ -1175,7 +1170,7 @@ mono_class_setup_methods (MonoClass *class)
 
 	//printf ("INIT: %s.%s\n", class->name_space, class->name);
 
-	if (!class->generic_class && !class->methods) {
+	if (!class->methods) {
 		methods = mono_mempool_alloc (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
 		for (i = 0; i < class->method.count; ++i) {
 			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
@@ -1327,6 +1322,7 @@ mono_get_unique_iid (MonoClass *class)
 
 	char *str;
 	gpointer value;
+	int generic_id;
 	
 	g_assert (MONO_CLASS_IS_INTERFACE (class));
 
@@ -1335,7 +1331,14 @@ mono_get_unique_iid (MonoClass *class)
 	if (!iid_hash)
 		iid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
-	str = g_strdup_printf ("%s|%s.%s\n", class->image->name, class->name_space, class->name);
+	if (class->generic_class && !class->generic_class->inst->is_open) {
+		generic_id = class->generic_class->inst->id;
+		g_assert (generic_id != 0);
+	} else
+		generic_id = 0;
+
+	str = g_strdup_printf ("%s|%s.%s|%d", class->image->name, class->name_space, class->name,
+			       generic_id);
 
 	if (g_hash_table_lookup_extended (iid_hash, str, NULL, &value)) {
 		mono_loader_unlock ();
@@ -1526,42 +1529,8 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	return cur_slot;
 }
 
-void
-mono_class_setup_vtable (MonoClass *class)
-{
-	MonoMethod **overrides;
-	MonoGenericContext *context;
-	int onum = 0;
-
-	if (class->vtable)
-		return;
-
-	mono_class_setup_methods (class);
-
-	if (MONO_CLASS_IS_INTERFACE (class))
-		return;
-
-	mono_loader_lock ();
-
-	if (class->vtable) {
-		mono_loader_unlock ();
-		return;
-	}
-
-	if (class->generic_class)
-		context = class->generic_class->context;
-	else
-		context = (MonoGenericContext *) class->generic_container;		
-
-	mono_class_get_overrides_full (class->image, class->type_token, &overrides, &onum, context);
-	mono_class_setup_vtable_general (class, overrides, onum);
-	g_free (overrides);
-
-	mono_loader_unlock ();
-}
-
 static void
-setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
+setup_generic_vtable (MonoClass *class)
 {
 	MonoClass *gklass;
 	int i;
@@ -1590,6 +1559,50 @@ setup_generic_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		sizeof (gint) * (gklass->max_interface_id + 1));
 }
 
+void
+mono_class_setup_vtable (MonoClass *class)
+{
+	MonoMethod **overrides;
+	MonoGenericContext *context;
+	guint32 type_token;
+	int onum = 0;
+
+	if (class->vtable)
+		return;
+
+	mono_class_setup_methods (class);
+
+	if (MONO_CLASS_IS_INTERFACE (class))
+		return;
+
+	mono_loader_lock ();
+
+	if (class->vtable) {
+		mono_loader_unlock ();
+		return;
+	}
+
+	if (class->generic_class) {
+		if (class->generic_class->inst->is_open) {
+			setup_generic_vtable (class);
+			mono_loader_unlock ();
+			return;
+		}
+
+		context = class->generic_class->context;
+		type_token = class->generic_class->container_class->type_token;
+	} else {
+		context = (MonoGenericContext *) class->generic_container;		
+		type_token = class->type_token;
+	}
+
+	mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
+	mono_class_setup_vtable_general (class, overrides, onum);
+	g_free (overrides);
+
+	mono_loader_unlock ();
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1599,15 +1612,15 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
-	GPtrArray *ifaces;
+	GPtrArray *ifaces, *pifaces = NULL;
 	GHashTable *override_map = NULL;
 	gboolean security_enabled = mono_is_security_manager_active ();
 
 	if (class->vtable)
 		return;
 
-	if (class->generic_class) {
-		setup_generic_vtable (class, overrides, onum);
+	if (class->generic_class && class->generic_class->inst->is_open) {
+		setup_generic_vtable (class);
 		return;
 	}
 
@@ -1661,12 +1674,22 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		int nifaces = 0;
 
 		ifaces = mono_class_get_implemented_interfaces (k);
-		if (ifaces)
+		if (ifaces) {
 			nifaces = ifaces->len;
+			if (k->generic_class) {
+				pifaces = mono_class_get_implemented_interfaces (
+					k->generic_class->container_class);
+				g_assert (pifaces && (pifaces->len == nifaces));
+			}
+		}
 		for (i = 0; i < nifaces; i++) {
+			MonoClass *pic = NULL;
 			int j, l, io;
 
 			ic = g_ptr_array_index (ifaces, i);
+			if (pifaces)
+				pic = g_ptr_array_index (pifaces, i);
+			g_assert (ic->interface_id <= k->max_interface_id);
 			io = k->interface_offsets [ic->interface_id];
 
 			g_assert (io >= 0);
@@ -1750,8 +1773,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				if (vtable [io + l])
 					continue;
 
-				if (ic->generic_class) {
-					the_cname = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
+				if (pic) {
+					the_cname = mono_type_get_name_full (&pic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
@@ -1823,7 +1846,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						g_free (msig);
 						for (j = 0; j < class->method.count; ++j) {
 							MonoMethod *cm = class->methods [j];
-							msig = mono_signature_get_desc (mono_method_signature (cm), FALSE);
+							msig = mono_signature_get_desc (mono_method_signature (cm), TRUE);
 							
 							printf ("METHOD %s(%s)\n", cm->name, msig);
 							g_free (msig);
@@ -1936,8 +1959,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoClass *gklass = class->generic_class->container_class;
 
 		mono_class_init (gklass);
-		class->vtable_size = gklass->vtable_size;
-	} else       
+
+		class->vtable_size = MAX (gklass->vtable_size, cur_slot);
+	} else
 		class->vtable_size = cur_slot;
 
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);

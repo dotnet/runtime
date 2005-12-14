@@ -140,7 +140,7 @@ static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p,
 static guint32 type_get_signature_size (MonoType *type);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
-
+static inline MonoType *dup_type (const MonoType *original);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
@@ -8530,15 +8530,20 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gclass->inst = g_new0 (MonoGenericInst, 1);
 
 	gclass->inst->type_argc = type_argc;
-	gclass->inst->type_argv = types;
+	gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
 	gclass->inst->is_reference = 1;
 
 	for (i = 0; i < gclass->inst->type_argc; ++i) {
+		MonoType *t = dup_type (types [i]);
+
 		if (!gclass->inst->is_open)
-			gclass->inst->is_open = mono_class_is_open_constructed_type (types [i]);
+			gclass->inst->is_open = mono_class_is_open_constructed_type (t);
 		if (gclass->inst->is_reference)
-			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (types [i]);
+			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
+		gclass->inst->type_argv [i] = t;
 	}
+
+	gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 	gclass->container_class = klass;
 
@@ -8580,6 +8585,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 			gclass->inst->type_argv [i] = t;
 		}
+
+		gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 		gclass->container_class = kgclass->container_class;
 	}
@@ -8701,15 +8708,21 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 
 	gclass->inst = g_new0 (MonoGenericInst, 1);
 	gclass->inst->type_argc = type_argc;
-	gclass->inst->type_argv = types;
+	gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
 	gclass->inst->is_reference = 1;
 
 	for (i = 0; i < gclass->inst->type_argc; ++i) {
+		MonoType *t = dup_type (types [i]);
+
 		if (!gclass->inst->is_open)
-			gclass->inst->is_open = mono_class_is_open_constructed_type (types [i]);
+			gclass->inst->is_open = mono_class_is_open_constructed_type (t);
 		if (gclass->inst->is_reference)
-			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (types [i]);
+			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
+
+		gclass->inst->type_argv [i] = t;
 	}
+
+	gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 	gclass->container_class = klass;
 
@@ -8742,6 +8755,8 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 
 			gclass->inst->type_argv [i] = t;
 		}
+
+		gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 		gclass->container_class = kgclass->container_class;
 	}

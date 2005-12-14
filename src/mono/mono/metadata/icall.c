@@ -957,6 +957,26 @@ ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 	mono_image_build_metadata (mb);
 }
 
+static gboolean
+get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+	if (!(*dest)) {
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static MonoReflectionType *
 type_from_name (const char *str, MonoBoolean ignoreCase)
 {
@@ -979,10 +999,27 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	if (info.assembly.name) {
 		assembly = mono_assembly_load (&info.assembly, NULL, NULL);
 	} else {
-		MonoReflectionAssembly *refass;
+		MonoMethod *m = mono_method_get_last_managed ();
+		MonoMethod *dest = m;
 
-		refass = ves_icall_System_Reflection_Assembly_GetCallingAssembly  ();
-		assembly = refass->assembly;
+		mono_stack_walk_no_il (get_caller, &dest);
+		if (!dest)
+			dest = m;
+
+		/*
+		 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
+		 *        causing ves_icall_System_Reflection_Assembly_GetCallingAssembly()
+		 *        to crash.  This only seems to happen in some strange remoting
+		 *        scenarios and I was unable to figure out what's happening there.
+		 *        Dec 10, 2005 - Martin.
+		 */
+
+		if (dest)
+			assembly = dest->klass->image->assembly;
+		else {
+			g_warning (G_STRLOC);
+			raise (19);
+		}
 	}
 
 	if (assembly)
@@ -4081,26 +4118,6 @@ ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
 }
 
 
-static gboolean
-get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
-{
-	MonoMethod **dest = data;
-
-	/* skip unmanaged frames */
-	if (!managed)
-		return FALSE;
-
-	if (m == *dest) {
-		*dest = NULL;
-		return FALSE;
-	}
-	if (!(*dest)) {
-		*dest = m;
-		return TRUE;
-	}
-	return FALSE;
-}
-
 static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
 {
@@ -4113,7 +4130,6 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
 
 	return mono_assembly_get_object (domain, domain->entry_assembly);
 }
-
 
 static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
