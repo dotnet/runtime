@@ -89,8 +89,6 @@ public class Test {
 			return 13;
 		if (Marshal.ReadInt32 (p, 36) != 11)
 			return 14;
-		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "s2")) == 0)
-			return 15;
 
 		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
 
