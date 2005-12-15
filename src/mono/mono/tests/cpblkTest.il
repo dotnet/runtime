@@ -9,7 +9,7 @@
 
   .method public static int32  start() cil managed {
 	.entrypoint
-	.locals init(int32, unsigned int8)
+	.locals init(native int, unsigned int8)
 
 	//store data address
 	ldsflda valuetype DataType test::dataField
