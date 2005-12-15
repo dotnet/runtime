@@ -313,7 +313,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	GError *gerr = NULL;
 	int in_fd, out_fd, err_fd;
 	pid_t pid;
-	int lockpipe [2];
 	int thr_ret;
 	
 	mono_once (&process_ops_once, process_ops_init);
@@ -693,8 +692,9 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		
 		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);
 	}
-	
-	pipe (lockpipe);
+
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
 	
 	pid = fork ();
 	if (pid == -1) {
@@ -704,13 +704,16 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		goto cleanup;
 	} else if (pid == 0) {
 		/* Child */
-		char c [1];
 		
-		/* Wait for the parent to finish setting up the handle */
-		close (lockpipe [1]);
-		while (read (lockpipe [0], c, 1) == -1 &&
-		       errno == EINTR);
-		close (lockpipe [0]);
+		/* Wait for the parent to finish setting up the
+		 * handle.  The semaphore lock is safe because the
+		 * sem_undo structures of a semaphore aren't inherited
+		 * across a fork ()
+		 */
+		thr_ret = _wapi_handle_lock_shared_handles ();
+		g_assert (thr_ret == 0);
+	
+		_wapi_handle_unlock_shared_handles ();
 		
 		/* should we detach from the process group? */
 
@@ -753,9 +756,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		exit (-1);
 	}
 	/* parent */
-
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
 	
 	ret = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				   (gpointer *)&process_handle_data);
@@ -767,10 +767,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	}
 	
 	process_handle_data->id = pid;
-	
-	_wapi_handle_unlock_shared_handles ();
-	
-	write (lockpipe [1], cmd, 1);
 	
 	if (process_info != NULL) {
 		process_info->hProcess = handle;
@@ -784,9 +780,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	}
 
 cleanup:
-	close (lockpipe [0]);
-	close (lockpipe [1]);
-	
+	_wapi_handle_unlock_shared_handles ();
+
 	if (cmd != NULL) {
 		g_free (cmd);
 	}
