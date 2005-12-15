@@ -534,7 +534,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	/* If the class is a generic instantiation, ensure that all VAR references in the signature
 	   are replaced by the corresponding type argument.  Note that MVARs are left alone. */
-	if (klass->generic_class) {
+	if (klass->generic_class && sig->has_type_parameters) {
 		MonoMethodSignature *old_sig = sig;
 		sig = mono_class_inflate_generic_signature (image, sig, klass->generic_class->context);
 		g_assert (sig != old_sig);
