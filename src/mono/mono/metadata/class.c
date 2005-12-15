@@ -1596,7 +1596,11 @@ mono_class_setup_vtable (MonoClass *class)
 		type_token = class->type_token;
 	}
 
-	mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
+	if (class->image->dynamic)
+		mono_reflection_get_dynamic_overrides (class, &overrides, &onum);
+	else
+		mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
+
 	mono_class_setup_vtable_general (class, overrides, onum);
 	g_free (overrides);
 
