@@ -38,12 +38,6 @@ lreg: OP_LADD_OVF_UN (lreg, lreg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-#reg: OP_LSUB_OVF (lreg, lreg) "0" {
-#	/* SBB sets the condition code */
-#	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-#	MONO_EMIT_NEW_BIALU (s, OP_SUB_OVF_CARRY, state->reg2, state->left->reg2, state->right->reg2);
-#}
-#
 lreg: OP_LSUB_OVF (lreg, lreg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
