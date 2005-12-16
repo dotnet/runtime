@@ -498,7 +498,6 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
 	int soffset   = vt->inst_offset;
 	int treg;
 
-//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_ARGPTR))\n");
 	if (size < 0) { 
 		size = -size;
 		treg = mono_regstate_next_int (s->rs);
@@ -633,6 +632,7 @@ stmt: OP_OUTARG_VT (reg) {
 						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
+printf("OP_OUTARG_VT(reg) 1\n");
 			MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset+size, state->left->reg1,
 					    0, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
@@ -641,6 +641,7 @@ stmt: OP_OUTARG_VT (reg) {
 						     STK_BASE, arg->offset, treg);
 		}
 	} else {
+printf("OP_OUTARG_VT(reg) 2\n");
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {

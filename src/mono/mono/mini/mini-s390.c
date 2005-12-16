@@ -117,6 +117,16 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 		s390_lr  (code, ins->dreg, ins->sreg1);			\
 	}
 
+#define CHECK_SRCDST_COM_F						\
+	if (ins->dreg == ins->sreg2) {					\
+		src2 = ins->sreg1;					\
+	} else {							\
+		src2 = ins->sreg2;					\
+		if (ins->dreg != ins->sreg1) {				\
+			s390_ldr (code, ins->dreg, ins->sreg1);		\
+		}							\
+	}	
+
 #define CHECK_SRCDST_NCOM_F						\
 	if (ins->dreg == ins->sreg2) {					\
 		src2 = s390_f15;					\
@@ -3371,7 +3381,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC: {
-			int area_offset = S390_MINIMAL_STACK_SIZE;
+			/*------------------------------------------*/
+			/* To allocate space on the stack we have   */
+			/* to allow room for parameters passed in   */
+			/* calls, the backchain pointer and round   */
+			/* it to our stack alignment requirements   */
+			/*------------------------------------------*/
+			int alloca_skip = S390_MINIMAL_STACK_SIZE + cfg->param_area;
+			int area_offset = S390_ALIGN(alloca_skip, S390_STACK_ALIGNMENT);
 			s390_lr   (code, s390_r1, ins->sreg1);
 			if (ins->flags & MONO_INST_INIT)
 				s390_lr   (code, s390_r0, ins->sreg1);
@@ -3717,16 +3734,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FADD: {
-			if (ins->dreg == ins->sreg1)
-				s390_adbr (code, ins->dreg, ins->sreg2);
-			else {
-				if (ins->dreg == ins->sreg2)
-					s390_adbr (code, ins->dreg, ins->sreg1);
-				else {
-					s390_ldr  (code, ins->dreg, ins->sreg1);
-					s390_adbr (code, ins->dreg, ins->sreg2);
-				}
-			}
+			CHECK_SRCDST_COM_F;
+			s390_adbr (code, ins->dreg, src2);
 		}
 			break;
 		case OP_FSUB: {
@@ -3735,16 +3744,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;		
 		case OP_FMUL: {
-			if (ins->dreg == ins->sreg1)
-				s390_mdbr (code, ins->dreg, ins->sreg2);
-			else {
-				if (ins->dreg == ins->sreg2)
-					s390_mdbr (code, ins->dreg, ins->sreg1);
-				else {
-					s390_ldr  (code, ins->dreg, ins->sreg1);
-					s390_mdbr (code, ins->dreg, ins->sreg2);
-				}
-			}
+			CHECK_SRCDST_COM_F;
+			s390_mdbr (code, ins->dreg, src2);
 		}
 			break;		
 		case OP_FDIV: {
@@ -3758,7 +3759,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_FREM: {
 			CHECK_SRCDST_NCOM_F;
-			s390_didbr (code, ins->dreg, ins->sreg2, 5, s390_f15);
+			s390_didbr (code, ins->dreg, src2, 5, s390_f15);
 		}
 			break;
 		case OP_FCOMPARE: {

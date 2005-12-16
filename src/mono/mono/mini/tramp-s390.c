@@ -168,38 +168,39 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 
 			opcode = *((unsigned short *) (code - 6));
 			switch (opcode) {
-				case 0x5810 :
-					/* This is a bras r14,r1 instruction */
-					code    -= 4;
-					reg      = *code >> 4;
-					displace = *((short *)code) & 0x0fff;
-					if (reg > 5) 
-						base = *((guchar **) (sp + S390_REG_SAVE_OFFSET+
-								       sizeof(int)*(reg-6)));
-					else
-						base = *((guchar **) (sp + CREATE_GR_OFFSET+
-								       sizeof(int)*(reg-2)));
+			case 0x5810 :
+				/* This is a bras r14,r1 instruction */
+				code    -= 4;
+				reg      = *code >> 4;
+				displace = *((short *)code) & 0x0fff;
+				if (reg > 5) 
+					base = *((guchar **) (sp + S390_REG_SAVE_OFFSET+
+							       sizeof(int)*(reg-6)));
+				else
+					base = *((guchar **) ((sp - CREATE_STACK_SIZE) + 
+							       CREATE_GR_OFFSET +
+							       sizeof(int)*(reg-2)));
 
-					if ((method->klass->valuetype) && 
-					    (!mono_aot_is_got_entry(code, base))) 
-						addr = get_unbox_trampoline(method, addr);
+				if ((method->klass->valuetype) && 
+				    (!mono_aot_is_got_entry(code, base))) 
+					addr = get_unbox_trampoline(method, addr);
 
-					code = base + displace;
-					if (mono_domain_owns_vtable_slot(mono_domain_get(), 
-									 code))
-						s390_patch(code, addr);
-					break;
-				case 0xc0e5 :
-					/* This is the 'brasl' instruction */
-					code    -= 4;
-					displace = ((gint32) addr - (gint32) (code - 2)) / 2;
-					if (mono_method_same_domain (codeJi, addrJi)) {
-						s390_patch (code, displace);
-						mono_arch_flush_icache (code, 4);
-					}
-					break;
-				default :
-					g_error("Unable to patch instruction prior to %p",code);
+				code = base + displace;
+				if (mono_domain_owns_vtable_slot(mono_domain_get(), 
+								 code))
+					s390_patch(code, addr);
+				break;
+			case 0xc0e5 :
+				/* This is the 'brasl' instruction */
+				code    -= 4;
+				displace = ((gint32) addr - (gint32) (code - 2)) / 2;
+				if (mono_method_same_domain (codeJi, addrJi)) {
+					s390_patch (code, displace);
+					mono_arch_flush_icache (code, 4);
+				}
+				break;
+			default :
+				g_error("Unable to patch instruction prior to %p",code);
 			}
 		}
 	}
@@ -373,6 +374,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		
 		/* Arg 3: stack pointer */
 		s390_lr   (buf, s390_r4, STK_BASE);
+		s390_ahi  (buf, s390_r4, CREATE_STACK_SIZE);
 		
 		/* Calculate call address and call
 		's390_magic_trampoline'. Return value will be in r2 */
