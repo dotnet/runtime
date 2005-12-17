@@ -263,7 +263,8 @@ AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
 # Set STDC_HEADERS
 AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
-AC_DISABLE_FAST_INSTALL
+# This causes monodis to not link correctly
+#AC_DISABLE_FAST_INSTALL
 AM_PROG_LIBTOOL
 
 # Test whenever ld supports -version-script

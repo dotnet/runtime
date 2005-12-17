@@ -1,3 +1,8 @@
+2005-12-16 Wade Berrier <wberrier@novell.com>
+
+	* configure.in: Unset AC_DISABLE_FAST_INSTALL
+	This caused some weird monodis linking errors
+
 2005-12-12 Mike Kestner <mkestner@novell.com>
 
 	* mono-cairo.pc.in: pkgconfig support for Mono.Cairo. Mono.Cairo.dll
