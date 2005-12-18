@@ -1,3 +1,9 @@
+2005-12-18  Raja R Harinath  <harinath@gmail.com>
+
+	* configure.in (config.make): Don't blindly copy over $INSTALL,
+	since it can be relative to the mono tree.  Use the same trick as
+	ac_INSTALL, but against an absolute path.
+
 2005-12-16 Wade Berrier <wberrier@novell.com>
 
 	* configure.in: Unset AC_DISABLE_FAST_INSTALL

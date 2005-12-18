@@ -1851,7 +1851,13 @@ fi
     echo 'IL_FLAGS = /debug' >> $srcdir/$mcsdir/build/config.make
     echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
-    echo "INSTALL = $INSTALL" >> $srcdir/$mcsdir/build/config.make
+
+    case $INSTALL in
+    [\\/$]* | ?:[\\/]* ) mcs_INSTALL=$INSTALL ;;
+    *) mcs_INSTALL=$mono_build_root/$INSTALL ;;
+    esac
+
+    echo "INSTALL = $mcs_INSTALL" >> $srcdir/$mcsdir/build/config.make
 
     export VERSION
     [myver=$($AWK 'BEGIN {
