@@ -1853,7 +1853,7 @@ fi
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
 
     case $INSTALL in
-    [\\/$]* | ?:[\\/]* ) mcs_INSTALL=$INSTALL ;;
+    [[\\/$]]* | ?:[[\\/]]* ) mcs_INSTALL=$INSTALL ;;
     *) mcs_INSTALL=$mono_build_root/$INSTALL ;;
     esac
 
