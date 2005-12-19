@@ -161,7 +161,7 @@ create_term (char *id, int num)
 	if (!term_hash) 
 		term_hash = g_hash_table_new (g_str_hash , g_str_equal);
 
-	g_hash_table_foreach (term_hash, (GHFunc) check_term_num, (gpointer) num);
+	g_hash_table_foreach (term_hash, (GHFunc) check_term_num, GINT_TO_POINTER (num));
 
 	term = g_new0 (Term, 1);
 
