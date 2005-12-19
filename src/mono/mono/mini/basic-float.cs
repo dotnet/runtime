@@ -192,6 +192,20 @@ class Tests {
 		return 4;
 	}
 
+	static int test_4_single_long_cast () {
+		long a = 1000;
+		float d = (float)a;
+		long b = (long)d;
+		if (b != 1000)
+			return 0;
+		a = -1;
+		d = (float)a;
+		b = (long)d;
+		if (b != -1)
+			return 1;
+		return 4;
+	}
+
 	public static int test_0_rounding () {
 		long ticks = 631502475130080000L;
 		long ticksperday = 864000000000L;
