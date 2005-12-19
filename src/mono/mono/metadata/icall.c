@@ -4165,6 +4165,9 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 	if (!name)
 		return NULL;
 
+	if (full_name && (object->type->type == MONO_TYPE_VAR || object->type->type == MONO_TYPE_MVAR))
+		return NULL;
+
 	res = mono_string_new (domain, name);
 	g_free (name);
 
