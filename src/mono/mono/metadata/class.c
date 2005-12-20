@@ -2815,6 +2815,9 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 
 	if (klass->parent)
 		mono_class_setup_parent (klass, klass->parent);
+
+	if (MONO_CLASS_IS_INTERFACE (klass))
+		setup_interface_offsets (klass, 0);
 }
 
 MonoClass *
@@ -3865,11 +3868,6 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (!oklass->inited)
 		mono_class_init (oklass);
 
-	if (klass->generic_class)
-		klass = klass->generic_class->container_class;
-	if (oklass->generic_class)
-		oklass = oklass->generic_class->container_class;
-
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((oklass->byval_arg.type == MONO_TYPE_VAR) || (oklass->byval_arg.type == MONO_TYPE_MVAR))
 			return FALSE;
@@ -3918,19 +3916,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		if (klass == mono_defaults.object_class)
 			return TRUE;
 
-	/*
-	 * Custom version of mono_class_has_parent (oklass, klass)
-	 */
-	if (oklass->idepth >= klass->idepth) {
-		MonoClass *parent = oklass->supertypes [klass->idepth - 1];
-
-		if (parent->generic_class)
-			parent = parent->generic_class->container_class;
-
-		return klass == parent;
-	}
-
-	return FALSE;
+	return mono_class_has_parent (oklass, klass);
 }	
 
 /*
