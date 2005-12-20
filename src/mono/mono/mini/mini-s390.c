@@ -176,6 +176,8 @@ typedef struct {
 	      local_size,
 	      code_size,
 	      parm_size,
+	      offset,
+	      offStruct,
 	      retStruct;
 } size_data;	
 
@@ -188,7 +190,8 @@ enum {
 	SAVE_STRUCT,
 	SAVE_ONE,
 	SAVE_TWO,
-	SAVE_FP
+	SAVE_R4,
+	SAVE_R8
 };
 
 typedef struct InstList InstList;
@@ -220,7 +223,6 @@ typedef struct {
 	int nargs;
 	guint32 stack_usage;
 	guint32 struct_ret;
-	guint32 offStruct;
 	ArgInfo ret;
 	ArgInfo sigCookie;
 	ArgInfo args [1];
@@ -711,11 +713,13 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 
 
 lc++;
-if (lc > 50000) {
+if (lc > 5000000) {
 fseek(stdout, 0L, SEEK_SET);
 lc = 0;
 }
 	fname = mono_method_full_name (method, TRUE);
+if (strcmp(fname,"NUnit.Framework.Assertion:AssertEquals (string,object,object)") == 0)
+printf("!!\n");
 	indent (1);
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
@@ -941,9 +945,9 @@ handle_enum:
 		break;
 	}
 	case MONO_TYPE_R4: {
-		float f;
+		double f;
 		f = va_arg (ap, double);
-		printf ("[FLOAT4:%f]\n", f);
+		printf ("[FLOAT4:%g]\n", f);
 		break;
 	}
 	case MONO_TYPE_R8: {
@@ -1190,6 +1194,7 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 			ainfo->regtype  = RegTypeBase;
 			sz->stack_size += sizeof(int);
 			sz->local_size += sizeof(int);
+			sz->offStruct  += sizeof(int);
 			sz->code_size  += 12;    
 		} else {
 			ainfo->reg      = *gr;
@@ -1203,6 +1208,7 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 			ainfo->regtype  = RegTypeBase;
 			sz->stack_size += sizeof(long long);
 			sz->local_size += sizeof(long long);
+			sz->offStruct  += sizeof(long long);
 			sz->code_size  += 10;   
 		} else {
 			ainfo->reg      = *gr;
@@ -1232,16 +1238,18 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 		ainfo->offset   = sz->stack_size;
 		ainfo->reg	= STK_BASE;
 		sz->parm_size  += sizeof(gpointer);
+		sz->offStruct  += sizeof(gpointer);
 	} else {
 		ainfo->reg      = *gr;
 	}
 	(*gr) ++;
-	ainfo->offparm  = sz->parm_size;
-	ainfo->size     = sizeof(gpointer);
+	ainfo->offparm  = sz->offset;
+	sz->offset      = S390_ALIGN(sz->offset+size, sizeof(long));
+	ainfo->size     = size;
 	ainfo->regtype  = RegTypeStructByAddr; 
 	ainfo->vtsize   = size;
-	sz->local_size += (size + sizeof(gpointer));
 	sz->parm_size  += size;
+
 }
 
 /*========================= End of Function ========================*/
@@ -1271,6 +1279,7 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 		sz->code_size  += 4;
 		sz->stack_size += ainfo->size;
 		sz->local_size += ainfo->size;
+		sz->offStruct  += ainfo->size;
 	}
 }
 
@@ -1300,7 +1309,8 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	gr                = s390_r2;
 	nParm 		  = 0;
 	cinfo->struct_ret = 0;
-	cinfo->offStruct  = 0;
+	sz->offset	  = 0;
+	sz->offStruct     = S390_MINIMAL_STACK_SIZE;
 	sz->retStruct     = 0;
 	sz->stack_size    = S390_MINIMAL_STACK_SIZE;
 	sz->code_size     = 0;
@@ -1576,9 +1586,8 @@ enum_retvalue:
 		}
 	}
 
-	cinfo->offStruct   = sz->stack_size;
-//	cinfo->stack_usage = S390_ALIGN(sz->stack_size+sz->local_size, 
-//					S390_STACK_ALIGNMENT);
+	sz->stack_size  = S390_ALIGN(sz->stack_size+sz->offset, sizeof(long));
+
 	return (cinfo);
 }
 
@@ -1817,11 +1826,10 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
-//	call->stack_usage = cinfo->stack_usage;
-//	lParamArea        = MAX((cinfo->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
-	call->stack_usage = MAX((sz.stack_size + sz.local_size), call->stack_usage);
-	lParamArea        = MAX((call->stack_usage - S390_MINIMAL_STACK_SIZE), 0);
-	cfg->param_area   = MAX (((signed) cfg->param_area), lParamArea);
+	call->stack_usage = MAX((sz.stack_size + sz.local_size + sz.parm_size), 
+				call->stack_usage);
+	lParamArea        = MAX((call->stack_usage-S390_MINIMAL_STACK_SIZE-sz.parm_size), 0);
+	cfg->param_area   = MAX(((signed) cfg->param_area), lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 
 	if (cinfo->struct_ret)
@@ -1873,7 +1881,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->ins.opcode   = OP_OUTARG_VT;
 				arg->size         = -ainfo->vtsize;
 				arg->offset       = ainfo->offset;
-				arg->offPrm       = ainfo->offparm + cinfo->offStruct;
+				arg->offPrm       = ainfo->offparm + sz.offStruct;
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				if (ainfo->reg != STK_BASE) {
 					switch (ainfo->size) {
@@ -1895,7 +1903,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->ins.opcode = OP_OUTARG_VT;
 				arg->size       = ainfo->size;
 				arg->offset     = ainfo->offset;
-				arg->offPrm     = ainfo->offparm + cinfo->offStruct;
+				arg->offPrm     = ainfo->offparm + sz.offStruct;
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->ins.opcode   = OP_OUTARG_MEMBASE;
 				arg->ins.sreg1    = ainfo->reg;
@@ -2035,8 +2043,10 @@ handle_enum:
 		save_mode = SAVE_TWO;
 		break;
 	case MONO_TYPE_R4:
+		save_mode = SAVE_R4;
+		break;
 	case MONO_TYPE_R8:
-		save_mode = SAVE_FP;
+		save_mode = SAVE_R8;
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (mono_method_signature (method)->ret->data.klass->enumtype) {
@@ -2064,13 +2074,14 @@ handle_enum:
 			s390_lr (code, s390_r3, s390_r2);
 		}
 		break;
-	case SAVE_FP:
+	case SAVE_R4:
 		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
-			/* FIXME: what reg?  */
-			s390_ldr (code, s390_f2, s390_f0);
-			s390_lm  (code, s390_r3, s390_r4, cfg->frame_reg, saveOffset);
+			s390_ldebr (code, s390_f0, s390_f0);
 		}
+		break;
+	case SAVE_R8:
+		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_STRUCT:
 		s390_st (code, s390_r2, 0, cfg->frame_reg, saveOffset);
@@ -2099,7 +2110,8 @@ handle_enum:
 	case SAVE_ONE:
 		s390_l   (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
-	case SAVE_FP:
+	case SAVE_R4:
+	case SAVE_R8:
 		s390_ld  (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_STRUCT:
@@ -4304,16 +4316,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						break;
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
-				if (ainfo->reg == STK_BASE) {
-					s390_lr  (code, s390_r13, ainfo->reg);
-					s390_ahi (code, s390_r13, alloc_size);
-					s390_l   (code, s390_r13, 0, s390_r13, ainfo->offset);
-					code = emit_memcpy (code, abs(ainfo->vtsize), 
-							    inst->inst_basereg, 
-							    inst->inst_offset, s390_r13, 0);
-				} else {
-					s390_st  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
-				}
+				s390_st  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 			} else
 				g_assert_not_reached ();
 		}

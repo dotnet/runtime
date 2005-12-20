@@ -61,9 +61,9 @@ and_imm: dest:i src1:i len:16
 aot_const: dest:i len:8
 arg:
 arglist:
-atomic_add_i4: src1:b src2:i dest:i len:16
-atomic_exchange_i4: src1:b src2:i dest:i len:14
-atomic_add_new_i4: src1:b src2:i dest:i len:20
+atomic_add_i4: src1:b src2:i dest:i len:20
+atomic_exchange_i4: src1:b src2:i dest:i len:20
+atomic_add_new_i4: src1:b src2:i dest:i len:24
 beq.s:
 beq: len:8
 bge.s:

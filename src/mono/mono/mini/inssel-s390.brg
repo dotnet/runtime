@@ -632,7 +632,7 @@ stmt: OP_OUTARG_VT (reg) {
 						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
-printf("OP_OUTARG_VT(reg) 1\n");
+//printf("OP_OUTARG_VT(reg) 1\n");
 			MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset+size, state->left->reg1,
 					    0, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
@@ -641,7 +641,7 @@ printf("OP_OUTARG_VT(reg) 1\n");
 						     STK_BASE, arg->offset, treg);
 		}
 	} else {
-printf("OP_OUTARG_VT(reg) 2\n");
+//printf("OP_OUTARG_VT(reg) 2\n");
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {
