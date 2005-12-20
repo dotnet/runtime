@@ -1344,6 +1344,14 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
+
+		/* 
+		 * FIXME: Should really check for usize==0 and msize>0, but we apply 
+		 * the layout to the managed structure as well.
+		 */
+		if (usize == 0)
+			g_error ("Type %s which has an [ExplicitLayout] attribute cannot have two fields with the same offset.", mono_type_full_name (&klass->byval_arg));
+
 		if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 			g_error ("Type %s which is passed to unmanaged code must have a StructLayout attribute", mono_type_full_name (&klass->byval_arg));
 
