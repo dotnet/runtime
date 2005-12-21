@@ -6,4 +6,4 @@ includedir=${prefix}/include
 Name: Mono.Cairo
 Description: Cairo bindings for Mono
 Version: @VERSION@
-Libs: -r:${libdir}/mono/1.0/Mono.Cairo.dll
+Libs: -r:${prefix}/lib/mono/1.0/Mono.Cairo.dll

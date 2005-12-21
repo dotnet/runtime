@@ -1,3 +1,8 @@
+2005-12-21  Wade Berrier <wberrier@novell.com>
+
+	* mono-cairo.pc.in: use $prefix/lib instead of $libdir, 
+	otherwise the cairo.dll can't be found on 64 bit architectures
+
 2005-12-18  Raja R Harinath  <harinath@gmail.com>
 
 	* configure.in (config.make): Don't blindly copy over $INSTALL,
