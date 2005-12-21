@@ -718,8 +718,6 @@ fseek(stdout, 0L, SEEK_SET);
 lc = 0;
 }
 	fname = mono_method_full_name (method, TRUE);
-if (strcmp(fname,"NUnit.Framework.Assertion:AssertEquals (string,object,object)") == 0)
-printf("!!\n");
 	indent (1);
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
@@ -735,7 +733,7 @@ printf("!!\n");
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
-		printf ("[VALUERET:%p], ", (gpointer) rParm->gr[0]);
+		printf ("[STRUCTRET:%p], ", (gpointer) rParm->gr[0]);
 		iParm = 1;
 	}
 
@@ -983,21 +981,39 @@ handle_enum:
 			}
 
 			size = mono_type_size (type, &align);
-			printf ("[");
-			for (j = 0; p && j < size; j++)
-				printf ("%02x,", p [j]);
-			printf ("]");
-		}
+			switch (size) {
+			case 1:
+			case 2:
+			case 4:
+			case 8:
+				printf ("[");
+				for (j = 0; p && j < size; j++)
+					printf ("%02x,", p [j]);
+				printf ("]\n");
+				break;
+			default:
+				printf ("[VALUERET]\n");
+			}
+		}	
 		break;
 	}
 	case MONO_TYPE_TYPEDBYREF: {
 		guint8 *p = va_arg (ap, gpointer);
 		int j, size, align;
 		size = mono_type_size (type, &align);
-		printf ("[");
-		for (j = 0; p && j < size; j++)
-			printf ("%02x,", p [j]);
-		printf ("]");
+		switch (size) {
+		case 1:
+		case 2:
+		case 4:
+		case 8:
+			printf ("[");
+			for (j = 0; p && j < size; j++)
+				printf ("%02x,", p [j]);
+			printf ("]\n");
+			break;
+		default:
+			printf ("[TYPEDBYREF]\n");
+		}
 	}
 		break;
 	default:
@@ -1235,7 +1251,6 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 {
 	if (*gr > S390_LAST_ARG_REG) {
 		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
-		ainfo->offset   = sz->stack_size;
 		ainfo->reg	= STK_BASE;
 		sz->parm_size  += sizeof(gpointer);
 		sz->offStruct  += sizeof(gpointer);
@@ -1243,13 +1258,13 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 		ainfo->reg      = *gr;
 	}
 	(*gr) ++;
+	ainfo->offset   = sz->stack_size;
 	ainfo->offparm  = sz->offset;
 	sz->offset      = S390_ALIGN(sz->offset+size, sizeof(long));
 	ainfo->size     = size;
 	ainfo->regtype  = RegTypeStructByAddr; 
 	ainfo->vtsize   = size;
 	sz->parm_size  += size;
-
 }
 
 /*========================= End of Function ========================*/
@@ -1586,7 +1601,9 @@ enum_retvalue:
 		}
 	}
 
-	sz->stack_size  = S390_ALIGN(sz->stack_size+sz->offset, sizeof(long));
+	sz->stack_size  = sz->stack_size + sz->local_size + sz->parm_size + 
+			  sz->offset;
+	sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
 
 	return (cinfo);
 }
@@ -1706,12 +1723,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					size		   = abs(cinfo->args[iParm].vtsize);
 					offset 		   = S390_ALIGN(offset, sizeof(long));
 					inst->inst_offset  = offset; 
+					inst->unused       = cinfo->args[iParm].offset;
 				} else {
 					inst->opcode 	   = OP_S390_ARGREG;
 					inst->inst_basereg = frame_reg;
 					size		   = sizeof(gpointer);
 					offset		   = S390_ALIGN(offset, size);
 					inst->inst_offset  = offset;
+					inst->unused       = cinfo->args[iParm].offset;
 				}
 					break;
 				case RegTypeStructByVal :
@@ -1720,6 +1739,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					size		   = cinfo->args[iParm].size;
 					offset		   = S390_ALIGN(offset, size);
 					inst->inst_offset  = offset;
+					inst->unused       = cinfo->args[iParm].offset;
 					break;
 				default :
 				if (cinfo->args[iParm].reg != STK_BASE) {
@@ -1780,8 +1800,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
 	/*------------------------------------------------------*/
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) 
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) {
 		offset += S390_TRACE_STACK_SIZE;
+	}
 
 	/*------------------------------------------------------*/
 	/* Reserve space to save LMF and caller saved registers */
@@ -1819,6 +1840,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	size_data sz;
+	int stackSize;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -1826,8 +1848,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
-	call->stack_usage = MAX((sz.stack_size + sz.local_size + sz.parm_size), 
-				call->stack_usage);
+	stackSize         = sz.stack_size + sz.local_size + sz.parm_size + sz.offset;
+	call->stack_usage = MAX(stackSize, call->stack_usage);
 	lParamArea        = MAX((call->stack_usage-S390_MINIMAL_STACK_SIZE-sz.parm_size), 0);
 	cfg->param_area   = MAX(((signed) cfg->param_area), lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
@@ -3290,6 +3312,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FCONV_TO_R4: {
+			NOT_IMPLEMENTED("OP_FCONV_TO_R4");
 			if ((ins->next) &&
 			     (ins->next->opcode != OP_FMOVE) &&
 			     (ins->next->opcode != OP_STORER4_MEMBASE_REG))
@@ -3913,6 +3936,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lr  (code, ins->dreg, s390_r0);
 		}
 			break;	
+		case OP_S390_BKCHAIN: {
+			s390_lr  (code, ins->dreg, ins->sreg1);
+			if (s390_is_imm16 (cfg->stack_offset)) {
+				s390_ahi (code, ins->dreg, cfg->stack_offset);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 6);
+				s390_word (code, cfg->stack_offset);
+				s390_a    (code, ins->dreg, 0, s390_r13, 4);
+			}
+		}
+			break;	
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -4316,7 +4351,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						break;
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
-				s390_st  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+				if (ainfo->reg != STK_BASE) 
+					s390_st  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 			} else
 				g_assert_not_reached ();
 		}
@@ -4839,6 +4875,12 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			        tree->inst_imm,
 				mono_arch_regname (tree->sreg1));
 			done = 1;
+			break;
+		case OP_S390_BKCHAIN:
+			printf ("[previous_frame(%s)]", 
+				mono_arch_regname (tree->sreg1));
+			done = 1;
+			break;
 		default:
 			done = 0;
 	}

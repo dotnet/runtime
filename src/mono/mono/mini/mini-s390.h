@@ -56,6 +56,10 @@
 #define MONO_OUTPUT_VTR(cfg, size, dr, sr, so) do {				\
 	int reg = mono_regstate_next_int (cfg->rs);				\
 	switch (size) {								\
+		case 0: 							\
+			MONO_EMIT_NEW_ICONST(cfg, reg, 0);			\
+			mono_call_inst_add_outarg_reg (call, reg, dr, FALSE);	\
+		break;								\
 		case 1:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
 				reg, sr, so);					\
@@ -87,6 +91,12 @@
 #define MONO_OUTPUT_VTS(cfg, size, dr, dx, sr, so) do {				\
 	int tmpr;								\
 	switch (size) {								\
+		case 0: 							\
+			tmpr = mono_regstate_next_int (cfg->rs);		\
+			MONO_EMIT_NEW_ICONST(cfg, tmpr, 0);			\
+			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
+				dr, dx, tmpr);					\
+		break;								\
 		case 1:								\
 			tmpr = mono_regstate_next_int (cfg->rs);		\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\

@@ -450,6 +450,7 @@ rem_un_imm: dest:i src1:i src2:i len:24
 rename:
 ret:
 retarg:
+s390_bkchain: len:16 dest:i src1:i
 s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4
 tls_get: dest:i len:44

@@ -602,6 +602,7 @@ MINI_OP(OP_S390_ARGPTR, 	   "s390_argptr")
 MINI_OP(OP_S390_STKARG, 	   "s390_stkarg")
 MINI_OP(OP_S390_MOVE,	 	   "s390_move")
 MINI_OP(OP_S390_SETF4RET,	   "s390_setf4ret")
+MINI_OP(OP_S390_BKCHAIN, 	   "s390_bkchain")
 
 MINI_OP(OP_IA64_LOAD,          "ia64_load")
 MINI_OP(OP_IA64_LOADI1,        "ia64_loadi1")
