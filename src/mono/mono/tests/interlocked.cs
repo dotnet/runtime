@@ -44,6 +44,8 @@ public class InterlockTest
 		if (s != "A2")
 			return -6;
 
+		Thread.MemoryBarrier ();
+
 		Console.WriteLine ("done!");
 
 		return 0;
