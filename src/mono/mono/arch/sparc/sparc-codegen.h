@@ -219,6 +219,19 @@ typedef enum {
 	sparc_fcmpeq_val = 87
 } SparcFOp;
 
+typedef enum {
+	sparc_membar_load_load = 0x1,
+	sparc_membar_store_load = 0x2,
+	sparc_membar_load_store = 0x4,
+	sparc_membar_store_store = 0x8,
+   
+	sparc_membar_lookaside = 0x10,
+	sparc_membar_memissue = 0x20,
+	sparc_membar_sync = 0x40,
+
+    sparc_membar_all = 0x4f
+} SparcMembarFlags;
+
 typedef struct {
 	unsigned int op   : 2; /* always 1 */
 	unsigned int disp : 30;
@@ -648,6 +661,8 @@ typedef struct {
 #define sparc_flush_imm(ins,base,disp) sparc_encode_format3b((ins),2,(base),(disp),59,0)
 
 #define sparc_flushw(ins) sparc_encode_format3a((ins),2,0,0,0,43,0)
+
+#define sparc_membar(ins,flags) sparc_encode_format3b ((ins), 2, 0xf, (flags), 0x28, 0)
 
 /* trap */
 
