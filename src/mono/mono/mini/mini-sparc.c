@@ -3446,6 +3446,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		}
+
+		case OP_MEMORY_BARRIER:
+			sparc_membar (code, sparc_membar_all);
+			break;
+
 		default:
 #ifdef __GNUC__
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
@@ -4238,7 +4243,15 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *call, int this_re
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	return NULL;
+	MonoInst *ins = NULL;
+
+	if (cmethod->klass == mono_defaults.thread_class &&
+		strcmp (cmethod->name, "MemoryBarrier") == 0) {
+		if (sparcv9)
+			MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+	}
+
+	return ins;
 }
 
 /*
