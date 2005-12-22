@@ -40,7 +40,10 @@ namespace Test {
 		}
 	}
 
-	class ZAttribute : Attribute {
+	interface ZInterface {
+    }
+
+	class ZAttribute : Attribute, ZInterface {
 	}
 
 	[X, Z, Serializable]
@@ -92,6 +95,9 @@ namespace Test {
 			}
 			catch {
 			}
+
+			if (typeof (Y).GetCustomAttributes (typeof (ZInterface), true).Length != 1)
+				return 5;
 
 			return 0;
 		}
