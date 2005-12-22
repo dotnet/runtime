@@ -7046,7 +7046,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass))
+		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass))
 			n ++;
 	}
 
@@ -7054,7 +7054,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	result = mono_array_new (mono_domain_get (), klass, n);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, attr_klass)) {
+		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
 			attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
 			mono_array_set (result, gpointer, n, attr);
 			n ++;
