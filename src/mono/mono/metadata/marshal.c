@@ -1976,12 +1976,12 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 static void
 mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 {
+	MonoType *t = mono_type_get_underlying_type (return_type);
+
 	if (return_type->byref)
 		return_type = &mono_defaults.int_class->byval_arg;
-	else if (return_type->type == MONO_TYPE_VALUETYPE && return_type->data.klass->enumtype)
-		return_type = return_type->data.klass->enum_basetype;
 
-	switch (return_type->type) {
+	switch (t->type) {
 	case MONO_TYPE_VOID:
 		g_assert_not_reached ();
 		break;
