@@ -736,7 +736,7 @@ mono_build_aliasing_information (MonoCompile *cfg) {
 				} else {
 					MonoLocalVariableList *last = use->affected_variables;
 					while (last->next != NULL) {
-						while (info->variable_is_uncontrollably_aliased [last->next->variable_index]) {
+						while (last->next && info->variable_is_uncontrollably_aliased [last->next->variable_index]) {
 							last->next = last->next->next;
 						}
 						if (last->next != NULL) {
