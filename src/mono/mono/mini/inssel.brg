@@ -1826,42 +1826,6 @@ mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass
 	MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
 }
 
-static int
-size_to_load_u_membase (int size)
-{
-	switch (size) {
-	case 1:
-		return OP_LOADU1_MEMBASE;
-	case 2:
-		return OP_LOADU2_MEMBASE;
-	case 4:
-		return OP_LOADU4_MEMBASE;
-	case 8:
-		return OP_LOADI8_MEMBASE;
-	default:
-		g_assert_not_reached ();
-		return -1;
-	}
-}
-
-static int
-size_to_store_membase_reg (int size)
-{
-	switch (size) {
-	case 1:
-		return OP_STOREI1_MEMBASE_REG;
-	case 2:
-		return OP_STOREI2_MEMBASE_REG;
-	case 4:
-		return OP_STOREI4_MEMBASE_REG;
-	case 8:
-		return OP_STOREI8_MEMBASE_REG;
-	default:
-		g_assert_not_reached ();
-		return -1;
-	}
-}
-
 void 
 mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {

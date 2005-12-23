@@ -117,7 +117,7 @@ print_tree_node (MonoInst *tree) {
 	printf (mono_inst_name (tree->opcode));
 	
 	if (OP_IS_OUTARG (tree->opcode)) {
-		printf ("[OUT:%d]", tree->inst_c1);
+		printf ("[OUT:%ld]", (long)tree->inst_c1);
 	}
 	
 	switch (tree->opcode) {
@@ -243,7 +243,7 @@ print_used_aliases(MonoInst *inst, MonoLocalVariableList* affected_variables) {
 			switch (inst->inst_i0->opcode) {
 			case OP_LOCAL:
 			case OP_ARG:
-				printf ("{%d}", inst->inst_i0->inst_c0);
+				printf ("{%ld}", (long)inst->inst_i0->inst_c0);
 				break;
 			case OP_RETARG:
 				printf ("{RETARG}");
@@ -927,7 +927,7 @@ mono_aliasing_deadce_on_inst (MonoAliasingInformation *info, MonoInst **possibly
 	
 	if ((! has_side_effects) && (inst->ssa_op == MONO_SSA_STORE)) {
 		if (LOG_DEADCE) {
-			printf ("FILLING slot %d with inst ", inst->inst_i0->inst_c0);
+			printf ("FILLING slot %d with inst ", (int)inst->inst_i0->inst_c0);
 			mono_print_tree_nl (inst);
 		}
 		possibly_dead_assignments [inst->inst_i0->inst_c0] = inst;
