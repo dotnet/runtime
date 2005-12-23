@@ -2444,7 +2444,7 @@ static void
 handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native) {
 	MonoInst *iargs [3];
 	int n;
-	int align = 0;
+	guint32 align = 0;
 	MonoMethod *memcpy_method;
 
 	g_assert (klass);
@@ -3305,9 +3305,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoGenericContainer *generic_container = NULL;
 	MonoType **param_types;
 	GList *bb_recheck = NULL, *tmp;
-	int i, n, start_new_bblock, align;
+	int i, n, start_new_bblock, ialign;
 	int num_calls = 0, inline_costs = 0;
 	int breakpoint_id = 0;
+	guint32 align;
 	guint real_offset, num_args;
 	MonoBoolean security, pinvoke;
 	MonoSecurityManager* secman = NULL;
@@ -6632,7 +6633,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXXME: handle generics. */
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
-					token = mono_type_size (type, &align);
+					token = mono_type_size (type, &ialign);
 				} else {
 					MonoClass *klass = mono_class_get_full (image, token, generic_context);
 					if (!klass)
@@ -7225,7 +7226,8 @@ typedef struct {
 gint32*
 mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
-	int i, slot, offset, size, align;
+	int i, slot, offset, size;
+	guint32 align;
 	MonoMethodVar *vmv;
 	MonoInst *inst;
 	gint32 *offsets;
@@ -7263,8 +7265,12 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		* pinvoke wrappers when they call functions returning structures */
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
-		else
-			size = mono_type_size (inst->inst_vtype, &align);
+		else {
+			int ialign;
+
+			size = mono_type_size (inst->inst_vtype, &ialign);
+			align = ialign;
+		}
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		switch (t->type) {

@@ -1072,7 +1072,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(arg_type))) {
 				MonoInst *stack_addr;
-				gint align;
+				guint32 align;
 				guint32 size;
 
 				if (arg_type->type == MONO_TYPE_TYPEDBYREF) {
