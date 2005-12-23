@@ -3592,20 +3592,27 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 }
 
 static MonoString *
-ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly)
+ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly, MonoBoolean escaped)
 {
 	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoAssembly *mass = assembly->assembly;
-	MonoString *res;
+	MonoString *res = NULL;
 	gchar *uri;
 	gchar *absolute;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	absolute = g_build_filename (mass->basedir, mass->image->module_name, NULL);
-	uri = g_filename_to_uri (absolute, NULL, NULL);
-	res = mono_string_new (domain, uri);
-	g_free (uri);
+	if (escaped) {
+		uri = g_filename_to_uri (absolute, NULL, NULL);
+	} else {
+		uri = g_strconcat ("file://", absolute, NULL);
+	}
+
+	if (uri) {
+		res = mono_string_new (domain, uri);
+		g_free (uri);
+	}
 	g_free (absolute);
 	return res;
 }
@@ -5029,7 +5036,7 @@ gmt_offset(struct tm *tm, time_t t)
  *  Returns true on success and zero on failure.
  */
 static guint32
-ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data, MonoArray **names)
+ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray **data, MonoArray **names)
 {
 #ifndef PLATFORM_WIN32
 	MonoDomain *domain = mono_domain_get ();
@@ -6295,7 +6302,7 @@ static const IcallEntry convert_icalls [] = {
 };
 
 static const IcallEntry timezone_icalls [] = {
-	{"GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData}
+	{"GetTimeZoneData", ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData}
 };
 
 static const IcallEntry datetime_icalls [] = {
@@ -7102,7 +7109,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
 	{"System.ConsoleDriver", consoledriver_icalls, G_N_ELEMENTS (consoledriver_icalls)},
 	{"System.Convert", convert_icalls, G_N_ELEMENTS (convert_icalls)},
-	{"System.CurrentTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
+	{"System.CurrentSystemTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
 	{"System.DateTime", datetime_icalls, G_N_ELEMENTS (datetime_icalls)},
 #ifndef DISABLE_DECIMAL
 	{"System.Decimal", decimal_icalls, G_N_ELEMENTS (decimal_icalls)},
