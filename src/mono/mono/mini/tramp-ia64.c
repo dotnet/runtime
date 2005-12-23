@@ -40,6 +40,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	gpointer func_addr, func_gp;
 	Ia64CodegenState code;
 	int this_reg = 0;
+	gpointer *desc;
 	MonoDomain *domain = mono_domain_get ();
 
 	/* FIXME: Optimize this */
@@ -66,9 +67,10 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	g_assert (code.buf - buf < 256);
 
-	/* FIXME: */
+	mono_arch_flush_icache (buf, code.buf - buf);
 
-	gpointer *desc = g_malloc0 (sizeof (gpointer) * 2);
+	/* FIXME: */
+	desc = g_malloc0 (sizeof (gpointer) * 2);
 	desc [0] = buf;
 	desc [1] = func_gp;
 
