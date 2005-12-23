@@ -6914,17 +6914,20 @@ static const IcallEntry interlocked_icalls [] = {
 
 static const IcallEntry mutex_icalls [] = {
 	{"CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal},
+	{"OpenMutex_internal(string,System.Security.AccessControl.MutexRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Mutex_OpenMutex_internal},
 	{"ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal}
 };
 
 static const IcallEntry semaphore_icalls [] = {
 	{"CreateSemaphore_internal(int,int,string,bool&)", ves_icall_System_Threading_Semaphore_CreateSemaphore_internal},
+	{"OpenSemaphore_internal(string,System.Security.AccessControl.SemaphoreRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Semaphore_OpenSemaphore_internal},
 	{"ReleaseSemaphore_internal(intptr,int,bool&)", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal}
 };
 
 static const IcallEntry nativeevents_icalls [] = {
 	{"CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal},
-	{"CreateEvent_internal", ves_icall_System_Threading_Events_CreateEvent_internal},
+	{"CreateEvent_internal(bool,bool,string,bool&)", ves_icall_System_Threading_Events_CreateEvent_internal},
+	{"OpenEvent_internal(string,System.Security.AccessControl.EventWaitHandleRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Events_OpenEvent_internal},
 	{"ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal},
 	{"SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal}
 };

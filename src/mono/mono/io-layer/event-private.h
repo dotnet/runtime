@@ -17,11 +17,19 @@
 #include <mono/io-layer/mono-mutex.h>
 
 extern struct _WapiHandleOps _wapi_event_ops;
+extern struct _WapiHandleOps _wapi_namedevent_ops;
 
 extern void _wapi_event_details (gpointer handle_info);
 
 struct _WapiHandle_event
 {
+	gboolean manual;
+	guint32 set_count;
+};
+
+struct _WapiHandle_namedevent
+{
+	WapiSharedNamespace sharedns;
 	gboolean manual;
 	guint32 set_count;
 };

@@ -50,6 +50,7 @@ static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	&_wapi_pipe_ops,
 	&_wapi_namedmutex_ops,
 	&_wapi_namedsem_ops,
+	&_wapi_namedevent_ops,
 };
 
 static void _wapi_shared_details (gpointer handle_info);
@@ -68,6 +69,7 @@ static void (*handle_details[WAPI_HANDLE_COUNT])(gpointer) = {
 	_wapi_pipe_details,
 	_wapi_shared_details,	/* namedmutex */
 	_wapi_shared_details,	/* namedsem */
+	_wapi_shared_details,	/* namedevent */
 };
 
 const char *_wapi_handle_typename[] = {
@@ -84,6 +86,7 @@ const char *_wapi_handle_typename[] = {
 	"Pipe",
 	"N.Mutex",
 	"N.Sem",
+	"N.Event",
 	"Error!!"
 };
 
@@ -740,8 +743,8 @@ gint32 _wapi_search_handle_namespace (WapiHandleType type,
 		shared_handle_data = &_wapi_shared_layout->handles[i];
 
 		/* Check mutex, event, semaphore, timer, job and
-		 * file-mapping object names.  So far only mutex and
-		 * semaphore are implemented.
+		 * file-mapping object names.  So far only mutex,
+		 * semaphore and event are implemented.
 		 */
 		if (!_WAPI_SHARED_NAMESPACE (shared_handle_data->type)) {
 			continue;

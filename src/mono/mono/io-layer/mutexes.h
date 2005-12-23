@@ -14,9 +14,11 @@
 
 G_BEGIN_DECLS
 
-extern gpointer CreateMutex(WapiSecurityAttributes *security, gboolean owned,
-			    const gunichar2 *name);
-extern gboolean ReleaseMutex(gpointer handle);
+extern gpointer CreateMutex (WapiSecurityAttributes *security, gboolean owned,
+			     const gunichar2 *name);
+extern gboolean ReleaseMutex (gpointer handle);
+extern gpointer OpenMutex (guint32 access, gboolean inherit,
+			   const gunichar2 *name);
 
 G_END_DECLS
 

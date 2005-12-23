@@ -418,19 +418,20 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		SetLastError (ERROR_ALREADY_EXISTS);
 	}
 	/* Fall through to create the mutex handle. */
-	
-	if (strlen (utf8_name) < MAX_PATH) {
-		namelen = strlen (utf8_name);
-	} else {
-		namelen = MAX_PATH;
-	}
-	
-	memcpy (&namedmutex_handle.sharedns.name, utf8_name, namelen);
 
 	if (offset == 0) {
 		/* A new named mutex, so create both the private and
 		 * shared parts
 		 */
+	
+		if (strlen (utf8_name) < MAX_PATH) {
+			namelen = strlen (utf8_name);
+		} else {
+			namelen = MAX_PATH;
+		}
+	
+		memcpy (&namedmutex_handle.sharedns.name, utf8_name, namelen);
+
 		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDMUTEX,
 					   &namedmutex_handle);
 	} else {
@@ -645,4 +646,65 @@ gboolean ReleaseMutex(gpointer handle)
 	}
 	
 	return(mutex_ops[type].release (handle));
+}
+
+gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, const gunichar2 *name)
+{
+	gpointer handle;
+	gchar *utf8_name;
+	int thr_ret;
+	gpointer ret = NULL;
+	gint32 offset;
+
+	mono_once (&mutex_ops_once, mutex_ops_init);
+
+	/* w32 seems to guarantee that opening named objects can't
+	 * race each other
+	 */
+	thr_ret = _wapi_namespace_lock ();
+	g_assert (thr_ret == 0);
+
+	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+	
+#ifdef DEBUG
+	g_message ("%s: Opening named mutex [%s]", __func__, utf8_name);
+#endif
+	
+	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
+						utf8_name);
+	if (offset == -1) {
+		/* The name has already been used for a different
+		 * object.
+		 */
+		SetLastError (ERROR_INVALID_HANDLE);
+		goto cleanup;
+	} else if (offset == 0) {
+		/* This name doesn't exist */
+		SetLastError (ERROR_FILE_NOT_FOUND);	/* yes, really */
+		goto cleanup;
+	}
+
+	/* A new reference to an existing named mutex, so just create
+	 * the private part
+	 */
+	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset,
+					       TRUE);
+	
+	if (handle == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error opening named mutex handle", __func__);
+		SetLastError (ERROR_GEN_FAILURE);
+		goto cleanup;
+	}
+	ret = handle;
+
+#ifdef DEBUG
+	g_message ("%s: returning named mutex handle %p", __func__, handle);
+#endif
+
+cleanup:
+	g_free (utf8_name);
+
+	_wapi_namespace_unlock (NULL);
+	
+	return(ret);
 }

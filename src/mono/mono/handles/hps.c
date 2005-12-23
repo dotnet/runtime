@@ -14,6 +14,7 @@ static const guchar *unshared_details (struct _WapiHandleShared *handle);
 static const guchar *thread_details (struct _WapiHandleShared *handle);
 static const guchar *namedmutex_details (struct _WapiHandleShared *handle);
 static const guchar *namedsem_details (struct _WapiHandleShared *handle);
+static const guchar *namedevent_details (struct _WapiHandleShared *handle);
 static const guchar *process_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
@@ -34,6 +35,7 @@ static const guchar * (*details[])(struct _WapiHandleShared *)=
 	unshared_details,		/* pipe */
 	namedmutex_details,
 	namedsem_details,
+	namedevent_details,
 	unused_details,
 };
 
@@ -141,6 +143,21 @@ static const guchar *namedsem_details (struct _WapiHandleShared *handle)
 	
 	g_snprintf (buf, sizeof(buf), "[%15s] val: %5u, max: %5d",
 		    name == NULL?(gchar *)"":name, sem->val, sem->max);
+
+	return(buf);
+}
+
+static const guchar *namedevent_details (struct _WapiHandleShared *handle)
+{
+	static guchar buf[80];
+	gchar *name;
+	struct _WapiHandle_namedevent *event = &handle->u.namedevent;
+	
+	name = event->sharedns.name;
+	
+	g_snprintf (buf, sizeof(buf), "[%15s] %s count: %5u",
+		    name == NULL?(gchar *)"":name,
+		    event->manual?"Manual":"Auto", event->set_count);
 
 	return(buf);
 }

@@ -246,18 +246,18 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 	}
 	/* Fall through to create the semaphore handle */
 
-	if (strlen (utf8_name) < MAX_PATH) {
-		namelen = strlen (utf8_name);
-	} else {
-		namelen = MAX_PATH;
-	}
-	
-	memcpy (&namedsem_handle.sharedns.name, utf8_name, namelen);
-	
 	if (offset == 0) {
 		/* A new named semaphore, so create both the private
 		 * and shared parts
 		 */
+		if (strlen (utf8_name) < MAX_PATH) {
+			namelen = strlen (utf8_name);
+		} else {
+			namelen = MAX_PATH;
+		}
+	
+		memcpy (&namedsem_handle.sharedns.name, utf8_name, namelen);
+	
 		namedsem_handle.val = initial;
 		namedsem_handle.max = max;
 
@@ -495,4 +495,66 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	}
 	
 	return (sem_ops[type].release (handle, count, prevcount));
+}
+
+gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED,
+			const gunichar2 *name)
+{
+	gpointer handle;
+	gchar *utf8_name;
+	int thr_ret;
+	gpointer ret = NULL;
+	gint32 offset;
+
+	mono_once (&sem_ops_once, sem_ops_init);
+	
+	/* w32 seems to guarantee that opening named objects can't
+	 * race each other
+	 */
+	thr_ret = _wapi_namespace_lock ();
+	g_assert (thr_ret == 0);
+	
+	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+	
+#ifdef DEBUG
+	g_message ("%s: Opening named sem [%s]", __func__, utf8_name);
+#endif
+
+	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
+						utf8_name);
+	if (offset == -1) {
+		/* The name has already been used for a different
+		 * object.
+		 */
+		SetLastError (ERROR_INVALID_HANDLE);
+		goto cleanup;
+	} else if (offset == 0) {
+		/* This name doesn't exist */
+		SetLastError (ERROR_FILE_NOT_FOUND);	/* yes, really */
+		goto cleanup;
+	}
+
+	/* A new reference to an existing named semaphore, so just
+	 * create the private part
+	 */
+	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM, offset,
+					       TRUE);
+	
+	if (handle == _WAPI_HANDLE_INVALID) {
+		g_warning ("%s: error opening named sem handle", __func__);
+		SetLastError (ERROR_GEN_FAILURE);
+		goto cleanup;
+	}
+	ret = handle;
+	
+#ifdef DEBUG
+	g_message ("%s: returning named sem handle %p", __func__, handle);
+#endif
+
+cleanup:
+	g_free (utf8_name);
+	
+	_wapi_namespace_unlock (NULL);
+	
+	return (ret);
 }

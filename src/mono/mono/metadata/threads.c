@@ -1040,6 +1040,25 @@ void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) {
 	ReleaseMutex(handle);
 }
 
+HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name,
+							    gint32 rights,
+							    gint32 *error)
+{
+	HANDLE ret;
+	
+	MONO_ARCH_SAVE_REGS;
+	
+	*error = ERROR_SUCCESS;
+	
+	ret = OpenMutex (rights, FALSE, mono_string_chars (name));
+	if (ret == NULL) {
+		*error = GetLastError ();
+	}
+	
+	return(ret);
+}
+
+
 HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, MonoBoolean *created)
 { 
 	HANDLE sem;
@@ -1073,11 +1092,42 @@ gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE ha
 	return (prevcount);
 }
 
-HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name) {
+HANDLE ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
+{
+	HANDLE ret;
+	
+	MONO_ARCH_SAVE_REGS;
+	
+	*error = ERROR_SUCCESS;
+	
+	ret = OpenSemaphore (rights, FALSE, mono_string_chars (name));
+	if (ret == NULL) {
+		*error = GetLastError ();
+	}
+	
+	return(ret);
+}
+
+HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name, MonoBoolean *created)
+{
+	HANDLE event;
+	
 	MONO_ARCH_SAVE_REGS;
 
-	return(CreateEvent (NULL, manual, initial,
-			    name==NULL?NULL:mono_string_chars (name)));
+	*created = TRUE;
+
+	if (name == NULL) {
+		event = CreateEvent (NULL, manual, initial, NULL);
+	} else {
+		event = CreateEvent (NULL, manual, initial,
+				     mono_string_chars (name));
+		
+		if (GetLastError () == ERROR_ALREADY_EXISTS) {
+			*created = FALSE;
+		}
+	}
+	
+	return(event);
 }
 
 gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {
@@ -1097,6 +1147,24 @@ ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle) {
 	MONO_ARCH_SAVE_REGS;
 
 	CloseHandle (handle);
+}
+
+HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
+							     gint32 rights,
+							     gint32 *error)
+{
+	HANDLE ret;
+	
+	MONO_ARCH_SAVE_REGS;
+	
+	*error = ERROR_SUCCESS;
+	
+	ret = OpenEvent (rights, FALSE, mono_string_chars (name));
+	if (ret == NULL) {
+		*error = GetLastError ();
+	}
+	
+	return(ret);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
