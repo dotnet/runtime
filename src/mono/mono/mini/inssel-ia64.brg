@@ -345,13 +345,17 @@ stmt: OP_MEMSET (base) "0" {
 
 		/* Use two destination regs to increase paralellism */
 		if (size >= 2 * unit) {
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, dest_reg2, state->left->tree->inst_basereg, state->left->tree->inst_offset + unit);
+			int diff = (size / (2 * unit)) * unit;
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, dest_reg2, state->left->tree->inst_basereg, state->left->tree->inst_offset + diff);
 
 			while (size >= (2 * unit)) {
 				MONO_EMIT_NEW_STORE_MEMBASE (s, size_to_ia64_store_membase_inc_reg (unit), dest_reg, 0, val_reg);
 				MONO_EMIT_NEW_STORE_MEMBASE (s, size_to_ia64_store_membase_inc_reg (unit), dest_reg2, 0, val_reg);
 				size -= 2 * unit;
 			}
+
+			if (size > 0)
+				MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, dest_reg, dest_reg, diff);
 		}
 
 		while (size >= unit) {
