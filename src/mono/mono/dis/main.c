@@ -966,9 +966,10 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContext *cont
 	prop_flags = cols [MONO_PROPERTY_FLAGS];
 	ptr = mono_metadata_blob_heap (m, cols [MONO_PROPERTY_TYPE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	/* ECMA claims 0x08 ... */
-	if (*ptr != 0x28 && *ptr != 0x08)
-		g_warning("incorrect signature in propert blob: 0x%x", *ptr);
+	if (!(*ptr & 0x08))
+		g_warning("incorrect signature in property blob: 0x%x", *ptr);
+	if (*ptr & 0x20)
+		g_string_append (res, "instance ");
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
 	type = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, ptr, &ptr);
