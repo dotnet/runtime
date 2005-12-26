@@ -1,6 +1,8 @@
 2005-12-26  Zoltan Varga  <vargaz@gmail.com>
 
-	* runtime/Makefile.am (all-local): Pass CC tothe mcs makefile.
+	* configure.in: Add support for solaris/x86.
+
+	* runtime/Makefile.am (all-local): Pass CC to the mcs makefile.
 
 2005-12-21  Wade Berrier <wberrier@novell.com>
 

@@ -1427,6 +1427,11 @@ case "$host" in
 		arch_target=x86;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
+		case $host_os in
+		  solaris*)
+			LIBC="libc.so"
+			INTL="libintl.so"
+		esac
 		;;
 	x86_64-*-* | amd64-*-*)
 		TARGET=AMD64;
