@@ -672,6 +672,18 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	return NULL;
 }
 
+#ifdef __sun
+#define REG_EAX EAX
+#define REG_EBX EBX
+#define REG_ECX ECX
+#define REG_EDX EDX
+#define REG_EBP EBP
+#define REG_ESP ESP
+#define REG_ESI ESI
+#define REG_EDI EDI
+#define REG_EIP EIP
+#endif
+
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {

@@ -43,34 +43,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #endif /* PLATFORM_WIN32 */
 
-#ifdef sun    // Solaris x86
-#  define MONO_ARCH_USE_SIGACTION 1
-struct sigcontext {
-        unsigned short gs, __gsh;
-        unsigned short fs, __fsh;
-        unsigned short es, __esh;
-        unsigned short ds, __dsh;
-        unsigned long edi;
-        unsigned long esi;
-        unsigned long ebp;
-        unsigned long esp;
-        unsigned long ebx;
-        unsigned long edx;
-        unsigned long ecx;
-        unsigned long eax;
-        unsigned long trapno;
-        unsigned long err;
-        unsigned long eip;
-        unsigned short cs, __csh;
-        unsigned long eflags;
-        unsigned long esp_at_signal;
-        unsigned short ss, __ssh;
-        unsigned long fpstate[95];
-      unsigned long filler[5];
-};
-#endif  // sun, Solaris x86
-
-#ifdef __linux__
+#if defined( __linux__) || defined(__sun)
 #define MONO_ARCH_USE_SIGACTION
 #endif
 
