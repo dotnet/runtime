@@ -1,3 +1,7 @@
+2005-12-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* runtime/Makefile.am (all-local): Pass CC tothe mcs makefile.
+
 2005-12-21  Wade Berrier <wberrier@novell.com>
 
 	* mono-cairo.pc.in: use $prefix/lib instead of $libdir, 
