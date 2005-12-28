@@ -1,3 +1,8 @@
+2005-12-28  Kornél Pál  <kornelpal@hotmail.com>
+
+	* runtime/Makefile.am (all-local): Enclose CC by apostrophes to fix
+	  build when CC contains spaces.
+
 2005-12-27  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add check for <sys/mman.h>.  Fixes #77091.
