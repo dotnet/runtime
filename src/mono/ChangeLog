@@ -1,3 +1,8 @@
+2005-12-27  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add check for <sys/mman.h>.  Fixes #77091.
+	  Thanks to Ben Gamari for the patch.
+
 2005-12-26  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add support for solaris/x86.
