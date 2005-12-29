@@ -1636,6 +1636,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	header  = mono_method_get_header (cfg->method);
 
+	cfg->flags |= MONO_CFG_HAS_SPILLUP;
+
 	/*---------------------------------------------------------*/	 
 	/* We use the frame register also for any method that has  */ 
 	/* filter clauses. This way, when the handlers are called, */
@@ -1998,31 +2000,43 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 {
 	guchar 	*code = p;
 	int 	parmOffset, 
-	    	fpOffset;
+	    	fpOffset,
+		baseReg;
 
 	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
 	if (cfg->method->save_lmf)
 		parmOffset -= sizeof(MonoLMF);
 	fpOffset   = parmOffset + (5*sizeof(gint32));
+	if (fpOffset > 4096) {
+		s390_lr (code, s390_r12, STK_BASE);
+		baseReg = s390_r12;
+		while (fpOffset > 4096) {
+			s390_ahi (code, baseReg, 4096);
+			fpOffset   -= 4096;
+			parmOffset -= 4096;
+		}
+	} else {
+		baseReg = STK_BASE;
+	}	
 
-	s390_stm  (code, s390_r2, s390_r6, STK_BASE, parmOffset);
-	s390_std  (code, s390_f0, 0, STK_BASE, fpOffset);
-	s390_std  (code, s390_f1, 0, STK_BASE, fpOffset+sizeof(gdouble));
-	s390_std  (code, s390_f2, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
+	s390_stm  (code, s390_r2, s390_r6, baseReg, parmOffset);
+	s390_std  (code, s390_f0, 0, baseReg, fpOffset);
+	s390_std  (code, s390_f1, 0, baseReg, fpOffset+sizeof(gdouble));
+	s390_std  (code, s390_f2, 0, baseReg, fpOffset+2*sizeof(gdouble));
 	s390_basr (code, s390_r13, 0);
 	s390_j    (code, 6);
 	s390_word (code, cfg->method);
 	s390_word (code, func);
 	s390_l    (code, s390_r2, 0, s390_r13, 4);
-	s390_la   (code, s390_r3, 0, STK_BASE, parmOffset);
+	s390_la   (code, s390_r3, 0, baseReg, parmOffset);
 	s390_lr   (code, s390_r4, STK_BASE);
 	s390_ahi  (code, s390_r4, cfg->stack_usage);
 	s390_l	  (code, s390_r1, 0, s390_r13, 8);
 	s390_basr (code, s390_r14, s390_r1);
-	s390_ld   (code, s390_f2, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
-	s390_ld   (code, s390_f1, 0, STK_BASE, fpOffset+sizeof(gdouble));
-	s390_ld   (code, s390_f0, 0, STK_BASE, fpOffset);
-	s390_lm   (code, s390_r2, s390_r6, STK_BASE, parmOffset);
+	s390_ld   (code, s390_f2, 0, baseReg, fpOffset+2*sizeof(gdouble));
+	s390_ld   (code, s390_f1, 0, baseReg, fpOffset+sizeof(gdouble));
+	s390_ld   (code, s390_f0, 0, baseReg, fpOffset);
+	s390_lm   (code, s390_r2, s390_r6, baseReg, parmOffset);
 
 	return code;
 }
@@ -2729,28 +2743,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ADD_IMM: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lr	  (code, ins->dreg, ins->sreg1);
+			}
 			if ((ins->next) &&
 			    (ins->next->opcode == OP_ADC_IMM)) {
 				s390_basr (code, s390_r13, 0);
 				s390_j	  (code, 4);
 				s390_word (code, ins->inst_imm);
-				if (ins->dreg != ins->sreg1) {
-					s390_lr	  (code, ins->dreg, ins->sreg1);
-				}
 				s390_a (code, ins->dreg, 0, s390_r13, 4);
 			} else {
 				if (s390_is_imm16 (ins->inst_imm)) {
-					if (ins->dreg != ins->sreg1) {
-						s390_lr	  (code, ins->dreg, ins->sreg1);
-					}
 					s390_ahi  (code, ins->dreg, ins->inst_imm);
 				} else {
 					s390_basr (code, s390_r13, 0);
 					s390_j	  (code, 4);
 					s390_word (code, ins->inst_imm);
-					if (ins->dreg != ins->sreg1) {
-						s390_lr	  (code, ins->dreg, ins->sreg1);
-					}
 					s390_a (code, ins->dreg, 0, s390_r13, 4);
 				}
 			}
@@ -2815,21 +2823,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LADD_OVF: {
 			short int *o[1];
-			CHECK_SRCDST_COM;
-			s390_alr  (code, ins->dreg, src2);
+			s390_alr  (code, s390_r0, ins->sreg1);
 			s390_jnc  (code, 0); CODEPTR(code, o[0]);
-			s390_ahi  (code, ins->dreg+1, 1);
+			s390_ahi  (code, s390_r1, 1);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 			PTRSLOT   (code, o[0]);
-			s390_ar   (code, ins->dreg+1, src2+1);
+			s390_ar   (code, s390_r1, ins->sreg2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
 		}
 			break;
 		case OP_LADD_OVF_UN: {
-			CHECK_SRCDST_COM;
-			s390_alr  (code, ins->dreg, src2);
-			s390_alcr (code, ins->dreg+1, src2+1);
+			s390_alr  (code, s390_r0, ins->sreg1);
+			s390_alcr (code, s390_r1, ins->sreg2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
 		}
 			break;
 		case OP_ADD_OVF_CARRY: {
@@ -2928,22 +2938,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LSUB_OVF: {
 			short int *o[3];
-			CHECK_SRCDST_COM;
-			s390_lr   (code, s390_r1, src2+1);
-			s390_slr  (code, ins->dreg, src2);
+			s390_lr   (code, s390_r14, ins->sreg2);
+			s390_slr  (code, s390_r0, ins->sreg1);
 			s390_jnl  (code, 0); CODEPTR(code, o[0]);
-			s390_ahi  (code, s390_r1, 1);
+			s390_ahi  (code, s390_r14, 1);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 			PTRSLOT   (code, o[0]);
-			s390_sr   (code, ins->dreg+1, s390_r1);
+			s390_sr   (code, s390_r1, s390_r14);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
 		}
 			break;
 		case OP_LSUB_OVF_UN: {
-			CHECK_SRCDST_COM;
-			s390_slr  (code, ins->dreg, src2);
-			s390_slbr (code, ins->dreg+1, src2+1);
+			s390_slr  (code, s390_r0, ins->sreg1);
+			s390_slbr (code, s390_r1, ins->sreg2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_LT, "OverflowException");
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
 		}
 			break;
 		case OP_SUB_OVF_CARRY: {
@@ -3946,6 +3958,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_word (code, cfg->stack_offset);
 				s390_a    (code, ins->dreg, 0, s390_r13, 4);
 			}
+		}
+		case OP_MEMORY_BARRIER: {
 		}
 			break;	
 		default:

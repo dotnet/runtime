@@ -30,22 +30,34 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-lreg: OP_LADD_OVF (lreg, lreg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-lreg: OP_LADD_OVF_UN (lreg, lreg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-lreg: OP_LSUB_OVF (lreg, lreg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
+lreg: OP_LADD_OVF (lreg, lreg),
+lreg: OP_LADD_OVF_UN (lreg, lreg),
+lreg: OP_LSUB_OVF (lreg, lreg),
 lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, s390_r0, state->left->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, s390_r1, state->left->reg2);
+	tree->dreg    = state->reg1;
+	tree->sreg1   = state->right->reg1;
+	tree->sreg2   = state->right->reg2;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
+#lreg: OP_LADD_OVF (lreg, lreg) "0" {
+#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+#}
+#
+#lreg: OP_LADD_OVF_UN (lreg, lreg) "0" {
+#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+#}
+#
+#lreg: OP_LSUB_OVF (lreg, lreg) "0" {
+#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+#}
+#
+#lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
+#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+#}
+#
 reg: CEE_ADD_OVF (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
@@ -232,7 +244,7 @@ stmt: OP_OUTARG (lreg) {
 	int tdreg;
 
 	tdreg = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
 	
 	mono_call_inst_add_outarg_reg (call, tdreg, tree->unused, FALSE);
 
@@ -242,7 +254,6 @@ stmt: OP_OUTARG (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 	
 	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused + 1, FALSE);
-#	tree->dreg = tree->unused + 1;
 }
 
 stmt: OP_OUTARG_MEMBASE (lreg) {

@@ -329,8 +329,8 @@ local:
 localloc: dest:i src1:i len:62
 long_add:
 long_add_imm:
-long_add_ovf_un: len:18 dest:l src1:l src2:i
-long_add_ovf: len:24 dest:l src1:l src2:i
+long_add_ovf_un: len:22 dest:l src1:l src2:i clob:1
+long_add_ovf: len:28 dest:l src1:l src2:i clob:1
 long_and:
 long_beq:
 long_bge:
@@ -398,9 +398,10 @@ long_shr_un:
 long_shr_un_imm:
 long_sub:
 long_sub_imm:
-long_sub_ovf_un: len:18 dest:l src1:l src2:i
-long_sub_ovf: len:36 dest:l src1:l src2:i
+long_sub_ovf_un: len:22 dest:l src1:l src2:i clob:1
+long_sub_ovf: len:36 dest:l src1:l src2:i clob:1
 long_xor:
+memory_barrier: len: 10
 mkrefany:
 mono_ldptr:
 mono_newobj:
