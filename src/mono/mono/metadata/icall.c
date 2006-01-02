@@ -1420,6 +1420,19 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return o;
 	}
 
+	if (mono_class_is_nullable (mono_class_from_mono_type (cf->type))) {
+		MonoClass *nklass = mono_class_from_mono_type (cf->type);
+		guint8 *buf;
+
+		/* Convert the Nullable structure into a boxed vtype */
+		if (is_static)
+			buf = (char*)vtable->data + cf->offset;
+		else
+			buf = (char*)obj + cf->offset;
+
+		return mono_nullable_box (buf, nklass);
+	}
+
 	/* boxed value type */
 	klass = mono_class_from_mono_type (cf->type);
 	o = mono_object_new (domain, klass);
@@ -1476,8 +1489,26 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_GENERICINST: {
 			MonoGenericClass *gclass = cf->type->data.generic_class;
 			g_assert (!gclass->inst->is_open);
-			if (gclass->container_class->valuetype && (v != NULL))
-				v += sizeof (MonoObject);
+
+			if (mono_class_is_nullable (mono_class_from_mono_type (cf->type))) {
+				MonoClass *nklass = mono_class_from_mono_type (cf->type);
+				guint8 *buf;
+
+				/* 
+				 * Convert the boxed vtype into a Nullable structure.
+				 * This is complicated by the fact that Nullables have
+				 * a variable structure.
+				 */
+				/* Allocate using alloca so it gets GC tracking */
+				buf = alloca (nklass->instance_size);
+
+				mono_nullable_init (buf, value, nklass);
+
+				v = buf;
+			}
+			else 
+				if (gclass->container_class->valuetype && (v != NULL))
+					v += sizeof (MonoObject);
 			break;
 		}
 		default:

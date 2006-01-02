@@ -3488,8 +3488,16 @@ handle_enum:
 				type = t->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
-			mono_mb_emit_byte (mb, CEE_LDOBJ);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
+			if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
+				/* Need to convert a boxed vtype to an mp to a Nullable struct */
+				mono_mb_emit_byte (mb, CEE_UNBOX);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
+				mono_mb_emit_byte (mb, CEE_LDOBJ);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
+			} else {
+				mono_mb_emit_byte (mb, CEE_LDOBJ);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
+			}
 			break;
 		case MONO_TYPE_GENERICINST:
 			t = &t->data.generic_class->container_class->byval_arg;
