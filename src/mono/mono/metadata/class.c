@@ -3883,38 +3883,36 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		if ((klass->interface_id <= oklass->max_interface_id) &&
 		    (oklass->interface_offsets [klass->interface_id] != -1))
 			return TRUE;
-	} else
-		if (klass->rank) {
-			MonoClass *eclass, *eoclass;
+	} else if (klass->rank) {
+		MonoClass *eclass, *eoclass;
 
-			if (oklass->rank != klass->rank)
+		if (oklass->rank != klass->rank)
+			return FALSE;
+
+		/* vectors vs. one dimensional arrays */
+		if (oklass->byval_arg.type != klass->byval_arg.type)
+			return FALSE;
+
+		eclass = klass->cast_class;
+		eoclass = oklass->cast_class;
+
+		/* 
+		 * a is b does not imply a[] is b[] when a is a valuetype, and
+		 * b is a reference type.
+		 */
+
+		if (eoclass->valuetype) {
+			if ((eclass == mono_defaults.enum_class) || 
+				(eclass == mono_defaults.enum_class->parent) ||
+				(eclass == mono_defaults.object_class))
 				return FALSE;
-
-			/* vectors vs. one dimensional arrays */
-			if (oklass->byval_arg.type != klass->byval_arg.type)
-				return FALSE;
-
-			eclass = klass->cast_class;
-			eoclass = oklass->cast_class;
-
-
-			/* 
-			 * a is b does not imply a[] is b[] when a is a valuetype, and
-			 * b is a reference type.
-			 */
-
-			if (eoclass->valuetype) {
-				if ((eclass == mono_defaults.enum_class) || 
-					(eclass == mono_defaults.enum_class->parent) ||
-					(eclass == mono_defaults.object_class))
-					return FALSE;
-			}
-
-			return mono_class_is_assignable_from (klass->cast_class, oklass->cast_class);
 		}
-	else
-		if (klass == mono_defaults.object_class)
-			return TRUE;
+
+		return mono_class_is_assignable_from (klass->cast_class, oklass->cast_class);
+	} else if (mono_class_is_nullable (klass))
+		return (mono_class_is_assignable_from (klass->cast_class, oklass));
+	else if (klass == mono_defaults.object_class)
+		return TRUE;
 
 	return mono_class_has_parent (oklass, klass);
 }	
