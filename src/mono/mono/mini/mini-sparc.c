@@ -1096,8 +1096,16 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				else
 				if (sig->pinvoke)
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
-				else
-					size = mono_type_stack_size (&in->klass->byval_arg, &align);
+				else {
+					/* 
+					 * Can't use mono_type_stack_size (), but that
+					 * aligns the size to sizeof (gpointer), which is larger 
+					 * than the size of the source, leading to reads of invalid
+					 * memory if the source is at the end of address space or
+					 * misaligned reads.
+					 */
+					size = mono_class_value_size (in->klass, &align);
+				}
 
 				/* 
 				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then

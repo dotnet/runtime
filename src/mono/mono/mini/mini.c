@@ -5239,7 +5239,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			//	goto unverified;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			if (method->wrapper_type != MONO_WRAPPER_NONE) {
+				field = mono_method_get_wrapper_data (method, token);
+				klass = field->parent;
+			}
+			else
+				field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
@@ -5372,8 +5377,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-
-			field = mono_field_from_token (image, token, &klass, generic_context);
+			if (method->wrapper_type != MONO_WRAPPER_NONE) {
+				field = mono_method_get_wrapper_data (method, token);
+				klass = field->parent;
+			}
+			else
+				field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
@@ -5904,6 +5913,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
 				handle = mono_method_get_wrapper_data (method, n);
 				handle_class = mono_method_get_wrapper_data (method, n + 1);
+				if (handle_class == mono_defaults.typehandle_class)
+					handle = &((MonoClass*)handle)->byval_arg;
 			}
 			else {
 				handle = mono_ldtoken (image, n, &handle_class, generic_context);
