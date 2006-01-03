@@ -346,6 +346,10 @@ get_file_attributes (const char *filename)
 		}
 	}
 
+	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
+	if ((buf.st_mode & S_IFSOCK) != 0)
+		buf.st_mode &= ~S_IFSOCK; /* don't consider socket protection */
+
 	file_attrs = 0;
 	if ((buf.st_mode & S_IFDIR) != 0)
 		file_attrs |= FILE_ATTRIBUTE_DIRECTORY;
