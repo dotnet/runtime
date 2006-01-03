@@ -2800,6 +2800,16 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 
 	rank = mono_method_signature (cmethod)->param_count - (is_set? 1: 0);
 
+	if (rank == 1) {
+		MONO_INST_NEW (cfg, addr, CEE_LDELEMA);
+		addr->inst_left = sp [0];
+		addr->inst_right = sp [1];
+		addr->cil_code = ip;
+		addr->type = STACK_MP;
+		addr->klass = cmethod->klass;
+		return addr;
+	}
+
 	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
 #ifdef MONO_ARCH_EMULATE_MUL_DIV
 		/* OP_LDELEMA2D depends on OP_LMUL */
