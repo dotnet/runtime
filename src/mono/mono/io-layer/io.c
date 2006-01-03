@@ -217,6 +217,10 @@ static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
 
 	/* FIXME: this could definitely be better */
 
+	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
+	if (S_ISSOCK (buf->st_mode))
+		buf->st_mode &= ~S_IFSOCK; /* don't consider socket protection */
+
 	if (S_ISDIR (buf->st_mode))
 		attrs |= FILE_ATTRIBUTE_DIRECTORY;
 	else
