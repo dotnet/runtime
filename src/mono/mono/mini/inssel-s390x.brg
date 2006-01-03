@@ -403,7 +403,7 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 	int size      = arg->size;
 	int nregs     = size / 4;
 
-printf("OP_OUTARG_VT(OP_ICONST) %d\n",nregs);
+//printf("OP_OUTARG_VT(OP_ICONST) %d\n",nregs);
 	if (start_reg != STK_BASE) {
 		if (nregs) {
 			tree->opcode  = OP_SETREGIMM;
@@ -431,14 +431,14 @@ stmt: OP_OUTARG_VT (reg) {
 		size = -size;
 		treg = mono_regstate_next_int (s->rs);
 		if (start_reg != STK_BASE) {
-printf("OP_OUTARG_VT(reg) 1\n");
+//printf("OP_OUTARG_VT(reg) 1\n");
 			MONO_EMIT_NEW_MOVE (s, STK_BASE, arg->offPrm, state->left->reg1,
 					    0, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg,
 						 STK_BASE, arg->offPrm);
 			mono_call_inst_add_outarg_reg (call, treg, start_reg, FALSE);
 		} else {
-printf("OP_OUTARG_VT(reg) 1\n");
+//printf("OP_OUTARG_VT(reg) 1\n");
 			MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset+size, state->left->reg1,
 					    0, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE,
@@ -450,7 +450,7 @@ printf("OP_OUTARG_VT(reg) 1\n");
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {
-printf("OP_OUTARG_VT(reg) 2\n");
+//printf("OP_OUTARG_VT(reg) 2\n");
 			MONO_OUTPUT_VTS (s, size, STK_BASE, soffset, treg,
 					 state->left->tree->inst_offset);
 			treg = mono_regstate_next_int (s->rs);
