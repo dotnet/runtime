@@ -1,3 +1,7 @@
+2006-01-03  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add check for lutimes(2).  Mac OS X doesn't provide this.
+
 2005-12-28  Kornél Pál  <kornelpal@hotmail.com>
 
 	* runtime/Makefile.am (all-local): Enclose CC by apostrophes to fix
