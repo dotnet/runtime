@@ -975,4 +975,30 @@ COND:   ldloc.0
 		add
 		ret
 	}
+
+	.method public static int32 test_3_larray_get_set () {
+		.locals init (
+			int32[2]	V_0)
+			  
+			ldc.i4.2 
+			newobj instance void int32[0...]::.ctor(int32)
+			stloc.0 
+			ldloc.0 
+			ldc.i4.0 
+			ldc.i4 1
+			call instance void int32[0...]::Set(int32, int32)
+		    ldloc.0 
+		    ldc.i4.1 
+			ldc.i4 2
+			call instance void int32[0...]::Set(int32, int32)
+
+			ldloc.0
+			ldc.i4.0
+			call instance int32 int32[0...]::Get(int32)
+			ldloc.0
+			ldc.i4.1
+			call instance int32 int32[0...]::Get(int32)
+			add
+			ret
+	}
 }
