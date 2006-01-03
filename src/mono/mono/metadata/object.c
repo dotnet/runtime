@@ -2157,7 +2157,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	MonoMethodSignature *sig = mono_method_signature (method);
 	gpointer *pa = NULL;
 	int i;
-		
+
 	if (NULL != params) {
 		pa = alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
@@ -2215,6 +2215,17 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
 		void *o = obj;
+
+		if (mono_class_is_nullable (method->klass)) {
+			/* Need to create a boxed vtype instead */
+			g_assert (!obj);
+
+			if (!params)
+				return NULL;
+			else
+				return mono_value_box (mono_domain_get (), method->klass->cast_class, pa [0]);
+		}
+
 		if (!obj) {
 			obj = mono_object_new (mono_domain_get (), method->klass);
 			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
