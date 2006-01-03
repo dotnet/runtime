@@ -316,4 +316,38 @@ class Tests {
 			return 9;
 	}
 
+	static float pass_double_ret_float(double a)
+	{
+		float b;
+		b = (float) a;
+		return b;
+	}
+
+	static int test_0_pass_double_ret_float ()
+	{
+		double a = 654.34;
+		float b = 654.34f;
+		if (pass_double_ret_float(a) == b)
+			return 0;
+		else
+			return 10;
+	}
+
+	static double pass_float_ret_double(float a)
+	{
+		double b;
+		b = (double) a;
+		return b;
+	}
+
+	static int test_0_pass_float_ret_double ()
+	{
+		float a = 654.34f;
+		double b = 654.34;
+		if (pass_float_ret_double(a) == b)
+			return 0;
+		else
+			return 11;
+	}
+
 }

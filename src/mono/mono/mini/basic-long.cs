@@ -197,6 +197,23 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_conv_to_r8 () {
+		long a = 150;
+		double b = (double) a;
+
+		if (b != 150.0)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_conv_to_r4 () {
+		long a = 3000;
+		float b = (float) a;
+
+		if (b != 3000.0F)
+			return 1;
+		return 0;
+	}
 	/*
 	public static int test_0_conv_from_r8 () {
 		double b = 2.0;

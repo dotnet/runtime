@@ -40,6 +40,9 @@ static const char*const * ins_spec = ia64_desc;
 #elif defined(__arm__)
 const char * const arm_cpu_desc [OP_LAST];
 static const char*const * ins_spec = arm_cpu_desc;
+#elif defined(__s390x__)
+const char * const s390x_cpu_desc [OP_LAST];
+static const char*const * ins_spec = s390x_cpu_desc;
 #elif defined(__s390__)
 const char * const s390_cpu_desc [OP_LAST];
 static const char*const * ins_spec = s390_cpu_desc;

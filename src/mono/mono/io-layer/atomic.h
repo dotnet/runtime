@@ -416,7 +416,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 {
 	gpointer ret;
 	
-	__asm__ __volatile__ ("\tLA\t1,%1\n"
+	__asm__ __volatile__ ("\tLA\t1,%0\n"
 			      "0:\tLG\t%1,%0\n"
 			      "\tCSG\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
