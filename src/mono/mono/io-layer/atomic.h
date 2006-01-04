@@ -292,7 +292,7 @@ InterlockedCompareExchange(volatile gint32 *dest,
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b\n"
 			      "1:\n"
-			      : "+m" (*dest), "+r" (old)
+			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
 	return(old);
@@ -312,7 +312,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b\n"
 			      "1:\n"
-			      : "+m" (*dest), "+r" (old)
+			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
 	return(old);
@@ -332,7 +332,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 			      "\tCSG\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b\n"
 			      "1:\n"
-			      : "+m" (*dest), "+r" (old)
+			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");
 
@@ -387,7 +387,7 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "+r" (ret)
+			      : "+m" (*val), "=r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
@@ -404,7 +404,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "+r" (ret)
+			      : "+m" (*val), "=r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
@@ -420,7 +420,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 			      "0:\tLG\t%1,%0\n"
 			      "\tCSG\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "+r" (ret)
+			      : "+m" (*val), "=r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 

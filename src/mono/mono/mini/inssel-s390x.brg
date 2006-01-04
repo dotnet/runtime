@@ -451,9 +451,9 @@ stmt: OP_OUTARG_VT (reg) {
 			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {
 //printf("OP_OUTARG_VT(reg) 2\n");
+			treg = mono_regstate_next_int (s->rs);
 			MONO_OUTPUT_VTS (s, size, STK_BASE, soffset, treg,
 					 state->left->tree->inst_offset);
-			treg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, 
 			 			 s->stack_offset);
 		}

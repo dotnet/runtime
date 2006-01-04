@@ -87,6 +87,7 @@
 	int tmpr;								\
 	switch (size) {								\
 		case 0:								\
+			tmpr = mono_regstate_next_int (cfg->rs);		\
 			MONO_EMIT_NEW_ICONST(cfg, tmpr, 0);			\
 			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
 				dr, dx, tmpr);					\
@@ -240,7 +241,7 @@ typedef struct
 		(ctx)->uc_stack.ss_sp	     = (void*)bp;		\
 	} while (0) 
 
-#define MONO_CONTEXT_GET_IP(ctx) (ctx)->uc_mcontext.psw.addr
+#define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr
 #define MONO_CONTEXT_GET_BP(ctx) MONO_CONTEXT_GET_SP((ctx))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->uc_mcontext.gregs[15]))
 
