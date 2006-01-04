@@ -1245,7 +1245,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	MonoJumpInfo *patch_info = NULL;
 	MonoJitInfo *jinfo;
 	MonoMemPool *mp;
-	int i, pindex, got_index, n_patches, used_strings;
+	int i, pindex, got_index = 0, n_patches, used_strings;
 	gboolean non_got_patches, keep_patches = TRUE;
 	guint8 *p;
 
