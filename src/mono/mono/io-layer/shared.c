@@ -51,7 +51,7 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 		name = g_strdup_printf ("shared_data-%s-%s-%s-%d-%d-%d",
 					machine_name, ubuf.sysname,
 					ubuf.machine,
-					sizeof(struct _WapiHandleShared),
+					(int) sizeof(struct _WapiHandleShared),
 					_WAPI_HANDLE_VERSION, 0);
 		break;
 		
@@ -59,7 +59,7 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 		name = g_strdup_printf ("shared_fileshare-%s-%s-%s-%d-%d-%d",
 					machine_name, ubuf.sysname,
 					ubuf.machine,
-					sizeof(struct _WapiFileShare),
+					(int) sizeof(struct _WapiFileShare),
 					_WAPI_HANDLE_VERSION, 0);
 		break;
 	}
