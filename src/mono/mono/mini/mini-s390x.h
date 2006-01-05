@@ -155,9 +155,6 @@ typedef struct
 // #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION	1
 
 #define MONO_ARCH_USE_SIGACTION 	1
-// #define CUSTOM_STACK_WALK 		1
-// #define CUSTOM_EXCEPTION_HANDLING 	1
-#define mono_find_jit_info 		mono_arch_find_jit_info
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2

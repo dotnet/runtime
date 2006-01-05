@@ -465,8 +465,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		*managed = FALSE;
 
 	if (ji != NULL) {
-		char *source_location, *tmpaddr, *fname;
-		gint64 address, iloffset;
+		gint64 address;
 
 		*new_ctx = *ctx;
 
@@ -484,26 +483,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		if (trace) {
-			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, domain);
-			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
-
-			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%016lx>", address);
-			else
-				tmpaddr = g_strdup_printf ("[0x%16x]", iloffset);
-		
-			fname = mono_method_full_name (ji->method, TRUE);
-
-			if (source_location)
-				*trace = g_strdup_printf ("in %s (at %s) %s", tmpaddr, source_location, fname);
-			else
-				*trace = g_strdup_printf ("in %s %s", tmpaddr, fname);
-
-			g_free (fname);
-			g_free (source_location);
-			g_free (tmpaddr);
-		}
 		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
 		sframe = (MonoS390StackFrame *) sframe->prev;
@@ -517,9 +496,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (!(*lmf)->method)
 			return (gpointer)-1;
 
-		if (trace)
-			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
-		
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
 			memset (res, 0, sizeof (MonoJitInfo));
