@@ -3442,6 +3442,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ahi  (code, s390_r1, 14);
 			s390_srl  (code, s390_r1, 0, 3);
 			s390_sll  (code, s390_r1, 0, 3);
+			if (cfg->method->save_lmf) {
+				/*----------------------------------*/
+				/* we have to adjust lmf ebp value  */ 
+				/*----------------------------------*/
+				int lmfOffset = cfg->stack_usage - sizeof(MonoLMF);	
+											
+				s390_lr (code, s390_r13, cfg->frame_reg);
+				if (s390_is_uimm16(lmfOffset))
+					s390_ahi   (code, s390_r13, lmfOffset);	
+				else {
+					s390_basr (code, s390_r14, 0);
+					s390_j    (code, 4);
+					s390_word (code, lmfOffset);
+					s390_a    (code, s390_r13, 0, s390_r14, 4);
+				}
+				s390_lr (code, s390_r14, STK_BASE);
+				s390_sr (code, s390_r14, s390_r1);
+				s390_st (code, s390_r14, 0, s390_r13, 
+					 G_STRUCT_OFFSET(MonoLMF, ebp));	
+			}
 			s390_l	  (code, s390_r13, 0, STK_BASE, 0);
 			s390_sr	  (code, STK_BASE, s390_r1);
 			s390_st   (code, s390_r13, 0, STK_BASE, 0);
@@ -4380,7 +4400,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		lmfOffset = alloc_size - sizeof(MonoLMF);	
 											
 		s390_lr    (code, s390_r13, cfg->frame_reg);		
-		s390_ahi   (code, s390_r13, lmfOffset);					
+		if (s390_is_uimm16(lmfOffset))
+			s390_ahi   (code, s390_r13, lmfOffset);	
+		else {
+			s390_basr (code, s390_r14, 0);
+			s390_j    (code, 4);
+			s390_word (code, lmfOffset);
+			s390_a    (code, s390_r13, 0, s390_r14, 4);
+		}
 											
 		/*---------------------------------------------------------------*/
 		/* Preserve the parameter registers while we fix up the lmf	 */
@@ -4431,8 +4458,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/	
 		/* save the current IP						 */	
 		/*---------------------------------------------------------------*/	
-		s390_lr    (code, s390_r1, cfg->frame_reg);
-		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));	
+		s390_st	   (code, STK_BASE, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
 		s390_basr  (code, s390_r1, 0);
 		s390_la    (code, s390_r1, 0, s390_r1, 0);				
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));	
@@ -4642,13 +4668,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	pthread_t 	self = pthread_self();
-	pthread_attr_t 	attr;
-	void 		*stAddr = NULL;
-	size_t 		stSize  = 0;
-	struct sigaltstack sa;
-#endif
 
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
@@ -4673,35 +4692,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #endif
 	}		
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-
-	/*----------------------------------------------------------*/
-	/* Determine stack boundaries 				    */
-	/*----------------------------------------------------------*/
-	if (!mono_running_on_valgrind ()) {
-#ifdef HAVE_PTHREAD_GETATTR_NP
-		pthread_getattr_np( self, &attr );
-#elif HAVE_PTHREAD_ATTR_GET_NP
-		pthread_attr_get_np( self, &attr );
-#endif
-		pthread_attr_getstack( &attr, &stAddr, &stSize );
-	}
-
-
-	/*----------------------------------------------------------*/
-	/* Setup an alternate signal stack 			    */
-	/*----------------------------------------------------------*/
-	tls->stack_size	       = stSize;
-	tls->signal_stack      = mmap (0, SIGNAL_STACK_SIZE, 
-				       PROT_READ|PROT_WRITE|PROT_EXEC, 
-				       MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	tls->signal_stack_size = SIGNAL_STACK_SIZE;
-
-	sa.ss_sp    = tls->signal_stack;
-	sa.ss_size  = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_ONSTACK;
-	sigaltstack (&sa, NULL);
-#endif
 	if (!lmf_addr_key_inited) {
 		lmf_addr_key_inited = TRUE;
 		pthread_key_create (&lmf_addr_key, NULL);
@@ -4723,17 +4713,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	struct sigaltstack sa;
-
-	sa.ss_sp    = tls->signal_stack;
-	sa.ss_size  = SIGNAL_STACK_SIZE;
-	sa.ss_flags = SS_DISABLE;
-	sigaltstack (&sa, NULL);
-
-	if (tls->signal_stack)
-		munmap(tls->signal_stack, SIGNAL_STACK_SIZE);
-#endif
 
 }
 

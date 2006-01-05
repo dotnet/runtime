@@ -42,22 +42,6 @@ lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-#lreg: OP_LADD_OVF (lreg, lreg) "0" {
-#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-#}
-#
-#lreg: OP_LADD_OVF_UN (lreg, lreg) "0" {
-#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-#}
-#
-#lreg: OP_LSUB_OVF (lreg, lreg) "0" {
-#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-#}
-#
-#lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
-#	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-#}
-#
 reg: CEE_ADD_OVF (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
@@ -172,15 +156,6 @@ stmt: OP_SETRET (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-#lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
-#	/*----------------------------------------------------------------------*/
-#	/* SBB sets the condition code - CC 0 or 1 indicates Borrow == Overflow */
-#	/*----------------------------------------------------------------------*/
-#	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
-#	MONO_EMIT_NEW_BIALU (s, OP_SBB, state->reg2, state->left->reg2, state->right->reg2);
-#	MONO_EMIT_NEW_COND_EXC (s, NC, "OverflowException");
-#}
-#
 stmt: OP_OUTARG (reg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 
@@ -217,28 +192,6 @@ stmt: OP_OUTARG_MEMBASE (OP_REGVAR) {
 				     arg->offset, state->left->tree->dreg);
 }
 
-#stmt: OP_OUTARG (reg) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg1);
-#		return;
-#	}
-#	tree->opcode = OP_SETREG;
-#	tree->dreg = tree->unused;
-#	tree->sreg1 = state->left->reg1;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (OP_REGVAR) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->tree->dreg);
-#		return;
-#	}
-#	tree->opcode = OP_SETREG;
-#	tree->dreg = tree->unused;
-#	tree->sreg1 = state->left->tree->dreg;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
 stmt: OP_OUTARG (lreg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 	int tdreg;
@@ -264,19 +217,6 @@ stmt: OP_OUTARG_MEMBASE (lreg) {
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
 				     arg->offset + 4, state->left->reg1);
 }
-
-#stmt: OP_OUTARG (lreg) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg2);
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm + 4, state->left->reg1);
-#		return;
-#	}
-#	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
-#	tree->opcode = OP_SETREG;
-#	tree->dreg = tree->unused + 1;
-#	tree->sreg1 = state->left->reg1;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
 
 stmt: OP_OUTARG (OP_ICONST) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
@@ -314,50 +254,12 @@ stmt: OP_OUTARG_MEMBASE (CEE_LDIND_REF (OP_REGVAR)) {
 				         arg->offset, state->left->tree->inst_c0);
 }
 
-#stmt: OP_OUTARG (OP_ICONST) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, STK_BASE, tree->inst_imm, state->left->tree->inst_c0);
-#		return;
-#	}
-#	tree->opcode = OP_SETREGIMM;
-#	tree->dreg = tree->unused;
-#	tree->inst_c0 = state->left->tree->inst_c0;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->left->tree->dreg);
-#		return;
-#	}
-#	tree->opcode = OP_SETREG;
-#	tree->sreg1 = state->left->left->tree->dreg;
-#	tree->dreg = tree->unused;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (OP_LDADDR (OP_S390_LOADARG)) {
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, tree->unused,
-#			     state->left->left->tree->sreg1,
-#			     state->left->left->tree->inst_offset);
-#}
-#
 stmt: OP_OUTARG_MEMBASE (OP_LDADDR (OP_S390_LOADARG)) {
 	MonoCallArgParm *arg = (MonoCallArgParm *) tree; 
 
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, 
 				     arg->offset, state->left->left->tree->dreg);
 }
-
-#stmt: OP_OUTARG (OP_LDADDR (OP_S390_LOADARG)) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->left->tree->dreg);
-#		return;
-#	}
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, tree->unused,
-#			     state->left->left->tree->sreg1,
-#			     state->left->left->tree->inst_offset);
-#}
 
 freg: OP_FCONV_TO_R4 (freg) "0" {
 	/* The conversion is done elsewhere */
@@ -405,29 +307,6 @@ stmt: OP_OUTARG_MEMBASE (freg) {
 	}
 }
 
-#stmt: OP_OUTARG_R4 (freg) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg1);
-#		return;
-#	}
-#	tree->opcode = OP_SETFREG;
-#	tree->sreg1 = state->left->reg1;
-#	tree->dreg = tree->unused;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-#
-#stmt: OP_OUTARG_R8 (freg) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, STK_BASE, 
-#					     tree->inst_imm, state->left->reg1);
-#		return;
-#	}
-#	tree->opcode = OP_SETFREG;
-#	tree->sreg1 = state->left->reg1;
-#	tree->dreg = tree->unused;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
 stmt: OP_OUTARG_R4 (CEE_LDOBJ (OP_REGOFFSET)),
 stmt: OP_OUTARG_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
@@ -439,18 +318,6 @@ stmt: OP_OUTARG_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
 
 	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
 }
-
-#stmt: OP_OUTARG_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
-#	if (tree->inst_imm) {
-#		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, STK_BASE, 
-#					     tree->inst_imm, state->left->reg1);
-#		return;
-#	}
-#	tree->opcode = OP_SETFREG;
-#	tree->sreg1 = state->left->reg1;
-#	tree->dreg = tree->unused;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
 
 freg: OP_FCONV_TO_R4 (CEE_LDOBJ (OP_REGOFFSET)) {
 	MonoInst *vt = state->left->left->tree;
