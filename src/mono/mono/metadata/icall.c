@@ -981,7 +981,7 @@ static MonoReflectionType *
 type_from_name (const char *str, MonoBoolean ignoreCase)
 {
 	MonoType *type = NULL;
-	MonoAssembly *assembly;
+	MonoAssembly *assembly = NULL;
 	MonoTypeNameParse info;
 	char *temp_str = g_strdup (str);
 	gboolean type_resolve = FALSE;
