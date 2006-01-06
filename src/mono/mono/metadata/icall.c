@@ -2543,7 +2543,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 * is stupid), mono_runtime_invoke_*() calls the provided method, allowing
 	 * greater flexibility.
 	 */
-	MonoMethod *m = method->method;
+	MonoMethod *m = mono_get_inflated_method (method->method);
 	int pcount;
 	void *obj = this;
 

@@ -606,6 +606,8 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
  * mono_class_inflate_generic_method:
  *
  * Instantiate method @method with the generic context @context.
+ * BEWARE: All non-trivial fields are invalid, including klass, signature, and header.
+ *         Use mono_get_inflated_method (), mono_method_signature () and mono_method_get_header () to get the correct values.
  */
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
