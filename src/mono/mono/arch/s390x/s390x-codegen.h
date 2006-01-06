@@ -690,6 +690,7 @@ typedef struct {
 #define s390_lndbr(c, r1, r2)		S390_RRE(c, 0xb311, r1, r2)
 #define s390_lngr(c, r1, r2)		S390_RRE(c, 0xb901, r1, r2)
 #define s390_lnr(c, r1, r2)		S390_RR(c, 0x11, r1, r2)
+#define s390_lpdbr(c, r1, r2)		S390_RRE(c, 0xb310, r1, r2)
 #define s390_lpgr(c, r1, r2)		S390_RRE(c, 0xb900, r1, r2)
 #define s390_lpr(c, r1, r2)		S390_RR(c, 0x10, r1, r2)
 #define s390_lr(c, r1, r2)		S390_RR(c, 0x18, r1, r2)

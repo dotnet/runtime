@@ -4088,6 +4088,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			PTRSLOT(code, o[4]);
 		}
 			break;
+		case OP_ABS: {
+			s390_lpdbr (code, ins->dreg, ins->sreg1);
+		}
+			break;
 		case OP_SQRT: {
 			s390_sqdbr (code, ins->dreg, ins->sreg1);
 		}
@@ -4237,8 +4241,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgr (code, s390_r1, ins->sreg2);
 			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_ag  (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
-			s390_csg (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
-			s390_jnz (code, -7);
+			s390_csg (code, s390_r0, s390_r0, ins->inst_basereg, ins->inst_offset);
+			s390_jnz (code, -11);
 			s390_lgr (code, ins->dreg, s390_r1);
 		}
 			break;	
@@ -4247,14 +4251,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_ag  (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
 			s390_csg (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
-			s390_jnz (code, -7);
+			s390_jnz (code, -11);
 			s390_lgr (code, ins->dreg, s390_r1);
 		}
 			break;	
 		case OP_ATOMIC_EXCHANGE_I8: {
 			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_csg (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
-			s390_jnz (code, -4);
+			s390_jnz (code, -6);
 			s390_lgr (code, ins->dreg, s390_r0);
 		}
 			break;	
@@ -4262,7 +4266,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lr  (code, s390_r1, ins->sreg2);
 			s390_l   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_a	 (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
-			s390_cs  (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
+			s390_cs  (code, s390_r0, s390_r0, ins->inst_basereg, ins->inst_offset);
 			s390_jnz (code, -7);
 			s390_lr  (code, ins->dreg, s390_r1);
 		}
@@ -5101,6 +5105,10 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 			MONO_INST_NEW (cfg, ins, OP_SQRT);
 			ins->inst_i0 = args [0];
 		}
+//		if (strcmp (cmethod->name, "Abs") == 0) {
+//			MONO_INST_NEW (cfg, ins, OP_ABS);
+//			ins->inst_i0 = args [0];
+//		}
 	} else if (cmethod->klass == mono_defaults.thread_class &&
 			   strcmp (cmethod->name, "MemoryBarrier") == 0) {
 		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
@@ -5108,38 +5116,74 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
 
-		if (strcmp (cmethod->name, "Increment") == 0 && 
-		    fsig->params [0]->type == MONO_TYPE_I4) {
+		if (strcmp (cmethod->name, "Increment") == 0) {
 			MonoInst *ins_iconst;
+			guint32 opcode;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_NEW_I4);
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+
+			MONO_INST_NEW (cfg, ins, opcode);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = 1;
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = ins_iconst;
-		} else if (strcmp (cmethod->name, "Decrement") == 0 && 
-			   fsig->params [0]->type == MONO_TYPE_I4) {
+		} else if (strcmp (cmethod->name, "Decrement") == 0) {
 			MonoInst *ins_iconst;
+			guint32 opcode;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_NEW_I4);
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+			MONO_INST_NEW (cfg, ins, opcode);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = -1;
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = ins_iconst;
-		} else if (strcmp (cmethod->name, "Exchange") == 0 && 
-			   fsig->params [0]->type == MONO_TYPE_I4) {
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_EXCHANGE_I4);
+			/* FIXME: */
+		} else if (strcmp (cmethod->name, "Exchange") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_EXCHANGE_I4;
+			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
+					 (fsig->params [0]->type == MONO_TYPE_I) ||
+					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+				opcode = OP_ATOMIC_EXCHANGE_I8;
+			else
+				return NULL;
+
+			MONO_INST_NEW (cfg, ins, opcode);
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
-		} else if (strcmp (cmethod->name, "Add") == 0 && 
-			   fsig->params [0]->type == MONO_TYPE_I4) {
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
+		} else if (strcmp (cmethod->name, "Add") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_I8;
+			else
+				g_assert_not_reached ();
+
+			MONO_INST_NEW (cfg, ins, opcode);
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
+		} else if ((strcmp (cmethod->name, "Read") == 0 && 
+			   (fsig->params [0]->type == MONO_TYPE_I8))) {
+			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
+			ins->inst_i0 = args [0];
 		}
 	}
 	return ins;

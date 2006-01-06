@@ -61,11 +61,11 @@ aot_const: dest:i len:8
 arg:
 arglist:
 atomic_add_i4: src1:b src2:i dest:i len:20
-atomic_add_i8: src1:b src2:i dest:i len:20
+atomic_add_i8: src1:b src2:i dest:i len:30
 atomic_add_new_i4: src1:b src2:i dest:i len:20
-atomic_add_new_i8: src1:b src2:i dest:i len:26
+atomic_add_new_i8: src1:b src2:i dest:i len:30
 atomic_exchange_i4: src1:b src2:i dest:i len:14
-atomic_exchange_i8: src1:b src2:i dest:i len:18
+atomic_exchange_i8: src1:b src2:i dest:i len:20
 beq.s:
 beq: len:8
 bge.s:
@@ -153,11 +153,11 @@ conv.ovf.u:
 conv.r.un: dest:f src1:i len:32
 conv.r4: dest:f src1:i len:4
 conv.r8: dest:f src1:i len:4
-conv.u1: dest:i src1:i len:12
-conv.u2: dest:i src1:i len:20
-conv.u4: dest:i src1:i len:12
-conv.u8: dest:i src1:i len:12
-conv.u: dest:i src1:i len:4
+conv.u1: dest:i src1:i len:14
+conv.u2: dest:i src1:i len:24
+conv.u4: dest:i src1:i len:4
+conv.u8: dest:i src1:i len:4
+conv.u:  dest:i src1:i len:4
 cpblk:
 cpobj:
 div.un: dest:a src1:i src2:i len:12
