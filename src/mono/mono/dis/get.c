@@ -799,11 +799,11 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 			g_string_append (result, ",");
 
 		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
-		if (flags == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
+		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
 			g_string_append (result, "class ");
-		else if (flags == GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
+		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
 			g_string_append (result, "valuetype ");
-		else if (flags == GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT)
+		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT)
 			g_string_append (result, ".ctor ");
 
 		for (constr = param->constraints; constr && *constr; constr++) {
