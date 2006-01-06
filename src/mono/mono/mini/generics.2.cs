@@ -14,7 +14,7 @@ class Tests {
 	{
 		return TestDriver.RunTests (typeof (Tests));
 	}
-	
+
 	public static int test_1_nullable_unbox ()
 	{
 		return Unbox<int?> (1).Value;
@@ -41,8 +41,6 @@ class Tests {
 		return (o is int?) ? 1 : 0;
 	}
 
-	/* FIXME: This doesn't work yet
-
 	public static int test_1_nullable_unbox_vtype ()
 	{
 		return Unbox<TestStruct?> (new TestStruct (1)).Value.i;
@@ -68,7 +66,6 @@ class Tests {
 		object o = new TestStruct (1);
 		return (o is TestStruct?) ? 1 : 0;
 	}
-	*/
 
 	static object Box<T> (T t)
 	{

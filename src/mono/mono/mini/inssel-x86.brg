@@ -335,12 +335,6 @@ stmt: OP_OUTARG (CEE_LDIND_REF (base)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG (CEE_LDOBJ (reg)) {
-	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: OP_OUTARG (freg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 	tree->opcode = OP_STORER8_MEMBASE_REG;
