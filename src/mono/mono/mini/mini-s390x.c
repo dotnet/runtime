@@ -2332,9 +2332,9 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		s390_llong  (code, 0x41e0000000000000);
 		s390_llong  (code, 0x41f0000000000000);
 		s390_ldr    (code, s390_f15, sreg);
-		s390_cdb    (code, s390_f15, 0, s390_r13, 0);
+		s390_cdb    (code, s390_f15, 0, s390_r13, 4);
 		s390_jl     (code, 0); CODEPTR (code, o[0]);
-		s390_sdb    (code, s390_f15, 0, s390_r13, 8);
+		s390_sdb    (code, s390_f15, 0, s390_r13, 12);
 		s390_cfdbr  (code, dreg, 7, s390_f15);
 		s390_j      (code, 4);
 		PTRSLOT (code, o[0]);
