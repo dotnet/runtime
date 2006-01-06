@@ -327,7 +327,7 @@ loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:18
 local:
 localloc: dest:i src1:i len:62
-long_add:
+long_add: len: 18 dest:l src1:l src2:i clob:1
 long_add_imm:
 long_add_ovf_un: len:22 dest:l src1:l src2:i clob:1
 long_add_ovf: len:28 dest:l src1:l src2:i clob:1
@@ -396,7 +396,7 @@ long_shr:
 long_shr_imm:
 long_shr_un:
 long_shr_un_imm:
-long_sub:
+long_sub: len: 18 dest:l src1:l src2:i clob:1
 long_sub_imm:
 long_sub_ovf_un: len:22 dest:l src1:l src2:i clob:1
 long_sub_ovf: len:36 dest:l src1:l src2:i clob:1

@@ -30,8 +30,10 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+lreg: OP_LADD (lreg, lreg),
 lreg: OP_LADD_OVF (lreg, lreg),
 lreg: OP_LADD_OVF_UN (lreg, lreg),
+lreg: OP_LSUB (lreg, lreg),
 lreg: OP_LSUB_OVF (lreg, lreg),
 lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, s390_r0, state->left->reg1);
@@ -39,6 +41,30 @@ lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
 	tree->dreg    = state->reg1;
 	tree->sreg1   = state->right->reg1;
 	tree->sreg2   = state->right->reg2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: OP_LADD (lreg, i8con) "0" {
+	MONO_EMIT_NEW_ICONST (s, s390_r0, state->right->tree->inst_ls_word);
+	MONO_EMIT_NEW_ICONST (s, s390_r1, state->right->tree->inst_ms_word);
+	tree->dreg    = state->reg1;
+	tree->sreg1   = state->left->reg1;
+	tree->sreg2   = state->left->reg2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: OP_LSUB (lreg, i8con) "0" {
+	int rh,rl;
+
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, s390_r0, state->left->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, s390_r1, state->left->reg2);
+	rh = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_ICONST (s, rh, state->right->tree->inst_ls_word);
+	rl = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_ICONST (s, rl, state->right->tree->inst_ms_word);
+	tree->dreg    = state->reg1;
+	tree->sreg1   = rh;
+	tree->sreg2   = rl;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -528,9 +554,9 @@ stmt: OP_OUTARG_VT (reg) {
 		if (start_reg != STK_BASE) {
 			MONO_OUTPUT_VTR (s, size, start_reg, STK_BASE, soffset);
 		} else {
+			treg = mono_regstate_next_int (s->rs);
 			MONO_OUTPUT_VTS (s, size, STK_BASE, soffset, treg,
 					 state->left->tree->inst_offset);
-			treg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, treg, STK_BASE, 
 			 			 s->stack_offset);
 		}

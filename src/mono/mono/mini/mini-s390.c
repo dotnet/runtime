@@ -2369,16 +2369,18 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 				break;
 		}
 	} else {
+		short *o[1];
 		s390_basr   (code, s390_r13, 0);
 		s390_j	    (code, 10);
 		s390_llong  (code, 0x41e0000000000000);
 		s390_llong  (code, 0x41f0000000000000);
 		s390_ldr    (code, s390_f15, sreg);
-		s390_cdb    (code, s390_f15, 0, s390_r13, 0);
-		s390_jl     (code, 10);
-		s390_sdb    (code, s390_f15, 0, s390_r13, 8);
+		s390_cdb    (code, s390_f15, 0, s390_r13, 4);
+		s390_jl     (code, 0); CODEPTR(code, o[0]);
+		s390_sdb    (code, s390_f15, 0, s390_r13, 12);
 		s390_cfdbr  (code, dreg, 7, s390_f15);
 		s390_j      (code, 4);
+		PTRSLOT(code, o[0]);
 		s390_cfdbr  (code, dreg, 5, sreg);
 		switch (size) {
 			case 1: 
@@ -2821,6 +2823,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 		}
 			break;
+		case OP_LADD: {
+			short int *o[1];
+			s390_alr  (code, s390_r0, ins->sreg1);
+			s390_jnc  (code, 4);
+			s390_ahi  (code, s390_r1, 1);
+			s390_ar   (code, s390_r1, ins->sreg2);
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
+		}
+			break;
 		case OP_LADD_OVF: {
 			short int *o[1];
 			s390_alr  (code, s390_r0, ins->sreg1);
@@ -2936,8 +2948,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
 		}
 			break;
+		case OP_LSUB: {
+			s390_lr   (code, s390_r14, ins->sreg2);
+			s390_slr  (code, s390_r0, ins->sreg1);
+			s390_jnl  (code, 4);
+			s390_ahi  (code, s390_r14, 1);
+			s390_sr   (code, s390_r1, s390_r14);
+			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lr   (code, ins->dreg+1, s390_r1);
+		}
+			break;
 		case OP_LSUB_OVF: {
-			short int *o[3];
+			short int *o[1];
 			s390_lr   (code, s390_r14, ins->sreg2);
 			s390_slr  (code, s390_r0, ins->sreg1);
 			s390_jnl  (code, 0); CODEPTR(code, o[0]);
