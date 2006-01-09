@@ -1,3 +1,10 @@
+2006-01-09  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: switch over to the 2.0
+	configuration sections for System.Web and System.Web.Services.
+	Also, add the configProtectedData stuff so we can encrypt config
+	sections.
+
 2006-01-08  Robert Jordan  <robertj@gmx.net>
 
 	* man/mkbundle.1: Documented environment variables and Windows issues.
