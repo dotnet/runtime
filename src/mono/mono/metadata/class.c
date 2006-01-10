@@ -1246,6 +1246,40 @@ mono_class_setup_properties (MonoClass *class)
 }
 
 static void
+inflate_event (MonoClass *class, MonoEvent *event, MonoInflatedGenericClass *gclass)
+{
+	event->parent = class;
+
+	if (event->add) {
+		MonoMethod *inflated = mono_class_inflate_generic_method (
+			event->add, gclass->generic_class.context);
+
+		event->add = mono_get_inflated_method (inflated);
+	}
+
+	if (event->remove) {
+		MonoMethod *inflated = mono_class_inflate_generic_method (
+			event->remove, gclass->generic_class.context);
+
+		event->remove = mono_get_inflated_method (inflated);
+	}
+
+	if (event->raise) {
+		MonoMethod *inflated = mono_class_inflate_generic_method (
+			event->raise, gclass->generic_class.context);
+
+		event->raise = mono_get_inflated_method (inflated);
+	}
+
+	if (event->other) {
+		MonoMethod *inflated = mono_class_inflate_generic_method (
+			event->other, gclass->generic_class.context);
+
+		event->other = mono_get_inflated_method (inflated);
+	}
+}
+
+static void
 mono_class_setup_events (MonoClass *class)
 {
 	guint startm, endm, i, j;
@@ -1264,6 +1298,28 @@ mono_class_setup_events (MonoClass *class)
 		mono_loader_unlock ();
 		return;
 	}
+
+	if (class->generic_class) {
+		MonoInflatedGenericClass *gclass;
+		MonoClass *gklass;
+
+		gclass = mono_get_inflated_generic_class (class->generic_class);
+		gklass = gclass->generic_class.container_class;
+
+		mono_class_setup_events (gklass);
+		class->event = gklass->event;
+
+		class->events = g_new0 (MonoEvent, class->event.count);
+
+		for (i = 0; i < class->event.count; i++) {
+			class->events [i] = gklass->events [i];
+			inflate_event (class, &class->events [i], gclass);
+		}
+
+		mono_loader_unlock ();
+		return;
+	}
+
 	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
 	class->event.count = last - class->event.first;
 
