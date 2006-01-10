@@ -3969,7 +3969,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lr  (code, s390_r1, ins->sreg2);
 			s390_l   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_a	 (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
-			s390_cs  (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
+			s390_cs  (code, s390_r0, s390_r0, ins->inst_basereg, ins->inst_offset);
 			s390_jnz (code, -7);
 			s390_lr  (code, ins->dreg, s390_r1);
 		}
