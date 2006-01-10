@@ -67,6 +67,21 @@ class Tests {
 		return (o is TestStruct?) ? 1 : 0;
 	}
 
+	public static void stelem_any<T> (T[] arr, T elem) {
+		arr [0] = elem;
+	}
+
+	public static T ldelem_any<T> (T[] arr) {
+		return arr [0];
+	}
+
+	public static int test_1_ldelem_stelem_any_int () {
+		int[] arr = new int [3];
+		stelem_any (arr, 1);
+
+		return ldelem_any (arr);
+	}
+
 	static object Box<T> (T t)
 	{
 		return t;
