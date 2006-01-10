@@ -1,3 +1,7 @@
+2006-01-10  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/Makefile.am (scripts_2_0): Add nunit-console2.
+
 2006-01-09  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/machine.config: switch over to the 2.0
