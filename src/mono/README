@@ -25,6 +25,11 @@ This is Mono.
 
 		http://www.hpl.hp.com/research/linux/libunwind/download.php4
 
+	On Solaris, make sure that you used GNU tar to unpack this package, as
+	Solaris tar will not unpack this correctly, and you will get strange errors.
+
+	On Solaris, make sure that you use the GNU toolchain to build the software.
+
 	Optional dependencies:
 
 		* libgdiplus
