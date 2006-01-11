@@ -67,6 +67,7 @@ typedef void (*MonoProfileAssemblyFunc) (MonoProfiler *prof, MonoAssembly *assem
 
 typedef void (*MonoProfileAppDomainResult)(MonoProfiler *prof, MonoDomain   *domain,   int result);
 typedef void (*MonoProfileMethodResult)   (MonoProfiler *prof, MonoMethod   *method,   int result);
+typedef void (*MonoProfileJitResult)      (MonoProfiler *prof, MonoMethod   *method,   MonoJitInfo* jinfo,   int result);
 typedef void (*MonoProfileClassResult)    (MonoProfiler *prof, MonoClass    *klass,    int result);
 typedef void (*MonoProfileModuleResult)   (MonoProfiler *prof, MonoImage    *module,   int result);
 typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *assembly, int result);
@@ -101,6 +102,7 @@ void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoPro
                                         MonoProfileClassFunc start_unload, MonoProfileClassFunc end_unload);
 
 void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
+void mono_profiler_install_jit_end (MonoProfileJitResult end);
 void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);

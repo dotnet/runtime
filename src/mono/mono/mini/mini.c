@@ -9269,7 +9269,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if ((i = mono_method_to_ir (cfg, method, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
 		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		mono_destroy_compile (cfg);
 		return NULL;
 	}
@@ -9549,7 +9549,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.native_code_size += cfg->code_len;
 
 	if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
 
 	/* this can only be set if the security manager is active */
 	if (cfg->exception_type == MONO_EXCEPTION_SECURITY_LINKDEMAND) {

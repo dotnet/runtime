@@ -320,6 +320,24 @@ mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func)
 	jit_info_find_in_aot_func = func;
 }
 
+gpointer
+mono_jit_info_get_code_start (MonoJitInfo* ji)
+{
+	return ji->code_start;
+}
+
+int
+mono_jit_info_get_code_size (MonoJitInfo* ji)
+{
+	return ji->code_size;
+}
+
+MonoMethod*
+mono_jit_info_get_method (MonoJitInfo* ji)
+{
+	return ji->method;
+}
+
 gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
 {

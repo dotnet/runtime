@@ -115,6 +115,18 @@ mono_context_get				   (void);
 MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, char *addr);
 
+/* MonoJitInfo accessors */
+
+gpointer
+mono_jit_info_get_code_start (MonoJitInfo* ji);
+
+int
+mono_jit_info_get_code_size (MonoJitInfo* ji);
+
+MonoMethod*
+mono_jit_info_get_method (MonoJitInfo* ji);
+
+
 MonoImage*
 mono_get_corlib            (void);
 
