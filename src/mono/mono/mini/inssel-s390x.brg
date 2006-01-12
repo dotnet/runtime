@@ -675,7 +675,7 @@ reg: OP_LDADDR (OP_S390_LOADARG) {
 
 	treg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_UNALU (s, OP_S390_BKCHAIN, treg, s->frame_reg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, treg, treg, state->left->tree->inst_offset);
+	MONO_EMIT_LOAD_MEMBASE (s, tree, state->reg1, treg, state->left->tree->inst_offset);
 }
 
 reg: OP_LDADDR (OP_S390_ARGPTR) "2" {

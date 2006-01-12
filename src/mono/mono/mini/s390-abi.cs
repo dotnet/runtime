@@ -91,9 +91,17 @@ class Tests {
 			return 3;
 	}
 
-	static TestStruct3 spill_struct (TestStruct3 regStruct)
+	static TestStruct3 spill_struct (TestStruct3 regStruct, int value)
 	{
-		regStruct.c = 99;
+		regStruct.c = value;
+		return(regStruct);
+	}
+
+	static TestStruct3 ret_big_struct (int value_a, int value_c)
+	{
+		TestStruct3 regStruct = new TestStruct3();
+		regStruct.a = value_a;
+		regStruct.c = value_c;
 		return(regStruct);
 	}
 
@@ -185,7 +193,7 @@ class Tests {
 		myStruct.a = 64;	
 		myStruct.b = 255;
 		myStruct.c = 127;
-		myStruct = spill_struct(myStruct);
+		myStruct = spill_struct(myStruct, 99);
 		if (myStruct.c == 99)
 			return 0;
 		return myStruct.c;
@@ -282,6 +290,16 @@ class Tests {
 		myStruct.b = 181;
 		myStruct.c = 999;
 		return (pass_struct_spill_big (myStruct));
+	}
+		
+	static int test_0_pass_ret_big_struct ()
+	{
+		TestStruct3 myStruct;
+		myStruct = ret_big_struct(10,132);
+		if (myStruct.c == 132)
+			return 0;
+		else
+			return 1;
 	}
 		
 	static int test_0_pass_spill_struct_spill ()

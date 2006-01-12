@@ -5118,7 +5118,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 
 		if (strcmp (cmethod->name, "Increment") == 0) {
 			MonoInst *ins_iconst;
-			guint32 opcode;
+			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_ADD_NEW_I4;
@@ -5135,7 +5135,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 			ins->inst_i1 = ins_iconst;
 		} else if (strcmp (cmethod->name, "Decrement") == 0) {
 			MonoInst *ins_iconst;
-			guint32 opcode;
+			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_ADD_NEW_I4;
@@ -5151,7 +5151,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 			ins->inst_i1 = ins_iconst;
 			/* FIXME: */
 		} else if (strcmp (cmethod->name, "Exchange") == 0) {
-			guint32 opcode;
+			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_EXCHANGE_I4;
@@ -5167,7 +5167,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
 		} else if (strcmp (cmethod->name, "Add") == 0) {
-			guint32 opcode;
+			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_ADD_I4;
