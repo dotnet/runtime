@@ -1531,7 +1531,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		
 		obj_class = mono_class_from_name(mono_posix_image,
 						 "Mono.Posix",
-						 "PeerCred/PeerCredData");
+						 "PeerCredData");
 		obj = mono_object_new(domain, obj_class);
 		cred_data = (MonoPeerCredData *)obj;
 		cred_data->pid = cred.pid;
