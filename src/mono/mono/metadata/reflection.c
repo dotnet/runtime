@@ -8481,7 +8481,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gboolean is_dynamic = FALSE;
 	MonoDomain *domain;
 	MonoType *geninst;
-	int icount, i;
+	int i;
 
 	klass = mono_class_from_mono_type (type->type);
 	if (!klass->generic_container && !klass->generic_class &&
@@ -8495,7 +8495,6 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
 		tb = (MonoReflectionTypeBuilder *) type;
 
-		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 		is_dynamic = TRUE;
 	} else if (!strcmp (((MonoObject *) type)->vtable->klass->name, "MonoGenericClass")) {
 		MonoReflectionGenericClass *rgi = (MonoReflectionGenericClass *) type;
@@ -8504,15 +8503,11 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		g_assert (!strcmp (((MonoObject *) rgt)->vtable->klass->name, "TypeBuilder"));
 		tb = (MonoReflectionTypeBuilder *) rgt;
 
-		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 		is_dynamic = TRUE;
 	} else if (klass->wastypebuilder) {
 		tb = (MonoReflectionTypeBuilder *) klass->reflection_info;
 
-		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 		is_dynamic = TRUE;
-	} else {
-		icount = klass->interface_count;
 	}
 
 	if (is_dynamic) {
@@ -8608,23 +8603,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gclass->context->container = gclass->container_class->generic_container;
 	gclass->context->gclass = gclass;
 
-	if (is_dynamic) {
+	if (is_dynamic)
 		dgclass->parent = parent;
-		dgclass->ifaces = g_new0 (MonoType *, icount);
-		dgclass->count_ifaces = icount;
-
-		for (i = 0; i < icount; i++) {
-			MonoReflectionType *itype;
-
-			if (tb)
-				itype = mono_array_get (tb->interfaces, MonoReflectionType *, i);
-			else
-				itype = mono_type_get_object (domain, &klass->interfaces [i]->byval_arg);
-			dgclass->ifaces [i] = mono_reflection_bind_generic_parameters (itype, type_argc, types);
-			if (!dgclass->ifaces [i])
-				dgclass->ifaces [i] = itype->type;
-		}
-	}
 
 	mono_loader_unlock ();
 
@@ -8691,7 +8671,7 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 	MonoGenericClass *gclass, *cached;
 	MonoInflatedGenericClass *igclass;
 	MonoType *geninst;
-	int icount, i;
+	int i;
 
 	klass = mono_class_from_mono_type (type);
 	if (!klass->generic_container && !klass->generic_class &&
@@ -8699,8 +8679,6 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 		return NULL;
 
 	mono_loader_lock ();
-
-	icount = klass->interface_count;
 
 	igclass = g_new0 (MonoInflatedGenericClass, 1);
 	gclass = &igclass->generic_class;

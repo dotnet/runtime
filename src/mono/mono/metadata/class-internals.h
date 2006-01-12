@@ -406,8 +406,6 @@ struct _MonoInflatedGenericClass {
 struct _MonoDynamicGenericClass {
 	MonoInflatedGenericClass generic_class;
 	MonoType *parent;
-	int count_ifaces;
-	MonoType **ifaces;
 	int count_methods;
 	MonoMethod **methods;
 	int count_ctors;

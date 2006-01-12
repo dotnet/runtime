@@ -2060,10 +2060,11 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 {
 	static MonoClass *System_Reflection_MonoGenericClass;
 	MonoDynamicGenericClass *gclass;
+	MonoReflectionTypeBuilder *tb = NULL;
+	MonoClass *klass = NULL;
 	MonoDomain *domain;
-	MonoClass *klass;
 	MonoArray *res;
-	int i;
+	int icount, i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2077,22 +2078,37 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 
 	g_assert (type->type.type->data.generic_class->is_dynamic);
 	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
-	if (!gclass->ifaces)
-		return mono_array_new (domain, System_Reflection_MonoGenericClass, 0);
 
-	klass = gclass->generic_class.generic_class.container_class;
+	if (!strcmp (type->generic_type->object.vtable->klass->name, "TypeBuilder")) {
+		tb = (MonoReflectionTypeBuilder *) type->generic_type;
+		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
+	} else {
+		klass = gclass->generic_class.generic_class.container_class;
+		mono_class_init (klass);
+		icount = klass->interface_count;
+	}
 
-	res = mono_array_new (domain, System_Reflection_MonoGenericClass, gclass->count_ifaces);
+	res = mono_array_new (domain, System_Reflection_MonoGenericClass, icount);
 
-	for (i = 0; i < gclass->count_ifaces; i++) {
-		MonoReflectionType *iface = mono_type_get_object (domain, gclass->ifaces [i]);
+	for (i = 0; i < icount; i++) {
+		MonoReflectionType *iface;
+		MonoType *it;
 
+		if (tb) {
+			iface = mono_array_get (tb->interfaces, MonoReflectionType *, i);
+			it = iface->type;
+		} else
+			it = &klass->interfaces [i]->byval_arg;
+
+		it = mono_class_inflate_generic_type (
+			it, gclass->generic_class.generic_class.context);
+
+		iface = mono_type_get_object (domain, it);
 		mono_array_set (res, gpointer, i, iface);
 	}
 
 	return res;
 }
-
 
 static MonoReflectionMethod*
 ves_icall_MonoGenericClass_GetCorrespondingInflatedMethod (MonoReflectionGenericClass *type, 
