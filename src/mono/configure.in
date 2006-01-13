@@ -1451,6 +1451,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		LIBC="libc.so.6.1"
+		INTL="libc.so.6.1"
 		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
 		libmono_ldflags="-lunwind"
 		;;
