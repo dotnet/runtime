@@ -842,6 +842,8 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 			cfg->arch.omit_fp = FALSE;
 		}
 	}
+
+	g_free (cinfo);
 }
 
 GList *
