@@ -2963,7 +2963,7 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContext *context)
 		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
 
 		if (token == impl)
-			return get_method_core (m, decl, FALSE, context);
+			return get_method_core (m, decl, TRUE, context);
 	}
 
 	return NULL;

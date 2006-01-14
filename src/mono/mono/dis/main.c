@@ -679,7 +679,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 
 	override = get_method_override (m, token, context);
 	if (override) {
-		fprintf (output, "\t.override %s\n", override);
+		fprintf (output, "\t.override method %s\n", override);
 		g_free (override);
 	}
 
