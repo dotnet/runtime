@@ -10,12 +10,12 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
-#define BITS_PER_CHUNK (8 * sizeof (guint32))
+#define BITS_PER_CHUNK (8 * sizeof (gsize))
 
 struct MonoBitSet {
 	guint32 size;
 	guint32 flags;
-	guint32 data [MONO_ZERO_LEN_ARRAY];
+	gsize data [MONO_ZERO_LEN_ARRAY];
 };
 
 /*
@@ -31,7 +31,7 @@ guint32
 mono_bitset_alloc_size (guint32 max_size, guint32 flags) {
 	guint32 real_size = (max_size + BITS_PER_CHUNK - 1) / BITS_PER_CHUNK;
 
-	return sizeof (MonoBitSet) + sizeof (guint32) * (real_size - MONO_ZERO_LEN_ARRAY);
+	return sizeof (MonoBitSet) + sizeof (gsize) * (real_size - MONO_ZERO_LEN_ARRAY);
 }
 
 /*
@@ -47,7 +47,7 @@ mono_bitset_new (guint32 max_size, guint32 flags) {
 	guint32 real_size = (max_size + BITS_PER_CHUNK - 1) / BITS_PER_CHUNK;
 	MonoBitSet *result;
 
-	result = g_malloc0 (sizeof (MonoBitSet) + sizeof (guint32) * (real_size - MONO_ZERO_LEN_ARRAY));
+	result = g_malloc0 (sizeof (MonoBitSet) + sizeof (gsize) * (real_size - MONO_ZERO_LEN_ARRAY));
 	result->size = real_size * BITS_PER_CHUNK;
 	result->flags = flags;
 	return result;
@@ -101,7 +101,7 @@ mono_bitset_set (MonoBitSet *set, guint32 pos) {
 
 	g_return_if_fail (pos < set->size);
 
-	set->data [j] |= 1 << bit;
+	set->data [j] |= (gsize)1 << bit;
 }
 
 /*
@@ -119,7 +119,7 @@ mono_bitset_test (const MonoBitSet *set, guint32 pos) {
 
 	g_return_val_if_fail (pos < set->size, 0);
 
-	return set->data [j] & (1 << bit);
+	return (set->data [j] & ((gsize)1 << bit)) > 0;
 }
 
 /*
@@ -127,10 +127,10 @@ mono_bitset_test (const MonoBitSet *set, guint32 pos) {
  * @set: bitset ptr
  * @pos: test bit at this pos
  *
- * Return 32 bits from the bitset, starting from @pos, which must be divisible
- * with 32.
+ * Return 32/64 bits from the bitset, starting from @pos, which must be 
+ * divisible with 32/64.
  */
-guint32
+gsize
 mono_bitset_test_bulk (const MonoBitSet *set, guint32 pos) {
 	int j = pos / BITS_PER_CHUNK;
 
@@ -154,7 +154,7 @@ mono_bitset_clear (MonoBitSet *set, guint32 pos) {
 
 	g_return_if_fail (pos < set->size);
 
-	set->data [j] &= ~(1 << bit);
+	set->data [j] &= ~((gsize)1 << bit);
 }
 
 /*
@@ -180,7 +180,7 @@ void
 mono_bitset_set_all (MonoBitSet *set) {
 	int i;
 	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i)
-		set->data [i] = 0xffffffff;
+		set->data [i] = (gsize)-1;
 }
 
 /*
@@ -239,6 +239,16 @@ mono_bitset_count (const MonoBitSet *set) {
 			count += table [b [2] >> 4];
 			count += table [b [3] & 0xf];
 			count += table [b [3] >> 4];
+#if SIZEOF_VOID_P == 8
+			count += table [b [4] & 0xf];
+			count += table [b [4] >> 4];
+			count += table [b [5] & 0xf];
+			count += table [b [5] >> 4];
+			count += table [b [6] & 0xf];
+			count += table [b [6] >> 4];
+			count += table [b [7] & 0xf];
+			count += table [b [7] >> 4];
+#endif
 		}
 	}
 	return count;
@@ -287,13 +297,18 @@ bitstart_mask [] = {
 
 #else
 static inline gint
-my_g_bit_nth_lsf (guint32 mask, gint nth_bit)
+my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 {
 	do {
 		nth_bit++;
-		if (mask & (1 << (gulong) nth_bit))
-			return nth_bit;
-	} while (nth_bit < 31);
+		if (mask & ((gsize)1 << nth_bit)) {
+			if (nth_bit == BITS_PER_CHUNK)
+				/* On 64 bit platforms, 1 << 64 == 1 */
+				return -1;
+			else
+				return nth_bit;
+		}
+	} while (nth_bit < BITS_PER_CHUNK);
 	return -1;
 }
 #define my_g_bit_nth_lsf_nomask(m) (my_g_bit_nth_lsf((m),-1))
@@ -533,7 +548,7 @@ mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data)
 	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i]) {
 			for (j = 0; j < BITS_PER_CHUNK; ++j)
-				if (set->data [i] & (1 << j))
+				if (set->data [i] & ((gsize)1 << j))
 					func (j + i * BITS_PER_CHUNK, data);
 		}
 	}

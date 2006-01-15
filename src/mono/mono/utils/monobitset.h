@@ -29,7 +29,7 @@ void        mono_bitset_set_all      (MonoBitSet *set);
 
 int         mono_bitset_test         (const MonoBitSet *set, guint32 pos);
 
-guint32     mono_bitset_test_bulk    (const MonoBitSet *set, guint32 pos);
+gsize       mono_bitset_test_bulk    (const MonoBitSet *set, guint32 pos);
 
 void        mono_bitset_clear        (MonoBitSet *set, guint32 pos);
 
