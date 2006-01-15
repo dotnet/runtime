@@ -13,6 +13,12 @@
 
 //#define DEBUG_LIVENESS
 
+#if SIZEOF_VOID_P == 8
+#define BITS_PER_CHUNK 64
+#else
+#define BITS_PER_CHUNK 32
+#endif
+
 extern guint8 mono_burg_arity [];
 
 /* mono_bitset_mp_new:
@@ -404,27 +410,27 @@ mono_analyze_liveness (MonoCompile *cfg)
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		guint32 rem;
 
-		rem = max_vars % 32;
-		for (j = 0; j < (max_vars / 32) + 1; ++j) {
-			guint32 bits_in;
-			guint32 bits_out;
+		rem = max_vars % BITS_PER_CHUNK;
+		for (j = 0; j < (max_vars / BITS_PER_CHUNK) + 1; ++j) {
+			gsize bits_in;
+			gsize bits_out;
 			int k, nbits;
 
-			if (j > (max_vars / 32))
+			if (j > (max_vars / BITS_PER_CHUNK))
 				break;
 			else
-				if (j == (max_vars / 32))
+				if (j == (max_vars / BITS_PER_CHUNK))
 					nbits = rem;
 				else
-					nbits = 32;
+					nbits = BITS_PER_CHUNK;
 
-			bits_in = mono_bitset_test_bulk (bb->live_in_set, j * 32);
-			bits_out = mono_bitset_test_bulk (bb->live_out_set, j * 32);
+			bits_in = mono_bitset_test_bulk (bb->live_in_set, j * BITS_PER_CHUNK);
+			bits_out = mono_bitset_test_bulk (bb->live_out_set, j * BITS_PER_CHUNK);
 			for (k = 0; k < nbits; ++k) {
-				if (bits_in & (1 << k))
-					update_live_range (cfg, (j * 32) + k, bb->dfn, 0);
-				if (bits_out & (1 << k))
-					update_live_range (cfg, (j * 32) + k, bb->dfn, 0xffff);
+				if (bits_in & ((gsize)1 << k))
+					update_live_range (cfg, (j * BITS_PER_CHUNK) + k, bb->dfn, 0);
+				if (bits_out & ((gsize)1 << k))
+					update_live_range (cfg, (j * BITS_PER_CHUNK) + k, bb->dfn, 0xffff);
 			}
 		}
 	}
