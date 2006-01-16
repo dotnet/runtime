@@ -1831,6 +1831,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 
 	mh = mono_get_method_full (m, token, NULL, context);
 	if (mh) {
+		mh = mono_get_inflated_method (mh);
 		if (mono_method_signature (mh)->is_inflated)
 			context = ((MonoMethodInflated *) mh)->context;
 		esname = get_escaped_name (mh->name);
