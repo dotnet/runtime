@@ -2806,7 +2806,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		addr->inst_right = sp [1];
 		addr->cil_code = ip;
 		addr->type = STACK_MP;
-		addr->klass = cmethod->klass;
+		addr->klass = cmethod->klass->element_class;
 		return addr;
 	}
 
