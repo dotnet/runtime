@@ -2967,8 +2967,24 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContext *context)
 		impl = method_dor_to_token (cols [MONO_METHODIMPL_BODY]);
 		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
 
-		if (token == impl)
-			return get_method_core (m, decl, TRUE, context);
+		if (token == impl) {
+			MonoMethod *mh = NULL;
+			mh = mono_get_method_full (m, decl, NULL, context);
+			mh = mono_get_inflated_method (mh);
+
+			if ((mh && (mh->is_inflated || mh->generic_container)) || 
+			    (mh->klass && (mh->klass->generic_class || mh->klass->generic_container))) {
+				char *meth_str;
+				char *ret;
+				
+				meth_str = get_method_core (m, decl, TRUE, context);
+				ret = g_strdup_printf ("method %s", meth_str);
+				g_free (meth_str);
+				return ret;
+			} else {
+				return get_method_core (m, decl, FALSE, context);
+			}
+		}
 	}
 
 	return NULL;
