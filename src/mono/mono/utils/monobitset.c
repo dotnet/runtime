@@ -10,11 +10,11 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
-#define BITS_PER_CHUNK (8 * sizeof (gsize))
+#define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
 
 struct MonoBitSet {
-	guint32 size;
-	guint32 flags;
+	gsize size;
+	gsize flags;
 	gsize data [MONO_ZERO_LEN_ARRAY];
 };
 

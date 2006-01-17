@@ -10,6 +10,11 @@ enum {
 	MONO_BITSET_DONT_FREE = 1
 };
 
+#define MONO_BITSET_BITS_PER_CHUNK (8 * sizeof (gsize))
+
+/* Fast access to bits which depends on the implementation of the bitset */
+#define mono_bitset_test_fast(set,n) (((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] & ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)))
+
 /*
  * Interface documentation can be found in the c-file.
  * Interface documentation by Dennis Haney.
