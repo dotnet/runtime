@@ -387,7 +387,7 @@ typedef_flags (guint32 flags)
 	if (flags & TYPE_ATTRIBUTE_SEALED)
 		strcat (buffer, "sealed ");
 	if (flags & TYPE_ATTRIBUTE_SPECIAL_NAME)
-		strcat (buffer, "special-name ");
+		strcat (buffer, "specialname ");
 	if (flags & TYPE_ATTRIBUTE_IMPORT)
 		strcat (buffer, "import ");
 	if (flags & TYPE_ATTRIBUTE_SERIALIZABLE)
