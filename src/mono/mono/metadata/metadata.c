@@ -1518,7 +1518,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 {
 	int sigsize;
 
-	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
+	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
 	return g_memdup (sig, sigsize);
 }
 
