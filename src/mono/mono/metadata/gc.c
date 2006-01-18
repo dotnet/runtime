@@ -665,7 +665,8 @@ mono_gchandle_free (guint32 gchandle)
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK)
 			mono_gc_weak_link_remove (&handles->entries [slot]);
-		handles->entries [slot] = NULL;
+		else
+			handles->entries [slot] = NULL;
 		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
 	} else {
 		/* print a warning? */

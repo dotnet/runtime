@@ -76,6 +76,7 @@ mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
 void
 mono_gc_weak_link_remove (void **link_addr)
 {
+	*link_addr = NULL;
 }
 
 MonoObject*

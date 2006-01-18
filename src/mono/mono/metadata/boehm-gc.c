@@ -132,6 +132,7 @@ void
 mono_gc_weak_link_remove (void **link_addr)
 {
 	GC_unregister_disappearing_link (link_addr);
+	*link_addr = NULL;
 }
 
 MonoObject*
