@@ -1208,8 +1208,8 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	dis_interfaces (m, n + 1, (MonoGenericContext *) container);
 	fprintf (output, "  {\n");
         if (!forward) {
-        	dump_cattrs_for_type_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
         	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
+        	dump_cattrs_for_type_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 	        dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
 
         	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
