@@ -247,7 +247,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	gboolean changes;
 	int i, j, max_vars = cfg->num_varinfo;
 	int iterations, out_iter, in_iter;
-	gboolean *changed_in, *changed_out, *new_changed_in, *in_worklist;
+	gboolean *in_worklist;
 	MonoBasicBlock **worklist;
 	guint32 l_begin, l_end;
 	static int count = 0;
@@ -306,15 +306,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	old_live_in_set = mono_bitset_new (max_vars, 0);
 	old_live_out_set = mono_bitset_new (max_vars, 0);
 	tmp_in_set = mono_bitset_new (max_vars, 0);
-	changed_in = g_new0 (gboolean, cfg->num_bblocks + 1);
-	changed_out = g_new0 (gboolean, cfg->num_bblocks + 1);
 	in_worklist = g_new0 (gboolean, cfg->num_bblocks + 1);
-	new_changed_in = g_new0 (gboolean, cfg->num_bblocks + 1);
-
-	for (i = 0; i < cfg->num_bblocks + 1; ++i) {
-		changed_in [i] = TRUE;
-		changed_out [i] = TRUE;
-	}
 
 	count ++;
 
@@ -359,8 +351,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 				}
 				
-				changed_out [bb->dfn] = !mono_bitset_equal (old_live_out_set, bb->live_out_set);
-				if (changed_out [bb->dfn]) {
+				if (!mono_bitset_equal (old_live_out_set, bb->live_out_set)) {
 					for (j = 0; j < bb->in_count; j++) {
 						MonoBasicBlock *in_bb = bb->in_bb [j];
 						/* 
@@ -388,9 +379,6 @@ mono_analyze_liveness (MonoCompile *cfg)
 	mono_bitset_free (old_live_out_set);
 	mono_bitset_free (tmp_in_set);
 
-	g_free (changed_in);
-	g_free (changed_out);
-	g_free (new_changed_in);
 	g_free (worklist);
 	g_free (in_worklist);
 
