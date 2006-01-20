@@ -104,14 +104,15 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	}
 
 	references = image->references;
-	if (!references [idx-1])
+	if (!references [idx - 1])
 		mono_assembly_load_reference (image, idx - 1);
+	/* If this assert fails, it probably means that you haven't installed an assembly load/search hook */
+	g_assert (references == image->references);
+	g_assert (references [idx - 1]);
 	if (references [idx - 1] == (gpointer)-1)
 		return NULL;
 
-	image = references [idx-1]->image;
-
-	return mono_class_from_name (image, nspace, name);
+	return mono_class_from_name (references [idx - 1]->image, nspace, name);
 }
 
 static inline MonoType*

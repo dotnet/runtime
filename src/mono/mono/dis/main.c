@@ -1745,6 +1745,26 @@ monodis_preload (MonoAssemblyName *aname,
 	return result;
 }
 
+static GList *loaded_assemblies = NULL;
+
+static void
+monodis_assembly_load_hook (MonoAssembly *assembly, gpointer user_data)
+{
+	loaded_assemblies = g_list_prepend (loaded_assemblies, assembly);
+}
+
+static MonoAssembly *
+monodis_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
+{
+        GList *tmp;
+
+       for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
+               MonoAssembly *ass = tmp->data;
+               if (mono_assembly_names_equal (aname, &ass->aname))
+		       return ass;
+       }
+       return NULL;
+}
 
 static void
 usage (void)
@@ -1818,6 +1838,9 @@ main (int argc, char *argv [])
 
 	if (input_files == NULL)
 		usage ();
+
+	mono_install_assembly_load_hook (monodis_assembly_load_hook, NULL);
+	mono_install_assembly_search_hook (monodis_assembly_search_hook, NULL);
 
 	/*
 	 * If we just have one file, use the corlib version it requires.
