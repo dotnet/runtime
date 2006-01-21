@@ -4,7 +4,7 @@
 #include <mono/metadata/mono-debug.h>
 #define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
-#include <mono/private/libgc-mono-debugger.h>
+#include <libgc/include/libgc-mono-debugger.h>
 #include "mini.h"
 #include <unistd.h>
 #include <locale.h>

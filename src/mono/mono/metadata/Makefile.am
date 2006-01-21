@@ -133,7 +133,6 @@ libmonoruntimeinclude_HEADERS = \
 	appdomain.h	\
 	mono-debug.h	\
 	mono-gc.h	\
-	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
 	threads.h	\
 	environment.h	\
