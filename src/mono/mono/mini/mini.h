@@ -983,10 +983,15 @@ void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBloc
 void      mono_debug_record_line_number         (MonoCompile *cfg, MonoInst *ins, guint32 address);
 void      mono_debug_serialize_debug_info       (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len);
 void      mono_debug_add_aot_method             (MonoDomain *domain,
-												MonoMethod *method, guint8 *code_start, 
-												guint8 *debug_info, guint32 debug_info_len);
+						 MonoMethod *method, guint8 *code_start, 
+						 guint8 *debug_info, guint32 debug_info_len);
 void      mono_debug_add_icall_wrapper          (MonoMethod *method, MonoJitICallInfo* info);
 void      mono_debugger_run_finally             (MonoContext *start_ctx);
+
+/* Mono Debugger support */
+void      mono_debugger_init                    (void);
+int       mono_debugger_main                    (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv);
+
 
 /* Tracing */
 MonoTraceSpec *mono_trace_parse_options         (char *options);

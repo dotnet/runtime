@@ -198,6 +198,7 @@ common_sources = \
 	ssapre-mini-ops.h \
 	driver.c	\
 	debug-mini.c	\
+	debug-debugger.c\
 	linear-scan.c	\
 	aot.c		\
 	graph.c		\

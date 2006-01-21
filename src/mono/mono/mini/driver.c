@@ -406,7 +406,8 @@ enum {
 	DO_REGRESSION,
 	DO_COMPILE,
 	DO_EXEC,
-	DO_DRAW
+	DO_DRAW,
+	DO_DEBUGGER
 };
 
 typedef struct CompileAllThreadArgs {
@@ -814,6 +815,8 @@ mono_main (int argc, char* argv[])
 			/* Put desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
 			/* Put server-specific optimizations here */
+		} else if (strcmp (argv [i], "--inside-mdb") == 0) {
+			action = DO_DEBUGGER;
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
@@ -825,7 +828,7 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
-	if (mono_compile_aot || action == DO_EXEC) {
+	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		g_set_prgname (argv[i]);
 	}
 
@@ -843,6 +846,14 @@ mono_main (int argc, char* argv[])
 		mono_jit_trace_calls = mono_trace_parse_options (trace_options);
 		if (mono_jit_trace_calls == NULL)
 			exit (1);
+	}
+
+	if (action == DO_DEBUGGER) {
+		opt |= MONO_OPT_SHARED;
+		enable_debugging = TRUE;
+
+		mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
+		mono_debugger_init ();
 	}
 
 	mono_set_defaults (mini_verbose, opt);
@@ -891,13 +902,15 @@ mono_main (int argc, char* argv[])
 		break;
 	}
 
-	if (enable_debugging) {
+	if (action == DO_DEBUGGER)
+		mono_debug_init_1 (domain);
+	else if (enable_debugging) {
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 		mono_debug_init_1 (domain);
 	}
 
 	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC) {
+	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		mono_config_parse (config_file);
 	}
 
@@ -951,6 +964,19 @@ mono_main (int argc, char* argv[])
 		return i;
 	} else if (action == DO_COMPILE) {
 		compile_all_methods (assembly, mini_verbose, opt);
+		mini_cleanup (domain);
+		return 0;
+	} else if (action == DO_DEBUGGER) {
+		const char *error;
+
+		error = mono_check_corlib_version ();
+		if (error) {
+			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.go-mono.com/daily.\n");
+			exit (1);
+		}
+
+		mono_debugger_main (domain, assembly, argc, argv);
 		mini_cleanup (domain);
 		return 0;
 	}
