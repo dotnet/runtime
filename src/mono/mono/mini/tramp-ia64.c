@@ -14,7 +14,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/ia64/ia64-codegen.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-ia64.h"

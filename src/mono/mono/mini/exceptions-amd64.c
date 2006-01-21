@@ -21,7 +21,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-amd64.h"

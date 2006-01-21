@@ -18,7 +18,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #include <fcntl.h>
 #include <unistd.h>

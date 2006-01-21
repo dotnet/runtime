@@ -9,12 +9,12 @@
 
 #include "mini.h"
 #include "jit.h"
+#include "config.h"
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/appdomain.h>
-/* mono-debug-debugger.h needs config.h to work... */
-#include "config.h"
+#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 
 #ifdef HAVE_VALGRIND_H

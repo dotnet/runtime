@@ -14,7 +14,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/amd64/amd64-codegen.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>

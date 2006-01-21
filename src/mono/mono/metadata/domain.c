@@ -27,7 +27,6 @@
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/appdomain.h>
 #include <metadata/threads.h>
 

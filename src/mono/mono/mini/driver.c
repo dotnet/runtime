@@ -36,7 +36,6 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
 

@@ -15,7 +15,6 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-sparc.h"

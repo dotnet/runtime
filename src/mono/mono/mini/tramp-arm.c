@@ -14,7 +14,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/arm/arm-codegen.h>
-#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-arm.h"

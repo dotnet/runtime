@@ -12,6 +12,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mono-debug.h>
+#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
 
@@ -255,17 +256,27 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 void
 mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, GPOINTER_TO_UINT (method), index);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, GPOINTER_TO_UINT (method), index);
 }
 
 gboolean
 mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
+	const gchar *name;
+
 	if (!mono_debugger_use_debugger)
 		return FALSE;
 
 	// Prevent the object from being finalized.
 	last_exception = exc;
+
+	name = mono_class_get_name (mono_object_get_class (exc));
+	if (!strcmp (name, "ThreadAbortException")) {
+		MonoThread *thread = mono_thread_current ();
+		mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_ABORT, 0, thread->tid);
+		mono_thread_exit ();
+	}
+
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
 			     GPOINTER_TO_UINT (exc), GPOINTER_TO_UINT (addr));
 	return TRUE;
@@ -286,7 +297,7 @@ mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	info.exception_obj = exc;
 	info.stop = 0;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, GPOINTER_TO_UINT (&info),
+	mono_debugger_event (MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION, GPOINTER_TO_UINT (&info),
 			     GPOINTER_TO_UINT (addr));
 }
 

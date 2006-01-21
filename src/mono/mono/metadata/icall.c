@@ -43,7 +43,7 @@
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
 #include <mono/metadata/string-icalls.h>
-#include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/process.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/profiler-private.h>

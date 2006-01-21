@@ -32,7 +32,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
 

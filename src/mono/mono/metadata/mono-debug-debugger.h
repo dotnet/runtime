@@ -6,6 +6,10 @@
 #ifndef __MONO_DEBUG_DEBUGGER_H__
 #define __MONO_DEBUG_DEBUGGER_H__
 
+#if !defined _IN_THE_MONO_DEBUGGER
+#error "<mono/metadata/mono-debug-debugger.h> is a private header file only intended to be used by the debugger."
+#endif
+
 #include <glib.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
@@ -13,14 +17,26 @@
 
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
 typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
+typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
+typedef struct _MonoDebuggerThread		MonoDebuggerThread;
+typedef struct _MonoDebuggerManager             MonoDebuggerManager;
 
 typedef enum {
-	MONO_DEBUGGER_EVENT_BREAKPOINT,
+	MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE	= 1,
 	MONO_DEBUGGER_EVENT_ADD_MODULE,
 	MONO_DEBUGGER_EVENT_RELOAD_SYMTABS,
+	MONO_DEBUGGER_EVENT_METHOD_COMPILED,
+	MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
+	MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
+	MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK,
+	MONO_DEBUGGER_EVENT_RELEASE_GLOBAL_THREAD_LOCK,
+	MONO_DEBUGGER_EVENT_WRAPPER_MAIN,
+	MONO_DEBUGGER_EVENT_MAIN_EXITED,
 	MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
-	MONO_DEBUGGER_EVENT_EXCEPTION,
-	MONO_DEBUGGER_EVENT_THROW_EXCEPTION
+	MONO_DEBUGGER_EVENT_THREAD_CREATED,
+	MONO_DEBUGGER_EVENT_THREAD_ABORT,
+	MONO_DEBUGGER_EVENT_THROW_EXCEPTION,
+	MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION
 } MonoDebuggerEvent;
 
 struct _MonoDebuggerBreakpointInfo {
@@ -63,6 +79,50 @@ struct _MonoDebuggerIOLayer
 				  guint32 stacksize, WapiThreadStart start,
 				  gpointer param, guint32 create, guint32 *tid);
 	gsize (*GetCurrentThreadId) (void);
+};
+
+/*
+ * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
+ * contains pointers to global variables and functions which must be accessed
+ * by the debugger.
+ */
+struct _MonoDebuggerInfo {
+	guint64 magic;
+	guint32 version;
+	guint32 total_size;
+	guint32 symbol_table_size;
+	guint32 dummy;
+	guint8 ***mono_trampoline_code;
+	MonoSymbolTable **symbol_table;
+	guint64 (*compile_method) (guint64 method_argument);
+	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
+	guint64 (*get_boxed_object_method) (guint64 klass_argument, guint64 val_argument);
+	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
+	guint64 (*remove_breakpoint) (guint64 breakpoint);
+	MonoInvokeFunc runtime_invoke;
+	guint64 (*create_string) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*class_get_static_field_data) (guint64 klass);
+	guint64 (*lookup_class) (guint64 image_argument, guint64 token_arg);
+	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
+};
+
+struct _MonoDebuggerThread {
+	gpointer end_stack;
+	guint32 tid;
+	guint32 locked;
+	gpointer func;
+	gpointer start_stack;
+};
+
+struct _MonoDebuggerManager {
+	guint32 size;
+	guint32 thread_size;
+	gpointer main_function;
+	gpointer notification_address;
+	MonoDebuggerThread *main_thread;
+	guint32 main_tid;
 };
 
 extern MonoDebuggerIOLayer mono_debugger_io_layer;
