@@ -1,4 +1,4 @@
-#if defined(__i386__) || defined(__x86_64__)
+#include <config.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/assembly.h>
@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <locale.h>
 #include <string.h>
-
-#define IO_LAYER(func) (* mono_debugger_io_layer.func)
 
 static GPtrArray *thread_array = NULL;
 
@@ -235,7 +233,7 @@ debugger_thread_manager_end_resume (gsize tid)
 static void
 debugger_thread_manager_acquire_global_thread_lock (void)
 {
-	int tid = IO_LAYER (GetCurrentThreadId) ();
+	int tid = GetCurrentThreadId ();
 
 	mono_debugger_notification_function (
 		MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
@@ -244,7 +242,7 @@ debugger_thread_manager_acquire_global_thread_lock (void)
 static void
 debugger_thread_manager_release_global_thread_lock (void)
 {
-	int tid = IO_LAYER (GetCurrentThreadId) ();
+	int tid = GetCurrentThreadId ();
 
 	mono_debugger_notification_function (
 		MONO_DEBUGGER_EVENT_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
@@ -269,7 +267,7 @@ debugger_gc_push_all_stacks (void)
 {
 	int i, tid;
 
-	tid = IO_LAYER (GetCurrentThreadId) ();
+	tid = GetCurrentThreadId ();
 
 	if (!thread_array)
 		return;
@@ -309,8 +307,8 @@ static MonoThreadCallbacks thread_callbacks = {
 void
 mono_debugger_init (void)
 {
-	main_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	main_started_cond = CreateSemaphore (NULL, 0, 1, NULL);
+	main_ready_cond = CreateSemaphore (NULL, 0, 1, NULL);
 
 	mono_debugger_notification_function = mono_debugger_create_notification_function
 		(&MONO_DEBUGGER__manager.notification_address);
@@ -336,19 +334,19 @@ main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
 	int retval;
 
-	MONO_DEBUGGER__manager.main_tid = IO_LAYER (GetCurrentThreadId) ();
+	MONO_DEBUGGER__manager.main_tid = GetCurrentThreadId ();
 	MONO_DEBUGGER__manager.main_thread = g_new0 (MonoDebuggerThread, 1);
-	MONO_DEBUGGER__manager.main_thread->tid = IO_LAYER (GetCurrentThreadId) ();
+	MONO_DEBUGGER__manager.main_thread->tid = GetCurrentThreadId ();
 	MONO_DEBUGGER__manager.main_thread->start_stack = &main_args;
 
 	debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
 
-	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
+	ReleaseSemaphore (main_started_cond, 1, NULL);
 
 	/*
 	 * Wait until everything is ready.
 	 */
-	IO_LAYER (WaitForSingleObject) (main_ready_cond, INFINITE, FALSE);
+	WaitForSingleObject (main_ready_cond, INFINITE);
 
 	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 	/*
@@ -384,7 +382,7 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	main_args.argv = argv + 2;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
-	IO_LAYER (WaitForSingleObject) (main_started_cond, INFINITE, FALSE);
+	WaitForSingleObject (main_started_cond, INFINITE);
 
 	/*
 	 * Initialize the thread manager.
@@ -405,7 +403,7 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	/*
 	 * Signal the main thread that it can execute the managed Main().
 	 */
-	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
+	ReleaseSemaphore (main_ready_cond, 1, NULL);
 
 	/*
 	 * This will never return.
@@ -414,28 +412,3 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 
 	return 0;
 }
-
-#else /* defined(__x86__) || defined(__x86_64__) */
-/*
- * We're on an unsupported platform for the debugger.
- */
-#include "mini.h"
-
-void
-mono_debugger_init (void)
-{
-	/*
-	 * This method is only called when we're running inside the Mono Debugger, but
-	 * since the debugger doesn't work on this platform, this line should never be reached.
-	 */
-	g_error ("The Mono Debugger is not supported on this platform.");
-}
-
-int
-mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv)
-{
-	g_assert_not_reached ();
-	return 0;
-}
-
-#endif

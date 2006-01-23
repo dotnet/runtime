@@ -852,8 +852,13 @@ mono_main (int argc, char* argv[])
 		opt |= MONO_OPT_SHARED;
 		enable_debugging = TRUE;
 
+#ifdef MONO_DEBUGGER_SUPPORTED
 		mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
 		mono_debugger_init ();
+#else
+		g_print ("The Mono Debugger is not supported on this platform.\n");
+		return 1;
+#endif
 	}
 
 	mono_set_defaults (mini_verbose, opt);
@@ -967,6 +972,7 @@ mono_main (int argc, char* argv[])
 		mini_cleanup (domain);
 		return 0;
 	} else if (action == DO_DEBUGGER) {
+#ifdef MONO_DEBUGGER_SUPPORTED
 		const char *error;
 
 		error = mono_check_corlib_version ();
@@ -979,6 +985,9 @@ mono_main (int argc, char* argv[])
 		mono_debugger_main (domain, assembly, argc, argv);
 		mini_cleanup (domain);
 		return 0;
+#else
+		return 1;
+#endif
 	}
 	desc = mono_method_desc_new (mname, 0);
 	if (!desc) {

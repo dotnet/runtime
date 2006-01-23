@@ -1,3 +1,9 @@
+2006-01-23  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Added configure check whether the Mono Debugger is
+	supported on this platform; AC_DEFINE(MONO_DEBUGGER_SUPPORTED) and
+	also added a `MONO_DEBUGGER_SUPPORTED' automake conditional.
+
 2006-01-13  Raja R Harinath  <rharinath@novell.com>
 
 	* data/net_2_0/machine.config: Fix a couple of typos in type names.

@@ -66,17 +66,6 @@ typedef struct {
 	guint32 stop;
 } MonoDebuggerExceptionInfo;
 
-#ifndef PLATFORM_WIN32
-
-MonoDebuggerIOLayer mono_debugger_io_layer = {
-	InitializeCriticalSection, DeleteCriticalSection, TryEnterCriticalSection,
-	EnterCriticalSection, LeaveCriticalSection, WaitForSingleObjectEx, SignalObjectAndWait,
-	WaitForMultipleObjectsEx, CreateSemaphore, ReleaseSemaphore, CreateThread,
-	GetCurrentThreadId
-};
-
-#endif
-
 static int initialized = 0;
 
 void

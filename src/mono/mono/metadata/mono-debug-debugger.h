@@ -50,37 +50,6 @@ struct _MonoDebuggerBreakpointInfo {
  */
 extern guint8 *mono_trampoline_code [];
 
-#if !defined(__WIN32__)
-
-/*
- * Functions we export to the debugger.
- */
-struct _MonoDebuggerIOLayer
-{
-	void (*InitializeCriticalSection) (WapiCriticalSection *section);
-	void (*DeleteCriticalSection) (WapiCriticalSection *section);
-	gboolean (*TryEnterCriticalSection) (WapiCriticalSection *section);
-	void (*EnterCriticalSection) (WapiCriticalSection *section);
-	void (*LeaveCriticalSection) (WapiCriticalSection *section);
-
-	guint32 (*WaitForSingleObject) (gpointer handle, guint32 timeout, 
-					gboolean alertable);
-	guint32 (*SignalObjectAndWait) (gpointer signal_handle, gpointer wait,
-					guint32 timeout, gboolean alertable);
-	guint32 (*WaitForMultipleObjects) (guint32 numobjects, gpointer *handles,
-				      gboolean waitall, guint32 timeout, gboolean alertable);
-
-	gpointer (*CreateSemaphore) (WapiSecurityAttributes *security,
-				     gint32 initial, gint32 max,
-				     const gunichar2 *name);
-	gboolean (*ReleaseSemaphore) (gpointer handle, gint32 count, gint32 *prevcount);
-
-	gpointer (*CreateThread) (WapiSecurityAttributes *security,
-				  guint32 stacksize, WapiThreadStart start,
-				  gpointer param, guint32 create, guint32 *tid);
-	gsize (*GetCurrentThreadId) (void);
-};
-
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
  * contains pointers to global variables and functions which must be accessed
@@ -124,10 +93,6 @@ struct _MonoDebuggerManager {
 	MonoDebuggerThread *main_thread;
 	guint32 main_tid;
 };
-
-extern MonoDebuggerIOLayer mono_debugger_io_layer;
-
-#endif
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
