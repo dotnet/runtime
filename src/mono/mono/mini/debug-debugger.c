@@ -1,3 +1,4 @@
+#if defined(__i386__) || defined(__x86_64__)
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/assembly.h>
@@ -413,3 +414,28 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 
 	return 0;
 }
+
+#else /* defined(__x86__) || defined(__x86_64__) */
+/*
+ * We're on an unsupported platform for the debugger.
+ */
+#include "mini.h"
+
+void
+mono_debugger_init (void)
+{
+	/*
+	 * This method is only called when we're running inside the Mono Debugger, but
+	 * since the debugger doesn't work on this platform, this line should never be reached.
+	 */
+	g_error ("The Mono Debugger is not supported on this platform.");
+}
+
+int
+mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+#endif
