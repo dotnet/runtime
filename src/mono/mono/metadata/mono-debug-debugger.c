@@ -7,6 +7,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/threads.h>
 #include <mono/os/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>

@@ -50,7 +50,7 @@ struct _MonoDebuggerBreakpointInfo {
  */
 extern guint8 *mono_trampoline_code [];
 
-#ifndef PLATFORM_WIN32
+#if !defined(__WIN32__)
 
 /*
  * Functions we export to the debugger.
@@ -144,8 +144,6 @@ void            mono_debugger_add_builtin_types           (MonoDebugHandle *symf
 
 int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint           (int breakpoint_id);
-int             mono_debugger_insert_breakpoint           (const gchar *method_name, gboolean include_namespace);
-int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
 void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
 
 gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
@@ -155,11 +153,6 @@ MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, v
 
 gboolean        mono_debugger_lookup_type                 (const gchar *type_name);
 gint32          mono_debugger_lookup_assembly             (const gchar *name);
-gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpointer stack, MonoObject *exc);
-void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
-gboolean        mono_debugger_throw_exception             (gpointer addr, gpointer stack, MonoObject *exc);
-
-
 
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);

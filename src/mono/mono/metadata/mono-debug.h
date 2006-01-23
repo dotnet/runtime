@@ -205,4 +205,16 @@ gchar *mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 of
 gint32 mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomain *domain);
 gint32 mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDomain *domain);
 
+/*
+ * Mono Debugger support functions
+ *
+ * These methods are used by the JIT while running inside the Mono Debugger.
+ */
+
+int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
+int             mono_debugger_insert_breakpoint           (const gchar *method_name, gboolean include_namespace);
+gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpointer stack, MonoObject *exc);
+void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
+gboolean        mono_debugger_throw_exception             (gpointer addr, gpointer stack, MonoObject *exc);
+
 #endif /* __MONO_DEBUG_H__ */
