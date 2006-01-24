@@ -79,6 +79,10 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 static MonoString*
 mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig);
 
+#define ldstr_lock() EnterCriticalSection (&ldstr_section)
+#define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
+static CRITICAL_SECTION ldstr_section;
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -165,6 +169,7 @@ mono_type_initialization_init (void)
 	InitializeCriticalSection (&type_initialization_section);
 	type_initialization_hash = g_hash_table_new (NULL, NULL);
 	blocked_thread_hash = g_hash_table_new (NULL, NULL);
+	InitializeCriticalSection (&ldstr_section);
 }
 
 /*
@@ -578,10 +583,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		/* bug #75479 */
 		return;
 	}
-
-	if ((class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_EXPLICIT_LAYOUT && (class->packing_size != 0) && class->packing_size != sizeof (gpointer))
-		/* reference fields might be placed on non-aligned offsets */
-		return;
 
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
@@ -3084,9 +3085,7 @@ str_lookup (MonoDomain *domain, gpointer user_data)
 	LDStrInfo *info = user_data;
 	if (info->res || domain == info->orig_domain)
 		return;
-	mono_domain_lock (domain);
 	info->res = mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
-	mono_domain_unlock (domain);
 }
 
 static MonoString*
@@ -3098,14 +3097,14 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	
 	domain = ((MonoObject *)str)->vtable->domain;
 	ldstr_table = domain->ldstr_table;
-	mono_domain_lock (domain);
+	ldstr_lock ();
 	if ((res = mono_g_hash_table_lookup (ldstr_table, str))) {
-		mono_domain_unlock (domain);
+		ldstr_unlock ();
 		return res;
 	}
 	if (insert) {
 		mono_g_hash_table_insert (ldstr_table, str, str);
-		mono_domain_unlock (domain);
+		ldstr_unlock ();
 		return str;
 	} else {
 		LDStrInfo ldstr_info;
@@ -3120,11 +3119,11 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 			 * intern it in the current one as well.
 			 */
 			mono_g_hash_table_insert (ldstr_table, str, str);
-			mono_domain_unlock (domain);
+			ldstr_unlock ();
 			return str;
 		}
 	}
-	mono_domain_unlock (domain);
+	ldstr_unlock ();
 	return NULL;
 }
 
@@ -3201,15 +3200,15 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 		}
 	}
 #endif
-	mono_domain_lock (domain);
+	ldstr_lock ();
 	if ((interned = mono_g_hash_table_lookup (domain->ldstr_table, o))) {
-		mono_domain_unlock (domain);
+		ldstr_unlock ();
 		/* o will get garbage collected */
 		return interned;
 	}
 
 	mono_g_hash_table_insert (domain->ldstr_table, o, o);
-	mono_domain_unlock (domain);
+	ldstr_unlock ();
 
 	return o;
 }
