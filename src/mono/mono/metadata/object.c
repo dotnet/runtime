@@ -3234,8 +3234,9 @@ mono_string_to_utf8 (MonoString *s)
 
 	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, NULL, &error);
 	if (error) {
-		g_warning (error->message);
+		MonoException *exc = mono_get_exception_argument ("string", error->message);
 		g_error_free (error);
+		mono_raise_exception(exc);
 	}
 
 	return as;
