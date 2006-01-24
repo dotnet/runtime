@@ -175,6 +175,7 @@ static void
 method_stats (MonoMethod *method) {
 	const MonoOpcode *opcode;
 	MonoMethodHeader *header;
+	MonoMethodSignature *sig;
 	const unsigned char *ip;
 	int i, n;
 	int local_branch = 0, local_condbranch = 0, local_throw = 0, local_calls = 0;
@@ -203,7 +204,8 @@ method_stats (MonoMethod *method) {
 	if (header->max_stack != 8) /* just a guess */
 		has_maxstack++;
 
-	n = method->signature->hasthis + method->signature->param_count;
+	sig = mono_method_signature (method);
+	n = sig->hasthis + sig->param_count;
 	if (max_args < n)
 		max_args = n;
 	num_args += n;
@@ -405,12 +407,13 @@ method_stats (MonoMethod *method) {
 
 static int num_pdepth = 0;
 static int max_pdepth = 0;
+static int num_pdepth_ovf = 0;
 static int num_ifaces = 0;
 
 static void
 type_stats (MonoClass *klass) {
 	MonoClass *parent;
-	int depth = 0;
+	int depth = 1;
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		num_ifaces++;
@@ -424,6 +427,10 @@ type_stats (MonoClass *klass) {
 	num_pdepth += depth;
 	if (max_pdepth < depth)
 		max_pdepth = depth;
+	if (depth > MONO_DEFAULT_SUPERTABLE_SIZE) {
+		/*g_print ("overflow parent depth: %s.%s\n", klass->name_space, klass->name);*/
+		num_pdepth_ovf++;
+	}
 }
 
 static void
@@ -465,7 +472,7 @@ stats (MonoImage *image, const char *name) {
 	
 	g_print ("\nType stats:\n");
 	g_print ("interface types: %d/%d\n", num_ifaces, num_types);
-	g_print ("parent depth: max: %d, mean: %d\n", max_pdepth, num_pdepth/(num_types - num_ifaces));
+	g_print ("parent depth: max: %d, mean: %f, overflowing: %d\n", max_pdepth, (double)num_pdepth/(num_types - num_ifaces), num_pdepth_ovf);
 }
 
 static char *
@@ -482,7 +489,7 @@ get_signature (MonoMethod *method) {
 	res = g_string_new ("");
 	if (include_namespace && *(method->klass->name_space))
 		g_string_sprintfa (res, "%s.", method->klass->name_space);
-	result = mono_signature_get_desc (method->signature, include_namespace);
+	result = mono_signature_get_desc (mono_method_signature (method), include_namespace);
 	g_string_sprintfa (res, "%s:%s(%s)", method->klass->name, method->name, result);
 	g_free (result);
 	g_hash_table_insert (hash, method, res->str);
