@@ -886,7 +886,7 @@ output_newobj_profile (GList *proflist)
 			} else {
 				isarray = "";
 			}
-			g_snprintf (buf, sizeof (buf), "%s%%s%s",
+			g_snprintf (buf, sizeof (buf), "%s%s%s%s",
 				klass->name_space, klass->name_space ? "." : "", klass->name, isarray);
 			g_print ("    %8" G_GUINT64_FORMAT " KB %8" G_GUINT64_FORMAT " %-48s\n", (ainfo->mem / 1024), ainfo->count, buf);
 		}
