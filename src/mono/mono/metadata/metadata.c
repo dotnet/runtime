@@ -4245,12 +4245,16 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	guint32 i, owner = 0, n;
 	MonoGenericContainer *container;
 	MonoGenericParam *params;
+	gpointer *p;
+	GSList *dup_list = NULL, *l;
+	GHashTable *table = NULL;
 
 	if (!(i = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return NULL;
 	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	params = NULL;
 	n = 0;
+	table = g_hash_table_new (g_str_hash, g_str_equal);
 	container = g_new0 (MonoGenericContainer, 1);
 	do {
 		n++;
@@ -4261,11 +4265,27 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
+		if ((p = g_hash_table_lookup (table, params [n - 1].name)))
+			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (n)), p);
+		else
+			g_hash_table_insert (table, params [n - 1].name, GUINT_TO_POINTER (n));
 		params [n - 1].constraints = NULL;
 		if (++i > tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
+
+	if (dup_list) {
+		if (!mono_generic_params_with_ambiguous_names)
+			mono_generic_params_with_ambiguous_names = g_hash_table_new (NULL, NULL);
+		for (l = dup_list; l; l = l->next) {
+			int param = GPOINTER_TO_UINT (l->data);
+			g_hash_table_insert (mono_generic_params_with_ambiguous_names, &params [param-1], &params [param-1]);
+		}
+		g_slist_free (dup_list);
+	}
+	g_hash_table_destroy (table);
+	table = NULL;
 
 	container->type_argc = n;
 	container->type_params = params;

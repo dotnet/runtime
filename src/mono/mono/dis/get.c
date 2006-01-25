@@ -1168,17 +1168,15 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		if (is_def) {
-			g_assert (type->data.generic_param->name);
+		if (is_def && (!mono_generic_params_with_ambiguous_names || !g_hash_table_lookup (mono_generic_params_with_ambiguous_names, type->data.generic_param)))
 			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
-		} else
+		else
 			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
-		if (is_def) {
-			g_assert (type->data.generic_param->name);
+		if (is_def && (!mono_generic_params_with_ambiguous_names || !g_hash_table_lookup (mono_generic_params_with_ambiguous_names, type->data.generic_param)))
 			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
-		} else
+		else
 			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_GENERICINST: {
