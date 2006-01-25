@@ -18,8 +18,6 @@
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
 typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
-typedef struct _MonoDebuggerThread		MonoDebuggerThread;
-typedef struct _MonoDebuggerManager             MonoDebuggerManager;
 
 typedef enum {
 	MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE	= 1,
@@ -75,23 +73,6 @@ struct _MonoDebuggerInfo {
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
-};
-
-struct _MonoDebuggerThread {
-	gpointer end_stack;
-	guint32 tid;
-	guint32 locked;
-	gpointer func;
-	gpointer start_stack;
-};
-
-struct _MonoDebuggerManager {
-	guint32 size;
-	guint32 thread_size;
-	gpointer main_function;
-	gpointer notification_address;
-	MonoDebuggerThread *main_thread;
-	guint32 main_tid;
 };
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);

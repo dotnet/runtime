@@ -57,6 +57,22 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_run_finally
 };
 
+typedef struct {
+	gpointer end_stack;
+	gpointer start_stack;
+	gpointer func;
+	guint64 tid;
+} MonoDebuggerThread;
+
+typedef struct {
+	guint32 size;
+	guint32 thread_size;
+	gpointer main_function;
+	gpointer notification_address;
+	MonoDebuggerThread *main_thread;
+	guint32 main_tid;
+} MonoDebuggerManager;
+
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
 	sizeof (MonoDebuggerThread),
@@ -230,36 +246,20 @@ debugger_thread_manager_end_resume (gsize tid)
 {
 }
 
-static void
-debugger_thread_manager_acquire_global_thread_lock (void)
-{
-	int tid = GetCurrentThreadId ();
-
-	mono_debugger_notification_function (
-		MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
-}
-
-static void
-debugger_thread_manager_release_global_thread_lock (void)
-{
-	int tid = GetCurrentThreadId ();
-
-	mono_debugger_notification_function (
-		MONO_DEBUGGER_EVENT_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
-}
-
 extern void GC_push_all_stack (gpointer b, gpointer t);
 
 static void
 debugger_gc_stop_world (void)
 {
-	debugger_thread_manager_acquire_global_thread_lock ();
+	mono_debugger_notification_function (
+		MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK, 0, 0);
 }
 
 static void
 debugger_gc_start_world (void)
 {
-	debugger_thread_manager_release_global_thread_lock ();
+	mono_debugger_notification_function (
+		MONO_DEBUGGER_EVENT_RELEASE_GLOBAL_THREAD_LOCK, 0, 0);
 }
 
 static void
