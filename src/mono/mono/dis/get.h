@@ -73,6 +73,8 @@ const char *get_blob_encoded_size      (const char *ptr, int *size);
 
 MonoTypeEnum get_field_literal_type (MonoImage *m, guint32 blob_signature);
 
+char *stringify_double (double r);
+
 /**
  * This is called to initialize the table containing keyword names
  */

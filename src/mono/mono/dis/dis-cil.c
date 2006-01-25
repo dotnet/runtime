@@ -192,8 +192,11 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 				fprintf (output, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
 			else if (isnan (r))
 				fprintf (output, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
-			else
-				fprintf (output, "%.20g", r);
+			else {
+				char *str = stringify_double (r);
+				fprintf (output, str);
+				g_free (str);
+			}
 			ptr += 8;
 			break;
 		}
@@ -298,8 +301,11 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 				fprintf (output, "(00 00 80 7f)"); /* positive infinity */
 			else if (isnan (f))
 				fprintf (output, "(00 00 c0 ff)"); /* NaN */
-			else
-				fprintf (output, "%.20g", (double) f);
+			else {
+				char *str = stringify_double ((double) f);
+				fprintf (output, str);
+				g_free (str);
+			}
 			ptr += 4;
 			break;
 		}

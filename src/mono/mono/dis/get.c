@@ -2145,6 +2145,19 @@ get_encoded_user_string_or_bytearray (const unsigned char *ptr, int len)
 	return result;
 }
 
+char *
+stringify_double (double r)
+{
+	char *ret, *ptr;
+
+	ret = g_strdup_printf ("%.17g.", r);
+	ptr = ret + strlen (ret) - 1;
+	if (strchr (ret, '.') != ptr)
+		*ptr = '\0';
+
+	return ret;
+}
+
 /**
  * get_constant:
  * @m: metadata context
@@ -2199,10 +2212,14 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 #else
 		normal = isnormal (r);
 #endif
-		if (!normal)
+		if (!normal) {
 			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));
-		else
-			return g_strdup_printf ("float32(%.20g)", r);
+		} else {
+			char *str = stringify_double ((double) r);
+			char *ret = g_strdup_printf ("float32(%s)", str);
+			g_free (str);
+			return ret;
+		}
 	}	
 	case MONO_TYPE_R8: {
 		gboolean normal;
@@ -2221,7 +2238,10 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 			high = read32 (ptr + 4);
 			return g_strdup_printf ("float64(0x%08x%08x)", high, low);
 		} else {
-			return g_strdup_printf ("float64(%.20g)", r);
+			char *str = stringify_double (r);
+			char *ret = g_strdup_printf ("float64(%s)", str);
+			g_free (str);
+			return ret;
 		}
 	}
 	case MONO_TYPE_STRING:
