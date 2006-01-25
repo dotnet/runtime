@@ -2152,7 +2152,7 @@ stringify_double (double r)
 
 	ret = g_strdup_printf ("%.17g.", r);
 	ptr = ret + strlen (ret) - 1;
-	if (strchr (ret, '.') != ptr)
+	if (strchr (ret, '.') != ptr || strchr (ret, 'e'))
 		*ptr = '\0';
 
 	return ret;
