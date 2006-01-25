@@ -1856,7 +1856,10 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 	if (!gc)
 		return NULL;
 
-	if (type == MONO_TYPE_VAR && gc->parent)
+	gboolean is_var = (type == MONO_TYPE_VAR);
+	g_assert (is_var || type == MONO_TYPE_MVAR);
+
+	if (is_var && gc->parent)
 		/*
 		 * The current MonoGenericContainer is a generic method -> its `parent'
 		 * points to the containing class'es container.
@@ -1866,7 +1869,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 	/*
 	 * Ensure that we have the correct type of GenericContainer.
 	 */
-	g_assert ((type == MONO_TYPE_VAR) == !gc->is_method);
+	g_assert (is_var == !gc->is_method);
 
 	return gc;
 }
@@ -3695,13 +3698,13 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open) {
 		MonoType *gtype = find_generic_param (type->data.generic_class, gc ? gc->is_method : FALSE);
-		gc = select_container (gc, gtype->type == MONO_TYPE_MVAR);
+		gc = select_container (gc, gtype->type);
 		if (gtype->data.generic_param->owner != gc)
 			type = NULL;
 	}
 
 	if (type && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		gc = select_container (gc, type->type == MONO_TYPE_MVAR);
+		gc = select_container (gc, type->type);
 		if (gc) {
 			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
 			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
@@ -3735,7 +3738,7 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContext *gener
 
 	type = g_new0 (MonoType, 1);
 
-	if (!cache_type)
+	if (cache_type)
 		g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
 
 	if (*ptr == MONO_TYPE_BYREF) {
