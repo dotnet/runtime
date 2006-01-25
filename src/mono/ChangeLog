@@ -1,3 +1,14 @@
+2006-01-25  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: for system.web, add default
+	<authorization> section that allows everything.  also, add
+	System.Configuration to system.web/compilation/assemblies.
+
+2006-01-23  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: add System.Configuration to the
+	list of assemblies in system.web/compilation.
+
 2006-01-23  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Added configure check whether the Mono Debugger is
