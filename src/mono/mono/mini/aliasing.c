@@ -630,7 +630,7 @@ update_aliasing_information_on_inst (MonoAliasingInformation *info, MonoAliasing
 			use->affected_variables = info->temporary_uncontrollably_aliased_variables;
 			APPEND_USE (info,bb_info,use);
 		}
-	} else if ((inst->opcode == OP_UNBOXCAST) || (inst->opcode == CEE_CONV_I)) {
+	} else if ((inst->opcode == OP_UNBOXCAST) || (inst->opcode == CEE_CONV_I) || (inst->opcode == OP_LCONV_TO_I)) {
 		father_alias->type = context.subtree_aliases [0].type;
 		father_alias->variable_index = context.subtree_aliases [0].variable_index;
 	} else if ((inst->opcode == CEE_LDELEMA) || (inst->opcode == OP_COMPARE) || (inst->opcode == CEE_SWITCH)) {
