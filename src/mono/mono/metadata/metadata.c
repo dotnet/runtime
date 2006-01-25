@@ -30,6 +30,8 @@ static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolea
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
 
+GHashTable *mono_generic_params_with_ambiguous_names;
+
 /*
  * This enumeration is used to describe the data types in the metadata
  * tables
