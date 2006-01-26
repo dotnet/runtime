@@ -1,5 +1,10 @@
 2006-01-25  Chris Toshok  <toshok@ximian.com>
 
+	* data/net_2_0/machine.config: ignore mscorlib,
+	system.runtime.remoting, and strongNames sections.
+
+2006-01-25  Chris Toshok  <toshok@ximian.com>
+
 	* data/net_2_0/machine.config: for system.web, add default
 	<authorization> section that allows everything.  also, add
 	System.Configuration to system.web/compilation/assemblies.
