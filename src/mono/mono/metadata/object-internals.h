@@ -253,7 +253,7 @@ struct _MonoThread {
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
 	 */
-	gpointer unused1;
+	MonoBoolean thread_dump_requested;
 	gpointer unused2;
 	gpointer unused3;
 	gpointer unused4;

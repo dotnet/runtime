@@ -69,6 +69,8 @@ void mono_gc_stop_world (void);
 
 void mono_gc_start_world (void);
 
+void mono_threads_request_thread_dump (void);
+
 extern MonoException* mono_thread_request_interruption (gboolean running_managed);
 extern gboolean mono_thread_interruption_requested (void);
 extern void mono_thread_interruption_checkpoint (void);

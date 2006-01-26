@@ -2199,6 +2199,41 @@ void mono_thread_suspend_all_other_threads (void)
 	g_free (wait);
 }
 
+/**
+ * mono_threads_request_thread_dump:
+ *
+ *   Ask all threads except the current to print their stacktrace to stdout.
+ */
+void
+mono_threads_request_thread_dump (void)
+{
+	struct wait_data *wait = g_new0 (struct wait_data, 1);
+	int i, waitnum;
+	gsize self = GetCurrentThreadId ();
+	gpointer *events;
+	guint32 eventidx = 0;
+
+	/* 
+	 * Make a copy of the hashtable since we can't do anything with
+	 * threads while threads_mutex is held.
+	 */
+	mono_threads_lock ();
+	mono_g_hash_table_foreach (threads, collect_threads, wait);
+	mono_threads_unlock ();
+
+	for (i = 0; i < wait->num; ++i) {
+		MonoThread *thread = wait->threads [i];
+
+		if (!mono_gc_is_finalizer_thread (thread) && (thread != mono_thread_current ()) && !thread->thread_dump_requested) {
+			thread->thread_dump_requested = TRUE;
+
+			signal_thread_state_change (thread);
+		}
+
+		CloseHandle (wait->handles [i]);
+	}
+}
+
 /*
  * mono_thread_push_appdomain_ref:
  *
