@@ -10009,9 +10009,16 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
 	gboolean running_managed;
 	MonoException *exc;
+	MonoThread *thread = mono_thread_current ();
 	void *ji;
 	
 	GET_CONTEXT;
+
+	if (thread->thread_dump_requested) {
+		thread->thread_dump_requested = FALSE;
+
+		mono_print_thread_dump (ctx);
+	}
 
 	/*
 	 * FIXME:
@@ -10039,12 +10046,19 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 {
-	MonoException *exc;
 	GET_CONTEXT;
 
-	exc = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
-       
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	printf ("Full thread dump:\n");
+
+	mono_threads_request_thread_dump ();
+
+	/*
+	 * print_thread_dump () skips the current thread, since sending a signal
+	 * to it would invoke the signal handler below the sigquit signal handler,
+	 * and signal handlers don't create an lmf, so the stack walk could not
+	 * be performed.
+	 */
+	mono_print_thread_dump (ctx);
 }
 
 static void
