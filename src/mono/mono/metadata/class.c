@@ -1907,8 +1907,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 								 overrides [j*2+1]->slot, overrides [j*2]->name, overrides [j*2]->slot);
 						}
 						msig = mono_signature_get_desc (mono_method_signature (im), FALSE);
-						printf ("no implementation for interface method %s.%s::%s(%s) in class %s.%s\n",
-							ic->name_space, ic->name, im->name, msig, class->name_space, class->name);
+						printf ("no implementation for interface method %s::%s(%s) in class %s.%s\n",
+							mono_type_get_name (&ic->byval_arg), im->name, msig, class->name_space, class->name);
 						g_free (msig);
 						for (j = 0; j < class->method.count; ++j) {
 							MonoMethod *cm = class->methods [j];

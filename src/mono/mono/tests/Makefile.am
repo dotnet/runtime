@@ -3,21 +3,25 @@ check-local: test
 TEST_PROG = ../interpreter/mint
 JITTEST_PROG = ../mini/mono
 
-TEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(TEST_PROG)
-JITTEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(JITTEST_PROG)
+TEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(TEST_PROG)
+JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(JITTEST_PROG)
 
 RUNTIME_ARGS=--config tests-config --optimize=all
 
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
+with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
+RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
 	$(RUNTIME) $(mcs_topdir)/tools/mkbundle/mkbundle.exe
 
-CSC = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+GMCS = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/default/ilasm.exe
+ILASM2 = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -242,19 +246,29 @@ TEST_IL_SRC=			\
 	reload-at-bb-end.il	\
 	even-odd.il
 
+TEST_CS2_SRC =
+TEST_IL2_SRC = find-method.2.il
 
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
+TESTSI_CS2=$(TEST_CS2_SRC:.2.il=.exe)
+TESTSI_IL2=$(TEST_IL2_SRC:.2.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_SRC) $(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl
+
+%.exe: %.2.il
+	$(ILASM2) -out:$@ $<
 
 %.exe: %.il
 	$(ILASM) -out:$@ $<
 
+%.exe: %.2.cs TestDriver.dll
+	$(GMCS) -r:TestDriver.dll -out:$@ $<
+
 %.exe: %.cs TestDriver.dll
-	$(CSC) -r:TestDriver.dll -out:$@ $<
+	$(MCS) -r:TestDriver.dll -out:$@ $<
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
@@ -264,14 +278,14 @@ test:	testjit testbundle test-type-load
 endif
 
 TestDriver.dll:
-	$(CSC) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
+	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -286,7 +300,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -298,16 +312,37 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
+testjit: testjit-default testjit-net_2_0
+
+testjit-default: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
-		if $(srcdir)/test-driver '$(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+testjit-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for i in $(TESTSI_IL2); do	\
+		rm -f $${i}.so; \
+		if $(srcdir)/test-driver '$(with_mono_path2) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -328,7 +363,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	for i in $(TESTSI_CS) $(TESTBS); do	\
 		rm -f $${i}.so; \
 		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
-		if $(srcdir)/test-driver '$(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -350,7 +385,7 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL); do \
-		if $(srcdir)/test-driver '$(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -395,9 +430,9 @@ testbundle: console.exe
 EXTRA_DIST += load-missing.il t-missing.cs load-exceptions.cs
 test-type-load: TestDriver.dll
 	$(ILASM) /dll /output:load-missing.dll $(srcdir)/load-missing.il
-	$(CSC) /target:library /out:t.dll /d:FOUND $(srcdir)/t-missing.cs
-	$(CSC) /r:TestDriver.dll /r:load-missing.dll /r:t.dll /out:load-exceptions.exe $(srcdir)/load-exceptions.cs
-	$(CSC) /target:library /out:t.dll $(srcdir)/t-missing.cs
+	$(MCS) -t:library -out:t.dll -d:FOUND $(srcdir)/t-missing.cs
+	$(MCS) -r:TestDriver.dll -r:load-missing.dll -r:t.dll -out:load-exceptions.exe $(srcdir)/load-exceptions.cs
+	$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	$(RUNTIME) load-exceptions.exe
 
 noinst_LTLIBRARIES = libtest.la
