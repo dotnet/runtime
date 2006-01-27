@@ -1426,7 +1426,7 @@ lreg: OP_LSHR_UN (lreg, reg) {
 #
 # string support
 #
-reg: OP_GETCHR (reg, reg) {
+reg: OP_GETCHR (reg, reg) "4" {
 	int mult_reg = mono_regstate_next_int (s->rs);
 	int add_reg = mono_regstate_next_int (s->rs);
 	
@@ -1442,6 +1442,19 @@ reg: OP_GETCHR (reg, OP_ICONST) {
 
 	MONO_EMIT_BOUNDS_CHECK_IMM (s, state->left->reg1, MonoString, length, state->right->tree->inst_c0);
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, state->left->reg1, ind);
+}
+
+reg: OP_STR_CHAR_ADDR (reg, reg) "4" {
+	int mult_reg = mono_regstate_next_int (s->rs);
+	int add_reg = mono_regstate_next_int (s->rs);
+
+	/*
+	 * The corlib functions check for oob already.
+	 * MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoString, length, state->right->reg1);
+	 */
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, mult_reg, state->right->reg1, 1);
+	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult_reg, state->left->reg1);
+	MONO_EMIT_BIALU_IMM (s, tree, CEE_ADD, state->reg1, add_reg, G_STRUCT_OFFSET (MonoString, chars));
 }
 
 reg: OP_STRLEN (reg) {	

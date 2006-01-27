@@ -476,6 +476,7 @@ MINI_OP(OP_ATAN,    "atan")
 MINI_OP(OP_SQRT,    "sqrt")
 /* to optimize strings */
 MINI_OP(OP_GETCHR, "getchar")
+MINI_OP(OP_STR_CHAR_ADDR, "str_char_addr")
 MINI_OP(OP_STRLEN, "strlen")
 MINI_OP(OP_GETTYPE, "gettype")
 MINI_OP(OP_GETHASHCODE, "gethashcode")

@@ -2900,9 +2900,6 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			"System.Runtime.CompilerServices", "RuntimeHelpers");
 
 	if (cmethod->klass == mono_defaults.string_class) {
- 		if (cmethod->name [0] != 'g')
- 			return NULL;
- 
 		if (strcmp (cmethod->name, "get_Chars") == 0) {
  			MONO_INST_NEW (cfg, ins, OP_GETCHR);
 			ins->inst_i0 = args [0];
@@ -2911,6 +2908,15 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		} else if (strcmp (cmethod->name, "get_Length") == 0) {
  			MONO_INST_NEW (cfg, ins, OP_STRLEN);
 			ins->inst_i0 = args [0];
+			return ins;
+		} else if (strcmp (cmethod->name, "InternalSetChar") == 0) {
+			MonoInst *get_addr;
+ 			MONO_INST_NEW (cfg, get_addr, OP_STR_CHAR_ADDR);
+			get_addr->inst_i0 = args [0];
+			get_addr->inst_i1 = args [1];
+ 			MONO_INST_NEW (cfg, ins, CEE_STIND_I2);
+			ins->inst_i0 = get_addr;
+			ins->inst_i1 = args [2];
 			return ins;
 		} else 
 			return NULL;

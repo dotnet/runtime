@@ -784,6 +784,20 @@ reg: CEE_LDIND_U4 (OP_REGVAR) "0" {
 	tree->dreg = state->reg1;
 }
 
+reg: OP_STR_CHAR_ADDR (reg, reg) "2" {
+	/*
+	 * The corlib functions check for oob already.
+	 * MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoString, length, state->right->reg1);
+	 */
+	tree->opcode = OP_X86_LEA;
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->right->reg1;
+	tree->inst_imm = G_STRUCT_OFFSET (MonoString, chars);
+	tree->unused = 1; /* shift by two */
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 %%
 
 int
