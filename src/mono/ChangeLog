@@ -1,3 +1,8 @@
+2006-01-26  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: ignore runtime and startup
+	sections.
+
 2006-01-25  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/machine.config: ignore mscorlib,
