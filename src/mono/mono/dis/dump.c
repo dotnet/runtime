@@ -280,7 +280,7 @@ dump_table_memberref (MonoImage *m)
 		if (*blob == 0x6) { /* it's a field */
 			sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL);
 		} else {
-			sig = get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL, NULL);
+			sig = get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL);
 		}
 		fprintf (output, "%d: %s[%d] %s\n\tResolved: %s\n\tSignature: %s\n\t\n",
 			 i + 1,

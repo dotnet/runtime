@@ -1590,8 +1590,7 @@ field_flags (guint32 f)
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
-get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy_name,
-			 MonoGenericContext *context)
+get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy_name)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -1625,7 +1624,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 		gen_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	if (cconv != 0xa) {
-		ptr = get_ret_type (m, ptr, &allocated_ret_type, context);
+		ptr = get_ret_type (m, ptr, &allocated_ret_type, NULL);
 		g_string_append (res, allocated_ret_type);
 		g_free (allocated_ret_type);
 	}
@@ -1656,7 +1655,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 			ptr++;
 		}
 
-		ptr = get_param (m, ptr, &param, context);
+		ptr = get_param (m, ptr, &param, NULL);
 		g_string_append (res, param);
 		if (i+1 != param_count)
 			g_string_append (res, ", ");
@@ -1848,7 +1847,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, MONO_METHOD_SIZE);
 
-		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name, context);
+		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
 		break;
 		
 	case MONO_TOKEN_MEMBER_REF: {
@@ -1859,7 +1858,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 						get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS], context),
 						mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
 		sig = get_methodref_signature (
-			m, member_cols [MONO_MEMBERREF_SIGNATURE], name, context);
+			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
 		break;
 	}
 	case MONO_TOKEN_METHOD_SPEC: {
@@ -1920,7 +1919,7 @@ get_methoddef (MonoImage *m, guint32 idx)
 		name = NULL;
         mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
                         idx - 1, cols, MONO_METHOD_SIZE);
-        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name, NULL);
+        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name);
         
         return sig;
 }
