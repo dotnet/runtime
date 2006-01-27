@@ -340,7 +340,7 @@ testjit-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	for i in $(TESTSI_IL2); do	\
+	for i in $(TESTSI_CS2) $(TESTSI_IL2); do	\
 		rm -f $${i}.so; \
 		if $(srcdir)/test-driver '$(with_mono_path2) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
