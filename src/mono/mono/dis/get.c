@@ -1857,6 +1857,22 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConte
 			name = g_strdup_printf ("%s::%s",
 						get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS], context),
 						mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
+		if (mh) {
+			int arity = 0;
+
+			if (mh->generic_container)
+				arity = mh->generic_container->type_argc;
+			else
+			if (mh->is_inflated && ((MonoMethodInflated *)mh)->declaring->generic_container)
+				arity = ((MonoMethodInflated*) mh)->declaring->generic_container->type_argc;
+
+			if (arity > 0) {
+				char *str = g_strdup_printf ("%s <[%d]>", name, arity);
+				g_free (name);
+				name = str;
+			}
+		}
+				
 		sig = get_methodref_signature (
 			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
 		break;
@@ -2989,8 +3005,7 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContext *context)
 			mh = mono_get_method_full (m, decl, NULL, context);
 			mh = mono_get_inflated_method (mh);
 
-			if ((mh && (mh->is_inflated || mh->generic_container)) || 
-			    (mh->klass && (mh->klass->generic_class || mh->klass->generic_container))) {
+			if (mh && (mh->klass && (mh->klass->generic_class || mh->klass->generic_container))) {
 				char *meth_str;
 				char *ret;
 				
