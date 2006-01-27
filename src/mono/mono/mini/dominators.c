@@ -413,6 +413,7 @@ void
 mono_compute_natural_loops (MonoCompile *cfg)
 {
 	int i, j, k;
+	int *bb_indexes;
 
 	g_assert (!(cfg->comp_done & MONO_COMP_LOOPS));
 
@@ -424,8 +425,6 @@ mono_compute_natural_loops (MonoCompile *cfg)
 			/* check for back-edge from n to h */
 			if (n != h && mono_bitset_test (n->dominators, h->dfn)) {
 				GList *todo;
-
-				n->loop_body_start = 1;
 
 				/* already in loop_blocks? */
 				if (h->loop_blocks && g_list_find (h->loop_blocks, n))
@@ -462,7 +461,37 @@ mono_compute_natural_loops (MonoCompile *cfg)
 	}
 
 	cfg->comp_done |= MONO_COMP_LOOPS;
-	
+
+	/* Compute loop_body_start for each loop */
+	bb_indexes = g_new0 (int, cfg->num_bblocks);
+	{
+		MonoBasicBlock *bb;
+
+		for (i = 0, bb = cfg->bb_entry; bb; i ++, bb = bb->next_bb) {
+			if (bb->dfn)
+				bb_indexes [bb->dfn] = i;
+		}
+	}
+	for (i = 0; i < cfg->num_bblocks; ++i) {
+		if (cfg->bblocks [i]->loop_blocks) {
+			/* The loop body start is the first bblock in the order they will be emitted */
+			MonoBasicBlock *h = cfg->bblocks [i];
+			MonoBasicBlock *body_start = h;
+			GList *l;
+
+			for (l = h->loop_blocks; l; l = l->next) {
+				MonoBasicBlock *cb = (MonoBasicBlock *)l->data;
+
+				if (cb->dfn && bb_indexes [cb->dfn] < bb_indexes [body_start->dfn]) {
+					body_start = cb;
+				}
+			}
+
+			body_start->loop_body_start = 1;
+		}
+	}
+	g_free (bb_indexes);
+
 #ifdef DEBUG_NATURAL_LOOPS
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		if (cfg->bblocks [i]->loop_blocks) {
