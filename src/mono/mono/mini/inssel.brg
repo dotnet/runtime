@@ -1454,7 +1454,7 @@ reg: OP_STR_CHAR_ADDR (reg, reg) "1" {
 	 */
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, mult_reg, state->right->reg1, 1);
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult_reg, state->left->reg1);
-	MONO_EMIT_BIALU_IMM (s, tree, CEE_ADD_IMM, state->reg1, add_reg, G_STRUCT_OFFSET (MonoString, chars));
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->reg1, add_reg, G_STRUCT_OFFSET (MonoString, chars));
 }
 
 reg: OP_STRLEN (reg) {	
