@@ -1055,12 +1055,13 @@ mono_print_thread_dump (void *sigctx)
 
 	fprintf (stdout, " tid=0x%p this=0x%p:\n", (gpointer)(gsize)thread->tid, thread);
 
-#ifdef CUSTOM_STACK_WALK
-	printf ("\t<Stack traces in thread dumps not supported on this platform>\n");
-#else
+	/* FIXME: */
+#ifdef __i386__
 	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 
 	mono_jit_walk_stack_from_ctx (print_stack_frame, &ctx, TRUE, stdout);
+#else
+	printf ("\t<Stack traces in thread dumps not supported on this platform>\n");
 #endif
 
 	fflush (stdout);
