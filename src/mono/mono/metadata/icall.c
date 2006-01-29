@@ -1797,6 +1797,8 @@ ves_icall_MonoType_get_DeclaringType (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return NULL;
 	if (type->type->type == MONO_TYPE_VAR)
 		class = type->type->data.generic_param->owner->klass;
 	else if (type->type->type == MONO_TYPE_MVAR)
@@ -2013,7 +2015,7 @@ ves_icall_MonoType_get_IsGenericParameter (MonoReflectionType *type)
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
-		return TRUE;
+		return !type->type->byref;
 	return FALSE;
 }
 
@@ -2023,7 +2025,7 @@ ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 	MONO_ARCH_SAVE_REGS;
 
 	if (tb->type.type->type == MONO_TYPE_VAR || tb->type.type->type == MONO_TYPE_MVAR)
-		return TRUE;
+		return !tb->type.type->byref;
 	return FALSE;
 }
 
@@ -2387,7 +2389,7 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->type != MONO_TYPE_MVAR)
+	if (type->type->byref || type->type->type != MONO_TYPE_MVAR)
 		return NULL;
 
 	method = type->type->data.generic_param->method;
