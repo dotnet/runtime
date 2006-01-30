@@ -1542,7 +1542,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 					   int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
-	int i, ret_attrs = 0, *pattrs = NULL;
+	int i, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
@@ -1558,7 +1558,6 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	if (gen_param_count)
 		gen_param_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
-	pattrs = g_new0 (int, param_count);
 
 	if (def) {
 		MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
@@ -1570,12 +1569,11 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 			lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 		else
 			lastp = paramt->rows + 1;
+
+		pattrs = g_new0 (int, 1 + param_count);
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
-			if (!cols [MONO_PARAM_SEQUENCE])
-				ret_attrs = cols [MONO_PARAM_FLAGS];
-			else
-				pattrs [cols [MONO_PARAM_SEQUENCE] - 1] = cols [MONO_PARAM_FLAGS];
+			pattrs [cols [MONO_PARAM_SEQUENCE]] = cols [MONO_PARAM_FLAGS];
 		}
 	}
 	method = mono_metadata_signature_alloc (m, param_count);
@@ -1585,26 +1583,24 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	method->generic_param_count = gen_param_count;
 
 	if (call_convention != 0xa) {
-		method->ret = mono_metadata_parse_type_full (m, (MonoGenericContext *) container, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
+		method->ret = mono_metadata_parse_type_full (
+			m, (MonoGenericContext *) container, MONO_PARSE_RET,
+			pattrs ? pattrs [0] : 0, ptr, &ptr);
 		is_open = mono_class_is_open_constructed_type (method->ret);
 	}
 
-	if (method->param_count) {
-		method->sentinelpos = -1;
-		
-		for (i = 0; i < method->param_count; ++i) {
-			if (*ptr == MONO_TYPE_SENTINEL) {
-				if (method->call_convention != MONO_CALL_VARARG || def)
-					g_error ("found sentinel for methoddef or no vararg method");
-				method->sentinelpos = i;
-				ptr++;
-			}
-			method->params [i] = mono_metadata_parse_type_full (
-				m, (MonoGenericContext *) container, MONO_PARSE_PARAM,
-				pattrs [i], ptr, &ptr);
-			if (!is_open)
-				is_open = mono_class_is_open_constructed_type (method->params [i]);
+	for (i = 0; i < method->param_count; ++i) {
+		if (*ptr == MONO_TYPE_SENTINEL) {
+			if (method->call_convention != MONO_CALL_VARARG || def)
+				g_error ("found sentinel for methoddef or no vararg method");
+			method->sentinelpos = i;
+			ptr++;
 		}
+		method->params [i] = mono_metadata_parse_type_full (
+			m, (MonoGenericContext *) container, MONO_PARSE_PARAM,
+			pattrs ? pattrs [i+1] : 0, ptr, &ptr);
+		if (!is_open)
+			is_open = mono_class_is_open_constructed_type (method->params [i]);
 	}
 
 	method->has_type_parameters = is_open;

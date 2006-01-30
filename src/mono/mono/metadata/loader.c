@@ -127,8 +127,6 @@ mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
 	error->klass = klass;
 	error->member_name = member_name;
 
-	g_warning ("Missing member %s in type %s, assembly %s", member_name, mono_class_get_name (klass), klass->image->name);
-	
 	set_loader_error (error);
 }
 
@@ -535,11 +533,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
+	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		method = find_method (klass, NULL, mname, sig);
-		if (!method)
-			mono_loader_set_error_method_load (klass, mname);
-		mono_metadata_free_method_signature (sig);
 		break;
+
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		MonoType *type;
 		MonoMethod *result;
@@ -549,13 +546,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
 			MonoClass *in_class = klass->generic_class ? klass->generic_class->container_class : klass;
 			method = find_method (in_class, NULL, mname, sig);
-			if (!method)
-				g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
-			else if (klass->generic_class) {
+			if (method && klass->generic_class) {
 				method = mono_class_inflate_generic_method (method, klass->generic_class->context);
 				method = mono_get_inflated_method (method);
 			}
-			mono_metadata_free_method_signature (sig);
 			break;
 		}
 
@@ -594,18 +588,27 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_assert_not_reached ();
 		break;
 	}
-	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		method = find_method (klass, NULL, mname, sig);
-		if (!method)
-			g_warning (
-				"Missing method %s::%s(%s) in assembly %s", 
-				mono_type_get_name (&klass->byval_arg), mname, mono_signature_get_desc (sig, FALSE), image->name);
-		mono_metadata_free_method_signature (sig);
-		break;
 	default:
 		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);
 		g_assert_not_reached ();
 	}
+
+	if (!method) {
+		char *msig = mono_signature_get_desc (sig, FALSE);
+		GString *s = g_string_new (mname);
+		if (sig->generic_param_count)
+			g_string_append_printf (s, "<[%d]>", sig->generic_param_count);
+		g_string_append_printf (s, "(%s)", msig);
+		g_free (msig);
+		msig = g_string_free (s, FALSE);
+		
+		g_warning (
+			"Missing method %s::%s in assembly %s, referenced in assembly %s",
+			mono_type_get_name (&klass->byval_arg), msig, klass->image->name, image->name);
+		g_free (msig);
+		mono_loader_set_error_method_load (klass, mname);
+	}
+	mono_metadata_free_method_signature (sig);
 
 	return method;
 }
