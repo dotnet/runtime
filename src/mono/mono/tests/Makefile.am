@@ -435,6 +435,13 @@ test-type-load: TestDriver.dll
 	$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	$(RUNTIME) load-exceptions.exe
 
+# Useful if mono is compiled with --enable-shared=no
+patch-libtool:
+	cp "../../libtool" .
+	sed -e 's,build_libtool_libs=no,build_libtool_libs=yes,g' libtool > 2; mv 2 libtool
+	sed -e 's,LIBTOOL =,LIBTOOL2 =,g' Makefile > 2 && echo "LIBTOOL = bash ./libtool" > 1 && cat 1 2 > Makefile
+	touch libtest.c
+
 noinst_LTLIBRARIES = libtest.la
 
 INCLUDES = $(GLIB_CFLAGS)
