@@ -1444,7 +1444,7 @@ reg: OP_GETCHR (reg, OP_ICONST) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, state->left->reg1, ind);
 }
 
-reg: OP_STR_CHAR_ADDR (reg, reg) "1" {
+reg: OP_STR_CHAR_ADDR (reg, reg) "4" {
 	int mult_reg = mono_regstate_next_int (s->rs);
 	int add_reg = mono_regstate_next_int (s->rs);
 

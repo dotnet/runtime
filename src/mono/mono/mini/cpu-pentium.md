@@ -269,6 +269,9 @@ x86_dec_reg: dest:i src1:i clob:1 len:1
 x86_dec_membase: src1:b len:6
 x86_add_membase_imm: src1:b len:11
 x86_sub_membase_imm: src1:b len:11
+x86_and_membase_imm: src1:b len:11
+x86_or_membase_imm: src1:b len:11
+x86_xor_membase_imm: src1:b len:11
 x86_push: src1:i len:1
 x86_push_imm: len:5
 x86_push_membase: src1:b len:6

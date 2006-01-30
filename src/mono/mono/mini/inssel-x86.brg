@@ -38,6 +38,8 @@
 	} while (0)
 
 int call_reg_to_call_membase (int opcode);
+int alu_reg_to_alu_imm (int op);
+int alu_reg_to_alu_membase_imm (int op);
 
 %%
 
@@ -440,46 +442,46 @@ stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 	/* nothing to do: the value is already on the FP stack */
 }
 
+stmt: CEE_STIND_I4 (base, CEE_AND (CEE_LDIND_U4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_OR (CEE_LDIND_U4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_XOR (CEE_LDIND_U4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_SUB (CEE_LDIND_U4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_ADD (CEE_LDIND_U4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_AND (CEE_LDIND_I4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_OR (CEE_LDIND_I4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_XOR (CEE_LDIND_I4 (base), OP_ICONST)),
+stmt: CEE_STIND_I4 (base, CEE_SUB (CEE_LDIND_I4 (base), OP_ICONST)),
 stmt: CEE_STIND_I4 (base, CEE_ADD (CEE_LDIND_I4 (base), OP_ICONST)) {
 	int con = state->right->right->tree->inst_c0;	
+	MBTREE_TYPE *t1 = state->left->tree;
+	MBTREE_TYPE *t2 = state->right->left->left->tree;
+	int op = state->right->tree->opcode;
 
-	if (con == 1) {
-		tree->opcode = OP_X86_INC_MEMBASE;
+	/* inst_basereg/offset can't be used for base
+	 * operands in cost functions, since they are not set yet,
+	 * so we catch all the cases and handle them here.
+	 */
+	if (t1->inst_basereg == t2->inst_basereg && t1->inst_offset == t2->inst_offset) {
+		if (con == 1 && op == CEE_ADD) {
+			tree->opcode = OP_X86_INC_MEMBASE;
+		} else if (con == 1 && op == CEE_SUB) {
+			tree->opcode = OP_X86_DEC_MEMBASE;
+		} else {
+			tree->opcode = alu_reg_to_alu_membase_imm (op);
+			tree->inst_imm = con;
+		}
+
+		tree->inst_basereg = state->left->tree->inst_basereg;
+		tree->inst_offset = state->left->tree->inst_offset;
+		mono_bblock_add_inst (s->cbb, tree);
 	} else {
-		tree->opcode = OP_X86_ADD_MEMBASE_IMM;
-		tree->inst_imm = con;
+		/* emit by hand */
+		int loaded_reg = mono_regstate_next_int (s->rs);
+		int add_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, loaded_reg, t2->inst_basereg, t2->inst_offset);
+		MONO_EMIT_NEW_BIALU_IMM (s, alu_reg_to_alu_imm (op), add_reg, loaded_reg, con);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, t1->inst_basereg, t1->inst_offset, add_reg);
 	}
-
-	tree->inst_basereg = state->left->tree->inst_basereg;
-	tree->inst_offset = state->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-} cost {
-	MBTREE_TYPE *t1 = state->right->left->left->tree;
-	MBTREE_TYPE *t2 = state->left->tree;
-	MBCOND (t1->inst_basereg == t2->inst_basereg &&
-		t1->inst_offset == t2->inst_offset);
-	return 2;
-}
-
-stmt: CEE_STIND_I4 (base, CEE_SUB (CEE_LDIND_I4 (base), OP_ICONST)) {
-	int con = state->right->right->tree->inst_c0;	
-
-	if (con == 1) {
-		tree->opcode = OP_X86_DEC_MEMBASE;
-	} else {
-		tree->opcode = OP_X86_SUB_MEMBASE_IMM;
-		tree->inst_imm = con;
-	}
-
-	tree->inst_basereg = state->left->tree->inst_basereg;
-	tree->inst_offset = state->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-} cost {
-	MBTREE_TYPE *t1 = state->right->left->left->tree;
-	MBTREE_TYPE *t2 = state->left->tree;
-	MBCOND (t1->inst_basereg == t2->inst_basereg &&
-		t1->inst_offset == t2->inst_offset);
-	return 2;
 }
 
 #
@@ -799,6 +801,46 @@ reg: OP_STR_CHAR_ADDR (reg, reg) "2" {
 }
 
 %%
+
+int
+alu_reg_to_alu_imm (int op)
+{
+	switch (op) {
+	case CEE_ADD:
+		return OP_ADD_IMM;
+	case CEE_SUB:
+		return OP_SUB_IMM;
+	case CEE_AND:
+		return OP_AND_IMM;
+	case CEE_OR:
+		return OP_OR_IMM;
+	case CEE_XOR:
+		return OP_XOR_IMM;
+	default:
+		g_assert_not_reached ();
+	}
+	return -1;
+}
+
+int
+alu_reg_to_alu_membase_imm (int op)
+{
+	switch (op) {
+	case CEE_ADD:
+		return OP_X86_ADD_MEMBASE_IMM;
+	case CEE_SUB:
+		return OP_X86_SUB_MEMBASE_IMM;
+	case CEE_AND:
+		return OP_X86_AND_MEMBASE_IMM;
+	case CEE_OR:
+		return OP_X86_OR_MEMBASE_IMM;
+	case CEE_XOR:
+		return OP_X86_XOR_MEMBASE_IMM;
+	default:
+		g_assert_not_reached ();
+	}
+	return -1;
+}
 
 int
 call_reg_to_call_membase (int opcode)
