@@ -931,7 +931,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 				 guint8 *buf, guint8 **endbuf)
 {
 	MonoJumpInfo *patches;
-	MonoJumpInfo *patch_info;
+	MonoJumpInfo *patch_info = NULL;
 	MonoImage *image;
 	gpointer *table;
 	int i, pindex;
