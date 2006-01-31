@@ -1625,9 +1625,13 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	int i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
-	MonoBitSet *slots = mono_bitset_new (class->max_interface_id + 1, 0);
+	MonoBitSet *slots;
 
 	MONO_ARCH_SAVE_REGS;
+
+	mono_class_setup_vtable (class);
+
+	slots = mono_bitset_new (class->max_interface_id + 1, 0);
 
 	if (class->rank) {
 		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
@@ -1681,6 +1685,8 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	MonoDomain *domain;
 
 	MONO_ARCH_SAVE_REGS;
+
+	mono_class_setup_vtable (class);
 
 	/* type doesn't implement iface: the exception is thrown in managed code */
 	if ((iclass->interface_id > class->max_interface_id) || !class->interface_offsets [iclass->interface_id])
