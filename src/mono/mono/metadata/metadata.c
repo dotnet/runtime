@@ -1849,10 +1849,10 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 static MonoGenericContainer *
 select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 {
+	gboolean is_var = (type == MONO_TYPE_VAR);
 	if (!gc)
 		return NULL;
 
-	gboolean is_var = (type == MONO_TYPE_VAR);
 	g_assert (is_var || type == MONO_TYPE_MVAR);
 
 	if (is_var && gc->parent)
