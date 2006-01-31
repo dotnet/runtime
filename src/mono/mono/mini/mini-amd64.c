@@ -843,6 +843,11 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->num_varinfo > 10000) {
+		/* Avoid hitting the stack_alloc_size < (1 << 16) assertion in emit_epilog () */
+		cfg->arch.omit_fp = FALSE;
+	}
+
 	g_free (cinfo);
 }
 
