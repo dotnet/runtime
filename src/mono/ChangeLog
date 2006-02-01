@@ -1,6 +1,7 @@
-2006-02-01  Sebastien Pouliot  <sebastien@ximian.com>
-
+2006-02-01  Sebastien Pouliot  <sebastien@ximian.com> 
+ 
 	* libmono.vcproj: Added new files to the VS.NET build.
+	* README.vsnet: Updated VS.NET build instructions.
 
 2006-01-26  Chris Toshok  <toshok@ximian.com>
 
