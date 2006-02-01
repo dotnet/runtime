@@ -42,11 +42,6 @@ extern gboolean mono_gc_is_gc_thread (void);
  */
 extern gboolean mono_gc_register_thread (void *baseptr);
 
-/*
- * Unregister a foreign thread from the GC.
- */
-extern void mono_gc_unregister_thread (void);
-
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
