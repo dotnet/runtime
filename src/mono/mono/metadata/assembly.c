@@ -457,10 +457,14 @@ mono_assembly_getrootdir (void)
 void
 mono_set_dirs (const char *assembly_dir, const char *config_dir)
 {
+#if defined (MONO_ASSEMBLIES)
 	if (assembly_dir == NULL)
 		assembly_dir = MONO_ASSEMBLIES;
+#endif
+#if defined (MONO_CFG_DIR)
 	if (config_dir == NULL)
 		config_dir = MONO_CFG_DIR;
+#endif
 	mono_assembly_setrootdir (assembly_dir);
 	mono_set_config_dir (config_dir);
 }
