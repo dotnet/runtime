@@ -56,6 +56,11 @@ mono_gc_register_thread (void *baseptr)
 	return TRUE;
 }
 
+void
+mono_gc_unregister_thread (void)
+{
+}
+
 gboolean
 mono_object_is_alive (MonoObject* o)
 {

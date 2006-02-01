@@ -458,6 +458,8 @@ mono_thread_detach (MonoThread *thread)
 	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
+
+	mono_gc_unregister_thread ();
 }
 
 void

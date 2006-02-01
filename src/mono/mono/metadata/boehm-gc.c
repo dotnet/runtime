@@ -78,6 +78,14 @@ mono_gc_register_thread (void *baseptr)
 #endif
 }
 
+void
+mono_gc_unregister_thread (void)
+{
+#if defined(USE_INCLUDED_LIBGC) && !defined(PLATFORM_WIN32)
+	GC_thread_deregister_foreign ();
+#endif
+}
+
 extern int GC_is_marked (void *p);
 
 gboolean
