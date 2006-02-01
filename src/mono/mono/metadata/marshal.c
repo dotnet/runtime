@@ -1421,26 +1421,68 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				mono_mb_emit_byte (mb, CEE_LDIND_R8);
 				mono_mb_emit_byte (mb, CEE_STIND_R8);
 				break;
-			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_VALUETYPE: {
+				int src_var, dst_var;
+
 				if (ftype->data.klass->enumtype) {
 					t = ftype->data.klass->enum_basetype->type;
 					goto handle_enum;
 				}
+
+				src_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+				dst_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	
+				/* save the old src pointer */
+				mono_mb_emit_ldloc (mb, 0);
+				mono_mb_emit_stloc (mb, src_var);
+				/* save the old dst pointer */
+				mono_mb_emit_ldloc (mb, 1);
+				mono_mb_emit_stloc (mb, dst_var);
+
 				emit_struct_conv (mb, ftype->data.klass, to_object);
-				continue;
+
+				/* restore the old src pointer */
+				mono_mb_emit_ldloc (mb, src_var);
+				mono_mb_emit_stloc (mb, 0);
+				/* restore the old dst pointer */
+				mono_mb_emit_ldloc (mb, dst_var);
+				mono_mb_emit_byte (mb, CEE_STLOC_1);
+				break;
+			}
+
 			default:
 				g_warning ("marshaling type %02x not implemented", ftype->type);
 				g_assert_not_reached ();
 			}
 			break;
 		}
-		default:
+		default: {
+			int src_var, dst_var;
+
+			src_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			dst_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+			/* save the old src pointer */
+			mono_mb_emit_ldloc (mb, 0);
+			mono_mb_emit_stloc (mb, src_var);
+			/* save the old dst pointer */
+			mono_mb_emit_ldloc (mb, 1);
+			mono_mb_emit_stloc (mb, dst_var);
+
 			if (to_object) 
 				emit_ptr_to_object_conv (mb, ftype, conv, info->fields [i].mspec);
 			else
-				emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);	
+				emit_object_to_ptr_conv (mb, ftype, conv, info->fields [i].mspec);
+
+			/* restore the old src pointer */
+			mono_mb_emit_ldloc (mb, src_var);
+			mono_mb_emit_stloc (mb, 0);
+			/* restore the old dst pointer */
+			mono_mb_emit_ldloc (mb, dst_var);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
 		}
-		
+		}
+
 		if (to_object) {
 			mono_mb_emit_add_to_local (mb, 0, usize);
 			mono_mb_emit_add_to_local (mb, 1, msize);
