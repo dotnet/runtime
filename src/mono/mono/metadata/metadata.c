@@ -4269,7 +4269,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		if ((p = g_hash_table_lookup (table, params [n - 1].name)))
 			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (n)), p);
 		else
-			g_hash_table_insert (table, params [n - 1].name, GUINT_TO_POINTER (n));
+			g_hash_table_insert (table, (char*)params [n - 1].name, GUINT_TO_POINTER (n));
 		params [n - 1].constraints = NULL;
 		if (++i > tdef->rows)
 			break;

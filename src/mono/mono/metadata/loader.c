@@ -468,7 +468,6 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context)
 {
-	MonoGenericContext *context = NULL;
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
 	MonoTableInfo *tables = image->tables;
