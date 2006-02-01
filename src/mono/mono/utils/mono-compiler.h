@@ -48,6 +48,7 @@
 #define isnan(x)	_isnan(x)
 #define trunc(x)	floor((x))
 #define isinf(x)	(_isnan(x) ? 0 : (_fpclass(x) == _FPCLASS_NINF) ? -1 : (_fpclass(x) == _FPCLASS_PINF) ? 1 : 0)
+#define isnormal(x)	_finite(x)
 
 #define popen		_popen
 #define pclose		_pclose
