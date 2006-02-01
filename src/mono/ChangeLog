@@ -1,3 +1,7 @@
+2006-02-01  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* libmono.vcproj: Added new files to the VS.NET build.
+
 2006-01-26  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/machine.config: ignore runtime and startup

@@ -1688,6 +1688,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mono\mini\aliasing.c"
+				>
+			</File>
+			<File
 				RelativePath="mono\mini\aot.c"
 				>
 				<FileConfiguration
@@ -1711,6 +1715,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\mono\mini\branch-opts.c"
+				>
 			</File>
 			<File
 				RelativePath="mono\mini\cfold.c"
