@@ -50,7 +50,6 @@ typedef struct
 	gpointer exit_userdata;
 	guint32 exitstatus;
 	gboolean exiting;
-	gpointer stack_ptr;
 	GSList *apc_queue;
 } TimedThread;
 
