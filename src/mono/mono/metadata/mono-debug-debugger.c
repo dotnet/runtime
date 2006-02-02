@@ -23,26 +23,6 @@ static gboolean must_reload_symtabs = FALSE;
 static gboolean mono_debugger_use_debugger = FALSE;
 static MonoObject *last_exception = NULL;
 
-struct _MonoDebuggerMetadataInfo {
-	int size;
-	int mono_defaults_size;
-	MonoDefaults *mono_defaults;
-	int type_size;
-	int array_type_size;
-	int klass_size;
-	int klass_instance_size_offset;
-	int klass_parent_offset;
-	int klass_token_offset;
-	int klass_field_offset;
-	int klass_methods_offset;
-	int klass_method_count_offset;
-	int klass_this_arg_offset;
-	int klass_byval_arg_offset;
-	int klass_generic_class_offset;
-	int klass_generic_container_offset;
-	int field_info_size;
-};
-
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg) = NULL;
 
 #define WRITE_UINT32(ptr,value) G_STMT_START {	\
@@ -109,36 +89,8 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 	g_assert (mono_debugger_use_debugger);
 
 	mono_debugger_lock ();
-	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, GPOINTER_TO_UINT (handle), 0);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, (guint64) (gsize) handle, 0);
 	mono_debugger_unlock ();
-}
-
-void
-mono_debugger_add_builtin_types (MonoDebugHandle *symfile)
-{
-	MonoDebuggerMetadataInfo *info;
-	MonoClass klass;
-
-	mono_symbol_table->corlib = symfile;
-	mono_symbol_table->metadata_info = info = g_new0 (MonoDebuggerMetadataInfo, 1);
-
-	info->size = sizeof (MonoDebuggerMetadataInfo);
-	info->mono_defaults = &mono_defaults;
-	info->mono_defaults_size = sizeof (MonoDefaults);
-	info->type_size = sizeof (MonoType);
-	info->array_type_size = sizeof (MonoArrayType);
-	info->klass_size = sizeof (MonoClass);
-	info->klass_instance_size_offset = (guint8*)&klass.instance_size - (guint8*)&klass;
-	info->klass_parent_offset = (guint8*)&klass.parent - (guint8*)&klass;
-	info->klass_token_offset = (guint8*)&klass.type_token - (guint8*)&klass;
-	info->klass_field_offset = (guint8*)&klass.fields - (guint8*)&klass;
-	info->klass_methods_offset = (guint8*)&klass.methods - (guint8*)&klass;
-	info->klass_method_count_offset = (guint8*)&klass.method.count - (guint8*)&klass;
-	info->klass_this_arg_offset = (guint8*)&klass.this_arg - (guint8*)&klass;
-	info->klass_byval_arg_offset = (guint8*)&klass.byval_arg - (guint8*)&klass;
-	info->klass_generic_class_offset = (guint8*)&klass.generic_class - (guint8*)&klass;
-	info->klass_generic_container_offset = (guint8*)&klass.generic_container - (guint8*)&klass;
-	info->field_info_size = sizeof (MonoClassField);
 }
 
 void
@@ -246,7 +198,7 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 void
 mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, GPOINTER_TO_UINT (method), index);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, (guint64) (gsize) method, index);
 }
 
 gboolean
@@ -268,7 +220,7 @@ mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *ex
 	}
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
-			     GPOINTER_TO_UINT (exc), GPOINTER_TO_UINT (addr));
+			     (guint64) (gsize) exc, (guint64) (gsize) addr);
 	return TRUE;
 }
 
@@ -287,8 +239,8 @@ mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	info.exception_obj = exc;
 	info.stop = 0;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION, GPOINTER_TO_UINT (&info),
-			     GPOINTER_TO_UINT (addr));
+	mono_debugger_event (MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION, (guint64) (gsize) &info,
+			     (guint64) (gsize) addr);
 }
 
 gboolean
@@ -306,8 +258,8 @@ mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	info.exception_obj = exc;
 	info.stop = 0;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THROW_EXCEPTION, GPOINTER_TO_UINT (&info),
-			     GPOINTER_TO_UINT (addr));
+	mono_debugger_event (MONO_DEBUGGER_EVENT_THROW_EXCEPTION, (guint64) (gsize) &info,
+			     (guint64) (gsize) addr);
 	return info.stop != 0;
 }
 

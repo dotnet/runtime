@@ -27,8 +27,6 @@ typedef struct _MonoDebugMethodAddress		MonoDebugMethodAddress;
 typedef struct _MonoDebugWrapperData		MonoDebugWrapperData;
 typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
-typedef struct _MonoDebuggerMetadataInfo	MonoDebuggerMetadataInfo;
-
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_MONO,
@@ -59,7 +57,6 @@ struct _MonoSymbolTable {
 	 * Corlib and metadata info.
 	 */
 	MonoDebugHandle *corlib;
-	MonoDebuggerMetadataInfo *metadata_info;
 
 	/*
 	 * The symbol files.
@@ -180,7 +177,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				53
+#define MONO_DEBUGGER_VERSION				54
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
