@@ -217,6 +217,4 @@ gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpoint
 void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
 gboolean        mono_debugger_throw_exception             (gpointer addr, gpointer stack, MonoObject *exc);
 
-gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
-
 #endif /* __MONO_DEBUG_H__ */
