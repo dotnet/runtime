@@ -793,35 +793,6 @@ static guint32 finalizer_thread (gpointer unused)
  */
 #define ENABLE_FINALIZER_THREAD
 
-#ifdef WITH_INCLUDED_LIBGC
-/* from threads.c */
-extern void mono_gc_stop_world (void);
-extern void mono_gc_start_world (void);
-extern void mono_gc_push_all_stacks (void);
-
-static void mono_gc_lock (void)
-{
-	mono_allocator_lock ();
-}
-
-static void mono_gc_unlock (void)
-{
-	mono_allocator_unlock ();
-}
-
-static GCThreadFunctions mono_gc_thread_vtable = {
-	NULL,
-
-	mono_gc_lock,
-	mono_gc_unlock,
-
-	mono_gc_stop_world,
-	NULL,
-	mono_gc_push_all_stacks,
-	mono_gc_start_world
-};
-#endif /* WITH_INCLUDED_LIBGC */
-
 static void
 mono_gc_warning (char *msg, GC_word arg)
 {
@@ -835,10 +806,6 @@ void mono_gc_init (void)
 
 	InitializeCriticalSection (&finalizer_mutex);
 
-#ifdef WITH_INCLUDED_LIBGC
-	gc_thread_vtable = &mono_gc_thread_vtable;
-#endif
-	
 	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_NORMAL].entries);
 	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_PINNED].entries);
 	GC_no_dls = TRUE;
