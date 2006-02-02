@@ -2822,6 +2822,7 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 	klass->name_space = gklass->name_space;
 	klass->image = gklass->image;
 	klass->flags = gklass->flags;
+	klass->type_token = gklass->type_token;
 
 	klass->generic_class = &gclass->generic_class;
 
