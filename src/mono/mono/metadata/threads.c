@@ -2808,6 +2808,20 @@ gint32* mono_thread_interruption_request_flag ()
 	return &thread_interruption_requested;
 }
 
+static void debugger_create_all_threads (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread = (MonoThread *)value;
+	(* mono_thread_callbacks->thread_created) (thread->tid, thread->stack_ptr, NULL);
+}
+
+void
+mono_debugger_create_all_threads (void)
+{
+	mono_threads_lock ();
+	mono_g_hash_table_foreach (threads, debugger_create_all_threads, NULL);
+	mono_threads_unlock ();
+}
+
 #ifdef WITH_INCLUDED_LIBGC
 
 static void gc_push_all_stacks (gpointer key, gpointer value, gpointer user)
