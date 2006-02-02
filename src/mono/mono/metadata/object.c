@@ -2165,10 +2165,6 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			MonoType *t = sig->params [i];
 
 		again:
-			if (t->byref) {
-				/* nothing to do */
-			}
-
 			switch (t->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
@@ -2186,12 +2182,29 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
 				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
+					if (t->byref)
+						/* FIXME: */
+						g_assert_not_reached ();
 					/* The runtime invoke wrapper needs the original boxed vtype */
 					pa [i] = (char *)(((gpointer *)params->vector)[i]);
 				} else {
 					/* MS seems to create the objects if a null is passed in */
 					if (!((gpointer *)params->vector)[i])
 						((gpointer*)params->vector)[i] = mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->params [i]));
+
+					if (t->byref) {
+						/*
+						 * We can't pass the unboxed vtype byref to the callee, since
+						 * that would mean the callee would be able to modify boxed
+						 * primitive types. So we (and MS) make a copy of the boxed
+						 * object, pass that to the callee, and replace the original
+						 * boxed object in the arg array with the copy.
+						 */
+						MonoObject *orig = mono_array_get (params, MonoObject*, i);
+						MonoObject *copy = mono_value_box (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig));
+						mono_array_set (params, MonoObject*, i, copy);
+					}
+						
 					pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
 				}
 				break;
