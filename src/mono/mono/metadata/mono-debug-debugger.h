@@ -1,14 +1,11 @@
 /*
- * This header is only installed for use by the debugger:
- * the structures and the API declared here are not supported.
+ * This is a private header file.
+ * The API in here is undocumented and may only be used by the JIT to
+ * communicate with the debugger.
  */
 
 #ifndef __MONO_DEBUG_DEBUGGER_H__
 #define __MONO_DEBUG_DEBUGGER_H__
-
-#if !defined _IN_THE_MONO_DEBUGGER
-#error "<mono/metadata/mono-debug-debugger.h> is a private header file only intended to be used by the debugger."
-#endif
 
 #include <glib.h>
 #include <mono/metadata/debug-helpers.h>

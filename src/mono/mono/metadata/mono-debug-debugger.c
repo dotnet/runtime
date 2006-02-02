@@ -13,7 +13,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mono-debug.h>
-#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
 

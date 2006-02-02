@@ -14,7 +14,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/appdomain.h>
-#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 
 #ifdef HAVE_VALGRIND_H

@@ -13,6 +13,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/arch/amd64/amd64-codegen.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
