@@ -222,7 +222,7 @@ test_sources = 		\
 test_sources2 = generics.2.cs
 
 if MONO_DEBUGGER_SUPPORTED
-mono_debugger_sources = debug-debugger.c
+mono_debugger_sources = debug-debugger.c debug-debugger.h
 else
 mono_debugger_sources =
 endif
