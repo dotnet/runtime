@@ -82,6 +82,24 @@ class Tests {
 		return ldelem_any (arr);
 	}
 
+	interface ITest
+	{
+		void Foo<T> ();
+	}
+
+	public static int test_0_iface_call_null_bug_77442 () {
+		ITest test = null;
+
+		try {
+			test.Foo<int> ();
+		}
+		catch (NullReferenceException) {
+			return 0;
+		}
+		
+		return 1;
+	}
+
 	static object Box<T> (T t)
 	{
 		return t;
