@@ -237,15 +237,6 @@ debugger_attach (void)
 }
 
 static void
-debugger_thread_manager_thread_created (MonoDebuggerThread *thread)
-{
-	if (!thread_array)
-		thread_array = g_ptr_array_new ();
-
-	g_ptr_array_add (thread_array, thread);
-}
-
-static void
 debugger_thread_manager_add_thread (gsize tid, gpointer start_stack, gpointer func)
 {
 	MonoDebuggerThread *thread = g_new0 (MonoDebuggerThread, 1);
@@ -256,7 +247,10 @@ debugger_thread_manager_add_thread (gsize tid, gpointer start_stack, gpointer fu
 	mono_debugger_notification_function (
 		MONO_DEBUGGER_EVENT_THREAD_CREATED, (guint64) (gsize) thread, tid);
 
-	debugger_thread_manager_thread_created (thread);
+	if (!thread_array)
+		thread_array = g_ptr_array_new ();
+
+	g_ptr_array_add (thread_array, thread);
 }
 
 static void
@@ -382,7 +376,13 @@ int
 mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv)
 {
 	MainThreadArgs main_args;
+	MonoThread *thread;
 	MonoImage *image;
+
+	/*
+	 * Notify the debugger about the main thread.
+	 */
+	debugger_thread_manager_add_thread (GetCurrentThreadId (), &main_args, NULL);
 
 	/*
 	 * Get and compile the main function.
