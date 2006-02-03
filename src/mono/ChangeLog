@@ -1,3 +1,8 @@
+2006-02-02  Carlos Alberto Cortez <calberto.cortez@gmail.com>
+
+	* data/net_2_0/machine.config: Add FtpRequestCreator
+	to create new instances of System.Net.FtpWebWebRequest.
+
 2006-02-01  Sebastien Pouliot  <sebastien@ximian.com> 
  
 	* libmono.vcproj: Added new files to the VS.NET build.
