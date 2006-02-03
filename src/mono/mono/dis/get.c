@@ -16,6 +16,7 @@
 #include "meta.h"
 #include "util.h"
 #include "get.h"
+#include <mono/utils/mono-compiler.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/marshal.h>
 
