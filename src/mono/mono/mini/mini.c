@@ -8345,6 +8345,109 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	}		
 }
 
+/* checks that a and b represent the same instructions, conservatively,
+ * it can return FALSE also for two trees that are equal.
+ * FIXME: also make sure there are no side effects.
+ */
+static int
+same_trees (MonoInst *a, MonoInst *b)
+{
+	int arity;
+	if (a->opcode != b->opcode)
+		return FALSE;
+	arity = mono_burg_arity [a->opcode];
+	if (arity == 1) {
+		if (a->ssa_op == b->ssa_op && a->ssa_op == MONO_SSA_LOAD && a->inst_i0 == b->inst_i0)
+			return TRUE;
+		return same_trees (a->inst_left, b->inst_left);
+	} else if (arity == 2) {
+		return same_trees (a->inst_left, b->inst_left) && same_trees (a->inst_right, b->inst_right);
+	} else if (arity == 0) {
+		switch (a->opcode) {
+		case OP_ICONST:
+			return a->inst_c0 == b->inst_c0;
+		default:
+			return FALSE;
+		}
+	}
+	return FALSE;
+}
+
+static int
+get_unsigned_condbranch (int opcode)
+{
+	switch (opcode) {
+	case CEE_BLE: return CEE_BLE_UN;
+	case CEE_BLT: return CEE_BLT_UN;
+	case CEE_BGE: return CEE_BGE_UN;
+	case CEE_BGT: return CEE_BGT_UN;
+	}
+	g_assert_not_reached ();
+	return 0;
+}
+
+static int
+tree_is_unsigned (MonoInst* ins) {
+	switch (ins->opcode) {
+	case OP_ICONST:
+		return (int)ins->inst_c0 >= 0;
+	/* array lengths are positive as are string sizes */
+	case CEE_LDLEN:
+	case OP_STRLEN:
+		return TRUE;
+	case CEE_CONV_U1:
+	case CEE_CONV_U2:
+	case CEE_CONV_U4:
+	case CEE_CONV_OVF_U1:
+	case CEE_CONV_OVF_U2:
+	case CEE_CONV_OVF_U4:
+		return TRUE;
+	case CEE_LDIND_U1:
+	case CEE_LDIND_U2:
+	case CEE_LDIND_U4:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+/* check if an unsigned compare can be used instead of two signed compares
+ * for (val < 0 || val > limit) conditionals.
+ * Returns TRUE if the optimization has been applied.
+ * Note that this can't be applied if the second arg is not positive...
+ */
+static int
+try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	MonoBasicBlock *truet, *falset;
+	MonoInst *cmp_inst = bb->last_ins->inst_left;
+	MonoInst *condb;
+	if (!cmp_inst->inst_right->inst_c0 == 0)
+		return FALSE;
+	truet = bb->last_ins->inst_true_bb;
+	falset = bb->last_ins->inst_false_bb;
+	if (falset->in_count != 1)
+		return FALSE;
+	condb = falset->last_ins;
+	/* target bb must have one instruction */
+	if (!condb || (condb != falset->code))
+		return FALSE;
+	if ((((condb->opcode == CEE_BLE || condb->opcode == CEE_BLT) && (condb->inst_false_bb == truet))
+			|| ((condb->opcode == CEE_BGE || condb->opcode == CEE_BGT) && (condb->inst_true_bb == truet)))
+			&& same_trees (cmp_inst->inst_left, condb->inst_left->inst_left)) {
+		if (!tree_is_unsigned (condb->inst_left->inst_right))
+			return FALSE;
+		condb->opcode = get_unsigned_condbranch (condb->opcode);
+		/* change the original condbranch to just point to the new unsigned check */
+		bb->last_ins->opcode = CEE_BR;
+		bb->last_ins->inst_target_bb = falset;
+		replace_out_block (bb, truet, NULL);
+		replace_in_block (truet, bb, NULL);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * Optimizes the branches on the Control Flow Graph
  *
@@ -8365,6 +8468,7 @@ optimize_branches (MonoCompile *cfg)
 		niterations = cfg->num_bblocks * 2;
 	else
 		niterations = 1000;
+
 	do {
 		MonoBasicBlock *previous_bb;
 		changed = FALSE;
@@ -8436,23 +8540,8 @@ optimize_branches (MonoCompile *cfg)
 
 						//mono_print_bb_code (bb);
 					}
-				}				
+				}
 			}
-		}
-	} while (changed && (niterations > 0));
-
-	niterations = 1000;
-	do {
-		changed = FALSE;
-		niterations --;
-
-		/* we skip the entry block (exit is handled specially instead ) */
-		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
-
-			/* dont touch code inside exception clauses */
-			if (bb->region != -1)
-				continue;
-
 			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
 				if (cfg->verbose_level > 2) {
 					g_print ("nullify block triggered %d\n", bbn->block_num);
@@ -8548,6 +8637,15 @@ optimize_branches (MonoCompile *cfg)
 
 						link_bblock (cfg, bb, bbn->code->inst_target_bb);
 
+						changed = TRUE;
+						break;
+					}
+				}
+
+				/* detect and optimize to unsigned compares checks like: if (v < 0 || v > limit */
+				if (bb->last_ins && bb->last_ins->opcode == CEE_BLT && bb->last_ins->inst_left->inst_right->opcode == OP_ICONST) {
+					if (try_unsigned_compare (cfg, bb)) {
+						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, bb->last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
 						changed = TRUE;
 						break;
 					}
