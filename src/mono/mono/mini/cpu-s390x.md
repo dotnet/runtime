@@ -292,7 +292,7 @@ int_subcc: dest:i src1:i src2:i len:12
 int_sub: dest:i src1:i src2:i len:12
 int_sub_imm: dest:i src1:i len:18
 int_xor: dest:i src1:i src2:i len:12
-int_xor_imm: dest:i src1:i len:20
+int_xor_imm: dest:i src1:i len:24
 isinst:
 jmp: len:40
 label:
