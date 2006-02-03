@@ -1130,4 +1130,19 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_5_div_un_cfold ()
+	{
+		uint i = 10;
+		uint j = 2;
+
+		return (int)(i / j);
+	}
+
+	public static int test_1_rem_un_cfold ()
+	{
+		uint i = 11;
+		uint j = 2;
+
+		return (int)(i % j);
+	}
 }
