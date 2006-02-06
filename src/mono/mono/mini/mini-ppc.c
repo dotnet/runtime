@@ -1121,7 +1121,10 @@ handle_enum:
  * going to be perf critical anyway.
  */
 typedef struct {
-	MonoBasicBlock *bb;
+	union {
+		MonoBasicBlock *bb;
+		const char *exception;
+	} data;
 	guint32 ip_offset;
 	guint16 b0_cond;
 	guint16 b1_cond;
@@ -1142,7 +1145,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		int br_disp = ins->inst_true_bb->max_offset - offset;	\
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
-			ovfj->bb = ins->inst_true_bb;	\
+			ovfj->data.bb = ins->inst_true_bb;	\
 			ovfj->ip_offset = 0;	\
 			ovfj->b0_cond = (b0);	\
 			ovfj->b1_cond = (b1);	\
@@ -1167,13 +1170,12 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		int br_disp = cfg->bb_exit->max_offset - offset;	\
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
-			ovfj->bb = NULL;	\
+			ovfj->data.exception = (exc_name);	\
 			ovfj->ip_offset = code - cfg->native_code;	\
 			ovfj->b0_cond = (b0);	\
 			ovfj->b1_cond = (b1);	\
-			/* FIXME: test this code */	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_OVF, ovfj); \
-			ppc_b (code, 0);	\
+			ppc_bl (code, 0);	\
 			cfg->bb_exit->max_offset += 24;	\
 		} else {	\
 			mono_add_patch_info (cfg, code - cfg->native_code,   \
@@ -4016,8 +4018,15 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			}
 		} else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
 			max_epilog_size += 12;
-		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF)
-			max_epilog_size += 12;
+		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF) {
+			MonoOvfJump *ovfj = patch_info->data.target;
+			i = exception_id_by_name (ovfj->data.exception);
+			if (!exc_throw_found [i]) {
+				max_epilog_size += 12;
+				exc_throw_found [i] = TRUE;
+			}
+			max_epilog_size += 8;
+		}
 	}
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
@@ -4041,22 +4050,28 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			ppc_patch (code - 4, ip + 4); /* jump back after the initiali branch */
 			/* jump back to the true target */
 			ppc_b (code, 0);
-			ip = ovfj->bb->native_offset + cfg->native_code;
+			ip = ovfj->data.bb->native_offset + cfg->native_code;
 			ppc_patch (code - 4, ip);
 			break;
 		}
 		case MONO_PATCH_INFO_EXC_OVF: {
 			MonoOvfJump *ovfj = patch_info->data.target;
+			MonoJumpInfo *newji;
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
-			/* patch the initial jump */
+			unsigned char *bcl = code;
+			/* patch the initial jump: we arrived here with a call */
 			ppc_patch (ip, code);
-			ppc_bc (code, ovfj->b0_cond, ovfj->b1_cond, 2);
+			ppc_bc (code, ovfj->b0_cond, ovfj->b1_cond, 0);
 			ppc_b (code, 0);
 			ppc_patch (code - 4, ip + 4); /* jump back after the initiali branch */
-			/* jump back to the true target */
-			ppc_b (code, 0);
-			ip = cfg->native_code + ovfj->ip_offset + 4;
-			ppc_patch (code - 4, ip);
+			/* patch the conditional jump to the right handler */
+			/* make it processed next */
+			newji = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfo));
+			newji->type = MONO_PATCH_INFO_EXC;
+			newji->ip.i = bcl - cfg->native_code;
+			newji->data.target = ovfj->data.exception;
+			newji->next = patch_info->next;
+			patch_info->next = newji;
 			break;
 		}
 		case MONO_PATCH_INFO_EXC: {
