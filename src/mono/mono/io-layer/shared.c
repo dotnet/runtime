@@ -34,17 +34,26 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 	static guchar file[_POSIX_PATH_MAX];
 	guchar *name = NULL, *filename, *dir, *wapi_dir;
 	gchar machine_name[256];
+	gchar *fake_name;
 	struct utsname ubuf;
 	int ret;
+	int len;
 	
 	ret = uname (&ubuf);
 	if (ret == -1) {
 		ubuf.machine[0] = '\0';
 		ubuf.sysname[0] = '\0';
 	}
-	
-	if (gethostname(machine_name, sizeof(machine_name)) != 0)
-		machine_name[0] = '\0';
+
+	fake_name = g_getenv ("MONO_SHARED_HOSTNAME");
+	if (fake_name == NULL) {
+		if (gethostname(machine_name, sizeof(machine_name)) != 0)
+			machine_name[0] = '\0';
+	} else {
+		len = MIN (strlen (fake_name), sizeof (machine_name) - 1);
+		strncpy (machine_name, fake_name, len);
+		machine_name [len] = '\0';
+	}
 	
 	switch (type) {
 	case WAPI_SHM_DATA:
