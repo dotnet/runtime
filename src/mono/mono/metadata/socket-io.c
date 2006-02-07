@@ -263,6 +263,39 @@ static gint32 convert_proto(MonoProtocolType mono_proto)
 	return(proto);
 }
 
+/* Convert MonoSocketFlags */
+static gint32 convert_socketflags (gint32 sflags)
+{
+	gint32 flags = 0;
+
+	if (!sflags)
+		/* SocketFlags.None */
+		return 0;
+
+	if (sflags & ~(SocketFlags_OutOfBand | SocketFlags_MaxIOVectorLength | SocketFlags_Peek | 
+			SocketFlags_DontRoute | SocketFlags_Partial))
+		/* Contains invalid flag values */
+		return -1;
+
+	if (sflags & SocketFlags_OutOfBand)
+		flags |= MSG_OOB;
+	if (sflags & SocketFlags_Peek)
+		flags |= MSG_PEEK;
+	if (sflags & SocketFlags_DontRoute)
+		flags |= MSG_DONTROUTE;
+	if (sflags & SocketFlags_Partial)
+#ifdef MSG_MORE
+		flags |= MSG_MORE;
+#else
+		return -1;	
+#endif
+	if (sflags & SocketFlags_MaxIOVectorLength)
+		/* FIXME: Don't know what to do for MaxIOVectorLength query */
+		return -1;	
+	
+	return (flags ? flags : -1);
+}
+
 static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 					     MonoSocketOptionName mono_name,
 					     int *system_level,
@@ -1146,6 +1179,12 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 	
+	recvflags = convert_socketflags (flags);
+	if (recvflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return (0);
+	}
+		
 	ret = _wapi_recv (sock, buf, count, recvflags);
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
@@ -1180,6 +1219,12 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 	
+	recvflags = convert_socketflags (flags);
+	if (recvflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return (0);
+	}
+
 	ret = _wapi_recvfrom (sock, buf, count, recvflags, sa, &sa_size);
 	if(ret==SOCKET_ERROR) {
 		g_free(sa);
@@ -1227,6 +1272,12 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
 #endif
 
+	sendflags = convert_socketflags (flags);
+	if (sendflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return (0);
+	}
+
 	ret = _wapi_send (sock, buf, count, sendflags);
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
@@ -1268,6 +1319,12 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
 #endif
+
+	sendflags = convert_socketflags (flags);
+	if (sendflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return (0);
+	}
 
 	ret = _wapi_sendto (sock, buf, count, sendflags, sa, sa_size);
 	if(ret==SOCKET_ERROR) {
