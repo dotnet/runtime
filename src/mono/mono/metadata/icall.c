@@ -2507,14 +2507,6 @@ ves_icall_MonoMethod_get_Mono_IsInflatedMethod (MonoReflectionMethod *method)
 	return method->method->is_inflated;
 }
 
-static gboolean
-ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_method_signature (method->method)->generic_param_count != 0;
-}
-
 static MonoArray*
 ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 {
@@ -6715,7 +6707,6 @@ static const IcallEntry monomethod_icalls [] = {
 	{"InternalInvoke", ves_icall_InternalInvoke},
 	{"MakeGenericMethod_impl", mono_reflection_bind_generic_method_parameters},
 	{"get_HasGenericParameters", ves_icall_MonoMethod_get_HasGenericParameters},
-	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
 	{"get_Mono_IsInflatedMethod", ves_icall_MonoMethod_get_Mono_IsInflatedMethod},
 	{"get_base_definition", ves_icall_MonoMethod_get_base_definition}
 };
