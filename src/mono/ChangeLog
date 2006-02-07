@@ -1,3 +1,13 @@
+2006-02-07  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/Makefile.am (EXTRA_DIST): add web.config
+	(mono_DATA): same.
+
+	* data/net_2_0/machine.config: remove the system.web section from
+	here.
+
+	* data/net_2_0/web.config: and add it here.
+
 2006-02-02  Carlos Alberto Cortez <calberto.cortez@gmail.com>
 
 	* data/net_2_0/machine.config: Add FtpRequestCreator
