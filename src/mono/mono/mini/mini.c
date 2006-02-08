@@ -10412,12 +10412,30 @@ mini_init (const char *filename)
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
 
-	if (mono_running_on_valgrind ()) {
+	/* we used to do this only when running on valgrind,
+	 * but it happens also in other setups.
+	 */
+#if defined(HAVE_BOEHM_GC)
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK) && defined(HAVE_BOEHM_GC)
+	{
+		size_t size;
+		void *sstart;
+		pthread_attr_t attr;
+		pthread_getattr_np (pthread_self (), &attr);
+		pthread_attr_getstack (&attr, &sstart, &size);
+		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
+		GC_stackbottom = (char*)sstart + size;
+	}
+#else
+	{
 		gsize stack_bottom = (gsize)&domain;
 		stack_bottom += 4095;
 		stack_bottom &= ~4095;
+		/*g_print ("stackbottom is: %p\n", (char*)stack_bottom);*/
 		GC_stackbottom = (char*)stack_bottom;
 	}
+#endif
+#endif
 	MONO_GC_PRE_INIT ();
 
 	mono_jit_tls_id = TlsAlloc ();
