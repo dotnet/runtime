@@ -35,7 +35,6 @@ struct _WapiHandle_thread
 extern gboolean _wapi_thread_apc_pending (gpointer handle);
 extern gboolean _wapi_thread_cur_apc_pending (void);
 extern gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
-extern gpointer _wapi_thread_handle_from_id (pthread_t tid);
 extern void _wapi_thread_own_mutex (pthread_t tid, gpointer mutex);
 extern void _wapi_thread_disown_mutex (pthread_t tid, gpointer mutex);
 

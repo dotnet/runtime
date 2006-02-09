@@ -43,6 +43,7 @@
 static mono_once_t thread_hash_once = MONO_ONCE_INIT;
 static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
+static pthread_key_t thread_hash_key;
 
 static void thread_close (gpointer handle, gpointer data);
 static gboolean thread_own (gpointer handle);
@@ -191,7 +192,12 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 
 static void thread_hash_init(void)
 {
+	int thr_ret;
+	
 	thread_hash = g_hash_table_new (NULL, NULL);
+
+	thr_ret = pthread_key_create (&thread_hash_key, NULL);
+	g_assert (thr_ret == 0);
 }
 
 /**
@@ -356,11 +362,27 @@ cleanup:
 	return(ct_ret);
 }
 
-gpointer _wapi_thread_handle_from_id (pthread_t tid)
+/* The only time this function is called when tid != pthread_self ()
+ * is from OpenThread (), and that does not have to deal with attached
+ * threads
+ */
+static gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
 	gpointer ret=NULL;
 	int thr_ret;
 
+	if (tid == pthread_self () &&
+	    (ret = pthread_getspecific (thread_hash_key)) != NULL) {
+		/* We have an attached thread, so we know the handle */
+
+#ifdef DEBUG
+		g_message ("%s: Returning %p for attached thread %ld",
+			   __func__, ret, tid);
+#endif
+		
+		return(ret);
+	}
+	
 	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
 			      (void *)&thread_hash_mutex);
 	thr_ret = mono_mutex_lock(&thread_hash_mutex);
@@ -371,6 +393,17 @@ gpointer _wapi_thread_handle_from_id (pthread_t tid)
 	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
+
+#ifdef DEBUG
+	if (ret != NULL) {
+		g_message ("%s: Returning %p for created thread %ld",
+			   __func__, ret, tid);
+	} else {
+		g_message ("%s: Returning NULL for unknown thread %ld",
+			   __func__, tid);
+	}
+#endif
+		
 
 	return(ret);
 }
@@ -534,15 +567,7 @@ static gpointer thread_attach(gsize *tid)
 	 */
 	_wapi_handle_ref (handle);
 	
-	/* Lock around the thread create, so that the new thread cant
-	 * race us to look up the thread handle in GetCurrentThread()
-	 */
-	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
-			      (void *)&thread_hash_mutex);
-	thr_ret = mono_mutex_lock(&thread_hash_mutex);
-	g_assert (thr_ret == 0);
-
-	ret = _wapi_timed_thread_attach (&thread_handle_p->thread, thread_exit,
+	ret = _wapi_timed_thread_attach (&thread_handle_p->thread, NULL,
 					 handle);
 	if (ret != 0) {
 #ifdef DEBUG
@@ -552,15 +577,13 @@ static gpointer thread_attach(gsize *tid)
 
 		/* Two, because of the reference we took above */
 		unrefs = 2;
-		
-		goto thread_hash_cleanup;
+		goto cleanup;
 	}
 	ta_ret = handle;
-	
-	g_hash_table_insert (thread_hash,
-			     (gpointer)(thread_handle_p->thread->id),
-			     handle);
 
+	thr_ret = pthread_setspecific (thread_hash_key, (void *)handle);
+	g_assert (thr_ret == 0);
+	
 #ifdef DEBUG
 	g_message("%s: Attached thread handle %p thread %p ID %ld", __func__,
 		  handle, thread_handle_p->thread,
@@ -578,11 +601,6 @@ static gpointer thread_attach(gsize *tid)
 		*tid = thread_handle_p->thread->id;
 #endif
 	}
-
-thread_hash_cleanup:
-	thr_ret = mono_mutex_unlock (&thread_hash_mutex);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 
 cleanup:
 	_wapi_handle_unlock_shared_handles ();
@@ -977,6 +995,8 @@ void _wapi_thread_own_mutex (pthread_t tid, gpointer mutex)
 	gboolean ok;
 	gpointer thread;
 
+	g_assert (tid == pthread_self ());
+	
 	thread = _wapi_thread_handle_from_id (tid);
 	if (thread == NULL) {
 		g_warning ("%s: error looking up thread by ID", __func__);
@@ -1001,6 +1021,8 @@ void _wapi_thread_disown_mutex (pthread_t tid, gpointer mutex)
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	gpointer thread;
+
+	g_assert (tid == pthread_self ());
 
 	thread = _wapi_thread_handle_from_id (tid);
 	if (thread == NULL) {

@@ -458,6 +458,11 @@ mono_thread_detach (MonoThread *thread)
 	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
+
+	/* Need to CloseHandle this thread, because we took a reference in
+	 * mono_thread_attach ()
+	 */
+	CloseHandle(thread->handle);
 }
 
 void

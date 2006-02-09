@@ -810,7 +810,9 @@ void _wapi_handle_ref (gpointer handle)
 	}
 	
 #ifdef DEBUG_REFS
-	g_message ("%s: handle %p ref now %d", __func__, handle,
+	g_message ("%s: %s handle %p ref now %d", __func__, 
+		   _wapi_handle_typename[_WAPI_PRIVATE_HANDLES (idx).type],
+		   handle,
 		   _WAPI_PRIVATE_HANDLES(idx).ref);
 #endif
 }
@@ -836,7 +838,9 @@ void _wapi_handle_unref (gpointer handle)
 	destroy = (InterlockedDecrement (&_WAPI_PRIVATE_HANDLES(idx).ref) ==0);
 	
 #ifdef DEBUG_REFS
-	g_message ("%s: handle %p ref now %d (destroy %s)", __func__, handle,
+	g_message ("%s: %s handle %p ref now %d (destroy %s)", __func__,
+		   _wapi_handle_typename[_WAPI_PRIVATE_HANDLES (idx).type],
+		   handle,
 		   _WAPI_PRIVATE_HANDLES(idx).ref, destroy?"TRUE":"FALSE");
 #endif
 	
