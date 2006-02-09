@@ -61,10 +61,30 @@ class Tests {
 		return Box<TestStruct?> (null) == null ? 1 : 0;
 	}
 
-	public static int test_1_isinst_nullable_vtype ()
+	public static int test_1_nullable_unbox_reftype ()
 	{
-		object o = new TestStruct (1);
-		return (o is TestStruct?) ? 1 : 0;
+		return Unbox<String?> ("ABC").Value == "ABC" ? 1 : 0;
+	}
+
+	public static int test_1_nullable_unbox_null_reftype ()
+	{
+		return Unbox<String?> (null).HasValue ? 0 : 1;
+	}
+
+	public static int test_1_nullable_box_reftype ()
+	{
+		return ((String)(Box<String?> ("ABC"))) == "ABC" ? 1 : 0;
+	}
+
+	public static int test_1_nullable_box_null_reftype ()
+	{
+		return Box<String?> (null) == null ? 1 : 0;
+	}
+
+	public static int test_1_isinst_nullable_reftype ()
+	{
+		object o = "ABC";
+		return (o is String?) ? 1 : 0;
 	}
 
 	public static void stelem_any<T> (T[] arr, T elem) {
