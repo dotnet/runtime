@@ -323,7 +323,7 @@ libmono_la_LIBADD = \
 	$(libs) \
 	$(PLATFORM_LIB)
 
-%.exe: %.2.cs TestDriver.dll
+generics.exe: generics.cs TestDriver.dll
 	$(GMCS) -out:$@ $< -r:TestDriver.dll 
 
 %.exe: %.cs TestDriver.dll
