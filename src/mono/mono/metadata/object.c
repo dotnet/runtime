@@ -1732,16 +1732,21 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
 
 	*(guint8*)(buf + klass->fields [1].offset - sizeof (MonoObject)) = value ? 1 : 0;
-	if (value)
-		memcpy (buf + klass->fields [0].offset - sizeof (MonoObject), mono_object_unbox (value), mono_class_value_size (param_class, NULL));
-	else
-		memset (buf + klass->fields [0].offset - sizeof (MonoObject), 0, mono_class_value_size (param_class, NULL));
+
+	if (param_class->valuetype) {
+		if (value)
+			memcpy (buf + klass->fields [0].offset - sizeof (MonoObject), mono_object_unbox (value), mono_class_value_size (param_class, NULL));
+		else
+			memset (buf + klass->fields [0].offset - sizeof (MonoObject), 0, mono_class_value_size (param_class, NULL));
+	} else {
+		*(MonoObject**)(buf + klass->fields [0].offset - sizeof (MonoObject)) = value;
+	}
 }
 
 /**
  * mono_nullable_box:
  *
- *   Creates a boxed vtype or NULL from the Nullable structure pointed to by
+ *   Creates a boxed object or NULL from the Nullable structure pointed to by
  * @buf.
  */
 MonoObject*
@@ -1753,9 +1758,13 @@ mono_nullable_box (guint8 *buf, MonoClass *klass)
 	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
 
 	if (*(guint8*)(buf + klass->fields [1].offset - sizeof (MonoObject))) {
-		MonoObject *o = mono_object_new (mono_domain_get (), param_class);
-		memcpy (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
-		return o;
+		if (param_class->valuetype) {
+			MonoObject *o = mono_object_new (mono_domain_get (), param_class);
+			memcpy (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+			return o;
+		}
+		else
+			return *(MonoObject**)(buf + klass->fields [0].offset - sizeof (MonoObject));
 	}
 	else
 		return NULL;
