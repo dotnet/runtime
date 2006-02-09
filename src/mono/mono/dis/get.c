@@ -106,6 +106,30 @@ get_assemblyref (MonoImage *m, int idx)
 	return g_strdup (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
 }
 
+static char *
+stringify_array (guint32 rank, guint32 num_sizes, guint32 num_lo_bounds, gint32 *sizes, gint32 *lo_bounds)
+{
+	GString *res = g_string_new ("[");
+	int i;
+
+	for (i = 0; i < rank; i++) {
+		if (i)
+			g_string_append_c (res, ',');
+		if (i < num_lo_bounds)
+			g_string_sprintfa (res, "%d...", lo_bounds [i]);
+		if (i < num_sizes) {
+			if (i < num_lo_bounds)
+				g_string_sprintfa (res, "%d", lo_bounds [i] + sizes [i] - 1);
+			else
+				g_string_sprintfa (res, "%d", sizes [i]);
+		}
+
+	}
+	g_string_append (res, "]");
+
+	return g_string_free (res, FALSE);
+}
+
 /*
  *
  * Returns a string representing the ArrayShape (22.2.16).
@@ -113,52 +137,30 @@ get_assemblyref (MonoImage *m, int idx)
 static const char *
 get_array_shape (MonoImage *m, const char *ptr, char **result)
 {
-	GString *res = g_string_new ("[");
 	guint32 rank, num_sizes, num_lo_bounds;
-	guint32 *sizes = NULL, *lo_bounds = NULL;
-	int i, r;
-	char buffer [80];
+	gint32 *sizes = NULL, *lo_bounds = NULL;
+	int i;
 	
 	rank = mono_metadata_decode_value (ptr, &ptr);
 	num_sizes = mono_metadata_decode_value (ptr, &ptr);
 
 	if (num_sizes > 0)
-		sizes = g_new (guint32, num_sizes);
+		sizes = g_new (gint32, num_sizes);
 	
 	for (i = 0; i < num_sizes; i++)
 		sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
 	num_lo_bounds = mono_metadata_decode_value (ptr, &ptr);
 	if (num_lo_bounds > 0)
-		lo_bounds = g_new (guint32, num_lo_bounds);
+		lo_bounds = g_new (gint32, num_lo_bounds);
 	
 	for (i = 0; i < num_lo_bounds; i++)
 		lo_bounds [i] = mono_metadata_decode_value (ptr, &ptr);
 
-	for (r = 0; r < rank; r++){
-		if (r < num_sizes){
-			if (r < num_lo_bounds){
-				sprintf (buffer, "%d..%d", lo_bounds [r], lo_bounds [r] + sizes [r] - 1);
-			} else {
-				sprintf (buffer, "0..%d", sizes [r] - 1);
-			}
-		} else
-			buffer [0] = 0;
-		
-		g_string_append (res, buffer);
-		if ((r + 1) != rank)
-			g_string_append (res, ", ");
-	}
-	g_string_append (res, "]");
-	
-	if (sizes)
-		g_free (sizes);
+	*result = stringify_array (rank, num_sizes, num_lo_bounds, sizes, lo_bounds);
 
-	if (lo_bounds)
-		g_free (lo_bounds);
-
-	*result = res->str;
-	g_string_free (res, FALSE);
+	g_free (sizes);
+	g_free (lo_bounds);
 
 	return ptr;
 }
@@ -481,28 +483,16 @@ dis_stringify_token (MonoImage *m, guint32 token)
 char*
 dis_stringify_array (MonoImage *m, MonoArrayType *array, gboolean is_def)
 {
-	char *type;
-	GString *s = g_string_new("");
-	int i;
+	char *type, *arr_str, *ret;
 	
 	type = dis_stringify_type (m, &array->eklass->byval_arg, is_def);
-	g_string_append (s, type);
+	arr_str = stringify_array (array->rank, array->numsizes, array->numlobounds, array->sizes, array->lobounds);
+
+	ret = g_strconcat (type, arr_str, NULL);
+	
+	g_free (arr_str);
 	g_free (type);
-	g_string_append_c (s, '[');
-	for (i = 0; i < array->rank; ++i) {
-		if (i)
-			g_string_append_c (s, ',');
-		if (i < array->numsizes) {
-			if (i < array->numlobounds && array->lobounds[i] != 0)
-				g_string_sprintfa (s, "%d..%d", array->lobounds[i], array->sizes[i]);
-			else
-				g_string_sprintfa (s, "%d", array->sizes[i]);
-		}
-	}
-	g_string_append_c (s, ']');
-	type = s->str;
-	g_string_free (s, FALSE);
-	return type;
+	return ret;
 }
 
 char*
