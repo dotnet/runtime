@@ -10416,7 +10416,7 @@ mini_init (const char *filename)
 	 * but it happens also in other setups.
 	 */
 #if defined(HAVE_BOEHM_GC)
-#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK) && defined(HAVE_BOEHM_GC)
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
 	{
 		size_t size;
 		void *sstart;
@@ -10426,6 +10426,8 @@ mini_init (const char *filename)
 		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
 		GC_stackbottom = (char*)sstart + size;
 	}
+#elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+		GC_stackbottom = (char*)pthread_get_stackaddr_np (pthread_self ());
 #else
 	{
 		gsize stack_bottom = (gsize)&domain;
