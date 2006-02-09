@@ -907,6 +907,7 @@ if test x$platform_win32 = xno; then
 	])
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack)
+	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
 
 	dnl ***********************************
 	dnl *** Checks for working __thread ***
