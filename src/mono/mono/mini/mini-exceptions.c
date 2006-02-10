@@ -38,9 +38,14 @@
 #endif
 
 #ifndef MONO_INIT_CONTEXT_FROM_CALLER
+/* 
+ * This isn't the caller, but __builtin_frame_address (1) doesn't work
+ * in the presence of optimizations.
+ * FIXME: Clean this stuff up.
+ */
 #define MONO_INIT_CONTEXT_FROM_CALLER(ctx) do { \
 	MONO_CONTEXT_SET_IP ((ctx), __builtin_return_address (0)); \
-	MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (1)); \
+	MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0)); \
 } while (0)
 #endif
 
