@@ -184,18 +184,6 @@ typedef struct {
 	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
 } while (0)
 
-#define MONO_INIT_CONTEXT_FROM_CALLER(ctx) do { \
-	unsigned int stackptr, retaddr; \
-    { \
-	    __asm mov stackptr, ebp \
-        __asm mov eax, DWORD PTR [ebp + 4] \
-	    __asm mov retaddr, eax \
-    } \
-	MONO_CONTEXT_SET_IP ((ctx), retaddr); \
-	/* FIXME: NOT WORKING -- THIS IS __builtin_frame_address (0) NOT (1) */ \
-	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
-} while (0)
-
 #else
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
