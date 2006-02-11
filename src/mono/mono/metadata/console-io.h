@@ -23,6 +23,7 @@ gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout);
 MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo);
 MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break);
 MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown);
+MonoBoolean ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height);
 
 G_END_DECLS
 

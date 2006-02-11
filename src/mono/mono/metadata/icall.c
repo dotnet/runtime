@@ -5445,6 +5445,7 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 
 	utf8_name = mono_string_to_utf8 (name);	/* FIXME: this should be ascii */
 	value = g_getenv (utf8_name);
+
 	g_free (utf8_name);
 
 	if (value == 0)
@@ -6340,6 +6341,7 @@ static const IcallEntry defaultconf_icalls [] = {
 };
 
 static const IcallEntry consoledriver_icalls [] = {
+	{"GetTtySize", ves_icall_System_ConsoleDriver_GetTtySize },
 	{"InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable },
 	{"Isatty", ves_icall_System_ConsoleDriver_Isatty },
 	{"SetBreak", ves_icall_System_ConsoleDriver_SetBreak },

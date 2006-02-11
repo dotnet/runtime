@@ -76,6 +76,12 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown)
 	return FALSE;
 }
 
+MonoBoolean
+ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height)
+{
+	return FALSE;
+}
+
 #else
 static struct termios initial_attr;
 
@@ -210,5 +216,26 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown)
 
 	return TRUE;
 }
-#endif
 
+MonoBoolean
+ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height)
+{
+#ifdef TIOCGWINSZ
+	struct winsize ws;
+	int res;
+
+	res = ioctl (GPOINTER_TO_INT (handle), TIOCGWINSZ, &ws);
+
+	if (!res) {
+		*width = ws.ws_col;
+		*height = ws.ws_row;
+		return TRUE;
+	}
+	else
+		return FALSE;
+#else
+	return FALSE;
+#endif
+}
+
+#endif /* !PLATFORM_WIN32 */
