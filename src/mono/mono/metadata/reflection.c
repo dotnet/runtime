@@ -6456,14 +6456,13 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionType *tb = (MonoReflectionType *)obj;
 		token = mono_class_from_mono_type (tb->type)->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
-			strcmp (klass->name, "MonoMethod") == 0) {
+		   strcmp (klass->name, "MonoMethod") == 0 ||
+		   strcmp (klass->name, "MonoGenericMethod") == 0 ||
+		   strcmp (klass->name, "MonoGenericCMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		if (m->method->is_inflated) {
-			g_assert_not_reached ();
-		} else if (mono_method_signature (m->method)->generic_param_count) {
-			g_assert_not_reached ();
-		} else if (m->method->klass->generic_class) {
-			g_assert_not_reached ();
+			MonoMethodInflated *inflated = (MonoMethodInflated *) m->method;
+			return inflated->declaring->token;
 		} else {
 			token = m->method->token;
 		}
