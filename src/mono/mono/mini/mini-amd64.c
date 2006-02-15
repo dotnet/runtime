@@ -518,7 +518,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.reg = AMD64_XMM0;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->ret))
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
 				cinfo->ret.storage = ArgInIReg;
 				cinfo->ret.reg = AMD64_RAX;
 				break;
