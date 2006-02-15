@@ -1057,14 +1057,14 @@ mono_metadata_decode_signed_value (const char *_ptr, const char **rptr)
 	
 	if ((b & 0x80) == 0){
 		if (b & 1)
-			len = ((char)(b | 0x80) >> 1);
+			len = ((gint8)(b | 0x80) >> 1);
 		else
 			len = b >> 1;
 		++ptr;
 	} else if ((b & 0x40) == 0){
 		short s = ((b & 0x3f) << 8 | ptr [1]);
 		if (s & 1)
-			len = ((short) (s | 0xc000) >> 1);
+			len = ((gint16) (s | 0xc000) >> 1);
 		else
 			len = s >> 1;
 		ptr += 2;
@@ -1074,7 +1074,7 @@ mono_metadata_decode_signed_value (const char *_ptr, const char **rptr)
 			(ptr [2] << 8) |
 			ptr [3];
 		if (len & 1)
-			len = ((int)(len | 0xe0000000) >> 1);
+			len = ((gint32)(len | 0xe0000000) >> 1);
 		else
 			len >>= 1;
 		ptr += 4;
