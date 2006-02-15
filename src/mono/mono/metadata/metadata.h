@@ -446,6 +446,7 @@ int            mono_type_size                  (MonoType        *type,
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
 
+gboolean       mono_type_generic_inst_is_valuetype      (MonoType *type);
 gboolean       mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass);
 guint          mono_metadata_generic_class_hash  (MonoGenericClass *gclass);
 gboolean       mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2);

@@ -2091,6 +2091,10 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
 		mono_mb_emit_byte (mb, CEE_LDIND_R8);
 		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (return_type))
+			break;
+		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
 		int class;
 		mono_mb_emit_byte (mb, CEE_UNBOX);
@@ -3778,14 +3782,15 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 			klass = mono_defaults.array_class;
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			klass = type->data.klass;
-			if (klass->enumtype) {
-				t = klass->enum_basetype->type;
-				klass = mono_class_from_mono_type (klass->enum_basetype);
-			}
 		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING) {
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;
+		} else if (t == MONO_TYPE_GENERICINST) {
+			if (mono_type_generic_inst_is_valuetype (type))
+				klass = mono_class_from_mono_type (type);
+			else
+				klass = mono_defaults.object_class;
 		} else {
 			klass = mono_class_from_mono_type (type);			
 		}
@@ -3801,7 +3806,8 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	if (res)
 		return res;
 
-	name = g_strdup_printf ("__ldfld_wrapper_%s.%s", klass->name_space, klass->name); 
+	/* we add the %p pointer value of klass because class names are not unique */
+	name = g_strdup_printf ("__ldfld_wrapper_%p_%s.%s", klass, klass->name_space, klass->name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD);
 	g_free (name);
 
@@ -3937,15 +3943,16 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 			klass = mono_defaults.array_class;
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			klass = type->data.klass;
-			if (klass->enumtype) {
-				t = klass->enum_basetype->type;
-				klass = mono_class_from_mono_type (klass->enum_basetype);
-			}
 		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
 			   t == MONO_TYPE_CLASS) { 
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;
+		} else if (t == MONO_TYPE_GENERICINST) {
+			if (mono_type_generic_inst_is_valuetype (type))
+				klass = mono_class_from_mono_type (type);
+			else
+				klass = mono_defaults.object_class;
 		} else {
 			klass = mono_class_from_mono_type (type);			
 		}
@@ -3961,7 +3968,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	if (res)
 		return res;
 
-	name = g_strdup_printf ("__ldflda_wrapper_%s.%s", klass->name_space, klass->name); 
+	/* we add the %p pointer value of klass because class names are not unique */
+	name = g_strdup_printf ("__ldflda_wrapper_%p_%s.%s", klass, klass->name_space, klass->name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLDA);
 	g_free (name);
 
@@ -4089,14 +4097,15 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 			klass = mono_defaults.array_class;
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			klass = type->data.klass;
-			if (klass->enumtype) {
-				t = klass->enum_basetype->type;
-				klass = mono_class_from_mono_type (klass->enum_basetype);
-			}
 		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING) {
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;
+		} else if (t == MONO_TYPE_GENERICINST) {
+			if (mono_type_generic_inst_is_valuetype (type))
+				klass = mono_class_from_mono_type (type);
+			else
+				klass = mono_defaults.object_class;
 		} else {
 			klass = mono_class_from_mono_type (type);			
 		}
@@ -4112,7 +4121,8 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	if (res)
 		return res;
 
-	name = g_strdup_printf ("__stfld_wrapper_%s.%s", klass->name_space, klass->name); 
+	/* we add the %p pointer value of klass because class names are not unique */
+	name = g_strdup_printf ("__stfld_wrapper_%p_%s.%s", klass, klass->name_space, klass->name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
 	g_free (name);
 

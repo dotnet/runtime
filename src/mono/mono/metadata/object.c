@@ -510,6 +510,16 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 				*max_set = MAX (*max_set, pos);
 				break;
+			case MONO_TYPE_GENERICINST:
+				if (!mono_type_generic_inst_is_valuetype (type)) {
+					g_assert ((field->offset % sizeof(gpointer)) == 0);
+
+					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+					*max_set = MAX (*max_set, pos);
+					break;
+				} else {
+					/* fall through */
+				}
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = mono_class_from_mono_type (field->type);
 				if (fclass->has_references) {
@@ -578,11 +588,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 	class->gc_descr_inited = TRUE;
 	class->gc_descr = GC_NO_DESCRIPTOR;
-
-	if (class->generic_class || class->generic_container) {
-		/* bug #75479 */
-		return;
-	}
 
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {

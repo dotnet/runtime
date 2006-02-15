@@ -357,20 +357,18 @@ mono_type_get_name (MonoType *type)
 	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_IL);
 }
 
+/*
+ * mono_type_get_underlying_type:
+ * @type: a type
+ *
+ * Returns: the MonoType for the underlying interger type if @type
+ * is an enum, otherwise the type itself.
+ */
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	switch (type->type) {
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype)
-			return type->data.klass->enum_basetype;
-		break;
-	case MONO_TYPE_GENERICINST:
-		return mono_type_get_underlying_type (&type->data.generic_class->container_class->byval_arg);
-	default:
-		break;
-	}
-
+	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)
+		return type->data.klass->enum_basetype;
 	return type;
 }
 
@@ -993,7 +991,7 @@ mono_class_layout_fields (MonoClass *class)
 
 		field = &class->fields [i];
 
-		if (!field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 			ftype = mono_type_get_underlying_type (field->type);
 			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
 				class->has_static_refs = TRUE;

@@ -1397,6 +1397,13 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	case MONO_TYPE_VALUETYPE:
 		is_ref = t->byref;
 		break;
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (t)) {
+			is_ref = t->byref;
+		} else {
+			is_ref = TRUE;
+		}
+		break;
 	default:
 		g_error ("type 0x%x not handled in "
 			 "ves_icall_Monofield_GetValue", t->type);

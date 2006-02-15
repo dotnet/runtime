@@ -3088,6 +3088,13 @@ mono_type_stack_size (MonoType *t, gint *align)
 }
 
 gboolean
+mono_type_generic_inst_is_valuetype (MonoType *type)
+{
+	g_assert (type->type == MONO_TYPE_GENERICINST);
+	return type->data.generic_class->container_class->valuetype;
+}
+
+gboolean
 mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 {
 	return gclass->container_class->valuetype;
