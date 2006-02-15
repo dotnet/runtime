@@ -1049,40 +1049,25 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
  * Returns: the decoded value
  */
 gint32
-mono_metadata_decode_signed_value (const char *_ptr, const char **rptr)
+mono_metadata_decode_signed_value (const char *ptr, const char **rptr)
 {
-	const unsigned char *ptr = (const unsigned char *) _ptr;
-	unsigned char b = *ptr;
-	gint32 len;
-	
-	if ((b & 0x80) == 0){
-		if (b & 1)
-			len = ((gint8)(b | 0x80) >> 1);
-		else
-			len = b >> 1;
-		++ptr;
-	} else if ((b & 0x40) == 0){
-		short s = ((b & 0x3f) << 8 | ptr [1]);
-		if (s & 1)
-			len = ((gint16) (s | 0xc000) >> 1);
-		else
-			len = s >> 1;
-		ptr += 2;
-	} else {
-		len = ((b & 0x1f) << 24) |
-			(ptr [1] << 16) |
-			(ptr [2] << 8) |
-			ptr [3];
-		if (len & 1)
-			len = ((gint32)(len | 0xe0000000) >> 1);
-		else
-			len >>= 1;
-		ptr += 4;
-	}
-	if (rptr)
-		*rptr = ptr;
-	
-	return len;
+	guint32 uval = mono_metadata_decode_value (ptr, rptr);
+	gint32 ival = uval >> 1;
+	if (!(uval & 1))
+		return ival;
+	/* ival is a truncated 2's complement negative number.  */
+	if (ival < 0x40)
+		/* 6 bits = 7 bits for compressed representation (top bit is '0') - 1 sign bit */
+		return ival - 0x40;
+	if (ival < 0x2000)
+		/* 13 bits = 14 bits for compressed representation (top bits are '10') - 1 sign bit */
+		return ival - 0x2000;
+	if (ival < 0x10000000)
+		/* 28 bits = 29 bits for compressed representation (top bits are '110') - 1 sign bit */
+		return ival - 0x10000000;
+	g_assert (ival < 0x20000000);
+	g_warning ("compressed signed value appears to use 29 bits for compressed representation: %x (raw: %8x)", ival, uval);
+	return ival - 0x20000000;
 }
 
 /*

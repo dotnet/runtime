@@ -1890,7 +1890,10 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 		MonoGenericInst *inst = klass->generic_class->inst;
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i) {
-			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
+			MonoType *t = inst->type_argv [i];
+			/* Ensure that our dummy null-owner types don't leak into userspace.  */
+			g_assert ((t->type != MONO_TYPE_VAR && t->type != MONO_TYPE_MVAR) || t->data.generic_param->owner);
+			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), t));
 		}
 	} else {
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
@@ -2529,8 +2532,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 				MonoType *t = gmethod->inst->type_argv [i];
 				/* Ensure that our dummy null-owner types don't leak into userspace.  */
 				g_assert ((t->type != MONO_TYPE_VAR && t->type != MONO_TYPE_MVAR) || t->data.generic_param->owner);
-				mono_array_set (
-					res, gpointer, i, mono_type_get_object (domain, t));
+				mono_array_set (res, gpointer, i, mono_type_get_object (domain, t));
 			}
 
 			return res;
