@@ -155,7 +155,7 @@ get_array_shape (MonoImage *m, const char *ptr, char **result)
 		lo_bounds = g_new (gint32, num_lo_bounds);
 	
 	for (i = 0; i < num_lo_bounds; i++)
-		lo_bounds [i] = mono_metadata_decode_value (ptr, &ptr);
+		lo_bounds [i] = mono_metadata_decode_signed_value (ptr, &ptr);
 
 	*result = stringify_array (rank, num_sizes, num_lo_bounds, sizes, lo_bounds);
 

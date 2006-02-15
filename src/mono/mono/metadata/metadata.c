@@ -1002,7 +1002,6 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 	return size;
 }
 
-
 /**
  * mono_metadata_decode_value:
  * @ptr: pointer to decode from
@@ -1031,6 +1030,53 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 			(ptr [1] << 16) |
 			(ptr [2] << 8) |
 			ptr [3];
+		ptr += 4;
+	}
+	if (rptr)
+		*rptr = ptr;
+	
+	return len;
+}
+
+/**
+ * mono_metadata_decode_signed_value:
+ * @ptr: pointer to decode from
+ * @rptr: the new position of the pointer
+ *
+ * This routine decompresses 32-bit signed values
+ * (not specified in the spec)
+ *
+ * Returns: the decoded value
+ */
+gint32
+mono_metadata_decode_signed_value (const char *_ptr, const char **rptr)
+{
+	const unsigned char *ptr = (const unsigned char *) _ptr;
+	unsigned char b = *ptr;
+	gint32 len;
+	
+	if ((b & 0x80) == 0){
+		if (b & 1)
+			len = ((char)(b | 0x80) >> 1);
+		else
+			len = b >> 1;
+		++ptr;
+	} else if ((b & 0x40) == 0){
+		short s = ((b & 0x3f) << 8 | ptr [1]);
+		if (s & 1)
+			len = ((short) (s | 0xc000) >> 1);
+		else
+			len = s >> 1;
+		ptr += 2;
+	} else {
+		len = ((b & 0x1f) << 24) |
+			(ptr [1] << 16) |
+			(ptr [2] << 8) |
+			ptr [3];
+		if (len & 1)
+			len = ((int)(len | 0xe0000000) >> 1);
+		else
+			len >>= 1;
 		ptr += 4;
 	}
 	if (rptr)
@@ -1116,7 +1162,7 @@ mono_metadata_parse_array_full (MonoImage *m, MonoGenericContext *generic_contex
 	if (array->numlobounds)
 		array->lobounds = g_new0 (int, array->numlobounds);
 	for (i = 0; i < array->numlobounds; ++i)
-		array->lobounds [i] = mono_metadata_decode_value (ptr, &ptr);
+		array->lobounds [i] = mono_metadata_decode_signed_value (ptr, &ptr);
 
 	if (rptr)
 		*rptr = ptr;
