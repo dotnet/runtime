@@ -6784,7 +6784,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
 			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
-				   ((t == MONO_TYPE_GENERICINST) && mono_metadata_generic_class_is_valuetype (ptype->data.generic_class))) {
+				   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (ptype))) {
 				NEW_LOCLOADA (cfg, ins, i);
 				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (ptype), NULL, NULL);
 			} else {
@@ -7333,6 +7333,12 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		switch (t->type) {
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (t)) {
+				slot_info = &scalar_stack_slots [t->type];
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 			for (i = 0; i < nvtypes; ++i)
 				if (t->data.klass == vtype_stack_slots [i].vtype)

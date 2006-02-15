@@ -237,6 +237,10 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		return TRUE;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return TRUE;
+		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
 	}
@@ -466,7 +470,6 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			continue;
 		}
 		simpletype = mono_type_get_underlying_type (sig->params [i])->type;
-	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -501,6 +504,14 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				cinfo->args [n].size = sizeof (gpointer);
+				add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+				n++;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
 			MonoClass *klass;
@@ -668,6 +679,12 @@ enum_retvalue:
 		case MONO_TYPE_R8:
 			cinfo->ret.reg = ppc_f1;
 			cinfo->ret.regtype = RegTypeFP;
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.reg = ppc_r3;
+				break;
+			}
 			break;
 		case MONO_TYPE_VALUETYPE:
 			break;

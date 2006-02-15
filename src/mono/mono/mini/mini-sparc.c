@@ -546,6 +546,12 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_ARRAY:
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				add_general (&gr, &stack_size, ainfo, FALSE);
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 #ifdef SPARCV9
 			if (sig->pinvoke)
@@ -638,6 +644,15 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.storage = ArgInFReg;
 			cinfo->ret.reg = sparc_f0;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.storage = ArgInIReg;
+				cinfo->ret.reg = sparc_i0;
+				if (gr < 1)
+					gr = 1;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 			if (v64) {
 				if (sig->pinvoke)

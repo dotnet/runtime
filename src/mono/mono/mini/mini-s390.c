@@ -1371,6 +1371,13 @@ enum_retvalue:
 			cinfo->ret.reg = s390_r2;
 			sz->code_size += 4;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.reg = s390_r2;
+				sz->code_size += 4;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
 			if (sig->ret->data.klass->enumtype) {
@@ -1484,6 +1491,14 @@ enum_retvalue:
 			add_float (&fr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				cinfo->args[nParm].size = sizeof(gpointer);
+				add_general (&gr, sz, cinfo->args+nParm, TRUE);
+				nParm++;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoMarshalType *info;
 			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);

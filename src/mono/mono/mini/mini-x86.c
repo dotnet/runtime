@@ -264,6 +264,13 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_R8:
 			cinfo->ret.storage = ArgOnDoubleFpStack;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.storage = ArgInIReg;
+				cinfo->ret.reg = X86_EAX;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
@@ -346,6 +353,12 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_ARRAY:
 			add_general (&gr, &stack_size, ainfo);
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				add_general (&gr, &stack_size, ainfo);
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
@@ -641,6 +654,10 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		return TRUE;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return TRUE;
+		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
 	}

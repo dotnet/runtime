@@ -214,6 +214,10 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		return TRUE;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return TRUE;
+		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
 	}
@@ -426,6 +430,14 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				cinfo->args [n].size = sizeof (gpointer);
+				add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+				n++;
+				break;
+			}
+			/* Fall through */
 		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
@@ -510,6 +522,12 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.reg = ARMREG_R0;
 			/* FIXME: cinfo->ret.reg = ???;
 			cinfo->ret.regtype = RegTypeFP;*/
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.reg = ARMREG_R0;
+				break;
+			}
 			break;
 		case MONO_TYPE_VALUETYPE:
 			break;

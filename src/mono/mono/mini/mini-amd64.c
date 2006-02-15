@@ -296,6 +296,12 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 	case MONO_TYPE_TYPEDBYREF:
 		g_assert_not_reached ();
 
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (ptype)) {
+			class2 = ARG_CLASS_INTEGER;
+			break;
+		}
+		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
 		MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
 		int i;
@@ -511,6 +517,13 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.storage = ArgInDoubleSSEReg;
 			cinfo->ret.reg = AMD64_XMM0;
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->ret))
+				cinfo->ret.storage = ArgInIReg;
+				cinfo->ret.reg = AMD64_RAX;
+				break;
+			}
+			/* fall through */
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
@@ -592,6 +605,12 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_ARRAY:
 			add_general (&gr, &stack_size, ainfo);
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (ptype)) {
+				add_general (&gr, &stack_size, ainfo);
+				break;
+			}
+			/* fall through */
 		case MONO_TYPE_VALUETYPE:
 			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
@@ -741,6 +760,10 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		return TRUE;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return TRUE;
+		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
 	}
@@ -4567,6 +4590,12 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	case MONO_TYPE_R8:
 		save_mode = SAVE_XMM;
 		break;
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
+			save_mode = SAVE_EAX;
+			break;
+		}
+		/* Fall through */
 	case MONO_TYPE_VALUETYPE:
 		save_mode = SAVE_STRUCT;
 		break;
