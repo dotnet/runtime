@@ -271,13 +271,13 @@ mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 
 MonoArrayType *
 mono_metadata_parse_array_full              (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *container,
 					     const char            *ptr,
 					     const char           **rptr);
 
 MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *container,
 					     MonoParseTypeMode      mode,
 					     short                  opt_attrs,
 					     const char            *ptr,
@@ -285,7 +285,7 @@ mono_metadata_parse_type_full               (MonoImage             *image,
 
 MonoType *
 mono_type_create_from_typespec_full         (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *container,
 					     guint32                type_spec);
 
 MonoMethodSignature *
@@ -302,7 +302,7 @@ mono_metadata_parse_method_signature_full   (MonoImage             *image,
 
 MonoMethodHeader *
 mono_metadata_parse_mh_full                 (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *container,
 					     const char            *ptr);
 
 guint
@@ -314,7 +314,7 @@ mono_metadata_generic_method_equal          (MonoGenericMethod     *g1,
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst            (MonoImage             *image,
-					     MonoGenericContext    *generic_context,
+					     MonoGenericContainer  *container,
 					     int                    count,
 					     const char            *ptr,
 					     const char           **rptr);

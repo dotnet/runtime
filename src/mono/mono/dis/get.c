@@ -183,7 +183,7 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *co
 
 	MonoType *type;
 
-	type = mono_type_create_from_typespec_full (m, context, idx);
+	type = mono_type_create_from_typespec_full (m, context ? context->container : NULL, idx);
 
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
@@ -1270,7 +1270,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 	}
 
 	default:
-		t = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, start, &ptr);
+		t = mono_metadata_parse_type_full (m, context ? context->container : NULL, MONO_PARSE_TYPE, 0, start, &ptr);
 		*result = dis_stringify_type (m, t, FALSE);
 		mono_metadata_free_type (t);
 		break;

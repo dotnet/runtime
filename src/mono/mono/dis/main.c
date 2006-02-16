@@ -683,7 +683,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh_full (m, context, ptr);
+	mh = mono_metadata_parse_mh_full (m, context ? context->container : NULL, ptr);
 	if ((entry_point = mono_image_get_entry_point (m))){
 		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
@@ -972,7 +972,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContext *cont
 		g_string_append (res, "instance ");
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	type = mono_metadata_parse_type_full (m, context ? context->container : NULL, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	blurb = dis_stringify_type (m, type, TRUE);
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
@@ -986,7 +986,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContext *cont
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_type_full (m, context, MONO_PARSE_PARAM, 0, ptr, &ptr);
+		param = mono_metadata_parse_type_full (m, context ? context->container : NULL, MONO_PARSE_PARAM, 0, ptr, &ptr);
 		blurb = dis_stringify_param (m, param);
 		g_string_append (res, blurb);
 		mono_metadata_free_type (param);

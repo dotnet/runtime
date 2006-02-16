@@ -702,9 +702,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	 * ie. instantiate the method as `Foo.Hello<float>.
 	 */
 
-	gmethod->inst = mono_metadata_parse_generic_inst (image, context, param_count, ptr, &ptr);
+	gmethod->inst = mono_metadata_parse_generic_inst (image, context ? context->container : NULL, param_count, ptr, &ptr);
 
-	if (context)
+	if (context && gmethod->inst->is_open)
 		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);
 
 	if (!container->method_hash)
@@ -1177,8 +1177,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
 		gpointer loc = mono_image_rva_map (image, cols [0]);
 		g_assert (loc);
-		((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (
-			image, (MonoGenericContext *) container, loc);
+		((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (image, container, loc);
 	}
 		
 	result->generic_container = generic_container;
@@ -1663,7 +1662,7 @@ mono_method_get_header (MonoMethod *method)
 	
 	g_assert (loc);
 	
-	mn->header = mono_metadata_parse_mh_full (img, (MonoGenericContext *) method->generic_container, loc);
+	mn->header = mono_metadata_parse_mh_full (img, method->generic_container, loc);
 	
 	mono_loader_unlock ();
 	return mn->header;
