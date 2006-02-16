@@ -3887,20 +3887,30 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		mono_mb_emit_byte (mb, CEE_LDIND_R8);
 		break;
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		break;
 	case MONO_TYPE_VALUETYPE:
 		g_assert (!klass->enumtype);
 		mono_mb_emit_byte (mb, CEE_LDOBJ);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (type)) {
+			mono_mb_emit_byte (mb, CEE_LDOBJ);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		} else {
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		}
 		break;
 	default:
 		g_warning ("type %x not implemented", type->type);
@@ -4181,14 +4191,16 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		mono_mb_emit_byte (mb, CEE_STIND_R8);
 		break;
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
+		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	case MONO_TYPE_VALUETYPE:
