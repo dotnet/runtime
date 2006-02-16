@@ -100,6 +100,52 @@ class Tests {
 		return 1;
 	}
 
+	public struct GenericStruct<T> {
+		public T t;
+
+		public GenericStruct (T t) {
+			this.t = t;
+		}
+	}
+
+	public class GenericClass<T> {
+		public T t;
+
+		public GenericClass (T t) {
+			this.t = t;
+		}
+	}
+
+	public class MRO : MarshalByRefObject {
+		public GenericStruct<int> struct_field;
+		public GenericClass<int> class_field;
+	}
+
+	public static int test_0_ldfld_stfld_mro () {
+		MRO m = new MRO ();
+		GenericStruct<int> s = new GenericStruct<int> (5);
+		// This generates stfld
+		m.struct_field = s;
+
+		// This generates ldflda
+		if (m.StructField.t != 5)
+			return 1;
+
+		// This generates ldfld
+		GenericStruct<int> s2 = m.struct_field;
+		if (s2.t != 5)
+			return 2;
+
+		if (m.struct_field.t != 5)
+			return 3;
+
+		m.class_field = new GenericClass<int> (5);
+		if (m.class_field.t != 5)
+			return 4;
+
+		return 0;
+	}
+
 	static object Box<T> (T t)
 	{
 		return t;
