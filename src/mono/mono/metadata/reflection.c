@@ -6443,7 +6443,6 @@ mono_reflection_get_token (MonoObject *obj)
 		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)fb->typeb;
 		token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
