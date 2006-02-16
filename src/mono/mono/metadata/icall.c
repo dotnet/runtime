@@ -1535,17 +1535,6 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 }
 
-static MonoReflectionField*
-ves_icall_MonoField_Mono_GetGenericFieldDefinition (MonoReflectionField *field)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	if (field->field->generic_info && field->field->generic_info->reflection_info)
-		return field->field->generic_info->reflection_info;
-
-	return field;
-}
-
 static MonoReflectionType*
 ves_icall_MonoGenericMethod_get_ReflectedType (MonoReflectionGenericMethod *rmethod)
 {
@@ -6685,7 +6674,6 @@ static const IcallEntry monofield_icalls [] = {
 	{"GetFieldOffset", ves_icall_MonoField_GetFieldOffset},
 	{"GetParentType", ves_icall_MonoField_GetParentType},
 	{"GetValueInternal", ves_icall_MonoField_GetValueInternal},
-	{"Mono_GetGenericFieldDefinition", ves_icall_MonoField_Mono_GetGenericFieldDefinition},
 	{"SetValueInternal", ves_icall_FieldInfo_SetValueInternal}
 };
 
