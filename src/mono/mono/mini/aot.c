@@ -2527,7 +2527,10 @@ compile_method (MonoAotCompile *acfg, int index)
 	 * does not need to support them by creating a fake GOT etc.
 	 */
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
-	g_assert (cfg);
+	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
+		/* Let the exception happen at runtime */
+		return;
+	}
 
 	if (cfg->disable_aot) {
 		//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));

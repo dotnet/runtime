@@ -331,7 +331,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 				comp_time -= start_time; 
 				cfg = mini_method_compile (method, opt_flags, mono_get_root_domain (), TRUE, FALSE, 0);
 				comp_time += g_timer_elapsed (timer, NULL);
-				if (cfg) {
+				if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 					if (verbose >= 2)
 						g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
