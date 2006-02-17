@@ -128,7 +128,7 @@ class Tests {
 		m.struct_field = s;
 
 		// This generates ldflda
-		if (m.StructField.t != 5)
+		if (m.struct_field.t != 5)
 			return 1;
 
 		// This generates ldfld
