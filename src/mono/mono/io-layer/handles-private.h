@@ -25,6 +25,8 @@
 #define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [x / _WAPI_HANDLE_INITIAL_COUNT][x % _WAPI_HANDLE_INITIAL_COUNT])
 #define _WAPI_PRIVATE_HAVE_SLOT(x) ((GPOINTER_TO_UINT (x) / _WAPI_PRIVATE_MAX_SLOTS) < _WAPI_PRIVATE_MAX_SLOTS && \
 					_wapi_private_handles [GPOINTER_TO_UINT (x) / _WAPI_HANDLE_INITIAL_COUNT] != NULL)
+#define _WAPI_PRIVATE_VALID_SLOT(x) (((x) / _WAPI_HANDLE_INITIAL_COUNT) < _WAPI_PRIVATE_MAX_SLOTS)
+
 #undef DEBUG
 
 extern struct _WapiHandleUnshared *_wapi_private_handles [];
@@ -101,6 +103,10 @@ static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(WAPI_HANDLE_COUNT);	/* An impossible type */
+	}
+	
 	return(_WAPI_PRIVATE_HANDLES(idx).type);
 }
 
@@ -112,6 +118,10 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	struct _WapiHandleUnshared *handle_data;
 	int thr_ret;
 
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return;
+	}
+	
 	g_assert (!_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
 	
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
@@ -163,6 +173,10 @@ static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
 	struct _WapiHandle_shared_ref *ref;
 	struct _WapiHandleShared *shared_data;
 	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return;
+	}
+	
 	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
 	
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
@@ -180,6 +194,10 @@ static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
 static inline gboolean _wapi_handle_issignalled (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
+	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(FALSE);
+	}
 	
 	if (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle))) {
 		return(WAPI_SHARED_HANDLE_DATA(handle).signalled);
@@ -215,6 +233,10 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 	g_message ("%s: locking handle %p", __func__, handle);
 #endif
 
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
+	
 	_wapi_handle_ref (handle);
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
@@ -232,6 +254,10 @@ static inline int _wapi_handle_trylock_handle (gpointer handle)
 	g_message ("%s: locking handle %p", __func__, handle);
 #endif
 
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
+	
 	_wapi_handle_ref (handle);
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
@@ -249,6 +275,10 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 #ifdef DEBUG
 	g_message ("%s: unlocking handle %p", __func__, handle);
 #endif
+	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
 	
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
 		_wapi_handle_unref (handle);
