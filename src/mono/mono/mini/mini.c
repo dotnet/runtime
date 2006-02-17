@@ -1434,7 +1434,7 @@ type_from_op (MonoInst *ins) {
 
 static const char 
 ldind_type [] = {
-	STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I8, STACK_MP, STACK_R8, STACK_R8, STACK_OBJ
+	STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I4, STACK_I8, STACK_PTR, STACK_R8, STACK_R8, STACK_OBJ
 };
 
 /* map ldelem.x to the matching ldind.x opcode */
@@ -2016,11 +2016,111 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 }
 
 /*
+ * target_type_is_incompatible:
+ * @cfg: MonoCompile context
+ *
+ * Check that the item @arg on the evaluation stack can be stored
+ * in the target type (can be a local, or field, etc).
+ * The cfg arg can be used to check if we need verification or just
+ * validity checks.
+ *
+ * Returns: non-0 value if arg can't be stored on a target.
+ */
+static int
+target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
+{
+	MonoType *simple_type;
+	MonoClass *klass;
+
+	if (target->byref) {
+		/* FIXME: check that the pointed to types match */
+		if (arg->type == STACK_MP && arg->type == STACK_PTR)
+			return 0;
+		return 1;
+	}
+	simple_type = mono_type_get_underlying_type (target);
+	switch (simple_type->type) {
+	case MONO_TYPE_VOID:
+		return 1;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
+			return 1;
+		return 0;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
+			return 1;
+		return 0;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		if (arg->type != STACK_OBJ)
+			return 1;
+		/* FIXME: check type compatibility */
+		return 0;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		if (arg->type != STACK_I8)
+			return 1;
+		return 0;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		if (arg->type != STACK_R8)
+			return 1;
+		return 0;
+	case MONO_TYPE_VALUETYPE:
+		if (arg->type != STACK_VTYPE)
+			return 1;
+		klass = mono_class_from_mono_type (simple_type);
+		if (klass != arg->klass)
+			return 1;
+		return 0;
+	case MONO_TYPE_TYPEDBYREF:
+		if (arg->type != STACK_VTYPE)
+			return 1;
+		klass = mono_class_from_mono_type (simple_type);
+		if (klass != arg->klass)
+			return 1;
+		return 0;
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (simple_type)) {
+			if (arg->type != STACK_VTYPE)
+				return 1;
+			klass = mono_class_from_mono_type (simple_type);
+			if (klass != arg->klass)
+				return 1;
+			return 0;
+		} else {
+			if (arg->type != STACK_OBJ)
+				return 1;
+			/* FIXME: check type compatibility */
+			return 0;
+		}
+	default:
+		g_error ("unknown type 0x%02x in target_type_is_incompatible", simple_type->type);
+	}
+	return 1;
+}
+
+/*
  * Prepare arguments for passing to a function call.
  * Return a non-zero value if the arguments can't be passed to the given
  * signature.
  * The type checks are not yet complete and some conversions may need
  * casts on 32 or 64 bit architectures.
+ *
+ * FIXME: implement this using target_type_is_incompatible ()
  */
 static int
 check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args)
@@ -5253,17 +5353,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 			}
-			// FIXME: enable this test later.
-			//if (sp [0]->type != STACK_OBJ && sp [0]->type != STACK_MP)
-			//	goto unverified;
+			if (sp [0]->type == STACK_I4 || sp [0]->type == STACK_I8 || sp [0]->type == STACK_R8 || sp [0]->type == STACK_VTYPE)
+				goto unverified;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				field = mono_method_get_wrapper_data (method, token);
 				klass = field->parent;
-			}
-			else
+			} else {
 				field = mono_field_from_token (image, token, &klass, generic_context);
+			}
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
@@ -5271,6 +5370,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_STFLD) {
+				if (target_type_is_incompatible (cfg, field->type, sp [1]))
+					goto unverified;
 				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
@@ -5615,6 +5716,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
+			if (target_type_is_incompatible (cfg, &klass->byval_arg, *sp))
+				goto unverified;
 			/* frequent check in generic code: box (struct), brtrue */
 			if (ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) && (ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S)) {
 				/*g_print ("box-brtrue opt at 0x%04x in %s\n", real_offset, method->name);*/
@@ -6853,7 +6956,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
 	cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-	cfg->exception_message = g_strdup_printf ("Invalid IL code at IL%04x in %s: %s\n", (int)(ip - header->code), 
+	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n",
 		 mono_method_full_name (method, TRUE), mono_disasm_code_one (NULL, method, ip, NULL));
 	return -1;
 }
@@ -9413,7 +9516,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->compile_aot = compile_aot;
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-		cfg->exception_message = g_strdup ("No header for method");
+		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
 		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		return cfg;
