@@ -728,6 +728,8 @@ mono_class_find_enum_basetype (MonoClass *class)
 			g_assert (container);
 		}
 		ftype = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+		if (!ftype)
+			return NULL;
 		if (class->generic_class) {
 			ftype = mono_class_inflate_generic_type (ftype, class->generic_class->context);
 			ftype->attrs = cols [MONO_FIELD_FLAGS];
@@ -854,6 +856,10 @@ mono_class_setup_fields (MonoClass *class)
 			/* FIELD signature == 0x06 */
 			g_assert (*sig == 0x06);
 			field->type = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+			if (!field->type) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				continue;
+			}
 			if (mono_field_is_deleted (field))
 				continue;
 			if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
@@ -4898,6 +4904,7 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass)
 {
+	MonoException *ex;
 	switch (klass->exception_type) {
 	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND: {
 		MonoDomain *domain = mono_domain_get ();
@@ -4915,6 +4922,8 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		mono_runtime_invoke (secman->inheritsecurityexception, NULL, args, &exc);
 		return (MonoException*) exc;
 	}
+	case MONO_EXCEPTION_TYPE_LOAD:
+		return mono_exception_from_name (mono_defaults.corlib, "System", "TypeLoadException");
 	/* TODO - handle other class related failures */
 	default:
 		return NULL;

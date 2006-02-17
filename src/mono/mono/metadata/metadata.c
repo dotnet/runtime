@@ -22,7 +22,7 @@
 #include "class-internals.h"
 #include "class.h"
 
-static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
+static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 					 const char *ptr, const char **rptr);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
@@ -1134,6 +1134,8 @@ mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 	MonoType *etype;
 	
 	etype = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	if (!etype)
+		return NULL;
 	array->eklass = mono_class_from_mono_type (etype);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
@@ -1398,8 +1400,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
-	}
-	else {
+	} else {
 		type = &stype;
 		memset (type, 0, sizeof (MonoType));
 	}
@@ -1431,7 +1432,11 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
 
-	do_mono_metadata_parse_type (type, m, container, ptr, &ptr);
+	if (!do_mono_metadata_parse_type (type, m, container, ptr, &ptr)) {
+		if (type != &stype)
+			g_free (type);
+		return NULL;
+	}
 
 	if (rptr)
 		*rptr = ptr;
@@ -1615,6 +1620,11 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 
 	if (call_convention != 0xa) {
 		method->ret = mono_metadata_parse_type_full (m, container, MONO_PARSE_RET, pattrs ? pattrs [0] : 0, ptr, &ptr);
+		if (!method->ret) {
+			mono_metadata_free_method_signature (method);
+			g_free (pattrs);
+			return NULL;
+		}
 		is_open = mono_class_is_open_constructed_type (method->ret);
 	}
 
@@ -1626,6 +1636,11 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 			ptr++;
 		}
 		method->params [i] = mono_metadata_parse_type_full (m, container, MONO_PARSE_PARAM, pattrs ? pattrs [i+1] : 0, ptr, &ptr);
+		if (!method->params [i]) {
+			mono_metadata_free_method_signature (method);
+			g_free (pattrs);
+			return NULL;
+		}
 		if (!is_open)
 			is_open = mono_class_is_open_constructed_type (method->params [i]);
 	}
@@ -1669,14 +1684,19 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
  * @sig: signature to destroy
  *
  * Free the memory allocated in the signature @sig.
+ * This method needs to be robust and work also on partially-built
+ * signatures, so it does extra checks.
  */
 void
 mono_metadata_free_method_signature (MonoMethodSignature *sig)
 {
 	int i;
-	mono_metadata_free_type (sig->ret);
-	for (i = 0; i < sig->param_count; ++i)
-		mono_metadata_free_type (sig->params [i]);
+	if (sig->ret)
+		mono_metadata_free_type (sig->ret);
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i])
+			mono_metadata_free_type (sig->params [i]);
+	}
 
 	g_free (sig);
 }
@@ -1784,6 +1804,11 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 	for (i = 0; i < ginst->type_argc; i++) {
 		MonoType *t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
+		if (!t) {
+			g_free (ginst->type_argv);
+			g_free (ginst);
+			return NULL;
+		}
 		ginst->type_argv [i] = t;
 		if (!ginst->is_open)
 			ginst->is_open = mono_class_is_open_constructed_type (t);
@@ -1942,8 +1967,10 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
  * mono_metadata_parse_field_type
  *
  * This extracts a Type as specified in Partition II (22.2.12) 
+ *
+ * Returns: FALSE if the type could not be loaded
  */
-static void
+static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 			     const char *ptr, const char **rptr)
 {
@@ -1974,16 +2001,22 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		guint32 token;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		type->data.klass = mono_class_get (m, token);
+		if (!type->data.klass)
+			return FALSE;
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
 		MonoType *etype = mono_metadata_parse_type_full (m, container, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		if (!etype)
+			return FALSE;
 		type->data.klass = mono_class_from_mono_type (etype);
 		mono_metadata_free_type (etype);
 		break;
 	}
 	case MONO_TYPE_PTR:
 		type->data.type = mono_metadata_parse_type_full (m, container, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		if (!type->data.type)
+			return FALSE;
 		break;
 	case MONO_TYPE_FNPTR:
 		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
@@ -2004,6 +2037,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	
 	if (rptr)
 		*rptr = ptr;
+	return TRUE;
 }
 
 /*
@@ -2236,9 +2270,14 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
 		mh = g_malloc0 (sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
-		for (i = 0; i < len; ++i)
+		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
+			if (!mh->locals [i]) {
+				g_free (mh);
+				return NULL;
+			}
+		}
 	} else {
 		mh = g_new0 (MonoMethodHeader, 1);
 	}
@@ -3775,7 +3814,13 @@ mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContainer *con
 		ptr++;
 	}
 
-	do_mono_metadata_parse_type (type, image, container, ptr, &ptr);
+	if (!do_mono_metadata_parse_type (type, image, container, ptr, &ptr)) {
+		if (cache_type)
+			g_hash_table_remove (image->typespec_cache, GUINT_TO_POINTER (type_spec));
+		g_free (type);
+		mono_loader_unlock ();
+		return NULL;
+	}
 
 	if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->owner) {
 		MonoGenericContainer *owner = type->data.generic_param->owner;
