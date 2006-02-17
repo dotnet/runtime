@@ -119,6 +119,29 @@
 	}									\
 } while (0)
 
+#define S390_LONG(loc, opy, op, r, ix, br, off)					\
+	if (has_ld) {								\
+		if (s390_is_uimm20(off)) {					\
+			s390_##opy (loc, r, ix, br, off);			\
+		} else {							\
+			s390_basr (code, s390_r13, 0);				\
+			s390_j    (code, 6);					\
+			s390_llong(code, off);					\
+			s390_lg   (code, s390_r13, 0, s390_r13, 4);		\
+			s390_##op (code, r, s390_r13, br, 0);			\
+		}								\
+	} else {								\
+		if (s390_is_uimm12(off)) {					\
+			s390_##op (loc, r, ix, br, off);			\
+		} else {							\
+			s390_basr (code, s390_r13, 0);				\
+			s390_j    (code, 6);					\
+			s390_llong(code, off);					\
+			s390_lg   (code, s390_r13, 0, s390_r13, 4);		\
+			s390_##op (code, r, s390_r13, br, 0);			\
+		}								\
+	}
+
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
