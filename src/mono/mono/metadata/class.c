@@ -2921,41 +2921,20 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
 
-	g_assert (param->name && param->owner);
-
-	klass->name = param->name;
-	klass->name_space = "";
-	klass->image = image;
-	klass->inited = TRUE;
-	klass->cast_class = klass->element_class = klass;
-	klass->enum_basetype = &klass->element_class->byval_arg;
-	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
-
-	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
-	klass->this_arg.byref = TRUE;
-
-	mono_class_setup_supertypes (klass);
-
-	return klass;
-}
-
-static MonoClass *
-my_mono_class_from_generic_parameter (MonoGenericParam *param, gboolean is_mvar)
-{
-	MonoClass *klass;
-
-	if (param->pklass)
-		return param->pklass;
-
-	klass = g_new0 (MonoClass, 1);
-
 	if (param->name)
 		klass->name = param->name;
 	else
 		klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+
 	klass->name_space = "";
-	klass->image = mono_defaults.corlib;
+
+	if (image)
+		klass->image = image;
+	else if (param->owner)
+		klass->image = is_mvar ? param->method->klass->image : param->owner->klass->image;
+	else
+		klass->image = mono_defaults.corlib;
+
 	klass->inited = TRUE;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
@@ -3114,9 +3093,9 @@ mono_class_from_mono_type (MonoType *type)
 		return gclass->klass;
 	}
 	case MONO_TYPE_VAR:
-		return my_mono_class_from_generic_parameter (type->data.generic_param, FALSE);
+		return mono_class_from_generic_parameter (type->data.generic_param, NULL, FALSE);
 	case MONO_TYPE_MVAR:
-		return my_mono_class_from_generic_parameter (type->data.generic_param, TRUE);
+		return mono_class_from_generic_parameter (type->data.generic_param, NULL, TRUE);
 	default:
 		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
@@ -3130,9 +3109,9 @@ mono_class_from_mono_type (MonoType *type)
  * @type_spec:  typespec token
  */
 static MonoClass *
-mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContainer *container)
+mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
-	return mono_class_from_mono_type (mono_type_create_from_typespec_full (image, container, type_spec));
+	return mono_class_from_mono_type (mono_type_create_from_typespec (image, type_spec));
 }
 
 /**
@@ -3594,12 +3573,11 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
  * mono_class_get:
  * @image: the image where the class resides
  * @type_token: the token for the class
- * @at: an optional pointer to return the array element type
  *
  * Returns: the MonoClass that represents @type_token in @image
  */
-static MonoClass *
-_mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContainer *container)
+MonoClass *
+mono_class_get (MonoImage *image, guint32 type_token)
 {
 	MonoClass *class = NULL;
 
@@ -3614,7 +3592,7 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContainer *con
 		class = mono_class_from_typeref (image, type_token);
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
-		class = mono_class_create_from_typespec (image, type_token, container);
+		class = mono_class_create_from_typespec (image, type_token);
 		break;
 	default:
 		g_warning ("unknown token type %x", type_token & 0xff000000);
@@ -3631,25 +3609,15 @@ _mono_class_get (MonoImage *image, guint32 type_token, MonoGenericContainer *con
 }
 
 MonoClass *
-mono_class_get (MonoImage *image, guint32 type_token)
-{
-	return _mono_class_get (image, type_token, NULL);
-}
-
-MonoClass *
 mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
-	MonoClass *class = _mono_class_get (image, type_token, context ? context->container : NULL);
-	MonoType *inflated;
-
-	if (!class || !context || (!context->gclass && !context->gmethod))
-		return class;
-
-	inflated = inflate_generic_type (&class->byval_arg, context);
-	if (!inflated)
-		return class;
-
-	return mono_class_from_mono_type (inflated);
+	MonoClass *class = mono_class_get (image, type_token);
+	if (class && context && (context->gclass || context->gmethod)) {
+		MonoType *inflated = inflate_generic_type (&class->byval_arg, context);
+		if (inflated)
+			class = mono_class_from_mono_type (inflated);
+	}
+	return class;
 }
 
 typedef struct {
