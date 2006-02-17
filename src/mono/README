@@ -47,7 +47,8 @@ This is Mono.
 		make
 		make install
 
-	Mono supports a JIT engine on x86, SPARC, SPARCv9, S/390, AMD64 and PowerPC systems.
+	Mono supports a JIT engine on x86, SPARC, SPARCv9, S/390, AMD64, ARM
+	and PowerPC systems.
 
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation, unpack both
@@ -92,10 +93,11 @@ This is Mono.
 
 	If you don't have a working Mono installation, an obvious choice
 	is to install the latest released packages of 'mono' for your
-	distribution and try from the beginning.
+	distribution and running autogen.sh; make; make install in the
+	mono module directory.
 
-	You can also try a slightly more risky approach that should work
-	almost all the time.  
+	You can also try a slightly more risky approach: this may not work,
+	so start from the released tarball as detailed above.
 
 	This works by first getting the latest version of the 'monolite'
 	distribution, which contains just enough to run the 'mcs'
@@ -173,7 +175,7 @@ This is Mono.
 		metadata/
 			The object system and metadata reader.
 
-		jit/
+		mini/
 			The Just in Time Compiler.
 
 		dis/
@@ -191,7 +193,7 @@ This is Mono.
 			definition of the CIL bytecodes.
 
 		interp/
-			Interpreter for CLI executables.
+			Interpreter for CLI executables (obsolete).
 
 		arch/
 			Architecture specific portions.
