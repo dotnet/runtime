@@ -20,7 +20,11 @@ dist-hook:
 
 pkgconfigdir = $(libdir)/pkgconfig
 if JIT_SUPPORTED
+if INTERP_SUPPORTED
 pkgconfig_DATA= mono.pc mint.pc dotnet.pc mono-cairo.pc
+else
+pkgconfig_DATA= mono.pc dotnet.pc mono-cairo.pc
+endif
 else
 pkgconfig_DATA= mint.pc mono-cairo.pc
 endif
