@@ -1273,6 +1273,28 @@ mono_test_asany (void *ptr, int what)
 	return 1;
 }
 
+typedef struct
+{
+	int i;
+	int j;
+	int k;
+	char *s;
+} AsAnyStruct;
+
+STDCALL int
+mono_test_marshal_asany_inout (void* ptr)
+{
+	AsAnyStruct* asAny = ptr;
+	int res = asAny->i + asAny->j + asAny->k;
+
+	asAny->i = 10;
+	asAny->j = 20;
+	asAny->k = 30;
+	asAny->s = 0;
+
+	return res;
+}
+
 /*
  * AMD64 marshalling tests.
  */

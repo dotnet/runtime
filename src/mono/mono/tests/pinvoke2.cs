@@ -98,6 +98,37 @@ public class Tests {
 		public int i;
 	}
 
+	[StructLayout(LayoutKind.Sequential)]
+	struct AsAnyStruct
+	{
+		public int i;
+		public int j;
+		public int k;
+		public String s;
+
+		public AsAnyStruct(int i, int j, int k, String s) {
+			this.i = i;
+			this.j = j;
+			this.k = k;
+			this.s = s;
+		}
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	class AsAnyClass
+	{
+		public int i;
+		public int j;
+		public int k;
+		public String s;
+
+		public AsAnyClass(int i, int j, int k, String s) {
+			this.i = i;
+			this.j = j;
+			this.k = k;
+		}
+	}
+
 	[DllImport ("libnot-found", EntryPoint="not_found")]
 	public static extern int mono_library_not_found ();
 
@@ -208,6 +239,14 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_asany", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_asany_unicode ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
+
+	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
+	static extern void mono_test_asany_in ([MarshalAs(UnmanagedType.AsAny)][In] object obj); 
+
+	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
+	static extern void mono_test_asany_out ([MarshalAs(UnmanagedType.AsAny)][Out] object obj); 
+	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
+	static extern void mono_test_asany_inout ([MarshalAs(UnmanagedType.AsAny)][In, Out] object obj); 
 
 	[DllImport ("libtest")]
         static extern int class_marshal_test0 (SimpleObj obj);
@@ -686,6 +725,71 @@ public class Tests {
 		}
 		catch (ArgumentException) {
 		}
+
+		return 0;
+	}
+
+	/* AsAny marshalling + [In, Out] */
+
+	public static int test_0_asany_in () {
+		// Struct
+		AsAnyStruct str = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_in (str);
+
+		// Formatted Class
+		AsAnyClass cls = new AsAnyClass(1,2,3, "ABC");
+		mono_test_asany_in (cls);
+		if ((cls.i != 1) || (cls.j != 2) || (cls.k != 3))
+			return 1;
+
+		// Boxed Struct
+		object obj = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_in (obj);
+		str = (AsAnyStruct)obj;
+		if ((str.i != 1) || (str.j != 2) || (str.k != 3))
+			return 2;
+
+		return 0;
+	}
+
+	public static int test_0_asany_out () {
+		// Struct
+		AsAnyStruct str = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_out (str);
+
+		// Formatted Class
+		AsAnyClass cls = new AsAnyClass(1,2,3, "ABC");
+		mono_test_asany_out (cls);
+		if ((cls.i != 10) || (cls.j != 20) || (cls.k != 30))
+			return 1;
+
+		// Boxed Struct
+		object obj = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_out (obj);
+		str = (AsAnyStruct)obj;
+		if ((str.i != 10) || (str.j != 20) || (str.k != 30))
+			return 2;
+
+		return 0;
+	}
+
+	public static int test_0_asany_inout () {
+		// Struct
+		AsAnyStruct str = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_inout (str);
+
+		// Formatted Class
+		AsAnyClass cls = new AsAnyClass(1,2,3, "ABC");
+		mono_test_asany_inout (cls);
+		if ((cls.i != 10) || (cls.j != 20) || (cls.k != 30))
+			return 1;
+
+		// Boxed Struct
+		object obj = new AsAnyStruct(1,2,3, "ABC");
+		mono_test_asany_inout (obj);
+		str = (AsAnyStruct)obj;
+		if ((str.i != 10) || (str.j != 20) || (str.k != 30))
+			return 2;
 
 		return 0;
 	}
