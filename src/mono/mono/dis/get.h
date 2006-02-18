@@ -63,7 +63,7 @@ const char *get_encoded_value          (const char *_ptr,
 const char *get_custom_mod             (MonoImage *m, const char *ptr,
 					char **return_value);
 const char *get_type                   (MonoImage *m, const char *ptr,
-					char **result, MonoGenericContext *context);
+					char **result, gboolean is_def, MonoGenericContext *context);
 const char *get_ret_type               (MonoImage *m, const char *ptr,
 					char **ret_type, MonoGenericContext *context);
 const char *get_param                  (MonoImage *m, const char *ptr,

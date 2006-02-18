@@ -180,15 +180,12 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *co
 	char *s, *result;
 	GString *res = g_string_new ("");
 	int len;
-
-	MonoType *type;
-
-	type = mono_type_create_from_typespec_full (m, context ? context->container : NULL, idx);
+	MonoMethodSignature *sig;
 
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
-	
+
 	switch (*ptr++){
 	case MONO_TYPE_PTR:
 		ptr = get_custom_mod (m, ptr, &s);
@@ -197,26 +194,27 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *co
 			g_string_append_c (res, ' ');
 			g_free (s);
 		}
-		
+
 		if (*ptr == MONO_TYPE_VOID)
 			g_string_append (res, "void");
 		else {
-			ptr = get_type (m, ptr, &s, context);
+			ptr = get_type (m, ptr, &s, is_def, context);
 			if (s)
 				g_string_append (res, s);
 		}
 		g_string_append (res, "*");
 		break;
-		
+
 	case MONO_TYPE_FNPTR:
-		s = dis_stringify_function_ptr (m, type->data.method);
+		sig = mono_metadata_parse_method_signature_full (m, context ? context->container : NULL, 0, ptr, &ptr);
+		s = dis_stringify_function_ptr (m, sig);
 		g_string_append (res, "method ");
 		g_string_append (res, s);
 		g_free (s);
 		break;
-			
+
 	case MONO_TYPE_ARRAY:
-		ptr = get_type (m, ptr, &s, context);
+		ptr = get_type (m, ptr, &s, is_def, context);
 		g_string_append (res, s);
 		g_free (s);
 		g_string_append_c (res, ' ');
@@ -224,7 +222,7 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *co
 		g_string_append (res, s);
 		g_free (s);
 		break;
-		
+
 	case MONO_TYPE_SZARRAY:
 		ptr = get_custom_mod (m, ptr, &s);
 		if (s){
@@ -232,14 +230,14 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContext *co
 			g_string_append_c (res, ' ');
 			g_free (s);
 		}
-		ptr = get_type (m, ptr, &s, context);
+		ptr = get_type (m, ptr, &s, is_def, context);
 		g_string_append (res, s);
 		g_string_append (res, "[]");
 		g_free (s);
 		break;
 
 	default:
-		s = dis_stringify_type (m, type, is_def);
+		ptr = get_type (m, ptr - 1, &s, is_def, context);
 		g_string_append (res, s);
 		g_free (s);
 		break;
@@ -1218,7 +1216,7 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *context)
+get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGenericContext *context)
 {
 	const char *start = ptr;
 	guint32 type;
@@ -1249,7 +1247,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 		int count, i;
 		char *temp;
 
-		ptr = get_type (m, ptr, &temp, context);
+		ptr = get_type (m, ptr, &temp, is_def, context);
 		g_string_append (str, temp);
 		g_free (temp);
 
@@ -1259,7 +1257,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 		for (i = 0; i < count; i++) {
 			if (i)
 				g_string_append (str, ",");
-			ptr = get_type (m, ptr, &temp, context);
+			ptr = get_type (m, ptr, &temp, is_def, context);
 			g_string_append (str, temp);
 		}
 
@@ -1271,7 +1269,7 @@ get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *cont
 
 	default:
 		t = mono_metadata_parse_type_full (m, context ? context->container : NULL, MONO_PARSE_TYPE, 0, start, &ptr);
-		*result = dis_stringify_type (m, t, FALSE);
+		*result = dis_stringify_type (m, t, is_def);
 		mono_metadata_free_type (t);
 		break;
 	}
@@ -1300,7 +1298,7 @@ get_field_signature (MonoImage *m, guint32 blob_signature, MonoGenericContext *c
 	ptr++; len--;
 	
 	ptr = get_custom_mod (m, ptr, &allocated_modifier_string);
-	ptr = get_type (m, ptr, &allocated_type_string, context);
+	ptr = get_type (m, ptr, &allocated_type_string, FALSE, context);
 
 	res = g_strdup_printf (
 		"%s %s",
@@ -1386,7 +1384,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type, MonoGenericContext
 			ptr++;
 		}
 
-		ptr = get_type (m, ptr, &allocated_type_string, context);
+		ptr = get_type (m, ptr, &allocated_type_string, FALSE, context);
 		g_string_append (str, allocated_type_string);
 		if (has_byref)
 			g_string_append (str, "& ");
@@ -1432,7 +1430,7 @@ get_param (MonoImage *m, const char *ptr, char **retval, MonoGenericContext *con
 			ptr++;
 			by_ref = 1;
 		}
-		ptr = get_type (m, ptr, &allocated_type_string, context);
+		ptr = get_type (m, ptr, &allocated_type_string, FALSE, context);
 		g_string_append (str, allocated_type_string);
 		if (by_ref)
 			g_string_append_c (str, '&');

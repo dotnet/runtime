@@ -392,7 +392,7 @@ dump_table_property (MonoImage *m)
 			g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 		ptr++;
 		pcount = mono_metadata_decode_value (ptr, &ptr);
-		ptr = get_type (m, ptr, &type, NULL);
+		ptr = get_type (m, ptr, &type, FALSE, NULL);
 		fprintf (output, "%d: %s %s (",
 			 i + 1, type, mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]));
 		g_free (type);
