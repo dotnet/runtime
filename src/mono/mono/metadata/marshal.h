@@ -82,10 +82,10 @@ void
 mono_marshal_set_last_error (void);
 
 gpointer
-mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding);
+mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
 
 void
-mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding);
+mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
 
 /* method builder functions */
 
