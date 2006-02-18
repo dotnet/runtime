@@ -32,6 +32,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/exception.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
 
@@ -3018,8 +3019,8 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL; /* no parent for PTR types */
-	result->name = "System";
-	result->name_space = "MonoFNPtrFakeClass";
+	result->name_space = "System";
+	result->name = "MonoFNPtrFakeClass";
 	result->image = NULL; /* need to fix... */
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
@@ -4906,7 +4907,6 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass)
 {
-	MonoException *ex;
 	switch (klass->exception_type) {
 	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND: {
 		MonoDomain *domain = mono_domain_get ();

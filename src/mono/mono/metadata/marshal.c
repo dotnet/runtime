@@ -6240,6 +6240,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 			case MONO_TYPE_R8:
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
+			case MONO_TYPE_FNPTR:
 				mono_mb_emit_ldarg (mb, argnum);
 				break;
 			case MONO_TYPE_VALUETYPE:
@@ -6263,7 +6264,6 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 				mono_mb_emit_ldarg (mb, argnum);
 				break;
 			case MONO_TYPE_TYPEDBYREF:
-			case MONO_TYPE_FNPTR:
 			default:
 				g_warning ("type 0x%02x unknown", t->type);	
 				g_assert_not_reached ();
@@ -6311,6 +6311,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 			case MONO_TYPE_R8:
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
+			case MONO_TYPE_FNPTR:
 				/* no conversions necessary */
 				mono_mb_emit_stloc (mb, 3);
 				break;
@@ -6335,7 +6336,6 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 				mono_mb_emit_stloc (mb, 3);
 				break;
 			case MONO_TYPE_TYPEDBYREF:
-			case MONO_TYPE_FNPTR:
 			default:
 				g_warning ("return type 0x%02x unknown", sig->ret->type);	
 				g_assert_not_reached ();
