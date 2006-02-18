@@ -2936,8 +2936,10 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	if (image)
 		klass->image = image;
-	else if (param->owner)
-		klass->image = is_mvar ? param->method->klass->image : param->owner->klass->image;
+	else if (is_mvar && param->method && param->method->klass)
+		klass->image = param->method->klass->image;
+	else if (param->owner && param->owner->klass)
+		klass->image = param->owner->klass->image;
 	else
 		klass->image = mono_defaults.corlib;
 
