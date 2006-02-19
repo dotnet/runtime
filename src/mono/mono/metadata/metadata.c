@@ -9,7 +9,7 @@
  */
 
 #include <config.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
@@ -3686,62 +3686,6 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 }
 
 /**
- * @ptr: MonoType to unwrap
- *
- * Recurses in array/szarray to get the element type.
- * Returns the element MonoType or the @ptr itself if its not an array/szarray.
- */
-static MonoType*
-unwrap_arrays (MonoType *ptr)
-{
-	for (;;) {
-		if (ptr->type == MONO_TYPE_ARRAY)
-			ptr = &ptr->data.array->eklass->byval_arg;
-		else if (ptr->type == MONO_TYPE_SZARRAY)
-			ptr = &ptr->data.klass->byval_arg;
-		else
-			return ptr;
-	}
-}
-
-/**
- * @inst: MonoGenericClass to search in
- * @prefer_mvar: Whether to try harder to find an MVAR
- *
- * Return some occurance of a generic parameter in this instantiation, if any.  Return NULL otherwise.
- * If @prefer_mvar is set, it tries to find if there's an MVAR generic parameter, and returns that
- * in preference to any VAR generic parameter.
- */
-static MonoType *
-find_generic_param (MonoGenericClass *gclass, gboolean prefer_mvar)
-{
-	int i = 0, count = gclass->inst->type_argc;
-	MonoType **ptr = gclass->inst->type_argv;
-	MonoType *fallback = NULL;
-
-	g_assert (gclass->inst->is_open);
-
-	for (i = 0; i < count; i++) {
-		MonoType *ctype = unwrap_arrays (ptr [i]);
-
-		if (ctype->type == MONO_TYPE_GENERICINST && ctype->data.generic_class->inst->is_open)
-			ctype = find_generic_param (ctype->data.generic_class, prefer_mvar);
-
-		if (ctype->type == MONO_TYPE_MVAR)
-			return ctype;
-
-		if (ctype->type == MONO_TYPE_VAR) {
-			if (prefer_mvar)
-				fallback = ctype;
-			else
-				return ctype;
-		}
-	}
-
-	return fallback;
-}
-
-/**
  * @image: context where the image is created
  * @type_spec:  typespec token
  *
@@ -3749,97 +3693,48 @@ find_generic_param (MonoGenericClass *gclass, gboolean prefer_mvar)
  * token.
  */
 MonoType *
-mono_type_create_from_typespec_full (MonoImage *image, MonoGenericContainer *container, guint32 type_spec)
+mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
 	guint32 idx = mono_metadata_token_index (type_spec);
 	MonoTableInfo *t;
-	guint32 cols [MONO_TYPESPEC_SIZE];       
+	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
 	guint32 len;
 	MonoType *type;
-	gboolean cache_type = TRUE;
-	MonoGenericContainer *gc = container;
 
 	mono_loader_lock ();
 
 	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
-
-	if (type && type->type == MONO_TYPE_GENERICINST && type->data.generic_class->inst->is_open) {
-		MonoType *gtype = find_generic_param (type->data.generic_class, gc ? gc->is_method : FALSE);
-		gc = select_container (gc, gtype->type);
-		if (gtype->data.generic_param->owner != gc)
-			type = NULL;
-	}
-
-	if (type && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		gc = select_container (gc, type->type);
-		if (gc) {
-			/* Use the one already cached in the container, if it exists. Otherwise, ensure that it's created */
-			type = gc->types ? gc->types [type->data.generic_param->num] : NULL;
-
-			/* Either way, some other variant of this generic-parameter is already in the typespec cache. */
-			cache_type = FALSE;
-		} else if (type->data.generic_param->owner) {
-			/*
-			 * We need a null-owner generic-parameter, but the one in the cache has an owner.
-			 * Ensure that the null-owner generic-parameter goes into the cache.
-			 *
-			 * Together with the 'cache_type = FALSE;' line in the other arm of this condition,
-			 * this ensures that a null-owner generic-parameter, once created, doesn't need to be re-created.
-			 * The generic-parameters with owners are cached in their respective owners, and thus don't
-			 * need to be re-created either.
-			 */
-			type = NULL;
-		}
-	}
-
 	if (type) {
 		mono_loader_unlock ();
 		return type;
 	}
 
 	t = &image->tables [MONO_TABLE_TYPESPEC];
-	
+
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
 
 	type = g_new0 (MonoType, 1);
 
-	if (cache_type)
-		g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
+	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
 
 	if (*ptr == MONO_TYPE_BYREF) {
-		type->byref = 1; 
+		type->byref = 1;
 		ptr++;
 	}
 
-	if (!do_mono_metadata_parse_type (type, image, container, ptr, &ptr)) {
-		if (cache_type)
-			g_hash_table_remove (image->typespec_cache, GUINT_TO_POINTER (type_spec));
+	if (!do_mono_metadata_parse_type (type, image, NULL, ptr, &ptr)) {
+		g_hash_table_remove (image->typespec_cache, GUINT_TO_POINTER (type_spec));
 		g_free (type);
 		mono_loader_unlock ();
 		return NULL;
 	}
 
-	if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->owner) {
-		MonoGenericContainer *owner = type->data.generic_param->owner;
-
-		if (!owner->types)
-			owner->types = g_new0 (MonoType*, owner->type_argc);
-
-		owner->types [type->data.generic_param->num] = type;
-	}
-
 	mono_loader_unlock ();
 
 	return type;
-}
-
-MonoType *
-mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
-{
-	return mono_type_create_from_typespec_full (image, NULL, type_spec);
 }
 
 MonoMarshalSpec *

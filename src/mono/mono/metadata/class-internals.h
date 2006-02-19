@@ -439,7 +439,7 @@ struct _MonoGenericMethod {
  */
 struct _MonoGenericContext {
 	/*
-	 * The current container:
+	 * The container which has been instantiated.
 	 *
 	 * If we're in a generic method, the generic method definition's container.
 	 * Otherwise the generic type's container.
@@ -458,7 +458,8 @@ struct _MonoGenericContext {
  */
 struct _MonoGenericContainer {
 	MonoGenericContext context;
-	/* If we're a generic method definition, the containing class'es context. */
+	/* If we're a generic method definition in a generic type definition,
+	   the generic container of the containing class. */
 	MonoGenericContainer *parent;
 	/* If we're a generic method definition, caches all their instantiations. */
 	GHashTable *method_hash;
@@ -466,11 +467,10 @@ struct _MonoGenericContainer {
 	MonoClass *klass;
 	int type_argc    : 6;
 	/* If true, we're a generic method, otherwise a generic type definition. */
+	/* Invariant: parent != NULL => is_method */
 	int is_method    : 1;
 	/* Our type parameters. */
 	MonoGenericParam *type_params;
-	/* Cache for MonoTypes */
-	MonoType **types;
 };
 
 /*

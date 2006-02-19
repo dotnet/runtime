@@ -283,11 +283,6 @@ mono_metadata_parse_type_full               (MonoImage             *image,
 					     const char            *ptr,
 					     const char           **rptr);
 
-MonoType *
-mono_type_create_from_typespec_full         (MonoImage             *image,
-					     MonoGenericContainer  *container,
-					     guint32                type_spec);
-
 MonoMethodSignature *
 mono_metadata_parse_signature_full          (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
