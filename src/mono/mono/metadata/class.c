@@ -2592,8 +2592,8 @@ mono_class_setup_supertypes (MonoClass *class)
 	}
 }	
 
-static MonoGenericInst *
-get_shared_inst (MonoGenericContainer *container)
+MonoGenericInst *
+mono_get_shared_generic_inst (MonoGenericContainer *container)
 {
 	MonoGenericInst *nginst;
 	int i;
@@ -2639,7 +2639,7 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 
 	gclass->context = &container->context;
 	gclass->container_class = container->klass;
-	gclass->inst = get_shared_inst (container);
+	gclass->inst = mono_get_shared_generic_inst (container);
 
 	if (!is_dynamic) {
 		MonoGenericClass *cached = mono_metadata_lookup_generic_class (gclass);

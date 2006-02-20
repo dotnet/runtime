@@ -8317,6 +8317,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	if (rmb->generic_params) {
 		int count = mono_array_length (rmb->generic_params);
 		MonoGenericContainer *container;
+		MonoGenericContext *context;
 
 		m->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
@@ -8327,7 +8328,16 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				mono_array_get (rmb->generic_params, MonoReflectionGenericParam*, i);
 
 			container->type_params [i] = *gp->type.type->data.generic_param;
+			container->type_params [i].method = m;
 		}
+
+		context = &container->context;
+		context->container = container;
+		if (klass->generic_container) {
+			container->parent = klass->generic_container;
+			context->gclass = klass->generic_container->context.gclass;
+		}
+		context->gmethod = mono_get_shared_generic_method (container);
 	}
 
 	if (rmb->refs) {

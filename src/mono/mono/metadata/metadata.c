@@ -4096,14 +4096,17 @@ mono_guid_to_string (const guint8 *guid)
 }
 
 static gboolean
-get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContext *context)
+get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContainer *container)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
 	guint32 i, token, found;
 	MonoClass *klass, **res;
 	GList *cons = NULL, *tmp;
-	
+	MonoGenericContext *context = &container->context;
+
+	g_assert (context->gclass || context->gmethod);
+
 	*constraints = NULL;
 	found = 0;
 	for (i = 0; i < tdef->rows; ++i) {
@@ -4192,8 +4195,7 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return;
 	for (i = 0; i < container->type_argc; i++)
-		get_constraints (image, start_row + i, &container->type_params [i].constraints,
-				 &container->context);
+		get_constraints (image, start_row + i, &container->type_params [i].constraints, container);
 }
 
 /*

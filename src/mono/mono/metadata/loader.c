@@ -1075,6 +1075,17 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	return piinfo->addr;
 }
 
+MonoGenericMethod *
+mono_get_shared_generic_method (MonoGenericContainer *container)
+{
+	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->container = container;
+	gmethod->generic_class = container->context.gclass;
+	gmethod->inst = mono_get_shared_generic_inst (container);
+
+	return gmethod;
+}
+
 static MonoMethod *
 mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			    MonoGenericContext *context)
@@ -1125,6 +1136,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	container = klass->generic_container;
 	generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
+		MonoGenericContext *context = &generic_container->context;
+		if (container)
+			context->gclass = container->context.gclass;
+		context->gmethod = mono_get_shared_generic_method (generic_container);
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
 
 		for (i = 0; i < generic_container->type_argc; i++) {

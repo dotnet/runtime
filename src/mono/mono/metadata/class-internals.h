@@ -758,8 +758,14 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 MonoMethodSignature *
 mono_method_signature_full (MonoMethod *image, MonoGenericContainer *container);
 
+MonoGenericInst *
+mono_get_shared_generic_inst (MonoGenericContainer *container);
+
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic);
+
+MonoGenericMethod *
+mono_get_shared_generic_method (MonoGenericContainer *container);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
