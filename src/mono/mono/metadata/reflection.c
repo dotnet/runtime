@@ -5400,6 +5400,35 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	return res;
 }
 
+static gboolean
+verify_safe_for_managed_space (MonoType *type)
+{
+	switch (type->type) {
+#ifdef DEBUG_HARDER
+	case MONO_TYPE_ARRAY:
+		return verify_safe_for_managed_space (&type->data.array->eklass->byval_arg);
+	case MONO_TYPE_PTR:
+		return verify_safe_for_managed_space (type->data.type);
+	case MONO_TYPE_SZARRAY:
+		return verify_safe_for_managed_space (&type->data.klass->byval_arg);
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericInst *inst = type->data.generic_class->inst;
+		int i;
+		if (!inst->is_open)
+			break;
+		for (i = 0; i < inst->type_argc; ++i)
+			if (!verify_safe_for_managed_space (inst->type_argv [i]))
+				return FALSE;
+		break;
+	}
+#endif
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return type->data.generic_param->owner != NULL;
+	}
+	return TRUE;
+}
+
 /*
  * mono_type_get_object:
  * @domain: an app domain
@@ -5427,6 +5456,12 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_domain_unlock (domain);
 		return res;
 	}
+
+	if (!verify_safe_for_managed_space (type)) {
+		mono_domain_unlock (domain);
+		mono_raise_exception (mono_get_exception_invalid_operation ("This type cannot be propagated to managed space"));
+	}
+
 	if (klass->reflection_info && !klass->wastypebuilder) {
 		/* g_assert_not_reached (); */
 		/* should this be considered an error condition? */
