@@ -8,5 +8,5 @@ def_DATA = opcode.def
 xmldir = $(datadir)/mono/cil
 xml_DATA = cil-opcodes.xml
 
-EXTRA_DIST=opcode.def make-opcodes-def.pl make-opcode-def.xsl $(xml_DATA) $(def_DATA)
+EXTRA_DIST=tables.def opcode.def make-opcodes-def.pl make-opcode-def.xsl $(xml_DATA) $(def_DATA)
 
