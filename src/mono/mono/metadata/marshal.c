@@ -5373,8 +5373,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
-		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		*conv_arg_type = &mono_defaults.object_class->byval_arg;
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
 		if (klass->element_class->blittable) {
 			mono_mb_emit_ldarg (mb, argnum);
@@ -5382,8 +5382,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_ARRAY_LPARRAY));
 			mono_mb_emit_stloc (mb, conv_arg);
-		}
-		else {
+		} else {
 			MonoClass *eklass;
 			guint32 label1, label2, label3;
 			int index_var, src_var, dest_ptr, esize;
@@ -5405,7 +5404,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			else
 				conv = -1;
 
-			src_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			src_var = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			if (t->byref)
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -5473,8 +5472,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 				mono_mb_emit_icall (mb, conv_to_icall (conv));
 				mono_mb_emit_byte (mb, CEE_STIND_I);
-			}
-			else {
+			} else {
 				/* set the src_ptr */
 				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_ldloc (mb, index_var);
@@ -5549,7 +5547,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, index_var);
 			mono_mb_emit_ldarg (mb, argnum);
 			if (t->byref)
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_byte (mb, CEE_LDLEN);
 			mono_mb_emit_byte (mb, CEE_BGE);
 			label3 = mb->pos;
