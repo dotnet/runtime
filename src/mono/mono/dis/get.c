@@ -29,7 +29,7 @@ static char *
 get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *context);
  
 static gboolean
-can_print_generic_param_name (MonoGenericParam *gparam);
+cant_print_generic_param_name (MonoGenericParam *gparam);
 
 GHashTable *key_table = NULL;
 GHashTable *mono_generic_params_with_ambiguous_names = NULL;
@@ -1162,13 +1162,13 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		if (is_def && !can_print_generic_param_name (type->data.generic_param))
+		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
 		else
 			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
-		if (is_def && !can_print_generic_param_name (type->data.generic_param))
+		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
 		else
 			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
@@ -3061,7 +3061,7 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 }
 	
 static gboolean
-can_print_generic_param_name (MonoGenericParam *gparam)
+cant_print_generic_param_name (MonoGenericParam *gparam)
 {
 	g_assert (gparam);
 
