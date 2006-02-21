@@ -259,6 +259,8 @@ guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token, gu
  */
 guint32 mono_metadata_decode_value     (const char            *ptr,
                                         const char           **rptr);
+gint32 mono_metadata_decode_signed_value (const char *ptr, const char **rptr);
+
 guint32 mono_metadata_decode_blob_size (const char            *ptr,
                                         const char           **rptr);
 
