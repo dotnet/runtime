@@ -1630,32 +1630,30 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
 }
 
-static void
-mini_emit_load_intf_reg (MonoCompile *s, int intf_reg, int ioffset_reg, MonoClass *klass)
-{
-	if (s->compile_aot) {
-		int iid_reg = mono_regstate_next_int (s->rs);
-		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-#if SIZEOF_VOID_P == 8
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 3);
-#else
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 2);
-#endif
-		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, iid_reg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, 0);
-	}
-	else
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
-}
-
-/* Emit code which loads <vtable_reg>->interface_offsets [klass->interface_id] */
+/* Emit code which loads interface_offsets [klass->interface_id]
+ * The array is stored in memory before vtable.
+ */
 static void
 mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, MonoClass *klass)
 {
-	int ioffset_reg = mono_regstate_next_int (s->rs);
-
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_offsets));
-	mini_emit_load_intf_reg (s, intf_reg, ioffset_reg, klass);
+	if (s->compile_aot) {
+		int ioffset_reg = mono_regstate_next_int (s->rs);
+		int iid_reg = mono_regstate_next_int (s->rs);
+		int adjiid_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
+		/* Consider having it already adjusted with a new AOT const,
+		 * so we avoid both the inc and the shift.
+		 */
+		MONO_EMIT_NEW_BIALU (s, OP_ADD_IMM, adjiid_reg, iid_reg, 1);
+#if SIZEOF_VOID_P == 8
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, ioffset_reg, adjiid_reg, 3);
+#else
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, ioffset_reg, adjiid_reg, 2);
+#endif
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, 0);
+	} else {
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, vtable_reg, -((klass->interface_id + 1) * SIZEOF_VOID_P));
+	}
 }
 
 /* Emit code which loads <klass_reg>->interface_offsets [klass->interface_id] */
