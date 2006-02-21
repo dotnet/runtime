@@ -702,6 +702,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	gpointer iter;
+	gpointer *interface_offsets;
 
 	mono_domain_lock (domain);
 	runtime_info = class->runtime_info;
@@ -714,13 +715,15 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	mono_class_setup_vtable (class);
 
+
+	vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
+		sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+
 	mono_stats.used_class_count++;
-	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	mono_stats.class_vtable_size += vtable_size;
+	interface_offsets = mono_mempool_alloc0 (domain->mp,  vtable_size);
 
-	vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
-
-	vt = mono_mempool_alloc0 (domain->mp,  vtable_size);
-
+	vt = (MonoVTable*) (interface_offsets + class->max_interface_id + 1);
 	vt->klass = class;
 	vt->rank = class->rank;
 	vt->domain = domain;
@@ -805,14 +808,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	vt->max_interface_id = class->max_interface_id;
 	
-	vt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
-	        sizeof (gpointer) * (class->max_interface_id + 1));
-
 	/* initialize interface offsets */
 	for (i = 0; i <= class->max_interface_id; ++i) {
 		int slot = class->interface_offsets [i];
 		if (slot >= 0)
-			vt->interface_offsets [i] = &(vt->vtable [slot]);
+			interface_offsets [class->max_interface_id - i] = &(vt->vtable [slot]);
 	}
 
 	/* 
@@ -918,6 +918,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	MonoClass *k;
 	GSList *extra_interfaces = NULL;
 	MonoClass *class = remote_class->proxy_class;
+	gpointer *interface_offsets;
 
 	vt = mono_class_vtable (domain, class);
 	max_interface_id = vt->max_interface_id;
@@ -955,11 +956,13 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		if (iclass->max_interface_id > max_interface_id) max_interface_id = iclass->max_interface_id;
 	}
 
-	vtsize = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	vtsize = sizeof (gpointer) * (max_interface_id + 1) +
+		sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
 	mono_stats.class_vtable_size += vtsize + extra_interface_vtsize;
 
-	pvt = mono_mempool_alloc (domain->mp, vtsize + extra_interface_vtsize);
+	interface_offsets = mono_mempool_alloc0 (domain->mp, vtsize + extra_interface_vtsize);
+	pvt = (MonoVTable*)(interface_offsets + max_interface_id + 1);
 	memcpy (pvt, vt, vtsize);
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
@@ -987,14 +990,12 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	pvt->max_interface_id = max_interface_id;
-	pvt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
-			sizeof (gpointer) * (max_interface_id + 1));
 
 	/* initialize interface offsets */
 	for (i = 0; i <= class->max_interface_id; ++i) {
 		int slot = class->interface_offsets [i];
 		if (slot >= 0)
-			pvt->interface_offsets [i] = &(pvt->vtable [slot]);
+			interface_offsets [max_interface_id - i] = &(pvt->vtable [slot]);
 	}
 
 	if (extra_interfaces) {
@@ -1007,7 +1008,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		/* Create trampolines for the methods of the interfaces */
 		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
 			interf = list_item->data;
-			pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
+			interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
 
 			iter = NULL;
 			j = 0;
@@ -3031,11 +3032,13 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 	vt = obj->vtable;
 	
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		if ((klass->interface_id <= vt->max_interface_id) &&
-		    (vt->interface_offsets [klass->interface_id] != 0))
-			return obj;
-	}
-	else {
+		if (klass->interface_id <= vt->max_interface_id) {
+			/* the interface_offsets array is stored before the vtable */
+			gpointer *interface_offsets = (gpointer*)vt;
+			if (interface_offsets [- (klass->interface_id + 1)] != NULL)
+				return obj;
+		}
+	} else {
 		MonoClass *oklass = vt->klass;
 		if ((oklass == mono_defaults.transparent_proxy_class))
 			oklass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;

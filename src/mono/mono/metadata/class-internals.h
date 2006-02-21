@@ -345,15 +345,15 @@ struct _MonoClass {
 	MonoMethod **vtable;	
 };
 
+/* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
 	MonoClass  *klass;
-    /*
+	 /*
 	 * According to comments in gc_gcj.h, this should be the second word in
 	 * the vtable.
 	 */
 	void *gc_descr; 	
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-        gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
         gpointer    type; /* System.Type type for klass */
 	guint16     max_interface_id;
