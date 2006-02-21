@@ -27,8 +27,13 @@ get_memberref_context (MonoImage *m, guint32 mrp_token, MonoGenericContext *cont
 
 static char *
 get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *context);
+ 
+static gboolean
+can_print_generic_param_name (MonoGenericParam *gparam);
 
 GHashTable *key_table = NULL;
+GHashTable *mono_generic_params_with_ambiguous_names = NULL;
+GHashTable *generic_containers = NULL;
 gboolean show_method_tokens = FALSE;
 gboolean show_tokens = FALSE;
 
@@ -1157,13 +1162,13 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		if (is_def && (!mono_generic_params_with_ambiguous_names || !g_hash_table_lookup (mono_generic_params_with_ambiguous_names, type->data.generic_param)))
+		if (is_def && !can_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
 		else
 			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
-		if (is_def && (!mono_generic_params_with_ambiguous_names || !g_hash_table_lookup (mono_generic_params_with_ambiguous_names, type->data.generic_param)))
+		if (is_def && !can_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
 		else
 			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
@@ -3010,3 +3015,59 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContext *context)
 
 	return NULL;
 }
+
+static void
+check_ambiguous_genparams (MonoGenericContainer *container)
+{
+	GSList *dup_list = NULL, *l;
+	GHashTable *table = NULL;
+	gpointer *p;
+	int i;
+
+	if (!container)
+		return;
+	
+	if (generic_containers && g_hash_table_lookup (generic_containers, container))
+		/* Already been checked for ambiguous gen params */
+		return;
+
+	table = g_hash_table_new (g_str_hash, g_str_equal);
+	for (i = 0; i < container->type_argc; i++) {
+		MonoGenericParam *param = &container->type_params [i];
+
+		if ((p = g_hash_table_lookup (table, param->name)))
+			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (i + 1)), p);
+		else
+			g_hash_table_insert (table, (char*)param->name, GUINT_TO_POINTER (i + 1));
+	}
+
+	if (dup_list) {
+		if (!mono_generic_params_with_ambiguous_names)
+			mono_generic_params_with_ambiguous_names = g_hash_table_new (NULL, NULL);
+		for (l = dup_list; l; l = l->next) {
+			int param = GPOINTER_TO_UINT (l->data);
+			g_hash_table_insert (mono_generic_params_with_ambiguous_names,
+				 &container->type_params [param-1],
+				 &container->type_params [param-1]);
+		}
+		g_slist_free (dup_list);
+	}
+
+	if (!generic_containers)
+		generic_containers = g_hash_table_new (NULL, NULL);
+
+	g_hash_table_insert (generic_containers, container, container);
+	g_hash_table_destroy (table);
+}
+	
+static gboolean
+can_print_generic_param_name (MonoGenericParam *gparam)
+{
+	g_assert (gparam);
+
+	check_ambiguous_genparams (gparam->owner);
+	return (!gparam->owner || (mono_generic_params_with_ambiguous_names && 
+			g_hash_table_lookup (mono_generic_params_with_ambiguous_names, gparam)));
+}
+
+

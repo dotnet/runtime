@@ -257,8 +257,6 @@ typedef struct _MonoAssemblyBindingInfo {
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr);
 
-extern GHashTable *mono_generic_params_with_ambiguous_names;
-
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
 
