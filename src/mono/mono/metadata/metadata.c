@@ -4103,7 +4103,8 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	GList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
 
-	g_assert (context->gclass || context->gmethod);
+	/* FIXME: !container->klass => this is probably monodis */
+	g_assert (!container->klass || context->gclass || context->gmethod);
 
 	*constraints = NULL;
 	found = 0;
