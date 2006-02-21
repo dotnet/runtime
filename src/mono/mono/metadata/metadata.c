@@ -91,7 +91,8 @@ enum {
 	MONO_MT_RS_IDX
 };
 
-const static unsigned char AssemblySchema [] = {
+const static unsigned char TableSchemas [] = {
+#define ASSEMBLY_SCHEMA_OFFSET 0
 	MONO_MT_UINT32,     /* "HashId" }, */
 	MONO_MT_UINT16,     /* "Major" },  */
 	MONO_MT_UINT16,     /* "Minor" }, */
@@ -101,22 +102,19 @@ const static unsigned char AssemblySchema [] = {
 	MONO_MT_BLOB_IDX,   /* "PublicKey" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_STRING_IDX, /* "Culture" }, */
-	MONO_MT_END
-};
-	
-const static unsigned char AssemblyOSSchema [] = {
+	MONO_MT_END,
+
+#define ASSEMBLYOS_SCHEMA_OFFSET ASSEMBLY_SCHEMA_OFFSET + 10
 	MONO_MT_UINT32,     /* "OSPlatformID" }, */
 	MONO_MT_UINT32,     /* "OSMajor" }, */
 	MONO_MT_UINT32,     /* "OSMinor" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char AssemblyProcessorSchema [] = {
+#define ASSEMBLYPROC_SCHEMA_OFFSET ASSEMBLYOS_SCHEMA_OFFSET + 4
 	MONO_MT_UINT32,     /* "Processor" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char AssemblyRefSchema [] = {
+#define ASSEMBLYREF_SCHEMA_OFFSET ASSEMBLYPROC_SCHEMA_OFFSET + 2
 	MONO_MT_UINT16,     /* "Major" }, */
 	MONO_MT_UINT16,     /* "Minor" }, */
 	MONO_MT_UINT16,     /* "Build" }, */
@@ -126,295 +124,292 @@ const static unsigned char AssemblyRefSchema [] = {
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_STRING_IDX, /* "Culture" }, */
 	MONO_MT_BLOB_IDX,   /* "HashValue" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char AssemblyRefOSSchema [] = {
+#define ASSEMBLYREFOS_SCHEMA_OFFSET ASSEMBLYREF_SCHEMA_OFFSET + 10
 	MONO_MT_UINT32,     /* "OSPlatformID" }, */
 	MONO_MT_UINT32,     /* "OSMajorVersion" }, */
 	MONO_MT_UINT32,     /* "OSMinorVersion" }, */
 	MONO_MT_TABLE_IDX,  /* "AssemblyRef:AssemblyRef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char AssemblyRefProcessorSchema [] = {
+#define ASSEMBLYREFPROC_SCHEMA_OFFSET ASSEMBLYREFOS_SCHEMA_OFFSET + 5
 	MONO_MT_UINT32,     /* "Processor" }, */
 	MONO_MT_TABLE_IDX,  /* "AssemblyRef:AssemblyRef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ClassLayoutSchema [] = {
+#define CLASS_LAYOUT_SCHEMA_OFFSET ASSEMBLYREFPROC_SCHEMA_OFFSET + 3
 	MONO_MT_UINT16,     /* "PackingSize" }, */
 	MONO_MT_UINT32,     /* "ClassSize" }, */
 	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ConstantSchema [] = {
+#define CONSTANT_SCHEMA_OFFSET CLASS_LAYOUT_SCHEMA_OFFSET + 4
 	MONO_MT_UINT8,      /* "Type" }, */
 	MONO_MT_UINT8,      /* "PaddingZero" }, */
 	MONO_MT_CONST_IDX,  /* "Parent" }, */
 	MONO_MT_BLOB_IDX,   /* "Value" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char CustomAttributeSchema [] = {
+#define CUSTOM_ATTR_SCHEMA_OFFSET CONSTANT_SCHEMA_OFFSET + 5
 	MONO_MT_HASCAT_IDX, /* "Parent" }, */
 	MONO_MT_CAT_IDX,    /* "Type" }, */
 	MONO_MT_BLOB_IDX,   /* "Value" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char DeclSecuritySchema [] = {
+#define DECL_SEC_SCHEMA_OFFSET CUSTOM_ATTR_SCHEMA_OFFSET + 4
 	MONO_MT_UINT16,     /* "Action" }, */
 	MONO_MT_HASDEC_IDX, /* "Parent" }, */
 	MONO_MT_BLOB_IDX,   /* "PermissionSet" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char EventMapSchema [] = {
+#define EVENTMAP_SCHEMA_OFFSET DECL_SEC_SCHEMA_OFFSET + 4
 	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
 	MONO_MT_TABLE_IDX,  /* "EventList:Event" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char EventSchema [] = {
+#define EVENT_SCHEMA_OFFSET EVENTMAP_SCHEMA_OFFSET + 3
 	MONO_MT_UINT16,     /* "EventFlags#EventAttribute" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_TABLE_IDX,  /* "EventType" }, TypeDef or TypeRef  */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ExportedTypeSchema [] = {
+#define EXPORTED_TYPE_SCHEMA_OFFSET EVENT_SCHEMA_OFFSET + 4
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_TABLE_IDX,  /* "TypeDefId" }, */
 	MONO_MT_STRING_IDX, /* "TypeName" }, */
 	MONO_MT_STRING_IDX, /* "TypeNameSpace" }, */
 	MONO_MT_IMPL_IDX,   /* "Implementation" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char FieldSchema [] = {
+#define FIELD_SCHEMA_OFFSET EXPORTED_TYPE_SCHEMA_OFFSET + 6
 	MONO_MT_UINT16,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
-	MONO_MT_END
-};
-const static unsigned char FieldLayoutSchema [] = {
+	MONO_MT_END,
+
+#define FIELD_LAYOUT_SCHEMA_OFFSET FIELD_SCHEMA_OFFSET + 4
 	MONO_MT_UINT32,     /* "Offset" }, */
 	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char FieldMarshalSchema [] = {
+#define FIELD_MARSHAL_SCHEMA_OFFSET FIELD_LAYOUT_SCHEMA_OFFSET + 3
 	MONO_MT_HFM_IDX,    /* "Parent" }, */
 	MONO_MT_BLOB_IDX,   /* "NativeType" }, */
-	MONO_MT_END
-};
-const static unsigned char FieldRVASchema [] = {
+	MONO_MT_END,
+
+#define FIELD_RVA_SCHEMA_OFFSET FIELD_MARSHAL_SCHEMA_OFFSET + 3
 	MONO_MT_UINT32,     /* "RVA" }, */
 	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char FileSchema [] = {
+#define FILE_SCHEMA_OFFSET FIELD_RVA_SCHEMA_OFFSET + 3
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Value" },  */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ImplMapSchema [] = {
+#define IMPLMAP_SCHEMA_OFFSET FILE_SCHEMA_OFFSET + 4
 	MONO_MT_UINT16,     /* "MappingFlag" }, */
 	MONO_MT_MF_IDX,     /* "MemberForwarded" }, */
 	MONO_MT_STRING_IDX, /* "ImportName" }, */
 	MONO_MT_TABLE_IDX,  /* "ImportScope:ModuleRef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char InterfaceImplSchema [] = {
+#define IFACEMAP_SCHEMA_OFFSET IMPLMAP_SCHEMA_OFFSET + 5
 	MONO_MT_TABLE_IDX,  /* "Class:TypeDef" },  */
 	MONO_MT_TDOR_IDX,  /* "Interface=TypeDefOrRef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ManifestResourceSchema [] = {
+#define MANIFEST_SCHEMA_OFFSET IFACEMAP_SCHEMA_OFFSET + 3
 	MONO_MT_UINT32,     /* "Offset" }, */
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_IMPL_IDX,   /* "Implementation" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char MemberRefSchema [] = {
+#define MEMBERREF_SCHEMA_OFFSET MANIFEST_SCHEMA_OFFSET + 5
 	MONO_MT_MRP_IDX,    /* "Class" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char MethodSchema [] = {
+#define METHOD_SCHEMA_OFFSET MEMBERREF_SCHEMA_OFFSET + 4
 	MONO_MT_UINT32,     /* "RVA" }, */
 	MONO_MT_UINT16,     /* "ImplFlags#MethodImplAttributes" }, */
 	MONO_MT_UINT16,     /* "Flags#MethodAttribute" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
 	MONO_MT_TABLE_IDX,  /* "ParamList:Param" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char MethodImplSchema [] = {
+#define METHOD_IMPL_SCHEMA_OFFSET METHOD_SCHEMA_OFFSET + 7
 	MONO_MT_TABLE_IDX,  /* "Class:TypeDef" }, */
 	MONO_MT_MDOR_IDX,   /* "MethodBody" }, */
 	MONO_MT_MDOR_IDX,   /* "MethodDeclaration" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char MethodSemanticsSchema [] = {
+#define METHOD_SEMA_SCHEMA_OFFSET METHOD_IMPL_SCHEMA_OFFSET + 4
 	MONO_MT_UINT16,     /* "MethodSemantic" }, */
 	MONO_MT_TABLE_IDX,  /* "Method:Method" }, */
 	MONO_MT_HS_IDX,     /* "Association" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ModuleSchema [] = {
+#define MODULE_SCHEMA_OFFSET METHOD_SEMA_SCHEMA_OFFSET + 4
 	MONO_MT_UINT16,     /* "Generation" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_GUID_IDX,   /* "MVID" }, */
 	MONO_MT_GUID_IDX,   /* "EncID" }, */
 	MONO_MT_GUID_IDX,   /* "EncBaseID" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ModuleRefSchema [] = {
+#define MODULEREF_SCHEMA_OFFSET MODULE_SCHEMA_OFFSET + 6
 	MONO_MT_STRING_IDX, /* "Name" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char NestedClassSchema [] = {
+#define NESTED_CLASS_SCHEMA_OFFSET MODULEREF_SCHEMA_OFFSET + 2
 	MONO_MT_TABLE_IDX,  /* "NestedClass:TypeDef" }, */
 	MONO_MT_TABLE_IDX,  /* "EnclosingClass:TypeDef" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char ParamSchema [] = {
+#define PARAM_SCHEMA_OFFSET NESTED_CLASS_SCHEMA_OFFSET + 3
 	MONO_MT_UINT16,     /* "Flags" }, */
 	MONO_MT_UINT16,     /* "Sequence" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char PropertySchema [] = {
+#define PROPERTY_SCHEMA_OFFSET PARAM_SCHEMA_OFFSET + 4
 	MONO_MT_UINT16,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Type" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char PropertyMapSchema [] = {
+#define PROPERTY_MAP_SCHEMA_OFFSET PROPERTY_SCHEMA_OFFSET + 4
 	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
 	MONO_MT_TABLE_IDX,  /* "PropertyList:Property" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char StandaloneSigSchema [] = {
+#define STDALON_SIG_SCHEMA_OFFSET PROPERTY_MAP_SCHEMA_OFFSET + 3
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char TypeDefSchema [] = {
+#define TYPEDEF_SCHEMA_OFFSET STDALON_SIG_SCHEMA_OFFSET + 2
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_STRING_IDX, /* "Namespace" }, */
 	MONO_MT_TDOR_IDX,   /* "Extends" }, */
 	MONO_MT_TABLE_IDX,  /* "FieldList:Field" }, */
 	MONO_MT_TABLE_IDX,  /* "MethodList:Method" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char TypeRefSchema [] = {
+#define TYPEREF_SCHEMA_OFFSET TYPEDEF_SCHEMA_OFFSET + 7
 	MONO_MT_RS_IDX,     /* "ResolutionScope=ResolutionScope" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_STRING_IDX, /* "Namespace" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char TypeSpecSchema [] = {
+#define TYPESPEC_SCHEMA_OFFSET TYPEREF_SCHEMA_OFFSET + 4
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char GenericParamSchema [] = {
+#define GENPARAM_SCHEMA_OFFSET TYPESPEC_SCHEMA_OFFSET + 2
 	MONO_MT_UINT16,     /* "Number" }, */
 	MONO_MT_UINT16,     /* "Flags" }, */
 	MONO_MT_TABLE_IDX,  /* "Owner" },  TypeDef or MethodDef */
 	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_END,
 
-	MONO_MT_END
-};
-
-const static unsigned char MethodSpecSchema [] = {
+#define METHOD_SPEC_SCHEMA_OFFSET GENPARAM_SCHEMA_OFFSET + 5
 	MONO_MT_MDOR_IDX,   /* "Method" }, */
 	MONO_MT_BLOB_IDX,   /* "Signature" }, */
-	MONO_MT_END
-};
+	MONO_MT_END,
 
-const static unsigned char GenericParamConstraintSchema [] = {
+#define GEN_CONSTRAINT_SCHEMA_OFFSET METHOD_SPEC_SCHEMA_OFFSET + 3
 	MONO_MT_TABLE_IDX,  /* "GenericParam" }, */
 	MONO_MT_TDOR_IDX,   /* "Constraint" }, */
+	MONO_MT_END,
+
+#define NULL_SCHEMA_OFFSET GEN_CONSTRAINT_SCHEMA_OFFSET + 3
 	MONO_MT_END
 };
 
-const static struct {
-	const unsigned char *description;
-	const char    *name;
-} tables [] = {
-	/*  0 */ { ModuleSchema,               "Module" },
-	/*  1 */ { TypeRefSchema,              "TypeRef" },
-	/*  2 */ { TypeDefSchema,              "TypeDef" },
-	/*  3 */ { NULL,                       NULL },
-	/*  4 */ { FieldSchema,                "Field" },
-	/*  5 */ { NULL,                       NULL },
-	/*  6 */ { MethodSchema,               "Method" },
-	/*  7 */ { NULL,                       NULL },
-	/*  8 */ { ParamSchema,                "Param" },
-	/*  9 */ { InterfaceImplSchema,        "InterfaceImpl" },
-	/*  A */ { MemberRefSchema,            "MemberRef" },
-	/*  B */ { ConstantSchema,             "Constant" },
-	/*  C */ { CustomAttributeSchema,      "CustomAttribute" },
-	/*  D */ { FieldMarshalSchema,         "FieldMarshal" },
-	/*  E */ { DeclSecuritySchema,         "DeclSecurity" },
-	/*  F */ { ClassLayoutSchema,          "ClassLayout" },
-	/* 10 */ { FieldLayoutSchema,          "FieldLayout" },
-	/* 11 */ { StandaloneSigSchema,        "StandaloneSig" },
-	/* 12 */ { EventMapSchema,             "EventMap" },
-	/* 13 */ { NULL,                       NULL },
-	/* 14 */ { EventSchema,                "Event" },
-	/* 15 */ { PropertyMapSchema,          "PropertyMap" },
-	/* 16 */ { NULL,                       NULL },
-	/* 17 */ { PropertySchema,             "PropertyTable" },
-	/* 18 */ { MethodSemanticsSchema,      "MethodSemantics" },
-	/* 19 */ { MethodImplSchema,           "MethodImpl" },
-	/* 1A */ { ModuleRefSchema,            "ModuleRef" },
-	/* 1B */ { TypeSpecSchema,             "TypeSpec" },
-	/* 1C */ { ImplMapSchema,              "ImplMap" },
-	/* 1D */ { FieldRVASchema,             "FieldRVA" },
-	/* 1E */ { NULL,                       NULL },
-	/* 1F */ { NULL,                       NULL },
-	/* 20 */ { AssemblySchema,             "Assembly" },
-	/* 21 */ { AssemblyProcessorSchema,    "AssemblyProcessor" },
-	/* 22 */ { AssemblyOSSchema,           "AssemblyOS" },
-	/* 23 */ { AssemblyRefSchema,          "AssemblyRef" },
-	/* 24 */ { AssemblyRefProcessorSchema, "AssemblyRefProcessor" },
-	/* 25 */ { AssemblyRefOSSchema,        "AssemblyRefOS" },
-	/* 26 */ { FileSchema,                 "File" },
-	/* 27 */ { ExportedTypeSchema,         "ExportedType" },
-	/* 28 */ { ManifestResourceSchema,     "ManifestResource" },
-	/* 29 */ { NestedClassSchema,          "NestedClass" },
-	/* 2A */ { GenericParamSchema,         "GenericParam" },
-	/* 2B */ { MethodSpecSchema,           "MethodSpec" },
-	/* 2C */ { GenericParamConstraintSchema, "GenericParamConstraint" },
+/* Must be the same order as MONO_TABLE_* */
+const static unsigned char
+table_description [] = {
+	MODULE_SCHEMA_OFFSET,
+	TYPEREF_SCHEMA_OFFSET,
+	TYPEDEF_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	FIELD_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	METHOD_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	PARAM_SCHEMA_OFFSET,
+	IFACEMAP_SCHEMA_OFFSET,
+	MEMBERREF_SCHEMA_OFFSET, /* 0xa */
+	CONSTANT_SCHEMA_OFFSET,
+	CUSTOM_ATTR_SCHEMA_OFFSET,
+	FIELD_MARSHAL_SCHEMA_OFFSET,
+	DECL_SEC_SCHEMA_OFFSET,
+	CLASS_LAYOUT_SCHEMA_OFFSET,
+	FIELD_LAYOUT_SCHEMA_OFFSET, /* 0x10 */
+	STDALON_SIG_SCHEMA_OFFSET,
+	EVENTMAP_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	EVENT_SCHEMA_OFFSET,
+	PROPERTY_MAP_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	PROPERTY_SCHEMA_OFFSET,
+	METHOD_SEMA_SCHEMA_OFFSET,
+	METHOD_IMPL_SCHEMA_OFFSET,
+	MODULEREF_SCHEMA_OFFSET, /* 0x1a */
+	TYPESPEC_SCHEMA_OFFSET,
+	IMPLMAP_SCHEMA_OFFSET,
+	FIELD_RVA_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	ASSEMBLY_SCHEMA_OFFSET, /* 0x20 */
+	ASSEMBLYPROC_SCHEMA_OFFSET,
+	ASSEMBLYOS_SCHEMA_OFFSET,
+	ASSEMBLYREF_SCHEMA_OFFSET,
+	ASSEMBLYREFPROC_SCHEMA_OFFSET,
+	ASSEMBLYREFOS_SCHEMA_OFFSET,
+	FILE_SCHEMA_OFFSET,
+	EXPORTED_TYPE_SCHEMA_OFFSET,
+	MANIFEST_SCHEMA_OFFSET,
+	NESTED_CLASS_SCHEMA_OFFSET,
+	GENPARAM_SCHEMA_OFFSET, /* 0x2a */
+	METHOD_SPEC_SCHEMA_OFFSET,
+	GEN_CONSTRAINT_SCHEMA_OFFSET
 };
+
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define TABLEDEF(a,b) char MSGSTRFIELD(__LINE__) [sizeof (b)];
+#include "mono/cil/tables.def"
+#undef TABLEDEF
+} tablestr = {
+#define TABLEDEF(a,b) b,
+#include "mono/cil/tables.def"
+#undef TABLEDEF
+};
+static const gint16 tableidx [] = {
+#define TABLEDEF(a,b) [a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "mono/cil/tables.def"
+#undef TABLEDEF
+};
+
+#else
+#define TABLEDEF(a,b) b,
+static const char* const
+mono_tables_names [] = {
+#include "mono/cil/tables.def"
+	NULL
+};
+
+#endif
 
 /**
  * mono_meta_table_name:
@@ -425,10 +420,14 @@ const static struct {
 const char *
 mono_meta_table_name (int table)
 {
-	if ((table < 0) || (table > 0x2c))
+	if ((table < 0) || (table > MONO_TABLE_LAST))
 		return "";
-	
-	return tables [table].name;
+
+#ifdef HAVE_ARRAY_ELEM_INIT
+	return (const char*)&tablestr + tableidx [table];
+#else
+	return mono_tables_names [table];
+#endif
 }
 
 /* The guy who wrote the spec for this should not be allowed near a
@@ -465,7 +464,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	int size = 0, field_size = 0;
 	int i, n, code;
 	int shift = 0;
-	const unsigned char *description = tables [tableindex].description;
+	const unsigned char *description = TableSchemas + table_description [tableindex];
 
 	for (i = 0; (code = description [i]) != MONO_MT_END; i++){
 		switch (code){
