@@ -11,6 +11,7 @@
 #include "mini.h"
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -27,6 +28,13 @@
 static gint lmf_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
+
+#ifdef MONO_XEN_OPT
+/* TRUE by default until we add runtime detection of Xen */
+static gboolean optimize_for_xen = TRUE;
+#else
+#define optimize_for_xen 0
+#endif
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -1635,6 +1643,17 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
+/*
+ * emit_tls_get:
+ * @code: buffer to store code to
+ * @dreg: hard register where to place the result
+ * @tls_offset: offset info
+ *
+ * emit_tls_get emits in @code the native code that puts in the dreg register
+ * the item in the thread local storage identified by tls_offset.
+ *
+ * Returns: a pointer to the end of the stored code
+ */
 static guint8*
 emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
@@ -1650,8 +1669,14 @@ emit_tls_get (guint8* code, int dreg, int tls_offset)
 	x86_alu_membase_imm (code, X86_AND, dreg, 0x34, 0);
 	x86_mov_reg_membase (code, dreg, dreg, 3600 + (tls_offset * 4), 4);
 #else
-	x86_prefix (code, X86_GS_PREFIX);
-	x86_mov_reg_mem (code, dreg, tls_offset, 4);			
+	if (optimize_for_xen) {
+		x86_prefix (code, X86_GS_PREFIX);
+		x86_mov_reg_mem (code, dreg, 0, 4);
+		x86_mov_reg_membase (code, dreg, dreg, tls_offset, 4);
+	} else {
+		x86_prefix (code, X86_GS_PREFIX);
+		x86_mov_reg_mem (code, dreg, tls_offset, 4);
+	}
 #endif
 	return code;
 }
@@ -3674,6 +3699,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 			if (thread_tls_offset >= 64)
 				thread_tls_offset = -1;
 #else
+			optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 			tls_offset_inited = TRUE;
 			appdomain_tls_offset = mono_domain_get_tls_offset ();
 			lmf_tls_offset = mono_get_lmf_tls_offset ();

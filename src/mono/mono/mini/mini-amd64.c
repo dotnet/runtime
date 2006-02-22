@@ -13,6 +13,7 @@
 #include "mini.h"
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -29,6 +30,13 @@
 static gint lmf_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
+
+#ifdef MONO_XEN_OPT
+/* TRUE by default until we add runtime detection of Xen */
+static gboolean optimize_for_xen = TRUE;
+#else
+#define optimize_for_xen 0
+#endif
 
 static gboolean use_sse2 = !MONO_ARCH_USE_FPSTACK;
 
@@ -2092,6 +2100,31 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 }
 
 /*
+ * emit_tls_get:
+ * @code: buffer to store code to
+ * @dreg: hard register where to place the result
+ * @tls_offset: offset info
+ *
+ * emit_tls_get emits in @code the native code that puts in the dreg register
+ * the item in the thread local storage identified by tls_offset.
+ *
+ * Returns: a pointer to the end of the stored code
+ */
+static guint8*
+emit_tls_get (guint8* code, int dreg, int tls_offset)
+{
+	if (optimize_for_xen) {
+		x86_prefix (code, X86_FS_PREFIX);
+		amd64_mov_reg_mem (code, dreg, 0, 8);
+		amd64_mov_reg_membase (code, dreg, dreg, tls_offset, 8);
+	} else {
+		x86_prefix (code, X86_FS_PREFIX);
+		amd64_mov_reg_mem (code, dreg, tls_offset, 8);
+	}
+	return code;
+}
+
+/*
  * emit_load_volatile_arguments:
  *
  *  Load volatile arguments from the stack to the original input registers.
@@ -3761,8 +3794,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET: {
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_reg_mem (code, ins->dreg, ins->inst_offset, 8);
+			code = emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -4171,8 +4203,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the FS register */
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_reg_mem (code, AMD64_RAX, lmf_tls_offset, 8);
+			code = emit_tls_get (code, AMD64_RAX, lmf_tls_offset);
 		}
 		else {
 			/* 
@@ -4835,7 +4866,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
-
+		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 		appdomain_tls_offset = mono_domain_get_tls_offset ();
 		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		thread_tls_offset = mono_thread_get_tls_offset ();
