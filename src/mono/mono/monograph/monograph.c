@@ -176,7 +176,7 @@ method_stats (MonoMethod *method) {
 	const MonoOpcode *opcode;
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
-	const unsigned char *ip;
+	const unsigned char *ip, *il_code_end;
 	int i, n;
 	int local_branch = 0, local_condbranch = 0, local_throw = 0, local_calls = 0;
 	gint64 l;
@@ -187,21 +187,25 @@ method_stats (MonoMethod *method) {
 		return;
 
 	header = mono_method_get_header (method);
-	if (header->num_clauses)
+	n = mono_method_header_get_num_clauses (header);
+	if (n)
 		has_exceptions++;
-	num_exceptions += header->num_clauses;
-	if (max_exceptions < header->num_clauses)
-		max_exceptions = header->num_clauses;
-	if (header->num_locals)
+	num_exceptions += n;
+	if (max_exceptions < n)
+		max_exceptions = n;
+	mono_method_header_get_locals (header, &n, NULL);
+	if (n)
 		has_locals++;
-	num_locals += header->num_locals;
-	if (max_locals < header->num_locals)
-		max_locals = header->num_locals;
+	num_locals += n;
+	if (max_locals < n)
+		max_locals = n;
 
-	if (max_maxstack < header->max_stack)
-		max_maxstack = header->max_stack;
-	num_maxstack += header->max_stack;
-	if (header->max_stack != 8) /* just a guess */
+	ip = mono_method_header_get_code (header, &n, &i);
+	il_code_end = ip + n;
+	if (max_maxstack < i)
+		max_maxstack = i;
+	num_maxstack += i;
+	if (i != 8) /* just a guess */
 		has_maxstack++;
 
 	sig = mono_method_signature (method);
@@ -213,13 +217,11 @@ method_stats (MonoMethod *method) {
 		has_args++;
 
 	has_code++;
-	if (max_code < header->code_size)
-		max_code = header->code_size;
-	num_code += header->code_size;
+	if (max_code < il_code_end - ip)
+		max_code = il_code_end - ip;
+	num_code += il_code_end - ip;
 
-	ip = header->code;
-
-	while (ip < (header->code + header->code_size)) {
+	while (ip < il_code_end) {
 		if (*ip == 0xfe) {
 			++ip;
 			i = *ip + 256;
@@ -523,7 +525,7 @@ print_method (MonoMethod *method, int depth) {
 	MonoMethodHeader *header;
 	GHashTable *hash;
 	static GHashTable *visited = NULL;
-	const unsigned char *ip;
+	const unsigned char *ip, *il_code_end;
 	int i;
 
 	if (depth++ > max_depth)
@@ -543,11 +545,12 @@ print_method (MonoMethod *method, int depth) {
 		return;
 
 	header = mono_method_get_header (method);
-	ip = header->code;
+	ip = mono_method_header_get_code (header, &i, NULL);
+	il_code_end = ip + i;
 
 	hash = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
-	while (ip < (header->code + header->code_size)) {
+	while (ip < il_code_end) {
 		if (*ip == 0xfe) {
 			++ip;
 			i = *ip + 256;
@@ -687,8 +690,8 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 	GHashTable *table = g_hash_table_new (g_direct_hash, g_direct_equal);
 	MonoBasicBlock *entry_bb, *end_bb, *bb, *target;
 
-	ip = header->code;
-	end = ip + header->code_size;
+	ip = mono_method_header_get_code (header, &i, NULL);
+	end = ip + i;
 	debug_start = ip;
 
 	entry_bb = g_new0 (MonoBasicBlock, 1);
@@ -838,7 +841,7 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 		target = bb;
 		/*fprintf (stderr, "bblock %d at IL_%04x:\n", i, bb->cil_code - header->code);*/
 	}
-	bb->cil_length = header->code + header->code_size - bb->cil_code;
+	bb->cil_length = end - bb->cil_code;
 	return result;
 }
 
@@ -887,8 +890,10 @@ print_method_cfg (MonoMethod *method) {
 	MonoMethodHeader *header;
 	int i, dfn;
 	char *code;
+	const unsigned char *il_code;
 
 	header = mono_method_get_header (method);
+	il_code = mono_method_header_get_code (header, NULL, NULL);
 	bblocks = mono_method_find_bblocks (header);
 	for (i = 0; i < bblocks->len; ++i) {
 		bb = (MonoBasicBlock*)g_ptr_array_index (bblocks, i);
@@ -898,7 +903,7 @@ print_method_cfg (MonoMethod *method) {
 			fprintf (output, "\tB%p [shape=record,label=\"end\"]\n", bb);
 		else {
 			code = mono_disasm_code (&graph_dh, method, bb->cil_code, bb->cil_code + bb->cil_length);
-			fprintf (output, "\tB%p [shape=record,label=\"IL_%04x\\n%s\"]\n", bb, bb->cil_code - header->code, code);
+			fprintf (output, "\tB%p [shape=record,label=\"IL_%04x\\n%s\"]\n", bb, bb->cil_code - il_code, code);
 			g_free (code);
 		}
 	}
@@ -917,7 +922,7 @@ print_method_cfg (MonoMethod *method) {
 	dfn = 0;
 	for (i = 0; i < bblocks->len; ++i) {
 		bb = (MonoBasicBlock*)g_ptr_array_index (bblocks, i);
-		df_visit (bb, &dfn, header->code);
+		df_visit (bb, &dfn, il_code);
 	}
 #endif
 }
