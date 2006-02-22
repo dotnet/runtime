@@ -165,7 +165,7 @@ static void handle_store(MonoThread *thread)
 {
 	mono_threads_lock ();
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread %p ID %"G_GSIZE_FORMAT, thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: thread %p ID %"G_GSIZE_FORMAT, __func__, thread, (gsize)thread->tid));
 
 	if(threads==NULL) {
 		MONO_GC_REGISTER_ROOT (threads);
@@ -183,7 +183,7 @@ static void handle_store(MonoThread *thread)
 
 static void handle_remove(gsize tid)
 {
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": thread ID %"G_GSIZE_FORMAT, tid));
+	THREAD_DEBUG (g_message ("%s: thread ID %"G_GSIZE_FORMAT, __func__, tid));
 
 	mono_threads_lock ();
 	
@@ -244,7 +244,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	MonoThread *thread=start_info->obj;
 	MonoObject *start_delegate = start_info->delegate;
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Start wrapper", GetCurrentThreadId ()));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper", __func__, GetCurrentThreadId ()));
 	
 	/* We can be sure start_info->obj->tid and
 	 * start_info->obj->handle have been set, because the thread
@@ -272,13 +272,9 @@ static guint32 WINAPI start_wrapper(void *data)
 	mono_thread_new_init (tid, &tid, start_func);
 	thread->stack_ptr = &tid;
 
-	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
-		   ": (%"G_GSIZE_FORMAT",%d) Setting thread stack to %p",
-		   GetCurrentThreadId (), getpid (), thread->stack_ptr));
+	LIBGC_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT",%d) Setting thread stack to %p", __func__, GetCurrentThreadId (), getpid (), thread->stack_ptr));
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
-		   ": (%"G_GSIZE_FORMAT") Setting current_object_key to %p",
-		   GetCurrentThreadId (), thread));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, GetCurrentThreadId (), thread));
 
 	mono_profiler_thread_start (tid);
 
@@ -296,7 +292,7 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	thread_adjust_static_data (thread);
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION "start_wrapper for %"G_GSIZE_FORMAT,
+	g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
 		   thread->tid);
 #endif
 
@@ -316,7 +312,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	 * call thread_cleanup() on this thread's behalf.
 	 */
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Start wrapper terminating", GetCurrentThreadId ()));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, GetCurrentThreadId ()));
 
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
@@ -374,8 +370,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	 */
 	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Started thread ID %"G_GSIZE_FORMAT" (handle %p)",
-		  tid, thread_handle));
+	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
 		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
@@ -429,13 +424,11 @@ mono_thread_attach (MonoDomain *domain)
 	thread->tid=tid;
 	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Attached thread ID %"G_GSIZE_FORMAT" (handle %p)",
-		  tid, thread_handle));
+	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 
 	handle_store(thread);
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Setting current_object_key to %p",
-		   GetCurrentThreadId (), thread));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, GetCurrentThreadId (), thread));
 
 	SET_CURRENT_OBJECT (thread);
 	mono_domain_set (domain, TRUE);
@@ -454,7 +447,7 @@ mono_thread_detach (MonoThread *thread)
 {
 	g_return_if_fail (thread != NULL);
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION "mono_thread_detach for %"G_GSIZE_FORMAT, thread->tid));
+	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
@@ -489,8 +482,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	
 	MONO_ARCH_SAVE_REGS;
 
-	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Trying to start a new thread: this (%p) start (%p)", this, start));
+	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this, start));
 
 	mono_monitor_enter (this->synch_lock);
 
@@ -517,7 +509,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		this->start_notify=CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 		if(this->start_notify==NULL) {
 			mono_monitor_exit (this->synch_lock);
-			g_warning (G_GNUC_PRETTY_FUNCTION ": CreateSemaphore error 0x%x", GetLastError ());
+			g_warning ("%s: CreateSemaphore error 0x%x", __func__, GetLastError ());
 			return(NULL);
 		}
 
@@ -525,8 +517,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
 			mono_monitor_exit (this->synch_lock);
-			g_warning(G_GNUC_PRETTY_FUNCTION
-				  ": CreateThread error 0x%x", GetLastError());
+			g_warning("%s: CreateThread error 0x%x", __func__, GetLastError());
 			return(NULL);
 		}
 		
@@ -543,7 +534,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		
 		this->state &= ~ThreadState_Unstarted;
 
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Started thread ID %"G_GSIZE_FORMAT" (handle %p)", tid, thread));
+		THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread));
 
 		mono_monitor_exit (this->synch_lock);
 		return(thread);
@@ -555,7 +546,7 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 {
 	MONO_ARCH_SAVE_REGS;
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Closing thread %p, handle %p", this, thread));
+	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, thread));
 
 	CloseHandle (thread);
 }
@@ -564,7 +555,7 @@ static void mono_thread_start (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Launching thread %p (%"G_GSIZE_FORMAT")", GetCurrentThreadId (), thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Launching thread %p (%"G_GSIZE_FORMAT")", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
 
 	/* Only store the handle when the thread is about to be
 	 * launched, to avoid the main thread deadlocking while trying
@@ -587,14 +578,14 @@ static void mono_thread_start (MonoThread *thread)
 		 * started
 		 */
 
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") waiting for thread %p (%"G_GSIZE_FORMAT") to start", GetCurrentThreadId (), thread, (gsize)thread->tid));
+		THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for thread %p (%"G_GSIZE_FORMAT") to start", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
 
 		WaitForSingleObjectEx (thread->start_notify, INFINITE, FALSE);
 		CloseHandle (thread->start_notify);
 		thread->start_notify = NULL;
 	}
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Done launching thread %p (%"G_GSIZE_FORMAT")", GetCurrentThreadId (), thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Done launching thread %p (%"G_GSIZE_FORMAT")", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -603,7 +594,7 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	
 	MONO_ARCH_SAVE_REGS;
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms));
+	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
 	mono_monitor_enter (thread->synch_lock);
 	thread->state |= ThreadState_WaitSleepJoin;
@@ -815,7 +806,7 @@ ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *thi
 MonoThread *
 mono_thread_current (void)
 {
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", GET_CURRENT_OBJECT ()));
+	THREAD_DEBUG (g_message ("%s: returning %p", __func__, GET_CURRENT_OBJECT ()));
 	return GET_CURRENT_OBJECT ();
 }
 
@@ -840,8 +831,7 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	if(ms== -1) {
 		ms=INFINITE;
 	}
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": joining thread handle %p, %d ms",
-		   thread, ms));
+	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, thread, ms));
 	
 	ret=WaitForSingleObjectEx (thread, ms, TRUE);
 
@@ -850,12 +840,12 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	mono_monitor_exit (this->synch_lock);
 	
 	if(ret==WAIT_OBJECT_0) {
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": join successful"));
+		THREAD_DEBUG (g_message ("%s: join successful", __func__));
 
 		return(TRUE);
 	}
 	
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": join failed"));
+	THREAD_DEBUG (g_message ("%s: join failed", __func__));
 
 	return(FALSE);
 }
@@ -904,7 +894,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	g_free(handles);
 
 	if(ret==WAIT_FAILED) {
-		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Wait failed", GetCurrentThreadId ()));
+		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
 		/* Do we want to try again if we get
@@ -912,7 +902,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 		 * WaitHandle doesn't give any clues.  (We'd have to
 		 * fiddle with the timeout if we retry.)
 		 */
-		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Wait timed out", GetCurrentThreadId ()));
+		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	}
 	
@@ -962,7 +952,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	g_free(handles);
 
-	THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") returning %d", GetCurrentThreadId (), ret));
+	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, GetCurrentThreadId (), ret));
 
 	/*
 	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
@@ -986,7 +976,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	
 	MONO_ARCH_SAVE_REGS;
 
-	THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") waiting for %p, %d ms", GetCurrentThreadId (), handle, ms));
+	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") waiting for %p, %d ms", __func__, GetCurrentThreadId (), handle, ms));
 	
 	if(ms== -1) {
 		ms=INFINITE;
@@ -1003,7 +993,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	mono_monitor_exit (thread->synch_lock);
 
 	if(ret==WAIT_FAILED) {
-		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Wait failed", GetCurrentThreadId ()));
+		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
 		/* Do we want to try again if we get
@@ -1011,7 +1001,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 		 * WaitHandle doesn't give any clues.  (We'd have to
 		 * fiddle with the timeout if we retry.)
 		 */
-		THREAD_WAIT_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Wait timed out", GetCurrentThreadId ()));
+		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	}
 	
@@ -1567,7 +1557,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 
 	mono_monitor_exit (thread->synch_lock);
 
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", GetCurrentThreadId (), thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
 	
 	/* Make sure the thread is awake */
 	mono_thread_resume (thread);
@@ -1797,8 +1787,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_init_static_data_info (&context_static_info);
 
 	current_object_key=TlsAlloc();
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
-		   current_object_key));
+	THREAD_DEBUG (g_message ("%s: Allocated current_object_key %d", __func__, current_object_key));
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
@@ -1845,14 +1834,13 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 {
 	guint32 i, ret;
 	
-	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
-		  ": %d threads to wait for in this batch", wait->num));
+	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
 	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, FALSE);
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed"));
+		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
 		return;
 	}
 	
@@ -1877,7 +1865,7 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 			 * same thread.)
 			 */
 	
-			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up after thread %"G_GSIZE_FORMAT, tid));
+			THREAD_DEBUG (g_message ("%s: cleaning up after thread %"G_GSIZE_FORMAT, __func__, tid));
 			thread_cleanup (wait->threads[i]);
 		}
 	}
@@ -1887,8 +1875,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 {
 	guint32 i, ret, count;
 	
-	THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
-		  ": %d threads to wait for in this batch", wait->num));
+	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
 	/* Add the thread state change event, so it wakes up if a thread changes
 	 * to background mode.
@@ -1903,7 +1890,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Wait failed"));
+		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
 		return;
 	}
 	
@@ -1919,8 +1906,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 		if (mono_g_hash_table_lookup (threads, (gpointer)tid)!=NULL) {
 			/* See comment in wait_for_tids about thread cleanup */
 			mono_threads_unlock ();
-			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
-				   ": cleaning up after thread %"G_GSIZE_FORMAT, tid));
+			THREAD_DEBUG (g_message ("%s: cleaning up after thread %"G_GSIZE_FORMAT, __func__, tid));
 			thread_cleanup (wait->threads [ret]);
 		} else
 			mono_threads_unlock ();
@@ -1986,7 +1972,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		
 		if(thread->state & ThreadState_AbortRequested ||
 		   thread->state & ThreadState_Aborted) {
-			THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Thread id %"G_GSIZE_FORMAT" already aborting", (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: Thread id %"G_GSIZE_FORMAT" already aborting", __func__, (gsize)thread->tid));
 			return(TRUE);
 		}
 
@@ -1995,7 +1981,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		wait->threads[wait->num]=thread;
 		wait->num++;
 
-		THREAD_DEBUG (g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %"G_GSIZE_FORMAT"\n", (gsize)thread->tid));
+		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
 		mono_thread_stop (thread);
 		return TRUE;
 	}
@@ -2008,11 +1994,11 @@ void mono_thread_manage (void)
 	struct wait_data *wait=g_new0 (struct wait_data, 1);
 	
 	/* join each thread that's still running */
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Joining each running thread..."));
+	THREAD_DEBUG (g_message ("%s: Joining each running thread...", __func__));
 	
 	mono_threads_lock ();
 	if(threads==NULL) {
-		THREAD_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION ": No threads"));
+		THREAD_DEBUG (g_message("%s: No threads", __func__));
 		mono_threads_unlock ();
 		return;
 	}
@@ -2020,8 +2006,7 @@ void mono_thread_manage (void)
 	
 	do {
 		mono_threads_lock ();
-		THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION
-			  ":There are %d threads to join", mono_g_hash_table_size (threads));
+		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
 		ResetEvent (background_change_event);
@@ -2032,12 +2017,12 @@ void mono_thread_manage (void)
 			/* Something to wait for */
 			wait_for_tids_or_state_change (wait, INFINITE);
 		}
-		THREAD_DEBUG (g_message ("I have %d threads after waiting.", wait->num));
+		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
 	mono_runtime_set_shutting_down ();
 
-	THREAD_DEBUG (g_message ("threadpool cleanup"));
+	THREAD_DEBUG (g_message ("%s: threadpool cleanup", __func__));
 	mono_thread_pool_cleanup ();
 
 	/* 
@@ -2052,7 +2037,7 @@ void mono_thread_manage (void)
 
 		mono_threads_unlock ();
 
-		THREAD_DEBUG (g_message ("wait->num is now %d", wait->num));
+		THREAD_DEBUG (g_message ("%s: wait->num is now %d", __func__, wait->num));
 		if(wait->num>0) {
 			/* Something to wait for */
 			wait_for_tids (wait, INFINITE);
@@ -2099,9 +2084,9 @@ void mono_thread_abort_all_other_threads (void)
 	gsize self = GetCurrentThreadId ();
 
 	mono_threads_lock ();
-	THREAD_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ":There are %d threads to abort",
-		  mono_g_hash_table_size (threads));
-		mono_g_hash_table_foreach (threads, print_tids, NULL));
+	THREAD_DEBUG (g_message ("%s: There are %d threads to abort", __func__,
+				 mono_g_hash_table_size (threads));
+		      mono_g_hash_table_foreach (threads, print_tids, NULL));
 
 	mono_g_hash_table_foreach (threads, terminate_thread, (gpointer)self);
 	
@@ -2213,10 +2198,7 @@ void
 mono_threads_request_thread_dump (void)
 {
 	struct wait_data *wait = g_new0 (struct wait_data, 1);
-	int i, waitnum;
-	gsize self = GetCurrentThreadId ();
-	gpointer *events;
-	guint32 eventidx = 0;
+	int i;
 
 	/* 
 	 * Make a copy of the hashtable since we can't do anything with
@@ -2599,7 +2581,7 @@ static void gc_stop_world (gpointer key, gpointer value, gpointer user)
 {
 	MonoThread *thread=(MonoThread *)value;
 
-	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %"G_GSIZE_FORMAT, (gsize)user, (gsize)thread->tid));
+	LIBGC_DEBUG (g_message ("%s: %"G_GSIZE_FORMAT" - %"G_GSIZE_FORMAT, __func__, (gsize)user, (gsize)thread->tid));
 
 	if(thread->tid == (gsize)user)
 		return;
@@ -2611,7 +2593,7 @@ void mono_gc_stop_world (void)
 {
 	gsize self = GetCurrentThreadId ();
 
-	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %p", self, threads));
+	LIBGC_DEBUG (g_message ("%s: %"G_GSIZE_FORMAT" - %p", __func__, self, threads));
 
 	mono_threads_lock ();
 
@@ -2625,7 +2607,7 @@ static void gc_start_world (gpointer key, gpointer value, gpointer user)
 {
 	MonoThread *thread=(MonoThread *)value;
 	
-	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %"G_GSIZE_FORMAT, (gsize)user, (gsize)thread->tid));
+	LIBGC_DEBUG (g_message ("%s: %"G_GSIZE_FORMAT" - %"G_GSIZE_FORMAT, __func__, (gsize)user, (gsize)thread->tid));
 
 	if(thread->tid == (gsize)user)
 		return;
@@ -2637,7 +2619,7 @@ void mono_gc_start_world (void)
 {
 	gsize self = GetCurrentThreadId ();
 
-	LIBGC_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": %"G_GSIZE_FORMAT" - %p", self, threads));
+	LIBGC_DEBUG (g_message ("%s: %"G_GSIZE_FORMAT" - %p", __func__, self, threads));
 
 	mono_threads_lock ();
 

@@ -110,7 +110,7 @@ static gboolean mutex_own (gpointer handle)
 		return(FALSE);
 	}
 
-	_wapi_thread_own_mutex (pthread_self (), handle);
+	_wapi_thread_own_mutex (handle);
 	
 #ifdef DEBUG
 	g_message("%s: owning mutex handle %p", __func__, handle);
@@ -189,7 +189,7 @@ static gboolean namedmutex_own (gpointer handle)
 		return(FALSE);
 	}
 
-	_wapi_thread_own_mutex (pthread_self (), handle);
+	_wapi_thread_own_mutex (handle);
 
 	namedmutex_handle->pid = getpid ();
 	namedmutex_handle->tid = pthread_self ();
@@ -547,7 +547,7 @@ static gboolean mutex_release (gpointer handle)
 	mutex_handle->recursion--;
 	
 	if(mutex_handle->recursion==0) {
-		_wapi_thread_disown_mutex (tid, handle);
+		_wapi_thread_disown_mutex (handle);
 
 #ifdef DEBUG
 		g_message("%s: Unlocking mutex handle %p", __func__, handle);
@@ -603,7 +603,7 @@ static gboolean namedmutex_release (gpointer handle)
 	mutex_handle->recursion--;
 	
 	if(mutex_handle->recursion==0) {
-		_wapi_thread_disown_mutex (tid, handle);
+		_wapi_thread_disown_mutex (handle);
 
 #ifdef DEBUG
 		g_message("%s: Unlocking mutex handle %p", __func__, handle);

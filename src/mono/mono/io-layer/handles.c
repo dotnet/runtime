@@ -623,6 +623,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			if (handle_data->type == type) {
 				ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
 				if (check (ret, user_data) == TRUE) {
+					_wapi_handle_ref (ret);
 					found = TRUE;
 					break;
 				}

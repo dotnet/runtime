@@ -91,8 +91,6 @@ OTHER_SRC = \
 	timefuncs.c		\
 	timefuncs.h		\
 	timefuncs-private.h	\
-	timed-thread.c		\
-	timed-thread.h		\
 	types.h			\
 	uglify.h		\
 	versioninfo.h		\
