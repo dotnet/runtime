@@ -811,7 +811,9 @@ mono_main (int argc, char* argv[])
 			mono_use_security_manager = TRUE;
 			mono_activate_security_manager ();
 		} else if (strcmp (argv [i], "--desktop") == 0) {
+#if defined (HAVE_BOEHM_GC)
 			GC_dont_expand = 1;
+#endif
 			/* Put desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
 			/* Put server-specific optimizations here */
