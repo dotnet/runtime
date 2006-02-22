@@ -447,7 +447,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	MonoProfileCoverageInfo* info;
 	int i, offset;
 	guint32 line, col;
-	unsigned char *start, *end, *cil_code;
+	const unsigned char *start, *end, *cil_code;
 	MonoMethodHeader *header;
 	MonoProfileCoverageEntry entry;
 
@@ -459,8 +459,8 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 		return;
 
 	header = mono_method_get_header (method);
-	start = (unsigned char*)header->code;
-	end = start + header->code_size;
+	start = mono_method_header_get_code (header, &col, NULL);
+	end = start + col;
 	for (i = 0; i < info->entries; ++i) {
 		cil_code = info->data [i].cil_code;
 		if (cil_code && cil_code >= start && cil_code < end) {

@@ -86,13 +86,16 @@ static void
 add_types_from_method (MonoMethod *method) {
 	const MonoOpcode *opcode;
 	MonoMethodHeader *header;
-	const unsigned char *ip;
+	const unsigned char *ip, *il_code_end;
 	gpointer val = NULL, oldkey = NULL;
 	int i, n;
 	guint32 token;
 	MonoClass *klass;
 	MonoClassField *field;
 	MonoCustomAttrInfo* cattrs;
+	MonoType** locals;
+	gpointer exc_iter;
+	MonoExceptionClause clause;
 
 	if (g_hash_table_lookup_extended (method_table, method, &oldkey, &val))
 		return;
@@ -123,19 +126,20 @@ add_types_from_method (MonoMethod *method) {
 
 	header = mono_method_get_header (method);
 
-	for (i = 0; i < header->num_locals; ++i) {
-		klass = mono_class_from_mono_type (header->locals [i]);
+	locals = mono_method_header_get_locals (header, &n, NULL);
+	for (i = 0; i < n; ++i) {
+		klass = mono_class_from_mono_type (locals);
 		add_type (klass);
 	}
-	for (i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
-			add_type (clause->data.catch_class);
+	for (exc_iter = NULL; mono_method_header_get_clauses (header, method, &exc_iter, &clause);) {
+		if (clause.flags == MONO_EXCEPTION_CLAUSE_NONE)
+			add_type (clause.data.catch_class);
 	}
 
-	ip = header->code;
+	ip = mono_method_header_get_code (header, &n, NULL);
+	il_code_end = ip + n;
 
-	while (ip < (header->code + header->code_size)) {
+	while (ip < il_code_end) {
 		if (verbose > 2)
 			g_print ("#%s", mono_disasm_code_one (NULL, method, ip, NULL));
 		if (*ip == 0xfe) {

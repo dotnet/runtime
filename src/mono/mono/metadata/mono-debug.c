@@ -374,13 +374,15 @@ mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	guint8 *ptr, *oldptr;
 	guint32 i, size, total_size, max_size;
 	gint32 last_il_offset = 0, last_native_offset = 0;
+	const unsigned char* il_code;
+	guint32 il_codesize;
 
 	if (!in_the_mono_debugger)
 		return NULL;
 
 	mono_debugger_lock ();
 
-	header = ((MonoMethodNormal *) method)->header;
+	header = mono_method_get_header (method);
 
 	max_size = 28 * jit->num_line_numbers;
 	if (max_size > BUFSIZ)
@@ -424,8 +426,9 @@ mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	wrapper->code_size = jit->code_size;
 	wrapper->name = mono_method_full_name (method, TRUE);
 
+	il_code = mono_method_header_get_code (header, &il_codesize, NULL);
 	wrapper->cil_code = mono_disasm_code (
-		NULL, method, header->code, header->code + header->code_size);
+		NULL, method, il_code, il_code + il_codesize);
 
 	memcpy (&wrapper->data, oldptr, size);
 

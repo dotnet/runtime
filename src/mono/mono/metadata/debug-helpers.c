@@ -340,8 +340,9 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	guint32 i, label, token;
 	gint32 sval;
 	char *tmp;
+	const unsigned char* il_code = mono_method_header_get_code (header, NULL, NULL);
 
-	label = ip - header->code;
+	label = ip - il_code;
 	if (dh->indenter) {
 		tmp = dh->indenter (dh, method, label);
 		g_string_append (str, tmp);
@@ -389,7 +390,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		sval = read32 (ip);
 		ip += 4;
 		if (dh->label_target)
-			g_string_sprintfa (str, dh->label_target, ip + sval - header->code);
+			g_string_sprintfa (str, dh->label_target, ip + sval - il_code);
 		else
 			g_string_sprintfa (str, "%d", sval);
 		break;
@@ -397,7 +398,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		sval = *(const signed char*)ip;
 		ip ++;
 		if (dh->label_target)
-			g_string_sprintfa (str, dh->label_target, ip + sval - header->code);
+			g_string_sprintfa (str, dh->label_target, ip + sval - il_code);
 		else
 			g_string_sprintfa (str, "%d", sval);
 		break;
@@ -412,7 +413,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 				g_string_append (str, ", ");
 			label = read32 (ip);
 			if (dh->label_target)
-				g_string_sprintfa (str, dh->label_target, end + label - header->code);
+				g_string_sprintfa (str, dh->label_target, end + label - il_code);
 			else
 				g_string_sprintfa (str, "%d", label);
 			ip += 4;
