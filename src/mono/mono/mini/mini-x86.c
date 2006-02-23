@@ -3699,7 +3699,9 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 			if (thread_tls_offset >= 64)
 				thread_tls_offset = -1;
 #else
+#if MONO_XEN_OPT
 			optimize_for_xen = access ("/proc/xen", F_OK) == 0;
+#endif
 			tls_offset_inited = TRUE;
 			appdomain_tls_offset = mono_domain_get_tls_offset ();
 			lmf_tls_offset = mono_get_lmf_tls_offset ();
