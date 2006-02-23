@@ -963,7 +963,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 
 	interface_offsets = mono_mempool_alloc0 (domain->mp, vtsize + extra_interface_vtsize);
 	pvt = (MonoVTable*)(interface_offsets + max_interface_id + 1);
-	memcpy (pvt, vt, vtsize);
+	memcpy (pvt, vt, sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
 	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */
