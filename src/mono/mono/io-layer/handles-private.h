@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/misc-private.h>
@@ -38,6 +39,7 @@ extern mono_mutex_t _wapi_global_signal_mutex;
 extern pthread_cond_t _wapi_global_signal_cond;
 extern int _wapi_sem_id;
 
+extern pid_t _wapi_getpid (void);
 extern gpointer _wapi_handle_new (WapiHandleType type,
 				  gpointer handle_specific);
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,

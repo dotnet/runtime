@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Ximian, Inc.
  */
 
 #include <config.h>
@@ -118,7 +118,7 @@ static gboolean mutex_own (gpointer handle)
 
 	_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	
-	mutex_handle->pid = getpid ();
+	mutex_handle->pid = _wapi_getpid ();
 	mutex_handle->tid = pthread_self ();
 	mutex_handle->recursion++;
 
@@ -149,17 +149,17 @@ static gboolean mutex_is_owned (gpointer handle)
 #endif
 
 	if (mutex_handle->recursion > 0 &&
-	    mutex_handle->pid == getpid () &&
+	    mutex_handle->pid == _wapi_getpid () &&
 	    mutex_handle->tid == pthread_self ()) {
 #ifdef DEBUG
 		g_message ("%s: mutex handle %p owned by %d:%ld", __func__,
-			   handle, getpid (), pthread_self ());
+			   handle, _wapi_getpid (), pthread_self ());
 #endif
 
 		return(TRUE);
 	} else {
 #ifdef DEBUG
-		g_message ("%s: mutex handle %p not owned by %d:%ld, but locked %d times by %d:%ld", __func__, handle, getpid (), pthread_self (), mutex_handle->recursion, mutex_handle->pid, mutex_handle->tid);
+		g_message ("%s: mutex handle %p not owned by %d:%ld, but locked %d times by %d:%ld", __func__, handle, _wapi_getpid (), pthread_self (), mutex_handle->recursion, mutex_handle->pid, mutex_handle->tid);
 #endif
 
 		return(FALSE);
@@ -191,7 +191,7 @@ static gboolean namedmutex_own (gpointer handle)
 
 	_wapi_thread_own_mutex (handle);
 
-	namedmutex_handle->pid = getpid ();
+	namedmutex_handle->pid = _wapi_getpid ();
 	namedmutex_handle->tid = pthread_self ();
 	namedmutex_handle->recursion++;
 
@@ -224,17 +224,17 @@ static gboolean namedmutex_is_owned (gpointer handle)
 #endif
 
 	if (namedmutex_handle->recursion > 0 &&
-	    namedmutex_handle->pid == getpid () &&
+	    namedmutex_handle->pid == _wapi_getpid () &&
 	    namedmutex_handle->tid == pthread_self ()) {
 #ifdef DEBUG
 		g_message ("%s: mutex handle %p owned by %d:%ld", __func__,
-			   handle, getpid (), pthread_self ());
+			   handle, _wapi_getpid (), pthread_self ());
 #endif
 
 		return(TRUE);
 	} else {
 #ifdef DEBUG
-		g_message ("%s: mutex handle %p not owned by %d:%ld, but locked %d times by %d:%ld", __func__, handle, getpid (), pthread_self (), namedmutex_handle->recursion, namedmutex_handle->pid, namedmutex_handle->tid);
+		g_message ("%s: mutex handle %p not owned by %d:%ld, but locked %d times by %d:%ld", __func__, handle, _wapi_getpid (), pthread_self (), namedmutex_handle->recursion, namedmutex_handle->pid, namedmutex_handle->tid);
 #endif
 
 		return(FALSE);
@@ -513,7 +513,7 @@ static gboolean mutex_release (gpointer handle)
 	struct _WapiHandle_mutex *mutex_handle;
 	gboolean ok;
 	pthread_t tid=pthread_self();
-	pid_t pid=getpid ();
+	pid_t pid = _wapi_getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
 	
@@ -534,9 +534,9 @@ static gboolean mutex_release (gpointer handle)
 	g_message("%s: Releasing mutex handle %p", __func__, handle);
 #endif
 
-	if(mutex_handle->tid!=tid || mutex_handle->pid!=pid) {
+	if (mutex_handle->tid != tid || mutex_handle->pid != pid) {
 #ifdef DEBUG
-		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, pid, tid);
+		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, _wapi_getpid (), tid);
 #endif
 
 		goto cleanup;
@@ -571,7 +571,7 @@ static gboolean namedmutex_release (gpointer handle)
 	struct _WapiHandle_namedmutex *mutex_handle;
 	gboolean ok;
 	pthread_t tid=pthread_self();
-	pid_t pid=getpid ();
+	pid_t pid = _wapi_getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
 	
@@ -590,9 +590,9 @@ static gboolean namedmutex_release (gpointer handle)
 	g_message("%s: Releasing mutex handle %p", __func__, handle);
 #endif
 
-	if(mutex_handle->tid!=tid || mutex_handle->pid!=pid) {
+	if (mutex_handle->tid != tid || mutex_handle->pid != pid) {
 #ifdef DEBUG
-		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, pid, tid);
+		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, _wapi_getpid (), tid);
 #endif
 
 		goto cleanup;

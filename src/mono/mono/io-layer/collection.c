@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2004 Novell, Inc.
+ * (C) 2004-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -82,7 +82,8 @@ void _wapi_handle_collect (void)
 	int i, thr_ret;
 	
 #ifdef DEBUG
-	g_message ("%s: (%d) Starting a collection", __func__, getpid ());
+	g_message ("%s: (%d) Starting a collection", __func__,
+		   _wapi_getpid ());
 #endif
 
 	/* Become the collection master */
@@ -90,7 +91,7 @@ void _wapi_handle_collect (void)
 	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
-	g_message ("%s: (%d) Master set", __func__, getpid ());
+	g_message ("%s: (%d) Master set", __func__, _wapi_getpid ());
 #endif
 	
 	/* If count has changed, someone else jumped in as master */
@@ -103,7 +104,7 @@ void _wapi_handle_collect (void)
 			data = &_wapi_shared_layout->handles[i];
 			if (data->timestamp < too_old) {
 #ifdef DEBUG
-				g_message ("%s: (%d) Deleting handle 0x%x", __func__, getpid (), i);
+				g_message ("%s: (%d) Deleting handle 0x%x", __func__, _wapi_getpid (), i);
 #endif
 				memset (&_wapi_shared_layout->handles[i], '\0', sizeof(struct _WapiHandleShared));
 			}
@@ -124,6 +125,6 @@ void _wapi_handle_collect (void)
 	_wapi_handle_unlock_shared_handles ();
 
 #ifdef DEBUG
-	g_message ("%s: (%d) Collection done", __func__, getpid ());
+	g_message ("%s: (%d) Collection done", __func__, _wapi_getpid ());
 #endif
 }

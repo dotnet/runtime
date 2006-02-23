@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Ximian, Inc.
  */
 
 #include <config.h>
@@ -109,6 +109,26 @@ mono_mutex_t _wapi_global_signal_mutex;
 pthread_cond_t _wapi_global_signal_cond;
 
 int _wapi_sem_id;
+
+/* Use this instead of getpid(), to cope with linuxthreads.  It's a
+ * function rather than a variable lookup because we need to get at
+ * this before share_init() might have been called.
+ */
+static pid_t _wapi_pid;
+static mono_once_t pid_init_once = MONO_ONCE_INIT;
+
+static void pid_init (void)
+{
+	_wapi_pid = getpid ();
+}
+
+pid_t _wapi_getpid (void)
+{
+	mono_once (&pid_init_once, pid_init);
+	
+	return(_wapi_pid);
+}
+
 
 static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 
@@ -1337,7 +1357,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	guint32 now = (guint32)(time(NULL) & 0xFFFFFFFF);
 	int thr_ret, i, first_unused = -1;
 	gboolean exists = FALSE;
-	
+
 	/* Prevents entries from expiring under us as we search
 	 */
 	thr_ret = _wapi_handle_lock_shared_handles ();
@@ -1397,7 +1417,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 			
 			file_share->device = device;
 			file_share->inode = inode;
-			file_share->opened_by_pid = getpid ();
+			file_share->opened_by_pid = _wapi_getpid ();
 			file_share->sharemode = new_sharemode;
 			file_share->access = new_access;
 			file_share->handle_refs = 1;
@@ -1447,7 +1467,7 @@ static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 {
 	gboolean found = FALSE, proc_fds = FALSE;
-	pid_t self = getpid();
+	pid_t self = _wapi_getpid ();
 	int pid;
 	int thr_ret, i;
 	
@@ -1635,16 +1655,13 @@ void _wapi_handle_update_refs (void)
 				struct _WapiHandleShared *shared_data;
 				
 #ifdef DEBUG
-				g_message ("%s: (%d) handle 0x%x is SHARED (%s)", __func__,
-					   getpid (), i * _WAPI_HANDLE_INITIAL_COUNT + k, _wapi_handle_typename[handle->type]);
+				g_message ("%s: (%d) handle 0x%x is SHARED (%s)", __func__, _wapi_getpid (), i * _WAPI_HANDLE_INITIAL_COUNT + k, _wapi_handle_typename[handle->type]);
 #endif
 
 				shared_data = &_wapi_shared_layout->handles[handle->u.shared.offset];
 
 #ifdef DEBUG
-				g_message ("%s: (%d) Updating timestamp of handle 0x%x",
-					   __func__, getpid(),
-					   handle->u.shared.offset);
+				g_message ("%s: (%d) Updating timestamp of handle 0x%x", __func__, _wapi_getpid (), handle->u.shared.offset);
 #endif
 
 				InterlockedExchange (&shared_data->timestamp,
@@ -1653,16 +1670,13 @@ void _wapi_handle_update_refs (void)
 				struct _WapiHandle_file *file_handle = &handle->u.file;
 				
 #ifdef DEBUG
-				g_message ("%s: (%d) handle 0x%x is FILE", __func__,
-					   getpid (), i * _WAPI_HANDLE_INITIAL_COUNT + k);
+				g_message ("%s: (%d) handle 0x%x is FILE", __func__, _wapi_getpid (), i * _WAPI_HANDLE_INITIAL_COUNT + k);
 #endif
 				
 				g_assert (file_handle->share_info != NULL);
 
 #ifdef DEBUG
-				g_message ("%s: (%d) Inc refs on fileshare 0x%x",
-					   __func__, getpid(),
-					   (file_handle->share_info - &_wapi_fileshare_layout->share_info[0]) / sizeof(struct _WapiFileShare));
+				g_message ("%s: (%d) Inc refs on fileshare 0x%x", __func__, _wapi_getpid (), (file_handle->share_info - &_wapi_fileshare_layout->share_info[0]) / sizeof(struct _WapiFileShare));
 #endif
 
 				InterlockedExchange (&file_handle->share_info->timestamp, now);

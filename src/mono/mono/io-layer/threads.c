@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Ximian, Inc.
  */
 
 #include <config.h>
@@ -64,7 +64,7 @@ void _wapi_thread_abandon_mutexes (gpointer handle)
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	int i;
-	pid_t pid = getpid ();
+	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
@@ -154,7 +154,7 @@ static void thread_hash_init(void)
 
 static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
 {
-	g_assert (thread->owner_pid == getpid ());
+	g_assert (thread->owner_pid == _wapi_getpid ());
 	g_assert (thread->id == pthread_self ());
 	
 	while (MONO_SEM_WAIT (&thread->suspend_sem) != 0 &&
@@ -163,7 +163,7 @@ static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
 
 static void _wapi_thread_resume (struct _WapiHandle_thread *thread)
 {
-	if (thread->owner_pid != getpid ()) {
+	if (thread->owner_pid != _wapi_getpid ()) {
 		return;
 	}
 	
@@ -182,7 +182,9 @@ static void *thread_start_routine (gpointer args)
 	thr_ret = pthread_setspecific (thread_hash_key,
 				       (void *)thread->handle);
 	g_assert (thr_ret == 0);
-	
+
+	thread->id = pthread_self();
+
 	if (thread->create_flags & CREATE_SUSPENDED) {
 		_wapi_thread_suspend (thread);
 	}
@@ -237,7 +239,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	}
 
 	thread_handle.state = THREAD_STATE_START;
-	thread_handle.owner_pid = getpid ();
+	thread_handle.owner_pid = _wapi_getpid ();
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 	thread_handle.create_flags = create;
 	thread_handle.start_routine = start;
@@ -400,7 +402,7 @@ static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 		g_message ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, thread_handle->owner_pid);
 #endif
 
-		if (thread_handle->owner_pid != getpid ()) {
+		if (thread_handle->owner_pid != _wapi_getpid ()) {
 			/* Not sure if ms has this limitation with
 			 * OpenThread(), but pthreads IDs are not
 			 * unique across processes
@@ -560,7 +562,7 @@ static gpointer thread_attach(gsize *tid)
 	mono_once (&thread_ops_once, thread_ops_init);
 
 	thread_handle.state = THREAD_STATE_START;
-	thread_handle.owner_pid = getpid ();
+	thread_handle.owner_pid = _wapi_getpid ();
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 
 	handle = _wapi_handle_new (WAPI_HANDLE_THREAD, &thread_handle);
@@ -944,7 +946,7 @@ static void _wapi_thread_queue_apc (struct _WapiHandle_thread *thread,
 	ApcInfo *apc;
 	int thr_ret;
 	
-	if (thread->owner_pid != getpid ()) {
+	if (thread->owner_pid != _wapi_getpid ()) {
 		return;
 	}
 
@@ -973,7 +975,7 @@ gboolean _wapi_thread_apc_pending (gpointer handle)
 		return (FALSE);
 	}
 	
-	if (thread->owner_pid != getpid ()) {
+	if (thread->owner_pid != _wapi_getpid ()) {
 		return(FALSE);
 	}
 	
@@ -996,7 +998,7 @@ gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
 		return (FALSE);
 	}
 	
-	if (thread->owner_pid != getpid ()) {
+	if (thread->owner_pid != _wapi_getpid ()) {
 		return(FALSE);
 	}
 	

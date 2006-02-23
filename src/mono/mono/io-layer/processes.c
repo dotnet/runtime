@@ -830,7 +830,7 @@ extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 
 static void process_set_current (void)
 {
-	pid_t pid = getpid ();
+	pid_t pid = _wapi_getpid ();
 	char *handle_env;
 	struct _WapiHandle_process process_handle = {0};
 	
@@ -855,9 +855,9 @@ static void process_set_current (void)
 			return;
 		}
 
-		/* This test will break on linuxthreads, but that
-		 * should be ancient history on all distros we care
-		 * about by now
+		/* This test will probably break on linuxthreads, but
+		 * that should be ancient history on all distros we
+		 * care about by now
 		 */
 		if (process_handlep->id == pid) {
 			procname = process_handlep->proc_name;
