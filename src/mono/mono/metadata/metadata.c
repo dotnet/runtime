@@ -1767,6 +1767,9 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 	MonoGenericInst *nginst;
 	int i;
 
+	if (!ginst->is_open)
+		return ginst;
+
 	nginst = g_new0 (MonoGenericInst, 1);
 	nginst->type_argc = ginst->type_argc;
 	nginst->type_argv = g_new0 (MonoType*, nginst->type_argc);

@@ -407,6 +407,11 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 {
 	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *ngclass, *cached;
+	MonoGenericInst *ninst;
+
+	ninst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
+	if (ninst == ogclass->inst)
+		return ogclass;
 
 	if (ogclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
@@ -422,7 +427,7 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 
 	*ngclass = *ogclass;
 
-	ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
+	ngclass->inst = ninst;
 
 	igclass->klass = NULL;
 
@@ -446,20 +451,24 @@ static MonoType*
 inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
 	switch (type->type) {
-	case MONO_TYPE_MVAR:
-		if (context->gmethod && context->gmethod->inst->type_argv)
-			return dup_type (
-				context->gmethod->inst->type_argv [type->data.generic_param->num],
-				type);
-		else
+	case MONO_TYPE_MVAR: {
+		int num = type->data.generic_param->num;
+		MonoGenericInst *inst = context->gmethod ? context->gmethod->inst : NULL;
+		if (!inst || !inst->type_argv)
 			return NULL;
-	case MONO_TYPE_VAR:
-		if (context->gclass)
-			return dup_type (
-				context->gclass->inst->type_argv [type->data.generic_param->num],
-				type);
-		else
+		if (num >= inst->type_argc)
+			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
+		return dup_type (inst->type_argv [num], type);
+	}
+	case MONO_TYPE_VAR: {
+		int num = type->data.generic_param->num;
+		MonoGenericInst *inst = context->gclass ? context->gclass->inst : NULL;
+		if (!inst)
 			return NULL;
+		if (num >= inst->type_argc)
+			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
+		return dup_type (inst->type_argv [num], type);
+	}
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoType *nt, *inflated = inflate_generic_type (&eclass->byval_arg, context);
@@ -580,26 +589,37 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 static MonoGenericContext *
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
 {
-	MonoGenericContext *res = g_new0 (MonoGenericContext, 1);
-
-	res->container = context->container;
+	MonoGenericClass *gclass = NULL;
+	MonoGenericMethod *gmethod = NULL;
 
 	if (context->gclass)
-		res->gclass = inflate_generic_class (context->gclass, inflate_with);
+		gclass = inflate_generic_class (context->gclass, inflate_with);
 
 	if (context->gmethod) {
-		res->gmethod = g_new0 (MonoGenericMethod, 1);
-		res->gmethod->generic_class = res->gclass;
-
-		res->gmethod->container = context->gmethod->container;
-		res->gmethod->inst = mono_metadata_inflate_generic_inst (context->gmethod->inst, inflate_with);
-	} else
-		res->gmethod = inflate_with->gmethod;
-
-	if (res->gmethod) {
-		res->gmethod->container->parent = res->container;
-		res->container = res->gmethod->container;
+		MonoGenericInst *ninst = mono_metadata_inflate_generic_inst (context->gmethod->inst, inflate_with);
+		if (ninst == context->gmethod->inst) {
+			gmethod = context->gmethod;
+		} else {
+			gmethod = g_new0 (MonoGenericMethod, 1);
+			gmethod->generic_class = gclass;
+			gmethod->container = context->container;
+			gmethod->inst = ninst;
+		}
+	} else if (inflate_with->gmethod) {
+		gmethod = inflate_with->gmethod;
+		/* See mini/jit-icalls.c:helper_compile_generic_method for the rationale to the
+		   first part of this assert. */
+		g_assert (!(gclass && gclass->inst->is_open) || gmethod->container->parent == context->container);
 	}
+
+	if (gclass == context->gclass && gmethod == context->gmethod)
+		return context;
+
+	MonoGenericContext *res = g_new0 (MonoGenericContext, 1);
+
+	res->container = gmethod ? gmethod->container : context->container;
+	res->gclass = gclass;
+	res->gmethod = gmethod;
 
 	return res;
 }
