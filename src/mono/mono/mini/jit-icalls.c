@@ -658,6 +658,16 @@ helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericC
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_null_reference ());
 	vmethod = mono_object_get_virtual_method (obj, method);
+
+	/* 'vmethod' is partially inflated.  All the blanks corresponding to the type parameters of the
+	   declaring class have been inflated.  We still need to fully inflate the method parameters.
+
+	   FIXME: This code depends on the declaring class being fully inflated, since we inflate it twice with 
+	   the same context.
+	*/
+	g_assert (!vmethod->klass->generic_container);
+	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->inst->is_open);
+	g_assert (!context->gmethod || !context->gmethod->inst->is_open);
 	inflated = mono_class_inflate_generic_method (vmethod, context);
 	inflated = mono_get_inflated_method (inflated);
 	addr = mono_compile_method (inflated);
