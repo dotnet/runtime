@@ -73,7 +73,7 @@ static void
 set_loader_error (MonoLoaderError *error)
 {
 	TlsSetValue (loader_error_thread_id, error);
-}	
+}
 
 /*
  * mono_loader_set_error_type_load:
@@ -103,7 +103,7 @@ mono_loader_set_error_type_load (char *class_name, char *assembly_name)
 	 * assert.
 	 */
 	g_warning ("The class %s could not be loaded, used in %s", class_name, assembly_name);
-	
+
 	set_loader_error (error);
 }
 
@@ -149,7 +149,7 @@ mono_loader_set_error_field_load (MonoClass *klass, const char *member_name)
 	error->kind = MONO_LOADER_ERROR_FIELD;
 	error->klass = klass;
 	error->member_name = member_name;
-	
+
 	set_loader_error (error);
 }
 
@@ -203,7 +203,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-	
+
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 	/* we may want to check the signature here... */
@@ -310,7 +310,7 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 	for (i = 0; i < sig1->sentinelpos; i++) { 
 		MonoType *p1 = sig1->params[i];
 		MonoType *p2 = sig2->params[i];
-		
+
 		/*if (p1->attrs != p2->attrs)
 			return FALSE;
 		*/
@@ -399,6 +399,53 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 	return result;
 }
 
+static MonoMethodSignature*
+inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context)
+{
+	MonoMethodSignature *res;
+	gboolean is_open;
+	int i;
+
+	if (!context)
+		return sig;
+
+	res = mono_metadata_signature_alloc (image, sig->param_count);
+	res->ret = mono_class_inflate_generic_type (sig->ret, context);
+	is_open = mono_class_is_open_constructed_type (res->ret);
+	for (i = 0; i < sig->param_count; ++i) {
+		res->params [i] = mono_class_inflate_generic_type (sig->params [i], context);
+		if (!is_open)
+			is_open = mono_class_is_open_constructed_type (res->params [i]);
+	}
+	res->hasthis = sig->hasthis;
+	res->explicit_this = sig->explicit_this;
+	res->call_convention = sig->call_convention;
+	res->pinvoke = sig->pinvoke;
+	res->generic_param_count = sig->generic_param_count;
+	res->sentinelpos = sig->sentinelpos;
+	res->has_type_parameters = is_open;
+	res->is_inflated = 1;
+	return res;
+}
+
+static MonoMethodHeader*
+inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
+{
+	MonoMethodHeader *res;
+	int i;
+	res = g_malloc0 (sizeof (MonoMethodHeader) + sizeof (gpointer) * header->num_locals);
+	res->code = header->code;
+	res->code_size = header->code_size;
+	res->max_stack = header->max_stack;
+	res->num_clauses = header->num_clauses;
+	res->init_locals = header->init_locals;
+	res->num_locals = header->num_locals;
+	res->clauses = header->clauses;
+	for (i = 0; i < header->num_locals; ++i)
+		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], context);
+	return res;
+}
+
 /*
  * token is the method_ref or method_def token used in a call IL instruction.
  */
@@ -436,7 +483,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	mono_loader_unlock ();
 	if (!sig) {
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-	
+
 		ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (ptr, &ptr);
 		sig = mono_metadata_parse_method_signature_full (
@@ -454,7 +501,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		mono_loader_unlock ();
 	}
 
-	sig = mono_class_inflate_generic_signature (image, sig, context);
+	sig = inflate_generic_signature (image, sig, context);
 
 	return sig;
 }
@@ -546,7 +593,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			MonoClass *in_class = klass->generic_class ? klass->generic_class->container_class : klass;
 			method = find_method (in_class, NULL, mname, sig);
 			if (method && klass->generic_class) {
-				method = mono_class_inflate_generic_method (method, klass->generic_class->context);
+				MonoClass *klass_hint = (in_class == method->klass) ? klass : NULL;
+				method = mono_class_inflate_generic_method (method, klass_hint, klass->generic_class->context);
 				method = mono_get_inflated_method (method);
 			}
 			break;
@@ -562,7 +610,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			/* we special-case this in the runtime. */
 			return result;
 		}
-		
+
 		if (!strcmp (mname, "Set")) {
 			g_assert (sig->hasthis);
 			g_assert (type->data.array->rank + 1 == sig->param_count);
@@ -600,7 +648,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_string_append_printf (s, "(%s)", msig);
 		g_free (msig);
 		msig = g_string_free (s, FALSE);
-		
+
 		g_warning (
 			"Missing method %s::%s in assembly %s, referenced in assembly %s",
 			mono_type_get_name (&klass->byval_arg), msig, klass->image->name, image->name);
@@ -629,7 +677,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	nindex = token >> MONO_METHODDEFORREF_BITS;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
-	
+
 	mono_metadata_decode_value (ptr, &ptr);
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
@@ -723,10 +771,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method (method, new_context);
+	inflated = mono_class_inflate_generic_method (method, method->klass, new_context);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
-	new_context->gclass = inflated->klass->generic_class;
 	return inflated;
 }
 
@@ -758,7 +805,7 @@ mono_dllmap_lookup_hash (GHashTable *dll_map, const char *dll, const char* func,
 		return 0;
 	}
 	*rdll = map->target? map->target: dll;
-		
+
 	for (tmp = map->next; tmp; tmp = tmp->next) {
 		if (strcmp (func, tmp->name) == 0) {
 			*rfunc = tmp->name;
@@ -881,7 +928,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	/* we allow a special name to dlopen from the running process namespace */
 	if (strcmp (new_scope, "__Internal") == 0)
 		gmodule = g_module_open (NULL, G_MODULE_BIND_LAZY);
-		
+
 	/*
 	 * Try loading the module using a variety of names
 	 */
@@ -1118,14 +1165,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
-	else 
+	else
 		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
 
 	if (!klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 	}
-	
+
 	result->slot = -1;
 	result->klass = klass;
 	result->flags = cols [2];
@@ -1155,25 +1202,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	
-	/* there are generic params, or a container. FIXME: be lazy here for generics*/
-	if (* sig & 0x10 || container) {
-		result->signature = mono_metadata_parse_method_signature_full (
-			image, container, idx, sig, NULL);
-
-		/* Verify metadata consistency */
-		if (result->signature->generic_param_count) {
-			if (!container || !container->is_method)
-				g_error ("Signature claims method has generic parameters, but generic_params table says it doesn't");
-			if (container->type_argc != result->signature->generic_param_count)
-				g_error ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %d",
-					 result->signature->generic_param_count, container->type_argc);
-		} else if (container && container->is_method && container->type_argc)
-			g_error ("generic_params table claims method has generic parameters, but signature says it doesn't");
-
-		if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-			result->signature->pinvoke = 1;
-	}
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
@@ -1181,11 +1209,11 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	} else if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 		MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-		
+
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
 	}
-		
+
 	/* FIXME: lazyness for generics too, but how? */
 	if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 	    !(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
@@ -1194,7 +1222,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		g_assert (loc);
 		((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (image, container, loc);
 	}
-		
+
 	result->generic_container = generic_container;
 
 	return result;
@@ -1269,7 +1297,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			   image->name, token);
 
 	if (gclass)
-		result = mono_class_inflate_generic_method (result, gclass->context);
+		result = mono_class_inflate_generic_method (result, NULL, gclass->context);
 
 	mono_loader_unlock ();
 	return result;
@@ -1469,7 +1497,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
-		
+
 		if (idx + 1 < methodt->rows)
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
@@ -1554,47 +1582,66 @@ mono_loader_unlock (void)
 	LeaveCriticalSection (&loader_mutex);
 }
 
-MonoMethodSignature* 
+MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
-{
-	m = mono_get_inflated_method (m);
-	return mono_method_signature_full (m, NULL);
-}
-
-MonoMethodSignature* 
-mono_method_signature_full (MonoMethod *m, MonoGenericContainer *container)
 {
 	int idx;
 	int size;
 	MonoImage* img;
 	const char *sig;
-	
+	MonoGenericContainer *container;
+
 	if (m->signature)
 		return m->signature;
-		
+
 	mono_loader_lock ();
-	
+
 	if (m->signature) {
 		mono_loader_unlock ();
 		return m->signature;
 	}
-	
+
+	if (m->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
+		MonoMethodSignature *signature;
+		/* the lock is recursive */
+		signature = mono_method_signature (imethod->declaring);
+		m->signature = inflate_generic_signature (imethod->declaring->klass->image, signature, imethod->context);
+		mono_loader_unlock ();
+		return m->signature;
+	}
+
 	g_assert (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (m->token);
 	img = m->klass->image;
-	
+
 	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	
+
+	g_assert (!m->klass->generic_class);
+	container = m->generic_container;
+	if (!container)
+		container = m->klass->generic_container;
+
 	m->signature = mono_metadata_parse_method_signature_full (img, container, idx, sig, NULL);
-	
+
+	/* Verify metadata consistency */
+	if (m->signature->generic_param_count) {
+		if (!container || !container->is_method)
+			g_error ("Signature claims method has generic parameters, but generic_params table says it doesn't");
+		if (container->type_argc != m->signature->generic_param_count)
+			g_error ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %d",
+				 m->signature->generic_param_count, container->type_argc);
+	} else if (container && container->is_method && container->type_argc)
+		g_error ("generic_params table claims method has generic parameters, but signature says it doesn't");
+
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		m->signature->pinvoke = 1;
 	else if ((m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(m->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
 		MonoCallConvention conv = 0;
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)m;
 		m->signature->pinvoke = 1;
-		
+
 		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CALL_CONV_MASK) {
 		case 0: /* no call conv, so using default */
 		case PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI:
@@ -1617,10 +1664,10 @@ mono_method_signature_full (MonoMethod *m, MonoGenericContainer *container)
 		default:
 			g_warning ("unsupported calling convention : 0x%04x", piinfo->piflags);
 			g_assert_not_reached ();
-		}	
+		}
 		m->signature->call_convention = conv;
 	}
-	
+
 	mono_loader_unlock ();
 	return m->signature;
 }
@@ -1643,7 +1690,7 @@ mono_method_get_token (MonoMethod *method)
 	return method->token;
 }
 
-MonoMethodHeader* 
+MonoMethodHeader*
 mono_method_get_header (MonoMethod *method)
 {
 	int idx;
@@ -1651,34 +1698,44 @@ mono_method_get_header (MonoMethod *method)
 	MonoImage* img;
 	gpointer loc;
 	MonoMethodNormal* mn = (MonoMethodNormal*) method;
-	
+
 	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
-	
+
 #ifdef G_LIKELY
 	if (G_LIKELY (mn->header))
 #else
 	if (mn->header)
 #endif
 		return mn->header;
-	
+
 	mono_loader_lock ();
-	
+
 	if (mn->header) {
 		mono_loader_unlock ();
 		return mn->header;
 	}
-	
+
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		MonoMethodHeader *header;
+		/* the lock is recursive */
+		header = mono_method_get_header (imethod->declaring);
+		mn->header = inflate_generic_header (header, imethod->context);
+		mono_loader_unlock ();
+		return mn->header;
+	}
+
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 	img = method->klass->image;
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 	loc = mono_image_rva_map (img, rva);
-	
+
 	g_assert (loc);
-	
+
 	mn->header = mono_metadata_parse_mh_full (img, method->generic_container, loc);
-	
+
 	mono_loader_unlock ();
 	return mn->header;
 }

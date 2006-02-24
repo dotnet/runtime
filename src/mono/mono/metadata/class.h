@@ -53,7 +53,7 @@ MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context);
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context);
+mono_class_inflate_generic_method (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
 
 MonoMethod *
 mono_get_inflated_method (MonoMethod *method);
