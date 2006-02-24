@@ -764,8 +764,9 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	GSList *list;
 	SocketIOData *data = &socket_io_data;
 
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD6)
 	/* select() for connect() does not work well on the Mac. Bug #75436. */
+	/* Bug #77637 for the BSD 6 case */
 	if (state->operation == AIO_OP_CONNECT && state->blocking == TRUE) {
 		start_io_thread_or_queue (state);
 		return;
