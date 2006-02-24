@@ -402,6 +402,10 @@ stmt: OP_OUTARG_VT (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_X86_OUTARG_ALIGN_STACK {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, tree->inst_c0);
+}	
+
 reg: OP_LDADDR (OP_REGOFFSET),
 reg: CEE_LDOBJ (OP_REGOFFSET) {
 	if (state->left->tree->inst_offset) {
