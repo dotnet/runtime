@@ -4781,7 +4781,18 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
 	 */
-	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+	if ((code [-1] == 0x8b) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
+			/*
+			 * This is a interface call
+			 * 48 8b 80 f0 e8 ff ff   mov    0xffffffffffffe8f0(%rax),%rax
+			 * ff 10                  callq  *(%rax)
+			 */
+		if (IS_REX (code [4]))
+			rex = code [4];
+		reg = amd64_modrm_rm (code [6]);
+		disp = 0;
+	}
+	else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
 		disp = *(guint32*)(code + 3);
 		return (gpointer*)(code + disp + 7);
