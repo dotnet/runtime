@@ -1,3 +1,7 @@
+2006-02-24 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: define PLATFORM_BSD.
+
 2006-02-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* Makefile.am: Avoid installing mint.pc if mint is not compiled.

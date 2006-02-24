@@ -81,6 +81,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
+		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
 		libmono_ldflags="-pthread"
 		need_link_unlink=yes
 		libdl=
@@ -104,6 +105,7 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
+		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD4"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
@@ -128,6 +130,7 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
+		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD5"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
@@ -154,6 +157,7 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
+		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD6"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
