@@ -19,7 +19,7 @@
 #include "inssel.h"
 #include "mini-arch.h"
 
-#define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 2, a)
+#define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 2, a;)
 
 #if defined(__x86_64__)
 const char * const amd64_desc [OP_LAST];

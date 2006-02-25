@@ -24,7 +24,7 @@
 #if DISABLE_LOGGING
 #define MINI_DEBUG(level,limit,code)
 #else
-#define MINI_DEBUG(level,limit,code) do {if ((level) >= (limit)) (code)} while (0)
+#define MINI_DEBUG(level,limit,code) do {if ((level) >= (limit)) code} while (0)
 #endif
 
 #ifndef DISABLE_AOT
