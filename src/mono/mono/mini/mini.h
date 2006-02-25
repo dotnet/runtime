@@ -21,7 +21,15 @@
 #include "regalloc.h"
 #include "declsec.h"
 
+#if DISABLE_LOGGING
+#define MINI_DEBUG(level,limit,code)
+#else
+#define MINI_DEBUG(level,limit,code) do {if ((level) >= (limit)) (code)} while (0)
+#endif
+
+#ifndef DISABLE_AOT
 #define MONO_USE_AOT_COMPILER
+#endif
 
 /* for 32 bit systems */
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
