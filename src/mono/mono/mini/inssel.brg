@@ -939,7 +939,7 @@ stmt: OP_THROW_OR_NULL (reg, reg) {
 	 * Currently, we allways rethrow the abort exception, despite the fact
 	 * that this is not correct. See thread6.cs for an example. But propagating
 	 * the abort exception is more important than getting the sematics right.
-     */
+	 */
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, 0);
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, dont_throw);
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
@@ -1106,7 +1106,7 @@ reg: OP_CISINST (reg) {
 	1) if the object is not instance of the class,
 	2) if the object is a proxy whose type cannot be determined */
 	
-    MonoClass *klass = tree->inst_newa_class;
+	MonoClass *klass = tree->inst_newa_class;
 	MonoInst *end_label, *true_label, *false_label, *false2_label;
 	MonoInst *no_proxy_label, *interface_fail_label;
 	int obj_reg = state->left->reg1;
@@ -1599,9 +1599,9 @@ mini_emit_max_iid_check (MonoCompile *s, int max_iid_reg, MonoClass *klass,
 		int iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, max_iid_reg, iid_reg);
-	}
-	else
+	} else {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
+	}
 	if (false_target)
 		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
 	else
@@ -1666,13 +1666,14 @@ mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, Mono
 
 	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
+		int shifted_iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 2);
-		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, iid_reg);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, shifted_iid_reg, iid_reg, 2);
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, shifted_iid_reg);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, 0);
-	}
-	else
+	} else {
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, klass->interface_id * sizeof (int));
+	}
 }
 
 void 
@@ -1945,8 +1946,7 @@ mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpo
 	if (cfg->got_var->opcode == OP_REGOFFSET) {
 		got_var_reg = mono_regstate_next_int (cfg->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, got_var_reg, cfg->got_var->inst_basereg, cfg->got_var->inst_offset);
-	}
-	else {
+	} else {
 		g_assert (cfg->got_var->opcode == OP_REGVAR);
 		got_var_reg = cfg->got_var->dreg;
 	}
