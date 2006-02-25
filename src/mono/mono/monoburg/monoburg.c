@@ -360,7 +360,7 @@ emit_decoders ()
 
 	for (l = nonterm_list; l; l = l->next) {
 		NonTerm *n = (NonTerm *)l->data;
-		output ("const int mono_burg_decode_%s[] = {\n", n->name);
+		output ("const short mono_burg_decode_%s[] = {\n", n->name);
 		output ("\t0,\n");
 		for (rl = n->rules; rl; rl = rl->next) {
 			Rule *rule = (Rule *)rl->data;
@@ -818,12 +818,27 @@ compute_nonterms (Tree *tree)
 	} 
 }
 
+static int
+count_nonterms (Tree *tree)
+{
+	if (!tree)
+		return 0;
+
+	if (tree->nonterm) {
+		return 1;
+	} else {
+		return count_nonterms (tree->left) + count_nonterms (tree->right);
+	} 
+}
+
 static void
 emit_vardefs ()
 {
 	GList *l;
 	int i, j, c, n, *si;
 	char **sa;
+	int *nts_offsets;
+	int current_offset;
 
 	if (predefined_terms) {
 		output ("#if HAVE_ARRAY_ELEM_INIT\n");
@@ -887,7 +902,11 @@ emit_vardefs ()
 	n = g_list_length (rule_list);
 	sa = g_new0 (char *, n);
 	si = g_new0 (int, n);
+	nts_offsets = g_new0 (int, n);
 
+	/* at offset 0 we store 0 to mean end of list */
+	current_offset = 1;
+	output ("const guint16 mono_burg_nts_data [] = {\n\t0,\n");
 	/* compress the _nts array */
 	for (l = rule_list, i = 0, c = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
@@ -899,17 +918,20 @@ emit_vardefs ()
 
 		si [i++] = j;
 		if (j == c) {
-			output ("static const guint16 mono_burg_nts_%d [] = { %s0 };\n", c, s);
+			output ("\t%s0,\n", s);
+			nts_offsets [c] = current_offset;
 			sa [c++] = s;
+			current_offset += count_nonterms (rule->tree) + 1;
 		}
 	}	
-	output ("\n");
+	output ("\t0\n};\n\n");
 
-	output ("const guint16 *const mono_burg_nts [] = {\n");
+	output ("const guint8 mono_burg_nts [] = {\n");
 	output ("\t0,\n");
 	for (l = rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
-		output ("\tmono_burg_nts_%d, ", si [i++]);
+		output ("\t%d, /* %s */ ", nts_offsets [si [i]], sa [si [i]]);
+		++i;
 		emit_rule_string (rule, "");
 	}
 	output ("};\n\n");
@@ -927,7 +949,8 @@ emit_prototypes ()
 	output ("#if MONOBURG_LOG\n");
 	output ("extern const char * const mono_burg_rule_string [];\n");
 	output ("#endif /* MONOBURG_LOG */\n");
-	output ("extern const guint16 *const mono_burg_nts [];\n");
+	output ("extern const guint16 mono_burg_nts_data [];\n");
+	output ("extern const guint8 mono_burg_nts [];\n");
 	output ("extern MBEmitFunc const mono_burg_func [];\n");
 
 	output ("MBState *mono_burg_label (MBTREE_TYPE *tree, MBCOST_DATA *data);\n");
