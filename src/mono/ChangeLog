@@ -1,3 +1,8 @@
+
+Sat Feb 25 11:53:30 CET 2006 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: more feature for --enable-minimal flags.
+
 2006-02-24 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: define PLATFORM_BSD.
