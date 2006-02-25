@@ -864,6 +864,7 @@ emit_vardefs ()
 		output ("};\n\n");
 	}
 
+	output ("#if MONOBURG_LOG\n");
 	output ("const char * const mono_burg_rule_string [] = {\n");
 	output ("\tNULL,\n");
 	for (l = rule_list, i = 0; l; l = l->next) {
@@ -872,7 +873,8 @@ emit_vardefs ()
 		emit_tree_string (rule->tree);
 		output ("\",\n");
 	}
-	output ("};\n\n");
+	output ("};\n");
+	output ("#endif /* MONOBURG_LOG */\n\n");
 
 	n = g_list_length (rule_list);
 	sa = g_new0 (char *, n);
@@ -914,7 +916,9 @@ emit_prototypes ()
 		output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
 	
 	output ("extern const char * const mono_burg_term_string [];\n");
+	output ("#if MONOBURG_LOG\n");
 	output ("extern const char * const mono_burg_rule_string [];\n");
+	output ("#endif /* MONOBURG_LOG */\n");
 	output ("extern const guint16 *const mono_burg_nts [];\n");
 	output ("extern MBEmitFunc const mono_burg_func [];\n");
 
