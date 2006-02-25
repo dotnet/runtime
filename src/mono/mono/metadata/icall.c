@@ -5379,20 +5379,14 @@ ves_icall_System_Environment_get_MachineName (void)
 	g_free (buf);
 	return result;
 #else
-	gchar *buf;
-	int len;
+	gchar buf [256];
 	MonoString *result;
 
-	MONO_ARCH_SAVE_REGS;
-
-	len = 256;
-	buf = g_new (gchar, len);
-
-	result = NULL;
-	if (gethostname (buf, len) == 0)
+	if (gethostname (buf, sizeof (buf)) == 0)
 		result = mono_string_new (mono_domain_get (), buf);
+	else
+		result = NULL;
 	
-	g_free (buf);
 	return result;
 #endif
 }
@@ -6134,13 +6128,13 @@ GCHandle_CheckCurrentDomain (guint32 gchandle)
 static MonoString*
 ves_icall_Mono_Runtime_GetDisplayName (void)
 {
-	char *display_name_str = g_strdup_printf ("Mono %s", VERSION);
+	static const char display_name_str [] = "Mono " VERSION;
 	MonoString *display_name = mono_string_new (mono_domain_get (), display_name_str);
-	g_free (display_name_str);
 	return display_name;
 }
 
-static guchar dbase64 [] = {
+const static guchar
+dbase64 [] = {
 	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
 	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
 	128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 62, 128, 128, 128, 63,
@@ -6149,7 +6143,7 @@ static guchar dbase64 [] = {
 	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 128, 128, 128, 128, 128,
 	128, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
 	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
-	};
+};
 
 static MonoArray *
 base64_to_byte_array (gunichar2 *start, gint ilength, MonoBoolean allowWhitespaceOnly)
