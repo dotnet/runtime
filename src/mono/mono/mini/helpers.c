@@ -10,6 +10,27 @@
 #ifdef MINI_OP
 #undef MINI_OP
 #endif
+
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define MINI_OP(a,b) char MSGSTRFIELD(__LINE__) [sizeof (b)];
+#include "mini-ops.h"
+#undef MINI_OP
+} opstr = {
+#define MINI_OP(a,b) b,
+#include "mini-ops.h"
+#undef MINI_OP
+};
+static const gint16 opidx [] = {
+#define MINI_OP(a,b) [a - OP_LOAD] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "mini-ops.h"
+#undef MINI_OP
+};
+
+#else
+
 #define MINI_OP(a,b) b,
 /* keep in sync with the enum in mini.h */
 static const char* const
@@ -18,16 +39,22 @@ opnames[] = {
 };
 #undef MINI_OP
 
+#endif
+
 #ifdef __i386__
-static gboolean emit_debug_info = TRUE;
+#define emit_debug_info  TRUE
 #else
-static gboolean emit_debug_info = FALSE;
+#define emit_debug_info  FALSE
 #endif
 
 const char*
 mono_inst_name (int op) {
 	if (op >= OP_LOAD && op <= OP_LAST)
+#ifdef HAVE_ARRAY_ELEM_INIT
+		return (const char*)&opstr + opidx [op - OP_LOAD];
+#else
 		return opnames [op - OP_LOAD];
+#endif
 	if (op < OP_LOAD)
 		return mono_opcode_name (op);
 	g_error ("unknown opcode name for %d", op);
@@ -37,6 +64,7 @@ mono_inst_name (int op) {
 void
 mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) 
 {
+#ifndef DISABLE_LOGGING
 	int i;
 
 	if (name)
@@ -50,6 +78,7 @@ mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint 
 		
 	}
 	g_print ("\n");
+#endif
 }
 
 /**
@@ -63,6 +92,7 @@ mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint 
 void
 mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 {
+#ifndef DISABLE_LOGGING
 	GHashTable *offset_to_bb_hash = NULL;
 	int i, bb_num;
 	FILE *ofd;
@@ -140,5 +170,6 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	
 	g_free (o_file);
 	g_free (as_file);
+#endif
 }
 
