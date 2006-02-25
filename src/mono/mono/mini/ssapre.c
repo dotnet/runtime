@@ -18,8 +18,6 @@
 
 #include "ssapre.h"
 
-extern guint8 mono_burg_arity [];
-
 /* Logging conditions */
 #define DUMP_LEVEL (4)
 #define TRACE_LEVEL (3)

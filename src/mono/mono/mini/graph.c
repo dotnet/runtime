@@ -11,8 +11,6 @@
 
 #include "mini.h"
 
-extern guint8 mono_burg_arity [];
-
 static char *
 convert_name (const char *str)
 {

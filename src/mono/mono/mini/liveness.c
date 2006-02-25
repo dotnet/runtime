@@ -19,8 +19,6 @@
 #define BITS_PER_CHUNK 32
 #endif
 
-extern guint8 mono_burg_arity [];
-
 /* mono_bitset_mp_new:
  * 
  * allocates a MonoBitSet inside a memory pool

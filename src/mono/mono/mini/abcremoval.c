@@ -23,7 +23,6 @@
 #define OP_PCONST OP_ICONST
 #endif
 
-extern guint8 mono_burg_arity [];
 
 #define TRACE_ABC_REMOVAL (verbose_level > 2)
 #define REPORT_ABC_REMOVAL (verbose_level > 0)

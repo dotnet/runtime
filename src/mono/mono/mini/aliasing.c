@@ -15,8 +15,6 @@
 
 #include "aliasing.h"
 
-extern guint8 mono_burg_arity [];
-
 #define MONO_APPLY_DEADCE_TO_SINGLE_METHOD 0
 #define DEBUG_DEADCE 0
 
