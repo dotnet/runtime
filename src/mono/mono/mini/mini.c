@@ -5081,6 +5081,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			if (!klass)
 				goto load_error;
+			if (sp [0]->type != STACK_OBJ)
+				goto unverified;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5114,13 +5116,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  				sp++;
 				bblock = ebblock;
 				inline_costs += costs;
-
-			}
-			else {
+			} else {
 				MONO_INST_NEW (cfg, ins, *ip);
 				ins->type = STACK_OBJ;
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
+				ins->klass = klass;
 				ins->cil_code = ip;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
@@ -5168,8 +5169,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					sp++;
 					bblock = ebblock;
 					inline_costs += costs;				
-				}
-				else {
+				} else {
 					MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
 					ins->type = STACK_OBJ;
 					ins->inst_left = *sp;
@@ -5276,6 +5276,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			if (!klass)
 				goto load_error;
+			if (sp [0]->type != STACK_OBJ)
+				goto unverified;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5309,8 +5311,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  				sp++;
 				bblock = ebblock;
 				inline_costs += costs;
-			}
-			else {
+			} else {
 				MONO_INST_NEW (cfg, ins, *ip);
 				ins->type = STACK_OBJ;
 				ins->inst_left = *sp;
