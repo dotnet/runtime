@@ -826,18 +826,26 @@ emit_vardefs ()
 	char **sa;
 
 	if (predefined_terms) {
+		output ("#if HAVE_ARRAY_ELEM_INIT\n");
+		output ("const guint8 mono_burg_arity [MBMAX_OPCODES] = {\n"); 
+		for (l = term_list, i = 0; l; l = l->next) {
+			Term *t = (Term *)l->data;
+			output ("\t [%s] = %d, /* %s */\n", t->name, t->arity, t->name);
+		}
+		output ("};\n\n");
+		output ("void\nmono_burg_init (void) {\n");
+		output ("}\n\n");
+		output ("#else\n");
 		output ("guint8 mono_burg_arity [MBMAX_OPCODES];\n"); 
 
 		output ("void\nmono_burg_init (void)\n{\n");
 
 		for (l = term_list, i = 0; l; l = l->next) {
 			Term *t = (Term *)l->data;
-
 			output ("\tmono_burg_arity [%s] = %d; /* %s */\n", t->name, t->arity, t->name);
-
 		}
-
 		output ("}\n\n");
+		output ("#endif /* HAVE_ARRAY_ELEM_INIT */\n");
 
 	} else {
 		output ("const guint8 mono_burg_arity [] = {\n"); 
