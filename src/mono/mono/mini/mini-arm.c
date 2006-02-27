@@ -1732,6 +1732,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_MEMORY_BARRIER:
+			break;
 		case OP_TLS_GET:
 			g_assert_not_reached ();
 			break;
@@ -2290,7 +2292,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code += 4 * GPOINTER_TO_INT (ins->klass);
 			break;
 		case OP_CEQ:
-			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_NE);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_EQ);
 			break;
 		case OP_CLT:
@@ -2492,7 +2494,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCEQ:
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
-			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_NE);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_EQ);
 			break;
 		case OP_FCLT:
@@ -3155,7 +3157,12 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	return NULL;
+	MonoInst *ins = NULL;
+	if (cmethod->klass == mono_defaults.thread_class &&
+			strcmp (cmethod->name, "MemoryBarrier") == 0) {
+		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+	}
+	return ins;
 }
 
 gboolean
