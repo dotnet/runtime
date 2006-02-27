@@ -199,11 +199,11 @@ mono_mutex_lock (mono_mutex_t *mutex)
 			return EINVAL;
 		
 		while (1) {
-			if (mutex->owner == MONO_THREAD_NONE) {
+			if (pthread_equal (mutex->owner, MONO_THREAD_NONE)) {
 				mutex->owner = id;
 				mutex->depth = 1;
 				break;
-			} else if (mutex->owner == id) {
+			} else if (pthread_equal (mutex->owner, id)) {
 				mutex->depth++;
 				break;
 			} else {
@@ -234,13 +234,14 @@ mono_mutex_trylock (mono_mutex_t *mutex)
 		if (pthread_mutex_lock (&mutex->mutex) != 0)
 			return EINVAL;
 		
-		if (mutex->owner != MONO_THREAD_NONE && mutex->owner != id) {
+		if (!pthread_equal (mutex->owner, MONO_THREAD_NONE) &&
+		    !pthread_equal (mutex->owner, id)) {
 			pthread_mutex_unlock (&mutex->mutex);
 			return EBUSY;
 		}
 		
 		while (1) {
-			if (mutex->owner == MONO_THREAD_NONE) {
+			if (pthread_equal (mutex->owner, MONO_THREAD_NONE)) {
 				mutex->owner = id;
 				mutex->depth = 1;
 				break;
@@ -271,11 +272,11 @@ mono_mutex_timedlock (mono_mutex_t *mutex, const struct timespec *timeout)
 			return ETIMEDOUT;
 		
 		while (1) {
-			if (mutex->owner == MONO_THREAD_NONE) {
+			if (pthread_equal (mutex->owner, MONO_THREAD_NONE)) {
 				mutex->owner = id;
 				mutex->depth = 1;
 				break;
-			} else if (mutex->owner == id) {
+			} else if (pthread_equal (mutex->owner, id)) {
 				mutex->depth++;
 				break;
 			} else {
@@ -304,7 +305,7 @@ mono_mutex_unlock (mono_mutex_t *mutex)
 		if (pthread_mutex_lock (&mutex->mutex) != 0)
 			return EINVAL;
 		
-		if (mutex->owner != pthread_self()) {
+		if (pthread_equal (mutex->owner, pthread_self())) {
 			/* Not owned by this thread */
 			pthread_mutex_unlock (&mutex->mutex);
 			return EPERM;

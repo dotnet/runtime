@@ -76,7 +76,7 @@ void _wapi_thread_abandon_mutexes (gpointer handle)
 	}
 	
 	if (thread_handle->owner_pid != pid ||
-	    thread_handle->id != tid) {
+	    !pthread_equal (thread_handle->id, tid)) {
 		return;
 	}
 	
@@ -155,7 +155,7 @@ static void thread_hash_init(void)
 static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
 {
 	g_assert (thread->owner_pid == _wapi_getpid ());
-	g_assert (thread->id == pthread_self ());
+	g_assert (pthread_equal (thread->id, pthread_self ()));
 	
 	while (MONO_SEM_WAIT (&thread->suspend_sem) != 0 &&
 	       errno == EINTR);
@@ -358,7 +358,7 @@ static gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
 	gpointer ret;
 
-	if (tid == pthread_self () &&
+	if (pthread_equal (tid, pthread_self ()) &&
 	    (ret = pthread_getspecific (thread_hash_key)) != NULL) {
 		/* We know the handle */
 
@@ -413,7 +413,7 @@ static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 			return(FALSE);
 		}
 		
-		if (thread_handle->id == tid) {
+		if (pthread_equal (thread_handle->id, tid)) {
 #ifdef DEBUG
 			g_message ("%s: found the thread we are looking for",
 				   __func__);

@@ -150,7 +150,7 @@ static gboolean mutex_is_owned (gpointer handle)
 
 	if (mutex_handle->recursion > 0 &&
 	    mutex_handle->pid == _wapi_getpid () &&
-	    mutex_handle->tid == pthread_self ()) {
+	    pthread_equal (mutex_handle->tid, pthread_self ())) {
 #ifdef DEBUG
 		g_message ("%s: mutex handle %p owned by %d:%ld", __func__,
 			   handle, _wapi_getpid (), pthread_self ());
@@ -225,7 +225,7 @@ static gboolean namedmutex_is_owned (gpointer handle)
 
 	if (namedmutex_handle->recursion > 0 &&
 	    namedmutex_handle->pid == _wapi_getpid () &&
-	    namedmutex_handle->tid == pthread_self ()) {
+	    pthread_equal (namedmutex_handle->tid, pthread_self ())) {
 #ifdef DEBUG
 		g_message ("%s: mutex handle %p owned by %d:%ld", __func__,
 			   handle, _wapi_getpid (), pthread_self ());
@@ -261,7 +261,7 @@ static void mutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 	g_assert (thr_ret == 0);
 	
 	if (mutex_handle->pid == pid &&
-	    mutex_handle->tid == tid) {
+	    pthread_equal (mutex_handle->tid, tid)) {
 #ifdef DEBUG
 		g_message ("%s: Mutex handle %p abandoned!", __func__, handle);
 #endif
@@ -296,7 +296,7 @@ static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 	g_assert (thr_ret == 0);
 	
 	if (mutex_handle->pid == pid &&
-	    mutex_handle->tid == tid) {
+	    pthread_equal (mutex_handle->tid, tid)) {
 #ifdef DEBUG
 		g_message ("%s: Mutex handle %p abandoned!", __func__, handle);
 #endif
@@ -512,7 +512,7 @@ static gboolean mutex_release (gpointer handle)
 {
 	struct _WapiHandle_mutex *mutex_handle;
 	gboolean ok;
-	pthread_t tid=pthread_self();
+	pthread_t tid = pthread_self ();
 	pid_t pid = _wapi_getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
@@ -534,7 +534,8 @@ static gboolean mutex_release (gpointer handle)
 	g_message("%s: Releasing mutex handle %p", __func__, handle);
 #endif
 
-	if (mutex_handle->tid != tid || mutex_handle->pid != pid) {
+	if (!pthread_equal (mutex_handle->tid, tid) ||
+	    mutex_handle->pid != pid) {
 #ifdef DEBUG
 		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, _wapi_getpid (), tid);
 #endif
@@ -570,7 +571,7 @@ static gboolean namedmutex_release (gpointer handle)
 {
 	struct _WapiHandle_namedmutex *mutex_handle;
 	gboolean ok;
-	pthread_t tid=pthread_self();
+	pthread_t tid = pthread_self ();
 	pid_t pid = _wapi_getpid ();
 	int thr_ret;
 	gboolean ret = FALSE;
@@ -590,7 +591,8 @@ static gboolean namedmutex_release (gpointer handle)
 	g_message("%s: Releasing mutex handle %p", __func__, handle);
 #endif
 
-	if (mutex_handle->tid != tid || mutex_handle->pid != pid) {
+	if (!pthread_equal (mutex_handle->tid, tid) ||
+	    mutex_handle->pid != pid) {
 #ifdef DEBUG
 		g_message("%s: We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", __func__, handle, mutex_handle->pid, mutex_handle->tid, _wapi_getpid (), tid);
 #endif
