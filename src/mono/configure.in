@@ -1805,7 +1805,7 @@ AC_CONFIG_FILES([runtime/semdel-wrapper],[chmod +x runtime/semdel-wrapper])
 AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
 [   depth=../../../..
     case $srcdir in
-    [\\/$]* | ?:[\\/]* ) reldir=$srcdir ;;
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
     .) reldir=$depth ;;
     *) reldir=$depth/$srcdir ;;
     esac
@@ -1819,7 +1819,7 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
 AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/machine.config],
 [   depth=../../../..
     case $srcdir in
-    [\\/$]* | ?:[\\/]* ) reldir=$srcdir ;;
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
     .) reldir=$depth ;;
     *) reldir=$depth/$srcdir ;;
     esac

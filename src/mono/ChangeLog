@@ -1,3 +1,7 @@
+2006-02-27  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (runtime/etc/mono/{1.0,2.0}/machine.config):
+	Fix m4-quoting.
 
 Sat Feb 25 11:53:30 CET 2006 Paolo Molaro <lupus@ximian.com>
 
