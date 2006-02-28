@@ -9,10 +9,10 @@
 #ifdef HAVE_KW_THREAD
 #if HAVE_TLS_MODEL_ATTR
 
-#if defined(PIC) && defined(__x86_64__)
-#define MONO_TLS_FAST 
-#elif defined (__powerpc__)
+#if defined (__powerpc__)
 #define MONO_TLS_FAST
+#elif defined(PIC)
+#define MONO_TLS_FAST __attribute__((tls_model("initial-exec")))
 #else
 #define MONO_TLS_FAST __attribute__((tls_model("local-exec")))
 #endif
@@ -22,15 +22,20 @@
 #endif
 
 #if defined(__GNUC__) && defined(__i386__)
-#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("jmp 1f; .section writetext, \"awx\"; 1: movl $" #var "@ntpoff, %0; jmp 2f; .previous; 2:" : "=r" (offset));
+#if defined(PIC)
+#define MONO_THREAD_VAR_OFFSET(var,offset) do { int tmp; __asm ("call 1f; 1: popl %0; addl $_GLOBAL_OFFSET_TABLE_+[.-1b], %0; movl " #var "@gotntpoff(%0), %1" : "=r" (tmp), "=r" (offset)); } while (0)
+#else
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("movl $" #var "@ntpoff, %0" : "=r" (offset))
+#endif
 #elif defined(__x86_64__)
 #if defined(PIC)
-#define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
+#define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@GOTTPOFF(%%rip), %0" : "=r" (foo)); offset
+= foo; } while (0)
 #else
-#define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("jmp 1f; .section writetext, \"awx\"; 1: movq $" #var "@TPOFF, %0; jmp 2f; .previous; 2:" : "=a" (foo)); offset = foo; } while (0);
+#define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@TPOFF, %0" : "=r" (foo)); offset = foo; } while (0)
 #endif
 #elif defined(__ia64__) && !defined(__INTEL_COMPILER)
-#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @tprel(" #var "#), r0 ;;\n" : "=r" (offset));
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @tprel(" #var "#), r0 ;;\n" : "=r" (offset))
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
