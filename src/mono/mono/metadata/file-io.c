@@ -476,7 +476,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *
 #else
 		utf16 = mono_unicode_from_external (namelist [i], &nbytes);
 		if (utf16 == NULL) {
-			g_message ("Bad encoding for '%s'\nConsider using MONO_EXTERNAL_ENCODING\n",
+			g_message ("Bad encoding for '%s'\nConsider using MONO_EXTERNAL_ENCODINGS\n",
 				namelist [i]);
 			removed++;
 			continue;
