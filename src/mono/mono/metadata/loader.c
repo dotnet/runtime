@@ -1064,6 +1064,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 #ifdef PLATFORM_WIN32
 						if (mangle_charset == 0)
 							mangled_name = g_strconcat (import, "W", NULL);
+#else
+						/* Try the mangled name last */
+						if (mangle_charset == 1)
+							mangled_name = g_strconcat (import, "A", NULL);
 #endif
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
