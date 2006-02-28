@@ -109,17 +109,6 @@ struct _MonoMethodInflated {
 	} method;
 	MonoGenericContext *context;	/* The current context. */
 	MonoMethod *declaring;		/* the generic method definition. */
-	/* This is a big performance optimization:
-	 *
-	 * mono_class_inflate_generic_method() just creates a copy of the method
-	 * and computes its new context, but it doesn't actually inflate the
-	 * method's signature and header.  Very often, we don't actually need them
-	 * (for instance because the method is stored in a class'es vtable).
-	 *
-	 * If the `inflated' field in non-NULL, mono_get_inflated_method() already
-	 * inflated the signature and header and stored it there.
-	 */
-	MonoMethodInflated *inflated;
 };
 
 typedef struct {
@@ -630,6 +619,10 @@ mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
 
 MonoInflatedGenericClass*
 mono_get_inflated_generic_class (MonoGenericClass *gclass);
+
+MonoMethod*
+mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
+
 
 typedef struct {
 	MonoImage *corlib;

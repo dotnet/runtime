@@ -594,7 +594,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			method = find_method (in_class, NULL, mname, sig);
 			if (method && klass->generic_class) {
 				MonoClass *klass_hint = (in_class == method->klass) ? klass : NULL;
-				method = mono_class_inflate_generic_method (method, klass_hint, klass->generic_class->context);
+				method = mono_class_inflate_generic_method_full (method, klass_hint, klass->generic_class->context);
 				method = mono_get_inflated_method (method);
 			}
 			break;
@@ -771,7 +771,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method (method, method->klass, new_context);
+	inflated = mono_class_inflate_generic_method_full (method, method->klass, new_context);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	return inflated;
@@ -1297,7 +1297,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			   image->name, token);
 
 	if (gclass)
-		result = mono_class_inflate_generic_method (result, NULL, gclass->context);
+		result = mono_class_inflate_generic_method (result, gclass->context);
 
 	mono_loader_unlock ();
 	return result;
