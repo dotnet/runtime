@@ -29,8 +29,7 @@
 #endif
 #elif defined(__x86_64__)
 #if defined(PIC)
-#define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@GOTTPOFF(%%rip), %0" : "=r" (foo)); offset
-= foo; } while (0)
+#define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq " #var "@GOTTPOFF(%%rip), %0" : "=r" (foo)); offset = foo; } while (0)
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@TPOFF, %0" : "=r" (foo)); offset = foo; } while (0)
 #endif
