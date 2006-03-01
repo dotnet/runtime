@@ -73,7 +73,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	      if (counter->type & MONO_COUNTER_CALLBACK)
 		      uintval = ((UIntFunc)counter->addr) ();
 	      else
-		      uintval = *(uint*)counter->addr;
+		      uintval = *(guint*)counter->addr;
 	      fprintf (outfile, ENTRY_FMT "%u\n", counter->name, uintval);
 	      break;
 	case MONO_COUNTER_LONG:
