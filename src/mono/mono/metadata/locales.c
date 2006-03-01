@@ -131,7 +131,7 @@ create_names_array_idx (const guint16 *names, int ml)
 	ret = mono_array_new (mono_domain_get (), mono_get_string_class (), len);
 
 	for(i = 0; i < len; i++)
-		mono_array_set (ret, MonoString *, i, mono_string_new (domain, idx2string (names [i])));
+		mono_array_setref (ret, i, mono_string_new (domain, idx2string (names [i])));
 
 	return ret;
 }
@@ -589,7 +589,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 
 	len = 0;
 	if (neutral)
-		mono_array_set (ret, MonoCultureInfo *, len++, NULL);
+		mono_array_setref (ret, len++, NULL);
 
 	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
 		ci = &culture_entries [i];
@@ -598,7 +598,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			culture = (MonoCultureInfo *) mono_object_new (domain, class);
 			mono_runtime_object_init ((MonoObject *) culture);
 			construct_culture (culture, ci);
-			mono_array_set (ret, MonoCultureInfo *, len++, culture);
+			mono_array_setref (ret, len++, culture);
 		}
 	}
 

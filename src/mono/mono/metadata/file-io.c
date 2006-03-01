@@ -484,7 +484,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *
 		str_name = mono_string_from_utf16 (utf16);
 		g_free (utf16);
 #endif
-		mono_array_set (result, MonoString *, i - removed, str_name);
+		mono_array_setref (result, i - removed, str_name);
 	}
 
 	if (removed > 0) {
@@ -493,7 +493,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *
 		for (i = 0; i < (nnames - removed); i++) {
 			MonoString *str;
 			str = mono_array_get (result, MonoString *, i);
-			mono_array_set (shrinked, MonoString *,i, str);
+			mono_array_setref (shrinked, i, str);
 		}
 		result = shrinked;
 	}

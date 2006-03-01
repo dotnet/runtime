@@ -203,7 +203,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		ji = mono_jit_info_table_find (domain, ip);
 		if (ji == NULL) {
 			/* Unmanaged frame */
-			mono_array_set (res, gpointer, i, sf);
+			mono_array_setref (res, i, sf);
 			continue;
 		}
 
@@ -234,7 +234,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			g_free (filename);
 		}
 
-		mono_array_set (res, gpointer, i, sf);
+		mono_array_setref (res, i, sf);
 	}
 
 	return res;
@@ -466,7 +466,7 @@ grow_array (MonoSecurityStack *stack)
 	int i;
 	for (i=0; i < stack->maximum; i++) {
 		gpointer frame = mono_array_get (stack->stack, gpointer, i);
-		mono_array_set (newstack, gpointer, i, frame);
+		mono_array_setref (newstack, i, frame);
 	}
 	stack->maximum = newsize;
 	stack->stack = newstack;
@@ -494,7 +494,7 @@ callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, M
 	if (ss->count == ss->maximum)
 		grow_array (ss);
 	
-	mono_array_set (ss->stack, gpointer, ss->count++, mono_declsec_create_frame (domain, ji));
+	mono_array_setref (ss->stack, ss->count++, mono_declsec_create_frame (domain, ji));
 
 	/* continue down the stack */
 	return FALSE;

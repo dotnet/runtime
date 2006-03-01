@@ -1829,7 +1829,7 @@ mono_runtime_get_main_args (void)
 	res = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, num_main_args);
 
 	for (i = 0; i < num_main_args; ++i)
-		mono_array_set (res, gpointer, i, mono_string_new (domain, main_args [i]));
+		mono_array_setref (res, i, mono_string_new (domain, main_args [i]));
 
 	return res;
 }
@@ -1940,7 +1940,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			 */
 			gchar *str = mono_utf8_from_external (argv [i]);
 			MonoString *arg = mono_string_new (domain, str);
-			mono_array_set (args, gpointer, i, arg);
+			mono_array_setref (args, i, arg);
 			g_free (str);
 		}
 	} else {
@@ -2208,7 +2208,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 						 */
 						MonoObject *orig = mono_array_get (params, MonoObject*, i);
 						MonoObject *copy = mono_value_box (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig));
-						mono_array_set (params, MonoObject*, i, copy);
+						mono_array_setref (params, i, copy);
 					}
 						
 					pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
@@ -3437,7 +3437,7 @@ mono_message_init (MonoDomain *domain,
 	
 	for (i = 0; i < sig->param_count; i++) {
 		 name = mono_string_new (domain, names [i]);
-		 mono_array_set (this->names, gpointer, i, name);	
+		 mono_array_setref (this->names, i, name);	
 	}
 
 	g_free (names);
@@ -3445,8 +3445,8 @@ mono_message_init (MonoDomain *domain,
 
 		if (sig->params [i]->byref) {
 			if (out_args) {
-				gpointer arg = mono_array_get (out_args, gpointer, j);
-				mono_array_set (this->args, gpointer, i, arg);
+				MonoObject* arg = mono_array_get (out_args, gpointer, j);
+				mono_array_setref (this->args, i, arg);
 				j++;
 			}
 			arg_type = 2;
@@ -3534,9 +3534,9 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		if (sig->params [i]->byref) {
-			gpointer arg;
+			MonoObject* arg;
 			arg = mono_array_get (msg->args, gpointer, i);
-			mono_array_set (*out_args, gpointer, j, arg);
+			mono_array_setref (*out_args, j, arg);
 			j++;
 		}
 	}
@@ -3685,7 +3685,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		else 
 			arg = *((MonoObject **)vpos);
 		      
-		mono_array_set (msg->args, gpointer, i, arg);
+		mono_array_setref (msg->args, i, arg);
 	}
 
 	if (cb != NULL && state != NULL) {
@@ -3809,8 +3809,8 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
-	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
-	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -3872,8 +3872,8 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
-	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
-	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -3934,9 +3934,9 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
 
-	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
-	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
-	mono_array_set (msg->args, gpointer, 2, arg);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
+	mono_array_setref (msg->args, 2, arg);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -3981,9 +3981,9 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
 
-	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
-	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
-	mono_array_set (msg->args, gpointer, 2, arg);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
+	mono_array_setref (msg->args, 2, arg);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 

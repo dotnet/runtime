@@ -65,6 +65,11 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 		type *__p = (type *) mono_array_addr ((array), type, (index));	\
 		*__p = (value);	\
 	} while (0)
+#define mono_array_setref(array,index,value)	\
+	do {	\
+		gpointer *__p = (gpointer *) mono_array_addr ((array), gpointer, (index));	\
+		*__p = (value);	\
+	} while (0)
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)

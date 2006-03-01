@@ -427,7 +427,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 
 				if (uniname) {
 					MonoString *str = mono_string_new_utf16 (domain, uniname, size);
-					mono_array_set (array, MonoString *, i, str);
+					mono_array_setref (array, i, str);
 					g_free (uniname);
 				}
 			}

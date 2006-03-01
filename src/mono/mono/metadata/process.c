@@ -630,8 +630,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 			    modules_list->len);
 	
 	for(i=0; i<modules_list->len; i++) {
-		mono_array_set (arr, MonoObject *, i,
-				g_ptr_array_index (modules_list, i));
+		mono_array_setref (arr, i, g_ptr_array_index (modules_list, i));
 	}
 	
 	g_ptr_array_free (modules_list, FALSE);

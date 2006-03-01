@@ -411,7 +411,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	/* if no split chars found return the string */
 	if (splitsize == 0) {
 		retarr = mono_array_new(mono_domain_get(), mono_get_string_class (), 1);
-		mono_array_set(retarr, MonoString *, 0, me);
+		mono_array_setref (retarr, 0, me);
 
 		return retarr;
 	}
@@ -431,7 +431,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 			tmpstrptr = mono_string_chars(tmpstr);
 
 			memcpy(tmpstrptr, src + lastpos, tmpstrsize * sizeof(gunichar2));
-			mono_array_set(retarr, MonoString *, arrpos, tmpstr);
+			mono_array_setref (retarr, arrpos, tmpstr);
 			arrpos++;
 			lastpos = i + 1;
 		}
@@ -443,7 +443,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 		tmpstrptr = mono_string_chars(tmpstr);
 
 		memcpy(tmpstrptr, src + lastpos, tmpstrsize * sizeof(gunichar2));
-		mono_array_set(retarr, MonoString *, arrpos, tmpstr);
+		mono_array_setref (retarr, arrpos, tmpstr);
 	}
 
 	return retarr;

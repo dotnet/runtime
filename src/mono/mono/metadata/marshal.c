@@ -2359,7 +2359,7 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 			int i, len = mono_array_length (acopy);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = mono_array_get (acopy, gpointer, i);
-				mono_array_set (acopy, gpointer, i, mono_marshal_xdomain_copy_value (item));
+				mono_array_setref (acopy, i, mono_marshal_xdomain_copy_value (item));
 			}
 		}
 		return (MonoObject *) acopy;
@@ -2397,7 +2397,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 			int i, len = mono_array_length ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = mono_array_get ((MonoArray *)src, gpointer, i);
-				mono_array_set ((MonoArray *)dst, gpointer, i, mono_marshal_xdomain_copy_value (item));
+				mono_array_setref ((MonoArray *)dst, i, mono_marshal_xdomain_copy_value (item));
 			}
 		} else {
 			mono_array_full_copy ((MonoArray *)src, (MonoArray *)dst);
