@@ -2710,10 +2710,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
 		class->unicode = 1;
-	/* fixme: maybe we must set this on windows 
+
+#if PLATFORM_WIN32
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_AUTO_CLASS)
 		class->unicode = 1;
-	*/
+#endif
 
 	class->cast_class = class->element_class = class;
 
