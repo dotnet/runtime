@@ -497,16 +497,21 @@ if test "x$with_xen_opt" = "xyes"; then
 	])
 fi
 
+DISABLED_FEATURES=none
+
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
   LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug,
-  reflection_emit, large_code, logging, com, ssa.],
+  reflection_emit, large_code, logging, com, ssa, generics.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
 		AC_MSG_NOTICE([Disabled support for feature: $feature])
 	done
+	DISABLED_FEATURES=$enable_minimal
 	disabled="Disabled:    $enable_minimal"
 ],[])
+
+AC_DEFINE_UNQUOTED(DISABLED_FEATURES, "$DISABLED_FEATURES", [String of disabled features])
 
 if test "x$mono_feature_disable_aot" = "xyes"; then
 	AC_DEFINE(DISABLE_AOT, 1, [Disable AOT support])
@@ -547,6 +552,21 @@ fi
 if test "x$mono_feature_disable_ssa" = "xyes"; then
 	AC_DEFINE(DISABLE_SSA, 1, [Disable advanced SSA JIT optimizations])
 fi
+
+if test "x$mono_feature_disable_generics" = "xyes"; then
+	AC_DEFINE(DISABLE_GENERICS, 1, [Disable generics support])
+fi
+
+AC_MSG_CHECKING(for visibility __attribute__)
+AC_TRY_COMPILE([], [
+   void __attribute__ ((visibility ("hidden"))) doit (void) {}
+   void main () { doit (); }
+], [
+   AC_DEFINE(HAVE_VISIBILITY_HIDDEN, 1, [Support for the visibility ("hidden") attribute])
+   AC_MSG_RESULT(yes)
+], [
+   AC_MSG_RESULT(no)
+])
 
 LIBGC_CFLAGS=
 LIBGC_LIBS=
