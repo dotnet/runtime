@@ -75,7 +75,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	regmask_t used_regs = 0;
 	gboolean cost_driven;
 
-	cost_driven = (cfg->comp_done & MONO_COMP_LOOPS);
+	cost_driven = TRUE;
 
 #ifdef DEBUG_LSCAN
 	printf ("Linears scan for %s\n", mono_method_full_name (cfg->method, TRUE));
