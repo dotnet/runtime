@@ -556,6 +556,7 @@ struct _MonoReflectionAssembly {
 	MonoObject *denied;	/* PermissionSet - for the resolved assembly denied permissions */
 	/* */
 	MonoBoolean from_byte_array;
+	MonoString *name;
 };
 
 typedef struct {
