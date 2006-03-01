@@ -51,6 +51,7 @@
 #include <mono/metadata/rawbuffer.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -10874,6 +10875,7 @@ mini_cleanup (MonoDomain *domain)
 		g_hash_table_destroy (class_init_hash_addr);
 
 	print_jit_stats ();
+	mono_counters_dump (-1, stdout);
 }
 
 void

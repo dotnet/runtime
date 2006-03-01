@@ -38,6 +38,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
+#include "mono/utils/mono-counters.h"
 
 #include "mini.h"
 #include "jit.h"
@@ -763,6 +764,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
+			mono_counters_enable (-1);
 			mono_stats.enabled = TRUE;
 			mono_jit_stats.enabled = TRUE;
 #ifndef DISABLE_AOT
