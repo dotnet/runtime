@@ -7,6 +7,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-hash.h>
+#include <mono/utils/mono-compiler.h>
 #include <mono/io-layer/io-layer.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
@@ -150,119 +151,119 @@ typedef struct  {
 #define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
 
 void
-mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
-mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
-mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);
+mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end) MONO_INTERNAL;
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
  */
 typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoDomain *domain, MonoImage *image, gpointer addr);
-void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
+void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func) MONO_INTERNAL;
 
 MonoAppDomain *
-ves_icall_System_AppDomain_getCurDomain            (void);
+ves_icall_System_AppDomain_getCurDomain            (void) MONO_INTERNAL;
 
 MonoAppDomain *
-ves_icall_System_AppDomain_getRootDomain           (void);
+ves_icall_System_AppDomain_getRootDomain           (void) MONO_INTERNAL;
 
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain            (MonoString         *friendly_name,
-						    MonoAppDomainSetup *setup);
+						    MonoAppDomainSetup *setup) MONO_INTERNAL;
 
 MonoObject *
 ves_icall_System_AppDomain_GetData                 (MonoAppDomain *ad, 
-						    MonoString    *name);
+						    MonoString    *name) MONO_INTERNAL;
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomain *ad,
     						    MonoArray *raw_assembly, 
 						    MonoArray *raw_symbol_store,
 						    MonoObject *evidence,
-						    MonoBoolean refonly);
+						    MonoBoolean refonly) MONO_INTERNAL;
 
 void
 ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad, 
 						    MonoString    *name, 
-						    MonoObject    *data);
+						    MonoObject    *data) MONO_INTERNAL;
 
 MonoAppDomainSetup *
-ves_icall_System_AppDomain_getSetup                (MonoAppDomain *ad);
+ves_icall_System_AppDomain_getSetup                (MonoAppDomain *ad) MONO_INTERNAL;
 
 MonoString *
-ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad);
+ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad) MONO_INTERNAL;
 
 MonoArray *
 ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad,
-						    MonoBoolean refonly);
+						    MonoBoolean refonly) MONO_INTERNAL;
 
 MonoReflectionAssembly *
 ves_icall_System_Reflection_Assembly_LoadFrom      (MonoString *fname,
-						    MonoBoolean refonly);
+						    MonoBoolean refonly) MONO_INTERNAL;
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad, 
 						    MonoString *assRef,
 						    MonoObject    *evidence,
-						    MonoBoolean refonly);
+						    MonoBoolean refonly) MONO_INTERNAL;
 
 gboolean
-ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);
+ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id) MONO_INTERNAL;
 
 void
-ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
+ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id) MONO_INTERNAL;
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
 						    MonoString    *file, 
 						    MonoObject    *evidence,
-						    MonoArray     *args);
+						    MonoArray     *args) MONO_INTERNAL;
 
 MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
+ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad) MONO_INTERNAL;
 
 MonoAppDomain * 
-ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
+ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid) MONO_INTERNAL;
 
 void
-ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad);
+ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad) MONO_INTERNAL;
 
 void
-ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id);
+ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id) MONO_INTERNAL;
 
 void
-ves_icall_System_AppDomain_InternalPopDomainRef (void);
+ves_icall_System_AppDomain_InternalPopDomainRef (void) MONO_INTERNAL;
 
 MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext      (void);
+ves_icall_System_AppDomain_InternalGetContext      (void) MONO_INTERNAL;
 
 MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetDefaultContext      (void);
+ves_icall_System_AppDomain_InternalGetDefaultContext      (void) MONO_INTERNAL;
 
 MonoAppContext * 
-ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
+ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc) MONO_INTERNAL;
 
 gint32 
-ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
+ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad) MONO_INTERNAL;
 
 MonoString *
-ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
+ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid) MONO_INTERNAL;
 
 MonoAssembly *
-mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
+mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status) MONO_INTERNAL;
 
 const MonoRuntimeInfo*
-mono_get_runtime_info (void);
+mono_get_runtime_info (void) MONO_INTERNAL;
 
 gboolean
-mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
+mono_assembly_name_parse (const char *name, MonoAssemblyName *aname) MONO_INTERNAL;
 
 void
-mono_assembly_name_free (MonoAssemblyName *aname);
+mono_assembly_name_free (MonoAssemblyName *aname) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
