@@ -4,6 +4,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
@@ -540,7 +541,7 @@ typedef struct {
 	gboolean enabled;
 } MonoStats;
 
-extern MonoStats mono_stats;
+extern MonoStats mono_stats MONO_INTERNAL;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 typedef gpointer (*MonoRemotingTrampoline)       (MonoMethod *method, MonoRemotingTarget target);
@@ -551,74 +552,74 @@ typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token, Mon
 typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
 
 void
-mono_classes_init (void);
+mono_classes_init (void) MONO_INTERNAL;
 
 void
-mono_class_layout_fields   (MonoClass *klass);
+mono_class_layout_fields   (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum);
+mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum) MONO_INTERNAL;
 
 void
-mono_class_setup_vtable (MonoClass *klass);
+mono_class_setup_vtable (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_methods (MonoClass *klass);
+mono_class_setup_methods (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_mono_type (MonoClass *klass);
+mono_class_setup_mono_type (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_parent    (MonoClass *klass, MonoClass *parent);
+mono_class_setup_parent    (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
 
 void
-mono_class_setup_supertypes (MonoClass *klass);
+mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
 
 GPtrArray*
-mono_class_get_implemented_interfaces (MonoClass *klass);
+mono_class_get_implemented_interfaces (MonoClass *klass) MONO_INTERNAL;
 
 gboolean
-mono_class_is_open_constructed_type (MonoType *t);
+mono_class_is_open_constructed_type (MonoType *t) MONO_INTERNAL;
 
 gboolean
 mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides,
-			       MonoGenericContext *generic_context);
+			       MonoGenericContext *generic_context) MONO_INTERNAL;
 
 MonoMethod*
-mono_class_get_cctor (MonoClass *klass);
+mono_class_get_cctor (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod*
-mono_class_get_finalizer (MonoClass *klass);
+mono_class_get_finalizer (MonoClass *klass) MONO_INTERNAL;
 
 gboolean
-mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
+mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller) MONO_INTERNAL;
 
 gboolean
-mono_class_has_special_static_fields (MonoClass *klass);
+mono_class_has_special_static_fields (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_install_trampoline (MonoTrampoline func);
+mono_install_trampoline (MonoTrampoline func) MONO_INTERNAL;
 
 void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func);
+mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
 
 void
-mono_install_delegate_trampoline (MonoDelegateTrampoline func);
+mono_install_delegate_trampoline (MonoDelegateTrampoline func) MONO_INTERNAL;
 
 gpointer
-mono_lookup_dynamic_token (MonoImage *image, guint32 token);
+mono_lookup_dynamic_token (MonoImage *image, guint32 token) MONO_INTERNAL;
 
 gpointer
-mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class);
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class) MONO_INTERNAL;
 
 void
-mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
+mono_install_lookup_dynamic_token (MonoLookupDynamicToken func) MONO_INTERNAL;
 
 void
-mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
+mono_install_get_cached_class_info (MonoGetCachedClassInfo func) MONO_INTERNAL;
 
 MonoInflatedGenericClass*
-mono_get_inflated_generic_class (MonoGenericClass *gclass);
+mono_get_inflated_generic_class (MonoGenericClass *gclass) MONO_INTERNAL;
 
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
@@ -681,46 +682,46 @@ typedef struct {
 	MonoClass *generic_nullable_class;
 } MonoDefaults;
 
-extern MonoDefaults mono_defaults;
+extern MonoDefaults mono_defaults MONO_INTERNAL;
 
 void
-mono_loader_init           (void);
+mono_loader_init           (void) MONO_INTERNAL;
 
 void
-mono_loader_lock           (void);
+mono_loader_lock           (void) MONO_INTERNAL;
 
 void
-mono_loader_unlock         (void);
+mono_loader_unlock         (void) MONO_INTERNAL;
 
 void
-mono_loader_set_error_type_load (char *class_name, char *assembly_name);
+mono_loader_set_error_type_load (char *class_name, char *assembly_name) MONO_INTERNAL;
 
 void
-mono_loader_set_error_method_load (MonoClass *klass, const char *member_name);
+mono_loader_set_error_method_load (MonoClass *klass, const char *member_name) MONO_INTERNAL;
 
 void
-mono_loader_set_error_field_load (MonoClass *klass, const char *member_name);
+mono_loader_set_error_field_load (MonoClass *klass, const char *member_name) MONO_INTERNAL;
 
 MonoLoaderError*
-mono_loader_get_last_error (void);
+mono_loader_get_last_error (void) MONO_INTERNAL;
 
 void
-mono_loader_clear_error    (void);
-
-void 
-mono_icall_init            (void);
+mono_loader_clear_error    (void) MONO_INTERNAL;
 
 void
-mono_icall_cleanup         (void);
+mono_icall_init            (void) MONO_INTERNAL;
+
+void
+mono_icall_cleanup         (void) MONO_INTERNAL;
 
 gpointer
-mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
+mono_method_get_wrapper_data (MonoMethod *method, guint32 id) MONO_INTERNAL;
 
 void
-mono_install_stack_walk (MonoStackWalkImpl func);
+mono_install_stack_walk (MonoStackWalkImpl func) MONO_INTERNAL;
 
 gboolean
-mono_metadata_has_generic_params (MonoImage *image, guint32 token);
+mono_metadata_has_generic_params (MonoImage *image, guint32 token) MONO_INTERNAL;
 
 MonoGenericContainer *
 mono_metadata_load_generic_params (MonoImage *image, guint32 token,
@@ -731,46 +732,46 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container);
 
 MonoMethodSignature*
-mono_create_icall_signature (const char *sigstr);
+mono_create_icall_signature (const char *sigstr) MONO_INTERNAL;
 
 MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save) MONO_INTERNAL;
 
 void
-mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
+mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper) MONO_INTERNAL;
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name);
+mono_find_jit_icall_by_name (const char *name) MONO_INTERNAL;
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_addr (gconstpointer addr);
+mono_find_jit_icall_by_addr (gconstpointer addr) MONO_INTERNAL;
 
 MonoGenericInst *
-mono_get_shared_generic_inst (MonoGenericContainer *container);
+mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
 
 MonoGenericClass *
-mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic);
+mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic) MONO_INTERNAL;
 
 MonoGenericMethod *
-mono_get_shared_generic_method (MonoGenericContainer *container);
+mono_get_shared_generic_method (MonoGenericContainer *container) MONO_INTERNAL;
 
 gboolean
-mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
+mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data) MONO_INTERNAL;
 
 MonoException*
-mono_class_get_exception_for_failure (MonoClass *klass);
+mono_class_get_exception_for_failure (MonoClass *klass) MONO_INTERNAL;
 
 char*
-mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
+mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format) MONO_INTERNAL;
 
 char*
-mono_type_get_full_name (MonoClass *class);
+mono_type_get_full_name (MonoClass *class) MONO_INTERNAL;
 
-MonoArrayType *mono_dup_array_type (MonoArrayType *a);
-MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig);
+MonoArrayType *mono_dup_array_type (MonoArrayType *a) MONO_INTERNAL;
+MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig) MONO_INTERNAL;
 
-gboolean mono_class_is_nullable (MonoClass *klass);
-MonoClass *mono_class_get_nullable_param (MonoClass *klass);
+gboolean mono_class_is_nullable (MonoClass *klass) MONO_INTERNAL;
+MonoClass *mono_class_get_nullable_param (MonoClass *klass) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

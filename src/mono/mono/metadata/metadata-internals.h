@@ -7,6 +7,7 @@
 #include "mono/metadata/mempool.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/utils/mono-hash.h"
+#include "mono/utils/mono-compiler.h"
 
 struct _MonoAssembly {
 	int ref_count; /* use atomic operations only */
@@ -267,23 +268,23 @@ struct _MonoMethodHeader {
 };
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
-guint mono_aligned_addr_hash (gconstpointer ptr);
+guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 
-const char *   mono_meta_table_name              (int table);
-void           mono_metadata_compute_table_bases (MonoImage *meta);
+const char *   mono_meta_table_name              (int table) MONO_INTERNAL;
+void           mono_metadata_compute_table_bases (MonoImage *meta) MONO_INTERNAL;
 
 gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 											 guint32                table_index,
 											 MonoClass           ***interfaces,
 											 guint                 *count,
-											 MonoGenericContext    *context);
+											 MonoGenericContext    *context) MONO_INTERNAL;
 
 MonoArrayType *
 mono_metadata_parse_array_full              (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr,
-					     const char           **rptr);
+					     const char           **rptr) MONO_INTERNAL;
 
 MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
@@ -296,7 +297,7 @@ mono_metadata_parse_type_full               (MonoImage             *image,
 MonoMethodSignature *
 mono_metadata_parse_signature_full          (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
-					     guint32                token);
+					     guint32                token) MONO_INTERNAL;
 
 MonoMethodSignature *
 mono_metadata_parse_method_signature_full   (MonoImage             *image,
@@ -311,39 +312,39 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     const char            *ptr);
 
 guint
-mono_metadata_generic_method_hash           (MonoGenericMethod     *gmethod);
+mono_metadata_generic_method_hash           (MonoGenericMethod     *gmethod) MONO_INTERNAL;
 
 gboolean
 mono_metadata_generic_method_equal          (MonoGenericMethod     *g1,
-					     MonoGenericMethod     *g2);
+					     MonoGenericMethod     *g2) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     int                    count,
 					     const char            *ptr,
-					     const char           **rptr);
+					     const char           **rptr) MONO_INTERNAL;
 
 MonoGenericInst *
-mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst);
+mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst) MONO_INTERNAL;
 
 MonoGenericClass *
-mono_metadata_lookup_generic_class          (MonoGenericClass      *gclass);
+mono_metadata_lookup_generic_class          (MonoGenericClass      *gclass) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
-					     MonoGenericContext    *context);
+					     MonoGenericContext    *context) MONO_INTERNAL;
 
-void mono_dynamic_stream_reset (MonoDynamicStream* stream);
-void mono_assembly_addref      (MonoAssembly *assembly);
+void mono_dynamic_stream_reset (MonoDynamicStream* stream) MONO_INTERNAL;
+void mono_assembly_addref      (MonoAssembly *assembly) MONO_INTERNAL;
 
-void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
+void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info) MONO_INTERNAL;
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
 					      MonoAssemblyName	   *aname,
 					      gboolean save_public_key,
-					      gboolean *is_version_defined);
+					      gboolean *is_version_defined) MONO_INTERNAL;
 
 guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
