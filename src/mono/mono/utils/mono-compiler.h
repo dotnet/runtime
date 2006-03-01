@@ -63,6 +63,8 @@
 /* GCC specific functions aren't available */
 #define __builtin_return_address(x)	NULL
 
+#define __func__ __FUNCTION__
+
 #endif /* _MSC_VER */
 
 #if HAVE_VISIBILITY_HIDDEN
