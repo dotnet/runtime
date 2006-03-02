@@ -395,6 +395,8 @@ mono_thread_attach (MonoDomain *domain)
 	gsize tid;
 
 	if ((thread = mono_thread_current ())) {
+		if (domain != mono_domain_get ())
+			mono_domain_set (domain, TRUE);
 		/* Already attached */
 		return thread;
 	}
