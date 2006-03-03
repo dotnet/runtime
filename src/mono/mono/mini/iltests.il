@@ -732,7 +732,7 @@ COND:   ldloc.0
 
 		.field public bool n
 
-	    .method private hidebysig  specialname  rtspecialname 
+	    .method public hidebysig  specialname  rtspecialname 
            instance default void .ctor (unsigned int64 i, bool n)  cil managed 
 	    {
 			.maxstack 8
