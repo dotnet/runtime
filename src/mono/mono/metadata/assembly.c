@@ -28,7 +28,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger.h>
-#include <mono/os/util.h>
 
 #ifndef PLATFORM_WIN32
 #include <sys/types.h>
