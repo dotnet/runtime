@@ -474,6 +474,8 @@ mono_set_dirs (const char *assembly_dir, const char *config_dir)
 	mono_set_config_dir (config_dir);
 }
 
+#ifndef PLATFORM_WIN32
+
 static char *
 compute_base (char *path)
 {
@@ -530,6 +532,8 @@ set_dirs (char *exe)
 	g_free (lib);
 	g_free (mono);
 }
+
+#endif /* PLATFORM_WIN32 */
 
 #ifdef UNDER_CE
 #undef GetModuleFileName
