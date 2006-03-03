@@ -241,6 +241,11 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return (FALSE);
 	}
+
+	if (sei->lpFile == NULL) {
+		/* w2k returns TRUE for this, for some reason. */
+		return (TRUE);
+	}
 	
 	/* Put both executable and parameters into the second argument
 	 * to CreateProcess (), so it searches $PATH.  The conversion
@@ -253,27 +258,31 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 		return (FALSE);
 	}
 	
-	u8params = g_utf16_to_utf8 (sei->lpParameters, -1, NULL, NULL, NULL);
-	if (u8params == NULL) {
-		SetLastError (ERROR_INVALID_DATA);
-		g_free (u8file);
-		return (FALSE);
-	}
+	if (sei->lpParameters != NULL) {
+		u8params = g_utf16_to_utf8 (sei->lpParameters, -1, NULL, NULL, NULL);
+		if (u8params == NULL) {
+			SetLastError (ERROR_INVALID_DATA);
+			g_free (u8file);
+			return (FALSE);
+		}
 	
-	u8args = g_strdup_printf ("%s %s", u8file, u8params);
-	if (u8args == NULL) {
-		SetLastError (ERROR_INVALID_DATA);
+		u8args = g_strdup_printf ("%s %s", u8file, u8params);
+		if (u8args == NULL) {
+			SetLastError (ERROR_INVALID_DATA);
+			g_free (u8params);
+			g_free (u8file);
+			return (FALSE);
+		}
+	
+		args = g_utf8_to_utf16 (u8args, -1, NULL, NULL, NULL);
+	
+		g_free (u8file);
 		g_free (u8params);
-		g_free (u8file);
-		return (FALSE);
+		g_free (u8args);
+	} else {
+		args = g_utf8_to_utf16 (u8file, -1, NULL, NULL, NULL);
 	}
-	
-	args = g_utf8_to_utf16 (u8args, -1, NULL, NULL, NULL);
-	
-	g_free (u8file);
-	g_free (u8params);
-	g_free (u8args);
-
+		
 	if (args == NULL) {
 		SetLastError (ERROR_INVALID_DATA);
 		return (FALSE);
