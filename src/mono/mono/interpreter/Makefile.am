@@ -49,7 +49,6 @@ libmint_la_LIBADD =				\
 	../metadata/libmonoruntime.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
-	../os/libmonoos.la		\
 	$(libgc_libs)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\

@@ -13,8 +13,6 @@ assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
 
-PLATFORM_LIB = ../os/libmonoos.la 
-
 bin_PROGRAMS = pedump monodiet
 
 #
@@ -23,8 +21,7 @@ bin_PROGRAMS = pedump monodiet
 #
 noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 
-
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 #
 # Make sure any prefix changes are updated in the binaries too.
@@ -39,7 +36,7 @@ assembly.lo mono-config.lo: Makefile
 
 CLEANFILES = mono-bundle.stamp
 
-libmonoruntime_static_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB) $(libmonoruntime_la_LIBADD)
+libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
@@ -158,7 +155,6 @@ pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(PLATFORM_LIB)			\
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 monodiet_SOURCES = monodiet.c
@@ -167,7 +163,6 @@ monodiet_LDADD = \
 	libmonoruntime.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
-	$(PLATFORM_LIB)			\
 	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\

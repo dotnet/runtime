@@ -1,3 +1,7 @@
+2006-03-03  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in mono/os: Merge the contents of libmonoos to metadata/assembly.c and
+	get rid of os/unix and os/win32.
 
 Wed Mar 1 12:37:43 CET 2006 Paolo Molaro <lupus@ximian.com>
 

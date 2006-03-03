@@ -30,6 +30,12 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/os/util.h>
 
+#ifndef PLATFORM_WIN32
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
+
 /* AssemblyVersionMap: an assembly name and the assembly version set on which it is based */
 typedef struct  {
 	const char* assembly_name;
@@ -467,6 +473,135 @@ mono_set_dirs (const char *assembly_dir, const char *config_dir)
 #endif
 	mono_assembly_setrootdir (assembly_dir);
 	mono_set_config_dir (config_dir);
+}
+
+static char *
+compute_base (char *path)
+{
+	char *p = rindex (path, '/');
+	if (p == NULL)
+		return NULL;
+
+	/* Not a well known Mono executable, we are embedded, cant guess the base  */
+	if (strcmp (p, "/mono") && strcmp (p, "/monodis") && strcmp (p, "/mint") && strcmp (p, "/monodiet"))
+		return NULL;
+	    
+	*p = 0;
+	p = rindex (path, '/');
+	if (p == NULL)
+		return NULL;
+	
+	if (strcmp (p, "/bin") != 0)
+		return NULL;
+	*p = 0;
+	return path;
+}
+
+static void
+fallback (void)
+{
+	mono_set_dirs (MONO_ASSEMBLIES, MONO_CFG_DIR);
+}
+
+static void
+set_dirs (char *exe)
+{
+	char *base;
+	char *config, *lib, *mono;
+	struct stat buf;
+	
+	/*
+	 * Only /usr prefix is treated specially
+	 */
+	if (strncmp (exe, MONO_BINDIR, strlen (MONO_BINDIR)) == 0 || (base = compute_base (exe)) == NULL){
+		fallback ();
+		return;
+	}
+
+	config = g_build_filename (base, "etc", NULL);
+	lib = g_build_filename (base, "lib", NULL);
+	mono = g_build_filename (lib, "mono/1.0", NULL);
+	if (stat (mono, &buf) == -1)
+		fallback ();
+	else {
+		mono_set_dirs (lib, config);
+	}
+	
+	g_free (config);
+	g_free (lib);
+	g_free (mono);
+}
+
+#ifdef UNDER_CE
+#undef GetModuleFileName
+#define GetModuleFileName ceGetModuleFileNameA
+
+DWORD ceGetModuleFileNameA(HMODULE hModule, char* lpFilename, DWORD nSize)
+{
+	DWORD res = 0;
+	wchar_t* wbuff = (wchar_t*)LocalAlloc(LPTR, nSize*2);
+	res = GetModuleFileNameW(hModule, wbuff, nSize);
+	if (res) {
+		int len = wcslen(wbuff);
+		WideCharToMultiByte(CP_ACP, 0, wbuff, len, lpFilename, len, NULL, NULL);
+	}
+	LocalFree(wbuff);
+	return res;
+}
+#endif
+
+/**
+ * mono_set_rootdir:
+ *
+ * Registers the root directory for the Mono runtime, for Linux and Solaris 10,
+ * this auto-detects the prefix where Mono was installed. 
+ */
+void
+mono_set_rootdir (void)
+{
+#ifdef PLATFORM_WIN32
+	gunichar2 moddir [MAXPATHLEN];
+	gchar *bindir, *installdir, *root, *utf8name, *config;
+
+	GetModuleFileNameW (NULL, moddir, MAXPATHLEN);
+	utf8name = g_utf16_to_utf8 (moddir, -1, NULL, NULL, NULL);
+	bindir = g_path_get_dirname (utf8name);
+	installdir = g_path_get_dirname (bindir);
+	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
+
+	config = g_build_filename (root, "..", "etc", NULL);
+	mono_set_dirs (root, config);
+
+	g_free (config);
+	g_free (root);
+	g_free (installdir);
+	g_free (bindir);
+	g_free (utf8name);
+#else
+	char buf [4096];
+	int  s;
+	char *str;
+
+	/* Linux style */
+	s = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
+
+	if (s != -1){
+		buf [s] = 0;
+		set_dirs (buf);
+		return;
+	}
+
+	/* Solaris 10 style */
+	str = g_strdup_printf ("/proc/%d/path/a.out", getpid ());
+	s = readlink (str, buf, sizeof (buf)-1);
+	g_free (str);
+	if (s != -1){
+		buf [s] = 0;
+		set_dirs (buf);
+		return;
+	} 
+	fallback ();
+#endif
 }
 
 /**
