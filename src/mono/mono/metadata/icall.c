@@ -2038,6 +2038,9 @@ static MonoReflectionType*
 ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 {
 	MonoDynamicGenericClass *gclass;
+	MonoReflectionType *parent = NULL;
+	MonoDomain *domain;
+	MonoType *inflated;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -2045,14 +2048,31 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 	g_assert (type->type.type->data.generic_class->is_dynamic);
 	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
 
-	if (!gclass->parent || (gclass->parent->type != MONO_TYPE_GENERICINST))
-		return NULL;
+	domain = mono_object_domain (type);
+	klass = mono_class_from_mono_type (type->generic_type->type);
 
-	klass = mono_class_from_mono_type (gclass->parent);
 	if (!klass->generic_class && !klass->generic_container)
 		return NULL;
 
-	return mono_type_get_object (mono_object_domain (type), gclass->parent);
+	if (!strcmp (type->generic_type->object.vtable->klass->name, "TypeBuilder")) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *) type->generic_type;
+		parent = tb->parent;
+	} else if (klass->wastypebuilder) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *) type->generic_type;
+		parent = tb->parent;
+	} else {
+		MonoClass *pklass = klass->parent;
+		if (pklass)
+			parent = mono_type_get_object (domain, &pklass->byval_arg);
+	}
+
+	if (!parent || (parent->type->type != MONO_TYPE_GENERICINST))
+		return NULL;
+
+	inflated = mono_class_inflate_generic_type (
+		parent->type, gclass->generic_class.generic_class.context);
+
+	return mono_type_get_object (domain, inflated);
 }
 
 static MonoArray*

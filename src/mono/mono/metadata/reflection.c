@@ -8514,9 +8514,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 	return field;
 }
 
-static MonoType*
-do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types,
-					    MonoType *parent)
+MonoType*
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
 {
 	MonoClass *klass;
 	MonoReflectionTypeBuilder *tb = NULL;
@@ -8648,63 +8647,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	gclass->context->container = gclass->container_class->generic_container;
 	gclass->context->gclass = gclass;
 
-	if (is_dynamic)
-		dgclass->parent = parent;
-
 	mono_loader_unlock ();
-
-	return geninst;
-}
-
-MonoType*
-mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
-{
-	MonoClass *klass, *pklass = NULL;
-	MonoReflectionType *parent = NULL;
-	MonoType *the_parent = NULL, *geninst;
-	MonoReflectionTypeBuilder *tb = NULL;
-	MonoGenericClass *gclass;
-	MonoDomain *domain;
-
-	domain = mono_object_domain (type);
-	klass = mono_class_from_mono_type (type->type);
-
-	if (!strcmp (((MonoObject *) type)->vtable->klass->name, "TypeBuilder")) {
-		tb = (MonoReflectionTypeBuilder *) type;
-
-		if (tb->parent) {
-			parent = tb->parent;
-			pklass = mono_class_from_mono_type (parent->type);
-		}
-	} else if (klass->wastypebuilder) {
-		tb = (MonoReflectionTypeBuilder *) klass->reflection_info;
-		if (tb->parent) {
-			parent = tb->parent;
-			pklass = mono_class_from_mono_type (parent->type);
-		}
-	} else {
-		pklass = klass->parent;
-		if (pklass)
-			parent = mono_type_get_object (domain, &pklass->byval_arg);
-		else if (klass->generic_class && klass->generic_class->is_dynamic) {
-			MonoDynamicGenericClass *dgclass;
-
-			dgclass = (MonoDynamicGenericClass *) klass->generic_class;
-			if (dgclass->parent) {
-				parent = mono_type_get_object (domain, dgclass->parent);
-				pklass = mono_class_from_mono_type (dgclass->parent);
-			}
-		}
-	}
-
-	if (pklass && pklass->generic_class)
-		the_parent = mono_reflection_bind_generic_parameters (parent, type_argc, types);
-
-	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types, the_parent);
-	if (!geninst)
-		return NULL;
-
-	gclass = geninst->data.generic_class;
 
 	return geninst;
 }
@@ -8976,7 +8919,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 {
 	MonoGenericClass *gclass;
 	MonoDynamicGenericClass *dgclass;
-	MonoClass *klass, *gklass, *pklass;
+	MonoClass *klass, *gklass;
 	int i;
 
 	MONO_ARCH_SAVE_REGS;
@@ -8992,11 +8935,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 
 	gklass = gclass->container_class;
 	mono_class_init (gklass);
-
-	if (dgclass->parent)
-		pklass = mono_class_from_mono_type (dgclass->parent);
-	else
-		pklass = gklass->parent;
 
 	dgclass->count_methods = methods ? mono_array_length (methods) : 0;
 	dgclass->count_ctors = ctors ? mono_array_length (ctors) : 0;

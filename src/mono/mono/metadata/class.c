@@ -2858,12 +2858,7 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 		i = mono_metadata_nesting_typedef (klass->image, gklass->type_token, i + 1);
 	}
 
-	if (gclass->generic_class.is_dynamic) {
-		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *) gclass;
-
-		if (dgclass->parent)
-			klass->parent = mono_class_from_mono_type (dgclass->parent);
-	} else if (gklass->parent) {
+	if (gklass->parent) {
 		MonoType *inflated = mono_class_inflate_generic_type (
 			&gklass->parent->byval_arg, gclass->generic_class.context);
 
@@ -3825,18 +3820,6 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	if (klassc == mono_defaults.object_class)
 		return TRUE;
 
-	if (klass->generic_class && klass->generic_class->is_dynamic) {
-		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *) klass->generic_class;
-
-		if (!dgclass->parent)
-			return FALSE;
-
-		if (mono_metadata_type_equal (dgclass->parent, &klassc->byval_arg))
-			return TRUE;
-		klass = mono_class_from_mono_type (dgclass->parent);
-		goto again;
-	}
-	
 	return FALSE;
 }
 
