@@ -397,11 +397,13 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 /*
  * This method is only called when running in the Mono Debugger.
  */
-void
-mono_debugger_create_notification_function (gpointer notification_address)
+guint8 *
+mono_debugger_create_notification_function ()
 {
-	guint8 *buf = notification_address;
+	guint8 *buf, *code;
 
+	code = buf = mono_global_codeman_reserve (2);
 	x86_breakpoint (buf);
 	x86_ret (buf);
+	return code;
 }

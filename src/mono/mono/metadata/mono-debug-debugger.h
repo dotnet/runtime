@@ -54,7 +54,7 @@ int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc)
 int             mono_debugger_remove_breakpoint           (int breakpoint_id);
 void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
 
-void            mono_debugger_create_notification_function(gpointer notification_address);
+guint8         *mono_debugger_create_notification_function(void);
 
 MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
 							   void **params, MonoObject **exc);

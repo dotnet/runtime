@@ -27,8 +27,8 @@ static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *st
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
 static guint64 debugger_get_thread_id (void);
 static void debugger_attach (void);
+static void debugger_initialize (void);
 
-static guint8 notification_function [16];
 static void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
 
 static MonoDebuggerMetadataInfo debugger_metadata_info = {
@@ -60,7 +60,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
 	0,
-	notification_function,
+	&mono_debugger_notification_function,
 	mono_trampoline_code,
 	&mono_symbol_table,
 	&debugger_metadata_info,
@@ -77,7 +77,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_lookup_assembly,
 	&debugger_run_finally,
 	&debugger_get_thread_id,
-	&debugger_attach
+	&debugger_attach,
+	&debugger_initialize
 };
 
 typedef struct {
@@ -319,11 +320,20 @@ static MonoThreadCallbacks thread_callbacks = {
 	&debugger_thread_manager_end_resume
 };
 
+static void
+debugger_initialize (void)
+{
+}
+
 void
 mono_debugger_init (void)
 {
-	mono_debugger_notification_function = notification_function;
-	mono_debugger_create_notification_function (notification_function);
+	mono_debugger_notification_function = mono_debugger_create_notification_function ();
+
+	/*
+	 * Use an indirect call so gcc can't optimize it away.
+	 */
+	MONO_DEBUGGER__debugger_info.initialize ();
 
 	/*
 	 * Initialize the thread manager.
@@ -332,7 +342,6 @@ mono_debugger_init (void)
 	thread_array = g_ptr_array_new ();
 	mono_install_thread_callbacks (&thread_callbacks);
 	gc_thread_vtable = &debugger_thread_vtable;
-
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
 					     GetCurrentThreadId (), 0);
 }

@@ -50,6 +50,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
 	guint64 (*get_thread_id) (void);
 	void (*attach) (void);
+	void (*initialize) (void);
 };
 
 struct _MonoDebuggerMetadataInfo {
