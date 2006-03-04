@@ -1085,7 +1085,7 @@ ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type && c->type)
+	if (c && type->type && c->type)
 		return mono_metadata_type_equal (type->type, c->type);
 	else
 		return FALSE;
