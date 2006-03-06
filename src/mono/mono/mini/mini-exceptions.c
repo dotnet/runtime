@@ -25,6 +25,7 @@
 #include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
+#include "trace.h"
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #include <unistd.h>
@@ -632,7 +633,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 	if (!test_only) {
 		MonoContext ctx_cp = *ctx;
-		if (mono_jit_trace_calls != NULL)
+		if (mono_trace_is_enabled ())
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
 			if (mono_break_on_exc)
@@ -752,7 +753,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 									mono_gc_enable ();
 								return TRUE;
 							}
-							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
+							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
@@ -765,7 +766,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
+							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							call_filter (ctx, ei->handler_start);
