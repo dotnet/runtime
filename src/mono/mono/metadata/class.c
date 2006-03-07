@@ -3595,6 +3595,10 @@ MonoClass *
 mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
 	MonoClass *class = mono_class_get (image, type_token);
+
+	if (!image->dynamic && ((type_token & 0xff000000) == MONO_TOKEN_TYPE_DEF))
+		return class;
+
 	if (class && context && (context->gclass || context->gmethod)) {
 		MonoType *inflated = inflate_generic_type (&class->byval_arg, context);
 		if (inflated)

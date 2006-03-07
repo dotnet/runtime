@@ -1281,7 +1281,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
-	MonoGenericClass *gclass = NULL;
+	MonoGenericContext *class_context = NULL, *method_context = NULL;
+	MonoMethodSignature *sig;
 
 	mono_loader_lock ();
 
@@ -1293,20 +1294,32 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 
 	mono_class_init (constrained_class);
 	method = mono_get_inflated_method (method);
+	sig = mono_method_signature (method);
+
+	if (method->is_inflated && sig->generic_param_count) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		sig = mono_method_signature (imethod->declaring);
+		method_context = imethod->context;
+	}
 
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
 		ic = method->klass;
 
 	if (constrained_class->generic_class)
-		gclass = constrained_class->generic_class;
+		class_context = constrained_class->generic_class->context;
 
-	result = find_method (constrained_class, ic, method->name, mono_method_signature (method), constrained_class);
-	if (!result)
-		g_warning ("Missing method %s in assembly %s token %x", method->name,
-			   image->name, token);
+	result = find_method (constrained_class, ic, method->name, sig, constrained_class);
+	if (!result) {
+		g_warning ("Missing method %s.%s.%s in assembly %s token %x", method->klass->name_space,
+			   method->klass->name, method->name, image->name, token);
+		mono_loader_unlock ();
+		return NULL;
+	}
 
-	if (gclass)
-		result = mono_class_inflate_generic_method (result, gclass->context);
+	if (class_context)
+		result = mono_class_inflate_generic_method (result, class_context);
+	if (method_context)
+		result = mono_class_inflate_generic_method (result, method_context);
 
 	mono_loader_unlock ();
 	return result;
