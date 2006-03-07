@@ -2540,10 +2540,10 @@ cinfo_fields[] = {
 
 static const FieldDesc
 dtfinfo_fields[] = {
-	{"_AMDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, AMDesignator)},
-	{"_PMDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, PMDesignator)},
-	{"_DayNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, DayNames)},
-	{"_MonthNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, MonthNames)},
+	{"amDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, AMDesignator)},
+	{"pmDesignator", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, PMDesignator)},
+	{"dayNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, DayNames)},
+	{"monthNames", G_STRUCT_OFFSET (MonoDateTimeFormatInfo, MonthNames)},
 	{NULL, 0}
 };
 
