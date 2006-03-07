@@ -1559,6 +1559,9 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	case MONO_TYPE_VALUETYPE:
 		is_ref = field->type->byref;
 		break;
+	case MONO_TYPE_GENERICINST:
+		is_ref = !field->type->data.generic_class->container_class->valuetype;
+		break;
 	default:
 		g_error ("type 0x%x not handled in "
 			 "mono_field_get_value_object", field->type->type);
