@@ -157,6 +157,10 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		goto done;
 	}
 
+	if (timeout == 0) {
+		ret = WAIT_TIMEOUT;
+		goto done;
+	}
 	/* Have to wait for it */
 	if (timeout != INFINITE) {
 		_wapi_calc_timeout (&abstime, timeout);
@@ -561,6 +565,9 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		return(WAIT_OBJECT_0+lowest);
 	}
 	
+	if (timeout == 0) {
+		return WAIT_TIMEOUT;
+	}
 	/* Have to wait for some or all handles to become signalled
 	 */
 
