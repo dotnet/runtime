@@ -1,3 +1,11 @@
+2006-03-08  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/web.config: add a default siteMap section with the
+	AspNetXmlSiteMapProvider provider.
+
+	* data/net_2_0/machine.config: add system.web/siteMap section
+	info.
+
 2006-03-03  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in mono/os: Merge the contents of libmonoos to metadata/assembly.c and
