@@ -823,7 +823,19 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	field=mono_class_get_field_from_name(sockaddr_class, "data");
 
 	/* Make sure there is space for the family and size bytes */
-	data=mono_array_new(domain, mono_get_byte_class (), sa_size+2);
+#ifdef HAVE_SYS_UN_H
+	if (saddr->sa_family == AF_UNIX) {
+		/* sa_len includes the entire sockaddr size, so we don't need the
+		 * N bytes (sizeof (unsigned short)) of the family. */
+		data=mono_array_new(domain, mono_get_byte_class (), sa_size - 2);
+	} else
+#endif
+	{
+		/* May be the +2 here is too conservative, as sa_len returns
+		 * the length of the entire sockaddr_in/in6, including
+		 * sizeof (unsigned short) of the family */
+		data=mono_array_new(domain, mono_get_byte_class (), sa_size+2);
+	}
 
 	/* The data buffer is laid out as follows:
 	 * bytes 0 and 1 are the address family
