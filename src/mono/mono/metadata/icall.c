@@ -1333,6 +1333,33 @@ ves_icall_get_parameter_info (MonoMethod *method)
 	return mono_param_get_objects (domain, method);
 }
 
+static MonoReflectionMarshal*
+ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoReflectionMarshal* res = NULL;
+	MonoMarshalSpec **mspecs;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (method->is_inflated)
+		method = mono_get_inflated_method (method);
+
+	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
+	mono_method_get_marshal_info (method, mspecs);
+
+	if (mspecs [0])
+		res = mono_reflection_marshal_from_marshal_spec (domain, method->klass, mspecs [0]);
+		
+	for (i = mono_method_signature (method)->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+	g_free (mspecs);
+
+	return res;
+}
+
 static gint32
 ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
 {
@@ -6710,7 +6737,8 @@ static const IcallEntry monomethod_icalls [] = {
 
 static const IcallEntry monomethodinfo_icalls [] = {
 	{"get_method_info", ves_icall_get_method_info},
-	{"get_parameter_info", ves_icall_get_parameter_info}
+	{"get_parameter_info", ves_icall_get_parameter_info},
+	{"get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal}
 };
 
 static const IcallEntry monopropertyinfo_icalls [] = {
