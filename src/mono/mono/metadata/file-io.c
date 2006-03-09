@@ -6,7 +6,7 @@
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * (C) 2001,2002,2003 Ximian, Inc.
- * Copyright (c) 2004,2005 Novell, Inc. (http://www.novell.com)
+ * Copyright (c) 2004,2005,2006 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -337,7 +337,7 @@ get_file_attributes (const char *filename)
 	if (result == -1)
 		return FALSE;
 
-	if ((buf.st_mode & S_IFLNK) != 0) {
+	if (S_ISLNK (buf.st_mode)) {
 		result = stat (filename, &linkbuf);
 		if (result != -1) {
 			buf = linkbuf;
