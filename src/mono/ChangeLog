@@ -1,3 +1,8 @@
+2006-03-09  Vladimir Krasnov  <vladimirk@mainsoft.com>
+
+	* Added data/net_1_1/DefaultWsdlHelpGenerator.jvm.aspx
+	with removed proxy class generation for Grasshopper
+
 2006-03-08  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/web.config: add a default siteMap section with the
