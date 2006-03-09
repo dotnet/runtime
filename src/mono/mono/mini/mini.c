@@ -6953,6 +6953,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
+
+	if (inline_costs < 0) {
+		char *mname;
+
+		/* Method is too large */
+		mname = mono_method_full_name (method, TRUE);
+		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+		cfg->exception_message = g_strdup_printf ("Method %s is too complex.", mname);
+		g_free (mname);
+		return -1;
+	}
+
 	return inline_costs;
 
  inline_failure:
