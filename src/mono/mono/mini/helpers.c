@@ -94,7 +94,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 {
 #ifndef DISABLE_LOGGING
 	GHashTable *offset_to_bb_hash = NULL;
-	int i, bb_num;
+	int i, cindex, bb_num;
 	FILE *ofd;
 	const char *tmp = g_get_tmp_dir ();
 	const char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
@@ -128,14 +128,25 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 		}
 	}
 
+	cindex = 0;
 	for (i = 0; i < size; ++i) {
 		if (emit_debug_info) {
 			bb_num = GPOINTER_TO_INT (g_hash_table_lookup (offset_to_bb_hash, GINT_TO_POINTER (i)));
-			if (bb_num)
-				fprintf (ofd, ".stabd 68,0,%d\n", bb_num - 1);
+			if (bb_num) {
+				fprintf (ofd, "\n.stabd 68,0,%d\n", bb_num - 1);
+				cindex = 0;
+			}
 		}
-		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
+		if (cindex == 0) {
+			fprintf (ofd, "\n.byte %d", (unsigned int) code [i]);
+		} else {
+			fprintf (ofd, ",%d", (unsigned int) code [i]);
+		}
+		cindex++;
+		if (cindex == 64)
+			cindex = 0;
 	}
+	fprintf (ofd, "\n");
 	fclose (ofd);
 #ifdef __APPLE__
 #define DIS_CMD "otool -v -t"

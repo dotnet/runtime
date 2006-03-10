@@ -21,10 +21,15 @@
 #include "regalloc.h"
 #include "declsec.h"
 
+#ifndef G_LIKELY
+#define G_LIKELY(a) (a)
+#define G_UNLIKELY(a) (a)
+#endif
+
 #if DISABLE_LOGGING
 #define MINI_DEBUG(level,limit,code)
 #else
-#define MINI_DEBUG(level,limit,code) do {if ((level) >= (limit)) code} while (0)
+#define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
 #ifndef DISABLE_AOT
@@ -145,29 +150,6 @@ struct MonoSpillInfo {
 struct MonoBasicBlock {
 	MonoInst *last_ins;
 
-	/* Points to the start of the CIL code that initiated this BB */
-	unsigned char* cil_code;
-
-	/* Length of the CIL block */
-	gint32 cil_length;
-
-	/* The address of the generated code, used for fixups */
-	int native_offset;
-	int max_offset;
-	
-	gint32 dfn;
-
-	/* unique block number identification */
-	gint32 block_num;
-
-	/* Visited and reachable flags */
-	guint32 flags;
-
-	/* Basic blocks: incoming and outgoing counts and pointers */
-	gint16 out_count, in_count;
-	MonoBasicBlock **in_bb;
-	MonoBasicBlock **out_bb;
-
 	/* the next basic block in the order it appears in IL */
 	MonoBasicBlock *next_bb;
 
@@ -178,6 +160,29 @@ struct MonoBasicBlock {
 	 * first item in the list of instructions.
 	 */
 	MonoInst *code;
+
+	/* unique block number identification */
+	gint32 block_num;
+	
+	gint32 dfn;
+
+	/* Basic blocks: incoming and outgoing counts and pointers */
+	gint16 out_count, in_count;
+	MonoBasicBlock **in_bb;
+	MonoBasicBlock **out_bb;
+
+	/* Points to the start of the CIL code that initiated this BB */
+	unsigned char* cil_code;
+
+	/* Length of the CIL block */
+	gint32 cil_length;
+
+	/* The address of the generated code, used for fixups */
+	int native_offset;
+	int max_offset;
+
+	/* Visited and reachable flags */
+	guint32 flags;
 
 	/*
 	 * SSA and loop based flags
@@ -200,7 +205,9 @@ struct MonoBasicBlock {
 	 * Whenever the bblock is rarely executed so it should be emitted after
 	 * the function epilog.
 	 */
-	gboolean out_of_line;
+	gboolean out_of_line : 1;
+	/* Caches the result of uselessness calculation during optimize_branches */
+	gboolean not_useless : 1;
 
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
