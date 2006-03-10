@@ -61,7 +61,7 @@
 		if (mono_bitset_test_fast(set,b))
 #else
 #define mono_bitset_foreach_bit(set,b,n) \
-	for (b = mono_bitset_find_first (set, -1); b < n && b >= 0; b = mono_bitset_find_first (set, b))
+	for (b = mono_bitset_find_start (set); b < n && b >= 0; b = mono_bitset_find_first (set, b))
 #define mono_bitset_foreach_bit_rev(set,b,n) \
 	for (b = mono_bitset_find_last (set, n - 1); b >= 0; b = b ? mono_bitset_find_last (set, b) : -1)
  

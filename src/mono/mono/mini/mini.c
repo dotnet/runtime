@@ -8382,7 +8382,10 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	MonoInst *inst;
 	
 	/* Do not touch handlers */
-	if (bb->region != -1) return FALSE;
+	if (bb->region != -1) {
+		bb->not_useless = TRUE;
+		return FALSE;
+	}
 	
 	for (inst = bb->code; inst != NULL; inst = inst->next) {
 		switch (inst->opcode) {
@@ -8392,6 +8395,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 			target_bb = inst->inst_target_bb;
 			break;
 		default:
+			bb->not_useless = TRUE;
 			return FALSE;
 		}
 	}
@@ -8650,7 +8654,7 @@ optimize_branches (MonoCompile *cfg)
 			if (bb->region != -1)
 				continue;
 
-			if (remove_block_if_useless (cfg, bb, previous_bb)) {
+			if (!bb->not_useless && remove_block_if_useless (cfg, bb, previous_bb)) {
 				changed = TRUE;
 				continue;
 			}
@@ -8705,6 +8709,7 @@ optimize_branches (MonoCompile *cfg)
 								g_print ("block merge triggered %d -> %d\n", bb->block_num, bbn->block_num);
 							merge_basic_blocks (bb, bbn);
 							changed = TRUE;
+							continue;
 						}
 
 						//mono_print_bb_code (bb);
@@ -8722,9 +8727,8 @@ optimize_branches (MonoCompile *cfg)
 
 				nullify_basic_block (bbn);			
 				changed = TRUE;
-				break;
+				continue;
 			}
-
 
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
@@ -8743,7 +8747,7 @@ optimize_branches (MonoCompile *cfg)
 						link_bblock (cfg, bb, bbn->code->inst_target_bb);
 						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
 						changed = TRUE;
-						break;
+						continue;
 					}
 				}
 			} else if (bb->out_count == 2) {
@@ -8766,7 +8770,7 @@ optimize_branches (MonoCompile *cfg)
 						replace_out_block (bb, untaken_branch_target, NULL);
 						replace_in_block (untaken_branch_target, bb, NULL);
 						changed = TRUE;
-						break;
+						continue;
 					}
 					bbn = bb->last_ins->inst_true_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
@@ -8779,14 +8783,12 @@ optimize_branches (MonoCompile *cfg)
 						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
 
 						replace_in_block (bbn, bb, NULL);
-						if (!bbn->in_count)
-							replace_in_block (bbn->code->inst_target_bb, bbn, bb);
 						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
 
 						link_bblock (cfg, bb, bbn->code->inst_target_bb);
 
 						changed = TRUE;
-						break;
+						continue;
 					}
 
 					bbn = bb->last_ins->inst_false_bb;
@@ -8800,14 +8802,12 @@ optimize_branches (MonoCompile *cfg)
 						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
 
 						replace_in_block (bbn, bb, NULL);
-						if (!bbn->in_count)
-							replace_in_block (bbn->code->inst_target_bb, bbn, bb);
 						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
 
 						link_bblock (cfg, bb, bbn->code->inst_target_bb);
 
 						changed = TRUE;
-						break;
+						continue;
 					}
 				}
 
@@ -8816,7 +8816,7 @@ optimize_branches (MonoCompile *cfg)
 					if (try_unsigned_compare (cfg, bb)) {
 						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, bb->last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
 						changed = TRUE;
-						break;
+						continue;
 					}
 				}
 
@@ -9634,7 +9634,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 				if (bbn && bbn->region == -1 && !bbn->dfn) {
 					if (cfg->verbose_level > 1)
-						g_print ("found unreachabel code in BB%d\n", bbn->block_num);
+						g_print ("found unreachable code in BB%d\n", bbn->block_num);
 					bb->next_bb = bbn->next_bb;
 					nullify_basic_block (bbn);			
 				} else {
