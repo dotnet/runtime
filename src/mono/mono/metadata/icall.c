@@ -7606,7 +7606,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 		g_assert_not_reached ();
 	}
 
-	info = g_new (MonoJitICallInfo, 1);
+	info = g_new0 (MonoJitICallInfo, 1);
 	
 	info->name = name;
 	info->func = func;
