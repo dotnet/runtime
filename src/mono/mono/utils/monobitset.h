@@ -15,7 +15,8 @@ enum {
 /* Fast access to bits which depends on the implementation of the bitset */
 #define mono_bitset_test_fast(set,n) (((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] & ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)))
 #define mono_bitset_set_fast(set,n) do { ((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] |= ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
-#define mono_bitset_clear_fast(set,n) do { ((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] &= ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
+#define mono_bitset_clear_fast(set,n) do { ((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] &= ~((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
+#define mono_bitset_get_fast(set,n) (((gsize*)set)[2+(n)])
 
 /*
  * Interface documentation can be found in the c-file.
@@ -69,5 +70,7 @@ void        mono_bitset_sub          (MonoBitSet *dest, const MonoBitSet *src);
 gboolean    mono_bitset_equal        (const MonoBitSet *src, const MonoBitSet *src1);
 
 void        mono_bitset_foreach      (MonoBitSet *set, MonoBitSetFunc func, gpointer data);
+
+void        mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2);
 
 #endif /* __MONO_BITSET_H__ */
