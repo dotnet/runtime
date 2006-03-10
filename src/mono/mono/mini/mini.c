@@ -3062,6 +3062,27 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	} else if (cmethod->klass == mono_defaults.thread_class) {
 		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg)))
 			return ins;
+	} else if (mini_class_is_system_array (cmethod->klass) &&
+			strcmp (cmethod->name, "GetGenericValueImpl") == 0) {
+		MonoInst *sp [2];
+		MonoInst *ldelem, *store, *load;
+		MonoClass *eklass = mono_class_from_mono_type (fsig->params [1]);
+		int n;
+		n = mono_type_to_stind (&eklass->byval_arg);
+		if (n == CEE_STOBJ)
+			return NULL;
+		sp [0] = args [0];
+		sp [1] = args [1];
+		NEW_LDELEMA (cfg, ldelem, sp, eklass);
+		ldelem->flags |= MONO_INST_NORANGECHECK;
+		MONO_INST_NEW (cfg, store, n);
+		n = mono_type_to_ldind (&eklass->byval_arg);
+		MONO_INST_NEW (cfg, load, mono_type_to_ldind (&eklass->byval_arg));
+		type_to_eval_stack_type (&eklass->byval_arg, load);
+		load->inst_left = ldelem;
+		store->inst_left = args [2];
+		store->inst_right = load;
+		return store;
 	}
 
 	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
