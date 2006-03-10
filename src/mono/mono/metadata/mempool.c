@@ -25,10 +25,15 @@
 
 #define MONO_MEMPOOL_PAGESIZE 8192
 
+#ifndef G_LIKELY
+#define G_LIKELY(a) (a)
+#define G_UNLIKELY(a) (a)
+#endif
+
 struct _MonoMemPool {
 	MonoMemPool *next;
 	gint rest;
-	gpointer pos;
+	guint8 *pos, *end;
 	guint32 size;
 	union {
 		double pad; /* to assure proper alignment */
@@ -48,7 +53,7 @@ mono_mempool_new ()
 
 	pool->next = NULL;
 	pool->pos = (char *)pool + sizeof (MonoMemPool);
-	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 	pool->d.allocated = pool->size = MONO_MEMPOOL_PAGESIZE;
 	return pool;
 }
@@ -95,7 +100,7 @@ void
 mono_mempool_empty (MonoMemPool *pool)
 {
 	pool->pos = (char *)pool + sizeof (MonoMemPool);
-	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 }
 
 /**
@@ -113,7 +118,7 @@ mono_mempool_stats (MonoMemPool *pool)
 
 	p = pool;
 	while (p) {
-		still_free += p->rest;
+		still_free += p->end - p->pos;
 		n = p->next;
 		p = n;
 		count++;
@@ -131,8 +136,7 @@ mono_mempool_stats (MonoMemPool *pool)
  * @pool: the momory pool to destroy
  * @size: size of the momory block
  *
- * Allocates a new block of memory in @pool. @size must 
- * be smaller than 256.
+ * Allocates a new block of memory in @pool.
  *
  * Returns: the address of a newly allocated memory block.
  */
@@ -141,11 +145,13 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 {
 	gpointer rval;
 	
-	g_assert (pool != NULL);
-
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
 
-	if (pool->rest < size) {
+	rval = pool->pos;
+	pool->pos = (char*)rval + size;
+
+	if (G_UNLIKELY (pool->pos >= pool->end)) {
+		pool->pos -= size;
 		if (size >= 4096) {
 			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
 			np->next = pool->next;
@@ -159,14 +165,13 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->next = np;
 			pool->pos = (char *)np + sizeof (MonoMemPool);
 			np->size = MONO_MEMPOOL_PAGESIZE;
-			pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+			pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 			pool->d.allocated += MONO_MEMPOOL_PAGESIZE;
+
+			rval = pool->pos;
+			pool->pos += size;
 		}
 	}
-
-	rval = pool->pos;
-	pool->rest -= size;
-	pool->pos = (char *)pool->pos + size;
 
 	return rval;
 }
@@ -179,7 +184,17 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 gpointer
 mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 {
-	gpointer rval = mono_mempool_alloc (pool, size);
+	gpointer rval;
+	
+	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
+
+	rval = pool->pos;
+	pool->pos = (char*)rval + size;
+
+	if (G_UNLIKELY (pool->pos >= pool->end)) {
+		rval = mono_mempool_alloc (pool, size);
+	}
+
 	memset (rval, 0, size);
 	return rval;
 }
