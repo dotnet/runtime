@@ -737,6 +737,55 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 }
 
 /**
+ * mono_unlink_bblock:
+ *
+ *   Unlink two basic blocks.
+ */
+void
+mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
+{
+	MonoBasicBlock **newa;
+	int i, pos;
+	gboolean found;
+
+	found = FALSE;
+	for (i = 0; i < from->out_count; ++i) {
+		if (to == from->out_bb [i]) {
+			found = TRUE;
+			break;
+		}
+	}
+	if (found) {
+		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (from->out_count - 1));
+		pos = 0;
+		for (i = 0; i < from->out_count; ++i) {
+			if (from->out_bb [i] != to)
+				newa [pos ++] = from->out_bb [i];
+		}
+		from->out_count--;
+		from->out_bb = newa;
+	}
+
+	found = FALSE;
+	for (i = 0; i < to->in_count; ++i) {
+		if (from == to->in_bb [i]) {
+			found = TRUE;
+			break;
+		}
+	}
+	if (found) {
+		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (to->in_count - 1));
+		pos = 0;
+		for (i = 0; i < to->in_count; ++i) {
+			if (to->in_bb [i] != from)
+				newa [pos ++] = to->in_bb [i];
+		}
+		to->in_count--;
+		to->in_bb = newa;
+	}
+}
+
+/**
  * mono_find_block_region:
  *
  *   We mark each basic block with a region ID. We use that to avoid BB
@@ -7163,24 +7212,20 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 {
 	char *name;
 	MonoMethod *wrapper;
-	gconstpointer code;
 	
-	if (callinfo->wrapper)
+	if (callinfo->wrapper) {
 		return callinfo->wrapper;
-	
-	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
-	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
-	/* Must be domain neutral since there is only one copy */
-	code = mono_jit_compile_method_with_opt (wrapper, default_opt | MONO_OPT_SHARED);
-
-	if (!callinfo->wrapper) {
-		callinfo->wrapper = code;
-		mono_register_jit_icall_wrapper (callinfo, code);
-		mono_debug_add_icall_wrapper (wrapper, callinfo);
 	}
 
+	if (callinfo->trampoline)
+		return callinfo->trampoline;
+
+	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
+	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
 	g_free (name);
-	return callinfo->wrapper;
+
+	callinfo->trampoline = mono_create_jit_trampoline (wrapper);
+	return callinfo->trampoline;
 }
 
 static void
@@ -8438,6 +8483,8 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 				replace_or_add_in_block (cfg, target_bb, bb, in_bb);
 			}
 		}
+
+		mono_unlink_bblock (cfg, bb, target_bb);
 		
 		if ((previous_bb != cfg->bb_entry) &&
 				(previous_bb->region == bb->region) &&
@@ -9876,15 +9923,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 }
 
 static gpointer
-mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
+mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt)
 {
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
 	gpointer code = NULL;
-	guint32 opt;
 	MonoJitInfo *info;
-
-	opt = default_opt;
 
 	jit_code_hash = target_domain->jit_code_hash;
 
@@ -10051,10 +10095,26 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 static gpointer
 mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 {
-	/* FIXME: later copy the code from mono */
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
 	gpointer p;
+	MonoJitICallInfo *callinfo = NULL;
+
+	/*
+	 * ICALL wrappers are handled specially, since there is only one copy of them
+	 * shared by all appdomains.
+	 */
+	if ((method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
+		const char *icall_name;
+
+		icall_name = method->name + strlen ("__icall_wrapper_");
+		g_assert (icall_name);
+		callinfo = mono_find_jit_icall_by_name (icall_name);
+		g_assert (callinfo);
+
+		/* Must be domain neutral since there is only one copy */
+		opt |= MONO_OPT_SHARED;
+	}
 
 	if (opt & MONO_OPT_SHARED)
 		target_domain = mono_get_root_domain ();
@@ -10074,8 +10134,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	}
 
 	mono_domain_unlock (target_domain);
-	p = mono_jit_compile_method_inner (method, target_domain);
-	return mono_create_ftnptr (target_domain, p);
+	p = mono_create_ftnptr (target_domain, mono_jit_compile_method_inner (method, target_domain, opt));
+
+	if (callinfo) {
+		g_assert (!callinfo->wrapper);
+		callinfo->wrapper = p;
+		mono_register_jit_icall_wrapper (callinfo, p);
+		mono_debug_add_icall_wrapper (method, callinfo);
+	}
+
+	return p;
 }
 
 static gpointer
