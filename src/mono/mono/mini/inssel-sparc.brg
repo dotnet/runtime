@@ -108,7 +108,7 @@ stmt: OP_OUTARG (OP_LDADDR (reg)) {
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_SETRET (reg) {
@@ -148,7 +148,7 @@ stmt: OP_OUTARG (reg) {
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (OP_REGVAR) {
@@ -159,7 +159,7 @@ stmt: OP_OUTARG (OP_REGVAR) {
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (OP_ICONST) {
@@ -170,7 +170,7 @@ stmt: OP_OUTARG (OP_ICONST) {
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (OP_I8CONST) {
@@ -181,7 +181,7 @@ stmt: OP_OUTARG (OP_I8CONST) {
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 } cost {
 	MBCOND (sizeof (gpointer) == 8);
 
@@ -197,7 +197,7 @@ stmt: OP_OUTARG (CEE_LDIND_R4 (base)) {
 	tree->inst_offset = state->left->left->tree->inst_offset;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_FLOAT (freg) {
@@ -208,7 +208,7 @@ stmt: OP_SPARC_OUTARG_FLOAT (freg) {
 							 	tree->inst_right->inst_imm, state->left->reg1);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, tree->inst_right->inst_basereg, tree->inst_right->inst_imm);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_REGPAIR (lreg) {
@@ -222,8 +222,8 @@ stmt: OP_SPARC_OUTARG_REGPAIR (lreg) {
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
-	mono_call_inst_add_outarg_reg (call, dreg2, tree->unused + 1, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg2, tree->unused + 1, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_REGPAIR_FLOAT (freg) {
@@ -238,8 +238,8 @@ stmt: OP_SPARC_OUTARG_REGPAIR_FLOAT (freg) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, tree->inst_right->inst_basereg, tree->inst_right->inst_imm);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg2, tree->inst_right->inst_basereg, tree->inst_right->inst_imm + 4);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
-	mono_call_inst_add_outarg_reg (call, dreg2, tree->unused + 1, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg2, tree->unused + 1, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_MEM (reg) {
@@ -295,7 +295,7 @@ stmt: OP_SPARC_OUTARG_SPLIT_REG_STACK (lreg) {
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_SPLIT_REG_STACK (freg) {
@@ -308,7 +308,7 @@ stmt: OP_SPARC_OUTARG_SPLIT_REG_STACK (freg) {
 	/* Load most significant word into register */
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, tree->inst_right->inst_basereg, tree->inst_right->inst_imm);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 stmt: OP_SPARC_OUTARG_FLOAT_REG (freg) {
@@ -319,7 +319,7 @@ stmt: OP_SPARC_OUTARG_FLOAT_REG (freg) {
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, TRUE);
 }	
 
 stmt: OP_SPARC_OUTARG_DOUBLE_REG (freg) {
@@ -330,7 +330,7 @@ stmt: OP_SPARC_OUTARG_DOUBLE_REG (freg) {
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, TRUE);
 }	
 
 # Handles scalar valuetypes like RuntimeTypeHandle
@@ -366,7 +366,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGOFFSET)) {
@@ -376,7 +376,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGOFFSET)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, state->left->left->tree->inst_basereg, 
 								state->left->left->tree->inst_offset);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
@@ -387,7 +387,7 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 	tree->inst_imm = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
@@ -615,7 +615,7 @@ stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)) {
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (CEE_LDIND_REF(base)) {
@@ -626,7 +626,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF(base)) {
 				state->left->left->tree->inst_offset);	
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 stmt: OP_OUTARG (CEE_LDIND_I4(base)) {
@@ -637,7 +637,7 @@ stmt: OP_OUTARG (CEE_LDIND_I4(base)) {
 				state->left->left->tree->inst_offset);	
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->unused, FALSE);
 }
 
 reg: OP_LDADDR (OP_REGOFFSET) "1" {
