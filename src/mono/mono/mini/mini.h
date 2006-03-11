@@ -205,9 +205,9 @@ struct MonoBasicBlock {
 	 * Whenever the bblock is rarely executed so it should be emitted after
 	 * the function epilog.
 	 */
-	gboolean out_of_line : 1;
+	guint out_of_line : 1;
 	/* Caches the result of uselessness calculation during optimize_branches */
-	gboolean not_useless : 1;
+	guint not_useless : 1;
 
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
@@ -597,13 +597,13 @@ typedef struct {
 	guint32          param_area;
 	guint32          frame_reg;
 	gint32           sig_cookie;
-	gboolean         disable_aot;
-	gboolean         disable_ssa;
-	gboolean         run_cctors;
-	gboolean         need_lmf_area;
-	gboolean         compile_aot;
-	gboolean         got_var_allocated;
-	gboolean         ret_var_is_local;
+	guint            disable_aot : 1;
+	guint            disable_ssa : 1;
+	guint            run_cctors : 1;
+	guint            need_lmf_area : 1;
+	guint            compile_aot : 1;
+	guint            got_var_allocated : 1;
+	guint            ret_var_is_local : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
