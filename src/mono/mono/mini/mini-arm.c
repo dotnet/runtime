@@ -3140,7 +3140,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		this->sreg1 = this_reg;
 		this->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, this);
-		mono_call_inst_add_outarg_reg (inst, this->dreg, this_dreg, FALSE);
+		mono_call_inst_add_outarg_reg (cfg, inst, this->dreg, this_dreg, FALSE);
 	}
 
 	if (vt_reg != -1) {
@@ -3150,7 +3150,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		vtarg->sreg1 = vt_reg;
 		vtarg->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, vtarg);
-		mono_call_inst_add_outarg_reg (inst, vtarg->dreg, ARMREG_R0, FALSE);
+		mono_call_inst_add_outarg_reg (cfg, inst, vtarg->dreg, ARMREG_R0, FALSE);
 	}
 }
 

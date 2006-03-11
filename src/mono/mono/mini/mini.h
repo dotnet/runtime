@@ -294,7 +294,7 @@ struct MonoCallInst {
 	gboolean virtual;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
-#if defined(MONO_ARCH_HAS_XP_LOCAL_REGALLOC) || defined(__x86_64__)
+#if defined(MONO_ARCH_HAS_XP_LOCAL_REGALLOC)
 	GSList *out_ireg_args;
 	GSList *out_freg_args;
 #endif
@@ -900,9 +900,9 @@ void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack,
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
 MonoCallInst *mono_arch_call_opcode             (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual);
-MonoInst *mono_arch_get_inst_for_method       (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst *mono_arch_get_inst_for_method         (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 void      mono_codegen                          (MonoCompile *cfg);
-void      mono_call_inst_add_outarg_reg         (MonoCallInst *call, int vreg, int hreg, gboolean fp);
+void      mono_call_inst_add_outarg_reg         (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, gboolean fp);
 const char *mono_arch_regname                   (int reg);
 const char *mono_arch_fregname                  (int reg);
 gpointer  mono_arch_get_throw_exception         (void);

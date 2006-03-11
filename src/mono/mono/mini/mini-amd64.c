@@ -389,7 +389,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	}
 
 	for (quad = 0; quad < nquads; ++quad) {
-		int size, align;
+		int size;
+		guint32 align;
 		ArgumentClass class1;
 		
 		class1 = ARG_CLASS_NO_CLASS;
@@ -1136,21 +1137,18 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
-		call->used_iregs |= 1 << reg;
 		break;
 	case ArgInFloatSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
-		call->used_fregs |= 1 << reg;
 		break;
 	case ArgInDoubleSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
 		arg->unused = reg;
-		call->used_fregs |= 1 << reg;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1250,7 +1248,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			call->out_args = arg;
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
-				gint align;
+				guint32 align;
 				guint32 size;
 
 				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
@@ -4919,7 +4917,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 			vtarg->dreg = mono_regstate_next_int (cfg->rs);
 			mono_bblock_add_inst (cfg->cbb, vtarg);
 
-			mono_call_inst_add_outarg_reg (call, vtarg->dreg, cinfo->ret.reg, FALSE);
+			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
 		}
 	}
 
@@ -4932,7 +4930,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		this->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, this);
 
-		mono_call_inst_add_outarg_reg (call, this->dreg, cinfo->args [0].reg, FALSE);
+		mono_call_inst_add_outarg_reg (cfg, call, this->dreg, cinfo->args [0].reg, FALSE);
 	}
 
 	g_free (cinfo);

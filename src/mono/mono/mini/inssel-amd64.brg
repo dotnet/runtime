@@ -209,7 +209,7 @@ stmt: OP_OUTARG_REG (reg) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
 # we need to reduce this code duplication with some burg syntax extension
@@ -298,7 +298,7 @@ stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
 	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, TRUE);
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
@@ -309,7 +309,7 @@ stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
 	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (call, tree->dreg, tree->unused, TRUE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, TRUE);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
