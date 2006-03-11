@@ -10137,10 +10137,13 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	p = mono_create_ftnptr (target_domain, mono_jit_compile_method_inner (method, target_domain, opt));
 
 	if (callinfo) {
-		g_assert (!callinfo->wrapper);
-		callinfo->wrapper = p;
-		mono_register_jit_icall_wrapper (callinfo, p);
-		mono_debug_add_icall_wrapper (method, callinfo);
+		mono_jit_lock ();
+		if (!callinfo->wrapper) {
+			callinfo->wrapper = p;
+			mono_register_jit_icall_wrapper (callinfo, p);
+			mono_debug_add_icall_wrapper (method, callinfo);
+		}
+		mono_jit_unlock ();
 	}
 
 	return p;
