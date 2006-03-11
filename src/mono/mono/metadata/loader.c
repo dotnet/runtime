@@ -608,6 +608,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
 		result->klass = klass;
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+		result->flags = METHOD_ATTRIBUTE_PUBLIC;
 		result->signature = sig;
 		result->name = mname;
 
