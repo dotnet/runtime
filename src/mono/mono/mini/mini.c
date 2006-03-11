@@ -78,6 +78,7 @@ gboolean  mono_arch_print_tree(MonoInst *tree, int arity);
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
 static gpointer mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method);
+static gpointer mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method);
 
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
 			  const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native);
@@ -7224,7 +7225,9 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
 	g_free (name);
 
-	callinfo->trampoline = mono_create_jit_trampoline (wrapper);
+	callinfo->trampoline = mono_create_ftnptr (mono_get_root_domain (), mono_create_jit_trampoline_in_domain (mono_get_root_domain (), wrapper));
+	mono_register_jit_icall_wrapper (callinfo, callinfo->trampoline);
+
 	return callinfo->trampoline;
 }
 
@@ -7344,10 +7347,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	return ji->code_start;
 }
 
-gpointer
-mono_create_jit_trampoline (MonoMethod *method)
+static gpointer
+mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 {
-	MonoDomain *domain = mono_domain_get ();
 	gpointer tramp;
 
 	mono_domain_lock (domain);
@@ -7360,7 +7362,7 @@ mono_create_jit_trampoline (MonoMethod *method)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
 #ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
-	tramp =  mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get (), NULL);
+	tramp =  mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain, NULL);
 #else
 	tramp = mono_arch_create_jit_trampoline (method);
 #endif
@@ -7373,6 +7375,12 @@ mono_create_jit_trampoline (MonoMethod *method)
 
 	return tramp;
 }	
+
+gpointer
+mono_create_jit_trampoline (MonoMethod *method)
+{
+	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method);
+}
 
 #ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
 gpointer
