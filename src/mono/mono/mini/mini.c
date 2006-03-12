@@ -3509,9 +3509,15 @@ can_access_field (MonoMethod *method, MonoClassField *field)
 {
 	/* FIXME: check all overlapping fields */
 	int can = can_access_member (method->klass, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
-	/* FIXME: ensure it's allowed or not to all the nesting levels above */
-	if (!can && method->klass->nested_in)
-		return can_access_member (method->klass->nested_in, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = method->klass->nested_in;
+		while (nested) {
+			can = can_access_member (nested, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
 	return can;
 }
 
@@ -3519,9 +3525,15 @@ static gboolean
 can_access_method (MonoMethod *method, MonoMethod *called)
 {
 	int can = can_access_member (method->klass, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
-	/* FIXME: ensure it's allowed or not to all the nesting levels above */
-	if (!can && method->klass->nested_in)
-		return can_access_member (method->klass->nested_in, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = method->klass->nested_in;
+		while (nested) {
+			can = can_access_member (nested, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
 	return can;
 }
 
