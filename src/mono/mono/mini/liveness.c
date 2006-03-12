@@ -23,13 +23,23 @@
  * 
  * allocates a MonoBitSet inside a memory pool
  */
-static MonoBitSet* 
+static inline MonoBitSet* 
 mono_bitset_mp_new (MonoMemPool *mp,  guint32 max_size)
 {
 	int size = mono_bitset_alloc_size (max_size, 0);
 	gpointer mem;
 
 	mem = mono_mempool_alloc0 (mp, size);
+	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
+}
+
+static inline MonoBitSet* 
+mono_bitset_mp_new_noinit (MonoMemPool *mp,  guint32 max_size)
+{
+	int size = mono_bitset_alloc_size (max_size, 0);
+	gpointer mem;
+
+	mem = mono_mempool_alloc (mp, size);
 	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
 }
 
@@ -103,8 +113,8 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				}
 				update_live_range (cfg, idx, bb->dfn, inst_num); 
-				if (!mono_bitset_test (bb->kill_set, idx))
-					mono_bitset_set (bb->gen_set, idx);
+				if (!mono_bitset_test_fast (bb->kill_set, idx))
+					mono_bitset_set_fast (bb->gen_set, idx);
 				if (inst->ssa_op == MONO_SSA_LOAD)
 					vi->spill_costs += 1 + (bb->nesting * 2);
 				
@@ -126,7 +136,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				}
 				update_live_range (cfg, idx, bb->dfn, inst_num); 
-				mono_bitset_set (bb->kill_set, idx);
+				mono_bitset_set_fast (bb->kill_set, idx);
 				if (inst->ssa_op == MONO_SSA_STORE)
 					vi->spill_costs += 1 + (bb->nesting * 2);
 				
@@ -138,8 +148,8 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 		int i;
 		for (i = 0; i < cfg->num_varinfo; i++) {
 			if (cfg->varinfo [i]->opcode == OP_ARG) {
-				if (!mono_bitset_test (bb->kill_set, i))
-					mono_bitset_set (bb->gen_set, i);
+				if (!mono_bitset_test_fast (bb->kill_set, i))
+					mono_bitset_set_fast (bb->gen_set, i);
 			}
 		}
 	}
@@ -241,14 +251,14 @@ handle_exception_clauses (MonoCompile *cfg)
 void
 mono_analyze_liveness (MonoCompile *cfg)
 {
-	MonoBitSet *old_live_in_set, *old_live_out_set, *tmp_in_set;
-	gboolean changes;
+	MonoBitSet *old_live_out_set;
 	int i, j, max_vars = cfg->num_varinfo;
-	int iterations, out_iter, in_iter;
+	int out_iter;
 	gboolean *in_worklist;
 	MonoBasicBlock **worklist;
-	guint32 l_begin, l_end;
-	static int count = 0;
+	guint32 l_end;
+	int bitsize;
+	guint8 *mem;
 
 #ifdef DEBUG_LIVENESS
 	printf ("LIVENESS %s\n", mono_method_full_name (cfg->method, TRUE));
@@ -261,13 +271,20 @@ mono_analyze_liveness (MonoCompile *cfg)
 	if (max_vars == 0)
 		return;
 
+	bitsize = mono_bitset_alloc_size (max_vars, 0);
+	mem = mono_mempool_alloc0 (cfg->mempool, cfg->num_bblocks * bitsize * 4);
+
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
-		bb->gen_set = mono_bitset_mp_new (cfg->mempool, max_vars);
-		bb->kill_set = mono_bitset_mp_new (cfg->mempool, max_vars);
-		bb->live_in_set = mono_bitset_mp_new (cfg->mempool, max_vars);
-		bb->live_out_set = mono_bitset_mp_new (cfg->mempool, max_vars);
+		bb->gen_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+		mem += bitsize;
+		bb->kill_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+		mem += bitsize;
+		/* Initialized later */
+		bb->live_in_set = NULL;
+		bb->live_out_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+		mem += bitsize;
 	}
 	for (i = 0; i < max_vars; i ++) {
 		MONO_VARINFO (cfg, i)->range.first_use.abs_pos = ~ 0;
@@ -301,91 +318,120 @@ mono_analyze_liveness (MonoCompile *cfg)
 #endif
 	}
 
-	old_live_in_set = mono_bitset_new (max_vars, 0);
 	old_live_out_set = mono_bitset_new (max_vars, 0);
-	tmp_in_set = mono_bitset_new (max_vars, 0);
 	in_worklist = g_new0 (gboolean, cfg->num_bblocks + 1);
 
-	count ++;
-
-	worklist = g_new0 (MonoBasicBlock *, cfg->num_bblocks + 1);
-	l_begin = 0;
+	worklist = g_new (MonoBasicBlock *, cfg->num_bblocks + 1);
 	l_end = 0;
 
-	for (i = cfg->num_bblocks - 1; i >= 0; i--) {
+	/*
+	 * This is a backward dataflow analysis problem, so we process blocks in
+	 * decreasing dfn order, this speeds up the iteration.
+	 */
+	for (i = 0; i < cfg->num_bblocks; i ++) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
 		worklist [l_end ++] = bb;
 		in_worklist [bb->dfn] = TRUE;
 	}
 
-	iterations = 0;
 	out_iter = 0;
-	in_iter = 0;
-	do {
-		changes = FALSE;
-		iterations ++;
 
-		while (l_begin != l_end) {
-			MonoBasicBlock *bb = worklist [l_begin ++];
+	while (l_end != 0) {
+		MonoBasicBlock *bb = worklist [--l_end];
+		MonoBasicBlock *out_bb;
+		gboolean changed;
 
-			in_worklist [bb->dfn] = FALSE;
+		in_worklist [bb->dfn] = FALSE;
 
-			if (l_begin == cfg->num_bblocks + 1)
-				l_begin = 0;
+#ifdef DEBUG_LIVENESS
+		printf ("P: %d(%d): IN: ", bb->block_num, bb->dfn);
+		for (j = 0; j < bb->in_count; ++j) 
+			printf ("BB%d ", bb->in_bb [j]->block_num);
+		printf ("OUT:");
+		for (j = 0; j < bb->out_count; ++j) 
+			printf ("BB%d ", bb->out_bb [j]->block_num);
+		printf ("\n");
+#endif
 
-			if (bb->out_count > 0) {
-				out_iter ++;
-				mono_bitset_copyto (bb->live_out_set, old_live_out_set);
+		if (bb->out_count == 0)
+			continue;
 
-				for (j = 0; j < bb->out_count; j++) {
-					MonoBasicBlock *out_bb = bb->out_bb [j];
+		out_iter ++;
 
-					mono_bitset_copyto (out_bb->live_out_set, tmp_in_set);
-					mono_bitset_sub (tmp_in_set, out_bb->kill_set);
-					mono_bitset_union (tmp_in_set, out_bb->gen_set);
+		if (!bb->live_in_set) {
+			/* First pass over this bblock */
+			changed = TRUE;
+		}
+		else {
+			changed = FALSE;
+			mono_bitset_copyto (bb->live_out_set, old_live_out_set);
+		}
+ 
+		for (j = 0; j < bb->out_count; j++) {
+			out_bb = bb->out_bb [j];
 
-					mono_bitset_union (bb->live_out_set, tmp_in_set);
+			if (!out_bb->live_in_set) {
+				out_bb->live_in_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+				mem += bitsize;
 
-				}
+				mono_bitset_copyto (out_bb->live_out_set, out_bb->live_in_set);
+				mono_bitset_sub (out_bb->live_in_set, out_bb->kill_set);
+				mono_bitset_union (out_bb->live_in_set, out_bb->gen_set);
+			}
+
+			mono_bitset_union (bb->live_out_set, out_bb->live_in_set);
+		}
 				
-				if (!mono_bitset_equal (old_live_out_set, bb->live_out_set)) {
-					for (j = 0; j < bb->in_count; j++) {
-						MonoBasicBlock *in_bb = bb->in_bb [j];
-						/* 
-						 * Some basic blocks do not seem to be in the 
-						 * cfg->bblocks array...
-						 */
-						if (in_bb->live_in_set)
-							if (!in_worklist [in_bb->dfn]) {
-								worklist [l_end ++] = in_bb;
-								if (l_end == cfg->num_bblocks + 1)
-									l_end = 0;
-								in_worklist [in_bb->dfn] = TRUE;
-							}
-					}
+		if (changed || !mono_bitset_equal (old_live_out_set, bb->live_out_set)) {
+			if (!bb->live_in_set) {
+				bb->live_in_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+				mem += bitsize;
+			}
+			mono_bitset_copyto (bb->live_out_set, bb->live_in_set);
+			mono_bitset_sub (bb->live_in_set, bb->kill_set);
+			mono_bitset_union (bb->live_in_set, bb->gen_set);
 
-					changes = TRUE;
+			for (j = 0; j < bb->in_count; j++) {
+				MonoBasicBlock *in_bb = bb->in_bb [j];
+				/* 
+				 * Some basic blocks do not seem to be in the 
+				 * cfg->bblocks array...
+				 */
+				if (in_bb->gen_set && !in_worklist [in_bb->dfn]) {
+#ifdef DEBUG_LIVENESS
+					printf ("\tADD: %d\n", in_bb->block_num);
+#endif
+					/*
+					 * Put the block at the top of the stack, so it
+					 * will be processed right away.
+					 */
+					worklist [l_end ++] = in_bb;
+					in_worklist [in_bb->dfn] = TRUE;
 				}
 			}
 		}
-	} while (changes);
+	}
 
 	//printf ("IT: %d %d %d.\n", iterations, in_iter, out_iter);
 
-	mono_bitset_free (old_live_in_set);
 	mono_bitset_free (old_live_out_set);
-	mono_bitset_free (tmp_in_set);
 
 	g_free (worklist);
 	g_free (in_worklist);
 
-	for (i = cfg->num_bblocks - 1; i >= 0; i--) {
+	/* Compute live_in_set for bblocks skipped earlier */
+	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
-		mono_bitset_copyto (bb->live_out_set, bb->live_in_set);
-		mono_bitset_sub (bb->live_in_set, bb->kill_set);
-		mono_bitset_union (bb->live_in_set, bb->gen_set);
+		if (!bb->live_in_set) {
+			bb->live_in_set = mono_bitset_mem_new (mem, max_vars, MONO_BITSET_DONT_FREE);
+			mem += bitsize;
+
+			mono_bitset_copyto (bb->live_out_set, bb->live_in_set);
+			mono_bitset_sub (bb->live_in_set, bb->kill_set);
+			mono_bitset_union (bb->live_in_set, bb->gen_set);
+		}
 	}
 
 	/*
@@ -394,29 +440,35 @@ mono_analyze_liveness (MonoCompile *cfg)
 	 */
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
-		guint32 rem;
+		guint32 rem, max;
+
+		if (!bb->live_out_set)
+			continue;
 
 		rem = max_vars % BITS_PER_CHUNK;
-		for (j = 0; j < (max_vars / BITS_PER_CHUNK) + 1; ++j) {
+		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
+		for (j = 0; j < max; ++j) {
 			gsize bits_in;
 			gsize bits_out;
-			int k, nbits;
+			int k, end;
 
-			if (j > (max_vars / BITS_PER_CHUNK))
-				break;
+			bits_in = mono_bitset_get_fast (bb->live_in_set, j);
+			bits_out = mono_bitset_get_fast (bb->live_out_set, j);
+
+			if (j == max)
+				end = (j * BITS_PER_CHUNK) + rem;
 			else
-				if (j == (max_vars / BITS_PER_CHUNK))
-					nbits = rem;
-				else
-					nbits = BITS_PER_CHUNK;
+				end = (j * BITS_PER_CHUNK) + BITS_PER_CHUNK;
 
-			bits_in = mono_bitset_test_bulk (bb->live_in_set, j * BITS_PER_CHUNK);
-			bits_out = mono_bitset_test_bulk (bb->live_out_set, j * BITS_PER_CHUNK);
-			for (k = 0; k < nbits; ++k) {
-				if (bits_in & ((gsize)1 << k))
-					update_live_range (cfg, (j * BITS_PER_CHUNK) + k, bb->dfn, 0);
-				if (bits_out & ((gsize)1 << k))
-					update_live_range (cfg, (j * BITS_PER_CHUNK) + k, bb->dfn, 0xffff);
+			k = (j * BITS_PER_CHUNK);
+			while ((bits_in || bits_out)) {
+				if (bits_in & 1)
+					update_live_range (cfg, k, bb->dfn, 0);
+				if (bits_out & 1)
+					update_live_range (cfg, k, bb->dfn, 0xffff);
+				bits_in >>= 1;
+				bits_out >>= 1;
+				k ++;
 			}
 		}
 	}
