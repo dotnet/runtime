@@ -2085,7 +2085,9 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
-		if (arg->type == STACK_MP && arg->type == STACK_PTR)
+		if (arg->type == STACK_MP)
+			return arg->klass != mono_class_from_mono_type (target);
+		if (arg->type == STACK_PTR)
 			return 0;
 		return 1;
 	}
@@ -2104,9 +2106,13 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
 			return 1;
 		return 0;
+	case MONO_TYPE_PTR:
+		/* STACK_MP is needed when setting pinned locals */
+		if (arg->type != STACK_I4 && arg->type != STACK_PTR && arg->type != STACK_MP)
+			return 1;
+		return 0;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
 			return 1;
@@ -3554,12 +3560,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
-	gboolean dont_verify;
+	gboolean dont_verify, dont_verify_stloc;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH;
+
+	/* still some type unsefety issues in marshal wrappers... (unknown is PtrToStructure) */
+	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
+	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_UNKNOWN;
+	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
@@ -3797,6 +3808,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
 	for (n = 0; n < sig->param_count; ++n)
 		param_types [n + sig->hasthis] = sig->params [n];
+	for (n = 0; n < header->num_locals; ++n) {
+		if (header->locals [n]->type == MONO_TYPE_VOID && !header->locals [n]->byref)
+			goto unverified;
+	}
 	class_inits = NULL;
 
 	/* do this somewhere outside - not here */
@@ -3934,6 +3949,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			NEW_LOCSTORE (cfg, ins, n, *sp);
 			ins->cil_code = ip;
+			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
+				goto unverified;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, n);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -3968,6 +3985,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_ARGSTORE (cfg, ins, ip [1], *sp);
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			ins->cil_code = ip;
+			if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [ip [1]], *sp))
+				goto unverified;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_ARGLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -4001,6 +4020,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_LOCAL (ip [1]);
 			NEW_LOCSTORE (cfg, ins, ip [1], *sp);
 			ins->cil_code = ip;
+			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [ip [1]], *sp))
+				goto unverified;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -5395,6 +5416,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			add->inst_left = ins;
 			add->inst_right = vtoffset;
 			add->type = STACK_MP;
+			add->klass = klass;
 			*sp++ = add;
 			ip += 5;
 			inline_costs += 2;
@@ -5854,6 +5876,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
+			if (klass == mono_defaults.void_class)
+				goto unverified;
 			if (target_type_is_incompatible (cfg, &klass->byval_arg, *sp))
 				goto unverified;
 			/* frequent check in generic code: box (struct), brtrue */
@@ -6725,6 +6749,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_ARG (n);
 				NEW_ARGSTORE (cfg, ins, n, *sp);
 				ins->cil_code = ip;
+				if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [n], *sp))
+					goto unverified;
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_ARGLOADA (cfg, ins, n);
 					handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -6760,6 +6786,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_LOCAL (n);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 				NEW_LOCSTORE (cfg, ins, n, *sp);
+				if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
+					goto unverified;
 				ins->cil_code = ip;
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_LOCLOADA (cfg, ins, n);
@@ -6784,7 +6812,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
 				ins->inst_left = *sp;
 				ins->cil_code = ip;
-				ins->type = STACK_MP;
+				ins->type = STACK_PTR;
 
 				cfg->flags |= MONO_CFG_HAS_ALLOCA;
 				if (header->init_locals)
