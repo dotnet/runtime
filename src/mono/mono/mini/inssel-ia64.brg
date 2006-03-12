@@ -1,5 +1,6 @@
 
 int size_to_ia64_load_u_membase_inc (int size);
+int size_to_store_membase_reg (int size);
 int size_to_ia64_store_membase_inc_reg (int size);
 
 %%
@@ -339,7 +340,6 @@ stmt: OP_MEMSET (base) "0" {
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, dest_reg, state->left->tree->inst_basereg, state->left->tree->inst_offset);	
 
-	/* FIXME: Alignment */
 	for (unit = align; unit >= 1; unit = unit >> 1) {
 		dest_reg2 = mono_regstate_next_int (s->rs);
 
@@ -359,7 +359,10 @@ stmt: OP_MEMSET (base) "0" {
 		}
 
 		while (size >= unit) {
-			MONO_EMIT_NEW_STORE_MEMBASE (s, size_to_ia64_store_membase_inc_reg (unit), dest_reg, 0, val_reg);
+			if (size == unit)
+				MONO_EMIT_NEW_STORE_MEMBASE (s, size_to_store_membase_reg (unit), dest_reg, 0, val_reg);
+			else
+				MONO_EMIT_NEW_STORE_MEMBASE (s, size_to_ia64_store_membase_inc_reg (unit), dest_reg, 0, val_reg);
 			size -= unit;
 		}
 	}	
@@ -385,9 +388,7 @@ stmt: OP_MEMCPY (base, base) "0" {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, dest_reg, state->left->tree->inst_basereg, state->left->tree->inst_offset);	
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, src_reg, state->right->tree->inst_basereg, state->right->tree->inst_offset);
 
-	/* FIXME: Alignment */
 	for (unit = align; unit >= 1; unit = unit >> 1) {
-
 		while (size >= unit) {
 			cur_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, size_to_ia64_load_u_membase_inc (unit), cur_reg, src_reg, 0);
@@ -411,6 +412,24 @@ size_to_ia64_load_u_membase_inc (int size)
 		return OP_IA64_LOADU4_MEMBASE_INC;
 	case 8:
 		return OP_IA64_LOADI8_MEMBASE_INC;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+int
+size_to_store_membase_reg (int size)
+{
+	switch (size) {
+	case 1:
+		return OP_STOREI1_MEMBASE_REG;
+	case 2:
+		return OP_STOREI2_MEMBASE_REG;
+	case 4:
+		return OP_STOREI4_MEMBASE_REG;
+	case 8:
+		return OP_STOREI8_MEMBASE_REG;
 	default:
 		g_assert_not_reached ();
 		return -1;

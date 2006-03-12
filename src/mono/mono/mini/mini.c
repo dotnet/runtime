@@ -7718,7 +7718,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
-			if (t->type == MONO_TYPE_VALUETYPE)
+			if (MONO_TYPE_ISSTRUCT (t))
 				align = sizeof (gpointer);
 
 			if (backward) {
