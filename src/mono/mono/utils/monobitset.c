@@ -216,11 +216,6 @@ mono_bitset_size (const MonoBitSet *set) {
  */
 guint32
 mono_bitset_count (const MonoBitSet *set) {
-#if SIZEOF_VOID_P == 8
-	static const unsigned char table [16] = {
-		0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
-	};
-#endif
 	guint32 i, count;
 	gsize d;
 
@@ -230,22 +225,12 @@ mono_bitset_count (const MonoBitSet *set) {
 		/* there is probably some asm code that can do this much faster */
 		if (d) {
 #if SIZEOF_VOID_P == 8
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
-			count += table [d & 0xf]; d >>= 4;
+			/* http://www.jjj.de/bitwizardry/bitwizardrypage.html */
+			d -=  (d>>1) & 0x5555555555555555;
+			d  = ((d>>2) & 0x3333333333333333) + (d & 0x3333333333333333);
+			d  = ((d>>4) + d) & 0x0f0f0f0f0f0f0f0f;
+			d *= 0x0101010101010101;
+			count += d >> 56;
 #else
 			/* http://aggregate.org/MAGIC/ */
 			d -= ((d >> 1) & 0x55555555);
@@ -306,21 +291,28 @@ bitstart_mask [] = {
 static inline gint
 my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 {
-#ifdef __i386__
-	int cnt;
-#endif
-
 	nth_bit ++;
 	mask >>= nth_bit;
 
 	if ((mask == 0) || (nth_bit == BITS_PER_CHUNK))
 		return -1;
 
-#ifdef __i386__
-	/* This depends on mask != 0 */
-	__asm__("bsfl %1,%0\n\t"
-			: "=r" (cnt) : "g" (mask)); 
-	return nth_bit + cnt;
+#if defined(__i386__)
+ {
+	 int r;
+	 /* This depends on mask != 0 */
+	 __asm__("bsfl %1,%0\n\t"
+			 : "=r" (r) : "g" (mask)); 
+	 return nth_bit + r;
+ }
+#elif defined(__x86_64)
+ {
+	guint64 r;
+
+	__asm__("bsfq %1,%0\n\t"
+			: "=r" (r) : "rm" (mask));
+	return nth_bit + r;
+ }
 #else
 	while (! (mask & 0x1)) {
 		mask >>= 1;
@@ -335,10 +327,16 @@ static inline gint
 my_g_bit_nth_lsf_nomask (gsize mask)
 {
 	/* Mask is expected to be != 0 */
-#ifdef __i386__
+#if defined(__i386__)
 	int r;
 
 	__asm__("bsfl %1,%0\n\t"
+			: "=r" (r) : "rm" (mask));
+	return r;
+#elif defined(__x86_64)
+	guint64 r;
+
+	__asm__("bsfq %1,%0\n\t"
 			: "=r" (r) : "rm" (mask));
 	return r;
 #else
