@@ -3248,7 +3248,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	/* get this->prev */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
-	mono_mb_emit_byte (mb, CEE_LDIND_I );
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_stloc (mb, 0);
 
 	/* if prev != null */
@@ -3272,7 +3272,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	/* get this->target */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, target));
-	mono_mb_emit_byte (mb, CEE_LDIND_I );
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_stloc (mb, 0);
 
 	/* if target != null */
@@ -3401,9 +3401,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			 * Create a new signature to reflect this.
 			 */
 			callsig = signature_dup_add_this (mono_method_signature (method), method->klass);
-		}
-		else
+		} else {
 			callsig = mono_method_signature (method);
+		}
 	}
 
 	cache = method->klass->image->runtime_invoke_cache;
@@ -3634,7 +3634,7 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 1);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
-	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_stloc (mb, 0);
 
 	/* Check for the abort exception */
@@ -7196,7 +7196,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 		/* allocate local 0 (pointer) src_ptr */
 		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* allocate local 1 (pointer) dst_ptr */
-		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_add_local (mb, &klass->this_arg);
 		
 		/* initialize src_ptr to point to the start of object data */
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -7204,8 +7204,9 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 		/* initialize dst_ptr */
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_stloc (mb, 1);
 
 		emit_struct_conv (mb, klass, TRUE);
 	}
