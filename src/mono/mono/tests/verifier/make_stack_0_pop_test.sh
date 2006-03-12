@@ -1,0 +1,30 @@
+#! /bin/sh
+
+TEST_OP=$1
+
+TEST_OP_SHORT=`echo $TEST_OP | cut -d " " -f 1`
+TEST_FILE=`echo invalid_stack_0_${TEST_OP_SHORT} | sed -e "s/ /_/g" -e "s/\./_/g" -e "s/&/mp/g"`_generated.cil
+echo $TEST_FILE
+sed -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
+// invalid CIL which breaks the ECMA-335 rules. 
+// This CIL should fail verification by a conforming CLI verifier.
+
+.class Class extends [mscorlib]System.Object
+{
+    .field public int32 fld
+}
+
+.method public static int32 Main(int32 arg) cil managed
+{
+	.entrypoint
+	.maxstack 1
+	.locals init (
+	    int32 V_0
+	)
+	OPCODE // invalid, stack empty.
+	branch_target:
+	pop
+	ldc.i4.0
+	ret
+}
+//EOF
