@@ -4,14 +4,8 @@
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001-2006 Novell, Inc.
  *
- * Possible Optimizations:
- *     in mono_class_create, do not allocate the class right away,
- *     but wait until you know the size of the FieldMap, so that
- *     the class embeds directly the FieldMap after the vtable.
- *
- * 
  */
 #include <config.h>
 #include <glib.h>
@@ -47,6 +41,16 @@ static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedCl
 void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 
+/*
+ * mono_class_from_typeref:
+ * @image: a MonoImage
+ * @type_token: a TypeRef token
+ *
+ * Creates the MonoClass* structure representing the type defined by
+ * the typeref token valid inside @image.
+ * Returns: the MonoClass* representing the typeref token, NULL ifcould
+ * not be loaded.
+ */
 MonoClass *
 mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
@@ -352,6 +356,12 @@ mono_type_get_full_name (MonoClass *class)
 	return mono_type_get_name_full (mono_class_get_type (class), MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
 
+/**
+ * mono_type_get_name:
+ * @type: a type
+ *
+ * Returns: the string representation for type as it would be represented in IL code.
+ */
 char*
 mono_type_get_name (MonoType *type)
 {
@@ -373,6 +383,14 @@ mono_type_get_underlying_type (MonoType *type)
 	return type;
 }
 
+/*
+ * mono_class_is_open_constructed_type:
+ * @type: a type
+ *
+ * Returns TRUE if type represents a generics open constructed type
+ * (not all the type parameters required for the instantiation have
+ * been provided).
+ */
 gboolean
 mono_class_is_open_constructed_type (MonoType *t)
 {
@@ -530,6 +548,15 @@ mono_get_inflated_generic_class (MonoGenericClass *gclass)
 	return (MonoInflatedGenericClass *) gclass;
 }
 
+/*
+ * mono_class_inflate_generic_type:
+ * @type: a type
+ * @context: a generics context
+ *
+ * Instantiate the generic type @type, using the generics context @context.
+ *
+ * Returns: the instantiated type
+ */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
@@ -576,6 +603,15 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 	return res;
 }
 
+/*
+ * mono_class_inflate_generic_method:
+ * @method: a generic method
+ * @context: a generics context
+ *
+ * Instantiate the generic method @method using the generics context @context.
+ *
+ * Returns: the new instantiated method
+ */
 MonoMethod *
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
 {
@@ -659,6 +695,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
  * For performance reasons, mono_class_inflate_generic_method() does not actually instantiate the
  * method, it just "prepares" it for that.  If you really need to fully instantiate the method
  * (including its signature and header), call this method.
+ * FIXME: Martin? this description looks completely wrong.
  */
 MonoMethod *
 mono_get_inflated_method (MonoMethod *method)
@@ -726,7 +763,7 @@ mono_class_find_enum_basetype (MonoClass *class)
  * @class: The class to initialize
  *
  * Initializes the class->fields.
- * Assumes the loader lock is held.
+ * LOCKING: Assumes the loader lock is held.
  */
 static void
 mono_class_setup_fields (MonoClass *class)
@@ -896,7 +933,7 @@ mono_class_setup_fields (MonoClass *class)
  * mono_class_setup_fields_locking:
  * @class: The class to initialize
  *
- * Initializes the class->fields.
+ * Initializes the class->fields array of fields.
  * Aquires the loader lock.
  */
 static void
@@ -930,6 +967,17 @@ mono_class_has_references (MonoClass *klass)
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
 
 /*
+ * mono_class_layout_fields:
+ * @class: a class
+ *
+ * Compute the placement of fields inside an object or struct, according to
+ * the layout rules and set the following fields in @class:
+ *  - has_references (if the class contains instance references firled or structs that contain references)
+ *  - has_static_refs (same, but for static fields)
+ *  - instance_size (size of the object in memory)
+ *  - class_size (size needed for the static fields)
+ *  - size_inited (flag set when the instance_size is set)
+ *
  * LOCKING: this is supposed to be called with the loader lock held.
  */
 void
@@ -1140,10 +1188,13 @@ mono_class_layout_fields (MonoClass *class)
 
 /*
  * mono_class_setup_methods:
+ * @class: a class
  *
  *   Initializes the 'methods' array in the klass.
  * Calling this method should be avoided if possible since it allocates a lot 
  * of long-living MonoMethod structures.
+ * Methods belonging to an interface are assigned a sequential slot starting
+ * from 0.
  */
 void
 mono_class_setup_methods (MonoClass *class)
@@ -1236,6 +1287,9 @@ mono_class_setup_properties (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+/*
+ * LOCKING: assumes the loader lock is held.
+ */
 static void
 inflate_event (MonoClass *class, MonoEvent *event, MonoInflatedGenericClass *gclass)
 {
@@ -1263,10 +1317,22 @@ inflate_event (MonoClass *class, MonoEvent *event, MonoInflatedGenericClass *gcl
 	}
 
 	if (event->other) {
-		MonoMethod *inflated = mono_class_inflate_generic_method_full (
-			event->other, class, gclass->generic_class.context);
+		MonoMethod **om = event->other;
+		int count = 0;
+		while (*om) {
+			count++;
+			om++;
+		}
+		om = event->other;
+		event->other = g_new0 (MonoMethod*, count + 1);
+		count = 0;
+		while (*om) {
+			MonoMethod *inflated = mono_class_inflate_generic_method_full (
+				*om, class, gclass->generic_class.context);
 
-		event->other = mono_get_inflated_method (inflated);
+			event->other [count++] = mono_get_inflated_method (inflated);
+			om++;
+		}
 	}
 }
 
@@ -1343,13 +1409,15 @@ mono_class_setup_events (MonoClass *class)
 				int n = 0;
 
 				if (event->other == NULL) {
-					event->other = g_new0 (MonoMethod*, 1);
+					event->other = g_new0 (MonoMethod*, 2);
 				} else {
 					while (event->other [n])
 						n++;
-					event->other = g_realloc (event->other, (n + 1) * sizeof (MonoMethod*));
+					event->other = g_realloc (event->other, (n + 2) * sizeof (MonoMethod*));
 				}
 				event->other [n] = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				/* NULL terminated */
+				event->other [n + 1] = NULL;
 				break;
 			}
 			default:
@@ -2535,6 +2603,16 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 }
 
 /*
+ * mono_class_setup_supertypes:
+ * @class: a class
+ *
+ * Build the data structure needed to make fast type checks work.
+ * This currently sets two fields in @class:
+ *  - idepth: distance between @class and System.Object in the type
+ *    hierarchy + 1
+ *  - supertypes: array of classes: each element has a class in the hierarchy
+ *    starting from @class up to System.Object
+ * 
  * LOCKING: this assumes the loader lock is held
  */
 void
@@ -2627,8 +2705,12 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 }
 
 /**
- * @image: context where the image is created
+ * mono_class_create_from_typedef:
+ * @image: image where the token is valid
  * @type_token:  typedef token
+ *
+ * Create the MonoClass* representing the specified type token.
+ * @type_token must be a TypeDef token.
  */
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
