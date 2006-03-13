@@ -140,8 +140,9 @@ typedef enum {
 					 (glong)val <= (glong)((1<<15)-1))
 #define s390_is_uimm16(val) 		((glong)val >= 0 && (glong)val <= 65535)
 #define s390_is_uimm20(val) 		((glong)val >= 0 && (glong)val <= 1048575)
+#define s390_is_imm20(val) 		((glong)val >= -524288 && (glong)val <= 524287)
 #define s390_is_imm12(val)		((glong)val >= (glong)-(1<<11) && \
-					 (glong)val <= (glong)((1<<15)-1))
+					 (glong)val <= (glong)((1<<11)-1))
 #define s390_is_uimm12(val)		((glong)val >= 0 && (glong)val <= 4095)
 
 #define STK_BASE			s390_r15
