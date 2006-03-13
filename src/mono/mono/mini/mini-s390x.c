@@ -600,7 +600,7 @@ enum_parmtype:
 					printf("%p [%p] ",obj,curParm);
 					if (class == mono_defaults.string_class) {
 						printf("[STRING:%p:%s]", 
-						       *obj, mono_string_to_utf8 (obj));
+						       obj, mono_string_to_utf8 (obj));
 					} else if (class == mono_defaults.int32_class) { 
 						printf("[INT32:%p:%d]", 
 							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
@@ -682,7 +682,6 @@ enum_parmtype:
 
 /*========================= End of Function ========================*/
 
-static int lc = 0;
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- enter_method                                      */
@@ -706,12 +705,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	size_data sz;
 	void *curParm;
 
-
-lc++;
-if (lc > 500000) {
-fseek(stdout, 0L, SEEK_SET);
-lc = 0;
-}
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
 	printf ("ENTER: %s ", fname);
@@ -743,15 +736,15 @@ lc = 0;
 				printf ("this:[NULL], ");
 		} else {
 			if (obj) {
-//				class = obj->vtable->klass;
-//				if (class == mono_defaults.string_class) {
-//					printf ("this:[STRING:%p:%s], ", 
-//						obj, mono_string_to_utf8 ((MonoString *)obj));
-//				} else {
-//					printf ("this:%p[%s.%s], ", 
-//						obj, class->name_space, class->name);
-//				}
-printf("this:%p, ",obj);
+				class = obj->vtable->klass;
+				if (class == mono_defaults.string_class) {
+					printf ("this:[STRING:%p:%s], ", 
+						obj, mono_string_to_utf8 ((MonoString *)obj));
+				} else {
+					printf ("this:%p[%s.%s], ", 
+						obj, class->name_space, class->name);
+				}
+// printf("this:%p, ",obj);
 			} else 
 				printf ("this:NULL, ");
 		}
@@ -771,8 +764,10 @@ printf("this:%p, ",obj);
 				decodeParm(sig->params[i], sp+ainfo->offset, ainfo->size);
 				break;
 			case RegTypeStructByVal :
-				if (ainfo->reg != STK_BASE) 
-					curParm = &(rParm->gr[ainfo->reg-2]);
+				if (ainfo->reg != STK_BASE) {
+					int offset = sizeof(glong) - ainfo->size;
+					curParm = &(rParm->gr[ainfo->reg-2])+offset;
+				}
 				else
 					curParm = sp+ainfo->offset;
 
@@ -3891,7 +3886,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case CEE_CONV_R_UN: {
-			s390_cdfbr (code, ins->dreg, ins->sreg1);
+			s390_cdgbr (code, ins->dreg, ins->sreg1);
 			s390_ltgr  (code, ins->sreg1, ins->sreg1);
 			s390_jnl   (code, 12);
 			s390_basr  (code, s390_r13, 0);

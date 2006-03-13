@@ -477,7 +477,7 @@ not: dest:i src1:i len:12
 oparglist: src1:i len:28
 op_bigmul: len:2 dest:i src1:a src2:i
 op_bigmul_un: len:2 dest:i src1:a src2:i
-op_endfilter: src1:i len:12
+op_endfilter: src1:i len:28
 op_rethrow: src1:i len:26
 or: dest:i src1:i src2:i len:8
 or_imm: dest:i src1:i len:24
