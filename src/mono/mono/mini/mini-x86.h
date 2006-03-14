@@ -86,8 +86,9 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_USE_FPSTACK TRUE
 #define MONO_ARCH_FPSTACK_SIZE 6
 
-/* FIXME: Don't constrain byte regs to eax */
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc == ' ') || (desc == 'i')) ? -1 : ((desc == 's') ? X86_ECX : ((desc == 'a') ? X86_EAX : ((desc == 'd') ? X86_EDX : ((desc == 'y') ? X86_EAX : ((desc == 'l') ? X86_EAX : -1))))))
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc == ' ') || (desc == 'i')) ? -1 : ((desc == 's') ? X86_ECX : ((desc == 'a') ? X86_EAX : ((desc == 'd') ? X86_EDX : ((desc == 'l') ? X86_EAX : -1)))))
+
+#define MONO_ARCH_INST_FIXED_MASK(desc) ((desc == 'y') ? (X86_BYTE_REGS) : 0)
 
 /* RDX is clobbered by the opcode implementation before accessing sreg2 */
 #define MONO_ARCH_INST_SREG2_MASK(ins) (((ins [MONO_INST_CLOB] == 'a') || (ins [MONO_INST_CLOB] == 'd')) ? (1 << X86_EDX) : 0)
