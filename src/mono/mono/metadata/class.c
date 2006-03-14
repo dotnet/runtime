@@ -2774,6 +2774,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	mono_class_setup_parent (class, parent);
 
+	/* uses ->valuetype, which is initialized by mono_class_setup_parent above */
 	mono_class_setup_mono_type (class);
 
 	if (!class->enumtype) {
@@ -2873,9 +2874,11 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 	MonoClass *klass, *gklass;
 	int i;
 
-	if (gclass->is_initialized)
+	mono_loader_lock ();
+	if (gclass->is_initialized) {
+		mono_loader_unlock ();
 		return;
-	gclass->is_initialized = TRUE;
+	}
 
 	if (!gclass->klass)
 		gclass->klass = g_malloc0 (sizeof (MonoClass));
@@ -2883,7 +2886,16 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 
 	gklass = gclass->generic_class.container_class;
 
-	klass->nested_in = gklass->nested_in;
+	if (gklass->nested_in) {
+		/* 
+		 * FIXME: the nested type context should include everything the
+		 * nesting context should have, but it may also have additional
+		 * generic parameters...
+		 */
+		MonoType *inflated = mono_class_inflate_generic_type (
+			&gklass->nested_in->byval_arg, gclass->generic_class.context);
+		klass->nested_in = mono_class_from_mono_type (inflated);
+	}
 
 	klass->name = gklass->name;
 	klass->name_space = gklass->name_space;
@@ -2945,6 +2957,8 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 
 	if (MONO_CLASS_IS_INTERFACE (klass))
 		setup_interface_offsets (klass, 0);
+	gclass->is_initialized = TRUE;
+	mono_loader_unlock ();
 }
 
 MonoClass *
