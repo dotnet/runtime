@@ -3471,6 +3471,106 @@ void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 	}
 }
 
+static gboolean
+can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
+{
+	GSList *tmp;
+	if (accessing == accessed)
+		return TRUE;
+	if (!accessed || !accessing)
+		return FALSE;
+	for (tmp = accessed->friend_assembly_names; tmp; tmp = tmp->next) {
+		MonoAssemblyName *friend = tmp->data;
+		/* Be conservative with checks */
+		if (!friend->name)
+			continue;
+		if (strcmp (accessing->aname.name, friend->name))
+			continue;
+		if (friend->public_key_token [0]) {
+			if (!accessing->aname.public_key_token [0])
+				continue;
+			if (strcmp (friend->public_key_token, accessing->aname.public_key_token))
+				continue;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/* FIXME: check visibility of type, too */
+static gboolean
+can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_level)
+{
+	/* Partition I 8.5.3.2 */
+	/* the access level values are the same for fields and methods */
+	switch (access_level) {
+	case FIELD_ATTRIBUTE_COMPILER_CONTROLLED:
+		/* same compilation unit */
+		return access_klass->image == member_klass->image;
+	case FIELD_ATTRIBUTE_PRIVATE:
+		return access_klass == member_klass;
+	case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
+		if (mono_class_has_parent (access_klass, member_klass) &&
+				can_access_internals (access_klass->image->assembly, member_klass->image->assembly))
+			return TRUE;
+		return FALSE;
+	case FIELD_ATTRIBUTE_ASSEMBLY:
+		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
+	case FIELD_ATTRIBUTE_FAMILY:
+		if (mono_class_has_parent (access_klass, member_klass))
+			return TRUE;
+		return FALSE;
+	case FIELD_ATTRIBUTE_FAM_OR_ASSEM:
+		if (mono_class_has_parent (access_klass, member_klass))
+			return TRUE;
+		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
+	case FIELD_ATTRIBUTE_PUBLIC:
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+can_access_field (MonoMethod *method, MonoClassField *field)
+{
+	/* FIXME: check all overlapping fields */
+	int can = can_access_member (method->klass, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = method->klass->nested_in;
+		while (nested) {
+			can = can_access_member (nested, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
+	return can;
+}
+
+static gboolean
+can_access_method (MonoMethod *method, MonoMethod *called)
+{
+	int can = can_access_member (method->klass, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = method->klass->nested_in;
+		while (nested) {
+			can = can_access_member (nested, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
+	/* 
+	 * FIXME:
+	 * with generics calls to explicit interface implementations can be expressed
+	 * directly: the method is private, but we must allow it. This may be opening
+	 * a hole or the generics code should handle this differently.
+	 * Maybe just ensure the interface type is public.
+	 */
+	if ((called->flags & METHOD_ATTRIBUTE_VIRTUAL) && (called->flags & METHOD_ATTRIBUTE_FINAL))
+		return TRUE;
+	return can;
+}
 
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
@@ -3507,7 +3607,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
-	gboolean dont_verify_stloc;
+	gboolean dont_verify, dont_verify_stloc;
+
+	/* serialization and xdomain stuff may need access to private fields and methods */
+	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
+	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE;
+	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH;
 
 	/* still some type unsefety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -4169,6 +4274,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (!cmethod)
 					goto load_error;
+				if (!dont_verify && !can_access_method (method, cmethod))
+					goto unverified;
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
 					/* MS.NET seems to silently convert this to a callvirt */
@@ -5464,6 +5571,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
+			if (!dont_verify && !can_access_field (method, field))
+				goto unverified;
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
