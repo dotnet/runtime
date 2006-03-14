@@ -133,7 +133,9 @@ struct MonoEdge {
 };
 
 struct MonoSpillInfo {
+#ifndef MONO_ARCH_HAS_XP_REGALLOC
 	MonoSpillInfo *next;
+#endif
 	int offset;
 };
 
@@ -563,6 +565,7 @@ typedef struct {
 	MonoSpillInfo   *spill_info; /* machine register spills */
 	MonoSpillInfo   *spill_info_float; /* fp register spills */
 	gint             spill_count;
+	gint             spill_info_len, spill_info_float_len;
 	/* unsigned char   *cil_code; */
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
 	MonoInst        *domainvar; /* a cache for the current domain */
@@ -612,9 +615,13 @@ typedef struct {
 	guint32          exception_type;	/* MONO_EXCEPTION_* */
 	guint32          exception_data;
 	char*            exception_message;
-#ifdef __ia64
-	guint8           ins, locals, outs; /* reg stack region sizes */
-#endif /* __ia64 */
+
+	/* Fields used by the local reg allocator */
+	void*            reginfo;
+	void*            reginfof;
+	void*            reverse_inst_list;
+	int              reginfo_len, reginfof_len;
+	int              reverse_inst_list_len;
 } MonoCompile;
 
 typedef enum {

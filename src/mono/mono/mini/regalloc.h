@@ -40,6 +40,8 @@ typedef struct {
 
 	int max_ireg;
 	int ispills;
+
+	int iassign_size, fassign_size;
 } MonoRegState;
 
 #define mono_regstate_next_int(rs)   ((rs)->next_vireg++)
