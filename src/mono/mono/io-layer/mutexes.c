@@ -29,6 +29,7 @@ static gboolean mutex_is_owned (gpointer handle);
 static void namedmutex_signal (gpointer handle);
 static gboolean namedmutex_own (gpointer handle);
 static gboolean namedmutex_is_owned (gpointer handle);
+static void namedmutex_prewait (gpointer handle);
 
 struct _WapiHandleOps _wapi_mutex_ops = {
 	NULL,			/* close */
@@ -55,6 +56,8 @@ struct _WapiHandleOps _wapi_namedmutex_ops = {
 	namedmutex_signal,	/* signal */
 	namedmutex_own,		/* own */
 	namedmutex_is_owned,	/* is_owned */
+	NULL,			/* special_wait */
+	namedmutex_prewait	/* prewait */
 };
 
 static gboolean mutex_release (gpointer handle);
@@ -238,6 +241,113 @@ static gboolean namedmutex_is_owned (gpointer handle)
 #endif
 
 		return(FALSE);
+	}
+}
+
+/* The shared state is not locked when prewait methods are called */
+static void namedmutex_prewait (gpointer handle)
+{
+	/* If the mutex is not currently owned, do nothing and let the
+	 * usual wait carry on.  If it is owned, check that the owner
+	 * is still alive; if it isn't we override the previous owner
+	 * and assume that process exited abnormally and failed to
+	 * clean up.
+	 */
+	struct _WapiHandle_namedmutex *namedmutex_handle;
+	gboolean ok;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDMUTEX,
+				  (gpointer *)&namedmutex_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up named mutex handle %p",
+			   __func__, handle);
+		return;
+	}
+	
+#ifdef DEBUG
+	g_message ("%s: Checking ownership of named mutex handle %p", __func__,
+		   handle);
+#endif
+
+	if (namedmutex_handle->recursion == 0) {
+#ifdef DEBUG
+		g_message ("%s: Named mutex handle %p not owned", __func__,
+			   handle);
+#endif
+	} else if (namedmutex_handle->pid == _wapi_getpid ()) {
+#ifdef DEBUG
+		g_message ("%s: Named mutex handle %p owned by this process",
+			   __func__, handle);
+#endif
+	} else {
+		guint32 *pids = g_new0 (guint32, 32);
+		guint32 count = 32, needed_bytes, i;
+		gboolean ret;
+		int thr_ret;
+		
+#ifdef DEBUG
+		g_message ("%s: Named mutex handle %p owned by another process", __func__, handle);
+#endif
+		
+		ret = EnumProcesses (pids, count * sizeof(guint32),
+				     &needed_bytes);
+		if (ret == FALSE) {
+			do {
+				count = needed_bytes / sizeof(guint32);
+#ifdef DEBUG
+				g_message ("%s: Retrying pid lookup with %d slots", __func__, count);
+#endif
+				pids = g_renew (guint32, pids, count);
+				ret = EnumProcesses (pids, needed_bytes,
+						     &needed_bytes);
+			} while (ret == FALSE);
+		}
+
+		count = needed_bytes / sizeof(guint32);
+
+#ifdef DEBUG
+		g_message ("%s: Need to look at %d pids for named mutex handle %p", __func__, count, handle);
+#endif
+
+		thr_ret = _wapi_handle_lock_shared_handles ();
+		g_assert (thr_ret == 0);
+
+		for (i = 0; i < count; i++) {
+#ifdef DEBUG
+			g_message ("%s: Checking pid %d for named mutex handle %p", __func__, pids[i], handle);
+#endif
+
+			if (pids[i] == namedmutex_handle->pid) {
+				/* Must be still alive, because
+				 * EnumProcesses() checks for us
+				 */
+#ifdef DEBUG
+				g_message ("%s: Found active pid %d for named mutex handle %p", __func__, pids[i], handle);
+#endif
+
+				break;
+			}
+		}
+		
+		g_free (pids);
+
+		if (i == count) {
+			/* Didn't find the process that this handle
+			 * was owned by, overriding it
+			 */
+
+#ifdef DEBUG
+			g_message ("%s: overriding old owner of named mutex handle %p", __func__, handle);
+#endif
+
+			namedmutex_handle->pid = 0;
+			namedmutex_handle->tid = 0;
+			namedmutex_handle->recursion = 0;
+
+			_wapi_shared_handle_set_signal_state (handle, TRUE);
+		}
+
+		_wapi_handle_unlock_shared_handles ();
 	}
 }
 

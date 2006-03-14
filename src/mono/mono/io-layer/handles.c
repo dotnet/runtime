@@ -1096,6 +1096,23 @@ guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout)
 	}
 }
 
+void _wapi_handle_ops_prewait (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT (handle);
+	WapiHandleType type;
+	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return;
+	}
+	
+	type = _WAPI_PRIVATE_HANDLES (idx).type;
+	
+	if (handle_ops[type] != NULL &&
+	    handle_ops[type]->prewait != NULL) {
+		handle_ops[type]->prewait (handle);
+	}
+}
+
 
 /**
  * CloseHandle:

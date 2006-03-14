@@ -104,6 +104,8 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		return(WAIT_FAILED);
 	}
 
+	_wapi_handle_ops_prewait (handle);
+	
 	if (_wapi_handle_test_capabilities (handle, WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
 #ifdef DEBUG
 		g_message ("%s: handle %p has special wait", __func__, handle);
@@ -169,6 +171,8 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
+		_wapi_handle_ops_prewait (handle);
+
 		if (own_if_signalled (handle)) {
 #ifdef DEBUG
 			g_message ("%s: handle %p signalled", __func__,
@@ -294,6 +298,8 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		return(WAIT_FAILED);
 	}
 
+	_wapi_handle_ops_prewait (wait);
+	
 	if (_wapi_handle_test_capabilities (wait, WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
 		g_warning ("%s: handle %p has special wait, implement me!!",
 			   __func__, wait);
@@ -346,6 +352,8 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	do {
 		/* Check before waiting on the condition, just in case
 		 */
+		_wapi_handle_ops_prewait (wait);
+	
 		if (own_if_signalled (wait)) {
 #ifdef DEBUG
 			g_message ("%s: handle %p signalled", __func__, wait);
@@ -541,6 +549,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		}
 
 		g_hash_table_insert (dups, handles[i], handles[i]);
+		_wapi_handle_ops_prewait (handles[i]);
 	}
 	g_hash_table_destroy (dups);
 
@@ -581,10 +590,12 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	}
 	
 	while(1) {
-		/* Prod all special-wait handles that aren't already
-		 * signalled
+		/* Prod all handles with prewait methods and
+		 * special-wait handles that aren't already signalled
 		 */
 		for (i = 0; i < numobjects; i++) {
+			_wapi_handle_ops_prewait (handles[i]);
+		
 			if (_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE && _wapi_handle_issignalled (handles[i]) == FALSE) {
 				_wapi_handle_ops_special_wait (handles[i], 0);
 			}

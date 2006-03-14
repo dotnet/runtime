@@ -98,6 +98,12 @@ struct _WapiHandleOps
 	 * Returns the WaitForSingleObject return code.
 	 */
 	guint32 (*special_wait)(gpointer handle, guint32 timeout);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects,
+	 * if the handle in question needs some preprocessing before the
+	 * signal wait.
+	 */
+	void (*prewait)(gpointer handle);
 };
 
 #include <mono/io-layer/event-private.h>

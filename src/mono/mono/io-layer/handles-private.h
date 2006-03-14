@@ -67,6 +67,7 @@ extern gboolean _wapi_handle_ops_own (gpointer handle);
 extern gboolean _wapi_handle_ops_isowned (gpointer handle);
 extern guint32 _wapi_handle_ops_special_wait (gpointer handle,
 					      guint32 timeout);
+extern void _wapi_handle_ops_prewait (gpointer handle);
 
 extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      gpointer *handles,
@@ -251,6 +252,7 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 static inline int _wapi_handle_trylock_handle (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
+	int ret;
 	
 #ifdef DEBUG
 	g_message ("%s: locking handle %p", __func__, handle);
@@ -266,7 +268,12 @@ static inline int _wapi_handle_trylock_handle (gpointer handle)
 		return(0);
 	}
 
-	return(mono_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
+	ret = mono_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	if (ret != 0) {
+		_wapi_handle_unref (handle);
+	}
+	
+	return(ret);
 }
 
 static inline int _wapi_handle_unlock_handle (gpointer handle)
