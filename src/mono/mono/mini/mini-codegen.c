@@ -828,7 +828,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		local_copy_prop (cfg, ins);*/
 
 	if (cfg->reginfo && cfg->reginfo_len < rs->next_vireg) {
-		g_free (cfg->reginfo);
 		cfg->reginfo = NULL;
 	}
 	reginfo = cfg->reginfo;
@@ -840,7 +839,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		g_assert (cfg->reginfo_len >= rs->next_vireg);
 
 	if (cfg->reginfof && cfg->reginfof_len < rs->next_vfreg) {
-		g_free (cfg->reginfof);
 		cfg->reginfof = NULL;
 	}
 	reginfof = cfg->reginfof;
@@ -862,7 +860,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 
 	if (cfg->reverse_inst_list && (cfg->reverse_inst_list_len < ins_count)) {
-		g_free (cfg->reverse_inst_list);
 		cfg->reverse_inst_list = NULL;
 	}
 
