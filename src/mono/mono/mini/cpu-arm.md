@@ -530,25 +530,6 @@ float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 op_endfilter: src1:i len:16
 aot_const: dest:i len:8
-x86_test_null: src1:i len:4
-x86_compare_membase_reg: src1:b src2:i len:8
-x86_compare_membase_imm: src1:b len:8
-x86_compare_reg_membase: src1:i src2:b len:8
-x86_inc_reg: dest:i src1:i clob:1 len:1
-x86_inc_membase: src1:b len:6
-x86_dec_reg: dest:i src1:i clob:1 len:1
-x86_dec_membase: src1:b len:6
-x86_add_membase_imm: src1:b len:8
-x86_sub_membase_imm: src1:b len:8
-x86_push: src1:i len:1
-x86_push_imm: len:5
-x86_push_membase: src1:b len:6
-x86_push_obj: src1:b len:30
-x86_lea: dest:i src1:i src2:i len:7
-x86_xchg: src1:i src2:i clob:x len:1
-x86_fpop: src1:f len:2
-x86_fp_load_i8: dest:f src1:b len:7
-x86_fp_load_i4: dest:f src1:b len:7
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
