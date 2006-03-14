@@ -15,6 +15,7 @@ struct _MonoAssembly {
 	MonoAssemblyName aname;
 	GModule *aot_module;
 	MonoImage *image;
+	GSList *friend_assembly_names;
 	guint8 in_gac;
 	guint8 dynamic;
 	guint8 corlib_internal;

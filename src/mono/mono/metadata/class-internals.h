@@ -678,6 +678,7 @@ typedef struct {
 	MonoClass *iremotingtypeinfo_class;
 	MonoClass *runtimesecurityframe_class;
 	MonoClass *executioncontext_class;
+	MonoClass *internals_visible_class;
 	MonoClass *generic_array_class;
 	MonoClass *generic_nullable_class;
 } MonoDefaults;

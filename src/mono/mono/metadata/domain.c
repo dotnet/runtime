@@ -774,6 +774,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.executioncontext_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Threading", "ExecutionContext");
 
+	mono_defaults.internals_visible_class = mono_class_from_name (
+	        mono_defaults.corlib, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute");
+
 	/*
 	 * Note that mono_defaults.generic_*_class is only non-NULL if we're
 	 * using the 2.0 corlib.

@@ -28,6 +28,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/metadata/reflection.h>
 
 #ifndef PLATFORM_WIN32
 #include <sys/types.h>
@@ -1262,6 +1263,47 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	return ass;
 }
 
+/*
+ * load_friend_assemblies:
+ * @ass: an assembly
+ *
+ * Load the list of friend assemblies that are allowed to access
+ * the assembly's internal types and members. They are stored as assembly
+ * names in custom attributes.
+ */
+static void
+load_friend_assemblies (MonoAssembly* ass)
+{
+	int i;
+	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly (ass);
+	if (!attrs)
+		return;
+	for (i = 0; i < attrs->num_attrs; ++i) {
+		MonoCustomAttrEntry *attr = &attrs->attrs [i];
+		MonoAssemblyName *aname;
+		const guchar *data;
+		guint slen;
+		/* Do some sanity checking */
+		if (!attr->ctor || attr->ctor->klass != mono_defaults.internals_visible_class)
+			continue;
+		if (attr->data_size < 4)
+			continue;
+		data = attr->data;
+		/* 0xFF means null string, see custom attr format */
+		if (data [0] != 1 || data [1] != 0 || data [2] == 0xFF)
+			continue;
+		slen = mono_metadata_decode_value (data + 2, &data);
+		aname = g_new0 (MonoAssemblyName, 1);
+		/*g_print ("friend ass: %s\n", data);*/
+		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL)) {
+			ass->friend_assembly_names = g_slist_prepend (ass->friend_assembly_names, aname);
+		} else {
+			g_free (aname);
+		}
+	}
+	mono_custom_attrs_free (attrs);
+}
+
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
@@ -1377,6 +1419,8 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	}
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	if (mono_defaults.internals_visible_class)
+		load_friend_assemblies (ass);
 	mono_assemblies_unlock ();
 
 	mono_assembly_invoke_load_hook (ass);
@@ -2122,6 +2166,7 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
+	GSList *tmp;
 	g_return_if_fail (assembly != NULL);
 
 	if (InterlockedDecrement (&assembly->ref_count))
@@ -2136,6 +2181,12 @@ mono_assembly_close (MonoAssembly *assembly)
 
 	mono_image_close (assembly->image);
 
+	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
+		MonoAssemblyName *fname = tmp->data;
+		mono_assembly_name_free (fname);
+		g_free (fname);
+	}
+	g_slist_free (assembly->friend_assembly_names);
 	g_free (assembly->basedir);
 	if (!assembly->dynamic)
 		g_free (assembly);
