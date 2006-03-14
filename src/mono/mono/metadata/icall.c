@@ -4455,28 +4455,25 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		if (abuilder->modules) {
 			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
 				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-				if (res == NULL)
-					res = mb->types;
-				else {
-					MonoArray *append = mb->types;
-					if (mono_array_length (append) > 0) {
-						guint32 len1, len2;
-						MonoArray *new;
-						len1 = mono_array_length (res);
-						len2 = mono_array_length (append);
-						new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+				MonoArray *append = mb->types;
+				if (append && mono_array_length (append) > 0) {
+					guint32 len1, len2;
+					MonoArray *new;
+					len1 = res ? mono_array_length (res) : 0;
+					len2 = mono_array_length (append);
+					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+					if (res)
 						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
-							mono_array_addr (res, MonoReflectionType*, 0),
-							len1 * sizeof (MonoReflectionType*));
-						memcpy (mono_array_addr (new, MonoReflectionType*, len1),
+								mono_array_addr (res, MonoReflectionType*, 0),
+								len1 * sizeof (MonoReflectionType*));
+					memcpy (mono_array_addr (new, MonoReflectionType*, len1),
 							mono_array_addr (append, MonoReflectionType*, 0),
 							len2 * sizeof (MonoReflectionType*));
-						res = new;
-					}
+					res = new;
 				}
 			}
 
-			/* 
+			/*
 			 * Replace TypeBuilders with the created types to be compatible
 			 * with MS.NET.
 			 */
@@ -4492,27 +4489,27 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		if (abuilder->loaded_modules)
 			for (i = 0; i < mono_array_length(abuilder->loaded_modules); i++) {
 				MonoReflectionModule *rm = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-				if (res == NULL)
-					res = mono_module_get_types (domain, rm->image, exportedOnly);
-				else {
-					MonoArray *append = mono_module_get_types (domain, rm->image, exportedOnly);
-					if (mono_array_length (append) > 0) {
-						guint32 len1, len2;
-						MonoArray *new;
-						len1 = mono_array_length (res);
-						len2 = mono_array_length (append);
-						new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+				MonoArray *append = mono_module_get_types (domain, rm->image, exportedOnly);
+				if (append && mono_array_length (append) > 0) {
+					guint32 len1, len2;
+					MonoArray *new;
+					len1 = res ? mono_array_length (res) : 0;
+					len2 = mono_array_length (append);
+					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+					if (res)
 						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
-							mono_array_addr (res, MonoReflectionType*, 0),
-							len1 * sizeof (MonoReflectionType*));
-						memcpy (mono_array_addr (new, MonoReflectionType*, len1),
+								mono_array_addr (res, MonoReflectionType*, 0),
+								len1 * sizeof (MonoReflectionType*));
+					memcpy (mono_array_addr (new, MonoReflectionType*, len1),
 							mono_array_addr (append, MonoReflectionType*, 0),
 							len2 * sizeof (MonoReflectionType*));
-						res = new;
-					}
+					res = new;
 				}
 			}
-		return res;
+		if (res)
+			return res;
+		else
+			return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	}
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
