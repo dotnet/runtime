@@ -394,6 +394,8 @@ typedef_flags (guint32 flags)
 		strcat (buffer, "serializable ");
 	if (flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
 		strcat (buffer, "beforefieldinit ");
+	if (flags & TYPE_ATTRIBUTE_FORWARDER)
+		strcat (buffer, "forwarder ");
 
 	return buffer;
 }
@@ -1371,7 +1373,8 @@ dis_data (MonoImage *m)
 	MonoTableInfo *ft = &m->tables [MONO_TABLE_FIELD];
 	int i, b;
 	const char *rva, *sig;
-	guint32 align, size;
+	guint32 size;
+	gint align;
 	guint32 cols [MONO_FIELD_RVA_SIZE];
 	MonoType *type;
 
