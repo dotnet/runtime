@@ -30,7 +30,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 48
+#define MONO_CORLIB_VERSION 49
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -481,7 +481,8 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	if (!setup->application_base) {
 		/* Inherit from the root domain since MS.NET does this */
 		MonoDomain *root = mono_get_root_domain ();
-		setup->application_base = mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base));
+		if (root->setup->application_base)
+			setup->application_base = mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base));
 	}
 
 	mono_context_init (data);

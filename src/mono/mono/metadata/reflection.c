@@ -3161,6 +3161,44 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	}
 }
 
+static void
+mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly)
+{
+	MonoDynamicTable *table;
+	MonoClass *klass;
+	guint32 *values;
+	guint32 scope, idx;
+	int i;
+
+	table = &assembly->tables [MONO_TABLE_EXPORTEDTYPE];
+
+	if (assemblyb->type_forwarders) {
+		for (i = 0; i < mono_array_length (assemblyb->type_forwarders); ++i) {
+			MonoReflectionType *t = mono_array_get (assemblyb->type_forwarders, MonoReflectionType*, i);
+			if (!t)
+				continue;
+
+			g_assert (t->type);
+
+			klass = mono_class_from_mono_type (t->type);
+
+			scope = resolution_scope_from_image (assembly, klass->image);
+			g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
+			idx = scope >> MONO_RESOLTION_SCOPE_BITS;
+
+			table->rows++;
+			alloc_table (table, table->rows);
+			values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
+
+			values [MONO_EXP_TYPE_FLAGS] = TYPE_ATTRIBUTE_FORWARDER;
+			values [MONO_EXP_TYPE_TYPEDEF] = 0;
+			values [MONO_EXP_TYPE_IMPLEMENTATION] = (idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
+			values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
+			values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+		}
+	}
+}
+
 #define align_pointer(base,p)\
 	do {\
 		guint32 __diff = (unsigned char*)(p)-(unsigned char*)(base);\
@@ -3847,6 +3885,8 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 			mono_image_fill_export_table_from_module (domain, file_module, module_index, assembly);
 		}
 	}
+	if (assemblyb->type_forwarders)
+		mono_image_fill_export_table_from_type_forwarders (assemblyb, assembly);
 
 	/* Emit MANIFESTRESOURCE table */
 	module_index = 0;
@@ -9367,6 +9407,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	g_assert (res != (MonoReflectionType*)tb);
+
 	return res;
 }
 

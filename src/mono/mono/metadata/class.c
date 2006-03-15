@@ -772,7 +772,8 @@ mono_class_setup_fields (MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
-	int i, blittable = TRUE, real_size = 0;
+	int i, blittable = TRUE;
+	guint32 real_size = 0;
 	guint32 packing_size = 0;
 	gboolean explicit_size;
 	MonoClassField *field;
@@ -879,7 +880,9 @@ mono_class_setup_fields (MonoClass *class)
 			if (mono_field_is_deleted (field))
 				continue;
 			if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
-				mono_metadata_field_info (m, idx, &field->offset, NULL, NULL);
+				guint32 offset;
+				mono_metadata_field_info (m, idx, &offset, NULL, NULL);
+				field->offset = offset;
 				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 					g_warning ("%s not initialized correctly (missing field layout info for %s)",
 						   class->name, field->name);
@@ -3508,12 +3511,6 @@ mono_class_get_event_token (MonoEvent *event)
 	return 0;
 }
 
-void *
-mono_vtable_get_static_field_data (MonoVTable *vt)
-{
-	return vt->data;
-}
-
 MonoProperty*
 mono_class_get_property_from_name (MonoClass *klass, const char *name)
 {
@@ -3870,6 +3867,17 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 			if (nested)
 				return return_nested_in (class, nested);
 			return class;
+		} else if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF) {
+			MonoAssembly **references = image->references;
+			if (!references [idx - 1])
+				mono_assembly_load_reference (image, idx - 1);
+			g_assert (references == image->references);
+			g_assert (references [idx - 1]);
+			if (references [idx - 1] == (gpointer)-1)
+				return NULL;			
+			else
+				/* FIXME: Cycle detection */
+				return mono_class_from_name (references [idx - 1]->image, name_space, name);
 		} else {
 			g_error ("not yet implemented");
 		}

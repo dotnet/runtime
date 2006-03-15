@@ -32,6 +32,7 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
+#include "mono/metadata/mono-debug-debugger.h"
 #include <mono/os/gc_wrapper.h>
 #include <mono/utils/strenc.h>
 
@@ -1484,6 +1485,13 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	
 	dest = (char*)vt->data + field->offset;
 	set_value (field->type, dest, value, FALSE);
+}
+
+/* Used by the debugger */
+void *
+mono_vtable_get_static_field_data (MonoVTable *vt)
+{
+	return vt->data;
 }
 
 /**

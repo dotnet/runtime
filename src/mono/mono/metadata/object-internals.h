@@ -795,6 +795,7 @@ typedef struct {
 	gint32 pe_kind;
 	gint32 machine;
 	MonoBoolean corlib_internal;
+	MonoArray *type_forwarders;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
