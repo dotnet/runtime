@@ -2626,9 +2626,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-		case OP_X86_TEST_NULL:
-			ppc_cmpi (code, 0, 0, ins->sreg1, 0);
-			break;
 		case CEE_BREAK:
 			ppc_break (code);
 			break;
@@ -3300,14 +3297,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
 			break;
 		}
-		case OP_X86_FP_LOAD_I8:
-			g_assert_not_reached ();
-			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);*/
-			break;
-		case OP_X86_FP_LOAD_I4:
-			g_assert_not_reached ();
-			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);*/
-			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
