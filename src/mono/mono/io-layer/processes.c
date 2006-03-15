@@ -41,7 +41,8 @@ struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
-	process_wait			/* special_wait */
+	process_wait,			/* special_wait */
+	NULL				/* prewait */	
 };
 
 static mono_once_t process_current_once=MONO_ONCE_INIT;

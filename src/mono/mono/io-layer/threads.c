@@ -48,6 +48,8 @@ struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
+	NULL,				/* special_wait */
+	NULL				/* prewait */
 };
 
 static mono_once_t thread_ops_once=MONO_ONCE_INIT;

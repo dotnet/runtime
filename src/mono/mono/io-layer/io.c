@@ -60,6 +60,8 @@ struct _WapiHandleOps _wapi_file_ops = {
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 void _wapi_file_details (gpointer handle_info)
@@ -94,6 +96,8 @@ struct _WapiHandleOps _wapi_console_ops = {
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 void _wapi_console_details (gpointer handle_info)
@@ -108,6 +112,8 @@ struct _WapiHandleOps _wapi_find_ops = {
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 static void pipe_close (gpointer handle, gpointer data);
@@ -125,6 +131,8 @@ struct _WapiHandleOps _wapi_pipe_ops = {
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 void _wapi_pipe_details (gpointer handle_info)

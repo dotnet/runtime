@@ -47,6 +47,8 @@ struct _WapiHandleOps _wapi_socket_ops = {
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 static mono_once_t socket_ops_once=MONO_ONCE_INIT;

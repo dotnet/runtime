@@ -34,6 +34,8 @@ struct _WapiHandleOps _wapi_event_ops = {
 	event_signal,		/* signal */
 	event_own,		/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 struct _WapiHandleOps _wapi_namedevent_ops = {

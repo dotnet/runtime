@@ -36,6 +36,8 @@ struct _WapiHandleOps _wapi_mutex_ops = {
 	mutex_signal,		/* signal */
 	mutex_own,		/* own */
 	mutex_is_owned,		/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 void _wapi_mutex_details (gpointer handle_info)

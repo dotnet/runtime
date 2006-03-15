@@ -37,6 +37,8 @@ struct _WapiHandleOps _wapi_sem_ops = {
 	sema_signal,		/* signal */
 	sema_own,		/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 void _wapi_sem_details (gpointer handle_info)
@@ -51,6 +53,8 @@ struct _WapiHandleOps _wapi_namedsem_ops = {
 	namedsema_signal,	/* signal */
 	namedsema_own,		/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL			/* prewait */
 };
 
 static gboolean sem_release (gpointer handle, gint32 count, gint32 *prev);
