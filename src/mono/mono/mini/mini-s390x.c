@@ -280,7 +280,6 @@ typedef struct {
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-static guint8 * emit_memcpy (guint8 *, int, int, int, int, int);
 static void indent (int);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
 static void decodeParm (MonoType *, void *, int);
@@ -744,7 +743,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 					printf ("this:%p[%s.%s], ", 
 						obj, class->name_space, class->name);
 				}
-// printf("this:%p, ",obj);
 			} else 
 				printf ("this:NULL, ");
 		}
@@ -1093,7 +1091,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 
 	/*----------------------------------------------------------*/
-	/* no s390-specific optimizations yet 			    */
+	/* No s390-specific optimizations yet 			    */
 	/*----------------------------------------------------------*/
 	*exclude_mask = MONO_OPT_INLINE|MONO_OPT_LINEARS;
 //	*exclude_mask = MONO_OPT_INLINE;
@@ -2662,10 +2660,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-		case OP_X86_TEST_NULL: {
-			s390_ltgr (code, ins->sreg1, ins->sreg1);
-		}
-			break;
 		case CEE_BREAK: {
 			s390_basr  (code, s390_r13, 0);
 			s390_j	   (code, 6);
@@ -4183,7 +4177,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %ld)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
-//			g_assert_not_reached ();
+			g_assert_not_reached ();
 		}
 	       
 		cpos += max_len;

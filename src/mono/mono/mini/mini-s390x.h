@@ -121,7 +121,7 @@
 
 #define S390_LONG(loc, opy, op, r, ix, br, off)					\
 	if (has_ld) {								\
-		if (s390_is_uimm20(off)) {					\
+		if (s390_is_imm20(off)) {					\
 			s390_##opy (loc, r, ix, br, off);			\
 		} else {							\
 			s390_basr (code, s390_r13, 0);				\
