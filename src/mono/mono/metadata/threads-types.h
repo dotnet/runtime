@@ -115,4 +115,6 @@ void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *);
 
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 
+void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

@@ -2579,6 +2579,70 @@ mono_get_special_static_data (guint32 offset)
 	}
 }
 
+static MonoClassField *local_slots = NULL;
+
+typedef struct {
+	/* local tls data to get locals_slot from a thread */
+	guint32 offset;
+	int idx;
+	/* index in the locals_slot array */
+	int slot;
+} LocalSlotID;
+
+static void
+clear_local_slot (gpointer key, gpointer value, gpointer user_data)
+{
+	LocalSlotID *sid = user_data;
+	MonoThread *thread = (MonoThread*)value;
+	MonoArray *slots_array;
+	/*
+	 * the static field is stored at: ((char*) thread->static_data [idx]) + (offset & 0xffffff);
+	 * it is for the right domain, so we need to check if it is allocated an initialized
+	 * for the current thread.
+	 */
+	/*g_print ("handling thread %p\n", thread);*/
+	if (!thread->static_data || !thread->static_data [sid->idx])
+		return;
+	slots_array = *(MonoArray **)(((char*) thread->static_data [sid->idx]) + (sid->offset & 0xffffff));
+	if (!slots_array || sid->slot >= mono_array_length (slots_array))
+		return;
+	mono_array_set (slots_array, MonoObject*, sid->slot, NULL);
+}
+
+void
+mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
+{
+	MonoDomain *domain;
+	LocalSlotID sid;
+	sid.slot = slot;
+	if (thread_local) {
+		void *addr = NULL;
+		if (!local_slots) {
+			local_slots = mono_class_get_field_from_name (mono_defaults.thread_class, "local_slots");
+			if (!local_slots) {
+				g_warning ("local_slots field not found in Thread class");
+				return;
+			}
+		}
+		domain = mono_domain_get ();
+		mono_domain_lock (domain);
+		if (domain->special_static_fields)
+			addr = g_hash_table_lookup (domain->special_static_fields, local_slots);
+		mono_domain_unlock (domain);
+		if (!addr)
+			return;
+		/*g_print ("freeing slot %d at %p\n", slot, addr);*/
+		sid.offset = GPOINTER_TO_UINT (addr);
+		sid.offset &= 0x7fffffff;
+		sid.idx = (sid.offset >> 24) - 1;
+		mono_threads_lock ();
+		mono_g_hash_table_foreach (threads, clear_local_slot, &sid);
+		mono_threads_unlock ();
+	} else {
+		/* FIXME: clear the slot for MonoAppContexts, too */
+	}
+}
+
 static void gc_stop_world (gpointer key, gpointer value, gpointer user)
 {
 	MonoThread *thread=(MonoThread *)value;

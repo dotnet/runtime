@@ -7015,6 +7015,7 @@ static const IcallEntry thread_icalls [] = {
 	{"Abort_internal(object)", ves_icall_System_Threading_Thread_Abort},
 	{"ClrState", ves_icall_System_Threading_Thread_ClrState},
 	{"CurrentThread_internal", mono_thread_current},
+	{"FreeLocalSlotValues", mono_thread_free_local_slot_values},
 	{"GetCachedCurrentCulture", ves_icall_System_Threading_Thread_GetCachedCurrentCulture},
 	{"GetCachedCurrentUICulture", ves_icall_System_Threading_Thread_GetCachedCurrentUICulture},
 	{"GetDomainID", ves_icall_System_Threading_Thread_GetDomainID},
