@@ -10,7 +10,9 @@
 
 #include <math.h>
 
-static void*
+#include "jit-icalls.h"
+
+void*
 mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
@@ -26,7 +28,7 @@ mono_ldftn (MonoMethod *method)
  * Same as mono_ldftn, but do not add a synchronized wrapper. Used in the
  * synchronized wrappers to avoid infinite recursion.
  */
-static void*
+void*
 mono_ldftn_nosync (MonoMethod *method)
 {
 	gpointer addr;
@@ -38,7 +40,7 @@ mono_ldftn_nosync (MonoMethod *method)
 	return mono_create_ftnptr (mono_domain_get (), addr);
 }
 
-static void*
+void*
 mono_ldvirtfn (MonoObject *obj, MonoMethod *method) 
 {
 	MONO_ARCH_SAVE_REGS;
@@ -51,7 +53,7 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 	return mono_ldftn (method);
 }
 
-static void
+void
 helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -65,7 +67,7 @@ helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 	mono_array_set (array, gpointer, index, val);
 }
 
-static void
+void
 helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -76,14 +78,14 @@ helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 
-static gint64 
+gint64 
 mono_llmult (gint64 a, gint64 b)
 {
 	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return a * b;
 }
 
-static guint64  
+guint64  
 mono_llmult_ovf_un (guint64 a, guint64 b)
 {
 	guint32 al = a;
@@ -115,7 +117,7 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	return 0;
 }
 
-static guint64  
+guint64  
 mono_llmult_ovf (gint64 a, gint64 b) 
 {
 	guint32 al = a;
@@ -228,7 +230,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 
-static gint32
+gint32
 mono_idiv (gint32 a, gint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -242,7 +244,7 @@ mono_idiv (gint32 a, gint32 b)
 	return a / b;
 }
 
-static guint32
+guint32
 mono_idiv_un (guint32 a, guint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -254,7 +256,7 @@ mono_idiv_un (guint32 a, guint32 b)
 	return a / b;
 }
 
-static gint32
+gint32
 mono_irem (gint32 a, gint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -269,7 +271,7 @@ mono_irem (gint32 a, gint32 b)
 	return a % b;
 }
 
-static guint32
+guint32
 mono_irem_un (guint32 a, guint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -285,7 +287,7 @@ mono_irem_un (guint32 a, guint32 b)
 
 #ifdef MONO_ARCH_EMULATE_MUL_DIV
 
-static gint32
+gint32
 mono_imul (gint32 a, gint32 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -293,7 +295,7 @@ mono_imul (gint32 a, gint32 b)
 	return a * b;
 }
 
-static gint32
+gint32
 mono_imul_ovf (gint32 a, gint32 b)
 {
 	gint64 res;
@@ -308,7 +310,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 	return res;
 }
 
-static gint32
+gint32
 mono_imul_ovf_un (guint32 a, guint32 b)
 {
 	guint64 res;
@@ -323,7 +325,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 	return res;
 }
 
-static double
+double
 mono_fdiv (double a, double b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -332,7 +334,7 @@ mono_fdiv (double a, double b)
 }
 #endif
 
-static gint64 
+gint64 
 mono_lldiv (gint64 a, gint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -346,7 +348,7 @@ mono_lldiv (gint64 a, gint64 b)
 	return a / b;
 }
 
-static gint64 
+gint64 
 mono_llrem (gint64 a, gint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -360,7 +362,7 @@ mono_llrem (gint64 a, gint64 b)
 	return a % b;
 }
 
-static guint64 
+guint64 
 mono_lldiv_un (guint64 a, guint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -372,7 +374,7 @@ mono_lldiv_un (guint64 a, guint64 b)
 	return a / b;
 }
 
-static guint64 
+guint64 
 mono_llrem_un (guint64 a, guint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -388,7 +390,7 @@ mono_llrem_un (guint64 a, guint64 b)
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 
-static guint64 
+guint64 
 mono_lshl (guint64 a, gint32 shamt)
 {
 	guint64 res;
@@ -401,7 +403,7 @@ mono_lshl (guint64 a, gint32 shamt)
 	return res;
 }
 
-static guint64 
+guint64 
 mono_lshr_un (guint64 a, gint32 shamt)
 {
 	guint64 res;
@@ -414,7 +416,7 @@ mono_lshr_un (guint64 a, gint32 shamt)
 	return res;
 }
 
-static gint64 
+gint64 
 mono_lshr (gint64 a, gint32 shamt)
 {
 	gint64 res;
@@ -435,7 +437,7 @@ mono_lshr (gint64 a, gint32 shamt)
  *
  * Returns: the address of an array element.
  */
-static gpointer 
+gpointer 
 ves_array_element_address (MonoArray *this, ...)
 {
 	MonoClass *class;
@@ -474,7 +476,7 @@ ves_array_element_address (MonoArray *this, ...)
 	return ea;
 }
 
-static MonoArray *
+MonoArray *
 mono_array_new_va (MonoMethod *cm, ...)
 {
 	MonoDomain *domain = mono_domain_get ();
@@ -515,7 +517,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
 }
 
-static gpointer
+gpointer
 mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 {
 	MonoVTable *vtable;
@@ -541,7 +543,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	return addr;
 }
 
-static gpointer
+gpointer
 mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 {
 	MonoClass *handle_class;
@@ -554,14 +556,14 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 	return res;
 }
 
-static guint64
+guint64
 mono_fconv_u8 (double v)
 {
 	return (guint64)v;
 }
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
-static gint64
+gint64
 mono_fconv_i8 (double v)
 {
 	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
@@ -569,7 +571,7 @@ mono_fconv_i8 (double v)
 }
 #endif
 
-static guint32
+guint32
 mono_fconv_u4 (double v)
 {
 	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
@@ -587,7 +589,7 @@ extern long double aintl (long double);
 #endif
 #endif /* HAVE_TRUNC */
 
-static gint64
+gint64
 mono_fconv_ovf_i8 (double v)
 {
 	gint64 res;
@@ -602,7 +604,7 @@ mono_fconv_ovf_i8 (double v)
 	return res;
 }
 
-static guint64
+guint64
 mono_fconv_ovf_u8 (double v)
 {
 	guint64 res;
@@ -618,7 +620,7 @@ mono_fconv_ovf_u8 (double v)
 }
 
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
-static double
+double
 mono_lconv_to_r8 (gint64 a)
 {
 	return (double)a;
@@ -626,7 +628,7 @@ mono_lconv_to_r8 (gint64 a)
 #endif
 
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R4
-static float
+float
 mono_lconv_to_r4 (gint64 a)
 {
 	return (float)a;
@@ -634,7 +636,7 @@ mono_lconv_to_r4 (gint64 a)
 #endif
 
 #ifdef MONO_ARCH_EMULATE_CONV_R8_UN
-static double
+double
 mono_conv_to_r8_un (guint32 a)
 {
 	return (double)a;
@@ -642,14 +644,14 @@ mono_conv_to_r8_un (guint32 a)
 #endif
 
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8_UN
-static double
+double
 mono_lconv_to_r8_un (guint64 a)
 {
 	return (double)a;
 }
 #endif
 
-static gpointer
+gpointer
 helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context)
 {
 	MonoMethod *vmethod, *inflated;
@@ -675,7 +677,7 @@ helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericC
 	return addr;
 }
 
-static MonoString*
+MonoString*
 helper_ldstr (MonoImage *image, guint32 idx)
 {
 	return mono_ldstr (mono_domain_get (), image, idx);

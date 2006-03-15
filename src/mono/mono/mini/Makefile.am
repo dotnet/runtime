@@ -173,6 +173,8 @@ ia64_sources = \
 common_sources = \
 	mini.c		\
 	mini.h		\
+	jit-icalls.h \
+	jit-icalls.c \
 	trace.c		\
 	trace.h		\
 	mini-ops.h	\
@@ -431,7 +433,7 @@ BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript ldscript.mono \
+EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(test_sources) $(test_sources2) \
 	inssel-long.brg inssel-long32.brg \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \

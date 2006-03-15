@@ -60,7 +60,7 @@
 #include "inssel.h"
 #include "trace.h"
 
-#include "jit-icalls.c"
+#include "jit-icalls.h"
 
 #include "aliasing.h"
 
