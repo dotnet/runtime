@@ -11,6 +11,8 @@
 #include "inssel.h"
 #include "aliasing.h"
 
+#define SPILL_COST_INCREMENT (1 << (bb->nesting << 1))
+
 //#define DEBUG_LIVENESS
 
 #if SIZEOF_VOID_P == 8
@@ -116,7 +118,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 				if (!mono_bitset_test_fast (bb->kill_set, idx))
 					mono_bitset_set_fast (bb->gen_set, idx);
 				if (inst->ssa_op == MONO_SSA_LOAD)
-					vi->spill_costs += 1 + (bb->nesting * 2);
+					vi->spill_costs += SPILL_COST_INCREMENT;
 				
 				affected_variable = affected_variable->next;
 			}
@@ -138,7 +140,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 				update_live_range (cfg, idx, bb->dfn, inst_num); 
 				mono_bitset_set_fast (bb->kill_set, idx);
 				if (inst->ssa_op == MONO_SSA_STORE)
-					vi->spill_costs += 1 + (bb->nesting * 2);
+					vi->spill_costs += SPILL_COST_INCREMENT;
 				
 				affected_variable = affected_variable->next;
 			}
