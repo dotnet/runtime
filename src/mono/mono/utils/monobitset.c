@@ -297,7 +297,7 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 	if ((mask == 0) || (nth_bit == BITS_PER_CHUNK))
 		return -1;
 
-#if defined(__i386__)
+#if defined(__i386__) && defined(__GNUC__)
  {
 	 int r;
 	 /* This depends on mask != 0 */
@@ -305,7 +305,7 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 			 : "=r" (r) : "g" (mask)); 
 	 return nth_bit + r;
  }
-#elif defined(__x86_64)
+#elif defined(__x86_64) && defined(__GNUC__)
  {
 	guint64 r;
 
@@ -327,13 +327,13 @@ static inline gint
 my_g_bit_nth_lsf_nomask (gsize mask)
 {
 	/* Mask is expected to be != 0 */
-#if defined(__i386__)
+#if defined(__i386__) && defined(__GNUC__)
 	int r;
 
 	__asm__("bsfl %1,%0\n\t"
 			: "=r" (r) : "rm" (mask));
 	return r;
-#elif defined(__x86_64)
+#elif defined(__x86_64) && defined(__GNUC__)
 	guint64 r;
 
 	__asm__("bsfq %1,%0\n\t"
@@ -421,7 +421,7 @@ mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 	} else {
 		j = pos / BITS_PER_CHUNK;
 		bit = pos % BITS_PER_CHUNK;
-		g_return_val_if_fail (pos < set->size, -1);
+		g_assert (pos < set->size);
 	}
 	/*g_print ("find first from %d (j: %d, bit: %d)\n", pos, j, bit);*/
 
