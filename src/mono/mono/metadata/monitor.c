@@ -55,6 +55,9 @@ struct _MonoThreadsSync
 {
 	gsize owner;			/* thread ID */
 	guint32 nest;
+#ifdef HAVE_MOVING_COLLECTOR
+	gint32 hash_code;
+#endif
 	volatile guint32 entry_count;
 	HANDLE entry_sem;
 	GSList *wait_list;
@@ -164,6 +167,96 @@ mon_new (gsize id)
 	return new;
 }
 
+/*
+ * Format of the lock word:
+ * thinhash | fathash | data
+ *
+ * thinhash is the lower bit: if set data is the shifted hashcode of the object.
+ * fathash is another bit: if set the hash code is stored in the MonoThreadsSync
+ *   struct pointed to by data
+ * if neither bit is set and data is non-NULL, data is a MonoThreadsSync
+ */
+typedef union {
+	gsize lock_word;
+	MonoThreadsSync *sync;
+} LockWord;
+
+enum {
+	LOCK_WORD_THIN_HASH = 1,
+	LOCK_WORD_FAT_HASH = 1 << 1,
+	LOCK_WORD_BITS_MASK = 0x3,
+	LOCK_WORD_HASH_SHIFT = 2
+};
+
+#define MONO_OBJECT_ALIGNMENT_SHIFT	3
+
+/*
+ * mono_object_hash:
+ * @obj: an object
+ *
+ * Calculate a hash code for @obj that is constant while @obj is alive.
+ */
+int
+mono_object_hash (MonoObject* obj)
+{
+#ifdef HAVE_MOVING_COLLECTOR
+	LockWord lw;
+	unsigned int hash;
+	if (!obj)
+		return 0;
+	lw.sync = obj->synchronisation;
+	if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+		/*g_print ("fast thin hash %d for obj %p store\n", (unsigned int)lw.lock_word >> LOCK_WORD_HASH_SHIFT, obj);*/
+		return (unsigned int)lw.lock_word >> LOCK_WORD_HASH_SHIFT;
+	}
+	if (lw.lock_word & LOCK_WORD_FAT_HASH) {
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		/*g_print ("fast fat hash %d for obj %p store\n", lw.sync->hash_code, obj);*/
+		return lw.sync->hash_code;
+	}
+	/*
+	 * while we are inside this function, the GC will keep this object pinned,
+	 * since we are in the unamanged stack. Thanks to this and to the hash
+	 * function that depends only on the address, we can ignore the races if
+	 * another thread computes the hash at the same time, because it'll end up
+	 * with the same value.
+	 */
+	hash = (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+	/* clear the top bits as they can be discarded */
+	hash &= ~(LOCK_WORD_BITS_MASK << 30);
+	/* no hash flags were set, so it must be a MonoThreadsSync pointer if not NULL */
+	if (lw.sync) {
+		lw.sync->hash_code = hash;
+		/*g_print ("storing hash code %d for obj %p in sync %p\n", hash, obj, lw.sync);*/
+		lw.lock_word |= LOCK_WORD_FAT_HASH;
+		/* this is safe since we don't deflate locks */
+		obj->synchronisation = lw.sync;
+	} else {
+		/*g_print ("storing thin hash code %d for obj %p\n", hash, obj);*/
+		lw.lock_word = LOCK_WORD_THIN_HASH | (hash << LOCK_WORD_HASH_SHIFT);
+		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, NULL) == NULL)
+			return hash;
+		/*g_print ("failed store\n");*/
+		/* someone set the hash flag or someone inflated the object */
+		lw.sync = obj->synchronisation;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH)
+			return hash;
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		lw.sync->hash_code = hash;
+		lw.lock_word |= LOCK_WORD_FAT_HASH;
+		/* this is safe since we don't deflate locks */
+		obj->synchronisation = lw.sync;
+	}
+	return hash;
+#else
+/*
+ * Wang's address-based hash function:
+ *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
+ */
+	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+#endif
+}
+
 /* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
  * is requested. In this case it returns -1.
  */ 
@@ -193,11 +286,76 @@ retry:
 			/* Successfully locked */
 			return 1;
 		} else {
+#ifdef HAVE_MOVING_COLLECTOR
+			LockWord lw;
+			lw.sync = obj->synchronisation;
+			if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+				MonoThreadsSync *oldlw = lw.sync;
+				/* move the already calculated hash */
+				mon->hash_code = lw.lock_word >> LOCK_WORD_HASH_SHIFT;
+				lw.sync = mon;
+				lw.lock_word |= LOCK_WORD_FAT_HASH;
+				if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, oldlw) == oldlw) {
+					mono_gc_weak_link_add (&mon->data, obj);
+					mono_monitor_allocator_unlock ();
+					/* Successfully locked */
+					return 1;
+				} else {
+					mon_finalize (mon);
+					mono_monitor_allocator_unlock ();
+					goto retry;
+				}
+			} else if (lw.lock_word & LOCK_WORD_FAT_HASH) {
+				mon_finalize (mon);
+				mono_monitor_allocator_unlock ();
+				/* get the old lock without the fat hash bit */
+				lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+				mon = lw.sync;
+			} else {
+				mon_finalize (mon);
+				mono_monitor_allocator_unlock ();
+				mon = obj->synchronisation;
+			}
+#else
 			mon_finalize (mon);
 			mono_monitor_allocator_unlock ();
-			goto retry;
+			mon = obj->synchronisation;
+#endif
 		}
+	} else {
+#ifdef HAVE_MOVING_COLLECTOR
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+			MonoThreadsSync *oldlw = lw.sync;
+			mono_monitor_allocator_lock ();
+			mon = mon_new (id);
+			/* move the already calculated hash */
+			mon->hash_code = lw.lock_word >> LOCK_WORD_HASH_SHIFT;
+			lw.sync = mon;
+			lw.lock_word |= LOCK_WORD_FAT_HASH;
+			if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, oldlw) == oldlw) {
+				mono_gc_weak_link_add (&mon->data, obj);
+				mono_monitor_allocator_unlock ();
+				/* Successfully locked */
+				return 1;
+			} else {
+				mon_finalize (mon);
+				mono_monitor_allocator_unlock ();
+				goto retry;
+			}
+		}
+#endif
 	}
+
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 
 	/* If the object is currently locked by this thread... */
 	if (mon->owner == id) {
@@ -339,6 +497,16 @@ mono_monitor_exit (MonoObject *obj)
 
 	mon = obj->synchronisation;
 
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH)
+			return;
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		/* No one ever used Enter. Just ignore the Exit request as MS does */
 		return;
@@ -403,6 +571,16 @@ ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 		  ": Testing if %p is owned by thread %d", obj, GetCurrentThreadId()));
 
 	mon = obj->synchronisation;
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH)
+			return FALSE;
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		return FALSE;
 	}
@@ -423,6 +601,16 @@ ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj)
 		  ": (%d) Testing if %p is owned by any thread", GetCurrentThreadId (), obj));
 	
 	mon = obj->synchronisation;
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH)
+			return FALSE;
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		return FALSE;
 	}
@@ -448,6 +636,18 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 		GetCurrentThreadId (), obj));
 	
 	mon = obj->synchronisation;
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			return;
+		}
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
@@ -479,6 +679,18 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 		  GetCurrentThreadId (), obj));
 
 	mon = obj->synchronisation;
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			return;
+		}
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
@@ -517,6 +729,18 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		  GetCurrentThreadId (), obj, ms));
 	
 	mon = obj->synchronisation;
+#ifdef HAVE_MOVING_COLLECTOR
+	{
+		LockWord lw;
+		lw.sync = mon;
+		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
+			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			return FALSE;
+		}
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		mon = lw.sync;
+	}
+#endif
 	if (mon == NULL) {
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return FALSE;

@@ -780,7 +780,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	klass = mono_object_class (this);
 
 	if (mono_class_num_fields (klass) == 0)
-		return ves_icall_System_Object_GetHashCode (this);
+		return mono_object_hash (this);
 
 	/*
 	 * Compute the starting value of the hashcode for fields of primitive
@@ -6782,7 +6782,7 @@ static const IcallEntry socketex_icalls [] = {
 
 static const IcallEntry object_icalls [] = {
 	{"GetType", ves_icall_System_Object_GetType},
-	{"InternalGetHashCode", ves_icall_System_Object_GetHashCode},
+	{"InternalGetHashCode", mono_object_hash},
 	{"MemberwiseClone", ves_icall_System_Object_MemberwiseClone},
 	{"obj_address", ves_icall_System_Object_obj_address}
 };

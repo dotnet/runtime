@@ -70,6 +70,10 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 		gpointer *__p = (gpointer *) mono_array_addr ((array), gpointer, (index));	\
 		*__p = (value);	\
 	} while (0)
+#define mono_array_memcpy_refs(dest,destidx,src,srcidx,count)	\
+	do {	\
+		memcpy (mono_array_addr ((dest), gpointer, (destidx)), mono_array_addr ((src), gpointer, (srcidx)), (count) * sizeof (gpointer));	\
+	} while (0)
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
@@ -141,6 +145,9 @@ mono_string_equal           (MonoString *s1, MonoString *s2);
 
 guint
 mono_string_hash            (MonoString *s);
+
+int
+mono_object_hash            (MonoObject* obj);
 
 MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, gpointer val);
