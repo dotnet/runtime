@@ -67,7 +67,7 @@
 
 #endif /* _MSC_VER */
 
-#if HAVE_VISIBILITY_HIDDEN
+#if !defined(_MSC_VER) && HAVE_VISIBILITY_HIDDEN
 #define MONO_INTERNAL __attribute__ ((visibility ("hidden")))
 #else
 #define MONO_INTERNAL 
