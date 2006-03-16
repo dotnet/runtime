@@ -239,7 +239,6 @@ typedef struct {
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-static guint8 * emit_memcpy (guint8 *, int, int, int, int, int);
 static void indent (int);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *, gint);
 static void decodeParm (MonoType *, void *, int);
@@ -336,56 +335,6 @@ mono_arch_fregname (int reg) {
 		return rnames [reg];
 	else
 		return "unknown";
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- emit_memcpy                                       */
-/*                                                                  */
-/* Function	- Emit code to move from memory-to-memory based on  */
-/*		  the size of the variable. r0 is overwritten.      */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-static guint8 *
-emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
-{
-	switch (size) {
-		case 4 :
-			s390_l  (code, s390_r0, 0, sreg, soffset);
-			s390_st (code, s390_r0, 0, dreg, doffset);
-			break;
-
-		case 3 : 
-			s390_icm  (code, s390_r0, 14, sreg, soffset);
-			s390_stcm (code, s390_r0, 14, dreg, doffset);
-			break;
-
-		case 2 : 
-			s390_lh  (code, s390_r0, 0, sreg, soffset);
-			s390_sth (code, s390_r0, 0, dreg, doffset);
-			break;
-
-		case 1 : 
-			s390_ic  (code, s390_r0, 0, sreg, soffset);
-		 	s390_stc (code, s390_r0, 0, dreg, doffset);
-			break;
-	
-		default : 
-			while (size > 0) {
-				int len;
-
-				if (size > 256) 
-					len = 256;
-				else
-					len = size;
-				s390_mvc (code, len, dreg, doffset, sreg, soffset);
-				size -= len;
-			}
-	}
-	return code;
 }
 
 /*========================= End of Function ========================*/
@@ -2733,10 +2682,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					s390_c 	  (code, ins->sreg1, 0, s390_r13, 4);
 			}
-		}
-			break;
-		case OP_X86_TEST_NULL: {
-			s390_ltr (code, ins->sreg1, ins->sreg1);
 		}
 			break;
 		case CEE_BREAK: {
