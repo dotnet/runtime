@@ -682,9 +682,9 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this)
 	if (this->serialized_culture_info) {
 		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_culture_info_len);
 		memcpy (mono_array_addr (res, guint8, 0), this->serialized_culture_info, this->serialized_culture_info_len);
-	}
-	else
+	} else {
 		res = NULL;
+	}
 	mono_monitor_exit (this->synch_lock);
 
 	return res;
@@ -758,9 +758,9 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture (MonoThread *thi
 	if (this->serialized_ui_culture_info) {
 		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_ui_culture_info_len);
 		memcpy (mono_array_addr (res, guint8, 0), this->serialized_ui_culture_info, this->serialized_ui_culture_info_len);
-	}
-	else
+	} else {
 		res = NULL;
+	}
 	mono_monitor_exit (this->synch_lock);
 
 	return res;

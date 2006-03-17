@@ -2951,6 +2951,41 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	return res;
 }
 
+/*
+ * mono_value_copy:
+ * @dest: destination pointer
+ * @src: source pointer
+ * @klass: a valuetype class
+ *
+ * Copy a valuetype from @src to @dest. This function must be used
+ * when @klass contains references fields.
+ */
+void
+mono_value_copy (gpointer dest, gpointer src, MonoClass *klass)
+{
+	int size = mono_class_value_size (klass, NULL);
+	memcpy (dest, src, size);
+}
+
+/*
+ * mono_value_copy_array:
+ * @dest: destination array
+ * @dest_idx: index in the @dest array
+ * @src: source pointer
+ * @count: number of items
+ *
+ * Copy @count valuetype items from @src to @dest. This function must be used
+ * when @klass contains references fields.
+ * Overlap is handled.
+ */
+void
+mono_value_copy_array (MonoArray *dest, int dest_idx, gpointer src, int count)
+{
+	int size = mono_array_element_size (dest->obj.vtable->klass);
+	char *d = mono_array_addr_with_size (dest, size, dest_idx);
+	memmove (d, src, size * count);
+}
+
 /**
  * mono_object_get_domain:
  * @obj: object to query

@@ -224,7 +224,7 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("length"));
 
 	arr = mono_array_new (domain, mono_defaults.byte_class, length);
-	memcpy (mono_array_addr (arr, guint8*, 0), value + sindex, length);
+	memcpy (mono_array_addr (arr, guint8, 0), value + sindex, length);
 
 	/* Find the System.Text.Encoding class */
 	for (klass = enc->vtable->klass; klass->parent->parent != NULL; klass = klass->parent)

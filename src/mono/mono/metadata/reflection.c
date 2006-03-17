@@ -4497,6 +4497,7 @@ resource_tree_create (MonoArray *win32_resources)
 
 		/* Create node */
 
+		/* FIXME: BUG: this stores managed references in unmanaged memory */
 		lang_node = g_new0 (ResTreeNode, 1);
 		lang_node->id = win32_res->lang_id;
 		lang_node->win32_res = win32_res;
@@ -5808,7 +5809,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	ret->max_stack = header->max_stack;
 	ret->local_var_sig_token = local_var_sig_token;
 	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
-	memcpy (mono_array_addr (ret->il, guint8*, 0), header->code, header->code_size);
+	memcpy (mono_array_addr (ret->il, guint8, 0), header->code, header->code_size);
 
 	/* Locals */
 	ret->locals = mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals);

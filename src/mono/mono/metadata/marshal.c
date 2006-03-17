@@ -7611,7 +7611,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *s
 	g_assert (start_index + length <= mono_array_length (src));
 
 	element_size = mono_array_element_size (src->obj.vtable->klass);
-	  
+
+	/* no references should be involved */
 	source_addr = mono_array_addr_with_size (src, element_size, start_index);
 
 	memcpy (dest, source_addr, length * element_size);
@@ -7636,6 +7637,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 
 	element_size = mono_array_element_size (dest->obj.vtable->klass);
 	  
+	/* no references should be involved */
 	dest_addr = mono_array_addr_with_size (dest, element_size, start_index);
 
 	memcpy (dest_addr, src, length * element_size);

@@ -578,10 +578,6 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 		(source_idx + length > mono_array_length (source)))
 		return FALSE;
 
-	element_size = mono_array_element_size (source->obj.vtable->klass);
-	dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
-	source_addr = mono_array_addr_with_size (source, element_size, source_idx);
-
 	src_class = source->obj.vtable->klass->element_class;
 	dest_class = dest->obj.vtable->klass->element_class;
 
@@ -591,6 +587,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 
 	/* Case1: object[] -> valuetype[] (ArrayList::ToArray) */
 	if (src_class == mono_defaults.object_class && dest_class->valuetype) {
+		int has_refs = dest_class->has_references;
 		for (i = source_idx; i < source_idx + length; ++i) {
 			MonoObject *elem = mono_array_get (source, MonoObject*, i);
 			if (elem && !mono_object_isinst (elem, dest_class))
@@ -598,11 +595,14 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 		}
 
 		element_size = mono_array_element_size (dest->obj.vtable->klass);
+		memset (mono_array_addr_with_size (dest, element_size, dest_idx), 0, element_size * length);
 		for (i = 0; i < length; ++i) {
 			MonoObject *elem = mono_array_get (source, MonoObject*, source_idx + i);
 			void *addr = mono_array_addr_with_size (dest, element_size, dest_idx + i);
 			if (!elem)
-				memset (addr, 0, element_size);
+				continue;
+			if (has_refs)
+				mono_value_copy (addr, (char *)elem + sizeof (MonoObject), dest_class);
 			else
 				memcpy (addr, (char *)elem + sizeof (MonoObject), element_size);
 		}
@@ -627,7 +627,18 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 			return FALSE;
 	}
 
-	memmove (dest_addr, source_addr, element_size * length);
+	if (dest_class->valuetype) {
+		element_size = mono_array_element_size (source->obj.vtable->klass);
+		source_addr = mono_array_addr_with_size (source, element_size, source_idx);
+		if (dest_class->has_references) {
+			mono_value_copy_array (dest, dest_idx, source_addr, length);
+		} else {
+			dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
+			memmove (dest_addr, source_addr, element_size * length);
+		}
+	} else {
+		mono_array_memcpy_refs (dest, dest_idx, source, source_idx, length);
+	}
 
 	return TRUE;
 }
@@ -814,11 +825,13 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	}
 
 	if (values) {
+		int i;
 		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
-		memcpy (mono_array_addr (*fields, MonoObject*, 0), values, count * sizeof (MonoObject*));
-	}
-	else
+		for (i = 0; i < count; ++i)
+			mono_array_setref (*fields, i, values [i]);
+	} else {
 		*fields = NULL;
+	}
 	return result;
 }
 
@@ -889,13 +902,14 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 	}
 
 	if (values) {
+		int i;
 		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
-		memcpy (mono_array_addr (*fields, MonoObject*, 0), values, count * sizeof (MonoObject*));
-
+		for (i = 0; i < count; ++i)
+			mono_array_setref (*fields, i, values [i]);
 		return FALSE;
-	}
-	else
+	} else {
 		return TRUE;
+	}
 }
 
 static MonoReflectionType *
@@ -4463,12 +4477,8 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 					len2 = mono_array_length (append);
 					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
 					if (res)
-						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
-								mono_array_addr (res, MonoReflectionType*, 0),
-								len1 * sizeof (MonoReflectionType*));
-					memcpy (mono_array_addr (new, MonoReflectionType*, len1),
-							mono_array_addr (append, MonoReflectionType*, 0),
-							len2 * sizeof (MonoReflectionType*));
+						mono_array_memcpy_refs (new, 0, res, 0, len1);
+					mono_array_memcpy_refs (new, len1, append, 0, len2);
 					res = new;
 				}
 			}
@@ -4497,12 +4507,8 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 					len2 = mono_array_length (append);
 					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
 					if (res)
-						memcpy (mono_array_addr (new, MonoReflectionType*, 0),
-								mono_array_addr (res, MonoReflectionType*, 0),
-								len1 * sizeof (MonoReflectionType*));
-					memcpy (mono_array_addr (new, MonoReflectionType*, len1),
-							mono_array_addr (append, MonoReflectionType*, 0),
-							len2 * sizeof (MonoReflectionType*));
+						mono_array_memcpy_refs (new, 0, res, 0, len1);
+					mono_array_memcpy_refs (new, len1, append, 0, len2);
 					res = new;
 				}
 			}
@@ -4529,12 +4535,8 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 					len1 = mono_array_length (res);
 					len2 = mono_array_length (res2);
 					res3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
-					memcpy (mono_array_addr (res3, MonoReflectionType*, 0),
-							mono_array_addr (res, MonoReflectionType*, 0),
-							len1 * sizeof (MonoReflectionType*));
-					memcpy (mono_array_addr (res3, MonoReflectionType*, len1),
-							mono_array_addr (res2, MonoReflectionType*, 0),
-							len2 * sizeof (MonoReflectionType*));
+					mono_array_memcpy_refs (res3, 0, res, 0, len1);
+					mono_array_memcpy_refs (res3, len1, res2, 0, len2);
 					res = res3;
 				}
 			}
