@@ -1625,35 +1625,6 @@
 				RelativePath="mono\os\gc_wrapper.h"
 				>
 			</File>
-			<File
-				RelativePath="mono\os\win32\util.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="mono\os\util.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="mini"

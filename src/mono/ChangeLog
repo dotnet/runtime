@@ -1,3 +1,7 @@
+2006-03-17  Zoltan Varga  <vargaz@gmail.com>
+
+	* libmono.vcproj: Remove os/win32/util.h.
+
 2006-03-09  Vladimir Krasnov  <vladimirk@mainsoft.com>
 
 	* Added data/net_1_1/DefaultWsdlHelpGenerator.jvm.aspx
