@@ -161,6 +161,20 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 #endif
 }
 
+typedef struct {
+	void *ip;
+	MonoMethod *method;
+} FindTrampUserData;
+
+static void
+find_tramp (gpointer key, gpointer value, gpointer user_data)
+{
+	FindTrampUserData *ud = (FindTrampUserData*)user_data;
+
+	if (value == ud->ip)
+		ud->method = (MonoMethod*)key;
+}
+
 /* debug function */
 G_GNUC_UNUSED static char*
 get_method_from_ip (void *ip)
@@ -170,10 +184,23 @@ get_method_from_ip (void *ip)
 	char *source;
 	char *res;
 	MonoDomain *domain = mono_domain_get ();
+	FindTrampUserData user_data;
 	
 	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji) {
-		return NULL;
+		user_data.ip = ip;
+		user_data.method = NULL;
+		mono_domain_lock (domain);
+		g_hash_table_foreach (domain->jit_trampoline_hash, find_tramp, &user_data);
+		mono_domain_unlock (domain);
+		if (user_data.method) {
+			char *mname = mono_method_full_name (user_data.method, TRUE);
+			res = g_strdup_printf ("<%p - JIT trampoline for %s>", ip, mname);
+			g_free (mname);
+			return res;
+		}
+		else
+			return NULL;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
 	source = mono_debug_source_location_from_address (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), NULL, domain);
@@ -200,10 +227,22 @@ mono_print_method_from_ip (void *ip)
 	char *method;
 	char *source;
 	MonoDomain *domain = mono_domain_get ();
+	FindTrampUserData user_data;
 	
 	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji) {
-		g_print ("No method at %p\n", ip);
+		user_data.ip = ip;
+		user_data.method = NULL;
+		mono_domain_lock (domain);
+		g_hash_table_foreach (domain->jit_trampoline_hash, find_tramp, &user_data);
+		mono_domain_unlock (domain);
+		if (user_data.method) {
+			char *mname = mono_method_full_name (user_data.method, TRUE);
+			printf ("IP %p is a JIT trampoline for %s\n", ip, mname);
+			g_free (mname);
+		}
+		else
+			g_print ("No method at %p\n", ip);
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
@@ -3482,7 +3521,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		if (friend->public_key_token [0]) {
 			if (!accessing->aname.public_key_token [0])
 				continue;
-			if (strcmp (friend->public_key_token, accessing->aname.public_key_token))
+			if (strcmp ((char*)friend->public_key_token, (char*)accessing->aname.public_key_token))
 				continue;
 		}
 		return TRUE;
