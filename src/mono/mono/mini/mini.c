@@ -10832,7 +10832,12 @@ mini_init (const char *filename)
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
 
-	/* we used to do this only when running on valgrind,
+	/*
+	 * Handle the case when we are called from a thread different from the main thread,
+	 * confusing libgc.
+	 * FIXME: Move this to libgc where it belongs.
+	 *
+	 * we used to do this only when running on valgrind,
 	 * but it happens also in other setups.
 	 */
 #if defined(HAVE_BOEHM_GC)
@@ -10844,7 +10849,14 @@ mini_init (const char *filename)
 		pthread_getattr_np (pthread_self (), &attr);
 		pthread_attr_getstack (&attr, &sstart, &size);
 		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
+#ifdef __ia64__
+		/*
+		 * The calculation above doesn't seem to work on ia64, also we need to set
+		 * GC_register_stackbottom as well, but don't know how.
+		 */
+#else
 		GC_stackbottom = (char*)sstart + size;
+#endif
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 		GC_stackbottom = (char*)pthread_get_stackaddr_np (pthread_self ());
