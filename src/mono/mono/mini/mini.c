@@ -193,8 +193,8 @@ mono_pmip (void *ip)
 }
 
 /* debug function */
-G_GNUC_UNUSED static void
-print_method_from_ip (void *ip)
+void
+mono_print_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
 	char *method;
@@ -216,12 +216,6 @@ print_method_from_ip (void *ip)
 
 	g_free (source);
 	g_free (method);
-}
-
-G_GNUC_UNUSED void
-mono_print_method_from_ip (void *ip)
-{
-	print_method_from_ip (ip);
 }
 	
 /* 

@@ -267,6 +267,27 @@ static void indent (int diff) {
 		indent_level += diff;
 }
 
+static char *
+string_to_utf8 (MonoString *s)
+{
+	char *as;
+	GError *error = NULL;
+
+	g_assert (s);
+
+	if (!s->length)
+		return g_strdup ("");
+
+	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, NULL, &error);
+	if (error) {
+		/* Happens with StringBuilders */
+		g_error_free (error);
+		return g_strdup ("<INVALID UTF8>");
+	}
+	else
+		return as;
+}
+
 void
 mono_trace_enter_method (MonoMethod *method, char *ebp)
 {
@@ -316,7 +337,11 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 				class = o->vtable->klass;
 
 				if (class == mono_defaults.string_class) {
-					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+					MonoString *s = (MonoString*)o;
+					char *as = string_to_utf8 (s);
+
+					printf ("this:[STRING:%p:%s], ", o, as);
+					g_free (as);
 				} else {
 					printf ("this:%p[%s.%s %s], ", o, class->name_space, class->name, o->vtable->domain->friendly_name);
 				}
@@ -356,8 +381,13 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		case MONO_TYPE_STRING: {
 			MonoString *s = *((MonoString **)cpos);
 			if (s) {
+				char *as;
+
 				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
+				as = string_to_utf8 (s);
+
+				printf ("[STRING:%p:%s], ", s, as);
+				g_free (as);
 			} else 
 				printf ("[STRING:null], ");
 			break;
@@ -369,7 +399,10 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 				class = o->vtable->klass;
 		    
 				if (class == mono_defaults.string_class) {
-					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
+					char *as = string_to_utf8 ((MonoString*)o);
+
+					printf ("[STRING:%p:%s], ", o, as);
+					g_free (as);
 				} else if (class == mono_defaults.int32_class) {
 					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
 				} else
@@ -458,8 +491,12 @@ handle_enum:
 		MonoString *s = va_arg (ap, MonoString *);
 ;
 		if (s) {
+			char *as;
+
 			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
+			as = string_to_utf8 (s);
+			printf ("[STRING:%p:%s]", s, as);
+			g_free (as);
 		} else 
 			printf ("[STRING:null], ");
 		break;
