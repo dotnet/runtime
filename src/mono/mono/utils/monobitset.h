@@ -57,6 +57,8 @@ int         mono_bitset_find_first   (const MonoBitSet *set, gint pos);
 
 int         mono_bitset_find_last    (const MonoBitSet *set, gint pos);
 
+int         mono_bitset_find_first_unset (const MonoBitSet *set, gint pos);
+
 MonoBitSet* mono_bitset_clone        (const MonoBitSet *set, guint32 new_size);
 
 void        mono_bitset_copyto       (const MonoBitSet *src, MonoBitSet *dest);

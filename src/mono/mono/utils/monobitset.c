@@ -383,6 +383,22 @@ my_g_bit_nth_msf (gsize mask,
 	return -1;
 }
 
+static int
+find_first_unset (gulong mask, gint nth_bit)
+{
+	do {
+		nth_bit++;
+		if (!(mask & ((gsize)1 << nth_bit))) {
+			if (nth_bit == BITS_PER_CHUNK)
+				/* On 64 bit platforms, 1 << 64 == 1 */
+				return -1;
+			else
+				return nth_bit;
+		}
+	} while (nth_bit < BITS_PER_CHUNK);
+	return -1;
+}
+
 /*
  * mono_bitset_find_start:
  * @set: bitset ptr
@@ -465,6 +481,43 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	for (i = --j; i >= 0; --i) {
 		if (set->data [i])
 			return my_g_bit_nth_msf (set->data [i], BITS_PER_CHUNK) + i * BITS_PER_CHUNK;
+	}
+	return -1;
+}
+
+/*
+ * mono_bitset_find_first_unset:
+ * @set: bitset ptr
+ * @pos: pos to search _after_ (not including)
+ *
+ * Returns position of first unset bit after @pos. If pos < 0 begin search from
+ * start. Return -1 if no bit set is found.
+ */
+int
+mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
+	int j;
+	int bit;
+	int result, i;
+
+	if (pos < 0) {
+		j = 0;
+		bit = -1;
+	} else {
+		j = pos / BITS_PER_CHUNK;
+		bit = pos % BITS_PER_CHUNK;
+		g_return_val_if_fail (pos < set->size, -1);
+	}
+	/*g_print ("find first from %d (j: %d, bit: %d)\n", pos, j, bit);*/
+
+	if (set->data [j] != -1) {
+		result = find_first_unset (set->data [j], bit);
+		if (result != -1)
+			return result + j * BITS_PER_CHUNK;
+	}
+	for (i = ++j; i < set->size / BITS_PER_CHUNK; ++i) {
+		if (set->data [i] != -1) {
+			return find_first_unset (set->data [i], -1) + i * BITS_PER_CHUNK;
+		}
 	}
 	return -1;
 }
