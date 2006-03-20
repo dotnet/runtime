@@ -1666,6 +1666,12 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	/* open generic-instance classes can share their interface_id */
+	if (class->generic_class && class->generic_class->inst->is_open) {
+		context = class->generic_class->context;
+		class = class->generic_class->container_class;
+	}
+
 	mono_class_setup_vtable (class);
 
 	slots = mono_bitset_new (class->max_interface_id + 1, 0);
@@ -1674,12 +1680,6 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
 		mono_bitset_free (slots);
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
-	}
-
-	/* open generic-instance classes can share their interface_id */
-	if (class->generic_class && class->generic_class->inst->is_open) {
-		context = class->generic_class->context;
-		class = class->generic_class->container_class;
 	}
 
 	for (parent = class; parent; parent = parent->parent) {
