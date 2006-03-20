@@ -490,6 +490,35 @@
 				RelativePath="mono\utils\strtod.h"
 				>
 			</File>
+			<File
+				RelativePath="mono\utils\mono-counters.h"
+				>
+			</File>
+			<File
+				RelativePath="mono\utils\mono-counters.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 		<Filter
 			Name="metadata"
@@ -2028,6 +2057,10 @@
 				>
 			</File>
 			<File
+				RelativePath="mono\mini\jit-icalls.h"
+				>
+			</File>
+			<File
 				RelativePath="mono\mini\mini.c"
 				>
 				<FileConfiguration
@@ -2055,6 +2088,31 @@
 			<File
 				RelativePath="mono\mini\mini.h"
 				>
+			</File>
+			<File
+				RelativePath="mono\mini\jit-icalls.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="mono\mini\regalloc.c"

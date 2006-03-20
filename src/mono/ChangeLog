@@ -1,3 +1,7 @@
+2006-03-20  Zoltan Varga  <vargaz@gmail.com>
+
+	* libmono.vcproj: Add some newly added source files.
+
 2006-03-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* libmono.vcproj: Remove os/win32/util.h.
