@@ -1662,6 +1662,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
 	MonoBitSet *slots;
+	MonoGenericContext *context = NULL;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1673,6 +1674,12 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
 		mono_bitset_free (slots);
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
+	}
+
+	/* open generic-instance classes can share their interface_id */
+	if (class->generic_class && class->generic_class->inst->is_open) {
+		context = class->generic_class->context;
+		class = class->generic_class->container_class;
 	}
 
 	for (parent = class; parent; parent = parent->parent) {
@@ -1700,8 +1707,11 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	intf = mono_array_new (domain, mono_defaults.monotype_class, ifaces->len);
 	for (i = 0; i < ifaces->len; ++i) {
 		MonoClass *ic = g_ptr_array_index (ifaces, i);
+		MonoType *ret = &ic->byval_arg;
+		if (context && ic->generic_class && ic->generic_class->inst->is_open)
+			ret = mono_class_inflate_generic_type (ret, context);
 		
-		mono_array_setref (intf, i, mono_type_get_object (domain, &ic->byval_arg));
+		mono_array_setref (intf, i, mono_type_get_object (domain, ret));
 	}
 	g_ptr_array_free (ifaces, TRUE);
 
