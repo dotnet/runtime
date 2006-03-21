@@ -8,6 +8,7 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/utils/mono-hash.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/monobitset.h"
 
 struct _MonoAssembly {
 	int ref_count; /* use atomic operations only */
@@ -160,6 +161,9 @@ struct _MonoImage {
 
 	/* dll map entries */
 	GHashTable *dll_map;
+
+	/* interfaces IDs from this image */
+	MonoBitSet *interface_bitset;
 };
 
 enum {
@@ -348,6 +352,8 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 					      gboolean *is_version_defined) MONO_INTERNAL;
 
 guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
+
+void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

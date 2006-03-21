@@ -29,6 +29,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
+#include <mono/utils/mono-counters.h>
 
 MonoStats mono_stats;
 
@@ -1434,49 +1435,84 @@ mono_class_setup_events (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+/*
+ * Global pool of interface IDs, represented as a bitset.
+ * LOCKING: this is supposed to be accessed with the loader lock held.
+ */
+static MonoBitSet *global_interface_bitset = NULL;
+
+/*
+ * mono_unload_interface_ids:
+ * @bitset: bit set of interface IDs
+ *
+ * When an image is unloaded, the interface IDs associated with
+ * the image are put back in the global pool of IDs so the numbers
+ * can be reused.
+ */
+void
+mono_unload_interface_ids (MonoBitSet *bitset)
+{
+	mono_loader_lock ();
+	mono_bitset_sub (global_interface_bitset, bitset);
+	mono_loader_unlock ();
+}
+
+/*
+ * mono_get_unique_iid:
+ * @class: interface
+ *
+ * Assign a unique integer ID to the interface represented by @class.
+ * The ID will positive and as small as possible.
+ * LOCKING: this is supposed to be called with the loader lock held.
+ * Returns: the new ID.
+ */
 static guint
 mono_get_unique_iid (MonoClass *class)
 {
-	static GHashTable *iid_hash = NULL;
-	static guint iid = 0;
-	char *str, *type_name;
-	gpointer value;
-	int generic_id;
+	int iid;
 	
 	g_assert (MONO_CLASS_IS_INTERFACE (class));
 
-	mono_loader_lock ();
-
-	if (!iid_hash)
-		iid_hash = g_hash_table_new (g_str_hash, g_str_equal);
-
-	if (class->generic_class && !class->generic_class->inst->is_open) {
-		generic_id = class->generic_class->inst->id;
-		g_assert (generic_id != 0);
-	} else
-		generic_id = 0;
-
-	type_name = mono_type_full_name (&class->byval_arg);
-	str = g_strdup_printf ("%s|%s|%d", class->image->name, type_name, generic_id);
-	g_free (type_name);
-
-	if (g_hash_table_lookup_extended (iid_hash, str, NULL, &value)) {
-		mono_loader_unlock ();
-		if (mono_print_vtable)
-			printf ("Interface: reusing id %d for %s\n", iid, str);
-		g_free (str);
-		return GPOINTER_TO_INT (value);
-	} else {
-		if (mono_print_vtable)
-			printf ("Interface: assigned id %d to %s\n", iid, str);
-		g_hash_table_insert (iid_hash, str, GINT_TO_POINTER (iid));
-		++iid;
+	if (!global_interface_bitset) {
+		global_interface_bitset = mono_bitset_new (128, 0);
 	}
 
-	mono_loader_unlock ();
+	iid = mono_bitset_find_first_unset (global_interface_bitset, -1);
+	if (iid < 0) {
+		int old_size = mono_bitset_size (global_interface_bitset);
+		MonoBitSet *new_set = mono_bitset_clone (global_interface_bitset, old_size * 2);
+		mono_bitset_free (global_interface_bitset);
+		global_interface_bitset = new_set;
+		iid = old_size;
+	}
+	mono_bitset_set (global_interface_bitset, iid);
+	/* set the bit also in the per-image set */
+	if (class->image->interface_bitset) {
+		if (iid >= mono_bitset_size (class->image->interface_bitset)) {
+			MonoBitSet *new_set = mono_bitset_clone (class->image->interface_bitset, iid + 1);
+			mono_bitset_free (class->image->interface_bitset);
+			class->image->interface_bitset = new_set;
+		}
+	} else {
+		class->image->interface_bitset = mono_bitset_new (iid + 1, 0);
+	}
+	mono_bitset_set (class->image->interface_bitset, iid);
+
+	if (mono_print_vtable) {
+		int generic_id;
+		char *type_name = mono_type_full_name (&class->byval_arg);
+		if (class->generic_class && !class->generic_class->inst->is_open) {
+			generic_id = class->generic_class->inst->id;
+			g_assert (generic_id != 0);
+		} else {
+			generic_id = 0;
+		}
+		printf ("Interface: assigned id %d to %s|%s|%d\n", iid, class->image->name, type_name, generic_id);
+		g_free (type_name);
+	}
 
 	g_assert (iid <= 65535);
-	return iid - 1;
+	return iid;
 }
 
 static void
@@ -1573,6 +1609,9 @@ cache_interface_offsets (int max_iid, int *data)
 	return cached;
 }
 
+/*
+ * LOCKING: this is supposed to be called with the loader lock held.
+ */
 static int
 setup_interface_offsets (MonoClass *class, int cur_slot)
 {
@@ -1610,7 +1649,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 	class->max_interface_id = max_iid;
 	/* compute vtable offset for interfaces */
-	class->interface_offsets = g_malloc (sizeof (gpointer) * (max_iid + 1));
+	class->interface_offsets = g_malloc (sizeof (int) * (max_iid + 1));
 
 	for (i = 0; i <= max_iid; i++)
 		class->interface_offsets [i] = -1;
@@ -1653,36 +1692,6 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	return cur_slot;
 }
 
-static void
-setup_generic_vtable (MonoClass *class)
-{
-	MonoClass *gklass;
-	int i;
-
-	gklass = class->generic_class->container_class;
-
-	mono_class_init (gklass);
-	class->vtable_size = gklass->vtable_size;
-
-	class->vtable = g_new0 (MonoMethod*, class->vtable_size);
-	memcpy (class->vtable, gklass->vtable,  sizeof (MonoMethod*) * class->vtable_size);
-
-	for (i = 0; i < class->vtable_size; i++) {
-		MonoMethod *m = class->vtable [i];
-
-		if (!m)
-			continue;
-
-		m = mono_class_inflate_generic_method_full (m, class, class->generic_class->context);
-		class->vtable [i] = m;
-	}
-
-	class->max_interface_id = gklass->max_interface_id;
-	class->interface_offsets = g_new0 (gint, gklass->max_interface_id + 1);
-	memcpy (class->interface_offsets, gklass->interface_offsets,
-		sizeof (gint) * (gklass->max_interface_id + 1));
-}
-
 void
 mono_class_setup_vtable (MonoClass *class)
 {
@@ -1707,12 +1716,6 @@ mono_class_setup_vtable (MonoClass *class)
 	}
 
 	if (class->generic_class) {
-		if (class->generic_class->inst->is_open) {
-			setup_generic_vtable (class);
-			mono_loader_unlock ();
-			return;
-		}
-
 		context = class->generic_class->context;
 		type_token = class->generic_class->container_class->type_token;
 	} else {
@@ -1746,11 +1749,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	if (class->vtable)
 		return;
-
-	if (class->generic_class && class->generic_class->inst->is_open) {
-		setup_generic_vtable (class);
-		return;
-	}
 
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {

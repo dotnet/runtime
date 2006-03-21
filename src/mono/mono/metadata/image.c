@@ -1104,7 +1104,11 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->memberref_signatures);
 	g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
-	
+
+	if (image->interface_bitset) {
+		mono_unload_interface_ids (image->interface_bitset);
+		mono_bitset_free (image->interface_bitset);
+	}
 	if (image->image_info){
 		MonoCLIImageInfo *ii = image->image_info;
 
