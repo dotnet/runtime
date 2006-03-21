@@ -1,5 +1,6 @@
 #include <glib.h>
 #include <string.h>
+#include <math.h>
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/tokentype.h"
@@ -169,6 +170,7 @@ static int cast_sealed = 0;
 static int cast_iface = 0;
 static int total_cast = 0;
 static int nonvirt_callvirt = 0;
+static int iface_callvirt = 0;
 static int total_callvirt = 0;
 
 static void
@@ -285,16 +287,16 @@ method_stats (MonoMethod *method) {
 					case MONO_CEE_LDLOC:
 					case MONO_CEE_STLOC:
 						var_waste += 3;
-						g_print ("%s %d\n", mono_opcode_name (i), n);
+						/*g_print ("%s %d\n", mono_opcode_name (i), n);*/
 						break;
 					default:
 						var_waste += 2;
-						g_print ("%s %d\n", mono_opcode_name (i), n);
+						/*g_print ("%s %d\n", mono_opcode_name (i), n);*/
 						break;
 					}
 				} else {
 					var_waste += 2;
-					g_print ("%s %d\n", mono_opcode_name (i), n);
+					/*g_print ("%s %d\n", mono_opcode_name (i), n);*/
 				}
 			}
 			ip += 3;
@@ -306,7 +308,7 @@ method_stats (MonoMethod *method) {
 				case MONO_CEE_LDLOC_S:
 				case MONO_CEE_STLOC_S:
 					var_waste++;
-					g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);
+					/*g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);*/
 					break;
 				default:
 					break;
@@ -316,7 +318,7 @@ method_stats (MonoMethod *method) {
 			break;
 		case MonoShortInlineI:
 			if ((signed char)ip [1] <= 8 && (signed char)ip [1] >= -1) {
-				g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);
+				/*g_print ("%s %d\n", mono_opcode_name (i), (signed char)ip [1]);*/
 				int_waste ++;
 			}
 			ip += 2;
@@ -356,6 +358,8 @@ method_stats (MonoMethod *method) {
 				MonoMethod *cm = mono_get_method (method->klass->image, read32 (ip + 1), NULL);
 				if (cm && !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 					nonvirt_callvirt++;
+				if (cm && (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+					iface_callvirt++;
 				total_callvirt++;
 			}
 			ip += 5;
@@ -411,6 +415,9 @@ static int num_pdepth = 0;
 static int max_pdepth = 0;
 static int num_pdepth_ovf = 0;
 static int num_ifaces = 0;
+static int *pdepth_array = NULL;
+static int pdepth_array_size = 0;
+static int pdepth_array_next = 0;
 
 static void
 type_stats (MonoClass *klass) {
@@ -426,6 +433,13 @@ type_stats (MonoClass *klass) {
 		depth++;
 		parent = parent->parent;
 	}
+	if (pdepth_array_next >= pdepth_array_size) {
+		pdepth_array_size *= 2;
+		if (!pdepth_array_size)
+			pdepth_array_size = 128;
+		pdepth_array = g_realloc (pdepth_array, pdepth_array_size * sizeof (int));
+	}
+	pdepth_array [pdepth_array_next++] = depth;
 	num_pdepth += depth;
 	if (max_pdepth < depth)
 		max_pdepth = depth;
@@ -471,10 +485,23 @@ stats (MonoImage *image, const char *name) {
 	g_print ("sealed type cast: %d/%d\n", cast_sealed, total_cast);
 	g_print ("interface type cast: %d/%d\n", cast_iface, total_cast);
 	g_print ("non virtual callvirt: %d/%d\n", nonvirt_callvirt, total_callvirt);
+	g_print ("interface callvirt: %d/%d\n", iface_callvirt, total_callvirt);
 	
 	g_print ("\nType stats:\n");
 	g_print ("interface types: %d/%d\n", num_ifaces, num_types);
-	g_print ("parent depth: max: %d, mean: %f, overflowing: %d\n", max_pdepth, (double)num_pdepth/(num_types - num_ifaces), num_pdepth_ovf);
+	{
+		double mean = 0;
+		double stddev = 0;
+		if (pdepth_array_next) {
+			int i;
+			mean = (double)num_pdepth/pdepth_array_next;
+			for (i = 0; i < pdepth_array_next; ++i) {
+				stddev += (pdepth_array [i] - mean) * (pdepth_array [i] - mean);
+			}
+			stddev = sqrt (stddev/pdepth_array_next);
+		}
+		g_print ("parent depth: max: %d, mean: %f, sttdev: %f, overflowing: %d\n", max_pdepth, mean, stddev, num_pdepth_ovf);
+	}
 }
 
 static char *
@@ -1026,7 +1053,6 @@ main (int argc, char *argv[]) {
 	int callneato = 0;
 	int i;
 	
-	mono_init (argv [0]);
 	output = stdout;
 
 	for (i = 1; i < argc; ++i) {
@@ -1064,8 +1090,10 @@ main (int argc, char *argv[]) {
 	if (argc > i + 1)
 		cname = argv [i + 1];
 	if (aname) {
+		mono_init_from_assembly (argv [0], aname);
 		assembly = mono_assembly_open (aname, NULL);
 	} else {
+		mono_init (argv [0]);
 		assembly = mono_image_get_assembly (mono_get_corlib ());
 	}
 	if (!cname && (graphtype == GRAPH_TYPES))
