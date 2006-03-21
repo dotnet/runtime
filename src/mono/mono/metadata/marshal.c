@@ -388,7 +388,7 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 	
 	if (!error) {
 		if (! sb->str || sb->str == sb->cached_str) {
-			sb->str = mono_string_new_size (mono_domain_get (), items_written);
+			MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), items_written));
 			sb->cached_str = NULL;
 		}
 		
@@ -452,14 +452,14 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	 * we need to alloc a buffer of the default capacity in this case.
 	 */
 	if (! sb->str)
-		sb->str = mono_string_new_size (mono_domain_get (), mono_stringbuilder_capacity (sb));
+		MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), mono_stringbuilder_capacity (sb)));
 	/*
 	 * The stringbuilder might not have ownership of this string. If this is
 	 * the case, we must duplicate the string, so that we don't munge immutable
 	 * strings
 	 */
 	else if (sb->str == sb->cached_str) {
-		sb->str = mono_string_new_utf16 (mono_domain_get (), mono_string_chars (sb->str), mono_stringbuilder_capacity (sb));
+		MONO_OBJECT_SETREF (sb, str, mono_string_new_utf16 (mono_domain_get (), mono_string_chars (sb->str), mono_stringbuilder_capacity (sb)));
 		sb->cached_str = NULL;
 	}
 	
@@ -922,7 +922,7 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 		mono_mb_emit_byte (mb, CEE_DUP);
 		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoException, message));
 		mono_mb_emit_ldstr (mb, (char*)msg);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 	}
 	mono_mb_emit_byte (mb, CEE_THROW);
 }
@@ -1568,9 +1568,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state);
 			handle = CreateEvent (NULL, TRUE, FALSE, NULL);
 			ares = mono_async_result_new (mono_domain_get (), handle, state, handle);
-			ares->async_delegate = (MonoObject *)delegate;
-			ares->async_callback = (MonoObject *)async_callback;
-			msg->async_result = ares;
+			MONO_OBJECT_SETREF (ares, async_delegate, (MonoObject *)delegate);
+			MONO_OBJECT_SETREF (ares, async_callback, (MonoObject *)async_callback);
+			MONO_OBJECT_SETREF (msg, async_result, ares);
 			msg->call_type = CallType_BeginInvoke;
 
 			mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
@@ -1995,7 +1995,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 		mono_message_init (domain, msg, delegate->method_info, NULL);
 		msg->call_type = CallType_EndInvoke;
-		msg->async_result = ares;
+		MONO_OBJECT_SETREF (msg, async_result, ares);
 		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
 	}
 	else
@@ -2007,7 +2007,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 			char  *tmp;
 			tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
 			g_free (strace);	
-			((MonoException*)exc)->stack_trace = mono_string_new (domain, tmp);
+			MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, mono_string_new (domain, tmp));
 			g_free (tmp);
 		}
 		mono_raise_exception ((MonoException*)exc);
@@ -2369,7 +2369,7 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 	if (mono_object_class (val) == mono_defaults.stringbuilder_class) {
 		MonoStringBuilder *oldsb = (MonoStringBuilder *) val;
 		MonoStringBuilder *newsb = (MonoStringBuilder *) mono_object_new (domain, mono_defaults.stringbuilder_class);
-		newsb->str = mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str));
+		MONO_OBJECT_SETREF (newsb, str, mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str)));
 		newsb->length = oldsb->length;
 		newsb->max_capacity = (gint32)0x7fffffff;
 		return (MonoObject *) newsb;
@@ -2410,7 +2410,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		MonoStringBuilder *src_sb = (MonoStringBuilder *) src;
 		MonoStringBuilder *dst_sb = (MonoStringBuilder *) dst;
 	
-		dst_sb->str = mono_string_new_utf16 (mono_object_domain (dst), mono_string_chars (src_sb->str), mono_string_length (src_sb->str));
+		MONO_OBJECT_SETREF (dst_sb, str, mono_string_new_utf16 (mono_object_domain (dst), mono_string_chars (src_sb->str), mono_string_length (src_sb->str)));
 		dst_sb->cached_str = NULL;
 		dst_sb->length = src_sb->length;
 	}
@@ -7032,7 +7032,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	/* get the real proxy from the transparent proxy*/
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	
 	/* get the refletion type from the type handle */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);

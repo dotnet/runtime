@@ -2512,8 +2512,8 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 	
 	attr = (MonoReflectionDllImportAttribute*)mono_object_new (domain, DllImportAttributeClass);
 
-	attr->dll = mono_string_new (domain, scope);
-	attr->entry_point = mono_string_new (domain, import);
+	MONO_OBJECT_SETREF (attr, dll, mono_string_new (domain, scope));
+	MONO_OBJECT_SETREF (attr, entry_point, mono_string_new (domain, import));
 	attr->call_conv = (flags & 0x700) >> 8;
 	attr->charset = ((flags & 0x6) >> 1) + 1;
 	if (attr->charset == 1)
@@ -3882,7 +3882,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
 			domain, System_Reflection_AssemblyName);
 
-		aname->name = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]));
+		MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME])));
 
 		aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
 		aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
@@ -3891,12 +3891,12 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
 		aname->versioncompat = 1; /* SameMachine (default) */
 		aname->hashalg = ASSEMBLY_HASH_SHA1; /* SHA1 (default) */
-		aname->version = create_version (domain, aname->major, aname->minor, aname->build, aname->revision);
+		MONO_OBJECT_SETREF (aname, version, create_version (domain, aname->major, aname->minor, aname->build, aname->revision));
 
 		if (create_culture) {
 			gpointer args [1];
 			args [0] = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]));
-			aname->cultureInfo = mono_runtime_invoke (create_culture, NULL, args, NULL);
+			MONO_OBJECT_SETREF (aname, cultureInfo, mono_runtime_invoke (create_culture, NULL, args, NULL));
 		}
 		
 		if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
@@ -3906,10 +3906,10 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 			if ((cols [MONO_ASSEMBLYREF_FLAGS] & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG)) {
 				/* public key token isn't copied - the class library will 
 		   		automatically generate it from the public key if required */
-				aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+				MONO_OBJECT_SETREF (aname, publicKey, mono_array_new (domain, mono_defaults.byte_class, pkey_len));
 				memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
 			} else {
-				aname->keyToken = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+				MONO_OBJECT_SETREF (aname, keyToken, mono_array_new (domain, mono_defaults.byte_class, pkey_len));
 				memcpy (mono_array_addr (aname->keyToken, guint8, 0), pkey_ptr, pkey_len);
 			}
 		}
@@ -4047,7 +4047,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 			table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
 			mono_metadata_decode_row (table, i - 1, file_cols, MONO_FILE_SIZE);
 			val = mono_metadata_string_heap (assembly->assembly->image, file_cols [MONO_FILE_NAME]);
-			info->filename = mono_string_new (mono_object_domain (assembly), val);
+			MONO_OBJECT_SETREF (info, filename, mono_string_new (mono_object_domain (assembly), val));
 			if (file_cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA)
 				info->location = 0;
 			else
@@ -4063,7 +4063,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 				g_free (msg);
 				mono_raise_exception (ex);
 			}
-			info->assembly = mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]);
+			MONO_OBJECT_SETREF (info, assembly, mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]));
 
 			/* Obtain info recursively */
 			ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (info->assembly, name, info);
@@ -4293,18 +4293,18 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 	MONO_ARCH_SAVE_REGS;
 
-	aname->name = mono_string_new (domain, name->name);
+	MONO_OBJECT_SETREF (aname, name, mono_string_new (domain, name->name));
 	aname->major = name->major;
 	aname->minor = name->minor;
 	aname->build = name->build;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
 	if (by_default_version)
-		aname->version = create_version (domain, name->major, name->minor, name->build, name->revision);
+		MONO_OBJECT_SETREF (aname, version, create_version (domain, name->major, name->minor, name->build, name->revision));
 	
 	codebase = g_filename_to_uri (absolute, NULL, NULL);
 	if (codebase) {
-		aname->codebase = mono_string_new (domain, codebase);
+		MONO_OBJECT_SETREF (aname, codebase, mono_string_new (domain, codebase));
 		g_free (codebase);
 	}
 
@@ -4317,14 +4317,14 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 	if (name->culture) {
 		args [0] = mono_string_new (domain, name->culture);
-		aname->cultureInfo = mono_runtime_invoke (create_culture, NULL, args, NULL);
+		MONO_OBJECT_SETREF (aname, cultureInfo, mono_runtime_invoke (create_culture, NULL, args, NULL));
 	}
 
 	if (name->public_key) {
 		pkey_ptr = (char*)name->public_key;
 		pkey_len = mono_metadata_decode_blob_size (pkey_ptr, &pkey_ptr);
 
-		aname->publicKey = mono_array_new (domain, mono_defaults.byte_class, pkey_len);
+		MONO_OBJECT_SETREF (aname, publicKey, mono_array_new (domain, mono_defaults.byte_class, pkey_len));
 		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
 	}
 
@@ -4333,7 +4333,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 		int i, j;
 		char *p;
 
-		aname->keyToken = mono_array_new (domain, mono_defaults.byte_class, 8);
+		MONO_OBJECT_SETREF (aname, keyToken, mono_array_new (domain, mono_defaults.byte_class, 8));
 		p = mono_array_addr (aname->keyToken, char, 0);
 
 		for (i = 0, j = 0; i < 8; i++) {
@@ -5390,7 +5390,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *
 	res = mono_object_new (domain, mono_defaults.transparent_proxy_class);
 	tp = (MonoTransparentProxy*) res;
 	
-	tp->rp = rp;
+	MONO_OBJECT_SETREF (tp, rp, rp);
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 

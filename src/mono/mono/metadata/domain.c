@@ -55,7 +55,7 @@ static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
 #endif
 
 #define GET_APPCONTEXT() (mono_thread_current ()->current_appcontext)
-#define SET_APPCONTEXT(x) mono_thread_current ()->current_appcontext = (x)
+#define SET_APPCONTEXT(x) MONO_OBJECT_SETREF (mono_thread_current (), current_appcontext, (x))
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;

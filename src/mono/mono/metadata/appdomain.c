@@ -482,7 +482,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 		/* Inherit from the root domain since MS.NET does this */
 		MonoDomain *root = mono_get_root_domain ();
 		if (root->setup->application_base)
-			setup->application_base = mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base));
+			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
 	}
 
 	mono_context_init (data);
@@ -1008,7 +1008,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 	}
 
 	refass = mono_assembly_get_object (domain, ass);
-	refass->evidence = evidence;
+	MONO_OBJECT_SETREF (refass, evidence, evidence);
 	return refass;
 }
 
@@ -1051,7 +1051,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	if (refass == NULL)
 		refass = mono_assembly_get_object (domain, ass);
 
-	refass->evidence = evidence;
+	MONO_OBJECT_SETREF (refass, evidence, evidence);
 	return refass;
 }
 
@@ -1124,7 +1124,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 		args = (MonoArray *) mono_array_new (ad->data, mono_defaults.string_class, 0);
 
 	refass = mono_assembly_get_object (ad->data, assembly);
-	refass->evidence = evidence;
+	MONO_OBJECT_SETREF (refass, evidence, evidence);
 
 	res = mono_runtime_exec_main (method, (MonoArray *)args, NULL);
 

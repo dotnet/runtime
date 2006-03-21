@@ -152,33 +152,33 @@ ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultur
 
 	domain = mono_domain_get ();
 
-	datetime->AbbreviatedDayNames = create_names_array_idx (dfe->abbreviated_day_names,
-			NUM_DAYS);
-	datetime->AbbreviatedMonthNames = create_names_array_idx (dfe->abbreviated_month_names,
-			NUM_MONTHS);
-	datetime->AMDesignator = mono_string_new (domain, idx2string (dfe->am_designator));
+	MONO_OBJECT_SETREF (datetime, AbbreviatedDayNames, create_names_array_idx (dfe->abbreviated_day_names,
+			NUM_DAYS));
+	MONO_OBJECT_SETREF (datetime, AbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_names,
+			NUM_MONTHS));
+	MONO_OBJECT_SETREF (datetime, AMDesignator, mono_string_new (domain, idx2string (dfe->am_designator)));
 	datetime->CalendarWeekRule = dfe->calendar_week_rule;
-	datetime->DateSeparator = mono_string_new (domain, idx2string (dfe->date_separator));
-	datetime->DayNames = create_names_array_idx (dfe->day_names, NUM_DAYS);
+	MONO_OBJECT_SETREF (datetime, DateSeparator, mono_string_new (domain, idx2string (dfe->date_separator)));
+	MONO_OBJECT_SETREF (datetime, DayNames, create_names_array_idx (dfe->day_names, NUM_DAYS));
 	datetime->FirstDayOfWeek = dfe->first_day_of_week;
-	datetime->FullDateTimePattern = mono_string_new (domain, idx2string (dfe->full_date_time_pattern));
-	datetime->LongDatePattern = mono_string_new (domain, idx2string (dfe->long_date_pattern));
-	datetime->LongTimePattern = mono_string_new (domain, idx2string (dfe->long_time_pattern));
-	datetime->MonthDayPattern = mono_string_new (domain, idx2string (dfe->month_day_pattern));
-	datetime->MonthNames = create_names_array_idx (dfe->month_names, NUM_MONTHS);
-	datetime->PMDesignator = mono_string_new (domain, idx2string (dfe->pm_designator));
-	datetime->ShortDatePattern = mono_string_new (domain, idx2string (dfe->short_date_pattern));
-	datetime->ShortTimePattern = mono_string_new (domain, idx2string (dfe->short_time_pattern));
-	datetime->TimeSeparator = mono_string_new (domain, idx2string (dfe->time_separator));
-	datetime->YearMonthPattern = mono_string_new (domain, idx2string (dfe->year_month_pattern));
-	datetime->ShortDatePatterns = create_names_array_idx (dfe->short_date_patterns,
-			NUM_SHORT_DATE_PATTERNS);
-	datetime->LongDatePatterns = create_names_array_idx (dfe->long_date_patterns,
-			NUM_LONG_DATE_PATTERNS);
-	datetime->ShortTimePatterns = create_names_array_idx (dfe->short_time_patterns,
-			NUM_SHORT_TIME_PATTERNS);
-	datetime->LongTimePatterns = create_names_array_idx (dfe->long_time_patterns,
-			NUM_LONG_TIME_PATTERNS);
+	MONO_OBJECT_SETREF (datetime, FullDateTimePattern, mono_string_new (domain, idx2string (dfe->full_date_time_pattern)));
+	MONO_OBJECT_SETREF (datetime, LongDatePattern, mono_string_new (domain, idx2string (dfe->long_date_pattern)));
+	MONO_OBJECT_SETREF (datetime, LongTimePattern, mono_string_new (domain, idx2string (dfe->long_time_pattern)));
+	MONO_OBJECT_SETREF (datetime, MonthDayPattern, mono_string_new (domain, idx2string (dfe->month_day_pattern)));
+	MONO_OBJECT_SETREF (datetime, MonthNames, create_names_array_idx (dfe->month_names, NUM_MONTHS));
+	MONO_OBJECT_SETREF (datetime, PMDesignator, mono_string_new (domain, idx2string (dfe->pm_designator)));
+	MONO_OBJECT_SETREF (datetime, ShortDatePattern, mono_string_new (domain, idx2string (dfe->short_date_pattern)));
+	MONO_OBJECT_SETREF (datetime, ShortTimePattern, mono_string_new (domain, idx2string (dfe->short_time_pattern)));
+	MONO_OBJECT_SETREF (datetime, TimeSeparator, mono_string_new (domain, idx2string (dfe->time_separator)));
+	MONO_OBJECT_SETREF (datetime, YearMonthPattern, mono_string_new (domain, idx2string (dfe->year_month_pattern)));
+	MONO_OBJECT_SETREF (datetime, ShortDatePatterns, create_names_array_idx (dfe->short_date_patterns,
+			NUM_SHORT_DATE_PATTERNS));
+	MONO_OBJECT_SETREF (datetime, LongDatePatterns, create_names_array_idx (dfe->long_date_patterns,
+			NUM_LONG_DATE_PATTERNS));
+	MONO_OBJECT_SETREF (datetime, ShortTimePatterns, create_names_array_idx (dfe->short_time_patterns,
+			NUM_SHORT_TIME_PATTERNS));
+	MONO_OBJECT_SETREF (datetime, LongTimePatterns, create_names_array_idx (dfe->long_time_patterns,
+			NUM_LONG_TIME_PATTERNS));
 
 }
 
@@ -199,40 +199,40 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 	domain = mono_domain_get ();
 
 	number->currencyDecimalDigits = nfe->currency_decimal_digits;
-	number->currencyDecimalSeparator = mono_string_new (domain,
-			idx2string (nfe->currency_decimal_separator));
-	number->currencyGroupSeparator = mono_string_new (domain,
-			idx2string (nfe->currency_group_separator));
-	number->currencyGroupSizes = create_group_sizes_array (nfe->currency_group_sizes,
-			GROUP_SIZE);
+	MONO_OBJECT_SETREF (number, currencyDecimalSeparator, mono_string_new (domain,
+			idx2string (nfe->currency_decimal_separator)));
+	MONO_OBJECT_SETREF (number, currencyGroupSeparator, mono_string_new (domain,
+			idx2string (nfe->currency_group_separator)));
+	MONO_OBJECT_SETREF (number, currencyGroupSizes, create_group_sizes_array (nfe->currency_group_sizes,
+			GROUP_SIZE));
 	number->currencyNegativePattern = nfe->currency_negative_pattern;
 	number->currencyPositivePattern = nfe->currency_positive_pattern;
-	number->currencySymbol = mono_string_new (domain, idx2string (nfe->currency_symbol));
-	number->naNSymbol = mono_string_new (domain, idx2string (nfe->nan_symbol));
-	number->negativeInfinitySymbol = mono_string_new (domain,
-			idx2string (nfe->negative_infinity_symbol));
-	number->negativeSign = mono_string_new (domain, idx2string (nfe->negative_sign));
+	MONO_OBJECT_SETREF (number, currencySymbol, mono_string_new (domain, idx2string (nfe->currency_symbol)));
+	MONO_OBJECT_SETREF (number, naNSymbol, mono_string_new (domain, idx2string (nfe->nan_symbol)));
+	MONO_OBJECT_SETREF (number, negativeInfinitySymbol, mono_string_new (domain,
+			idx2string (nfe->negative_infinity_symbol)));
+	MONO_OBJECT_SETREF (number, negativeSign, mono_string_new (domain, idx2string (nfe->negative_sign)));
 	number->numberDecimalDigits = nfe->number_decimal_digits;
-	number->numberDecimalSeparator = mono_string_new (domain,
-			idx2string (nfe->number_decimal_separator));
-	number->numberGroupSeparator = mono_string_new (domain, idx2string (nfe->number_group_separator));
-	number->numberGroupSizes = create_group_sizes_array (nfe->number_group_sizes,
-			GROUP_SIZE);
+	MONO_OBJECT_SETREF (number, numberDecimalSeparator, mono_string_new (domain,
+			idx2string (nfe->number_decimal_separator)));
+	MONO_OBJECT_SETREF (number, numberGroupSeparator, mono_string_new (domain, idx2string (nfe->number_group_separator)));
+	MONO_OBJECT_SETREF (number, numberGroupSizes, create_group_sizes_array (nfe->number_group_sizes,
+			GROUP_SIZE));
 	number->numberNegativePattern = nfe->number_negative_pattern;
 	number->percentDecimalDigits = nfe->percent_decimal_digits;
-	number->percentDecimalSeparator = mono_string_new (domain,
-			idx2string (nfe->percent_decimal_separator));
-	number->percentGroupSeparator = mono_string_new (domain,
-			idx2string (nfe->percent_group_separator));
-	number->percentGroupSizes = create_group_sizes_array (nfe->percent_group_sizes,
-			GROUP_SIZE);
+	MONO_OBJECT_SETREF (number, percentDecimalSeparator, mono_string_new (domain,
+			idx2string (nfe->percent_decimal_separator)));
+	MONO_OBJECT_SETREF (number, percentGroupSeparator, mono_string_new (domain,
+			idx2string (nfe->percent_group_separator)));
+	MONO_OBJECT_SETREF (number, percentGroupSizes, create_group_sizes_array (nfe->percent_group_sizes,
+			GROUP_SIZE));
 	number->percentNegativePattern = nfe->percent_negative_pattern;
 	number->percentPositivePattern = nfe->percent_positive_pattern;
-	number->percentSymbol = mono_string_new (domain, idx2string (nfe->percent_symbol));
-	number->perMilleSymbol = mono_string_new (domain, idx2string (nfe->per_mille_symbol));
-	number->positiveInfinitySymbol = mono_string_new (domain,
-			idx2string (nfe->positive_infinity_symbol));
-	number->positiveSign = mono_string_new (domain, idx2string (nfe->positive_sign));
+	MONO_OBJECT_SETREF (number, percentSymbol, mono_string_new (domain, idx2string (nfe->percent_symbol)));
+	MONO_OBJECT_SETREF (number, perMilleSymbol, mono_string_new (domain, idx2string (nfe->per_mille_symbol)));
+	MONO_OBJECT_SETREF (number, positiveInfinitySymbol, mono_string_new (domain,
+			idx2string (nfe->positive_infinity_symbol)));
+	MONO_OBJECT_SETREF (number, positiveSign, mono_string_new (domain, idx2string (nfe->positive_sign)));
 }
 
 static MonoBoolean
@@ -241,14 +241,14 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	MonoDomain *domain = mono_domain_get ();
 
 	this->lcid = ci->lcid;
-	this->name = mono_string_new (domain, idx2string (ci->name));
-	this->icu_name = mono_string_new (domain, idx2string (ci->icu_name));
-	this->displayname = mono_string_new (domain, idx2string (ci->displayname));
-	this->englishname = mono_string_new (domain, idx2string (ci->englishname));
-	this->nativename = mono_string_new (domain, idx2string (ci->nativename));
-	this->win3lang = mono_string_new (domain, idx2string (ci->win3lang));
-	this->iso3lang = mono_string_new (domain, idx2string (ci->iso3lang));
-	this->iso2lang = mono_string_new (domain, idx2string (ci->iso2lang));
+	MONO_OBJECT_SETREF (this, name, mono_string_new (domain, idx2string (ci->name)));
+	MONO_OBJECT_SETREF (this, icu_name, mono_string_new (domain, idx2string (ci->icu_name)));
+	MONO_OBJECT_SETREF (this, displayname, mono_string_new (domain, idx2string (ci->displayname)));
+	MONO_OBJECT_SETREF (this, englishname, mono_string_new (domain, idx2string (ci->englishname)));
+	MONO_OBJECT_SETREF (this, nativename, mono_string_new (domain, idx2string (ci->nativename)));
+	MONO_OBJECT_SETREF (this, win3lang, mono_string_new (domain, idx2string (ci->win3lang)));
+	MONO_OBJECT_SETREF (this, iso3lang, mono_string_new (domain, idx2string (ci->iso3lang)));
+	MONO_OBJECT_SETREF (this, iso2lang, mono_string_new (domain, idx2string (ci->iso2lang)));
 	this->parent_lcid = ci->parent_lcid;
 	this->specific_lcid = ci->specific_lcid;
 	this->datetime_index = ci->datetime_format_index;
@@ -265,13 +265,13 @@ construct_region (MonoRegionInfo *this, const RegionInfoEntry *ri)
 	MonoDomain *domain = mono_domain_get ();
 
 	this->region_id = ri->region_id;
-	this->iso2name = mono_string_new (domain, idx2string (ri->iso2name));
-	this->iso3name = mono_string_new (domain, idx2string (ri->iso3name));
-	this->win3name = mono_string_new (domain, idx2string (ri->win3name));
-	this->english_name = mono_string_new (domain, idx2string (ri->english_name));
-	this->currency_symbol = mono_string_new (domain, idx2string (ri->currency_symbol));
-	this->iso_currency_symbol = mono_string_new (domain, idx2string (ri->iso_currency_symbol));
-	this->currency_english_name = mono_string_new (domain, idx2string (ri->currency_english_name));
+	MONO_OBJECT_SETREF (this, iso2name, mono_string_new (domain, idx2string (ri->iso2name)));
+	MONO_OBJECT_SETREF (this, iso3name, mono_string_new (domain, idx2string (ri->iso3name)));
+	MONO_OBJECT_SETREF (this, win3name, mono_string_new (domain, idx2string (ri->win3name)));
+	MONO_OBJECT_SETREF (this, english_name, mono_string_new (domain, idx2string (ri->english_name)));
+	MONO_OBJECT_SETREF (this, currency_symbol, mono_string_new (domain, idx2string (ri->currency_symbol)));
+	MONO_OBJECT_SETREF (this, iso_currency_symbol, mono_string_new (domain, idx2string (ri->iso_currency_symbol)));
+	MONO_OBJECT_SETREF (this, currency_english_name, mono_string_new (domain, idx2string (ri->currency_english_name)));
 	
 	return TRUE;
 }
@@ -673,7 +673,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 		mono_array_set (arr, guint8, i, mono_string_chars (source)[i]);
 	}
 	
-	key->key=arr;
+	MONO_OBJECT_SETREF (key, key, arr);
 }
 
 int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)

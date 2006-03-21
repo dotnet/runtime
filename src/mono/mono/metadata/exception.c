@@ -163,7 +163,7 @@ mono_exception_from_name_msg (MonoImage *image, const char *name_space,
 	ex = mono_exception_from_name (image, name_space, name);
 
 	if (msg)
-		ex->message = mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg);
+		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg));
 
 	return ex;
 }
@@ -400,9 +400,10 @@ mono_get_exception_argument_null (const char *arg)
 	ex = mono_exception_from_name ( 
 		mono_get_corlib (), "System", "ArgumentNullException");
 
-	if (arg)
-		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
+	if (arg) {
+		MonoArgumentException *argex = (MonoArgumentException *)ex;
+		MONO_OBJECT_SETREF (argex, param_name, mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg));
+	}
 	
 	return ex;
 }
@@ -421,9 +422,10 @@ mono_get_exception_argument (const char *arg, const char *msg)
 	ex = mono_exception_from_name_msg (
 		mono_get_corlib (), "System", "ArgumentException", msg);
 
-	if (arg)
-		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
+	if (arg) {
+		MonoArgumentException *argex = (MonoArgumentException *)ex;
+		MONO_OBJECT_SETREF (argex, param_name, mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg));
+	}
 	
 	return ex;
 }
@@ -442,9 +444,10 @@ mono_get_exception_argument_out_of_range (const char *arg)
 	ex = mono_exception_from_name (
 		mono_get_corlib (), "System", "ArgumentOutOfRangeException");
 
-	if (arg)
-		((MonoArgumentException *)ex)->param_name =
-			mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg);
+	if (arg) {
+		MonoArgumentException *argex = (MonoArgumentException *)ex;
+		MONO_OBJECT_SETREF (argex, param_name, mono_string_new (mono_object_get_domain ((MonoObject*)ex), arg));
+	}
 	
 	return ex;
 }

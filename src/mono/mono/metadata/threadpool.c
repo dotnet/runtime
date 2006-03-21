@@ -850,7 +850,7 @@ static void
 socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 {
 	socket_io_init (&socket_io_data);
-	state->ares = ares;
+	MONO_OBJECT_SETREF (state, ares, ares);
 #ifdef HAVE_EPOLL
 	if (socket_io_data.epoll_disabled == FALSE) {
 		if (socket_io_add_epoll (state))
@@ -903,8 +903,8 @@ mono_async_invoke (MonoAsyncResult *ares)
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
 		thread = mono_thread_current ();
-		ares->original_context = thread->execution_context;
-		thread->execution_context = ares->execution_context;
+		MONO_OBJECT_SETREF (ares, original_context, thread->execution_context);
+		MONO_OBJECT_SETREF (thread, execution_context, ares->execution_context);
 	} else {
 		ares->original_context = NULL;
 	}
@@ -923,12 +923,12 @@ mono_async_invoke (MonoAsyncResult *ares)
 		/* 'exc' will be the previous ac->msg->exc if not NULL and not
 		 * catched. If catched, this will be set to NULL and the
 		 * exception will not be printed. */
-		ac->msg->exc = exc;
+		MONO_OBJECT_SETREF (ac->msg, exc, exc);
 	}
 
 	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
 	if (ares->original_context) {
-		thread->execution_context = ares->original_context;
+		MONO_OBJECT_SETREF (thread, execution_context, ares->original_context);
 		ares->original_context = NULL;
 	}
 
@@ -993,7 +993,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	}
 
 	ares = mono_async_result_new (domain, NULL, ac->state, ac);
-	ares->async_delegate = target;
+	MONO_OBJECT_SETREF (ares, async_delegate, target);
 
 	EnterCriticalSection (&ares_lock);
 	mono_g_hash_table_insert (ares_htable, ares, ares);
@@ -1055,7 +1055,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
 			ac->wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-			ares->handle = (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event);
+			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event));
 		}
 		mono_monitor_exit ((MonoObject *) ares);
 		WaitForSingleObjectEx (ac->wait_event, INFINITE, TRUE);
@@ -1063,7 +1063,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 		mono_monitor_exit ((MonoObject *) ares);
 	}
 
-	*exc = ac->msg->exc;
+	*exc = ac->msg->exc; /* FIXME: GC add write barrier */
 	*out_args = ac->out_args;
 
 	return ac->res;

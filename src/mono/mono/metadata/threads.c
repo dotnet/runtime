@@ -380,7 +380,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	thread->handle=thread_handle;
 	thread->tid=tid;
 
-	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
+	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 						  
 	handle_store(thread);
 
@@ -424,7 +424,7 @@ mono_thread_attach (MonoDomain *domain)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
-	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
+	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 
@@ -503,7 +503,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		/* This is freed in start_wrapper */
 		start_info = g_new0 (struct StartInfo, 1);
 		start_info->func = start_func;
-		start_info->start_arg = this->start_obj;
+		start_info->start_arg = this->start_obj; /* FIXME: GC object stored in unmanaged memory */
 		start_info->delegate = start;
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
@@ -1554,7 +1554,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	}
 
 	thread->state |= ThreadState_AbortRequested;
-	thread->abort_state = state;
+	MONO_OBJECT_SETREF (thread, abort_state, state);
 	thread->abort_exc = NULL;
 
 	mono_monitor_exit (thread->synch_lock);
@@ -2725,7 +2725,7 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
 		if (thread->abort_exc == NULL)
-			thread->abort_exc = mono_get_exception_thread_abort ();
+			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
 		mono_monitor_exit (thread->synch_lock);
 		return thread->abort_exc;
 	}

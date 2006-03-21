@@ -2028,7 +2028,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
-	entry->gparam = gparam;
+	entry->gparam = gparam; /* FIXME: GC object stored in unmanaged mem */
 
 	g_ptr_array_add (assembly->gen_params, entry);
 }
@@ -2908,7 +2908,7 @@ collect_types (GPtrArray *types, MonoReflectionTypeBuilder *type)
 {
 	int i;
 
-	g_ptr_array_add (types, type);
+	g_ptr_array_add (types, type); /* FIXME: GC object added to unmanaged memory */
 
 	if (!type->subtypes)
 		return;
@@ -5250,11 +5250,12 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	res = (MonoReflectionModule *)mono_object_new (domain, System_Reflection_Module);
 
 	res->image = image;
-	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
+	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
 
-	res->fqname    = mono_string_new (domain, image->name);
-	res->name      = mono_string_new (domain, basename = g_path_get_basename (image->name));
-	res->scopename = mono_string_new (domain, image->module_name);
+	MONO_OBJECT_SETREF (res, fqname, mono_string_new (domain, image->name));
+	basename = g_path_get_basename (image->name);
+	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, basename));
+	MONO_OBJECT_SETREF (res, scopename, mono_string_new (domain, image->module_name));
 	
 	g_free (basename);
 
@@ -5296,8 +5297,8 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	g_assert (table_index < table->rows);
 	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
 
-	res->image = 0;
-	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
+	res->image = NULL;
+	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
 	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
@@ -5309,9 +5310,9 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 			res->image = image->modules [i];
 	}
 
-	res->fqname    = mono_string_new (domain, name);
-	res->name      = mono_string_new (domain, name);
-	res->scopename = mono_string_new (domain, name);
+	MONO_OBJECT_SETREF (res, fqname, mono_string_new (domain, name));
+	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, name));
+	MONO_OBJECT_SETREF (res, scopename, mono_string_new (domain, name));
 	res->is_resource = cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA;
 	res->token = mono_metadata_make_token (MONO_TABLE_FILE, table_index + 1);
 
@@ -5434,9 +5435,9 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 
 	res->type.type = geninst;
 	if (gklass->wastypebuilder && gklass->reflection_info)
-		res->generic_type = gklass->reflection_info;
+		MONO_OBJECT_SETREF (res, generic_type, gklass->reflection_info);
 	else
-		res->generic_type = mono_type_get_object (domain, &gklass->byval_arg);
+		MONO_OBJECT_SETREF (res, generic_type, mono_type_get_object (domain, &gklass->byval_arg));
 
 	return res;
 }
@@ -5552,8 +5553,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 
 		gret = (MonoReflectionGenericMethod*)mono_object_new (domain, klass);
 		gret->method.method = method;
-		gret->method.name = mono_string_new (domain, method->name);
-		gret->method.reftype = mono_type_get_object (domain, &refclass->byval_arg);
+		MONO_OBJECT_SETREF (gret, method.name, mono_string_new (domain, method->name));
+		MONO_OBJECT_SETREF (gret, method.reftype, mono_type_get_object (domain, &refclass->byval_arg));
 		CACHE_OBJECT (MonoReflectionMethod *, method, (MonoReflectionMethod*)gret, refclass);
 	}
 
@@ -5569,8 +5570,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 
 	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
 	ret->method = method;
-	ret->name = mono_string_new (domain, method->name);
-	ret->reftype = mono_type_get_object (domain, &refclass->byval_arg);
+	MONO_OBJECT_SETREF (ret, name, mono_string_new (domain, method->name));
+	MONO_OBJECT_SETREF (ret, reftype, mono_type_get_object (domain, &refclass->byval_arg));
 	CACHE_OBJECT (MonoReflectionMethod *, method, ret, refclass);
 }
 
@@ -5594,12 +5595,12 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	res = (MonoReflectionField *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->field = field;
-	res->name = mono_string_new (domain, field->name);
+	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, field->name));
 	if (field->generic_info)
 		res->attrs = field->generic_info->generic_type->attrs;
 	else
 		res->attrs = field->type->attrs;
-	res->type = mono_type_get_object (domain, field->type);
+	MONO_OBJECT_SETREF (res, type, mono_type_get_object (domain, field->type));
 	CACHE_OBJECT (MonoReflectionField *, field, res, klass);
 }
 
@@ -5693,14 +5694,14 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	res = mono_array_new (domain, System_Reflection_ParameterInfo, mono_method_signature (method)->param_count);
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		param = (MonoReflectionParameter *)mono_object_new (domain, System_Reflection_ParameterInfo);
-		param->ClassImpl = mono_type_get_object (domain, mono_method_signature (method)->params [i]);
-		param->MemberImpl = (MonoObject*)member;
-		param->NameImpl = mono_string_new (domain, names [i]);
+		MONO_OBJECT_SETREF (param, ClassImpl, mono_type_get_object (domain, mono_method_signature (method)->params [i]));
+		MONO_OBJECT_SETREF (param, MemberImpl, (MonoObject*)member);
+		MONO_OBJECT_SETREF (param, NameImpl, mono_string_new (domain, names [i]));
 		param->PositionImpl = i;
 		param->AttrsImpl = mono_method_signature (method)->params [i]->attrs;
 
 		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
-			param->DefaultValueImpl = dbnull;
+			MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
 		} else {
 
 			if (!blobs) {
@@ -5719,16 +5720,16 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			else	
 				type->data.klass = mono_class_from_mono_type (type);
 			
-			param->DefaultValueImpl = mono_get_object_from_blob (domain, type, blobs [i]);
+			MONO_OBJECT_SETREF (param, DefaultValueImpl, mono_get_object_from_blob (domain, type, blobs [i]));
 
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
 			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) 
-				param->DefaultValueImpl = dbnull;
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
 			
 		}
 
 		if (mspecs [i + 1])
-			param->MarshalAsImpl = (MonoObject*)mono_reflection_marshal_from_marshal_spec (domain, method->klass, mspecs [i + 1]);
+			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mono_reflection_marshal_from_marshal_spec (domain, method->klass, mspecs [i + 1]));
 		
 		mono_array_setref (res, i, param);
 	}
@@ -5808,21 +5809,21 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
 	ret->local_var_sig_token = local_var_sig_token;
-	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
+	MONO_OBJECT_SETREF (ret, il, mono_array_new (domain, mono_defaults.byte_class, header->code_size));
 	memcpy (mono_array_addr (ret->il, guint8, 0), header->code, header->code_size);
 
 	/* Locals */
-	ret->locals = mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals);
+	MONO_OBJECT_SETREF (ret, locals, mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals));
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new (domain, System_Reflection_LocalVariableInfo);
-		info->local_type = mono_type_get_object (domain, header->locals [i]);
+		MONO_OBJECT_SETREF (info, local_type, mono_type_get_object (domain, header->locals [i]));
 		info->is_pinned = header->locals [i]->pinned;
 		info->local_index = i;
 		mono_array_setref (ret->locals, i, info);
 	}
 
 	/* Exceptions */
-	ret->clauses = mono_array_new (domain, System_Reflection_ExceptionHandlingClause, header->num_clauses);
+	MONO_OBJECT_SETREF (ret, clauses, mono_array_new (domain, System_Reflection_ExceptionHandlingClause, header->num_clauses));
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new (domain, System_Reflection_ExceptionHandlingClause);
 		MonoExceptionClause *clause = &header->clauses [i];
@@ -5835,7 +5836,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 			info->filter_offset = clause->data.filter_offset;
 		else if (clause->data.catch_class)
-			info->catch_type = mono_type_get_object (mono_domain_get (), &clause->data.catch_class->byval_arg);
+			MONO_OBJECT_SETREF (info, catch_type, mono_type_get_object (mono_domain_get (), &clause->data.catch_class->byval_arg));
 
 		mono_array_setref (ret->clauses, i, info);
 	}
@@ -8006,7 +8007,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	klass->flags = tb->attrs;
 
 	klass->element_class = klass;
-	klass->reflection_info = tb; /* need to pin. */
+	klass->reflection_info = tb; /* FIXME: GC need to pin. */
 
 	/* Put into cache so mono_class_get () will find it */
 	mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
@@ -8235,12 +8236,12 @@ mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
 		if (spec->data.custom_data.custom_name) {
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
 			if (mtype)
-				minfo->marshaltyperef = mono_type_get_object (domain, mtype);
+				MONO_OBJECT_SETREF (minfo, marshaltyperef, mono_type_get_object (domain, mtype));
 
-			minfo->marshaltype = mono_string_new (domain, spec->data.custom_data.custom_name);
+			MONO_OBJECT_SETREF (minfo, marshaltype, mono_string_new (domain, spec->data.custom_data.custom_name));
 		}
 		if (spec->data.custom_data.cookie)
-			minfo->mcookie = mono_string_new (domain, spec->data.custom_data.cookie);
+			MONO_OBJECT_SETREF (minfo, mcookie, mono_string_new (domain, spec->data.custom_data.cookie));
 		break;
 
 	default:
@@ -8533,7 +8534,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		field->type = fb->type->type;
 	}
 	if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
-		field->data = mono_array_addr (fb->rva_data, char, 0);
+		field->data = mono_array_addr (fb->rva_data, char, 0); /* FIXME: GC pin array */
 	if (fb->offset != -1)
 		field->offset = fb->offset;
 	field->parent = klass;
@@ -9438,7 +9439,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	image = &gparam->tbuilder->module->dynamic_image->image;
 	mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
 
-	param->pklass->reflection_info = gparam;
+	param->pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
 
 	gparam->type.type = g_new0 (MonoType, 1);
 	gparam->type.type->type = gparam->mbuilder ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
@@ -9534,7 +9535,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
 			return;
 		}
-		rmb.refs [i] = ref;
+		rmb.refs [i] = ref; /* FIXME: GC object stored in unamanged memory (change also resolve_object() signature) */
 		rmb.refs [i + 1] = handle_class;
 	}		
 
