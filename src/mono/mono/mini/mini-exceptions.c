@@ -215,11 +215,11 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 			sf->method = NULL;
 			s = mono_method_full_name (ji->method, TRUE);
-			sf->internal_method_name = mono_string_new (domain, s);
+			MONO_OBJECT_SETREF (sf, internal_method_name, mono_string_new (domain, s));
 			g_free (s);
 		}
 		else
-			sf->method = mono_method_get_object (domain, ji->method, NULL);
+			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, ji->method, NULL));
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
 		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
@@ -229,7 +229,10 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			
 			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
 
-			sf->filename = filename? mono_string_new (domain, filename): NULL;
+			if (filename)
+				MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, filename));
+			else
+				sf->filename = NULL;
 			sf->column = 0;
 
 			g_free (filename);
@@ -598,7 +601,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
-		ex->message = mono_string_new (domain, "Object reference not set to an instance of an object");
+		MONO_OBJECT_SETREF (ex, message, mono_string_new (domain, "Object reference not set to an instance of an object"));
 		obj = (MonoObject *)ex;
 	} 
 
@@ -742,10 +745,10 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							if (test_only) {
 								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);
-									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+									MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
 									if (has_dynamic_methods)
 										/* These methods could go away anytime, so compute the stack trace now */
-										mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
+										MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 								}
 								g_list_free (trace_ips);
 
@@ -802,10 +805,10 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			} else {
 				if (mono_ex && !initial_trace_ips) {
 					trace_ips = g_list_reverse (trace_ips);
-					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+					MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
 					if (has_dynamic_methods)
 						/* These methods could go away anytime, so compute the stack trace now */
-						mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
+						MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 				}
 				g_list_free (trace_ips);
 				return FALSE;

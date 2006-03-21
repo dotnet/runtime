@@ -70,8 +70,8 @@ mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo)
 		jinfo->cas_inited = TRUE;
 	}
 
-	frame->method = mono_method_get_object (domain, jinfo->method, NULL);
-	frame->domain = domain->domain;
+	MONO_OBJECT_SETREF (frame, method, mono_method_get_object (domain, jinfo->method, NULL));
+	MONO_OBJECT_SETREF (frame, domain, domain->domain);
 
 	/* stack modifiers on methods have priority on (i.e. replaces) modifiers on class */
 
