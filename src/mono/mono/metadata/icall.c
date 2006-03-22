@@ -3704,6 +3704,14 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	MONO_ARCH_SAVE_REGS;
 
 	absolute = g_build_filename (mass->basedir, mass->image->module_name, NULL);
+#if PLATFORM_WIN32
+	{
+		gint i;
+		for (i = strlen (absolute) - 1; i >= 0; i--)
+			if (absolute [i] == '\\')
+				absolute [i] = '/';
+	}
+#endif
 	if (escaped) {
 		uri = g_filename_to_uri (absolute, NULL, NULL);
 	} else {
