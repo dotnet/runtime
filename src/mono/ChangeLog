@@ -1,3 +1,10 @@
+2006-03-22  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/web.config: add RoleManagerModule to httpModules.
+
+	* data/net_2_0/machine.config: add system.web/roleManager section
+	handler.
+
 2006-03-20  Zoltan Varga  <vargaz@gmail.com>
 
 	* libmono.vcproj: Add some newly added source files.
