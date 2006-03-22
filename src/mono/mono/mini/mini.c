@@ -9378,8 +9378,15 @@ mono_codegen (MonoCompile *cfg)
 					 */
 					;
 				else {
-					patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-					patch_info->data.name = info->name;
+					/* for these array methods we currently register the same function pointer
+					 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
+					 * will return the incorrect one depending on the order they are registered.
+					 * See tests/test-arr.cs
+					 */
+					if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
+						patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+						patch_info->data.name = info->name;
+					}
 				}
 			}
 			else {

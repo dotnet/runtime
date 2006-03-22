@@ -161,6 +161,7 @@ TEST_CS_SRC=			\
 	inctest.cs		\
 	bound.cs		\
 	array-invoke.cs		\
+	test-arr.cs		\
 	decimal.cs		\
 	decimal-array.cs	\
 	marshal.cs		\
