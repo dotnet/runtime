@@ -2435,9 +2435,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_cmp (code, ins->sreg1, sparc_o7);
 			}
 			break;
-		case OP_X86_TEST_NULL:
-			sparc_cmp_imm (code, ins->sreg1, 0);
-			break;
 		case CEE_BREAK:
 			/*
 			 * gdb does not like encountering 'ta 1' in the debugged code. So 
