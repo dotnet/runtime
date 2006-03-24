@@ -1868,9 +1868,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (imm8 >= 0);
 			ARM_CMP_REG_IMM (code, ins->sreg1, imm8, rot_amount);
 			break;
-		case OP_X86_TEST_NULL:
-			g_assert_not_reached ();
-			break;
 		case CEE_BREAK:
 			*(int*)code = 0xe7f001f0;
 			*(int*)code = 0xef9f0001;
@@ -2401,14 +2398,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CONV_R8:
 			ARM_FLTD (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_X86_FP_LOAD_I8:
-			g_assert_not_reached ();
-			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);*/
-			break;
-		case OP_X86_FP_LOAD_I4:
-			g_assert_not_reached ();
-			/*x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);*/
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
