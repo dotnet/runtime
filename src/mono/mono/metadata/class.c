@@ -770,7 +770,7 @@ static void
 mono_class_setup_fields (MonoClass *class)
 {
 	MonoImage *m = class->image; 
-	const int top = class->field.count;
+	int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i, blittable = TRUE;
@@ -784,8 +784,11 @@ mono_class_setup_fields (MonoClass *class)
 	if (class->size_inited)
 		return;
 
-	if (class->inited)
-		mono_class_init (class);
+	if (class->generic_class) {
+		MonoClass *gklass = class->generic_class->container_class;
+		mono_class_setup_fields (gklass);
+		top = gklass->field.count;
+	}
 
 	class->instance_size = 0;
 	class->class_size = 0;
