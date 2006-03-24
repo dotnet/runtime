@@ -1549,14 +1549,17 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	aname->name = g_strdup (name);
 	
 	if (culture) {
-		if (g_strcasecmp (culture, "neutral") == 0)
+		if (g_ascii_strcasecmp (culture, "neutral") == 0)
 			aname->culture = g_strdup ("");
 		else
 			aname->culture = g_strdup (culture);
 	}
 	
-	if (token && strncmp (token, "null", 4) != 0)
-		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	if (token && strncmp (token, "null", 4) != 0) {
+		char *lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_strlcpy ((char*)aname->public_key_token, lower, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free (lower);
+	}
 
 	if (key && strncmp (key, "null", 4) != 0) {
 		if (!parse_public_key (key, &pkey)) {
