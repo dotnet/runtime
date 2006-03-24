@@ -484,6 +484,8 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
  * and improve it to do graphs and more accurate timestamping with rdtsc.
  */
 
+static FILE* poutput = NULL;
+
 #define USE_X86TSC 0
 #define USE_WIN32COUNTER 0
 #if USE_X86TSC
@@ -735,24 +737,24 @@ output_profile (GList *funcs)
 	guint64 total_calls = 0;
 
 	if (funcs)
-		g_print ("Time(ms) Count   P/call(ms) Method name\n");
+		fprintf (poutput, "Time(ms) Count   P/call(ms) Method name\n");
 	for (tmp = funcs; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		total_calls += p->count;
 		if (!(gint)(p->total*1000))
 			continue;
 		m = method_get_name (p->method);
-		printf ("########################\n");
-		printf ("% 8.3f ", (double) (p->total * 1000));
-		printf ("%7llu ", (unsigned long long)p->count);
-		printf ("% 8.3f ", (double) (p->total * 1000)/(double)p->count);
-		printf ("  %s\n", m);
+		fprintf (poutput, "########################\n");
+		fprintf (poutput, "% 8.3f ", (double) (p->total * 1000));
+		fprintf (poutput, "%7llu ", (unsigned long long)p->count);
+		fprintf (poutput, "% 8.3f ", (double) (p->total * 1000)/(double)p->count);
+		fprintf (poutput, "  %s\n", m);
 
 		g_free (m);
 		/* callers */
 		output_callers (p);
 	}
-	printf ("Total number of calls: %lld\n", (long long)total_calls);
+	fprintf (poutput, "Total number of calls: %lld\n", (long long)total_calls);
 }
 
 typedef struct {
@@ -825,7 +827,7 @@ output_callers (MethodProfile *p) {
 	CallerInfo *cinfo;
 	char *m;
 	
-	g_print ("  Callers (with count) that contribute at least for 1%%:\n");
+	fprintf (poutput, "  Callers (with count) that contribute at least for 1%%:\n");
 	total_callers = 0;
 	for (cinfo = p->caller_info; cinfo; cinfo = cinfo->next) {
 		total_callers += cinfo->count;
@@ -837,7 +839,7 @@ output_callers (MethodProfile *p) {
 		if (percent < 1)
 			continue;
 		m = method_get_name (cinfo->caller);
-		g_print ("    %8d % 3d %% %s\n", cinfo->count, percent, m);
+		fprintf (poutput, "    %8d % 3d %% %s\n", cinfo->count, percent, m);
 		g_free (m);
 	}
 }
@@ -861,10 +863,10 @@ output_newobj_profile (GList *proflist)
 	guint64 total = 0;
 	GSList *sorted, *tmps;
 
-	g_print ("\nAllocation profiler\n");
+	fprintf (poutput, "\nAllocation profiler\n");
 
 	if (proflist)
-		g_print ("%-9s %s\n", "Total mem", "Method");
+		fprintf (poutput, "%-9s %s\n", "Total mem", "Method");
 	for (tmp = proflist; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		total += p->count;
@@ -872,7 +874,7 @@ output_newobj_profile (GList *proflist)
 			continue;
 		mp = p->mp;
 		m = method_get_name (mp->method);
-		g_print ("########################\n%8" G_GUINT64_FORMAT " KB %s\n", (p->count / 1024), m);
+		fprintf (poutput, "########################\n%8" G_GUINT64_FORMAT " KB %s\n", (p->count / 1024), m);
 		g_free (m);
 		sorted = sort_alloc_list (mp->alloc_info);
 		for (tmps = sorted; tmps; tmps = tmps->next) {
@@ -888,12 +890,12 @@ output_newobj_profile (GList *proflist)
 			}
 			g_snprintf (buf, sizeof (buf), "%s%s%s%s",
 				klass->name_space, klass->name_space ? "." : "", klass->name, isarray);
-			g_print ("    %8" G_GUINT64_FORMAT " KB %8" G_GUINT64_FORMAT " %-48s\n", (ainfo->mem / 1024), ainfo->count, buf);
+			fprintf (poutput, "    %8" G_GUINT64_FORMAT " KB %8" G_GUINT64_FORMAT " %-48s\n", (ainfo->mem / 1024), ainfo->count, buf);
 		}
 		/* callers */
 		output_callers (mp);
 	}
-	g_print ("Total memory allocated: %" G_GUINT64_FORMAT " KB\n", total / 1024);
+	fprintf (poutput, "Total memory allocated: %" G_GUINT64_FORMAT " KB\n", total / 1024);
 }
 
 static void
@@ -1225,13 +1227,13 @@ stat_prof_report (void)
 		if (c > 1)
 			g_free (mn);
 	}
-	g_print ("prof counts: total/unmanaged: %d/%d\n", pcount, prof_ucounts);
+	fprintf (poutput, "prof counts: total/unmanaged: %d/%d\n", pcount, prof_ucounts);
 	g_hash_table_foreach (prof_table, (GHFunc)prof_foreach, &sorted);
 	for (tmp = sorted; tmp; tmp = tmp->next) {
 		double perc;
 		c = GPOINTER_TO_UINT (g_hash_table_lookup (prof_table, tmp->data));
 		perc = c*100.0/count;
-		g_print ("%7d\t%5.2f %% %s\n", c, perc, (char*)tmp->data);
+		fprintf (poutput, "%7d\t%5.2f %% %s\n", c, perc, (char*)tmp->data);
 	}
 	g_list_free (sorted);
 }
@@ -1259,10 +1261,10 @@ simple_shutdown (MonoProfiler *prof)
 		merge_thread_data (prof, tprof);
 	}
 
-	printf("Total time spent compiling %d methods (sec): %.4g\n", prof->methods_jitted, prof->jit_time);
+	fprintf (poutput, "Total time spent compiling %d methods (sec): %.4g\n", prof->methods_jitted, prof->jit_time);
 	if (prof->max_jit_method) {
 		str = method_get_name (prof->max_jit_method);
-		printf("Slowest method to compile (sec): %.4g: %s\n", prof->max_jit_time, str);
+		fprintf (poutput, "Slowest method to compile (sec): %.4g: %s\n", prof->max_jit_time, str);
 		g_free (str);
 	}
 	g_hash_table_foreach (prof->methods, (GHFunc)build_profile, &profile);
@@ -1287,6 +1289,7 @@ mono_profiler_install_simple (const char *desc)
 	MonoProfileFlags flags = 0;
 
 	MONO_TIMER_STARTUP;
+	poutput = stdout;
 
 	if (!desc)
 		desc = "alloc,time,jit";
@@ -1310,7 +1313,13 @@ mono_profiler_install_simple (const char *desc)
 				flags |= MONO_PROFILE_STATISTICAL | MONO_PROFILE_APPDOMAIN_EVENTS;
 			else if (!strcmp (arg, "jit"))
 				flags |= MONO_PROFILE_JIT_COMPILATION;
-			else {
+			else if (strncmp (arg, "file=", 5) == 0) {
+				poutput = fopen (arg + 5, "wb");
+				if (!poutput) {
+					poutput = stdout;
+					fprintf (stderr, "profiler : cannot open profile output file '%s'.\n", arg + 5);
+				}
+			} else {
 				fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
 				return;
 			}
