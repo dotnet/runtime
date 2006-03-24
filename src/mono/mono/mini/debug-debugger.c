@@ -301,7 +301,9 @@ debugger_gc_push_all_stacks (void)
 		MonoDebuggerThread *thread = g_ptr_array_index (thread_array, i);
 		gpointer end_stack = (thread->tid == tid) ? &i : thread->end_stack;
 
+#ifdef USE_INCLUDED_LIBGC
 		GC_push_all_stack (end_stack, thread->start_stack);
+#endif
 	}
 }
 
@@ -341,7 +343,9 @@ mono_debugger_init (void)
 
 	thread_array = g_ptr_array_new ();
 	mono_install_thread_callbacks (&thread_callbacks);
+#ifdef USE_INCLUDED_LIBGC
 	gc_thread_vtable = &debugger_thread_vtable;
+#endif
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
 					     GetCurrentThreadId (), 0);
 }
