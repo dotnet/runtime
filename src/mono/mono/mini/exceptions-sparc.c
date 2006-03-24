@@ -425,6 +425,61 @@ mono_arch_has_unwind_info (gconstpointer addr)
 	return FALSE;
 }
 
+#ifdef __linux__
+
+gboolean
+mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+{
+       MonoContext mctx;
+       struct sigcontext *sc = sigctx;
+       gpointer *window;
+
+#ifdef SPARCV9
+       mctx.ip = (gpointer) sc->sigc_regs.tpc;
+       mctx.sp = (gpointer) sc->sigc_regs.u_regs[14];
+#else
+       mctx.ip = (gpointer) sc->si_regs.pc;
+       mctx.sp = (gpointer) sc->si_regs.u_regs[14];
+#endif
+
+       window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
+       mctx.fp = window [sparc_fp - 16];
+
+       mono_handle_exception (&mctx, obj, mctx.ip, test_only);
+
+#ifdef SPARCV9
+       sc->sigc_regs.tpc = (unsigned long) mctx.ip;
+       sc->sigc_regs.tnpc = (unsigned long) (mctx.ip + 4);
+       sc->sigc_regs.u_regs[14] = (unsigned long) mctx.sp;
+#else
+       sc->si_regs.pc = (unsigned long) mctx.ip;
+       sc->si_regs.npc = (unsigned long) (mctx.ip + 4);
+       sc->si_regs.u_regs[14] = (unsigned long) mctx.sp;
+#endif
+
+       window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
+       window [sparc_fp - 16] = mctx.fp;
+
+       return TRUE;
+}
+
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+       struct sigcontext *sc = sigctx;
+       gpointer *ret;
+
+#ifdef SPARCV9
+       ret = (gpointer) sc->sigc_regs.tpc;
+#else
+       ret = (gpointer) sc->si_regs.pc;
+#endif
+
+       return ret;
+}
+
+#else /* !__linux__ */
+
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
@@ -437,12 +492,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	 * under documented under solaris. The code below seems to work under
 	 * Solaris 9.
 	 */
-#ifndef __linux__
 	g_assert (!ctx->uc_mcontext.gwins);
-#else
-	/* better, but doesn't work all the time.  need to rethink! */
-	g_assert (!ctx->uc_mcontext.gregs);
-#endif
 
 	mctx.ip = ctx->uc_mcontext.gregs [REG_PC];
 	mctx.sp = ctx->uc_mcontext.gregs [REG_SP];
@@ -468,3 +518,4 @@ mono_arch_ip_from_context (void *sigctx)
 	return (gpointer)ctx->uc_mcontext.gregs [REG_PC];
 }
 
+#endif
