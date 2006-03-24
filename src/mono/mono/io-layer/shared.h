@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #ifndef _WAPI_SHARED_H_
@@ -19,6 +19,7 @@ typedef enum {
 
 extern gpointer _wapi_shm_attach (_wapi_shm_t type);
 extern void _wapi_shm_semaphores_init (void);
+extern void _wapi_shm_semaphores_remove (void);
 extern int _wapi_shm_sem_lock (int sem);
 extern int _wapi_shm_sem_trylock (int sem);
 extern int _wapi_shm_sem_unlock (int sem);

@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #ifndef _WAPI_PRIVATE_H_
@@ -24,6 +24,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
+/* Next time I change this, remember to fix the process count in shared.c */
 #define _WAPI_HANDLE_VERSION 10
 
 typedef enum {
@@ -165,6 +166,8 @@ struct _WapiHandleShared
 /*#define _WAPI_SHARED_SEM_COLLECTION 1*/
 #define _WAPI_SHARED_SEM_FILESHARE 2
 #define _WAPI_SHARED_SEM_SHARED_HANDLES 3
+#define _WAPI_SHARED_SEM_PROCESS_COUNT_LOCK 6
+#define _WAPI_SHARED_SEM_PROCESS_COUNT 7
 #define _WAPI_SHARED_SEM_COUNT 8	/* Leave some future expansion space */
 
 struct _WapiHandleSharedLayout

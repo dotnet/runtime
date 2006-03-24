@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 
@@ -34,7 +34,7 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 	static guchar file[_POSIX_PATH_MAX];
 	guchar *name = NULL, *filename, *dir, *wapi_dir;
 	gchar machine_name[256];
-	gchar *fake_name;
+	const gchar *fake_name;
 	struct utsname ubuf;
 	int ret;
 	int len;
@@ -259,9 +259,11 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 
 void _wapi_shm_semaphores_init ()
 {
-	key_t key = ftok (_wapi_shm_file (WAPI_SHM_DATA), 'M');
+	key_t key;
 	key_t oldkey;
-
+	int thr_ret;
+	struct _WapiHandleSharedLayout *tmp_shared;
+	
 	/* Yet more barmy API - this union is a well-defined parameter
 	 * in a syscall, yet I still have to define it here as it
 	 * doesn't appear in a header
@@ -278,11 +280,31 @@ void _wapi_shm_semaphores_init ()
 	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
 		def_vals[i] = 1;
 	}
+#ifdef NEXT_VERSION_INC
+	/* Process count must start at '0' - the 1 for all the others
+	 * sets the semaphore to "unlocked"
+	 */
+	def_vals[_WAPI_SHARED_SEM_PROCESS_COUNT] = 0;
+#endif
+	
 	defs.array = def_vals;
 	
+	/* Temporarily attach the shared data so we can read the
+	 * semaphore key.  We release this mapping and attach again
+	 * after getting the semaphores to avoid a race condition
+	 * where a terminating process can delete the shared files
+	 * between a new process attaching the file and getting access
+	 * to the semaphores (which increments the process count,
+	 * preventing destruction of the shared data...)
+	 */
+	tmp_shared = _wapi_shm_attach (WAPI_SHM_DATA);
+	g_assert (tmp_shared != NULL);
+	
+	key = ftok (_wapi_shm_file (WAPI_SHM_DATA), 'M');
+
 again:
 	retries++;
-	oldkey = _wapi_shared_layout->sem_key;
+	oldkey = tmp_shared->sem_key;
 
 	if (oldkey == 0) {
 #ifdef DEBUG
@@ -328,7 +350,7 @@ again:
 			goto again;
 		}
 
-		if (InterlockedCompareExchange (&_wapi_shared_layout->sem_key,
+		if (InterlockedCompareExchange (&tmp_shared->sem_key,
 						key, 0) != 0) {
 			/* Someone else created one and installed the
 			 * key while we were working, so delete the
@@ -336,12 +358,12 @@ again:
 			 * 'key already known' case.
 			 */
 			semctl (_wapi_sem_id, 0, IPC_RMID);
-			oldkey = _wapi_shared_layout->sem_key;
+			oldkey = tmp_shared->sem_key;
 		} else {
 			/* We've installed this semaphore set's key into
 			 * the shared memory
 			 */
-			return;
+			goto done;
 		}
 	}
 	
@@ -358,10 +380,79 @@ again:
 		/* Someone must have deleted the semaphore set, so
 		 * blow away the bad key and try again
 		 */
-		InterlockedCompareExchange (&_wapi_shared_layout->sem_key, 0,
-					    oldkey);
+		InterlockedCompareExchange (&tmp_shared->sem_key, 0, oldkey);
 		
 		goto again;
+	}
+
+  done:
+	/* Increment the usage count of this semaphore set */
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
+	g_assert (thr_ret == 0);
+	
+#ifdef DEBUG
+	g_message ("%s: Incrementing the process count", __func__);
+#endif
+
+	/* We only ever _unlock_ this semaphore, letting the kernel
+	 * restore (ie decrement) this unlock when this process exits.
+	 * We lock another semaphore around it so we can serialise
+	 * access when we're testing the value of this semaphore when
+	 * we exit cleanly, so we can delete the whole semaphore set.
+	 */
+	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT);
+
+#ifdef DEBUG
+	g_message ("%s: Process count is now %d", __func__, semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT, GETVAL));
+#endif
+	
+	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
+
+	munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
+}
+
+void _wapi_shm_semaphores_remove (void)
+{
+	int thr_ret;
+	int proc_count;
+	
+#ifdef DEBUG
+	g_message ("%s: Checking process count", __func__);
+#endif
+
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
+	g_assert (thr_ret == 0);
+	
+	proc_count = semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT,
+			     GETVAL);
+#ifdef NEXT_VERSION_INC
+	g_assert (proc_count > 0);
+	if (proc_count == 1) {
+#else
+	/* Compatibility - the semaphore was initialised to '1' (which
+	 * normally means 'unlocked'.  Instead of fixing that right
+	 * now, which would mean a shared file version increment, just
+	 * cope with the value starting too high for now.  Fix this
+	 * next time I have to change the file version.
+	 */
+	g_assert (proc_count > 1);
+	if (proc_count == 2) {
+#endif
+		/* Just us, so blow away the semaphores and the shared
+		 * files
+		 */
+#ifdef DEBUG
+		g_message ("%s: Removing semaphores!", __func__);
+#endif
+
+		semctl (_wapi_sem_id, IPC_RMID, 0);
+		unlink (_wapi_shm_file (WAPI_SHM_DATA));
+		unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
+	} else {
+		/* "else" clause, because there's no point unlocking
+		 * the semaphore if we've just blown it away...
+		 */
+		_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	}
 }
 
@@ -378,11 +469,28 @@ int _wapi_shm_sem_lock (int sem)
 	ops.sem_op = -1;
 	ops.sem_flg = SEM_UNDO;
 	
+  retry:
 	do {
 		ret = semop (_wapi_sem_id, &ops, 1);
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
+		/* EINVAL covers the case when the semaphore was
+		 * deleted before we started the semop
+		 */
+		if (errno == EIDRM || errno == EINVAL) {
+			/* Someone blew away this semaphore set, so
+			 * get a new one and try again
+			 */
+#ifdef DEBUG
+			g_message ("%s: Reinitialising the semaphores!",
+				   __func__);
+#endif
+
+			_wapi_shm_semaphores_init ();
+			goto retry;
+		}
+		
 		/* Turn this into a pthreads-style return value */
 		ret = errno;
 	}
@@ -407,11 +515,28 @@ int _wapi_shm_sem_trylock (int sem)
 	ops.sem_op = -1;
 	ops.sem_flg = IPC_NOWAIT | SEM_UNDO;
 	
+  retry:
 	do {
 		ret = semop (_wapi_sem_id, &ops, 1);
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
+		/* EINVAL covers the case when the semaphore was
+		 * deleted before we started the semop
+		 */
+		if (errno == EIDRM || errno == EINVAL) {
+			/* Someone blew away this semaphore set, so
+			 * get a new one and try again
+			 */
+#ifdef DEBUG
+			g_message ("%s: Reinitialising the semaphores!",
+				   __func__);
+#endif
+
+			_wapi_shm_semaphores_init ();
+			goto retry;
+		}
+		
 		/* Turn this into a pthreads-style return value */
 		ret = errno;
 	}
@@ -441,11 +566,29 @@ int _wapi_shm_sem_unlock (int sem)
 	ops.sem_op = 1;
 	ops.sem_flg = SEM_UNDO;
 	
+  retry:
 	do {
 		ret = semop (_wapi_sem_id, &ops, 1);
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
+		/* EINVAL covers the case when the semaphore was
+		 * deleted before we started the semop
+		 */
+		if (errno == EIDRM || errno == EINVAL) {
+			/* Someone blew away this semaphore set, so
+			 * get a new one and try again (we can't just
+			 * assume that the semaphore is now unlocked)
+			 */
+#ifdef DEBUG
+			g_message ("%s: Reinitialising the semaphores!",
+				   __func__);
+#endif
+
+			_wapi_shm_semaphores_init ();
+			goto retry;
+		}
+		
 		/* Turn this into a pthreads-style return value */
 		ret = errno;
 	}

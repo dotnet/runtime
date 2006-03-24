@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002-2006 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -132,6 +132,11 @@ pid_t _wapi_getpid (void)
 
 static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 
+static void handle_cleanup (void)
+{
+	_wapi_shm_semaphores_remove ();
+}
+
 static mono_once_t shared_init_once = MONO_ONCE_INIT;
 static void shared_init (void)
 {
@@ -149,11 +154,11 @@ static void shared_init (void)
 
 		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
 	} while(_wapi_fd_reserve > _wapi_private_handle_count);
+
+	_wapi_shm_semaphores_init ();
 	
 	_wapi_shared_layout = _wapi_shm_attach (WAPI_SHM_DATA);
 	g_assert (_wapi_shared_layout != NULL);
-
-	_wapi_shm_semaphores_init ();
 	
 	_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
 	g_assert (_wapi_fileshare_layout != NULL);
@@ -165,6 +170,13 @@ static void shared_init (void)
 	
 	thr_ret = mono_mutex_init(&_wapi_global_signal_mutex, NULL);
 	g_assert (thr_ret == 0);
+
+	/* Using g_atexit here instead of an explicit function call in
+	 * a cleanup routine lets us cope when a third-party library
+	 * calls exit (eg if an X client loses the connection to its
+	 * server.)
+	 */
+	g_atexit (handle_cleanup);
 }
 
 static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
@@ -1709,3 +1721,4 @@ void _wapi_handle_update_refs (void)
 
 	_wapi_handle_unlock_shared_handles ();
 }
+
