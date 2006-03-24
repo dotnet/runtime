@@ -351,7 +351,7 @@ get_file_attributes (const char *filename)
 		buf.st_mode &= ~S_IFSOCK; /* don't consider socket protection */
 
 	file_attrs = 0;
-	if ((buf.st_mode & S_IFDIR) != 0)
+	if (S_ISDIR (buf.st_mode))
 		file_attrs |= FILE_ATTRIBUTE_DIRECTORY;
 	else
 		file_attrs |= FILE_ATTRIBUTE_ARCHIVE;
