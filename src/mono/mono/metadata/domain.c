@@ -676,6 +676,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System", "RuntimeFieldHandle");
 	g_assert (mono_defaults.fieldhandle_class != 0);
 
+	mono_defaults.systemtype_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Type");
+	g_assert (mono_defaults.systemtype_class != 0);
+
 	mono_defaults.monotype_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "MonoType");
 	g_assert (mono_defaults.monotype_class != 0);

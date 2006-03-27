@@ -653,6 +653,7 @@ typedef struct {
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
 	MonoClass *methodhandle_class;
+	MonoClass *systemtype_class;
 	MonoClass *monotype_class;
 	MonoClass *exception_class;
 	MonoClass *threadabortexception_class;

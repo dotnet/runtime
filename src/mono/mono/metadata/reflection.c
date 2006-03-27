@@ -7775,7 +7775,7 @@ handle_type:
 		
 		klass = mono_object_class (arg);
 
-		if (mono_object_isinst (arg, mono_defaults.monotype_class)) {
+		if (mono_object_isinst (arg, mono_defaults.systemtype_class)) {
 			*p++ = 0x50;
 			goto handle_type;
 		} else if (klass->enumtype) {
