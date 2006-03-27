@@ -104,10 +104,18 @@ static int _wapi_shm_file_open (const guchar *filename, guint32 wanted_size)
 {
 	int fd;
 	struct stat statbuf;
-	int ret;
+	int ret, tries = 0;
 	gboolean created = FALSE;
 	
 try_again:
+	if (tries++ > 10) {
+		/* Just give up */
+		return (-1);
+	} else if (tries > 5) {
+		/* Break out of a loop */
+		unlink (filename);
+	}
+	
 	/* No O_CREAT yet, because we need to initialise the file if
 	 * we have to create it.
 	 */
@@ -195,6 +203,7 @@ try_again:
 			return(-1);
 		} else {
 			/* We didn't create it, so just try opening it again */
+			_wapi_handle_spin (100);
 			goto try_again;
 		}
 	}
