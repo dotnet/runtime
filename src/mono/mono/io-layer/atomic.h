@@ -127,152 +127,165 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return(ret);
 }
 
-#elif defined(sparc) || defined (__sparc__)
+#elif (defined(sparc) || defined (__sparc__)) && defined(__GNUC__)
 #define WAPI_ATOMIC_ASM
 
-#ifdef __GNUC__
-#define BEGIN_SPIN(tmp,lock) \
-__asm__ __volatile__("1:        ldstub [%1],%0\n\t"  \
-                             "          cmp %0, 0\n\t" \
-                             "          bne 1b\n\t" \
-                             "          nop" \
-                             : "=&r" (tmp) \
-                             : "r" (&lock) \
-                             : "memory"); 
+G_GNUC_UNUSED 
+static inline gint32 InterlockedCompareExchange(volatile gint32 *_dest, gint32 _exch, gint32 _comp)
+{
+       register volatile gint32 *dest asm("g1") = _dest;
+       register gint32 comp asm("o4") = _comp;
+       register gint32 exch asm("o5") = _exch;
 
-#define END_SPIN(lock) \
-__asm__ __volatile__("stb	%%g0, [%0]"  \
-                      : /* no outputs */ \
-                      : "r" (&lock)\
-                      : "memory");
+       __asm__ __volatile__(
+               /* cas [%%g1], %%o4, %%o5 */
+               ".word 0xdbe0500c"
+               : "=r" (exch)
+               : "0" (exch), "r" (dest), "r" (comp)
+               : "memory");
+
+       return exch;
+}
+
+G_GNUC_UNUSED 
+static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *_dest, gpointer _exch, gpointer _comp)
+{
+       register volatile gpointer *dest asm("g1") = _dest;
+       register gpointer comp asm("o4") = _comp;
+       register gpointer exch asm("o5") = _exch;
+
+       __asm__ __volatile__(
+#ifdef SPARCV9
+               /* casx [%%g1], %%o4, %%o5 */
+               ".word 0xdbf0500c"
 #else
-static inline void begin_spin(volatile unsigned char *lock)
-{
-	asm("1: ldstub [%i0], %l0");
-	asm("cmp %l0,0");
-	asm("bne 1b");
-	asm("nop");
-}
-#define BEGIN_SPIN(tmp,lock) begin_spin(&lock);
-#define END_SPIN(lock) ((lock) = 0);
+               /* cas [%%g1], %%o4, %%o5 */
+               ".word 0xdbe0500c"
 #endif
+               : "=r" (exch)
+               : "0" (exch), "r" (dest), "r" (comp)
+               : "memory");
 
-extern volatile unsigned char _wapi_sparc_lock;
-
-G_GNUC_UNUSED 
-static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp)
-{
-	int tmp;
-	gint32 old;
-
-	BEGIN_SPIN(tmp,_wapi_sparc_lock)
-
-	old = *dest;
-	if (old==comp) {
-		*dest=exch;
-	}
-
-	END_SPIN(_wapi_sparc_lock)
-
-	return(old);
+       return exch;
 }
 
 G_GNUC_UNUSED 
-static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
+static inline gint32 InterlockedIncrement(volatile gint32 *_dest)
 {
-        int tmp;
-        gpointer old;
+       register volatile gint32 *dest asm("g1") = _dest;
+       register gint32 tmp asm("o4");
+       register gint32 ret asm("o5");
 
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
+       __asm__ __volatile__(
+               "1:     ld      [%%g1], %%o4\n\t"
+               "       add     %%o4, 1, %%o5\n\t"
+               /*      cas     [%%g1], %%o4, %%o5 */
+               "       .word   0xdbe0500c\n\t"
+               "       cmp     %%o4, %%o5\n\t"
+               "       bne     1b\n\t"
+               "        add    %%o5, 1, %%o5"
+               : "=&r" (tmp), "=&r" (ret)
+               : "r" (dest)
+               : "memory", "cc");
 
-        old = *dest;
-        if (old==comp) {
-                *dest=exch;
-        }
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(old);
+        return ret;
 }
 
 G_GNUC_UNUSED 
-static inline gint32 InterlockedIncrement(volatile gint32 *dest)
+static inline gint32 InterlockedDecrement(volatile gint32 *_dest)
 {
-        int tmp;
-        gint32 ret;
+       register volatile gint32 *dest asm("g1") = _dest;
+       register gint32 tmp asm("o4");
+       register gint32 ret asm("o5");
 
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
+       __asm__ __volatile__(
+               "1:     ld      [%%g1], %%o4\n\t"
+               "       sub     %%o4, 1, %%o5\n\t"
+               /*      cas     [%%g1], %%o4, %%o5 */
+               "       .word   0xdbe0500c\n\t"
+               "       cmp     %%o4, %%o5\n\t"
+               "       bne     1b\n\t"
+               "        sub    %%o5, 1, %%o5"
+               : "=&r" (tmp), "=&r" (ret)
+               : "r" (dest)
+               : "memory", "cc");
 
-        (*dest)++;
-        ret = *dest;
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(ret);
-}
-
-G_GNUC_UNUSED 
-static inline gint32 InterlockedDecrement(volatile gint32 *dest)
-{
-        int tmp;
-        gint32 ret;
-
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
-
-	(*dest)--;
-        ret = *dest;
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(ret);
+        return ret;
 }
 
 G_GNUC_UNUSED
-static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
+static inline gint32 InterlockedExchange(volatile gint32 *_dest, gint32 exch)
 {
-        int tmp;
-        gint32 ret;
+       register volatile gint32 *dest asm("g1") = _dest;
+       register gint32 tmp asm("o4");
+       register gint32 ret asm("o5");
 
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
+       __asm__ __volatile__(
+               "1:     ld      [%%g1], %%o4\n\t"
+               "       mov     %3, %%o5\n\t"
+               /*      cas     [%%g1], %%o4, %%o5 */
+               "       .word   0xdbe0500c\n\t"
+               "       cmp     %%o4, %%o5\n\t"
+               "       bne     1b\n\t"
+               "        nop"
+               : "=&r" (tmp), "=&r" (ret)
+               : "r" (dest), "r" (exch)
+               : "memory", "cc");
 
-        ret = *dest;
-        *dest = exch;
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(ret);
+        return ret;
 }
 
 G_GNUC_UNUSED
-static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
+static inline gpointer InterlockedExchangePointer(volatile gpointer *_dest, gpointer exch)
 {
-        int tmp;
-        gpointer ret;
+       register volatile gpointer *dest asm("g1") = _dest;
+       register gpointer tmp asm("o4");
+       register gpointer ret asm("o5");
 
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
+       __asm__ __volatile__(
+#ifdef SPARCV9
+               "1:     ldx     [%%g1], %%o4\n\t"
+#else
+               "1:     ld      [%%g1], %%o4\n\t"
+#endif
+               "       mov     %3, %%o5\n\t"
+#ifdef SPARCV9
+               /*      casx    [%%g1], %%o4, %%o5 */
+               "       .word   0xdbf0500c\n\t"
+#else
+               /*      cas     [%%g1], %%o4, %%o5 */
+               "       .word   0xdbe0500c\n\t"
+#endif
+               "       cmp     %%o4, %%o5\n\t"
+               "       bne     1b\n\t"
+               "        nop"
+               : "=&r" (tmp), "=&r" (ret)
+               : "r" (dest), "r" (exch)
+               : "memory", "cc");
 
-        ret = *dest;
-        *dest = exch;
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(ret);
+        return ret;
 }
 
 G_GNUC_UNUSED
-static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *_dest, gint32 add)
 {
-        int tmp;
-        gint32 ret;
+       register volatile gint32 *dest asm("g1") = _dest;
+       register gint32 tmp asm("o4");
+       register gint32 ret asm("o5");
 
-        BEGIN_SPIN(tmp,_wapi_sparc_lock)
+       __asm__ __volatile__(
+               "1:     ld      [%%g1], %%o4\n\t"
+               "       add     %%o4, %3, %%o5\n\t"
+               /*      cas     [%%g1], %%o4, %%o5 */
+               "       .word   0xdbe0500c\n\t"
+               "       cmp     %%o4, %%o5\n\t"
+               "       bne     1b\n\t"
+               "        add    %%o5, %3, %%o5"
+               : "=&r" (tmp), "=&r" (ret)
+               : "r" (dest), "r" (add)
+               : "memory", "cc");
 
-        ret = *dest;
-        *dest += add;
-
-        END_SPIN(_wapi_sparc_lock)
-
-        return(ret);
+        return ret;
 }
 
 #elif __s390__
