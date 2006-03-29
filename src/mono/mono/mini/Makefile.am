@@ -203,6 +203,7 @@ common_sources = \
 	mini-exceptions.c	\
 	declsec.c	\
 	declsec.h	\
+	wapihandles.c	\
 	branch-opts.c
 
 test_sources = 		\
