@@ -1118,7 +1118,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	key = create_remote_class_key (NULL, proxy_class);
 	
 	mono_domain_lock (domain);
-	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, key);
+	rc = g_hash_table_lookup (domain->proxy_vtable_hash, key);
 
 	if (rc) {
 		g_free (key);
@@ -1141,7 +1141,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	rc->xdomain_vtable = NULL;
 	rc->proxy_class_name = mono_string_to_utf8 (class_name);
 
-	mono_g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
+	g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
 
 	mono_domain_unlock (domain);
 	return rc;
@@ -1158,7 +1158,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 	gpointer* key;
 	
 	key = create_remote_class_key (remote_class, extra_class);
-	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, key);
+	rc = g_hash_table_lookup (domain->proxy_vtable_hash, key);
 	if (rc != NULL) {
 		g_free (key);
 		return rc;
@@ -1192,7 +1192,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 	rc->xdomain_vtable = NULL;
 	rc->proxy_class_name = remote_class->proxy_class_name;
 
-	mono_g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
+	g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
 
 	return rc;
 }

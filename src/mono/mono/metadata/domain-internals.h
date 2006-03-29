@@ -95,8 +95,8 @@ struct _MonoDomain {
 	guint32            state;
 	MonoGHashTable     *ldstr_table;
 	GHashTable         *class_vtable_hash;
-	/* maps MonoString -> MonoRemoteClass */
-	MonoGHashTable     *proxy_vtable_hash;
+	/* maps remote class key -> MonoRemoteClass */
+	GHashTable         *proxy_vtable_hash;
 	MonoGHashTable     *static_data_hash;
 	GHashTable         *jit_code_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */

@@ -455,7 +455,7 @@ mono_domain_create (void)
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->domain_assemblies = NULL;
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
+	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	domain->static_data_hash = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->jit_code_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
@@ -983,7 +983,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->env = NULL;
 	g_hash_table_destroy (domain->class_vtable_hash);
 	domain->class_vtable_hash = NULL;
-	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
+	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
 	mono_g_hash_table_destroy (domain->static_data_hash);
 	domain->static_data_hash = NULL;
