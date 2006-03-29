@@ -566,7 +566,7 @@ mini_usage_jitdeveloper (void)
 		 "    --regression           Runs the regression test contained in the assembly\n"
 		 "    --statfile FILE        Sets the stat file to FILE\n"
 		 "    --stats                Print statistics about the JIT operations\n"
-		 "    --wapi=hps|semdel      IO-layer maintainance\n"
+		 "    --wapi=hps|semdel      IO-layer maintenance\n"
 		 "\n"
 		 "Other options:\n" 
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
