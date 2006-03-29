@@ -64,6 +64,9 @@
 
 #include "aliasing.h"
 
+#define BRANCH_COST 100
+#define INLINE_LENGTH_LIMIT 20
+
 /* 
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
  * because they have weird semantics with NaNs.
@@ -2952,7 +2955,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		if (header->code_size < atoi (getenv ("MONO_INLINELIMIT"))) {
 			return TRUE;
 		}
-	} else if (header->code_size < 20)
+	} else if (header->code_size < INLINE_LENGTH_LIMIT)
 		return TRUE;
 
 	return FALSE;
@@ -3036,9 +3039,9 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	return addr;
 }
 
-static MonoJitICallInfo **emul_opcode_map = NULL;
+MonoJitICallInfo **emul_opcode_map = NULL;
 
-static inline MonoJitICallInfo *
+MonoJitICallInfo *
 mono_find_jit_opcode_emulation (int opcode)
 {
 	if  (emul_opcode_map)
@@ -4702,7 +4705,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp = stack_start;
 			}
 			start_new_bblock = 1;
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_BRFALSE_S:
 		case CEE_BRTRUE_S:
@@ -4719,7 +4722,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
 			}
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_BEQ_S:
 		case CEE_BGE_S:
@@ -4742,7 +4745,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
 			}
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_BR:
 			CHECK_OPSIZE (5);
@@ -4760,7 +4763,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp = stack_start;
 			}
 			start_new_bblock = 1;
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_BRFALSE:
 		case CEE_BRTRUE:
@@ -4777,7 +4780,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
 			}
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_BEQ:
 		case CEE_BGE:
@@ -4800,7 +4803,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
 			}
-			inline_costs += 10;
+			inline_costs += BRANCH_COST;
 			break;
 		case CEE_SWITCH:
 			CHECK_OPSIZE (5);
@@ -4834,7 +4837,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
-			inline_costs += 20;
+			inline_costs += (BRANCH_COST * 2);
 			break;
 		case CEE_LDIND_I1:
 		case CEE_LDIND_U1:
@@ -9450,190 +9453,7 @@ mono_codegen (MonoCompile *cfg)
 	mono_debug_close_method (cfg);
 }
 
-static void
-mono_cprop_copy_values (MonoCompile *cfg, MonoInst *tree, MonoInst **acp)
-{
-	MonoInst *cp;
-	int arity;
 
-	if (tree->ssa_op == MONO_SSA_LOAD && (tree->inst_i0->opcode == OP_LOCAL || tree->inst_i0->opcode == OP_ARG) && 
-	    (cp = acp [tree->inst_i0->inst_c0]) && !tree->inst_i0->flags) {
-
-		if (cp->opcode == OP_ICONST) {
-			if (cfg->opt & MONO_OPT_CONSPROP) {
-				//{ static int c = 0; printf ("CCOPY %d %d %s\n", c++, cp->inst_c0, mono_method_full_name (cfg->method, TRUE)); }
-				*tree = *cp;
-			}
-		} else {
-			if (tree->inst_i0->inst_vtype->type == cp->inst_vtype->type) {
-				if (cfg->opt & MONO_OPT_COPYPROP) {
-					//{ static int c = 0; printf ("VCOPY %d\n", ++c); }
-					tree->inst_i0 = cp;
-				} 
-			}
-		} 
-	} else {
-		arity = mono_burg_arity [tree->opcode];
-
-		if (arity) {
-			mono_cprop_copy_values (cfg, tree->inst_i0, acp);
-			if (cfg->opt & MONO_OPT_CFOLD)
-				mono_constant_fold_inst (tree, NULL); 
-			/* The opcode may have changed */
-			if (mono_burg_arity [tree->opcode] > 1) {
-				mono_cprop_copy_values (cfg, tree->inst_i1, acp);
-				if (cfg->opt & MONO_OPT_CFOLD)
-					mono_constant_fold_inst (tree, NULL); 
-			}
-			mono_constant_fold_inst (tree, NULL); 
-		}
-	}
-}
-
-static void
-mono_cprop_invalidate_values (MonoInst *tree, MonoInst **acp, int acp_size)
-{
-	int arity;
-
-	switch (tree->opcode) {
-	case CEE_STIND_I:
-	case CEE_STIND_I1:
-	case CEE_STIND_I2:
-	case CEE_STIND_I4:
-	case CEE_STIND_REF:
-	case CEE_STIND_I8:
-	case CEE_STIND_R4:
-	case CEE_STIND_R8:
-	case CEE_STOBJ:
-		if ((tree->ssa_op == MONO_SSA_NOP) || (tree->ssa_op & MONO_SSA_ADDRESS_TAKEN)) {
-			memset (acp, 0, sizeof (MonoInst *) * acp_size);
-			return;
-		}
-
-		break;
-	case CEE_CALL:
-	case OP_CALL_REG:
-	case CEE_CALLVIRT:
-	case OP_LCALL_REG:
-	case OP_LCALLVIRT:
-	case OP_LCALL:
-	case OP_FCALL_REG:
-	case OP_FCALLVIRT:
-	case OP_FCALL:
-	case OP_VCALL_REG:
-	case OP_VCALLVIRT:
-	case OP_VCALL:
-	case OP_VOIDCALL_REG:
-	case OP_VOIDCALLVIRT:
-	case OP_VOIDCALL: {
-		MonoCallInst *call = (MonoCallInst *)tree;
-		MonoMethodSignature *sig = call->signature;
-		int i, byref = FALSE;
-
-		for (i = 0; i < sig->param_count; i++) {
-			if (sig->params [i]->byref) {
-				byref = TRUE;
-				break;
-			}
-		}
-
-		if (byref)
-			memset (acp, 0, sizeof (MonoInst *) * acp_size);
-
-		return;
-	}
-	default:
-		break;
-	}
-
-	arity = mono_burg_arity [tree->opcode];
-
-	switch (arity) {
-	case 0:
-		break;
-	case 1:
-		mono_cprop_invalidate_values (tree->inst_i0, acp, acp_size);
-		break;
-	case 2:
-		mono_cprop_invalidate_values (tree->inst_i0, acp, acp_size);
-		mono_cprop_invalidate_values (tree->inst_i1, acp, acp_size);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-static void
-mono_local_cprop_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size)
-{
-	MonoInst *tree = bb->code;	
-	int i;
-
-	if (!tree)
-		return;
-
-	for (; tree; tree = tree->next) {
-
-		mono_cprop_copy_values (cfg, tree, acp);
-
-		mono_cprop_invalidate_values (tree, acp, acp_size);
-
-		if (tree->ssa_op == MONO_SSA_STORE  && 
-		    (tree->inst_i0->opcode == OP_LOCAL || tree->inst_i0->opcode == OP_ARG)) {
-			MonoInst *i1 = tree->inst_i1;
-
-			acp [tree->inst_i0->inst_c0] = NULL;
-
-			for (i = 0; i < acp_size; i++) {
-				if (acp [i] && acp [i]->opcode != OP_ICONST && 
-				    acp [i]->inst_c0 == tree->inst_i0->inst_c0) {
-					acp [i] = NULL;
-				}
-			}
-
-			if (i1->opcode == OP_ICONST) {
-				acp [tree->inst_i0->inst_c0] = i1;
-				//printf ("DEF1 BB%d %d\n", bb->block_num,tree->inst_i0->inst_c0);
-			}
-			if (i1->ssa_op == MONO_SSA_LOAD && 
-			    (i1->inst_i0->opcode == OP_LOCAL || i1->inst_i0->opcode == OP_ARG) &&
-			    (i1->inst_i0->inst_c0 != tree->inst_i0->inst_c0)) {
-				acp [tree->inst_i0->inst_c0] = i1->inst_i0;
-				//printf ("DEF2 BB%d %d %d\n", bb->block_num,tree->inst_i0->inst_c0,i1->inst_i0->inst_c0);
-			}
-		}
-
-		/*
-		  if (tree->opcode == CEE_BEQ) {
-		  g_assert (tree->inst_i0->opcode == OP_COMPARE);
-		  if (tree->inst_i0->inst_i0->opcode == OP_ICONST &&
-		  tree->inst_i0->inst_i1->opcode == OP_ICONST) {
-		  
-		  tree->opcode = CEE_BR;
-		  if (tree->inst_i0->inst_i0->opcode == tree->inst_i0->inst_i1->opcode) {
-		  tree->inst_target_bb = tree->inst_true_bb;
-		  } else {
-		  tree->inst_target_bb = tree->inst_false_bb;
-		  }
-		  }
-		  }
-		*/
-	}
-}
-
-static void
-mono_local_cprop (MonoCompile *cfg)
-{
-	MonoBasicBlock *bb;
-	MonoInst **acp;
-
-	acp = alloca (sizeof (MonoInst *) * cfg->num_varinfo);
-
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		memset (acp, 0, sizeof (MonoInst *) * cfg->num_varinfo);
-		mono_local_cprop_bb (cfg, bb, acp, cfg->num_varinfo);
-	}
-}
 
 static void
 remove_critical_edges (MonoCompile *cfg) {

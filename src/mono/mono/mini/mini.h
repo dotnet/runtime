@@ -523,7 +523,8 @@ enum {
 	MONO_OPT_ABCREM   = 1 << 18,
 	MONO_OPT_SSAPRE   = 1 << 19,
 	MONO_OPT_EXCEPTION= 1 << 20,
-	MONO_OPT_SSA      = 1 << 21
+	MONO_OPT_SSA      = 1 << 21,
+	MONO_OPT_TREEPROP = 1 << 22
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -849,6 +850,8 @@ void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, 
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, const char *aot_options);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
+MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode);
+
 
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
@@ -1033,6 +1036,8 @@ extern void
 mono_perform_abc_removal (MonoCompile *cfg);
 extern void
 mono_perform_ssapre (MonoCompile *cfg);
+extern void
+mono_local_cprop (MonoCompile *cfg);
 
 /* CAS - stack walk */
 MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);

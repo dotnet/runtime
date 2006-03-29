@@ -192,6 +192,7 @@ common_sources = \
 	ssapre.h	\
 	aliasing.c	\
 	aliasing.h	\
+	local-propagation.c	\
 	ssapre-cee-ops.h \
 	ssapre-mini-ops.h \
 	driver.c	\
