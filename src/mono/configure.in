@@ -593,6 +593,9 @@ case "x$gc" in
 		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
 		if test "x$found_gcj_malloc" = "xyes"; then
 			AC_DEFINE(HAVE_GC_GCJ_MALLOC)
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (with typed GC)", [GC description])
+		else
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (no typed GC)", [GC description])
 		fi
 		AC_CHECK_LIB(gc, GC_enable, found_gc_enable="yes",,$libdl)
 		if test "x$found_gc_enable" = "xyes"; then
@@ -621,10 +624,23 @@ case "x$gc" in
 		# The included libgc contains GCJ support
 		AC_DEFINE(HAVE_GC_GCJ_MALLOC)
 		AC_DEFINE(HAVE_GC_ENABLE)
+		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC)", [GC description])
 		;;
+
+dnl	xsgen)
+dnl		found_boehm=no
+dnl		gc_headers=no
+dnl		use_included_gc=no
+dnl		AC_DEFINE(HAVE_SGEN_GC,1,[Using the simple generational GC.])
+dnl		AC_DEFINE(HAVE_MOVING_COLLECTOR,1,[The GC can move objects.])
+dnl		AC_DEFINE(HAVE_WRITE_BARRIERS,1,[The GC needs write barriers.])
+dnl		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Simple generational", [GC description])
+dnl		;;
 
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
+		AC_DEFINE_UNQUOTED(USED_GC_NAME, "none", [GC description])
+		AC_DEFINE(HAVE_NULL_GC,1,[No GC support.])
 		;;
 	*)
 		AC_MSG_ERROR([Invalid argument to --with-gc.])
