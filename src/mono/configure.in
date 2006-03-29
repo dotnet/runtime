@@ -1903,7 +1903,6 @@ mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/io-layer/Makefile
 mono/mini/Makefile
-mono/handles/Makefile
 mono/profiler/Makefile
 ikvm-native/Makefile
 scripts/Makefile

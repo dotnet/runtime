@@ -1,3 +1,9 @@
+
+Wed, 29 Mar 2006 20:54:05 +0200 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, mono/Makefile.am: remove the now unused handles dir
+	from the build.
+
 2006-03-22  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/web.config: add RoleManagerModule to httpModules.
