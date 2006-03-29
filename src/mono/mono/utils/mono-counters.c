@@ -32,6 +32,8 @@ mono_counters_register (const char* name, int type, void *addr)
 	counter->name = name;
 	counter->type = type;
 	counter->addr = addr;
+	counter->next = NULL;
+
 	/* Append */
 	if (counters) {
 		MonoCounter *item = counters;
