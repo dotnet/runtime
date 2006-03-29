@@ -119,6 +119,7 @@ TEST_CS_SRC=			\
 	iface2.cs		\
 	iface3.cs		\
 	iface4.cs		\
+	iface-large.cs		\
 	virtual-method.cs	\
 	intptrcast.cs		\
 	indexer.cs		\

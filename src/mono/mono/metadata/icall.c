@@ -3125,7 +3125,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	MonoMethod *method;
 	gpointer iter;
 	MonoObject *member;
-	int i, len, match;
+	int i, len, match, nslots;
 	guint32 method_slots_default [8];
 	guint32 *method_slots;
 	gchar *mname = NULL;
@@ -3146,8 +3146,9 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 
 	mono_class_setup_vtable (klass);
 
-	if (klass->vtable_size >= sizeof (method_slots_default) * 8) {
-		method_slots = g_new0 (guint32, klass->vtable_size / 32 + 1);
+	nslots = MONO_CLASS_IS_INTERFACE (klass) ? mono_class_num_methods (klass) : klass->vtable_size;
+	if (nslots >= sizeof (method_slots_default) * 8) {
+		method_slots = g_new0 (guint32, nslots / 32 + 1);
 	} else {
 		method_slots = method_slots_default;
 		memset (method_slots, 0, sizeof (method_slots_default));
@@ -3188,6 +3189,7 @@ handle_parent:
 		
 		match = 0;
 		if (method->slot != -1) {
+			g_assert (method->slot < nslots);
 			if (method_slots [method->slot >> 5] & (1 << (method->slot & 0x1f)))
 				continue;
 			method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
@@ -3289,7 +3291,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
-	int i, match;
+	int i, match, nslots;
 	int len = 0;
 	guint32 flags;
 	guint32 method_slots_default [8];
@@ -3313,8 +3315,11 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
 	}
 
-	if (klass->vtable_size >= sizeof (method_slots_default) * 8) {
-		method_slots = g_new0 (guint32, klass->vtable_size / 32 + 1);
+	mono_class_setup_vtable (klass);
+
+	nslots = MONO_CLASS_IS_INTERFACE (klass) ? mono_class_num_methods (klass) : klass->vtable_size;
+	if (nslots >= sizeof (method_slots_default) * 8) {
+		method_slots = g_new0 (guint32, nslots / 32 + 1);
 	} else {
 		method_slots = method_slots_default;
 		memset (method_slots, 0, sizeof (method_slots_default));
