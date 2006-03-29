@@ -750,11 +750,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		vt->gc_descr = class->gc_descr;
 
 	if (class->class_size) {
-		if (class->has_static_refs)
+		if (class->has_static_refs) {
 			vt->data = mono_gc_alloc_fixed (class->class_size, NULL);
-		else
+			mono_domain_add_class_static_data (domain, class, vt->data, NULL);
+		} else {
 			vt->data = mono_mempool_alloc0 (domain->mp, class->class_size);
-		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
+		}
 		mono_stats.class_static_data_size += class->class_size;
 	}
 
@@ -823,8 +824,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	/* FIXME: class_vtable_hash is basically obsolete now: remove as soon
 	 * as we change the code in appdomain.c to invalidate vtables by
 	 * looking at the possible MonoClasses created for the domain.
-	 * Or we can reuse static_data_hash, by using vtable as a key
-	 * and always inserting into that hash.
 	 */
 	g_hash_table_insert (domain->class_vtable_hash, class, vt);
 	/* class->runtime_info is protected by the loader lock, both when

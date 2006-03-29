@@ -97,7 +97,8 @@ struct _MonoDomain {
 	GHashTable         *class_vtable_hash;
 	/* maps remote class key -> MonoRemoteClass */
 	GHashTable         *proxy_vtable_hash;
-	MonoGHashTable     *static_data_hash;
+	/* a GC-tracked array to keep references to the static fields of types */
+	gpointer           *static_data_array;
 	GHashTable         *jit_code_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable         *dynamic_code_hash;
@@ -265,5 +266,8 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname) MONO_INTERN
 
 void
 mono_assembly_name_free (MonoAssemblyName *aname) MONO_INTERNAL;
+
+void
+mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap);
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
