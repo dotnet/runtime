@@ -630,19 +630,7 @@ static const char info[] =
 #else
 	"\tTLS:           normal\n"
 #endif /* HAVE_KW_THREAD */
-#ifdef HAVE_BOEHM_GC
-#ifdef USE_INCLUDED_LIBGC
-	"\tGC:            Included Boehm (with typed GC)\n"
-#else
-#if HAVE_GC_GCJ_MALLOC
-	"\tGC:            System Boehm (with typed GC)\n"
-#else
-	"\tGC:            System Boehm (no typed GC available)\n"
-#endif
-#endif
-#else
-	"\tGC:            none\n"
-#endif /* HAVE_BOEHM_GC */
+	"\tGC:            " USED_GC_NAME "\n"
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
     "\tSIGSEGV:       altstack\n"
 #else
