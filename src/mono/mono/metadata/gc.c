@@ -46,8 +46,7 @@ static MonoThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
-#if HAVE_BOEHM_GC
-static void finalize_notify (void);
+#ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
 static HANDLE thread_started_event;
@@ -203,11 +202,11 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	 * is still working and will take care of running the finalizers
 	 */ 
 	
-#if HAVE_BOEHM_GC
+#ifndef HAVE_NULL_GC
 	if (gc_disabled)
 		return TRUE;
 
-	GC_gcollect ();
+	mono_gc_collect (mono_gc_max_generation ());
 
 	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 
@@ -222,7 +221,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	mono_finalizer_unlock ();
 
 	/* Tell the finalizer thread to finalize this appdomain */
-	finalize_notify ();
+	mono_gc_finalize_notify ();
 
 	res = WaitForSingleObjectEx (done_event, timeout, TRUE);
 
@@ -287,8 +286,8 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
 	MONO_ARCH_SAVE_REGS;
 	
-#if HAVE_BOEHM_GC
-	if (!GC_should_invoke_finalizers ())
+#ifndef HAVE_NULL_GC
+	if (!mono_gc_pending_finalizers ())
 		return;
 
 	if (mono_thread_current () == gc_thread)
@@ -296,7 +295,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 		return;
 
 	ResetEvent (pending_done_event);
-	finalize_notify ();
+	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
 	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
@@ -675,12 +674,13 @@ mono_gchandle_free (guint32 gchandle)
 	unlock_handles (handles);
 }
 
-#if HAVE_BOEHM_GC
+#ifndef HAVE_NULL_GC
 
 static HANDLE finalizer_event;
 static volatile gboolean finished=FALSE;
 
-static void finalize_notify (void)
+void
+mono_gc_finalize_notify (void)
 {
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
@@ -729,7 +729,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	}
 
 	/* Process finalizers which are already in the queue */
-	GC_invoke_finalizers ();
+	mono_gc_invoke_finalizers ();
 
 	/* printf ("DONE.\n"); */
 	SetEvent (req->done_event);
@@ -769,15 +769,8 @@ static guint32 finalizer_thread (gpointer unused)
 
 		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
 		 * before the domain is unloaded.
-		 *
-		 * There is a bug in GC_invoke_finalizer () in versions <= 6.2alpha4:
-		 * the 'mem_freed' variable is not initialized when there are no
-		 * objects to finalize, which leads to strange behavior later on.
-		 * The check is necessary to work around that bug.
 		 */
-		if (GC_should_invoke_finalizers ()) {
-			GC_invoke_finalizers ();
-		}
+		mono_gc_invoke_finalizers ();
 
 		SetEvent (pending_done_event);
 	}
@@ -793,13 +786,8 @@ static guint32 finalizer_thread (gpointer unused)
  */
 #define ENABLE_FINALIZER_THREAD
 
-static void
-mono_gc_warning (char *msg, GC_word arg)
-{
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, msg, (unsigned long)arg);
-}
-
-void mono_gc_init (void)
+void
+mono_gc_init (void)
 {
 	InitializeCriticalSection (&handle_section);
 	InitializeCriticalSection (&allocator_section);
@@ -808,11 +796,8 @@ void mono_gc_init (void)
 
 	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_NORMAL].entries);
 	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_PINNED].entries);
-	GC_no_dls = TRUE;
 
-	GC_oom_fn = mono_gc_out_of_memory;
-
-	GC_set_warn_proc (mono_gc_warning);
+	mono_gc_base_init ();
 
 #ifdef ENABLE_FINALIZER_THREAD
 
@@ -828,9 +813,6 @@ void mono_gc_init (void)
 	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL || thread_started_event == NULL) {
 		g_assert_not_reached ();
 	}
-
-	GC_finalize_on_demand = 1;
-	GC_finalizer_notifier = finalize_notify;
 
 	mono_thread_create (mono_domain_get (), finalizer_thread, NULL);
 	/*
@@ -852,7 +834,7 @@ void mono_gc_cleanup (void)
 		ResetEvent (shutdown_event);
 		finished = TRUE;
 		if (mono_thread_current () != gc_thread) {
-			finalize_notify ();
+			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
 			if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
@@ -860,7 +842,9 @@ void mono_gc_cleanup (void)
 			}
 		}
 		gc_thread = NULL;
+#ifdef HAVE_BOEHM_GC
 		GC_finalizer_notifier = NULL;
+#endif
 	}
 
 #endif

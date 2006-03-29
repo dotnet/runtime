@@ -8,7 +8,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
 
-#ifndef HAVE_BOEHM_GC
+#ifdef HAVE_NULL_GC
 
 void
 mono_gc_collect (int generation)

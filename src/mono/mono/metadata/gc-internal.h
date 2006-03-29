@@ -26,6 +26,7 @@ void        ves_icall_System_GCHandle_FreeHandle (guint32 handle);
 gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
 
 extern void mono_gc_init (void);
+extern void mono_gc_base_init (void);
 extern void mono_gc_cleanup (void);
 extern void mono_gc_enable (void);
 extern void mono_gc_disable (void);
@@ -68,6 +69,11 @@ void  mono_gc_free_fixed             (void* addr);
 
 /* make sure the gchandle was allocated for an object in domain */
 gboolean mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain);
+
+/* if there are finalizers to run, run them. Returns the number of finalizers run */
+int      mono_gc_invoke_finalizers  (void);
+gboolean mono_gc_pending_finalizers (void);
+void     mono_gc_finalize_notify    (void);
 
 #endif /* __MONO_METADATA_GC_H__ */
 

@@ -9,8 +9,25 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-logger.h>
 
 #if HAVE_BOEHM_GC
+
+static void
+mono_gc_warning (char *msg, GC_word arg)
+{
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, msg, (unsigned long)arg);
+}
+
+void
+mono_gc_base_init (void)
+{
+	GC_no_dls = TRUE;
+	GC_oom_fn = mono_gc_out_of_memory;
+	GC_set_warn_proc (mono_gc_warning);
+	GC_finalize_on_demand = 1;
+	GC_finalizer_notifier = mono_gc_finalize_notify;
+}
 
 void
 mono_gc_collect (int generation)
@@ -159,6 +176,25 @@ mono_gc_alloc_fixed (size_t size, void *descr)
 void
 mono_gc_free_fixed (void* addr)
 {
+}
+
+int
+mono_gc_invoke_finalizers (void)
+{
+	/* There is a bug in GC_invoke_finalizer () in versions <= 6.2alpha4:
+	 * the 'mem_freed' variable is not initialized when there are no
+	 * objects to finalize, which leads to strange behavior later on.
+	 * The check is necessary to work around that bug.
+	 */
+	if (GC_should_invoke_finalizers ())
+		return GC_invoke_finalizers ();
+	return 0;
+}
+
+gboolean
+mono_gc_pending_finalizers (void)
+{
+	return GC_should_invoke_finalizers ();
 }
 
 #endif /* no Boehm GC */
