@@ -66,8 +66,13 @@ typedef struct {
 	int offset;
 } StaticDataInfo;
 
-/* Number of cached culture objects in the MonoThread->culture_info array */
+/* Number of cached culture objects in the MonoThread->cached_culture_info array
+ * (per-type): we use the first NUM entries for CultureInfo and the last for
+ * UICultureInfo. So the size of the array is really NUM_CACHED_CULTURES * 2.
+ */
 #define NUM_CACHED_CULTURES 4
+#define CULTURES_START_IDX 0
+#define UICULTURES_START_IDX NUM_CACHED_CULTURES
 
 /*
  * The "os_handle" field of the WaitHandle class.
@@ -228,8 +233,7 @@ static void thread_cleanup (MonoThread *thread)
 	if (thread->serialized_culture_info)
 		g_free (thread->serialized_culture_info);
 
-	mono_gc_free_fixed (thread->culture_info);
-	mono_gc_free_fixed (thread->ui_culture_info);
+	thread->cached_culture_info = NULL;
 
 	if (mono_thread_cleanup)
 		mono_thread_cleanup (thread);
@@ -653,24 +657,28 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 	mono_monitor_exit (this_obj->synch_lock);
 }
 
-MonoObject*
-ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoThread *this)
+static MonoObject*
+lookup_cached_culture (MonoThread *this, MonoDomain *domain, int start_idx)
 {
 	MonoObject *res;
-	MonoDomain *domain;
 	int i;
 
-	/* No need to lock here */
-	if (this->culture_info) {
+	if (this->cached_culture_info) {
 		domain = mono_domain_get ();
-		for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-			res = this->culture_info [i];
+		for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
+			res = mono_array_get (this->cached_culture_info, MonoObject*, i);
 			if (res && res->vtable->domain == domain)
 				return res;
 		}
 	}
 
 	return NULL;
+}
+
+MonoObject*
+ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoThread *this)
+{
+	return lookup_cached_culture (this, mono_domain_get (), CULTURES_START_IDX);
 }
 
 MonoArray*
@@ -690,30 +698,45 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this)
 	return res;
 }
 
-void
-ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, MonoObject *culture)
+static void
+cache_culture (MonoThread *this, MonoObject *culture, int start_idx)
 {
 	int i;
 	MonoDomain *domain = mono_domain_get ();
+	MonoObject *obj;
+	int free_slot = -1;
+	int same_domain_slot = -1;
 
 	mono_monitor_enter (this->synch_lock);
-	if (!this->culture_info) {
-		this->culture_info = mono_gc_alloc_fixed (sizeof (MonoObject*) * NUM_CACHED_CULTURES, NULL);
-	}
+	if (!this->cached_culture_info)
+		this->cached_culture_info = mono_array_new (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2);
 
-	for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-		if (this->culture_info [i]) {
-			if (this->culture_info [i]->vtable->domain == domain)
-				/* Replace */
-				break;
+	for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
+		obj = mono_array_get (this->cached_culture_info, MonoObject*, i);
+		/* Free entry */
+		if (!obj) {
+			free_slot = i;
+			/* we continue, because there may be a slot used with the same domain */
+			continue;
 		}
-		else
-			/* Free entry */
+		/* Replace */
+		if (obj->vtable->domain == domain) {
+			same_domain_slot = i;
 			break;
+		}
 	}
-	if (i < NUM_CACHED_CULTURES)
-		this->culture_info [i] = culture;
+	if (same_domain_slot >= 0)
+		mono_array_setref (this->cached_culture_info, same_domain_slot, culture);
+	else if (free_slot >= 0)
+		mono_array_setref (this->cached_culture_info, free_slot, culture);
+	/* we may want to replace an existing entry here, even when no suitable slot is found */
 	mono_monitor_exit (this->synch_lock);
+}
+
+void
+ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, MonoObject *culture)
+{
+	cache_culture (this, culture, CULTURES_START_IDX);
 }
 
 void
@@ -732,21 +755,7 @@ ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoThread *this,
 MonoObject*
 ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoThread *this)
 {
-	MonoObject *res;
-	MonoDomain *domain;
-	int i;
-
-	/* No need to lock here */
-	if (this->ui_culture_info) {
-		domain = mono_domain_get ();
-		for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-			res = this->ui_culture_info [i];
-			if (res && res->vtable->domain == domain)
-				return res;
-		}
-	}
-
-	return NULL;
+	return lookup_cached_culture (this, mono_domain_get (), UICULTURES_START_IDX);
 }
 
 MonoArray*
@@ -769,27 +778,7 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture (MonoThread *thi
 void
 ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this, MonoObject *culture)
 {
-	int i;
-	MonoDomain *domain = mono_domain_get ();
-
-	mono_monitor_enter (this->synch_lock);
-	if (!this->ui_culture_info) {
-		this->ui_culture_info = mono_gc_alloc_fixed (sizeof (MonoObject*) * NUM_CACHED_CULTURES, NULL);
-	}
-
-	for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-		if (this->ui_culture_info [i]) {
-			if (this->ui_culture_info [i]->vtable->domain == domain)
-				/* Replace */
-				break;
-		}
-		else
-			/* Free entry */
-			break;
-	}
-	if (i < NUM_CACHED_CULTURES)
-		this->ui_culture_info [i] = culture;
-	mono_monitor_exit (this->synch_lock);
+	cache_culture (this, culture, UICULTURES_START_IDX);
 }
 
 void
@@ -2352,17 +2341,13 @@ clear_cached_culture (gpointer key, gpointer value, gpointer user_data)
 	int i;
 
 	/* No locking needed here */
+	/* FIXME: why no locking? writes to the cache are protected with synch_lock above */
 
-	if (thread->culture_info) {
-		for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-			if (thread->culture_info [i] && thread->culture_info [i]->vtable->domain == domain)
-				thread->culture_info [i] = NULL;
-		}
-	}
-	if (thread->ui_culture_info) {
-		for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
-			if (thread->ui_culture_info [i] && thread->ui_culture_info [i]->vtable->domain == domain)
-				thread->ui_culture_info [i] = NULL;
+	if (thread->cached_culture_info) {
+		for (i = 0; i < NUM_CACHED_CULTURES * 2; ++i) {
+			MonoObject *obj = mono_array_get (thread->cached_culture_info, MonoObject*, i);
+			if (obj && obj->vtable->domain == domain)
+				mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
 		}
 	}
 }

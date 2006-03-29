@@ -2505,7 +2505,6 @@ wait_handle_fields[] = {
 static FieldDesc 
 thread_fields[] = {
 	{"system_thread_handle", G_STRUCT_OFFSET (MonoThread, handle)},
-	{"current_culture", G_STRUCT_OFFSET (MonoThread, culture_info)},
 	{"threadpool_thread", G_STRUCT_OFFSET (MonoThread, threadpool_thread)},
 	{"state", G_STRUCT_OFFSET (MonoThread, state)},
 	{"abort_exc", G_STRUCT_OFFSET (MonoThread, abort_exc)},

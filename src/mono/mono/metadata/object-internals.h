@@ -221,8 +221,8 @@ struct _MonoThread {
 	MonoObject  obj;
 	int         lock_thread_id; /* to be used as the pre-shifted thread id in thin locks */
 	HANDLE	    handle;
-	MonoObject **culture_info;
-	MonoObject **ui_culture_info;
+	MonoArray  *cached_culture_info;
+	gpointer    unused1;
 	MonoBoolean threadpool_thread;
 	gunichar2  *name;
 	guint32	    name_len;
