@@ -232,24 +232,22 @@ regtests2=generics.exe
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
 if X86
-libmono_la_SOURCES = \
-	$(common_sources) $(x86_sources) $(mono_debugger_sources)
-
+arch_sources = \
+	$(x86_sources) $(mono_debugger_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
 arch_built=cpu-pentium.h
 endif
 
 if AMD64
-libmono_la_SOURCES = \
-	$(common_sources) $(amd64_sources) $(mono_debugger_sources)
+arch_sources = \
+	$(amd64_sources) $(mono_debugger_sources)
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-amd64.brg
 arch_built=cpu-amd64.h
 endif
 
 if POWERPC
-libmono_la_SOURCES = \
-	$(common_sources) $(ppc_sources)
-
+arch_sources = \
+	$(ppc_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-g4.h
 endif
@@ -259,52 +257,53 @@ if ARM
 # pick up arm_dpimacros.h and arm_fpamacros.h
 ARCH_CFLAGS = -I../arch/arm
 
-libmono_la_SOURCES = \
-	$(common_sources) $(arm_sources)
+arch_sources = $(arm_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg
 arch_built=cpu-arm.h
 endif
 
 if SPARC
-libmono_la_SOURCES = \
-	$(common_sources) $(sparc_sources)
+arch_sources = \
+	$(sparc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
 endif
 
 if SPARC64
-libmono_la_SOURCES = \
-	$(common_sources) $(sparc_sources)
+arch_sources = \
+	$(sparc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
 endif
 
 if S390
-libmono_la_SOURCES = \
-	$(common_sources) $(s390_sources)
+arch_sources = \
+	$(s390_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-s390.brg
 arch_built=cpu-s390.h
 endif
 
 if S390x
-libmono_la_SOURCES = \
-	$(common_sources) $(s390x_sources)
+arch_sources = \
+	$(s390x_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-s390x.brg
 arch_built=cpu-s390x.h
 endif
 
 if IA64
-libmono_la_SOURCES = \
-    $(common_sources) $(ia64_sources)
+arch_sources = \
+    $(ia64_sources)
 
 arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-ia64.brg
 arch_built = cpu-ia64.h
 endif
+
+libmono_la_SOURCES = $(common_sources) $(arch_sources)
 
 nodist_libmono_la_SOURCES = inssel.c inssel.h
 
