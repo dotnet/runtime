@@ -1,6 +1,8 @@
 /*
  * local-propagation.c: Local constant, copy and tree propagation.
  *
+ * To make some sense of the tree mover, read mono/docs/tree-mover.txt
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *   Dietmar Maurer (dietmar@ximian.com)
@@ -25,72 +27,127 @@
 #define MONO_APPLY_TREE_MOVER_TO_SINGLE_METHOD 0
 #define MONO_APPLY_TREE_MOVER_TO_COUNTED_METHODS 0
 
-struct MonoTreeMoverActSlot;
-typedef struct MonoTreeMoverDependencyNode {
-	struct MonoTreeMoverActSlot *used_slot;
-	struct MonoTreeMoverActSlot *affected_slot;
-	struct MonoTreeMoverDependencyNode *next_used_local;
-	struct MonoTreeMoverDependencyNode *next_affected_local;
-	struct MonoTreeMoverDependencyNode *previous_affected_local;
-	gboolean use_is_direct;
-} MonoTreeMoverDependencyNode;
+struct TreeMoverActSlot;
+/*
+ * A node describing one dependency between a tree and a local
+ */
+typedef struct TreeMoverDependencyNode {
+	/* The local used in the tree */
+	struct TreeMoverActSlot *used_slot;
+	/* The local defined by the tree */
+	struct TreeMoverActSlot *affected_slot;
+	/* Next in the list of used locals */
+	struct TreeMoverDependencyNode *next_used_local;
+	/* Next in the list of affected locals */
+	struct TreeMoverDependencyNode *next_affected_local;
+	/* Previous in the list of affected locals */
+	struct TreeMoverDependencyNode *previous_affected_local;
+	/* False if the local is used in a tree that defines a used local */
+	guchar use_is_direct;
+} TreeMoverDependencyNode;
 
-struct MonoTreeMoverTreeMove;
-typedef struct MonoTreeMoverAffectedMove {
-	struct MonoTreeMoverTreeMove *affected_move;
-	struct MonoTreeMoverAffectedMove *next_affected_move;
-} MonoTreeMoverAffectedMove;
+struct TreeMoverTreeMove;
+/*
+ * A node in a list of affected TreeMoverTreeMove
+ */
+typedef struct TreeMoverAffectedMove {
+	struct TreeMoverTreeMove *affected_move;
+	struct TreeMoverAffectedMove *next_affected_move;
+} TreeMoverAffectedMove;
 
-typedef struct MonoTreeMoverDependencyFromDeadDefinition {
-	struct MonoTreeMoverActSlot *defined_slot;
+/*
+ * A node in a list of TreeMoverDependencyFromDeadDefinition
+ */
+typedef struct TreeMoverDependencyFromDeadDefinition {
+	/* The ACT slot of the defined local */
+	struct TreeMoverActSlot *defined_slot;
+	/* The definition that will hopefully be dead */
 	MonoInst *dead_definition;
-	struct MonoTreeMoverDependencyFromDeadDefinition *next;
-} MonoTreeMoverDependencyFromDeadDefinition;
+	/* Next in the list */
+	struct TreeMoverDependencyFromDeadDefinition *next;
+} TreeMoverDependencyFromDeadDefinition;
 
-typedef struct MonoTreeMoverTreeMove {
-	struct MonoTreeMoverActSlot *defined_slot;
+/*
+ * A "tree move"
+ */
+typedef struct TreeMoverTreeMove {
+	/* ACT slot of the defined local */
+	struct TreeMoverActSlot *defined_slot;
+	/* Code location of the definition */
 	MonoInst *definition;
+	/* Code location where the tree must be replaced with the local */
 	MonoInst **use;
-	MonoTreeMoverAffectedMove *affected_moves;
-	struct MonoTreeMoverDependencyFromDeadDefinition *slots_that_must_be_safe;
-	struct MonoTreeMoverTreeMove *next;
-	gboolean tree_reads_memory;
-	gboolean move_is_safe;
-	gboolean skip_this_move;
-	gboolean prevent_forwarding;
-} MonoTreeMoverTreeMove;
+	/* Moves that must not be performed of we perform this one */
+	TreeMoverAffectedMove *affected_moves;
+	/* Definitions that must be dead to be allowed to perform this move */
+	struct TreeMoverDependencyFromDeadDefinition *slots_that_must_be_safe;
+	/* Next in the list of scheduled moves */
+	struct TreeMoverTreeMove *next;
+	/* The used tree accesses heap memory */
+	guchar tree_reads_memory;
+	/* A subsequent definitions makes this move globally safe */
+	guchar move_is_safe;
+	/* This move has been affected by something, ignore it */
+	guchar skip_this_move;
+	/* "tree forwarding" cannot continue for this definition */
+	guchar prevent_forwarding;
+} TreeMoverTreeMove;
 
-typedef struct MonoTreeMoverActSlot {
-	MonoTreeMoverDependencyNode *used_locals;
-	MonoTreeMoverDependencyNode *last_used_local;
-	MonoTreeMoverDependencyNode *affected_locals;
-	MonoTreeMoverTreeMove *pending_move;
-	gboolean pending_move_is_ready;
-	gboolean waiting_flag;
-	gboolean unsafe_flag;
-	gboolean pending_move_is_forwarded;
-} MonoTreeMoverActSlot;
+/*
+ * An ACT slot (there is one for each local in the ACT array)
+ */
+typedef struct TreeMoverActSlot {
+	/* List of used locals (directly and indirectly) */
+	TreeMoverDependencyNode *used_locals;
+	/* Last element (so that we can move all the nodes quickly) */
+	TreeMoverDependencyNode *last_used_local;
+	/* List of affected locals (definitions that use this local) */
+	TreeMoverDependencyNode *affected_locals;
+	/* The current pending move */
+	TreeMoverTreeMove *pending_move;
+	/* True if the move has already met its use use */
+	guchar pending_move_is_ready;
+	/* See [W] flag */
+	guchar waiting_flag;
+	/* See [X] flag */
+	guchar unsafe_flag;
+	/* A "tree forwarding" is in progress */
+	guchar pending_move_is_forwarded;
+} TreeMoverActSlot;
 
-typedef struct MonoTreeMover {
+/*
+ * Main tree mover work area
+ */
+typedef struct TreeMover {
+	/* Pool used for allocating everything */
 	MonoMemPool *pool;
+	/* Current method */
 	MonoCompile *cfg;
 	
-	MonoTreeMoverDependencyNode *free_nodes;
-	MonoTreeMoverTreeMove *free_moves;
+	/* Free (recycled) TreeMoverDependencyNode structs */
+	TreeMoverDependencyNode *free_nodes;
+	/* Free (recycled) TreeMoverTreeMove structs */
+	TreeMoverTreeMove *free_moves;
 
-	MonoTreeMoverActSlot *ACT;
-	MonoTreeMoverTreeMove *scheduled_moves;
+	/* ACT array */
+	TreeMoverActSlot *ACT;
+	/* List of tree moves that could be performed */
+	TreeMoverTreeMove *scheduled_moves;
 
+	/* The following fields are reset at each tree traversal */
+	/* List of used locals */
+	TreeMoverDependencyNode *used_nodes;
+	/* Last node in the list (to free it in one block) */
+	TreeMoverDependencyNode *last_used_node;
+	/* The current tree cannot be moved (it can still receive moves!) */
+	guchar tree_has_side_effects;
+	/* The current tree reads heap locations */
+	guchar tree_reads_memory;
+} TreeMover;
 
-	MonoTreeMoverDependencyNode *used_nodes;
-	MonoTreeMoverDependencyNode *last_used_node;
-	gboolean tree_has_side_effects;
-	gboolean tree_reads_memory;
-} MonoTreeMover;
-
-inline static MonoTreeMoverDependencyNode*
-tree_mover_new_node (MonoTreeMover *tree_mover) {
-	MonoTreeMoverDependencyNode *node;
+inline static TreeMoverDependencyNode*
+tree_mover_new_node (TreeMover *tree_mover) {
+	TreeMoverDependencyNode *node;
 	
 	if (tree_mover->free_nodes != NULL) {
 		node = tree_mover->free_nodes;
@@ -99,29 +156,29 @@ tree_mover_new_node (MonoTreeMover *tree_mover) {
 		node->next_affected_local = NULL;
 		node->previous_affected_local = NULL;
 	} else {
-		node = (MonoTreeMoverDependencyNode*) mono_mempool_alloc0 (tree_mover->pool, sizeof (MonoTreeMoverDependencyNode));
+		node = (TreeMoverDependencyNode*) mono_mempool_alloc0 (tree_mover->pool, sizeof (TreeMoverDependencyNode));
 	}
 	
 	return node;
 }
 
 inline static void
-tree_mover_new_slot_move (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
-	MonoTreeMoverTreeMove *move;
+tree_mover_new_slot_move (TreeMover *tree_mover, TreeMoverActSlot *slot) {
+	TreeMoverTreeMove *move;
 	
 	if (tree_mover->free_moves != NULL) {
 		move = tree_mover->free_moves;
 		tree_mover->free_moves = tree_mover->free_moves->next;
-		memset (move, 0, sizeof (MonoTreeMoverTreeMove));
+		memset (move, 0, sizeof (TreeMoverTreeMove));
 	} else {
-		move = (MonoTreeMoverTreeMove*) mono_mempool_alloc0 (tree_mover->pool, sizeof (MonoTreeMoverTreeMove));
+		move = (TreeMoverTreeMove*) mono_mempool_alloc0 (tree_mover->pool, sizeof (TreeMoverTreeMove));
 	}
 	
 	slot->pending_move = move;
 }
 
 inline static void
-tree_mover_dispose_used_nodes (MonoTreeMover *tree_mover) {
+tree_mover_dispose_used_nodes (TreeMover *tree_mover) {
 	tree_mover->last_used_node->next_used_local = tree_mover->free_nodes;
 	tree_mover->free_nodes = tree_mover->used_nodes;
 	tree_mover->used_nodes = NULL;
@@ -129,7 +186,7 @@ tree_mover_dispose_used_nodes (MonoTreeMover *tree_mover) {
 }
 
 inline static void
-tree_mover_dispose_slot_nodes (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_dispose_slot_nodes (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	slot->last_used_local->next_used_local = tree_mover->free_nodes;
 	tree_mover->free_nodes = slot->used_locals;
 	slot->used_locals = NULL;
@@ -137,25 +194,25 @@ tree_mover_dispose_slot_nodes (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *
 }
 
 inline static void
-tree_mover_dispose_slot_move (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_dispose_slot_move (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	slot->pending_move->next = tree_mover->free_moves;
 	tree_mover->free_moves = slot->pending_move;
 	slot->pending_move = NULL;
 }
 
-inline static MonoTreeMoverActSlot*
-tree_mover_slot_from_index (MonoTreeMover *tree_mover, int index) {
+inline static TreeMoverActSlot*
+tree_mover_slot_from_index (TreeMover *tree_mover, int index) {
 	return & (tree_mover->ACT [index]);
 }
 
 inline static int
-tree_mover_slot_to_index (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_slot_to_index (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	return slot - tree_mover->ACT;
 }
 
 inline static void
-tree_mover_add_used_node (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot, gboolean use_is_direct) {
-	MonoTreeMoverDependencyNode *node;
+tree_mover_add_used_node (TreeMover *tree_mover, TreeMoverActSlot *slot, gboolean use_is_direct) {
+	TreeMoverDependencyNode *node;
 	
 	node = tree_mover_new_node (tree_mover);
 	node->used_slot = slot;
@@ -170,8 +227,8 @@ tree_mover_add_used_node (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot,
 }
 
 inline static void
-tree_mover_link_affecting_node (MonoTreeMoverDependencyNode *node, MonoTreeMoverActSlot *affected_slot) {
-	MonoTreeMoverActSlot *affecting_slot = node->used_slot;
+tree_mover_link_affecting_node (TreeMoverDependencyNode *node, TreeMoverActSlot *affected_slot) {
+	TreeMoverActSlot *affecting_slot = node->used_slot;
 	node->affected_slot = affected_slot;
 	node->next_affected_local = affecting_slot->affected_locals;
 	affecting_slot->affected_locals = node;
@@ -182,14 +239,14 @@ tree_mover_link_affecting_node (MonoTreeMoverDependencyNode *node, MonoTreeMover
 }
 
 inline static void
-tree_mover_unlink_affecting_node (MonoTreeMoverDependencyNode *node) {
+tree_mover_unlink_affecting_node (TreeMoverDependencyNode *node) {
 	if (node->next_affected_local != NULL) {
 		node->next_affected_local->previous_affected_local = node->previous_affected_local;
 	}
 	if (node->previous_affected_local != NULL) {
 		node->previous_affected_local->next_affected_local = node->next_affected_local;
 	} else {
-		MonoTreeMoverActSlot *slot = node->used_slot;
+		TreeMoverActSlot *slot = node->used_slot;
 		slot->affected_locals = node->next_affected_local;
 	}
 	node->next_affected_local = NULL;
@@ -198,8 +255,8 @@ tree_mover_unlink_affecting_node (MonoTreeMoverDependencyNode *node) {
 }
 
 inline static void
-tree_mover_link_affected_moves (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *source_slot, MonoTreeMoverActSlot *destination_slot) {
-	MonoTreeMoverAffectedMove *node = (MonoTreeMoverAffectedMove*) mono_mempool_alloc0 (tree_mover->pool, sizeof (MonoTreeMoverAffectedMove));
+tree_mover_link_affected_moves (TreeMover *tree_mover, TreeMoverActSlot *source_slot, TreeMoverActSlot *destination_slot) {
+	TreeMoverAffectedMove *node = (TreeMoverAffectedMove*) mono_mempool_alloc0 (tree_mover->pool, sizeof (TreeMoverAffectedMove));
 	node->affected_move = destination_slot->pending_move; 
 	node->next_affected_move = source_slot->pending_move->affected_moves;
 	source_slot->pending_move->affected_moves = node;
@@ -207,7 +264,7 @@ tree_mover_link_affected_moves (MonoTreeMover *tree_mover, MonoTreeMoverActSlot 
 
 
 inline static void
-tree_mover_record_pending_move (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot, gboolean move_is_safe) {
+tree_mover_record_pending_move (TreeMover *tree_mover, TreeMoverActSlot *slot, gboolean move_is_safe) {
 	if (slot->pending_move_is_ready) {
 		slot->pending_move->move_is_safe = move_is_safe;
 		slot->pending_move->next = tree_mover->scheduled_moves;
@@ -218,9 +275,9 @@ tree_mover_record_pending_move (MonoTreeMover *tree_mover, MonoTreeMoverActSlot 
 }
 
 inline static void
-tree_mover_clear_forwarding_dependency (MonoTreeMoverActSlot *slot) {
+tree_mover_clear_forwarding_dependency (TreeMoverActSlot *slot) {
 	if (slot->pending_move_is_forwarded) {
-		MonoTreeMoverDependencyFromDeadDefinition *dependency = slot->pending_move->slots_that_must_be_safe;
+		TreeMoverDependencyFromDeadDefinition *dependency = slot->pending_move->slots_that_must_be_safe;
 		while (dependency != NULL) {
 			if (dependency->defined_slot == slot) {
 				dependency->defined_slot = NULL;
@@ -232,7 +289,7 @@ tree_mover_clear_forwarding_dependency (MonoTreeMoverActSlot *slot) {
 }
 
 inline static void
-tree_mover_enforce_forwarding_dependency (MonoTreeMoverActSlot *slot) {
+tree_mover_enforce_forwarding_dependency (TreeMoverActSlot *slot) {
 	if (slot->pending_move_is_forwarded) {
 		slot->pending_move->skip_this_move = TRUE;
 		slot->pending_move_is_forwarded = FALSE;
@@ -241,8 +298,8 @@ tree_mover_enforce_forwarding_dependency (MonoTreeMoverActSlot *slot) {
 }
 
 inline static void
-tree_mover_clean_act_slot_dependency_nodes (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
-	MonoTreeMoverDependencyNode *current_node = slot->used_locals;
+tree_mover_clean_act_slot_dependency_nodes (TreeMover *tree_mover, TreeMoverActSlot *slot) {
+	TreeMoverDependencyNode *current_node = slot->used_locals;
 	while (current_node != NULL) {
 		tree_mover_unlink_affecting_node (current_node);
 		current_node = current_node->next_used_local;
@@ -253,7 +310,7 @@ tree_mover_clean_act_slot_dependency_nodes (MonoTreeMover *tree_mover, MonoTreeM
 }
 
 inline static void
-tree_mover_clean_act_slot_pending_move (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_clean_act_slot_pending_move (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	if (slot->pending_move != NULL) {
 		if (! slot->pending_move_is_forwarded) {
 			tree_mover_dispose_slot_move (tree_mover, slot);
@@ -266,36 +323,36 @@ tree_mover_clean_act_slot_pending_move (MonoTreeMover *tree_mover, MonoTreeMover
 }
 
 inline static void
-tree_mover_clean_act_slot (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_clean_act_slot (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	tree_mover_clean_act_slot_dependency_nodes (tree_mover, slot);
 	tree_mover_clean_act_slot_pending_move (tree_mover, slot);
 }
 
 inline static void
-tree_mover_kill_act_slot_for_definition (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_kill_act_slot_for_definition (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	tree_mover_record_pending_move (tree_mover, slot, TRUE);
 	tree_mover_clear_forwarding_dependency (slot);
 	tree_mover_clean_act_slot (tree_mover, slot);
 }
 
 inline static void
-tree_mover_kill_act_slot_because_it_is_affected (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_kill_act_slot_because_it_is_affected (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	if ((! slot->pending_move_is_ready) && (! slot->pending_move_is_forwarded)) {
 		tree_mover_clean_act_slot (tree_mover, slot);
 	}
 }
 
 inline static void
-tree_mover_kill_act_slot_for_use (MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
+tree_mover_kill_act_slot_for_use (TreeMover *tree_mover, TreeMoverActSlot *slot) {
 	tree_mover_enforce_forwarding_dependency (slot);
 	tree_mover_clean_act_slot (tree_mover, slot);
 }
 
 inline static void
-tree_mover_kill_act_for_indirect_local_definition (MonoTreeMover *tree_mover, int size) {
+tree_mover_kill_act_for_indirect_local_definition (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		if (slot->pending_move != NULL) {
 			slot->pending_move->prevent_forwarding = TRUE;
 		}
@@ -304,10 +361,10 @@ tree_mover_kill_act_for_indirect_local_definition (MonoTreeMover *tree_mover, in
 }
 
 inline static void
-tree_mover_kill_act_for_indirect_global_definition (MonoTreeMover *tree_mover, int size) {
+tree_mover_kill_act_for_indirect_global_definition (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		if ((slot->pending_move != NULL) && slot->pending_move->tree_reads_memory) {
 			tree_mover_kill_act_slot_because_it_is_affected (tree_mover, slot);
 		}
@@ -315,38 +372,38 @@ tree_mover_kill_act_for_indirect_global_definition (MonoTreeMover *tree_mover, i
 }
 
 inline static void
-tree_mover_kill_act_for_indirect_use (MonoTreeMover *tree_mover, int size) {
+tree_mover_kill_act_for_indirect_use (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		tree_mover_kill_act_slot_for_use (tree_mover, slot);
 	}
 }
 
 inline static void
-tree_mover_clear_act_recording_moves (MonoTreeMover *tree_mover, int size) {
+tree_mover_clear_act_recording_moves (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		tree_mover_record_pending_move (tree_mover, slot, FALSE);
 		tree_mover_clean_act_slot (tree_mover, slot);
 	}
 }
 
 inline static void
-tree_mover_set_waiting_flags (MonoTreeMover *tree_mover, int size) {
+tree_mover_set_waiting_flags (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		slot->waiting_flag = TRUE;
 	}
 }
 
 inline static void
-tree_mover_verify_dependency_nodes_are_clear (MonoTreeMover *tree_mover, int size) {
+tree_mover_verify_dependency_nodes_are_clear (TreeMover *tree_mover, int size) {
 	int i;
 	for (i = 0; i < size; i++) {
-		MonoTreeMoverActSlot *slot = &(tree_mover->ACT [i]);
+		TreeMoverActSlot *slot = &(tree_mover->ACT [i]);
 		if (slot->affected_locals != NULL) {
 			printf ("Slot %d has still affected variables\n", i); 
 			g_assert_not_reached ();
@@ -394,8 +451,8 @@ static const guchar ldind_needs_conversion[(CEE_LDIND_REF-CEE_LDIND_I1)+1][STACK
 #define TREE_MOVER_LDIND_NEEDS_CONVERSION(__opcode,__type) (ldind_needs_conversion [(__opcode) - CEE_LDIND_I1][(__type)])
 
 static void
-tree_mover_print_act_slot (const char* message, MonoTreeMover *tree_mover, MonoTreeMoverActSlot *slot) {
-	MonoTreeMoverDependencyNode *node;
+tree_mover_print_act_slot (const char* message, TreeMover *tree_mover, TreeMoverActSlot *slot) {
+	TreeMoverDependencyNode *node;
 	printf ("  [%s] Slot %d uses {", message, tree_mover_slot_to_index (tree_mover, slot));
 	for (node = slot->used_locals; node != NULL; node = node->next_used_local) {
 		printf (" %d", tree_mover_slot_to_index (tree_mover, node->used_slot));
@@ -413,12 +470,12 @@ tree_mover_print_act_slot (const char* message, MonoTreeMover *tree_mover, MonoT
 	printf ("\n");
 }
 
-static MonoTreeMoverTreeMove*
-mono_cprop_copy_values (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoInst *tree, MonoInst **acp)
+static TreeMoverTreeMove*
+mono_cprop_copy_values (MonoCompile *cfg, TreeMover *tree_mover, MonoInst *tree, MonoInst **acp)
 {
 	MonoInst *cp;
 	int arity;
-	MonoTreeMoverTreeMove *pending_move = NULL;
+	TreeMoverTreeMove *pending_move = NULL;
 
 	if (tree->ssa_op == MONO_SSA_LOAD && (tree->inst_i0->opcode == OP_LOCAL || tree->inst_i0->opcode == OP_ARG) &&
 	    (cp = acp [tree->inst_i0->inst_c0]) && !tree->inst_i0->flags) {
@@ -477,7 +534,7 @@ mono_cprop_copy_values (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoInst *t
 		arity = mono_burg_arity [tree->opcode];
 
 		if (arity) {
-			MonoTreeMoverTreeMove *result = mono_cprop_copy_values (cfg, tree_mover, tree->inst_i0, acp);
+			TreeMoverTreeMove *result = mono_cprop_copy_values (cfg, tree_mover, tree->inst_i0, acp);
 			if (cfg->opt & MONO_OPT_CFOLD)
 				mono_constant_fold_inst (tree, NULL);
 			if (result != NULL) {
@@ -503,7 +560,7 @@ mono_cprop_copy_values (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoInst *t
 	if ((tree_mover != NULL) && (tree->ssa_op == MONO_SSA_LOAD) &&
 			(tree->inst_i0->opcode == OP_LOCAL || tree->inst_i0->opcode == OP_ARG)) {
 		guint used_index = tree->inst_i0->inst_c0;
-		MonoTreeMoverActSlot *used_slot = &(tree_mover->ACT [used_index]);
+		TreeMoverActSlot *used_slot = &(tree_mover->ACT [used_index]);
 		
 		/* First, handle waiting flag */
 		if (used_slot->waiting_flag) {
@@ -546,7 +603,7 @@ mono_cprop_copy_values (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoInst *t
 					pending_move = NULL;
 				} else {
 					/* All goes well: set slot state to [U] */
-					MonoTreeMoverDependencyNode *node = used_slot->used_locals;
+					TreeMoverDependencyNode *node = used_slot->used_locals;
 					if (MONO_DEBUG_TREE_MOVER) {
 						printf ("Setting tree move for slot %d as ready: ", used_index);
 						mono_print_tree_nl (tree);
@@ -579,7 +636,7 @@ mono_cprop_copy_values (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoInst *t
 }
 
 static void
-mono_cprop_invalidate_values (MonoInst *tree, MonoTreeMover *tree_mover, MonoInst **acp, int acp_size)
+mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **acp, int acp_size)
 {
 	int arity;
 
@@ -724,7 +781,7 @@ mono_cprop_invalidate_values (MonoInst *tree, MonoTreeMover *tree_mover, MonoIns
 }
 
 static void
-mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock *bb, MonoInst **acp, int acp_size)
+mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb, MonoInst **acp, int acp_size)
 {
 	MonoInst *tree = bb->code;
 	int i;
@@ -759,7 +816,7 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 		if (tree->ssa_op == MONO_SSA_STORE  &&
 		    (tree->inst_i0->opcode == OP_LOCAL || tree->inst_i0->opcode == OP_ARG)) {
 			MonoInst *i1 = tree->inst_i1;
-			MonoTreeMoverActSlot *forwarding_source = NULL;
+			TreeMoverActSlot *forwarding_source = NULL;
 			gboolean tree_can_be_moved = TRUE;
 
 			acp [tree->inst_i0->inst_c0] = NULL;
@@ -821,8 +878,8 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 			/* Apply tree mover */
 			if (tree_mover != NULL) {
 				guint defined_index = tree->inst_i0->inst_c0;
-				MonoTreeMoverActSlot *defined_slot = tree_mover_slot_from_index (tree_mover, defined_index);
-				MonoTreeMoverDependencyNode *affected_node;
+				TreeMoverActSlot *defined_slot = tree_mover_slot_from_index (tree_mover, defined_index);
+				TreeMoverDependencyNode *affected_node;
 				
 				/* First clear the waiting flag... */
 				defined_slot->waiting_flag = FALSE;
@@ -839,7 +896,7 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 					/* Check that consprop or copyprop did not already do the job, */
 					/* and that the tree has no side effects */
 					if (tree_can_be_moved && ! tree_mover->tree_has_side_effects) {
-						MonoTreeMoverDependencyNode *affecting_node;
+						TreeMoverDependencyNode *affecting_node;
 						if (MONO_DEBUG_TREE_MOVER) {
 							printf ("Recording definition of slot %d by tree: ", defined_index);
 							mono_print_tree_nl (tree);
@@ -867,7 +924,7 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 						mono_print_tree_nl (tree);
 					}
 				} else {
-					MonoTreeMoverDependencyFromDeadDefinition *dependency;
+					TreeMoverDependencyFromDeadDefinition *dependency;
 					/* forwarding previous definition: */
 					if (MONO_DEBUG_TREE_MOVER) {
 						printf ("Handling forwarding in slot %d for tree: ", defined_index);
@@ -877,7 +934,7 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 					defined_slot->pending_move = forwarding_source->pending_move;
 					defined_slot->pending_move_is_forwarded = TRUE;
 					/* Setup forwarding dependency node */
-					dependency = mono_mempool_alloc0 (tree_mover->pool, sizeof (MonoTreeMoverDependencyFromDeadDefinition));
+					dependency = mono_mempool_alloc0 (tree_mover->pool, sizeof (TreeMoverDependencyFromDeadDefinition));
 					dependency->defined_slot = defined_slot;
 					dependency->dead_definition = tree;
 					dependency->next = defined_slot->pending_move->slots_that_must_be_safe;
@@ -890,8 +947,8 @@ mono_local_cprop_bb (MonoCompile *cfg, MonoTreeMover *tree_mover, MonoBasicBlock
 				/* Then kill all affected definitions waiting for a use */
 				affected_node = defined_slot->affected_locals;
 				while (affected_node != NULL) {
-					MonoTreeMoverDependencyNode *next_affected_node = affected_node->next_affected_local;
-					MonoTreeMoverActSlot *affected_slot = affected_node->affected_slot;
+					TreeMoverDependencyNode *next_affected_node = affected_node->next_affected_local;
+					TreeMoverActSlot *affected_slot = affected_node->affected_slot;
 					
 					if (affected_node->use_is_direct) {
 						/* Direct use: kill affected slot */
@@ -1010,9 +1067,9 @@ static gboolean check_tree_mover_method_count (MonoCompile *cfg) {
 #endif
 
 static void
-apply_tree_mover (MonoTreeMover *tree_mover, MonoTreeMoverTreeMove *move) {
-	MonoTreeMoverDependencyFromDeadDefinition *dependency;
-	MonoTreeMoverAffectedMove *affected_move;
+apply_tree_mover (TreeMover *tree_mover, TreeMoverTreeMove *move) {
+	TreeMoverDependencyFromDeadDefinition *dependency;
+	TreeMoverAffectedMove *affected_move;
 
 	/* Test if this move has been explicitly disabled */
 	if (move->skip_this_move) {
@@ -1077,17 +1134,17 @@ void
 mono_local_cprop (MonoCompile *cfg) {
 	MonoBasicBlock *bb;
 	MonoInst **acp;
-	MonoTreeMover *tree_mover;
+	TreeMover *tree_mover;
 
 	acp = alloca (sizeof (MonoInst *) * cfg->num_varinfo);
 	
 	if (cfg->opt & MONO_OPT_TREEPROP) {
 		MonoMemPool *pool = mono_mempool_new();
-		tree_mover = mono_mempool_alloc0(pool, sizeof (MonoTreeMover));
+		tree_mover = mono_mempool_alloc0(pool, sizeof (TreeMover));
 		
 		tree_mover->cfg = cfg;
 		tree_mover->pool = pool;
-		tree_mover->ACT = mono_mempool_alloc0 (pool, sizeof (MonoTreeMoverActSlot) * (cfg->num_varinfo));		
+		tree_mover->ACT = mono_mempool_alloc0 (pool, sizeof (TreeMoverActSlot) * (cfg->num_varinfo));		
 #if (MONO_APPLY_TREE_MOVER_TO_SINGLE_METHOD)
 		if (! check_tree_mover_method_name (cfg)) {
 			mono_mempool_destroy(tree_mover->pool);
@@ -1113,7 +1170,7 @@ mono_local_cprop (MonoCompile *cfg) {
 	}
 	
 	if (tree_mover != NULL) {
-		MonoTreeMoverTreeMove *move;
+		TreeMoverTreeMove *move;
 		/* Move the movable trees */
 		if (MONO_DEBUG_TREE_MOVER) {
 			printf ("BEFORE TREE MOVER START\n");
