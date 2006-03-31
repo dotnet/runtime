@@ -92,6 +92,7 @@ freg: OP_LCONV_TO_R8 (lreg) {
 	tree->opcode = OP_X86_FP_LOAD_I8;
 	tree->inst_basereg = X86_ESP;
 	tree->inst_offset = 0;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, X86_ESP, X86_ESP, 8);
 }
@@ -102,6 +103,7 @@ freg: OP_LCONV_TO_R4 (lreg) {
 	tree->opcode = OP_X86_FP_LOAD_I8;
 	tree->inst_basereg = X86_ESP;
 	tree->inst_offset = 0;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 	/* change precision */
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, X86_ESP, 0, state->reg1);
@@ -115,6 +117,7 @@ freg: CEE_CONV_R_UN (reg) {
 	tree->opcode = OP_X86_FP_LOAD_I8;
 	tree->inst_basereg = X86_ESP;
 	tree->inst_offset = 0;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, X86_ESP, X86_ESP, 8);
 }

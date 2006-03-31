@@ -875,7 +875,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	i = 1;
 	fpcount = 0;
-	DEBUG (printf ("LOCAL REGALLOC: BASIC BLOCK: %d\n", bb->block_num));
+	DEBUG (printf ("\nLOCAL REGALLOC: BASIC BLOCK: %d\n", bb->block_num));
 	/* forward pass on the instructions to collect register liveness info */
 	for (ins = bb->code; ins; ins = ins->next) {
 		spec = ins_spec [ins->opcode];
@@ -1737,8 +1737,14 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				val = alloc_reg (cfg, tmp, ins, sreg2_mask, ins->sreg2, &reginfo [ins->sreg2], fp);
 				assign_reg (cfg, rs, ins->sreg2, val, fp);
 				DEBUG (printf ("\tassigned sreg2 %s to R%d\n", mono_regname_full (val, fp), ins->sreg2));
-				if (spill)
-					create_spilled_store (cfg, spill, val, prev_sreg2, ins, fp);
+				if (spill) {
+					MonoInst *store = create_spilled_store (cfg, spill, val, prev_sreg2, NULL, fp);
+					/*
+					 * Need to insert before the instruction since it can
+					 * overwrite sreg2.
+					 */
+					insert_before_ins (ins, tmp, store);
+				}
 			}
 			ins->sreg2 = val;
 		}

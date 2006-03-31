@@ -9428,9 +9428,9 @@ mono_codegen (MonoCompile *cfg)
        
 	if (cfg->verbose_level > 0) {
 		char* nm = mono_method_full_name (cfg->method, TRUE);
-		g_print ("Method %s emitted at %p to %p [%s]\n", 
+		g_print ("Method %s emitted at %p to %p (code length %d) [%s]\n", 
 				 nm, 
-				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
+				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
 		g_free (nm);
 	}
 
