@@ -1474,9 +1474,9 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 		/* Convert the Nullable structure into a boxed vtype */
 		if (is_static)
-			buf = (char*)vtable->data + cf->offset;
+			buf = (guint8*)vtable->data + cf->offset;
 		else
-			buf = (char*)obj + cf->offset;
+			buf = (guint8*)obj + cf->offset;
 
 		return mono_nullable_box (buf, nklass);
 	}
@@ -1552,7 +1552,7 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 				mono_nullable_init (buf, value, nklass);
 
-				v = buf;
+				v = (gchar*)buf;
 			}
 			else 
 				if (gclass->container_class->valuetype && (v != NULL))
@@ -2823,7 +2823,7 @@ write_enum_value (char *mem, int type, guint64 value)
 	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1: {
-		guint8 *p = mem;
+		guint8 *p = (guint8*)mem;
 		*p = value;
 		break;
 	}
@@ -5542,6 +5542,28 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return names;
 }
 
+static void
+ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
+{
+	gchar *utf8_name, *utf8_value;
+
+	MONO_ARCH_SAVE_REGS;
+
+	utf8_name = mono_string_to_utf8 (name);	/* FIXME: this should be ascii */
+
+	if ((value == NULL) || (mono_string_length (value) == 0) || (mono_string_chars (value)[0] == 0)) {
+		g_unsetenv (utf8_name);
+		return;
+	}
+
+	utf8_value = mono_string_to_utf8 (value);
+
+	g_setenv (utf8_name, utf8_value, TRUE);
+
+	g_free (utf8_name);
+	g_free (utf8_value);
+}
+
 /*
  * Returns: the number of milliseconds elapsed since the system started.
  */
@@ -6476,6 +6498,7 @@ static const IcallEntry environment_icalls [] = {
  	{"GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
  	{"GetOSVersionString", ves_icall_System_Environment_GetOSVersionString},
 	{"GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath},
+	{"InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable},
 	{"get_ExitCode", mono_environment_exitcode_get},
 	{"get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted},
 	{"get_MachineName", ves_icall_System_Environment_get_MachineName},
