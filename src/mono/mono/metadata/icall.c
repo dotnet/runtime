@@ -5542,6 +5542,14 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return names;
 }
 
+/*
+ * If your platform lacks setenv/unsetenv, you must upgrade your glib.
+ */
+#if !GLIB_CHECK_VERSION(2,4,0)
+#define g_setenv(a,b,c)   setenv(a,b,c)
+#define g_unsetenv(a,b,c) unsetenv(a,b,c)
+#endif
+
 static void
 ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
 {
