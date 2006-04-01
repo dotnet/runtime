@@ -9008,12 +9008,18 @@ optimize_branches (MonoCompile *cfg)
 								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
 								 bbn->code->opcode);
 
+						/* 
+						 * Unlink, then relink bblocks to avoid various
+						 * tricky situations when the two targets of the branch
+						 * are equal, or will become equal after the change.
+						 */
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+
 						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
 
-						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
-
-						link_bblock (cfg, bb, bbn->code->inst_target_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
 						changed = TRUE;
 						continue;
@@ -9027,12 +9033,13 @@ optimize_branches (MonoCompile *cfg)
 								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
 								 bbn->code->opcode);
 
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+
 						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
 
-						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
-
-						link_bblock (cfg, bb, bbn->code->inst_target_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
 						changed = TRUE;
 						continue;
