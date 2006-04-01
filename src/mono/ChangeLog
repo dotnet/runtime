@@ -1,3 +1,7 @@
+2006-04-01  Zoltan Varga  <vargaz@gmail.com>
+
+	* data/mono.supp: Add "Use of uninitialized value of size 8" too.
+
 2006-03-31  Massimiliano Mantione  <massi@ximian.com>
 
         * docs/tree-mover.txt: Added tree mover documentation.
