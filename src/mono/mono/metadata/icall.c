@@ -5547,7 +5547,7 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
  */
 #if !GLIB_CHECK_VERSION(2,4,0)
 #define g_setenv(a,b,c)   setenv(a,b,c)
-#define g_unsetenv(a,b,c) unsetenv(a,b,c)
+#define g_unsetenv(a) unsetenv(a)
 #endif
 
 static void
