@@ -782,42 +782,43 @@ void
 mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 {
 	MonoBasicBlock **newa;
-	int i, pos;
+	int i, pos, count;
 	gboolean found;
 
-	found = FALSE;
+	/* 
+	 * In theory, count could only have the value 0 or 1, but some branch opts
+	 * are still buggy, causing the same bblock to appear in in/out_bb multiple
+	 * times (bug #77992)
+	 */
+	count = 0;
 	for (i = 0; i < from->out_count; ++i) {
-		if (to == from->out_bb [i]) {
-			found = TRUE;
-			break;
-		}
+		if (to == from->out_bb [i])
+			count ++;
 	}
-	if (found) {
-		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (from->out_count - 1));
+	if (count) {
+		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (from->out_count - count));
 		pos = 0;
 		for (i = 0; i < from->out_count; ++i) {
 			if (from->out_bb [i] != to)
 				newa [pos ++] = from->out_bb [i];
 		}
-		from->out_count--;
+		from->out_count -= count;
 		from->out_bb = newa;
 	}
 
-	found = FALSE;
+	count = 0;
 	for (i = 0; i < to->in_count; ++i) {
-		if (from == to->in_bb [i]) {
-			found = TRUE;
-			break;
-		}
+		if (from == to->in_bb [i])
+			count ++;
 	}
 	if (found) {
-		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (to->in_count - 1));
+		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (to->in_count - count));
 		pos = 0;
 		for (i = 0; i < to->in_count; ++i) {
 			if (to->in_bb [i] != from)
 				newa [pos ++] = to->in_bb [i];
 		}
-		to->in_count--;
+		to->in_count -= count;
 		to->in_bb = newa;
 	}
 }
