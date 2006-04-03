@@ -4310,7 +4310,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.name = assembly_name;
 	image->image.assembly_name = image->image.name; /* they may be different */
 	image->image.module_name = module_name;
-	image->image.version = version;
+	image->image.version = g_strdup (version);
 	image->image.md_version_major = 1;
 	image->image.md_version_minor = 1;
 	image->image.dynamic = TRUE;
@@ -7988,7 +7988,6 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		klass = mono_class_from_mono_type (tb->type.type);
 		klass->parent = NULL;
 		/* fool mono_class_setup_parent */
-		g_free (klass->supertypes);
 		klass->supertypes = NULL;
 		mono_class_setup_parent (klass, parent);
 		mono_class_setup_mono_type (klass);

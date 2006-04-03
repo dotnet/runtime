@@ -2093,7 +2093,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	} else
 		class->vtable_size = cur_slot;
 
-	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
+	class->vtable = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
 
 	if (mono_print_vtable) {
@@ -2315,14 +2315,14 @@ mono_class_init (MonoClass *class)
 		for (i = 0; i < class->rank; ++i)
 			sig->params [i] = &mono_defaults.int32_class->byval_arg;
 
-		ctor = (MonoMethod *) g_new0 (MonoMethodPInvoke, 1);
+		ctor = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
 		ctor->klass = class;
 		ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
 		ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		ctor->signature = sig;
 		ctor->name = ".ctor";
 		ctor->slot = -1;
-		class->methods = g_new (MonoMethod*, class->method.count);
+		class->methods = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
 		class->methods [0] = ctor;
 		if (class->rank > 1) {
 			sig = mono_metadata_signature_alloc (class->image, class->rank * 2);
@@ -2331,7 +2331,7 @@ mono_class_init (MonoClass *class)
 			for (i = 0; i < class->rank * 2; ++i)
 				sig->params [i] = &mono_defaults.int32_class->byval_arg;
 
-			ctor = (MonoMethod *) g_new0 (MonoMethodPInvoke, 1);
+			ctor = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
 			ctor->klass = class;
 			ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
 			ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
@@ -2635,7 +2635,7 @@ mono_class_setup_supertypes (MonoClass *class)
 		class->idepth = 1;
 
 	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
-	class->supertypes = g_new0 (MonoClass *, ms);
+	class->supertypes = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoClass *) * ms);
 
 	if (class->parent) {
 		class->supertypes [class->idepth - 1] = class;
@@ -2745,7 +2745,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	class = g_malloc0 (sizeof (MonoClass));
+	class = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
 
 	class->name = name;
 	class->name_space = nspace;

@@ -1174,9 +1174,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
+		result = (MonoMethod *)mono_mempool_alloc0 (image->mempool, sizeof (MonoMethodPInvoke));
 	else
-		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
+		result = (MonoMethod *)mono_mempool_alloc0 (image->mempool, sizeof (MonoMethodNormal));
 
 	if (!klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
@@ -1353,7 +1353,8 @@ mono_free_method  (MonoMethod *method)
 		g_free (((MonoMethodNormal*)method)->header);
 	}
 
-	g_free (method);
+	if (method->dynamic)
+		g_free (method);
 }
 
 void
