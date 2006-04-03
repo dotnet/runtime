@@ -781,45 +781,41 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 void
 mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 {
-	MonoBasicBlock **newa;
-	int i, pos, count;
+	int i, pos;
 	gboolean found;
 
-	/* 
-	 * In theory, count could only have the value 0 or 1, but some branch opts
-	 * are still buggy, causing the same bblock to appear in in/out_bb multiple
-	 * times (bug #77992)
-	 */
-	count = 0;
+	found = FALSE;
 	for (i = 0; i < from->out_count; ++i) {
-		if (to == from->out_bb [i])
-			count ++;
+		if (to == from->out_bb [i]) {
+			found = TRUE;
+			break;
+		}
 	}
-	if (count) {
-		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (from->out_count - count));
+	if (found) {
 		pos = 0;
 		for (i = 0; i < from->out_count; ++i) {
 			if (from->out_bb [i] != to)
-				newa [pos ++] = from->out_bb [i];
+				from->out_bb [pos ++] = from->out_bb [i];
 		}
-		from->out_count -= count;
-		from->out_bb = newa;
+		g_assert (pos == from->out_count - 1);
+		from->out_count--;
 	}
 
-	count = 0;
+	found = FALSE;
 	for (i = 0; i < to->in_count; ++i) {
-		if (from == to->in_bb [i])
-			count ++;
+		if (from == to->in_bb [i]) {
+			found = TRUE;
+			break;
+		}
 	}
 	if (found) {
-		newa = mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * (to->in_count - count));
 		pos = 0;
 		for (i = 0; i < to->in_count; ++i) {
 			if (to->in_bb [i] != from)
-				newa [pos ++] = to->in_bb [i];
+				to->in_bb [pos ++] = to->in_bb [i];
 		}
-		to->in_count -= count;
-		to->in_bb = newa;
+		g_assert (pos == to->in_count - 1);
+		to->in_count--;
 	}
 }
 
@@ -8497,39 +8493,6 @@ replace_in_block (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl
 	}
 }
 
-static void 
-replace_or_add_in_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl)
-{
-	gboolean found = FALSE;
-	int i;
-
-	for (i = 0; i < bb->in_count; i++) {
-		MonoBasicBlock *ib = bb->in_bb [i];
-		if (ib == orig) {
-			if (!repl) {
-				if (bb->in_count > 1) {
-					bb->in_bb [i] = bb->in_bb [bb->in_count - 1];
-				}
-				bb->in_count--;
-			} else {
-				bb->in_bb [i] = repl;
-			}
-			found = TRUE;
-		}
-	}
-	
-	if (! found) {
-		MonoBasicBlock **new_in_bb = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (bb->in_count + 1));
-		for (i = 0; i < bb->in_count; i++) {
-			new_in_bb [i] = bb->in_bb [i];
-		}
-		new_in_bb [i] = repl;
-		bb->in_count++;
-		bb->in_bb = new_in_bb;
-	}
-}
-
-
 static void
 replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl) {
 	MonoInst *inst;
@@ -8655,17 +8618,14 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 			printf ("remove_block_if_useless %s, removed BB%d\n", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 		}
 		
-		for (i = 0; i < bb->in_count; i++) {
-			MonoBasicBlock *in_bb = bb->in_bb [i];
-			replace_out_block (in_bb, bb, target_bb);
+		/* unlink_bblock () modifies the bb->in_bb array so can't use a for loop here */
+		while (bb->in_count) {
+			MonoBasicBlock *in_bb = bb->in_bb [0];
+			mono_unlink_bblock (cfg, in_bb, bb);
+			link_bblock (cfg, in_bb, target_bb);
 			replace_out_block_in_code (in_bb, bb, target_bb);
-			if (bb->in_count == 1) {
-				replace_in_block (target_bb, bb, in_bb);
-			} else {
-				replace_or_add_in_block (cfg, target_bb, bb, in_bb);
-			}
 		}
-
+		
 		mono_unlink_bblock (cfg, bb, target_bb);
 		
 		if ((previous_bb != cfg->bb_entry) &&
@@ -8996,8 +8956,7 @@ optimize_branches (MonoCompile *cfg)
 						 */
 						bb->last_ins->opcode = CEE_BR;
 						bb->last_ins->inst_target_bb = taken_branch_target;
-						replace_out_block (bb, untaken_branch_target, NULL);
-						replace_in_block (untaken_branch_target, bb, NULL);
+						mono_unlink_bblock (cfg, bb, untaken_branch_target);
 						changed = TRUE;
 						continue;
 					}
