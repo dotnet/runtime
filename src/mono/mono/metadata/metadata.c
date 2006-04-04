@@ -2206,7 +2206,9 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
  * info about local variables and optional exception tables.
  * This is a Mono runtime internal function.
  *
- * Returns: a MonoMethodHeader.
+ * LOCKING: Assumes the loader lock is held.
+ *
+ * Returns: a MonoMethodHeader allocated from the image mempool.
  */
 MonoMethodHeader *
 mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr)
@@ -2223,7 +2225,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
-		mh = g_new0 (MonoMethodHeader, 1);
+		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader));
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2231,7 +2233,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->code = ptr;
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
-		mh = g_new0 (MonoMethodHeader, 1);
+		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader));
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2286,7 +2288,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
-		mh = g_malloc0 (sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
@@ -2297,7 +2299,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			}
 		}
 	} else {
-		mh = g_new0 (MonoMethodHeader, 1);
+		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader));
 	}
 	mh->code = code;
 	mh->code_size = code_size;
@@ -2322,7 +2324,15 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
-	return mono_metadata_parse_mh_full (m, NULL, ptr);
+	MonoMethodHeader *res;
+
+	mono_loader_lock ();
+
+	res = mono_metadata_parse_mh_full (m, NULL, ptr);
+
+	mono_loader_unlock ();
+
+	return res;
 }
 
 /*
@@ -2335,11 +2345,7 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 void
 mono_metadata_free_mh (MonoMethodHeader *mh)
 {
-	int i;
-	for (i = 0; i < mh->num_locals; ++i)
-		mono_metadata_free_type (mh->locals[i]);
-	g_free (mh->clauses);
-	g_free (mh);
+	/* Allocated from the mempool */
 }
 
 /*

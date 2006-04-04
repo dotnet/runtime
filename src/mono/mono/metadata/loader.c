@@ -1347,7 +1347,7 @@ mono_free_method  (MonoMethod *method)
 		g_free (mw->method_data);
 	}
 
-	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
+	if (method->dynamic && !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
 		/* FIXME: Ditto */
 		/* mono_metadata_free_mh (((MonoMethodNormal *)method)->header); */
 		g_free (((MonoMethodNormal*)method)->header);
