@@ -10943,6 +10943,9 @@ mini_cleanup (MonoDomain *domain)
 	 */
 	mono_domain_finalize (domain, 2000);
 
+	/* This accesses metadata so needs to be called before runtime shutdown */
+	print_jit_stats ();
+
 	mono_runtime_cleanup (domain);
 
 	mono_profiler_shutdown ();
@@ -10963,7 +10966,6 @@ mini_cleanup (MonoDomain *domain)
 		g_hash_table_destroy (class_init_hash_addr);
 	g_free (emul_opcode_map);
 
-	print_jit_stats ();
 	mono_counters_dump (-1, stdout);
 }
 
