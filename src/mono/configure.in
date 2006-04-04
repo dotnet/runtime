@@ -1547,7 +1547,11 @@ case "$host" in
 		esac
 		jit_wanted=true
 		if test x"$GCC" = xyes; then
-			CFLAGS="$CFLAGS -Wno-cast-align"
+			# We don't support v8 cpus
+			CFLAGS="$CFLAGS -Wno-cast-align -mcpu=v9"
+		fi
+		if test x"$AR" = xfalse; then
+			AC_MSG_ERROR([The required utility 'ar' is not found in your PATH. Usually it can be found in /usr/ccs/bin.])
 		fi
 		;;
        alpha*-*-linux* | alpha*-*-osf*)

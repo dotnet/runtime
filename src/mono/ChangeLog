@@ -1,3 +1,7 @@
+2006-04-04  Zoltan Varga  <vargaz@gmail.com>
+
+        * configure.in: Add a check and a helpful error message when 'ar' is not found on solaris.
+
 2006-04-01  Zoltan Varga  <vargaz@gmail.com>
 
 	* data/mono.supp: Add "Use of uninitialized value of size 8" too.
