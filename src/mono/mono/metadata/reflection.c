@@ -285,7 +285,7 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 	guint32 idx;
 	char *copy;
 	gpointer oldkey, oldval;
-	
+
 	copy = g_malloc (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
@@ -5271,8 +5271,6 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 		}
 		g_assert (res->token);
 	}
-
-	mono_image_addref (image);
 
 	CACHE_OBJECT (MonoReflectionModule *, image, res, NULL);
 }

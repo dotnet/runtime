@@ -11,6 +11,7 @@
 #include "mono/utils/monobitset.h"
 
 struct _MonoAssembly {
+	/* The number of appdomains which have this assembly loaded. Initially 0 */
 	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
@@ -52,6 +53,10 @@ struct _MonoTableInfo {
 };
 
 struct _MonoImage {
+	/*
+	 * The number of assemblies which reference this MonoImage though their 'image'
+	 * field. Initially 0.
+	 */
 	int   ref_count;
 	FILE *file_descr;
 	/* if file_descr is NULL the image was loaded from raw data */
@@ -68,7 +73,7 @@ struct _MonoImage {
 	char *name;
 	const char *assembly_name;
 	const char *module_name;
-	const char *version;
+	char *version;
 	gint16 md_version_major, md_version_minor;
 	char *guid;
 	void *image_info;

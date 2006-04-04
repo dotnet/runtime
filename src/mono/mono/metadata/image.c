@@ -22,7 +22,9 @@
 #include "tabledefs.h"
 #include "tokentype.h"
 #include "metadata-internals.h"
+#include "loader.h"
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-logger.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -762,8 +764,6 @@ done:
 	if (status)
 		*status = MONO_IMAGE_OK;
 
-	image->ref_count=1;
-
 	return image;
 
 invalid_image:
@@ -793,7 +793,6 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 		return NULL;
 	}
 	image = g_new0 (MonoImage, 1);
-	image->ref_count = 1;
 	image->file_descr = filed;
 	image->raw_data_len = stat_buf.st_size;
 	image->raw_data = mono_raw_buffer_load (fileno (filed), FALSE, 0, stat_buf.st_size);
@@ -890,7 +889,6 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	}
 
 	image = g_new0 (MonoImage, 1);
-	image->ref_count = 1;
 	image->raw_data = datac;
 	image->raw_data_len = data_len;
 	image->raw_data_allocated = need_copy;
@@ -935,7 +933,6 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	g_free (absfname);
 	
 	if (image){
-		mono_image_addref (image);
 		mono_images_unlock ();
 		return image;
 	}
@@ -994,6 +991,12 @@ free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
 }
 
 static void
+free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
+{
+	g_free (key);
+}
+
+static void
 free_remoting_wrappers (gpointer key, gpointer val, gpointer user_data)
 {
 	g_free (val);
@@ -1039,8 +1042,10 @@ mono_image_close (MonoImage *image)
 
 	g_return_if_fail (image != NULL);
 
-	if (InterlockedDecrement (&image->ref_count))
+	if (InterlockedDecrement (&image->ref_count) > 0)
 		return;
+
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "Unloading image %s %p.", image->name, image);
 	
 	mono_images_lock ();
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
@@ -1081,6 +1086,7 @@ mono_image_close (MonoImage *image)
 	}
 	g_free (image->name);
 	g_free (image->guid);
+	g_free (image->version);
 	g_free (image->files);
 
 	g_hash_table_destroy (image->method_cache);
@@ -1100,9 +1106,10 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->synchronized_cache);
 	g_hash_table_destroy (image->unbox_wrapper_cache);
 	g_hash_table_destroy (image->typespec_cache);
-	g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
+	/* The ownership of signatures is not well defined */
+	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->memberref_signatures);
-	g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
+	//g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
 
 	if (image->interface_bitset) {
@@ -1140,8 +1147,10 @@ mono_image_close (MonoImage *image)
 			g_hash_table_destroy (di->handleref);
 		if (di->tokens)
 			mono_g_hash_table_destroy (di->tokens);
-		if (di->blob_cache)
+		if (di->blob_cache) {
+			g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
 			g_hash_table_destroy (di->blob_cache);
+		}
 		g_list_free (di->array_methods);
 		if (di->gen_params)
 			g_ptr_array_free (di->gen_params, TRUE);
