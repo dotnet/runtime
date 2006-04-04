@@ -508,10 +508,10 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	for (i = 0; i < jit->num_lexical_blocks; i ++) {
 		MonoDebugLexicalBlockEntry *jit_lbe = &jit->lexical_blocks [i];
 		MonoSymbolFileLexicalBlockEntry *minfo_lbe = &minfo->lexical_blocks [i];
-		jit_lbe->il_start_offset = minfo_lbe->_start_offset;
+		jit_lbe->il_start_offset = read32 (&(minfo_lbe->_start_offset));
 		jit_lbe->native_start_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_start_offset);
 
-		jit_lbe->il_end_offset = minfo_lbe->_end_offset;
+		jit_lbe->il_end_offset = read32 (&(minfo_lbe->_end_offset));
 		jit_lbe->native_end_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_end_offset);
 	}
 
