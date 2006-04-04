@@ -10961,6 +10961,7 @@ mini_cleanup (MonoDomain *domain)
 	g_hash_table_destroy (jit_icall_name_hash);
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
+	g_free (emul_opcode_map);
 
 	print_jit_stats ();
 	mono_counters_dump (-1, stdout);
