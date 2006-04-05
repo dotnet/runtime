@@ -325,6 +325,8 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr);
 
+int* mono_metadata_get_param_attrs          (MonoImage *m, int def);
+
 guint
 mono_metadata_generic_method_hash           (MonoGenericMethod     *gmethod) MONO_INTERNAL;
 

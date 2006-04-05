@@ -1484,6 +1484,39 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 }
 
 /*
+ * mono_metadata_get_param_attrs:
+ *
+ *   Return the parameter attributes for the method whose MethodDef index is DEF. The 
+ * returned memory needs to be freed by the caller. If all the param attributes are
+ * 0, then NULL is returned.
+ */
+int*
+mono_metadata_get_param_attrs (MonoImage *m, int def)
+{
+	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
+	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
+	guint32 cols [MONO_PARAM_SIZE];
+	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+	int *pattrs = NULL;
+
+	if (def < methodt->rows)
+		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
+	else
+		lastp = paramt->rows + 1;
+
+	for (i = param_index; i < lastp; ++i) {
+		mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
+		if (cols [MONO_PARAM_FLAGS]) {
+			if (!pattrs)
+				pattrs = g_new0 (int, 1 + (lastp - param_index));
+			pattrs [cols [MONO_PARAM_SEQUENCE]] = cols [MONO_PARAM_FLAGS];
+		}
+	}
+
+	return pattrs;
+}
+
+/*
  * mono_metadata_parse_signature_full:
  * @image: metadata context
  * @generic_container: generic container
@@ -1511,7 +1544,7 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	return mono_metadata_parse_method_signature_full (image, generic_container, FALSE, ptr, NULL); 
+	return mono_metadata_parse_method_signature_full (image, generic_container, 0, ptr, NULL); 
 }
 
 /*
@@ -1606,23 +1639,8 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		gen_param_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
-	if (def) {
-		MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
-		MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
-		guint32 cols [MONO_PARAM_SIZE];
-		guint lastp, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
-
-		if (def < methodt->rows)
-			lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
-		else
-			lastp = paramt->rows + 1;
-
-		pattrs = g_new0 (int, 1 + param_count);
-		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
-			pattrs [cols [MONO_PARAM_SEQUENCE]] = cols [MONO_PARAM_FLAGS];
-		}
-	}
+	if (def)
+		pattrs = mono_metadata_get_param_attrs (m, def);
 	method = mono_metadata_signature_alloc (m, param_count);
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
