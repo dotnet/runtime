@@ -69,7 +69,7 @@ compute_dominators (MonoCompile *cfg)
 		idom = NULL;
 		for (i = 0; i < bb->in_count; ++i) {
 			MonoBasicBlock *in_bb = bb->in_bb [i];
-			if (doms [in_bb->dfn]) {
+			if ((in_bb != bb) && doms [in_bb->dfn]) {
 				idom = in_bb;
 				break;
 			}
