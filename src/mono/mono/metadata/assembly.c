@@ -1247,6 +1247,10 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 		return NULL;
 	}
 
+	if (image->assembly)
+		/* Already loaded by another appdomain */
+		return image->assembly;
+
 	ass = mono_assembly_load_from_full (image, fname, status, refonly);
 
 	if (ass) {
@@ -1388,6 +1392,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
 	mono_assemblies_unlock ();
 
+	g_assert (image->assembly == NULL);
 	image->assembly = ass;
 
 	mono_assembly_load_references (image, status);
