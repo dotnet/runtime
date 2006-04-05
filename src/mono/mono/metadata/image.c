@@ -1057,11 +1057,13 @@ mono_image_close (MonoImage *image)
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images, image->name);
 		g_hash_table_remove (loaded_images_guid, image->guid);
-		/* Multiple images might have the same guid */
-		build_guid_table (image->ref_only);
 	}
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == image))
 		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
+
+	/* Multiple images might have the same guid */
+	build_guid_table (image->ref_only);
+
 	mono_images_unlock ();
 
 	if (image->file_descr) {
