@@ -5081,6 +5081,7 @@ mono_image_load_module (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 	if (image->assembly->image->modules)
 		memcpy (new_modules, image->assembly->image->modules, module_count * sizeof (MonoImage *));
 	new_modules [module_count] = image;
+	mono_image_addref (image);
 
 	g_free (image->assembly->image->modules);
 	image->assembly->image->modules = new_modules;
@@ -5204,6 +5205,7 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		if (ass->modules)
 			memcpy (new_modules, ass->modules, module_count * sizeof (MonoImage *));
 		new_modules [module_count] = &image->image;
+		mono_image_addref (&image->image);
 
 		g_free (ass->modules);
 		ass->modules = new_modules;

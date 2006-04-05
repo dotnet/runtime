@@ -481,6 +481,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		module_ref = g_build_filename (base_dir, name, NULL);
 		image->modules [i] = mono_image_open_full (module_ref, status, refonly);
 		if (image->modules [i]) {
+			mono_image_addref (image->modules [i]);
 			/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
 		}
 		/* 
@@ -602,6 +603,7 @@ mono_image_init (MonoImage *image)
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
 	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
+	image->method_signatures = g_hash_table_new (NULL, NULL);
 }
 
 static MonoImage *
@@ -1045,7 +1047,7 @@ mono_image_close (MonoImage *image)
 	if (InterlockedDecrement (&image->ref_count) > 0)
 		return;
 
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "Unloading image %s %p.", image->name, image);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s %p.", image->name, image);
 	
 	mono_images_lock ();
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
@@ -1111,6 +1113,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->memberref_signatures);
 	//g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
+	g_hash_table_destroy (image->method_signatures);
 
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);

@@ -1438,11 +1438,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	if (rptr)
 		*rptr = ptr;
 
-	
-	/* FIXME: remove the != MONO_PARSE_PARAM condition, this accounts for
-	 * almost 10k (about 2/3rds) of all MonoType's we create.
-	 */
-	if (mode != MONO_PARSE_PARAM && !type->num_mods) {
+		if (!type->num_mods) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
 			MonoType *ret = type->byref ? &type->data.klass->this_arg : &type->data.klass->byval_arg;
@@ -1473,7 +1469,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 			return cached;
 	}
 	
-	/*printf ("%x%c %s\n", type->attrs, type->pinned ? 'p' : ' ', mono_type_full_name (type));*/
+	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
 	if (type == &stype)
 		type = g_memdup (&stype, sizeof (MonoType));
@@ -2685,6 +2681,8 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
  * The array of interfaces that the @index typedef token implements is returned in
  * @interfaces. The number of elemnts in the array is returned in @count.
  *
+ * LOCKING: Assumes the loader lock is held.
+ *
  * Returns: TRUE on success, FALSE on failure.
  */
 gboolean
@@ -2692,7 +2690,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
 	locator_t loc;
-	guint32 start, i;
+	guint32 start, pos;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	MonoClass **result;
 
@@ -2719,18 +2717,26 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 		else
 			break;
 	}
-	result = NULL;
-	i = 0;
-	while (start < tdef->rows) {
-		mono_metadata_decode_row (tdef, start, cols, MONO_INTERFACEIMPL_SIZE);
+	pos = start;
+	while (pos < tdef->rows) {
+		mono_metadata_decode_row (tdef, pos, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
-		result = g_renew (MonoClass*, result, i + 1);
-		result [i] = mono_class_get_full (
-			meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]), context);
-		*count = ++i;
-		++start;
+		++pos;
 	}
+
+	result = mono_mempool_alloc0 (meta->mempool, sizeof (MonoClass*) * (pos - start));
+
+	pos = start;
+	while (pos < tdef->rows) {
+		mono_metadata_decode_row (tdef, pos, cols, MONO_INTERFACEIMPL_SIZE);
+		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
+			break;
+		result [pos - start] = mono_class_get_full (
+			meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]), context);
+		++pos;
+	}
+	*count = pos - start;
 	*interfaces = result;
 	return TRUE;
 }
@@ -2741,7 +2747,9 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 	MonoClass **interfaces;
 	gboolean rv;
 
+	mono_loader_lock ();
 	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, NULL);
+	mono_loader_unlock ();
 	if (rv)
 		return interfaces;
 	else
