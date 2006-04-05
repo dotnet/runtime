@@ -55,7 +55,8 @@ struct _MonoTableInfo {
 struct _MonoImage {
 	/*
 	 * The number of assemblies which reference this MonoImage though their 'image'
-	 * field. Initially 0.
+	 * field plus the number of images which reference this MonoImage through their 
+	 * 'modules' field. Initially 0.
 	 */
 	int   ref_count;
 	FILE *file_descr;
@@ -127,6 +128,9 @@ struct _MonoImage {
 	/* indexed by token */
 	GHashTable *memberref_signatures;
 	GHashTable *helper_signatures;
+
+	/* Indexed by blob heap indexes */
+	GHashTable *method_signatures;
 
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
