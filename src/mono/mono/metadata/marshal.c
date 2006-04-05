@@ -100,6 +100,30 @@ void * mono_marshal_string_to_utf16 (MonoString *s);
 
 static gpointer mono_string_to_lpstr (MonoString *string_obj);
 
+static MonoObject *
+mono_remoting_wrapper (MonoMethod *method, gpointer *params);
+
+static MonoAsyncResult *
+mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
+
+static MonoObject *
+mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
+
+static MonoObject *
+mono_marshal_xdomain_copy_value (MonoObject *val);
+
+static void
+mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
+
+static gint32
+mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push);
+
+void
+mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
+
+static MonoReflectionType *
+type_from_handle (MonoType *handle);
+
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
@@ -148,6 +172,7 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32 int32", FALSE);
 		register_icall (mono_marshal_alloc, "mono_marshal_alloc", "ptr int32", FALSE);
 		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
+		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
@@ -156,6 +181,17 @@ mono_marshal_init (void)
 		register_icall (g_free, "g_free", "void ptr", FALSE);
 		register_icall (mono_object_isinst, "mono_object_isinst", "object object ptr", FALSE);
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
+		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
+		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
+		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
+		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
+		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
+		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
+		register_icall (mono_compile_method, "mono_compile_method", "ptr ptr", FALSE);
+		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
+		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
+		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 	}
 }
 
@@ -873,6 +909,14 @@ mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op)
 }
 
 static void
+mono_mb_emit_ptr (MonoMethodBuilder *mb, gpointer ptr)
+{
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ptr));
+}
+
+static void
 mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 {
 	mono_mb_emit_byte (mb, CEE_CALLI);
@@ -891,9 +935,7 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_SAVE_LMF);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, func));
+	mono_mb_emit_ptr (mb, func);
 	mono_mb_emit_calli (mb, sig);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
@@ -1510,9 +1552,7 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoin
 {
 	int pos_noabort;
 
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, (gpointer) mono_thread_interruption_request_flag ()));
+	mono_mb_emit_ptr (mb, (gpointer) mono_thread_interruption_request_flag ());
 	mono_mb_emit_byte (mb, CEE_LDIND_U4);
 	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -1915,7 +1955,6 @@ MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
-	static MonoMethodSignature *csig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -1933,15 +1972,6 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	g_assert (sig->hasthis);
 
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (method->klass->image, 2);
-
-		/* MonoAsyncResult * begin_invoke (MonoDelegate *delegate, gpointer params[]) */
-		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->params [0] = &mono_defaults.object_class->byval_arg;
-		csig->params [1] = &mono_defaults.int_class->byval_arg;
-	}
-
 	name = mono_signature_to_name (sig, "begin_invoke");
 	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
@@ -1952,7 +1982,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
-	mono_mb_emit_native_call (mb, csig, mono_delegate_begin_invoke);
+	mono_mb_emit_icall (mb, mono_delegate_begin_invoke);
 	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
@@ -2116,7 +2146,6 @@ MonoMethod *
 mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
-	static MonoMethodSignature *csig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -2134,15 +2163,6 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 
 	g_assert (sig->hasthis);
 
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (method->klass->image, 2);
-
-		/* MonoObject *end_invoke (MonoDelegate *delegate, gpointer params[]) */
-		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->params [0] = &mono_defaults.object_class->byval_arg;
-		csig->params [1] = &mono_defaults.int_class->byval_arg;
-	}
-
 	name = mono_signature_to_name (sig, "end_invoke");
 	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
@@ -2153,7 +2173,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
-	mono_mb_emit_native_call (mb, csig, mono_delegate_end_invoke);
+	mono_mb_emit_icall (mb, mono_delegate_end_invoke);
 	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
@@ -2223,7 +2243,6 @@ MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
-	static MonoMethodSignature *csig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int params_var;
@@ -2242,24 +2261,14 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_REMOTING_INVOKE)))
 		return res;
 
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->params [1] = &mono_defaults.int_class->byval_arg;
-		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->pinvoke = 1;
-	}
-
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE);
 	mb->method->save_lmf = 1;
 
 	params_var = mono_mb_emit_save_args (mb, sig, TRUE);
 
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_ptr (mb, method);
 	mono_mb_emit_ldloc (mb, params_var);
-	mono_mb_emit_native_call (mb, csig, mono_remoting_wrapper);
+	mono_mb_emit_icall (mb, mono_remoting_wrapper);
 	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
@@ -2419,15 +2428,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 static void
 mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
-	static MonoMethodSignature *csig = NULL;
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		csig->params [0] = &mono_defaults.object_class->byval_arg;
-		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->pinvoke = 1;
-	}
-
-	mono_mb_emit_native_call (mb, csig, mono_marshal_xdomain_copy_value);
+	mono_mb_emit_icall (mb, mono_marshal_xdomain_copy_value);
 	mono_mb_emit_byte (mb, CEE_CASTCLASS);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
 }
@@ -2435,16 +2436,7 @@ mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 static void
 mono_marshal_emit_xdomain_copy_out_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
-	static MonoMethodSignature *csig = NULL;
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-		csig->params [0] = &mono_defaults.object_class->byval_arg;
-		csig->params [1] = &mono_defaults.object_class->byval_arg;
-		csig->ret = &mono_defaults.void_class->byval_arg;
-		csig->pinvoke = 1;
-	}
-
-	mono_mb_emit_native_call (mb, csig, mono_marshal_xdomain_copy_out_value);
+	mono_mb_emit_icall (mb, mono_marshal_xdomain_copy_out_value);
 }
 
 /* mono_marshal_supports_fast_xdomain()
@@ -2477,16 +2469,7 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 static void
 mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 {
-	static MonoMethodSignature *csig = NULL;
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-		csig->params [0] = &mono_defaults.int32_class->byval_arg;
-		csig->params [1] = &mono_defaults.int32_class->byval_arg;
-		csig->ret = &mono_defaults.int32_class->byval_arg;
-		csig->pinvoke = 1;
-	}
-
-	mono_mb_emit_native_call (mb, csig, mono_marshal_set_domain_by_id);
+	mono_mb_emit_icall (mb, mono_marshal_set_domain_by_id);
 }
 
 /* mono_marshal_emit_load_domain_method ()
@@ -2496,21 +2479,11 @@ mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 static void
 mono_marshal_emit_load_domain_method (MonoMethodBuilder *mb, MonoMethod *method)
 {
-	static MonoMethodSignature *csig = NULL;
-	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->ret = &mono_defaults.int_class->byval_arg;
-		csig->pinvoke = 1;
-	}
-
 	/* We need a pointer to the method for the running domain (not the domain
 	 * that compiles the method).
 	 */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
-	mono_mb_emit_native_call (mb, csig, mono_compile_method);
+	mono_mb_emit_ptr (mb, method);
+	mono_mb_emit_icall (mb, mono_compile_method);
 }
 
 /* mono_marshal_get_xappdomain_dispatch ()
@@ -2792,8 +2765,6 @@ MonoMethod *
 mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
-	static MonoMethodSignature *sig_context_get;
-	static MonoMethodSignature *sig_context_set;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i, j, complex_count, complex_out_count, copy_locals_base;
@@ -2824,17 +2795,6 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 		return res;
 	
 	sig = signature_no_pinvoke (mono_method_signature (method));
-	
-	if (sig_context_set == NULL) {
-		sig_context_set = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		sig_context_set->params [0] = &mono_defaults.object_class->byval_arg;
-		sig_context_set->ret = &mono_defaults.void_class->byval_arg;
-		sig_context_set->pinvoke = 1;
-	
-		sig_context_get = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-		sig_context_get->ret = &mono_defaults.object_class->byval_arg;
-		sig_context_get->pinvoke = 1;
-	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_XDOMAIN_INVOKE);
 	mb->method->save_lmf = 1;
@@ -2879,7 +2839,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 
 	/* Save thread domain data */
 
-	mono_mb_emit_native_call (mb, sig_context_get, mono_context_get);
+	mono_mb_emit_icall (mb, mono_context_get);
 	mono_mb_emit_byte (mb, CEE_DUP);
 	mono_mb_emit_stloc (mb, loc_context);
 
@@ -3010,7 +2970,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	/* Restore thread domain data */
 	
 	mono_mb_emit_ldloc (mb, loc_context);
-	mono_mb_emit_native_call (mb, sig_context_set, mono_context_set);
+	mono_mb_emit_icall (mb, mono_context_set);
 	
 	/* if (loc_serialized_exc != null) ... */
 
@@ -3464,9 +3424,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	if (sig->hasthis) {
 		if (method->string_ctor) {
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, string_dummy));
+			mono_mb_emit_ptr (mb, string_dummy);
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
 		}
@@ -6274,13 +6232,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-		MonoMethodSignature *lasterr_sig;
-
-		lasterr_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-		lasterr_sig->ret = &mono_defaults.void_class->byval_arg;
-		lasterr_sig->pinvoke = 1;
-
-		mono_mb_emit_native_call (mb, lasterr_sig, mono_marshal_set_last_error);
+		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
 	}		
 
 	/* convert the result */
@@ -6654,9 +6606,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
 		if (this) {
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, this));
+			mono_mb_emit_ptr (mb, this);
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
@@ -6801,9 +6751,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	return res;
 }
-
-void
-mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
 
 static MonoReflectionType *
 type_from_handle (MonoType *handle)
@@ -6986,8 +6933,6 @@ mono_marshal_get_castclass (MonoClass *klass)
 MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass)
 {
-	static MonoMethodSignature *from_handle_sig = NULL;
-	static MonoMethodSignature *upgrade_proxy_sig = NULL;
 	static MonoMethodSignature *isint_sig = NULL;
 	static GHashTable *proxy_isinst_hash = NULL; 
 	MonoMethod *res;
@@ -7007,16 +6952,6 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 		return res;
 
 	if (!isint_sig) {
-		upgrade_proxy_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-		upgrade_proxy_sig->params [0] = &mono_defaults.object_class->byval_arg;
-		upgrade_proxy_sig->params [1] = &mono_defaults.object_class->byval_arg;
-		upgrade_proxy_sig->ret = &mono_defaults.void_class->byval_arg;
-		upgrade_proxy_sig->pinvoke = 1;
-
-		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
-		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
-	
 		isint_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 		isint_sig->params [0] = &mono_defaults.object_class->byval_arg;
 		isint_sig->ret = &mono_defaults.object_class->byval_arg;
@@ -7034,11 +6969,9 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	
-	/* get the refletion type from the type handle */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &klass->byval_arg));
-	mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+	/* get the reflection type from the type handle */
+	mono_mb_emit_ptr (mb, &klass->byval_arg);
+	mono_mb_emit_icall (mb, type_from_handle);
 	
 	mono_mb_emit_ldarg (mb, 0);
 	
@@ -7054,13 +6987,11 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	pos_failed = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/* Upgrade the proxy vtable by calling: mono_upgrade_remote_class_wrapper (type, ob)*/
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &klass->byval_arg));
-	mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+	mono_mb_emit_ptr (mb, &klass->byval_arg);
+	mono_mb_emit_icall (mb, type_from_handle);
 	mono_mb_emit_ldarg (mb, 0);
 	
-	mono_mb_emit_native_call (mb, upgrade_proxy_sig, mono_upgrade_remote_class_wrapper);
+	mono_mb_emit_icall (mb, mono_upgrade_remote_class_wrapper);
 	emit_thread_interrupt_checkpoint (mb);
 	
 	mono_mb_emit_ldarg (mb, 0);
@@ -7227,7 +7158,6 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 {
-	static MonoMethodSignature *from_handle_sig = NULL;
 	static MonoMethod *enter_method, *exit_method;
 	MonoMethodSignature *sig;
 	MonoExceptionClause *clause;
@@ -7271,23 +7201,17 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (exit_method);
 		mono_method_desc_free (desc);
+	}
 
+	/* Push this or the type object */
+	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 		/*
 		 * GetTypeFromHandle isn't called as a managed method because it has
 		 * a funky calling sequence, e.g. ldtoken+GetTypeFromHandle gets
 		 * transformed into something else by the JIT.
 		 */
-		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
-		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
-	}
-
-	/* Push this or the type object */
-	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &method->klass->byval_arg));
-		mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+		mono_mb_emit_ptr (mb, &method->klass->byval_arg);
+		mono_mb_emit_icall (mb, type_from_handle);
 	}
 	else
 		mono_mb_emit_ldarg (mb, 0);
