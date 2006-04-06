@@ -1524,6 +1524,8 @@ mono_metadata_get_param_attrs (MonoImage *m, int def)
  *
  * Decode a method signature stored in the STANDALONESIG table
  *
+ * LOCKING: Assumes the loader lock is held.
+ *
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature*
@@ -1702,6 +1704,8 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
  *
  * Decode a method signature stored at @ptr.
  * This is a Mono runtime internal function.
+ *
+ * LOCKING: Assumes the loader lock is held.
  *
  * Returns: a MonoMethodSignature describing the signature.
  */
