@@ -1335,7 +1335,8 @@ mono_free_method  (MonoMethod *method)
 		 * locals are shared.
 		 */
 		/* mono_metadata_free_method_signature (method->signature); */
-		g_free (method->signature);
+		if (method->dynamic)
+			g_free (method->signature);
 	}
 
 	if (method->dynamic) {

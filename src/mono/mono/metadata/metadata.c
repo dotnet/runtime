@@ -1571,6 +1571,8 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
  * The return type and the params types need to be filled later.
  * This is a Mono runtime internal function.
  *
+ * LOCKING: Assumes the loader lock is held.
+ *
  * Returns: the new MonoMethodSignature structure.
  */
 MonoMethodSignature*
@@ -1578,8 +1580,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 {
 	MonoMethodSignature *sig;
 
-	/* later we want to allocate signatures with mempools */
-	sig = g_malloc0 (sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	sig = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	sig->param_count = nparams;
 	sig->sentinelpos = -1;
 
@@ -1614,6 +1615,8 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
  *
  * Decode a method signature stored at @ptr.
  * This is a Mono runtime internal function.
+ *
+ * LOCKING: Assumes the loader lock is held.
  *
  * Returns: a MonoMethodSignature describing the signature.
  */
@@ -1726,8 +1729,6 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 		if (sig->params [i])
 			mono_metadata_free_type (sig->params [i]);
 	}
-
-	g_free (sig);
 }
 
 /*
