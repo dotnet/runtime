@@ -13,6 +13,11 @@ int mini_wapi_semdel (int argc, char **argv)
 	return 0;
 }
 
+int mini_wapi_seminfo (int argc, char **argv)
+{
+	return 0;
+}
+
 #else
 
 #include <errno.h>
@@ -200,16 +205,67 @@ int mini_wapi_semdel (int argc, char **argv)
 	int sem_id, ret;
 	
 	_wapi_shared_layout = _wapi_shm_attach(WAPI_SHM_DATA);
-	if (_wapi_shared_layout == FALSE) {
+	if (_wapi_shared_layout == FALSE ||
+	    _wapi_shared_layout->sem_key == 0) {
 		exit (0);
 	}
 
 	sem_id = semget (_wapi_shared_layout->sem_key, _WAPI_SHARED_SEM_COUNT, 0600);
 	if (sem_id != -1) {
-		ret = semctl (sem_id, IPC_RMID, 0);
+		ret = semctl (sem_id, 0, IPC_RMID);
 		if (ret == -1) {
 			g_message ("Error deleting semaphore: %s",
 				   g_strerror (errno));
+		}
+	}
+	
+	exit (0);
+}
+
+static void sem_explain (int val)
+{
+	g_print ("%d ", val);
+	if (val >= 1) {
+		g_print ("(Unlocked)");
+	} else {
+		g_print ("(Locked)");
+	}
+	g_print ("\n");
+}
+
+int mini_wapi_seminfo (int argc, char **argv)
+{
+	int sem_id, ret;
+	union semun
+	{
+		int val;
+		struct semid_ds *buf;
+		ushort *array;
+	} arg;
+	ushort vals[_WAPI_SHARED_SEM_COUNT];
+	
+	_wapi_shared_layout = _wapi_shm_attach (WAPI_SHM_DATA);
+	if (_wapi_shared_layout == FALSE ||
+	    _wapi_shared_layout->sem_key == 0) {
+		exit (0);
+	}
+	
+	sem_id = semget (_wapi_shared_layout->sem_key, _WAPI_SHARED_SEM_COUNT, 0600);
+	if (sem_id != -1) {
+		g_print ("Getting values for sem: 0x%x\n",
+			 _wapi_shared_layout->sem_key);
+		arg.array = vals;
+		ret = semctl (sem_id, 0, GETALL, arg);
+		if (ret != -1) {
+			g_print ("Namespace: ");
+			sem_explain (vals[_WAPI_SHARED_SEM_NAMESPACE]);
+			g_print ("Fileshare: ");
+			sem_explain (vals[_WAPI_SHARED_SEM_FILESHARE]);
+			g_print ("Handles: ");
+			sem_explain (vals[_WAPI_SHARED_SEM_SHARED_HANDLES]);
+			g_print ("Count lock: ");
+			sem_explain (vals[_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK]);
+			g_print ("Count: %d\n", vals[_WAPI_SHARED_SEM_PROCESS_COUNT] - 1);
 		}
 	}
 	

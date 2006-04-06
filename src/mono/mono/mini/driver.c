@@ -53,6 +53,7 @@ static void mini_usage (void);
 
 extern int mini_wapi_hps (int argc, char **argv);
 extern int mini_wapi_semdel (int argc, char **argv);
+extern int mini_wapi_seminfo (int argc, char **argv);
 
 /* This turns off command line globbing under win32 */
 #ifdef PLATFORM_WIN32
@@ -821,6 +822,8 @@ mono_main (int argc, char* argv[])
 				return mini_wapi_hps (argc - i, argv + i);
 			} else if (strcmp (argv [i] + 7, "semdel") == 0) {
 				return mini_wapi_semdel (argc - i, argv + i);
+			} else if (strcmp (argv [i] + 7, "seminfo") == 0) {
+				return mini_wapi_seminfo (argc - i, argv + i);
 			} else {
 				fprintf (stderr, "Invalid --wapi suboption: '%s'\n", argv [i]);
 				return 1;

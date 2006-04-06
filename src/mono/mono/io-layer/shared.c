@@ -454,7 +454,7 @@ void _wapi_shm_semaphores_remove (void)
 		g_message ("%s: Removing semaphores!", __func__);
 #endif
 
-		semctl (_wapi_sem_id, IPC_RMID, 0);
+		semctl (_wapi_sem_id, 0, IPC_RMID);
 		unlink (_wapi_shm_file (WAPI_SHM_DATA));
 		unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
 	} else {
