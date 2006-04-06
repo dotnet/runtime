@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #ifndef _WAPI_HANDLES_PRIVATE_H_
@@ -52,7 +52,8 @@ extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gboolean (*check)(gpointer, gpointer),
 				     gpointer user_data,
-				     gpointer *handle_specific);
+				     gpointer *handle_specific,
+				     gboolean search_shared);
 extern gint32 _wapi_search_handle_namespace (WapiHandleType type,
 					     gchar *utf8_name);
 extern void _wapi_handle_ref (gpointer handle);

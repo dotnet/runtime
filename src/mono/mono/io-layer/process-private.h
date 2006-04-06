@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #ifndef _WAPI_PROCESS_PRIVATE_H_
@@ -30,5 +30,6 @@ struct _WapiHandle_process
 };
 
 extern void _wapi_process_reap (void);
+extern void _wapi_process_signal_self (void);
 
 #endif /* _WAPI_PROCESS_PRIVATE_H_ */

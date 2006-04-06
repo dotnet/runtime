@@ -31,6 +31,8 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 	sleepytime.tv_nsec = 0;
 
 	while (1) {
+		nanosleep (&sleepytime, NULL);
+
 		//_wapi_handle_dump ();
 		_wapi_handle_update_refs ();
 
@@ -39,8 +41,6 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 		 * function.
 		 */
 		_wapi_process_reap ();
-
-		nanosleep (&sleepytime, NULL);
 	}
 
 #ifndef __GNUC__

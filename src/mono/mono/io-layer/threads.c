@@ -448,7 +448,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
 	if (ret == NULL) {
 		/* We need to search for this thread */
-		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL);
+		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL, TRUE);	/* FIXME: have a proper look at this, me might not need to set search_shared = TRUE */
 	} else {
 		/* if _wapi_search_handle() returns a found handle, it
 		 * refs it itself

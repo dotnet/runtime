@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -141,7 +141,8 @@ void _wapi_process_reap (void)
 	g_message ("%s: Reaping child processes", __func__);
 #endif
 
-	_wapi_search_handle (WAPI_HANDLE_PROCESS, waitfor_pid, NULL, NULL);
+	_wapi_search_handle (WAPI_HANDLE_PROCESS, waitfor_pid, NULL, NULL,
+			     FALSE);
 }
 
 /* Limitations: This can only wait for processes that are our own
@@ -217,6 +218,14 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 
 	return(WAIT_OBJECT_0);
 }
+
+void _wapi_process_signal_self ()
+{
+	if (current_process != NULL) {
+		process_set_termination_details (current_process, 0);
+	}
+}
+
 	
 static void process_set_defaults (struct _WapiHandle_process *process_handle)
 {
@@ -631,6 +640,11 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		SetLastError (ERROR_PATH_NOT_FOUND);
 		goto cleanup;
 	}
+
+	/* Hold another reference so the process has somewhere to
+	 * store its exit data even if we drop this handle
+	 */
+	_wapi_handle_ref (handle);
 	
 	/* new_environ is a block of NULL-terminated strings, which
 	 * is itself NULL-terminated. Of course, passing an array of
@@ -841,10 +855,12 @@ extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 static void process_set_current (void)
 {
 	pid_t pid = _wapi_getpid ();
-	char *handle_env;
+	const char *handle_env;
 	struct _WapiHandle_process process_handle = {0};
 	
-	handle_env = getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
+	handle_env = g_getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
+	g_unsetenv ("_WAPI_PROCESS_HANDLE_OFFSET");
+	
 	if (handle_env != NULL) {
 		struct _WapiHandle_process *process_handlep;
 		guchar *procname = NULL;
@@ -853,47 +869,49 @@ static void process_set_current (void)
 		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env), TRUE);
 		
 #ifdef DEBUG
-		g_message ("%s: Found my process handle: %p (offset %d)",
-			   __func__, current_process, atoi (handle_env));
+		g_message ("%s: Found my process handle: %p (offset %d 0x%x)",
+			   __func__, current_process, atoi (handle_env),
+			   atoi (handle_env));
 #endif
 
 		ok = _wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
 					  (gpointer *)&process_handlep);
-		if (ok == FALSE) {
-			g_warning ("%s: error looking up process handle %p",
-				   __func__, current_process);
-			return;
-		}
-
-		/* This test will probably break on linuxthreads, but
-		 * that should be ancient history on all distros we
-		 * care about by now
-		 */
-		if (process_handlep->id == pid) {
-			procname = process_handlep->proc_name;
-			if (!strcmp (procname, "mono")) {
-				/* Set a better process name */
+		if (ok) {
+			/* This test will probably break on linuxthreads, but
+			 * that should be ancient history on all distros we
+			 * care about by now
+			 */
+			if (process_handlep->id == pid) {
+				procname = process_handlep->proc_name;
+				if (!strcmp (procname, "mono")) {
+					/* Set a better process name */
 #ifdef DEBUG
-				g_message ("%s: Setting better process name",
-					   __func__);
+					g_message ("%s: Setting better process name", __func__);
 #endif
-
-				process_set_name (process_handlep);
-			} else {
+					
+					process_set_name (process_handlep);
+				} else {
 #ifdef DEBUG
-				g_message ("%s: Leaving process name: %s",
-					   __func__, procname);
+					g_message ("%s: Leaving process name: %s", __func__, procname);
 #endif
+				}
+
+				return;
 			}
 
-			return;
+			/* Wrong pid, so drop this handle and fall through to
+			 * create a new one
+			 */
+			_wapi_handle_unref (current_process);
 		}
-
-		/* Wrong pid, so drop this handle and fall through to
-		 * create a new one
-		 */
-		_wapi_handle_unref (current_process);
 	}
+
+	/* We get here if the handle wasn't specified in the
+	 * environment, or if the process ID was wrong, or if the
+	 * handle lookup failed (eg if the parent process forked and
+	 * quit immediately, and deleted the shared data before the
+	 * child got a chance to attach it.)
+	 */
 
 #ifdef DEBUG
 	g_message ("%s: Need to create my own process handle", __func__);
@@ -1030,7 +1048,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	mono_once (&process_current_once, process_set_current);
 	
 	_wapi_search_handle (WAPI_HANDLE_PROCESS, process_enum, processes,
-			     NULL);
+			     NULL, TRUE);
 	
 	fit=len/sizeof(guint32);
 	for (i = 0, j = 0; j < fit && i < processes->len; i++) {
@@ -1084,7 +1102,7 @@ gpointer OpenProcess (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUS
 
 	handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
 				      process_open_compare,
-				      GUINT_TO_POINTER (pid), NULL);
+				      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
 #ifdef DEBUG
 		g_message ("%s: Can't find pid %d", __func__, pid);

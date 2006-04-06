@@ -29,6 +29,7 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
+#include <mono/io-layer/process-private.h>
 
 #undef DEBUG
 #undef DEBUG_REFS
@@ -134,6 +135,7 @@ static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 
 static void handle_cleanup (void)
 {
+	_wapi_process_signal_self ();
 	_wapi_shm_semaphores_remove ();
 }
 
@@ -459,6 +461,19 @@ first_pass_done:
 	
 	if (shared->type == WAPI_HANDLE_UNUSED) {
 		/* Someone deleted this handle while we were working */
+#ifdef DEBUG
+		g_message ("%s: Handle at 0x%x unused", __func__, offset);
+#endif
+		goto done;
+	}
+
+	if (shared->type != type) {
+#ifdef DEBUG
+		g_message ("%s: Wrong type at %d 0x%x! Found %s wanted %s",
+			   __func__, offset, offset,
+			   _wapi_handle_typename[shared->type],
+			   _wapi_handle_typename[type]);
+#endif
 		goto done;
 	}
 	
@@ -634,7 +649,8 @@ _wapi_handle_foreach (WapiHandleType type,
 gpointer _wapi_search_handle (WapiHandleType type,
 			      gboolean (*check)(gpointer test, gpointer user),
 			      gpointer user_data,
-			      gpointer *handle_specific)
+			      gpointer *handle_specific,
+			      gboolean search_shared)
 {
 	struct _WapiHandleUnshared *handle_data = NULL;
 	struct _WapiHandleShared *shared;
@@ -667,7 +683,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 
-	if (!found && _WAPI_SHARED_HANDLE (type)) {
+	if (!found && search_shared && _WAPI_SHARED_HANDLE (type)) {
 		/* Not found yet, so search the shared memory too */
 #ifdef DEBUG
 		g_message ("%s: Looking at other shared handles...", __func__);
