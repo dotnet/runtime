@@ -3971,7 +3971,10 @@ handle_enum:
 		if (mspec) {
 			switch (mspec->native) {
 			case MONO_NATIVE_BYVALARRAY:
-				*conv = MONO_MARSHAL_CONV_ARRAY_BYVALARRAY;
+				if ((type->data.klass->element_class == mono_defaults.char_class) && !unicode)
+					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY;
+				else
+					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALARRAY;
 				return MONO_NATIVE_BYVALARRAY;
 			case MONO_NATIVE_SAFEARRAY:
 				*conv = MONO_MARSHAL_CONV_ARRAY_SAVEARRAY;

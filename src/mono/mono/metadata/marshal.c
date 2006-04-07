@@ -62,12 +62,6 @@ struct _MonoRemotingMethods {
 
 typedef struct _MonoRemotingMethods MonoRemotingMethods;
 
-static void
-delegate_hash_table_add (MonoDelegate *d);
-
-static void
-emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
-
 #ifdef DEBUG_RUNTIME_CODE
 static char*
 indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
@@ -95,10 +89,26 @@ static GHashTable *wrapper_hash;
 
 static guint32 last_error_tls_id;
 
-static void mono_struct_delete_old (MonoClass *klass, char *ptr);
-void * mono_marshal_string_to_utf16 (MonoString *s);
+static void
+delegate_hash_table_add (MonoDelegate *d);
 
-static gpointer mono_string_to_lpstr (MonoString *string_obj);
+static void
+emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
+
+static void 
+mono_struct_delete_old (MonoClass *klass, char *ptr);
+
+void *
+mono_marshal_string_to_utf16 (MonoString *s);
+
+static gpointer
+mono_string_to_lpstr (MonoString *string_obj);
+
+static void
+mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
+
+static void
+mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype, guint32 elnum);
 
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params);
@@ -166,6 +176,8 @@ mono_marshal_init (void)
 		register_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", "ptr object", FALSE);
 		register_icall (mono_array_to_savearray, "mono_array_to_savearray", "ptr object", FALSE);
 		register_icall (mono_array_to_lparray, "mono_array_to_lparray", "ptr object", FALSE);
+		register_icall (mono_byvalarray_to_array, "mono_byvalarray_to_array", "void object ptr ptr int32", FALSE);
+		register_icall (mono_array_to_byvalarray, "mono_array_to_byvalarray", "void ptr object ptr int32", FALSE);
 		register_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", "ptr object", FALSE);
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32 int32", FALSE);
@@ -402,6 +414,52 @@ mono_array_to_lparray (MonoArray *array)
 
 	/* fixme: maybe we need to make a copy */
 	return array->vector;
+}
+
+static void
+mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclass, guint32 elnum)
+{
+	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
+
+	if (elclass == mono_defaults.byte_class) {
+		GError *error = NULL;
+		guint16 *ut;
+		glong items_written;
+
+		ut = g_utf8_to_utf16 (native_arr, elnum, NULL, &items_written, &error);
+
+		if (!error) {
+			memcpy (mono_array_addr (arr, guint16, 0), ut, items_written * sizeof (guint16));
+			g_free (ut);
+		}
+		else
+			g_error_free (error);
+	}
+	else
+		g_assert_not_reached ();
+}
+
+static void
+mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclass, guint32 elnum)
+{
+	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
+
+	if (elclass == mono_defaults.byte_class) {
+		char *as;
+		GError *error = NULL;
+
+		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &error);
+		if (error) {
+			MonoException *exc = mono_get_exception_argument ("string", error->message);
+			g_error_free (error);
+			mono_raise_exception (exc);
+		}
+
+		memcpy (native_arr, as, MIN (strlen (as), elnum));
+		g_free (as);
+	}
+	else
+		g_assert_not_reached ();
 }
 
 void
@@ -1040,6 +1098,8 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 
+		// FIXME: This only works if the array is blittable
+
 		/* copy the elements */
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1050,6 +1110,24 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
 
+		break;
+	}
+	case MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY: {
+		MonoClass *eclass = mono_defaults.char_class;
+
+		/* create a new array */
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		mono_mb_emit_byte (mb, CEE_NEWARR);	
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		mono_mb_emit_icall (mb, mono_byvalarray_to_array);
 		break;
 	}
 	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
@@ -1277,6 +1355,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		pos = mb->pos;
 		mono_mb_emit_byte (mb, 0);
 
+		// FIXME: This only works if the array is blittable
+
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);	
 		mono_mb_emit_byte (mb, CEE_LDIND_I);	
@@ -1287,6 +1367,22 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
+		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
+		break;
+	}
+	case MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY: {
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);		
+		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
+		pos = mb->pos;
+		mono_mb_emit_byte (mb, 0);
+
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);	
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+		mono_mb_emit_icall (mb, mono_array_to_byvalarray);
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
 		break;
 	}
@@ -8317,9 +8413,15 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		return mspec->data.array_data.num_elem * esize;
 	}
 	case MONO_NATIVE_BYVALARRAY: {
+		// FIXME: Have to consider ArraySubType
 		int esize;
 		klass = mono_class_from_mono_type (type);
-		esize = mono_class_native_size (klass->element_class, align);
+		if (klass->element_class == mono_defaults.char_class) {
+			esize = unicode ? 2 : 1;
+			*align = esize;
+		} else {
+			esize = mono_class_native_size (klass->element_class, align);
+		}
 		g_assert (mspec);
 		return mspec->data.array_data.num_elem * esize;
 	}
