@@ -1,3 +1,8 @@
+2006-04-07  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: add system.web/membership and
+	system.web/xhtmlConformance config sections.
+
 2006-04-04  Zoltan Varga  <vargaz@gmail.com>
 
         * configure.in: Add a check and a helpful error message when 'ar' is not found on solaris.
