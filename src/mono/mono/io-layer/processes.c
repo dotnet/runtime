@@ -852,6 +852,11 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 
 extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 
+#if !GLIB_CHECK_VERSION (2,4,0)
+#define g_setenv (a,b,c) setenv (a,b,c)
+#define g_unsetenv (a) unsetenv (a)
+#endif
+
 static void process_set_current (void)
 {
 	pid_t pid = _wapi_getpid ();
