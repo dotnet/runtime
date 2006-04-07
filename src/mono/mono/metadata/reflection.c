@@ -6578,6 +6578,8 @@ static void*
 load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end)
 {
 	int slen, type = t->type;
+	MonoClass *tklass = t->data.klass;
+
 handle_enum:
 	switch (type) {
 	case MONO_TYPE_U1:
@@ -6668,6 +6670,15 @@ handle_type:
 		} else if (subt == 0x0E) {
 			type = MONO_TYPE_STRING;
 			goto handle_enum;
+		} else if (subt == 0x1D) {
+			MonoType simple_type = {{0}};
+			int etype = *p;
+			p ++;
+
+			type = MONO_TYPE_SZARRAY;
+			simple_type.type = etype;
+			tklass = mono_class_from_mono_type (&simple_type);
+			goto handle_enum;
 		} else if (subt == 0x55) {
 			char *n;
 			MonoType *t;
@@ -6702,8 +6713,8 @@ handle_type:
 			*end = p;
 			return NULL;
 		}
-		arr = mono_array_new (mono_domain_get(), t->data.klass, alen);
-		basetype = t->data.klass->byval_arg.type;
+		arr = mono_array_new (mono_domain_get(), tklass, alen);
+		basetype = tklass->byval_arg.type;
 		switch (basetype)
 		{
 			case MONO_TYPE_U1:
@@ -6745,7 +6756,7 @@ handle_type:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_STRING:
 				for (i = 0; i < alen; i++) {
-					MonoObject *item = load_cattr_value (image, &t->data.klass->byval_arg, p, &p);
+					MonoObject *item = load_cattr_value (image, &tklass->byval_arg, p, &p);
 					mono_array_setref (arr, i, item);
 				}
 				break;
@@ -7767,6 +7778,12 @@ handle_type:
 		char *str;
 		guint32 slen;
 
+		/*
+		 * The parameter type is 'object' but the type of the actual
+		 * argument is not. So we have to add type information to the blob
+		 * too. This is completely undocumented in the spec.
+		 */
+
 		if (arg == NULL) {
 			*p++ = MONO_TYPE_STRING;	// It's same hack as MS uses
 			*p++ = 0xFF;
@@ -7783,6 +7800,11 @@ handle_type:
 		} else if (klass == mono_defaults.string_class) {
 			simple_type = MONO_TYPE_STRING;
 			*p++ = 0x0E;
+			goto handle_enum;
+		} else if (klass->rank == 1) {
+			simple_type = MONO_TYPE_SZARRAY;
+			*p++ = 0x1D;
+			*p++ = klass->element_class->byval_arg.type;
 			goto handle_enum;
 		} else if (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8) {
 			*p++ = simple_type = klass->byval_arg.type;
