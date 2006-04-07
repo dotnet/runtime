@@ -1,5 +1,10 @@
 2006-04-07  Chris Toshok  <toshok@ximian.com>
 
+	* data/net_2_0/machine.config: oh, and
+	system.web/anonymousIdentification.
+
+2006-04-07  Chris Toshok  <toshok@ximian.com>
+
 	* data/net_2_0/machine.config: add system.web/membership and
 	system.web/xhtmlConformance config sections.
 
