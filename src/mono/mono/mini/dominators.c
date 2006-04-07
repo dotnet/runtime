@@ -15,6 +15,12 @@
 //#define DEBUG_DOMINATORS
 
 /*
+ * bb->dfn == 0 means either the bblock is ignored by the dfn calculation, or
+ * it is the entry bblock.
+ */
+#define HAS_DFN(bb, entry) ((bb)->dfn || ((bb) == entry))
+
+/*
  * Compute dominators and immediate dominators using the algorithm in the
  * paper "A Simple, Fast Dominance Algorithm" by Keith D. Cooper, 
  * Timothy J. Harvey, and Ken Kennedy:
@@ -27,6 +33,7 @@ compute_dominators (MonoCompile *cfg)
 	char* mem;
 	gboolean *in_worklist;
 	MonoBasicBlock **worklist;
+	MonoBasicBlock *entry;
 	guint32 l_begin, l_end;
 	MonoBasicBlock **doms;
 
@@ -41,10 +48,11 @@ compute_dominators (MonoCompile *cfg)
 	mem = mono_mempool_alloc0 (cfg->mempool, bitsize * cfg->num_bblocks);
 
 	/* the first is always the entry */
-	worklist [l_end ++] = cfg->bblocks [0];
+	entry = cfg->bblocks [0];
+	worklist [l_end ++] = entry;
 
 	doms = g_new0 (MonoBasicBlock*, cfg->num_bblocks);
-	doms [cfg->bblocks [0]->dfn] = cfg->bblocks [0];
+	doms [entry->dfn] = entry;
 
 #ifdef DEBUG_DOMINATORS
 	for (i = 0; i < cfg->num_bblocks; ++i) {
@@ -80,7 +88,7 @@ compute_dominators (MonoCompile *cfg)
 		while (i < bb->in_count) {
 			MonoBasicBlock *in_bb = bb->in_bb [i];
 
-			if (in_bb->dfn && doms [in_bb->dfn]) {
+			if (HAS_DFN (in_bb, entry) && doms [in_bb->dfn]) {
 				/* Intersect */
 				MonoBasicBlock *f1 = idom;
 				MonoBasicBlock *f2 = in_bb;
