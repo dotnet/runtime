@@ -1,3 +1,7 @@
+//
+// Tests for Marshal.StructureToPtr and PtrToStructure
+//
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -30,6 +34,7 @@ public class Test {
 		public SimpleObj emb2;
 		public string s2;
 		public double x;
+		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public char[] a2;
 	}
 	
 	public unsafe static int Main () {
@@ -57,6 +62,9 @@ public class Test {
 		ss.emb2.b = 11;
 		ss.s2 = "just a test";
 		ss.x = 1.5;
+		ss.a2 = new char [2];
+		ss.a2 [0] = 'a';
+		ss.a2 [1] = 'b';
 		
 		Marshal.StructureToPtr (ss, p, false);
 		Type t = ss.GetType ();
@@ -89,6 +97,10 @@ public class Test {
 			return 13;
 		if (Marshal.ReadInt32 (p, 36) != 11)
 			return 14;
+		if (Marshal.ReadByte (p, (int)Marshal.OffsetOf (t, "a2")) != 97)
+			return 15;
+		if (Marshal.ReadByte (p, (int)Marshal.OffsetOf (t, "a2") + 1) != 98)
+			return 16;
 
 		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
 
@@ -130,6 +142,12 @@ public class Test {
 
 		if (cp.x != 1.5)
 			return 28;
+
+		if (cp.a2 [0] != 'a')
+			return 29;
+
+		if (cp.a2 [1] != 'b')
+			return 30;
 		
 		return 0;
 	}
