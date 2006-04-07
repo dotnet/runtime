@@ -558,6 +558,9 @@ void
 mono_class_layout_fields   (MonoClass *klass) MONO_INTERNAL;
 
 void
+mono_class_setup_interface_offsets (MonoClass *klass) MONO_INTERNAL;
+
+void
 mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum) MONO_INTERNAL;
 
 void

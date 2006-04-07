@@ -1695,6 +1695,19 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	return cur_slot;
 }
 
+/*
+ * Setup interface offsets for interfaces. Used by Ref.Emit.
+ */
+void
+mono_class_setup_interface_offsets (MonoClass *class)
+{
+	mono_loader_lock ();
+
+	setup_interface_offsets (class, 0);
+
+	mono_loader_unlock ();
+}
+
 void
 mono_class_setup_vtable (MonoClass *class)
 {

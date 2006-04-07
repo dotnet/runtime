@@ -9129,9 +9129,12 @@ ensure_runtime_vtable (MonoClass *klass)
 		}
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		for (i = 0; i < klass->method.count; ++i)
 			klass->methods [i]->slot = i;
+		
+		mono_class_setup_interface_offsets (klass);
+	}
 
 	/*
 	 * The generic vtable is needed even if image->run is not set since some
