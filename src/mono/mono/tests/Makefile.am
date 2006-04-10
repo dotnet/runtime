@@ -246,6 +246,7 @@ TEST_IL_SRC=			\
 	bug-29859.il		\
 	static-fields-nonconst.il	\
 	reload-at-bb-end.il	\
+	test-enum-indstoreil.il	\
 	even-odd.il
 
 TEST_CS2_SRC =
