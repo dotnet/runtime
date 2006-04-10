@@ -1186,12 +1186,11 @@ type_to_eval_stack_type (MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
+	inst->klass = klass = mono_class_from_mono_type (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
 		return;
 	}
-
-	klass = mono_class_from_mono_type (type);
 
 handle_enum:
 	switch (type->type) {
@@ -5713,6 +5712,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->type = STACK_MP;
 
 					if (*ip == CEE_LDFLDA) {
+						ins->klass = mono_class_from_mono_type (field->type);
 						*sp++ = ins;
 					} else {
 						MonoInst *load;
@@ -5813,6 +5813,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_LDSFLDA) {
+				ins->klass = mono_class_from_mono_type (field->type);
 				*sp++ = ins;
 			} else if (*ip == CEE_STSFLD) {
 				MonoInst *store;
