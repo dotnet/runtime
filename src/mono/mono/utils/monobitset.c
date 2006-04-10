@@ -619,12 +619,11 @@ mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const Mono
  */
 void
 mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
-	int i, size;
+	int i;
 
 	g_assert (src->size <= dest->size);
-	size = MIN (src->size, dest->size);
 
-	for (i = 0; i < size / BITS_PER_CHUNK; ++i)
+	for (i = 0; i < src->size / BITS_PER_CHUNK; ++i)
 		dest->data [i] &= ~src->data [i];
 }
 
