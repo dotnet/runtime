@@ -254,7 +254,7 @@ struct _MonoThread {
 	 * when a new field is added to the unmanaged MonoThread structure.
 	 */
 	MonoBoolean thread_dump_requested;
-	gpointer unused2;
+	gpointer end_stack; /* This is only used when running in the debugger. */
 	gpointer unused3;
 	gpointer unused4;
 	gpointer unused5;
