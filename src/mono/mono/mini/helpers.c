@@ -41,7 +41,7 @@ opnames[] = {
 
 #endif
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 #define emit_debug_info  TRUE
 #else
 #define emit_debug_info  FALSE
@@ -153,7 +153,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #else
 #if defined(sparc) && !defined(__GNUC__)
 #define DIS_CMD "dis"
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(__x86_64__)
 #define DIS_CMD "objdump -l -d"
 #else
 #define DIS_CMD "objdump -d"
@@ -162,7 +162,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 #if defined(sparc)
 #define AS_CMD "as -xarch=v9"
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(__x86_64__)
 #define AS_CMD "as -gstabs"
 #else
 #define AS_CMD "as"
