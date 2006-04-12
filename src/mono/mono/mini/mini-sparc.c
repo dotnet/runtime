@@ -2204,7 +2204,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 		return NULL;
 
 	if ((sparc_inst_op (ins) == 0x2) && (sparc_inst_op3 (ins) == 0x38)) {
-		if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_op3 (prev_ins) == 0 || sparc_inst_op3 (prev_ins) == 0xb)) {
+		if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 1) && (sparc_inst_op3 (prev_ins) == 0 || sparc_inst_op3 (prev_ins) == 0xb)) {
 			/* ld [r1 + CONST ], r2; call r2 */
 			guint32 base = sparc_inst_rs1 (prev_ins);
 			guint32 disp = sparc_inst_imm13 (prev_ins);
@@ -2218,7 +2218,38 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 			return (gpointer)((guint8*)base_val + disp);
 		}
-		else
+		else if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 0) && (sparc_inst_op3 (prev_ins) == 0)) {
+			/* set r1, ICONST; ld [r1 + r2], r2; call r2 */
+			/* Decode a sparc_set32 */
+			guint32 base = sparc_inst_rs1 (prev_ins);
+			guint32 disp;
+			gpointer base_val;
+			guint32 s1 = code [-3];
+			guint32 s2 = code [-2];
+
+#ifdef SPARCV9
+			NOT_IMPLEMENTED;
+#endif
+
+			/* sparc_sethi */
+			g_assert (sparc_inst_op (s1) == 0);
+			g_assert (sparc_inst_op2 (s1) == 4);
+
+			/* sparc_or_imm */
+			g_assert (sparc_inst_op (s2) == 2);
+			g_assert (sparc_inst_op3 (s2) == 2);
+			g_assert (sparc_inst_i (s2) == 1);
+			g_assert (sparc_inst_rs1 (s2) == sparc_inst_rd (s2));
+			g_assert (sparc_inst_rd (s1) == sparc_inst_rs1 (s2));
+
+			disp = ((s1 & 0x3fffff) << 10) | sparc_inst_imm13 (s2);
+
+			g_assert ((base >= sparc_o0) && (base <= sparc_i7));
+
+			base_val = regs [base - sparc_o0];
+
+			return (gpointer)((guint8*)base_val + disp);
+		} else
 			g_assert_not_reached ();
 	}
 	else
@@ -2805,9 +2836,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
-			g_assert (sparc_is_imm13 (ins->inst_offset));
 			code = emit_save_sp_to_lmf (cfg, code);
-			sparc_ldi_imm (code, ins->inst_basereg, ins->inst_offset, sparc_o7);
+			if (sparc_is_imm13 (ins->inst_offset)) {
+				sparc_ldi_imm (code, ins->inst_basereg, ins->inst_offset, sparc_o7);
+			} else {
+				sparc_set (code, ins->inst_offset, sparc_o7);
+				sparc_ldi (code, ins->inst_basereg, sparc_o7, sparc_o7);
+			}
 			sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
 			if (call->virtual)
 				sparc_or_imm (code, FALSE, sparc_g0, 0xca, sparc_g0);
