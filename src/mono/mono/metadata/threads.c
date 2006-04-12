@@ -2815,7 +2815,7 @@ mono_debugger_create_all_threads (void)
 	mono_threads_unlock ();
 }
 
-#if USE_INCLUDED_LIBGC
+#if MONO_DEBUGGER_SUPPORTED
 
 static guint64 debugger_main_thread_id = -1;
 static gpointer debugger_main_thread_stack_ptr = NULL;
