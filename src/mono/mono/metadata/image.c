@@ -112,7 +112,9 @@ canonicalize_path (const char *path)
 			if (backc > 0) {
 				backc--;
 			} else {
-				if (dest != lastpos) strncpy (dest, lastpos, len + 1);
+				if (dest != lastpos) 
+					/* The two strings can overlap */
+					memmove (dest, lastpos, len + 1);
 				dest += len + 1;
 			}
 		}
