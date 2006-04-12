@@ -4386,7 +4386,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	filename = mono_string_to_utf8 (fname);
 
 	image = mono_image_open (filename, &status);
-	
+
 	if (!image){
 		MonoException *exc;
 
@@ -4395,6 +4395,8 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 		mono_raise_exception (exc);
 	}
 
+	/* So we can call mono_image_close () later */
+	mono_image_addref (image);
 	res = mono_assembly_fill_assembly_name (image, &name);
 	if (!res) {
 		mono_image_close (image);
