@@ -381,6 +381,7 @@ typedef struct {
 #define sparc_inst_op2(inst) (((inst) >> 22) & 0x7)
 #define sparc_inst_rd(inst) (((inst) >> 25) & 0x1f)
 #define sparc_inst_op3(inst) (((inst) >> 19) & 0x3f)
+#define sparc_inst_i(inst) (((inst) >> 13) & 0x1)
 #define sparc_inst_rs1(inst) (((inst) >> 14) & 0x1f)
 #define sparc_inst_rs2(inst) (((inst) >> 0) & 0x1f)
 #define sparc_inst_imm(inst) (((inst) >> 13) & 0x1)
