@@ -74,6 +74,17 @@ public class MultiThreadExceptionTest {
 		Console.WriteLine ("end");
 		result |= 16;
 	}
+
+	static string regress_78024 ()
+	{
+		try {
+			Thread.CurrentThread.Abort ();
+		} catch (Exception e) {
+			return "Got exception: " + e.Message;
+		} finally {
+		}
+		return "";
+	}
 	
 	public static int Main() {
 
@@ -114,6 +125,15 @@ public class MultiThreadExceptionTest {
 			}
 
 			return 2;
+		}
+		catch (ThreadAbortException ex) {
+			Thread.ResetAbort ();
+		}
+
+		// Test from #78024
+		try {
+			regress_78024 ();
+			return 3;
 		}
 		catch (ThreadAbortException ex) {
 			Thread.ResetAbort ();
