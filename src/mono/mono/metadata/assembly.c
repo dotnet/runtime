@@ -880,8 +880,11 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		reference = (gpointer)-1;
 	}	
 
-	if (!image->references [index])
+	if (!image->references [index]) {
+		mono_assembly_addref (reference);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d\n", image->assembly->aname.name, image->assembly, reference->aname.name, reference, reference->ref_count);
 		image->references [index] = reference;
+	}
 	mono_assemblies_unlock ();
 
 	if (image->references [index] != reference) {
@@ -1369,6 +1372,8 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	mono_image_addref (image);
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d\n", ass->aname.name, ass, image->name, image, image->ref_count);
 
 	/* 
 	 * Atomically search the loaded list and add ourselves to it if necessary.
@@ -2185,9 +2190,15 @@ mono_assembly_close (MonoAssembly *assembly)
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	mono_assemblies_unlock ();
-	/* assemblies belong to domains, so the domain code takes care of unloading the
-	 * referenced assemblies
-	 */
+
+	if (assembly->image->references) {
+		int i;
+
+		for (i = 0; assembly->image->references [i]; i++) {
+			if (assembly->image->references [i])
+				mono_assembly_close (assembly->image->references [i]);
+		}
+	}
 
 	mono_image_close (assembly->image);
 

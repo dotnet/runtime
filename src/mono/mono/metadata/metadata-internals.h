@@ -11,7 +11,14 @@
 #include "mono/utils/monobitset.h"
 
 struct _MonoAssembly {
-	/* The number of appdomains which have this assembly loaded. Initially 0 */
+	/* 
+	 * The number of appdomains which have this assembly loaded plus the number of 
+	 * assemblies referencing this assembly through an entry in their image->references
+	 * arrays. The later is needed because entries in the image->references array
+	 * might point to assemblies which are only loaded in some appdomains, and without
+	 * the additional reference, they can be freed at any time.
+	 * The ref_count is initially 0.
+	 */
 	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;

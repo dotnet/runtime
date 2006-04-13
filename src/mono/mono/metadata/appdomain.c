@@ -29,6 +29,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
+#include <mono/utils/mono-logger.h>
 
 #define MONO_CORLIB_VERSION 49
 
@@ -612,6 +613,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 		mono_assembly_addref (ass);
 		g_hash_table_insert (ht, ass, ass);
 		domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, ass);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s %p added to domain %s, ref_count=%d\n", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
 	}
 
 	if (ass->image->references) {

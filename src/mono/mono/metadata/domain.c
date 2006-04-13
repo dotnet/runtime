@@ -17,6 +17,7 @@
 #include <mono/os/gc_wrapper.h>
 
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-logger.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -969,16 +970,16 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->null_reference_ex = NULL;
 	domain->stack_overflow_ex = NULL;
 	domain->entry_assembly = NULL;
-	g_free (domain->friendly_name);
-	domain->friendly_name = NULL;
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = tmp->data;
-		/*g_print ("Unloading domain %p, assembly %s, refcount: %d\n", domain, ass->aname.name, ass->ref_count);*/
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		mono_assembly_close (ass);
 	}
 	g_slist_free (domain->domain_assemblies);
 	domain->domain_assemblies = NULL;
 
+	g_free (domain->friendly_name);
+	domain->friendly_name = NULL;
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 	g_hash_table_destroy (domain->class_vtable_hash);
