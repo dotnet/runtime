@@ -839,6 +839,9 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+	if ((action == DO_EXEC) && g_getenv ("MONO_INSIDE_MDB"))
+		action = DO_DEBUGGER;
+
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		g_set_prgname (argv[i]);
 	}
@@ -993,7 +996,7 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
-		mono_debugger_main (domain, assembly, argc, argv);
+		mono_debugger_main (domain, assembly, argc - i, argv + i);
 		mini_cleanup (domain);
 		return 0;
 #else

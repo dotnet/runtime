@@ -47,7 +47,29 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	G_STRUCT_OFFSET (MonoClass, byval_arg),
 	G_STRUCT_OFFSET (MonoClass, generic_class),
 	G_STRUCT_OFFSET (MonoClass, generic_container),
-	sizeof (MonoClassField)
+	sizeof (MonoClassField),
+	G_STRUCT_OFFSET (MonoDefaults, corlib),
+	G_STRUCT_OFFSET (MonoDefaults, object_class),
+	G_STRUCT_OFFSET (MonoDefaults, byte_class),
+	G_STRUCT_OFFSET (MonoDefaults, void_class),
+	G_STRUCT_OFFSET (MonoDefaults, boolean_class),
+	G_STRUCT_OFFSET (MonoDefaults, sbyte_class),
+	G_STRUCT_OFFSET (MonoDefaults, int16_class),
+	G_STRUCT_OFFSET (MonoDefaults, uint16_class),
+	G_STRUCT_OFFSET (MonoDefaults, int32_class),
+	G_STRUCT_OFFSET (MonoDefaults, uint32_class),
+	G_STRUCT_OFFSET (MonoDefaults, int_class),
+	G_STRUCT_OFFSET (MonoDefaults, uint_class),
+	G_STRUCT_OFFSET (MonoDefaults, int64_class),
+	G_STRUCT_OFFSET (MonoDefaults, uint64_class),
+	G_STRUCT_OFFSET (MonoDefaults, single_class),
+	G_STRUCT_OFFSET (MonoDefaults, double_class),
+	G_STRUCT_OFFSET (MonoDefaults, char_class),
+	G_STRUCT_OFFSET (MonoDefaults, string_class),
+	G_STRUCT_OFFSET (MonoDefaults, enum_class),
+	G_STRUCT_OFFSET (MonoDefaults, array_class),
+	G_STRUCT_OFFSET (MonoDefaults, delegate_class),
+	G_STRUCT_OFFSET (MonoDefaults, exception_class)
 };
 
 /*
@@ -317,8 +339,8 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 
 	main_args.domain = domain;
 	main_args.method = debugger_main_method;
-	main_args.argc = argc - 2;
-	main_args.argv = argv + 2;
+	main_args.argc = argc;
+	main_args.argv = argv;
 
 #if RUN_IN_SUBTHREAD
 	mono_thread_create (domain, main_thread_handler, &main_args);

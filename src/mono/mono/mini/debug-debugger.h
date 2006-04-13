@@ -71,6 +71,28 @@ struct _MonoDebuggerMetadataInfo {
 	int klass_generic_class_offset;
 	int klass_generic_container_offset;
 	int field_info_size;
+	int mono_defaults_corlib_offset;
+	int mono_defaults_object_offset;
+	int mono_defaults_byte_offset;
+	int mono_defaults_void_offset;
+	int mono_defaults_boolean_offset;
+	int mono_defaults_sbyte_offset;
+	int mono_defaults_int16_offset;
+	int mono_defaults_uint16_offset;
+	int mono_defaults_int32_offset;
+	int mono_defaults_uint32_offset;
+	int mono_defaults_int_offset;
+	int mono_defaults_uint_offset;
+	int mono_defaults_int64_offset;
+	int mono_defaults_uint64_offset;
+	int mono_defaults_single_offset;
+	int mono_defaults_double_offset;
+	int mono_defaults_char_offset;
+	int mono_defaults_string_offset;
+	int mono_defaults_enum_offset;
+	int mono_defaults_array_offset;
+	int mono_defaults_delegate_offset;
+	int mono_defaults_exception_offset;
 };
 
 #endif
