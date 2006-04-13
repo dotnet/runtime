@@ -1,3 +1,11 @@
+2006-04-13  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: add system.data section listing the
+	SqlClient provider.  Also add system.web section listing the
+	membership and role providers.  This is here instead of in
+	web.config because the providers are meant to be available to
+	non-web applications as well.
+
 2006-04-11  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/web.config: add the builtin expression builders.
