@@ -2912,7 +2912,7 @@ mono_debugger_init_threads (gpointer main_thread_stack)
 #else /* WITH_INCLUDED_LIBGC */
 
 void
-mono_debugger_init_threads (void main_thread_stack)
+mono_debugger_init_threads (gpointer main_thread_stack)
 {
 	g_assert_not_reached ();
 }
