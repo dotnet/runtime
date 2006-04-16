@@ -4198,6 +4198,37 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
+	/* Might need to attach the thread to the JIT */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		guint64 domain = (guint64)cfg->domain;
+
+		/* 
+		 * The call might clobber argument registers, but they are already
+		 * saved to the stack/global regs.
+		 */
+		if (lmf_tls_offset != -1) {
+			guint8 *buf;
+
+			code = emit_tls_get ( code, AMD64_RAX, lmf_tls_offset);
+			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+			buf = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			if ((domain >> 32) == 0)
+				amd64_mov_reg_imm_size (code, AMD64_RDI, domain, 4);
+			else
+				amd64_mov_reg_imm_size (code, AMD64_RDI, domain, 8);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
+			amd64_patch (buf, code);
+		} else {
+			g_assert (!cfg->compile_aot);
+			if ((domain >> 32) == 0)
+				amd64_mov_reg_imm_size (code, AMD64_RDI, domain, 4);
+			else
+				amd64_mov_reg_imm_size (code, AMD64_RDI, domain, 8);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
+		}
+	}
+
 	if (method->save_lmf) {
 		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the FS register */
