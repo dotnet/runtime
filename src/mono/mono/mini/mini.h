@@ -834,8 +834,6 @@ void      mono_select_instructions          (MonoCompile *cfg);
 const char* mono_inst_name                  (int op);
 void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data);
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
-guint     mono_type_to_ldind                (MonoType *t);
-guint     mono_type_to_stind                (MonoType *t);
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors);
