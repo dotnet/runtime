@@ -61,6 +61,7 @@ namespace Program {
 			Console.WriteLine ("strictFlag: {0}, relaxedFlag: {1}",
 					strictFlag, relaxedFlag);
 			if ((myMethodBase != inlinedMethodBase) &&
+					(myExecutingAssembly != inlinedExecutingAssembly) &&
 					(myCallingAssembly != inlinedCallingAssembly) &&
 					(myStackFrame.GetMethod ().Name != inlinedStackFrame.GetMethod ().Name) &&
 					(myConstructorCalledFrom != inlinedConstructorCalledFrom)) {
