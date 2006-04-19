@@ -1048,6 +1048,117 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 	mono_mb_emit_stloc (mb, local); 
 }
 
+guint
+mono_type_to_ldind (MonoType *type)
+{
+	if (type->byref)
+		return CEE_LDIND_I;
+
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_I1:
+		return CEE_LDIND_I1;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return CEE_LDIND_U1;
+	case MONO_TYPE_I2:
+		return CEE_LDIND_I2;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return CEE_LDIND_U2;
+	case MONO_TYPE_I4:
+		return CEE_LDIND_I4;
+	case MONO_TYPE_U4:
+		return CEE_LDIND_U4;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return CEE_LDIND_I;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return CEE_LDIND_REF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return CEE_LDIND_I8;
+	case MONO_TYPE_R4:
+		return CEE_LDIND_R4;
+	case MONO_TYPE_R8:
+		return CEE_LDIND_R8;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
+			goto handle_enum;
+		}
+		return CEE_LDOBJ;
+	case MONO_TYPE_TYPEDBYREF:
+		return CEE_LDOBJ;
+	case MONO_TYPE_GENERICINST:
+		type = &type->data.generic_class->container_class->byval_arg;
+		goto handle_enum;
+	default:
+		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
+	}
+	return -1;
+}
+
+guint
+mono_type_to_stind (MonoType *type)
+{
+	if (type->byref)
+		return CEE_STIND_I;
+
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return CEE_STIND_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return CEE_STIND_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return CEE_STIND_I4;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return CEE_STIND_I;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return CEE_STIND_REF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return CEE_STIND_I8;
+	case MONO_TYPE_R4:
+		return CEE_STIND_R4;
+	case MONO_TYPE_R8:
+		return CEE_STIND_R8;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
+			goto handle_enum;
+		}
+		return CEE_STOBJ;
+	case MONO_TYPE_TYPEDBYREF:
+		return CEE_STOBJ;
+	case MONO_TYPE_GENERICINST:
+		type = &type->data.generic_class->container_class->byval_arg;
+		goto handle_enum;
+	default:
+		g_error ("unknown type 0x%02x in type_to_stind", type->type);
+	}
+	return -1;
+}
+
 static void
 emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
 {
@@ -1508,62 +1619,32 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				break;
 			}
 
-			t = ftype->type;
 		handle_enum:
+			t = ftype->type;
 			switch (t) {
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
-#if SIZEOF_VOID_P == 4
-			case MONO_TYPE_PTR:
-#endif
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_I4);
-				mono_mb_emit_byte (mb, CEE_STIND_I4);
-				break;
 			case MONO_TYPE_I1:
 			case MONO_TYPE_U1:
 			case MONO_TYPE_BOOLEAN:
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_I1);
-				mono_mb_emit_byte (mb, CEE_STIND_I1);
-				break;
 			case MONO_TYPE_I2:
 			case MONO_TYPE_U2:
 			case MONO_TYPE_CHAR:
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_I2);
-				mono_mb_emit_byte (mb, CEE_STIND_I2);
-				break;
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
-#if SIZEOF_VOID_P == 8
 			case MONO_TYPE_PTR:
-#endif
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_I8);
-				mono_mb_emit_byte (mb, CEE_STIND_I8);
-				break;
 			case MONO_TYPE_R4:
-				mono_mb_emit_ldloc (mb, 1);
-				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_R4);
-				mono_mb_emit_byte (mb, CEE_STIND_R4);
-				break;
 			case MONO_TYPE_R8:
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, CEE_LDIND_R8);
-				mono_mb_emit_byte (mb, CEE_STIND_R8);
+				mono_mb_emit_byte (mb, mono_type_to_ldind (ftype));
+				mono_mb_emit_byte (mb, mono_type_to_stind (ftype));
 				break;
 			case MONO_TYPE_VALUETYPE: {
 				int src_var, dst_var;
 
 				if (ftype->data.klass->enumtype) {
-					t = ftype->data.klass->enum_basetype->type;
+					ftype = ftype->data.klass->enum_basetype;
 					goto handle_enum;
 				}
 
@@ -2165,57 +2246,21 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_U1);
-		break;
 	case MONO_TYPE_I1:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_I1);
-		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
-		break;
 	case MONO_TYPE_I2:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_I2);
-		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		break;
 	case MONO_TYPE_I4:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_I4);
-		break;
 	case MONO_TYPE_U4:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_U4);
-		break;
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_I8);
-		break;
 	case MONO_TYPE_R4:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_R4);
-		break;
 	case MONO_TYPE_R8:
 		mono_mb_emit_byte (mb, CEE_UNBOX);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
-		mono_mb_emit_byte (mb, CEE_LDIND_R8);
+		mono_mb_emit_byte (mb, mono_type_to_ldind (return_type));
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (return_type))
@@ -3544,38 +3589,20 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 handle_enum:
 		switch (type) {
 		case MONO_TYPE_I1:
-			mono_mb_emit_byte (mb, CEE_LDIND_I1);
-			break;
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
-			mono_mb_emit_byte (mb, CEE_LDIND_U1);
-			break;
 		case MONO_TYPE_I2:
-			mono_mb_emit_byte (mb, CEE_LDIND_I2);
-			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			mono_mb_emit_byte (mb, CEE_LDIND_U2);
-			break;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			break;
 		case MONO_TYPE_I4:
-			mono_mb_emit_byte (mb, CEE_LDIND_I4);
-			break;
 		case MONO_TYPE_U4:
-			mono_mb_emit_byte (mb, CEE_LDIND_U4);
-			break;
 		case MONO_TYPE_R4:
-			mono_mb_emit_byte (mb, CEE_LDIND_R4);
-			break;
 		case MONO_TYPE_R8:
-			mono_mb_emit_byte (mb, CEE_LDIND_R8);
-			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			mono_mb_emit_byte (mb, CEE_LDIND_I8);
+			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 			break;
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_CLASS:  
@@ -3919,39 +3946,25 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		mono_mb_emit_byte (mb, CEE_LDIND_I1);
-		break;
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		mono_mb_emit_byte (mb, CEE_LDIND_I2);
-		break;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		mono_mb_emit_byte (mb, CEE_LDIND_I4);
-		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		mono_mb_emit_byte (mb, CEE_LDIND_I8);
-		break;
 	case MONO_TYPE_R4:
-		mono_mb_emit_byte (mb, CEE_LDIND_R4);
-		break;
 	case MONO_TYPE_R8:
-		mono_mb_emit_byte (mb, CEE_LDIND_R8);
-		break;
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
-		mono_mb_emit_byte (mb, CEE_LDIND_REF);
-		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, mono_type_to_ldind (type));
 		break;
 	case MONO_TYPE_VALUETYPE:
 		g_assert (!klass->enumtype);
@@ -4223,39 +4236,25 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		mono_mb_emit_byte (mb, CEE_STIND_I1);
-		break;
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		mono_mb_emit_byte (mb, CEE_STIND_I2);
-		break;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		mono_mb_emit_byte (mb, CEE_STIND_I4);
-		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		mono_mb_emit_byte (mb, CEE_STIND_I8);
-		break;
 	case MONO_TYPE_R4:
-		mono_mb_emit_byte (mb, CEE_STIND_R4);
-		break;
 	case MONO_TYPE_R8:
-		mono_mb_emit_byte (mb, CEE_STIND_R8);
-		break;
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, mono_type_to_stind (type));
 		break;
 	case MONO_TYPE_VALUETYPE:
 		g_assert (!klass->enumtype);

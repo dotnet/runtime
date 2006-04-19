@@ -158,6 +158,12 @@ mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data);
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str);
 
+guint
+mono_type_to_ldind (MonoType *type);
+
+guint
+mono_type_to_stind (MonoType *type);
+
 /* functions to create various architecture independent helper functions */
 
 MonoMethod *
