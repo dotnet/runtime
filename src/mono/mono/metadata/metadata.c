@@ -1347,6 +1347,8 @@ mono_metadata_init (void)
  * this MonoGenericContainer.
  * This is a Mono runtime internal function.
  *
+ * LOCKING: Assumes the loader lock is held.
+ *
  * Returns: a #MonoType structure representing the decoded type.
  */
 MonoType*
@@ -1393,7 +1395,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	}
 
 	if (count) {
-		type = g_malloc0 (sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+		type = mono_mempool_alloc0 (m->mempool, sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
@@ -1471,11 +1473,16 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
-	if (type == &stype)
-		type = g_memdup (&stype, sizeof (MonoType));
+	if (type == &stype) {
+		type = mono_mempool_alloc (m->mempool, sizeof (MonoType));
+		memcpy (type, &stype, sizeof (MonoType));
+	}
 	return type;
 }
 
+/*
+ * LOCKING: Assumes the loader lock is held.
+ */
 MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			  const char *ptr, const char **rptr)
@@ -2081,7 +2088,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
  * mono_metadata_free_type:
  * @type: type to free
  *
- * Free the memory allocated for type @type.
+ * Free the memory allocated for type @type which is assumed to be created by
+ * mono_metadata_parse_type ().
  */
 void
 mono_metadata_free_type (MonoType *type)
@@ -2110,7 +2118,8 @@ mono_metadata_free_type (MonoType *type)
 		mono_metadata_free_array (type->data.array);
 		break;
 	}
-	g_free (type);
+
+	/* Allocated from a mempool, no need to free it */
 }
 
 #if 0

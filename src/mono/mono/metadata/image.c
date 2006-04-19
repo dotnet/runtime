@@ -38,6 +38,9 @@ static GHashTable *loaded_images_hash;
 static GHashTable *loaded_images_guid_hash;
 static GHashTable *loaded_images_refonly_hash;
 static GHashTable *loaded_images_refonly_guid_hash;
+
+static gboolean debug_assembly_unload = FALSE;
+
 #define mono_images_lock() EnterCriticalSection (&images_mutex)
 #define mono_images_unlock() LeaveCriticalSection (&images_mutex)
 static CRITICAL_SECTION images_mutex;
@@ -140,6 +143,8 @@ mono_images_init (void)
 	loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_refonly_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
+
+	debug_assembly_unload = getenv ("MONO_DEBUG_ASSEMBLY_UNLOAD") != NULL;
 }
 
 /**
@@ -1090,10 +1095,15 @@ mono_image_close (MonoImage *image)
 
 		g_free (image->raw_data);
 	}
-	g_free (image->name);
-	g_free (image->guid);
-	g_free (image->version);
-	g_free (image->files);
+
+	if (debug_assembly_unload) {
+		image->name = g_strdup_printf ("%s - UNLOADED", image->name);
+	} else {
+		g_free (image->name);
+		g_free (image->guid);
+		g_free (image->version);
+		g_free (image->files);
+	}
 
 	g_hash_table_destroy (image->method_cache);
 	g_hash_table_destroy (image->class_cache);
@@ -1139,8 +1149,12 @@ mono_image_close (MonoImage *image)
 	}
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
-		mono_mempool_destroy (image->mempool);
-		g_free (image);
+		if (debug_assembly_unload)
+			mono_mempool_invalidate (image->mempool);
+		else {
+			mono_mempool_destroy (image->mempool);
+			g_free (image);
+		}
 	} else {
 		/* Dynamic images are GC_MALLOCed */
 		struct _MonoDynamicImage *di = (struct _MonoDynamicImage*)image;
