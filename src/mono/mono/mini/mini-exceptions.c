@@ -982,8 +982,14 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
  * information and aborting.
  */
 void
-mono_handle_native_sigsegv (void *ctx)
+mono_handle_native_sigsegv (int signal, void *ctx)
 {
+#ifndef PLATFORM_WIN32
+	struct sigaction sa;
+#endif
+	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
+
+
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
@@ -992,11 +998,11 @@ mono_handle_native_sigsegv (void *ctx)
 	fprintf (stderr,
 			 "\n"
 			 "=================================================================\n"
-			 "Got a SIGSEGV while executing native code. This usually indicates\n"
+			 "Got a %s while executing native code. This usually indicates\n"
 			 "a fatal error in the mono runtime or one of the native libraries \n"
 			 "used by your application.\n"
 			 "=================================================================\n"
-			 "\n");
+			 "\n", signal_str);
 
 	fprintf (stderr, "Stacktrace:\n\n");
 
@@ -1021,6 +1027,17 @@ mono_handle_native_sigsegv (void *ctx)
  }
 
 	fflush (stderr);
+#endif
+
+#ifndef PLATFORM_WIN32
+
+	/* Remove our SIGABRT handler */
+	sa.sa_handler = SIG_DFL;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
+
 #endif
 
 	abort ();

@@ -10375,10 +10375,22 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	if (!ji) {
-		mono_handle_native_sigsegv (ctx);
+		mono_handle_native_sigsegv (SIGSEGV, ctx);
 	}
 			
 	mono_arch_handle_exception (ctx, exc, FALSE);
+}
+
+static void
+SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
+{
+	MonoJitInfo *ji;
+	GET_CONTEXT;
+
+	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+	if (!ji) {
+		mono_handle_native_sigsegv (SIGABRT, ctx);
+	}
 }
 
 static void
@@ -10511,6 +10523,8 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 	signal (SIGPIPE, SIG_IGN);
 
+	add_signal_handler (SIGABRT, sigabrt_signal_handler);
+
 	/* catch SIGSEGV */
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	sa.sa_sigaction = sigsegv_signal_handler;
@@ -10520,7 +10534,6 @@ mono_runtime_install_handlers (void)
 #else
 	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
 #endif
-
 #endif /* PLATFORM_WIN32 */
 }
 
