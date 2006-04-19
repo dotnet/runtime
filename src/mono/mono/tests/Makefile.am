@@ -275,9 +275,9 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	testjit test-type-load
+test:	testjit test-type-load test-inline-call-stack
 else
-test:	testjit testbundle test-type-load
+test:	testjit testbundle test-type-load test-inline-call-stack
 endif
 
 TestDriver.dll:
@@ -437,6 +437,13 @@ test-type-load: TestDriver.dll
 	$(MCS) -r:TestDriver.dll -r:load-missing.dll -r:t.dll -out:load-exceptions.exe $(srcdir)/load-exceptions.cs
 	$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	$(RUNTIME) load-exceptions.exe
+
+test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
+	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
+test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
+	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
+test-inline-call-stack: TestDriver.dll test-inline-call-stack-library.dll test-inline-call-stack.exe
+	$(RUNTIME) test-inline-call-stack.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
