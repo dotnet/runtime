@@ -66,6 +66,10 @@
 
 #define BRANCH_COST 100
 #define INLINE_LENGTH_LIMIT 20
+#define INLINE_FAILURE do {\
+		if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE))\
+			goto inline_failure;\
+	} while (0)
 
 /* 
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
@@ -4413,6 +4417,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *iargs [3];
 
 				g_assert (mono_method_signature (cmethod)->is_inflated);
+				/* Prevent inlining of methods that contain indirect calls */
+				INLINE_FAILURE;
 
 				this_temp = mono_compile_create_var (cfg, type_from_stack_type (sp [0]), OP_LOCAL);
 				this_temp->cil_code = ip;
@@ -4441,6 +4447,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) &&
 				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
 				int i;
+				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
+				INLINE_FAILURE;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
 				for (i = 0; i < n; ++i) {
 					/* Check if argument is the same */
@@ -4498,6 +4506,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+					/* Prevent inlining of methods that call wrappers */
+					INLINE_FAILURE;
 					cmethod = mono_marshal_get_native_wrapper (cmethod);
 					allways = TRUE;
 				}
@@ -4529,6 +4539,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				gboolean has_vtargs = FALSE;
 				int i;
 				
+				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
+				INLINE_FAILURE;
 				/* keep it simple */
 				for (i =  fsig->param_count - 1; i >= 0; i--) {
 					if (MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->params [i])) 
@@ -4560,12 +4572,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (*ip == CEE_CALLI) {
-
+				/* Prevent inlining of methods with indirect calls */
+				INLINE_FAILURE;
 				if ((temp = mono_emit_calli (cfg, bblock, fsig, sp, addr, ip)) != -1) {
 					NEW_TEMPLOAD (cfg, *sp, temp);
 					sp++;
-				}
-	      				
+				}	      				
 			} else if (array_rank) {
 				MonoInst *addr;
 
@@ -4623,6 +4635,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 			} else {
+				/* Prevent inlining of methods which call other methods */
+				INLINE_FAILURE;
 				if (ip_in_bb (cfg, bblock, ip + 5) 
 				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
 				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
@@ -5290,9 +5304,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						break;
 						
 					} else {
+						/* Prevent inlining of methods which call other methods */
+						INLINE_FAILURE;
 						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 					}
 				} else {
+					/* Prevent inlining of methods which call other methods */
+					INLINE_FAILURE;
 					/* now call the actual ctor */
 					mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 				}
