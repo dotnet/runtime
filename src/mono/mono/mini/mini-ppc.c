@@ -3821,8 +3821,13 @@ register.  Should this case include linux/ppc?
 		pos++;
 	}
 
-	if (method->save_lmf) {
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		ppc_load (code, ppc_r3, cfg->domain);
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
+		ppc_bl (code, 0);
+	}
 
+	if (method->save_lmf) {
 		if (lmf_pthread_key != -1) {
 			emit_tls_access (code, ppc_r3, lmf_pthread_key);
 			if (G_STRUCT_OFFSET (MonoJitTlsData, lmf))
