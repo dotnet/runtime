@@ -1,3 +1,9 @@
+2006-04-21  Alp Toker  <alp@atoker.com>
+
+	* scripts/mono-service.in: Usage info fixes:
+	Lock file was referred to as .log instead of .lock. Fixes #75724.
+	$0 was in single-quoted, so not interpreted.
+
 2006-04-13  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/machine.config: add system.data section listing the
