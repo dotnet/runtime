@@ -477,10 +477,10 @@ mono_thread_detach (MonoThread *thread)
 	
 	thread_cleanup (thread);
 
-	/* Need to CloseHandle this thread, because we took a reference in
-	 * mono_thread_attach ()
+	/* Don't need to CloseHandle this thread, even though we took a
+	 * reference in mono_thread_attach (), because the GC will do it
+	 * when the Thread object is finalised.
 	 */
-	CloseHandle(thread->handle);
 }
 
 void

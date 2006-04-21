@@ -647,6 +647,8 @@ gpointer GetCurrentThread(void)
 	ret = _wapi_thread_handle_from_id (pthread_self ());
 	if (!ret) {
 		ret = thread_attach (NULL);
+	} else {
+		_wapi_handle_ref (ret);
 	}
 
 	return(ret);
