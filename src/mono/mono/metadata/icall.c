@@ -2868,9 +2868,10 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	enumc = mono_class_from_mono_type (type->type);
 	objc = obj->vtable->klass;
 
-	MONO_CHECK_ARG (obj, enumc->enumtype == TRUE);
-	MONO_CHECK_ARG (obj, (objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_I1 &&
-						  objc->byval_arg.type <= MONO_TYPE_U8));
+	if (!enumc->enumtype)
+		mono_raise_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
+	if (!((objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_I1 && objc->byval_arg.type <= MONO_TYPE_U8)))
+		mono_raise_exception (mono_get_exception_argument ("value", "The value passed in must be an enum base or an underlying type for an enum, such as an Int32."));
 
 	res = mono_object_new (domain, enumc);
 	val = read_enum_value ((char *)obj + sizeof (MonoObject), objc->enumtype? objc->enum_basetype->type: objc->byval_arg.type);
