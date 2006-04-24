@@ -2187,7 +2187,7 @@ mono_assembly_close (MonoAssembly *assembly)
 	if (InterlockedDecrement (&assembly->ref_count) > 0)
 		return;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading assembly %s %p.", assembly->aname.name, assembly);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading assembly %s [%p].", assembly->aname.name, assembly);
 
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
@@ -2201,6 +2201,8 @@ mono_assembly_close (MonoAssembly *assembly)
 				mono_assembly_close (assembly->image->references [i]);
 		}
 	}
+
+	assembly->image->assembly = NULL;
 
 	mono_image_close (assembly->image);
 
