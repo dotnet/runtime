@@ -2719,7 +2719,6 @@ emit_method_order (MonoAotCompile *acfg)
 	symbol = g_strdup_printf ("method_order_end");
 	emit_section_change (acfg->fp, ".text", 1);
 	emit_global (acfg->fp, symbol, FALSE);
-	emit_alignment (acfg->fp, 8);
 	emit_label(acfg->fp, symbol);
 }
 
