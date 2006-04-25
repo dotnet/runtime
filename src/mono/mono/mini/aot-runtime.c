@@ -1004,7 +1004,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_INTERNAL_METHOD: {
 		guint32 len = decode_value (p, &p);
 
-		ji->data.name = p;
+		ji->data.name = (char*)p;
 		p += len + 1;
 		break;
 	}
@@ -1693,11 +1693,11 @@ aot_dyn_resolve (MonoAotModule *aot_module, guint32 plt_info_offset, guint8 *cod
 static void
 init_plt (MonoAotModule *info)
 {
+	make_writable (info->plt, info->plt_end - info->plt);
+
 #ifdef __i386__
 	/* Initialize the first PLT entry */
 	guint8 *buf = info->plt;
-
-	make_writable (info->plt, info->plt_end - info->plt);
 
 	/* This is a special kind of trampoline */
 	/* We use the return address on the stack as the third parameter */
@@ -1705,6 +1705,8 @@ init_plt (MonoAotModule *info)
 	x86_call_code (buf, aot_dyn_resolve);
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8);
 	x86_jump_reg (buf, X86_EAX);
+#else
+	g_assert_not_reached ();
 #endif
 }
 

@@ -214,6 +214,7 @@ cond_exc_c: len:8
 cond_exc_nc: len:8
 cond_exc_iov: len:8
 cond_exc_ic: len:8
+long_add: dest:i src1:i src2:i len:3 clob:1
 long_mul: dest:i src1:i src2:i clob:1 len:4
 long_mul_imm: dest:i src1:i clob:1 len:12
 long_div: dest:a src1:a src2:i len:16 clob:d

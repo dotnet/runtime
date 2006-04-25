@@ -526,7 +526,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				}
 
 				if (direct_call_target) {
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 					g_assert (code [i] == 0xe8);
 					/* Need to make sure this is exactly 5 bytes long */
 					fprintf (tmpfp, "\n.byte 0xe8");
@@ -1001,7 +1001,6 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 static void
 emit_plt (MonoAotCompile *acfg)
 {
-#ifdef __i386__
 	char *symbol;
 	int i, buf_size;
 	guint8 *p, *buf;
@@ -1030,9 +1029,13 @@ emit_plt (MonoAotCompile *acfg)
 		label = g_strdup_printf (".Lp_%d", i);
 		emit_label (acfg->fp, label);
 		g_free (label);
+#if defined(__i386__) || defined (__x86_64__)
 		/* Need to make sure this is 5 bytes long */
 		fprintf (acfg->fp, "\t.byte 0xe9\n");
 		fprintf (acfg->fp, "\t.long .Lpd_%d - . - 4\n", i);
+#else
+		g_assert_not_reached ();
+#endif
 	}
 
 	symbol = g_strdup_printf ("plt_end");
@@ -1067,8 +1070,15 @@ emit_plt (MonoAotCompile *acfg)
 		emit_label (acfg->fp, label);
 		g_free (label);
 
+#if defined(__i386__)
 		fprintf (acfg->fp, "\tpushl $%d\n", plt_info_offsets [i]);
 		fprintf (acfg->fp, "\tjmp .Lp_0\n");
+#elif defined(__x86_64__)
+		fprintf (acfg->fp, "\tpush $%d\n", plt_info_offsets [i]);
+		fprintf (acfg->fp, "\tjmp .Lp_0\n");
+#else
+		g_assert_not_reached ();
+#endif
 	}
 
 	/* Emit PLT info */
@@ -1084,7 +1094,6 @@ emit_plt (MonoAotCompile *acfg)
 	}
 	fprintf (acfg->fp, "\n");
 	g_free (buf);
-#endif
 }
 
 static gboolean

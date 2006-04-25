@@ -1438,10 +1438,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 {
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 
-	if (cfg->compile_aot) {
-		amd64_call_membase (code, AMD64_RIP, 0);
-	}
-	else {
+	{
 		gboolean near_call = FALSE;
 
 		/*
@@ -1501,6 +1498,9 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 		if (cfg->method->dynamic)
 			/* These methods are allocated using malloc */
 			near_call = FALSE;
+
+		if (cfg->compile_aot)
+			near_call = TRUE;
 
 		if (near_call) {
 			amd64_call_code (code, 0);
@@ -2426,6 +2426,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADDCC:
 		case CEE_ADD:
+		case OP_LADD:
 			amd64_alu_reg_reg (code, X86_ADD, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADC:
@@ -4481,8 +4482,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				patch_info->ip.i = code - cfg->native_code;
 
 				if (cfg->compile_aot) {
-					amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
-					amd64_call_reg (code, GP_SCRATCH_REG);
+					amd64_call_code (code, 0);
 				} else {
 					/* The callee is in memory allocated using the code manager */
 					amd64_call_code (code, 0);
