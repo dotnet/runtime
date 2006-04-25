@@ -48,8 +48,9 @@ struct _MonoDebuggerInfo {
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
-	guint64 (*get_thread_id) (void);
+	guint64 (*get_current_thread) (void);
 	void (*attach) (void);
+	void (*detach) (void);
 	void (*initialize) (void);
 };
 
@@ -60,6 +61,10 @@ struct _MonoDebuggerMetadataInfo {
 	int type_size;
 	int array_type_size;
 	int klass_size;
+	int thread_size;
+	int thread_tid_offset;
+	int thread_stack_ptr_offset;
+	int thread_end_stack_offset;
 	int klass_instance_size_offset;
 	int klass_parent_offset;
 	int klass_token_offset;

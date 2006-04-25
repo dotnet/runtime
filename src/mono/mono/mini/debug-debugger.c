@@ -24,8 +24,9 @@ static guint64 debugger_lookup_class (guint64 image_argument, guint64 token_arg)
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
-static guint64 debugger_get_thread_id (void);
+static guint64 debugger_get_current_thread (void);
 static void debugger_attach (void);
+static void debugger_detach (void);
 static void debugger_initialize (void);
 
 static void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
@@ -37,6 +38,10 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	sizeof (MonoType),
 	sizeof (MonoArrayType),
 	sizeof (MonoClass),
+	sizeof (MonoThread),
+	G_STRUCT_OFFSET (MonoThread, tid),
+	G_STRUCT_OFFSET (MonoThread, stack_ptr),
+	G_STRUCT_OFFSET (MonoThread, end_stack),
 	G_STRUCT_OFFSET (MonoClass, instance_size),
 	G_STRUCT_OFFSET (MonoClass, parent),
 	G_STRUCT_OFFSET (MonoClass, type_token),
@@ -97,8 +102,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_lookup_type,
 	&debugger_lookup_assembly,
 	&debugger_run_finally,
-	&debugger_get_thread_id,
+	&debugger_get_current_thread,
 	&debugger_attach,
+	&debugger_detach,
 	&debugger_initialize
 };
 
@@ -237,19 +243,28 @@ debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 }
 
 static guint64
-debugger_get_thread_id (void)
+debugger_get_current_thread (void)
 {
-	return GetCurrentThreadId ();
+	return (guint64) (gsize) mono_thread_current ();
 }
 
 static void
 debugger_attach (void)
 {
 	mono_debugger_init ();
-	mono_debugger_create_all_threads ();
 
 	mono_debugger_event_handler = debugger_event_handler;
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
+
+	mono_debugger_init_threads ();
+}
+
+static void
+debugger_detach (void)
+{
+	mono_debugger_event_handler = NULL;
+	mono_debugger_notification_function = NULL;
+	mono_debugger_finalize_threads ();
 }
 
 static void
@@ -317,7 +332,7 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	MainThreadArgs main_args;
 	MonoImage *image;
 
-	mono_debugger_init_threads (&main_args);
+	mono_debugger_init_threads ();
 
 	/*
 	 * Get and compile the main function.
