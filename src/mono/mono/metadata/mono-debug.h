@@ -177,7 +177,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				55
+#define MONO_DEBUGGER_VERSION				56
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;

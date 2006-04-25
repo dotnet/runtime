@@ -64,7 +64,8 @@ extern void mono_thread_interruption_checkpoint (void);
 extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
 extern void mono_debugger_create_all_threads (void);
-extern void mono_debugger_init_threads (gpointer main_thread_stack);
+extern void mono_debugger_init_threads (void);
+extern void mono_debugger_finalize_threads (void);
 
 G_END_DECLS
 
