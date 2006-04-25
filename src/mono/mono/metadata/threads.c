@@ -2805,19 +2805,6 @@ gint32* mono_thread_interruption_request_flag ()
 	return &thread_interruption_requested;
 }
 
-static void debugger_create_all_threads (gpointer key, gpointer value, gpointer user)
-{
-	debugger_thread_created ((MonoThread *) value);
-}
-
-void
-mono_debugger_create_all_threads (void)
-{
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, debugger_create_all_threads, NULL);
-	mono_threads_unlock ();
-}
-
 #if MONO_DEBUGGER_SUPPORTED
 
 extern void GC_push_all_stack (gpointer b, gpointer t);
