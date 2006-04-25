@@ -1639,19 +1639,8 @@ mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, Mo
 	if (s->compile_aot) {
 		int ioffset_reg = mono_regstate_next_int (s->rs);
 		int iid_reg = mono_regstate_next_int (s->rs);
-		int adjiid_reg = mono_regstate_next_int (s->rs);
-		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-		/* Consider having it already adjusted with a new AOT const,
-		 * so we avoid both the inc and the shift.
-		 */
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, adjiid_reg, iid_reg, 1);
-#if SIZEOF_VOID_P == 8
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, ioffset_reg, adjiid_reg, 3);
-#else
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, ioffset_reg, adjiid_reg, 2);
-#endif
-		MONO_EMIT_NEW_UNALU (s, OP_PNEG, ioffset_reg, ioffset_reg);
-		MONO_EMIT_NEW_BIALU (s, OP_PADD, ioffset_reg, ioffset_reg, vtable_reg);
+		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_ADJUSTED_IID);
+		MONO_EMIT_NEW_BIALU (s, OP_PADD, ioffset_reg, iid_reg, vtable_reg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, 0);
 	} else {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, vtable_reg, -((klass->interface_id + 1) * SIZEOF_VOID_P));

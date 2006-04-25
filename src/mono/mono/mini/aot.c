@@ -982,6 +982,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 		switch (ji->type) {
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IID:
+		case MONO_PATCH_INFO_ADJUSTED_IID:
 		case MONO_PATCH_INFO_VTABLE:
 		case MONO_PATCH_INFO_CLASS_INIT:
 			ji->data.klass = decode_klass_info (aot_module, p, &p);
@@ -2259,6 +2260,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		case MONO_PATCH_INFO_CLASS_INIT:
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IID:
+		case MONO_PATCH_INFO_ADJUSTED_IID:
 			encode_klass_info (acfg, patch_info->data.klass, p, &p);
 			break;
 		case MONO_PATCH_INFO_FIELD:
@@ -2605,6 +2607,7 @@ compile_method (MonoAotCompile *acfg, int index)
 		case MONO_PATCH_INFO_CLASS_INIT:
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IID:
+		case MONO_PATCH_INFO_ADJUSTED_IID:
 			if (!patch_info->data.klass->type_token)
 				if (!patch_info->data.klass->element_class->type_token)
 					skip = TRUE;
