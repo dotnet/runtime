@@ -198,7 +198,8 @@ common_sources = \
 	driver.c	\
 	debug-mini.c	\
 	linear-scan.c	\
-	aot.c		\
+	aot-compiler.c		\
+	aot-runtime.c		\
 	graph.c		\
 	mini-exceptions.c	\
 	declsec.c	\
