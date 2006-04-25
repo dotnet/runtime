@@ -2309,9 +2309,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this;
 
-	if (!virtual)
-		mono_get_got_var (cfg);
-	else if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+	if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 		/* Needed by the code generated in inssel.brg */
 		mono_get_got_var (cfg);
 
@@ -2355,8 +2353,6 @@ mono_emit_native_call (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer f
 	call = mono_emit_call_args (cfg, bblock, sig, args, FALSE, FALSE, ip, to_end);
 	call->fptr = func;
 
-	mono_get_got_var (cfg);
-
 	return mono_spill_call (cfg, bblock, call, sig, ret_object, ip, to_end);
 }
 
@@ -2370,7 +2366,6 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 		g_assert_not_reached ();
 	}
 
-	mono_get_got_var (cfg);
 	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, args, ip, FALSE, FALSE);
 }
 
@@ -2392,8 +2387,6 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	call->signature = info->sig;
 
 	call = mono_arch_call_opcode (cfg, cfg->cbb, call, FALSE);
-
-	mono_get_got_var (cfg);
 
 	if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
@@ -2632,10 +2625,15 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 		NEW_CLASSCONST (cfg, iargs [1], klass);
 
 		alloc_ftn = mono_object_new;
+	} else if (cfg->compile_aot && bblock->out_of_line && klass->type_token && klass->image == mono_defaults.corlib) {
+		/* This happens often in argument checking code, eg. throw new FooException... */
+		/* Avoid relocations by calling a helper function specialized to mscorlib */
+		NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (klass->type_token));
+		return mono_emit_jit_icall (cfg, bblock, helper_newobj_mscorlib, iargs, ip);
 	} else {
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 		gboolean pass_lw;
-		
+
 		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
 		if (pass_lw) {
 			guint32 lw = vtable->klass->instance_size;
@@ -3574,10 +3572,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
 
-		if (cfg->method->save_lmf)
-			/* Needed by the prolog code */
-			mono_get_got_var (cfg);
-
 		if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
 			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
@@ -4234,16 +4228,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			}
 
-			if (!virtual) {
-				mono_get_got_var (cfg);
-			} else {
-				/* code in inssel.brg might transform a virtual call to a normal call */
-				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
-					((cmethod->flags & METHOD_ATTRIBUTE_FINAL) && 
-					 cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK))
-					mono_get_got_var (cfg);
-			}
-
 			if (cmethod && cmethod->klass->generic_container) {
 				// G_BREAKPOINT ();
 				goto unverified;
@@ -4805,7 +4789,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
-				mono_get_got_var (cfg);
 			}
 			ip++;
 			break;
@@ -4837,7 +4820,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
-				mono_get_got_var (cfg);
 			}
 			ip++;
 			break;
@@ -4859,7 +4841,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
-				mono_get_got_var (cfg);
 			}
 			ip++;			
 			break;
@@ -5077,10 +5058,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MonoInst *iargs [2];
 						int temp;
 
-						/* Avoid creating the string object */
-						NEW_IMAGECONST (cfg, iargs [0], image);
-						NEW_ICONST (cfg, iargs [1], mono_metadata_token_index (n));
-						temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr, iargs, ip);
+						if (cfg->compile_aot && cfg->method->klass->image == mono_defaults.corlib) {
+							/* 
+							 * Avoid relocations by using a version of helper_ldstr
+							 * specialized to mscorlib.
+							 */
+							NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (n));
+							temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr_mscorlib, iargs, ip);
+						} else {
+							/* Avoid creating the string object */
+							NEW_IMAGECONST (cfg, iargs [0], image);
+							NEW_ICONST (cfg, iargs [1], mono_metadata_token_index (n));
+							temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr, iargs, ip);
+						}
 						NEW_TEMPLOAD (cfg, *sp, temp);
 					} 
 					else
@@ -5154,10 +5144,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* 
 					 * The code generated by mini_emit_virtual_call () expects
 					 * iargs [0] to be a boxed instance, but luckily the vcall
-					 * will be transformed into a normal call there. The AOT
-					 * case needs an already allocate got_var.
+					 * will be transformed into a normal call there.
 					 */
-					mono_get_got_var (cfg);
 				} else {
 					temp = handle_alloc (cfg, bblock, cmethod->klass, FALSE, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
@@ -5477,7 +5465,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			
 			link_bblock (cfg, bblock, end_bblock);
 			start_new_bblock = 1;
-			mono_get_got_var (cfg);
 			break;
 		case CEE_LDFLD:
 		case CEE_LDFLDA:
@@ -6309,7 +6296,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
-				mono_get_got_var (cfg);
 			}
 			ip++;
 			break;
@@ -6965,7 +6951,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, bblock, end_bblock);
 				start_new_bblock = 1;
 				ip += 2;
-				mono_get_got_var (cfg);
 				break;
 			}
 			case CEE_SIZEOF:
@@ -10794,6 +10779,8 @@ mini_init (const char *filename)
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
 	register_icall (helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
+	register_icall (helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
+	register_icall (helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS

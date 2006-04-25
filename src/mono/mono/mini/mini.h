@@ -50,7 +50,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "25"
+#define MONO_AOT_FILE_VERSION "27"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -858,6 +858,7 @@ MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
+guint8*   mono_aot_get_plt_entry            (guint8 *code);
 gboolean  mono_aot_init_vtable              (MonoVTable *vtable);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
@@ -972,7 +973,9 @@ void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *code, guint8 *addr);
+void     mono_arch_patch_plt_entry              (guint8 *code, guint8 *addr);
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs);
+void     mono_arch_nullify_plt_entry            (guint8 *code);
 void     mono_arch_patch_delegate_trampoline    (guint8 *code, guint8 *tramp, gssize *regs, guint8 *addr);
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 

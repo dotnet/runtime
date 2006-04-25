@@ -66,10 +66,22 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 }
 
 void
+mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+{
+	g_assert_not_reached ();
+}
+
+void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
 	/* Patch calling code */
 	sparc_nop (code);
+}
+
+void
+mono_arch_nullify_plt_entry (guint8 *code)
+{
+	g_assert_not_reached ();
 }
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))

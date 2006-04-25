@@ -682,3 +682,19 @@ helper_ldstr (MonoImage *image, guint32 idx)
 {
 	return mono_ldstr (mono_domain_get (), image, idx);
 }
+
+MonoString*
+helper_ldstr_mscorlib (guint32 idx)
+{
+	return mono_ldstr (mono_domain_get (), mono_defaults.corlib, idx);
+}
+
+MonoObject*
+helper_newobj_mscorlib (guint32 idx)
+{
+	MonoClass *klass = mono_class_get (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx);
+	
+	g_assert (klass);
+
+	return mono_object_new (mono_domain_get (), klass);
+}

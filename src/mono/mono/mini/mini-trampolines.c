@@ -43,15 +43,20 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 	}
 	else {
+		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+
 		/* Patch calling code */
+		if (plt_entry) {
+			mono_arch_patch_plt_entry (plt_entry, addr);
+		} else {
+			MonoJitInfo *ji = 
+				mono_jit_info_table_find (mono_domain_get (), code);
+			MonoJitInfo *target_ji = 
+				mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
 
-		MonoJitInfo *ji = 
-			mono_jit_info_table_find (mono_domain_get (), code);
-		MonoJitInfo *target_ji = 
-			mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
-
-		if (mono_method_same_domain (ji, target_ji))
-			mono_arch_patch_callsite (code, addr);
+			if (mono_method_same_domain (ji, target_ji))
+				mono_arch_patch_callsite (code, addr);
+		}
 	}
 
 	return addr;
@@ -94,15 +99,25 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 	}
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
-	g_assert (vtable_slot);
 
-	is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
+	if (vtable_slot) {
+		is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
 
-	if (!is_got_entry) {
-		if (!method)
-			method = mono_get_method (image, token, NULL);
-		if (method->klass->valuetype)
-			addr = mono_arch_get_unbox_trampoline (method, addr);
+		if (!is_got_entry) {
+			if (!method)
+				method = mono_get_method (image, token, NULL);
+			if (method->klass->valuetype)
+				addr = mono_arch_get_unbox_trampoline (method, addr);
+		}
+	} else {
+		/* This is a normal call through a PLT entry */
+		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+
+		g_assert (plt_entry);
+
+		mono_arch_patch_plt_entry (plt_entry, addr);
+
+		is_got_entry = FALSE;
 	}
 
 	/*
@@ -127,10 +142,17 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 void
 mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
+	guint8 *plt_entry = mono_aot_get_plt_entry (code);
+
 	mono_runtime_class_init (vtable);
 
-	if (!mono_running_on_valgrind ())
-		mono_arch_nullify_class_init_trampoline (code, regs);
+	if (!mono_running_on_valgrind ()) {
+		if (plt_entry) {
+			mono_arch_nullify_plt_entry (plt_entry);
+		} else {
+			mono_arch_nullify_class_init_trampoline (code, regs);
+		}
+	}
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE

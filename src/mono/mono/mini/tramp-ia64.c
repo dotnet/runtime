@@ -125,6 +125,12 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 }
 
 void
+mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+{
+	g_assert_not_reached ();
+}
+
+void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
 	guint8 *callsite_begin;
@@ -168,6 +174,12 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 	}
 
 	mono_arch_flush_icache (callsite_begin, code - callsite_begin);
+}
+
+void
+mono_arch_nullify_plt_entry (guint8 *code)
+{
+	g_assert_not_reached ();
 }
 
 void

@@ -77,11 +77,25 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 				//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
 #endif
 		}
+	} else if (code [1] == 0xe9) {
+		/* A PLT entry: jmp <DISP> */
+		if (!mono_running_on_valgrind ())
+			InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
 		g_assert_not_reached ();
 	}
+}
+
+void
+mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+{
+	/* A PLT entry: jmp <DISP> */
+	g_assert (code [0] == 0xe9);
+
+	if (!mono_running_on_valgrind ())
+		InterlockedExchange ((gint32*)(code + 1), (guint)addr - (guint)code - 5);
 }
 
 void
@@ -133,6 +147,26 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 				code [4], code [5], code [6]);
 			g_assert_not_reached ();
 		}
+}
+
+void
+mono_arch_nullify_plt_entry (guint8 *code)
+{
+	if (!mono_running_on_valgrind ()) {
+		guint32 ops;
+
+		ops = 0xfeeb;
+		InterlockedExchange ((gint32*)code, ops);
+
+		/* Then change the other bytes to a nop */
+		code [2] = 0x90;
+		code [3] = 0x90;
+		code [4] = 0x90;
+
+		/* Change the first byte to a nop */
+		ops = 0xc3;
+		InterlockedExchange ((gint32*)code, ops);
+	}
 }
 
 void

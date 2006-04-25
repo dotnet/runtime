@@ -81,4 +81,8 @@ gpointer helper_compile_generic_method (MonoObject *obj, MonoMethod *method, Mon
 
 MonoString *helper_ldstr (MonoImage *image, guint32 idx);
 
+MonoString *helper_ldstr_mscorlib (guint32 idx);
+
+MonoObject *helper_newobj_mscorlib (guint32 idx);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
