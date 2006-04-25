@@ -1,3 +1,9 @@
+2006-04-25  Wade Berrier <wberrier@novell.com>
+
+	* scripts/mono-find-provides.in: Only scan files that are in the gac.
+	This allows packages to contain private assemblies that won't conflict 
+	with other packages. Fixes bugzilla.novell.com #144655.
+
 2006-04-21  Alp Toker  <alp@atoker.com>
 
 	* scripts/mono-service.in: Usage info fixes:
