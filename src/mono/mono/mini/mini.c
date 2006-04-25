@@ -3306,7 +3306,7 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 			
 			/* Find the start of the bblock containing the throw */
 			bblock = NULL;
-			while ((bb_start > start) && !bblock) {
+			while ((bb_start >= start) && !bblock) {
 				bblock = g_hash_table_lookup (bbhash, (bb_start));
 				bb_start --;
 			}
