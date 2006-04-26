@@ -2187,7 +2187,8 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 			mono_array_setref (*h_aliases, i, alias);
 			i++;
 		}
-	} else if (family_hint == PF_UNSPEC || family_hint == PF_INET6) {
+	} else if (he2 != NULL && (family_hint == PF_UNSPEC ||
+				   family_hint == PF_INET6)) {
 		*h_name=mono_string_new (domain, he2->h_name);
 
 		i=0;
@@ -2205,6 +2206,8 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 			mono_array_setref (*h_aliases, i, alias);
 			i++;
 		}
+	} else {
+		return(FALSE);
 	}
 
 	/*

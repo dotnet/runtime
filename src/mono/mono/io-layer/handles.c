@@ -673,6 +673,11 @@ gpointer _wapi_search_handle (WapiHandleType type,
 				if (check (ret, user_data) == TRUE) {
 					_wapi_handle_ref (ret);
 					found = TRUE;
+
+					if (_WAPI_SHARED_HANDLE (type)) {
+						shared = &_wapi_shared_layout->handles[i];
+					}
+					
 					break;
 				}
 			}

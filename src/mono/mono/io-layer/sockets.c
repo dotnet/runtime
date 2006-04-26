@@ -794,9 +794,15 @@ WSAIoctl (guint32 fd, gint32 command,
 	} else {
 		/* We just copy the buffer to the output. Some ioctls
 		 * don't even output any data, but, well...
+		 *
+		 * NB windows returns WSAEFAULT if o_len is too small
 		 */
 		i_len = (i_len > o_len) ? o_len : i_len;
-		memcpy (output, buffer, i_len);
+
+		if (i_len > 0 && output != NULL) {
+			memcpy (output, buffer, i_len);
+		}
+		
 		g_free (buffer);
 		*written = i_len;
 	}
