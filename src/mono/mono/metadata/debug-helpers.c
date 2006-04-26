@@ -337,8 +337,9 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	const MonoOpcode *opcode;
-	guint32 i, label, token;
+	guint32 label, token;
 	gint32 sval;
+	int i;
 	char *tmp;
 	const unsigned char* il_code = mono_method_header_get_code (header, NULL, NULL);
 
