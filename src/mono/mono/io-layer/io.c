@@ -258,7 +258,7 @@ static void file_close (gpointer handle, gpointer data)
 #endif
 
 	if (file_handle->attrs & FILE_FLAG_DELETE_ON_CLOSE)
-		DeleteFile (file_handle->filename);
+		unlink (file_handle->filename);
 	
 	g_free (file_handle->filename);
 	
