@@ -1314,6 +1314,105 @@ load_profile_files (MonoAotCompile *acfg)
 }
 
 static void
+emit_code (MonoAotCompile *acfg)
+{
+	int i;
+	char *symbol;
+	GList *l;
+
+	symbol = g_strdup_printf ("methods");
+	emit_section_change (acfg->fp, ".text", 0);
+	emit_global (acfg->fp, symbol, TRUE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
+		if (acfg->cfgs [i])
+			emit_method_code (acfg, acfg->cfgs [i]);
+	}
+
+	symbol = g_strdup_printf ("methods_end");
+	emit_section_change (acfg->fp, ".text", 0);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+
+	symbol = g_strdup_printf ("method_offsets");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (acfg->fp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (acfg->cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x", i + 1);
+			fprintf (acfg->fp, "%s%s-methods", sep, symbol);
+		}
+		else
+			fprintf (acfg->fp, "%s0xffffffff", sep);
+	}
+	fprintf (acfg->fp, "\n");
+}
+
+static void
+emit_info (MonoAotCompile *acfg)
+{
+	int i;
+	char *symbol;
+	GList *l;
+
+	/* Emit method info */
+	symbol = g_strdup_printf ("method_infos");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+
+	/* To reduce size of generated assembly code */
+	symbol = g_strdup_printf ("mi");
+	emit_label (acfg->fp, symbol);
+
+	for (l = acfg->method_order; l != NULL; l = l->next) {
+		i = GPOINTER_TO_UINT (l->data);
+
+		if (acfg->cfgs [i])
+			emit_method_info (acfg, acfg->cfgs [i]);
+	}
+
+	symbol = g_strdup_printf ("method_info_offsets");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (acfg->fp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (acfg->cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
+			fprintf (acfg->fp, "%s%s - mi", sep, symbol);
+		}
+		else
+			fprintf (acfg->fp, "%s0", sep);
+	}
+	fprintf (acfg->fp, "\n");
+}
+
+static void
 emit_method_order (MonoAotCompile *acfg)
 {
 	int i, index, len;
@@ -1360,17 +1459,176 @@ emit_method_order (MonoAotCompile *acfg)
 	emit_label(acfg->fp, symbol);
 }
 
+static void
+emit_exception_info (MonoAotCompile *acfg)
+{
+	int i;
+	char *symbol;
+
+	symbol = g_strdup_printf ("ex_infos");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+
+	/* To reduce size of generate assembly */
+	symbol = g_strdup_printf ("ex");
+	emit_label (acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		if (acfg->cfgs [i])
+			emit_exception_debug_info (acfg, acfg->cfgs [i]);
+	}
+
+	symbol = g_strdup_printf ("ex_info_offsets");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (acfg->fp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+		if (acfg->cfgs [i]) {
+			symbol = g_strdup_printf (".Le_%x_p", i + 1);
+			fprintf (acfg->fp, "%s%s - ex", sep, symbol);
+		}
+		else
+			fprintf (acfg->fp, "%s0", sep);
+	}
+	fprintf (acfg->fp, "\n");
+}
+
+static void
+emit_class_info (MonoAotCompile *acfg)
+{
+	int i;
+	char *symbol;
+
+	symbol = g_strdup_printf ("class_infos");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
+		emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
+
+	symbol = g_strdup_printf ("class_info_offsets");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (acfg->fp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+
+		symbol = g_strdup_printf (".LK_I_%x", i);
+		fprintf (acfg->fp, "%s%s - class_infos", sep, symbol);
+	}
+	fprintf (acfg->fp, "\n");
+}
+
+static void
+emit_image_table (MonoAotCompile *acfg)
+{
+	int i;
+	char *symbol;
+
+	/*
+	 * The image table is small but referenced in a lot of places.
+	 * So we emit it at once, and reference its elements by an index.
+	 */
+
+	symbol = g_strdup_printf ("mono_image_table");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global(acfg->fp, symbol, FALSE);
+	emit_alignment(acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+	fprintf (acfg->fp, ".long %d\n", acfg->image_table->len);
+	for (i = 0; i < acfg->image_table->len; i++) {
+		MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
+		MonoAssemblyName *aname = &image->assembly->aname;
+
+		/* FIXME: Support multi-module assemblies */
+		g_assert (image->assembly->image == image);
+
+		fprintf (acfg->fp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, image->assembly_name);
+		fprintf (acfg->fp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, image->guid);
+		fprintf (acfg->fp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, aname->culture ? aname->culture : "");
+		fprintf (acfg->fp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, aname->public_key_token);
+
+		emit_alignment (acfg->fp, 8);
+		fprintf (acfg->fp, ".long %d\n", aname->flags);
+		fprintf (acfg->fp, ".long %d\n", aname->major);
+		fprintf (acfg->fp, ".long %d\n", aname->minor);
+		fprintf (acfg->fp, ".long %d\n", aname->build);
+		fprintf (acfg->fp, ".long %d\n", aname->revision);
+	}
+}
+
+static void
+emit_got (MonoAotCompile *acfg)
+{
+	char *symbol;
+
+	/* Don't make GOT global so accesses to it don't need relocations */
+	symbol = g_strdup_printf ("got");
+	emit_section_change (acfg->fp, ".bss", 1);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+	if (acfg->got_offset > 0)
+		fprintf (acfg->fp, ".skip %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
+
+	symbol = g_strdup_printf ("got_addr");
+	emit_section_change (acfg->fp, ".data", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+	emit_pointer (acfg->fp, "got");
+
+	symbol = g_strdup_printf ("got_size");
+	emit_section_change (acfg->fp, ".data", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+	fprintf (acfg->fp, ".long %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
+}
+
+static void
+emit_globals (MonoAotCompile *acfg)
+{
+	char *opts_str;
+
+	emit_string_symbol (acfg->fp, "mono_assembly_guid" , acfg->image->guid);
+
+	emit_string_symbol (acfg->fp, "mono_aot_version", MONO_AOT_FILE_VERSION);
+
+	opts_str = g_strdup_printf ("%d", acfg->opts);
+	emit_string_symbol (acfg->fp, "mono_aot_opt_flags", opts_str);
+	g_free (opts_str);
+}
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
-	char *com, *tmpfname, *opts_str, *symbol;
-	FILE *tmpfp;
+	char *command, *objfile, *tmpfname, *symbol;
 	int i;
 	MonoAotCompile *acfg;
 	MonoCompile **cfgs;
 	char *outfile_name, *tmp_outfile_name;
-	GList *l;
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
@@ -1388,276 +1646,68 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	load_profile_files (acfg);
 
 	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
-	tmpfp = fdopen (i, "w+");
-	acfg->fp = tmpfp;
-	g_assert (tmpfp);
-
-	emit_string_symbol (tmpfp, "mono_assembly_guid" , image->guid);
-
-	emit_string_symbol (tmpfp, "mono_aot_version", MONO_AOT_FILE_VERSION);
-
-	opts_str = g_strdup_printf ("%d", opts);
-	emit_string_symbol (tmpfp, "mono_aot_opt_flags", opts_str);
-	g_free (opts_str);
+	acfg->fp = fdopen (i, "w+");
+	g_assert (acfg->fp);
 
 	cfgs = g_new0 (MonoCompile*, image->tables [MONO_TABLE_METHOD].rows + 32);
 	acfg->cfgs = cfgs;
 	acfg->nmethods = image->tables [MONO_TABLE_METHOD].rows;
 	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
 
+	/* Slot 0 is reserved for the address of the current assembly */
+	acfg->got_offset = 1;
+	/* PLT offset 0 is reserved for the PLT trampoline */
+	acfg->plt_offset = 1;
+
 	/* Compile methods */
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i)
 		compile_method (acfg, i);
 
-	/* Reserved slots */
-	/* Slot 0 is reserved for the address of the current assembly */
-	acfg->got_offset = 1;
-	acfg->plt_offset = 1;
+	emit_code (acfg);
 
-	/* Emit code */
-	symbol = g_strdup_printf ("methods");
-	emit_section_change (tmpfp, ".text", 0);
-	emit_global (tmpfp, symbol, TRUE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
+	emit_info (acfg);
 
-	for (l = acfg->method_order; l != NULL; l = l->next) {
-		i = GPOINTER_TO_UINT (l->data);
-
-		if (cfgs [i])
-			emit_method_code (acfg, cfgs [i]);
-	}
-
-	symbol = g_strdup_printf ("methods_end");
-	emit_section_change (tmpfp, ".text", 0);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
-
-	/* Emit method_offsets table */
-	symbol = g_strdup_printf ("method_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x", i + 1);
-			fprintf (tmpfp, "%s%s-methods", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0xffffffff", sep);
-	}
-	fprintf (tmpfp, "\n");
-
-	/* Emit method info */
-	symbol = g_strdup_printf ("method_infos");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
-
-	/* To reduce size of generated assembly code */
-	symbol = g_strdup_printf ("mi");
-	emit_label (tmpfp, symbol);
-
-	for (l = acfg->method_order; l != NULL; l = l->next) {
-		i = GPOINTER_TO_UINT (l->data);
-
-		if (cfgs [i])
-			emit_method_info (acfg, cfgs [i]);
-	}
-
-	symbol = g_strdup_printf ("method_info_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
-			fprintf (tmpfp, "%s%s - mi", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0", sep);
-	}
-	fprintf (tmpfp, "\n");
-
-	/* Emit exception info */
-	symbol = g_strdup_printf ("ex_infos");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
-
-	/* To reduce size of generate assembly */
-	symbol = g_strdup_printf ("ex");
-	emit_label (tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		if (cfgs [i])
-			emit_exception_debug_info (acfg, cfgs [i]);
-	}
-
-	symbol = g_strdup_printf ("ex_info_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Le_%x_p", i + 1);
-			fprintf (tmpfp, "%s%s - ex", sep, symbol);
-		}
-		else
-			fprintf (tmpfp, "%s0", sep);
-	}
-	fprintf (tmpfp, "\n");
-
-	/* Emit method_order table */
 	emit_method_order (acfg);
 
-	/* Emit class info */
-	symbol = g_strdup_printf ("class_infos");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
+	emit_exception_info (acfg);
 
-	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
-		emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
+	emit_class_info (acfg);
 
-	symbol = g_strdup_printf ("class_info_offsets");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
-		const char *sep;
-		if ((i % 32) == 0) {
-			fprintf (tmpfp, "\n.long ");
-			sep = "";
-		}
-		else
-			sep = ",";
-
-		symbol = g_strdup_printf (".LK_I_%x", i);
-		fprintf (tmpfp, "%s%s - class_infos", sep, symbol);
-	}
-	fprintf (tmpfp, "\n");
-
-	/* Emit PLT */
 	emit_plt (acfg);
 
-	/*
-	 * The image table is small but referenced in a lot of places.
-	 * So we emit it at once, and reference its elements by an index.
-	 */
-
-	/* Emit image table */
-
-	symbol = g_strdup_printf ("mono_image_table");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global(tmpfp, symbol, FALSE);
-	emit_alignment(tmpfp, 8);
-	emit_label(tmpfp, symbol);
-	fprintf (tmpfp, ".long %d\n", acfg->image_table->len);
-	for (i = 0; i < acfg->image_table->len; i++) {
-		MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
-		MonoAssemblyName *aname = &image->assembly->aname;
-
-		/* FIXME: Support multi-module assemblies */
-		g_assert (image->assembly->image == image);
-
-		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, image->assembly_name);
-		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, image->guid);
-		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, aname->culture ? aname->culture : "");
-		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, aname->public_key_token);
-
-		emit_alignment (tmpfp, 8);
-		fprintf (tmpfp, ".long %d\n", aname->flags);
-		fprintf (tmpfp, ".long %d\n", aname->major);
-		fprintf (tmpfp, ".long %d\n", aname->minor);
-		fprintf (tmpfp, ".long %d\n", aname->build);
-		fprintf (tmpfp, ".long %d\n", aname->revision);
-	}
+	emit_image_table (acfg);
 
 #ifdef MONO_ARCH_HAVE_PIC_AOT
-	/* Emit GOT */
+	emit_got (acfg);
+#endif
 
-	/* Don't make GOT global so accesses to it don't need relocations */
-	symbol = g_strdup_printf ("got");
-	emit_section_change (tmpfp, ".bss", 1);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-	if (acfg->got_offset > 0)
-		fprintf (tmpfp, ".skip %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
+	emit_globals (acfg);
+
+	symbol = g_strdup_printf ("mem_end");
+	emit_section_change (acfg->fp, ".text", 1);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label(acfg->fp, symbol);
+
+	fclose (acfg->fp);
 
 	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT: %d\n", acfg->code_size, acfg->info_size, acfg->ex_info_size, acfg->class_info_size, acfg->plt_offset, (int)(acfg->got_offset * sizeof (gpointer)));
 
-	symbol = g_strdup_printf ("got_addr");
-	emit_section_change (tmpfp, ".data", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-	emit_pointer (tmpfp, "got");
-
-	symbol = g_strdup_printf ("got_size");
-	emit_section_change (tmpfp, ".data", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-	fprintf (tmpfp, ".long %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
-#endif
-
-	symbol = g_strdup_printf ("mem_end");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label(tmpfp, symbol);
-
-	fclose (tmpfp);
-
 #if defined(__x86_64__)
-	com = g_strdup_printf ("as --64 %s -o %s.o", tmpfname, tmpfname);
+	command = g_strdup_printf ("as --64 %s -o %s.o", tmpfname, tmpfname);
 #elif defined(sparc) && SIZEOF_VOID_P == 8
-	com = g_strdup_printf ("as -xarch=v9 %s -o %s.o", tmpfname, tmpfname);
+	command = g_strdup_printf ("as -xarch=v9 %s -o %s.o", tmpfname, tmpfname);
 #else
-	com = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
+	command = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
 	
 #endif
-	printf ("Executing the native assembler: %s\n", com);
-	if (system (com) != 0) {
-		g_free (com);
+	printf ("Executing the native assembler: %s\n", command);
+	if (system (command) != 0) {
+		g_free (command);
 		return 1;
 	}
 
-	g_free (com);
+	g_free (command);
 
 	if (acfg->aot_opts.outfile)
 		outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
@@ -1667,26 +1717,26 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
 #if defined(sparc)
-	com = g_strdup_printf ("ld -shared -G -o %s %s.o", outfile_name, tmpfname);
+	command = g_strdup_printf ("ld -shared -G -o %s %s.o", outfile_name, tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
-	com = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", outfile_name, tmpfname);
+	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", outfile_name, tmpfname);
 #elif defined(PLATFORM_WIN32)
-	com = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", outfile_name, tmpfname);
+	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", outfile_name, tmpfname);
 #else
-	com = g_strdup_printf ("ld -shared -o %s %s.o", outfile_name, tmpfname);
+	command = g_strdup_printf ("ld -shared -o %s %s.o", outfile_name, tmpfname);
 #endif
-	printf ("Executing the native linker: %s\n", com);
-	if (system (com) != 0) {
+	printf ("Executing the native linker: %s\n", command);
+	if (system (command) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
-		g_free (com);
+		g_free (command);
 		return 1;
 	}
 
-	g_free (com);
-	com = g_strdup_printf ("%s.o", tmpfname);
-	unlink (com);
-	g_free (com);
+	g_free (command);
+	objfile = g_strdup_printf ("%s.o", tmpfname);
+	unlink (objfile);
+	g_free (objfile);
 	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", image->name, SHARED_EXT);
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
