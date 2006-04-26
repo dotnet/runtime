@@ -1389,6 +1389,12 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	code = &aot_module->code [aot_module->code_offsets [method_index]];
 	info = &aot_module->method_infos [aot_module->method_info_offsets [method_index]];
 
+	if (!aot_module->methods_loaded)
+		aot_module->methods_loaded = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 1);
+
+	if ((aot_module->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
+		return code;
+
 	if (mono_last_aot_method != -1) {
 		if (mono_jit_stats.methods_aot > mono_last_aot_method)
 				return NULL;
@@ -1464,13 +1470,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 
 	mono_jit_stats.methods_aot++;
 
-	if (!aot_module->methods_loaded)
-		aot_module->methods_loaded = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 1);
-
-	if ((aot_module->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
-		return code;
-	else
-		aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
+	aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 
 	return code;
 
