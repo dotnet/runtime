@@ -6590,7 +6590,7 @@ static const IcallEntry monoio_icalls [] = {
 	{"GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath},
 	{"Lock(intptr,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Lock},
 	{"MoveFile(string,string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_MoveFile},
-	{"Open(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Open},
+	{"Open(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.IO.FileOptions,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Open},
 	{"Read(intptr,byte[],int,int,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Read},
 	{"RemoveDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_RemoveDirectory},
 	{"Seek(intptr,long,System.IO.SeekOrigin,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Seek},

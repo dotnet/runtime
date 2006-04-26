@@ -694,23 +694,46 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 
 HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
-				 gint32 access_mode, gint32 share,
-				 MonoBoolean async, gint32 *error)
+				 gint32 access_mode, gint32 share, gint32 options,
+				 gint32 *error)
 {
 	HANDLE ret;
+	int attributes;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
-	
+
+	if (options != 0){
+		if (options & FileOptions_Encrypted)
+			attributes = FILE_ATTRIBUTE_ENCRYPTED;
+		else
+			attributes = FILE_ATTRIBUTE_NORMAL;
+		if (options & FileOptions_DeleteOnClose)
+			attributes |= FILE_FLAG_DELETE_ON_CLOSE;
+		if (options & FileOptions_SequentialScan)
+			attributes |= FILE_FLAG_SEQUENTIAL_SCAN;
+		if (options & FileOptions_RandomAccess)
+			attributes |= FILE_FLAG_RANDOM_ACCESS;
+
+		/* Not sure if we should set FILE_FLAG_OVERLAPPED, how does this mix with the "Async" bool here? */
+		if (options & FileOptions_Asynchronous)
+			attributes |= FILE_FLAG_OVERLAPPED;
+		
+		if (options & FileOptions_WriteThrough)
+			attributes |= FILE_FLAG_WRITE_THROUGH;
+	} else
+		attributes = FILE_ATTRIBUTE_NORMAL;
+
+
 	ret=CreateFile (mono_string_chars (filename),
 			convert_access (access_mode), convert_share (share),
 			NULL, convert_mode (mode),
-			FILE_ATTRIBUTE_NORMAL | ((async) ? FILE_FLAG_OVERLAPPED : 0),
+			attributes,
 			NULL);
 	if(ret==INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
-	}
+	} 
 	
 	return(ret);
 }

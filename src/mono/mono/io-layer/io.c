@@ -257,6 +257,9 @@ static void file_close (gpointer handle, gpointer data)
 		  file_handle->filename);
 #endif
 
+	if (file_handle->attrs & FILE_FLAG_DELETE_ON_CLOSE)
+		DeleteFile (file_handle->filename);
+	
 	g_free (file_handle->filename);
 	
 	_wapi_handle_share_release (file_handle->share_info);
@@ -1442,6 +1445,11 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	
 	mono_once (&io_ops_once, io_ops_init);
 
+	if (attrs & FILE_ATTRIBUTE_ENCRYPTED){
+		SetLastError (ERROR_ENCRYPTION_FAILED);
+		return INVALID_HANDLE_VALUE;
+	}
+	
 	if (name == NULL) {
 #ifdef DEBUG
 		g_message ("%s: name is NULL", __func__);
@@ -1551,6 +1559,13 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	file_handle.sharemode=sharemode;
 	file_handle.attrs=attrs;
 
+#ifdef HAVE_POSIX_FADVISE
+	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN)
+		posix_fadvise (fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+	if (attrs & FILE_FLAG_RANDOM_ACCESS)
+		posix_fadvise (fd, 0, 0, POSIX_FADV_RANDOM);
+#endif
+	
 #ifndef S_ISFIFO
 #define S_ISFIFO(m) ((m & S_IFIFO) != 0)
 #endif

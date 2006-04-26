@@ -45,6 +45,17 @@ typedef enum {
 	FileShare_ReadWrite=FileShare_Read|FileShare_Write
 } MonoFileShare;
 
+/* This is a copy of System.IO.FileOptions */
+typedef enum {
+	FileOptions_None = 0,
+	FileOptions_Encrypted = 0x4000,
+	FileOptions_DeleteOnClose = 0x4000000,
+	FileOptions_SequentialScan = 0x8000000,
+	FileOptions_RandomAccess = 0x10000000,
+	FileOptions_Asynchronous = 0x40000000,
+	FileOptions_WriteThrough = 0x80000000
+} MonoFileOptions;
+
 /* This is a copy of System.IO.SeekOrigin */
 typedef enum {
 	SeekOrigin_Begin=0,
@@ -144,8 +155,8 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 
 extern HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
-				 gint32 access_mode, gint32 share,
-				 MonoBoolean async, gint32 *error) MONO_INTERNAL;
+				 gint32 access_mode, gint32 share, gint32 options,
+				 gint32 *error) MONO_INTERNAL;
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error) MONO_INTERNAL;
