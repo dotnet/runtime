@@ -58,8 +58,6 @@
 #define AS_STRING_DIRECTIVE ".string"
 #endif
 
-#define N_RESERVED_GOT_SLOTS 1
-
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
@@ -400,7 +398,7 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 }
 
 static guint32
-get_got_slot (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 {
 	guint32 res;
 
@@ -536,7 +534,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 					g_assert_not_reached ();
 #endif
 				} else {
-					got_slot = get_got_slot (acfg, patch_info);
+					got_slot = get_got_offset (acfg, patch_info);
 
 					fprintf (tmpfp, "\n.byte ");
 					for (j = 0; j < mono_arch_get_patch_offset (code + i); ++j)
@@ -1070,8 +1068,9 @@ emit_plt (MonoAotCompile *acfg)
 		emit_label (acfg->fp, label);
 		g_free (label);
 
+		/* Put the offset into the register expected by mono_aot_plt_trampoline */
 #if defined(__i386__)
-		fprintf (acfg->fp, "\tpushl $%d\n", plt_info_offsets [i]);
+		fprintf (acfg->fp, "\tmovl $%d, %%eax\n", plt_info_offsets [i]);
 		fprintf (acfg->fp, "\tjmp .Lp_0\n");
 #elif defined(__x86_64__)
 		fprintf (acfg->fp, "\tpush $%d\n", plt_info_offsets [i]);
@@ -1411,7 +1410,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		compile_method (acfg, i);
 
 	/* Reserved slots */
-	acfg->got_offset = N_RESERVED_GOT_SLOTS;
+	/* Slot 0 is reserved for the address of the current assembly */
+	acfg->got_offset = 1;
 	acfg->plt_offset = 1;
 
 	/* Emit code */

@@ -51,8 +51,6 @@
 #define SHARED_EXT ".so"
 #endif
 
-#define N_RESERVED_GOT_SLOTS 1
-
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
@@ -1665,20 +1663,21 @@ mono_aot_handle_pagefault (void *ptr)
  *   This function is called by the entries in the PLT to resolve the actual method that
  * needs to be called. It returns a trampoline to the method and patches the PLT entry.
  */
-static gpointer
-aot_dyn_resolve (MonoAotModule *aot_module, guint32 plt_info_offset, guint8 *code)
+gpointer
+mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code)
 {
 	guint8 *p, *target, *plt_entry;
 	MonoJumpInfo ji;
+	MonoAotModule *module = (MonoAotModule*)aot_module;
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
-	p = &aot_module->plt_info [plt_info_offset];
+	p = &module->plt_info [plt_info_offset];
 
 	ji.type = decode_value (p, &p);
 
 	// FIXME: Error handling
-	decode_patch_info (aot_module, NULL, &ji, p, &p);
+	decode_patch_info (module, NULL, &ji, p, &p);
 
 	target = mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE);
 
@@ -1693,18 +1692,16 @@ aot_dyn_resolve (MonoAotModule *aot_module, guint32 plt_info_offset, guint8 *cod
 static void
 init_plt (MonoAotModule *info)
 {
+	guint8 *buf = info->plt;
+	gpointer tramp;
+
 	make_writable (info->plt, info->plt_end - info->plt);
 
-#ifdef __i386__
-	/* Initialize the first PLT entry */
-	guint8 *buf = info->plt;
+	tramp = mono_arch_create_specific_trampoline (info, MONO_TRAMPOLINE_AOT_PLT, mono_get_root_domain (), NULL);
 
-	/* This is a special kind of trampoline */
-	/* We use the return address on the stack as the third parameter */
-	x86_push_imm (buf, info);
-	x86_call_code (buf, aot_dyn_resolve);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8);
-	x86_jump_reg (buf, X86_EAX);
+	/* Initialize the first PLT entry */
+#ifdef __i386__
+	x86_jump_code (buf, tramp);
 #else
 	g_assert_not_reached ();
 #endif

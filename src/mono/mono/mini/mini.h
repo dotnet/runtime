@@ -498,6 +498,7 @@ typedef enum {
 	MONO_TRAMPOLINE_JUMP,
 	MONO_TRAMPOLINE_CLASS_INIT,
 	MONO_TRAMPOLINE_AOT,
+	MONO_TRAMPOLINE_AOT_PLT,
 	MONO_TRAMPOLINE_DELEGATE,
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
@@ -866,6 +867,7 @@ void mono_aot_set_make_unreadable           (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
 void mono_aot_handle_pagefault              (void *ptr);
 guint32 mono_aot_get_n_pagefaults           (void);
+gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code);
 
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
@@ -894,6 +896,8 @@ gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod 
 gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp);
 gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp);
+gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
+										   guint8* tramp);
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp);
 
 gboolean          mono_running_on_valgrind (void);

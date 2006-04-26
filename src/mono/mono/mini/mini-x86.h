@@ -113,6 +113,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_RETREG1 X86_EAX
 #define MONO_ARCH_RETREG2 X86_EDX
 
+#define MONO_ARCH_AOT_PLT_OFFSET_REG X86_EAX
+
 #define MONO_ARCH_ENCODE_LREG(r1,r2) (r1 | (r2<<3))
 
 #define inst_dreg_low dreg&7 

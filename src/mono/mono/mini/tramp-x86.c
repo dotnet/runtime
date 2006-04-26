@@ -301,6 +301,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		x86_call_code (buf, mono_class_init_trampoline);
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
 		x86_call_code (buf, mono_aot_trampoline);
+	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
+		x86_call_code (buf, mono_aot_plt_trampoline);
 	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
 		x86_call_code (buf, mono_delegate_trampoline);
 	else
