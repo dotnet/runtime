@@ -1666,6 +1666,7 @@ mono_aot_handle_pagefault (void *ptr)
 gpointer
 mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code)
 {
+#ifdef MONO_ARCH_HAVE_PIC_AOT
 	guint8 *p, *target, *plt_entry;
 	MonoJumpInfo ji;
 	MonoAotModule *module = (MonoAotModule*)aot_module;
@@ -1687,11 +1688,18 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	mono_arch_patch_plt_entry (plt_entry, target);
 
 	return target;
+
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif
 }
 
 static void
 init_plt (MonoAotModule *info)
 {
+#ifdef MONO_ARCH_HAVE_PIC_AOT
+
 	guint8 *buf = info->plt;
 	gpointer tramp;
 
@@ -1704,6 +1712,8 @@ init_plt (MonoAotModule *info)
 	x86_jump_code (buf, tramp);
 #else
 	g_assert_not_reached ();
+#endif
+
 #endif
 }
 
