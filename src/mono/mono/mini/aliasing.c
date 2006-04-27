@@ -52,7 +52,14 @@ static const char *mono_stack_type_names[] = {
 #define OP_IS_STORE(op) (((op)==CEE_STIND_REF)||((op)==CEE_STIND_I1)||((op)==CEE_STIND_I2)||((op)==CEE_STIND_I4)||((op)==CEE_STIND_I8)||((op)==CEE_STIND_R4)||((op)==CEE_STIND_R8)||((op)==CEE_STIND_I))
 #define OP_IS_LOAD(op) (((op)==CEE_LDIND_REF)||((op)==CEE_LDIND_I1)||((op)==CEE_LDIND_I2)||((op)==CEE_LDIND_I4)||((op)==CEE_LDIND_U1)||((op)==CEE_LDIND_U2)||((op)==CEE_LDIND_U4)||((op)==CEE_LDIND_I8)||((op)==CEE_LDIND_R4)||((op)==CEE_LDIND_R8)||((op)==CEE_LDIND_I))
 #define OP_IS_CONST(op) (((op)==OP_ICONST)||((op)==OP_I8CONST)||((op)==OP_R4CONST)||((op)==OP_R8CONST)||((op)==OP_AOTCONST))
+#define OP_IS_ICONV(op) (((op)==CEE_CONV_I4)||((op)==CEE_CONV_U4)||((op)==CEE_CONV_I8)||((op)==CEE_CONV_U8)||\
+		((op)==CEE_CONV_OVF_I4_UN)||((op)==CEE_CONV_OVF_I8_UN)||((op)==CEE_CONV_OVF_U4_UN)||((op)==CEE_CONV_OVF_U8_UN)||\
+		((op)==CEE_CONV_OVF_I4)||((op)==CEE_CONV_OVF_U4)||((op)==CEE_CONV_OVF_I8)||((op)==CEE_CONV_OVF_U8))
+#define OP_IS_PCONV(op) (((op)==CEE_CONV_OVF_I_UN)||((op)==CEE_CONV_OVF_U_UN)||\
+		((op)==CEE_CONV_I)||((op)==CEE_CONV_U)||\
+		((op)==CEE_CONV_OVF_I)||((op)==CEE_CONV_OVF_U))
 #define LOAD_OF_LOCAL_GIVES_POINTER(load,local) ((local->opcode == OP_LOCAL) && (((load)->type == STACK_MP) || ((load)->type == STACK_PTR) || ((local)->inst_vtype->type == MONO_TYPE_PTR)))
+
 
 /*
  * A struct representing the context of the traversal of a MonoInst tree.
@@ -628,7 +635,7 @@ update_aliasing_information_on_inst (MonoAliasingInformation *info, MonoAliasing
 			use->affected_variables = info->temporary_uncontrollably_aliased_variables;
 			APPEND_USE (info,bb_info,use);
 		}
-	} else if ((inst->opcode == OP_UNBOXCAST) || (inst->opcode == CEE_CONV_I) || (inst->opcode == OP_LCONV_TO_I)) {
+	} else if ((inst->opcode == OP_UNBOXCAST) || OP_IS_PCONV (inst->opcode) || OP_IS_ICONV (inst->opcode)) {
 		father_alias->type = context.subtree_aliases [0].type;
 		father_alias->variable_index = context.subtree_aliases [0].variable_index;
 	} else if ((inst->opcode == CEE_LDELEMA) || (inst->opcode == OP_COMPARE) || (inst->opcode == CEE_SWITCH)) {
