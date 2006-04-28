@@ -849,7 +849,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 	reginfof = cfg->reginfof;
 	if (!reginfof) {
-		cfg->reginfof_len = MAX (256, rs->next_vireg * 2);
+		cfg->reginfof_len = MAX (256, rs->next_vfreg * 2);
 		reginfof = cfg->reginfof = mono_mempool_alloc (cfg->mempool, sizeof (RegTrack) * cfg->reginfof_len);
 	} 
 	else
