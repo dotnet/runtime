@@ -29,27 +29,19 @@
 static void
 compute_dominators (MonoCompile *cfg)
 {
-	int i, j, bitsize;
+	int bindex, i, bitsize;
 	char* mem;
-	gboolean *in_worklist;
-	MonoBasicBlock **worklist;
 	MonoBasicBlock *entry;
-	guint32 l_begin, l_end;
 	MonoBasicBlock **doms;
+	gboolean changed;
 
 	g_assert (!(cfg->comp_done & MONO_COMP_DOM));
 
 	bitsize = mono_bitset_alloc_size (cfg->num_bblocks, 0);
-	in_worklist = g_new0 (gboolean, cfg->num_bblocks);
-	worklist = g_new (MonoBasicBlock*, cfg->num_bblocks + 1);
-	l_begin = 0;
-	l_end = 0;
 
 	mem = mono_mempool_alloc0 (cfg->mempool, bitsize * cfg->num_bblocks);
 
-	/* the first is always the entry */
 	entry = cfg->bblocks [0];
-	worklist [l_end ++] = entry;
 
 	doms = g_new0 (MonoBasicBlock*, cfg->num_bblocks);
 	doms [entry->dfn] = entry;
@@ -65,63 +57,54 @@ compute_dominators (MonoCompile *cfg)
 	}
 #endif
 
-	while (l_begin != l_end) {
-		MonoBasicBlock *bb = worklist [l_begin ++];
-		MonoBasicBlock *idom;
+	changed = TRUE;
+	while (changed) {
+		changed = FALSE;
 
-		in_worklist [bb->dfn] = FALSE;
+		for (bindex = 0; bindex < cfg->num_bblocks; ++bindex) {
+			MonoBasicBlock *bb = cfg->bblocks [bindex];
+			MonoBasicBlock *idom;
 
-		if (l_begin == cfg->num_bblocks + 1)
-			l_begin = 0;
-
-		idom = NULL;
-		for (i = 0; i < bb->in_count; ++i) {
-			MonoBasicBlock *in_bb = bb->in_bb [i];
-			if ((in_bb != bb) && doms [in_bb->dfn]) {
-				idom = in_bb;
-				break;
+			idom = NULL;
+			for (i = 0; i < bb->in_count; ++i) {
+				MonoBasicBlock *in_bb = bb->in_bb [i];
+				if ((in_bb != bb) && doms [in_bb->dfn]) {
+					idom = in_bb;
+					break;
+				}
 			}
-		}
-		if (bb != cfg->bblocks [0])
-			g_assert (idom);
-			
-		while (i < bb->in_count) {
-			MonoBasicBlock *in_bb = bb->in_bb [i];
+			if (bb != cfg->bblocks [0])
+				g_assert (idom);
 
-			if (HAS_DFN (in_bb, entry) && doms [in_bb->dfn]) {
-				/* Intersect */
-				MonoBasicBlock *f1 = idom;
-				MonoBasicBlock *f2 = in_bb;
+			while (i < bb->in_count) {
+				MonoBasicBlock *in_bb = bb->in_bb [i];
 
-				while (f1 != f2) {
-					if (f1->dfn < f2->dfn)
-						f2 = doms [f2->dfn];
-					else
-						f1 = doms [f1->dfn];
+				if (HAS_DFN (in_bb, entry) && doms [in_bb->dfn]) {
+					/* Intersect */
+					MonoBasicBlock *f1 = idom;
+					MonoBasicBlock *f2 = in_bb;
+
+					while (f1 != f2) {
+						if (f1->dfn < f2->dfn)
+							f2 = doms [f2->dfn];
+						else
+							f1 = doms [f1->dfn];
+					}
+
+					idom = f1;
+				}
+				i ++;
+			}
+
+			if (idom != doms [bb->dfn]) {
+				if (bb == cfg->bblocks [0])
+					doms [bb->dfn] = bb;
+				else {
+					doms [bb->dfn] = idom;
+					changed = TRUE;
 				}
 
-				idom = f1;
-			}
-			i ++;
-		}
-
-		if (idom != doms [bb->dfn]) {
-			if (bb == cfg->bblocks [0])
-				doms [bb->dfn] = bb;
-			else
-				doms [bb->dfn] = idom;
-					
-			for (j = 0; j < bb->out_count; ++j) {
-				MonoBasicBlock *out_bb = bb->out_bb [j];
-				if (!in_worklist [out_bb->dfn]) {
-#ifdef DEBUG_DOMINATORS
-					printf ("\tADD %d to worklist.\n", out_bb->dfn);
-#endif
-					worklist [l_end ++] = out_bb;
-					if (l_end == cfg->num_bblocks + 1)
-						l_end = 0;
-					in_worklist [out_bb->dfn] = TRUE;
-				}
+				//printf ("A: bb=%d dfn=%d dom:%d\n", bb->block_num, bb->dfn, doms [bb->dfn]->block_num);
 			}
 		}
 	}
@@ -150,8 +133,6 @@ compute_dominators (MonoCompile *cfg)
 		mono_bitset_set_fast (dominators, 0);
 	}
 
-	g_free (worklist);
-	g_free (in_worklist);
 	g_free (doms);
 
 	cfg->comp_done |= MONO_COMP_DOM | MONO_COMP_IDOM;
