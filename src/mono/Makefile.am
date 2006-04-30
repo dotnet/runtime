@@ -65,8 +65,10 @@ bootstrap-world-net_2_0: compiler-tests-net_2_0
 # internal targets
 mcs-do-clean:
 	cd runtime && $(MAKE) clean-local
+	cd mono/tests && $(MAKE) clean
 mcs-do-compiler-tests:
 	cd runtime && $(MAKE) test_select='TEST_SUBDIRS="tests errors"' check-local
+	cd mono/tests && $(MAKE) check
 
 win32getdeps:
 	wget http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip
