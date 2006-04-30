@@ -912,7 +912,6 @@ mono_ldftn
 mono_ldftn_nosync
 mono_ldtoken_wrapper
 mono_ldvirtfn
-ves_array_element_address
 mono_linear_scan
 mono_varlist_insert_sorted
 mono_varlist_sort
@@ -999,7 +998,6 @@ mono_debugger_create_notification_function
 mono_profiler_startup
 mono_profiler_startup
 mono_invoke_delegate
-reliable_delegate
 mono_bitset_alloc_size
 mono_bitset_clear
 mono_bitset_clear_all

@@ -4,6 +4,18 @@
 	mono_class_get_nullable_param
 	mono_assembly_loaded_full
 
+* Namespacing
+
+	Do we need to re-namespace the published helper_ routines to avoid
+ 	poluting the namespace?
+
+		helper_compile_generic_method
+		helper_ldstr
+		helper_ldstr_mscorlib
+		helper_newobj_mscorlib
+		helper_stelem_ref
+		helper_stelem_ref_check
+
 * Generate a table of contents at the begining of each page for APIs.
 
 * Fill in with a concept guide
