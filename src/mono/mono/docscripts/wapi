@@ -10,6 +10,7 @@ errno_to_WSA
 GetLastError
 SetLastError
 CreateEvent
+OpenEvent
 PulseEvent
 ResetEvent
 SetEvent
@@ -46,6 +47,7 @@ UnlockFile
 WriteFile
 mono_once
 CreateMutex
+OpenMutex
 ReleaseMutex
 CreateProcess
 EnumProcesses
@@ -54,14 +56,17 @@ GetCurrentProcess
 GetCurrentProcessId
 GetExitCodeProcess
 GetModuleBaseName
+GetProcessId
 GetProcessTimes
 GetProcessWorkingSetSize
 OpenProcess
 SetProcessWorkingSetSize
+ShellExecuteEx
 TerminateProcess
 ImpersonateLoggedOnUser
 RevertToSelf
 CreateSemaphore
+OpenSemaphore
 ReleaseSemaphore
 closesocket
 ioctlsocket
@@ -71,7 +76,6 @@ WSAIoctl
 WSASetLastError
 WSAStartup
 GetSystemInfo
-BindIoCompletionCallback
 CreateThread
 ExitThread
 GetCurrentThread

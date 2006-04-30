@@ -22,6 +22,9 @@ marshal_test_ref_bool
 TestVectorList
 __bsd_dtoa
 bsd_strtod
+# 
+# Produced by the tests
+#
 mono_test_asany
 mono_test_byvalstr_check
 mono_test_byvalstr_gen
@@ -77,6 +80,28 @@ mono_test_marshal_struct2
 mono_test_marshal_struct2_2
 mono_test_marshal_struct_array
 mono_test_marshal_unicode_string_array
+mono_test_marshal_asany_inout
+mono_test_marshal_byref_struct
+mono_test_marshal_cdecl_delegate
+mono_test_marshal_ia64_pass_return_struct5
+mono_test_marshal_ia64_pass_return_struct6
+mono_test_marshal_out_array
+mono_test_marshal_out_array_delegate
+mono_test_marshal_out_string_array_delegate
+mono_test_marshal_pass_byref_custom
+mono_test_marshal_pass_out_custom
+mono_test_marshal_return_string_array_delegate
+mono_test_marshal_small_struct_delegate1
+mono_test_marshal_small_struct_delegate10
+mono_test_marshal_small_struct_delegate11
+mono_test_marshal_small_struct_delegate2
+mono_test_marshal_small_struct_delegate3
+mono_test_marshal_small_struct_delegate4
+mono_test_marshal_small_struct_delegate5
+mono_test_marshal_small_struct_delegate6
+mono_test_marshal_small_struct_delegate7
+mono_test_marshal_small_struct_delegate8
+mono_test_marshal_small_struct_delegate9
 mono_test_puts_static
 mono_test_ref_vtype
 mono_test_return_string
@@ -86,6 +111,19 @@ mono_test_return_vtype
 mono_test_split_double_arguments
 mono_test_stdcall_name_mangling
 mono_union_test_1
+NameManglingAnsi
+NameManglingAnsi2A
+NameManglingAnsi2W
+NameManglingAnsiA
+NameManglingAnsiW
+NameManglingAuto
+NameManglingAutoW
+NameManglingUnicode
+NameManglingUnicode2
+NameManglingUnicodeW
+#
+# Some internals
+#
 mini_emit_castclass_iface_class
 mini_emit_castclass_iface
 mini_emit_castclass
@@ -121,7 +159,6 @@ mono_get_inflated_method
 mono_debug_read_method
 mono_domain_get_tls_offset 
 mono_thread_get_tls_offset
-
 #
 # Most init/cleanup routines are internally called, so they do not need to be
 # documented
@@ -159,6 +196,16 @@ mono_icall_cleanup
 mono_icall_init
 mono_monitor_init
 mono_install_init_vtable
-mono_x86_tramp_init">mono_x86_tramp_init
+mono_x86_tramp_init
 mono_install_get_cached_class_info
-
+mono_debugger_init
+#
+# Internal JIT icalls
+#
+mono_lldiv
+mono_lldiv_un
+mono_llmult
+mono_llmult_ovf
+mono_llmult_ovf_un
+mono_llrem
+mono_llrem_un
