@@ -115,3 +115,39 @@
 <h4><a name="api:mono_opcode_name">mono_opcode_name</a></h4>
 <h4><a name="api:mono_opcode_value">mono_opcode_value</a></h4>
 
+<h3>Metadata Loading Errors</h3>
+
+	<p>The routines in this section are used to cope with errors
+	during metadata loading.  Errors in metadata handling can
+	happen for many reason, and these include (this is not an
+	exhaustive list).
+
+	<ul>
+		<li>An assembly referenced is missing.
+		<li>Fields referenced are missing.
+		<li>Methods referenced are missing.
+	</ul>
+
+	<p>The <tt>mono_loader_set_*</tt> routines are invoked during
+	metadata loading to flag that an error has happened.  The
+	class loading errros are flagged in a per-thread basis.
+
+	<P>In various spots in the runtime the
+	<tt>mono_loader_get_last_error</tt> routine is called to check
+	if there was a problem, and then errors are propagated upwards
+	on the stack until we reach a point where an exception can be
+	raised and no runtime locks are held.
+
+	<p>The <tt>mono_loader_error_prepare_exception</tt> takes a
+	<tt>MonoLoaderError</tt> structure (the value returned from
+	<tt>mono_loader_get_last_error</tt>), turns that into an
+	exception and clears the error condition from the current
+	thread. 
+	
+<h4><a name="api:mono_loader_set_error_field_load">mono_loader_set_error_field_load</a></h4>
+<h4><a name="api:mono_loader_set_error_method_load">mono_loader_set_error_method_load</a></h4>
+<h4><a name="api:mono_loader_set_error_type_load">mono_loader_set_error_type_load</a></h4>
+
+<h4><a name="api:mono_loader_get_last_error">mono_loader_get_last_error</a></h4>
+<h4><a name="api:mono_loader_clear_error">mono_loader_clear_error</a></h4>
+<h4><a name="api:mono_loader_error_prepare_exception">mono_loader_error_prepare_exception</a></h4>

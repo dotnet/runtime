@@ -5,7 +5,7 @@ add_h4()
 }
 
 dir=`dirname $0`
-sh $dir/produce-lists
+sh $dir/produce-lists || exit 1
 cat $dir/public-api $dir/wapi > $dir/current-api
 for i in `cat $dir/current-api`; do
 	if grep "api:$i" $dir/sources/mono-api-*.html > /dev/null; then

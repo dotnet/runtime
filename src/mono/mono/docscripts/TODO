@@ -1,3 +1,9 @@
+* Methods that should be static, but I cant commit now because of other patches:
+
+	mono_class_set_failure
+	mono_class_get_nullable_param
+	mono_assembly_loaded_full
+
 * Generate a table of contents at the begining of each page for APIs.
 
 * Fill in with a concept guide

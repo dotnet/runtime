@@ -26,7 +26,6 @@ mono_assembly_getrootdir
 mono_assembly_invoke_load_hook
 mono_assembly_invoke_search_hook
 mono_assembly_load
-mono_assembly_load_corlib
 mono_assembly_loaded
 mono_assembly_loaded_full
 mono_assembly_load_from
@@ -41,7 +40,6 @@ mono_assembly_name_parse
 mono_assembly_name_parse_full
 mono_assembly_names_equal
 mono_assembly_open
-mono_assembly_open_full
 mono_assembly_set_main
 mono_assembly_setrootdir
 mono_install_assembly_load_hook
@@ -117,7 +115,6 @@ mono_class_get_property_token
 mono_class_get_rank
 mono_class_get_type
 mono_class_inflate_generic_method
-mono_class_inflate_generic_method_full
 mono_class_inflate_generic_type
 mono_class_init
 mono_class_instance_size
@@ -136,7 +133,6 @@ mono_class_num_fields
 mono_class_num_methods
 mono_class_num_properties
 mono_class_set_failure
-mono_class_setup_interface_offsets
 mono_class_setup_methods
 mono_class_setup_mono_type
 mono_class_setup_parent
@@ -465,7 +461,6 @@ mono_mempool_invalidate
 mono_mempool_new
 mono_mempool_stats
 mono_aligned_addr_hash
-mono_class_get_overrides_full
 mono_guid_to_string
 mono_metadata_blob_heap
 mono_metadata_compute_size
@@ -602,7 +597,6 @@ mono_array_new_full
 mono_array_new_specific
 mono_async_result_new
 mono_class_get_allocation_ftn
-mono_class_has_special_static_fields
 mono_class_vtable
 mono_compile_method
 mono_delegate_ctor
@@ -727,14 +721,9 @@ mono_profiler_stat_hit
 mono_profiler_thread_end
 mono_profiler_thread_start
 mono_raw_buffer_free
-mono_raw_buffer_get_n_pagefaults
-mono_raw_buffer_handle_pagefault
-mono_raw_buffer_is_pagefault
 mono_raw_buffer_load
-mono_raw_buffer_set_make_unreadable
 mono_raw_buffer_update
 mono_assembly_get_object
-mono_class_bind_generic_parameters
 mono_custom_attrs_construct
 mono_custom_attrs_construct_by_type
 mono_custom_attrs_data_construct
@@ -915,7 +904,6 @@ helper_newobj_mscorlib
 helper_stelem_ref
 helper_stelem_ref_check
 mono_array_new_va
-mono_class_static_field_address
 mono_fconv_ovf_i8
 mono_fconv_ovf_u8
 mono_fconv_u4
@@ -984,7 +972,6 @@ mono_set_defaults
 mono_unlink_bblock
 mono_aot_plt_trampoline
 mono_aot_trampoline
-mono_class_init_trampoline
 mono_delegate_trampoline
 mono_magic_trampoline
 mono_regstate_alloc_float

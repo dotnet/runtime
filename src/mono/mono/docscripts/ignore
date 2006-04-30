@@ -121,6 +121,7 @@ NameManglingAutoW
 NameManglingUnicode
 NameManglingUnicode2
 NameManglingUnicodeW
+reliable_delegate
 #
 # Some internals
 #
@@ -145,6 +146,7 @@ mono_return_ss
 # The following are internal calls that are exposed because of cross 
 # library dependencies but could be private
 #
+mono_assembly_load_corlib
 mono_jit_walk_stack
 mono_init_icall
 mono_eval_cond_branch
@@ -159,6 +161,12 @@ mono_get_inflated_method
 mono_debug_read_method
 mono_domain_get_tls_offset 
 mono_thread_get_tls_offset
+mono_class_init_trampoline
+mono_class_inflate_generic_method_full
+mono_class_setup_interface_offsets
+mono_class_get_overrides_full
+mono_class_has_special_static_fields
+mono_class_bind_generic_parameters
 #
 # Most init/cleanup routines are internally called, so they do not need to be
 # documented
@@ -209,3 +217,17 @@ mono_llmult_ovf
 mono_llmult_ovf_un
 mono_llrem
 mono_llrem_un
+mono_class_static_field_address
+ves_array_element_address
+#
+# I believe these are internal, but I should check with the JIT guys
+#
+mono_assembly_open_full
+#
+# These are internal rawbuffer structures that we use to explore the
+# access to the metadata.
+#
+mono_raw_buffer_get_n_pagefaults
+mono_raw_buffer_handle_pagefault
+mono_raw_buffer_is_pagefault
+mono_raw_buffer_set_make_unreadable

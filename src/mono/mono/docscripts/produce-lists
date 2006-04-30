@@ -26,5 +26,11 @@ ignore_wapi ()
 	grep -v _wapi | fgrep -v -f $dir/wapi
 }
 
+if grep ^$ ignore >/dev/null; then
+    echo The ignore file contains empty lines, which breaks this script, please remove
+    echo the empty lines.
+    exit 1
+fi
+
 nm  $dir/../io-layer/.libs/*.o | clean_nm | grep -v _wapi | ignore_known > $dir/wapi
 nm  $dir/../*/.libs/*.o | clean_nm | ignore_known | ignore_wapi | grep -v ^ves_icall | grep -v ^mono_arch_ > $dir/public-api
