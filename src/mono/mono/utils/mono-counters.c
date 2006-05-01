@@ -14,12 +14,29 @@ struct _MonoCounter {
 static MonoCounter *counters = NULL;
 static int valid_mask = 0;
 
+/**
+ * mono_counters_enable:
+ * @section_mask: a mask listing the sections that will be displayed
+ *
+ * This is used to track which counters will be displayed.
+ */
 void
 mono_counters_enable (int section_mask)
 {
 	valid_mask = section_mask & MONO_COUNTER_SECTION_MASK;
 }
 
+/**
+ * mono_counters_register:
+ * @name: The name for this counters.
+ * @type: One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
+ * @addr: The address to register.
+ *
+ * Register addr as the address of a counter of type type.
+ *
+ * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
+ * the function should return the value and take no arguments.
+ */
 void 
 mono_counters_register (const char* name, int type, void *addr)
 {
@@ -140,6 +157,13 @@ mono_counters_dump_section (int section, FILE *outfile)
 	}
 }
 
+/**
+ * mono_counters_dump:
+ * @section_mask: The sections to dump counters for
+ * @outfile: a FILE to dump the results to
+ *
+ * Displays the counts of all the enabled counters registered. 
+ */
 void
 mono_counters_dump (int section_mask, FILE *outfile)
 {

@@ -7122,7 +7122,7 @@ mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 	return result;
 }
 
-MonoArray*
+static MonoArray*
 mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass)
 {
 	MonoArray *result;
@@ -7149,7 +7149,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	return result;
 }
 
-MonoArray*
+static MonoArray*
 mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
 {
 	MonoArray *result;
