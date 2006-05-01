@@ -353,7 +353,10 @@ mono_config_for_assembly (MonoImage *assembly)
 	g_free (cfg_name);
 }
 
-/*
+/**
+ * mono_config_parse:
+ * @filename: the filename to load the configuration variables from.
+ *
  * Pass a NULL filename to parse the default config files
  * (or the file in the MONO_CONFIG env var).
  */
