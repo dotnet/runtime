@@ -782,7 +782,7 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
  *
  *   Unlink two basic blocks.
  */
-void
+static void
 mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 {
 	int i, pos;

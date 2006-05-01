@@ -825,7 +825,6 @@ void      mono_compile_make_var_load        (MonoCompile *cfg, MonoInst *dest, g
 MonoInst* mono_compile_create_var_load      (MonoCompile *cfg, gssize var_index);
 MonoInst* mono_compile_create_var_store     (MonoCompile *cfg, gssize var_index, MonoInst *value);
 MonoType* mono_type_from_stack_type         (MonoInst *ins);
-void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
 void      mono_print_tree                   (MonoInst *tree);
 void      mono_print_tree_nl                (MonoInst *tree);
