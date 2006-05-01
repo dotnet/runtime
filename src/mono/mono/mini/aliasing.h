@@ -119,8 +119,6 @@ mono_aliasing_initialize_code_traversal (MonoAliasingInformation *info, MonoBasi
 extern MonoLocalVariableList*
 mono_aliasing_get_affected_variables_for_inst_traversing_code (MonoAliasingInformation *info, MonoInst *inst);
 extern MonoLocalVariableList*
-mono_aliasing_get_affected_variables_for_inst_in_bb (MonoAliasingInformation *info, MonoInst *inst, MonoBasicBlock *bb);
-extern MonoLocalVariableList*
 mono_aliasing_get_affected_variables_for_inst (MonoAliasingInformation *info, MonoInst *inst);
 
 extern void
