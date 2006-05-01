@@ -54,7 +54,7 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 }
 
 void
-helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
+mono_helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -68,7 +68,7 @@ helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 }
 
 void
-helper_stelem_ref_check (MonoArray *array, MonoObject *val)
+mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;
 
@@ -652,7 +652,7 @@ mono_lconv_to_r8_un (guint64 a)
 #endif
 
 gpointer
-helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context)
+mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context)
 {
 	MonoMethod *vmethod, *inflated;
 	gpointer addr;
@@ -678,19 +678,19 @@ helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericC
 }
 
 MonoString*
-helper_ldstr (MonoImage *image, guint32 idx)
+mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
 	return mono_ldstr (mono_domain_get (), image, idx);
 }
 
 MonoString*
-helper_ldstr_mscorlib (guint32 idx)
+mono_helper_ldstr_mscorlib (guint32 idx)
 {
 	return mono_ldstr (mono_domain_get (), mono_defaults.corlib, idx);
 }
 
 MonoObject*
-helper_newobj_mscorlib (guint32 idx)
+mono_helper_newobj_mscorlib (guint32 idx)
 {
 	MonoClass *klass = mono_class_get (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx);
 	

@@ -11,9 +11,9 @@ void* mono_ldftn_nosync (MonoMethod *method);
 
 void* mono_ldvirtfn (MonoObject *obj, MonoMethod *method);
 
-void helper_stelem_ref (MonoArray *array, int index, MonoObject *val);
+void mono_helper_stelem_ref (MonoArray *array, int index, MonoObject *val);
 
-void helper_stelem_ref_check (MonoArray *array, MonoObject *val);
+void mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val);
 
 gint64 mono_llmult (gint64 a, gint64 b);
 
@@ -77,12 +77,12 @@ double mono_conv_to_r8_un (guint32 a);
 
 double mono_lconv_to_r8_un (guint64 a);
 
-gpointer helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context);
+gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context);
 
-MonoString *helper_ldstr (MonoImage *image, guint32 idx);
+MonoString *mono_helper_ldstr (MonoImage *image, guint32 idx);
 
-MonoString *helper_ldstr_mscorlib (guint32 idx);
+MonoString *mono_helper_ldstr_mscorlib (guint32 idx);
 
-MonoObject *helper_newobj_mscorlib (guint32 idx);
+MonoObject *mono_helper_newobj_mscorlib (guint32 idx);
 
 #endif /* __MONO_JIT_ICALLS_H__ */

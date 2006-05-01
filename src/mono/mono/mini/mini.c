@@ -10768,8 +10768,8 @@ mini_init (const char *filename)
 	register_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", "ptr ptr ptr ptr", FALSE);
 	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
 	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
-	register_icall (helper_stelem_ref, "helper_stelem_ref", "void ptr int32 object", FALSE);
-	register_icall (helper_stelem_ref_check, "helper_stelem_ref_check", "void object object", FALSE);
+	register_icall (mono_helper_stelem_ref, "helper_stelem_ref", "void ptr int32 object", FALSE);
+	register_icall (mono_helper_stelem_ref_check, "helper_stelem_ref_check", "void object object", FALSE);
 	register_icall (mono_object_new, "mono_object_new", "object ptr ptr", FALSE);
 	register_icall (mono_object_new_specific, "mono_object_new_specific", "object ptr", FALSE);
 	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
@@ -10778,10 +10778,10 @@ mini_init (const char *filename)
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
 	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
-	register_icall (helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
-	register_icall (helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
-	register_icall (helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
-	register_icall (helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
+	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
+	register_icall (mono_helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
+	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
+	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS
