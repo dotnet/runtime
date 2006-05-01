@@ -4,6 +4,11 @@
 	mono_class_get_nullable_param
 	mono_assembly_loaded_full
 
+* Methods that might need to be static, but am not sure:
+	mono_assembly_loaded_full
+	mono_image_loaded_by_guid_full
+	mono_image_loaded_full
+
 * Namespacing
 
 	Do we need to re-namespace the published helper_ routines to avoid

@@ -167,6 +167,54 @@ mono_class_setup_interface_offsets
 mono_class_get_overrides_full
 mono_class_has_special_static_fields
 mono_class_bind_generic_parameters
+mono_config_parse_publisher_policy
+mono_get_trampoline_code
+mono_helper_compile_generic_method
+mono_helper_ldstr
+mono_helper_ldstr_mscorlib
+mono_helper_newobj_mscorlib
+mono_helper_stelem_ref
+mono_helper_stelem_ref_check
+mono_metadata_get_generic_param_row
+mono_metadata_signature_deep_dup
+mono_metadata_get_param_attrs
+mono_metadata_load_generic_param_constraints
+mono_find_jit_opcode_emulation
+mono_marshal_get_ldflda_wrapper
+mono_debug_free_method_jit_info
+mono_reflection_get_dynamic_overrides
+mono_poll
+mono_array_new_va
+mono_dynamic_stream_reset
+mono_domain_get_tls_offset
+mono_domain_add_class_static_data
+mono_handle_native_sigsegv
+mono_set_config_dir
+#
+# Bundles, internal:
+#
+mono_register_config_for_assembly
+#
+# Optimizations methods, exposed because they are used across files
+#
+mono_perform_ssapre
+mono_local_cprop
+mono_local_regalloc
+mono_aliasing_deadce
+mono_aliasing_get_affected_variables_for_inst
+mono_aliasing_get_affected_variables_for_inst_in_bb
+mono_aliasing_get_affected_variables_for_inst_traversing_code
+mono_aliasing_initialize_code_traversal
+mono_branch_optimize_exception_target
+mono_destroy_aliasing_information
+mono_build_aliasing_information
+mono_unlink_bblock
+#
+# JIT code genreation internals
+#
+mono_delegate_trampoline
+mono_magic_trampoline
+mono_call_inst_add_outarg_reg
 #
 # Most init/cleanup routines are internally called, so they do not need to be
 # documented
@@ -217,8 +265,24 @@ mono_llmult_ovf
 mono_llmult_ovf_un
 mono_llrem
 mono_llrem_un
+mono_fconv_ovf_i8
+mono_fconv_ovf_u8
+mono_fconv_u4
+mono_fconv_u8
+mono_ldftn
+mono_ldftn_nosync
+mono_ldtoken_wrapper
+mono_ldvirtfn
 mono_class_static_field_address
 ves_array_element_address
+mono_runtime_set_shutting_down
+mono_set_rootdir
+mono_object_hash
+mono_thread_pool_remove_socket
+mono_thread_free_local_slot_values
+mono_get_jit_tls_key
+mono_get_lmf_tls_offset
+mono_jit_thread_attach
 #
 # I believe these are internal, but I should check with the JIT guys
 #
@@ -231,3 +295,36 @@ mono_raw_buffer_get_n_pagefaults
 mono_raw_buffer_handle_pagefault
 mono_raw_buffer_is_pagefault
 mono_raw_buffer_set_make_unreadable
+#
+# AOT: I believe that the AOT API is completely internal, so am listing it
+# here for now, unless we decide there are pieces that should be documneted
+#
+mono_aot_find_jit_info
+mono_aot_get_method_from_token
+mono_aot_get_n_pagefaults
+mono_aot_handle_pagefault
+mono_aot_is_pagefault
+mono_aot_set_make_unreadable
+mono_aot_find_jit_info
+mono_aot_get_method_from_token
+mono_aot_get_n_pagefaults
+mono_aot_get_plt_entry
+mono_aot_handle_pagefault
+mono_aot_is_pagefault
+mono_aot_plt_resolve
+mono_aot_set_make_unreadable
+mono_aot_plt_trampoline
+mono_aot_trampoline
+mono_aot_get_cached_class_info
+mono_aot_get_method
+mono_aot_is_got_entry
+#
+# These should be static, but require some ugly changes
+#
+alu_reg_to_alu_imm
+alu_reg_to_alu_membase_imm
+#
+# Internal security manager
+#
+mono_secman_inheritancedemand_method
+mono_secman_inheritancedemand_class

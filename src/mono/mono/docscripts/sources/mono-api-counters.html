@@ -1,0 +1,44 @@
+<h2>Counters</h2>
+	
+	<p>Counters is a Mono API for flexible statistics collection
+	and is used to track different events inside the JIT.
+
+        <p>You would typically register an address with the
+        <tt>mono_counters_register</tt> routine and increment the
+        counters from your application as you go.   At the end of the
+        program you would call mono_counters_dump which will display
+        all the registered counters.
+
+	<p>If you need more complicated counter computation, a
+        function can be provided instead of an address.  In that case
+        the <tt>MONO_COUNTER_CALLBACK</tt> flag must be ored in the
+        type request. 
+
+	<p>The types that can be rendered are:
+		
+<pre>
+       MONO_COUNTER_INT
+       MONO_COUNTER_UINT
+       MONO_COUNTER_WORD
+       MONO_COUNTER_LONG
+       MONO_COUNTER_ULONG
+       MONO_COUNTER_DOUBLE
+       MONO_COUNTER_STRING
+</pre>
+	
+	<p>To organize the output, you register also a section where
+	the counter will be displayed, or one of the following values
+	when you register your counter:
+
+<pre>
+
+       MONO_COUNTER_JIT
+       MONO_COUNTER_GC
+       MONO_COUNTER_METADATA
+       MONO_COUNTER_GENERICS
+       MONO_COUNTER_SECURITY
+</pre>
+	
+<h4><a name="api:mono_counters_dump">mono_counters_dump</a></h4>
+<h4><a name="api:mono_counters_enable">mono_counters_enable</a></h4>
+<h4><a name="api:mono_counters_register">mono_counters_register</a></h4>

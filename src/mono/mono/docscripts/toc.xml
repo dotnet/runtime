@@ -81,8 +81,8 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="Internal Calls"/>
-	    <param name="Local" value="deploy/mono-api-icall.html"/>
+	    <param name="Name" value="Embedding Mono"/>
+	    <param name="Local" value="deploy/mono-api-embedding.html"/>
 	  </object>
 	</li>
 	<li>
@@ -161,6 +161,12 @@
 	  <object type="text/sitemap">
 	    <param name="Name" value="Tracing"/>
 	    <param name="Local" value="deploy/mono-api-trace.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
+	    <param name="Name" value="JIT Counters"/>
+	    <param name="Local" value="deploy/mono-api-counters.html"/>
 	  </object>
 	</li>
 	<li>

@@ -13,11 +13,15 @@
 <h4><a name="api:mono_object_isinst">mono_object_isinst</a></h4>
 <h4><a name="api:mono_object_register_finalizer">mono_object_register_finalizer</a></h4>
 <h4><a name="api:mono_object_unbox">mono_object_unbox</a></h4>
-<h4><a name="api:mono_value_box">mono_value_box</a></h4>
 <h4><a name="api:mono_object_castclass_mbyref">mono_object_castclass_mbyref</a></h4>
 <h4><a name="api:mono_object_is_alive">mono_object_is_alive</a></h4> 
-<h4><a name="api:mono_object_get_size">mono_object_get_size</a></h4> 
+<h4><a name="api:mono_object_get_size">mono_object_get_size</a></h4>
 
+<h3>Value Types</h3>
+
+<h4><a name="api:mono_value_box">mono_value_box</a></h4>
+<h4><a name="api:mono_value_copy">mono_value_copy</a></h4>
+<h4><a name="api:mono_value_copy_array">mono_value_copy_array</a></h4>
 
 <h3>Array Methods</h3>
 
@@ -31,6 +35,7 @@
 <h4><a name="api:mono_array_new_specific">mono_array_new_specific</a></h4>
 <h4><a name="api:mono_array_to_lparray">mono_array_to_lparray</a></h4>
 <h4><a name="api:mono_array_to_savearray">mono_array_to_savearray</a></h4>
+<h4><a name="api:mono_dup_array_type">mono_dup_array_type</a></h4>
 
 <h3>Fields</h3>
 
@@ -76,3 +81,10 @@
 <h4><a name="api:mono_store_remote_field">mono_store_remote_field</a></h4>
 <h4><a name="api:mono_store_remote_field_new">mono_store_remote_field_new</a></h4>
 
+<h3>Nullable Objects</h3>
+
+	<p>These methods are used to manipulate objects of type
+	System.Nullable&lt;T&gt;
+	
+<h4><a name="api:mono_nullable_box">mono_nullable_box</a></h4>
+<h4><a name="api:mono_nullable_init">mono_nullable_init</a></h4>
