@@ -7478,7 +7478,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 }	
 #endif
 
-gpointer
+static gpointer
 mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
 {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
