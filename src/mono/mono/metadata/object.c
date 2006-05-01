@@ -1734,10 +1734,17 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 
 /*
  * mono_nullable_init:
+ * @buf: The nullable structure to initialize.
+ * @value: the value to initialize from
+ * @klass: the type for the object
  *
- *   Initialize the nullable structure pointed to by @buf from @value which
- * should be a boxed value type. Since Nullables have variable structure, we 
- * can't define a C structure for them.
+ * Initialize the nullable structure pointed to by @buf from @value which
+ * should be a boxed value type.   The size of @buf should be able to hold
+ * as much data as the @klass->instance_size (which is the number of bytes
+ * that will be copies).
+ *
+ * Since Nullables have variable structure, we can not define a C
+ * structure for them.
  */
 void
 mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
@@ -1756,8 +1763,10 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 
 /**
  * mono_nullable_box:
+ * @buf: The buffer representing the data to be boxed
+ * @klass: the type to box it as.
  *
- *   Creates a boxed vtype or NULL from the Nullable structure pointed to by
+ * Creates a boxed vtype or NULL from the Nullable structure pointed to by
  * @buf.
  */
 MonoObject*
