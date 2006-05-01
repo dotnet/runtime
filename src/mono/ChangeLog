@@ -1,3 +1,8 @@
+2006-05-01  Chris Toshok  <toshok@ximian.com>
+
+	* data/net_2_0/machine.config: add connectionStringName's
+	parameters to the role/membership providers.
+
 2006-04-30  Raja R Harinath  <harinath@gmail.com>
 
 	* Makefile.am (mcs-do-clean, mcs-do-compiler-tests): Clean
