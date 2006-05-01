@@ -928,7 +928,6 @@ guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
-gpointer  mono_create_delegate_trampoline       (MonoMethod *method, gpointer addr);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
