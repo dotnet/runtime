@@ -72,7 +72,6 @@ MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assem
 
 MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
-MonoArray*  mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass);
 MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, guint32 idx);
 MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
 MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
