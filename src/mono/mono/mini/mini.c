@@ -2629,7 +2629,7 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 		/* This happens often in argument checking code, eg. throw new FooException... */
 		/* Avoid relocations by calling a helper function specialized to mscorlib */
 		NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (klass->type_token));
-		return mono_emit_jit_icall (cfg, bblock, helper_newobj_mscorlib, iargs, ip);
+		return mono_emit_jit_icall (cfg, bblock, mono_helper_newobj_mscorlib, iargs, ip);
 	} else {
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 		gboolean pass_lw;
@@ -4303,7 +4303,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
 				NEW_PCONST (cfg, iargs [1], cmethod);
 				NEW_PCONST (cfg, iargs [2], ((MonoMethodInflated *) cmethod)->context);
-				temp = mono_emit_jit_icall (cfg, bblock, helper_compile_generic_method, iargs, ip);
+				temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method, iargs, ip);
 
 				NEW_TEMPLOAD (cfg, addr, temp);
 				NEW_TEMPLOAD (cfg, sp [0], this_temp->inst_c0);
@@ -4479,7 +4479,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						 * the same MonoInst is added to two different trees and this is not 
 						 * allowed by burg.
 						 */
-						mono_emit_jit_icall (cfg, bblock, helper_stelem_ref_check, iargs, ip);
+						mono_emit_jit_icall (cfg, bblock, mono_helper_stelem_ref_check, iargs, ip);
 
 						NEW_TEMPLOAD (cfg, sp [0], array->inst_c0);
 						NEW_TEMPLOAD (cfg, sp [fsig->param_count], to_store->inst_c0);
@@ -5064,12 +5064,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							 * specialized to mscorlib.
 							 */
 							NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (n));
-							temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr_mscorlib, iargs, ip);
+							temp = mono_emit_jit_icall (cfg, bblock, mono_helper_ldstr_mscorlib, iargs, ip);
 						} else {
 							/* Avoid creating the string object */
 							NEW_IMAGECONST (cfg, iargs [0], image);
 							NEW_ICONST (cfg, iargs [1], mono_metadata_token_index (n));
-							temp = mono_emit_jit_icall (cfg, bblock, helper_ldstr, iargs, ip);
+							temp = mono_emit_jit_icall (cfg, bblock, mono_helper_ldstr, iargs, ip);
 						}
 						NEW_TEMPLOAD (cfg, *sp, temp);
 					} 
