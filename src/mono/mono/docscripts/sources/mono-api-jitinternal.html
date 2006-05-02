@@ -1,0 +1,38 @@
+<h1>Notification Interface</h1>
+
+	<p>Am not sure that we want to document this;  This seems like
+	an internal interface that third parties would not likely
+	use, and if they do, they probably are reading the JIT's
+	source code. 
+
+	<p>These methods must be called to notify the profiler of an
+	event that must be recorded.   Mono's JIT engine currently
+	calls these routines, but if you are extending Mono in some
+	way these are the methods that you might invoke to notify the
+	profiler of an event.
+
+<h4><a name="api:mono_profiler_load">mono_profiler_load</a></h4>
+<h4><a name="api:mono_profiler_allocation">mono_profiler_allocation</a></h4>
+<h4><a name="api:mono_profiler_stat_hit">mono_profiler_stat_hit</a></h4> 
+<h4><a name="api:mono_profiler_thread_start">mono_profiler_thread_start</a></h4>
+<h4><a name="api:mono_profiler_thread_end">mono_profiler_thread_end</a></h4>
+<h4><a name="api:mono_profiler_appdomain_event">mono_profiler_appdomain_event</a></h4>
+<h4><a name="api:mono_profiler_appdomain_loaded">mono_profiler_appdomain_loaded</a></h4>
+<h4><a name="api:mono_profiler_assembly_event">mono_profiler_assembly_event</a></h4>
+<h4><a name="api:mono_profiler_assembly_loaded">mono_profiler_assembly_loaded</a></h4>
+<h4><a name="api:mono_profiler_class_event">mono_profiler_class_event</a></h4>
+<h4><a name="api:mono_profiler_class_loaded">mono_profiler_class_loaded</a></h4>
+<h4><a name="api:mono_profiler_code_transition">mono_profiler_code_transition</a></h4>
+<h4><a name="api:mono_profiler_method_end_jit">mono_profiler_method_end_jit</a></h4>
+<h4><a name="api:mono_profiler_method_enter">mono_profiler_method_enter</a></h4>
+<h4><a name="api:mono_profiler_method_jit">mono_profiler_method_jit</a></h4>
+<h4><a name="api:mono_profiler_method_leave">mono_profiler_method_leave</a></h4>
+<h4><a name="api:mono_profiler_module_event">mono_profiler_module_event</a></h4>
+<h4><a name="api:mono_profiler_module_loaded">mono_profiler_module_loaded</a></h4>
+<h4><a name="api:mono_profiler_shutdown">mono_profiler_shutdown</a></h4>
+<h4><a name="api:mono_profiler_startup">mono_profiler_startup</a></h4>
+<h4><a name="api:mono_profiler_gc_event">mono_profiler_gc_event</a></h4> 
+<h4><a name="api:mono_profiler_gc_heap_resize">mono_profiler_gc_heap_resize</a></h4> 
+<h4><a name="api:mono_profiler_gc_event">mono_profiler_gc_event</a></h4> 
+<h4><a name="api:mono_profiler_gc_heap_resize">mono_profiler_gc_heap_resize</a></h4>
+<h4><a name="api:mono_profiler_stat_hit">mono_profiler_stat_hit</a></h4> 

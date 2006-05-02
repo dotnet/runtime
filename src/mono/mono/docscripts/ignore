@@ -190,6 +190,8 @@ mono_domain_get_tls_offset
 mono_domain_add_class_static_data
 mono_handle_native_sigsegv
 mono_set_config_dir
+mono_profiler_coverage_alloc
+mono_profiler_coverage_free
 #
 # Bundles, internal:
 #
