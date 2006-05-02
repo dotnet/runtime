@@ -71,6 +71,17 @@ static CRITICAL_SECTION profiler_coverage_mutex;
 /* this is directly accessible to other mono libs. */
 MonoProfileFlags mono_profiler_events;
 
+/**
+ * mono_profiler_install:
+ * @prof: a MonoProfiler structure pointer, or a pointer to a derived structure.
+ * @callback: the function to invoke at shutdown
+ *
+ * Use mono_profiler_install to activate profiling in the Mono runtime.
+ * Typically developers of new profilers will create a new structure whose
+ * first field is a MonoProfiler and put any extra information that they need
+ * to access from the various profiling callbacks there.
+ *
+ */
 void
 mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
 {
@@ -81,18 +92,46 @@ mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
 	InitializeCriticalSection (&profiler_coverage_mutex);
 }
 
+/**
+ * mono_profiler_set_events:
+ * @events: an ORed set of values made up of MONO_PROFILER_ flags
+ *
+ * The events descriped in the @events argument is a set of flags
+ * that represent which profiling events must be triggered.  For
+ * example if you have registered a set of methods for tracking
+ * JIT compilation start and end with mono_profiler_install_jit_compile,
+ * you will want to pass the MONO_PROFILE_JIT_COMPILATION flag to
+ * this routine.
+ *
+ * You can call mono_profile_set_events more than once and you can
+ * do this at runtime to modify which methods are invoked.
+ */
 void
 mono_profiler_set_events (MonoProfileFlags events)
 {
 	mono_profiler_events = events;
 }
 
+/**
+ * mono_profiler_get_events:
+ *
+ * Returns a list of active events that will be intercepted. 
+ */
 MonoProfileFlags
 mono_profiler_get_events (void)
 {
 	return mono_profiler_events;
 }
 
+/**
+ * mono_profiler_install_enter_leave:
+ * @enter: the routine to be called on each method entry
+ * @fleave: the routine to be called each time a method returns
+ *
+ * Use this routine to install routines that will be called everytime
+ * a method enters and leaves.   The routines will receive as an argument
+ * the MonoMethod representing the method that is entering or leaving.
+ */
 void
 mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave)
 {
@@ -100,6 +139,14 @@ mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMetho
 	method_leave = fleave;
 }
 
+/**
+ * mono_profiler_install_jit_compile:
+ * @start: the routine to be called when the JIT process starts.
+ * @end: the routine to be called when the JIT process ends.
+ *
+ * Use this routine to install routines that will be called when JIT 
+ * compilation of a method starts and completes.
+ */
 void 
 mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end)
 {
@@ -450,6 +497,18 @@ mono_profiler_coverage_free (MonoMethod *method)
 	mono_profiler_coverage_unlock ();
 }
 
+/**
+ * mono_profiler_coverage_get:
+ * @prof: The profiler handle, installed with mono_profiler_install
+ * @method: the method to gather information from.
+ * @func: A routine that will be called back with the results
+ *
+ * If the MONO_PROFILER_INS_COVERAGE flag was active during JIT compilation
+ * it is posisble to obtain coverage information about a give method.
+ *
+ * The function @func will be invoked repeatedly with instances of the
+ * MonoProfileCoverageEntry structure.
+ */
 void 
 mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func)
 {
@@ -1357,6 +1416,16 @@ mono_profiler_install_simple (const char *desc)
 typedef void (*ProfilerInitializer) (const char*);
 #define INITIALIZER_NAME "mono_profiler_startup"
 
+/**
+ * mono_profiler_load:
+ * @desc: arguments to configure the profiler
+ *
+ * Invoke this method to initialize the profiler.   This will drive the
+ * loading of the internal ("default") or any external profilers.
+ *
+ * This routine is invoked by Mono's driver, but must be called manually
+ * if you embed Mono into your application.
+ */
 void 
 mono_profiler_load (const char *desc)
 {
