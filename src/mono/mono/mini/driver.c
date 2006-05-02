@@ -6,7 +6,7 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *
  * (C) 2002-2003 Ximian, Inc.
- * (C) 2003-2004 Novell, Inc.
+ * (C) 2003-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -506,7 +506,12 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	}
 
 	method = mono_get_method (image, entry, NULL);
-
+	if (method == NULL){
+		g_print ("The entry point method could not be loaded\n");
+		mono_environment_exitcode_set (1);
+		return 1;
+	}
+	
 	return mono_runtime_run_main (method, argc, argv, NULL);
 }
 
@@ -691,7 +696,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
-			g_print ("Mono JIT compiler version %s, (C) 2002-2005 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
+			g_print ("Mono JIT compiler version %s, (C) 2002-2006 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
 			g_print (info);
 			if (mini_verbose) {
 				const char *cerror;
