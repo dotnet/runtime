@@ -1,7 +1,7 @@
 all: monoapi.tree
 
 monoapi.tree: toc.xml 
-	monodoc --assemble --out monoapi --hb toc.xml
+	mdassembler --out monoapi --hb toc.xml
 
 extract: convert.exe
 	perl exdoc -h . ../*/*.c
