@@ -1,3 +1,12 @@
+/*
+ * profiler.c: Profiler interface for Mono
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * (C) 2001-2003 Ximian, Inc.
+ * (C) 2003-2006 Novell, Inc.
+ */
 
 #include "config.h"
 #include "mono/metadata/profiler-private.h"
