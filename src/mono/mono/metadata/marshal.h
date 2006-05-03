@@ -330,6 +330,9 @@ int
 ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name);
 
 gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString *string);
+
+gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string);
 
 gpointer
@@ -349,6 +352,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size);
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (void *ptr);
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
