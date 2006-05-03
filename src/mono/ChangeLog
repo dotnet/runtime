@@ -1,3 +1,7 @@
+2006-05-02  Jonathan Chambers  <jonathan.chambers@ansys.com>
+
+        * configure.in: Add oleaut32 on Win32 builds for BSTR support
+
 2006-05-01  Chris Toshok  <toshok@ximian.com>
 
 	* data/net_2_0/machine.config: add connectionStringName's
