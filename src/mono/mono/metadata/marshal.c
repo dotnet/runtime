@@ -638,7 +638,6 @@ mono_free_bstr (gpointer bstr)
 	SysFreeString ((BSTR)bstr);
 #else
 	g_error ("Free BSTR is not implemented.");
-	return NULL;
 #endif
 }
 
