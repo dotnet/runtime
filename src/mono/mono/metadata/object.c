@@ -1101,6 +1101,22 @@ create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
 }
 
 /**
+ * copy_remote_class_key:
+ *
+ *   Make a copy of KEY in the mempool MP and return the copy.
+ */
+static gpointer*
+copy_remote_class_key (MonoMemPool *mp, gpointer *key)
+{
+	int key_size = (GPOINTER_TO_UINT (key [0]) + 1) * sizeof (gpointer);
+	gpointer *mp_key = mono_mempool_alloc (mp, key_size);
+
+	memcpy (mp_key, key, key_size);
+
+	return mp_key;
+}
+
+/**
  * mono_remote_class:
  * @domain: the application domain
  * @class_name: name of the remote class
@@ -1112,7 +1128,7 @@ MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class)
 {
 	MonoRemoteClass *rc;
-	gpointer* key;
+	gpointer* key, *mp_key;
 	
 	key = create_remote_class_key (NULL, proxy_class);
 	
@@ -1124,6 +1140,10 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 		mono_domain_unlock (domain);
 		return rc;
 	}
+
+	mp_key = copy_remote_class_key (domain->mp, key);
+	g_free (key);
+	key = mp_key;
 
 	if (proxy_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		rc = mono_mempool_alloc (domain->mp, sizeof(MonoRemoteClass) + sizeof(MonoClass*));
@@ -1138,7 +1158,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	
 	rc->default_vtable = NULL;
 	rc->xdomain_vtable = NULL;
-	rc->proxy_class_name = mono_string_to_utf8 (class_name);
+	rc->proxy_class_name = mono_string_to_utf8_mp (domain->mp, class_name);
 
 	g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
 
@@ -1154,7 +1174,7 @@ static MonoRemoteClass*
 clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass *extra_class)
 {
 	MonoRemoteClass *rc;
-	gpointer* key;
+	gpointer* key, *mp_key;
 	
 	key = create_remote_class_key (remote_class, extra_class);
 	rc = g_hash_table_lookup (domain->proxy_vtable_hash, key);
@@ -1162,6 +1182,10 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 		g_free (key);
 		return rc;
 	}
+
+	mp_key = copy_remote_class_key (domain->mp, key);
+	g_free (key);
+	key = mp_key;
 
 	if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		int i,j;
@@ -3366,6 +3390,31 @@ mono_string_from_utf16 (gunichar2 *data)
 	while (data [len]) len++;
 
 	return mono_string_new_utf16 (domain, data, len);
+}
+
+/**
+ * mono_string_to_utf8_mp:
+ * @s: a System.String
+ *
+ * Same as mono_string_to_utf8, but allocate the string from a mempool.
+ */
+char *
+mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s)
+{
+	char *r = mono_string_to_utf8 (s);
+	char *mp_s;
+	int len;
+
+	if (!r)
+		return NULL;
+
+	len = strlen (r) + 1;
+	mp_s = mono_mempool_alloc (mp, len);
+	memcpy (mp_s, r, len);
+
+	g_free (r);
+
+	return mp_s;
 }
 
 static void

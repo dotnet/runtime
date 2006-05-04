@@ -2185,7 +2185,7 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 			int i;
 			mh->num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
 			/* we could just store a pointer if we don't need to byteswap */
-			mh->clauses = g_new0 (MonoExceptionClause, mh->num_clauses);
+			mh->clauses = mono_mempool_alloc0 (m->mempool, sizeof (MonoExceptionClause) * mh->num_clauses);
 			for (i = 0; i < mh->num_clauses; ++i) {
 				MonoExceptionClause *ec = &mh->clauses [i];
 				guint32 tof_value;

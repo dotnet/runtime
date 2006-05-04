@@ -2213,8 +2213,11 @@ mono_assembly_close (MonoAssembly *assembly)
 	}
 	g_slist_free (assembly->friend_assembly_names);
 	g_free (assembly->basedir);
-	if (!assembly->dynamic)
+	if (assembly->dynamic) {
+		g_free (assembly->aname.culture);
+	} else {
 		g_free (assembly);
+	}
 }
 
 MonoImage*

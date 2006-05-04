@@ -4314,7 +4314,6 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.md_version_major = 1;
 	image->image.md_version_minor = 1;
 	image->image.dynamic = TRUE;
-	image->image.ref_count = 1;
 
 	image->image.references = g_new0 (MonoAssembly*, 1);
 	image->image.references [0] = NULL;
@@ -8023,14 +8022,14 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		mono_loader_unlock ();
 		return;
 	}
-	
-	klass = g_new0 (MonoClass, 1);
+
+	klass = mono_mempool_alloc0 (tb->module->dynamic_image->image.mempool, sizeof (MonoClass));
 
 	klass->image = &tb->module->dynamic_image->image;
 
 	klass->inited = 1; /* we lie to the runtime */
-	klass->name = mono_string_to_utf8 (tb->name);
-	klass->name_space = mono_string_to_utf8 (tb->nspace);
+	klass->name = mono_string_to_utf8_mp (klass->image->mempool, tb->name);
+	klass->name_space = mono_string_to_utf8_mp (klass->image->mempool, tb->nspace);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
 	klass->flags = tb->attrs;
 
@@ -9118,7 +9117,7 @@ ensure_runtime_vtable (MonoClass *klass)
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	num += tb->num_methods;
 	klass->method.count = num;
-	klass->methods = g_new (MonoMethod*, num);
+	klass->methods = mono_mempool_alloc (klass->image->mempool, sizeof (MonoMethod*) * num);
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	for (i = 0; i < num; ++i)
 		klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
@@ -9129,7 +9128,7 @@ ensure_runtime_vtable (MonoClass *klass)
 
 	if (tb->interfaces) {
 		klass->interface_count = mono_array_length (tb->interfaces);
-		klass->interfaces = g_new (MonoClass*, klass->interface_count);
+		klass->interfaces = mono_mempool_alloc (klass->image->mempool, sizeof (MonoClass*) * klass->interface_count);
 		for (i = 0; i < klass->interface_count; ++i) {
 			MonoReflectionType *iface = mono_array_get (tb->interfaces, gpointer, i);
 			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
