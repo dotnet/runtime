@@ -47,6 +47,7 @@ enum {
 
 struct _MonoMethodBuilder {
 	MonoMethod *method;
+	char *name;
 	GList *locals_list;
 	int locals;
 	guint32 code_size, pos;
@@ -149,6 +150,19 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 }
 
 static MonoMethodSignature*
+signature_dup_mp (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res;
+	int sigsize;
+
+	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	res = mono_mempool_alloc (mp, sigsize);
+	memcpy (res, sig, sigsize);
+
+	return res;
+}
+
+static MonoMethodSignature*
 signature_no_pinvoke (MonoMethodSignature* sig)
 {
 	if (sig->pinvoke) {
@@ -215,6 +229,13 @@ mono_marshal_init (void)
 	}
 }
 
+void
+mono_marshal_cleanup (void)
+{
+	g_hash_table_destroy (wrapper_hash);
+	TlsFree (last_error_tls_id);
+	DeleteCriticalSection (&marshal_mutex);
+}
 
 MonoClass *byte_array_class;
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
@@ -687,6 +708,9 @@ void
 mono_mb_free (MonoMethodBuilder *mb)
 {
 	g_list_free (mb->locals_list);
+	g_free (mb->method);
+	g_free (mb->name);
+	g_free (mb->code);
 	g_free (mb);
 }
 
@@ -704,10 +728,10 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 	mb->method = m = (MonoMethod *)g_new0 (MonoMethodWrapper, 1);
 
 	m->klass = klass;
-	m->name = g_strdup (name);
 	m->inline_info = 1;
 	m->wrapper_type = type;
 
+	mb->name = g_strdup (name);
 	mb->code_size = 40;
 	mb->code = g_malloc (mb->code_size);
 	
@@ -728,18 +752,37 @@ mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
 	return res;
 }
 
+/**
+ * mono_mb_create_method:
+ *
+ * Create a MonoMethod from this method builder.
+ * Returns: the newly created method.
+ *
+ * LOCKING: Assumes the loader lock is held.
+ */
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
 {
 	MonoMethodHeader *header;
 	MonoMethodWrapper *mw;
+	MonoMemPool *mp;
+	MonoMethod *method;
 	GList *l;
 	int i;
 
 	g_assert (mb != NULL);
 
-	((MonoMethodNormal *)mb->method)->header = header = (MonoMethodHeader *) 
-		g_malloc0 (sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
+	mp = mb->method->klass->image->mempool;
+
+	/* Realloc the method info into a mempool */
+
+	method = mono_mempool_alloc (mp, sizeof (MonoMethodWrapper));
+	memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+
+	method->name = mono_mempool_strdup (mp, mb->name);
+
+	((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
+		mono_mempool_alloc0 (mp, sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
 
 	if (max_stack < 8)
 		max_stack = 8;
@@ -750,8 +793,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		header->locals [i] = (MonoType *)l->data;
 	}
 
-	mb->method->signature = signature;
-	header->code = mb->code;
+	method->signature = signature;
+	header->code = mono_mempool_alloc (mp, mb->pos);
+	memcpy ((char*)header->code, mb->code, mb->pos);
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 
@@ -761,7 +805,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		GList *tmp;
 		void **data;
 		l = g_list_reverse (mw->method_data);
-		data = mw->method_data = g_new (gpointer, i + 1);
+		data = mono_mempool_alloc (mp, sizeof (gpointer) * (i + 1));
 		/* store the size in the first element */
 		data [0] = GUINT_TO_POINTER (i);
 		i = 1;
@@ -769,6 +813,8 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 			data [i++] = tmp->data;
 		}
 		g_list_free (l);
+
+		((MonoMethodWrapper*)method)->method_data = data;
 	}
 	/*{
 		static int total_code = 0;
@@ -779,11 +825,11 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	}*/
 
 #ifdef DEBUG_RUNTIME_CODE
-	printf ("RUNTIME CODE FOR %s\n", mono_method_full_name (mb->method, TRUE));
-	printf ("%s\n", mono_disasm_code (&marshal_dh, mb->method, mb->code, mb->code + mb->pos));
+	printf ("RUNTIME CODE FOR %s\n", mono_method_full_name (method, TRUE));
+	printf ("%s\n", mono_disasm_code (&marshal_dh, method, mb->code, mb->code + mb->pos));
 #endif
 
-	return mb->method;
+	return method;
 }
 
 guint32
@@ -1780,7 +1826,7 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoin
 static void
 emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
-	if (strstr (mb->method->name, "mono_thread_interruption_checkpoint"))
+	if (strstr (mb->name, "mono_thread_interruption_checkpoint"))
 		return;
 	
 	emit_thread_interrupt_checkpoint_call (mb, mono_thread_interruption_checkpoint);
@@ -2083,6 +2129,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 {
 	MonoMethod *res;
 
+	mono_loader_lock ();
 	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, key);
 	if (!res) {
@@ -2092,6 +2139,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		g_hash_table_insert (wrapper_hash, res, key);
 	}
 	mono_marshal_unlock ();
+	mono_loader_unlock ();
 
 	return res;
 }		
@@ -2128,6 +2176,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	MonoRemotingMethods *wrps;
 	GHashTable *cache = key->klass->image->remoting_invoke_cache;
 
+	mono_loader_lock ();
 	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (cache, key);
 	if (!wrps) {
@@ -2150,6 +2199,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	}
 
 	mono_marshal_unlock ();
+	mono_loader_unlock ();
 
 	return *res;
 }		
@@ -3730,7 +3780,9 @@ handle_enum:
 	pos = mb->pos;
 	mono_mb_emit_i4 (mb, 0);
 
-	clause = g_new0 (MonoExceptionClause, 1);
+	mono_loader_lock ();
+	clause = mono_mempool_alloc0 (target_klass->image->mempool, sizeof (MonoExceptionClause));
+	mono_loader_unlock ();
 	clause->flags = MONO_EXCEPTION_CLAUSE_FILTER;
 	clause->try_len = mb->pos;
 
@@ -3781,6 +3833,7 @@ handle_enum:
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* taken from mono_mb_create_and_cache */
+	mono_loader_lock ();
 	mono_marshal_lock ();
 
 	res = g_hash_table_lookup (cache, callsig);
@@ -3792,6 +3845,7 @@ handle_enum:
 	}
 
 	mono_marshal_unlock ();
+	mono_loader_unlock ();
 	/* end mono_mb_create_and_cache */
 
 	mono_mb_free (mb);
@@ -4329,7 +4383,9 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	csig = mono_metadata_signature_dup (sig);
+	mono_loader_lock ();
+	csig = signature_dup_mp (mono_defaults.corlib->mempool, sig);
+	mono_loader_unlock ();
 	csig->pinvoke = 0;
 	if (csig->call_convention == MONO_CALL_VARARG)
 		csig->call_convention = 0;
@@ -6513,8 +6569,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	
 	if (!piinfo->addr) {
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
-		csig = mono_metadata_signature_dup (sig);
+		mono_loader_lock ();
+		csig = signature_dup_mp (method->klass->image->mempool, sig);
 		csig->pinvoke = 0;
+		mono_loader_unlock ();
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
@@ -6542,8 +6600,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 
-		csig = mono_metadata_signature_dup (csig);
+		mono_loader_lock ();
+		csig = signature_dup_mp (method->klass->image->mempool, csig);
 		csig->pinvoke = 0;
+		mono_loader_unlock ();
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
@@ -6557,8 +6617,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, piinfo->addr);
 
-	csig = mono_metadata_signature_dup (sig);
+	mono_loader_lock ();
+	csig = signature_dup_mp (method->klass->image->mempool, sig);
 	csig->pinvoke = 0;
+	mono_loader_unlock ();
 	res = mono_mb_create_and_cache (cache, method,
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
@@ -6602,8 +6664,10 @@ mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig,
 
 	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, func);
 
-	csig = mono_metadata_signature_dup (sig);
+	mono_loader_lock ();
+	csig = signature_dup_mp (mb->method->klass->image->mempool, sig);
 	csig->pinvoke = 0;
+	mono_loader_unlock ();
 	res = mono_mb_create_and_cache (cache, func,
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
@@ -7289,7 +7353,10 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	mono_loader_lock ();
+	sig = signature_dup_mp (method->klass->image->mempool, mono_method_signature (method));
+	sig->pinvoke = 0;
+	mono_loader_unlock ();
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
 
@@ -7300,7 +7367,9 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	/* this */
 	this_local = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
-	clause = g_new0 (MonoExceptionClause, 1);
+	mono_loader_lock ();
+	clause = mono_mempool_alloc0 (method->klass->image->mempool, sizeof (MonoExceptionClause));
+	mono_loader_unlock ();
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 
 	if (!enter_method) {
