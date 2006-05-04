@@ -353,7 +353,7 @@ print_code_with_aliasing_information (MonoAliasingInformation *info) {
 #define ADD_ARGUMGENT(info,inst,alias) do {\
 		if ((info)->number_of_arguments == (info)->arguments_capacity) {\
 			MonoInst **new_arguments = mono_mempool_alloc ((info)->mempool, sizeof (MonoInst*) * ((info)->arguments_capacity * 2));\
-			MonoAliasValue *new_arguments_aliases = mono_mempool_alloc ((info)->mempool, sizeof (MonoInst*) * ((info)->arguments_capacity * 2));\
+			MonoAliasValue *new_arguments_aliases = mono_mempool_alloc ((info)->mempool, sizeof (MonoAliasValue) * ((info)->arguments_capacity * 2));\
 			memcpy (new_arguments, (info)->arguments, sizeof (MonoInst*) * ((info)->arguments_capacity));\
 			memcpy (new_arguments_aliases, (info)->arguments_aliases, sizeof (MonoAliasValue) * ((info)->arguments_capacity));\
 			(info)->arguments = new_arguments;\
