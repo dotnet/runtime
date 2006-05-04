@@ -696,6 +696,9 @@ void
 mono_loader_init           (void) MONO_INTERNAL;
 
 void
+mono_loader_cleanup        (void) MONO_INTERNAL;
+
+void
 mono_loader_lock           (void) MONO_INTERNAL;
 
 void

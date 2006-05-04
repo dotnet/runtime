@@ -219,3 +219,27 @@ mono_mempool_contains_addr (MonoMemPool *pool,
 
 	return FALSE;
 }
+
+/**
+ * mono_mempool_strdup:
+ *
+ * Same as strdup, but allocates memory from the mempool.
+ * Returns: a pointer to the newly allocated string data inside the mempool.
+ */
+char*
+mono_mempool_strdup (MonoMemPool *pool,
+					 const char *s)
+{
+	int l;
+	char *res;
+
+	if (s == NULL)
+		return NULL;
+
+	l = strlen (s);
+	res = mono_mempool_alloc (pool, l + 1);
+	memcpy (res, s, l + 1);
+
+	return res;
+}
+

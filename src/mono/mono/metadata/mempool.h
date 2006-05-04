@@ -32,6 +32,10 @@ gboolean
 mono_mempool_contains_addr (MonoMemPool *pool,
 			    gpointer addr);
 
+char*
+mono_mempool_strdup        (MonoMemPool *pool,
+							const char *s);
+
 G_END_DECLS
 
 #endif
