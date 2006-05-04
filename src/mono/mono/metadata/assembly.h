@@ -8,6 +8,7 @@
 G_BEGIN_DECLS
 
 void          mono_assemblies_init     (void);
+void          mono_assemblies_cleanup  (void);
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
 MonoAssembly *mono_assembly_open_full (const char *filename,

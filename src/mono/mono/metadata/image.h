@@ -34,6 +34,7 @@ typedef enum {
 } MonoImageOpenStatus;
 
 void          mono_images_init    (void);
+void          mono_images_cleanup (void);
 
 MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);

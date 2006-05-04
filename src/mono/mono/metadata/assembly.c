@@ -632,6 +632,20 @@ mono_assemblies_init (void)
 	assemblies_refonly_loading = g_hash_table_new (NULL, NULL);
 }
 
+/**
+ * mono_assemblies_cleanup:
+ *
+ *  Free all resources used by this module.
+ */
+void
+mono_assemblies_cleanup (void)
+{
+	DeleteCriticalSection (&assemblies_mutex);
+
+	g_hash_table_destroy (assemblies_loading);
+	g_hash_table_destroy (assemblies_refonly_loading);
+}
+
 gboolean
 mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 {

@@ -4960,6 +4960,37 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 }
 
 /**
+ * mono_classes_init:
+ *
+ * Initialize the resources used by this module.
+ */
+void
+mono_classes_init (void)
+{
+}
+
+/**
+ * mono_classes_cleanup:
+ *
+ * Free the resources used by this module.
+ */
+void
+mono_classes_cleanup (void)
+{
+	IOffsetInfo *cached_info, *next;
+
+	if (global_interface_bitset)
+		mono_bitset_free (global_interface_bitset);
+
+	for (cached_info = cached_offset_info; cached_info;) {
+		next = cached_info->next;
+
+		g_free (cached_info);
+		cached_info = next;
+	}
+}
+
+/**
  * mono_class_get_exception_for_failure:
  * @klass: class in which the failure was detected
  *

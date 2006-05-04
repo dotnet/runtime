@@ -1327,6 +1327,20 @@ mono_metadata_init (void)
 }
 
 /**
+ * mono_metadata_cleanup:
+ *
+ * Free all resources used by this module.
+ * This is a Mono runtime internal function.
+ */
+void
+mono_metadata_cleanup (void)
+{
+	g_hash_table_destroy (type_cache);
+	g_hash_table_destroy (generic_inst_cache);
+	g_hash_table_destroy (generic_class_cache);
+}
+
+/**
  * mono_metadata_parse_type:
  * @m: metadata context
  * @mode: king of type that may be found at @ptr

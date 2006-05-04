@@ -291,6 +291,9 @@ struct _MonoMethodHeader {
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 
+void
+mono_metadata_cleanup (void);
+
 const char *   mono_meta_table_name              (int table) MONO_INTERNAL;
 void           mono_metadata_compute_table_bases (MonoImage *meta) MONO_INTERNAL;
 

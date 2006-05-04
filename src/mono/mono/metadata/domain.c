@@ -29,6 +29,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <metadata/threads.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
@@ -199,7 +200,7 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 
 	if (ji == NULL) {
 		/* Maybe its an AOT module */
-		MonoImage *image = mono_jit_info_find_aot_module (addr);
+		MonoImage *image = mono_jit_info_find_aot_module ((guint8*)addr);
 		if (image)
 			ji = jit_info_find_in_aot_func (domain, image, addr);
 	}
@@ -512,6 +513,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_raw_buffer_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
+	mono_classes_init ();
 	mono_loader_init ();
 
 	/* FIXME: When should we release this memory? */
@@ -847,6 +849,27 @@ mono_init_version (const char *domain_name, const char *version)
 	return mono_init_internal (domain_name, NULL, version);
 }
 
+/**
+ * mono_cleanup:
+ *
+ * Cleans up all metadata modules. 
+ */
+void
+mono_cleanup (void)
+{
+	mono_loader_cleanup ();
+	mono_classes_cleanup ();
+	mono_assemblies_cleanup ();
+	mono_images_cleanup ();
+	mono_raw_buffer_cleanup ();
+	mono_metadata_cleanup ();
+}
+
+/**
+ * mono_get_root_domain:
+ *
+ * Returns: the root appdomain.
+ */
 MonoDomain*
 mono_get_root_domain (void)
 {

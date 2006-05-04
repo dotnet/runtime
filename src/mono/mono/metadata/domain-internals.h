@@ -151,6 +151,9 @@ typedef struct  {
 #define mono_domain_assemblies_lock(domain)   EnterCriticalSection(&(domain)->assemblies_lock)
 #define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
 
+void 
+mono_cleanup (void) MONO_INTERNAL;
+
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 

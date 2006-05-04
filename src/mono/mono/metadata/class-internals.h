@@ -555,6 +555,9 @@ void
 mono_classes_init (void) MONO_INTERNAL;
 
 void
+mono_classes_cleanup (void) MONO_INTERNAL;
+
+void
 mono_class_layout_fields   (MonoClass *klass) MONO_INTERNAL;
 
 void

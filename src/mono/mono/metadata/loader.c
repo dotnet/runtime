@@ -57,6 +57,14 @@ mono_loader_init ()
 	loader_error_thread_id = TlsAlloc ();
 }
 
+void
+mono_loader_cleanup (void)
+{
+	TlsFree (loader_error_thread_id);
+
+	DeleteCriticalSection (&loader_mutex);
+}
+
 /*
  * Handling of type load errors should be done as follows:
  *

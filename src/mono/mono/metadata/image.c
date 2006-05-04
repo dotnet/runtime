@@ -148,6 +148,22 @@ mono_images_init (void)
 }
 
 /**
+ * mono_images_cleanup:
+ *
+ *  Free all resources used by this module.
+ */
+void
+mono_images_cleanup (void)
+{
+	DeleteCriticalSection (&images_mutex);
+
+	g_hash_table_destroy (loaded_images_hash);
+	g_hash_table_destroy (loaded_images_guid_hash);
+	g_hash_table_destroy (loaded_images_refonly_hash);
+	g_hash_table_destroy (loaded_images_refonly_guid_hash);
+}
+
+/**
  * mono_image_ensure_section_idx:
  * @image: The image we are operating on
  * @section: section number that we will load/map into memory

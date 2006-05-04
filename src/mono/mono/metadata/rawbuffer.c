@@ -89,6 +89,14 @@ mono_raw_buffer_init (void)
 	mmap_map = g_hash_table_new (NULL, NULL);
 }
 
+void
+mono_raw_buffer_cleanup (void)
+{
+	g_hash_table_destroy (mmap_map);
+
+	DeleteCriticalSection (&mmap_mutex);
+}
+
 static void *
 mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 {
