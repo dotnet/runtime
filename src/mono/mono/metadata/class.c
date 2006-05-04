@@ -2183,6 +2183,16 @@ initialize_object_slots (MonoClass *class)
 	}
 }
 
+static GList*
+g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
+{
+	GList* n = mono_mempool_alloc (mp, sizeof (GList));
+	n->next = l;
+	n->prev = NULL;
+	n->data = datum;
+	return n;
+}
+
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -2295,7 +2305,7 @@ mono_class_init (MonoClass *class)
 			guint32 cols [MONO_NESTED_CLASS_SIZE];
 			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
 			nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-			class->nested_classes = g_list_prepend (class->nested_classes, nclass);
+			class->nested_classes = g_list_prepend_mempool (class->nested_classes, class->image->mempool, nclass);
 
 			i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
 		}
