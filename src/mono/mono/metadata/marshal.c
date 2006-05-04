@@ -50,6 +50,7 @@ struct _MonoMethodBuilder {
 	char *name;
 	GList *locals_list;
 	int locals;
+	gboolean dynamic;
 	guint32 code_size, pos;
 	unsigned char *code;
 };
@@ -708,9 +709,11 @@ void
 mono_mb_free (MonoMethodBuilder *mb)
 {
 	g_list_free (mb->locals_list);
-	g_free (mb->method);
-	g_free (mb->name);
-	g_free (mb->code);
+	if (!mb->dynamic) {
+		g_free (mb->method);
+		g_free (mb->name);
+		g_free (mb->code);
+	}
 	g_free (mb);
 }
 
@@ -774,15 +777,30 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	mp = mb->method->klass->image->mempool;
 
-	/* Realloc the method info into a mempool */
+	if (mb->dynamic) {
+		method = mb->method;
 
-	method = mono_mempool_alloc (mp, sizeof (MonoMethodWrapper));
-	memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+		method->name = mb->name;
+		method->dynamic = TRUE;
 
-	method->name = mono_mempool_strdup (mp, mb->name);
+		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
+			g_malloc0 (sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
 
-	((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
-		mono_mempool_alloc0 (mp, sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
+		header->code = mb->code;
+	} else {
+		/* Realloc the method info into a mempool */
+
+		method = mono_mempool_alloc (mp, sizeof (MonoMethodWrapper));
+		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+
+		method->name = mono_mempool_strdup (mp, mb->name);
+
+		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
+			mono_mempool_alloc0 (mp, sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
+
+		header->code = mono_mempool_alloc (mp, mb->pos);
+		memcpy ((char*)header->code, mb->code, mb->pos);
+	}
 
 	if (max_stack < 8)
 		max_stack = 8;
@@ -794,8 +812,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	}
 
 	method->signature = signature;
-	header->code = mono_mempool_alloc (mp, mb->pos);
-	memcpy ((char*)header->code, mb->code, mb->pos);
+
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 
@@ -805,7 +822,10 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		GList *tmp;
 		void **data;
 		l = g_list_reverse (mw->method_data);
-		data = mono_mempool_alloc (mp, sizeof (gpointer) * (i + 1));
+		if (method->dynamic)
+			data = g_malloc (sizeof (gpointer) * (i + 1));
+		else
+			data = mono_mempool_alloc (mp, sizeof (gpointer) * (i + 1));
 		/* store the size in the first element */
 		data [0] = GUINT_TO_POINTER (i);
 		i = 1;
@@ -6929,8 +6949,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		res = mono_mb_create_and_cache (cache, method,
 											 mb, csig, sig->param_count + 16);
 	else {
+		mb->dynamic = 1;
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
-		res->dynamic = 1;
 	}
 	mono_mb_free (mb);
 
