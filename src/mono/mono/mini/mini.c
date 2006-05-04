@@ -329,6 +329,9 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
         (vi)->idx = (id); \
 } while (0)
 
+//#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
+#define UNVERIFIED do { goto unverified; } while (0)
+
 /*
  * Basic blocks have two numeric identifiers:
  * dfn: Depth First Number
@@ -344,7 +347,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define GET_BBLOCK(cfg,bbhash,tblock,ip) do {	\
 		(tblock) = g_hash_table_lookup (bbhash, (ip));	\
 		if (!(tblock)) {	\
-			if ((ip) >= end || (ip) < header->code) goto unverified; \
+			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
 			(tblock) = NEW_BBLOCK (cfg);	\
 			(tblock)->cil_code = (ip);	\
 			ADD_BBLOCK (cfg, (bbhash), (tblock));	\
@@ -3206,12 +3209,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
  * * consider using an array instead of an hash table (bb_hash)
  */
 
-#define CHECK_TYPE(ins) if (!(ins)->type) goto unverified
-#define CHECK_STACK(num) if ((sp - stack_start) < (num)) goto unverified
-#define CHECK_STACK_OVF(num) if (((sp - stack_start) + (num)) > header->max_stack) goto unverified
-#define CHECK_ARG(num) if ((unsigned)(num) >= (unsigned)num_args) goto unverified
-#define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) goto unverified
-#define CHECK_OPSIZE(size) if (ip + size > end) goto unverified
+#define CHECK_TYPE(ins) if (!(ins)->type) UNVERIFIED
+#define CHECK_STACK(num) if ((sp - stack_start) < (num)) UNVERIFIED
+#define CHECK_STACK_OVF(num) if (((sp - stack_start) + (num)) > header->max_stack) UNVERIFIED
+#define CHECK_ARG(num) if ((unsigned)(num) >= (unsigned)num_args) UNVERIFIED
+#define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) UNVERIFIED
+#define CHECK_OPSIZE(size) if (ip + size > end) UNVERIFIED
 
 
 /* offset from br.s -> br like opcodes */
@@ -3239,7 +3242,7 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 		cli_addr = ip - start;
 		i = mono_opcode_value ((const guint8 **)&ip, end);
 		if (i < 0)
-			goto unverified;
+			UNVERIFIED;
 		opcode = &mono_opcodes [i];
 		switch (opcode->argument) {
 		case MonoInlineNone:
@@ -3763,7 +3766,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end, &err_pos)) {
 		ip = err_pos;
-		goto unverified;
+		UNVERIFIED;
 	}
 
 	if (cfg->method == method)
@@ -3776,7 +3779,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		param_types [n + sig->hasthis] = sig->params [n];
 	for (n = 0; n < header->num_locals; ++n) {
 		if (header->locals [n]->type == MONO_TYPE_VOID && !header->locals [n]->byref)
-			goto unverified;
+			UNVERIFIED;
 	}
 	class_inits = NULL;
 
@@ -3916,7 +3919,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_LOCSTORE (cfg, ins, n, *sp);
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
-				goto unverified;
+				UNVERIFIED;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, n);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -3952,7 +3955,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [ip [1]], *sp))
-				goto unverified;
+				UNVERIFIED;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_ARGLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -3987,7 +3990,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_LOCSTORE (cfg, ins, ip [1], *sp);
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [ip [1]], *sp))
-				goto unverified;
+				UNVERIFIED;
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -4141,7 +4144,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_JMP:
 			CHECK_OPSIZE (5);
 			if (stack_start != sp)
-				goto unverified;
+				UNVERIFIED;
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
@@ -4194,7 +4197,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!cmethod)
 					goto load_error;
 				if (!dont_verify && !can_access_method (method, cmethod))
-					goto unverified;
+					UNVERIFIED;
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
 					/* MS.NET seems to silently convert this to a callvirt */
@@ -4228,10 +4231,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			}
 
-			if (cmethod && cmethod->klass->generic_container) {
-				// G_BREAKPOINT ();
-				goto unverified;
-			}
+			if (cmethod && cmethod->klass->generic_container)
+				UNVERIFIED;
 
 			CHECK_STACK (n);
 
@@ -4276,10 +4277,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				constrained_call = NULL;
 			}
 
-			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp)) {
-				// G_BREAKPOINT ();
-				goto unverified;
-			}
+			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
+				UNVERIFIED;
 
 			if (cmethod && virtual && 
 			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
@@ -4565,7 +4564,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 			if (sp != stack_start)
-				goto unverified;
+				UNVERIFIED;
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip++;
 			ins->inst_target_bb = end_bblock;
@@ -4596,7 +4595,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (2);
 			CHECK_STACK (1);
 			if (sp [-1]->type == STACK_VTYPE || sp [-1]->type == STACK_R8)
-				goto unverified;
+				UNVERIFIED;
 			MONO_INST_NEW (cfg, ins, *ip + BIG_BRANCH_OFFSET);
 			ins->cil_code = ip++;
 			target = ip + 1 + *(signed char*)ip;
@@ -4654,7 +4653,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			if (sp [-1]->type == STACK_VTYPE || sp [-1]->type == STACK_R8)
-				goto unverified;
+				UNVERIFIED;
 			MONO_INST_NEW (cfg, ins, *ip);
 			ins->cil_code = ip++;
 			target = ip + 4 + (gint32)read32(ip);
@@ -4697,7 +4696,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			ins->inst_left = *sp;
 			if ((ins->inst_left->type != STACK_I4) && (ins->inst_left->type != STACK_PTR)) 
-				goto unverified;
+				UNVERIFIED;
 			ins->cil_code = ip;
 			ip += 5;
 			CHECK_OPSIZE (n * sizeof (guint32));
@@ -5209,7 +5208,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!klass)
 				goto load_error;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5405,7 +5404,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!klass)
 				goto load_error;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 
 			/* Needed by the code generated in inssel.brg */
 			mono_get_got_var (cfg);
@@ -5483,9 +5482,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 			}
 			if (sp [0]->type == STACK_I4 || sp [0]->type == STACK_I8 || sp [0]->type == STACK_R8)
-				goto unverified;
+				UNVERIFIED;
 			if (*ip != CEE_LDFLD && sp [0]->type == STACK_VTYPE)
-				goto unverified;
+				UNVERIFIED;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -5498,13 +5497,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 			mono_class_init (klass);
 			if (!dont_verify && !can_access_field (method, field))
-				goto unverified;
+				UNVERIFIED;
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_STFLD) {
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
-					goto unverified;
+					UNVERIFIED;
 				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
@@ -5852,9 +5851,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			if (klass == mono_defaults.void_class)
-				goto unverified;
+				UNVERIFIED;
 			if (target_type_is_incompatible (cfg, &klass->byval_arg, *sp))
-				goto unverified;
+				UNVERIFIED;
 			/* frequent check in generic code: box (struct), brtrue */
 			if (ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) && (ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S)) {
 				/*g_print ("box-brtrue opt at 0x%04x in %s\n", real_offset, method->name);*/
@@ -5941,7 +5940,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			MONO_INST_NEW (cfg, ins, *ip);
 			ins->cil_code = ip++;
 			ins->inst_left = *sp;
@@ -5953,7 +5952,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			CHECK_OPSIZE (5);
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 
 			klass = mini_get_class (method, read32 (ip + 1), generic_context);
 			if (!klass)
@@ -5983,7 +5982,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
@@ -6020,7 +6019,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			klass = array_access_to_klass (*ip);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
@@ -6048,7 +6047,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (3);
 			sp -= 3;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			klass = array_access_to_klass (*ip);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
@@ -6072,7 +6071,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (3);
 			sp -= 3;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
@@ -6116,9 +6115,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (3);
 			sp -= 3;
 			if (sp [0]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 			if (sp [2]->type != STACK_OBJ)
-				goto unverified;
+				UNVERIFIED;
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
@@ -6522,7 +6521,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stobj (cfg, bblock, ins, *sp, ip, klass, FALSE, TRUE);
 				
 				if (sp != stack_start)
-					goto unverified;
+					UNVERIFIED;
 				
 				MONO_INST_NEW (cfg, ins, CEE_BR);
 				ins->cil_code = ip;
@@ -6730,7 +6729,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_ARGSTORE (cfg, ins, n, *sp);
 				ins->cil_code = ip;
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [n], *sp))
-					goto unverified;
+					UNVERIFIED;
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_ARGLOADA (cfg, ins, n);
 					handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -6767,7 +6766,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 				NEW_LOCSTORE (cfg, ins, n, *sp);
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
-					goto unverified;
+					UNVERIFIED;
 				ins->cil_code = ip;
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_LOCLOADA (cfg, ins, n);
@@ -6781,7 +6780,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				if (sp != stack_start) 
-					goto unverified;
+					UNVERIFIED;
 				if (cfg->method != method) 
 					/* 
 					 * Inlining this into a loop in a parent could lead to 
@@ -6809,7 +6808,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				if ((sp != stack_start) || (sp [0]->type != STACK_I4)) 
-					goto unverified;
+					UNVERIFIED;
 				MONO_INST_NEW (cfg, ins, OP_ENDFILTER);
 				ins->inst_left = *sp;
 				ins->cil_code = ip;
@@ -6830,7 +6829,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 				g_assert (nearest);
 				if ((ip - header->code) != nearest->handler_offset)
-					goto unverified;
+					UNVERIFIED;
 
 				break;
 			}
@@ -6998,7 +6997,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	if (start_new_bblock != 1)
-		goto unverified;
+		UNVERIFIED;
 
 	bblock->cil_length = ip - bblock->cil_code;
 	bblock->next_bb = end_bblock;
@@ -10886,6 +10885,8 @@ mini_cleanup (MonoDomain *domain)
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
 	g_free (emul_opcode_map);
+
+	mono_cleanup ();
 
 	mono_counters_dump (-1, stdout);
 }
