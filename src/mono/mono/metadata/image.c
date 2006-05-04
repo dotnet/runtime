@@ -623,6 +623,15 @@ mono_image_init (MonoImage *image)
 	image->synchronized_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->unbox_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
+	image->ldfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->ldflda_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->ldfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->stfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->stfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->castclass_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->proxy_isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
 	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
@@ -1138,6 +1147,15 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->synchronized_cache);
 	g_hash_table_destroy (image->unbox_wrapper_cache);
 	g_hash_table_destroy (image->typespec_cache);
+	g_hash_table_destroy (image->ldfld_wrapper_cache);
+	g_hash_table_destroy (image->ldflda_wrapper_cache);
+	g_hash_table_destroy (image->ldfld_remote_wrapper_cache);
+	g_hash_table_destroy (image->stfld_wrapper_cache);
+	g_hash_table_destroy (image->stfld_remote_wrapper_cache);
+	g_hash_table_destroy (image->isinst_cache);
+	g_hash_table_destroy (image->castclass_cache);
+	g_hash_table_destroy (image->proxy_isinst_cache);
+
 	/* The ownership of signatures is not well defined */
 	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->memberref_signatures);

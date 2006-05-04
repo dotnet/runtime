@@ -3825,15 +3825,11 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	static GHashTable *ldfld_hash = NULL; 
+	GHashTable *cache;
 	char *name;
 
-	mono_marshal_lock ();
-	if (!ldfld_hash) 
-		ldfld_hash = g_hash_table_new (NULL, NULL);
-	res = g_hash_table_lookup (ldfld_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->ldfld_remote_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	/* 
@@ -3868,8 +3864,8 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_and_cache (ldfld_hash, klass,
-										 mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass,
+									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
 	return res;
@@ -3890,7 +3886,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *klass;
-	static GHashTable *ldfld_hash = NULL; 
+	GHashTable *cache;
 	char *name;
 	int t, pos0, pos1 = 0;
 
@@ -3919,12 +3915,8 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	mono_marshal_lock ();
-	if (!ldfld_hash) 
-		ldfld_hash = g_hash_table_new (NULL, NULL);
-	res = g_hash_table_lookup (ldfld_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->ldfld_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	/* we add the %p pointer value of klass because class names are not unique */
@@ -4026,8 +4018,8 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_and_cache (ldfld_hash, klass,
-										 mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass,
+									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
 	return res;
@@ -4048,7 +4040,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *klass;
-	static GHashTable *ldflda_hash = NULL; 
+	GHashTable *cache;
 	char *name;
 	int t, pos0;
 
@@ -4077,12 +4069,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	mono_marshal_lock ();
-	if (!ldflda_hash) 
-		ldflda_hash = g_hash_table_new (NULL, NULL);
-	res = g_hash_table_lookup (ldflda_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->ldflda_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	/* we add the %p pointer value of klass because class names are not unique */
@@ -4113,8 +4101,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_and_cache (ldflda_hash, klass,
-										 mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass,
+									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
 	return res;
@@ -4133,15 +4121,11 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	static GHashTable *stfld_hash = NULL; 
+	GHashTable *cache;
 	char *name;
 
-	mono_marshal_lock ();
-	if (!stfld_hash) 
-		stfld_hash = g_hash_table_new (NULL, NULL);
-	res = g_hash_table_lookup (stfld_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->stfld_remote_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	name = g_strdup_printf ("__mono_store_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
@@ -4180,7 +4164,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_and_cache (stfld_hash, klass,
+	res = mono_mb_create_and_cache (cache, klass,
 									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
@@ -4202,7 +4186,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *klass;
-	static GHashTable *stfld_hash = NULL; 
+	GHashTable *cache;
 	char *name;
 	int t, pos;
 
@@ -4230,12 +4214,8 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	mono_marshal_lock ();
-	if (!stfld_hash) 
-		stfld_hash = g_hash_table_new (NULL, NULL);
-	res = g_hash_table_lookup (stfld_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->stfld_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	/* we add the %p pointer value of klass because class names are not unique */
@@ -4312,7 +4292,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 
 	mono_mb_emit_byte (mb, CEE_RET);
        
-	res = mono_mb_create_and_cache (stfld_hash, klass,
+	res = mono_mb_create_and_cache (cache, klass,
 									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	
@@ -6925,19 +6905,14 @@ MonoMethod *
 mono_marshal_get_isinst (MonoClass *klass)
 {
 	static MonoMethodSignature *isint_sig = NULL;
-	static GHashTable *isinst_hash = NULL; 
+	GHashTable *cache;
 	MonoMethod *res;
 	int pos_was_ok, pos_failed, pos_end, pos_end2;
 	char *name;
 	MonoMethodBuilder *mb;
 
-	mono_marshal_lock ();
-	if (!isinst_hash) 
-		isinst_hash = g_hash_table_new (NULL, NULL);
-	
-	res = g_hash_table_lookup (isinst_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->isinst_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	if (!isint_sig) {
@@ -6994,7 +6969,7 @@ mono_marshal_get_isinst (MonoClass *klass)
 	mono_mb_patch_addr (mb, pos_end2, mb->pos - (pos_end2 + 4));
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (isinst_hash, klass, mb, isint_sig, isint_sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
 	mono_mb_free (mb);
 
 	return res;
@@ -7013,19 +6988,14 @@ MonoMethod *
 mono_marshal_get_castclass (MonoClass *klass)
 {
 	static MonoMethodSignature *castclass_sig = NULL;
-	static GHashTable *castclass_hash = NULL; 
+	GHashTable *cache;
 	MonoMethod *res;
 	int pos_was_ok, pos_was_ok2;
 	char *name;
 	MonoMethodBuilder *mb;
 
-	mono_marshal_lock ();
-	if (!castclass_hash) 
-		castclass_hash = g_hash_table_new (NULL, NULL);
-	
-	res = g_hash_table_lookup (castclass_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->castclass_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	if (!castclass_sig) {
@@ -7072,7 +7042,7 @@ mono_marshal_get_castclass (MonoClass *klass)
 	/* the end */
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (castclass_hash, klass, mb, castclass_sig, castclass_sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass, mb, castclass_sig, castclass_sig->param_count + 16);
 	mono_mb_free (mb);
 
 	return res;
@@ -7082,7 +7052,7 @@ MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass)
 {
 	static MonoMethodSignature *isint_sig = NULL;
-	static GHashTable *proxy_isinst_hash = NULL; 
+	GHashTable *cache;
 	MonoMethod *res;
 	int pos_failed, pos_end;
 	char *name;
@@ -7090,13 +7060,8 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	MonoMethodDesc *desc;
 	MonoMethodBuilder *mb;
 
-	mono_marshal_lock ();
-	if (!proxy_isinst_hash) 
-		proxy_isinst_hash = g_hash_table_new (NULL, NULL);
-	
-	res = g_hash_table_lookup (proxy_isinst_hash, klass);
-	mono_marshal_unlock ();
-	if (res)
+	cache = klass->image->proxy_isinst_cache;
+	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
 	if (!isint_sig) {
@@ -7155,7 +7120,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	mono_mb_patch_addr (mb, pos_end, mb->pos - (pos_end + 4));
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (proxy_isinst_hash, klass, mb, isint_sig, isint_sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
 	mono_mb_free (mb);
 
 	return res;

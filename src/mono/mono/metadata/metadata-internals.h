@@ -167,6 +167,18 @@ struct _MonoImage {
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
 
+	/*
+	 * indexed by MonoClass pointers
+	 */
+	GHashTable *ldfld_wrapper_cache;
+	GHashTable *ldflda_wrapper_cache;
+	GHashTable *ldfld_remote_wrapper_cache;
+	GHashTable *stfld_wrapper_cache;
+	GHashTable *stfld_remote_wrapper_cache;
+	GHashTable *isinst_cache;
+	GHashTable *castclass_cache;
+	GHashTable *proxy_isinst_cache;
+
 	void *reflection_info;
 
 	/*
