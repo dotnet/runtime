@@ -1258,6 +1258,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	if (image->assembly) {
 		/* Already loaded by another appdomain */
 		mono_assembly_invoke_load_hook (image->assembly);
+		mono_image_close (image);
 		g_free (fname);
 		return image->assembly;
 	}
