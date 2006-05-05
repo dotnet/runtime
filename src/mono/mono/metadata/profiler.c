@@ -12,6 +12,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
+#include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
@@ -735,7 +736,7 @@ create_profiler (void)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 
-	prof->methods = g_hash_table_new (NULL, NULL);
+	prof->methods = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	MONO_TIMER_INIT (prof->jit_timer);
 	prof->mempool = mono_mempool_new ();
 	return prof;
