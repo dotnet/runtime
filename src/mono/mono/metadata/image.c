@@ -402,7 +402,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	g_assert (image->heap_guid.data);
 	g_assert (image->heap_guid.size >= 16);
 
-	image->guid = mono_guid_to_string (image->heap_guid.data);
+	image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 
 	return TRUE;
 }
@@ -602,7 +602,6 @@ mono_image_init (MonoImage *image)
 	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->field_cache = g_hash_table_new (NULL, NULL);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
@@ -1022,11 +1021,13 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 	g_hash_table_destroy ((GHashTable*)val);
 }
 
+/*
 static void
 free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
 {
 	mono_metadata_free_method_signature ((MonoMethodSignature*)val);
 }
+*/
 
 static void
 free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
@@ -1038,6 +1039,12 @@ static void
 free_remoting_wrappers (gpointer key, gpointer val, gpointer user_data)
 {
 	g_free (val);
+}
+
+static void
+free_array_cache_entry (gpointer key, gpointer val, gpointer user_data)
+{
+	g_slist_free ((GSList*)val);
 }
 
 /**
@@ -1137,7 +1144,12 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->method_cache);
 	g_hash_table_destroy (image->class_cache);
 	g_hash_table_destroy (image->field_cache);
-	g_hash_table_destroy (image->array_cache);
+	if (image->array_cache) {
+		g_hash_table_foreach (image->array_cache, free_array_cache_entry, NULL);
+		g_hash_table_destroy (image->array_cache);
+	}
+	if (image->ptr_cache)
+		g_hash_table_destroy (image->ptr_cache);
 	g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
 	g_hash_table_destroy (image->name_cache);
 	g_hash_table_destroy (image->native_wrapper_cache);
@@ -1185,6 +1197,8 @@ mono_image_close (MonoImage *image)
 		if (image->modules [i])
 			mono_image_close (image->modules [i]);
 	}
+	if (image->modules)
+		g_free (image->modules);
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
 		if (debug_assembly_unload)

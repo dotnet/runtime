@@ -356,7 +356,7 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	if (!l->public_key_token [0] || !r->public_key_token [0])
 		return TRUE;
 
-	if (strcmp (l->public_key_token, r->public_key_token))
+	if (strcmp ((char*)l->public_key_token, (char*)r->public_key_token))
 		return FALSE;
 
 	return TRUE;
@@ -630,20 +630,6 @@ mono_assemblies_init (void)
 
 	assemblies_loading = g_hash_table_new (NULL, NULL);
 	assemblies_refonly_loading = g_hash_table_new (NULL, NULL);
-}
-
-/**
- * mono_assemblies_cleanup:
- *
- *  Free all resources used by this module.
- */
-void
-mono_assemblies_cleanup (void)
-{
-	DeleteCriticalSection (&assemblies_mutex);
-
-	g_hash_table_destroy (assemblies_loading);
-	g_hash_table_destroy (assemblies_refonly_loading);
 }
 
 gboolean
@@ -961,6 +947,17 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	assembly_load_hook = hook;
 }
 
+static void
+free_assembly_load_hooks (void)
+{
+	AssemblyLoadHook *hook, *next;
+
+	for (hook = assembly_load_hook; hook; hook = next) {
+		next = hook->next;
+		g_free (hook);
+	}
+}
+
 typedef struct AssemblySearchHook AssemblySearchHook;
 struct AssemblySearchHook {
 	AssemblySearchHook *next;
@@ -1015,6 +1012,17 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 {
 	mono_install_assembly_search_hook_internal (func, user_data, FALSE, FALSE);
 }	
+
+static void
+free_assembly_search_hooks (void)
+{
+	AssemblySearchHook *hook, *next;
+
+	for (hook = assembly_search_hook; hook; hook = next) {
+		next = hook->next;
+		g_free (hook);
+	}
+}
 
 void
 mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
@@ -1100,6 +1108,22 @@ mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpoint
 	hook->user_data = user_data;
 	hook->next = assembly_refonly_preload_hook;
 	assembly_refonly_preload_hook = hook;
+}
+
+static void
+free_assembly_preload_hooks (void)
+{
+	AssemblyPreLoadHook *hook, *next;
+
+	for (hook = assembly_preload_hook; hook; hook = next) {
+		next = hook->next;
+		g_free (hook);
+	}
+
+	for (hook = assembly_refonly_preload_hook; hook; hook = next) {
+		next = hook->next;
+		g_free (hook);
+	}
 }
 
 static gchar *
@@ -2211,6 +2235,8 @@ mono_assembly_close (MonoAssembly *assembly)
 			if (assembly->image->references [i])
 				mono_assembly_close (assembly->image->references [i]);
 		}
+
+		g_free (assembly->image->references);
 	}
 
 	assembly->image->assembly = NULL;
@@ -2225,7 +2251,7 @@ mono_assembly_close (MonoAssembly *assembly)
 	g_slist_free (assembly->friend_assembly_names);
 	g_free (assembly->basedir);
 	if (assembly->dynamic) {
-		g_free (assembly->aname.culture);
+		g_free ((char*)assembly->aname.culture);
 	} else {
 		g_free (assembly);
 	}
@@ -2260,6 +2286,34 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 	g_list_foreach (loaded_assemblies, func, user_data);
 
 	g_list_free (copy);
+}
+
+/**
+ * mono_assemblies_cleanup:
+ *
+ *  Free all resources used by this module.
+ */
+void
+mono_assemblies_cleanup (void)
+{
+	GSList *l;
+
+	DeleteCriticalSection (&assemblies_mutex);
+
+	g_hash_table_destroy (assemblies_loading);
+	g_hash_table_destroy (assemblies_refonly_loading);
+
+	for (l = loaded_assembly_bindings; l; l = l->next) {
+		MonoAssemblyBindingInfo *info = l->data;
+
+		mono_assembly_binding_info_free (info);
+		g_free (info);
+	}
+	g_slist_free (loaded_assembly_bindings);
+
+	free_assembly_load_hooks ();
+	free_assembly_search_hooks ();
+	free_assembly_preload_hooks ();
 }
 
 /*

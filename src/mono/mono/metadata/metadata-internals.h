@@ -146,10 +146,10 @@ struct _MonoImage {
 	GHashTable *name_cache;
 
 	/*
-	 * Indexed by ((rank << 24) | (typedef & 0xffffff)), which limits us to a
-	 * maximal rank of 255
+	 * Indexed by MonoClass
 	 */
 	GHashTable *array_cache;
+	GHashTable *ptr_cache;
 
 	/*
 	 * indexed by MonoMethodSignature 
