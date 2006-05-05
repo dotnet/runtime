@@ -1740,6 +1740,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	offset = code - cfg->native_code;
 
+	mono_debug_open_block (cfg, bb, offset);
+
 	ins = bb->code;
 	while (ins) {
 		offset = code - cfg->native_code;

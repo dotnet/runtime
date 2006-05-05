@@ -265,6 +265,33 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 	record_line_number (info, address, offset);
 }
 
+void
+mono_debug_open_block (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address)
+{
+	MiniDebugMethodInfo *info;
+	MonoMethodHeader *header;
+	guint32 offset;
+
+	info = (MiniDebugMethodInfo *) cfg->debug_info;
+	if (!info || !info->jit || !bb->cil_code)
+		return;
+
+	header = mono_method_get_header (cfg->method);
+	g_assert (header);
+
+	if ((bb->cil_code < header->code) ||
+	    (bb->cil_code > header->code + header->code_size))
+		return;
+
+	offset = bb->cil_code - header->code;
+	if (!info->has_line_numbers) {
+		info->jit->prologue_end = address;
+		info->has_line_numbers = TRUE;
+	}
+
+	record_line_number (info, address, offset);
+}
+
 static inline void
 encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 {
