@@ -377,7 +377,7 @@ search_loaded (MonoAssemblyName* aname, gboolean refonly)
 	 * The assembly might be under load by this thread. In this case, it is
 	 * safe to return an incomplete instance to prevent loops.
 	 */
-	loading = g_hash_table_lookup (refonly ? assemblies_refonly_loading : assemblies_loading, GetCurrentThread ());
+	loading = g_hash_table_lookup (refonly ? assemblies_refonly_loading : assemblies_loading, GetCurrentThreadId ());
 	for (tmp = loading; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (!mono_assembly_names_equal (aname, &ass->aname))
@@ -1405,9 +1405,9 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		}
 	}
 	ass_loading = refonly ? assemblies_refonly_loading : assemblies_loading;
-	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
+	loading = g_hash_table_lookup (ass_loading, GetCurrentThreadId ());
 	loading = g_list_prepend (loading, ass);
-	g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
+	g_hash_table_insert (ass_loading, GetCurrentThreadId (), loading);
 	mono_assemblies_unlock ();
 
 	g_assert (image->assembly == NULL);
@@ -1417,13 +1417,13 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	mono_assemblies_lock ();
 
-	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
+	loading = g_hash_table_lookup (ass_loading, GetCurrentThreadId ());
 	loading = g_list_remove (loading, ass);
 	if (loading == NULL)
 		/* Prevent memory leaks */
-		g_hash_table_remove (ass_loading, GetCurrentThread ());
+		g_hash_table_remove (ass_loading, GetCurrentThreadId ());
 	else
-		g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
+		g_hash_table_insert (ass_loading, GetCurrentThreadId (), loading);
 	if (*status != MONO_IMAGE_OK) {
 		mono_assemblies_unlock ();
 		mono_assembly_close (ass);
