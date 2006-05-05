@@ -1673,7 +1673,6 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
 	int vtable_reg, slot_reg, this_reg;
 	MBState *state = st;
-	gboolean enable_for_aot = TRUE;
 
 	this_reg = state->left->reg1;
 	mono_arch_emit_this_vret_args (cfg, (MonoCallInst*)tree, this_reg, state->left->tree->type, novirtop == OP_VCALL? state->right->reg1: -1);
