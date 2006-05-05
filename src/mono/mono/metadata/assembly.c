@@ -1193,24 +1193,6 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 	return NULL;
 }
 
-static MonoImage*
-do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
-{
-	MonoImage *image = NULL;
-
-	if (bundles != NULL){
-		image = mono_assembly_open_from_bundle (filename, status, refonly);
-
-		if (image != NULL)
-			return image;
-	}
-	mono_assemblies_lock ();
-	image = mono_image_open_full (filename, status, refonly);
-	mono_assemblies_unlock ();
-
-	return image;
-}
-
 MonoAssembly *
 mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
@@ -1256,7 +1238,16 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", filename);
-	image = do_mono_assembly_open (fname, status, refonly);
+	image = NULL;
+
+	if (bundles != NULL)
+		image = mono_assembly_open_from_bundle (fname, status, refonly);
+
+	if (!image) {
+		mono_assemblies_lock ();
+		image = mono_image_open_full (filename, status, refonly);
+		mono_assemblies_unlock ();
+	}
 
 	if (!image){
 		*status = MONO_IMAGE_ERROR_ERRNO;
@@ -1280,6 +1271,9 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 			mono_config_for_assembly (ass->image);
 	}
 
+	/* Clear the reference added by mono_image_open */
+	mono_image_close (image);
+	
 	g_free (fname);
 
 	return ass;
@@ -1386,6 +1380,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	ass->ref_only = refonly;
 	ass->image = image;
 
+	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
@@ -2203,6 +2198,8 @@ mono_assembly_close (MonoAssembly *assembly)
 		return;
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading assembly %s [%p].", assembly->aname.name, assembly);
+
+	printf ("A: %d\n", assembly->image->ref_count);
 
 	mono_assemblies_lock ();
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);

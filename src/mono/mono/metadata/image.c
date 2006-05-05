@@ -834,6 +834,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->image_info = iinfo;
 	image->name = canonicalize_path (fname);
 	image->ref_only = refonly;
+	image->ref_count = 1;
 
 	return do_mono_image_load (image, status, care_about_cli);
 }
@@ -967,6 +968,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	g_free (absfname);
 	
 	if (image){
+		mono_image_addref (image);
 		mono_images_unlock ();
 		return image;
 	}
@@ -984,7 +986,9 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
  * @fname: filename that points to the module we want to open
  * @status: An error condition is returned in this field
  *
- * Returns: An open image of type %MonoImage or NULL on error.
+ * Returns: An open image of type %MonoImage or NULL on error. 
+ * The caller holds a temporary reference to the returned image which should be cleared 
+ * when no longer needed by calling mono_image_close ().
  * if NULL, then check the value of @status for details on the error
  */
 MonoImage *

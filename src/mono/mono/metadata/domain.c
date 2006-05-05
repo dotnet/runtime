@@ -1,4 +1,3 @@
-
 /*
  * domain.c: MonoDomain functions
  *
@@ -1446,6 +1445,12 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 		runtimes [1] = NULL;
 		return;
 	}
+
+	/* 
+	 * FIXME: This would cause us to unload the image, and it will be loaded again later.
+	 * Disabling it will mean the initial exe will not be unloaded on shutdown.
+	 */
+	//mono_image_close (image);
 
 	runtimes [0] = get_runtime_by_version (image->version);
 	runtimes [1] = NULL;

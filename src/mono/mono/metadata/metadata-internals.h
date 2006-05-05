@@ -63,7 +63,8 @@ struct _MonoImage {
 	/*
 	 * The number of assemblies which reference this MonoImage though their 'image'
 	 * field plus the number of images which reference this MonoImage through their 
-	 * 'modules' field. Initially 0.
+	 * 'modules' field, plus the number of threads holding temporary references to
+	 * this image between calls of mono_image_open () and mono_image_close ().
 	 */
 	int   ref_count;
 	FILE *file_descr;
