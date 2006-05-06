@@ -1025,7 +1025,7 @@ COND:   ldloc.0
     IL_0025:  shl
     IL_0026:  ceq
     IL_0028:  box        [mscorlib]System.Boolean
-    IL_0032:  call       void Tests::regress_78314_helper(object)
+    IL_0032:  call       void Tests::regalloc_regress_78314_helper(object)
     IL_0037:  ldloc.0
     IL_0038:  ldc.i4.1
     IL_0039:  add
