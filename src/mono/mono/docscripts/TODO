@@ -21,6 +21,13 @@
 		helper_stelem_ref
 		helper_stelem_ref_check
 
+* Need to make public:
+
+	If the mono_mb_ interface is public, we need to make public:
+	
+	MonoWrapperType
+	MonoDefaults.
+
 * Generate a table of contents at the begining of each page for APIs.
 
 * Fill in with a concept guide

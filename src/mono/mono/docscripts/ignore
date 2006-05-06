@@ -192,6 +192,8 @@ mono_handle_native_sigsegv
 mono_set_config_dir
 mono_profiler_coverage_alloc
 mono_profiler_coverage_free
+mini_method_compile
+mono_destroy_compile
 #
 # Bundles, internal:
 #
