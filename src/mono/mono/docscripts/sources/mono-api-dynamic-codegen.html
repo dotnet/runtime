@@ -60,8 +60,8 @@ MonoMethod *adder ()
 
     /* Setup method signature */
     sig = mono_metadata_signature_alloc (2);
-    sig->ret = &amp;mono_defaults.int32_class->byval_arg;
-    sig->params [0] = &amp;mono_defaults.int32_class->byval_arg;
+    sig->ret = &amp;mono_get_int32_class ()->byval_arg;
+    sig->params [0] = &amp;mono_get_int32_class ()->byval_arg;
     sig->params [1] = &amp;mono_defaults.int32_class->byval_arg;
 
     /* Emit CIL code */
