@@ -1,5 +1,30 @@
-<h4><a name="api:mono_gchandle_free">mono_gchandle_free</a></h4>
-<h4><a name="api:mono_gchandle_get_target">mono_gchandle_get_target</a></h4>
+<h1>GC Hnadles</h1>
+
+	<p>GC handles are wrappers that are used to keep references to
+	managed objects in the unmanaged space and preventing the
+	object from being disposed.
+	
+	<p>These are the C equivalents of the <tt>System.GCHandle</tt>
+	structure.
+
+	<p>There are two kinds of GCHandles that can be created:
+
+	<ul>
+		<li>Handles to objects (use <tt><a
+		href="api:mono_gchandle_new">mono_gchandle_new</a></tt>). 
+
+		<li>Weak handles to objects (use <tt><a
+		href="api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></tt>).
+		Weak handles can have the objects reclaimed by the
+		garbage collector. 
+		
+	</ul>
+
+	<p>To retrieve the target address of an object pointed to by a
+	<tt>GCHandle</tt> you should use <tt>mono_gchandle_get_target</tt>
+		
 <h4><a name="api:mono_gchandle_new">mono_gchandle_new</a></h4>
 <h4><a name="api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></h4>
+<h4><a name="api:mono_gchandle_get_target">mono_gchandle_get_target</a></h4>
 <h4><a name="api:mono_gchandle_is_in_domain">mono_gchandle_is_in_domain</a></h4> 
+<h4><a name="api:mono_gchandle_free">mono_gchandle_free</a></h4>
