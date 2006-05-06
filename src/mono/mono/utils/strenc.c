@@ -15,7 +15,12 @@
 
 #undef DEBUG
 
-/* Tries to turn a NULL-terminated string into UTF16.
+/**
+ * mono_unicode_from_external:
+ * @in: pointers to the buffer.
+ * @bytes: number of bytes in the string.
+ *
+ * Tries to turn a NULL-terminated string into UTF16.
  *
  * First, see if it's valid UTF8, in which case just turn it directly
  * into UTF16.  Next, run through the colon-separated encodings in
@@ -26,7 +31,8 @@
  * Callers must free the returned string if not NULL. bytes holds the number
  * of bytes in the returned string, not including the terminator.
  */
-gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
+gunichar2 *
+mono_unicode_from_external (const gchar *in, gsize *bytes)
 {
 	gchar *res=NULL;
 	gchar **encodings;
@@ -86,7 +92,11 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 	return(NULL);
 }
 
-/* Tries to turn a NULL-terminated string into UTF8.
+/**
+ * mono_utf8_from_external:
+ * @in: pointer to the string buffer.
+ *
+ * Tries to turn a NULL-terminated string into UTF8.
  *
  * First, see if it's valid UTF8, in which case there's nothing more
  * to be done.  Next, run through the colon-separated encodings in
@@ -150,7 +160,11 @@ gchar *mono_utf8_from_external (const gchar *in)
 	return(NULL);
 }
 
-/* Turns NULL-terminated UTF16 into either UTF8, or the first
+/**
+ * mono_unicode_to_external:
+ * @uni: an UTF16 string to conver to an external representation.
+ *
+ * Turns NULL-terminated UTF16 into either UTF8, or the first
  * working item in MONO_EXTERNAL_ENCODINGS if set.  If no conversions
  * work, then UTF8 is returned.
  *
