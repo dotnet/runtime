@@ -52,6 +52,7 @@
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-logger.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -10887,6 +10888,8 @@ mini_cleanup (MonoDomain *domain)
 	g_free (emul_opcode_map);
 
 	mono_cleanup ();
+
+	mono_trace_cleanup ();
 
 	mono_counters_dump (-1, stdout);
 }
