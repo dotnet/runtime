@@ -1203,6 +1203,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					assign_ireg (cfg, rs, ins->dreg, new_dest);
 					clob_dreg = ins->dreg;
 					create_copy_ins (cfg, dest_sreg2, new_dest, ins, ip, FALSE);
+					mono_regstate_free_int (rs, dest_sreg2);
 					need_spill = FALSE;
 				}
 

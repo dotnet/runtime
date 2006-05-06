@@ -1001,4 +1001,44 @@ COND:   ldloc.0
 			add
 			ret
 	}
+
+	.method public static void regalloc_regress_78314_helper (object o) cil managed
+	{
+		ret
+	}
+
+	.method public static int32 test_1_regalloc_regress_78314 () cil managed
+	{
+    // Code size       68 (0x44)
+    .maxstack  6
+    .locals init (int32 V_0, bool V_1)
+    IL_0000:  ldc.i4.0
+    IL_0001:  stloc.0
+    IL_0002:  br.s       IL_003b
+
+    IL_0004:
+    IL_001e:  ldc.i4.s   10
+    IL_0020:  ldloc.0
+    IL_0021:  shl
+    IL_0022:  ldc.i4.s   10
+    IL_0024:  ldloc.0
+    IL_0025:  shl
+    IL_0026:  ceq
+    IL_0028:  box        [mscorlib]System.Boolean
+    IL_0032:  call       void Tests::regress_78314_helper(object)
+    IL_0037:  ldloc.0
+    IL_0038:  ldc.i4.1
+    IL_0039:  add
+    IL_003a:  stloc.0
+    IL_003b:  ldloc.0
+    IL_003c:  ldc.i4.8
+    IL_003f:  blt.s      IL_0004
+
+	ldloc.0
+	ldc.i4.8
+	ceq
+	conv.i4
+	ret	
+  }
+
 }
