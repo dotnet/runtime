@@ -1387,7 +1387,7 @@ ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 	*location = orig + value;
 	mono_interlocked_unlock ();
 
-	return orig;
+	return orig + value;
 #endif
 }
 
@@ -1406,7 +1406,7 @@ ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 	*location = orig + value;
 	mono_interlocked_unlock ();
 
-	return orig;
+	return orig + value;
 #endif
 }
 
