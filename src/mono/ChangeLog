@@ -1,3 +1,8 @@
+2006-05-07  Zoltan Varga  <vargaz@gmail.com>
+
+	* data/mono.supp: Applied patch from Matt Hargett (matt@use.net).
+	Generalize path to the mono executable.
+
 2006-05-02  Jonathan Chambers  <jonathan.chambers@ansys.com>
 
         * configure.in: Add oleaut32 on Win32 builds for BSTR support
