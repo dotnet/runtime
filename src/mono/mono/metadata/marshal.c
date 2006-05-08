@@ -164,10 +164,13 @@ signature_dup_mp (MonoMemPool *mp, MonoMethodSignature *sig)
 }
 
 static MonoMethodSignature*
-signature_no_pinvoke (MonoMethodSignature* sig)
+signature_no_pinvoke (MonoMethod *method)
 {
+	MonoMethodSignature *sig = mono_method_signature (method);
 	if (sig->pinvoke) {
-		sig = mono_metadata_signature_dup (sig);
+		mono_loader_lock ();
+		sig = signature_dup_mp (method->klass->image->mempool, sig);
+		mono_loader_unlock ();
 		sig->pinvoke = FALSE;
 	}
 	
@@ -2251,7 +2254,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	cache = method->klass->image->delegate_begin_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -2300,7 +2303,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	method = mono_class_get_method_from_name (klass, "EndInvoke", -1);
 	g_assert (method != NULL);
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
@@ -2406,7 +2409,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "EndInvoke"));
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	cache = method->klass->image->delegate_end_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -2503,7 +2506,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE || method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)
 		return method;
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	/* we cant remote methods without this pointer */
 	if (!sig->hasthis)
@@ -3045,7 +3048,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_XDOMAIN_INVOKE)))
 		return res;
 	
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_XDOMAIN_INVOKE);
 	mb->method->save_lmf = 1;
@@ -3369,7 +3372,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
 		return method;
 
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 	
 	/* we cant remote methods without this pointer */
 	g_assert (sig->hasthis);
@@ -3429,7 +3432,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
 		
-	sig = signature_no_pinvoke (mono_method_signature (method));
+	sig = signature_no_pinvoke (method);
 
 	cache = method->klass->image->delegate_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
