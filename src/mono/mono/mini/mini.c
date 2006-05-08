@@ -7396,7 +7396,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 #ifdef MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
 	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 
-	ji = g_new0 (MonoJitInfo, 1);
+	mono_domain_lock (domain);
+	ji = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
+	mono_domain_unlock (domain);
 	ji->code_start = code;
 	ji->code_size = code_size;
 	ji->method = method;
@@ -10063,6 +10065,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain->dynamic_code_hash, method);
 	g_hash_table_remove (domain->jit_code_hash, method);
+	g_hash_table_remove (domain->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
