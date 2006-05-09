@@ -2775,6 +2775,7 @@ array_constructed:
 			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDRMFLD) {
+			gpointer tmp;
 			MonoClassField *field;
 			char *addr;
 
@@ -2785,7 +2786,8 @@ array_constructed:
 			ip += 2;
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				addr = mono_load_remote_field (o, klass, field, NULL);
+
+				addr = mono_load_remote_field (o, klass, field, &tmp);
 			} else {
 				addr = (char*)o + field->offset;
 			}				
@@ -2797,6 +2799,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDRMFLD_VT) {
 			MonoClassField *field;
 			char *addr;
+			gpointer tmp;
 
 			o = sp [-1].data.p;
 			if (!o)
@@ -2806,7 +2809,7 @@ array_constructed:
 			ip += 4;
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				addr = mono_load_remote_field (o, klass, field, NULL);
+				addr = mono_load_remote_field (o, klass, field, &tmp);
 			} else {
 				addr = (char*)o + field->offset;
 			}				
