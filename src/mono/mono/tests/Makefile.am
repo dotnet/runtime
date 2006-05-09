@@ -228,6 +228,7 @@ endif
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	delegate-delegate-exception.exe	\
+	appdomain-unload.exe		\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
