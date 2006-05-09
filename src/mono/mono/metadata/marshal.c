@@ -151,13 +151,15 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 }
 
 static MonoMethodSignature*
-signature_dup_mp (MonoMemPool *mp, MonoMethodSignature *sig)
+signature_dup (MonoImage *image, MonoMethodSignature *sig)
 {
 	MonoMethodSignature *res;
 	int sigsize;
 
 	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
-	res = mono_mempool_alloc (mp, sigsize);
+	mono_loader_lock ();
+	res = mono_mempool_alloc (image->mempool, sigsize);
+	mono_loader_unlock ();
 	memcpy (res, sig, sigsize);
 
 	return res;
@@ -168,9 +170,7 @@ signature_no_pinvoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
 	if (sig->pinvoke) {
-		mono_loader_lock ();
-		sig = signature_dup_mp (method->klass->image->mempool, sig);
-		mono_loader_unlock ();
+		sig = signature_dup (method->klass->image, sig);
 		sig->pinvoke = FALSE;
 	}
 	
@@ -385,7 +385,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 
 		mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
 		mono_method_get_marshal_info (invoke, mspecs);
-		sig = mono_metadata_signature_dup (mono_method_signature (invoke));
+		sig = signature_dup (invoke->klass->image, mono_method_signature (invoke));
 		sig->hasthis = 0;
 
 		wrapper = mono_marshal_get_native_func_wrapper (sig, &piinfo, mspecs, ftn);
@@ -3438,7 +3438,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
-	static_sig = mono_metadata_signature_dup (sig);
+	static_sig = signature_dup (method->klass->image, sig);
 	static_sig->hasthis = 0;
 
 	name = mono_signature_to_name (sig, "invoke");
@@ -3601,7 +3601,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			}
 		}
 		if (!callsig) {
-			callsig = mono_metadata_signature_dup (mono_method_signature (method));
+			callsig = signature_dup (method->klass->image, mono_method_signature (method));
 			callsig->ret = &mono_defaults.string_class->byval_arg;
 			cs = g_new (CtorSigPair, 1);
 			cs->sig = callsig;
@@ -4406,9 +4406,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	mono_loader_lock ();
-	csig = signature_dup_mp (mono_defaults.corlib->mempool, sig);
-	mono_loader_unlock ();
+	csig = signature_dup (mono_defaults.corlib, sig);
 	csig->pinvoke = 0;
 	if (csig->call_convention == MONO_CALL_VARARG)
 		csig->call_convention = 0;
@@ -6330,7 +6328,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	m.piinfo = piinfo;
 
 	/* we copy the signature, so that we can set pinvoke to 0 */
-	csig = mono_metadata_signature_dup (sig);
+	csig = signature_dup (mb->method->klass->image, sig);
 	csig->pinvoke = 1;
 
 	/* we allocate local for use with emit_struct_conv() */
@@ -6592,10 +6590,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	
 	if (!piinfo->addr) {
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
-		mono_loader_lock ();
-		csig = signature_dup_mp (method->klass->image->mempool, sig);
+		csig = signature_dup (method->klass->image, sig);
 		csig->pinvoke = 0;
-		mono_loader_unlock ();
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
@@ -6607,7 +6603,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		/* hack - string constructors returns a value */
 		if (method->string_ctor) {
-			csig = mono_metadata_signature_dup (sig);
+			csig = signature_dup (method->klass->image, sig);
 			csig->ret = &mono_defaults.string_class->byval_arg;
 		} else
 			csig = sig;
@@ -6623,10 +6619,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 
-		mono_loader_lock ();
-		csig = signature_dup_mp (method->klass->image->mempool, csig);
+		csig = signature_dup (method->klass->image, csig);
 		csig->pinvoke = 0;
-		mono_loader_unlock ();
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
@@ -6640,10 +6634,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, piinfo->addr);
 
-	mono_loader_lock ();
-	csig = signature_dup_mp (method->klass->image->mempool, sig);
+	csig = signature_dup (method->klass->image, sig);
 	csig->pinvoke = 0;
-	mono_loader_unlock ();
 	res = mono_mb_create_and_cache (cache, method,
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
@@ -6687,10 +6679,8 @@ mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig,
 
 	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, func);
 
-	mono_loader_lock ();
-	csig = signature_dup_mp (mb->method->klass->image->mempool, sig);
+	csig = signature_dup (mb->method->klass->image, sig);
 	csig->pinvoke = 0;
-	mono_loader_unlock ();
 	res = mono_mb_create_and_cache (cache, func,
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
@@ -6754,7 +6744,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	mono_mb_emit_stloc (mb, 2);
 
 	/* we copy the signature, so that we can modify it */
-	csig = mono_metadata_signature_dup (sig);
+	csig = signature_dup (method->klass->image, sig);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
@@ -7376,10 +7366,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	mono_loader_lock ();
-	sig = signature_dup_mp (method->klass->image->mempool, mono_method_signature (method));
+	sig = signature_dup (method->klass->image, mono_method_signature (method));
 	sig->pinvoke = 0;
-	mono_loader_unlock ();
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
 
