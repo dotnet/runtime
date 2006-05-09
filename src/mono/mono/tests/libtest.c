@@ -524,6 +524,7 @@ get_sp (void)
 	int i;
 	void *p;
 
+	/* Yes, this is correct, we are only trying to determine the value of the stack here */
 	p = &i;
 	return p;
 }
