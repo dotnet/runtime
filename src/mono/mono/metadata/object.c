@@ -3890,12 +3890,9 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
-	gpointer tmp;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
-
-	if (!res)
-		res = &tmp;
+	g_assert (res != NULL);
 
 	if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		mono_field_get_value (tp->rp->unwrapped_server, field, res);
