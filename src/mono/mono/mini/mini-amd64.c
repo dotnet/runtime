@@ -4653,7 +4653,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		save_mode = SAVE_XMM;
 		break;
 	case MONO_TYPE_GENERICINST:
-		if (mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
+		if (!mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
 			save_mode = SAVE_EAX;
 			break;
 		}
