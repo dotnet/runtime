@@ -747,11 +747,12 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 int
 mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
 {
-	int res = mb->locals;
+	int res;
 
 	g_assert (mb != NULL);
 	g_assert (type != NULL);
 
+	res = mb->locals;
 	mb->locals_list = g_list_append (mb->locals_list, type);
 	mb->locals++;
 
