@@ -352,13 +352,15 @@ mono_domain_set (MonoDomain *domain, gboolean force)
 MonoObject *
 ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 {
-	MonoDomain *add = ad->data;
+	MonoDomain *add;
 	MonoObject *o;
 	char *str;
 
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
+	add = ad->data;
+	g_assert (add != NULL);
 
 	if (name == NULL)
 		mono_raise_exception (mono_get_exception_argument_null ("name"));
@@ -400,11 +402,13 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 void
 ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObject *data)
 {
-	MonoDomain *add = ad->data;
+	MonoDomain *add;
 
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
+	add = ad->data;
+	g_assert (add != NULL);
 
 	if (name == NULL)
 		mono_raise_exception (mono_get_exception_argument_null ("name"));
