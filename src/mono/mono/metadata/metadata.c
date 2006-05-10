@@ -3067,8 +3067,8 @@ mono_type_size (MonoType *t, gint *align)
 		MonoClass *container_class;
 
 		gclass = mono_get_inflated_generic_class (t->data.generic_class);
-		g_assert (!gclass->generic_class.inst->is_open);
-		g_assert (!gclass->klass->generic_container);
+		// g_assert (!gclass->generic_class.inst->is_open);
+		// g_assert (!gclass->klass->generic_container);
 
 		container_class = gclass->generic_class.container_class;
 
