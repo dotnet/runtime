@@ -1097,6 +1097,12 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	case MONO_TYPE_R8:
 		save_mode = SAVE_FP;
 		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
+			save_mode = SAVE_EAX;
+			break;
+		}
+		/* Fall through */
 	case MONO_TYPE_VALUETYPE:
 		save_mode = SAVE_STRUCT;
 		break;
