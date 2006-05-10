@@ -2871,6 +2871,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "preservesig", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "private", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "privatescope", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "property", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "protected", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "public", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "readonly", GINT_TO_POINTER (TRUE));
