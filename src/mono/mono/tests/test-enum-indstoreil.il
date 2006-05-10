@@ -45,7 +45,7 @@
 	IL_0007:  ldflda  valuetype Options Test::'opt'
 	IL_000c:  stloc.1 
 	IL_000d:  ldloc.1 
-	IL_000d:  ldloc.1 
+		  ldloc.1
 		  ldind.u1
 	IL_000e:  ldc.i4.1 
 	IL_000f:  or 
