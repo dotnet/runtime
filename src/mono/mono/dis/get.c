@@ -2935,6 +2935,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "sub", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "sub.ovf", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "sub.ovf.un", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "switch", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "synchronized", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "syschar", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "sysstring", GINT_TO_POINTER (TRUE));
