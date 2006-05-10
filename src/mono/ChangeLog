@@ -1,3 +1,8 @@
+2006-05-10  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* data/net_2_0/machine.config : updated webRequestModules,
+	  defaultProxy and connectionManagement handlers.
+
 2006-05-10  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable usage of visibility(hidden) on solaris x86.
