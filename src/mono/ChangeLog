@@ -1,3 +1,7 @@
+2006-05-10  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable usage of visibility(hidden) on solaris x86.
+
 2006-05-07  Zoltan Varga  <vargaz@gmail.com>
 
 	* data/mono.supp: Applied patch from Matt Hargett (matt@use.net).
