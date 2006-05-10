@@ -81,7 +81,7 @@ OBJECTS=					\
 	deploy/xml-classes.html			\
 	deploy/class-library.html		\
 	deploy/classlib-doc.html 		\
-	deploy/class-status.html	 	\
+	deploy/class-status.html		\
 	deploy/class-status-mscorlib.html 			\
 	deploy/class-status-System.html 			\
 	deploy/class-status-System.Xml.html 			\
@@ -102,7 +102,19 @@ OBJECTS=					\
 	deploy/class-status-System.EnterpriseServices.html	\
 	deploy/class-status-System.Runtime.Remoting.html	\
 	deploy/class-status-cscompmgd.html			\
-	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html
+	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html \
+	deploy/class-status-Microsoft.Build.Framework.html	\
+	deploy/class-status-Microsoft.Build.Engine.html		\
+	deploy/class-status-Microsoft.Build.Utilities.html	\
+	deploy/class-status-Microsoft.Build.Tasks.html
+
+NET_2_0_COMPARES = \
+	deploy/class-status-System.Configuration.html
+
+ifeq ($(PROFILE),net_2_0)
+	OBJECTS += $(NET_2_0_COMPARES)
+endif
+
 
 HTML_SOURCES = ../mono-roadmap.html
 
@@ -181,7 +193,7 @@ src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/mono-api.xsl
 
 
 .PRECIOUS: infos/%.xml
-infos/%.xml: ../../../mcs/class/lib/default/%.dll $(CORCOMPARE)/mono-api-info.exe
+infos/%.xml: ../../../mcs/class/lib/$(PROFILE)/%.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 .PRECIOUS: src/%.xml
