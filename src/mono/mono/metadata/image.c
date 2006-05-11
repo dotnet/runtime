@@ -1199,6 +1199,8 @@ mono_image_close (MonoImage *image)
 	}
 	if (image->modules)
 		g_free (image->modules);
+	if (image->references)
+		g_free (image->references);
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
 		if (debug_assembly_unload)

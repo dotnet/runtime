@@ -1429,9 +1429,9 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		}
 	}
 	ass_loading = refonly ? assemblies_refonly_loading : assemblies_loading;
-	loading = g_hash_table_lookup (ass_loading, GetCurrentThreadId ());
+	loading = g_hash_table_lookup (ass_loading, (gpointer)GetCurrentThreadId ());
 	loading = g_list_prepend (loading, ass);
-	g_hash_table_insert (ass_loading, GetCurrentThreadId (), loading);
+	g_hash_table_insert (ass_loading, (gpointer)GetCurrentThreadId (), loading);
 	mono_assemblies_unlock ();
 
 	g_assert (image->assembly == NULL);
@@ -1441,13 +1441,13 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	mono_assemblies_lock ();
 
-	loading = g_hash_table_lookup (ass_loading, GetCurrentThreadId ());
+	loading = g_hash_table_lookup (ass_loading, (gpointer)GetCurrentThreadId ());
 	loading = g_list_remove (loading, ass);
 	if (loading == NULL)
 		/* Prevent memory leaks */
-		g_hash_table_remove (ass_loading, GetCurrentThreadId ());
+		g_hash_table_remove (ass_loading, (gpointer)GetCurrentThreadId ());
 	else
-		g_hash_table_insert (ass_loading, GetCurrentThreadId (), loading);
+		g_hash_table_insert (ass_loading, (gpointer)GetCurrentThreadId (), loading);
 	if (*status != MONO_IMAGE_OK) {
 		mono_assemblies_unlock ();
 		mono_assembly_close (ass);
@@ -2237,6 +2237,7 @@ mono_assembly_close (MonoAssembly *assembly)
 		}
 
 		g_free (assembly->image->references);
+		assembly->image->references = NULL;
 	}
 
 	assembly->image->assembly = NULL;
