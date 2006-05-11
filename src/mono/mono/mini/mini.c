@@ -10597,6 +10597,7 @@ mini_init (const char *filename)
 		pthread_attr_t attr;
 		pthread_getattr_np (pthread_self (), &attr);
 		pthread_attr_getstack (&attr, &sstart, &size);
+		pthread_attr_destroy (&attr); 
 		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
 #ifdef __ia64__
 		/*
