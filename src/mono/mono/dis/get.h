@@ -40,6 +40,8 @@ char *dis_stringify_token     (MonoImage *m, guint32 token);
 char *dis_stringify_array     (MonoImage *m, MonoArrayType *array, gboolean is_def);
 char *dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod);
 char *dis_stringify_param     (MonoImage *m, MonoType *param);
+char *dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
+				      MonoGenericContext *context, gboolean fully_qualified, gboolean with_marshal_info);
 char *dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
 				      MonoGenericContext *context, gboolean fully_qualified);
 char *dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method);

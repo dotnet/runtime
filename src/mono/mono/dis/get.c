@@ -828,6 +828,13 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
         return retval;
 }
 
+char*
+dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
+				MonoGenericContext *context, gboolean fully_qualified)
+{
+	return dis_stringify_method_signature_full (m, method, methoddef_row, context, fully_qualified, TRUE);
+}
+
 /* 
  * @m: metadata context
  * @method: MonoMethodSignature to dis-stringify
@@ -839,8 +846,8 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
  * Returns: Allocated stringified method signature
  */
 char*
-dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
-				MonoGenericContext *context, gboolean fully_qualified)
+dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
+				MonoGenericContext *context, gboolean fully_qualified, gboolean with_marshal_info)
 {
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
@@ -910,7 +917,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 			if (i)
 				name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 
-			if (pcols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
+			if (with_marshal_info && (pcols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL)) {
 				const char *tp;
 				MonoMarshalSpec *spec;
 				tp = mono_metadata_get_marshal_info (m, param_index - 1, FALSE);

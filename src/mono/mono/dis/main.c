@@ -944,7 +944,7 @@ dis_property_methods (MonoImage *m, guint32 prop, MonoGenericContext *context)
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
 		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
 			continue;
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE);
+		sig = dis_stringify_method_signature_full (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE, FALSE);
 		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
 		g_free (sig);
 	}
@@ -1058,7 +1058,7 @@ dis_event_methods (MonoImage *m, guint32 event, MonoGenericContext *context)
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
 		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
 			continue;
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE);
+		sig = dis_stringify_method_signature_full (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE, FALSE);
 		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 		case METHOD_SEMANTIC_OTHER:
 			type = ".other"; break;
