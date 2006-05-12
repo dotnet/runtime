@@ -33,6 +33,10 @@ typedef sem_t MonoSemType;
 #define MONO_SEM_DESTROY(sem) sem_destroy ((sem))
 #endif
 
+/* There doesn't seem to be a defined symbol for this */
+#define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE
+extern gpointer _wapi_thread_duplicate (void);
+
 extern struct _WapiHandleOps _wapi_thread_ops;
 
 typedef enum {
@@ -68,6 +72,6 @@ extern gboolean _wapi_thread_cur_apc_pending (void);
 extern gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
 extern void _wapi_thread_own_mutex (gpointer mutex);
 extern void _wapi_thread_disown_mutex (gpointer mutex);
-
+extern gpointer _wapi_thread_handle_from_id (pthread_t tid);
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

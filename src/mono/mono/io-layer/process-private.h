@@ -13,6 +13,10 @@
 #include <config.h>
 #include <glib.h>
 
+/* There doesn't seem to be a defined symbol for this */
+#define _WAPI_PROCESS_CURRENT (gpointer)0xFFFFFFFF
+extern gpointer _wapi_process_duplicate (void);
+
 extern struct _WapiHandleOps _wapi_process_ops;
 
 #define _WAPI_PROC_NAME_MAX_LEN _POSIX_PATH_MAX

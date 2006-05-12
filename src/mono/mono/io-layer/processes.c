@@ -940,12 +940,21 @@ static void process_set_current (void)
 	_wapi_handle_ref (current_process);
 }
 
+gpointer _wapi_process_duplicate ()
+{
+	mono_once (&process_current_once, process_set_current);
+	
+	_wapi_handle_ref (current_process);
+	
+	return(current_process);
+}
+
 /* Returns a pseudo handle that doesn't need to be closed afterwards */
 gpointer GetCurrentProcess (void)
 {
 	mono_once (&process_current_once, process_set_current);
 		
-	return((gpointer)-1);
+	return(_WAPI_PROCESS_CURRENT);
 }
 
 guint32 GetProcessId (gpointer handle)

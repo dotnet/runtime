@@ -43,6 +43,12 @@
 static mono_once_t thread_hash_once = MONO_ONCE_INIT;
 static pthread_key_t thread_hash_key;
 
+/* This key is used with attached threads and a destructor to signal
+ * when attached threads exit, as they don't have the thread_exit()
+ * infrastructure
+ */
+static pthread_key_t thread_attached_key;
+
 struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
@@ -68,6 +74,14 @@ void _wapi_thread_abandon_mutexes (gpointer handle)
 	int i;
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
+	
+	if (handle == NULL) {
+		handle = _wapi_thread_handle_from_id (pthread_self ());
+		if (handle == NULL) {
+			/* Something gone badly wrong... */
+			return;
+		}
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
@@ -146,11 +160,23 @@ static void thread_exit (guint32 exitstatus, gpointer handle)
 	pthread_exit (NULL);
 }
 
+static void thread_attached_exit (gpointer handle)
+{
+	/* Drop the extra reference we take in thread_attach, now this
+	 * thread is dead
+	 */
+	_wapi_handle_unref (handle);
+}
+
 static void thread_hash_init(void)
 {
 	int thr_ret;
 	
 	thr_ret = pthread_key_create (&thread_hash_key, NULL);
+	g_assert (thr_ret == 0);
+
+	thr_ret = pthread_key_create (&thread_attached_key,
+				      thread_attached_exit);
 	g_assert (thr_ret == 0);
 }
 
@@ -356,7 +382,7 @@ cleanup:
  * looking up the handle in TLS.  OpenThread () must cope with a NULL
  * return and do a handle search in that case.
  */
-static gpointer _wapi_thread_handle_from_id (pthread_t tid)
+gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
 	gpointer ret;
 
@@ -474,7 +500,14 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
  */
 void ExitThread(guint32 exitcode)
 {
-	thread_exit(exitcode, GetCurrentThread ());
+	gpointer thread = _wapi_thread_handle_from_id (pthread_self ());
+	
+	if (thread != NULL) {
+		thread_exit(exitcode, thread);
+	} else {
+		/* Just blow this thread away */
+		pthread_exit (NULL);
+	}
 }
 
 /**
@@ -602,6 +635,9 @@ static gpointer thread_attach(gsize *tid)
 
 	thr_ret = pthread_setspecific (thread_hash_key, (void *)handle);
 	g_assert (thr_ret == 0);
+
+	thr_ret = pthread_setspecific (thread_attached_key, (void *)handle);
+	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
 	g_message("%s: Attached thread handle %p ID %ld", __func__, handle,
@@ -626,6 +662,23 @@ cleanup:
 	return(handle);
 }
 
+gpointer _wapi_thread_duplicate ()
+{
+	gpointer ret = NULL;
+	
+	mono_once (&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
+	
+	ret = _wapi_thread_handle_from_id (pthread_self ());
+	if (!ret) {
+		ret = thread_attach (NULL);
+	} else {
+		_wapi_handle_ref (ret);
+	}
+	
+	return(ret);
+}
+
 /**
  * GetCurrentThread:
  *
@@ -639,19 +692,10 @@ cleanup:
  */
 gpointer GetCurrentThread(void)
 {
-	gpointer ret=NULL;
-	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 	
-	ret = _wapi_thread_handle_from_id (pthread_self ());
-	if (!ret) {
-		ret = thread_attach (NULL);
-	} else {
-		_wapi_handle_ref (ret);
-	}
-
-	return(ret);
+	return(_WAPI_THREAD_CURRENT);
 }
 
 /**
@@ -892,7 +936,12 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 #endif
 
 	if (alertable) {
-		current_thread = GetCurrentThread ();
+		current_thread = _wapi_thread_handle_from_id (pthread_self ());
+		if (current_thread == NULL) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return(WAIT_FAILED);
+		}
+		
 		if (_wapi_thread_apc_pending (current_thread)) {
 			_wapi_thread_dispatch_apc_queue (current_thread);
 			return WAIT_IO_COMPLETION;
@@ -940,7 +989,14 @@ void Sleep(guint32 ms)
 
 gboolean _wapi_thread_cur_apc_pending (void)
 {
-	return(_wapi_thread_apc_pending (GetCurrentThread ()));
+	gpointer thread = _wapi_thread_handle_from_id (pthread_self ());
+	
+	if (thread == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	return(_wapi_thread_apc_pending (thread));
 }
 
 static void _wapi_thread_queue_apc (struct _WapiHandle_thread *thread,

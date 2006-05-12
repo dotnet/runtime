@@ -14,7 +14,8 @@
 
 G_BEGIN_DECLS
 
-extern gboolean CloseHandle(gpointer handle);
+extern gboolean CloseHandle (gpointer handle);
+extern gboolean DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target, guint32 access, gboolean inherit, guint32 options);
 
 G_END_DECLS
 

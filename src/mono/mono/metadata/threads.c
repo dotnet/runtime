@@ -425,7 +425,7 @@ mono_thread_attach (MonoDomain *domain)
 	}
 
 	if (!mono_gc_register_thread (&domain)) {
-		g_error ("Thread %p calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", GetCurrentThread ());
+		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", GetCurrentThreadId ());
 	}
 
 	thread = (MonoThread *)mono_object_new (domain,
@@ -436,14 +436,12 @@ mono_thread_attach (MonoDomain *domain)
 
 	tid=GetCurrentThreadId ();
 
-#ifdef PLATFORM_WIN32
 	/* 
 	 * The handle returned by GetCurrentThread () is a pseudo handle, so it can't be used to
 	 * refer to the thread from other threads for things like aborting.
 	 */
 	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle, 
 					 THREAD_ALL_ACCESS, TRUE, 0);
-#endif
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
@@ -2057,7 +2055,7 @@ void mono_thread_manage (void)
 	 * anything in the documentation that would let me do this
 	 * here yet still be safe to call on windows.
 	 */
-	_wapi_thread_abandon_mutexes (GetCurrentThread ());
+	_wapi_thread_abandon_mutexes (NULL);
 #endif
 	
 	/* 

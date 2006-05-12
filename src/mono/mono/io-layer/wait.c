@@ -4,7 +4,7 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * (C) 2002-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -92,7 +92,20 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	struct timespec abstime;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = GetCurrentThread ();
+	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	
+	if (current_thread == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
+	}
+
+	if (handle == _WAPI_THREAD_CURRENT) {
+		handle == _wapi_thread_handle_from_id (pthread_self ());
+		if (handle == NULL) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return(WAIT_FAILED);
+		}
+	}
 	
 	if (_wapi_handle_test_capabilities (handle,
 					    WAPI_HANDLE_CAP_WAIT) == FALSE) {
@@ -286,7 +299,28 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	struct timespec abstime;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = GetCurrentThread ();
+	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	
+	if (current_thread == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
+	}
+
+	if (signal_handle == _WAPI_THREAD_CURRENT) {
+		signal_handle == _wapi_thread_handle_from_id (pthread_self ());
+		if (signal_handle == NULL) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return(WAIT_FAILED);
+		}
+	}
+
+	if (wait == _WAPI_THREAD_CURRENT) {
+		wait == _wapi_thread_handle_from_id (pthread_self ());
+		if (wait == NULL) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return(WAIT_FAILED);
+		}
+	}
 	
 	if (_wapi_handle_test_capabilities (signal_handle,
 					    WAPI_HANDLE_CAP_SIGNAL)==FALSE) {
@@ -511,7 +545,12 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	guint i;
 	guint32 ret;
 	int thr_ret;
-	gpointer current_thread = GetCurrentThread ();
+	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	
+	if (current_thread == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
+	}
 	
 	if (numobjects > MAXIMUM_WAIT_OBJECTS) {
 #ifdef DEBUG
@@ -528,7 +567,22 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	/* Check for duplicates */
 	dups = g_hash_table_new (g_direct_hash, g_direct_equal);
 	for (i = 0; i < numobjects; i++) {
-		gpointer exists = g_hash_table_lookup (dups, handles[i]);
+		gpointer exists;
+
+		if (handles[i] == _WAPI_THREAD_CURRENT) {
+			handles[i] = _wapi_thread_handle_from_id (pthread_self ());
+			
+			if (handles[i] == NULL) {
+#ifdef DEBUG
+				g_message ("%s: Handle %d bogus", __func__, i);
+#endif
+
+				bogustype = TRUE;
+				break;
+			}
+		}
+		
+		exists = g_hash_table_lookup (dups, handles[i]);
 		if (exists != NULL) {
 #ifdef DEBUG
 			g_message ("%s: Handle %p duplicated", __func__,

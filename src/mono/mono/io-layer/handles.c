@@ -1165,6 +1165,30 @@ gboolean CloseHandle(gpointer handle)
 	return(TRUE);
 }
 
+/* Lots more to implement here, but this is all we need at the moment */
+gboolean DuplicateHandle (gpointer srcprocess, gpointer src,
+			  gpointer targetprocess, gpointer *target,
+			  guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED)
+{
+	if (srcprocess != _WAPI_PROCESS_CURRENT ||
+	    targetprocess != _WAPI_PROCESS_CURRENT) {
+		/* Duplicating other process's handles is not supported */
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	if (src == _WAPI_PROCESS_CURRENT) {
+		*target = _wapi_process_duplicate ();
+	} else if (src == _WAPI_THREAD_CURRENT) {
+		*target = _wapi_thread_duplicate ();
+	} else {
+		_wapi_handle_ref (src);
+		*target = src;
+	}
+	
+	return(TRUE);
+}
+
 gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 					       gpointer *handles,
 					       gboolean waitall,
