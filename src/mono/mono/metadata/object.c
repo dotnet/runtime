@@ -3890,6 +3890,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
+	char* full_name;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 	g_assert (res != NULL);
@@ -3910,8 +3911,10 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
-	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	full_name = mono_type_get_full_name (klass);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
 	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
+	g_free (full_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -3946,6 +3949,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc, *res;
+	char* full_name;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 
@@ -3973,8 +3977,10 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 
 	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
-	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	full_name = mono_type_get_full_name (klass);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
 	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
+	g_free (full_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -4010,6 +4016,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	MonoArray *out_args;
 	MonoObject *exc;
 	MonoObject *arg;
+	char* full_name;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 
@@ -4035,9 +4042,11 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
 
-	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	full_name = mono_type_get_full_name (klass);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
 	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
 	mono_array_setref (msg->args, 2, arg);
+	g_free (full_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
@@ -4063,6 +4072,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	MonoMethodMessage *msg;
 	MonoArray *out_args;
 	MonoObject *exc;
+	char* full_name;
 
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 
@@ -4082,9 +4092,11 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
 
-	mono_array_setref (msg->args, 0, mono_string_new (domain, klass->name));
+	full_name = mono_type_get_full_name (klass);
+	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
 	mono_array_setref (msg->args, 1, mono_string_new (domain, field->name));
 	mono_array_setref (msg->args, 2, arg);
+	g_free (full_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
 
