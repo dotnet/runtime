@@ -32,11 +32,11 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 {
 }
 
-.class ValueType extends [mscorlib]System.ValueType
+.class sealed ValueType extends [mscorlib]System.ValueType
 {
 }
 
-.class ValueTypeSubType extends ValueType
+.class sealed ValueTypeSubType extends ValueType
 {
 }
 
