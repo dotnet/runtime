@@ -3119,7 +3119,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
-	result->image = NULL; /* need to fix... */
+	result->image = mono_defaults.corlib; /* need to fix... */
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
 	/* Can pointers get boxed? */
