@@ -43,6 +43,15 @@
 /*#define LIBGC_DEBUG(a) do { a; } while (0)*/
 #define LIBGC_DEBUG(a)
 
+/* Provide this for systems with glib < 2.6 */
+#ifndef G_GSIZE_FORMAT
+#   if GLIB_SIZEOF_LONG == 8
+#       define G_GSIZE_FORMAT "lu"
+#   else
+#       define G_GSIZE_FORMAT "u"
+#   endif
+#endif
+
 struct StartInfo 
 {
 	guint32 (*func)(void *);
