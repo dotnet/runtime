@@ -1565,7 +1565,7 @@ typedef enum {
 #define ia64_m17(code, qp, r1, r3, imm, hint, m, x, x6) do { int aimm; read_pr ((code), (qp)); write_gr ((code), (r1)); read_gr ((code), (r3)); aimm = (imm) < 0 ? - (imm) : (imm); check_assert ((aimm) == 16 || (aimm) == 8 || (aimm) == 4 || (aimm) == 1); ia64_emit_ins_10 ((code), IA64_INS_TYPE_M, (qp), 0, (r1), 6, encode_inc3 (aimm), 13, sign_bit ((imm)), 15, (r3), 20, (x), 27, (hint), 28, (x6), 30, (m), 36, (4), 37); } while (0)
 
 #define ia64_fetchadd4_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
-#define ia64_fetchadd8_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x12)
+#define ia64_fetchadd8_acq_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x13)
 #define ia64_fetchadd4_rel_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x16)
 #define ia64_fetchadd8_rel_hint_pred(code, qp, r1, r3, inc, hint) ia64_m17 ((code), (qp), (r1), (r3), (inc), (hint), 0, 1, 0x17)
 
