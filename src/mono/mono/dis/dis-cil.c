@@ -63,7 +63,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 	const unsigned char *ptr = start;
 	const MonoOpcode *entry;
 	char indent[1024];
-	int i, indent_level = 0;
+	int i, j, indent_level = 0;
 	gboolean in_fault = 0;
 	const char *clause_names[] = {"catch", "filter", "finally", "", "fault"};
 	gboolean *trys = NULL;
@@ -82,11 +82,16 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 	       trys = g_malloc0 (sizeof (gboolean) * mh->num_clauses);
 	       trys [0] = 1;
 	       for (i=1; i < mh->num_clauses; ++i) {
-#define pcl mh->clauses [i-1]	
+#define jcl mh->clauses [j]	
 #define cl mh->clauses [i]	
-		       if (pcl.try_offset != cl.try_offset || pcl.try_len != cl.try_len)
-			       trys [i] = 1;
-#undef pcl
+		       trys [i] = 1;
+		       for (j = 0; j < i; j++) {
+			       if (cl.try_offset == jcl.try_offset && cl.try_len == jcl.try_len) {
+				       trys [i] = 0;
+				       break;
+			       }
+		       }
+#undef jcl
 #undef cl
 	       }
        }
