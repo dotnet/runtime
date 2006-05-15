@@ -756,6 +756,7 @@ typedef struct {
 	MonoString *filename;
 	guint32 attrs;
 	guint32 offset;
+	MonoObject *stream;
 } MonoReflectionResource;
 
 typedef struct {
