@@ -14,6 +14,28 @@ public class Dummy {
 	public long[]	c;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+class FormattedClass
+{
+	public int i;
+		
+	public FormattedClass(int i)
+	{
+		this.i = i;
+	}
+}
+
+[StructLayout(LayoutKind.Sequential)]
+struct Struct
+{
+	public int i;
+		
+	public Struct(int i)
+	{
+		this.i = i;
+	}
+}
+
 public class X {
 	public static unsafe int Main () {
 
@@ -69,6 +91,34 @@ public class X {
 		}
 
 		Marshal.FreeHGlobal(p);
+
+
+		///
+		/// Only allow 
+		///
+		FormattedClass fc = new FormattedClass(20);
+		IntPtr fc_ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FormattedClass)));
+		Marshal.StructureToPtr(fc, fc_ptr, false);
+		Marshal.PtrToStructure(fc_ptr, fc);
+		if (fc.i != 20)
+			return 10;
+		Marshal.FreeHGlobal(fc_ptr);
+			
+		bool exception = false;
+		try
+		{
+			object str = new Struct(20);
+			IntPtr str_ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Struct)));
+			Marshal.StructureToPtr(str, str_ptr, false);
+			Marshal.PtrToStructure(str_ptr, str);
+			Marshal.FreeHGlobal(str_ptr);
+		}
+		catch (Exception ex)
+		{
+			exception = true;
+		}
+		if (!exception)
+			return 11;
 
 		return 0;
 	}
