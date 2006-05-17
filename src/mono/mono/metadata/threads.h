@@ -63,8 +63,6 @@ extern gboolean mono_thread_interruption_requested (void);
 extern void mono_thread_interruption_checkpoint (void);
 extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
-extern void mono_debugger_init_threads (void);
-extern void mono_debugger_finalize_threads (void);
 
 G_END_DECLS
 
