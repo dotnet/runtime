@@ -8015,16 +8015,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj
 	mono_runtime_invoke (method, NULL, pa, NULL);
 }
 
-void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst)
+static void
+ptr_to_structure (gpointer src, MonoObject *dst)
 {
 	MonoMethod *method;
 	gpointer pa [2];
-
-	MONO_ARCH_SAVE_REGS;
-
-	MONO_CHECK_ARG_NULL (src);
-	MONO_CHECK_ARG_NULL (dst);
 
 	method = mono_marshal_get_ptr_to_struct (dst->vtable->klass);
 
@@ -8032,6 +8027,33 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 	pa [1] = dst;
 
 	mono_runtime_invoke (method, NULL, pa, NULL);
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst)
+{
+	MonoType *t;
+
+	MONO_ARCH_SAVE_REGS;
+
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dst);
+	
+	t = mono_type_get_underlying_type (mono_class_get_type (dst->vtable->klass));
+
+	if (t->type == MONO_TYPE_VALUETYPE) {
+		MonoException *exc;
+		gchar *tmp;
+
+		tmp = g_strdup_printf ("Destination is a boxed value type.");
+		exc = mono_get_exception_argument ("dst", tmp);
+		g_free (tmp);  
+
+		mono_raise_exception (exc);
+		return;
+	}
+
+	ptr_to_structure (src, dst);
 }
 
 MonoObject *
@@ -8047,7 +8069,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 
 	res = mono_object_new (domain, mono_class_from_mono_type (type->type));
 
-	ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (src, res);
+	ptr_to_structure (src, res);
 
 	return res;
 }
