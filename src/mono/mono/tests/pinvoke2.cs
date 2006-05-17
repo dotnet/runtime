@@ -201,6 +201,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_empty_struct")]
 	public static extern int mono_test_empty_struct (int a, EmptyStruct es, int b);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpstruct")]
+	public static extern int mono_test_marshal_lpstruct ([In, MarshalAs(UnmanagedType.LPStruct)] SimpleStruct ss);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct_array")]
 	public static extern int mono_test_marshal_struct_array (SimpleStruct2[] ss);
 
@@ -381,6 +384,14 @@ public class Tests {
 			return 1;
 		
 		return 0;
+	}
+
+	public static int test_0_marshal_lpstruct () {
+		SimpleStruct ss = new  SimpleStruct ();
+		ss.b = true;
+		ss.d = "TEST";
+		
+		return mono_test_marshal_lpstruct (ss);
 	}
 
 	public static int test_0_marshal_struct_array () {

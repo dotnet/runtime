@@ -450,6 +450,16 @@ mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 	return 1;
 }
 
+STDCALL int 
+mono_test_marshal_lpstruct (simplestruct *ss)
+{
+	if (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
+	    !strcmp (ss->d, "TEST"))
+		return 0;
+
+	return 1;
+}
+
 STDCALL int
 mono_test_marshal_struct_array (simplestruct2 *ss)
 {
