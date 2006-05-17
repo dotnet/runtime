@@ -5067,6 +5067,13 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		break;
 
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
+		break;
+
 	case MARSHAL_ACTION_CONV_RESULT:
 		mono_mb_emit_stloc (mb, 0);
 				
@@ -5324,6 +5331,13 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			emit_struct_free (mb, klass, conv_arg);
 
 		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+		break;
+
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT:
@@ -5811,6 +5825,13 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		break;
 
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
+		break;
+
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* fixme: we need conversions here */
 		mono_mb_emit_stloc (mb, 3);
@@ -6259,6 +6280,23 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 	}
 
+	case MARSHAL_ACTION_CONV_OUT:
+		if (!t->byref)
+			break;
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_ldloc (mb, conv_arg);
+		if (spec != NULL && spec->native == MONO_NATIVE_VARIANTBOOL)
+			mono_mb_emit_byte (mb, CEE_NEG);
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		break;
+
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldarg (mb, argnum);
+		break;
+
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* maybe we need to make sure that it fits within 8 bits */
 		mono_mb_emit_stloc (mb, 3);
@@ -6276,6 +6314,8 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 				  MonoMarshalSpec *spec, int conv_arg, 
 				  MonoType **conv_arg_type, MarshalAction action)
 {
+	MonoMethodBuilder *mb = m->mb;
+
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		if (MONO_TYPE_ISSTRUCT (t->data.type)) {
@@ -6283,6 +6323,67 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_exception_marshal_directive (m->mb, msg);
 		}
 		break;
+
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_ldarg (mb, argnum);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT:
+		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	default:
+		break;
+	}
+
+	return conv_arg;
+}
+
+static int
+emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t, 
+				   MonoMarshalSpec *spec, int conv_arg, 
+				   MonoType **conv_arg_type, MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action) {
+	case MARSHAL_ACTION_PUSH:
+		/* fixme: dont know how to marshal that. We cant simply
+		 * convert it to a one byte UTF8 character, because an
+		 * unicode character may need more that one byte in UTF8 */
+		mono_mb_emit_ldarg (mb, argnum);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT:
+		/* fixme: we need conversions here */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	default:
+		break;
+	}
+
+	return conv_arg;
+}
+
+static int
+emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t, 
+					 MonoMarshalSpec *spec, int conv_arg, 
+					 MonoType **conv_arg_type, MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action) {
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_ldarg (mb, argnum);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT:
+		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
 	default:
 		break;
 	}
@@ -6319,6 +6420,22 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_boolean (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_PTR:
 		return emit_marshal_ptr (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	case MONO_TYPE_CHAR:
+		return emit_marshal_char (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_FNPTR:
+		return emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
 
 	return conv_arg;
@@ -6391,64 +6508,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 
 	for (i = 0; i < sig->param_count; i++) {
-		MonoType *t = sig->params [i];
-		MonoMarshalSpec *spec = mspecs [i + 1];
-
-		if (spec && ((spec->native == MONO_NATIVE_CUSTOM) || (spec->native == MONO_NATIVE_ASANY)))
-			emit_marshal (&m, i + sig->hasthis, t, spec, tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
-		else {
-			argnum = i + sig->hasthis;
-
-			switch (t->type) {
-			case MONO_TYPE_BOOLEAN:
-				if (t->byref) {
-					g_assert (tmp_locals [i]);
-					mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-				} else
-					mono_mb_emit_ldarg (mb, argnum);
-				break;
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_FNPTR:
-				mono_mb_emit_ldarg (mb, argnum);
-				break;
-			case MONO_TYPE_VALUETYPE:
-				emit_marshal (&m, i + sig->hasthis, t, spec, tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
-				break;
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				g_assert (tmp_locals [i]);
-				if (t->byref) 
-					mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-				else
-					mono_mb_emit_ldloc (mb, tmp_locals [i]);
-				break;
-			case MONO_TYPE_CHAR:
-				/* fixme: dont know how to marshal that. We cant simply
-				 * convert it to a one byte UTF8 character, because an
-				 * unicode character may need more that one byte in UTF8 */
-				mono_mb_emit_ldarg (mb, argnum);
-				break;
-			case MONO_TYPE_TYPEDBYREF:
-			default:
-				g_warning ("type 0x%02x unknown", t->type);	
-				g_assert_not_reached ();
-			}
-		}
+		emit_marshal (&m, i + sig->hasthis, sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
 	}			
 
 	/* call the native method */
@@ -6472,23 +6532,6 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 			switch (type) {
 			case MONO_TYPE_VOID:
 				break;
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_FNPTR:
-				/* no conversions necessary */
-				mono_mb_emit_stloc (mb, 3);
-				break;
 			case MONO_TYPE_VALUETYPE:
 				klass = sig->ret->data.klass;
 				if (klass->enumtype) {
@@ -6497,17 +6540,28 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 				}
 				emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
 				break;
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_FNPTR:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_BOOLEAN:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
-				break;
 			case MONO_TYPE_CHAR:
-				/* fixme: we need conversions here */
-				mono_mb_emit_stloc (mb, 3);
+			case MONO_TYPE_PTR:
+				emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
 				break;
 			case MONO_TYPE_TYPEDBYREF:
 			default:
@@ -6543,16 +6597,9 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_BOOLEAN:
 			emit_marshal (&m, argnum, t, spec, tmp_locals [i], NULL, MARSHAL_ACTION_CONV_OUT);
 			break;
-		case MONO_TYPE_BOOLEAN:
-			if (!t->byref)
-				continue;
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			if (mspecs [i + 1] != NULL && mspecs [i + 1]->native == MONO_NATIVE_VARIANTBOOL)
-				mono_mb_emit_byte (mb, CEE_NEG);
-			mono_mb_emit_byte (mb, CEE_STIND_I1);
 		}
 	}
 
@@ -6771,6 +6818,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.sig = sig;
 	m.piinfo = NULL;
 	m.retobj_var = 0;
+	m.csig = csig;
 
 #ifdef PLATFORM_WIN32
 	/* 
