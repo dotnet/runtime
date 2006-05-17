@@ -4425,6 +4425,7 @@ typedef struct {
 	int *orig_conv_args; /* Locals containing the original values of byref args */
 	int retobj_var;
 	MonoClass *retobj_class;
+	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
 } EmitMarshalContext;
 
 typedef enum {
@@ -4828,6 +4829,22 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
+		if (spec && spec->native == MONO_NATIVE_LPSTRUCT) {
+			/* FIXME: */
+			g_assert (!t->byref);
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+				klass->blittable || klass->enumtype) {
+				/* FIXME: */
+				g_assert_not_reached ();
+			}
+
+			/* Have to change the signature since the vtype is passed byref */
+			m->csig->params [argnum - m->csig->hasthis] = &mono_defaults.int_class->byval_arg;
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			break;
+		}
+
 		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
 			klass->blittable || klass->enumtype) {
 			mono_mb_emit_ldarg (mb, argnum);
@@ -6331,6 +6348,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	/* we copy the signature, so that we can set pinvoke to 0 */
 	csig = signature_dup (mb->method->klass->image, sig);
 	csig->pinvoke = 1;
+	m.csig = csig;
 
 	/* we allocate local for use with emit_struct_conv() */
 	/* allocate local 0 (pointer) src_ptr */
