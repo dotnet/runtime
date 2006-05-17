@@ -42,10 +42,21 @@ typedef struct _MonoGHashTable  MonoGHashTable;
 typedef gpointer (*MonoGRemapperFunc) (gpointer key, gpointer value, 
 									   gpointer user_data);
 
+/* do not change the values of this enum */
+typedef enum {
+	MONO_HASH_CONSERVATIVE_GC,
+	MONO_HASH_KEY_GC,
+	MONO_HASH_VALUE_GC,
+	MONO_HASH_KEY_VALUE_GC /* note this is the OR of the other two values */
+} MonoGHashGCType;
+
 /* Hash tables
  */
 MonoGHashTable* mono_g_hash_table_new		   (GHashFunc	    hash_func,
 					    GEqualFunc	    key_equal_func);
+MonoGHashTable* mono_g_hash_table_new_type		   (GHashFunc	    hash_func,
+					    GEqualFunc	    key_equal_func,
+					    MonoGHashGCType type);
 MonoGHashTable* mono_g_hash_table_new_full      	   (GHashFunc	    hash_func,
 					    GEqualFunc	    key_equal_func,
 					    GDestroyNotify  key_destroy_func,

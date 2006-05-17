@@ -39,10 +39,10 @@
 #include <glib.h>
 #include <mono/os/gc_wrapper.h>
 #include "mono-hash.h"
+#include "metadata/gc-internal.h"
 
 #define HASH_TABLE_MIN_SIZE 11
 #define HASH_TABLE_MAX_SIZE 13845163
-
 
 typedef struct _MonoGHashNode      MonoGHashNode;
 
@@ -62,6 +62,7 @@ struct _MonoGHashTable
   GEqualFunc       key_equal_func;
   GDestroyNotify   key_destroy_func;
   GDestroyNotify   value_destroy_func;
+  MonoGHashGCType  gc_type;
 };
 
 #define G_HASH_TABLE_RESIZE(hash_table)				\
@@ -77,11 +78,14 @@ static void		g_hash_table_resize	  (MonoGHashTable	  *hash_table);
 static MonoGHashNode**	g_hash_table_lookup_node  (MonoGHashTable     *hash_table,
                                                    gconstpointer   key);
 static MonoGHashNode*	g_hash_node_new		  (gpointer	   key,
-                                                   gpointer        value);
+                                                   gpointer        value,
+						   gint            gc_type);
 static void		g_hash_node_destroy	  (MonoGHashNode	  *hash_node,
+						   MonoGHashGCType type,
                                                    GDestroyNotify  key_destroy_func,
                                                    GDestroyNotify  value_destroy_func);
 static void		g_hash_nodes_destroy	  (MonoGHashNode	  *hash_node,
+						   MonoGHashGCType type,
 						  GDestroyNotify   key_destroy_func,
 						  GDestroyNotify   value_destroy_func);
 static guint g_hash_table_foreach_remove_or_steal (MonoGHashTable     *hash_table,
@@ -92,10 +96,15 @@ static guint g_hash_table_foreach_remove_or_steal (MonoGHashTable     *hash_tabl
 
 G_LOCK_DEFINE_STATIC (g_hash_global);
 
-#if !HAVE_BOEHM_GC
+#if defined(HAVE_NULL_GC)
 static GMemChunk *node_mem_chunk = NULL;
 #endif
+#if defined(HAVE_SGEN_GC)
+static void *node_gc_descs [4] = {NULL};
+static MonoGHashNode *node_free_lists [4] = {NULL};
+#else
 static MonoGHashNode *node_free_list = NULL;
+#endif
 
 /**
  * g_hash_table_new:
@@ -122,6 +131,29 @@ mono_g_hash_table_new (GHashFunc    hash_func,
   return mono_g_hash_table_new_full (hash_func, key_equal_func, NULL, NULL);
 }
 
+MonoGHashTable*
+mono_g_hash_table_new_type (GHashFunc    hash_func,
+		  GEqualFunc   key_equal_func,
+		  MonoGHashGCType type)
+{
+  MonoGHashTable *table = mono_g_hash_table_new_full (hash_func, key_equal_func, NULL, NULL);
+  table->gc_type = type;
+#if defined(HAVE_SGEN_GC)
+  if (type < 0 || type > MONO_HASH_KEY_VALUE_GC)
+	  g_error ("wrong type for gc hashtable");
+  if (!node_gc_descs [type] && type > MONO_HASH_CONSERVATIVE_GC) {
+	  gsize bmap = 0;
+	  if (type & MONO_HASH_KEY_GC)
+		  bmap |= 1; /* the first field in the node is the key */
+	  if (type & MONO_HASH_VALUE_GC)
+		  bmap |= 2; /* the second is the value */
+	  node_gc_descs [type] = mono_gc_make_descr_from_bitmap (&bmap, 2);
+  }
+#endif
+  return table;
+}
+
+
 
 /**
  * g_hash_table_new_full:
@@ -147,13 +179,13 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
 		       GDestroyNotify  value_destroy_func)
 {
   MonoGHashTable *hash_table;
+#if HAVE_BOEHM_GC
   static gboolean inited = FALSE;
   if (!inited) {
     MONO_GC_REGISTER_ROOT (node_free_list);
     inited = TRUE;
   }
   
-#if HAVE_BOEHM_GC
   hash_table = GC_MALLOC (sizeof (MonoGHashTable));
 #else
   hash_table = g_new (MonoGHashTable, 1);
@@ -169,6 +201,7 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
 #else
   hash_table->nodes              = g_new0 (MonoGHashNode*, hash_table->size);
 #endif
+  hash_table->gc_type            = 0;
   
   return hash_table;
 }
@@ -191,7 +224,7 @@ mono_g_hash_table_destroy (MonoGHashTable *hash_table)
   g_return_if_fail (hash_table != NULL);
   
   for (i = 0; i < hash_table->size; i++)
-    g_hash_nodes_destroy (hash_table->nodes[i], 
+    g_hash_nodes_destroy (hash_table->nodes[i], hash_table->gc_type,
 			  hash_table->key_destroy_func,
 			  hash_table->value_destroy_func);
 
@@ -288,7 +321,8 @@ mono_g_hash_table_lookup_extended (MonoGHashTable    *hash_table,
 
 static inline MonoGHashNode*
 g_hash_node_new (gpointer key,
-		 gpointer value)
+		 gpointer value,
+		 gint gc_type)
 {
   MonoGHashNode *hash_node = NULL;
 
@@ -304,6 +338,18 @@ g_hash_node_new (gpointer key,
   }
   if (!hash_node)
       hash_node = GC_MALLOC (sizeof (MonoGHashNode));
+#elif defined(HAVE_SGEN_GC)
+  if (node_free_lists [gc_type]) {
+	  G_LOCK (g_hash_global);
+
+	  if (node_free_lists [gc_type]) {
+		  hash_node = node_free_lists [gc_type];
+		  node_free_lists [gc_type] = node_free_lists [gc_type]->next;
+	  }
+	  G_UNLOCK (g_hash_global);
+  }
+  if (!hash_node)
+      hash_node = mono_gc_alloc_fixed (sizeof (MonoGHashNode), node_gc_descs [gc_type]);
 #else
   G_LOCK (g_hash_global);
   if (node_free_list)
@@ -373,7 +419,7 @@ mono_g_hash_table_insert (MonoGHashTable *hash_table,
     }
   else
     {
-      *node = g_hash_node_new (key, value);
+      *node = g_hash_node_new (key, value, hash_table->gc_type);
       hash_table->nnodes++;
       G_HASH_TABLE_RESIZE (hash_table);
     }
@@ -416,7 +462,7 @@ mono_g_hash_table_replace (MonoGHashTable *hash_table,
     }
   else
     {
-      *node = g_hash_node_new (key, value);
+      *node = g_hash_node_new (key, value, hash_table->gc_type);
       hash_table->nnodes++;
       G_HASH_TABLE_RESIZE (hash_table);
     }
@@ -449,7 +495,7 @@ mono_g_hash_table_remove (MonoGHashTable	   *hash_table,
     {
       dest = *node;
       (*node) = dest->next;
-      g_hash_node_destroy (dest, 
+      g_hash_node_destroy (dest, hash_table->gc_type,
 			   hash_table->key_destroy_func,
 			   hash_table->value_destroy_func);
       hash_table->nnodes--;
@@ -485,7 +531,7 @@ mono_g_hash_table_steal (MonoGHashTable    *hash_table,
     {
       dest = *node;
       (*node) = dest->next;
-      g_hash_node_destroy (dest, NULL, NULL);
+      g_hash_node_destroy (dest, hash_table->gc_type, NULL, NULL);
       hash_table->nnodes--;
   
       G_HASH_TABLE_RESIZE (hash_table);
@@ -571,7 +617,7 @@ g_hash_table_foreach_remove_or_steal (MonoGHashTable *hash_table,
 	      if (prev)
 		{
 		  prev->next = node->next;
-		  g_hash_node_destroy (node,
+		  g_hash_node_destroy (node, hash_table->gc_type,
 				       notify ? hash_table->key_destroy_func : NULL,
 				       notify ? hash_table->value_destroy_func : NULL);
 		  node = prev;
@@ -579,7 +625,7 @@ g_hash_table_foreach_remove_or_steal (MonoGHashTable *hash_table,
 	      else
 		{
 		  hash_table->nodes[i] = node->next;
-		  g_hash_node_destroy (node,
+		  g_hash_node_destroy (node, hash_table->gc_type,
 				       notify ? hash_table->key_destroy_func : NULL,
 				       notify ? hash_table->value_destroy_func : NULL);
 		  goto restart;
@@ -702,6 +748,7 @@ g_hash_table_resize (MonoGHashTable *hash_table)
 
 static void
 g_hash_node_destroy (MonoGHashNode      *hash_node,
+		     MonoGHashGCType type,
 		     GDestroyNotify  key_destroy_func,
 		     GDestroyNotify  value_destroy_func)
 {
@@ -714,13 +761,19 @@ g_hash_node_destroy (MonoGHashNode      *hash_node,
   hash_node->value = NULL;
 
   G_LOCK (g_hash_global);
+#if defined(HAVE_SGEN_GC)
+  hash_node->next = node_free_lists [type];
+  node_free_lists [type] = hash_node;
+#else
   hash_node->next = node_free_list;
   node_free_list = hash_node;
+#endif
   G_UNLOCK (g_hash_global);
 }
 
 static void
 g_hash_nodes_destroy (MonoGHashNode *hash_node,
+		      MonoGHashGCType type,
 		      GFreeFunc  key_destroy_func,
 		      GFreeFunc  value_destroy_func)
 {
@@ -750,8 +803,13 @@ g_hash_nodes_destroy (MonoGHashNode *hash_node,
       node->value = NULL;
  
       G_LOCK (g_hash_global);
+#if defined(HAVE_SGEN_GC)
+      node->next = node_free_lists [type];
+      node_free_lists [type] = hash_node;
+#else
       node->next = node_free_list;
       node_free_list = hash_node;
+#endif
       G_UNLOCK (g_hash_global);
     }
 }
