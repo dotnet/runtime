@@ -204,6 +204,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpstruct")]
 	public static extern int mono_test_marshal_lpstruct ([In, MarshalAs(UnmanagedType.LPStruct)] SimpleStruct ss);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpstruct_blittable")]
+	public static extern int mono_test_marshal_lpstruct_blittable ([In, MarshalAs(UnmanagedType.LPStruct)] Point p);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct_array")]
 	public static extern int mono_test_marshal_struct_array (SimpleStruct2[] ss);
 
@@ -392,6 +395,14 @@ public class Tests {
 		ss.d = "TEST";
 		
 		return mono_test_marshal_lpstruct (ss);
+	}
+
+	public static int test_0_marshal_lpstruct_blittable () {
+		Point p = new Point ();
+		p.x = 1.0;
+		p.y = 2.0;
+		
+		return mono_test_marshal_lpstruct_blittable (p);
 	}
 
 	public static int test_0_marshal_struct_array () {
