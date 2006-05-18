@@ -4832,16 +4832,15 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (spec && spec->native == MONO_NATIVE_LPSTRUCT) {
 			/* FIXME: */
 			g_assert (!t->byref);
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-				klass->blittable || klass->enumtype) {
-				/* FIXME: */
-				g_assert_not_reached ();
-			}
 
 			/* Have to change the signature since the vtype is passed byref */
 			m->csig->params [argnum - m->csig->hasthis] = &mono_defaults.int_class->byval_arg;
 
-			mono_mb_emit_ldloc (mb, conv_arg);
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+				klass->blittable || klass->enumtype)
+				mono_mb_emit_ldarg_addr (mb, argnum);
+			else
+				mono_mb_emit_ldloc (mb, conv_arg);
 			break;
 		}
 
