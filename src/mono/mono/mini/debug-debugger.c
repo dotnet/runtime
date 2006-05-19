@@ -248,8 +248,6 @@ debugger_get_current_thread (void)
 	return (guint64) (gsize) mono_thread_current ();
 }
 
-#if FIXME_BROKEN_OVER_NIGHT
-
 static void
 debugger_gc_thread_created (pthread_t thread, void *stack_ptr)
 {
@@ -300,18 +298,6 @@ debugger_finalize_threads (void)
 	gc_thread_vtable = NULL;
 }
 
-#else
-
-static void
-debugger_init_threads (void)
-{ }
-
-static void
-debugger_finalize_threads (void)
-{ }
-
-#endif
-
 static void
 debugger_attach (void)
 {
@@ -321,9 +307,7 @@ debugger_attach (void)
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
 
 	debugger_init_threads ();
-#if FIXME_BROKEN_OVER_NIGHT
 	GC_mono_debugger_add_all_threads ();
-#endif
 }
 
 static void
