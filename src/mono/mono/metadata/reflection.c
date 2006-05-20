@@ -7804,8 +7804,12 @@ handle_type:
 		*retbuffer = buffer;
 		eclass = type->data.klass;
 		arg_eclass = mono_object_class (arg)->element_class;
-		if (eclass == mono_defaults.object_class && arg_eclass->valuetype) {
+
+		if (!eclass) {
 			/* Happens when we are called from the MONO_TYPE_OBJECT case below */
+			eclass = mono_defaults.object_class;
+		}
+		if (eclass == mono_defaults.object_class && arg_eclass->valuetype) {
 			char *elptr = mono_array_addr ((MonoArray*)arg, char, 0);
 			int elsize = mono_class_array_element_size (arg_eclass);
 			for (i = 0; i < len; ++i) {
