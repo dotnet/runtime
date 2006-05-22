@@ -251,7 +251,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
 	void *start_arg;
-	guint32 tid;
+	gsize tid;
 	MonoThread *thread=start_info->obj;
 	MonoObject *start_delegate = start_info->delegate;
 
