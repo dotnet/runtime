@@ -470,7 +470,7 @@ mono_install_init_vtable (MonoInitVTableFunc func)
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
 static gsize*
-compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set)
+compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
 {
 	MonoClassField *field;
 	MonoClass *p;
@@ -485,8 +485,13 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 		while ((field = mono_class_get_fields (p, &iter))) {
 			MonoType *type;
 
-			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
-				continue;
+			if (static_fields) {
+				if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
+					continue;
+			} else {
+				if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
+					continue;
+			}
 			/* FIXME: should not happen, flag as type load error */
 			if (field->type->byref)
 				break;
@@ -501,6 +506,9 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_U:
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_FNPTR:
+#ifdef HAVE_SGEN_GC
+				break;
+#endif
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
@@ -525,7 +533,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 				MonoClass *fclass = mono_class_from_mono_type (field->type);
 				if (fclass->has_references) {
 					/* remove the object header */
-					compute_class_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)), max_set);
+					compute_class_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)), max_set, FALSE);
 				}
 				break;
 			}
@@ -547,6 +555,8 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 				break;
 			}
 		}
+		if (static_fields)
+			break;
 	}
 	return bitmap;
 }
@@ -604,7 +614,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
-			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (sizeof (MonoObject) / sizeof (gpointer)), &max_set);
+			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 			class->gc_descr = mono_gc_make_descr_for_array (TRUE, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
@@ -616,7 +626,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		/*static int count = 0;
 		if (count++ > 58)
 			return;*/
-		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set);
+		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
 #ifdef HAVE_BOEHM_GC
 		/* It seems there are issues when the bitmap doesn't fit: play it safe */
 		if (max_set >= 30) {
@@ -751,8 +761,18 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (class->class_size) {
 		if (class->has_static_refs) {
-			vt->data = mono_gc_alloc_fixed (class->class_size, NULL);
+			gpointer statics_gc_descr;
+			int max_set = 0;
+			gsize default_bitmap [4] = {0};
+			gsize *bitmap;
+
+			bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
+			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], class->name_space, class->name, class->class_size);*/
+			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set? max_set + 1: 0);
+			vt->data = mono_gc_alloc_fixed (class->class_size, statics_gc_descr);
 			mono_domain_add_class_static_data (domain, class, vt->data, NULL);
+			if (bitmap != default_bitmap)
+				g_free (bitmap);
 		} else {
 			vt->data = mono_mempool_alloc0 (domain->mp, class->class_size);
 		}
@@ -1438,6 +1458,9 @@ handle_enum:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
+		mono_gc_wbarrier_generic_store (dest, deref_pointer? *(gpointer*)value: value);
+		return;
+	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_PTR: {
 		gpointer *p = (gpointer*)dest;
 		*p = deref_pointer? *(gpointer*)value: value;
@@ -2996,6 +3019,7 @@ void
 mono_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 {
 	int size = mono_class_value_size (klass, NULL);
+	mono_gc_wbarrier_value_copy (dest, src, 1, klass);
 	memcpy (dest, src, size);
 }
 
@@ -3015,6 +3039,7 @@ mono_value_copy_array (MonoArray *dest, int dest_idx, gpointer src, int count)
 {
 	int size = mono_array_element_size (dest->obj.vtable->klass);
 	char *d = mono_array_addr_with_size (dest, size, dest_idx);
+	mono_gc_wbarrier_value_copy (d, src, count, mono_object_class (dest)->element_class);
 	memmove (d, src, size * count);
 }
 
@@ -3051,13 +3076,20 @@ guint
 mono_object_get_size (MonoObject* o)
 {
 	MonoClass* klass = mono_object_class (o);
-	
-	if (klass == mono_defaults.string_class)
+	if (klass == mono_defaults.string_class) {
 		return sizeof (MonoString) + 2 * mono_string_length ((MonoString*) o) + 2;
-	else if (klass->parent == mono_defaults.array_class)
-		return sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length ((MonoArray*) o);
-	else
+	} else if (o->vtable->rank) {
+		MonoArray *array = (MonoArray*)o;
+		size_t size = sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length (array);
+		if (array->bounds) {
+			size += 3;
+			size &= ~3;
+			size += sizeof (MonoArrayBounds) * o->vtable->rank;
+		}
+		return size;
+	} else {
 		return mono_class_instance_size (klass);
+	}
 }
 
 /**
@@ -3187,6 +3219,24 @@ str_lookup (MonoDomain *domain, gpointer user_data)
 	info->res = mono_g_hash_table_lookup (domain->ldstr_table, info->ins);
 }
 
+#ifdef HAVE_SGEN_GC
+
+static MonoString*
+mono_string_get_pinned (MonoString *str)
+{
+	int size;
+	MonoString *news;
+	size = sizeof (MonoString) + 2 * (mono_string_length (str) + 1);
+	news = mono_gc_alloc_pinned_obj (((MonoObject*)str)->vtable, size);
+	memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
+	news->length = mono_string_length (str);
+	return news;
+}
+
+#else
+#define mono_string_get_pinned(str) (str)
+#endif
+
 static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)
 {
@@ -3202,6 +3252,7 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 		return res;
 	}
 	if (insert) {
+		str = mono_string_get_pinned (str);
 		mono_g_hash_table_insert (ldstr_table, str, str);
 		ldstr_unlock ();
 		return str;
@@ -3306,6 +3357,7 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 		return interned;
 	}
 
+	o = mono_string_get_pinned (o);
 	mono_g_hash_table_insert (domain->ldstr_table, o, o);
 	ldstr_unlock ();
 
