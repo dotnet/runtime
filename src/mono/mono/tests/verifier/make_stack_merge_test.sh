@@ -15,6 +15,12 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 // VALIDITY CIL which breaks the ECMA-335,III,1.8.1.3 rule. 
 // this CIL should fail verification by a conforming CLI verifier.
 
+.assembly extern mscorlib
+{
+  .ver 1:0:5000:0
+  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 ) // .z\V.4..
+}
+
 .class ClassA extends [mscorlib]System.Object
 {
 }
@@ -23,20 +29,17 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 {
 }
 
-.class interface InterfaceA
+.class interface abstract InterfaceA
 {
 }
 
-.class interface InterfaceB
+.class interface abstract InterfaceB
 {
 }
 
-.class nested ValueType extends [mscorlib]System.ValueType
+.class sealed ValueType extends [mscorlib]System.ValueType
 {
-}
-
-.class nested ValueTypeSubType extends ValueType
-{
+	.field private int32 v
 }
 
 .class Class extends [mscorlib]System.Object

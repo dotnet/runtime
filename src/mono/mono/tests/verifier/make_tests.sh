@@ -469,9 +469,6 @@ do
   # ClassB not subtype of ClassA.
   ./make_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'classB'
 
-  # ValueTypeSubType base class of ValueType, but is a value type.
-  ./make_store_test.sh assign_compat_2_${I} unverifiable "$OP" 'valuetype ValueType' 'valuetype ValueTypeSubType'
-
   # ClassA not interface type.
   ./make_store_test.sh assign_compat_3_${I} unverifiable "$OP" object 'class ClassA'
   
@@ -502,9 +499,6 @@ for OP in "stfld TYPE1 Class::fld" "call void Class::Method(TYPE1)"
 do
   # ClassB not subtype of ClassA.
   ./make_obj_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'classB'
-
-  # ValueTypeSubType base class of ValueType, but is a value type.
-  ./make_obj_store_test.sh assign_compat_2_${I} unverifiable "$OP" 'valuetype ValueType' 'valuetype ValueTypeSubType'
 
   # ClassA not interface type.
   ./make_obj_store_test.sh assign_compat_3_${I} unverifiable "$OP" object 'class ClassA'
