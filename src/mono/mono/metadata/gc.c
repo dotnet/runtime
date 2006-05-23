@@ -63,6 +63,7 @@ run_finalize (void *obj, void *data)
 	MonoObject *o, *o2;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
+#ifndef HAVE_SGEN_GC
 	mono_domain_lock (o->vtable->domain);
 
 	o2 = g_hash_table_lookup (o->vtable->domain->finalizable_objects_hash, o);
@@ -72,6 +73,7 @@ run_finalize (void *obj, void *data)
 	if (!o2)
 		/* Already finalized somehow */
 		return;
+#endif
 
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
@@ -155,6 +157,8 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	mono_domain_unlock (obj->vtable->domain);
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
+#elif defined(HAVE_SGEN_GC)
+	mono_gc_register_for_finalization (obj, callback);
 #endif
 }
 

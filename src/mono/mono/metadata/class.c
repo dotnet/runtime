@@ -971,7 +971,11 @@ mono_class_has_references (MonoClass *klass)
 }
 
 /* useful until we keep track of gc-references in corlib etc. */
+#ifdef HAVE_SGEN_GC
+#define IS_GC_REFERENCE(t) FALSE
+#else
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
+#endif
 
 /*
  * mono_class_layout_fields:
