@@ -3,6 +3,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-config.h>
 #define _IN_THE_MONO_DEBUGGER
 #include "debug-debugger.h"
 #include <libgc/include/libgc-mono-debugger.h>
@@ -10,6 +11,19 @@
 #include <unistd.h>
 #include <locale.h>
 #include <string.h>
+
+/*
+ * This file is only compiled on platforms where the debugger is supported - see the conditional
+ * definition of `debugger_sources' in Makefile.am.
+ *
+ * configure.in checks whether we're using the included libgc and disables the debugger if not.
+ */
+
+#if !defined(MONO_DEBUGGER_SUPPORTED)
+#error "Some clown tried to compile debug-debugger.c on an unsupported platform - fix Makefile.am!"
+#elif !defined(USE_INCLUDED_LIBGC)
+#error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
+#endif
 
 static MonoMethod *debugger_main_method;
 
@@ -248,7 +262,6 @@ debugger_get_current_thread (void)
 	return (guint64) (gsize) mono_thread_current ();
 }
 
-#if defined(MONO_DEBUGGER_SUPPORTED) && defined(WITH_INCLUDED_LIBGC)
 static void
 debugger_gc_thread_created (pthread_t thread, void *stack_ptr)
 {
@@ -299,20 +312,6 @@ debugger_finalize_threads (void)
 	gc_thread_vtable = NULL;
 }
 
-#else
-
-static void
-debugger_init_threads (void)
-{
-}
-
-static void
-debugger_finalize_threads (void)
-{
-}
-
-#endif
-
 static void
 debugger_attach (void)
 {
@@ -322,9 +321,7 @@ debugger_attach (void)
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
 
 	debugger_init_threads ();
-#if defined(MONO_DEBUGGER_SUPPORTED) && defined(WITH_INCLUDED_LIBGC)
 	GC_mono_debugger_add_all_threads ();
-#endif
 }
 
 static void
