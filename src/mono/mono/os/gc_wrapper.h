@@ -53,7 +53,33 @@
 #define CreateThread GC_CreateThread
 #endif
 
+#elif defined(HAVE_SGEN_GC)
+
+#if defined(PLATFORM_WIN32)
+#define CreateThread mono_gc_CreateThread
 #else
+/* pthread function wrappers */
+#include <pthread.h>
+#include <signal.h>
+
+int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int mono_gc_pthread_join (pthread_t thread, void **retval);
+int mono_gc_pthread_detach (pthread_t thread);
+
+#define pthread_create mono_gc_pthread_create
+#define pthread_join mono_gc_pthread_join
+#define pthread_detach mono_gc_pthread_detach
+
+#endif
+
+extern int
+mono_gc_register_root (char *start, size_t size, void *descr);
+extern void mono_gc_base_init (void);
+
+#	define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root (&(x), sizeof(x), NULL)
+#	define MONO_GC_PRE_INIT() mono_gc_base_init ()
+
+#else /* not Boehm and not sgen GC */
 #	define MONO_GC_REGISTER_ROOT(x) /* nop */
 #	define MONO_GC_PRE_INIT()
 #endif
