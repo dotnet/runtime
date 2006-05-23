@@ -39,6 +39,7 @@ static const char *wrapper_type_names [] = {
 	"stelemref",
 	"unbox",
 	"ldflda",
+	"write-barrier",
 	"unknown"
 };
 
