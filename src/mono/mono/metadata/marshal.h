@@ -90,6 +90,9 @@ mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int para
 void
 mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
 
+MonoMethod*
+mono_marshal_get_write_barrier (void);
+
 /* method builder functions */
 
 void
