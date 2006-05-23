@@ -1744,11 +1744,13 @@ fi
 
 mono_debugger_supported=no
 if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
-	case "$host" in
-	*-*-*linux*)
-		mono_debugger_supported=yes
-		;;
-	esac
+	if test x$use_included_gc = xyes; then
+		case "$host" in
+		*-*-*linux*)
+			mono_debugger_supported=yes
+			;;
+		esac
+	fi
 fi
 
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
