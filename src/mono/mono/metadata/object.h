@@ -57,7 +57,8 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
 
 #define MONO_OBJECT_SETREF(obj,fieldname,value) do {	\
-		(obj)->fieldname = (value);	\
+		mono_gc_wbarrier_set_field ((MonoObject*)(obj), &((obj)->fieldname), (MonoObject*)value);	\
+		/*(obj)->fieldname = (value);*/	\
 	} while (0)
 
 #define mono_array_length(array) ((array)->max_length)
@@ -72,11 +73,14 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_array_setref(array,index,value)	\
 	do {	\
 		gpointer *__p = (gpointer *) mono_array_addr ((array), gpointer, (index));	\
-		*__p = (value);	\
+		mono_gc_wbarrier_set_arrayref ((array), __p, (value));	\
+		/* *__p = (value);*/	\
 	} while (0)
 #define mono_array_memcpy_refs(dest,destidx,src,srcidx,count)	\
 	do {	\
-		memmove (mono_array_addr ((dest), gpointer, (destidx)), mono_array_addr ((src), gpointer, (srcidx)), (count) * sizeof (gpointer));	\
+		gpointer *__p = (gpointer *) mono_array_addr ((dest), gpointer, (destidx));	\
+		mono_gc_wbarrier_arrayref_copy ((dest), __p, (count));	\
+		memmove (__p, mono_array_addr ((src), gpointer, (srcidx)), (count) * sizeof (gpointer));	\
 	} while (0)
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
@@ -302,6 +306,13 @@ guint32      mono_gchandle_new         (MonoObject *obj, gboolean pinned);
 guint32      mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection);
 MonoObject*  mono_gchandle_get_target  (guint32 gchandle);
 void         mono_gchandle_free        (guint32 gchandle);
+
+/* GC write barriers support */
+void mono_gc_wbarrier_set_field     (MonoObject *obj, gpointer field_ptr, MonoObject* value);
+void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
+void mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count);
+void mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value);
+void mono_gc_wbarrier_value_copy    (gpointer dest, gpointer src, int count, MonoClass *klass);
 
 G_END_DECLS
 
