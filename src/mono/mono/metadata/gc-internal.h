@@ -57,7 +57,7 @@ void        mono_gc_weak_link_remove (void **link_addr);
 MonoObject *mono_gc_weak_link_get    (void **link_addr);
 
 /* simple interface for data structures needed in the runtime */
-void* mono_gc_make_descr_from_bitmap (unsigned int *bitmap, int numbits);
+void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits);
 /* desc is the result from mono_gc_make_descr*. A NULL value means
  * all the words contain GC pointers.
  * The memory is non-moving and it will be explicitly deallocated.
@@ -75,5 +75,15 @@ int      mono_gc_invoke_finalizers  (void);
 gboolean mono_gc_pending_finalizers (void);
 void     mono_gc_finalize_notify    (void);
 
+void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size);
+void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size);
+void* mono_gc_make_descr_for_string (void);
+void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size);
+void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size);
+
+void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data);
+void  mono_gc_add_memory_pressure (gint64 value);
+int   mono_gc_register_root (char *start, size_t size, void *descr);
+void  mono_gc_deregister_root (char* addr);
 #endif /* __MONO_METADATA_GC_H__ */
 

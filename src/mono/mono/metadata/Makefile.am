@@ -48,6 +48,8 @@ libmonoruntime_la_SOURCES = \
 	decimal.h	\
 	boehm-gc.c	\
 	null-gc.c	\
+	sgen-gc.c	\
+	sgen-gc.h	\
 	gc.c		\
 	gc-internal.h	\
 	marshal.c	\
