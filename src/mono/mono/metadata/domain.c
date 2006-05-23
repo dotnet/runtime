@@ -440,12 +440,26 @@ domain_id_alloc (MonoDomain *domain)
 	return id;
 }
 
+static guint32 domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
+static gpointer domain_gc_desc = NULL;
+
 MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
 
-	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), NULL);
+	mono_appdomains_lock ();
+	if (!domain_gc_desc) {
+		unsigned int i, bit = 0;
+		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i < G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED); i += sizeof (gpointer)) {
+			bit = i / sizeof (gpointer);
+			domain_gc_bitmap [bit / 32] |= 1 << (bit % 32);
+		}
+		domain_gc_desc = mono_gc_make_descr_from_bitmap (domain_gc_bitmap, bit + 1);
+	}
+	mono_appdomains_unlock ();
+
+	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc);
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
@@ -453,7 +467,7 @@ mono_domain_create (void)
 
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
-	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
+	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC);
 	domain->domain_assemblies = NULL;
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);

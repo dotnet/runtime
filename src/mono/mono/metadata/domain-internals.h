@@ -83,42 +83,49 @@ typedef enum {
 } MonoAppDomainState;
 
 struct _MonoDomain {
-	MonoAppDomain      *domain;
 	CRITICAL_SECTION    lock;
 	MonoMemPool        *mp;
 	MonoCodeManager    *code_mp;
-	MonoGHashTable     *env;
-	GSList             *domain_assemblies;
-	MonoAssembly       *entry_assembly;
+	/*
+	 * keep all the managed objects close to each other for the precise GC
+	 * For the Boehm GC we additionally keep close also other GC-tracked pointers.
+	 */
+#define MONO_DOMAIN_FIRST_OBJECT setup
 	MonoAppDomainSetup *setup;
-	char               *friendly_name;
-	guint32            state;
+	MonoAppDomain      *domain;
+	MonoAppContext     *default_context;
+	MonoException      *out_of_memory_ex;
+	MonoException      *null_reference_ex;
+	MonoException      *stack_overflow_ex;
+#define MONO_DOMAIN_FIRST_GC_TRACKED env
+	MonoGHashTable     *env;
 	MonoGHashTable     *ldstr_table;
-	GHashTable         *class_vtable_hash;
-	/* maps remote class key -> MonoRemoteClass */
-	GHashTable         *proxy_vtable_hash;
-	/* a GC-tracked array to keep references to the static fields of types */
-	gpointer           *static_data_array;
-	GHashTable         *jit_code_hash;
-	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
-	GHashTable         *dynamic_code_hash;
-	/* maps delegate trampoline addr -> delegate object */
-	MonoGHashTable     *delegate_hash_table;
-	MonoJitInfoTable   *jit_info_table;
 	/* hashtables for Reflection handles */
 	MonoGHashTable     *type_hash;
 	MonoGHashTable     *refobject_hash;
+	/* a GC-tracked array to keep references to the static fields of types */
+	gpointer           *static_data_array;
+	/* maps delegate trampoline addr -> delegate object */
+	MonoGHashTable     *delegate_hash_table;
+#define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
+	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
+	GSList             *domain_assemblies;
+	MonoAssembly       *entry_assembly;
+	char               *friendly_name;
+	GHashTable         *class_vtable_hash;
+	/* maps remote class key -> MonoRemoteClass */
+	GHashTable         *proxy_vtable_hash;
+	GHashTable         *jit_code_hash;
+	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
+	GHashTable         *dynamic_code_hash;
+	MonoJitInfoTable   *jit_info_table;
 	/* Used when loading assemblies */
 	gchar **search_path;
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
 	MonoMethod         *private_invoke_method;
-	MonoAppContext     *default_context;
-	MonoException      *out_of_memory_ex;
-	MonoException      *null_reference_ex;
-	MonoException      *stack_overflow_ex;
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
 	GHashTable         *jump_target_hash;
