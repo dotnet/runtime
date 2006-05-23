@@ -1,3 +1,7 @@
+2006-05-23  Zoltan Varga  <vargaz@gmail.com>
+
+	* libatomic_ops: Remove this, as using it didn't work out.
+
 2006-05-23  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Disable the debugger if we're not using the

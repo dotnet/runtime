@@ -1,7 +1,0 @@
-There are two kinds of entities in this directory:
-
-- Subdirectories corresponding to specific compilers (or compiler/OS combinations).
-  Each of these includes one or more architecture-specific headers.
-
-- More generic header files corresponding to a particular ordering and/or
-  atomicity property that might be shared by multiple hardware platforms.
