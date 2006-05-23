@@ -54,10 +54,14 @@ static const char *mono_stack_type_names[] = {
 #define OP_IS_CONST(op) (((op)==OP_ICONST)||((op)==OP_I8CONST)||((op)==OP_R4CONST)||((op)==OP_R8CONST)||((op)==OP_AOTCONST))
 #define OP_IS_ICONV(op) (((op)==CEE_CONV_I4)||((op)==CEE_CONV_U4)||((op)==CEE_CONV_I8)||((op)==CEE_CONV_U8)||\
 		((op)==CEE_CONV_OVF_I4_UN)||((op)==CEE_CONV_OVF_I8_UN)||((op)==CEE_CONV_OVF_U4_UN)||((op)==CEE_CONV_OVF_U8_UN)||\
-		((op)==CEE_CONV_OVF_I4)||((op)==CEE_CONV_OVF_U4)||((op)==CEE_CONV_OVF_I8)||((op)==CEE_CONV_OVF_U8))
+		((op)==CEE_CONV_OVF_I4)||((op)==CEE_CONV_OVF_U4)||((op)==CEE_CONV_OVF_I8)||((op)==CEE_CONV_OVF_U8)||\
+		((op)==OP_LCONV_TO_I8)||((op)==OP_LCONV_TO_OVF_I8)||((op)==OP_LCONV_TO_OVF_I8_UN)||\
+		((op)==OP_LCONV_TO_U8)||((op)==OP_LCONV_TO_OVF_U8)||((op)==OP_LCONV_TO_OVF_U8_UN))
 #define OP_IS_PCONV(op) (((op)==CEE_CONV_OVF_I_UN)||((op)==CEE_CONV_OVF_U_UN)||\
 		((op)==CEE_CONV_I)||((op)==CEE_CONV_U)||\
-		((op)==CEE_CONV_OVF_I)||((op)==CEE_CONV_OVF_U))
+		((op)==CEE_CONV_OVF_I)||((op)==CEE_CONV_OVF_U)||\
+		((op)==OP_LCONV_TO_I)||((op)==OP_LCONV_TO_OVF_I)||((op)==OP_LCONV_TO_OVF_I_UN)||\
+		((op)==OP_LCONV_TO_U)||((op)==OP_LCONV_TO_OVF_U)||((op)==OP_LCONV_TO_OVF_U_UN))
 #define LOAD_OF_LOCAL_GIVES_POINTER(load,local) ((local->opcode == OP_LOCAL) && (((load)->type == STACK_MP) || ((load)->type == STACK_PTR) || ((local)->inst_vtype->type == MONO_TYPE_PTR)))
 
 
