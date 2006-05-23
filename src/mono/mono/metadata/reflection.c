@@ -4356,12 +4356,12 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 
 	mono_image_init (&image->image);
 
-	image->token_fixups = mono_g_hash_table_new (NULL, NULL);
+	image->token_fixups = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
 	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
-	image->tokens = mono_g_hash_table_new (NULL, NULL);
+	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
@@ -5155,7 +5155,7 @@ reflected_equal (gconstpointer a, gconstpointer b) {
 static guint
 reflected_hash (gconstpointer a) {
 	const ReflectedEntry *ea = a;
-	return GPOINTER_TO_UINT (ea->item);
+	return mono_aligned_addr_hash (ea->item);
 }
 
 #define CHECK_OBJECT(t,p,k)	\
@@ -5166,7 +5166,7 @@ reflected_hash (gconstpointer a) {
 		e.refclass = (k);	\
 		mono_domain_lock (domain);	\
 		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);	\
+			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC);	\
 		if ((_obj = mono_g_hash_table_lookup (domain->refobject_hash, &e))) {	\
 			mono_domain_unlock (domain);	\
 			return _obj;	\
@@ -5176,6 +5176,8 @@ reflected_hash (gconstpointer a) {
 
 #if HAVE_BOEHM_GC
 #define ALLOC_REFENTRY GC_MALLOC (sizeof (ReflectedEntry))
+#elif HAVE_SGEN_GC
+#define ALLOC_REFENTRY mono_gc_alloc_fixed (sizeof (ReflectedEntry), NULL)
 #else
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
 #endif
@@ -5188,7 +5190,7 @@ reflected_hash (gconstpointer a) {
         pe.refclass = (k); \
         mono_domain_lock (domain); \
 		if (!domain->refobject_hash)	\
-			domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);	\
+			domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC);	\
         _obj = mono_g_hash_table_lookup (domain->refobject_hash, &pe); \
         if (!_obj) { \
 		    ReflectedEntry *e = ALLOC_REFENTRY; 	\
@@ -5523,8 +5525,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 
 	mono_domain_lock (domain);
 	if (!domain->type_hash)
-		domain->type_hash = mono_g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
-				(GCompareFunc)mymono_metadata_type_equal);
+		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
+				(GCompareFunc)mymono_metadata_type_equal, MONO_HASH_VALUE_GC);
 	if ((res = mono_g_hash_table_lookup (domain->type_hash, type))) {
 		mono_domain_unlock (domain);
 		return res;
@@ -5550,7 +5552,11 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		}
 	}
 	mono_class_init (klass);
+#ifdef HAVE_SGEN_GC
+	res = (MonoReflectionType *)mono_gc_alloc_pinned_obj (mono_class_vtable (domain, mono_defaults.monotype_class), mono_class_instance_size (mono_defaults.monotype_class));
+#else
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
+#endif
 	res->type = type;
 	mono_g_hash_table_insert (domain->type_hash, type, res);
 	mono_domain_unlock (domain);
@@ -8035,6 +8041,10 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	return result;
 }
 
+#if HAVE_SGEN_GC
+static void* reflection_info_desc = NULL;
+#endif
+
 /*
  * mono_reflection_setup_internal_class:
  * @tb: a TypeBuilder object
@@ -8087,7 +8097,15 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	klass->flags = tb->attrs;
 
 	klass->element_class = klass;
-	klass->reflection_info = tb; /* FIXME: GC need to pin. */
+
+#if HAVE_SGEN_GC
+	if (!reflection_info_desc) {
+		gsize bmap = 1;
+		reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);
+	}
+	mono_gc_register_root (&klass->reflection_info, sizeof (gpointer), reflection_info_desc);
+#endif
+	klass->reflection_info = tb;
 
 	/* Put into cache so mono_class_get () will find it */
 	mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
@@ -9484,8 +9502,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	if (klass->parent) {
 		if (!klass->parent->size_inited)
 			mono_class_init (klass->parent);
-		klass->instance_size += klass->parent->instance_size;
-		klass->class_size += klass->parent->class_size;
+		klass->instance_size = klass->parent->instance_size;
+		klass->class_size = 0;
 		klass->min_align = klass->parent->min_align;
 		/* if the type has no fields we won't call the field_setup
 		 * routine which sets up klass->has_references.
