@@ -134,8 +134,8 @@ static const guchar *thread_details (struct _WapiHandleShared *handle)
 	struct _WapiHandle_thread *thr=&handle->u.thread;
 
 	g_snprintf (buf, sizeof(buf),
-		    "proc: %d, state: %d, exit: %u, join: %d",
-		    thr->owner_pid, thr->state, thr->exitstatus,
+		    "proc: %d, tid: %ld, state: %d, exit: %u, join: %d",
+		    thr->owner_pid, thr->id, thr->state, thr->exitstatus,
 		    thr->joined);
 	
 	return(buf);

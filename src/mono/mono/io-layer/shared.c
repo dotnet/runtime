@@ -400,7 +400,7 @@ again:
 	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
-	g_message ("%s: Incrementing the process count", __func__);
+	g_message ("%s: Incrementing the process count (%d)", __func__, _wapi_getpid ());
 #endif
 
 	/* We only ever _unlock_ this semaphore, letting the kernel
@@ -412,7 +412,7 @@ again:
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT);
 
 #ifdef DEBUG
-	g_message ("%s: Process count is now %d", __func__, semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT, GETVAL));
+	g_message ("%s: Process count is now %d (%d)", __func__, semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT, GETVAL), _wapi_getpid ());
 #endif
 	
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
@@ -426,9 +426,10 @@ void _wapi_shm_semaphores_remove (void)
 	int proc_count;
 	
 #ifdef DEBUG
-	g_message ("%s: Checking process count", __func__);
+	g_message ("%s: Checking process count (%d)", __func__,
+		   _wapi_getpid ());
 #endif
-
+	
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	g_assert (thr_ret == 0);
 	
@@ -451,7 +452,8 @@ void _wapi_shm_semaphores_remove (void)
 		 * files
 		 */
 #ifdef DEBUG
-		g_message ("%s: Removing semaphores!", __func__);
+		g_message ("%s: Removing semaphores! (%d)", __func__,
+			   _wapi_getpid ());
 #endif
 
 		semctl (_wapi_sem_id, 0, IPC_RMID);

@@ -22,6 +22,7 @@ extern int  mono_thread_get_abort_signal (void);
 
 extern void mono_thread_init (MonoThreadStartCB start_cb,
 			      MonoThreadAttachCB attach_cb);
+extern void mono_thread_cleanup (void);
 extern void mono_thread_manage(void);
 extern void mono_thread_abort_all_other_threads (void);
 extern void mono_thread_suspend_all_other_threads (void);

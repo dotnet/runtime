@@ -66,8 +66,10 @@ static void thread_ops_init (void)
 					    WAPI_HANDLE_CAP_WAIT);
 }
 
-/* Called by thread_exit(), but maybe by mono_thread_manage() too */
-void _wapi_thread_abandon_mutexes (gpointer handle)
+/* Called by thread_exit(), but maybe indirectly by
+ * mono_thread_manage() via mono_thread_signal_self() too
+ */
+static void _wapi_thread_abandon_mutexes (gpointer handle)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
@@ -104,11 +106,8 @@ void _wapi_thread_abandon_mutexes (gpointer handle)
 	}
 }
 
-/* Called by the thread creation code as a thread is finishing up, and
- * by ExitThread()
-*/
-static void thread_exit (guint32 exitstatus, gpointer handle) G_GNUC_NORETURN;
-static void thread_exit (guint32 exitstatus, gpointer handle)
+static void thread_set_termination_details (gpointer handle,
+					    guint32 exitstatus)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
@@ -124,18 +123,10 @@ static void thread_exit (guint32 exitstatus, gpointer handle)
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up thread handle %p", __func__,
 			   handle);
-		/* exit the calling thread anyway, even though we
-		 * can't record the exit status and clean up the
-		 * private bits of handle data
-		 */
-		_wapi_handle_unlock_shared_handles ();
-		pthread_exit (NULL);
-	}
 
-#ifdef DEBUG
-	g_message ("%s: Recording thread handle %p exit status", __func__,
-		   handle);
-#endif
+		_wapi_handle_unlock_shared_handles ();
+		return;
+	}
 	
 	thread_handle->exitstatus = exitstatus;
 	thread_handle->state = THREAD_STATE_EXITED;
@@ -150,10 +141,39 @@ static void thread_exit (guint32 exitstatus, gpointer handle)
 	g_message("%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
 #endif
-
+	
 	/* The thread is no longer active, so unref it */
 	_wapi_handle_unref (handle);
+}
 
+void _wapi_thread_signal_self (guint32 exitstatus)
+{
+	gpointer handle;
+	
+	handle = _wapi_thread_handle_from_id (pthread_self ());
+	if (handle == NULL) {
+		/* Something gone badly wrong... */
+		return;
+	}
+	
+	thread_set_termination_details (handle, exitstatus);
+}
+
+/* Called by the thread creation code as a thread is finishing up, and
+ * by ExitThread()
+*/
+static void thread_exit (guint32 exitstatus, gpointer handle) G_GNUC_NORETURN;
+static void thread_exit (guint32 exitstatus, gpointer handle)
+{
+	if (_wapi_handle_issignalled (handle)) {
+		/* We must have already deliberately finished with
+		 * this thread, so don't do any more now
+		 */
+		pthread_exit (NULL);
+	}
+
+	thread_set_termination_details (handle, exitstatus);
+	
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread
 	 */
@@ -165,7 +185,8 @@ static void thread_attached_exit (gpointer handle)
 	/* Drop the extra reference we take in thread_attach, now this
 	 * thread is dead
 	 */
-	_wapi_handle_unref (handle);
+	
+	thread_set_termination_details (handle, 0);
 }
 
 static void thread_hash_init(void)
@@ -212,6 +233,10 @@ static void *thread_start_routine (gpointer args)
 	g_assert (thr_ret == 0);
 
 	thread->id = pthread_self();
+
+#ifdef DEBUG
+	g_message ("%s: started thread id %ld", __func__, thread->id);
+#endif
 
 	if (thread->create_flags & CREATE_SUSPENDED) {
 		_wapi_thread_suspend (thread);

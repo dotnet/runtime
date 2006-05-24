@@ -135,7 +135,37 @@ static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
 
 static void handle_cleanup (void)
 {
+	int i, j, k;
+	
 	_wapi_process_signal_self ();
+
+	/* Every shared handle we were using ought really to be closed
+	 * by now, but to make sure just blow them all away.  The
+	 * exiting finalizer thread in particular races us to the
+	 * program exit and doesn't always win, so it can be left
+	 * cluttering up the shared file.  Anything else left over is
+	 * really a bug.
+	 */
+	for(i = SLOT_INDEX (0); _wapi_private_handles[i] != NULL; i++) {
+		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
+			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles[i][j];
+			int type = handle_data->type;
+			
+			
+			if (_WAPI_SHARED_HANDLE (type)) {
+				gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
+				
+				for(k = handle_data->ref; k > 0; k--) {
+#ifdef DEBUG
+					g_message ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);
+#endif
+					
+					_wapi_handle_unref (handle);
+				}
+			}
+		}
+	}
+	
 	_wapi_shm_semaphores_remove ();
 }
 
@@ -504,8 +534,7 @@ first_pass_done:
 	InterlockedIncrement (&shared->handle_refs);
 	
 #ifdef DEBUG
-	g_message ("%s: Allocated new handle %p referencing 0x%x", __func__,
-		   handle, offset);
+	g_message ("%s: Allocated new handle %p referencing 0x%x (shared refs %d)", __func__, handle, offset, shared->handle_refs);
 #endif
 	
 done:
@@ -979,6 +1008,10 @@ void _wapi_handle_unref (gpointer handle)
 			/* It's possible that this handle is already
 			 * pointing at a deleted shared section
 			 */
+#ifdef DEBUG_REFS
+			g_message ("%s: %s handle %p shared refs before dec %d", __func__, _wapi_handle_typename[type], handle, shared->handle_refs);
+#endif
+
 			if (shared->handle_refs > 0) {
 				shared->handle_refs--;
 				if (shared->handle_refs == 0) {

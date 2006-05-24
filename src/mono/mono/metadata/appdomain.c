@@ -201,6 +201,8 @@ mono_runtime_cleanup (MonoDomain *domain)
 	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();
 
+	mono_thread_cleanup ();
+
 	mono_network_cleanup ();
 
 	mono_marshal_cleanup ();

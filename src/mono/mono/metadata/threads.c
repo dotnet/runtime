@@ -133,7 +133,7 @@ static MonoThreadStartCB mono_thread_start_cb = NULL;
 static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 
 /* function called at thread cleanup */
-static MonoThreadCleanupFunc mono_thread_cleanup = NULL;
+static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
@@ -242,8 +242,8 @@ static void thread_cleanup (MonoThread *thread)
 
 	thread->cached_culture_info = NULL;
 
-	if (mono_thread_cleanup)
-		mono_thread_cleanup (thread);
+	if (mono_thread_cleanup_fn)
+		mono_thread_cleanup_fn (thread);
 }
 
 static guint32 WINAPI start_wrapper(void *data)
@@ -1788,10 +1788,32 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	GetCurrentProcess ();
 }
 
+void mono_thread_cleanup (void)
+{
+#if !defined(PLATFORM_WIN32) && !defined(RUN_IN_SUBTHREAD)
+	/* The main thread must abandon any held mutexes (particularly
+	 * important for named mutexes as they are shared across
+	 * processes, see bug 74680.)  This will happen when the
+	 * thread exits, but if it's not running in a subthread it
+	 * won't exit in time.
+	 */
+	/* Using non-w32 API is a nasty kludge, but I couldn't find
+	 * anything in the documentation that would let me do this
+	 * here yet still be safe to call on windows.
+	 */
+	_wapi_thread_signal_self (mono_environment_exitcode_get ());
+#endif
+
+	DeleteCriticalSection (&threads_mutex);
+	DeleteCriticalSection (&interlocked_mutex);
+	DeleteCriticalSection (&contexts_mutex);
+	CloseHandle (background_change_event);
+}
+
 void
 mono_threads_install_cleanup (MonoThreadCleanupFunc func)
 {
-	mono_thread_cleanup = func;
+	mono_thread_cleanup_fn = func;
 }
 
 G_GNUC_UNUSED
@@ -1907,27 +1929,38 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		/* Ignore background threads, we abort them later */
 		mono_monitor_enter (thread->synch_lock);
 		if (thread->state & ThreadState_Background) {
+			THREAD_DEBUG (g_message ("%s: ignoring background thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			mono_monitor_exit (thread->synch_lock);
 			return; /* just leave, ignore */
 		}
 		mono_monitor_exit (thread->synch_lock);
 		
-		if (mono_gc_is_finalizer_thread (thread))
+		if (mono_gc_is_finalizer_thread (thread)) {
+			THREAD_DEBUG (g_message ("%s: ignoring finalizer thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
+		}
 
-		if (thread == mono_thread_current ())
+		if (thread == mono_thread_current ()) {
+			THREAD_DEBUG (g_message ("%s: ignoring current thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
+		}
 
-		if (thread == mono_thread_get_main ())
+		if (thread == mono_thread_get_main ()) {
+			THREAD_DEBUG (g_message ("%s: ignoring main thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
+		}
 
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
-		if (handle == NULL)
+		if (handle == NULL) {
+			THREAD_DEBUG (g_message ("%s: ignoring unopenable thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
+		}
 		
 		wait->handles[wait->num]=handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
+
+		THREAD_DEBUG (g_message ("%s: adding thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 	} else {
 		/* Just ignore the rest, we can't do anything with
 		 * them yet
@@ -2026,20 +2059,6 @@ void mono_thread_manage (void)
 			wait_for_tids (wait, INFINITE);
 		}
 	} while (wait->num > 0);
-
-#if !defined(PLATFORM_WIN32) && !defined(RUN_IN_SUBTHREAD)
-	/* The main thread must abandon any held mutexes (particularly
-	 * important for named mutexes as they are shared across
-	 * processes, see bug 74680.)  This will happen when the
-	 * thread exits, but if it's not running in a subthread it
-	 * won't exit in time.
-	 */
-	/* Using non-w32 API is a nasty kludge, but I couldn't find
-	 * anything in the documentation that would let me do this
-	 * here yet still be safe to call on windows.
-	 */
-	_wapi_thread_abandon_mutexes (NULL);
-#endif
 	
 	/* 
 	 * give the subthreads a chance to really quit (this is mainly needed

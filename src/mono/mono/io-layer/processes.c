@@ -942,11 +942,6 @@ static void process_set_current (void)
 		g_warning ("%s: error creating process handle", __func__);
 		return;
 	}
-		
-	/* Make sure the new handle has a reference so it wont go away
-	 * until this process exits
-	 */
-	_wapi_handle_ref (current_process);
 }
 
 gpointer _wapi_process_duplicate ()

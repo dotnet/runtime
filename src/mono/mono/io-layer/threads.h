@@ -63,7 +63,7 @@ extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle,
 /* Kludge alert! Making this visible outside io-layer is broken, but I
  * can't find any w32 call that will let me do this.
  */
-extern void _wapi_thread_abandon_mutexes (gpointer handle);
+extern void _wapi_thread_signal_self (guint32 exitstatus);
 
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */
