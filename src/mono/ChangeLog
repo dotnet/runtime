@@ -1,3 +1,8 @@
+2006-05-24  Andrew Skiba <andrews@mainsoft.com>
+
+	* configure.in, runtime/Makefile.am: create a symlink at
+	mono/runtime/etc/mono/2.0/web.config similar to machine.config
+	
 2006-05-24  Raja R Harinath  <rharinath@novell.com>
 
 	* scripts/Makefile.am (scripts_1_0, scripts_2_0): Move
