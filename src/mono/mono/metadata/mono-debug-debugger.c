@@ -108,7 +108,8 @@ mono_debugger_event (MonoDebuggerEvent event, guint64 data, guint64 arg)
 void
 mono_debugger_cleanup (void)
 {
-	/* Do nothing yet. */
+	mono_debugger_event (MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE, 0, 0);
+	mono_debugger_event_handler = NULL;
 }
 
 /*
