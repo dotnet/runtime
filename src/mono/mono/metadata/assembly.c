@@ -1269,7 +1269,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 
 	if (!image) {
 		mono_assemblies_lock ();
-		image = mono_image_open_full (filename, status, refonly);
+		image = mono_image_open_full (fname, status, refonly);
 		mono_assemblies_unlock ();
 	}
 
