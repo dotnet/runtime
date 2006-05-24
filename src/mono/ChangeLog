@@ -1,3 +1,12 @@
+2006-05-24  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/Makefile.am (scripts_1_0, scripts_2_0): Move
+	nunit-console ...
+	(scripts_nunit): ... here.
+	(REWRITE1_DEBUG, REWRITE2_DEBUG): New defines that pass a --debug
+	to the mono runtime.
+	(nunit-console, nunit-console2): New targets.  Use them.
+
 2006-05-23  Zoltan Varga  <vargaz@gmail.com>
 
 	* libatomic_ops: Remove this, as using it didn't work out.
