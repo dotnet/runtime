@@ -10,6 +10,7 @@
 #include <glib.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
+#include <mono/utils/mono-codeman.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
@@ -55,7 +56,7 @@ int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc)
 int             mono_debugger_remove_breakpoint           (int breakpoint_id);
 void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
 
-guint8         *mono_debugger_create_notification_function(void);
+guint8         *mono_debugger_create_notification_function(MonoCodeManager *codeman);
 
 MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
 							   void **params, MonoObject **exc);
