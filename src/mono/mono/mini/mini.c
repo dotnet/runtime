@@ -3125,6 +3125,56 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 		sp++;
 	}
 }
+#define MONO_INLINE_CALLED_LIMITED_METHODS 1
+#define MONO_INLINE_CALLER_LIMITED_METHODS 1
+
+#if (MONO_INLINE_CALLED_LIMITED_METHODS)
+static char*
+mono_inline_called_method_name_limit = NULL;
+static gboolean check_inline_called_method_name_limit (MonoMethod *called_method) {
+	char *called_method_name = mono_method_full_name (called_method, TRUE);
+	int strncmp_result;
+	
+	if (mono_inline_called_method_name_limit == NULL) {
+		char *limit_string = getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
+		if (limit_string != NULL) {
+			mono_inline_called_method_name_limit = limit_string;
+		} else {
+			mono_inline_called_method_name_limit = (char *) "";
+		}
+	}
+	
+	strncmp_result = strncmp (called_method_name, mono_inline_called_method_name_limit, strlen (mono_inline_called_method_name_limit));
+	g_free (called_method_name);
+	
+	//return (strncmp_result <= 0);
+	return (strncmp_result == 0);
+}
+#endif
+
+#if (MONO_INLINE_CALLER_LIMITED_METHODS)
+static char*
+mono_inline_caller_method_name_limit = NULL;
+static gboolean check_inline_caller_method_name_limit (MonoMethod *caller_method) {
+	char *caller_method_name = mono_method_full_name (caller_method, TRUE);
+	int strncmp_result;
+	
+	if (mono_inline_caller_method_name_limit == NULL) {
+		char *limit_string = getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
+		if (limit_string != NULL) {
+			mono_inline_caller_method_name_limit = limit_string;
+		} else {
+			mono_inline_caller_method_name_limit = (char *) "";
+		}
+	}
+	
+	strncmp_result = strncmp (caller_method_name, mono_inline_caller_method_name_limit, strlen (mono_inline_caller_method_name_limit));
+	g_free (caller_method_name);
+	
+	//return (strncmp_result <= 0);
+	return (strncmp_result == 0);
+}
+#endif
 
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoBasicBlock *bblock, MonoInst **sp,
@@ -3135,6 +3185,14 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	MonoBasicBlock *ebblock, *sbblock;
 	int i, costs, new_locals_offset;
 	MonoMethod *prev_inlined_method;
+#if (MONO_INLINE_CALLED_LIMITED_METHODS)
+	if ((! inline_allways) && ! check_inline_called_method_name_limit (cmethod))
+		return 0;
+#endif
+#if (MONO_INLINE_CALLER_LIMITED_METHODS)
+	if ((! inline_allways) && ! check_inline_caller_method_name_limit (cfg->method))
+		return 0;
+#endif
 
 	if (cfg->verbose_level > 2)
 		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
