@@ -15,6 +15,12 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 // VALIDITY CIL which breaks the ECMA-335,III,1.8.1.3 rule. 
 // this CIL should fail verification by a conforming CLI verifier.
 
+.assembly '${TEST_NAME}_generated'
+{
+  .hash algorithm 0x00008004
+  .ver  0:0:0:0
+}
+
 .assembly extern mscorlib
 {
   .ver 1:0:5000:0

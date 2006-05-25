@@ -8,9 +8,13 @@ public class TestRunner : MarshalByRefObject
 		Console.Write (test);
 
 		Assembly a = Assembly.LoadFrom (test);
-		Module m = a.GetLoadedModules ()[0];
 
-		MethodInfo mi = m.GetMethod ("Main");
+		MethodInfo mi = a.EntryPoint;
+
+		if (mi == null) {
+			Console.WriteLine (" FAILED (no entry point found)");
+			return;
+		}
 
 		try {
 			mi.Invoke (null, null);

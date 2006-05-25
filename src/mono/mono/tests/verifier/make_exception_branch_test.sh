@@ -16,6 +16,12 @@ sed -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TE
 // invalid CIL which breaks the ECMA-335 rules. 
 // This CIL should fail verification by a conforming CLI verifier.
 
+.assembly '${TEST_NAME}_generated'
+{
+  .hash algorithm 0x00008004
+  .ver  0:0:0:0
+}
+
 .method public static int32 Main() cil managed
 {
 	.entrypoint
