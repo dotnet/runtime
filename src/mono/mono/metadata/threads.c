@@ -1804,10 +1804,16 @@ void mono_thread_cleanup (void)
 	_wapi_thread_signal_self (mono_environment_exitcode_get ());
 #endif
 
+#if 0
+	/* This stuff needs more testing, it seems one of these
+	 * critical sections can be locked when mono_thread_cleanup is
+	 * called.
+	 */
 	DeleteCriticalSection (&threads_mutex);
 	DeleteCriticalSection (&interlocked_mutex);
 	DeleteCriticalSection (&contexts_mutex);
 	CloseHandle (background_change_event);
+#endif
 }
 
 void
