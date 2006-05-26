@@ -1,5 +1,7 @@
 2006-05-26  Zoltan Varga  <vargaz@gmail.com>
 
+	* jit-debug: Fix two other places.
+	
 	* jit-debug: print_method_from_ip -> mono_print_method_from_ip (). Fixes
 	#78514.
 

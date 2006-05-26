@@ -33,10 +33,10 @@
 	You can now use:
 
 <pre>
-(gdb) p print_method_from_ip (0x0817f490)
+(gdb) p mono_print_method_from_ip (0x0817f490)
 IP 0x817f490 at offset 0x28 of method (wrapper managed-to-native) System.String:GetHashCode () (0x817f468 0x817f4a4)
 $1 = void
-(gdb) p print_method_from_ip (0x0817f42a)
+(gdb) p mono_print_method_from_ip (0x0817f42a)
 IP 0x817f42a at offset 0x52 of method System.Collections.Hashtable:GetHash (object) (0x817f3d8 0x817f43b)
 $2 = void
 </pre>
