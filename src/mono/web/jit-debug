@@ -16,7 +16,7 @@
 * Debugging with GDB
 
 	If you use GDB to debug your mono process, you can use the function
-	print_method_from_ip(void *address) to obtain the name of a method
+	mono_print_method_from_ip(void *address) to obtain the name of a method
 	given an address.
 
 	For example:
