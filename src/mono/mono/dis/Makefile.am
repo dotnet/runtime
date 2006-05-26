@@ -26,7 +26,9 @@ monodis_SOURCES =	\
 	dump.c		\
 	dump.h		\
 	main.c		\
-	meta.h
+	meta.h		\
+	declsec.c	\
+	declsec.h
 
 monodis_LDADD = 			\
 	libmonodis.a			\

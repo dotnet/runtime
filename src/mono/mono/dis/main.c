@@ -24,6 +24,7 @@
 #include "dump.h"
 #include "get.h"
 #include "dis-cil.h"
+#include "declsec.h"
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/loader.h>
@@ -146,8 +147,16 @@ dump_declarative_security (MonoImage *m, guint32 objectType, guint32 token, cons
 		action = get_il_security_action (cols [MONO_DECL_SECURITY_ACTION]);
 		idx = cols [MONO_DECL_SECURITY_PARENT];
 		if (((idx & MONO_HAS_DECL_SECURITY_MASK) == objectType) && ((idx >> MONO_HAS_DECL_SECURITY_BITS) == token)) {
-			char *dump = data_dump (blob, len, indent);
-			fprintf (output, "%s.permissionset %s = %s", indent, action, dump);
+			char *dump;
+			if (blob [0] == MONO_DECLSEC_FORMAT_20) {
+				/* 2.0 declarative security format */
+				dump = dump_declsec_entry20 (m, blob, indent);
+				fprintf (output, "%s.permissionset %s = %s\n", indent, action, dump);
+			} else {
+				/* 1.x declarative security metadata format */
+				dump = data_dump (blob, len, indent);
+				fprintf (output, "%s.permissionset %s = %s", indent, action, dump);
+			}
 			g_free (dump);
 		}
 	}

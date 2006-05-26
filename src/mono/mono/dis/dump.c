@@ -15,6 +15,7 @@
 #include "util.h"
 #include "dump.h"
 #include "get.h"
+#include "declsec.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/class.h"
 #include "mono/metadata/class-internals.h"
@@ -1102,8 +1103,16 @@ dump_table_declsec (MonoImage *m)
 		fprintf (output, "%d: %s on %s %d%s", i, action, parent [idx & MONO_HAS_DECL_SECURITY_MASK], idx >> MONO_HAS_DECL_SECURITY_BITS, len? ":\n\t":"\n");
 		if (!len)
 			continue;
-		for (idx = 0; idx < len; ++idx)
-			fprintf (output, "%c", blob [idx]);
+		if (blob [0] == MONO_DECLSEC_FORMAT_20) {
+			/* 2.0 declarative security format */
+			char *declsec = dump_declsec_entry20 (m, blob, "\t");
+			fprintf (output, "%s", declsec);
+			g_free (declsec);
+		} else {
+			/* 1.0 declarative security format - Unicode XML */
+			for (idx = 0; idx < len; ++idx)
+				fprintf (output, "%c", blob [idx]);
+		}
 		fprintf (output, "\n");
 	}
 }
