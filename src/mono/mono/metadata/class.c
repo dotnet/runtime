@@ -75,7 +75,19 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		/* a typedef in disguise */
 		return mono_class_from_name (image, nspace, name);
 	case MONO_RESOLTION_SCOPE_MODULEREF:
-		return mono_class_from_name (image->modules [idx - 1], nspace, name);
+		if (image->modules [idx-1])
+			return mono_class_from_name (image->modules [idx - 1], nspace, name);
+		else {
+			char *msg = g_strdup_printf ("%s%s%s", nspace, nspace [0] ? "." : "", name);
+			char *human_name;
+			
+			human_name = mono_stringify_assembly_name (&image->assembly->aname);
+			mono_loader_set_error_type_load (msg, human_name);
+			g_free (msg);
+			g_free (human_name);
+		
+			return NULL;
+		}
 	case MONO_RESOLTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;
@@ -1773,7 +1785,7 @@ mono_class_setup_vtable (MonoClass *class)
 
 	mono_loader_unlock ();
 
-	return ok;
+	return;
 }
 
 /*
