@@ -59,6 +59,8 @@ struct _MonoTableInfo {
 	guint32   size_bitfield;
 };
 
+#define REFERENCE_MISSING ((gpointer) -1)
+
 struct _MonoImage {
 	/*
 	 * The number of assemblies which reference this MonoImage though their 'image'

@@ -706,15 +706,21 @@ void
 mono_loader_unlock         (void) MONO_INTERNAL;
 
 void
-mono_loader_set_error_type_load (char *class_name, char *assembly_name) MONO_INTERNAL;
+mono_loader_set_error_assembly_load (const char *assembly_name) MONO_INTERNAL;
 
 void
-mono_loader_set_error_method_load (MonoClass *klass, const char *member_name) MONO_INTERNAL;
+mono_loader_set_error_type_load (const char *class_name, const char *assembly_name) MONO_INTERNAL;
+
+void
+mono_loader_set_error_method_load (const char *class_name, const char *member_name) MONO_INTERNAL;
 
 void
 mono_loader_set_error_field_load (MonoClass *klass, const char *member_name) MONO_INTERNAL;
 
-MonoLoaderError*
+MonoException *
+mono_loader_error_prepare_exception (MonoLoaderError *error) MONO_INTERNAL;
+
+MonoLoaderError *
 mono_loader_get_last_error (void) MONO_INTERNAL;
 
 void

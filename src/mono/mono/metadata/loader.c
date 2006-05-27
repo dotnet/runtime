@@ -34,6 +34,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/metadata/exception.h>
 
 MonoDefaults mono_defaults;
 
@@ -83,27 +84,24 @@ set_loader_error (MonoLoaderError *error)
 	TlsSetValue (loader_error_thread_id, error);
 }
 
-/*
+
+/**
  * mono_loader_set_error_type_load:
  *
- *   Set the loader error for this thread. CLASS_NAME and ASSEMBLY_NAME should be
- * dynamically allocated strings whose ownership is passed to this function.
+ * Set the loader error for this thread. 
  */
 void
-mono_loader_set_error_type_load (char *class_name, char *assembly_name)
+mono_loader_set_error_type_load (const char *class_name, const char *assembly_name)
 {
 	MonoLoaderError *error;
 
-	if (mono_loader_get_last_error ()) {
-		g_free (class_name);
-		g_free (assembly_name);
+	if (mono_loader_get_last_error ()) 
 		return;
-	}
 
 	error = g_new0 (MonoLoaderError, 1);
 	error->kind = MONO_LOADER_ERROR_TYPE;
-	error->class_name = class_name;
-	error->assembly_name = assembly_name;
+	error->class_name = g_strdup (class_name);
+	error->assembly_name = g_strdup (assembly_name);
 
 	/* 
 	 * This is not strictly needed, but some (most) of the loader code still
@@ -122,7 +120,7 @@ mono_loader_set_error_type_load (char *class_name, char *assembly_name)
  * inside metadata.
  */
 void
-mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
+mono_loader_set_error_method_load (const char *class_name, const char *member_name)
 {
 	MonoLoaderError *error;
 
@@ -132,7 +130,7 @@ mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
 
 	error = g_new0 (MonoLoaderError, 1);
 	error->kind = MONO_LOADER_ERROR_METHOD;
-	error->klass = klass;
+	error->class_name = g_strdup (class_name);
 	error->member_name = member_name;
 
 	set_loader_error (error);
@@ -141,7 +139,7 @@ mono_loader_set_error_method_load (MonoClass *klass, const char *member_name)
 /*
  * mono_loader_set_error_field_load:
  *
- *   Set the loader error for this thread. MEMBER_NAME should point to a string
+ * Set the loader error for this thread. MEMBER_NAME should point to a string
  * inside metadata.
  */
 void
@@ -173,18 +171,84 @@ mono_loader_get_last_error (void)
 	return (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
 }
 
+/**
+ * mono_loader_clear_error:
+ *
+ * Disposes any loader error messages on this thread
+ */
 void
 mono_loader_clear_error (void)
 {
 	MonoLoaderError *ex = (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
 
-	g_assert (ex);	
-
-	g_free (ex->class_name);
-	g_free (ex->assembly_name);
+        g_free (ex->class_name);
+        g_free (ex->assembly_name);
 	g_free (ex);
-
+	
 	TlsSetValue (loader_error_thread_id, NULL);
+}
+
+/**
+ * mono_loader_error_prepare_exception:
+ * @error: The MonoLoaderError to turn into an exception
+ *
+ * This turns a MonoLoaderError into an exception that can be thrown
+ * and resets the Mono Loader Error state during this process.
+ *
+ */
+MonoException *
+mono_loader_error_prepare_exception (MonoLoaderError *error)
+{
+        MonoException *ex = NULL;
+
+        switch (error->kind) {
+        case MONO_LOADER_ERROR_TYPE: {
+		char *cname = g_strdup (error->class_name);
+		char *aname = g_strdup (error->assembly_name);
+		MonoString *class_name;
+		
+		mono_loader_clear_error ();
+		
+		class_name = mono_string_new (mono_domain_get (), cname);
+
+                ex = mono_get_exception_type_load (class_name, aname);
+		g_free (cname);
+		g_free (aname);
+                break;
+        }
+        case MONO_LOADER_ERROR_METHOD: {
+		char *cname = g_strdup (error->class_name);
+		char *aname = g_strdup (error->member_name);
+		MonoString *class_name;
+		
+		mono_loader_clear_error ();
+                ex = mono_get_exception_missing_method (cname, aname);
+		g_free (cname);
+		g_free (aname);
+		break;
+	}
+		
+        case MONO_LOADER_ERROR_FIELD: {
+		char *cnspace = g_strdup (*error->klass->name_space ? error->klass->name_space : "");
+		char *cname = g_strdup (error->klass->name);
+		char *cmembername = g_strdup (error->member_name);
+                char *class_name;
+
+		mono_loader_clear_error ();
+		class_name = g_strdup_printf ("%s%s%s", cnspace, cnspace ? "." : "", cname);
+		
+		ex = mono_get_exception_missing_field (class_name, cmembername);
+                g_free (class_name);
+		g_free (cname);
+		g_free (cmembername);
+		g_free (cnspace);
+                break;
+        }
+        default:
+                g_assert_not_reached ();
+        }
+
+        return ex;
 }
 
 static MonoClassField*
@@ -556,6 +620,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			mono_loader_set_error_method_load (name, mname);
 			g_free (name);
 			return NULL;
 		}
@@ -568,6 +633,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			mono_loader_set_error_method_load (name, mname);
 			g_free (name);
 			return NULL;
 		}
@@ -577,15 +643,22 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_DEF | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			mono_loader_set_error_method_load (name, mname);
 			g_free (name);
 			return NULL;
 		}
 		break;
 	case MONO_MEMBERREF_PARENT_METHODDEF:
 		return mono_get_method (image, MONO_TOKEN_METHOD_DEF | nindex, NULL);
+		
 	default:
-		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);
-		g_assert_not_reached ();
+		{
+			/* This message leaks */
+			char *message = g_strdup_printf ("Memberref parent unknown: class: %d, index %d", class, nindex);
+			mono_loader_set_error_method_load ("", message);
+			return NULL;
+		}
+
 	}
 	g_assert (klass);
 	mono_class_init (klass);
@@ -594,6 +667,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
 	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+	if (sig == NULL)
+		return NULL;
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
@@ -1189,6 +1264,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (!klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+		if (klass == NULL)
+			return NULL;
 	}
 
 	result->slot = -1;
@@ -1345,10 +1422,10 @@ mono_free_method  (MonoMethod *method)
 		/* mono_metadata_free_method_signature (method->signature); */
 		/* g_free (method->signature); */
 	}
-
+	
 	if (method->dynamic) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
-
+		
 		g_free ((char*)method->name);
 		if (mw->method.header)
 			g_free ((char*)mw->method.header->code);

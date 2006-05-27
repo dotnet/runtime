@@ -2954,38 +2954,6 @@ mono_find_jit_opcode_emulation (int opcode)
 		return NULL;
 }
 
-static MonoException*
-mini_loader_error_to_exception (MonoLoaderError *error)
-{
-	MonoException *ex = NULL;
-
-	switch (error->kind) {
-	case MONO_LOADER_ERROR_TYPE: {
-		MonoString *class_name = mono_string_new (mono_domain_get (), error->class_name);
-		
-		ex = mono_get_exception_type_load (class_name, error->assembly_name);
-		break;
-	}
-	case MONO_LOADER_ERROR_METHOD:
-	case MONO_LOADER_ERROR_FIELD: {
-		char *class_name;
-		
-		class_name = g_strdup_printf ("%s%s%s", error->klass->name_space, *error->klass->name_space ? "." : "", error->klass->name);
-
-		if (error->kind == MONO_LOADER_ERROR_METHOD)
-			ex = mono_get_exception_missing_method (class_name, error->member_name);
-		else
-			ex = mono_get_exception_missing_field (class_name, error->member_name);
-		g_free (class_name);
-		break;
-	}
-	default:
-		g_assert_not_reached ();
-	}
-
-	return ex;
-}
-
 static MonoInst*
 mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -4275,8 +4243,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* MS.NET seems to silently convert this to a callvirt */
 					virtual = 1;
 
-				if (!cmethod->klass->inited)
-					mono_class_init (cmethod->klass);
+				if (!cmethod->klass->inited){
+					if (!mono_class_init (cmethod->klass))
+						goto load_error;
+				}
 
 				if (mono_method_signature (cmethod)->pinvoke) {
 					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
@@ -5186,7 +5156,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
 
-			mono_class_init (cmethod->klass);
+			if (!mono_class_init (cmethod->klass))
+				goto load_error;
 
 			if (mono_use_security_manager) {
 				check_linkdemand (cfg, method, cmethod, bblock, ip);
@@ -9988,8 +9959,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 		mono_destroy_compile (cfg);
 		if (error) {
-			MonoException *ex = mini_loader_error_to_exception (error);
-			mono_loader_clear_error ();
+			MonoException *ex = mono_loader_error_prepare_exception (error);
 			mono_raise_exception (ex);
 		} else {
 			g_assert_not_reached ();

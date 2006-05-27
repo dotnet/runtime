@@ -28,7 +28,7 @@ mono_class_get             (MonoImage *image, guint32 type_token);
 MonoClass *
 mono_class_get_full        (MonoImage *image, guint32 type_token, MonoGenericContext *context);
 
-void
+gboolean
 mono_class_init            (MonoClass *klass);
 
 MonoVTable *

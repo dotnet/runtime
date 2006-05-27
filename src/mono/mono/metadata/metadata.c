@@ -1880,7 +1880,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 	return mono_metadata_lookup_generic_inst (ginst);
 }
 
-static void
+static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 				      const char *ptr, const char **rptr)
 {
@@ -1919,6 +1919,10 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	if (rptr)
 		*rptr = ptr;
 
+	/* If we failed to parse, return, the error has been flagged. */
+	if (gclass->inst == NULL)
+		return FALSE;
+	
 	/*
 	 * We may be called multiple times on different metadata to create the same
 	 * instantiated type.  This happens for instance if we're part of a method or
@@ -1939,7 +1943,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 		g_free (gclass);
 
 		type->data.generic_class = cached;
-		return;
+		return TRUE;
 	} else {
 		g_hash_table_insert (generic_class_cache, gclass, gclass);
 
@@ -1948,6 +1952,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 			sizeof (MonoGenericContext) +
 			gclass->inst->type_argc * sizeof (MonoType);
 	}
+	return TRUE;
 }
 
 /*
@@ -2032,6 +2037,7 @@ static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 			     const char *ptr, const char **rptr)
 {
+	gboolean ok = TRUE;
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
@@ -2087,7 +2093,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
 		break;
 	case MONO_TYPE_GENERICINST:
-		do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
+		ok = do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
 		break;
 	default:
 		g_error ("type 0x%02x not handled in do_mono_metadata_parse_type", type->type);
@@ -2095,7 +2101,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	
 	if (rptr)
 		*rptr = ptr;
-	return TRUE;
+	return ok;
 }
 
 /*
@@ -4114,7 +4120,8 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	gint32 i, num;
 	guint32 cols [MONO_METHODIMPL_SIZE];
 	MonoMethod **result;
-
+	gint32 ok = TRUE;
+	
 	*overrides = NULL;
 	if (num_overrides)
 		*num_overrides = 0;
@@ -4149,17 +4156,25 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	num = end - start;
 	result = g_new (MonoMethod*, num * 2);
 	for (i = 0; i < num; ++i) {
+		MonoMethod *method;
+
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
-		result [i * 2] = method_from_method_def_or_ref (
+		method = method_from_method_def_or_ref (
 			image, cols [MONO_METHODIMPL_DECLARATION], generic_context);
-		result [i * 2 + 1] = method_from_method_def_or_ref (
+		if (method == NULL)
+			ok = FALSE;
+		result [i * 2] = method;
+		method = method_from_method_def_or_ref (
 			image, cols [MONO_METHODIMPL_BODY], generic_context);
+		if (method == NULL)
+			ok = FALSE;
+		result [i * 2 + 1] = method;
 	}
 
 	*overrides = result;
 	if (num_overrides)
 		*num_overrides = num;
-	return TRUE;
+	return ok;
 }
 
 /**

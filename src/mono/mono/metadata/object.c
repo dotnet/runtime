@@ -722,7 +722,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		return runtime_info->domain_vtables [domain->domain_id];
 	}
 	if (!class->inited)
-		mono_class_init (class);
+		if (!mono_class_init (class)){
+			MonoException *exc;
+			mono_domain_unlock (domain);
+			exc = mono_class_get_exception_for_failure (class);
+			g_assert (exc);
+			mono_raise_exception (exc);
+		}
 
 	mono_class_setup_vtable (class);
 
@@ -1946,6 +1952,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	gchar *utf8_fullpath;
 	int result;
 
+	g_assert (method != NULL);
+	
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);

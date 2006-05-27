@@ -92,6 +92,29 @@ mono_double_ParseImpl (char *ptr, double *result)
 	return TRUE;
 }
 
+static MonoClass *
+mono_class_get_throw (MonoImage *image, guint32 type_token)
+{
+	MonoClass *class = mono_class_get (image, type_token);
+	MonoLoaderError *error;
+	MonoException *ex;
+	
+	if (class != NULL){
+		if (class->exception_type != NULL){
+			MonoException *exc = mono_class_get_exception_for_failure (class);
+			g_assert (exc);
+			mono_raise_exception (exc);
+		}
+		return class;
+	}
+	error = mono_loader_get_last_error ();
+	g_assert (error != NULL);
+	
+	ex = mono_loader_error_prepare_exception (error);
+	mono_raise_exception (ex);
+	return NULL;
+}
+
 static void
 ves_icall_System_Double_AssertEndianity (double *value)
 {
@@ -4482,8 +4505,7 @@ ves_icall_System_Reflection_Assembly_LoadPermissions (MonoReflectionAssembly *as
 }
 
 static MonoArray*
-mono_module_get_types (MonoDomain *domain, MonoImage *image, 
-					   MonoBoolean exportedOnly)
+mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoBoolean exportedOnly)
 {
 	MonoArray *res;
 	MonoClass *klass;
@@ -4509,7 +4531,7 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image,
 		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
-			klass = mono_class_get (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			klass = mono_class_get_throw (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
 			mono_array_setref (res, count, mono_type_get_object (domain, &klass->byval_arg));
 			count++;
 		}
