@@ -2248,8 +2248,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		cpos += 6;
 
 		cov->data [bb->dfn].cil_code = bb->cil_code;
+		amd64_mov_reg_imm (code, AMD64_R11, (guint64)&cov->data [bb->dfn].count);
 		/* this is not thread save, but good enough */
-		amd64_inc_mem (code, (guint64)&cov->data [bb->dfn].count); 
+		amd64_inc_membase (code, AMD64_R11, 0);
 	}
 
 	offset = code - cfg->native_code;
