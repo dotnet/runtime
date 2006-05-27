@@ -978,12 +978,18 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 
 	ass = mono_assembly_open_full (filename, &status, refOnly);
 	
-	g_free (name);
-
 	if (!ass){
-		MonoException *exc = mono_get_exception_file_not_found (fname);
+		MonoException *exc;
+
+		if (status == MONO_IMAGE_IMAGE_INVALID)
+			exc = mono_get_exception_bad_image_format (name);
+		else
+			exc = mono_get_exception_file_not_found (fname);
+		g_free (name);
 		mono_raise_exception (exc);
 	}
+
+	g_free (name);
 
 	return mono_assembly_get_object (domain, ass);
 }

@@ -1281,7 +1281,8 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	}
 
 	if (!image){
-		*status = MONO_IMAGE_ERROR_ERRNO;
+		if (*status == MONO_IMAGE_OK)
+			*status = MONO_IMAGE_ERROR_ERRNO;
 		g_free (fname);
 		return NULL;
 	}
