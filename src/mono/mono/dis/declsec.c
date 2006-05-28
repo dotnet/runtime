@@ -155,7 +155,7 @@ declsec_20_write_value (GString *str, char type, const char *value)
 char*
 dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 {
-	int i;
+	int i, num;
 	char *result;
 	GString *res = g_string_new ("");
 
@@ -165,7 +165,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 	g_string_append (res, "{");
 
 	/* number of encoded permission attributes */
-	int num = mono_metadata_decode_value (p, &p);
+	num = mono_metadata_decode_value (p, &p);
 
 	for (i = 0; i < num; i++) {
 		int len, j, pos = 0, param_len;
