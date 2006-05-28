@@ -288,6 +288,22 @@ mono_get_jit_tls_key
 mono_get_lmf_tls_offset
 mono_jit_thread_attach
 #
+# Internally used
+# 
+mono_assembly_load_from_full
+mono_assembly_load_module
+mono_assembly_load_reference
+mono_assembly_load_references
+mono_assembly_load_with_partial_name
+mono_assembly_fill_assembly_name
+mono_assembly_foreach
+mono_assembly_invoke_load_hook
+mono_assembly_invoke_search_hook
+mono_assembly_name_parse_full
+mono_assembly_set_main
+mono_assembly_get_assemblyref
+mono_assembly_setrootdir
+#
 # I believe these are internal, but I should check with the JIT guys
 #
 mono_assembly_open_full
