@@ -1361,8 +1361,9 @@ load_friend_assemblies (MonoAssembly* ass)
  * mono_assembly_open opens the PE-image pointed by @filename, and
  * loads any external assemblies referenced by it.
  *
- * NOTE: we could do lazy loading of the assemblies.  Or maybe not worth
- * it. 
+ * Return: a pointer to the MonoAssembly if @filename contains a valid
+ * assembly or NULL on error.  Details about the error are stored in the
+ * @status variable.
  */
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
@@ -1372,7 +1373,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 MonoAssembly *
 mono_assembly_load_from_full (MonoImage *image, const char*fname, 
-			 MonoImageOpenStatus *status, gboolean refonly)
+			      MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoAssembly *ass, *ass2;
 	char *base_dir;
@@ -1722,10 +1723,11 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 * mono_assembly_name_parse:
 * @name: name to parse
 * @aname: the destination assembly name
-* Returns: true if the name could be parsed.
 * 
 * Parses an assembly qualified type name and assigns the name,
 * version, culture and token to the provided assembly name object.
+*
+* Returns: true if the name could be parsed.
 */
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
@@ -2115,7 +2117,22 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	return corlib;
 }
 
-
+/**
+ * mono_assembly_load_full:
+ * @aname: A MonoAssemblyName with the assembly name to load.
+ * @basedir: A directory to look up the assembly at.
+ * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
+ * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ *
+ * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
+ * attempts to load the assembly from that directory before probing the standard locations.
+ *
+ * If the assembly is being opened in reflection-only mode (@refonly set to TRUE) then no 
+ * assembly binding takes place.
+ *
+ * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
+ * value pointed by status is updated with an error code.
+ */
 MonoAssembly*
 mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
 {
@@ -2186,6 +2203,18 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	return result;
 }
 
+/**
+ * mono_assembly_load:
+ * @aname: A MonoAssemblyName with the assembly name to load.
+ * @basedir: A directory to look up the assembly at.
+ * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
+ *
+ * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
+ * attempts to load the assembly from that directory before probing the standard locations.
+ *
+ * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
+ * value pointed by status is updated with an error code.
+ */
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
@@ -2207,6 +2236,13 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 	return res;
 }
 
+/**
+ * mono_assembly_loaded:
+ * @aname: an assembly to look for.
+ *
+ * Returns: NULL If the given @aname assembly has not been loaded, or a pointer to
+ * a MonoAssembly that matches the MonoAssemblyName specified.
+ */
 MonoAssembly*
 mono_assembly_loaded (MonoAssemblyName *aname)
 {
@@ -2303,7 +2339,7 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 /**
  * mono_assemblies_cleanup:
  *
- *  Free all resources used by this module.
+ * Free all resources used by this module.
  */
 void
 mono_assemblies_cleanup (void)
@@ -2337,16 +2373,25 @@ static MonoAssembly *main_assembly=NULL;
 void
 mono_assembly_set_main (MonoAssembly *assembly)
 {
-	main_assembly=assembly;
+	main_assembly = assembly;
 }
 
+/**
+ * mono_assembly_get_main:
+ *
+ * Returns: the assembly for the application, the first assembly that is loaded by the VM
+ */
 MonoAssembly *
 mono_assembly_get_main (void)
 {
-	return(main_assembly);
+	return (main_assembly);
 }
 
-/*
+/**
+ * mono_assembly_get_image:
+ * @assembly: The assembly to retrieve the image from
+ *
+ * Returns: the MonoImage associated with this assembly.
  */
 MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
