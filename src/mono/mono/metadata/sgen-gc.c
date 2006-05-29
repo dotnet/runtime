@@ -121,6 +121,7 @@
       barrier calls in ctors (but that is not valid for other reasons, too).
    *) add write barriers to the Clone methods
  */
+#include "config.h"
 #ifdef HAVE_SGEN_GC
 
 #include <unistd.h>
@@ -136,7 +137,6 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <fcntl.h>
-#include "config.h"
 #include "metadata/metadata-internals.h"
 #include "metadata/class-internals.h"
 #include "metadata/gc-internal.h"
