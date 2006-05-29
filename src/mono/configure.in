@@ -2022,7 +2022,7 @@ echo "
 	$disabled
 
 "
-if text x$gc = xsgengc; then
+if text x$gc = xsgen; then
         echo IMPORTANT:
 	echo IMPORTANT: You have selected an experimental, work-in-progress 
 	echo IMPORTANT: GC engine.  This GC engine is currently not supported
