@@ -628,15 +628,15 @@ case "x$gc" in
 		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC)", [GC description])
 		;;
 
-dnl	xsgen)
-dnl		found_boehm=no
-dnl		gc_headers=no
-dnl		use_included_gc=no
-dnl		AC_DEFINE(HAVE_SGEN_GC,1,[Using the simple generational GC.])
-dnl		AC_DEFINE(HAVE_MOVING_COLLECTOR,1,[The GC can move objects.])
-dnl		AC_DEFINE(HAVE_WRITE_BARRIERS,1,[The GC needs write barriers.])
-dnl		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Simple generational", [GC description])
-dnl		;;
+	xsgen)
+		found_boehm=no
+		gc_headers=no
+		use_included_gc=no
+		AC_DEFINE(HAVE_SGEN_GC,1,[Using the simple generational GC.])
+		AC_DEFINE(HAVE_MOVING_COLLECTOR,1,[The GC can move objects.])
+		AC_DEFINE(HAVE_WRITE_BARRIERS,1,[The GC needs write barriers.])
+		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Simple generational", [GC description])
+		;;
 
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
