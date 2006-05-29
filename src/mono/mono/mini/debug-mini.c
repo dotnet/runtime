@@ -97,6 +97,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 {
 #ifdef VALGRIND_ADD_LINE_INFO
 	MonoMethodHeader *header;
+	MonoDebugMethodInfo *minfo;
 	int i;
 	char *filename = NULL;
 	guint32 address, line_number;
@@ -119,13 +120,22 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	 * into [addr-addr] ->line number mappings.
 	 */
 
-	/* Create offset->line number mapping */
-	for (i = 0; i < header->code_size; ++i) {
-		char *fname;
+	minfo = mono_debug_lookup_method (method);
+	if (minfo) {
+		/* Create offset->line number mapping */
+		for (i = 0; i < header->code_size; ++i) {
+			MonoDebugSourceLocation *location;
 
-		fname = mono_debug_source_location_from_il_offset (method, i, &lines [i]);
-		if (!filename)
-			filename = fname;
+			location = mono_debug_symfile_lookup_location (minfo, i);
+			if (!location)
+				continue;
+
+			lines [i] = location.row;
+			if (!filename)
+				filename = location.source_file;
+
+			mono_debug_free_source_location (location);
+		}
 	}
 
 	/* Create address->offset mapping */

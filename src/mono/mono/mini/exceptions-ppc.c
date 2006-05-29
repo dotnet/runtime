@@ -502,8 +502,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		*managed = FALSE;
 
 	if (ji != NULL) {
-		char *source_location, *tmpaddr, *fname;
-		gint32 address, iloffset;
+		gint32 address;
 		int offset, i;
 		gulong *ctx_regs;
 
@@ -524,25 +523,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		if (trace) {
-			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, domain);
-			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
-
-			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%05x>", address);
-			else
-				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
-		
-			fname = mono_method_full_name (ji->method, TRUE);
-
-			if (source_location)
-				*trace = g_strdup_printf ("in %s (at %s) %s", tmpaddr, source_location, fname);
-			else
-				*trace = g_strdup_printf ("in %s %s", tmpaddr, fname);
-
-			g_free (fname);
-			g_free (source_location);
-			g_free (tmpaddr);
+		if (trace)
+			*trace = mono_debug_print_stack_frame (ji->method, offset, domain);
 		}
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
@@ -640,7 +622,14 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 		if (ji == (gpointer)-1)
 			return;
 
-		il_offset = do_il_offset ? mono_debug_il_offset_from_address (ji->method, native_offset, domain): -1;
+		if (do_il_offset) {
+			MonoDebugSourceLocation *source;
+
+			source = mono_debug_lookup_source_location (ji->method, native_offset, domain);
+			il_offset = source ? source->il_offset : -1;
+			mono_debug_free_source_location (source);
+		} else
+			il_offset = -1;
 
 		if (func (ji->method, native_offset, il_offset, managed, user_data))
 			return;
@@ -697,18 +686,25 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	} while (skip >= 0);
 
 	*method = mono_method_get_object (domain, ji->method, NULL);
-	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset, domain);
+
+	location = mono_debug_lookup_source_location (ji->method, *native_offset, domain);
+	if (location)
+		*iloffset = location->il_offset;
+	else
+		*iloffset = 0;
 
 	if (need_file_info) {
-		gchar *filename;
-
-		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line, domain);
-
-		*file = filename? mono_string_new (domain, filename): NULL;
-		*column = 0;
-
-		g_free (filename);
+		if (location) {
+			*file = mono_string_new (domain, location->source_file);
+			*line = location->row;
+			*column = location->column;
+		} else {
+			*file = NULL;
+			*line = *column = 0;
+		}
 	}
+
+	mono_debug_free_source_location (location);
 
 	return TRUE;
 }

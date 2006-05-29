@@ -189,9 +189,9 @@ get_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
 	char *method;
-	char *source;
 	char *res;
 	MonoDomain *domain = mono_domain_get ();
+	MonoDebugSourceLocation *location;
 	FindTrampUserData user_data;
 	
 	ji = mono_jit_info_table_find (domain, ip);
@@ -211,11 +211,12 @@ get_method_from_ip (void *ip)
 			return NULL;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
-	source = mono_debug_source_location_from_address (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), NULL, domain);
+	/* FIXME: unused ? */
+	location = mono_debug_lookup_source_location (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
 
 	res = g_strdup_printf (" %s + 0x%x (%p %p) [%p - %s]", method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
-	g_free (source);
+	mono_debug_free_source_location (location);
 	g_free (method);
 
 	return res;
@@ -233,7 +234,7 @@ mono_print_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
 	char *method;
-	char *source;
+	MonoDebugSourceLocation *source;
 	MonoDomain *domain = mono_domain_get ();
 	FindTrampUserData user_data;
 	
@@ -254,14 +255,14 @@ mono_print_method_from_ip (void *ip)
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
-	source = mono_debug_source_location_from_address (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), NULL, domain);
+	source = mono_debug_lookup_source_location (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
 
 	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	if (source)
-		g_print ("%s\n", source);
+		g_print ("%s:%d\n", source->source_file, source->row);
 
-	g_free (source);
+	mono_debug_free_source_location (source);
 	g_free (method);
 }
 	

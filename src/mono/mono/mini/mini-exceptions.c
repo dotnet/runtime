@@ -51,8 +51,8 @@
  */
 static MonoJitInfo *
 mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
-			 gboolean *managed)
+		    MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
+		    gboolean *managed)
 {
 	gboolean managed2;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -73,14 +73,20 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 		return ji;
 
 	if (managed2 || ji->method->wrapper_type) {
-		char *source_location, *tmpaddr, *fname;
-		gint32 offset, iloffset;
+		const char *real_ip, *start;
+		gint32 offset;
 
+		start = (const char *)ji->code_start;
 		if (!managed2)
 			/* ctx->ip points into native code */
-			offset = (char*)MONO_CONTEXT_GET_IP (new_ctx) - (char*)ji->code_start;
+			real_ip = (const char*)MONO_CONTEXT_GET_IP (new_ctx);
 		else
-			offset = (char *)ip - (char *)ji->code_start;
+			real_ip = (const char*)ip;
+
+		if ((real_ip >= ji->code_start) && (real_ip <= ji->code_start + ji->code_size))
+			offset = real_ip - start;
+		else
+			offset = -1;
 
 		if (native_offset)
 			*native_offset = offset;
@@ -89,28 +95,9 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		if (trace) {
-			source_location = mono_debug_source_location_from_address (ji->method, offset, NULL, domain);
-			iloffset = mono_debug_il_offset_from_address (ji->method, offset, domain);
-
-			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%05x>", offset);
-			else
-				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
-		
-			fname = mono_method_full_name (ji->method, TRUE);
-
-			if (source_location)
-				*trace = g_strdup_printf ("in %s (at %s) %s", tmpaddr, source_location, fname);
-			else
-				*trace = g_strdup_printf ("in %s %s", tmpaddr, fname);
-
-			g_free (fname);
-			g_free (source_location);
-			g_free (tmpaddr);
-		}
-	}
-	else {
+		if (trace)
+			*trace = mono_debug_print_stack_frame (ji->method, offset, domain);
+	} else {
 		if (trace) {
 			char *fname = mono_method_full_name (res->method, TRUE);
 			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
@@ -131,7 +118,6 @@ ves_icall_System_Exception_get_trace (MonoException *ex)
 	MonoArray *ta = ex->trace_ips;
 	int i, len;
 	GString *trace_str;
-	char tmpaddr [256];
 
 	if (ta == NULL)
 		/* Exception is not thrown yet */
@@ -148,28 +134,15 @@ ves_icall_System_Exception_get_trace (MonoException *ex)
 			/* Unmanaged frame */
 			g_string_append_printf (trace_str, "in (unmanaged) %p\n", ip);
 		} else {
-			char *source_location, *fname;
-			gint32 address, iloffset;
+			gchar *location;
+			gint32 address;
 
 			address = (char *)ip - (char *)ji->code_start;
+			location = mono_debug_print_stack_frame (
+				ji->method, address, ex->object.vtable->domain);
 
-			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, ex->object.vtable->domain);
-			iloffset = mono_debug_il_offset_from_address (ji->method, address, ex->object.vtable->domain);
-
-			if (iloffset < 0)
-				sprintf (tmpaddr, "<0x%05x>", address);
-			else
-				sprintf (tmpaddr, "[0x%05x]", iloffset);
-		
-			fname = mono_method_full_name (ji->method, TRUE);
-
-			if (source_location)
-				g_string_append_printf (trace_str, "in %s (at %s) %s\n", tmpaddr, source_location, fname);
-			else
-				g_string_append_printf (trace_str, "in %s %s\n", tmpaddr, fname);
-
-			g_free (fname);
-			g_free (source_location);
+			g_string_append_printf (trace_str, "%s\n", location);
+			g_free (location);
 		}
 	}
 
@@ -185,6 +158,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
+	MonoDebugSourceLocation *location;
 	int i, len;
 
 	if (ta == NULL) {
@@ -222,22 +196,29 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, ji->method, NULL));
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
-		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
+		/*
+		 * mono_debug_lookup_source_location() returns both the file / line number information
+		 * and the IL offset.  Note that computing the IL offset is already an expensive
+		 * operation, so we shouldn't call this method twice.
+		 */
+		location = mono_debug_lookup_source_location (ji->method, sf->native_offset, domain);
+		if (location)
+			sf->il_offset = location->il_offset;
+		else
+			sf->il_offset = 0;
 
 		if (need_file_info) {
-			gchar *filename;
-			
-			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
-
-			if (filename)
-				MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, filename));
-			else
+			if (location) {
+				MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, location->source_file));
+				sf->line = location->row;
+				sf->column = location->column;
+			} else {
+				sf->line = sf->column = 0;
 				sf->filename = NULL;
-			sf->column = 0;
-
-			g_free (filename);
+			}
 		}
 
+		mono_debug_free_source_location (location);
 		mono_array_setref (res, i, sf);
 	}
 
@@ -314,14 +295,20 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboole
 	}
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
-		
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
 			return;
 
-		il_offset = do_il_offset ? mono_debug_il_offset_from_address (ji->method, native_offset, domain): -1;
+		if (do_il_offset) {
+			MonoDebugSourceLocation *source;
+
+			source = mono_debug_lookup_source_location (ji->method, native_offset, domain);
+			il_offset = source ? source->il_offset : -1;
+			mono_debug_free_source_location (source);
+		} else
+			il_offset = -1;
 
 		if (func (ji->method, native_offset, il_offset, managed, user_data))
 			return;
@@ -347,6 +334,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
+	MonoDebugSourceLocation *location;
 
 	MONO_ARCH_CONTEXT_DEF;
 
@@ -377,18 +365,25 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	} while (skip >= 0);
 
 	*method = mono_method_get_object (domain, ji->method, NULL);
-	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset, domain);
+
+	location = mono_debug_lookup_source_location (ji->method, *native_offset, domain);
+	if (location)
+		*iloffset = location->il_offset;
+	else
+		*iloffset = 0;
 
 	if (need_file_info) {
-		gchar *filename;
-
-		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line, domain);
-
-		*file = filename? mono_string_new (domain, filename): NULL;
-		*column = 0;
-
-		g_free (filename);
+		if (location) {
+			*file = mono_string_new (domain, location->source_file);
+			*line = location->row;
+			*column = location->column;
+		} else {
+			*file = NULL;
+			*line = *column = 0;
+		}
 	}
+
+	mono_debug_free_source_location (location);
 
 	return TRUE;
 }
@@ -957,20 +952,11 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
 	FILE *stream = (FILE*)data;
 
 	if (method) {
-		char *fname = mono_method_full_name (method, TRUE);
-
-		if (il_offset != -1) {
-			gchar *source_location = mono_debug_source_location_from_address (method, native_offset, NULL, mono_domain_get ());
-
-			if (source_location)
-				fprintf (stream, "in %s (at %s)\n", fname, source_location);
-			else
-				fprintf (stream, "in %s [IL 0x%lx]\n", fname, (long)il_offset);
-		} else
-			fprintf (stream, "in %s <0x%lx>\n", fname, (long)native_offset);
-		g_free (fname);
+		gchar *location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		fprintf (stream, "  %s\n", location);
+		g_free (location);
 	} else
-		fprintf (stream, "in <unknown> <%lx>\n", (long)native_offset);
+		fprintf (stream, "  at <unknown> <0x%05x>\n", native_offset);
 
 	return FALSE;
 }
@@ -993,7 +979,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
-	 * with ones which have a greater change of working.
+	 * with ones which have a greater chance of working.
 	 */
 	fprintf (stderr,
 			 "\n"
