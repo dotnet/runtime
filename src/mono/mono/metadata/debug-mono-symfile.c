@@ -182,27 +182,29 @@ read_string (const char *ptr)
 	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
 
-gchar *
-mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, guint32 offset,
-				 guint32 *line_number)
+/**
+ * mono_debug_symfile_lookup_location:
+ * @minfo: A `MonoDebugMethodInfo' which can be retrieved by
+ *         mono_debug_lookup_method().
+ * @offset: IL offset within the corresponding method's CIL code.
+ *
+ * This function is similar to mono_debug_lookup_location(), but we
+ * already looked up the method and also already did the
+ * `native address -> IL offset' mapping.
+ */
+MonoDebugSourceLocation *
+mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 {
 	MonoSymbolFileLineNumberEntry *lne;
-	MonoDebugMethodInfo *minfo;
+	MonoSymbolFile *symfile;
 	gchar *source_file = NULL;
 	const char *ptr;
 	int i;
 
-	mono_debugger_lock ();
-	if (!symfile->method_hash) {
-		mono_debugger_unlock ();
+	if ((symfile = minfo->handle->symfile) == NULL)
 		return NULL;
-	}
 
-	minfo = g_hash_table_lookup (symfile->method_hash, method);
-	if (!minfo) {
-		mono_debugger_unlock ();
-		return NULL;
-	}
+	mono_debugger_lock ();
 
 	if (read32(&(minfo->entry->_source_index))) {
 		int offset = read32(&(symfile->offset_table->_source_table_offset)) +
@@ -217,26 +219,18 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	lne = (MonoSymbolFileLineNumberEntry *) ptr;
 
 	for (i = 0; i < read32(&(minfo->entry->_num_line_numbers)); i++, lne++) {
+		MonoDebugSourceLocation *location;
+
 		if (read32(&(lne->_offset)) < offset)
 			continue;
 
-		if (line_number) {
-			*line_number = read32(&(lne->_row));
-			mono_debugger_unlock ();
-			if (source_file)
-				return source_file;
-			else
-				return NULL;
-		} else if (source_file) {
-			gchar *retval = g_strdup_printf ("%s:%d", source_file, read32(&(lne->_row)));
-			g_free (source_file);
-			mono_debugger_unlock ();
-			return retval;
-		} else {
-			gchar* retval = g_strdup_printf ("%d", read32(&(lne->_row)));
-			mono_debugger_unlock ();
-			return retval;
-		}
+		location = g_new0 (MonoDebugSourceLocation, 1);
+		location->source_file = source_file;
+		location->row = read32(&(lne->_row));
+		location->il_offset = read32(&(lne->_offset));
+
+		mono_debugger_unlock ();
+		return location;
 	}
 
 	mono_debugger_unlock ();
@@ -271,7 +265,7 @@ compare_method (const void *key, const void *object)
 }
 
 MonoDebugMethodInfo *
-mono_debug_find_method (MonoDebugHandle *handle, MonoMethod *method)
+mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 {
 	MonoSymbolFileMethodEntry *me;
 	MonoSymbolFileMethodIndexEntry *first_ie, *ie;

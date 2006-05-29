@@ -12,6 +12,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
+#include "mono/metadata/debug-mono-symfile.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/domain-internals.h"
@@ -515,10 +516,11 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 {
 	MonoProfileCoverageInfo* info;
 	int i, offset;
-	guint32 line, col;
+	guint32 code_size;
 	const unsigned char *start, *end, *cil_code;
 	MonoMethodHeader *header;
 	MonoProfileCoverageEntry entry;
+	MonoDebugMethodInfo *debug_minfo;
 
 	mono_profiler_coverage_lock ();
 	info = g_hash_table_lookup (coverage_hash, method);
@@ -528,8 +530,10 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 		return;
 
 	header = mono_method_get_header (method);
-	start = mono_method_header_get_code (header, &col, NULL);
-	end = start + col;
+	start = mono_method_header_get_code (header, &code_size, NULL);
+	debug_minfo = mono_debug_lookup_method (method);
+
+	end = start + code_size;
 	for (i = 0; i < info->entries; ++i) {
 		cil_code = info->data [i].cil_code;
 		if (cil_code && cil_code >= start && cil_code < end) {
@@ -537,12 +541,22 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 			entry.iloffset = offset;
 			entry.method = method;
 			entry.counter = info->data [i].count;
-			/* the debug interface doesn't support column info, sigh */
-			col = line = 1;
-			entry.filename = mono_debug_source_location_from_il_offset (method, offset, &line);
-			entry.line = line;
-			entry.col = col;
+			entry.line = entry.col = 1;
+			entry.filename = NULL;
+			if (debug_minfo) {
+				MonoDebugSourceLocation *location;
+
+				location = mono_debug_symfile_lookup_location (debug_minfo, offset);
+				if (location) {
+					entry.line = location->row;
+					entry.col = location->column;
+					entry.filename = g_strdup (location->source_file);
+					mono_debug_free_source_location (location);
+				}
+			}
+
 			func (prof, &entry);
+			g_free (entry.filename);
 		}
 	}
 }

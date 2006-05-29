@@ -27,6 +27,9 @@ typedef struct _MonoDebugMethodAddress		MonoDebugMethodAddress;
 typedef struct _MonoDebugWrapperData		MonoDebugWrapperData;
 typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
+typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
+typedef struct _MonoDebugSourceLocation		MonoDebugSourceLocation;
+
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_MONO,
@@ -152,6 +155,12 @@ struct _MonoDebugClassEntry {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
+struct _MonoDebugSourceLocation {
+	gchar *source_file;
+	guint32 row, column;
+	guint32 il_offset;
+};
+
 /*
  * These bits of the MonoDebugLocalInfo's "index" field are flags specifying
  * where the variable is actually stored.
@@ -195,12 +204,21 @@ MonoDebugMethodAddress *mono_debug_add_method (MonoMethod *method, MonoDebugMeth
 					       MonoDomain *domain);
 MonoDebugMethodJitInfo *mono_debug_read_method (MonoDebugMethodAddress *address);
 void mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
-gchar *mono_debug_source_location_from_address (MonoMethod *method, guint32 address,
-						guint32 *line_number, MonoDomain *domain);
-gchar *mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset,
-						  guint32 *line_number);
-gint32 mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomain *domain);
-gint32 mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDomain *domain);
+
+MonoDebugMethodInfo *mono_debug_lookup_method (MonoMethod *method);
+
+/*
+ * Line number support.
+ */
+
+MonoDebugSourceLocation *
+mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDomain *domain);
+
+void
+mono_debug_free_source_location (MonoDebugSourceLocation *location);
+
+gchar *
+mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDomain *domain);
 
 /*
  * Mono Debugger support functions

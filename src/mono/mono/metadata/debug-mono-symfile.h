@@ -20,8 +20,6 @@ typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
 typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
 
-typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
-
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
 	guint32 _total_file_size;
@@ -95,7 +93,7 @@ struct MonoSymbolFileLineNumberEntry {
 	guint32 _offset;
 };
 
-struct MonoDebugMethodInfo {
+struct _MonoDebugMethodInfo {
 	MonoMethod *method;
 	MonoDebugHandle *handle;
 	guint32 index;
@@ -138,18 +136,16 @@ mono_debug_open_mono_symbol_file   (MonoDebugHandle           *handle,
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
 
-gchar *
-mono_debug_find_source_location    (MonoSymbolFile           *symfile,
-				    MonoMethod               *method,
-				    guint32                   offset,
-				    guint32                  *line_number);
+MonoDebugSourceLocation *
+mono_debug_symfile_lookup_location (MonoDebugMethodInfo      *minfo,
+				    guint32                   offset);
 
 gint32
 _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo   *jit,
 				    guint32                   il_offset);
 
 MonoDebugMethodInfo *
-mono_debug_find_method             (MonoDebugHandle           *handle,
+mono_debug_symfile_lookup_method   (MonoDebugHandle          *handle,
 				    MonoMethod               *method);
 G_END_DECLS
 

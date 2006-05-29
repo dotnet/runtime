@@ -303,7 +303,7 @@ lookup_method_func (gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	if (handle->symfile)
-		data->minfo = mono_debug_find_method (handle, data->method);
+		data->minfo = mono_debug_symfile_lookup_method (handle, data->method);
 }
 
 static MonoDebugMethodInfo *
@@ -319,6 +319,24 @@ _mono_debug_lookup_method (MonoMethod *method)
 
 	g_hash_table_foreach (mono_debug_handles, lookup_method_func, &data);
 	return data.minfo;
+}
+
+/**
+ * mono_debug_lookup_method:
+ *
+ * Lookup symbol file information for the method @method.  The returned
+ * `MonoDebugMethodInfo' is a private structure, but it can be passed to
+ * mono_debug_symfile_lookup_location().
+ */
+MonoDebugMethodInfo *
+mono_debug_lookup_method (MonoMethod *method)
+{
+	MonoDebugMethodInfo *minfo;
+
+	mono_debugger_lock ();
+	minfo = _mono_debug_lookup_method (method);
+	mono_debugger_unlock ();
+	return minfo;
 }
 
 static inline void
@@ -822,27 +840,21 @@ il_offset_from_address (MonoDebugMethodInfo *minfo, MonoDomain *domain, guint32 
 }
 
 /**
- * mono_debug_source_location_from_address:
- * @method:
- * @address:
- * @line_number:
- * @domain:
+ * mono_debug_lookup_source_location:
+ * @address: Native offset within the @method's machine code.
  *
- * Used by the exception code to get a source location from a machine address.
+ * Lookup the source code corresponding to the machine instruction located at
+ * native offset @address within @method.
  *
- * Returns: a textual representation of the specified address which is suitable to be displayed to
- * the user (for instance "/home/martin/monocvs/debugger/test/Y.cs:8").
- *
- * If the optional @line_number argument is not NULL, the line number is stored there and just the
- * source file is returned (ie. it'd return "/home/martin/monocvs/debugger/test/Y.cs" and store the
- * line number 8 in the variable pointed to by @line_number).
+ * The returned `MonoDebugSourceLocation' contains both file / line number
+ * information and the corresponding IL offset.  It must be freed by
+ * mono_debug_free_source_location().
  */
-gchar *
-mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number,
-					 MonoDomain *domain)
+MonoDebugSourceLocation *
+mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDomain *domain)
 {
 	MonoDebugMethodInfo *minfo;
-	char *res = NULL;
+	MonoDebugSourceLocation *location;
 	gint32 offset;
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
@@ -856,115 +868,57 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	}
 
 	offset = il_offset_from_address (minfo, domain, address);
-		
-	if (offset >= 0)
-		res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
+	if (offset < 0) {
+		mono_debugger_unlock ();
+		return NULL;
+	}
 
+	location = mono_debug_symfile_lookup_location (minfo, offset);
 	mono_debugger_unlock ();
-	return res;
+	return location;
 }
 
 /**
- * mono_debug_source_location_from_il_offset:
- * @method:
- * @offset:
- * @line_number:
+ * mono_debug_free_source_location:
+ * @location: A `MonoDebugSourceLocation'.
  *
- * Used by the exception code to get a source location from an IL offset.
+ * Frees the @location.
+ */
+void
+mono_debug_free_source_location (MonoDebugSourceLocation *location)
+{
+	if (location) {
+		g_free (location->source_file);
+		g_free (location);
+	}
+}
+
+/**
+ * mono_debug_print_stack_frame:
+ * @native_offset: Native offset within the @method's machine code.
  *
- * Returns a textual representation of the specified address which is suitable to be displayed to
- * the user (for instance "/home/martin/monocvs/debugger/test/Y.cs:8").
- *
- * If the optional @line_number argument is not NULL, the line number is stored there and just the
- * source file is returned (ie. it'd return "/home/martin/monocvs/debugger/test/Y.cs" and store the
- * line number 8 in the variable pointed to by @line_number).
+ * Conventient wrapper around mono_debug_lookup_source_location() which can be
+ * used if you only want to use the location to print a stack frame.
  */
 gchar *
-mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset, guint32 *line_number)
+mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDomain *domain)
 {
-	char *res;
-	MonoDebugMethodInfo *minfo;
+	MonoDebugSourceLocation *location;
+	gchar *fname, *res;
 
-	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
-		return NULL;
+	fname = mono_method_full_name (method, TRUE);
+	location = mono_debug_lookup_source_location (method, native_offset, domain);
 
-	mono_debugger_lock ();
-	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->handle || !minfo->handle->symfile) {
-		mono_debugger_unlock ();
-		return NULL;
+	if (!location) {
+		res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
+		g_free (fname);
+		return res;
 	}
 
-	res = mono_debug_find_source_location (minfo->handle->symfile, method, offset, line_number);
-	mono_debugger_unlock ();
-	return res;
-}
+	res = g_strdup_printf ("at %s [0x%05x] in %s:%d", fname, location->il_offset,
+			       location->source_file, location->row);
 
-/**
- * mono_debug_il_offset_from_address:
- * @method:
- * @address:
- * @domain:
- *
- * Returns: the IL offset corresponding to machine address @address which is an offset
- * relative to the beginning of the method @method.
- */
-gint32
-mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomain *domain)
-{
-	MonoDebugMethodInfo *minfo;
-	gint32 res;
-
-	if ((address < 0) || (mono_debug_format == MONO_DEBUG_FORMAT_NONE))
-		return -1;
-
-	mono_debugger_lock ();
-	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
-	    !minfo->handle->symfile->offset_table) {
-		mono_debugger_unlock ();
-		return -1;
-	}
-
-	res = il_offset_from_address (minfo, domain, address);
-	mono_debugger_unlock ();
-	return res;
-}
-
-/**
- * mono_debug_address_from_il_offset:
- * @method:
- * @il_offset:
- * @domain:
- *
- * Returns: the machine address corresponding to IL offset @il_offset.
- * The returned value is an offset relative to the beginning of the method @method.
- */
-gint32
-mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDomain *domain)
-{
-	MonoDebugMethodInfo *minfo;
-	MonoDebugMethodJitInfo *jit;
-	gint32 res;
-
-	if ((il_offset < 0) || (mono_debug_format == MONO_DEBUG_FORMAT_NONE))
-		return -1;
-
-	mono_debugger_lock ();
-	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
-	    !minfo->handle->symfile->offset_table) {
-		mono_debugger_unlock ();
-		return -1;
-	}
-
-	jit = find_method (minfo, domain);
-	if (!jit) {
-		mono_debugger_unlock ();
-		return -1;
-	}
-
-	res = _mono_debug_address_from_il_offset (jit, il_offset);
-	mono_debugger_unlock ();
+	g_free (fname);
+	mono_debug_free_source_location (location);
 	return res;
 }
