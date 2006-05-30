@@ -731,6 +731,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	if (!method) {
 		char *msig = mono_signature_get_desc (sig, FALSE);
+		char * class_name = mono_type_get_name (&klass->byval_arg);
 		GString *s = g_string_new (mname);
 		if (sig->generic_param_count)
 			g_string_append_printf (s, "<[%d]>", sig->generic_param_count);
@@ -740,9 +741,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 		g_warning (
 			"Missing method %s::%s in assembly %s, referenced in assembly %s",
-			mono_type_get_name (&klass->byval_arg), msig, klass->image->name, image->name);
+			class_name, msig, klass->image->name, image->name);
+		mono_loader_set_error_method_load (class_name, mname);
 		g_free (msig);
-		mono_loader_set_error_method_load (klass, mname);
+		g_free (class_name);
 	}
 	mono_metadata_free_method_signature (sig);
 
