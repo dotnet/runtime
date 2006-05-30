@@ -649,9 +649,21 @@ update_aliasing_information_on_inst (MonoAliasingInformation *info, MonoAliasing
 	} else {
 		MonoAliasType father_type = MONO_ALIASING_TYPE_NO_ALIAS;
 		if ((context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL) || (context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL_FIELD)) {
+			MonoAliasUsageInformation *use = mono_mempool_alloc (info->mempool, sizeof (MonoAliasUsageInformation));
+			
+			inst->ssa_op = MONO_SSA_INDIRECT_LOAD_STORE;
+			use->inst = inst;
+			use->affected_variables = &(info->variables [context.subtree_aliases [0].variable_index]);
+			APPEND_USE (info, bb_info, use);
 			ADD_BAD_ALIAS (info, context.subtree_aliases [0].variable_index);
 		}
 		if ((context.subtree_aliases [1].type == MONO_ALIASING_TYPE_LOCAL) || (context.subtree_aliases [1].type == MONO_ALIASING_TYPE_LOCAL_FIELD)) {
+			MonoAliasUsageInformation *use = mono_mempool_alloc (info->mempool, sizeof (MonoAliasUsageInformation));
+			
+			inst->ssa_op = MONO_SSA_INDIRECT_LOAD_STORE;
+			use->inst = inst;
+			use->affected_variables = &(info->variables [context.subtree_aliases [1].variable_index]);
+			APPEND_USE (info, bb_info, use);
 			ADD_BAD_ALIAS (info, context.subtree_aliases [1].variable_index);
 		}
 		if (father_alias != NULL) { 
