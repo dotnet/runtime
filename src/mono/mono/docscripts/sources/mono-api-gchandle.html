@@ -21,7 +21,66 @@
 	</ul>
 
 	<p>To retrieve the target address of an object pointed to by a
-	<tt>GCHandle</tt> you should use <tt>mono_gchandle_get_target</tt>
+	<tt>GCHandle</tt> you should use
+	<tt>mono_gchandle_get_target</tt>.
+
+	<p>For example, consider the following C code:
+<pre>
+static MonoObject* o = NULL;
+</pre>
+
+	<p>The object in `o' will *NOT* be scanned.
+
+	<p>If you need to store an object in a C variable and prevent
+	it from being collected, you need to acquire a GC handle for
+	it.
+
+<pre>
+        guint32 handle = mono_gchandle_new (my_object, TRUE);
+</pre>
+
+	<p>TRUE means the object will be pinned, so it won't move in
+	memory when we'll use a moving GC. You can access the
+	MonoObject* referenced by a handle with:
+
+<pre>
+        MonoObject* obj = mono_gchandle_get_target (handle);
+</pre>
+
+	<p>When you don't need the handle anymore you need to call:
+
+<pre>
+        mono_gchandle_free (handle);
+</pre>
+
+	<p>Note that if you assign a new object to the C var, you need
+	to get a new handle, it's not enough to store a new object in
+	the C var.
+
+	<p>So code that looked like this:
+
+<pre>
+        static MonoObject* o = NULL;
+        ...
+        o = mono_object_new (...);
+        /* use o */
+        ...
+        /* when done to allow the GC to collect o */
+        o = NULL;
+</pre>
+
+	<p>should now be changed to:
+
+<pre>
+        static guint32 o_handle;
+        ...
+        MonoObject *o = mono_object_new (...);
+        o_handle = mono_gchandle_new (o, TRUE);
+        /* use o or mono_gchandle_get_target (o_handle) */
+        ...
+        /* when done to allow the GC to collect o */
+        mono_gchandle_free (o_handle);
+</pre>
 		
 <h4><a name="api:mono_gchandle_new">mono_gchandle_new</a></h4>
 <h4><a name="api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></h4>
