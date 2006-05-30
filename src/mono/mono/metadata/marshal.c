@@ -1332,7 +1332,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 			/* set array_var */
 			mono_mb_emit_ldloc (mb, 1);
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_stloc (mb, array_var);
 		
 			/* save the old src pointer */
@@ -1393,10 +1393,10 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 		mono_mb_emit_byte (mb, CEE_NEWARR);	
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
@@ -1407,13 +1407,13 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_icall (mb, mono_string_new_wrapper);
-		mono_mb_emit_byte (mb, CEE_STIND_I);		
+		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_icall (mb, mono_string_from_utf16);
-		mono_mb_emit_byte (mb, CEE_STIND_I);		
+		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;		
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
@@ -1421,14 +1421,14 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall (mb, mono_string_new_wrapper);
-		mono_mb_emit_byte (mb, CEE_STIND_I);		
+		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall (mb, mono_string_from_utf16);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		break;
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
 		MonoClass *klass = mono_class_from_mono_type (type);
@@ -1442,7 +1442,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 	
 		/* save the old src pointer */
 		mono_mb_emit_ldloc (mb, 0);
@@ -1456,7 +1456,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_byte (mb, CEE_STLOC_1); 
+		mono_mb_emit_stloc (mb, 1); 
 
 		emit_struct_conv (mb, klass, TRUE);
 		
@@ -1465,7 +1465,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_stloc (mb, 0);
 		/* restore the old dst pointer */
 		mono_mb_emit_ldloc (mb, dst_var);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 		break;
 	}
 	case MONO_MARSHAL_CONV_DEL_FTN: {
@@ -1478,7 +1478,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall (mb, mono_ftnptr_to_delegate);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
@@ -1584,7 +1584,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_byte (mb, CEE_STIND_I);	
 		break;
@@ -1594,7 +1594,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_DEL_FTN:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_byte (mb, CEE_STIND_I);	
 		break;
@@ -1604,7 +1604,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 		mono_mb_emit_ldloc (mb, 1); /* dst */
 		mono_mb_emit_ldloc (mb, 0);	
-		mono_mb_emit_byte (mb, CEE_LDIND_I); /* src String */
+		mono_mb_emit_byte (mb, CEE_LDIND_REF); /* src String */
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		break;
@@ -1625,7 +1625,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			esize = sizeof (gpointer);
 
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);		
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
 		pos = mb->pos;
 		mono_mb_emit_byte (mb, 0);
@@ -1633,7 +1633,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		if (eklass->blittable) {
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_ldloc (mb, 0);	
-			mono_mb_emit_byte (mb, CEE_LDIND_I);	
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);	
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
@@ -1651,7 +1651,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 			/* set array_var */
 			mono_mb_emit_ldloc (mb, 0);	
-			mono_mb_emit_byte (mb, CEE_LDIND_I);	
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_stloc (mb, array_var);
 
 			/* save the old src pointer */
@@ -1708,14 +1708,14 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY: {
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);		
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
 		pos = mb->pos;
 		mono_mb_emit_byte (mb, 0);
 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);	
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 		mono_mb_emit_icall (mb, mono_array_to_byvalarray);
@@ -1729,7 +1729,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		dst_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);		
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, CEE_BRFALSE_S);
 		pos = mb->pos;
 		mono_mb_emit_byte (mb, 0);
@@ -1755,7 +1755,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_stloc (mb, 0);
 		/* restore the old dst pointer */
 		mono_mb_emit_ldloc (mb, dst_var);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
 		break;
@@ -1890,7 +1890,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				mono_mb_emit_stloc (mb, 0);
 				/* restore the old dst pointer */
 				mono_mb_emit_ldloc (mb, dst_var);
-				mono_mb_emit_byte (mb, CEE_STLOC_1);
+				mono_mb_emit_stloc (mb, 1);
 				break;
 			}
 
@@ -1923,7 +1923,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			mono_mb_emit_stloc (mb, 0);
 			/* restore the old dst pointer */
 			mono_mb_emit_ldloc (mb, dst_var);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 		}
 		}
 
@@ -4707,7 +4707,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_byte (mb, CEE_CALLVIRT);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
-			mono_mb_emit_byte (mb, CEE_STIND_I);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		}
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
@@ -4937,7 +4937,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (!(t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
 			/* set dst_ptr */
 			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 
 			/* emit valuetype conversion code */
 			emit_struct_conv (mb, klass, FALSE);
@@ -4984,7 +4984,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->byref) {
 			/* dst = argument */
 			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_byte (mb, CEE_BRFALSE);
@@ -5020,7 +5020,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_stloc (mb, 0);
 		/* set dst_ptr */
 		mono_mb_emit_ldloc_addr (mb, 3);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 				
 		/* emit valuetype conversion code */
 		emit_struct_conv (mb, klass, TRUE);
@@ -5052,7 +5052,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		}			
 
 		mono_mb_emit_ldloc_addr (mb, conv_arg);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		/* emit valuetype conversion code */
 		emit_struct_conv (mb, klass, TRUE);
@@ -5077,7 +5077,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Set dest */
 		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		/* emit valuetype conversion code */
 		emit_struct_conv (mb, klass, FALSE);
@@ -5107,7 +5107,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_icall (mb, mono_marshal_alloc);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_stloc (mb, m->retobj_var);
 
@@ -5173,7 +5173,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 			else
 				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPSTR_STR));
-			mono_mb_emit_byte (mb, CEE_STIND_I);		
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		} else {
 			if (mono_marshal_need_free (t, m->piinfo, spec)) {
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -5347,7 +5347,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			/* set dst_ptr */
 			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 
 			/* emit valuetype conversion code */
 			emit_struct_conv (mb, klass, FALSE);
@@ -5389,7 +5389,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
-			mono_mb_emit_byte (mb, CEE_STIND_I);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		}
 
 		/* dst = *argument */
@@ -5398,7 +5398,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->byref)
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, CEE_BRFALSE);
@@ -5409,7 +5409,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 			
 			/* src = tmp_locals [i] */
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -5499,7 +5499,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			mono_mb_emit_stloc (mb, 1);
 								
 			/* emit conversion code */
 			emit_struct_conv (mb, klass, TRUE);
@@ -5576,7 +5576,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 		mono_mb_emit_icon (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_byte (mb, CEE_STLOC_1); 
+		mono_mb_emit_stloc (mb, 1); 
 
 		/* emit valuetype conversion code */
 		emit_struct_conv (mb, klass, TRUE);
@@ -5590,7 +5590,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
 		mono_mb_emit_ldarg (mb, argnum);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		pos2 = mono_mb_emit_branch (mb, CEE_BR);
 
 		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));			
@@ -5607,7 +5607,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_icall (mb, mono_marshal_alloc);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		/* Update argument pointer */
 		mono_mb_emit_ldarg (mb, argnum);
@@ -5656,7 +5656,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_icall (mb, mono_marshal_alloc);
 		mono_mb_emit_byte (mb, CEE_DUP);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 		mono_mb_emit_stloc (mb, 3);
 
 		emit_struct_conv (mb, klass, FALSE);
@@ -5795,7 +5795,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 				/* set dst_ptr */
 				mono_mb_emit_ldloc (mb, dest_ptr);
-				mono_mb_emit_byte (mb, CEE_STLOC_1);
+				mono_mb_emit_stloc (mb, 1);
 
 				/* emit valuetype conversion code */
 				emit_struct_conv (mb, eklass, FALSE);
@@ -5917,7 +5917,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_ldloc (mb, index_var);
 					mono_mb_emit_byte (mb, CEE_LDELEMA);
 					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
-					mono_mb_emit_byte (mb, CEE_STLOC_1);
+					mono_mb_emit_stloc (mb, 1);
 
 					/* emit valuetype conversion code */
 					emit_struct_conv (mb, eklass, TRUE);
@@ -7448,7 +7448,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 		/* initialize dst_ptr */
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_stloc (mb, 1);
 
 		emit_struct_conv (mb, klass, FALSE);
 	}
