@@ -904,9 +904,13 @@ gchar *
 mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDomain *domain)
 {
 	MonoDebugSourceLocation *location;
-	gchar *fname, *res;
+	gchar *fname, *ptr, *res;
 
 	fname = mono_method_full_name (method, TRUE);
+	for (ptr = fname; *ptr; ptr++) {
+		if (*ptr == ':') *ptr = '.';
+	}
+
 	location = mono_debug_lookup_source_location (method, native_offset, domain);
 
 	if (!location) {

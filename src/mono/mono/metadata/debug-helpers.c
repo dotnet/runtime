@@ -524,13 +524,13 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
-		res = g_strdup_printf ("%s%s%s%s.%s (%s)", wrapper, 
+		res = g_strdup_printf ("%s%s%s%s:%s (%s)", wrapper, 
 							   nspace, *nspace ? "." : "",
 							   method->klass->name, method->name, tmpsig);
 		g_free (tmpsig);
 	} else {
 
-		res = g_strdup_printf ("%02d %s%s%s.%s", method->wrapper_type,
+		res = g_strdup_printf ("%02d %s%s%s:%s", method->wrapper_type,
 							   nspace, *nspace ? "." : "",
 							   method->klass->name, method->name);
 	}
