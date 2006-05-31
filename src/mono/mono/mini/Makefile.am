@@ -38,7 +38,7 @@ RUNTIME2 = MONO_PATH=$(CLASS2) $(top_builddir)/runtime/mono-wrapper
 MCS = $(RUNTIME) $(CLASS1)/mcs.exe -unsafe -nowarn:0162
 GMCS = $(RUNTIME2) $(CLASS2)/gmcs.exe -unsafe -nowarn:0162
 ILASM = $(RUNTIME) $(CLASS1)/ilasm.exe
-
+ILASM2 = $(RUNTIME2) $(CLASS2)/ilasm.exe
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
@@ -220,7 +220,7 @@ test_sources = 		\
 	iltests.il		\
 	test.cs
 
-test_sources2 = generics.2.cs
+test_sources2 = generics.2.cs il2tests.2.il
 
 if MONO_DEBUGGER_SUPPORTED
 mono_debugger_sources = debug-debugger.c debug-debugger.h
@@ -229,7 +229,8 @@ mono_debugger_sources =
 endif
 
 regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
-regtests2=generics.exe
+regtests2=generics.exe il2tests.exe
+
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
 if X86
@@ -327,6 +328,9 @@ libmono_la_LIBADD = \
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ -unsafe $< -r:TestDriver.dll
+
+%.exe: %.2.il
+	$(ILASM2) -output=$@ $<
 
 %.exe: %.il
 	$(ILASM) -output=$@ $<
