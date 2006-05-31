@@ -5928,7 +5928,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (target_type_is_incompatible (cfg, &klass->byval_arg, *sp))
 				UNVERIFIED;
 			/* frequent check in generic code: box (struct), brtrue */
-			if (ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) && (ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S)) {
+			if (!mono_class_is_nullable (klass) &&
+			    ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) && (ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S)) {
 				/*g_print ("box-brtrue opt at 0x%04x in %s\n", real_offset, method->name);*/
 				MONO_INST_NEW (cfg, ins, CEE_POP);
 				MONO_ADD_INS (bblock, ins);
