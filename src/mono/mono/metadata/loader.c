@@ -219,10 +219,9 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
         case MONO_LOADER_ERROR_METHOD: {
 		char *cname = g_strdup (error->class_name);
 		char *aname = g_strdup (error->member_name);
-		MonoString *class_name;
 		
 		mono_loader_clear_error ();
-                ex = mono_get_exception_missing_method (cname, aname);
+		ex = mono_get_exception_missing_method (cname, aname);
 		g_free (cname);
 		g_free (aname);
 		break;
@@ -1312,7 +1311,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	}
 
 	/* FIXME: lazyness for generics too, but how? */
-	if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+	if (!(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 	    !(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
 		gpointer loc = mono_image_rva_map (image, cols [0]);
@@ -1834,7 +1833,7 @@ mono_method_get_header (MonoMethod *method)
 	gpointer loc;
 	MonoMethodNormal* mn = (MonoMethodNormal*) method;
 
-	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
 
 #ifdef G_LIKELY

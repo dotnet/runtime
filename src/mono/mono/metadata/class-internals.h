@@ -260,9 +260,8 @@ struct _MonoClass {
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
-	guint dummy           : 1; /* temporary hack */
-	/* next byte */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
+	/* next byte */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
 

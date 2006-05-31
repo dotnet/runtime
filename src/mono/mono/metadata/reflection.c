@@ -8415,8 +8415,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		mono_loader_unlock ();
 
 		return m;
-	} else if (!m->klass->dummy && 
-			   !(m->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+	} else if (!(m->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 			   !(m->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header;
 		guint32 code_size;
