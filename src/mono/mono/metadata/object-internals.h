@@ -150,7 +150,8 @@ typedef struct {
 	MonoObject  *async_state;
 	MonoObject  *handle;
 	MonoObject  *async_delegate;
-	gpointer     data;
+	gpointer    *data;
+	MonoObject  *object_data;
 	MonoBoolean  sync_completed;
 	MonoBoolean  completed;
 	MonoBoolean  endinvoke_called;
@@ -402,7 +403,7 @@ typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
 
 MonoAsyncResult *
 mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
-			     MonoObject *state, gpointer data);
+			     MonoObject *state, gpointer data, MonoObject *object_data);
 
 MonoWaitHandle *
 mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);

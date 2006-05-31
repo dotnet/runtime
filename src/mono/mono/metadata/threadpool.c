@@ -992,7 +992,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		ac->cb_target = async_callback;
 	}
 
-	ares = mono_async_result_new (domain, NULL, ac->state, ac);
+	ares = mono_async_result_new (domain, NULL, ac->state, ac, NULL);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 
 	EnterCriticalSection (&ares_lock);
