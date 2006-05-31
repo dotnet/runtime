@@ -819,6 +819,8 @@ mono_class_setup_fields (MonoClass *class)
 	class->class_size = 0;
 
 	if (class->parent) {
+		/* For generic instances, class->parent might not have been initialized */
+		mono_class_init (class->parent);
 		if (!class->parent->size_inited)
 			mono_class_setup_fields (class->parent);
 		class->instance_size += class->parent->instance_size;
