@@ -102,6 +102,7 @@ static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_domain_get = NULL;
 
 static guint32 default_opt = 0;
+static gboolean default_opt_set = FALSE;
 
 guint32 mono_jit_tls_id = -1;
 MonoTraceSpec *mono_jit_trace_calls = NULL;
@@ -10633,7 +10634,7 @@ mini_init (const char *filename)
 	MonoDomain *domain;
 
 	/* Happens when using the embedding interface */
-	if (default_opt == 0)
+	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
 
 	InitializeCriticalSection (&jit_mutex);
@@ -10976,6 +10977,7 @@ mono_set_defaults (int verbose_level, guint32 opts)
 {
 	mini_verbose = verbose_level;
 	default_opt = opts;
+	default_opt_set = TRUE;
 }
 
 static void
