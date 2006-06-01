@@ -176,7 +176,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 
 		/* optional parameters length */
 		param_len = mono_metadata_decode_value (p, &p);
-		param_start = p;
+		param_start = (char *) p;
 
 		/* number of parameters */
 		pos = mono_metadata_decode_value (p, &p);
