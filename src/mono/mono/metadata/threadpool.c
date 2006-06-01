@@ -95,14 +95,17 @@ static SocketIOData socket_io_data;
 static HANDLE job_added;
 static HANDLE io_job_added;
 
+/* Keep in sync with the System.MonoAsyncCall class which provides GC tracking */
 typedef struct {
+	MonoObject         object;
 	MonoMethodMessage *msg;
-	HANDLE             wait_event;
 	MonoMethod        *cb_method;
 	MonoDelegate      *cb_target;
 	MonoObject        *state;
 	MonoObject        *res;
 	MonoArray         *out_args;
+	/* This is a HANDLE, we use guint64 so the managed object layout remains constant */
+	guint64           wait_event;
 } ASyncCall;
 
 static void async_invoke_thread (gpointer data);
@@ -114,6 +117,7 @@ static gpointer dequeue_job (CRITICAL_SECTION *cs, GList **plist);
 static GList *async_call_queue = NULL;
 static GList *async_io_queue = NULL;
 
+static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
 
 #define INIT_POLLFD(a, b, c) {(a)->fd = b; (a)->events = c; (a)->revents = 0;}
@@ -245,7 +249,7 @@ async_invoke_io_thread (gpointer data)
 				ASyncCall *ac;
 
 				mono_async_invoke (ar);
-				ac = (ASyncCall *) ar->data;
+				ac = (ASyncCall *) ar->object_data;
 				/*
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
@@ -897,7 +901,7 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 static void
 mono_async_invoke (MonoAsyncResult *ares)
 {
-	ASyncCall *ac = (ASyncCall *)ares->data;
+	ASyncCall *ac = (ASyncCall *)ares->object_data;
 	MonoThread *thread = NULL;
 
 	if (ares->execution_context) {
@@ -957,7 +961,7 @@ mono_thread_pool_init ()
 	MONO_GC_REGISTER_ROOT (ares_htable);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	InitializeCriticalSection (&ares_lock);
-	ares_htable = mono_g_hash_table_new (NULL, NULL);
+	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	GetSystemInfo (&info);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
@@ -967,6 +971,9 @@ mono_thread_pool_init ()
 	}
 
 	mono_max_worker_threads = 20 + threads_per_cpu * info.dwNumberOfProcessors;
+
+	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
+	g_assert (async_call_klass);
 }
 
 MonoAsyncResult *
@@ -979,20 +986,22 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 
 #ifdef HAVE_BOEHM_GC
 	ac = GC_MALLOC (sizeof (ASyncCall));
+#elif defined(HAVE_SGEN_GC)
+	ac = mono_object_new (mono_domain_get (), async_call_klass);
 #else
 	/* We'll leak the event if creaated... */
 	ac = g_new0 (ASyncCall, 1);
 #endif
 	ac->wait_event = NULL;
-	ac->msg = msg;
-	ac->state = state;
+	MONO_OBJECT_SETREF (ac, msg, msg);
+	MONO_OBJECT_SETREF (ac, state, state);
 
 	if (async_callback) {
 		ac->cb_method = mono_get_delegate_invoke (((MonoObject *)async_callback)->vtable->klass);
 		ac->cb_target = async_callback;
 	}
 
-	ares = mono_async_result_new (domain, NULL, ac->state, ac, NULL);
+	ares = mono_async_result_new (domain, NULL, ac->state, NULL, ac);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 
 	EnterCriticalSection (&ares_lock);
@@ -1047,7 +1056,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	}
 
 	ares->endinvoke_called = 1;
-	ac = (ASyncCall *)ares->data;
+	ac = (ASyncCall *)ares->object_data;
 
 	g_assert (ac != NULL);
 
@@ -1157,7 +1166,7 @@ async_invoke_thread (gpointer data)
 				ASyncCall *ac;
 
 				mono_async_invoke (ar);
-				ac = (ASyncCall *) ar->data;
+				ac = (ASyncCall *) ar->object_data;
 				/*
 				if (ac->msg->exc != NULL)
 					mono_unhandled_exception (ac->msg->exc);
