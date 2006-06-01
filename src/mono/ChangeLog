@@ -1,3 +1,7 @@
+2006-06-01 Zac Bowling <zac@zacbowling.com>
+	* configure.in, fix typo breaking build (test instead of text on last
+	line)
+
 2006-05-24  Andrew Skiba <andrews@mainsoft.com>
 
 	* configure.in, runtime/Makefile.am: create a symlink at
