@@ -906,7 +906,10 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 			fprintf (output, "          // Disassembly of native methods is not supported\n");
 		else
 			dis_code (m, token, cols [MONO_METHOD_RVA], method_context);
-		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
+		if (klass_name)
+			fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
+		else
+			fprintf (output, "    } // end of global method %s\n\n", sig_str);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
@@ -1280,9 +1283,6 @@ dis_globals (MonoImage *m)
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	gboolean next_is_valid, last;
-        gchar *name;
-
-        name = g_strdup ("<Module>");
 
         mono_metadata_decode_row (t, 0, cols, MONO_TYPEDEF_SIZE);
 
@@ -1312,7 +1312,7 @@ dis_globals (MonoImage *m)
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
 	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, NULL);
+		dis_method_list (NULL, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, NULL);
 
 }
 
