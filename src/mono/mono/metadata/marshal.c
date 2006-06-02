@@ -143,6 +143,9 @@ static MonoReflectionType *
 type_from_handle (MonoType *handle);
 
 static void
+mono_marshal_set_last_error_windows (int error);
+
+static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
@@ -211,6 +214,7 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_alloc, "mono_marshal_alloc", "ptr int32", FALSE);
 		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
 		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
+		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", FALSE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
@@ -616,6 +620,7 @@ mono_string_to_lpstr (MonoString *s)
 		MonoException *exc = mono_get_exception_argument ("string", error->message);
 		g_error_free (error);
 		mono_raise_exception(exc);
+		return NULL;
 	}
 	else {
 		as = CoTaskMemAlloc (len + 1);
@@ -6576,6 +6581,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	MonoClass *klass;
 	int i, argnum, *tmp_locals;
 	int type;
+	static MonoMethodSignature *get_last_error_sig = NULL;
 
 	m.mb = mb;
 	m.piinfo = piinfo;
@@ -6634,7 +6640,22 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		if (!get_last_error_sig) {
+			get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+			get_last_error_sig->ret = &mono_defaults.int_class->byval_arg;
+			get_last_error_sig->pinvoke = 1;
+		}
+
+#ifdef PLATFORM_WIN32
+		/* 
+		 * Have to call GetLastError () early and without a wrapper, since various runtime components could
+		 * clobber its value.
+		 */
+		mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
+		mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
+#else
 		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
+#endif
 	}		
 
 	/* convert the result */
@@ -7934,6 +7955,14 @@ mono_marshal_set_last_error (void)
 	TlsSetValue (last_error_tls_id, GINT_TO_POINTER (errno));
 #endif
 }
+
+#ifdef WIN32
+static void
+mono_marshal_set_last_error_windows (int error)
+{
+	TlsSetValue (last_error_tls_id, GINT_TO_POINTER (error));
+}
+#endif
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
