@@ -7956,13 +7956,13 @@ mono_marshal_set_last_error (void)
 #endif
 }
 
-#ifdef WIN32
 static void
 mono_marshal_set_last_error_windows (int error)
 {
+#ifdef WIN32
 	TlsSetValue (last_error_tls_id, GINT_TO_POINTER (error));
-}
 #endif
+}
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
