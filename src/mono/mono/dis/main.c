@@ -852,7 +852,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		MonoGenericContainer *container;
 		MonoGenericContext *method_context = context;
 		char *flags, *impl_flags;
-		const char *sig;
+		const char *sig, *method_name;
 		char *sig_str;
 		guint32 token;
 
@@ -876,6 +876,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 		ms = mono_metadata_parse_method_signature_full (m, method_context ? method_context->container : NULL, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
+		method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
@@ -907,9 +908,9 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		else
 			dis_code (m, token, cols [MONO_METHOD_RVA], method_context);
 		if (klass_name)
-			fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
+			fprintf (output, "    } // end of method %s::%s\n\n", klass_name, method_name);
 		else
-			fprintf (output, "    } // end of global method %s\n\n", sig_str);
+			fprintf (output, "    } // end of global method %s\n\n", method_name);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
