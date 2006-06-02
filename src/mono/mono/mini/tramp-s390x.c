@@ -633,14 +633,12 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_debugger_create_notification_function (gpointer *notification_address)
+mono_debugger_create_notification_function (MonoCodeManager *codeman)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = mono_global_codeman_reserve (16);
+	ptr = buf = mono_code_manager_reserve (codeman, 16);
 	s390_break (buf);
-	if (notification_address)
-		*notification_address = buf;
 	s390_br (buf, s390_r14);
 
 	return ptr;
