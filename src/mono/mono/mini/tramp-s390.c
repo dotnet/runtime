@@ -615,8 +615,6 @@ mono_debugger_create_notification_function (MonoCodeManager *codeman)
 {
 	ptr = buf = mono_code_manager_reserve (codeman, 16);
 	s390_break (buf);
-	if (notification_address)
-		*notification_address = buf;
 	s390_br (buf, s390_r14);
 
 	return ptr;
