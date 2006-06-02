@@ -523,7 +523,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		if (trace)
+		if (trace) {
 			*trace = mono_debug_print_stack_frame (ji->method, offset, domain);
 		}
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
@@ -651,6 +651,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 	MonoPPCStackFrame *sframe;
+	MonoDebugSourceLocation *location;
 
 #ifdef __APPLE__
 	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
