@@ -218,10 +218,10 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 
 	lne = (MonoSymbolFileLineNumberEntry *) ptr;
 
-	for (i = read32(&(minfo->entry->_num_line_numbers)) - 1; i >= 0; i--, lne--) {
+	for (i = 0; i < read32(&(minfo->entry->_num_line_numbers)); i++, lne++) {
 		MonoDebugSourceLocation *location;
 
-		if (read32(&(lne->_offset)) > offset)
+		if (read32(&(lne->_offset)) < offset)
 			continue;
 
 		location = g_new0 (MonoDebugSourceLocation, 1);
