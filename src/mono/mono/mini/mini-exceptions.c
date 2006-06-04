@@ -340,9 +340,20 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	mono_arch_flush_register_windows ();
 
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
+#endif
 
+	/* 
+	 * FIXME: This is needed because of the LMF stuff which doesn't exist on ia64.
+	 * Probably the whole mono_find_jit_info () stuff needs to be fixed so this isn't
+	 * needed even on other platforms.
+	 */
+#ifndef __ia64__
 	skip++;
+#endif
 
 	do {
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
