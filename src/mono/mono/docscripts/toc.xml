@@ -195,12 +195,6 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="VES Internal Calls"/>
-	    <param name="Local" value="deploy/mono-api-vesicall.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
 	    <param name="Name" value="VM calls"/>
 	    <param name="Local" value="deploy/mono-api-vm.html"/>
 	  </object>
