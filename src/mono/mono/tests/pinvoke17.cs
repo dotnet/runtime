@@ -18,13 +18,13 @@ public struct OSVersionInfo2
 
 public class LibWrap 
 {
-	[DllImport ("libtest")]				
+	[DllImport ("libtest", EntryPoint="MyGetVersionEx")]				
 	public static extern int GetVersionEx ([In, Out] OSVersionInfo osvi);
 
-        [DllImport ("libtest")]
+    [DllImport ("libtest")]
 	public static extern int BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, [In, Out] OSVersionInfo osvi);
     
-	[DllImport ("libtest", EntryPoint="GetVersionEx" )] 
+	[DllImport ("libtest", EntryPoint="MyGetVersionEx")] 
 	public static extern int GetVersionEx2 (ref OSVersionInfo2 osvi);  
 }
 

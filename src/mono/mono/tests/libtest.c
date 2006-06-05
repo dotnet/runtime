@@ -356,8 +356,10 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 		ss->b = 0;
 		ss->c = 1;
 		ss->d = "TEST2";
-	
+
+		printf ("A1\n");
 		return func (a, ss, b);
+		printf ("A2\n");
 	}
 
 	return 1;
@@ -1129,14 +1131,14 @@ TestVectorList (VectorList *vl)
 	return res;
 }
 
-typedef struct _OSVERSIONINFO
+typedef struct OSVERSIONINFO_STRUCT
 { 
 	int a; 
 	int b; 
-} OSVERSIONINFO; 
+} OSVERSIONINFO_STRUCT;
 
 STDCALL int 
-GetVersionEx (OSVERSIONINFO *osvi)
+MyGetVersionEx (OSVERSIONINFO_STRUCT *osvi)
 {
 
 	// printf ("GOT %d %d\n", osvi->a, osvi->b);
@@ -1148,7 +1150,7 @@ GetVersionEx (OSVERSIONINFO *osvi)
 }
 
 STDCALL int 
-BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO *osvi)
+BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO_STRUCT *osvi)
 {
 
 	// printf ("GOT %d %d\n", osvi->a, osvi->b);
