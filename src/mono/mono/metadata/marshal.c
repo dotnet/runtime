@@ -5262,7 +5262,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass = t->data.klass;
 	int pos, pos2, loc;
 
-	if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
+	if (mono_class_from_mono_type (t) == mono_defaults.object_class && 
+		(!spec || (spec && spec->native != MONO_NATIVE_STRUCT))) {
 		mono_raise_exception (mono_get_exception_not_implemented ("Marshalling of type object is not implemented"));
 	}
 
@@ -5273,7 +5274,24 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		m->orig_conv_args [argnum] = 0;
 
-		if (klass->delegate) {
+		if (spec && spec->native == MONO_NATIVE_STRUCT)
+		{
+			static MonoMethod *get_native_variant_for_object = NULL;
+			int local_variant;
+			if (!get_native_variant_for_object)
+				get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
+
+			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+
+			local_variant = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+			conv_arg = local_variant;
+			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref)
+				mono_mb_emit_byte(mb, CEE_LDIND_REF);
+			mono_mb_emit_ldloc_addr (mb, local_variant);
+			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
+		}
+		else if (klass->delegate) {
 			g_assert (!t->byref);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
@@ -5362,6 +5380,24 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
+		if (spec && spec->native == MONO_NATIVE_STRUCT)	{
+			static MonoMethod *variant_clear = NULL;
+			static MonoMethod *get_object_for_native_variant = NULL;
+			if (!variant_clear)
+				variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+			if (!get_object_for_native_variant)
+				get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
+			if (t->byref) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc_addr (mb, conv_arg);
+				mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			}
+
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+			mono_mb_emit_managed_call (mb, variant_clear, NULL);
+			break;
+		}
 		if (klass == mono_defaults.stringbuilder_class) {
 			gboolean need_free;
 			MonoMarshalNative encoding;

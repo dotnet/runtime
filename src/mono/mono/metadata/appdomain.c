@@ -31,7 +31,7 @@
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 
-#define MONO_CORLIB_VERSION 52
+#define MONO_CORLIB_VERSION 53
 
 CRITICAL_SECTION mono_delegate_section;
 

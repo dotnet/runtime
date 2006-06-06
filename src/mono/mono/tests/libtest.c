@@ -6,6 +6,10 @@
 #include <time.h>
 
 #ifdef WIN32
+#include <windows.h>
+#endif
+
+#ifdef WIN32
 #define STDCALL __stdcall
 #else
 #define STDCALL
@@ -1242,10 +1246,6 @@ marshal_test_bool_struct(struct BoolStruct *s)
     return res;
 }
 
-#ifdef WIN32
-extern __declspec(dllimport) __stdcall void SetLastError(int x);
-#endif
-
 STDCALL void
 mono_test_last_error (int err)
 {
@@ -1821,3 +1821,213 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 
 	return res;
 }
+
+/*
+ * COM INTEROP TESTS
+ */
+
+#ifdef WIN32
+
+STDCALL int
+mono_test_marshal_bstr_in(BSTR bstr)
+{
+	if (!wcscmp(bstr, L"mono_test_marshal_bstr_in"))
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_bstr_out(BSTR* bstr)
+{
+	*bstr = SysAllocString(L"mono_test_marshal_bstr_out");
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_sbyte(VARIANT variant)
+{
+	if (variant.vt == VT_I1 && variant.cVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_byte(VARIANT variant)
+{
+	if (variant.vt == VT_UI1 && variant.bVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_short(VARIANT variant)
+{
+	if (variant.vt == VT_I2 && variant.iVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_ushort(VARIANT variant)
+{
+	if (variant.vt == VT_UI2 && variant.uiVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_int(VARIANT variant)
+{
+	if (variant.vt == VT_I4 && variant.lVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_uint(VARIANT variant)
+{
+	if (variant.vt == VT_UI4 && variant.ulVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_long(VARIANT variant)
+{
+	if (variant.vt == VT_I8 && variant.llVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_ulong(VARIANT variant)
+{
+	if (variant.vt == VT_UI8 && variant.ullVal == 314)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_float(VARIANT variant)
+{
+	if (variant.vt == VT_R4 && (variant.fltVal - 3.14)/3.14 < .001)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_double(VARIANT variant)
+{
+	if (variant.vt == VT_R8 && (variant.dblVal - 3.14)/3.14 < .001)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_in_bstr(VARIANT variant)
+{
+	if (variant.vt == VT_BSTR && !wcscmp(variant.bstrVal, L"PI"))
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_sbyte(VARIANT* variant)
+{
+	variant->vt = VT_I1;
+	variant->cVal = 100;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_byte(VARIANT* variant)
+{	
+	variant->vt = VT_UI1;
+	variant->bVal = 100;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_short(VARIANT* variant)
+{
+	variant->vt = VT_I2;
+	variant->iVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_ushort(VARIANT* variant)
+{
+	variant->vt = VT_UI2;
+	variant->uiVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_int(VARIANT* variant)
+{
+	variant->vt = VT_I4;
+	variant->lVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_uint(VARIANT* variant)
+{
+	variant->vt = VT_UI4;
+	variant->ulVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_long(VARIANT* variant)
+{
+	variant->vt = VT_I8;
+	variant->llVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_ulong(VARIANT* variant)
+{
+	variant->vt = VT_UI8;
+	variant->ullVal = 314;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_float(VARIANT* variant)
+{
+	variant->vt = VT_R4;
+	variant->fltVal = 3.14;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_double(VARIANT* variant)
+{
+	variant->vt = VT_R8;
+	variant->dblVal = 3.14;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_bstr(VARIANT* variant)
+{
+	variant->vt = VT_BSTR;
+	variant->bstrVal = SysAllocString(L"PI");
+
+	return 0;
+}
+
+#endif

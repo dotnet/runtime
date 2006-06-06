@@ -214,7 +214,8 @@ TEST_CS_SRC=			\
 	main-returns-background-change.cs	\
 	main-returns.cs	\
 	subthread-exit.cs	\
-	desweak.cs
+	desweak.cs	\
+	cominterop.cs
 
 if X86
 # bug #71274

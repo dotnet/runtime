@@ -688,6 +688,7 @@ typedef struct {
 	MonoClass *internals_visible_class;
 	MonoClass *generic_array_class;
 	MonoClass *generic_nullable_class;
+	MonoClass *variant_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;
