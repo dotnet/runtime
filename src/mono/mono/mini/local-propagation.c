@@ -700,6 +700,15 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 		}
 
 		break;
+	case OP_STRLEN:
+		if (tree_mover != NULL) {
+			if (MONO_DEBUG_TREE_MOVER) {
+				printf ("Recording side effect because of inst ");
+				mono_print_tree_nl (tree);
+			}
+			tree_mover->tree_has_side_effects = TRUE;
+		}
+		return;
 	case CEE_CALL:
 	case OP_CALL_REG:
 	case CEE_CALLVIRT:
