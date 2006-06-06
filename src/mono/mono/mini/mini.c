@@ -429,12 +429,13 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->type = STACK_PTR;	\
     } while (0)
 
-#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type) do {    \
+#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
 		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
 		(dest)->inst_p1 = (gpointer)(patch_type); \
 		(dest)->type = (stack_type);	\
+        (dest)->klass = (stack_class);          \
     } while (0)
 
 #endif
