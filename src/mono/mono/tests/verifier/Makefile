@@ -15,7 +15,9 @@ generate-stamp: make_tests.sh make_bin_test.sh make_exception_branch_test.sh mak
 	./make_tests.sh
 	touch generate-stamp
 
-test: compile-stamp
+test: compile-stamp run-test
+
+run-test:
 	@for i in *.exe; do \
 		echo -n $$i; \
 		mono $$i >/dev/null 2>/dev/null; \
