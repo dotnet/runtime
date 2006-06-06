@@ -140,6 +140,17 @@ struct MonoSpillInfo {
 };
 
 /*
+ * This structure contains the information maintained by the verifier for each CIL
+ * stack slot. This information is also available in MonoInst, but the verifier needs to
+ * update the type information during stack merges, which could lead to problems if done
+ * on MonoInsts, so we use a dedicated structure instead.
+ */
+typedef struct {
+	int type;
+	MonoClass *klass;
+} MonoStackSlot;
+
+/*
  * The IR-level basic block.  
  *
  * A basic block can have multiple exits just fine, as long as the point of
@@ -222,6 +233,7 @@ struct MonoBasicBlock {
 	guint16 out_scount, in_scount;
 	MonoInst **out_stack;
 	MonoInst **in_stack;
+	MonoStackSlot *stack_state; /* Verification stack state on enter to bblock */
 
 	/* we use that to prevent merging of bblock covered by different clauses*/
 	guint real_offset;
@@ -611,6 +623,8 @@ typedef struct {
 	guint            compile_aot : 1;
 	guint            got_var_allocated : 1;
 	guint            ret_var_is_local : 1;
+	guint            dont_verify_stack_merge : 1;
+	guint            unverifiable : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
