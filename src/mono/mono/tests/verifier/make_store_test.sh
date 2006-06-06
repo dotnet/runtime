@@ -7,7 +7,7 @@ TEST_TYPE1=$4
 TEST_TYPE2=$5
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
-TEST_FILE=${TEST_NAME}_generated.cil
+TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
 TEST_TYPE2=`echo $TEST_TYPE2 | sed -s 's/&/\\\&/'`

@@ -3,11 +3,11 @@
 	ilasm -out:$@ $<
 
 compile-stamp: generate-stamp
-	for i in *.cil; do ilasm $$i; done
+	for i in *.il; do ilasm $$i; done
 	touch compile-stamp
 
 clean:
-	rm -f *_generated.cil *.exe *.dll generate-stamp compile-stamp
+	rm -f *_generated.il *.exe *.dll generate-stamp compile-stamp
 
 generate-stamp: make_tests.sh make_bin_test.sh make_exception_branch_test.sh make_obj_store_test.sh \
 		make_stack_0_pop_test.sh make_stack_0_test.sh make_stack_1_pop_test.sh \

@@ -10,7 +10,7 @@ TEST_OP3=$4
 TEST_OP4=$5
 TEST_OP5=$6
 
-TEST_FILE=invalid_exception_branch_${TEST_NAME}_generated.cil
+TEST_FILE=invalid_exception_branch_${TEST_NAME}_generated.il
 echo $TEST_FILE
 sed -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TEST_OP3}/g" -e "s/OPCODE4/${TEST_OP4}/g" -e "s/OPCODE5/${TEST_OP5}/g" > $TEST_FILE <<//EOF
 // invalid CIL which breaks the ECMA-335 rules. 

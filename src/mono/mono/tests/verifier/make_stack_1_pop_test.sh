@@ -4,7 +4,7 @@ TEST_OP=$1
 TEST_TYPE=$2
 
 TEST_OP_SHORT=`echo $TEST_OP | cut -d " " -f 1`
-TEST_FILE=`echo invalid_stack_1_${TEST_OP_SHORT}_${TEST_TYPE} | sed -e "s/ /_/g" -e "s/\./_/g" -e "s/&/mp/g"`_generated.cil
+TEST_FILE=`echo invalid_stack_1_${TEST_OP_SHORT}_${TEST_TYPE} | sed -e "s/ /_/g" -e "s/\./_/g" -e "s/&/mp/g"`_generated.il
 echo $TEST_FILE
 sed -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE/${TEST_TYPE}/g" > $TEST_FILE <<//EOF
 // invalid CIL which breaks the ECMA-335 rules.

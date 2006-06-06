@@ -541,16 +541,17 @@ done
 
 # Unverifiable array stack merges
 
-for TYPE1 in 'string []' 'string [,]' 'string [,,]' 
-do
-  for TYPE2 in 'string []' 'string [,]' 'string [,,]' 
-  do
-    if [ "$TYPE1" != "$TYPE2" ]; then
-	./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
-	I=`expr $I + 1`
-    fi
-  done
-done
+# These are verifiable, the merged type is 'object' or 'Array'
+#for TYPE1 in 'string []' 'string [,]' 'string [,,]' 
+#do
+#  for TYPE2 in 'string []' 'string [,]' 'string [,,]' 
+#  do
+#    if [ "$TYPE1" != "$TYPE2" ]; then
+#	./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
+#	I=`expr $I + 1`
+#    fi
+#  done
+#done
 
 # Exception block branch tests (see 3.15)
 I=1

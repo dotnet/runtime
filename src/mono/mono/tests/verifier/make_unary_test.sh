@@ -5,7 +5,7 @@ TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.cil
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
 sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/LOAD_OPCODE/${TEST_LOAD_OP}/g" > $TEST_FILE <<//EOF
