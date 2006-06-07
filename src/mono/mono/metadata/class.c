@@ -130,13 +130,11 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	/* If the assembly did not load, register this as a type load exception */
 	if (references [idx - 1] == REFERENCE_MISSING){
 		MonoAssemblyName aname;
-		char *msg = g_strdup_printf ("%s%s%s", nspace, nspace [0] ? "." : "", name);
 		char *human_name;
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		mono_loader_set_error_type_load (msg, human_name);
-		g_free (msg);
+		mono_loader_set_error_assembly_load (human_name, image->assembly->ref_only);
 		g_free (human_name);
 		
 		return NULL;

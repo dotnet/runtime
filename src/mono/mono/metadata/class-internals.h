@@ -514,14 +514,17 @@ typedef struct {
 typedef enum {
 	MONO_LOADER_ERROR_TYPE,
 	MONO_LOADER_ERROR_METHOD,
-	MONO_LOADER_ERROR_FIELD
+	MONO_LOADER_ERROR_FIELD,
+	MONO_LOADER_ERROR_ASSEMBLY
 } MonoLoaderErrorKind;
 
 typedef struct {
 	MonoLoaderErrorKind kind;
-	char *class_name, *assembly_name; /* If kind == TYPE */
+	char *class_name; /* If kind == TYPE */
+	char *assembly_name; /* If kind == TYPE or ASSEMBLY */
 	MonoClass *klass; /* If kind != TYPE */
 	const char *member_name; /* If kind != TYPE */
+	gboolean ref_only; /* If kind == ASSEMBLY */
 } MonoLoaderError;
 
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
@@ -706,7 +709,7 @@ void
 mono_loader_unlock         (void) MONO_INTERNAL;
 
 void
-mono_loader_set_error_assembly_load (const char *assembly_name) MONO_INTERNAL;
+mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_only) MONO_INTERNAL;
 
 void
 mono_loader_set_error_type_load (const char *class_name, const char *assembly_name) MONO_INTERNAL;

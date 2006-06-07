@@ -84,6 +84,33 @@ set_loader_error (MonoLoaderError *error)
 	TlsSetValue (loader_error_thread_id, error);
 }
 
+/**
+ * mono_loader_set_error_assembly_load:
+ *
+ * Set the loader error for this thread. 
+ */
+void
+mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_only)
+{
+	MonoLoaderError *error;
+
+	if (mono_loader_get_last_error ()) 
+		return;
+
+	error = g_new0 (MonoLoaderError, 1);
+	error->kind = MONO_LOADER_ERROR_ASSEMBLY;
+	error->assembly_name = g_strdup (assembly_name);
+	error->ref_only = ref_only;
+
+	/* 
+	 * This is not strictly needed, but some (most) of the loader code still
+	 * can't deal with load errors, and this message is more helpful than an
+	 * assert.
+	 */
+	g_warning ("Could not load file or assembly '%s' or one of its dependencies.", assembly_name);
+
+	set_loader_error (error);
+}
 
 /**
  * mono_loader_set_error_type_load:
@@ -199,10 +226,10 @@ mono_loader_clear_error (void)
 MonoException *
 mono_loader_error_prepare_exception (MonoLoaderError *error)
 {
-        MonoException *ex = NULL;
+	MonoException *ex = NULL;
 
-        switch (error->kind) {
-        case MONO_LOADER_ERROR_TYPE: {
+	switch (error->kind) {
+	case MONO_LOADER_ERROR_TYPE: {
 		char *cname = g_strdup (error->class_name);
 		char *aname = g_strdup (error->assembly_name);
 		MonoString *class_name;
@@ -216,7 +243,7 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		g_free (aname);
                 break;
         }
-        case MONO_LOADER_ERROR_METHOD: {
+	case MONO_LOADER_ERROR_METHOD: {
 		char *cname = g_strdup (error->class_name);
 		char *aname = g_strdup (error->member_name);
 		
@@ -227,7 +254,7 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		break;
 	}
 		
-        case MONO_LOADER_ERROR_FIELD: {
+	case MONO_LOADER_ERROR_FIELD: {
 		char *cnspace = g_strdup (*error->klass->name_space ? error->klass->name_space : "");
 		char *cname = g_strdup (error->klass->name);
 		char *cmembername = g_strdup (error->member_name);
@@ -243,11 +270,26 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		g_free (cnspace);
                 break;
         }
-        default:
-                g_assert_not_reached ();
-        }
+	
+	case MONO_LOADER_ERROR_ASSEMBLY: {
+		char *msg;
 
-        return ex;
+		if (error->ref_only)
+			msg = g_strdup_printf ("Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", error->assembly_name);
+		else
+			msg = g_strdup_printf ("Could not load file or assembly '%s' or one of its dependencies.", error->assembly_name);
+
+		mono_loader_clear_error ();
+		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), error->assembly_name));
+		g_free (msg);
+		break;
+	}
+	
+	default:
+		g_assert_not_reached ();
+	}
+
+	return ex;
 }
 
 static MonoClassField*
@@ -1692,6 +1734,11 @@ mono_loader_unlock (void)
 	LeaveCriticalSection (&loader_mutex);
 }
 
+/**
+ * mono_method_signature:
+ *
+ * Return the signature of the method M. On failure, returns NULL.
+ */
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
 {
@@ -1754,6 +1801,10 @@ mono_method_signature (MonoMethod *m)
 		size = mono_metadata_decode_blob_size (sig, &sig_body);
 
 		m->signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL);
+		if (!m->signature) {
+			mono_loader_unlock ();
+			return NULL;
+		}
 
 		if (can_cache_signature)
 			g_hash_table_insert (img->method_signatures, (gpointer)sig, m->signature);
