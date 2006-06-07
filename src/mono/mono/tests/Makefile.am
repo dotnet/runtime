@@ -442,6 +442,7 @@ test-type-load: TestDriver.dll
 	$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	$(RUNTIME) load-exceptions.exe
 
+EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
 test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
