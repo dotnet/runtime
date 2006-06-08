@@ -3215,8 +3215,8 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 		sp++;
 	}
 }
-#define MONO_INLINE_CALLED_LIMITED_METHODS 1
-#define MONO_INLINE_CALLER_LIMITED_METHODS 1
+#define MONO_INLINE_CALLED_LIMITED_METHODS 0
+#define MONO_INLINE_CALLER_LIMITED_METHODS 0
 
 #if (MONO_INLINE_CALLED_LIMITED_METHODS)
 static char*
@@ -3532,12 +3532,22 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 	return klass;
 }
 
+/*
+ * Returns TRUE if the JIT should abort inlining because "callee"
+ * is influenced by security attributes.
+ */
 static
-void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee, MonoBasicBlock *bblock, unsigned char *ip)
+gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee, MonoBasicBlock *bblock, unsigned char *ip)
 {
-	guint32 result = mono_declsec_linkdemand (cfg->domain, caller, callee);
+	guint32 result;
+	
+	if ((cfg->method != caller) && mono_method_has_declsec (callee)) {
+		return TRUE;
+	}
+	
+	result = mono_declsec_linkdemand (cfg->domain, caller, callee);
 	if (result == MONO_JIT_SECURITY_OK)
-		return;
+		return FALSE;
 
 	if (result == MONO_JIT_LINKDEMAND_ECMA) {
 		/* Generate code to throw a SecurityException before the actual call/link */
@@ -3556,6 +3566,8 @@ void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 		cfg->exception_type = MONO_EXCEPTION_SECURITY_LINKDEMAND;
 		cfg->exception_data = result;
 	}
+	
+	return FALSE;
 }
 
 static gboolean
@@ -4329,7 +4341,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 
 			if (mono_use_security_manager) {
-				check_linkdemand (cfg, method, cmethod, bblock, ip);
+				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
+					INLINE_FAILURE;
 			}
 
 			ins->inst_p0 = cmethod;
@@ -4395,7 +4408,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = fsig->param_count + fsig->hasthis;
 
 				if (mono_use_security_manager) {
-					check_linkdemand (cfg, method, cmethod, bblock, ip);
+					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
+						INLINE_FAILURE;
 				}
 
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
@@ -5309,7 +5323,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 
 			if (mono_use_security_manager) {
-				check_linkdemand (cfg, method, cmethod, bblock, ip);
+				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
+					INLINE_FAILURE;
 			}
 
 			n = fsig->param_count;
@@ -6881,7 +6896,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_class_init (cmethod->klass);
 
 				if (mono_use_security_manager) {
-					check_linkdemand (cfg, method, cmethod, bblock, ip);
+					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
+						INLINE_FAILURE;
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -6911,7 +6927,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_class_init (cmethod->klass);
 
 				if (mono_use_security_manager) {
-					check_linkdemand (cfg, method, cmethod, bblock, ip);
+					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
+						INLINE_FAILURE;
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -9871,6 +9888,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (parts == 3)
 		return cfg;
 
+	if (cfg->verbose_level > 4) {
+		printf ("BEFORE DECOMPSE START\n");
+		mono_print_code (cfg);
+		printf ("BEFORE DECOMPSE END\n");
+	}
+	
 	decompose_pass (cfg);
 
 	if (cfg->got_var) {
