@@ -393,6 +393,11 @@ typedef struct {
 	gint32 lcid;
 } MonoSortKey;
 
+typedef struct {
+	MonoObject object;
+	guint16 intType;
+} MonoInterfaceTypeAttribute;
+
 /* used to free a dynamic method */
 typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
 

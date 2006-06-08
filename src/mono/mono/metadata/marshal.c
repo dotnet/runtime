@@ -8247,6 +8247,32 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
 	mono_free_bstr (ptr);
 }
 
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethod *m)
+{
+	MONO_ARCH_SAVE_REGS;
+	static MonoClass *interface_type_attribute = NULL;
+	MonoInterfaceTypeAttribute* itf_attr = NULL; 
+	MonoCustomAttrInfo *cinfo = NULL;
+	guint32 offset = 7; 
+
+	if (!interface_type_attribute)
+		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
+	cinfo = mono_custom_attrs_from_class (m->method->klass);
+	if (cinfo) {
+		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr (cinfo, interface_type_attribute);
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+
+	if (itf_attr && itf_attr->intType == 1)
+		offset = 3; /* 3 methods in IUnknown*/
+	else
+		offset = 7; /* 7 methods in IDispatch*/
+
+	return m->method->slot + offset;
+}
+
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 {
