@@ -63,7 +63,7 @@ public class Program {
 			return err;
 		}
 		catch (ReflectionTypeLoadException rtle) {
-			Console.WriteLine ("*4* Expected ReflectionTypeLoadException");
+			Console.WriteLine ("*4* Expected ReflectionTypeLoadException\n{0}", rtle);
 			return 4;
 		}
 		catch (SecurityException se) {
