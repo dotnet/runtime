@@ -100,7 +100,7 @@ mono_class_get_throw (MonoImage *image, guint32 type_token)
 	MonoException *ex;
 	
 	if (class != NULL){
-		if (class->exception_type != NULL){
+		if (class->exception_type) {
 			MonoException *exc = mono_class_get_exception_for_failure (class);
 			g_assert (exc);
 			mono_raise_exception (exc);
@@ -4532,6 +4532,8 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoBoolean exporte
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
 			klass = mono_class_get_throw (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			if (mono_loader_get_last_error ())
+				mono_loader_clear_error ();
 			mono_array_setref (res, count, mono_type_get_object (domain, &klass->byval_arg));
 			count++;
 		}
@@ -4547,7 +4549,8 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	MonoImage *image = NULL;
 	MonoTableInfo *table = NULL;
 	MonoDomain *domain;
-	int i;
+	GList *list = NULL;
+	int i, len;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4632,42 +4635,41 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		}
 	}
 
-	if (mono_is_security_manager_active ()) {
-		/* the ReflectionTypeLoadException must have all the types (Types property), 
-		 * NULL replacing types which throws an exception. The LoaderException must
-		 * contains all exceptions for NULL items.
-		 */
+	/* the ReflectionTypeLoadException must have all the types (Types property), 
+	 * NULL replacing types which throws an exception. The LoaderException must
+	 * contain all exceptions for NULL items.
+	 */
 
-		guint32 len = mono_array_length (res);
-		GList *list = NULL;
+	len = mono_array_length (res);
 
-		for (i = 0; i < len; i++) {
-			MonoReflectionType *t = mono_array_get (res, gpointer, i);
-			MonoClass *klass = mono_type_get_class (t->type);
-			if ((klass != NULL) && klass->exception_type) {
-				/* keep the class in the list */
-				list = g_list_append (list, klass);
-				/* and replace Type with NULL */
-				mono_array_setref (res, i, NULL);
-			}
+	for (i = 0; i < len; i++) {
+		MonoReflectionType *t = mono_array_get (res, gpointer, i);
+		MonoClass *klass = mono_type_get_class (t->type);
+		if ((klass != NULL) && klass->exception_type) {
+			/* keep the class in the list */
+			list = g_list_append (list, klass);
+			/* and replace Type with NULL */
+			mono_array_setref (res, i, NULL);
 		}
+	}
 
-		if (list) {
-			GList *tmp = NULL;
-			MonoException *exc = NULL;
-			int length = g_list_length (list);
+	if (list) {
+		GList *tmp = NULL;
+		MonoException *exc = NULL;
+		int length = g_list_length (list);
 
-			MonoArray *exl = mono_array_new (domain, mono_defaults.exception_class, length);
-			for (i = 0, tmp = list; i < length; i++, tmp = tmp->next) {
-				MonoException *exc = mono_class_get_exception_for_failure (tmp->data);
-				mono_array_setref (exl, i, exc);
-			}
-			g_list_free (list);
-			list = NULL;
+		mono_loader_clear_error ();
 
-			exc = mono_get_exception_reflection_type_load (res, exl);
-			mono_raise_exception (exc);
+		MonoArray *exl = mono_array_new (domain, mono_defaults.exception_class, length);
+		for (i = 0, tmp = list; i < length; i++, tmp = tmp->next) {
+			MonoException *exc = mono_class_get_exception_for_failure (tmp->data);
+			mono_array_setref (exl, i, exc);
 		}
+		g_list_free (list);
+		list = NULL;
+
+		exc = mono_get_exception_reflection_type_load (res, exl);
+		mono_raise_exception (exc);
 	}
 		
 	return res;

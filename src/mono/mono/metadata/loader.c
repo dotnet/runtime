@@ -107,7 +107,10 @@ mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_onl
 	 * can't deal with load errors, and this message is more helpful than an
 	 * assert.
 	 */
-	g_warning ("Could not load file or assembly '%s' or one of its dependencies.", assembly_name);
+	if (ref_only)
+		g_warning ("Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", assembly_name);
+	else
+		g_warning ("Could not load file or assembly '%s' or one of its dependencies.", assembly_name);
 
 	set_loader_error (error);
 }
@@ -208,11 +211,13 @@ mono_loader_clear_error (void)
 {
 	MonoLoaderError *ex = (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
 
+	if (ex) {
         g_free (ex->class_name);
         g_free (ex->assembly_name);
-	g_free (ex);
+		g_free (ex);
 	
-	TlsSetValue (loader_error_thread_id, NULL);
+		TlsSetValue (loader_error_thread_id, NULL);
+	}
 }
 
 /**

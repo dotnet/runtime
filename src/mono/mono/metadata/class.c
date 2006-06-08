@@ -2075,10 +2075,21 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				int j;
 				for (j = 0; j < k->method.count; ++j) {
 					MonoMethod *m1 = k->methods [j];
+					MonoMethodSignature *cmsig, *m1sig;
+
 					if (!(m1->flags & METHOD_ATTRIBUTE_VIRTUAL))
 						continue;
+
+					cmsig = mono_method_signature (cm);
+					m1sig = mono_method_signature (m1);
+
+					if (!cmsig || !m1sig) {
+						mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+						return;
+					}
+
 					if (!strcmp(cm->name, m1->name) && 
-					    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (m1))) {
+					    mono_metadata_signature_equal (cmsig, m1sig)) {
 
 						/* CAS - SecurityAction.InheritanceDemand */
 						if (security_enabled && (m1->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
@@ -2439,7 +2450,12 @@ mono_class_init (MonoClass *class)
 	}
 	else {
 		mono_class_setup_vtable (class);
-	
+
+		if (class->exception_type || mono_loader_get_last_error ()){
+			class_init_ok = FALSE;
+			goto leave;
+		}
+
 		class->ghcimpl = 1;
 		if (class->parent) { 
 			MonoMethod *cmethod = class->vtable [ghc_slot];
