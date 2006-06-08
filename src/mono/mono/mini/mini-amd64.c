@@ -3868,7 +3868,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (breg == AMD64_RAX) {
-				amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, size);
+				amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
 				breg = AMD64_R11;
 			}
 
