@@ -4656,11 +4656,12 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	if (list) {
 		GList *tmp = NULL;
 		MonoException *exc = NULL;
+		MonoArray *exl = NULL;
 		int length = g_list_length (list);
 
 		mono_loader_clear_error ();
 
-		MonoArray *exl = mono_array_new (domain, mono_defaults.exception_class, length);
+		exl = mono_array_new (domain, mono_defaults.exception_class, length);
 		for (i = 0, tmp = list; i < length; i++, tmp = tmp->next) {
 			MonoException *exc = mono_class_get_exception_for_failure (tmp->data);
 			mono_array_setref (exl, i, exc);

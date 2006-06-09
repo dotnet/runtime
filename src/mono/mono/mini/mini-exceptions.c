@@ -83,7 +83,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 		else
 			real_ip = (const char*)ip;
 
-		if ((real_ip >= ji->code_start) && (real_ip <= ji->code_start + ji->code_size))
+		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
 			offset = real_ip - start;
 		else
 			offset = -1;
