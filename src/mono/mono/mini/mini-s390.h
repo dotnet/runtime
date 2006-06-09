@@ -254,7 +254,7 @@ typedef struct
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {			\
 		MonoS390StackFrame *sframe;				\
-		__asm__ volatile("l     %0,0(15)" : "=r" (sframe));	\
+		__asm__ volatile("lr    %0,15" : "=r" (sframe));	\
 		MONO_CONTEXT_SET_BP ((ctx), sframe->prev);		\
 		sframe = (MonoS390StackFrame*)sframe->prev;		\
 		MONO_CONTEXT_SET_IP ((ctx), sframe->return_address);	\
