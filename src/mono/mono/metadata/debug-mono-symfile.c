@@ -199,7 +199,7 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 	MonoSymbolFile *symfile;
 	gchar *source_file = NULL;
 	const char *ptr;
-	int i;
+	int count, i;
 
 	if ((symfile = minfo->handle->symfile) == NULL)
 		return NULL;
@@ -216,12 +216,13 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 
 	ptr = symfile->raw_contents + read32(&(minfo->entry->_line_number_table_offset));
 
-	lne = (MonoSymbolFileLineNumberEntry *) ptr;
+	count = read32(&(minfo->entry->_num_line_numbers));
+	lne = ((MonoSymbolFileLineNumberEntry *) ptr) + count - 1;
 
-	for (i = 0; i < read32(&(minfo->entry->_num_line_numbers)); i++, lne++) {
+	for (i = count - 1; i >= 0; i--, lne--) {
 		MonoDebugSourceLocation *location;
 
-		if (read32(&(lne->_offset)) < offset)
+		if (read32(&(lne->_offset)) > offset)
 			continue;
 
 		location = g_new0 (MonoDebugSourceLocation, 1);
