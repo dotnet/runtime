@@ -60,12 +60,12 @@ and_imm: dest:i src1:i len:24
 aot_const: dest:i len:8
 arg:
 arglist:
-atomic_add_i4: src1:b src2:i dest:i len:20
+atomic_add_i4: src1:b src2:i dest:i len:28
 atomic_add_i8: src1:b src2:i dest:i len:30
-atomic_add_new_i4: src1:b src2:i dest:i len:20
+atomic_add_new_i4: src1:b src2:i dest:i len:28
 atomic_add_new_i8: src1:b src2:i dest:i len:30
-atomic_exchange_i4: src1:b src2:i dest:i len:14
-atomic_exchange_i8: src1:b src2:i dest:i len:20
+atomic_exchange_i4: src1:b src2:i dest:i len:18
+atomic_exchange_i8: src1:b src2:i dest:i len:24
 beq.s:
 beq: len:8
 bge.s:
@@ -269,7 +269,7 @@ int_div_imm: dest:a src1:i len:24
 int_div_un: dest:a src1:i src2:i len:16
 int_div_un_imm: dest:a src1:i len:24
 int_mul: dest:i src1:i src2:i len:16
-int_mul_imm: dest:i src1:i len:20
+int_mul_imm: dest:i src1:i len:24
 int_mul_ovf: dest:i src1:i src2:i len:44
 int_mul_ovf_un: dest:i src1:i src2:i len:22
 int_neg: dest:i src1:i len:12

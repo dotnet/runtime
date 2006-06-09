@@ -349,9 +349,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	/* 
 	 * FIXME: This is needed because of the LMF stuff which doesn't exist on ia64.
 	 * Probably the whole mono_find_jit_info () stuff needs to be fixed so this isn't
-	 * needed even on other platforms.
+	 * needed even on other platforms. This is also true for s390/s390x.
 	 */
-#ifndef __ia64__
+#if	!defined(__ia64__) && !defined(__s390__) && !defined(__s390x__)
 	skip++;
 #endif
 
