@@ -339,12 +339,14 @@ analyze_argument (MonoInst *argument, MonoSsapreExpressionArgument *result) {
 static void
 analyze_expression (MonoInst *expression, MonoSsapreExpressionDescription *result) {
 	switch (expression->opcode) {
+#define SSAPRE_SPECIFIC_OPS 1
 #define OPDEF(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) case a1:
-#include "ssapre-cee-ops.h"
+#include "simple-cee-ops.h"
 #undef OPDEF
 #define MINI_OP(a1,a2) case a1:
-#include "ssapre-mini-ops.h"
+#include "simple-mini-ops.h"
 #undef MINI_OP
+#undef SSAPRE_SPECIFIC_OPS
 		if ( (expression->type == STACK_I4) ||
 				(expression->type == STACK_PTR) ||
 				(expression->type == STACK_MP) ||

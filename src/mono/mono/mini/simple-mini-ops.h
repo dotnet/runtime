@@ -10,6 +10,9 @@ MINI_OP(OP_GROUP, "group")
 MINI_OP(OP_CISINST, "cisinst")
 MINI_OP(OP_CCASTCLASS, "ccastclass")
 
+MINI_OP(OP_GETCHR, "getchar")
+MINI_OP(OP_STRLEN, "strlen")
+
 #endif
 
 MINI_OP(OP_LOAD_MEMBASE,"load_membase")
@@ -236,7 +239,4 @@ MINI_OP(OP_ABS,     "abs")
 MINI_OP(OP_TAN,     "tan")
 MINI_OP(OP_ATAN,    "atan")
 MINI_OP(OP_SQRT,    "sqrt")
-
-MINI_OP(OP_GETCHR, "getchar")
-MINI_OP(OP_STRLEN, "strlen")
 

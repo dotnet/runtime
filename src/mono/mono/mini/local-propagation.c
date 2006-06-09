@@ -700,15 +700,6 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 		}
 
 		break;
-	case OP_STRLEN:
-		if (tree_mover != NULL) {
-			if (MONO_DEBUG_TREE_MOVER) {
-				printf ("Recording side effect because of inst ");
-				mono_print_tree_nl (tree);
-			}
-			tree_mover->tree_has_side_effects = TRUE;
-		}
-		return;
 	case CEE_CALL:
 	case OP_CALL_REG:
 	case CEE_CALLVIRT:
@@ -768,7 +759,23 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 		}
 		return;
 	}
+#define TREEMOVE_SPECIFIC_OPS 1
+#define OPDEF(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) case a1:
+#include "simple-cee-ops.h"
+#undef OPDEF
+#define MINI_OP(a1,a2) case a1:
+#include "simple-mini-ops.h"
+#undef MINI_OP
+#undef TREEMOVE_SPECIFIC_OPS
+		break;
 	default:
+		if (tree_mover != NULL) {
+			if (MONO_DEBUG_TREE_MOVER) {
+				printf ("Recording side effect because of inst ");
+				mono_print_tree_nl (tree);
+			}
+			tree_mover->tree_has_side_effects = TRUE;
+		}
 		break;
 	}
 
@@ -1200,4 +1207,3 @@ mono_local_cprop (MonoCompile *cfg) {
 		mono_mempool_destroy(tree_mover->pool);
 	}
 }
-
