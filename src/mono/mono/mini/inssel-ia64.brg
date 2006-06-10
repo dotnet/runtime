@@ -304,10 +304,17 @@ reg: OP_ATOMIC_ADD_NEW_I8 (base, OP_ICONST) {
 	tree->inst_offset = state->left->tree->inst_offset; 
     
 	mono_bblock_add_inst (s->cbb, tree);
+} cost {
+	int imm = state->right->tree->inst_imm;
+
+	MBCOND (imm == 1 || imm == 4 || imm == 8 || imm == 16 || imm == -1 || imm == -4 || imm == -8 || imm == -16);
+	return 1;
 }
 
 reg: OP_ATOMIC_EXCHANGE_I4 (base, reg),
-reg: OP_ATOMIC_EXCHANGE_I8 (base, reg) {
+reg: OP_ATOMIC_EXCHANGE_I8 (base, reg),
+reg: OP_ATOMIC_ADD_NEW_I4 (base, reg),
+reg: OP_ATOMIC_ADD_NEW_I8 (base, reg) {
 	tree->opcode = tree->opcode;
 	tree->dreg = state->reg1;
 	tree->sreg2 = state->right->reg1;

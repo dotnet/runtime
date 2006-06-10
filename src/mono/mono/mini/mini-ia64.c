@@ -1627,6 +1627,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IA64_FETCHADD8_IMM:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8:
+		case OP_ATOMIC_ADD_NEW_I4:
+		case OP_ATOMIC_ADD_NEW_I8:
 			/* There are no membase instructions on ia64 */
 			if (ia64_is_imm14 (ins->inst_offset)) {
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
@@ -3091,6 +3093,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_EXCHANGE_I8:
 			ia64_xchg8_hint (code, ins->dreg, ins->inst_basereg, ins->sreg2, 0);
 			break;
+		case OP_ATOMIC_ADD_NEW_I4: {
+			guint8 *label, *buf;
+
+			/* From libatomic_ops */
+			ia64_mf (code);
+
+			ia64_begin_bundle (code);
+			label = code.buf + code.nins;
+			ia64_ld4_acq (code, GP_SCRATCH_REG, ins->sreg1);
+			ia64_add (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, ins->sreg2);
+			ia64_mov_to_ar_m (code, IA64_CCV, GP_SCRATCH_REG);
+			ia64_cmpxchg4_acq_hint (code, GP_SCRATCH_REG2, ins->sreg1, GP_SCRATCH_REG2, 0);
+			ia64_cmp4_eq (code, 6, 7, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+			buf = code.buf + code.nins;
+			ia64_br_cond_pred (code, 7, 0);
+			ia64_begin_bundle (code);
+			ia64_patch (buf, label);
+			ia64_add (code, ins->dreg, GP_SCRATCH_REG, ins->sreg2);
+			break;
+		}
+		case OP_ATOMIC_ADD_NEW_I8: {
+			guint8 *label, *buf;
+
+			/* From libatomic_ops */
+			ia64_mf (code);
+
+			ia64_begin_bundle (code);
+			label = code.buf + code.nins;
+			ia64_ld8_acq (code, GP_SCRATCH_REG, ins->sreg1);
+			ia64_add (code, GP_SCRATCH_REG2, GP_SCRATCH_REG, ins->sreg2);
+			ia64_mov_to_ar_m (code, IA64_CCV, GP_SCRATCH_REG);
+			ia64_cmpxchg8_acq_hint (code, GP_SCRATCH_REG2, ins->sreg1, GP_SCRATCH_REG2, 0);
+			ia64_cmp_eq (code, 6, 7, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+			buf = code.buf + code.nins;
+			ia64_br_cond_pred (code, 7, 0);
+			ia64_begin_bundle (code);
+			ia64_patch (buf, label);
+			ia64_add (code, ins->dreg, GP_SCRATCH_REG, ins->sreg2);
+			break;
+		}
 
 			/* Exception handling */
 		case OP_CALL_HANDLER:
@@ -4770,6 +4812,20 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			else
 				return NULL;
 
+			MONO_INST_NEW (cfg, ins, opcode);
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+		} else if (strcmp (cmethod->name, "Add") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+			
 			MONO_INST_NEW (cfg, ins, opcode);
 
 			ins->inst_i0 = args [0];
