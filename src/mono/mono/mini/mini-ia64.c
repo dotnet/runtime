@@ -1600,7 +1600,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
-			/* There are no load_membase instructions on ia64 */
+		case OP_IA64_FETCHADD4_IMM:
+		case OP_IA64_FETCHADD8_IMM:
+		case OP_ATOMIC_EXCHANGE_I4:
+		case OP_ATOMIC_EXCHANGE_I8:
+		case OP_ATOMIC_ADD_NEW_I4:
+		case OP_ATOMIC_ADD_NEW_I8:
+			/* There are no membase instructions on ia64 */
 			if (ins->inst_offset == 0) {
 				break;
 			}
@@ -1620,31 +1626,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
 			}
 
-			ins->inst_offset = 0;
-			ins->inst_basereg = temp2->dreg;
-			break;
-		case OP_IA64_FETCHADD4_IMM:
-		case OP_IA64_FETCHADD8_IMM:
-		case OP_ATOMIC_EXCHANGE_I4:
-		case OP_ATOMIC_EXCHANGE_I8:
-		case OP_ATOMIC_ADD_NEW_I4:
-		case OP_ATOMIC_ADD_NEW_I8:
-			/* There are no membase instructions on ia64 */
-			if (ia64_is_imm14 (ins->inst_offset)) {
-				NEW_INS (cfg, temp2, OP_ADD_IMM);
-				temp2->sreg1 = ins->inst_basereg;
-				temp2->inst_imm = ins->inst_offset;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
-			}
-			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
-				temp->inst_c0 = ins->inst_offset;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp2, CEE_ADD);
-				temp2->sreg1 = ins->inst_basereg;
-				temp2->sreg2 = temp->dreg;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
-			}
 			ins->inst_offset = 0;
 			ins->inst_basereg = temp2->dreg;
 			break;
