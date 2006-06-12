@@ -1041,4 +1041,30 @@ COND:   ldloc.0
 	ret	
   }
 
+	.method public static void try_block_end_remove_if_useless () cil managed {
+	    .maxstack  8
+
+	    T_START:
+	        ldstr   "Start"
+			pop
+	        leave.s COMPLETE
+	    T1_END:
+
+	    COMPLETE:
+	        ret
+
+	    F1_START:
+	        ldstr   "Finally1"
+			pop
+	        endfinally
+	    F1_END:
+
+	    .try T_START to T1_END finally handler F1_START to F1_END
+	}
+
+	.method public static int32 test_0_try_block_end_remove_if_useless () cil managed {
+		call void class Tests::try_block_end_remove_if_useless ()
+		ldc.i4.0
+		ret
+	}
 }

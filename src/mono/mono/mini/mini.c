@@ -8762,6 +8762,13 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	if ((previous_bb == cfg->bb_entry) && (bb->next_bb != target_bb)) {
 		return FALSE;
 	}
+
+	/* 
+	 * Do not touch BBs following a try block as the code in 
+	 * mini_method_compile needs them to compute the length of the try block.
+	 */
+	if (MONO_BBLOCK_IS_IN_REGION (previous_bb, MONO_REGION_TRY))
+		return FALSE;
 	
 	/* Check that there is a target BB, and that bb is not an empty loop (Bug 75061) */
 	if ((target_bb != NULL) && (target_bb != bb)) {
