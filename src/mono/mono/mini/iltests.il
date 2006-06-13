@@ -1067,4 +1067,14 @@ COND:   ldloc.0
 		ldc.i4.0
 		ret
 	}
+
+   .method private static int32 test_0_regress_78629_switch_next_ins_target ()  cil managed
+    {
+        ldc.i4.0
+        switch (target)
+        target: ldstr "bar"
+		pop
+		ldc.i4.0
+        ret
+    }
 }

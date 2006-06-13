@@ -79,6 +79,8 @@
 #define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
+#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == CEE_SWITCH))
+
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
 static void setup_stat_profiler (void);
@@ -8822,6 +8824,11 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 	bb->out_bb = bbn->out_bb;
 
 	replace_basic_block (bb, bbn, bb);
+
+	/* Nullify branch at the end of bb */
+	if (bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) {
+		bb->last_ins->opcode = CEE_NOP;
+	}		
 
 	if (bb->last_ins) {
 		if (bbn->code) {
