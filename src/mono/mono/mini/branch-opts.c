@@ -82,6 +82,9 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 
 					return NULL;
 				}
+			} else {
+				/* Branching to an outer clause could skip inner clauses */
+				return NULL;
 			}
 		}
 	}
