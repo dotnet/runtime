@@ -2002,7 +2002,7 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 			offset += 8;
 		}
 		
-		amd64_shift_reg_imm (code, X86_SHR, sreg, 4);
+		amd64_shift_reg_imm (code, X86_SHR, sreg, 3);
 		if (sreg != AMD64_RCX)
 			amd64_mov_reg_reg (code, AMD64_RCX, sreg, 8);
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
