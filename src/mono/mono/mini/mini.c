@@ -2955,8 +2955,14 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		vtable = mono_class_vtable (cfg->domain, method->klass);
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
-			if (cfg->run_cctors)
+			if (cfg->run_cctors) {
+				/* This makes so that inline cannot trigger */
+				/* .cctors: too many apps depend on them */
+				/* running with a specific order... */
+				if (! vtable->initialized)
+					return FALSE;
 				mono_runtime_class_init (vtable);
+			}
 		}
 		else if (!vtable->initialized && mono_class_needs_cctor_run (method->klass, NULL))
 			return FALSE;
@@ -5918,8 +5924,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
 						class_inits = g_slist_prepend (class_inits, vtable);
 					} else {
-						if (cfg->run_cctors)
+						if (cfg->run_cctors) {
+							/* This makes so that inline cannot trigger */
+							/* .cctors: too many apps depend on them */
+							/* running with a specific order... */
+							if (! vtable->initialized)
+								INLINE_FAILURE;
 							mono_runtime_class_init (vtable);
+						}
 					}
 					addr = (char*)vtable->data + field->offset;
 
