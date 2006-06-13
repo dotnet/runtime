@@ -58,13 +58,15 @@ namespace Program {
 					myConstructorCalledFrom, inlinedConstructorCalledFrom,
 					myConstructorCalledFrom == inlinedConstructorCalledFrom);
 			
-			Console.WriteLine ("strictFlag: {0}, relaxedFlag: {1}",
+			Console.WriteLine ("[{0}]strictFlag: {1}, relaxedFlag: {2}",
+					TestFailed ((strictFlag != relaxedFlag)),
 					strictFlag, relaxedFlag);
 			if ((myMethodBase != inlinedMethodBase) &&
 					(myExecutingAssembly != inlinedExecutingAssembly) &&
 					(myCallingAssembly != inlinedCallingAssembly) &&
 					(myStackFrame.GetMethod ().Name != inlinedStackFrame.GetMethod ().Name) &&
-					(myConstructorCalledFrom != inlinedConstructorCalledFrom)) {
+					(myConstructorCalledFrom != inlinedConstructorCalledFrom) &&
+					(strictFlag == relaxedFlag)) {
 				return 0;
 			} else {
 				return 1;
