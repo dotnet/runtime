@@ -2254,5 +2254,23 @@ class Tests {
 		}
 		return 1;
 	}
+
+	// bug #78633
+	public static int test_0_throw_to_branch_opt_outer_clause () {
+		int i = 0;
+
+		try {
+			try {
+				string [] files = new string[1];
+
+				string s = files[2];
+			} finally {
+				i ++;
+			}
+		} catch {
+		}
+
+		return (i == 1) ? 0 : 1;
+	}		
 }
 
