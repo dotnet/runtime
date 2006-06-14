@@ -339,7 +339,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 	gpointer old;
 
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
-			      "0:\tLGF\t%1,%0\n"
+			      "0:\tLG\t%1,%0\n"
 			      "\tCGR\t%1,%3\n"
 			      "\tJNE\t1f\n"
 			      "\tCSG\t%1,%2,0(1)\n"
@@ -468,7 +468,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 	gpointer ret;
 	
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
-			      "0:\tLGF\t%1,%0\n"
+			      "0:\tLG\t%1,%0\n"
 			      "\tCSG\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
 			      : "+m" (*val), "=r" (ret)
