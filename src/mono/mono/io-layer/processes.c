@@ -779,14 +779,14 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* set cwd */
 		if (chdir (dir) == -1) {
 			/* set error */
-			exit (-1);
+			_exit (-1);
 		}
 		
 		/* exec */
 		execve (argv[0], argv, env_strings);
 		
 		/* set error */
-		exit (-1);
+		_exit (-1);
 	}
 	/* parent */
 	
