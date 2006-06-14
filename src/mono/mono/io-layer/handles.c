@@ -450,7 +450,7 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	shared = &_wapi_shared_layout->handles[offset];
 	if (timestamp) {
 		/* Bump up the timestamp for this offset */
-		InterlockedExchange (&shared->timestamp, now);
+		InterlockedExchange ((gint32 *)&shared->timestamp, now);
 	}
 		
 	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
@@ -531,7 +531,7 @@ first_pass_done:
 	handle = GUINT_TO_POINTER (handle_idx);
 		
 	_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = offset;
-	InterlockedIncrement (&shared->handle_refs);
+	InterlockedIncrement ((gint32 *)&shared->handle_refs);
 	
 #ifdef DEBUG
 	g_message ("%s: Allocated new handle %p referencing 0x%x (shared refs %d)", __func__, handle, offset, shared->handle_refs);
@@ -764,7 +764,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 					
 					if (shared->type == type) {
 						guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-						InterlockedExchange (&shared->timestamp, now);
+						InterlockedExchange ((gint32 *)&shared->timestamp, now);
 
 						found = TRUE;
 						handle_data = &_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT(ret));
@@ -899,7 +899,7 @@ void _wapi_handle_ref (gpointer handle)
 
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
-	InterlockedIncrement (&handle_data->ref);
+	InterlockedIncrement ((gint32 *)&handle_data->ref);
 
 	/* It's possible for processes to exit before getting around
 	 * to updating timestamps in the collection thread, so if a
@@ -909,7 +909,7 @@ void _wapi_handle_ref (gpointer handle)
 	if (_WAPI_SHARED_HANDLE(handle_data->type)) {
 		struct _WapiHandleShared *shared_data = &_wapi_shared_layout->handles[handle_data->u.shared.offset];
 		
-		InterlockedExchange (&shared_data->timestamp, now);
+		InterlockedExchange ((gint32 *)&shared_data->timestamp, now);
 	}
 	
 #ifdef DEBUG_REFS
@@ -942,7 +942,7 @@ void _wapi_handle_unref (gpointer handle)
 	 * could lock a mutex, but I'm not sure that allowing a handle
 	 * reference to reach 0 isn't an application bug anyway.
 	 */
-	destroy = (InterlockedDecrement (&_WAPI_PRIVATE_HANDLES(idx).ref) ==0);
+	destroy = (InterlockedDecrement ((gint32 *)&_WAPI_PRIVATE_HANDLES(idx).ref) ==0);
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: %s handle %p ref now %d (destroy %s)", __func__,
@@ -1504,7 +1504,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 			 * This makes the increment atomic wrt
 			 * collections
 			 */
-			InterlockedIncrement (&file_share->handle_refs);
+			InterlockedIncrement ((gint32 *)&file_share->handle_refs);
 			
 			exists = TRUE;
 			break;
@@ -1533,7 +1533,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	}
 
 	if (*share_info != NULL) {
-		InterlockedExchange (&(*share_info)->timestamp, now);
+		InterlockedExchange ((gint32 *)&(*share_info)->timestamp, now);
 	}
 	
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
@@ -1771,8 +1771,7 @@ void _wapi_handle_update_refs (void)
 				g_message ("%s: (%d) Updating timestamp of handle 0x%x", __func__, _wapi_getpid (), handle->u.shared.offset);
 #endif
 
-				InterlockedExchange (&shared_data->timestamp,
-						     now);
+				InterlockedExchange ((gint32 *)&shared_data->timestamp, now);
 			} else if (handle->type == WAPI_HANDLE_FILE) {
 				struct _WapiHandle_file *file_handle = &handle->u.file;
 				
@@ -1786,7 +1785,7 @@ void _wapi_handle_update_refs (void)
 				g_message ("%s: (%d) Inc refs on fileshare 0x%x", __func__, _wapi_getpid (), (file_handle->share_info - &_wapi_fileshare_layout->share_info[0]) / sizeof(struct _WapiFileShare));
 #endif
 
-				InterlockedExchange (&file_handle->share_info->timestamp, now);
+				InterlockedExchange ((gint32 *)&file_handle->share_info->timestamp, now);
 			}
 		}
 	}

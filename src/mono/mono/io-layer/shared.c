@@ -29,10 +29,10 @@
 
 #undef DEBUG
 
-static guchar *_wapi_shm_file (_wapi_shm_t type)
+static gchar *_wapi_shm_file (_wapi_shm_t type)
 {
-	static guchar file[_POSIX_PATH_MAX];
-	guchar *name = NULL, *filename, *dir, *wapi_dir;
+	static gchar file[_POSIX_PATH_MAX];
+	gchar *name = NULL, *filename, *dir, *wapi_dir;
 	gchar machine_name[256];
 	const gchar *fake_name;
 	struct utsname ubuf;
@@ -100,7 +100,7 @@ static guchar *_wapi_shm_file (_wapi_shm_t type)
 	return(file);
 }
 
-static int _wapi_shm_file_open (const guchar *filename, guint32 wanted_size)
+static int _wapi_shm_file_open (const gchar *filename, guint32 wanted_size)
 {
 	int fd;
 	struct stat statbuf;
@@ -223,7 +223,7 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	gpointer shm_seg;
 	int fd;
 	struct stat statbuf;
-	guchar *filename=_wapi_shm_file (type);
+	gchar *filename=_wapi_shm_file (type);
 	guint32 size;
 	
 	switch(type) {

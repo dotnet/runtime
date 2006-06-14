@@ -119,7 +119,7 @@ void _wapi_handle_collect (void)
 			}
 		}
 
-		InterlockedIncrement (&_wapi_shared_layout->collection_count);
+		InterlockedIncrement ((gint32 *)&_wapi_shared_layout->collection_count);
 	}
 	
 	_wapi_handle_unlock_shared_handles ();

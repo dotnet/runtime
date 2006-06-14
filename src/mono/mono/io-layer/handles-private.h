@@ -350,7 +350,7 @@ static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert(thr_ret == 0);
 
-	if (InterlockedDecrement (&info->handle_refs) == 0) {
+	if (InterlockedDecrement ((gint32 *)&info->handle_refs) == 0) {
 		memset (info, '\0', sizeof(struct _WapiFileShare));
 	}
 

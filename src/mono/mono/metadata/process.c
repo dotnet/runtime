@@ -5,6 +5,7 @@
  *	Dick Porter (dick@ximian.com)
  *
  * (C) 2002 Ximian, Inc.
+ * Copyright (c) 2002-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -102,7 +103,7 @@ static guint32 unicode_bytes (const gunichar2 *str)
  * Can be used only for ascii or latin1 chars.
  */
 static gboolean
-unicode_string_equals (const gunichar2 *str1, const guchar *str2)
+unicode_string_equals (const gunichar2 *str1, const gchar *str2)
 {
 	while (*str1 && *str2) {
 		if (*str1 != *str2)
@@ -113,7 +114,7 @@ unicode_string_equals (const gunichar2 *str1, const guchar *str2)
 	return *str1 == *str2;
 }
 
-static void process_set_field_object (MonoObject *obj, const guchar *fieldname,
+static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
 				      MonoObject *data)
 {
 	MonoClassField *field;
@@ -128,7 +129,7 @@ static void process_set_field_object (MonoObject *obj, const guchar *fieldname,
 	*(MonoObject **)(((char *)obj) + field->offset)=data;
 }
 
-static void process_set_field_string (MonoObject *obj, const guchar *fieldname,
+static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 				      const gunichar2 *val, guint32 len)
 {
 	MonoClassField *field;
@@ -147,8 +148,8 @@ static void process_set_field_string (MonoObject *obj, const guchar *fieldname,
 }
 
 static void process_set_field_string_utf8 (MonoObject *obj,
-					   const guchar *fieldname,
-					   const guchar *val)
+					   const gchar *fieldname,
+					   const gchar *val)
 {
 	MonoClassField *field;
 	MonoString *string;
@@ -165,7 +166,7 @@ static void process_set_field_string_utf8 (MonoObject *obj,
 	*(MonoString **)(((char *)obj) + field->offset)=string;
 }
 
-static void process_set_field_int (MonoObject *obj, const guchar *fieldname,
+static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
 				   guint32 val)
 {
 	MonoClassField *field;
@@ -180,7 +181,7 @@ static void process_set_field_int (MonoObject *obj, const guchar *fieldname,
 	*(guint32 *)(((char *)obj) + field->offset)=val;
 }
 
-static void process_set_field_bool (MonoObject *obj, const guchar *fieldname,
+static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
 				    gboolean val)
 {
 	MonoClassField *field;
@@ -641,7 +642,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
 {
 	MonoImage *image;
-	guchar *filename_utf8;
+	gchar *filename_utf8;
 	
 	MONO_ARCH_SAVE_REGS;
 

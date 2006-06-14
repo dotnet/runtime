@@ -5,6 +5,7 @@
  *	Dick Porter (dick@ximian.com)
  *
  * (C) 2002 Ximian, Inc.
+ * Copyright (c) 2002-2006 Novell, Inc.
  */
 
 #include <config.h>
@@ -1902,7 +1903,7 @@ static gpointer stdin_handle=INVALID_HANDLE_VALUE;
 static gpointer stdout_handle=INVALID_HANDLE_VALUE;
 static gpointer stderr_handle=INVALID_HANDLE_VALUE;
 
-static gpointer stdhandle_create (int fd, const guchar *name)
+static gpointer stdhandle_create (int fd, const gchar *name)
 {
 	struct _WapiHandle_file file_handle = {0};
 	gpointer handle;

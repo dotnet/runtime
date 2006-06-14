@@ -100,7 +100,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	}
 
 	if (handle == _WAPI_THREAD_CURRENT) {
-		handle == _wapi_thread_handle_from_id (pthread_self ());
+		handle = _wapi_thread_handle_from_id (pthread_self ());
 		if (handle == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -307,7 +307,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	}
 
 	if (signal_handle == _WAPI_THREAD_CURRENT) {
-		signal_handle == _wapi_thread_handle_from_id (pthread_self ());
+		signal_handle = _wapi_thread_handle_from_id (pthread_self ());
 		if (signal_handle == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -315,7 +315,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	}
 
 	if (wait == _WAPI_THREAD_CURRENT) {
-		wait == _wapi_thread_handle_from_id (pthread_self ());
+		wait = _wapi_thread_handle_from_id (pthread_self ());
 		if (wait == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);

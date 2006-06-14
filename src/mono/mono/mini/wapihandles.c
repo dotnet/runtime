@@ -32,18 +32,18 @@ int mini_wapi_seminfo (int argc, char **argv)
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 
-static const guchar *unused_details (struct _WapiHandleShared *handle);
-static const guchar *unshared_details (struct _WapiHandleShared *handle);
-static const guchar *thread_details (struct _WapiHandleShared *handle);
-static const guchar *namedmutex_details (struct _WapiHandleShared *handle);
-static const guchar *namedsem_details (struct _WapiHandleShared *handle);
-static const guchar *namedevent_details (struct _WapiHandleShared *handle);
-static const guchar *process_details (struct _WapiHandleShared *handle);
+static const gchar *unused_details (struct _WapiHandleShared *handle);
+static const gchar *unshared_details (struct _WapiHandleShared *handle);
+static const gchar *thread_details (struct _WapiHandleShared *handle);
+static const gchar *namedmutex_details (struct _WapiHandleShared *handle);
+static const gchar *namedsem_details (struct _WapiHandleShared *handle);
+static const gchar *namedevent_details (struct _WapiHandleShared *handle);
+static const gchar *process_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
  * io-layer/wapi-private.h
  */
-static const guchar * (*details[])(struct _WapiHandleShared *)=
+static const gchar * (*details[])(struct _WapiHandleShared *)=
 {
 	unused_details,
 	unshared_details,		/* file */
@@ -118,19 +118,19 @@ int mini_wapi_hps (int argc, char **argv)
 	exit (0);
 }
 
-static const guchar *unused_details (struct _WapiHandleShared *handle)
+static const gchar *unused_details (struct _WapiHandleShared *handle)
 {
 	return("unused details");
 }
 
-static const guchar *unshared_details (struct _WapiHandleShared *handle)
+static const gchar *unshared_details (struct _WapiHandleShared *handle)
 {
 	return("unshared details");
 }
 
-static const guchar *thread_details (struct _WapiHandleShared *handle)
+static const gchar *thread_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
+	static gchar buf[80];
 	struct _WapiHandle_thread *thr=&handle->u.thread;
 
 	g_snprintf (buf, sizeof(buf),
@@ -141,9 +141,9 @@ static const guchar *thread_details (struct _WapiHandleShared *handle)
 	return(buf);
 }
 
-static const guchar *namedmutex_details (struct _WapiHandleShared *handle)
+static const gchar *namedmutex_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
+	static gchar buf[80];
 	gchar *name;
 	struct _WapiHandle_namedmutex *mut=&handle->u.namedmutex;
 	
@@ -156,9 +156,9 @@ static const guchar *namedmutex_details (struct _WapiHandleShared *handle)
 	return(buf);
 }
 
-static const guchar *namedsem_details (struct _WapiHandleShared *handle)
+static const gchar *namedsem_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
+	static gchar buf[80];
 	gchar *name;
 	struct _WapiHandle_namedsem *sem = &handle->u.namedsem;
 	
@@ -170,9 +170,9 @@ static const guchar *namedsem_details (struct _WapiHandleShared *handle)
 	return(buf);
 }
 
-static const guchar *namedevent_details (struct _WapiHandleShared *handle)
+static const gchar *namedevent_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
+	static gchar buf[80];
 	gchar *name;
 	struct _WapiHandle_namedevent *event = &handle->u.namedevent;
 	
@@ -185,9 +185,9 @@ static const guchar *namedevent_details (struct _WapiHandleShared *handle)
 	return(buf);
 }
 
-static const guchar *process_details (struct _WapiHandleShared *handle)
+static const gchar *process_details (struct _WapiHandleShared *handle)
 {
-	static guchar buf[80];
+	static gchar buf[80];
 	gchar *name;
 	struct _WapiHandle_process *proc=&handle->u.process;
 	

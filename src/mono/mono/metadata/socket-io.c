@@ -6,7 +6,7 @@
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
- * Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
+ * Copyright (c) 2005-2006 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -923,7 +923,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 *error)
 {
 	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
-	int salen;
+	socklen_t salen;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -949,7 +949,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 *error)
 {
 	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
-	int salen;
+	socklen_t salen;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -973,7 +973,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 }
 
 static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
-						    int *sa_size,
+						    socklen_t *sa_size,
 						    gint32 *error)
 {
 	MonoClassField *field;
@@ -1088,7 +1088,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
 {
 	struct sockaddr *sa;
-	int sa_size;
+	socklen_t sa_size;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -1173,7 +1173,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
 {
 	struct sockaddr *sa;
-	int sa_size;
+	socklen_t sa_size;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -1237,7 +1237,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	gint32 alen;
 	int recvflags=0;
 	struct sockaddr *sa;
-	int sa_size;
+	socklen_t sa_size;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1330,7 +1330,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	gint32 alen;
 	int sendflags=0;
 	struct sockaddr *sa;
-	int sa_size;
+	socklen_t sa_size;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1477,7 +1477,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 
 	sock_arr_class= ((MonoObject *)*sockets)->vtable->klass;
 	ret += 3; /* space for the NULL delimiters */
-	socks = mono_array_new_full (mono_domain_get (), sock_arr_class, &ret, NULL);
+	socks = mono_array_new_full (mono_domain_get (), sock_arr_class, (guint32*)&ret, NULL);
 	ret -= 3;
 	mode = idx = 0;
 	for (i = 0; i < count && ret > 0; i++) {
@@ -1520,14 +1520,14 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	int system_name;
 	int ret;
 	int val;
-	int valsize=sizeof(val);
+	socklen_t valsize=sizeof(val);
 	struct linger linger;
-	int lingersize=sizeof(linger);
+	socklen_t lingersize=sizeof(linger);
 	int time_ms = 0;
-	int time_ms_size = sizeof (time_ms);
+	socklen_t time_ms_size = sizeof (time_ms);
 #ifdef SO_PEERCRED
 	struct ucred cred;
-	int credsize = sizeof(cred);
+	socklen_t credsize = sizeof(cred);
 #endif
 	MonoDomain *domain=mono_domain_get();
 	MonoObject *obj;
@@ -1654,7 +1654,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	int system_name;
 	int ret;
 	guchar *buf;
-	int valsize;
+	socklen_t valsize;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1906,7 +1906,7 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 					      MonoArray *input,
 					      MonoArray *output, gint32 *error)
 {
-	gulong output_bytes = 0;
+	glong output_bytes = 0;
 	gchar *i_buffer, *o_buffer;
 	gint i_len, o_len;
 	gint ret;
@@ -2453,7 +2453,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 {
 	gboolean add_local_ips = FALSE;
 #ifdef HAVE_SIOCGIFCONF
-	guchar this_hostname [256];
+	gchar this_hostname [256];
 #endif
 #if !defined(HAVE_GETHOSTBYNAME2_R)
 	struct addrinfo *info = NULL, hints;
@@ -2680,7 +2680,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)
 {
-	guchar hostname[256];
+	gchar hostname[256];
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;

@@ -877,7 +877,7 @@ static void process_set_current (void)
 	
 	if (handle_env != NULL) {
 		struct _WapiHandle_process *process_handlep;
-		guchar *procname = NULL;
+		gchar *procname = NULL;
 		gboolean ok;
 		
 		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env), TRUE);
@@ -1265,7 +1265,7 @@ guint32 GetModuleBaseName (gpointer process, gpointer module,
 		 */
 		pid_t pid;
 		gunichar2 *procname;
-		guchar *procname_utf8 = NULL;
+		gchar *procname_utf8 = NULL;
 		glong len, bytes;
 		
 #ifdef DEBUG

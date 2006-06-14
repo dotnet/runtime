@@ -36,7 +36,6 @@
 #undef DEBUG
 #undef TLS_DEBUG
 
-
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
  */
@@ -77,6 +76,10 @@ static void _wapi_thread_abandon_mutexes (gpointer handle)
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
 	
+#ifdef DEBUG
+	g_message ("%s: Thread %p abandoning held mutexes", __func__, handle);
+#endif
+
 	if (handle == NULL) {
 		handle = _wapi_thread_handle_from_id (pthread_self ());
 		if (handle == NULL) {
@@ -112,6 +115,10 @@ static void thread_set_termination_details (gpointer handle,
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	int thr_ret;
+	
+#ifdef DEBUG
+	g_message ("%s: Thread %p terminating", __func__, handle);
+#endif
 	
 	_wapi_thread_abandon_mutexes (handle);
 	
