@@ -25,7 +25,8 @@ The "mono.sln" solution file contains the VC projects files for:
 
 REQUIREMENTS
 
-* A working cygwin (http://www.cygwin.com/) setup! This is required to:
+* A working (i.e. where you could succesfully build mono) cygwin 
+(http://www.cygwin.com/) setup! This is required to:
 	* generate some files (via monoburg and genmdesc);
 	* build the class libraries; and
 	* test for regressions.
@@ -116,4 +117,4 @@ Please email <mono-devel-list@lists.ximian.com> if you have any problem
 and/or if there's something wrong/missing in the instructions.
 
 An online version of this file is available at
-http://www.mono-project.com/Mono:Windows
+http://www.mono-project.com/Compiling_Mono_VSNET

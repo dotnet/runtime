@@ -1,3 +1,9 @@
+2006-06-14  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* README.vsnet: Make it clear that building Mono under cygwin is a
+	pre-requirement to using the VS.NET solution (with the supplied
+	instructions).
+
 2006-06-01 Zac Bowling <zac@zacbowling.com>
 	* configure.in, fix typo breaking build (test instead of text on last
 	line)
