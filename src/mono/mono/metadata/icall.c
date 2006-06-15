@@ -99,14 +99,9 @@ mono_class_get_throw (MonoImage *image, guint32 type_token)
 	MonoLoaderError *error;
 	MonoException *ex;
 	
-	if (class != NULL){
-		if (class->exception_type) {
-			MonoException *exc = mono_class_get_exception_for_failure (class);
-			g_assert (exc);
-			mono_raise_exception (exc);
-		}
+	if (class != NULL)
 		return class;
-	}
+
 	error = mono_loader_get_last_error ();
 	g_assert (error != NULL);
 	
