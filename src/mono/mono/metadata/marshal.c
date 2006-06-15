@@ -390,7 +390,8 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 
 		mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
 		mono_method_get_marshal_info (invoke, mspecs);
-		sig = signature_dup (invoke->klass->image, mono_method_signature (invoke));
+		/* Freed below so don't alloc from mempool */
+		sig = mono_metadata_signature_dup (mono_method_signature (invoke));
 		sig->hasthis = 0;
 
 		wrapper = mono_marshal_get_native_func_wrapper (sig, &piinfo, mspecs, ftn);
