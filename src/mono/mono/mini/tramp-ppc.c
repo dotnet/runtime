@@ -34,11 +34,14 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 3;
+	MonoDomain *domain = mono_domain_get ();
 
 	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 4;
 	    
-	start = code = g_malloc (20);
+	mono_domain_lock (domain);
+	start = code = mono_code_manager_reserve (domain->code_mp, 20);
+	mono_domain_unlock (domain);
 
 	ppc_load (code, ppc_r0, addr);
 	ppc_mtctr (code, ppc_r0);
@@ -235,7 +238,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
 		 is the trampoline code common to all methods  */
 		
-		code = buf = g_malloc(512);
+		code = buf = mono_global_codeman_reserve (512);
 		
 		ppc_stwu (buf, ppc_r1, -STACK, ppc_r1);
 
@@ -492,7 +495,6 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	use r11 to keep that value, for instance. However, the generic part of
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
-	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
 	mono_domain_lock (vtable->domain);
 	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
 	mono_domain_unlock (vtable->domain);
