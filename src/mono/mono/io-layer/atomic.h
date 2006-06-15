@@ -299,12 +299,8 @@ InterlockedCompareExchange(volatile gint32 *dest,
 	gint32 old;
 
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
-			      "0:\tL\t%1,%0\n"
-			      "\tCR\t%1,%3\n"
-			      "\tJNE\t1f\n"
+			      "\tLR\t%1,%3\n"
 			      "\tCS\t%1,%2,0(1)\n"
-			      "\tJNZ\t0b\n"
-			      "1:\n"
 			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
@@ -319,12 +315,8 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 	gpointer old;
 
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
-			      "0:\tL\t%1,%0\n"
-			      "\tCR\t%1,%3\n"
-			      "\tJNE\t1f\n"
+			      "\tLR\t%1,%3\n"
 			      "\tCS\t%1,%2,0(1)\n"
-			      "\tJNZ\t0b\n"
-			      "1:\n"
 			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
@@ -339,12 +331,8 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 	gpointer old;
 
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
-			      "0:\tLG\t%1,%0\n"
-			      "\tCGR\t%1,%3\n"
-			      "\tJNE\t1f\n"
+			      "\tLGR\t%1,%3\n"
 			      "\tCSG\t%1,%2,0(1)\n"
-			      "\tJNZ\t0b\n"
-			      "1:\n"
 			      : "+m" (*dest), "=r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");
