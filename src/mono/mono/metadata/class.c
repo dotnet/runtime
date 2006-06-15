@@ -2877,7 +2877,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	mono_class_setup_mono_type (class);
 
 	if (!class->enumtype) {
-		mono_metadata_interfaces_from_typedef_full (image, type_token, &interfaces, &icount, context);
+		if (!mono_metadata_interfaces_from_typedef_full (
+			    image, type_token, &interfaces, &icount, context)){
+			mono_loader_unlock ();
+			return NULL;
+		}
 
 		class->interfaces = interfaces;
 		class->interface_count = icount;

@@ -2781,11 +2781,16 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 
 	pos = start;
 	while (pos < tdef->rows) {
+		MonoClass *iface;
+		
 		mono_metadata_decode_row (tdef, pos, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
-		result [pos - start] = mono_class_get_full (
+		iface = mono_class_get_full (
 			meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]), context);
+		if (iface == NULL)
+			return FALSE;
+		result [pos - start] = iface;
 		++pos;
 	}
 	*count = pos - start;
