@@ -28,4 +28,17 @@ public class Tests {
 
 		return mono_test_marshal_cdecl_delegate (d);
 	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_fnptr")]
+	public static extern IntPtr mono_test_marshal_return_fnptr ();
+
+	delegate int AddDelegate (int i, int j);
+
+	static int test_4_get_delegate_for_function_pointer () {
+		IntPtr ptr = mono_test_marshal_return_fnptr ();
+
+		AddDelegate d = (AddDelegate)Marshal.GetDelegateForFunctionPointer (ptr, typeof (AddDelegate));
+
+		return d (2, 2);
+	}
 }

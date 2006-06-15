@@ -1822,6 +1822,18 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 	return res;
 }
 
+STDCALL int
+add_delegate (int i, int j)
+{
+	return i + j;
+}
+
+STDCALL gpointer
+mono_test_marshal_return_fnptr (void)
+{
+	return &add_delegate;
+}
+
 /*
  * COM INTEROP TESTS
  */
