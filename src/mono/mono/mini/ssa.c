@@ -579,16 +579,37 @@ typedef struct {
 	MonoInst *inst;
 } MonoVarUsageInfo;
 
-static void
+
+
+
+/*
+ * Returns TRUE if the tree can have side effects.
+ */
+static gboolean
 analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst *inst)
 {
 	MonoMethodVar *info;
 	int i, idx, arity;
+	gboolean has_side_effects;
 
 	if (!inst)
-		return;
+		return FALSE;
 
 	arity = mono_burg_arity [inst->opcode];
+	switch (inst->opcode) {
+#define ANALYZE_DEV_USE_SPECIFIC_OPS 1
+#define OPDEF(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) case a1:
+#include "simple-cee-ops.h"
+#undef OPDEF
+#define MINI_OP(a1,a2) case a1:
+#include "simple-mini-ops.h"
+#undef MINI_OP
+#undef ANALYZE_DEV_USE_SPECIFIC_OPS
+		has_side_effects = FALSE;
+		break;
+	default:
+		has_side_effects = TRUE;
+	}
 
 	if ((inst->ssa_op == MONO_SSA_STORE) && 
 	    (inst->inst_i0->opcode == OP_LOCAL /*|| inst->inst_i0->opcode == OP_ARG */)) {
@@ -631,11 +652,15 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 	} else {
 		if (arity) {
 			//if (inst->ssa_op != MONO_SSA_STORE)
-			analyze_dev_use (cfg, bb, root, inst->inst_left);
+			if (analyze_dev_use (cfg, bb, root, inst->inst_left))
+				has_side_effects = TRUE;
 			if (arity > 1)
-				analyze_dev_use (cfg, bb, root, inst->inst_right);
+				if (analyze_dev_use (cfg, bb, root, inst->inst_right))
+					has_side_effects = TRUE;
 		}
 	}
+	
+	return has_side_effects;
 }
 
 
@@ -704,7 +729,11 @@ mono_ssa_create_def_use (MonoCompile *cfg)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *inst;
 		for (inst = bb->code; inst; inst = inst->next) {
-			analyze_dev_use (cfg, bb, inst, inst);
+			gboolean has_side_effects = analyze_dev_use (cfg, bb, inst, inst);
+			if (has_side_effects && (inst->ssa_op == MONO_SSA_STORE) && 
+					(inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
+				inst->inst_i0->flags |= MONO_INST_DEFINITION_HAS_SIDE_EFFECTS;
+			}
 		}
 	}
 
@@ -1179,7 +1208,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 		MonoMethodVar *info = (MonoMethodVar *)work_list->data;
 		work_list = g_list_delete_link (work_list, work_list);
 
-		if (!info->uses && info->def && (!(cfg->varinfo [info->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))) {
+		if (!info->uses && info->def && (!(cfg->varinfo [info->idx]->flags & (MONO_INST_DEFINITION_HAS_SIDE_EFFECTS|MONO_INST_VOLATILE|MONO_INST_INDIRECT)))) {
 			MonoInst *i1;
 			//printf ("ELIMINATE %s: ", mono_method_full_name (cfg->method, TRUE)); mono_print_tree (info->def); printf ("\n");
 

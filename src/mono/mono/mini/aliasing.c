@@ -896,10 +896,17 @@ mono_aliasing_deadce_on_inst (MonoAliasingInformation *info, MonoInst **possibly
 	
 	arity = mono_burg_arity [inst->opcode];
 	
-	if (OP_IS_CALL (inst->opcode)) {
-		has_side_effects = TRUE;
-	} else {
+	switch (inst->opcode) {
+#define OPDEF(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) case a1:
+#include "simple-cee-ops.h"
+#undef OPDEF
+#define MINI_OP(a1,a2) case a1:
+#include "simple-mini-ops.h"
+#undef MINI_OP
 		has_side_effects = FALSE;
+		break;
+	default:
+		has_side_effects = TRUE;
 	}
 	
 	if (arity) {

@@ -15,6 +15,12 @@ MINI_OP(OP_STRLEN, "strlen")
 
 #endif
 
+#if (ANALYZE_DEV_USE_SPECIFIC_OPS)
+MINI_OP(OP_LOCAL, "local")
+MINI_OP(OP_ARG, "arg")
+#endif
+
+
 MINI_OP(OP_LOAD_MEMBASE,"load_membase")
 MINI_OP(OP_LOADI1_MEMBASE,"loadi1_membase")
 MINI_OP(OP_LOADU1_MEMBASE,"loadu1_membase")
@@ -28,7 +34,9 @@ MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase")
 MINI_OP(OP_LOADR8_SPILL_MEMBASE,"loadr8_spill_membase")
 MINI_OP(OP_LOADU4_MEM,"loadu4_mem")
 
+#if (TREEMOVE_SPECIFIC_OPS)
 MINI_OP(OP_LDELEMA2D, "getldelema2")
+#endif
 
 MINI_OP(OP_GETTYPE, "gettype")
 MINI_OP(OP_GETHASHCODE, "gethashcode")

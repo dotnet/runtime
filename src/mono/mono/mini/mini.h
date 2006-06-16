@@ -338,6 +338,7 @@ enum {
 	MONO_INST_BRLABEL    = 4,
 	MONO_INST_NOTYPECHECK    = 4,
 	MONO_INST_UNALIGNED  = 8,
+	MONO_INST_DEFINITION_HAS_SIDE_EFFECTS = 8,
 	/* the address of the variable has been taken */
 	MONO_INST_INDIRECT   = 16,
 	MONO_INST_NORANGECHECK   = 16

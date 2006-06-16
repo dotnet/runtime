@@ -1,6 +1,6 @@
 
-#if 0
 
+#if (ANALYZE_DEV_USE_SPECIFIC_OPS)
 OPDEF(CEE_LDIND_I1, "ldind.i1", PopI, PushI, InlineNone, X, 1, 0xFF, 0x46, NEXT)
 OPDEF(CEE_LDIND_U1, "ldind.u1", PopI, PushI, InlineNone, X, 1, 0xFF, 0x47, NEXT)
 OPDEF(CEE_LDIND_I2, "ldind.i2", PopI, PushI, InlineNone, X, 1, 0xFF, 0x48, NEXT)
@@ -14,7 +14,9 @@ OPDEF(CEE_LDIND_R8, "ldind.r8", PopI, PushR8, InlineNone, X, 1, 0xFF, 0x4F, NEXT
 OPDEF(CEE_LDIND_REF, "ldind.ref", PopI, PushRef, InlineNone, X, 1, 0xFF, 0x50, NEXT)
 OPDEF(CEE_LDSTR, "ldstr", Pop0, PushRef, InlineString, X, 1, 0xFF, 0x72, NEXT)
 OPDEF(CEE_STOBJ, "stobj", PopI+Pop1, Push0, InlineType, X, 1, 0xFF, 0x81, NEXT)
+#endif
 
+#if 0
 OPDEF(CEE_CPOBJ, "cpobj", PopI+PopI, Push0, InlineType, X, 1, 0xFF, 0x70, NEXT)
 OPDEF(CEE_LDOBJ, "ldobj", PopI, Push1, InlineType, X, 1, 0xFF, 0x71, NEXT)
 OPDEF(CEE_CASTCLASS, "castclass", PopRef, PushRef, InlineType, X, 1, 0xFF, 0x74, NEXT)
@@ -27,7 +29,6 @@ OPDEF(CEE_MONO_VTADDR, "mono_vtaddr", Pop1, PushI, InlineNone, X, 2, 0xF0, 0x03,
 OPDEF(CEE_MONO_LDNATIVEOBJ, "mono_ldnativeobj", PopI, Push1, InlineType, X, 2, 0xF0, 0x06, RETURN)
 OPDEF(CEE_MONO_CISINST, "mono_cisinst", PopRef, Push1, InlineType, X, 2, 0xF0, 0x07, NEXT)
 OPDEF(CEE_MONO_CCASTCLASS, "mono_ccastclass", PopRef, Push1, InlineType, X, 2, 0xF0, 0x08, NEXT)
-
 #endif
 
 #if (SSAPRE_SPECIFIC_OPS)
@@ -48,7 +49,7 @@ OPDEF(CEE_STSFLD, "stsfld", Pop1, Push0, InlineField, X, 1, 0xFF, 0x80, NEXT)
 #endif
 
 
-
+#if (TREEMOVE_SPECIFIC_OPS)
 OPDEF(CEE_LDLEN, "ldlen", PopRef, PushI, InlineNone, X, 1, 0xFF, 0x8E, NEXT)
 OPDEF(CEE_LDELEMA, "ldelema", PopRef+PopI, PushI, InlineType, X, 1, 0xFF, 0x8F, NEXT)
 OPDEF(CEE_LDELEM_I1, "ldelem.i1", PopRef+PopI, PushI, InlineNone, X, 1, 0xFF, 0x90, NEXT)
@@ -63,7 +64,7 @@ OPDEF(CEE_LDELEM_R4, "ldelem.r4", PopRef+PopI, PushR4, InlineNone, X, 1, 0xFF, 0
 OPDEF(CEE_LDELEM_R8, "ldelem.r8", PopRef+PopI, PushR8, InlineNone, X, 1, 0xFF, 0x99, NEXT)
 OPDEF(CEE_LDELEM_REF, "ldelem.ref", PopRef+PopI, PushRef, InlineNone, X, 1, 0xFF, 0x9A, NEXT)
 OPDEF(CEE_LDELEM_ANY, "ldelem.any", PopRef+PopI, Push1, InlineType, X, 1, 0xFF, 0xA3, NEXT)
-
+#endif
 
 OPDEF(CEE_ADD, "add", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0x58, NEXT)
 OPDEF(CEE_SUB, "sub", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0x59, NEXT)
