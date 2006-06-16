@@ -197,6 +197,7 @@ TEST_CS_SRC=			\
 	bug-48015.cs		\
 	bug-42136.cs		\
 	bug-78311.cs		\
+	bug-78653.cs		\
 	interlocked.cs		\
 	cross-domain.cs		\
 	appdomain-exit.cs	\
