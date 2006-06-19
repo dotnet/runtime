@@ -4242,7 +4242,17 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 
 	switch (token & 0xff000000) {
 	case MONO_TOKEN_TYPE_DEF:
-	case MONO_TOKEN_TYPE_REF:
+	case MONO_TOKEN_TYPE_REF: {
+		MonoClass *class;
+		if (handle_class)
+			*handle_class = mono_defaults.typehandle_class;
+		class = mono_class_get_full (image, token, NULL);
+		if (!class)
+			return NULL;
+		mono_class_init (class);
+		/* We return a MonoType* as handle */
+		return &class->byval_arg;
+	}
 	case MONO_TOKEN_TYPE_SPEC: {
 		MonoClass *class;
 		if (handle_class)
