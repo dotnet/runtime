@@ -235,7 +235,7 @@ add_ovf_carry: dest:i src1:i src2:i len:16
 sub_ovf_carry: dest:i src1:i src2:i len:16
 add_ovf_un_carry: dest:i src1:i src2:i len:16
 sub_ovf_un_carry: dest:i src1:i src2:i len:16
-start_handler: len:8
+start_handler: len:16
 endfinally: len:12
 leave:
 leave.s:
