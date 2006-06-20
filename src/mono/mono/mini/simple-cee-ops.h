@@ -91,7 +91,13 @@ OPDEF(CEE_CONV_U4, "conv.u4", Pop1, PushI, InlineNone, X, 1, 0xFF, 0x6D, NEXT)
 OPDEF(CEE_CONV_U8, "conv.u8", Pop1, PushI8, InlineNone, X, 1, 0xFF, 0x6E, NEXT)
 OPDEF(CEE_CONV_R_UN, "conv.r.un", Pop1, PushR8, InlineNone, X, 1, 0xFF, 0x76, NEXT)
 
+OPDEF(CEE_CONV_U2, "conv.u2", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD1, NEXT)
+OPDEF(CEE_CONV_U1, "conv.u1", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD2, NEXT)
+OPDEF(CEE_CONV_I, "conv.i", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD3, NEXT)
+OPDEF(CEE_CONV_U, "conv.u", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xE0, NEXT)
 
+
+#if 0
 OPDEF(CEE_CONV_OVF_I1_UN, "conv.ovf.i1.un", Pop1, PushI, InlineNone, X, 1, 0xFF, 0x82, NEXT)
 OPDEF(CEE_CONV_OVF_I2_UN, "conv.ovf.i2.un", Pop1, PushI, InlineNone, X, 1, 0xFF, 0x83, NEXT)
 OPDEF(CEE_CONV_OVF_I4_UN, "conv.ovf.i4.un", Pop1, PushI, InlineNone, X, 1, 0xFF, 0x84, NEXT)
@@ -112,9 +118,6 @@ OPDEF(CEE_CONV_OVF_U4, "conv.ovf.u4", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xB8,
 OPDEF(CEE_CONV_OVF_I8, "conv.ovf.i8", Pop1, PushI8, InlineNone, X, 1, 0xFF, 0xB9, NEXT)
 OPDEF(CEE_CONV_OVF_U8, "conv.ovf.u8", Pop1, PushI8, InlineNone, X, 1, 0xFF, 0xBA, NEXT)
 
-OPDEF(CEE_CONV_U2, "conv.u2", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD1, NEXT)
-OPDEF(CEE_CONV_U1, "conv.u1", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD2, NEXT)
-OPDEF(CEE_CONV_I, "conv.i", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD3, NEXT)
 OPDEF(CEE_CONV_OVF_I, "conv.ovf.i", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD4, NEXT)
 OPDEF(CEE_CONV_OVF_U, "conv.ovf.u", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xD5, NEXT)
 OPDEF(CEE_ADD_OVF, "add.ovf", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0xD6, NEXT)
@@ -123,4 +126,4 @@ OPDEF(CEE_MUL_OVF, "mul.ovf", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0xD8, NE
 OPDEF(CEE_MUL_OVF_UN, "mul.ovf.un", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0xD9, NEXT)
 OPDEF(CEE_SUB_OVF, "sub.ovf", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0xDA, NEXT)
 OPDEF(CEE_SUB_OVF_UN, "sub.ovf.un", Pop1+Pop1, Push1, InlineNone, X, 1, 0xFF, 0xDB, NEXT)
-OPDEF(CEE_CONV_U, "conv.u", Pop1, PushI, InlineNone, X, 1, 0xFF, 0xE0, NEXT)
+#endif

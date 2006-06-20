@@ -85,6 +85,8 @@ MINI_OP(OP_LCONV_TO_U8,"long_conv_to_u8")
 MINI_OP(OP_LCONV_TO_U2,   "long_conv_to_u2")
 MINI_OP(OP_LCONV_TO_U1,   "long_conv_to_u1")
 MINI_OP(OP_LCONV_TO_I,    "long_conv_to_i")
+
+#if 0
 MINI_OP(OP_LCONV_TO_OVF_I,"long_conv_to_ovf_i")
 MINI_OP(OP_LCONV_TO_OVF_U,"long_conv_to_ovf_u")
 MINI_OP(OP_LADD_OVF,      "long_add_ovf")
@@ -113,7 +115,7 @@ MINI_OP(OP_LCONV_TO_OVF_I4,"long_conv_to_ovf_i4")
 MINI_OP(OP_LCONV_TO_OVF_U4,"long_conv_to_ovf_u4")
 MINI_OP(OP_LCONV_TO_OVF_I8,"long_conv_to_ovf_i8")
 MINI_OP(OP_LCONV_TO_OVF_U8,"long_conv_to_ovf_u8")
-
+#endif
 
 MINI_OP(OP_LCONV_TO_R_UN,"long_conv_to_r_un")
 MINI_OP(OP_LCONV_TO_U,   "long_conv_to_u")
@@ -123,12 +125,14 @@ MINI_OP(OP_LSHL_IMM,     "long_shl_imm")
 MINI_OP(OP_LADD_IMM,     "long_add_imm")
 MINI_OP(OP_LSUB_IMM,     "long_sub_imm")
 
+#if 0
+MINI_OP(OP_IMUL_OVF,    "int_mul_ovf")
+MINI_OP(OP_IMUL_OVF_UN, "int_mul_ovf_un")
+#endif
 
 MINI_OP(OP_IADD,    "int_add")
 MINI_OP(OP_ISUB,    "int_sub")
 MINI_OP(OP_IMUL,    "int_mul")
-MINI_OP(OP_IMUL_OVF,    "int_mul_ovf")
-MINI_OP(OP_IMUL_OVF_UN, "int_mul_ovf_un")
 MINI_OP(OP_IDIV,    "int_div")
 MINI_OP(OP_IDIV_UN, "int_div_un")
 MINI_OP(OP_IREM,    "int_rem")
@@ -187,6 +191,9 @@ MINI_OP(OP_FCONV_TO_U8,"float_conv_to_u8")
 MINI_OP(OP_FCONV_TO_U2,   "float_conv_to_u2")
 MINI_OP(OP_FCONV_TO_U1,   "float_conv_to_u1")
 MINI_OP(OP_FCONV_TO_I,    "float_conv_to_i")
+
+
+#if 0
 MINI_OP(OP_FCONV_TO_OVF_I,"float_conv_to_ovf_i")
 MINI_OP(OP_FCONV_TO_OVF_U,"float_conv_to_ovd_u")
 MINI_OP(OP_FADD_OVF,      "float_add_ovf")
@@ -215,6 +222,7 @@ MINI_OP(OP_FCONV_TO_OVF_I4,"float_conv_to_ovf_i4")
 MINI_OP(OP_FCONV_TO_OVF_U4,"float_conv_to_ovf_u4")
 MINI_OP(OP_FCONV_TO_OVF_I8,"float_conv_to_ovf_i8")
 MINI_OP(OP_FCONV_TO_OVF_U8,"float_conv_to_ovf_u8")
+#endif
 
 
 MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u")
@@ -236,10 +244,12 @@ MINI_OP(OP_SEXT_I2,  "sext_i2")
 MINI_OP(OP_CNE,      "cne")
 
 
+#if 0
 MINI_OP(OP_ADD_OVF_CARRY,   "add_ovf_carry")
 MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry")
 MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry")
 MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry")
+#endif
 
 MINI_OP(OP_SIN,     "sin")
 MINI_OP(OP_COS,     "cos")
