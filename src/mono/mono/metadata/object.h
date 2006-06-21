@@ -73,7 +73,7 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_array_setref(array,index,value)	\
 	do {	\
 		gpointer *__p = (gpointer *) mono_array_addr ((array), gpointer, (index));	\
-		mono_gc_wbarrier_set_arrayref ((array), __p, (value));	\
+		mono_gc_wbarrier_set_arrayref ((array), __p, (MonoObject*)(value));	\
 		/* *__p = (value);*/	\
 	} while (0)
 #define mono_array_memcpy_refs(dest,destidx,src,srcidx,count)	\
