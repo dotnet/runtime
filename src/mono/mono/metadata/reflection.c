@@ -873,7 +873,8 @@ method_encode_clauses (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, g
 	for (i = mono_array_length (ilgen->ex_handlers) - 1; i >= 0; --i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		finally_start = ex_info->start + ex_info->len;
-		g_assert (ex_info->handlers);
+		if (!ex_info->handlers)
+			continue;
 		for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
 			ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
 			clause = &(clauses [clause_index]);
