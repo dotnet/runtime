@@ -1,3 +1,8 @@
+2006-06-22  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* configure.in: Add the Makefile to create in order to run the CAS
+	tests.
+
 2006-06-14  Sebastien Pouliot  <sebastien@ximian.com>
 
 	* README.vsnet: Make it clear that building Mono under cygwin is a
