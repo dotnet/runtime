@@ -1,3 +1,5 @@
+SUBDIRS = cas
+
 check-local: test
 
 TEST_PROG = ../interpreter/mint
