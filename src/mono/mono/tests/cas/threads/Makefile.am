@@ -2,11 +2,16 @@ RUNTIME = mono --debug --security
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
+EXTRA_DIST = thread1.cs thread2.cs thread3.cs \
+	tpool1.cs tpool2.cs \
+	timer1.cs timer2.cs swf-timer3.cs swf-timer4.cs \
+	delegate1.cs delegate2.cs \
+	swf-control1.cs
+
 all:	thread1.exe thread2.exe thread3.exe \
-	tpool1.exe tpool2.exe \
-	timer1.exe timer2.exe swf-timer3.exe swf-timer4.exe \
-	delegate1.exe delegate2.exe \
-	swf-control1.exe
+	tpool1.exe tpool2.exe delegate1.exe delegate2.exe \
+	timer1.exe timer2.exe
+#	swf-timer3.exe swf-timer4.exe swf-control1.exe
 
 aot:	thread1.exe.so thread2.exe.so thread3.exe.so \
 	tpool1.exe.so tpool2.exe.so \
