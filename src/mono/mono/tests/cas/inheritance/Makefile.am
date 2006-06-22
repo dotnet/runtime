@@ -2,6 +2,12 @@ RUNTIME = mono --debug --security
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
+EXTRA_DIST = notused.cs cas1.cs cas2.cs cas3.cs \
+	noncas1.cs noncas2.cs noncas3.cs noncas4.cs \
+	refload1.cs refload2.cs refload3.cs refload4.cs \
+	reftype1.cs reftype2.cs reftype3.cs reftype4.cs \
+	library1.cs library2.cs cas.snk
+
 all:	notused.exe cas1a.exe cas2a.exe cas3a.exe \
 	cas1b.exe cas2b.exe cas3b.exe \
 	noncas1.exe noncas2.exe noncas3.exe noncas4.exe \
@@ -73,16 +79,16 @@ clean:
 	$(CSCOMPILE) $^ /out:$@
 
 %a.dll: %.cs
-	$(CSCOMPILE) /target:library $^ /out:$@
+	$(CSCOMPILE) /target:library $< /out:$@
 
-%b.dll: %.cs
-	$(CSCOMPILE) /target:library $^ /out:$@ /keyfile:cas.snk
+%b.dll: %.cs 
+	$(CSCOMPILE) /target:library $< /out:$@ /keyfile:$</../cas.snk
 
 %a.exe: %.cs 
-	$(CSCOMPILE) $^ /out:$@
+	$(CSCOMPILE) $< /out:$@
 
-%b.exe: %.cs 
-	$(CSCOMPILE) $^ /out:$@ /keyfile:cas.snk
+%b.exe: %.cs
+	$(CSCOMPILE) $< /out:$@ /keyfile:$</../cas.snk
 
 %.exe.so: %.exe
 	$(RUNTIME) --aot $^
