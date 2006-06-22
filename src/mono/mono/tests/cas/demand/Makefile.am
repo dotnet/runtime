@@ -2,6 +2,10 @@ RUNTIME = mono --debug --security
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
+EXTRA_DIST = pinvoke1.cs pinvoke2.cs pinvoke3.cs \
+	sucs1.cs sucs2.cs sucs3.cs sucs4.cs \
+	selfassert.cs selfdeny.cs selfpermit.cs
+
 all:	pinvoke1.exe pinvoke2.exe pinvoke3.exe \
 	sucs1.exe sucs2.exe sucs3.exe sucs4.exe \
 	selfassert.exe selfdeny.exe selfpermit.exe
