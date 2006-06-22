@@ -1,5 +1,5 @@
 RUNTIME = mono --debug --security
-CSCOMPILE = mcs --debug
+CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
 all: all.exe min.exe opt.exe ref.exe none.exe
@@ -7,6 +7,7 @@ all: all.exe min.exe opt.exe ref.exe none.exe
 aot: all.exe.so min.exe.so opt.exe.so ref.exe.so none.exe.so
 
 TEST_FILES = all min opt ref none
+EXTRA_DIST=all.cs min.cs opt.cs ref.cs none.cs
 
 # Only make sense on a 2.0 runtime
 run: all
@@ -49,7 +50,7 @@ clean:
 	rm -f *.exe* *.tmp
 
 %.exe: %.cs
-	$(CSCOMPILE) $^
+	$(CSCOMPILE) $^ /out:$@
 
 %.exe.so: %.exe
 	$(RUNTIME) --aot $^
