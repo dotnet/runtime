@@ -14,11 +14,6 @@
 #include <math.h>
 #include <sys/time.h>
 
-#ifdef sun    // Solaris x86
-#include <sys/types.h>
-#include <sys/ucontext.h>
-#endif
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
