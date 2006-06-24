@@ -307,7 +307,7 @@ static guint32 WINAPI start_wrapper(void *data)
 		   thread->tid);
 #endif
 
-	/* start_func is set only for unamanged start functions */
+	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
 		start_func (start_arg);
 	} else {

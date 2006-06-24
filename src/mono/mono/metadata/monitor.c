@@ -216,7 +216,7 @@ mono_object_hash (MonoObject* obj)
 	}
 	/*
 	 * while we are inside this function, the GC will keep this object pinned,
-	 * since we are in the unamanged stack. Thanks to this and to the hash
+	 * since we are in the unmanaged stack. Thanks to this and to the hash
 	 * function that depends only on the address, we can ignore the races if
 	 * another thread computes the hash at the same time, because it'll end up
 	 * with the same value.

@@ -9654,7 +9654,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
 			return;
 		}
-		rmb.refs [i] = ref; /* FIXME: GC object stored in unamanged memory (change also resolve_object() signature) */
+		rmb.refs [i] = ref; /* FIXME: GC object stored in unmanaged memory (change also resolve_object() signature) */
 		rmb.refs [i + 1] = handle_class;
 	}		
 
