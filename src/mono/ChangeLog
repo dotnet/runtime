@@ -1,3 +1,7 @@
+2006-06-24  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Always pass CPPFLAGS to libgc configure.
+
 2006-06-22  Sebastien Pouliot  <sebastien@ximian.com>
 
 	* configure.in: Add the Makefile to create in order to run the CAS

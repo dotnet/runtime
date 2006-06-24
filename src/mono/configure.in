@@ -607,6 +607,11 @@ case "x$gc" in
 	xincluded)
 		AC_CONFIG_SUBDIRS(libgc)
 
+		# Pass CPPFLAGS to libgc configure
+		# Maybe we should use a separate variable for this to avoid passing useless and
+		# potentially problematic defines to libgc (like -D_FILE_OFFSET_BITS=64)
+		export CPPFLAGS
+
 		found_boehm=yes
 		gc_headers=yes
 		use_included_gc=yes
@@ -1762,9 +1767,8 @@ AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD)
-   # Pass the information to libgc
+	# Pass the information to libgc
 	CPPFLAGS="$CPPFLAGS -DUSE_COMPILER_TLS"
-	export CPPFLAGS
 	AC_MSG_CHECKING(if the tls_model attribute is supported)
 	AC_TRY_COMPILE([static __thread int foo __attribute__((tls_model("initial-exec")));], [
 		], [
