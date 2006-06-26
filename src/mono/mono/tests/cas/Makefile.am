@@ -1,4 +1,9 @@
-RUNTIME = mono --debug --security
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
+with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+
+RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
+RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug --security
+
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
