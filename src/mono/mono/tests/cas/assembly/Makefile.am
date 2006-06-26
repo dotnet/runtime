@@ -7,7 +7,8 @@ all: all.exe min.exe opt.exe ref.exe none.exe
 aot: all.exe.so min.exe.so opt.exe.so ref.exe.so none.exe.so
 
 TEST_FILES = all min opt ref none
-EXTRA_DIST=all.cs min.cs opt.cs ref.cs none.cs
+EXTRA_DIST=all.cs min.cs opt.cs ref.cs none.cs \
+	all.net_1_1.txt min.net_1_1.txt opt.net_1_1.txt ref.net_1_1.txt none.net_1_1.txt
 
 # Only make sense on a 2.0 runtime
 run: all
