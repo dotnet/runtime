@@ -92,7 +92,7 @@ get_module (MonoImage *m, int idx)
 	    
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULE], idx - 1, cols, MONO_MODULE_SIZE);
 
-	return g_strdup (mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]));
+	return get_escaped_name (mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]));
 }
 
 char *
@@ -102,7 +102,7 @@ get_moduleref (MonoImage *m, int idx)
 	
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, MONO_MODULEREF_SIZE);
 
-	return g_strdup (mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]));
+	return get_escaped_name (mono_metadata_string_heap (m, cols [MONO_MODULEREF_NAME]));
 }
 
 char *
@@ -112,7 +112,7 @@ get_assemblyref (MonoImage *m, int idx)
 	
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_ASSEMBLYREF], idx - 1, cols, MONO_ASSEMBLYREF_SIZE);
 
-	return g_strdup (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+	return get_escaped_name (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
 }
 
 static char *
