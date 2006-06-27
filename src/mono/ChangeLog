@@ -1,3 +1,7 @@
+2006-06-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable --with-tls=__thread on solaris/x86.
+
 2006-06-24  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Always pass CPPFLAGS to libgc configure.
