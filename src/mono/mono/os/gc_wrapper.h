@@ -22,7 +22,8 @@
 	
 #	if defined(HAVE_KW_THREAD) && defined(USE_INCLUDED_LIBGC) && !defined(__powerpc__)
         /* The local alloc stuff is in pthread_support.c, but solaris uses solaris_threads.c */
-#       if !defined(__sparc__)
+        /* It is also disabled on solaris/x86 by libgc/configure.in */
+#       if !defined(__sparc__) && !defined(__sun)
 #		    define GC_REDIRECT_TO_LOCAL
 #       endif
 #	endif
