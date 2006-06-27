@@ -4,14 +4,16 @@ with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
 RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug --security
 
-CSCOMPILE = mcs -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
 PROFILE = net_1_1
 
 EXTRA_DIST = pinvoke1.cs pinvoke2.cs pinvoke3.cs \
 	sucs1.cs sucs2.cs sucs3.cs sucs4.cs \
 	selfassert.cs selfdeny.cs selfpermit.cs
 
-all:	pinvoke1.exe pinvoke2.exe pinvoke3.exe \
+check-local: test
+
+tests:	pinvoke1.exe pinvoke2.exe pinvoke3.exe \
 	sucs1.exe sucs2.exe sucs3.exe sucs4.exe \
 	selfassert.exe selfdeny.exe selfpermit.exe
 
@@ -25,7 +27,7 @@ FULLTRUST_TEST_FILES = pinvoke1 pinvoke2 pinvoke3 \
 
 UNHANDLED_TEST_FILES = 
 
-run: all
+run: tests
 	@for i in $(FULLTRUST_TEST_FILES); do	\
 		$(RUNTIME) $$i.exe;	\
 	done;
@@ -33,7 +35,7 @@ run: all
 		MONO_CAS_ZONE=Internet $(RUNTIME) $$i.exe;	\
 	done;
 
-test: all
+test: tests
 	@failed=0; \
 	passed=0; \
 	for i in $(FULLTRUST_TEST_FILES); do	\

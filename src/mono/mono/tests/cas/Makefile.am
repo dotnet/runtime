@@ -9,9 +9,7 @@ PROFILE = net_1_1
 
 SUBDIRS = assembly linkdemand inheritance demand threads
 
-all:
-
-clean:
+check-local: test
 
 test:
 	@failed=0;	\

@@ -4,10 +4,13 @@ with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
 RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug --security
 
-CSCOMPILE = mcs -debug
 PROFILE = net_1_1
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
+PERMVIEW = $(RUNTIME) $(mcs_topdir)/tools/security/permview.exe
 
-all: all.exe min.exe opt.exe ref.exe none.exe
+check-local: test
+
+tests: all.exe min.exe opt.exe ref.exe none.exe
 
 aot: all.exe.so min.exe.so opt.exe.so ref.exe.so none.exe.so
 
@@ -25,14 +28,14 @@ run: all
 # That's why they aren't removed by "make clean"
 templates: all
 	@for i in $(TEST_FILES); do	\
-		permview /output $$i.$(PROFILE).txt $$i.exe > /dev/null;	\
+		$(PERMVIEW) /output $$i.$(PROFILE).txt $$i.exe > /dev/null;	\
 	done;
 
-test: all
+test: tests
 	@failed=0; \
 	passed=0; \
 	for i in $(TEST_FILES); do	\
-		permview /output $$i.$(PROFILE).tmp $$i.exe > /dev/null;	\
+		$(PERMVIEW) /output $$i.$(PROFILE).tmp $$i.exe > /dev/null;	\
 		cmp -s $$i.$(PROFILE).tmp $$i.$(PROFILE).txt;	\
 		if [ "$$?" = "0" ]; then	\
 			echo -e "$$i\tpass";	\

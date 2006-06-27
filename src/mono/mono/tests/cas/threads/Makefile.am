@@ -4,7 +4,7 @@ with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
 RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug --security
 
-CSCOMPILE = mcs -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
 PROFILE = net_1_1
 
 EXTRA_DIST = thread1.cs thread2.cs thread3.cs \
@@ -13,7 +13,9 @@ EXTRA_DIST = thread1.cs thread2.cs thread3.cs \
 	delegate1.cs delegate2.cs \
 	swf-control1.cs
 
-all:	thread1.exe thread2.exe thread3.exe \
+check-local: test
+
+tests:	thread1.exe thread2.exe thread3.exe \
 	tpool1.exe tpool2.exe delegate1.exe delegate2.exe \
 	timer1.exe timer2.exe
 #	swf-timer3.exe swf-timer4.exe swf-control1.exe
@@ -31,7 +33,7 @@ FULLTRUST_TEST_FILES = thread1 thread2 thread3 \
 
 UNHANDLED_TEST_FILES = 
 
-run: all
+run: tests
 	@for i in $(FULLTRUST_TEST_FILES); do	\
 		$(RUNTIME) $$i.exe x;	\
 	done;
@@ -39,7 +41,7 @@ run: all
 		MONO_CAS_ZONE=Internet $(RUNTIME) $$i.exe;	\
 	done;
 
-test: all
+test: tests
 	@failed=0; \
 	passed=0; \
 	for i in $(FULLTRUST_TEST_FILES); do	\
