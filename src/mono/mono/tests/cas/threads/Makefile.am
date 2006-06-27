@@ -13,8 +13,6 @@ EXTRA_DIST = thread1.cs thread2.cs thread3.cs \
 	delegate1.cs delegate2.cs \
 	swf-control1.cs
 
-check-local: test
-
 tests:	thread1.exe thread2.exe thread3.exe \
 	tpool1.exe tpool2.exe delegate1.exe delegate2.exe \
 	timer1.exe timer2.exe

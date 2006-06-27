@@ -23,8 +23,6 @@ EXTRA_DIST = icall1.cs icall2.cs icall3.cs icall4.cs icall5.cs icall6.cs \
 	refcas1.cs refcas2.cs refcas3.cs refcas4.cs refcas5.cs \
 	noncas1.cs noncas2.cs noncas3.cs noncas4.cs
 
-check-local: test
-
 tests:	icall1.exe icall2.exe icall3.exe icall4.exe icall5.exe icall6.exe \
 	aptc1a.exe aptc1b.exe aptc2a.exe aptc2b.exe aptclib.dll \
 	pinvoke1.exe pinvoke2.exe pinvoke3.exe pinvoke4.exe \

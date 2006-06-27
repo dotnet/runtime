@@ -13,8 +13,6 @@ EXTRA_DIST = notused.cs cas1.cs cas2.cs cas3.cs \
 	reftype1.cs reftype2.cs reftype3.cs reftype4.cs \
 	library1.cs library2.cs cas.snk
 
-check-local: test
-
 tests:	notused.exe cas1a.exe cas2a.exe cas3a.exe \
 	cas1b.exe cas2b.exe cas3b.exe \
 	noncas1.exe noncas2.exe noncas3.exe noncas4.exe \

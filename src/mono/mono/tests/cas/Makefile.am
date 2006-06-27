@@ -9,7 +9,8 @@ PROFILE = net_1_1
 
 SUBDIRS = assembly linkdemand inheritance demand threads
 
-check-local: test
+# Uncomment this for these tests to be for for 'make check'
+#check-local: test
 
 test:
 	@failed=0;	\

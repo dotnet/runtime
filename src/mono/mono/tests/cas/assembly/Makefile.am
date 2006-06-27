@@ -8,8 +8,6 @@ PROFILE = net_1_1
 CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
 PERMVIEW = $(RUNTIME) $(mcs_topdir)/tools/security/permview.exe
 
-check-local: test
-
 tests: all.exe min.exe opt.exe ref.exe none.exe
 
 aot: all.exe.so min.exe.so opt.exe.so ref.exe.so none.exe.so
