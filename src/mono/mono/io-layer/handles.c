@@ -155,6 +155,23 @@ static void handle_cleanup (void)
 			if (_WAPI_SHARED_HANDLE (type)) {
 				gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
 				
+				if (type == WAPI_HANDLE_THREAD) {
+					/* Special-case thread handles
+					 * because they need extra
+					 * cleanup.  This also avoids
+					 * a race condition between
+					 * the application exit and
+					 * the finalizer thread - if
+					 * it finishes up between now
+					 * and actual app termination
+					 * it will find all its handle
+					 * details have been blown
+					 * away, so this sets those
+					 * anyway.
+					 */
+					_wapi_thread_set_termination_details (handle, 0);
+				}
+				
 				for(k = handle_data->ref; k > 0; k--) {
 #ifdef DEBUG
 					g_message ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);

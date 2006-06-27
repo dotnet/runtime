@@ -73,5 +73,7 @@ extern gboolean _wapi_thread_dispatch_apc_queue (gpointer handle);
 extern void _wapi_thread_own_mutex (gpointer mutex);
 extern void _wapi_thread_disown_mutex (gpointer mutex);
 extern gpointer _wapi_thread_handle_from_id (pthread_t tid);
+extern void _wapi_thread_set_termination_details (gpointer handle,
+						  guint32 exitstatus);
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

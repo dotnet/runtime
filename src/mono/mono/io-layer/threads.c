@@ -109,13 +109,20 @@ static void _wapi_thread_abandon_mutexes (gpointer handle)
 	}
 }
 
-static void thread_set_termination_details (gpointer handle,
-					    guint32 exitstatus)
+void _wapi_thread_set_termination_details (gpointer handle,
+					   guint32 exitstatus)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	int thr_ret;
 	
+	if (_wapi_handle_issignalled (handle)) {
+		/* We must have already deliberately finished with
+		 * this thread, so don't do any more now
+		 */
+		return;
+	}
+
 #ifdef DEBUG
 	g_message ("%s: Thread %p terminating", __func__, handle);
 #endif
@@ -163,7 +170,7 @@ void _wapi_thread_signal_self (guint32 exitstatus)
 		return;
 	}
 	
-	thread_set_termination_details (handle, exitstatus);
+	_wapi_thread_set_termination_details (handle, exitstatus);
 }
 
 /* Called by the thread creation code as a thread is finishing up, and
@@ -172,14 +179,7 @@ void _wapi_thread_signal_self (guint32 exitstatus)
 static void thread_exit (guint32 exitstatus, gpointer handle) G_GNUC_NORETURN;
 static void thread_exit (guint32 exitstatus, gpointer handle)
 {
-	if (_wapi_handle_issignalled (handle)) {
-		/* We must have already deliberately finished with
-		 * this thread, so don't do any more now
-		 */
-		pthread_exit (NULL);
-	}
-
-	thread_set_termination_details (handle, exitstatus);
+	_wapi_thread_set_termination_details (handle, exitstatus);
 	
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread
@@ -193,7 +193,7 @@ static void thread_attached_exit (gpointer handle)
 	 * thread is dead
 	 */
 	
-	thread_set_termination_details (handle, 0);
+	_wapi_thread_set_termination_details (handle, 0);
 }
 
 static void thread_hash_init(void)
