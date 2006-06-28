@@ -36,12 +36,17 @@ public class Test {
 		public double x;
 		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public char[] a2;
 	}
+
+	[StructLayout (LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+	public struct ByValWStrStruct {
+		[MarshalAs (UnmanagedType.ByValTStr, SizeConst=4)] public string s1;
+		public int i;
+	}
 	
 	public unsafe static int Main () {
 		SimpleStruct ss = new SimpleStruct ();
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
-		Console.WriteLine ("SimpleStruct:" + size);
 		//if (size != 52)
 		//return 1;
 		
@@ -148,7 +153,32 @@ public class Test {
 
 		if (cp.a2 [1] != 'b')
 			return 30;
-		
+
+		/* ByValTStr with Unicode */
+		ByValWStrStruct s = new ByValWStrStruct ();
+
+		IntPtr p2 = Marshal.AllocHGlobal (Marshal.SizeOf (typeof (ByValWStrStruct)));
+		Marshal.StructureToPtr(s, p2, false);
+
+		/* Check that the ByValWStr is initialized correctly */
+		for (int i = 0; i < 8; ++i)
+			if (Marshal.ReadByte (p2, i) != 0)
+				return 31;
+
+		s.s1 = "ABCD";
+		s.i = 55;
+
+		Marshal.StructureToPtr(s, p2, false);
+
+		ByValWStrStruct s2 = (ByValWStrStruct)Marshal.PtrToStructure (p2, typeof (ByValWStrStruct));
+
+		/* The fourth char is lost because of null-termination */
+		if (s2.s1 != "ABC")
+			return 32;
+
+		if (s2.i != 55)
+			return 33;
+
 		return 0;
 	}
 }
