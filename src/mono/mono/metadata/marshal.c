@@ -704,15 +704,14 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 	g_assert (size > 1);
 
 	if (!src) {
-		memset (dst, 0, size);
+		memset (dst, 0, size * 2);
 		return;
 	}
 
-	len = MIN (size, (mono_string_length (src) * 2));
-	memcpy (dst, mono_string_chars (src), len);
+	len = MIN (size, (mono_string_length (src)));
+	memcpy (dst, mono_string_chars (src), len * 2);
 
-	*((char *)dst + size - 1) = 0;
-	*((char *)dst + size - 2) = 0;
+	*((gunichar2 *)dst + len - 1) = 0;
 }
 
 void
