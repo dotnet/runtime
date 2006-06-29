@@ -4557,11 +4557,12 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
 				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
 				MonoArray *append = mb->types;
-				if (append && mono_array_length (append) > 0) {
+				/* The types array might not be fully filled up */
+				if (append && mb->num_types > 0) {
 					guint32 len1, len2;
 					MonoArray *new;
 					len1 = res ? mono_array_length (res) : 0;
-					len2 = mono_array_length (append);
+					len2 = mb->num_types;
 					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
 					if (res)
 						mono_array_memcpy_refs (new, 0, res, 0, len1);
