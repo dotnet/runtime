@@ -361,9 +361,7 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 		ss->c = 1;
 		ss->d = "TEST2";
 
-		printf ("A1\n");
 		return func (a, ss, b);
-		printf ("A2\n");
 	}
 
 	return 1;
