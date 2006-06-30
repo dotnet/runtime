@@ -202,6 +202,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
+		libmono_ldflags="-lnsl -lsocket"
 		libgc_threads=pthreads
 		# This doesn't seem to work on solaris/x86, but the configure test runs
 		with_nptl=no

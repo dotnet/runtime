@@ -1,3 +1,8 @@
+2006-06-30  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add -lsocket -lnsl to libmono_ldflags on solaris to fix the
+	mkbundle tests.
+
 2006-06-27  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable --with-tls=__thread on solaris/x86.
