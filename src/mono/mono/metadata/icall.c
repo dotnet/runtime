@@ -6079,15 +6079,11 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 
 	result = klass->vtable [method->slot];
 	if (result == NULL) {
-		MonoMethod* m;
-		gpointer iter = NULL;
 		/* It is an abstract method */
-		while ((m = mono_class_get_methods (klass, &iter))) {
-			if (m->slot == method->slot) {
-				result = m;
+		gpointer iter = NULL;
+		while ((result = mono_class_get_methods (klass, &iter)))
+			if (result->slot == method->slot)
 				break;
-			}
-		}
 	}
 
 	if (result == NULL)
