@@ -3850,6 +3850,13 @@ handle_enum:
 		case MONO_TYPE_OBJECT:
 			/* do nothing */
 			break;
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+				/* do nothing */
+				break;
+			}
+
+			/* fall through */
 		case MONO_TYPE_VALUETYPE:
 			if (t->data.klass->enumtype) {
 				type = t->data.klass->enum_basetype->type;
@@ -3863,13 +3870,9 @@ handle_enum:
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
 			} else {
 				mono_mb_emit_byte (mb, CEE_LDOBJ);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
 			}
 			break;
-		case MONO_TYPE_GENERICINST:
-			t = &t->data.generic_class->container_class->byval_arg;
-			type = t->type;
-			goto handle_enum;
 		default:
 			g_assert_not_reached ();
 		}		
