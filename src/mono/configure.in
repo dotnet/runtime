@@ -187,8 +187,8 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		;;
-        *-*-hpux*)
-                platform_win32=no
+	*-*-hpux*)
+        platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
 		CFLAGS="$CFLAGS +ESdbgasm"
 		LDFLAGS="$LDFLAGS -z"
@@ -196,13 +196,12 @@ case "$host" in
 		libmono_ldflags="-lpthread"
 		libgc_threads=pthreads
 		need_link_unlink=yes
-                ;;
+		;;
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
-		libmono_ldflags="-lnsl -lsocket"
 		libgc_threads=pthreads
 		# This doesn't seem to work on solaris/x86, but the configure test runs
 		with_nptl=no
@@ -1566,6 +1565,7 @@ case "$host" in
 		  *)
 			LIBC="libc.so"
 			INTL="libintl.so"
+			libmono_ldflags="$libmono_ldflags $LIBS"
 		esac
 		jit_wanted=true
 		if test x"$GCC" = xyes; then

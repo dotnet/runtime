@@ -1,3 +1,7 @@
+2006-07-01  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add the contents of LIBS to libmono_ldflags instead on solaris.
+
 2006-06-30  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add -lsocket -lnsl to libmono_ldflags on solaris to fix the
