@@ -450,7 +450,11 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 
 	MONO_ARCH_CONTEXT_DEF
 
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
+#endif
 
 	si.skips = skip;
 	si.frame = NULL;
@@ -503,7 +507,7 @@ callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, M
 
 	if (ss->count == ss->maximum)
 		grow_array (ss);
-	
+
 	mono_array_setref (ss->stack, ss->count++, mono_declsec_create_frame (domain, ji));
 
 	/* continue down the stack */
@@ -548,7 +552,11 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 
 	MONO_ARCH_CONTEXT_DEF
 
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
+#endif
 
 	ss.skips = skip;
 	ss.count = 0;
@@ -802,7 +810,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						MONO_CONTEXT_SET_SP (&initial_ctx, (gssize)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
 						g_assert ((gssize)MONO_CONTEXT_GET_SP (&initial_ctx) < (gssize)jit_tls->end_of_stack);
 					}
+#ifdef MONO_CONTEXT_SET_FUNC
+					/* jit_tls->abort_func is a function descriptor on ia64 */
+					MONO_CONTEXT_SET_FUNC (&initial_ctx, (gssize)jit_tls->abort_func);
+#else
 					MONO_CONTEXT_SET_IP (&initial_ctx, (gssize)jit_tls->abort_func);
+#endif
 					restore_context (&initial_ctx);
 				}
 				else

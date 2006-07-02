@@ -149,6 +149,9 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 	g_assert (res == 0); \
 } while (0)
 
+/* This is ia64 only */
+#define MONO_CONTEXT_SET_FUNC(ctx, func) MONO_CONTEXT_SET_IP ((ctx), ((gpointer*)(func))[0])
+
 #define MONO_ARCH_CONTEXT_DEF unw_context_t unw_ctx;
 
 #define MONO_ARCH_USE_SIGACTION 1
