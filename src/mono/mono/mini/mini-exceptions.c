@@ -972,6 +972,8 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
 	return FALSE;
 }
 
+static gboolean handling_sigsegv = FALSE;
+
 /*
  * mono_handle_native_sigsegv:
  *
@@ -986,6 +988,11 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 #endif
 	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
+	if (handling_sigsegv)
+		return;
+
+	/* To prevent infinite loops when the stack walk causes a crash */
+	handling_sigsegv = TRUE;
 
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
