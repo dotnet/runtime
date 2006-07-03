@@ -17,8 +17,7 @@ libs=	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
-	$(libgc_libs)	\
-	$(ICU_LIBS)
+	$(libgc_libs)
 
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
@@ -26,8 +25,7 @@ static_libs=	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
-	$(libgc_static_libs) \
-	$(ICU_LIBS)
+	$(libgc_static_libs)
 
 CLASS1=$(mcs_topdir)/class/lib/default
 CLASS2=$(mcs_topdir)/class/lib/net_2_0
@@ -94,8 +92,7 @@ endif
 mono_LDADD = \
 	$(MONO_LIB)			\
 	$(GLIB_LIBS)		\
-	$(GMODULE_LIBS) -lm	\
-	$(ICU_LIBS)
+	$(GMODULE_LIBS) -lm
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags)
