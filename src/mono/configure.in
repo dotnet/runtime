@@ -1532,6 +1532,8 @@ case "$host" in
 			# foo.c:6: warning: visibility attribute not supported in this configuration; ignored
 			# ld: fatal: relocation error: R_386_GOTOFF: file /var/tmp//ccxYR96k.o: symbol astruct: relocation must bind locally
 			have_visibility_hidden=no
+
+			libmono_ldflags="$libmono_ldflags $LIBS"
 		esac
 		;;
 	x86_64-*-* | amd64-*-*)
