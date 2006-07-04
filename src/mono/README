@@ -140,6 +140,184 @@ This is Mono.
 
 	Failure to follow these steps may result in a broken installation. 
 
+    d. Common Configuration Options
+    -------------------------------
+
+	The following are the configuration options that someone
+	building Mono might want to use:
+	
+
+	--with-gc=[boehm, included, sgen, none]
+
+		Selects the garbage collector engine to use, the
+	  	default is the "included" value.
+	
+		included: 
+			This is the default value, and its
+	  		the most feature complete, it will allow Mono
+		  	to use typed allocations and support the
+		  	debugger.
+
+			It is essentially a slightly modified Boehm GC
+
+		boehm:
+			This is used to use a system-install Boehm GC,
+			it is useful to test new features available in
+			Boehm GC, but we do not recommend that people
+			use this, as it disables a few features.
+
+		sgen:
+			The under-development Generational GC for
+		  	Mono, do not use this in production.
+
+		none:
+			Disables the inclusion of a garbage
+		  	collector.  
+
+	--with-tls=__thread,pthread
+
+		Controls how Mono should access thread local storage,
+	  	pthread forces Mono to use the pthread APIs, while
+	  	__thread uses compiler-optimized access to it.
+
+	  	Although __thread is faster, it requires support from
+	  	the compiler, kernel and libc.   Old Linux systems do
+	  	not support with __thread.
+
+		This value is typically pre-configured and there is no
+	  	need to set it, unless you are trying to debug a
+	  	problem.
+
+	--with-sigaltstack=yes,no
+
+		This controls whether Mono will install a special
+	  	signal handler to handle stack overflows.   If set to
+	  	"yes", it will turn stack overflows into the
+	  	StackOverflowException.  Otherwise when a stack
+	  	overflow happens, your program will receive a
+	  	segmentation fault.
+
+		The configure script will try to detect if your
+	  	operating system supports this.   Some older Linux
+	  	systems do not support this feature, or you might want
+	  	to override the auto-detection.
+
+	--with-static-mono=yes,no
+
+		This controls whether `mono' should link against a
+	  	static library (libmono.a) or a shared library
+	  	(libmono.so). 
+
+		This defaults to yes, and will improve the performance
+	  	of the `mono' program. 
+
+		This only affects the `mono' binary, the shared
+	  	library libmono.so will always be produced for
+	  	developers that want to embed the runtime in their
+	  	application.
+
+	--with-xen-opt=yes,no
+
+		The default value for this is `yes', and it makes Mono
+	  	generate code which might be slightly slower on
+	  	average systems, but the resulting executable will run
+	  	faster under the Xen virtualization system.
+
+	--with-large-heap=yes,no
+
+		Enable support for GC heaps larger than 3GB.
+
+		This value is set to `no' by default.
+
+	--with-ikvm-native=yes,no
+
+		Controls whether the IKVM JNI interface library is
+	  	built or not.  This is used if you are planning on
+	  	using the IKVM Java Virtual machine with Mono.
+
+		This defaults to `yes'.
+
+	--with-preview=yes,no
+
+		Whether you want to build libraries that are still not
+	  	completed (The 2.0 APIs).   It defaults to `yes'.
+
+	--with-libgdiplus=installed,sibling,<path>
+
+		This is used to configure where should Mono look for
+	  	libgdiplus when running the System.Drawing tests.
+
+		It defaults to `installed', which means that the
+	  	library is available to Mono through the regular
+	  	system setup.
+
+		`sibling' can be used to specify that a libgdiplus
+	  	that resides as a sibling of this directory (mono)
+	  	should be used.
+
+		Or you can specify a path to a libgdiplus.
+
+	--enable-minimal=LIST
+
+		Use this feature to specify optional runtime
+	  	components that you might not want to include.  This
+	  	is only useful for developers embedding Mono that
+	  	require a subset of Mono functionality.
+
+		The list is a comma-separated list of components that
+	  	should be removed, these are:
+
+		aot:
+			Disables support for the Ahead of Time
+	  		compilation.
+
+		profiler:
+			Disables support for the default profiler.
+
+	 	decimal:
+			Disables support for System.Decimal.
+
+		pinvoke:
+			Support for Platform Invocation services,
+			disabling this will drop support for any
+			libraries using DllImport.
+
+		debug:
+			Drop debugging support.
+
+		reflection_emit:
+			Drop System.Reflection.Emit support
+
+		large_code:
+			Disables support for large assemblies.
+
+		logging:
+	  		Disables support for debug logging.
+
+		com:
+			Disables COM support.
+
+		ssa:
+			Disables compilation for the SSA optimization
+			framework, and the various SSA-based
+		  	optimizations.
+
+		generics:
+			Generics support.  Disabling this will not
+			allow Mono to run any 2.0 libraries or
+			code that contains generics.
+	  	
+	--disable-dev-random
+
+		Mono uses /dev/random to obtain good random data for
+	  	any source that requires random numbers.   If your
+	  	system does not support this, you might want to
+	  	disable it.
+
+		There are a number of runtime options to control this
+	  	also, see the man page.
+
+
 2. Using Mono
 =============
 
