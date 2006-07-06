@@ -18,6 +18,8 @@
 
 typedef const gunichar2 *LPCTSTR;
 typedef gunichar2 *LPTSTR;
+typedef const char *LPCSTR;
+typedef char *LPSTR;
 typedef guint8 BYTE;
 typedef guint8 *LPBYTE;
 typedef guint16 WORD;
@@ -32,6 +34,8 @@ typedef gint32 *PLONG;
 typedef guint64 LONGLONG;
 typedef gunichar2 TCHAR;
 typedef size_t SIZE_T;
+typedef guint64 ULONG64;
+typedef guint UINT;
 
 typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;

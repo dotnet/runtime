@@ -100,7 +100,7 @@ int WSAStartup(guint32 requested, WapiWSAData *data)
 	startup_count++;
 
 	/* I've no idea what is the minor version of the spec I read */
-	data->wHighVersion = MAKEWORD(2,0);
+	data->wHighVersion = MAKEWORD(2,2);
 	
 	data->wVersion = requested < data->wHighVersion? requested:
 		data->wHighVersion;
@@ -684,7 +684,8 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 
 	if (fd >= _wapi_fd_reserve) {
 #ifdef DEBUG
-		g_message ("%s: File descriptor is too big", __func__);
+		g_message ("%s: File descriptor is too big (%d >= %d)",
+			   __func__, fd, _wapi_fd_offset_table_size);
 #endif
 
 		WSASetLastError (WSASYSCALLFAILURE);

@@ -1210,6 +1210,19 @@ void _wapi_handle_ops_prewait (gpointer handle)
  */
 gboolean CloseHandle(gpointer handle)
 {
+	if (handle == NULL) {
+		/* Problem: because we map file descriptors to the
+		 * same-numbered handle we can't tell the difference
+		 * between a bogus handle and the handle to stdin.
+		 * Assume that it's the console handle if that handle
+		 * exists...
+		 */
+		if (_WAPI_PRIVATE_HANDLES (0).type != WAPI_HANDLE_CONSOLE) {
+			SetLastError (ERROR_INVALID_PARAMETER);
+			return(FALSE);
+		}
+	}
+	
 	_wapi_handle_unref (handle);
 	
 	return(TRUE);

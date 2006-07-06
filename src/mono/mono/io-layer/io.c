@@ -220,23 +220,45 @@ static void io_ops_init (void)
 /* Some utility functions.
  */
 
-static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
+static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
+					      struct stat *buf)
 {
 	guint32 attrs = 0;
-
-	/* FIXME: this could definitely be better */
+	gchar *filename;
+	
+	/* FIXME: this could definitely be better, but there seems to
+	 * be no pattern to the attributes that are set
+	 */
 
 	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
 	if (S_ISSOCK (buf->st_mode))
 		buf->st_mode &= ~S_IFSOCK; /* don't consider socket protection */
 
-	if (S_ISDIR (buf->st_mode))
-		attrs |= FILE_ATTRIBUTE_DIRECTORY;
-	else
-		attrs |= FILE_ATTRIBUTE_ARCHIVE;
+	filename = g_path_get_basename (pathname);
+
+	if (S_ISDIR (buf->st_mode)) {
+		attrs = FILE_ATTRIBUTE_DIRECTORY;
+		if (!(buf->st_mode & S_IWUSR)) {
+			attrs |= FILE_ATTRIBUTE_READONLY;
+		}
+		if (filename[0] == '.') {
+			attrs |= FILE_ATTRIBUTE_HIDDEN;
+		}
+	} else {
+		if (!(buf->st_mode & S_IWUSR)) {
+			attrs = FILE_ATTRIBUTE_READONLY;
+
+			if (filename[0] == '.') {
+				attrs |= FILE_ATTRIBUTE_HIDDEN;
+			}
+		} else if (filename[0] == '.') {
+			attrs = FILE_ATTRIBUTE_HIDDEN;
+		} else {
+			attrs = FILE_ATTRIBUTE_NORMAL;
+		}
+	}
 	
-	if (!(buf->st_mode & S_IWUSR))
-		attrs |= FILE_ATTRIBUTE_READONLY;
+	g_free (filename);
 	
 	return attrs;
 }
@@ -245,6 +267,34 @@ static void
 _wapi_set_last_error_from_errno (void)
 {
 	SetLastError (_wapi_get_win32_file_error (errno));
+}
+
+static void _wapi_set_last_path_error_from_errno (const gchar *dir,
+						  const gchar *path)
+{
+	if (errno == ENOENT) {
+		/* Check the path - if it's a missing directory then
+		 * we need to set PATH_NOT_FOUND not FILE_NOT_FOUND
+		 */
+		gchar *dirname;
+
+
+		if (dir == NULL) {
+			dirname = g_path_get_dirname (path);
+		} else {
+			dirname = g_strdup (dir);
+		}
+		
+		if (access (dirname, F_OK) == 0) {
+			SetLastError (ERROR_FILE_NOT_FOUND);
+		} else {
+			SetLastError (ERROR_PATH_NOT_FOUND);
+		}
+
+		g_free (dirname);
+	} else {
+		_wapi_set_last_error_from_errno ();
+	}
 }
 
 /* Handle ops.
@@ -627,6 +677,11 @@ static gboolean file_setendoffile(gpointer handle)
 		return(FALSE);
 	}
 	
+#ifdef FTRUNCATE_DOESNT_EXTEND
+	/* I haven't bothered to write the configure.in stuff for this
+	 * because I don't know if any platform needs it.  I'm leaving
+	 * this code just in case though
+	 */
 	if(pos>size) {
 		/* Extend the file.  Use write() here, because some
 		 * manuals say that ftruncate() behaviour is undefined
@@ -648,7 +703,20 @@ static gboolean file_setendoffile(gpointer handle)
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
 		}
+
+		/* And put the file position back after the write */
+		ret = lseek (fd, pos, SEEK_SET);
+		if (ret == -1) {
+#ifdef DEBUG
+			g_message ("%s: handle %p second lseek failed: %s",
+				   __func__, handle, strerror(errno));
+#endif
+
+			_wapi_set_last_error_from_errno ();
+			return(FALSE);
+		}
 	}
+#endif
 
 	/* always truncate, because the extend write() adds an extra
 	 * byte to the end of the file
@@ -1496,7 +1564,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		g_message("%s: Error opening file %s: %s", __func__, filename,
 			  strerror(errno));
 #endif
-		_wapi_set_last_error_from_errno ();
+		_wapi_set_last_path_error_from_errno (NULL, filename);
 		g_free (filename);
 
 		return(INVALID_HANDLE_VALUE);
@@ -1570,7 +1638,14 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #ifndef S_ISFIFO
 #define S_ISFIFO(m) ((m & S_IFIFO) != 0)
 #endif
-	handle_type = (S_ISFIFO (statbuf.st_mode)) ? WAPI_HANDLE_PIPE : WAPI_HANDLE_FILE;
+	if (S_ISFIFO (statbuf.st_mode)) {
+		handle_type = WAPI_HANDLE_PIPE;
+	} else if (S_ISCHR (statbuf.st_mode)) {
+		handle_type = WAPI_HANDLE_CONSOLE;
+	} else {
+		handle_type = WAPI_HANDLE_FILE;
+	}
+
 	handle = _wapi_handle_new_fd (handle_type, fd, &file_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating file handle", __func__);
@@ -1600,7 +1675,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 gboolean DeleteFile(const gunichar2 *name)
 {
 	gchar *filename;
-	int ret;
+	int retval;
+	gboolean ret = FALSE;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1621,16 +1697,17 @@ gboolean DeleteFile(const gunichar2 *name)
 		return(FALSE);
 	}
 	
-	ret=unlink(filename);
+	retval = unlink (filename);
 	
-	g_free(filename);
-
-	if(ret==0) {
-		return(TRUE);
+	if (retval == -1) {
+		_wapi_set_last_path_error_from_errno (NULL, filename);
+	} else {
+		ret = TRUE;
 	}
 
-	_wapi_set_last_error_from_errno ();
-	return(FALSE);
+	g_free(filename);
+
+	return(ret);
 }
 
 /**
@@ -1651,6 +1728,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	gchar *utf8_name, *utf8_dest_name;
 	int result;
 	struct stat stat_src, stat_dest;
+	gboolean ret = FALSE;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1705,6 +1783,18 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	}
 
 	result = rename (utf8_name, utf8_dest_name);
+
+	if (result == -1) {
+		switch(errno) {
+		case EEXIST:
+			SetLastError (ERROR_ALREADY_EXISTS);
+			break;
+			
+		default:
+			_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		}
+	}
+	
 	g_free (utf8_name);
 	g_free (utf8_dest_name);
 
@@ -1719,20 +1809,10 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	}
 
 	if (result == 0) {
-		return TRUE;
-	}
-	
-	switch (errno) {
-	case EEXIST:
-		SetLastError (ERROR_ALREADY_EXISTS);
-		break;
-	
-	default:
-		_wapi_set_last_error_from_errno ();
-		break;
+		ret = TRUE;
 	}
 
-	return FALSE;
+	return(ret);
 }
 
 /**
@@ -1803,8 +1883,8 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	
 	src_fd = open (utf8_src, O_RDONLY);
 	if (src_fd < 0) {
-		_wapi_set_last_error_from_errno ();
-
+		_wapi_set_last_path_error_from_errno (NULL, utf8_src);
+		
 		g_free (utf8_src);
 		g_free (utf8_dest);
 		
@@ -1822,7 +1902,8 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	}
 	
 	if (fail_if_exists) {
-		dest_fd = open (utf8_dest, O_WRONLY | O_CREAT, st.st_mode);
+		dest_fd = open (utf8_dest, O_WRONLY | O_CREAT | O_EXCL,
+				st.st_mode);
 	} else {
 		dest_fd = open (utf8_dest, O_WRONLY | O_TRUNC, st.st_mode);
 		if (dest_fd < 0) {
@@ -1831,6 +1912,11 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 			 */
 			dest_fd = open (utf8_dest, O_WRONLY | O_CREAT,
 					st.st_mode);
+		} else {
+			/* Apparently this error is set if we
+			 * overwrite the dest file
+			 */
+			SetLastError (ERROR_ALREADY_EXISTS);
 		}
 	}
 	if (dest_fd < 0) {
@@ -1898,11 +1984,6 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	return(TRUE);
 }
 
-static mono_once_t stdhandle_once=MONO_ONCE_INIT;
-static gpointer stdin_handle=INVALID_HANDLE_VALUE;
-static gpointer stdout_handle=INVALID_HANDLE_VALUE;
-static gpointer stderr_handle=INVALID_HANDLE_VALUE;
-
 static gpointer stdhandle_create (int fd, const gchar *name)
 {
 	struct _WapiHandle_file file_handle = {0};
@@ -1936,6 +2017,14 @@ static gpointer stdhandle_create (int fd, const gchar *name)
 	/* some default security attributes might be needed */
 	file_handle.security_attributes=0;
 	file_handle.fileaccess=convert_from_flags(flags);
+
+	/* Apparently input handles can't be written to.  (I don't
+	 * know if output or error handles can't be read from.)
+	 */
+	if (fd == 0) {
+		file_handle.fileaccess &= ~GENERIC_WRITE;
+	}
+	
 	file_handle.sharemode=0;
 	file_handle.attrs=0;
 
@@ -1953,13 +2042,6 @@ static gpointer stdhandle_create (int fd, const gchar *name)
 	return(handle);
 }
 
-static void stdhandle_init (void)
-{
-	stdin_handle=stdhandle_create (0, "<stdin>");
-	stdout_handle=stdhandle_create (1, "<stdout>");
-	stderr_handle=stdhandle_create (2, "<stderr>");
-}
-
 /**
  * GetStdHandle:
  * @stdhandle: specifies the file descriptor
@@ -1970,24 +2052,30 @@ static void stdhandle_init (void)
  * Return value: the handle, or %INVALID_HANDLE_VALUE on error
  */
 
+static mono_mutex_t stdhandle_mutex = MONO_MUTEX_INITIALIZER;
+
 gpointer GetStdHandle(WapiStdHandle stdhandle)
 {
+	struct _WapiHandle_file *file_handle;
 	gpointer handle;
-	
-	mono_once (&io_ops_once, io_ops_init);
-	mono_once (&stdhandle_once, stdhandle_init);
+	int thr_ret, fd;
+	const gchar *name;
+	gboolean ok;
 	
 	switch(stdhandle) {
 	case STD_INPUT_HANDLE:
-		handle=stdin_handle;
+		fd = 0;
+		name = "<stdin>";
 		break;
 
 	case STD_OUTPUT_HANDLE:
-		handle=stdout_handle;
+		fd = 1;
+		name = "<stdout>";
 		break;
 
 	case STD_ERROR_HANDLE:
-		handle=stderr_handle;
+		fd = 2;
+		name = "<stderr>";
 		break;
 
 	default:
@@ -1999,13 +2087,32 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	if (handle == INVALID_HANDLE_VALUE) {
-		SetLastError (ERROR_NO_MORE_FILES);
-		return(INVALID_HANDLE_VALUE);
+	handle = GINT_TO_POINTER (fd);
+
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&stdhandle_mutex);
+	thr_ret = mono_mutex_lock (&stdhandle_mutex);
+	g_assert (thr_ret == 0);
+
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+				  (gpointer *)&file_handle);
+	if (ok == FALSE) {
+		/* Need to create this console handle */
+		handle = stdhandle_create (fd, name);
+		
+		if (handle == INVALID_HANDLE_VALUE) {
+			SetLastError (ERROR_NO_MORE_FILES);
+			goto done;
+		}
+	} else {
+		/* Add a reference to this handle */
+		_wapi_handle_ref (handle);
 	}
 	
-	/* Add a reference to this handle */
-	_wapi_handle_ref (handle);
+  done:
+	thr_ret = mono_mutex_unlock (&stdhandle_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	return(handle);
 }
@@ -2628,8 +2735,11 @@ mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 		 * have read/x permission */
 		gint errnum = get_errno_from_g_file_error (error->code);
 		g_error_free (error);
-		if (errnum == ENOENT && g_file_test (dirname, G_FILE_TEST_IS_DIR))
+		if (errnum == ENOENT &&
+		    !access (dirname, F_OK) &&
+		    access (dirname, R_OK|X_OK)) {
 			errnum = EACCES;
+		}
 
 		errno = errnum;
 		return -1;
@@ -2728,11 +2838,22 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	find_handle.namelist = NULL;
 	result = mono_io_scandir (dir_part, entry_part, &find_handle.namelist);
 	
+	if (result == 0) {
+		/* No files, which windows seems to call
+		 * FILE_NOT_FOUND
+		 */
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		g_free (utf8_pattern);
+		g_free (entry_part);
+		g_free (dir_part);
+		return (INVALID_HANDLE_VALUE);
+	}
+	
 	if (result < 0) {
 #ifdef DEBUG
 		gint errnum = errno;
 #endif
-		_wapi_set_last_error_from_errno ();
+		_wapi_set_last_path_error_from_errno (dir_part, NULL);
 #ifdef DEBUG
 		g_message ("%s: scandir error: %s", __func__,
 			   g_strerror (errnum));
@@ -2854,7 +2975,7 @@ retry:
 	else
 		create_time = buf.st_ctime;
 	
-	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
+	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf);
 
 	_wapi_time_t_to_filetime (create_time, &find_data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
@@ -2920,6 +3041,11 @@ gboolean FindClose (gpointer handle)
 	gboolean ok;
 	int thr_ret;
 
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
 				(gpointer *)&find_handle);
 	if(ok==FALSE) {
@@ -2961,8 +3087,6 @@ gboolean CreateDirectory (const gunichar2 *name,
 {
 	gchar *utf8_name;
 	int result;
-	struct stat buf;
-	guint32 attrs;
 	
 	if (name == NULL) {
 #ifdef DEBUG
@@ -2990,25 +3114,7 @@ gboolean CreateDirectory (const gunichar2 *name,
 		return TRUE;
 	}
 
-	if (errno == EEXIST) {
-		result = stat (utf8_name, &buf);
-		if (result == -1) {
-			_wapi_set_last_error_from_errno ();
-			g_free (utf8_name);
-			return FALSE;
-		}
-
-		g_free (utf8_name);
-		attrs = _wapi_stat_to_file_attributes (&buf);
-		if ((attrs & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
-			return TRUE;
-
-		errno = EEXIST;
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	_wapi_set_last_error_from_errno ();
+	_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 	g_free (utf8_name);
 	return FALSE;
 }
@@ -3047,13 +3153,15 @@ gboolean RemoveDirectory (const gunichar2 *name)
 	}
 
 	result = rmdir (utf8_name);
+	if (result == -1) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		g_free (utf8_name);
+		
+		return(FALSE);
+	}
 	g_free (utf8_name);
 
-	if (result == 0)
-		return TRUE;
-	
-	_wapi_set_last_error_from_errno ();
-	return FALSE;
+	return(TRUE);
 }
 
 /**
@@ -3069,6 +3177,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 	gchar *utf8_name;
 	struct stat buf;
 	int result;
+	guint32 ret;
 	
 	if (name == NULL) {
 #ifdef DEBUG
@@ -3094,15 +3203,17 @@ guint32 GetFileAttributes (const gunichar2 *name)
 		/* Might be a dangling symlink... */
 		result = lstat (utf8_name, &buf);
 	}
-	
+
 	if (result != 0) {
-		_wapi_set_last_error_from_errno ();
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
 		return (INVALID_FILE_ATTRIBUTES);
 	}
 	
+	ret = _wapi_stat_to_file_attributes (utf8_name, &buf);
 	g_free (utf8_name);
-	return _wapi_stat_to_file_attributes (&buf);
+
+	return(ret);
 }
 
 /**
@@ -3159,10 +3270,9 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		result = lstat (utf8_name, &buf);
 	}
 	
-	g_free (utf8_name);
-
 	if (result != 0) {
-		SetLastError (ERROR_FILE_NOT_FOUND);
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		g_free (utf8_name);
 		return FALSE;
 	}
 
@@ -3175,7 +3285,10 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	else
 		create_time = buf.st_ctime;
 	
-	data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
+	data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_name,
+								&buf);
+
+	g_free (utf8_name);
 
 	_wapi_time_t_to_filetime (create_time, &data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &data->ftLastAccessTime);
@@ -3235,8 +3348,8 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 
 	result = stat (utf8_name, &buf);
 	if (result != 0) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
-		SetLastError (ERROR_FILE_NOT_FOUND);
 		return FALSE;
 	}
 
@@ -3332,6 +3445,11 @@ extern gboolean SetCurrentDirectory (const gunichar2 *path)
 	gchar *utf8_path;
 	gboolean result;
 
+	if (path == NULL) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return(FALSE);
+	}
+	
 	utf8_path = mono_unicode_to_external (path);
 	if (chdir (utf8_path) != 0) {
 		_wapi_set_last_error_from_errno ();
