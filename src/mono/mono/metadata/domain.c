@@ -879,6 +879,9 @@ mono_cleanup (void)
 	mono_images_cleanup ();
 	mono_raw_buffer_cleanup ();
 	mono_metadata_cleanup ();
+
+	TlsFree (appdomain_thread_id);
+	DeleteCriticalSection (&appdomains_mutex);
 }
 
 /**

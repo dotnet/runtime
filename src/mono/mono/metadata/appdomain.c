@@ -206,6 +206,10 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_network_cleanup ();
 
 	mono_marshal_cleanup ();
+
+	mono_type_initialization_cleanup ();
+
+	mono_monitor_cleanup ();
 }
 
 static MonoDomainFunc quit_function = NULL;

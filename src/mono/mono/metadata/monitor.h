@@ -16,6 +16,7 @@
 G_BEGIN_DECLS
 
 void mono_monitor_init (void);
+void mono_monitor_cleanup (void);
 
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, guint32 ms);
 extern void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj);

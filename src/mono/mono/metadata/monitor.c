@@ -84,6 +84,12 @@ mono_monitor_init (void)
 {
 	InitializeCriticalSection (&monitor_mutex);
 }
+ 
+void
+mono_monitor_cleanup (void)
+{
+	DeleteCriticalSection (&monitor_mutex);
+}
 
 /* LOCKING: this is called with monitor_mutex held */
 static void 

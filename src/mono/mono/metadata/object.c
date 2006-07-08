@@ -173,6 +173,13 @@ mono_type_initialization_init (void)
 	InitializeCriticalSection (&ldstr_section);
 }
 
+void
+mono_type_initialization_cleanup (void)
+{
+	DeleteCriticalSection (&type_initialization_section);
+	DeleteCriticalSection (&ldstr_section);
+}
+
 /*
  * mono_runtime_class_init:
  * @vtable: vtable that needs to be initialized

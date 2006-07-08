@@ -852,6 +852,10 @@ void mono_gc_cleanup (void)
 	}
 
 #endif
+
+	DeleteCriticalSection (&handle_section);
+	DeleteCriticalSection (&allocator_section);
+	DeleteCriticalSection (&finalizer_mutex);
 }
 
 #else

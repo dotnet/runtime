@@ -462,6 +462,9 @@ mono_install_init_vtable    (MonoInitVTableFunc func);
 void
 mono_type_initialization_init (void);
 
+void
+mono_type_initialization_cleanup (void);
+
 guint32
 mono_thread_get_tls_key    (void);
 

@@ -1814,6 +1814,8 @@ void mono_thread_cleanup (void)
 	DeleteCriticalSection (&contexts_mutex);
 	CloseHandle (background_change_event);
 #endif
+
+	TlsFree (current_object_key);
 }
 
 void
