@@ -9800,6 +9800,12 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class)
 
 		result = sig;
 		*handle_class = NULL;
+	} else if (strcmp (obj->vtable->klass->name, "DynamicMethod") == 0) {
+		MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)obj;
+		/* Already created by the managed code */
+		g_assert (method->mhandle);
+		result = method->mhandle;
+		*handle_class = mono_defaults.methodhandle_class;
 	} else {
 		g_print (obj->vtable->klass->name);
 		g_assert_not_reached ();
