@@ -922,9 +922,12 @@ mono_setup_altstack (MonoJitTlsData *tls)
 #error "Not implemented"
 #endif
 #endif
+
 #ifndef sun
 	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
 #endif
+
+	pthread_attr_destroy (&attr); 
 
 	g_assert (staddr);
 

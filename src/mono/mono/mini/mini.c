@@ -11164,6 +11164,12 @@ mini_cleanup (MonoDomain *domain)
 	mono_trace_cleanup ();
 
 	mono_counters_dump (-1, stdout);
+
+	TlsFree(mono_jit_tls_id);
+
+	DeleteCriticalSection (&jit_mutex);
+
+	DeleteCriticalSection (&mono_delegate_section);
 }
 
 void
