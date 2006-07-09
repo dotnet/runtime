@@ -1,5 +1,8 @@
 2006-07-09  Zoltan Varga  <vargaz@gmail.com>
 
+	* docs/exception-handling.txt: Update libunwind status since it is not really
+	dead.
+	
 	* docs/exception-handling.txt: Note the changes in the handling of SIGSEGV
 	received while in native code.
 
