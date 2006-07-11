@@ -217,6 +217,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_get_name_recurse (
 			&type->data.array->eklass->byval_arg, str, FALSE, nested_format);
 		g_string_append_c (str, '[');
+		if (rank == 1)
+			g_string_append_c (str, '*');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
 		g_string_append_c (str, ']');
