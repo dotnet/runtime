@@ -466,6 +466,9 @@ noinst_LTLIBRARIES = libtest.la
 INCLUDES = $(GLIB_CFLAGS)
 
 if PLATFORM_WIN32
+# gcc-3.4.4 emits incorrect code when making indirect calls to stdcall functions using a tail call
+# This shows up when compiling mono_test_marshal_delegate ()
+libtest_la_CFLAGS=-fno-optimize-sibling-calls
 # the exported names created by gcc for stdcall functions are missing the leading _, so MS.NET
 # can't find them. So we use --kill-at to remove the @ suffix as well.
 libtest_la_LDFLAGS=-no-undefined -rpath `pwd` -Wl,--kill-at
