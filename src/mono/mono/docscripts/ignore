@@ -194,6 +194,7 @@ mono_profiler_coverage_alloc
 mono_profiler_coverage_free
 mini_method_compile
 mono_destroy_compile
+mono_get_method_constrained
 #
 # Bundles, internal:
 #
