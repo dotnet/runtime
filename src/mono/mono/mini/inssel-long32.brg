@@ -851,7 +851,14 @@ reg: OP_LCONV_TO_OVF_I (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: OP_LCONV_TO_OVF_I4_UN (lreg),
+reg: OP_LCONV_TO_OVF_I4_UN (lreg) {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "OverflowException");
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, 0);
+	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg1);
+}
+
 reg: OP_LCONV_TO_OVF_I4 (lreg) {
 	tree->dreg = state->reg1;
 	tree->sreg1 = state->left->reg1;
