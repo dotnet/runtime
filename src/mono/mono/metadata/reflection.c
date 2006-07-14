@@ -6936,9 +6936,9 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 }
 
 static MonoObject*
-create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guint32 len)
+create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len)
 {
-	const char *p = data;
+	const char *p = (const char*)data;
 	const char *named;
 	guint32 i, j, num_named;
 	MonoObject *attr;
@@ -7028,7 +7028,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 }
 
 static MonoObject*
-create_custom_attr_data (MonoImage *image, MonoMethod *method, const char *data, guint32 len)
+create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len)
 {
 	MonoArray *typedargs, *namedargs;
 	MonoClass *attrklass;
@@ -7036,7 +7036,7 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const char *data,
 	static MonoMethod *ctor;
 	MonoDomain *domain;
 	MonoObject *attr;
-	const char *p = data;
+	const char *p = (const char*)data;
 	const char *named;
 	guint32 i, j, num_named;
 	void *params [3];
@@ -7258,7 +7258,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 			g_error ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
 		ainfo->attrs [i].data_size = mono_metadata_decode_value (data, &data);
-		ainfo->attrs [i].data = data;
+		ainfo->attrs [i].data = (guchar*)data;
 	}
 	g_list_free (list);
 
@@ -9370,6 +9370,8 @@ typebuilder_setup_properties (MonoClass *klass)
 			klass->properties [i].get = pb->get_method->mhandle;
 		if (pb->set_method)
 			klass->properties [i].set = pb->set_method->mhandle;
+
+		mono_save_custom_attrs (klass->image, &klass->properties [i], pb->cattrs);
 	}
 }
 
