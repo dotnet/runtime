@@ -176,7 +176,12 @@ mono_type_initialization_init (void)
 void
 mono_type_initialization_cleanup (void)
 {
+#if 0
+	/* This is causing race conditions with
+	 * mono_release_type_locks
+	 */
 	DeleteCriticalSection (&type_initialization_section);
+#endif
 	DeleteCriticalSection (&ldstr_section);
 }
 
