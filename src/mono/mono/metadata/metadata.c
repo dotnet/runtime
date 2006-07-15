@@ -3431,6 +3431,31 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	return TRUE;
 }
 
+/**
+ * mono_metadata_type_dup_mp:
+ * @image: image type is defined in
+ * @original: type to duplicate
+ *
+ * Returns: copy of type allocated from mempool.
+ */
+MonoType *
+mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original)
+{
+	MonoType *r = NULL;
+	mono_loader_lock ();
+	r = mono_mempool_alloc0 (image->mempool, sizeof(MonoType));
+	mono_loader_unlock ();
+	*r = *original;
+	/* FIXME: we don't handle these yet because they need to duplicate memory
+	 * but the current routines used are not using the mempools
+	 */
+	if (original->type == MONO_TYPE_PTR || 
+		original->type == MONO_TYPE_ARRAY || 
+		original->type == MONO_TYPE_FNPTR)
+		g_assert_not_reached ();
+	return r;
+}
+
 guint
 mono_signature_hash (MonoMethodSignature *sig)
 {

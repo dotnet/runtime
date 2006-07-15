@@ -40,7 +40,9 @@ static const char *wrapper_type_names [] = {
 	"unbox",
 	"ldflda",
 	"write-barrier",
-	"unknown"
+	"unknown",
+	"cominterop-invoke",
+	"cominterop"
 };
 
 static void

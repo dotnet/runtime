@@ -619,6 +619,8 @@ mono_image_init (MonoImage *image)
 	image->managed_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->native_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->remoting_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->cominterop_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->cominterop_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->synchronized_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->unbox_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
@@ -1162,6 +1164,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->runtime_invoke_cache);
 	g_hash_table_destroy (image->synchronized_cache);
 	g_hash_table_destroy (image->unbox_wrapper_cache);
+	g_hash_table_destroy (image->cominterop_invoke_cache);
+	g_hash_table_destroy (image->cominterop_wrapper_cache);
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->ldfld_wrapper_cache);
 	g_hash_table_destroy (image->ldflda_wrapper_cache);

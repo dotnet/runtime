@@ -186,7 +186,20 @@ typedef struct {
 	MonoObject *unwrapped_server;
 	gint32      target_domain_id;
 	MonoString *target_uri;
+	MonoObject *object_identity;
+	MonoObject *obj_TP;
+	MonoObject *stub_data;
 } MonoRealProxy;
+
+typedef struct {
+	MonoRealProxy real_proxy;
+	MonoObject *com_object;
+} MonoComInteropProxy;
+
+typedef struct {
+	MonoMarshalByRefObject object;
+	GHashTable* itf_hash;
+} MonoComObject;
 
 typedef struct {
 	MonoObject	 object;

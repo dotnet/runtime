@@ -2655,6 +2655,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 	}
 
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
+		/* Imported COM Objects always derive from __ComObject. */
+		if (MONO_CLASS_IS_IMPORT (class) && parent == mono_defaults.object_class)
+			parent = mono_defaults.com_object_class;
 		class->parent = parent;
 
 		if (!parent)

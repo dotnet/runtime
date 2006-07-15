@@ -146,6 +146,9 @@ static void
 mono_marshal_set_last_error_windows (int error);
 
 static void
+mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func);
+
+static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
@@ -178,6 +181,162 @@ signature_no_pinvoke (MonoMethod *method)
 	}
 	
 	return sig;
+}
+
+/**
+ * signature_cominterop:
+ * @image: a image
+ * @sig: mamaged method signature
+ *
+ * Returns: the corresponding unmanaged method signature for a managed COM 
+ * method.
+ */
+static MonoMethodSignature*
+signature_cominterop (MonoImage *image, MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res;
+	int sigsize;
+	int i;
+	int param_count = sig->param_count + 1; // convert this arg into IntPtr arg
+
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		param_count++;
+
+	sigsize = sizeof (MonoMethodSignature) + ((param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	mono_loader_lock ();
+	res = mono_mempool_alloc (image->mempool, sigsize);
+	mono_loader_unlock ();
+	memcpy (res, sig, sigsize);
+
+	// now move args forward one
+	for (i = sig->param_count-1; i >= 0; i--)
+		res->params[i+1] = sig->params[i];
+
+	// first arg is interface pointer
+	res->params[0] = &mono_defaults.int_class->byval_arg;
+
+	// last arg is return type
+	if (!MONO_TYPE_IS_VOID (sig->ret)) {
+		res->params[param_count-1] = mono_metadata_type_dup_mp (image, sig->ret);
+		res->params[param_count-1]->byref = 1;
+		res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
+	}
+
+	// no pinvoke
+	res->pinvoke = FALSE;
+
+	// no hasthis
+	res->hasthis = 0;
+
+	// set param_count
+	res->param_count = param_count;
+
+	// return type is always int32 (HRESULT)
+	res->ret = &mono_defaults.int32_class->byval_arg;
+
+	// com is always stdcall
+	res->call_convention = MONO_CALL_STDCALL;
+
+	return res;
+}
+
+/**
+ * cominterop_get_function_pointer:
+ * @itf: a pointer to the COM interface
+ * @slot: the vtable slot of the method pointer to return
+ *
+ * Returns: the unmanaged vtable function pointer from the interface
+ */
+static gpointer
+cominterop_get_function_pointer (gpointer itf, int slot)
+{
+	gpointer func;
+	func = *((*(gpointer**)itf)+slot);
+	return func;
+}
+
+/**
+ * cominterop_get_com_slot_for_method:
+ * @method: a method
+ *
+ * Returns: the method's slot in the COM interface vtable
+ */
+static int
+cominterop_get_com_slot_for_method (MonoMethod* method)
+{
+	static MonoClass *interface_type_attribute = NULL;
+	MonoInterfaceTypeAttribute* itf_attr = NULL; 
+	MonoCustomAttrInfo *cinfo = NULL;
+	guint32 offset = 7; 
+	guint32 slot = method->slot;
+	GPtrArray *ifaces;
+	MonoClass *ic;
+	int i;
+
+	ifaces = mono_class_get_implemented_interfaces (method->klass);
+	if (ifaces) {
+		int offset;
+		for (i = 0; i < ifaces->len; ++i) {
+			ic = g_ptr_array_index (ifaces, i);
+			offset = method->klass->interface_offsets[ic->interface_id];
+			if (method->slot >= offset && method->slot < offset + ic->method.count) {
+				slot -= offset;
+				break;
+			}
+		}
+		g_ptr_array_free (ifaces, TRUE);
+	}
+
+	if (!interface_type_attribute)
+		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
+	cinfo = mono_custom_attrs_from_class (method->klass);
+	if (cinfo) {
+		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr (cinfo, interface_type_attribute);
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+	}
+
+	if (itf_attr && itf_attr->intType == 1)
+		offset = 3; /* 3 methods in IUnknown*/
+	else
+		offset = 7; /* 7 methods in IDispatch*/
+
+	return slot + offset;
+}
+
+/**
+ * cominterop_get_method_interface:
+ * @method: method being called
+ *
+ * Returns: the Type on which the method is defined on
+ */
+static MonoReflectionType*
+cominterop_get_method_interface (MonoMethod* method)
+{
+	GPtrArray *ifaces;
+	MonoClass *ic = method->klass;
+	int i;
+	MonoReflectionType* rt = NULL;
+
+	ifaces = mono_class_get_implemented_interfaces (method->klass);
+	if (ifaces) {
+		int offset;
+		for (i = 0; i < ifaces->len; ++i) {
+			ic = g_ptr_array_index (ifaces, i);
+			offset = method->klass->interface_offsets[ic->interface_id];
+			if (method->slot >= offset && method->slot < offset + ic->method.count)
+				break;
+			ic = NULL;
+		}
+		g_ptr_array_free (ifaces, TRUE);
+	}
+
+	if (ic) {
+		MonoType* t = mono_class_get_type (ic);
+		rt = mono_type_get_object (mono_domain_get(), t);
+	}
+
+	return rt;
 }
 
 void
@@ -235,6 +394,8 @@ mono_marshal_init (void)
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_store, "wb_generic", "void ptr object", FALSE);
+		register_icall (cominterop_get_method_interface, "cominterop_get_method_interface", "object ptr", FALSE);
+		register_icall (cominterop_get_function_pointer, "cominterop_get_function_pointer", "ptr ptr int32", FALSE);
 	}
 }
 
@@ -1115,6 +1276,21 @@ mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_ICALL);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, func));
+}
+
+static void
+mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method)
+{
+	// get function pointer from 1st arg, the COM interface pointer
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_icon (mb, cominterop_get_com_slot_for_method (method));
+	mono_mb_emit_icall (mb, cominterop_get_function_pointer);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_SAVE_LMF);
+	mono_mb_emit_calli (mb, sig);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
 }
 
 static void
@@ -2618,6 +2794,237 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	return res;
 } 
 
+/**
+ * cominterop_get_native_wrapper_adjusted:
+ * @method: managed COM Interop method
+ *
+ * Returns: the generated method to call with signature matching
+ * the unmanaged COM Method signature
+ */
+static MonoMethod *
+cominterop_get_native_wrapper_adjusted (MonoMethod *method)
+{
+	MonoMethod *res;
+	MonoMethodBuilder *mb_native;
+	MonoMarshalSpec **mspecs;
+	MonoMethodSignature *sig, *sig_native;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
+	int i;
+
+	sig = mono_method_signature (method);
+
+	// create unmanaged wrapper
+	mb_native = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	sig_native = signature_cominterop (method->klass->image, sig);
+
+	mspecs = g_new (MonoMarshalSpec*, sig_native->param_count+1);
+	memset (mspecs, 0, sizeof(MonoMarshalSpec*)*(sig_native->param_count+1));
+
+	mono_method_get_marshal_info (method, mspecs);
+
+	// move managed args up one
+	for (i = sig->param_count; i >= 1; i--)
+		mspecs[i+1] = mspecs[i];
+
+	// first arg is IntPtr for interface
+	mspecs[1] = NULL;
+
+	// move return spec to last param
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mspecs[sig_native->param_count] = mspecs[0];
+
+	mspecs[0] = NULL;
+
+	mono_marshal_emit_native_wrapper(mb_native, sig_native, piinfo, mspecs, piinfo->addr);
+
+	mono_loader_lock ();
+	mono_marshal_lock ();
+	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
+	mono_marshal_unlock ();
+	mono_loader_unlock ();
+
+	mono_mb_free (mb_native);
+
+	for (i = sig_native->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+	g_free (mspecs);
+
+	return res;
+}
+
+/**
+ * cominterop_get_native_wrapper:
+ * @method: managed method
+ *
+ * Returns: the generated method to call
+ */
+static MonoMethod *
+cominterop_get_native_wrapper (MonoMethod *method)
+{
+	MonoMethod *res;
+	GHashTable *cache;
+	g_assert (method);
+
+	cache = method->klass->image->cominterop_wrapper_cache;
+	if ((res = mono_marshal_find_in_cache (cache, method)))
+		return res;
+
+	/* if method klass is import, that means method
+	 * is really a com call. let interop system emit it.
+	*/
+	if (MONO_CLASS_IS_IMPORT(method->klass)) {
+		MonoMethodBuilder *mb;
+		MonoMethodSignature *sig, *csig;
+
+		sig = mono_method_signature (method);
+		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
+
+		/* FIXME: we have to call actual class .ctor
+		 * instead of just __ComObject .ctor.
+		 */
+		if (!strcmp(method->name, ".ctor")) {
+			static MonoMethod *ctor = NULL;
+
+			if (!ctor)
+				ctor = mono_class_get_method_from_name (mono_defaults.com_object_class, ".ctor", 0);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_managed_call (mb, ctor, NULL);
+			mono_mb_emit_byte (mb, CEE_RET);
+		}
+		else {
+			static MonoMethod * ThrowExceptionForHR = NULL;
+			static MonoMethod * GetInterface = NULL;
+			MonoMethod *adjusted_method;
+			int hr;
+			int retval;
+			int ptr_this;
+			int i;
+			if (!GetInterface)
+				GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
+
+			// add local variables
+			hr = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+			ptr_this = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			if (!MONO_TYPE_IS_VOID (sig->ret))
+				retval =  mono_mb_add_local (mb, sig->ret);
+
+			// get the type for the interface the method is defined on
+			// and then get the underlying COM interface for that type
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_ptr (mb, method);
+			mono_mb_emit_icall (mb, cominterop_get_method_interface);
+			mono_mb_emit_managed_call (mb, GetInterface, NULL);
+			mono_mb_emit_stloc (mb, ptr_this);
+
+			// arg 1 is unmanaged this pointer
+			mono_mb_emit_ldloc (mb, ptr_this);
+
+			// load args
+			for (i = 1; i <= sig->param_count; i++)
+				mono_mb_emit_ldarg (mb, i);
+
+			// push managed return value as byref last argument
+			if (!MONO_TYPE_IS_VOID (sig->ret))
+				mono_mb_emit_ldloc_addr (mb, retval);
+			
+			adjusted_method = cominterop_get_native_wrapper_adjusted (method);
+			mono_mb_emit_managed_call (mb, adjusted_method, NULL);
+
+			// store HRESULT to check
+			mono_mb_emit_stloc (mb, hr);
+
+			if (!ThrowExceptionForHR)
+				ThrowExceptionForHR = mono_class_get_method_from_name (mono_defaults.marshal_class, "ThrowExceptionForHR", 1);
+			mono_mb_emit_ldloc (mb, hr);
+			mono_mb_emit_managed_call (mb, ThrowExceptionForHR, NULL);
+
+			// load return value managed is expecting
+			if (!MONO_TYPE_IS_VOID (sig->ret))
+				mono_mb_emit_ldloc (mb, retval);
+
+			mono_mb_emit_byte (mb, CEE_RET);
+		}
+		
+		csig = signature_dup (method->klass->image, sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache (cache, method,
+										mb, csig, csig->param_count + 16);
+		mono_mb_free (mb);
+		return res;
+	}
+	/* Does this case ever get hit? */
+	else {
+		g_assert(0);
+		return NULL;
+	}
+}
+
+/**
+ * cominterop_get_invoke:
+ * @method: managed method
+ *
+ * Returns: the generated method that calls the underlying __ComObject
+ * rather than the proxy object.
+ */
+static MonoMethod *
+cominterop_get_invoke (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	int i, temp_obj;
+	GHashTable* cache = method->klass->image->cominterop_invoke_cache;
+
+	g_assert (method);
+
+	if ((res = mono_marshal_find_in_cache (cache, method)))
+		return res;
+
+	sig = signature_no_pinvoke (method);
+
+	/* we cant remote methods without this pointer */
+	if (!sig->hasthis)
+		return method;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP_INVOKE);
+
+	/* get real proxy object, which is a ComInteropProxy in this case*/
+	temp_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+	/* load the RCW from the ComInteropProxy*/
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoComInteropProxy, com_object));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+	/* load args and make the call on the RCW */
+	for (i = 1; i <= sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		MonoMethod * native_wrapper = cominterop_get_native_wrapper(method);
+		mono_mb_emit_managed_call (mb, native_wrapper, NULL);
+	}
+	else {
+		if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
+			mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		else
+			mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	}
+
+	emit_thread_interrupt_checkpoint (mb);
+	
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+
+	return res;
+}
+
 MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method)
 {
@@ -2630,6 +3037,10 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE || method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)
 		return method;
+
+	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
+	if ((MONO_CLASS_IS_IMPORT(method->klass) || method->klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), method->klass)->remote)
+		return cominterop_get_invoke(method);
 
 	sig = signature_no_pinvoke (method);
 
@@ -3471,6 +3882,8 @@ mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTar
 {
 	if (target_type == MONO_REMOTING_TARGET_APPDOMAIN)
 		return mono_marshal_get_xappdomain_invoke (method);
+	else if (target_type == MONO_REMOTING_TARGET_COMINTEROP)
+		return cominterop_get_invoke (method);
 	else
 		return mono_marshal_get_remoting_invoke (method);
 }
@@ -5266,7 +5679,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	int pos, pos2, loc;
 
 	if (mono_class_from_mono_type (t) == mono_defaults.object_class && 
-		(!spec || (spec && spec->native != MONO_NATIVE_STRUCT))) {
+		(!spec || (spec && spec->native != MONO_NATIVE_STRUCT)) &&
+		(!spec || (spec && (spec->native != MONO_NATIVE_IUNKNOWN &&
+			spec->native != MONO_NATIVE_IDISPATCH &&
+			spec->native != MONO_NATIVE_INTERFACE)))) {
 		mono_raise_exception (mono_get_exception_not_implemented ("Marshalling of type object is not implemented"));
 	}
 
@@ -5293,6 +5709,12 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte(mb, CEE_LDIND_REF);
 			mono_mb_emit_ldloc_addr (mb, local_variant);
 			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
+		}
+		else if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
+			spec->native == MONO_NATIVE_IDISPATCH ||
+			spec->native == MONO_NATIVE_INTERFACE)) {
+			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 		}
 		else if (klass->delegate) {
 			g_assert (!t->byref);
@@ -5399,6 +5821,14 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 			mono_mb_emit_managed_call (mb, variant_clear, NULL);
+			break;
+		}
+
+		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
+			spec->native == MONO_NATIVE_IDISPATCH ||
+			spec->native == MONO_NATIVE_INTERFACE)) {
+			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 			break;
 		}
 		if (klass == mono_defaults.stringbuilder_class) {
@@ -5512,6 +5942,11 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
 			mono_mb_emit_stloc (mb, 3);
+		} else if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
+			spec->native == MONO_NATIVE_IDISPATCH ||
+			spec->native == MONO_NATIVE_INTERFACE)) {
+			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 		} else {
 			/* set src */
 			mono_mb_emit_stloc (mb, 0);
@@ -6670,12 +7105,18 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 
+
 	for (i = 0; i < sig->param_count; i++) {
 		emit_marshal (&m, i + sig->hasthis, sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
 	}			
 
 	/* call the native method */
-	mono_mb_emit_native_call (mb, csig, func);
+	if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+		mono_mb_emit_cominterop_call (mb, csig, &piinfo->method);
+	}
+	else {
+		mono_mb_emit_native_call (mb, csig, func);
+	}
 
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
@@ -6814,6 +7255,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	cache = method->klass->image->native_wrapper_cache;
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
+
+	if (MONO_CLASS_IS_IMPORT (method->klass))
+		return cominterop_get_native_wrapper (method);
 
 	sig = mono_method_signature (method);
 
@@ -8242,6 +8686,23 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
 	return mono_string_to_bstr(ptr);
 }
 
+#ifndef _MSC_VER
+typedef struct
+{
+	int (__attribute__((stdcall)) *QueryInterface)(gpointer pUnk, gpointer riid, gpointer* ppv);
+	int (__attribute__((stdcall)) *AddRef)(gpointer pUnk);
+	int (__attribute__((stdcall)) *Release)(gpointer pUnk);
+} MonoIUnknown;
+#else
+typedef struct
+{
+	int (__stdcall *QueryInterface)(gpointer pUnk, gpointer riid, gpointer* ppv);
+	int (__stdcall *AddRef)(gpointer pUnk);
+	int (__stdcall *Release)(gpointer pUnk);
+} MonoIUnknown;
+#endif
+
+
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
 {
@@ -8250,30 +8711,36 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
 	mono_free_bstr (ptr);
 }
 
+int
+ves_icall_System_Runtime_InteropServices_Marshal_AddRef (gpointer pUnk)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return (*(MonoIUnknown**)pUnk)->AddRef(pUnk);
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface (gpointer pUnk, gpointer riid, gpointer* ppv)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return (*(MonoIUnknown**)pUnk)->QueryInterface(pUnk, riid, ppv);
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_Release (gpointer pUnk)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return (*(MonoIUnknown**)pUnk)->Release(pUnk);
+}
+
 guint32
 ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethod *m)
 {
-	static MonoClass *interface_type_attribute = NULL;
-	MonoInterfaceTypeAttribute* itf_attr = NULL; 
-	MonoCustomAttrInfo *cinfo = NULL;
-	guint32 offset = 7; 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!interface_type_attribute)
-		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
-	cinfo = mono_custom_attrs_from_class (m->method->klass);
-	if (cinfo) {
-		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr (cinfo, interface_type_attribute);
-		if (!cinfo->cached)
-			mono_custom_attrs_free (cinfo);
-	}
-
-	if (itf_attr && itf_attr->intType == 1)
-		offset = 3; /* 3 methods in IUnknown*/
-	else
-		offset = 7; /* 7 methods in IDispatch*/
-
-	return m->method->slot + offset;
+	return cominterop_get_com_slot_for_method (m->method);
 }
 
 guint32 
@@ -8591,6 +9058,84 @@ MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
 {
 	return mono_ftnptr_to_delegate (mono_type_get_class (type->type), ftn);
+}
+
+/* Only used for COM RCWs */
+MonoObject *
+ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MonoDomain *domain;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_object_domain (type);
+	klass = mono_class_from_mono_type (type->type);
+
+	/* call mono_object_new_alloc_specific instead of mono_object_new
+	 * because we want to actually create object. mono_object_new checks
+	 * to see if type is import and creates transparent proxy. this method
+	 * is called by the corresponding real proxy to create the real RCW.
+	*/
+	return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
+}
+
+static gboolean    
+cominterop_finalizer (gpointer key, gpointer value, gpointer user_data)
+{
+	ves_icall_System_Runtime_InteropServices_Marshal_Release (value);
+	return TRUE;
+}
+
+void
+ves_icall_System_ComObject_Finalizer(MonoComObject* obj)
+{
+	g_assert(obj);
+	g_assert(obj->itf_hash);
+	g_hash_table_foreach_remove (obj->itf_hash, cominterop_finalizer, NULL);
+}
+
+#define MONO_IUNKNOWN_INTERFACE_SLOT 0
+
+gpointer
+ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType* type)
+{
+	MonoClass* klass;
+	g_assert(obj);
+	g_assert(obj->itf_hash);
+
+	klass = mono_class_from_mono_type (type->type);
+
+	return g_hash_table_lookup (obj->itf_hash, klass->interface_id);
+}
+
+void
+ves_icall_System_ComObject_CacheInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf)
+{
+	MonoClass* klass;
+	g_assert(obj);
+	g_assert(obj->itf_hash);
+
+	klass = mono_class_from_mono_type (type->type);
+
+	g_hash_table_insert (obj->itf_hash, klass->interface_id, pItf);
+}
+
+gpointer
+ves_icall_System_ComObject_GetIUnknown (MonoComObject* obj)
+{
+	g_assert(obj);
+	g_assert(obj->itf_hash);
+	return g_hash_table_lookup (obj->itf_hash, MONO_IUNKNOWN_INTERFACE_SLOT);
+}
+
+void
+ves_icall_System_ComObject_SetIUnknown (MonoComObject* obj, gpointer pUnk)
+{
+	g_assert(obj);
+	g_assert(!obj->itf_hash);
+	obj->itf_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	g_hash_table_insert (obj->itf_hash, MONO_IUNKNOWN_INTERFACE_SLOT, pUnk);
 }
 
 MonoMarshalType *

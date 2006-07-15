@@ -2041,3 +2041,91 @@ mono_test_marshal_variant_out_bstr(VARIANT* variant)
 }
 
 #endif
+
+#ifdef NOT_YET
+
+#ifdef _MSC_VER
+#define COM_STDCALL __stdcall
+#else
+#define COM_STDCALL __attribute__((stdcall))
+#endif
+
+typedef struct MonoComObject MonoComObject;
+
+typedef struct
+{
+	int (COM_STDCALL *QueryInterface)(MonoComObject* pUnk, gpointer riid, gpointer* ppv);
+	int (COM_STDCALL *AddRef)(MonoComObject* pUnk);
+	int (COM_STDCALL *Release)(MonoComObject* pUnk);
+	int (COM_STDCALL *Add)(MonoComObject* pUnk, int a, int b, int* c);
+	int (COM_STDCALL *Subtract)(MonoComObject* pUnk, int a, int b, int* c);
+} MonoIUnknown;
+
+struct MonoComObject
+{
+	MonoIUnknown* vtbl;
+	int m_ref;
+};
+
+int COM_STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
+{
+	*ppv = pUnk;
+	return 0;
+}
+
+int COM_STDCALL MonoAddRef(MonoComObject* pUnk)
+{
+	return ++(pUnk->m_ref);
+}
+
+int COM_STDCALL MonoRelease(MonoComObject* pUnk)
+{
+	return --(pUnk->m_ref);
+}
+
+int COM_STDCALL Add(MonoComObject* pUnk, int a, int b, int* c)
+{
+	*c = a + b;
+	return 0;
+}
+
+int COM_STDCALL Subtract(MonoComObject* pUnk, int a, int b, int* c)
+{
+	*c = a - b;
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_com_object_create(MonoComObject* *pUnk)
+{
+	*pUnk = g_new0 (MonoComObject, 1);
+	(*pUnk)->vtbl = g_new0 (MonoIUnknown, 1);
+
+	(*pUnk)->m_ref = 1;
+	(*pUnk)->vtbl->QueryInterface = MonoQueryInterface;
+	(*pUnk)->vtbl->AddRef = MonoAddRef;
+	(*pUnk)->vtbl->Release = MonoRelease;
+	(*pUnk)->vtbl->Add = Add;
+	(*pUnk)->vtbl->Subtract = Subtract;
+
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_com_object_destroy(MonoComObject *pUnk)
+{
+	int ref = --(pUnk->m_ref);
+	g_free(pUnk->vtbl);
+	g_free(pUnk);
+
+	return ref;
+}
+
+STDCALL int
+mono_test_marshal_com_object_ref_count(MonoComObject *pUnk)
+{
+	return pUnk->m_ref;
+}
+
+#endif //NOT_YET

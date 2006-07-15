@@ -47,7 +47,9 @@ typedef enum {
 	MONO_WRAPPER_UNBOX,
 	MONO_WRAPPER_LDFLDA,
 	MONO_WRAPPER_WRITE_BARRIER,
-	MONO_WRAPPER_UNKNOWN
+	MONO_WRAPPER_UNKNOWN,
+	MONO_WRAPPER_COMINTEROP_INVOKE,
+	MONO_WRAPPER_COMINTEROP
 } MonoWrapperType;
 
 typedef enum {
@@ -59,7 +61,8 @@ typedef enum {
 
 typedef enum {
 	MONO_REMOTING_TARGET_UNKNOWN,
-	MONO_REMOTING_TARGET_APPDOMAIN
+	MONO_REMOTING_TARGET_APPDOMAIN,
+	MONO_REMOTING_TARGET_COMINTEROP
 } MonoRemotingTarget;
 
 struct _MonoMethod {
@@ -692,6 +695,7 @@ typedef struct {
 	MonoClass *generic_array_class;
 	MonoClass *generic_nullable_class;
 	MonoClass *variant_class;
+	MonoClass *com_object_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

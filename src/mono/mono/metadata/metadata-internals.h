@@ -169,6 +169,8 @@ struct _MonoImage {
 	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
+	GHashTable *cominterop_invoke_cache;
+	GHashTable *cominterop_wrapper_cache;
 
 	/*
 	 * indexed by MonoClass pointers
@@ -390,6 +392,9 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
 void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
+
+
+MonoType *mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

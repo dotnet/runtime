@@ -371,6 +371,34 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type);
 
+int
+ves_icall_System_Runtime_InteropServices_Marshal_AddRef (gpointer pUnk);
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface (gpointer pUnk, gpointer riid, gpointer* ppv);
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_Release (gpointer pUnk);
+
+
+MonoObject *
+ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type);
+
+void
+ves_icall_System_ComObject_Finalizer(MonoComObject* obj);
+
+gpointer
+ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType* type);
+
+void
+ves_icall_System_ComObject_CacheInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf);
+
+gpointer
+ves_icall_System_ComObject_GetIUnknown (MonoComObject* obj);
+
+void
+ves_icall_System_ComObject_SetIUnknown (MonoComObject* obj, gpointer pUnk);
+
 G_END_DECLS
 
 #endif /* __MONO_MARSHAL_H__ */

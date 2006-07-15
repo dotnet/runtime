@@ -6992,6 +6992,7 @@ static const IcallEntry gchandle_icalls [] = {
 };
 
 static const IcallEntry marshal_icalls [] = {
+	{"AddRef", ves_icall_System_Runtime_InteropServices_Marshal_AddRef},
 	{"AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem},
 	{"AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal},
 	{"DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure},
@@ -7014,12 +7015,14 @@ static const IcallEntry marshal_icalls [] = {
 	{"PtrToStringUni(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len},
 	{"PtrToStructure(intptr,System.Type)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type},
 	{"PtrToStructure(intptr,object)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure},
+	{"QueryInterface", ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface},
 	{"ReAllocHGlobal", mono_marshal_realloc},
 	{"ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte},
 	{"ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16},
 	{"ReadInt32", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32},
 	{"ReadInt64", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64},
 	{"ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr},
+	{"Release", ves_icall_System_Runtime_InteropServices_Marshal_Release},
 	{"SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf},
 	{"StringToBSTR", ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR},
 	{"StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi},
@@ -7306,6 +7309,15 @@ static const IcallEntry generic_array_icalls [] = {
 	{"GetGenericValueImpl", ves_icall_System_Array_InternalArray_GetGenericValueImpl}
 };
 
+static const IcallEntry comobject_icalls [] = {
+	{"CacheInterface", ves_icall_System_ComObject_CacheInterface},
+	{"CreateRCW", ves_icall_System_ComObject_CreateRCW},
+	{"Finalizer", ves_icall_System_ComObject_Finalizer},
+	{"FindInterface", ves_icall_System_ComObject_FindInterface},
+	{"GetIUnknown", ves_icall_System_ComObject_GetIUnknown},
+	{"SetIUnknown", ves_icall_System_ComObject_SetIUnknown},
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -7406,7 +7418,8 @@ static const IcallMap icall_entries [] = {
 	{"System.Type", type_icalls, G_N_ELEMENTS (type_icalls)},
 	{"System.TypedReference", typedref_icalls, G_N_ELEMENTS (typedref_icalls)},
 	{"System.ValueType", valuetype_icalls, G_N_ELEMENTS (valuetype_icalls)},
-	{"System.Web.Util.ICalls", web_icalls, G_N_ELEMENTS (web_icalls)}
+	{"System.Web.Util.ICalls", web_icalls, G_N_ELEMENTS (web_icalls)},
+	{"System.__ComObject", comobject_icalls, G_N_ELEMENTS (comobject_icalls)}
 };
 
 static GHashTable *icall_hash = NULL;
