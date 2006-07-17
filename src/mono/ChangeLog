@@ -1,3 +1,8 @@
+2006-07-17  Wade Berrier <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: Change rpm requires to >= 1.0.3300.0 instead of
+	=, since we don't explicitly provide 1.0.3300.0 versions.
+
 2006-07-09  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/exception-handling.txt: Update libunwind status since it is not really
