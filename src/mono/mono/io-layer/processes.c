@@ -420,8 +420,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				dir[i] = '/';
 			}
 		}
-	} else {
-		dir = g_get_current_dir ();
 	}
 	
 
@@ -766,7 +764,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 #ifdef DEBUG
 		g_message ("%s: exec()ing [%s] in dir [%s]", __func__, cmd,
-			   dir);
+			   dir==NULL?".":dir);
 		for (i = 0; argv[i] != NULL; i++) {
 			g_message ("arg %d: [%s]", i, argv[i]);
 		}
@@ -777,7 +775,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 
 		/* set cwd */
-		if (chdir (dir) == -1) {
+		if (dir != NULL && chdir (dir) == -1) {
 			/* set error */
 			_exit (-1);
 		}
