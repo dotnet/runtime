@@ -239,6 +239,14 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 	return s;
 }
 
+/* This function is redirected to String.CreateString ()
+   by mono_marshal_get_native_wrapper () */
+void
+ves_icall_System_String_ctor_RedirectToCreateString ()
+{
+	g_assert_not_reached ();
+}
+
 MonoString * 
 ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)
 {

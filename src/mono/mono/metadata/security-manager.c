@@ -259,7 +259,7 @@ ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionM
 {
 	MonoMethod *method = m->method;
 	/* we want the original as the wrapper is "free" of the security informations */
-	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
 		method = mono_marshal_method_from_wrapper (method);
 	}
 

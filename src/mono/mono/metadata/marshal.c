@@ -23,6 +23,7 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/metadata/threads-types.h"
+#include "mono/metadata/string-icalls.h"
 #include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
@@ -7245,6 +7246,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 	gboolean pinvoke = FALSE;
+	gpointer iter;
 	int i;
 	const char *exc_class = "MissingMethodException";
 	const char *exc_arg = NULL;
@@ -7270,6 +7272,49 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		else
 			piinfo->addr = mono_lookup_internal_call (method);
+	}
+
+	/* hack - redirect certain string constructors to CreateString */
+	if (piinfo->addr == ves_icall_System_String_ctor_RedirectToCreateString) {
+		g_assert (!pinvoke);
+		g_assert (method->string_ctor);
+		g_assert (sig->hasthis);
+
+		/* CreateString returns a value */
+		csig = signature_dup (method->klass->image, sig);
+		csig->ret = &mono_defaults.string_class->byval_arg;
+		csig->pinvoke = 0;
+
+		iter = NULL;
+		while ((res = mono_class_get_methods (mono_defaults.string_class, &iter))) {
+			if (!strcmp ("CreateString", res->name) &&
+				mono_metadata_signature_equal (csig, mono_method_signature (res))) {
+
+				g_assert (!(res->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
+				g_assert (!(res->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+				/* create a wrapper to preserve .ctor in stack trace */
+				mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+
+				mono_mb_emit_byte (mb, CEE_LDARG_0);
+				for (i = 1; i <= csig->param_count; i++)
+					mono_mb_emit_ldarg (mb, i);
+				mono_mb_emit_managed_call (mb, res, NULL);
+				mono_mb_emit_byte (mb, CEE_RET);
+
+				/* use native_wrapper_cache because internal calls are looked up there */
+				res = mono_mb_create_and_cache (cache, method,
+					mb, csig, csig->param_count + 1);
+
+				mono_mb_free (mb);
+
+				return res;
+			}
+		}
+
+		/* exception will be thrown */
+		piinfo->addr = NULL;
+		g_warning ("cannot find CreateString for .ctor");
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);

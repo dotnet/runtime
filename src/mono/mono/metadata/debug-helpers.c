@@ -23,6 +23,7 @@ static const char *wrapper_type_names [] = {
 	"runtime-invoke",
 	"native-to-managed",
 	"managed-to-native",
+	"managed-to-managed",
 	"remoting-invoke",
 	"remoting-invoke-with-check",
 	"xdomain-invoke",

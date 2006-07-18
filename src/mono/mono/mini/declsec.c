@@ -19,7 +19,7 @@ mono_method_has_declsec (MonoMethod *method)
 {
 	mono_jit_stats.cas_declsec_check++;
 
-	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
 		method = mono_marshal_method_from_wrapper (method);
 		if (!method)
 			return FALSE;
