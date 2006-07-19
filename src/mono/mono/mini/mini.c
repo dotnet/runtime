@@ -4509,12 +4509,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				ip += 5;
+				ins_flag = 0;
 				break;
 			}
 
 			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) &&
 				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
 				int i;
+
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
@@ -4559,6 +4561,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				ip += 5;
+				ins_flag = 0;
 				break;
 			}
 
@@ -4596,6 +4599,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					bblock = ebblock;
 
 					inline_costs += costs;
+					ins_flag = 0;
 					break;
 				}
 			}
@@ -4634,7 +4638,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ip += 6;
 					else
 						ip += 5;
-
+					ins_flag = 0;
 					break;
 				}
 			}
@@ -4721,6 +4725,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			ip += 5;
+			ins_flag = 0;
 			break;
 		}
 		case CEE_RET:
@@ -8377,6 +8382,36 @@ mono_remove_patch_info (MonoCompile *cfg, int ip)
 		else
 			ji = &((*ji)->next);
 	}
+}
+
+/**
+ * mono_patch_info_dup_mp:
+ *
+ * Make a copy of PATCH_INFO, allocating memory from the mempool MP.
+ */
+MonoJumpInfo*
+mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
+{
+	MonoJumpInfo *res = mono_mempool_alloc (mp, sizeof (MonoJumpInfo));
+	memcpy (res, patch_info, sizeof (MonoJumpInfo));
+
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_DECLSEC:
+		res->data.token = mono_mempool_alloc (mp, sizeof (MonoJumpInfoToken));
+		memcpy (res->data.token, patch_info->data.token, sizeof (MonoJumpInfoToken));
+		break;
+	case MONO_PATCH_INFO_SWITCH:
+		res->data.table = mono_mempool_alloc (mp, sizeof (MonoJumpInfoBBTable));
+		memcpy (res->data.table, patch_info->data.table, sizeof (MonoJumpInfoBBTable));
+		break;
+	default:
+		break;
+	}
+
+	return res;
 }
 
 gpointer

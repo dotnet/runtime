@@ -82,6 +82,7 @@ typedef struct MonoAotCompile {
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
+	MonoMemPool *mempool;
 	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
 	int code_size, info_size, ex_info_size, got_size, class_info_size;
 } MonoAotCompile;
@@ -1126,6 +1127,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 	}
 }
 
+/* FIXME: Move this to mini.c */
+
 static void
 compile_method (MonoAotCompile *acfg, int index)
 {
@@ -1254,6 +1257,34 @@ compile_method (MonoAotCompile *acfg, int index)
 		acfg->wrappercount++;
 		mono_destroy_compile (cfg);
 		return;
+	}
+
+	/* Make a copy of the patch info which is in the mempool */
+	{
+		MonoJumpInfo *patches = NULL, *patches_end = NULL;
+
+		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+			MonoJumpInfo *new_patch_info = mono_patch_info_dup_mp (acfg->mempool, patch_info);
+
+			if (!patches)
+				patches = new_patch_info;
+			else
+				patches_end->next = new_patch_info;
+			patches_end = new_patch_info;
+		}
+		cfg->patch_info = patches;
+	}
+
+	/* Free some fields used by cfg to conserve memory */
+	mono_mempool_destroy (cfg->mempool);
+	cfg->mempool = NULL;
+	g_free (cfg->varinfo);
+	cfg->varinfo = NULL;
+	g_free (cfg->vars);
+	cfg->vars = NULL;
+	if (cfg->rs) {
+		mono_regstate_free (cfg->rs);
+		cfg->rs = NULL;
 	}
 
 	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
@@ -1640,6 +1671,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->image_table = g_ptr_array_new ();
 	acfg->image = image;
 	acfg->opts = opts;
+	acfg->mempool = mono_mempool_new ();
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
