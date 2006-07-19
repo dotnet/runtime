@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /* A typical Alpha stack frame looks like this */
 /*
@@ -39,13 +41,13 @@ fun..ng:		     // called from inside the module.
 //
 // Simple function which returns 10.
 //
-int testfunc()
+static int testfunc(void)
 {
     return 10;
 }
 
 // Write it using the known asm bytecodes.
-char * write_testfunc_1( char * p )
+static unsigned int * write_testfunc_1(unsigned int * p )
 {
 //
 //                               ldah     gp, 0(pv)
@@ -81,7 +83,7 @@ int _func_code[] = {
 }
 
 // The same function encoded with alpha-codegen.h
-char * write_testfunc_2( char * p )
+unsigned int * write_testfunc_2( unsigned int * p )
 {    
     alpha_ldah( p, alpha_gp, alpha_pv, 0 );  // start the gp load
     alpha_lda( p, alpha_sp, alpha_sp, -16 ); // allocate the stack
@@ -118,10 +120,12 @@ void output( char * p, int len )
 	close( fd );
 }
 
+unsigned int code [16000/4];
+
 int main( int argc, char ** argv ) {
-	char code [16000];
-	char *p = code;
-	char * cp;
+//	unsigned int code [16000/4];
+	unsigned int *p = code;
+	unsigned int * cp;
 
 	int (*x)() = 0;
 	int y = 0;

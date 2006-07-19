@@ -111,9 +111,10 @@ call_func..ng:
 /*								    */
 /* 		  void func (void (*callme)(), void *retval, 	    */
 /*			     void *this_obj, stackval *arguments);  */
-static inline guint8 *
-emit_prolog (guint8 *p, const gint SIZE, int hasthis )
+static inline unsigned int *
+emit_prolog (unsigned int *pi, const gint SIZE, int hasthis )
 {
+	unsigned int *p = (unsigned int *)pi;
 	// 9 instructions.
 	alpha_ldah( p, alpha_gp, alpha_pv, 0 );  
 	alpha_lda( p, alpha_gp, alpha_gp, 0 );     // ldgp gp, 0(pv)
@@ -127,9 +128,9 @@ emit_prolog (guint8 *p, const gint SIZE, int hasthis )
 	   alpha_a2: will be moved into alpha_a0... if hasthis is true.
 	*/
 	/* store parameters on stack.*/
-	alpha_stq( p, alpha_ra, alpha_sp, SIZE-24 ); // ra
-	alpha_stq( p, alpha_fp, alpha_sp, SIZE-16 ); // fp
-	alpha_stq( p, alpha_a1, alpha_sp, SIZE-8 );  // retval
+	alpha_stq( p, alpha_ra, alpha_sp, (SIZE-24) ); // ra
+	alpha_stq( p, alpha_fp, alpha_sp, (SIZE-16) ); // fp
+	alpha_stq( p, alpha_a1, alpha_sp, (SIZE-8) );  // retval
 	
 	/* set the frame pointer */
 	alpha_mov1( p, alpha_sp, alpha_fp );
@@ -144,9 +145,11 @@ emit_prolog (guint8 *p, const gint SIZE, int hasthis )
 	return p;
 }
 
-static inline guint8 *
-emit_call( guint8 *p , const gint SIZE )
+static inline unsigned int *
+emit_call( unsigned int *pi , const gint SIZE )
 {
+	unsigned int *p = (unsigned int *)pi;
+
 	// 3 instructions
 	/* call func */
 	alpha_jsr( p, alpha_ra, alpha_pv, 0 );     // jsr ra, 0(pv)
@@ -158,29 +161,32 @@ emit_call( guint8 *p , const gint SIZE )
 	return p;
 }
 
-static inline guint8 *
-emit_store_return_default(guint8 *p, const gint SIZE )
+static inline unsigned int *
+emit_store_return_default(unsigned int *pi, const gint SIZE )
 {
 	// 2 instructions.
+        unsigned int *p = (unsigned int *)pi;
 	
 	/* TODO: This probably do different stuff based on the value.  
 	   you know, like stq/l/w. and s/f.
 	*/
-	alpha_ldq( p, alpha_t0, alpha_fp, SIZE-8 );  // load void * retval
+	alpha_ldq( p, alpha_t0, alpha_fp, (SIZE-8) );  // load void * retval
 	alpha_stq( p, alpha_v0, alpha_t0, 0 );       // store the result to *retval.
 	return p;
 }
 
 
-static inline guint8 *
-emit_epilog (guint8 *p, const gint SIZE )
+static inline unsigned int *
+emit_epilog (unsigned int *pi, const gint SIZE )
 {       
+        unsigned int *p = (unsigned int *)pi;
+
 	// 5 instructions.
 	alpha_mov1( p, alpha_fp, alpha_sp );
 
 	/* restore fp, ra, sp */
-	alpha_ldq( p, alpha_ra, alpha_sp, SIZE-24 ); 
-	alpha_ldq( p, alpha_fp, alpha_sp, SIZE-16 ); 
+	alpha_ldq( p, alpha_ra, alpha_sp, (SIZE-24) ); 
+	alpha_ldq( p, alpha_fp, alpha_sp, (SIZE-16) ); 
 	alpha_lda( p, alpha_sp, alpha_sp, ((SIZE & 8) ? (SIZE+8) : SIZE) ); 
 	
 	/* return */
@@ -215,8 +221,8 @@ static void calculate_size(MonoMethodSignature *sig, int * INSTRUCTIONS, int * S
 MonoPIFunc
 mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
-	unsigned char *p;
-	unsigned char *buffer;
+	unsigned int *p;
+	unsigned int *buffer;
 	MonoType* param;
 
 	int i, pos;
@@ -240,7 +246,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 
 	
 	// allocate.	
-	buffer = p = malloc(BUFFER_SIZE);
+	buffer = p = (unsigned int *)malloc(BUFFER_SIZE);
 	memset( buffer, 0, BUFFER_SIZE );
 	pos = 8 * (sig->param_count - alpharegs - 1);
 	
@@ -264,7 +270,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 			else
 			{
 				// load into register
-				alpha_ldq( p, regbase + i, alpha_t0, ARG_LOC( i ) );
+				alpha_ldq( p, (regbase + i), alpha_t0, ARG_LOC( i ) );
 			}
 		}
 		else
@@ -299,7 +305,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 				else
 				{
 					// load into register
-					alpha_ldl( p, regbase + i, alpha_t0, ARG_LOC(i) );
+					alpha_ldl( p, (regbase + i), alpha_t0, (ARG_LOC(i)) );
 				}
 				break;
 			case MONO_TYPE_I:
@@ -321,7 +327,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 				else
 				{
 					// load into register
-					alpha_ldq( p, regbase + i, alpha_t0, ARG_LOC(i) );
+					alpha_ldq( p, (regbase + i), alpha_t0, ARG_LOC(i) );
 				}
 				break;
 			case MONO_TYPE_R4:

@@ -160,7 +160,6 @@ typedef enum {
 
 #define __alpha_int_32 unsigned int
 
-
 /***************************************/
 #define AXP_OFF26_MASK 0x03ffffff
 #define AXP_OFF21_MASK 0x01fffff
@@ -210,7 +209,7 @@ typedef enum {
 	((func & AXP_OFF7_MASK) << AXP_REGSIZE)
 
 #define alpha_op_literal( lit ) \
-	((lit &  AXP_OFF7_MASK) << AXP_LIT_SHIFT)
+	((lit &  AXP_OFF8_MASK) << AXP_LIT_SHIFT)
 
 #define alpha_mem_br_func( func, hint ) \
     (((func & AXP_OFF2_MASK ) << AXP_MEM_BR_SHIFT ) | (hint&AXP_OFF14_MASK))
@@ -236,48 +235,56 @@ typedef enum {
 
 
 #define alpha_encode_palcall( ins, op, func ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
-		alpha_opcode( op ) | ( func & AXP_OFF26_MASK ))
+	*((__alpha_int_32*)(ins)) = ( 0 |\
+		alpha_opcode( op ) | ( func & AXP_OFF26_MASK )),\
+	((__alpha_int_32*)(ins))++
 
 #define alpha_encode_mem( ins, op, Rdest, Rsrc, offset ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Rdest ) | \
-		alpha_reg_b( Rsrc ) | (offset & AXP_OFF16_MASK ))
+		alpha_reg_b( Rsrc ) | (offset & AXP_OFF16_MASK )),\
+	((__alpha_int_32*)(ins))++
 
 #define alpha_encode_mem_fc( ins, op, func, Rdest, Rsrc, offset ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Rdest ) | \
-		alpha_reg_b( Rsrc ) | alpha_mem_fc_func( func ))
+		alpha_reg_b( Rsrc ) | alpha_mem_fc_func( func )),\
+	*((__alpha_int_32*)(ins))++
 
 #define alpha_encode_mem_br( ins, op, func,  Rdest, Rsrc, hint ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Rdest ) | \
-		alpha_reg_b( Rsrc ) | alpha_mem_br_func( func, hint ) )
+		alpha_reg_b( Rsrc ) | alpha_mem_br_func( func, hint ) ),\
+	((__alpha_int_32*)(ins))++
 
 #define alpha_encode_branch( ins, op, Reg, offset ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Reg ) | \
-		(offset & AXP_OFF21_MASK ))
+		(offset & AXP_OFF21_MASK )),\
+	((__alpha_int_32*)(ins))++
 
 #define alpha_encode_op( ins, op, func, Rsrc1, Rsrc2, Rdest ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Rsrc1 ) | \
 		alpha_reg_b( Rsrc2 ) | alpha_op_func( func ) | \
-		alpha_reg_c( Rdest ))
+		alpha_reg_c( Rdest )),\
+	((__alpha_int_32*)(ins))++
 
 
 #define alpha_encode_opl( ins, op, func, Rsrc, lit, Rdest ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
-		alpha_opcode( op ) | alpha_reg_a( Rsrc1 ) | \
+	*((__alpha_int_32*)(ins)) = ( 0 |\
+		alpha_opcode( op ) | alpha_reg_a( Rsrc ) | \
 		alpha_op_literal(lit) | ( 1 << 12 ) | \
-		alpha_op_func( func ) | alpha_reg_c( Rdest ) )
+		alpha_op_func( func ) | alpha_reg_c( Rdest ) ),\
+	((__alpha_int_32*)(ins))++
 
 
 #define alpha_encode_fpop( ins, op, func, Rsrc1, Rsrc2, Rdest ) \
-	*((__alpha_int_32*)(ins))++ = ( 0 |\
+	*((__alpha_int_32*)(ins)) = ( 0 |\
 		alpha_opcode( op ) | alpha_reg_a( Rsrc1 ) | \
 		alpha_reg_b( Rsrc2 ) | alpha_fp_func( func ) | \
-		alpha_reg_c( Rdest ))
+		alpha_reg_c( Rdest )),\
+	((__alpha_int_32*)(ins))++
 
 
 /***************************************/
@@ -504,13 +511,48 @@ typedef enum {
 #define alpha_extqh( ins,  Rsrc1, Rsrc2, Rdest )   alpha_encode_op( ins, 0x12, 0x7a, Rsrc1, Rsrc2, Rdest )
 #define alpha_extqh_( ins,  Rsrc1, lit, Rdest )    alpha_encode_opl( ins, 0x12, 0x7a, Rsrc1, lit, Rdest )
 
+#define alpha_mull(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_op( ins, 0x13, 0x00, Rsrc1, Rsrc2, Rdest )
+#define alpha_mull_(ins,  Rsrc1, lit, Rdest) alpha_encode_op( ins, 0x13, 0x00, Rsrc1, lit, Rdest )
+#define alpha_mulq(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_op( ins, 0x13, 0x20, Rsrc1, Rsrc2, Rdest )
+#define alpha_mulq_(ins,  Rsrc1, lit, Rdest) alpha_encode_op( ins, 0x13, 0x20, Rsrc1, lit, Rdest )
+
+// For 264 
 #define alpha_ftois( ins, RFsrc, Rdest ) alpha_encode_fpop( ins, 0x1c, 0x078, RFsrc, alpha_zero, Rdest ) 
 #define alpha_ftoit( ins, RFsrc, Rdest ) alpha_encode_fpop( ins, 0x1c, 0x070, RFsrc, alpha_zero, Rdest )
 #define alpha_ftoi_qf( ins, RFsrc, Rdest ) alpha_encode_fpop( ins, 0x1c, 0x070, RFsrc, alpha_zero, Rdest )
-
+// For 264
 #define alpha_itofs( ins, Rsrc, RFdest ) alpha_encode_fpop( ins, 0x14, 0x004, Rsrc, alpha_zero, RFdest ) 
 #define alpha_itoff( ins, Rsrc, RFdest ) alpha_encode_fpop( ins, 0x14, 0x014, Rsrc, alpha_zero, RFdest )
 #define alpha_itoft( ins, Rsrc, RFdest ) alpha_encode_fpop( ins, 0x14, 0x024, Rsrc, alpha_zero, RFdest ) 
 #define alpha_itof_qf( ins, Rsrc, RFdest ) alpha_encode_fpop( ins, 0x14, 0x024, Rsrc, alpha_zero, RFdest ) 
 
+#define alpha_cvtts_c(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x2C, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvttq_c(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x2F, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvtqs_c(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x3C, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvtqt_c(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x3E, alpha_fzero, Rsrc2, Rdest )
+
+
+#define alpha_adds(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x080, Rsrc1, Rsrc2, Rdest )
+#define alpha_subs(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x081, Rsrc1, Rsrc2, Rdest )
+#define alpha_addt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A0, Rsrc1, Rsrc2, Rdest )
+#define alpha_subt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A1, Rsrc1, Rsrc2, Rdest )
+#define alpha_mult(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A2, Rsrc1, Rsrc2, Rdest )
+#define alpha_divt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A3, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmptun(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A4, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmpteq(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A5, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmptlt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A6, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmptle(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A7, Rsrc1, Rsrc2, Rdest )
+
+#define alpha_cvtts(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0AC, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvttq(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0AF, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvtqs(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0BC, alpha_fzero, Rsrc2, Rdest )
+#define alpha_cvtqt(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0BE, alpha_fzero, Rsrc2, Rdest )
+
+
+#define alpha_cpys(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x020, Rsrc1, Rsrc2, Rdest )
+#define alpha_cpysn(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x021, Rsrc1, Rsrc2, Rdest )
+#define alpha_cpyse(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x022, Rsrc1, Rsrc2, Rdest )
+
+
 #endif
+
