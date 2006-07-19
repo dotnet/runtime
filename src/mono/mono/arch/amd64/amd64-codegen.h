@@ -186,6 +186,20 @@ typedef union {
 		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
+#define amd64_mov_mem_reg(inst,mem,reg,size)	\
+	do {	\
+		if ((size) == 2) \
+			*(inst)++ = (unsigned char)0x66; \
+		amd64_emit_rex(inst, (size), (reg), 0, 0); \
+		switch ((size)) {	\
+		case 1: *(inst)++ = (unsigned char)0x88; break;	\
+		case 2: case 4: case 8: *(inst)++ = (unsigned char)0x89; break;	\
+		default: assert (0);	\
+		}	\
+        x86_address_byte ((inst), 0, (reg), 4); \
+        x86_address_byte ((inst), 0, 4, 5); \
+        x86_imm_emit32 ((inst), (mem)); \
+	} while (0)
 
 #define amd64_mov_reg_reg(inst,dreg,reg,size)	\
 	do {	\
@@ -768,7 +782,7 @@ typedef union {
 #define amd64_div_reg(inst,reg,is_signed) amd64_div_reg_size(inst,reg,is_signed,8)
 #define amd64_div_mem(inst,mem,is_signed) amd64_div_mem_size(inst,mem,is_signed,8)
 #define amd64_div_membase(inst,basereg,disp,is_signed) amd64_div_membase_size(inst,basereg,disp,is_signed,8)
-#define amd64_mov_mem_reg(inst,mem,reg,size) amd64_mov_mem_reg_size(inst,mem,reg,size)
+//#define amd64_mov_mem_reg(inst,mem,reg,size) amd64_mov_mem_reg_size(inst,mem,reg,size)
 //#define amd64_mov_regp_reg(inst,regp,reg,size) amd64_mov_regp_reg_size(inst,regp,reg,size)
 //#define amd64_mov_membase_reg(inst,basereg,disp,reg,size) amd64_mov_membase_reg_size(inst,basereg,disp,reg,size)
 #define amd64_mov_memindex_reg(inst,basereg,disp,indexreg,shift,reg,size) amd64_mov_memindex_reg_size(inst,basereg,disp,indexreg,shift,reg,size)
