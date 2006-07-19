@@ -427,7 +427,8 @@ int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
-	int size, align, pad;
+	int size, pad;
+	guint32 align;
 	int offset = 8;
 	CallInfo *cinfo;
 
@@ -451,8 +452,11 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		
 		if (csig->pinvoke)
 			size = mono_type_native_stack_size (csig->params [k], &align);
-		else
-			size = mono_type_stack_size (csig->params [k], &align);
+		else {
+			int ialign;
+			size = mono_type_stack_size (csig->params [k], &ialign);
+			align = ialign;
+		}
 
 		/* ignore alignment for now */
 		align = 1;
@@ -963,8 +967,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			call->out_args = arg;
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
-				gint align;
-				guint32 size;
+				guint32 size, align;
 
 				if (t->type == MONO_TYPE_TYPEDBYREF) {
 					size = sizeof (MonoTypedRef);
@@ -973,8 +976,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				else
 					if (sig->pinvoke)
 						size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
-					else
-						size = mono_type_stack_size (&in->klass->byval_arg, &align);
+					else {
+						int ialign;
+						size = mono_type_stack_size (&in->klass->byval_arg, &ialign);
+						align = ialign;
+					}
 				arg->opcode = OP_OUTARG_VT;
 				arg->klass = in->klass;
 				arg->unused = sig->pinvoke;
