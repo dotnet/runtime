@@ -1,3 +1,10 @@
+2006-07-19  Wade Berrier <wberrier@novell.com>
+
+	* scripts/mono-find-provides.in: Remove support for only scanning files in the gac.
+	The problem is that mono apps are often broken up into subpackages, and deps can only
+	be resolved if the assemblies are in the gac, even when they sometimes shouldn't be.
+	(See https://bugzilla.novell.com/show_bug.cgi?id=144655)
+
 2006-07-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Applied patch from Sergey Tikhonov <tsv@solvo.ru>. Beginning
