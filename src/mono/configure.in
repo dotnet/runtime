@@ -1581,9 +1581,8 @@ case "$host" in
        alpha*-*-linux* | alpha*-*-osf*)
 		TARGET=ALPHA;
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=no
-		INTERP_SUPPORTED=yes
-		interp_wanted=true
+		JIT_SUPPORTED=yes
+		jit_wanted=true
 		arch_target=alpha;
 		case $host_os in
 		  linux*)
