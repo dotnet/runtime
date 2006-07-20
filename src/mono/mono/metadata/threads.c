@@ -325,6 +325,8 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, GetCurrentThreadId ()));
 
+	thread_cleanup (thread);
+
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
 	 * reached if the thread threw an uncaught exception, so those
@@ -334,8 +336,6 @@ static guint32 WINAPI start_wrapper(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
-
-	thread_cleanup (thread);
 
 	return(0);
 }
@@ -457,9 +457,10 @@ mono_thread_detach (MonoThread *thread)
 	g_return_if_fail (thread != NULL);
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
-	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
+
+	SET_CURRENT_OBJECT (NULL);
 
 	/* Don't need to CloseHandle this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
@@ -472,8 +473,8 @@ mono_thread_exit ()
 {
 	MonoThread *thread = mono_thread_current ();
 
-	SET_CURRENT_OBJECT (NULL);
 	thread_cleanup (thread);
+	SET_CURRENT_OBJECT (NULL);
 
 	/* we could add a callback here for embedders to use. */
 	if (thread == mono_thread_get_main ())
