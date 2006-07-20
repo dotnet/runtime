@@ -116,7 +116,8 @@ void _wapi_thread_set_termination_details (gpointer handle,
 	gboolean ok;
 	int thr_ret;
 	
-	if (_wapi_handle_issignalled (handle)) {
+	if (_wapi_handle_issignalled (handle) ||
+	    _wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
 		/* We must have already deliberately finished with
 		 * this thread, so don't do any more now
 		 */
@@ -127,10 +128,10 @@ void _wapi_thread_set_termination_details (gpointer handle,
 	g_message ("%s: Thread %p terminating", __func__, handle);
 #endif
 	
-	_wapi_thread_abandon_mutexes (handle);
-	
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
+	
+	_wapi_thread_abandon_mutexes (handle);
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
