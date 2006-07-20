@@ -813,7 +813,7 @@ gint64
 ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 				 gint32 *error)
 {
-	guint32 offset_hi;
+	gint32 offset_hi;
 
 	MONO_ARCH_SAVE_REGS;
 
