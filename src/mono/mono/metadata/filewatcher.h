@@ -13,6 +13,14 @@
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 G_BEGIN_DECLS
 
 gboolean ves_icall_System_IO_FSW_SupportsFSW (void);
@@ -33,6 +41,10 @@ gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,
 							gint *code,
 							gint *reqnum);
+
+int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void);
+int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask);
+int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor);
 
 G_END_DECLS
 

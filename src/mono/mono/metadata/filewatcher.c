@@ -4,7 +4,7 @@
  * Authors:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2004 Novell, Inc. (http://www.novell.com)
+ * (C) 2004,2005,2006 Novell, Inc. (http://www.novell.com)
  */
 
 #ifdef HAVE_CONFIG_H
@@ -92,6 +92,7 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 {
 	return FALSE;
 }
+
 #else
 
 static int (*FAMNextEvent) (gpointer, gpointer);
@@ -105,8 +106,15 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	GModule *fam_module;
 	gchar *filename;
 	int lib_used = 4; /* gamin */
+	int inotify_instance;
 
 	MONO_ARCH_SAVE_REGS;
+
+	inotify_instance = ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ();
+	if (inotify_instance != -1) {
+		close (inotify_instance);
+		return 5; /* inotify */
+	}
 
 	filename = g_module_build_path (NULL, "libgamin-1.so.0");
 	fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
@@ -185,6 +193,56 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 
 	return FALSE;
 }
+#endif
 
+#if !defined(__linux__) || !defined(__NR_inotify_init)
+int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
+{
+	return -1;
+}
+
+int ves_icall_System_IO_InotifyWatcher_AddDirectoryWatch (int fd, MonoString *directory, gint32 mask)
+{
+	return -1;
+}
+
+int ves_icall_System_IO_InotifyWatcher_RemoveDirectoryWatch (int fd, int watch_descriptor)
+{
+	return -1;
+}
+#else
+#include <errno.h>
+
+int
+ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
+{
+	return syscall (__NR_inotify_init);
+}
+
+int
+ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
+{
+	char *str;
+	int retval;
+	int error;
+
+	if (name == NULL)
+		return -1;
+
+	str = mono_string_to_utf8 (name);
+	retval = syscall (__NR_inotify_add_watch, fd, str, mask);
+	if (retval < 0)
+		error = errno;
+	g_free (str);
+	if (retval < 0)
+		errno = error;
+	return retval;
+}
+
+int
+ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
+{
+	return syscall (__NR_inotify_rm_watch, fd, watch_descriptor);
+}
 #endif
 

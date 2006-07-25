@@ -6645,6 +6645,12 @@ static const IcallEntry famwatcher_icalls [] = {
 	{"InternalFAMNextEvent", ves_icall_System_IO_FAMW_InternalFAMNextEvent}
 };
 
+static const IcallEntry inotifywatcher_icalls [] = {
+	{"AddWatch", ves_icall_System_IO_InotifyWatcher_AddWatch},
+	{"GetInotifyInstance", ves_icall_System_IO_InotifyWatcher_GetInotifyInstance},
+	{"RemoveWatch", ves_icall_System_IO_InotifyWatcher_RemoveWatch}
+};
+
 static const IcallEntry filewatcher_icalls [] = {
 	{"InternalCloseDirectory", ves_icall_System_IO_FSW_CloseDirectory},
 	{"InternalOpenDirectory", ves_icall_System_IO_FSW_OpenDirectory},
@@ -7356,6 +7362,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Globalization.RegionInfo", regioninfo_icalls, G_N_ELEMENTS (regioninfo_icalls)},
 	{"System.IO.FAMWatcher", famwatcher_icalls, G_N_ELEMENTS (famwatcher_icalls)},
 	{"System.IO.FileSystemWatcher", filewatcher_icalls, G_N_ELEMENTS (filewatcher_icalls)},
+	{"System.IO.InotifyWatcher", inotifywatcher_icalls, G_N_ELEMENTS (inotifywatcher_icalls)},
 	{"System.IO.MonoIO", monoio_icalls, G_N_ELEMENTS (monoio_icalls)},
 	{"System.IO.Path", path_icalls, G_N_ELEMENTS (path_icalls)},
 	{"System.Math", math_icalls, G_N_ELEMENTS (math_icalls)},
