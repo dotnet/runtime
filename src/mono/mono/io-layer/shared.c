@@ -43,6 +43,9 @@ static gchar *_wapi_shm_file (_wapi_shm_t type)
 	if (ret == -1) {
 		ubuf.machine[0] = '\0';
 		ubuf.sysname[0] = '\0';
+	} else {
+		g_strdelimit (ubuf.sysname, "/", '_');
+		g_strdelimit (ubuf.machine, "/", '_');
 	}
 
 	fake_name = g_getenv ("MONO_SHARED_HOSTNAME");
