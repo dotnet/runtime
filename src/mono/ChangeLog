@@ -1,3 +1,8 @@
+2006-07-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: add check for sys/syscall.h. Remove aio_* detection as
+	it has not been used for a while now.
+
 2006-07-19  Wade Berrier <wberrier@novell.com>
 
 	* scripts/mono-find-provides.in: Remove support for only scanning files in the gac.
