@@ -201,12 +201,12 @@ int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 	return -1;
 }
 
-int ves_icall_System_IO_InotifyWatcher_AddDirectoryWatch (int fd, MonoString *directory, gint32 mask)
+int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask)
 {
 	return -1;
 }
 
-int ves_icall_System_IO_InotifyWatcher_RemoveDirectoryWatch (int fd, int watch_descriptor)
+int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, int watch_descriptor)
 {
 	return -1;
 }
