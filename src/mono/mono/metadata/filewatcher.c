@@ -195,6 +195,30 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 }
 #endif
 
+#ifdef __linux__ && defined(HAVE_SYS_SYSCALL_H) && !defined(__NR_inotify_init)
+#  if defined(__i386__)
+#     define __NR_inotify_init		291
+#  elif defined(__x86_64__)
+#     define __NR_inotify_init		253
+#  elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
+#     define __NR_inotify_init		275
+#  elif defined (__s390__) || defined (__s390x__)
+#     define __NR_inotify_init		284
+#  elif defined(__sparc__) || defined (__sparc64__)
+#     define __NR_inotify_init		151
+#  elif defined (__ia64__)
+#     define __NR_inotify_init		1277
+#  elif defined (__arm__)
+#     define __NR_inotify_init		316
+#  elif defined(__alpha__)
+#     define __NR_inotify_init		444
+#  endif
+#ifdef __NR_inotify_init
+#  define __NR_inotify_add_watch (__NR_inotify_init + 1)
+#  define __NR_inotify_rm_watch (__NR_inotify_init + 2)
+#endif
+#endif
+
 #if !defined(__linux__) || !defined(__NR_inotify_init)
 int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 {
