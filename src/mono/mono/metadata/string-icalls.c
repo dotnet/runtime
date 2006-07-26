@@ -242,7 +242,7 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 /* This function is redirected to String.CreateString ()
    by mono_marshal_get_native_wrapper () */
 void
-ves_icall_System_String_ctor_RedirectToCreateString ()
+ves_icall_System_String_ctor_RedirectToCreateString (void)
 {
 	g_assert_not_reached ();
 }
