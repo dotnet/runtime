@@ -9,19 +9,22 @@ G_BEGIN_DECLS
 typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
 
 MonoMethod *
-mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
+mono_get_method             (MonoImage *image, guint32 token, MonoClass *klass);
 
 MonoMethod *
-mono_get_method_full       (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context);
+mono_get_method_full        (MonoImage *image, guint32 token, MonoClass *klass,
+			     MonoGenericContext *context);
 
 MonoMethod *
-mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context);
+mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
+			     MonoGenericContext *context, MonoMethod **cil_method);
 
 void               
 mono_free_method           (MonoMethod *method);
 
 MonoMethodSignature*
-mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context);
+mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token,
+				MonoGenericContext *context);
 
 MonoMethodSignature* 
 mono_method_get_signature  (MonoMethod *method, MonoImage *image, guint32 token);

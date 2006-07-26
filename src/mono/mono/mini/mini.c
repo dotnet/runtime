@@ -4377,18 +4377,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				n = fsig->param_count + fsig->hasthis;
 			} else {
+				MonoMethod *cil_method;
+				
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
+					cil_method = cmethod;
 				} else if (constrained_call) {
-					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context);
+					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
 					cmethod = mono_get_inflated_method (cmethod);
 				} else {
 					cmethod = mini_get_method (method, token, NULL, generic_context);
+					cil_method = cmethod;
 				}
 
 				if (!cmethod)
 					goto load_error;
-				if (!dont_verify && !can_access_method (method, cmethod))
+				if (!dont_verify && !can_access_method (method, cil_method))
 					UNVERIFIED;
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))

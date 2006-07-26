@@ -890,7 +890,12 @@ mono_cleanup (void)
 /**
  * mono_get_root_domain:
  *
- * Returns: the root appdomain.
+ * The root AppDomain is the initial domain created by the runtime when it is
+ * initialized.  Programs execute on this AppDomain, but can create new ones
+ * later.   Currently there is no unmanaged API to create new AppDomains, this
+ * must be done from managed code.
+ *
+ * Returns: the root appdomain, to obtain the current domain, use mono_domain_get ()
  */
 MonoDomain*
 mono_get_root_domain (void)
@@ -901,7 +906,8 @@ mono_get_root_domain (void)
 /**
  * mono_domain_get:
  *
- * Returns: the current domain.
+ * Returns: the current domain, to obtain the root domain use
+ * mono_get_root_domain().
  */
 MonoDomain *
 mono_domain_get ()

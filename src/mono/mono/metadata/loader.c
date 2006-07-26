@@ -33,6 +33,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/profiler.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/exception.h>
 
@@ -1408,10 +1409,14 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
  * mono_get_method_constrained:
  *
  * This is used when JITing the `constrained.' opcode.
+ *
+ * This returns two values: the contrained method, which has been inflated
+ * as the function return value;   And the original CIL-stream method as
+ * declared in cil_method.  The later is used for verification.
  */
 MonoMethod *
 mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
-			     MonoGenericContext *context)
+			     MonoGenericContext *context, MonoMethod **cil_method)
 {
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
@@ -1420,14 +1425,14 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 
 	mono_loader_lock ();
 
-	method = mono_get_method_from_token (image, token, NULL, context);
-	if (!method) {
+	*cil_method = mono_get_method_from_token (image, token, NULL, context);
+	if (!cil_method) {
 		mono_loader_unlock ();
 		return NULL;
 	}
 
 	mono_class_init (constrained_class);
-	method = mono_get_inflated_method (method);
+	method = mono_get_inflated_method (*cil_method);
 	sig = mono_method_signature (method);
 
 	if (method->is_inflated && sig->generic_param_count) {
@@ -1462,6 +1467,9 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 void
 mono_free_method  (MonoMethod *method)
 {
+	if (mono_profiler_get_events () != MONO_PROFILE_NONE)
+		return;
+	
 	if (method->signature) {
 		/* 
 		 * FIXME: This causes crashes because the types inside signatures and
