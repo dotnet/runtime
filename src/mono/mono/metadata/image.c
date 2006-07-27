@@ -482,7 +482,7 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 static void
 load_modules (MonoImage *image, MonoImageOpenStatus *status)
 {
-	MonoTableInfo *t;
+	MonoTableInfo *t, *implmap;
 	int i;
 	char *base_dir;
 	gboolean refonly = image->ref_only;
@@ -490,15 +490,34 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	if (image->modules)
 		return;
 
+	implmap = &image->tables [MONO_TABLE_IMPLMAP];
 	t = &image->tables [MONO_TABLE_MODULEREF];
 	image->modules = g_new0 (MonoImage *, t->rows);
 	image->module_count = t->rows;
+
+	/* Flag all the modules that should not be loaded because they are merely p/invokes */
+	for (i = 1; i < implmap->rows; i++){
+		guint32 cols [MONO_IMPLMAP_SIZE];
+		int invalidate;
+		
+		mono_metadata_decode_row (implmap, i-1, cols, MONO_IMPLMAP_SIZE);
+		invalidate = cols [MONO_IMPLMAP_SCOPE];
+		if (invalidate >= 0 && invalidate < t->rows)
+			image->modules [invalidate] = (gpointer) -1;
+	}
+	
 	base_dir = g_path_get_dirname (image->name);
 	for (i = 0; i < t->rows; i++){
 		char *module_ref;
 		const char *name;
 		guint32 cols [MONO_MODULEREF_SIZE];
 
+		if (image->modules [i] == (gpointer) -1){
+			/* If it was invalidated, skip the loading, and set the pointer to NULL */
+			image->modules [i] = NULL;
+			continue;
+		}
+		
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		module_ref = g_build_filename (base_dir, name, NULL);
@@ -794,7 +813,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 					0, MONO_MODULE_NAME));
 
 	load_modules (image, status);
-
 done:
 	if (status)
 		*status = MONO_IMAGE_OK;
