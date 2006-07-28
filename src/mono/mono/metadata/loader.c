@@ -7,6 +7,7 @@
  *   Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc.
+ * Copyright (C) 2002-2006 Novell, Inc.
  *
  * This file is used by the interpreter and the JIT engine to locate
  * assemblies.  Used to load AssemblyRef and later to resolve various
@@ -64,7 +65,7 @@ mono_loader_cleanup (void)
 {
 	TlsFree (loader_error_thread_id);
 
-	DeleteCriticalSection (&loader_mutex);
+	/*DeleteCriticalSection (&loader_mutex);*/
 }
 
 /*
