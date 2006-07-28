@@ -483,12 +483,23 @@ static void
 load_modules (MonoImage *image, MonoImageOpenStatus *status)
 {
 	MonoTableInfo *t;
+	MonoTableInfo *file_table;
 	int i;
 	char *base_dir;
 	gboolean refonly = image->ref_only;
+	GList *list_iter, *valid_modules = NULL;
 
 	if (image->modules)
 		return;
+
+	file_table = &image->tables [MONO_TABLE_FILE];
+	for (i = 0; i < file_table->rows; i++) {
+		guint32 cols [MONO_FILE_SIZE];
+		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
+		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
+			continue;
+		valid_modules = g_list_prepend (valid_modules, mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
+	}
 
 	t = &image->tables [MONO_TABLE_MODULEREF];
 	image->modules = g_new0 (MonoImage *, t->rows);
@@ -498,9 +509,19 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		char *module_ref;
 		const char *name;
 		guint32 cols [MONO_MODULEREF_SIZE];
+		int valid = 0;
 
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
+		for (list_iter = valid_modules; list_iter; list_iter = list_iter->next) {
+			/* be safe with string dups, but we could just compare string indexes  */
+			if (strcmp (list_iter->data, name) == 0) {
+				valid = TRUE;
+				break;
+			}
+		}
+		if (!valid)
+			continue;
 		module_ref = g_build_filename (base_dir, name, NULL);
 		image->modules [i] = mono_image_open_full (module_ref, status, refonly);
 		if (image->modules [i]) {
@@ -508,8 +529,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 			/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
 		}
 		/* 
-		 * FIXME: what do we do here? it could be a native dll...
-		 * We should probably do lazy-loading of modules.
+		 * FIXME: We should probably do lazy-loading of modules.
 		 */
 		if (status)
 			*status = MONO_IMAGE_OK;
@@ -517,6 +537,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	}
 
 	g_free (base_dir);
+	g_list_free (valid_modules);
 }
 
 static void
