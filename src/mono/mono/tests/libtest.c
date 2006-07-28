@@ -2040,10 +2040,6 @@ mono_test_marshal_variant_out_bstr(VARIANT* variant)
 	return 0;
 }
 
-#endif
-
-#ifdef NOT_YET
-
 #ifdef _MSC_VER
 #define COM_STDCALL __stdcall
 #else
@@ -2059,6 +2055,8 @@ typedef struct
 	int (COM_STDCALL *Release)(MonoComObject* pUnk);
 	int (COM_STDCALL *Add)(MonoComObject* pUnk, int a, int b, int* c);
 	int (COM_STDCALL *Subtract)(MonoComObject* pUnk, int a, int b, int* c);
+	int (COM_STDCALL *Same)(MonoComObject* pUnk, MonoComObject* *pOut);
+	int (COM_STDCALL *Different)(MonoComObject* pUnk, MonoComObject* *pOut);
 } MonoIUnknown;
 
 struct MonoComObject
@@ -2095,19 +2093,42 @@ int COM_STDCALL Subtract(MonoComObject* pUnk, int a, int b, int* c)
 	return 0;
 }
 
+static void create_com_object (MonoComObject** pOut);
+static MonoComObject* same_com_object = NULL;
+
+int COM_STDCALL Same(MonoComObject* pUnk, MonoComObject** pOut)
+{
+	if (!same_com_object)
+		create_com_object (&same_com_object);
+	*pOut = same_com_object;
+	return 0;
+}
+
+int COM_STDCALL Different(MonoComObject* pUnk, MonoComObject** pOut)
+{
+	create_com_object (pOut);
+	return 0;
+}
+
+static void create_com_object (MonoComObject** pOut)
+{
+	*pOut = g_new0 (MonoComObject, 1);
+	(*pOut)->vtbl = g_new0 (MonoIUnknown, 1);
+
+	(*pOut)->m_ref = 1;
+	(*pOut)->vtbl->QueryInterface = MonoQueryInterface;
+	(*pOut)->vtbl->AddRef = MonoAddRef;
+	(*pOut)->vtbl->Release = MonoRelease;
+	(*pOut)->vtbl->Add = Add;
+	(*pOut)->vtbl->Subtract = Subtract;
+	(*pOut)->vtbl->Same = Same;
+	(*pOut)->vtbl->Different = Different;
+}
+
 STDCALL int
 mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 {
-	*pUnk = g_new0 (MonoComObject, 1);
-	(*pUnk)->vtbl = g_new0 (MonoIUnknown, 1);
-
-	(*pUnk)->m_ref = 1;
-	(*pUnk)->vtbl->QueryInterface = MonoQueryInterface;
-	(*pUnk)->vtbl->AddRef = MonoAddRef;
-	(*pUnk)->vtbl->Release = MonoRelease;
-	(*pUnk)->vtbl->Add = Add;
-	(*pUnk)->vtbl->Subtract = Subtract;
-
+	create_com_object (pUnk);
 
 	return 0;
 }

@@ -2865,22 +2865,22 @@ cominterop_get_native_wrapper (MonoMethod *method)
 {
 	MonoMethod *res;
 	GHashTable *cache;
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig, *csig;
+
 	g_assert (method);
 
 	cache = method->klass->image->cominterop_wrapper_cache;
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
+	sig = mono_method_signature (method);
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
+
 	/* if method klass is import, that means method
 	 * is really a com call. let interop system emit it.
 	*/
 	if (MONO_CLASS_IS_IMPORT(method->klass)) {
-		MonoMethodBuilder *mb;
-		MonoMethodSignature *sig, *csig;
-
-		sig = mono_method_signature (method);
-		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
-
 		/* FIXME: we have to call actual class .ctor
 		 * instead of just __ComObject .ctor.
 		 */
@@ -2947,18 +2947,20 @@ cominterop_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_byte (mb, CEE_RET);
 		}
 		
-		csig = signature_dup (method->klass->image, sig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache (cache, method,
-										mb, csig, csig->param_count + 16);
-		mono_mb_free (mb);
-		return res;
+		
 	}
 	/* Does this case ever get hit? */
 	else {
-		g_assert(0);
-		return NULL;
+		char *msg = g_strdup ("non imported interfaces on \
+			imported classes is not yet implemented.");
+		mono_mb_emit_exception (mb, "NotSupportedException", msg);
 	}
+	csig = signature_dup (method->klass->image, sig);
+	csig->pinvoke = 0;
+	res = mono_mb_create_and_cache (cache, method,
+									mb, csig, csig->param_count + 16);
+	mono_mb_free (mb);
+	return res;
 }
 
 /**
@@ -5714,8 +5716,39 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		else if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
 			spec->native == MONO_NATIVE_IDISPATCH ||
 			spec->native == MONO_NATIVE_INTERFACE)) {
-			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
-			mono_mb_emit_exception_marshal_directive (mb, msg);
+			mono_mb_emit_ptr (mb, 0);
+			mono_mb_emit_stloc (mb, conv_arg);
+
+			if (t->byref) {
+				/* we dont need any conversions for out parameters */
+				if (t->attrs & PARAM_ATTRIBUTE_OUT)
+					break;
+				else {
+					char *msg = g_strdup_printf ("non out object references are no implemented");
+					MonoException *exc = mono_get_exception_not_implemented (msg);
+					g_warning (msg);
+					g_free (msg);
+					mono_raise_exception (exc);
+
+				}
+			} else {
+				static MonoMethod* GetInterface = NULL;
+				
+				if (!GetInterface)
+					GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+				/* load the RCW from the ComInteropProxy*/
+				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoComInteropProxy, com_object));
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+				mono_mb_emit_ptr (mb, t);
+				mono_mb_emit_icall (mb, type_from_handle);
+				mono_mb_emit_managed_call (mb, GetInterface, NULL);
+				mono_mb_emit_stloc (mb, conv_arg);
+			}
 		}
 		else if (klass->delegate) {
 			g_assert (!t->byref);
@@ -5828,9 +5861,34 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
 			spec->native == MONO_NATIVE_IDISPATCH ||
 			spec->native == MONO_NATIVE_INTERFACE)) {
-			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
-			mono_mb_emit_exception_marshal_directive (mb, msg);
-			break;
+			if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+				static MonoClass* com_interop_proxy_class = NULL;
+				static MonoMethod* com_interop_proxy_get_proxy = NULL;
+				static MonoMethod* get_transparent_proxy = NULL;
+				int real_proxy;
+				com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+				com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
+				get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
+
+				real_proxy = mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
+
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_ptr (mb, &mono_defaults.com_object_class->byval_arg);
+				mono_mb_emit_icall (mb, type_from_handle);
+				mono_mb_emit_managed_call (mb, com_interop_proxy_get_proxy, NULL);
+				mono_mb_emit_stloc (mb, real_proxy);
+
+				
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, real_proxy);
+				mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
+				if (klass && klass != mono_defaults.object_class) {
+					mono_mb_emit_byte (mb, CEE_CASTCLASS);
+					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+				}
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			}
+				break;
 		}
 		if (klass == mono_defaults.stringbuilder_class) {
 			gboolean need_free;
@@ -9136,8 +9194,9 @@ void
 ves_icall_System_ComObject_Finalizer(MonoComObject* obj)
 {
 	g_assert(obj);
-	g_assert(obj->itf_hash);
-	g_hash_table_foreach_remove (obj->itf_hash, cominterop_finalizer, NULL);
+	if (obj->itf_hash)
+		g_hash_table_foreach_remove (obj->itf_hash, cominterop_finalizer, NULL);
+	obj->itf_hash = NULL;
 }
 
 #define MONO_IUNKNOWN_INTERFACE_SLOT 0
@@ -9151,7 +9210,7 @@ ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType
 
 	klass = mono_class_from_mono_type (type->type);
 
-	return g_hash_table_lookup (obj->itf_hash, klass->interface_id);
+	return g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER (klass->interface_id));
 }
 
 void
@@ -9163,14 +9222,15 @@ ves_icall_System_ComObject_CacheInterface (MonoComObject* obj, MonoReflectionTyp
 
 	klass = mono_class_from_mono_type (type->type);
 
-	g_hash_table_insert (obj->itf_hash, klass->interface_id, pItf);
+	g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER (klass->interface_id), pItf);
 }
 
 gpointer
 ves_icall_System_ComObject_GetIUnknown (MonoComObject* obj)
 {
 	g_assert(obj);
-	g_assert(obj->itf_hash);
+	if (!obj->itf_hash)
+		return NULL;
 	return g_hash_table_lookup (obj->itf_hash, MONO_IUNKNOWN_INTERFACE_SLOT);
 }
 
