@@ -941,7 +941,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	mono_monitor_enter ((MonoObject *) ares);
 	if (ares->handle != NULL) {
 		ac->wait_event = (gsize)((MonoWaitHandle *) ares->handle)->handle;
-		SetEvent (ac->wait_event);
+		SetEvent ((gpointer)(gsize)ac->wait_event);
 	}
 	mono_monitor_exit ((MonoObject *) ares);
 
@@ -993,7 +993,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	/* We'll leak the event if creaated... */
 	ac = g_new0 (ASyncCall, 1);
 #endif
-	ac->wait_event = NULL;
+	ac->wait_event = 0;
 	MONO_OBJECT_SETREF (ac, msg, msg);
 	MONO_OBJECT_SETREF (ac, state, state);
 
@@ -1002,7 +1002,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		ac->cb_target = async_callback;
 	}
 
-	ares = mono_async_result_new (domain, NULL, ac->state, NULL, ac);
+	ares = mono_async_result_new (domain, NULL, ac->state, NULL, (MonoObject*)ac);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 
 	EnterCriticalSection (&ares_lock);
@@ -1065,10 +1065,10 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
 			ac->wait_event = (gsize)CreateEvent (NULL, TRUE, FALSE, NULL);
-			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event));
+			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), (gpointer)(gsize)ac->wait_event));
 		}
 		mono_monitor_exit ((MonoObject *) ares);
-		WaitForSingleObjectEx ((gpointer)ac->wait_event, INFINITE, TRUE);
+		WaitForSingleObjectEx ((gpointer)(gsize)ac->wait_event, INFINITE, TRUE);
 	} else {
 		mono_monitor_exit ((MonoObject *) ares);
 	}
