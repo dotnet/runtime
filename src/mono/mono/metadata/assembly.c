@@ -377,7 +377,7 @@ search_loaded (MonoAssemblyName* aname, gboolean refonly)
 	 * The assembly might be under load by this thread. In this case, it is
 	 * safe to return an incomplete instance to prevent loops.
 	 */
-	loading = g_hash_table_lookup (refonly ? assemblies_refonly_loading : assemblies_loading, GetCurrentThreadId ());
+	loading = g_hash_table_lookup (refonly ? assemblies_refonly_loading : assemblies_loading, (gpointer)GetCurrentThreadId ());
 	for (tmp = loading; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (!mono_assembly_names_equal (aname, &ass->aname))

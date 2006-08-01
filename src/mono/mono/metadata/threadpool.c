@@ -940,7 +940,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	/* notify listeners */
 	mono_monitor_enter ((MonoObject *) ares);
 	if (ares->handle != NULL) {
-		ac->wait_event = ((MonoWaitHandle *) ares->handle)->handle;
+		ac->wait_event = (gsize)((MonoWaitHandle *) ares->handle)->handle;
 		SetEvent (ac->wait_event);
 	}
 	mono_monitor_exit ((MonoObject *) ares);
@@ -1064,11 +1064,11 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	/* wait until we are really finished */
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
-			ac->wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+			ac->wait_event = (gsize)CreateEvent (NULL, TRUE, FALSE, NULL);
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event));
 		}
 		mono_monitor_exit ((MonoObject *) ares);
-		WaitForSingleObjectEx (ac->wait_event, INFINITE, TRUE);
+		WaitForSingleObjectEx ((gpointer)ac->wait_event, INFINITE, TRUE);
 	} else {
 		mono_monitor_exit ((MonoObject *) ares);
 	}
