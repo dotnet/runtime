@@ -720,3 +720,19 @@ MINI_OP(OP_IA64_LOADR8_MEMBASE_INC,"ia64_loadr8_membase_inc")
 MINI_OP(OP_IA64_FETCHADD4_IMM,   "ia64_fetchadd4_imm")
 MINI_OP(OP_IA64_FETCHADD8_IMM,   "ia64_fetchadd8_imm")
 #endif
+
+#if defined(__alpha__)
+MINI_OP(OP_ALPHA_CMP_EQ, "alpha_cmp_eq")
+MINI_OP(OP_ALPHA_CMP_IMM_EQ, "alpha_cmp_imm_eq")
+MINI_OP(OP_ALPHA_CMP_ULT, "alpha_cmp_ult")
+MINI_OP(OP_ALPHA_CMP_IMM_ULT, "alpha_cmp_imm_ult")
+MINI_OP(OP_ALPHA_CMP_ULE, "alpha_cmp_ule")
+MINI_OP(OP_ALPHA_CMP_IMM_ULE, "alpha_cmp_imm_ule")
+MINI_OP(OP_ALPHA_CMP_LT, "alpha_cmp_lt")
+MINI_OP(OP_ALPHA_CMP_IMM_LT, "alpha_cmp_imm_lt")
+MINI_OP(OP_ALPHA_CMP_LE, "alpha_cmp_le")
+MINI_OP(OP_ALPHA_CMP_IMM_LE, "alpha_cmp_imm_le")
+
+MINI_OP(OP_ALPHA_CMPT_EQ, "alpha_cmpt_eq")
+#endif
+

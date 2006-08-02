@@ -19,6 +19,8 @@
 #include "mini-ia64.h"
 #elif defined(__arm__)
 #include "mini-arm.h"
+#elif defined(__alpha__)
+#include "mini-alpha.h"
 #else
 #error add arch specific include file in mini-arch.h
 #endif
