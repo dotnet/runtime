@@ -248,18 +248,40 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 {
 	char *str;
 	int retval;
-	int error;
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (name == NULL)
 		return -1;
 
 	str = mono_string_to_utf8 (name);
 	retval = syscall (__NR_inotify_add_watch, fd, str, mask);
-	if (retval < 0)
-		error = errno;
+	if (retval < 0) {
+		switch (errno) {
+		case EACCES:
+			SetLastError (ERROR_ACCESS_DENIED);
+			break;
+		case EBADF:
+			SetLastError (ERROR_INVALID_HANDLE);
+			break;
+		case EFAULT:
+			SetLastError (ERROR_INVALID_ACCESS);
+			break;
+		case EINVAL:
+			SetLastError (ERROR_INVALID_DATA);
+			break;
+		case ENOMEM:
+			SetLastError (ERROR_NOT_ENOUGH_MEMORY);
+			break;
+		case ENOSPC:
+			SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+			break;
+		default:
+			SetLastError (ERROR_GEN_FAILURE);
+			break;
+		}
+	}
 	g_free (str);
-	if (retval < 0)
-		errno = error;
 	return retval;
 }
 
