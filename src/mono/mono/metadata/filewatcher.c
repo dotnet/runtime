@@ -280,6 +280,7 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 			SetLastError (ERROR_GEN_FAILURE);
 			break;
 		}
+		mono_marshal_set_last_error ();
 	}
 	g_free (str);
 	return retval;
