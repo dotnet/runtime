@@ -3287,6 +3287,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		return 0;
 #endif
 
+	if (bblock->out_of_line && !inline_allways)
+		return 0;
+
 	if (cfg->verbose_level > 2)
 		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 

@@ -67,6 +67,14 @@ typedef struct MonoAotOptions {
 	gboolean write_symbols;
 } MonoAotOptions;
 
+typedef struct MonoAotStats {
+	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
+	int code_size, info_size, ex_info_size, got_size, class_info_size;
+	int methods_without_got_var, direct_calls, all_calls;
+	int got_slots;
+	int got_slot_types [MONO_PATCH_INFO_NONE];
+} MonoAotStats;
+
 typedef struct MonoAotCompile {
 	MonoImage *image;
 	MonoCompile **cfgs;
@@ -83,9 +91,43 @@ typedef struct MonoAotCompile {
 	guint32 nmethods;
 	guint32 opts;
 	MonoMemPool *mempool;
-	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
-	int code_size, info_size, ex_info_size, got_size, class_info_size;
+	MonoAotStats stats;
 } MonoAotCompile;
+
+/* Keep in synch with MonoJumpInfoType */
+static const char* patch_types [] = {
+	"bb",
+	"abs",
+	"label",
+	"method",
+	"method_jump",
+	"method_rel",
+	"methodconst",
+	"internal_method",
+	"switch",
+	"exc",
+	"exc_name",
+	"class",
+	"image",
+	"field",
+	"vtable",
+	"class_init",
+	"sflda",
+	"ldstr",
+	"ldtoken",
+	"type_from_handle",
+	"r4",
+	"r8",
+	"ip",
+	"iid",
+	"adjusted_iid",
+	"bb_ovf",
+	"exc_ovf",
+	"wrapper",
+	"got_offset",
+	"declsec",
+	"none"
+};
 
 static gboolean 
 is_got_patch (MonoJumpInfoType patch_type)
@@ -456,7 +498,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
 
-	acfg->code_size += cfg->code_len;
+	acfg->stats.code_size += cfg->code_len;
 
 	/* Collect and sort relocations */
 	patches = g_ptr_array_new ();
@@ -516,6 +558,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 					}
 				}
 
+				acfg->stats.all_calls ++;
+
 				if (!direct_call_target) {
 					plt_index = get_plt_index (acfg, patch_info);
 					if (plt_index != -1) {
@@ -534,6 +578,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 #else
 					g_assert_not_reached ();
 #endif
+					acfg->stats.direct_calls ++;
 				} else {
 					got_slot = get_got_offset (acfg, patch_info);
 
@@ -826,7 +871,26 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value (offset, p, &p);
 		}
 #endif
+
+		acfg->stats.got_slots ++;
+		acfg->stats.got_slot_types [patch_info->type] ++;
 	}
+
+	/*
+	if (n_patches) {
+		printf ("%s:\n", mono_method_full_name (cfg->method, TRUE));
+		for (pindex = 0; pindex < patches->len; ++pindex) {
+			patch_info = g_ptr_array_index (patches, pindex);
+			if (patch_info->type != MONO_PATCH_INFO_NONE) {
+				printf ("\t%s", patch_types [patch_info->type]);
+				if (patch_info->type == MONO_PATCH_INFO_VTABLE)
+					printf (": %s\n", patch_info->data.klass->name);
+				else
+					printf ("\n");
+			}
+		}
+	}
+	*/
 
 	/* Then encode the other info */
 	for (pindex = 0; pindex < patches->len; ++pindex) {
@@ -835,7 +899,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		encode_patch (acfg, patch_info, p, &p);
 	}
 
-	acfg->info_size += p - buf;
+	acfg->stats.info_size += p - buf;
 
 	/* Emit method info */
 
@@ -906,7 +970,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_free (debug_info);
 	}
 
-	acfg->ex_info_size += p - buf;
+	acfg->stats.ex_info_size += p - buf;
 
 	/* Emit info */
 
@@ -972,7 +1036,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 		}
 	}
 
-	acfg->class_info_size += p - buf;
+	acfg->stats.class_info_size += p - buf;
 
 	/* Emit the info */
 	label = g_strdup_printf (".LK_I_%x", token - MONO_TOKEN_TYPE_DEF - 1);
@@ -1149,12 +1213,12 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
-	acfg->mcount++;
+	acfg->stats.mcount++;
 
 	/* fixme: we need to patch the IP for the LMF in that case */
 	if (method->save_lmf) {
 		//printf ("Skip (needs lmf):  %s\n", mono_method_full_name (method, TRUE));
-		acfg->lmfcount++;
+		acfg->stats.lmfcount++;
 		return;
 	}
 
@@ -1172,7 +1236,7 @@ compile_method (MonoAotCompile *acfg, int index)
 
 	if (cfg->disable_aot) {
 		//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
-		acfg->ocount++;
+		acfg->stats.ocount++;
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -1188,7 +1252,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	}
 
 	if (skip) {
-		acfg->abscount++;
+		acfg->stats.abscount++;
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -1254,7 +1318,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	}
 
 	if (skip) {
-		acfg->wrappercount++;
+		acfg->stats.wrappercount++;
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -1275,6 +1339,11 @@ compile_method (MonoAotCompile *acfg, int index)
 		cfg->patch_info = patches;
 	}
 
+#ifdef MONO_ARCH_NEED_GOT_VAR
+	if (!cfg->got_var)
+		acfg->stats.methods_without_got_var ++;
+#endif
+
 	/* Free some fields used by cfg to conserve memory */
 	mono_mempool_destroy (cfg->mempool);
 	cfg->mempool = NULL;
@@ -1293,7 +1362,7 @@ compile_method (MonoAotCompile *acfg, int index)
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->method, cfg);
 
-	acfg->ccount++;
+	acfg->stats.ccount++;
 }
 
 static void
@@ -1723,7 +1792,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	fclose (acfg->fp);
 
-	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT: %d\n", acfg->code_size, acfg->info_size, acfg->ex_info_size, acfg->class_info_size, acfg->plt_offset, (int)(acfg->got_offset * sizeof (gpointer)));
+	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.class_info_size, acfg->plt_offset, (int)(acfg->got_offset * sizeof (gpointer)));
 
 #if defined(__x86_64__)
 	command = g_strdup_printf ("as --64 %s -o %s.o", tmpfname, tmpfname);
@@ -1779,11 +1848,19 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
 
-	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->ccount, acfg->mcount, acfg->mcount ? (acfg->ccount*100)/acfg->mcount : 100);
-	printf ("%d methods contain absolute addresses (%d%%)\n", acfg->abscount, acfg->mcount ? (acfg->abscount*100)/acfg->mcount : 100);
-	printf ("%d methods contain wrapper references (%d%%)\n", acfg->wrappercount, acfg->mcount ? (acfg->wrappercount*100)/acfg->mcount : 100);
-	printf ("%d methods contain lmf pointers (%d%%)\n", acfg->lmfcount, acfg->mcount ? (acfg->lmfcount*100)/acfg->mcount : 100);
-	printf ("%d methods have other problems (%d%%)\n", acfg->ocount, acfg->mcount ? (acfg->ocount*100)/acfg->mcount : 100);
+	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100);
+	printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
+	printf ("%d methods contain wrapper references (%d%%)\n", acfg->stats.wrappercount, acfg->stats.mcount ? (acfg->stats.wrappercount * 100) / acfg->stats.mcount : 100);
+	printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
+	printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
+	printf ("Methods without GOT var: %d (%d%%)\n", acfg->stats.methods_without_got_var, acfg->stats.mcount ? (acfg->stats.methods_without_got_var * 100) / acfg->stats.mcount : 100);
+	printf ("Direct calls: %d (%d%%)\n", acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
+
+	printf ("GOT slot distribution:\n");
+	for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
+		if (acfg->stats.got_slot_types [i])
+			printf ("\t%s: %d\n", patch_types [i], acfg->stats.got_slot_types [i]);
+
 	if (acfg->aot_opts.save_temps)
 		printf ("Retained input file.\n");
 	else
