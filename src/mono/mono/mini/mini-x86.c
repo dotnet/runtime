@@ -902,7 +902,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	MonoMethodSignature *sig;
 	int i, n;
 	CallInfo *cinfo;
-	int sentinelpos;
+	int sentinelpos = 0;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
