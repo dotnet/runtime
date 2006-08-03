@@ -187,7 +187,7 @@ signature_no_pinvoke (MonoMethod *method)
 /**
  * signature_cominterop:
  * @image: a image
- * @sig: mamaged method signature
+ * @sig: managed method signature
  *
  * Returns: the corresponding unmanaged method signature for a managed COM 
  * method.
