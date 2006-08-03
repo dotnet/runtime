@@ -259,25 +259,25 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 	if (retval < 0) {
 		switch (errno) {
 		case EACCES:
-			SetLastError (ERROR_ACCESS_DENIED);
+			errno = ERROR_ACCESS_DENIED;
 			break;
 		case EBADF:
-			SetLastError (ERROR_INVALID_HANDLE);
+			errno = ERROR_INVALID_HANDLE;
 			break;
 		case EFAULT:
-			SetLastError (ERROR_INVALID_ACCESS);
+			errno = ERROR_INVALID_ACCESS;
 			break;
 		case EINVAL:
-			SetLastError (ERROR_INVALID_DATA);
+			errno = ERROR_INVALID_DATA;
 			break;
 		case ENOMEM:
-			SetLastError (ERROR_NOT_ENOUGH_MEMORY);
+			errno = ERROR_NOT_ENOUGH_MEMORY;
 			break;
 		case ENOSPC:
-			SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+			errno = ERROR_TOO_MANY_OPEN_FILES;
 			break;
 		default:
-			SetLastError (ERROR_GEN_FAILURE);
+			errno = ERROR_GEN_FAILURE;
 			break;
 		}
 		mono_marshal_set_last_error ();
