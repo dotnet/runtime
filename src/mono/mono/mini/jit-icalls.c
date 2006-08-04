@@ -652,7 +652,7 @@ mono_lconv_to_r8_un (guint64 a)
 #endif
 
 gpointer
-mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context)
+mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context, gpointer *this_arg)
 {
 	MonoMethod *vmethod, *inflated;
 	gpointer addr;
@@ -673,6 +673,12 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGen
 	inflated = mono_class_inflate_generic_method (vmethod, context);
 	inflated = mono_get_inflated_method (inflated);
 	addr = mono_compile_method (inflated);
+
+	/* Since this is a virtual call, have to unbox vtypes */
+	if (obj->vtable->klass->valuetype)
+		*this_arg = mono_object_unbox (obj);
+	else
+		*this_arg = obj;
 
 	return addr;
 }

@@ -77,7 +77,7 @@ double mono_conv_to_r8_un (guint32 a);
 
 double mono_lconv_to_r8_un (guint64 a);
 
-gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context);
+gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context, gpointer *this_arg);
 
 MonoString *mono_helper_ldstr (MonoImage *image, guint32 idx);
 

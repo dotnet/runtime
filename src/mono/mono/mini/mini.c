@@ -4488,8 +4488,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 	    !((cmethod->flags & METHOD_ATTRIBUTE_FINAL) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
 			    mono_method_signature (cmethod)->generic_param_count) {
-				MonoInst *this_temp, *store;
-				MonoInst *iargs [3];
+				MonoInst *this_temp, *this_arg_temp, *store;
+				MonoInst *iargs [4];
 
 				g_assert (mono_method_signature (cmethod)->is_inflated);
 				/* Prevent inlining of methods that contain indirect calls */
@@ -4502,13 +4502,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->cil_code = ip;
 				MONO_ADD_INS (bblock, store);
 
+				/* FIXME: This should be a managed pointer */
+				this_arg_temp = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+				this_arg_temp->cil_code = ip;
+
 				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
 				NEW_PCONST (cfg, iargs [1], cmethod);
 				NEW_PCONST (cfg, iargs [2], ((MonoMethodInflated *) cmethod)->context);
+				NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
 				temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method, iargs, ip);
 
 				NEW_TEMPLOAD (cfg, addr, temp);
-				NEW_TEMPLOAD (cfg, sp [0], this_temp->inst_c0);
+				NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
 
 				if ((temp = mono_emit_calli (cfg, bblock, fsig, sp, addr, ip)) != -1) {
 					NEW_TEMPLOAD (cfg, *sp, temp);
@@ -11092,7 +11097,7 @@ mini_init (const char *filename)
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
 	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
-	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
+	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr ptr", FALSE);
 	register_icall (mono_helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);

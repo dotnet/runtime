@@ -146,6 +146,32 @@ class Tests {
 		return 0;
 	}
 
+    public static int test_0_generic_virtual_call_on_vtype_unbox () {
+		object o = new Object ();
+        IMyHandler h = new Handler(o);
+
+        if (h.Bar<object> () != o)
+			return 1;
+		else
+			return 0;
+    }
+
+	public interface IMyHandler {
+		object Bar<T>();
+	}
+
+	struct Handler : IMyHandler {
+		object o;
+
+		public Handler(object o) {
+			this.o = o;
+		}
+
+		public object Bar<T>() {
+			return o;
+		}
+	}
+
 	static object Box<T> (T t)
 	{
 		return t;
