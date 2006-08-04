@@ -72,6 +72,7 @@ typedef struct MonoAotModule {
 	guint8 *plt;
 	guint8 *plt_end;
 	guint8 *plt_info;
+	guint8 *plt_jump_table;
 	guint32 *code_offsets;
 	guint8 *method_infos;
 	guint32 *method_info_offsets;
@@ -398,6 +399,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *saved_guid = NULL;
 	char *aot_version = NULL;
 	char *opt_flags = NULL;
+	gpointer *plt_jump_table_addr = NULL;
 
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	gpointer *got_addr = NULL;
@@ -524,6 +526,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "plt", (gpointer*)&info->plt);
 	g_module_symbol (assembly->aot_module, "plt_end", (gpointer*)&info->plt_end);
 	g_module_symbol (assembly->aot_module, "plt_info", (gpointer*)&info->plt_info);
+
+	g_module_symbol (assembly->aot_module, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
+	g_assert (plt_jump_table_addr);
+	info->plt_jump_table = (guint8*)*plt_jump_table_addr;
+	g_assert (info->plt_jump_table);
 
 	init_plt (info);
 	
@@ -1699,7 +1706,6 @@ static void
 init_plt (MonoAotModule *info)
 {
 #ifdef MONO_ARCH_HAVE_PIC_AOT
-
 	guint8 *buf = info->plt;
 	gpointer tramp;
 
@@ -1710,8 +1716,25 @@ init_plt (MonoAotModule *info)
 	/* Initialize the first PLT entry */
 #ifdef __i386__
 	x86_jump_code (buf, tramp);
+#elif defined(__x86_64__)
+	amd64_mov_reg_imm (buf, AMD64_R11, tramp);
+	amd64_jump_reg (buf, AMD64_R11);
 #else
 	g_assert_not_reached ();
+#endif
+
+#ifdef __x86_64__
+	/*
+	 * Initialize the entries in the plt_jump_table to point to the default targets.
+	 */
+ {
+	 int i;
+	 int n_entries = (info->plt_end - info->plt_jump_table) / sizeof (gpointer);
+
+	 for (i = 0; i < n_entries; ++i)
+		 /* Each PLT entry is 16 bytes long, the default entry begins at offset 6 */
+		 ((gpointer*)info->plt_jump_table)[i] = info->plt + (i * 16) + 6;
+ }	 
 #endif
 
 #endif
@@ -1730,7 +1753,7 @@ mono_aot_get_plt_entry (guint8 *code)
 	if (!aot_module)
 		return NULL;
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 	if (code [-5] == 0xe8) {
 		guint32 disp = *(guint32*)(code - 4);
 		guint8 *target = code + disp;

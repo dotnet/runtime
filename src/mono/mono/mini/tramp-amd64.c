@@ -83,7 +83,18 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 void
 mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 {
-	g_assert_not_reached ();
+	gint32 disp;
+	gpointer *plt_jump_table_entry;
+
+	/* A PLT entry: jmp *<DISP>(%rip) */
+	g_assert (code [0] == 0xff);
+	g_assert (code [1] == 0x25);
+
+	disp = *(gint32*)(code + 2);
+
+	plt_jump_table_entry = (gpointer*)(code + 6 + disp);
+
+	InterlockedExchangePointer (plt_jump_table_entry, addr);
 }
 
 void
@@ -146,7 +157,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 void
 mono_arch_nullify_plt_entry (guint8 *code)
 {
-	g_assert_not_reached ();
+	mono_arch_patch_plt_entry (code, nullified_class_init_trampoline);
 }
 
 void
@@ -294,6 +305,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		tramp = (guint8*)mono_class_init_trampoline;
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
 		tramp = (guint8*)mono_aot_trampoline;
+	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
+		tramp = (guint8*)mono_aot_plt_trampoline;
 	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
 		tramp = (guint8*)mono_delegate_trampoline;
 	else

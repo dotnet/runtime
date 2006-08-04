@@ -87,6 +87,7 @@ typedef struct MonoAotCompile {
 	GList *method_order;
 	guint32 got_offset, plt_offset;
 	guint32 *method_got_offsets;
+	gboolean *has_got_slots;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -550,11 +551,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				direct_call_target = NULL;
 				if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == cfg->method->klass->image)) {
 					MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
-
-					if (callee_cfg && !callee_cfg->got_var && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
-						//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
-						direct_call_target = g_strdup_printf (".Lm_%x", mono_metadata_token_index (callee_cfg->method->token));
-						patch_info->type = MONO_PATCH_INFO_NONE;
+					if (callee_cfg) {
+						guint32 callee_idx = mono_metadata_token_index (callee_cfg->method->token);
+						if (!acfg->has_got_slots [callee_idx] && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
+							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
+							direct_call_target = g_strdup_printf (".Lm_%x", mono_metadata_token_index (callee_cfg->method->token));
+							patch_info->type = MONO_PATCH_INFO_NONE;
+						}
 					}
 				}
 
@@ -827,6 +830,9 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		n_patches ++;
 	}
 
+	if (n_patches)
+		g_assert (acfg->has_got_slots [method_idx]);
+
 	encode_value (n_patches, p, &p);
 
 #ifdef MONO_ARCH_HAVE_PIC_AOT
@@ -1056,7 +1062,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
  * Calls made from AOTed code are routed through a table of jumps similar to the
  * ELF PLT (Program Linkage Table). The differences are the following:
  * - the ELF PLT entries make an indirect jump though the GOT so they expect the
- *   GOT pointer to the in EBX. We want to avoid this, so our table contains direct
+ *   GOT pointer to be in EBX. We want to avoid this, so our table contains direct
  *   jumps. This means the jumps need to be patched when the address of the callee is
  *   known. Initially the PLT entries jump to code which transfer control to the
  *   AOT runtime through the first PLT entry.
@@ -1068,42 +1074,6 @@ emit_plt (MonoAotCompile *acfg)
 	int i, buf_size;
 	guint8 *p, *buf;
 	guint32 *plt_info_offsets;
-
-	fprintf (acfg->fp, "\n");
-	symbol = g_strdup_printf ("plt");
-
-	/* This section will be made read-write by the AOT loader */
-	emit_section_change (acfg->fp, ".text", 0);
-	emit_global (acfg->fp, symbol, TRUE);
-	emit_alignment (acfg->fp, PAGESIZE);
-	emit_label (acfg->fp, symbol);
-
-	/* 
-	 * The first plt entry is used to transfer code to the AOT loader. It is filled up
-	 * during loading by the AOT loader.
-	 */
-	emit_label (acfg->fp, ".Lp_0");
-	for (i = 0; i < 16; ++i)
-		fprintf (acfg->fp, "\t.long 0\n");
-
-	for (i = 1; i < acfg->plt_offset; ++i) {
-		char *label;
-
-		label = g_strdup_printf (".Lp_%d", i);
-		emit_label (acfg->fp, label);
-		g_free (label);
-#if defined(__i386__) || defined (__x86_64__)
-		/* Need to make sure this is 5 bytes long */
-		fprintf (acfg->fp, "\t.byte 0xe9\n");
-		fprintf (acfg->fp, "\t.long .Lpd_%d - . - 4\n", i);
-#else
-		g_assert_not_reached ();
-#endif
-	}
-
-	symbol = g_strdup_printf ("plt_end");
-	emit_global (acfg->fp, symbol, TRUE);
-	emit_label (acfg->fp, symbol);
 
 	/*
 	 * Encode info need to resolve PLT entries.
@@ -1121,11 +1091,78 @@ emit_plt (MonoAotCompile *acfg)
 		encode_patch (acfg, patch_info, p, &p);
 	}
 
+	fprintf (acfg->fp, "\n");
+	symbol = g_strdup_printf ("plt");
+
+	/* This section will be made read-write by the AOT loader */
+	emit_section_change (acfg->fp, ".text", 0);
+	emit_global (acfg->fp, symbol, TRUE);
+	emit_alignment (acfg->fp, PAGESIZE);
+	emit_label (acfg->fp, symbol);
+
+	/* 
+	 * The first plt entry is used to transfer code to the AOT loader. It is filled up
+	 * during loading by the AOT loader.
+	 */
+	emit_label (acfg->fp, ".Lp_0");
+	for (i = 0; i < 16; ++i)
+		fprintf (acfg->fp, "\t.byte 0\n");
+
+	for (i = 1; i < acfg->plt_offset; ++i) {
+		char *label;
+
+		label = g_strdup_printf (".Lp_%d", i);
+		emit_label (acfg->fp, label);
+		g_free (label);
+#if defined(__i386__)
+		/* Need to make sure this is 5 bytes long */
+		fprintf (acfg->fp, "\t.byte 0xe9\n");
+		fprintf (acfg->fp, "\t.long .Lpd_%d - . - 4\n", i);
+#elif defined(__x86_64__)
+		/*
+		 * We can't emit jumps because they are 32 bits only so they can't be patched.
+		 * So we emit a jump table instead whose entries are patched by the AOT loader to
+		 * point to .Lpd entries. ELF stores these in the GOT too, but we don't, since
+		 * methods with GOT entries can't be called directly.
+		 * We also emit the default PLT code here since the PLT code will not be patched.
+		 * An x86_64 plt entry is 16 bytes long, init_plt () depends on this.
+		 */
+		/* jmpq *<offset>(%rip) */
+		fprintf (acfg->fp, "\t.byte 0xff, 0x25\n");
+		fprintf (acfg->fp, "\t.int plt_jump_table - . + %d - 4\n", (unsigned int) (i * sizeof (gpointer)));
+		/* mov <plt info offset>, %eax */
+		fprintf (acfg->fp, "\t.byte 0xb8\n");
+		fprintf (acfg->fp, "\t.int %d\n", plt_info_offsets [i]);
+		/* jmp .Lp_0 */
+		fprintf (acfg->fp, "\t.byte 0xe9\n");
+		fprintf (acfg->fp, "\t.long .Lp_0 - . - 4\n");
+#else
+		g_assert_not_reached ();
+#endif
+	}
+
+	symbol = g_strdup_printf ("plt_jump_table_addr");
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+	emit_pointer (acfg->fp, "plt_jump_table");
+
+	/* Don't make this a global so accesses don't need relocations */
+	symbol = g_strdup_printf ("plt_jump_table");
+	emit_label (acfg->fp, symbol);
+
+#ifdef __x86_64__
+	fprintf (acfg->fp, ".skip %d\n", (int)(acfg->plt_offset * sizeof (gpointer)));
+#endif	
+
+	symbol = g_strdup_printf ("plt_end");
+	emit_global (acfg->fp, symbol, TRUE);
+	emit_label (acfg->fp, symbol);
+
 	/* 
 	 * Emit the default targets for the PLT entries separately since these will not
 	 * be modified at runtime.
 	 */
-
 	for (i = 1; i < acfg->plt_offset; ++i) {
 		char *label;
 
@@ -1138,8 +1175,7 @@ emit_plt (MonoAotCompile *acfg)
 		fprintf (acfg->fp, "\tmovl $%d, %%eax\n", plt_info_offsets [i]);
 		fprintf (acfg->fp, "\tjmp .Lp_0\n");
 #elif defined(__x86_64__)
-		fprintf (acfg->fp, "\tpush $%d\n", plt_info_offsets [i]);
-		fprintf (acfg->fp, "\tjmp .Lp_0\n");
+		/* Emitted along with the PLT entries since they will not be patched */
 #else
 		g_assert_not_reached ();
 #endif
@@ -1201,8 +1237,11 @@ compile_method (MonoAotCompile *acfg, int index)
 	MonoJumpInfo *patch_info;
 	gboolean skip;
 	guint32 token = MONO_TOKEN_METHOD_DEF | (index + 1);
-	
+	guint32 method_idx;
+
 	method = mono_get_method (acfg->image, token, NULL);
+
+	method_idx = mono_metadata_token_index (method->token);	
 		
 	/* fixme: maybe we can also precompile wrapper methods */
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
@@ -1323,6 +1362,34 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
+#ifdef MONO_ARCH_NEED_GOT_VAR
+	if (!cfg->got_var)
+		acfg->stats.methods_without_got_var ++;
+#endif
+
+	/* Determine whenever the method has GOT slots */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_LABEL:
+		case MONO_PATCH_INFO_BB:
+		case MONO_PATCH_INFO_GOT_OFFSET:
+		case MONO_PATCH_INFO_NONE:
+		case MONO_PATCH_INFO_METHOD:
+		case MONO_PATCH_INFO_INTERNAL_METHOD:
+		case MONO_PATCH_INFO_WRAPPER:
+			break;
+		case MONO_PATCH_INFO_IMAGE:
+			if (patch_info->data.image == acfg->image)
+				/* Stored in GOT slot 0 */
+				break;
+			/* Fall through */
+		default:
+			//printf ("A: %s\n", patch_types [patch_info->type]);
+			acfg->has_got_slots [method_idx] = TRUE;
+			break;
+		}
+	}
+
 	/* Make a copy of the patch info which is in the mempool */
 	{
 		MonoJumpInfo *patches = NULL, *patches_end = NULL;
@@ -1338,11 +1405,6 @@ compile_method (MonoAotCompile *acfg, int index)
 		}
 		cfg->patch_info = patches;
 	}
-
-#ifdef MONO_ARCH_NEED_GOT_VAR
-	if (!cfg->got_var)
-		acfg->stats.methods_without_got_var ++;
-#endif
 
 	/* Free some fields used by cfg to conserve memory */
 	mono_mempool_destroy (cfg->mempool);
@@ -1754,6 +1816,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->cfgs = cfgs;
 	acfg->nmethods = image->tables [MONO_TABLE_METHOD].rows;
 	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
+	acfg->has_got_slots = g_new0 (gboolean, image->tables [MONO_TABLE_METHOD].rows + 32);
 
 	/* Slot 0 is reserved for the address of the current assembly */
 	acfg->got_offset = 1;
