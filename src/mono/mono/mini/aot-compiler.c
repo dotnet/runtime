@@ -70,7 +70,7 @@ typedef struct MonoAotOptions {
 typedef struct MonoAotStats {
 	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
 	int code_size, info_size, ex_info_size, got_size, class_info_size;
-	int methods_without_got_var, direct_calls, all_calls;
+	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
 	int got_slot_types [MONO_PATCH_INFO_NONE];
 } MonoAotStats;
@@ -1362,11 +1362,6 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
-#ifdef MONO_ARCH_NEED_GOT_VAR
-	if (!cfg->got_var)
-		acfg->stats.methods_without_got_var ++;
-#endif
-
 	/* Determine whenever the method has GOT slots */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -1389,6 +1384,9 @@ compile_method (MonoAotCompile *acfg, int index)
 			break;
 		}
 	}
+
+	if (!acfg->has_got_slots [method_idx])
+		acfg->stats.methods_without_got_slots ++;
 
 	/* Make a copy of the patch info which is in the mempool */
 	{
@@ -1916,7 +1914,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	printf ("%d methods contain wrapper references (%d%%)\n", acfg->stats.wrappercount, acfg->stats.mcount ? (acfg->stats.wrappercount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
-	printf ("Methods without GOT var: %d (%d%%)\n", acfg->stats.methods_without_got_var, acfg->stats.mcount ? (acfg->stats.methods_without_got_var * 100) / acfg->stats.mcount : 100);
+	printf ("Methods without GOT slots: %d (%d%%)\n", acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100);
 	printf ("Direct calls: %d (%d%%)\n", acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
 
 	printf ("GOT slot distribution:\n");
