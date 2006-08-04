@@ -557,11 +557,12 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
 							direct_call_target = g_strdup_printf (".Lm_%x", mono_metadata_token_index (callee_cfg->method->token));
 							patch_info->type = MONO_PATCH_INFO_NONE;
+							acfg->stats.direct_calls ++;
 						}
 					}
-				}
 
-				acfg->stats.all_calls ++;
+					acfg->stats.all_calls ++;
+				}
 
 				if (!direct_call_target) {
 					plt_index = get_plt_index (acfg, patch_info);
@@ -581,7 +582,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 #else
 					g_assert_not_reached ();
 #endif
-					acfg->stats.direct_calls ++;
 				} else {
 					got_slot = get_got_offset (acfg, patch_info);
 
@@ -1379,7 +1379,6 @@ compile_method (MonoAotCompile *acfg, int index)
 				break;
 			/* Fall through */
 		default:
-			//printf ("A: %s\n", patch_types [patch_info->type]);
 			acfg->has_got_slots [method_idx] = TRUE;
 			break;
 		}
