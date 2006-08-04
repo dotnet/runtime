@@ -70,7 +70,7 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 		else {
 			g_assert ((((guint64)(addr)) >> 32) == 0);
 			g_assert ((((guint64)(code)) >> 32) == 0);
-			InterlockedExchange ((guint32*)(code - 4), ((gint64)addr - (gint64)code));
+			InterlockedExchange ((gint32*)(code - 4), ((gint64)addr - (gint64)code));
 		}
 	}
 	else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
