@@ -73,6 +73,7 @@ typedef struct MonoAotModule {
 	guint8 *plt_end;
 	guint8 *plt_info;
 	guint8 *plt_jump_table;
+	guint32 plt_jump_table_size;
 	guint32 *code_offsets;
 	guint8 *method_infos;
 	guint32 *method_info_offsets;
@@ -400,6 +401,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *aot_version = NULL;
 	char *opt_flags = NULL;
 	gpointer *plt_jump_table_addr = NULL;
+	guint32 *plt_jump_table_size = NULL;
 
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	gpointer *got_addr = NULL;
@@ -532,6 +534,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	info->plt_jump_table = (guint8*)*plt_jump_table_addr;
 	g_assert (info->plt_jump_table);
 
+	g_module_symbol (assembly->aot_module, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
+	g_assert (plt_jump_table_size);
+	info->plt_jump_table_size = *plt_jump_table_size;
+
+	/* FIXME: Do this lazily since the assembly might not be used */
 	init_plt (info);
 	
 	if (make_unreadable) {
@@ -1706,35 +1713,35 @@ static void
 init_plt (MonoAotModule *info)
 {
 #ifdef MONO_ARCH_HAVE_PIC_AOT
+#ifdef __i386__
 	guint8 *buf = info->plt;
+#endif
+#if defined(__x86_64__)
+	int i, n_entries;
+#endif
 	gpointer tramp;
-
-	make_writable (info->plt, info->plt_end - info->plt);
 
 	tramp = mono_arch_create_specific_trampoline (info, MONO_TRAMPOLINE_AOT_PLT, mono_get_root_domain (), NULL);
 
-	/* Initialize the first PLT entry */
 #ifdef __i386__
+	/* Initialize the first PLT entry */
+	make_writable (info->plt, info->plt_end - info->plt);
 	x86_jump_code (buf, tramp);
 #elif defined(__x86_64__)
-	amd64_mov_reg_imm (buf, AMD64_R11, tramp);
-	amd64_jump_reg (buf, AMD64_R11);
-#else
-	g_assert_not_reached ();
-#endif
+	 make_writable (info->plt_jump_table, info->plt_jump_table_size);
 
-#ifdef __x86_64__
 	/*
 	 * Initialize the entries in the plt_jump_table to point to the default targets.
 	 */
- {
-	 int i;
-	 int n_entries = (info->plt_end - info->plt_jump_table) / sizeof (gpointer);
+	 n_entries = info->plt_jump_table_size / sizeof (gpointer);
 
-	 for (i = 0; i < n_entries; ++i)
+	 /* The first entry points to the AOT trampoline */
+	 ((gpointer*)info->plt_jump_table)[0] = tramp;
+	 for (i = 1; i < n_entries; ++i)
 		 /* Each PLT entry is 16 bytes long, the default entry begins at offset 6 */
 		 ((gpointer*)info->plt_jump_table)[i] = info->plt + (i * 16) + 6;
- }	 
+#else
+	g_assert_not_reached ();
 #endif
 
 #endif

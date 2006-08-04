@@ -1101,12 +1101,23 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg->fp, symbol);
 
 	/* 
-	 * The first plt entry is used to transfer code to the AOT loader. It is filled up
-	 * during loading by the AOT loader.
+	 * The first plt entry is used to transfer code to the AOT loader. 
 	 */
 	emit_label (acfg->fp, ".Lp_0");
+#if defined(__i386__)
+	/* It is filled up during loading by the AOT loader. */
 	for (i = 0; i < 16; ++i)
 		fprintf (acfg->fp, "\t.byte 0\n");
+#elif defined(__x86_64__)
+	/* This should be exactly 16 bytes long */
+	/* jmpq *<offset>(%rip) */
+	fprintf (acfg->fp, "\t.byte 0xff, 0x25\n");
+	fprintf (acfg->fp, "\t.int plt_jump_table - . - 4\n");
+	for (i = 0; i < 10; ++i)
+		fprintf (acfg->fp, "\t.byte 0\n");
+#else
+	g_assert_not_reached ();
+#endif
 
 	for (i = 1; i < acfg->plt_offset; ++i) {
 		char *label;
@@ -1140,20 +1151,6 @@ emit_plt (MonoAotCompile *acfg)
 		g_assert_not_reached ();
 #endif
 	}
-
-	symbol = g_strdup_printf ("plt_jump_table_addr");
-	emit_global (acfg->fp, symbol, FALSE);
-	emit_alignment (acfg->fp, 8);
-	emit_label (acfg->fp, symbol);
-	emit_pointer (acfg->fp, "plt_jump_table");
-
-	/* Don't make this a global so accesses don't need relocations */
-	symbol = g_strdup_printf ("plt_jump_table");
-	emit_label (acfg->fp, symbol);
-
-#ifdef __x86_64__
-	fprintf (acfg->fp, ".skip %d\n", (int)(acfg->plt_offset * sizeof (gpointer)));
-#endif	
 
 	symbol = g_strdup_printf ("plt_end");
 	emit_global (acfg->fp, symbol, TRUE);
@@ -1194,6 +1191,32 @@ emit_plt (MonoAotCompile *acfg)
 	}
 	fprintf (acfg->fp, "\n");
 	g_free (buf);
+
+	symbol = g_strdup_printf ("plt_jump_table_addr");
+	emit_section_change (acfg->fp, ".data", 0);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+	emit_pointer (acfg->fp, "plt_jump_table");
+
+	symbol = g_strdup_printf ("plt_jump_table_size");
+	emit_section_change (acfg->fp, ".data", 0);
+	emit_global (acfg->fp, symbol, FALSE);
+	emit_alignment (acfg->fp, 8);
+	emit_label (acfg->fp, symbol);
+	fprintf (acfg->fp, ".long plt_jump_table_end - plt_jump_table\n");
+
+	/* Don't make this a global so accesses don't need relocations */
+	symbol = g_strdup_printf ("plt_jump_table");
+	emit_section_change (acfg->fp, ".bss", 0);
+	emit_label (acfg->fp, symbol);
+
+#ifdef __x86_64__
+	fprintf (acfg->fp, ".skip %d\n", (int)(acfg->plt_offset * sizeof (gpointer)));
+#endif	
+
+	symbol = g_strdup_printf ("plt_jump_table_end");
+	emit_label (acfg->fp, symbol);
 }
 
 static gboolean
