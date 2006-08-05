@@ -65,6 +65,7 @@ typedef struct MonoAotModule {
 	char **image_guids;
 	MonoImage **image_table;
 	gboolean out_of_date;
+	gboolean plt_inited;
 	guint8 *mem_begin;
 	guint8 *mem_end;
 	guint8 *code;
@@ -538,9 +539,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_assert (plt_jump_table_size);
 	info->plt_jump_table_size = *plt_jump_table_size;
 
-	/* FIXME: Do this lazily since the assembly might not be used */
-	init_plt (info);
-	
 	if (make_unreadable) {
 #ifndef PLATFORM_WIN32
 		guint8 *addr;
@@ -1337,6 +1335,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		g_free (full_name);
 	}
 
+	init_plt (aot_module);
+
 	return jinfo;
 
  cleanup:
@@ -1485,6 +1485,8 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	mono_jit_stats.methods_aot++;
 
 	aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
+
+	init_plt (aot_module);
 
 	return code;
 
@@ -1709,6 +1711,13 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 #endif
 }
 
+/**
+ * init_plt:
+ *
+ *   Initialize the PLT table of the AOT module. Called lazily when the first AOT
+ * method in the module is loaded to avoid committing memory by writing to it.
+ * LOCKING: Assumes the AOT lock is held.
+ */
 static void
 init_plt (MonoAotModule *info)
 {
@@ -1720,6 +1729,9 @@ init_plt (MonoAotModule *info)
 	int i, n_entries;
 #endif
 	gpointer tramp;
+
+	if (info->plt_inited)
+		return;
 
 	tramp = mono_arch_create_specific_trampoline (info, MONO_TRAMPOLINE_AOT_PLT, mono_get_root_domain (), NULL);
 
@@ -1742,6 +1754,7 @@ init_plt (MonoAotModule *info)
 	g_assert_not_reached ();
 #endif
 
+	info->plt_inited = TRUE;
 #endif
 }
 
