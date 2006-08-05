@@ -1728,8 +1728,6 @@ init_plt (MonoAotModule *info)
 	make_writable (info->plt, info->plt_end - info->plt);
 	x86_jump_code (buf, tramp);
 #elif defined(__x86_64__)
-	 make_writable (info->plt_jump_table, info->plt_jump_table_size);
-
 	/*
 	 * Initialize the entries in the plt_jump_table to point to the default targets.
 	 */
