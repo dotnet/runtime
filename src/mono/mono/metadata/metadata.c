@@ -1687,6 +1687,8 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		if (*ptr == MONO_TYPE_SENTINEL) {
 			if (method->call_convention != MONO_CALL_VARARG || def)
 				g_error ("found sentinel for methoddef or no vararg method");
+			if (method->sentinelpos >= 0)
+				g_error ("found sentinel twice in the same signature");
 			method->sentinelpos = i;
 			ptr++;
 		}
@@ -1699,6 +1701,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		if (!is_open)
 			is_open = mono_class_is_open_constructed_type (method->params [i]);
 	}
+
+	/* The sentinel could be missing if the caller does not pass any additional arguments */
+	if (!def && method->call_convention == MONO_CALL_VARARG && method->sentinelpos < 0)
+		method->sentinelpos = method->param_count;
 
 	method->has_type_parameters = is_open;
 
