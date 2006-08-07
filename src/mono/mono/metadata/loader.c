@@ -1427,7 +1427,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	mono_loader_lock ();
 
 	*cil_method = mono_get_method_from_token (image, token, NULL, context);
-	if (!cil_method) {
+	if (!*cil_method) {
 		mono_loader_unlock ();
 		return NULL;
 	}
