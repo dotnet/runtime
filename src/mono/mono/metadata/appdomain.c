@@ -1409,8 +1409,10 @@ mono_domain_unload (MonoDomain *domain)
 		if (mono_thread_has_appdomain_ref (mono_thread_current (), domain) && (mono_thread_interruption_requested ()))
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
+			CloseHandle (thread_handle);
 			return;
 	}
+	CloseHandle (thread_handle);
 
 	mono_domain_set (caller_domain, FALSE);
 
