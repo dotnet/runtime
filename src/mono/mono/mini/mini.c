@@ -2577,7 +2577,14 @@ mono_get_element_address_signature (int arity)
 	res->call_convention = MONO_CALL_VARARG;
 #endif
 	res->params [0] = &mono_defaults.array_class->byval_arg; 
-	
+
+#ifdef PLATFORM_WIN32
+	/* 
+	 * The default pinvoke calling convention is STDCALL but we need CDECL.
+	 */
+	res->call_convention = MONO_CALL_C;
+#endif
+
 	for (i = 1; i <= arity; i++)
 		res->params [i] = &mono_defaults.int_class->byval_arg;
 
@@ -2611,6 +2618,10 @@ mono_get_array_new_va_signature (int arity)
 #ifdef MONO_ARCH_VARARG_ICALLS
 	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
 	res->call_convention = MONO_CALL_VARARG;
+#endif
+
+#ifdef PLATFORM_WIN32
+	res->call_convention = MONO_CALL_C;
 #endif
 
 	res->params [0] = &mono_defaults.int_class->byval_arg;	
@@ -2859,6 +2870,7 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
+	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	return mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, TRUE, FALSE);
 }
 
@@ -3061,6 +3073,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		mono_jit_unlock ();
 	}
 
+	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
