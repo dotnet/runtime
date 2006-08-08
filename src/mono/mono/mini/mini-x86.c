@@ -890,6 +890,38 @@ mono_arch_create_vars (MonoCompile *cfg)
  * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
  */
 
+static void
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call)
+{
+	MonoInst *arg;
+	MonoMethodSignature *tmp_sig;
+	MonoInst *sig_arg;
+
+	/* FIXME: Add support for signature tokens to AOT */
+	cfg->disable_aot = TRUE;
+	MONO_INST_NEW (cfg, arg, OP_OUTARG);
+
+	/*
+	 * mono_ArgIterator_Setup assumes the signature cookie is 
+	 * passed first and all the arguments which were before it are
+	 * passed on the stack after the signature. So compensate by 
+	 * passing a different signature.
+	 */
+	tmp_sig = mono_metadata_signature_dup (call->signature);
+	tmp_sig->param_count -= call->signature->sentinelpos;
+	tmp_sig->sentinelpos = 0;
+	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+	MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+	sig_arg->inst_p0 = tmp_sig;
+
+	arg->inst_left = sig_arg;
+	arg->type = STACK_PTR;
+	/* prepend, so they get reversed */
+	arg->next = call->out_args;
+	call->out_args = arg;
+}
+
 /* 
  * take the arguments and generate the arch-specific
  * instructions to properly call the function in call.
@@ -917,32 +949,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 		/* Emit the signature cookie just before the implicit arguments */
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sentinelpos)) {
-			MonoMethodSignature *tmp_sig;
-			MonoInst *sig_arg;
-
-			/* FIXME: Add support for signature tokens to AOT */
-			cfg->disable_aot = TRUE;
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
-
-			/*
-			 * mono_ArgIterator_Setup assumes the signature cookie is 
-			 * passed first and all the arguments which were before it are
-			 * passed on the stack after the signature. So compensate by 
-			 * passing a different signature.
-			 */
-			tmp_sig = mono_metadata_signature_dup (call->signature);
-			tmp_sig->param_count -= call->signature->sentinelpos;
-			tmp_sig->sentinelpos = 0;
-			memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
-
-			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-			sig_arg->inst_p0 = tmp_sig;
-
-			arg->inst_left = sig_arg;
-			arg->type = STACK_PTR;
-			/* prepend, so they get reversed */
-			arg->next = call->out_args;
-			call->out_args = arg;
+			emit_sig_cookie (cfg, call);
 		}
 
 		if (is_virtual && i == 0) {
@@ -1003,6 +1010,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				}
 			}
 		}
+	}
+
+	/* Handle the case where there are no implicit arguments */
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sentinelpos)) {
+		emit_sig_cookie (cfg, call);
 	}
 
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
