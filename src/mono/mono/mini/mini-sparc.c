@@ -1028,7 +1028,7 @@ make_group (MonoCompile *cfg, MonoInst *left, int basereg, int offset)
 }
 
 static void
-emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call)
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoInst *arg;
 	MonoMethodSignature *tmp_sig;
@@ -1084,7 +1084,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Emit the signature cookie just before the first implicit argument */
-			emit_sig_cookie (cfg, call);
+			emit_sig_cookie (cfg, call, cinfo);
 		}
 
 		if (is_virtual && i == 0) {
@@ -1204,8 +1204,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	}
 
 	/* Handle the case where there are no implicit arguments */
-	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sentinelpos)) {
-		emit_sig_cookie (cfg, call);
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos)) {
+		emit_sig_cookie (cfg, call, cinfo);
 	}
 
 	/*
