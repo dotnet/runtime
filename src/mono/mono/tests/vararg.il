@@ -50,7 +50,7 @@
 		ret
 	}		
 
-	.method public static vararg int32 varargtest_refany () cil managed {
+	.method public static vararg int32 varargtest_refany (int32 last) cil managed {
 		.maxstack 16
 		.locals init (
 			valuetype [mscorlib]System.ArgIterator it,
@@ -89,9 +89,19 @@
 	.method public static int32 test_85_varargs_refany () cil managed {
 		.maxstack 16
 
+		ldc.i4 1
 		ldc.i4 42
 		ldc.i4 43
-		call vararg int32 Tests::varargtest_refany (..., int32, int32)
+		call vararg int32 Tests::varargtest_refany (int32, ..., int32, int32)
+		ret
+	}
+
+	// Test varargs
+	.method public static int32 test_0_varargs_refany_noargs () cil managed {
+		.maxstack 16
+
+		ldc.i4 1
+		call vararg int32 Tests::varargtest_refany (int32)
 		ret
 	}
 
