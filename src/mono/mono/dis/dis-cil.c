@@ -55,7 +55,7 @@ isinf (double num)
 	indent[indent_level*2] = 0;
 
 void
-dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context)
+disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context)
 {
 	const unsigned char *start = mh->code;
 	int size = mh->code_size;

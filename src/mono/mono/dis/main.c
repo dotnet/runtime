@@ -705,7 +705,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	if (mh->num_locals)
 		dis_locals (m, mh, ptr);
-	dissasemble_cil (m, mh, context);
+	disassemble_cil (m, mh, context);
 	
 /*
   hex_dump (mh->code, 0, mh->code_size);
@@ -1794,7 +1794,7 @@ usage (void)
 	}
 	g_string_append (args, "[--forward-decls]");
 	fprintf (stderr,
-		 "monodis -- Mono Common Intermediate Language Dissassembler\n" 
+		 "monodis -- Mono Common Intermediate Language Disassembler\n" 
 		 "Usage is: monodis %s file ..\n", args->str);
 	exit (1);
 }
