@@ -2898,7 +2898,7 @@ cominterop_get_native_wrapper (MonoMethod *method)
 			static MonoMethod * GetInterface = NULL;
 			MonoMethod *adjusted_method;
 			int hr;
-			int retval;
+			int retval = 0;
 			int ptr_this;
 			int i;
 			if (!GetInterface)
@@ -9210,7 +9210,7 @@ ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType
 
 	klass = mono_class_from_mono_type (type->type);
 
-	return g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER (klass->interface_id));
+	return g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER ((guint)klass->interface_id));
 }
 
 void
@@ -9222,7 +9222,7 @@ ves_icall_System_ComObject_CacheInterface (MonoComObject* obj, MonoReflectionTyp
 
 	klass = mono_class_from_mono_type (type->type);
 
-	g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER (klass->interface_id), pItf);
+	g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER ((guint)klass->interface_id), pItf);
 }
 
 gpointer
