@@ -9,12 +9,26 @@
 #ifdef HAVE_KW_THREAD
 #if HAVE_TLS_MODEL_ATTR
 
+/* 
+ * Define this if you want a faster libmono, which cannot be loaded dynamically as a 
+ * module.
+ */
+//#define PIC_INITIAL_EXEC
+
 #if defined (__powerpc__)
 #define MONO_TLS_FAST
 #elif defined(PIC)
+
+#ifdef PIC_INITIAL_EXEC
 #define MONO_TLS_FAST __attribute__((tls_model("initial-exec")))
 #else
+#define MONO_TLS_FAST __attribute__((tls_model("local-dynamic")))
+#endif
+
+#else
+
 #define MONO_TLS_FAST __attribute__((tls_model("local-exec")))
+
 #endif
 
 #else
@@ -29,6 +43,7 @@
 #endif
 #elif defined(__x86_64__)
 #if defined(PIC)
+// This only works if libmono is linked into the application
 #define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq " #var "@GOTTPOFF(%%rip), %0" : "=r" (foo)); offset = foo; } while (0)
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@TPOFF, %0" : "=r" (foo)); offset = foo; } while (0)
@@ -36,6 +51,15 @@
 #elif defined(__ia64__) && !defined(__INTEL_COMPILER)
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @tprel(" #var "#), r0 ;;\n" : "=r" (offset))
 #else
+#define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
+#endif
+
+#if defined(PIC) && !defined(PIC_INITIAL_EXEC)
+/* 
+ * The above definitions do not seem to work if libmono is loaded dynamically as a module.
+ * See bug #78767.
+ */
+#undef MONO_THREAD_VAR_OFFSET
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
 
