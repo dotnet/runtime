@@ -27,6 +27,7 @@ static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoG
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
+static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
 
@@ -3328,6 +3329,37 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 	return FALSE;
 }
 
+static gboolean
+mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only)
+{
+	gpointer iter1 = 0, iter2 = 0;
+
+	if (s1 == s2)
+		return TRUE;
+	if (s1->call_convention != s2->call_convention)
+		return FALSE;
+	if (s1->sentinelpos != s2->sentinelpos)
+		return FALSE;
+	if (s1->hasthis != s2->hasthis)
+		return FALSE;
+	if (s1->explicit_this != s2->explicit_this)
+		return FALSE;
+	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only))
+		return FALSE;
+	if (s1->param_count != s2->param_count)
+		return FALSE;
+
+	while (TRUE) {
+		MonoType *t1 = mono_signature_get_params (s1, &iter1);
+		MonoType *t2 = mono_signature_get_params (s2, &iter2);
+
+		if (t1 == NULL || t2 == NULL)
+			return (t1 == t2);
+		if (! do_mono_metadata_type_equal (t1, t2, signature_only))
+			return FALSE;
+	}
+}
+
 /*
  * mono_metadata_type_equal:
  * @t1: a type
@@ -3381,6 +3413,8 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	case MONO_TYPE_MVAR:
 		return mono_metadata_generic_param_equal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
+	case MONO_TYPE_FNPTR:
+		return mono_metadata_fnptr_equal (t1->data.method, t2->data.method, signature_only);
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
