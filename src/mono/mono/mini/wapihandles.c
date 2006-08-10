@@ -222,13 +222,17 @@ int mini_wapi_semdel (int argc, char **argv)
 	exit (0);
 }
 
-static void sem_explain (int val)
+static void sem_explain (int sem_id, ushort *vals, int which)
 {
-	g_print ("%d ", val);
-	if (val >= 1) {
+	pid_t pid;
+	
+	g_print ("%d ", vals[which]);
+	if (vals[which] >= 1) {
 		g_print ("(Unlocked)");
 	} else {
-		g_print ("(Locked)");
+		pid = semctl (sem_id, which, GETPID);
+		
+		g_print ("(Locked by %d)", pid);
 	}
 	g_print ("\n");
 }
@@ -258,14 +262,17 @@ int mini_wapi_seminfo (int argc, char **argv)
 		ret = semctl (sem_id, 0, GETALL, arg);
 		if (ret != -1) {
 			g_print ("Namespace: ");
-			sem_explain (vals[_WAPI_SHARED_SEM_NAMESPACE]);
+			sem_explain (sem_id, vals, _WAPI_SHARED_SEM_NAMESPACE);
 			g_print ("Fileshare: ");
-			sem_explain (vals[_WAPI_SHARED_SEM_FILESHARE]);
+			sem_explain (sem_id, vals, _WAPI_SHARED_SEM_FILESHARE);
 			g_print ("Handles: ");
-			sem_explain (vals[_WAPI_SHARED_SEM_SHARED_HANDLES]);
+			sem_explain (sem_id, vals,
+				     _WAPI_SHARED_SEM_SHARED_HANDLES);
 			g_print ("Count lock: ");
-			sem_explain (vals[_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK]);
-			g_print ("Count: %d\n", vals[_WAPI_SHARED_SEM_PROCESS_COUNT] - 1);
+			sem_explain (sem_id, vals,
+				     _WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
+			g_print ("Count: %d\n",
+				 vals[_WAPI_SHARED_SEM_PROCESS_COUNT] - 1);
 		}
 	}
 	
