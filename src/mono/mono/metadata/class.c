@@ -3354,7 +3354,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
 		for (; list; list = list->next) {
 			class = list->data;
-			if ((class->rank == rank) && (class->byval_arg.type == (bounded ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+			if ((class->rank == rank) && (class->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
 				mono_loader_unlock ();
 				return class;
 			}
