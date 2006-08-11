@@ -1278,7 +1278,7 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 		MonoClass *klass;
 		type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 		klass = mono_class_from_mono_type (type);
-		if ((MONO_CLASS_IS_IMPORT(klass) || klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), klass)->remote)
+		if ((klass->is_com_object || klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), klass)->remote)
 			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_COMINTEROP);
 		else
 			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_UNKNOWN);
@@ -2447,8 +2447,8 @@ mono_object_new_specific (MonoVTable *vtable)
 
 	MONO_ARCH_SAVE_REGS;
 	
-	/* check for MONO_CLASS_IS_IMPORT for COM Interop */
-	if (vtable->remote || MONO_CLASS_IS_IMPORT(vtable->klass))
+	/* check for is_com_object for COM Interop */
+	if (vtable->remote || vtable->klass->is_com_object)
 	{
 		gpointer pa [1];
 		MonoMethod *im = vtable->domain->create_proxy_for_type_method;

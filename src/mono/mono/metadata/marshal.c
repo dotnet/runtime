@@ -271,7 +271,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 	guint32 offset = 7; 
 	guint32 slot = method->slot;
 	GPtrArray *ifaces;
-	MonoClass *ic;
+	MonoClass *ic = method->klass;
 	int i;
 
 	ifaces = mono_class_get_implemented_interfaces (method->klass);
@@ -290,7 +290,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 
 	if (!interface_type_attribute)
 		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
-	cinfo = mono_custom_attrs_from_class (method->klass);
+	cinfo = mono_custom_attrs_from_class (ic);
 	if (cinfo) {
 		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr (cinfo, interface_type_attribute);
 		if (!cinfo->cached)
@@ -3018,8 +3018,23 @@ cominterop_get_invoke (MonoMethod *method)
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
 	}
 
+	if (!strcmp(method->name, ".ctor"))	{
+		static MonoClass *com_interop_proxy_class = NULL;
+		static MonoMethod *cache_proxy = NULL;
+
+		if (!com_interop_proxy_class)
+			com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+		if (!cache_proxy)
+			cache_proxy = mono_class_get_method_from_name (com_interop_proxy_class, "CacheProxy", 0);
+
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_managed_call (mb, cache_proxy, NULL);
+	}
+
 	emit_thread_interrupt_checkpoint (mb);
-	
+
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
@@ -3042,7 +3057,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		return method;
 
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
-	if ((MONO_CLASS_IS_IMPORT(method->klass) || method->klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), method->klass)->remote)
+	if ((method->klass->is_com_object || method->klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), method->klass)->remote)
 		return cominterop_get_invoke(method);
 
 	sig = signature_no_pinvoke (method);
@@ -5732,10 +5747,11 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 				}
 			} else {
-				static MonoMethod* GetInterface = NULL;
-				
-				if (!GetInterface)
-					GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
+				guint32 pos_failed = 0;
+				mono_mb_emit_ldarg (mb, argnum);	
+				// if null just break, conv arg was already inited to 0
+				pos_failed = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -5744,10 +5760,35 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoComInteropProxy, com_object));
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
-				mono_mb_emit_ptr (mb, t);
-				mono_mb_emit_icall (mb, type_from_handle);
-				mono_mb_emit_managed_call (mb, GetInterface, NULL);
+				if (klass && klass != mono_defaults.object_class) {
+					static MonoMethod* GetInterface = NULL;
+					
+					if (!GetInterface)
+						GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
+					mono_mb_emit_ptr (mb, t);
+					mono_mb_emit_icall (mb, type_from_handle);
+					mono_mb_emit_managed_call (mb, GetInterface, NULL);
+				}
+				else if (spec->native == MONO_NATIVE_IUNKNOWN) {
+					static MonoProperty* iunknown = NULL;
+					
+					if (!iunknown)
+						iunknown = mono_class_get_property_from_name (mono_defaults.com_object_class, "IUnknown");
+					mono_mb_emit_managed_call (mb, iunknown->get, NULL);
+				}
+				else if (spec->native == MONO_NATIVE_IDISPATCH) {
+					static MonoProperty* idispatch = NULL;
+					
+					if (!idispatch)
+						idispatch = mono_class_get_property_from_name (mono_defaults.com_object_class, "IDispatch");
+					mono_mb_emit_managed_call (mb, idispatch->get, NULL);
+				}
+				else {
+				}
 				mono_mb_emit_stloc (mb, conv_arg);
+				
+				// case if null
+				mono_mb_patch_addr (mb, pos_failed, mb->pos - (pos_failed + 4));
 			}
 		}
 		else if (klass->delegate) {
@@ -5866,9 +5907,21 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				static MonoMethod* com_interop_proxy_get_proxy = NULL;
 				static MonoMethod* get_transparent_proxy = NULL;
 				int real_proxy;
-				com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
-				com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
-				get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
+				guint32 pos_failed = 0;
+
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, CEE_LDNULL);
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+				mono_mb_emit_ldloc (mb, conv_arg);
+				pos_failed = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+				if (!com_interop_proxy_class)
+					com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+				if (!com_interop_proxy_get_proxy)
+					com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
+				if (!get_transparent_proxy)
+					get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
 
 				real_proxy = mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
 
@@ -5887,6 +5940,9 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 				}
 				mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+				// case if null
+				mono_mb_patch_addr (mb, pos_failed, mb->pos - (pos_failed + 4));
 			}
 				break;
 		}
@@ -9169,6 +9225,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 {
 	MonoClass *klass;
 	MonoDomain *domain;
+	MonoObject *obj;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -9179,8 +9236,10 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	 * because we want to actually create object. mono_object_new checks
 	 * to see if type is import and creates transparent proxy. this method
 	 * is called by the corresponding real proxy to create the real RCW.
+	 * Constructor does not need to be called. Will be called later.
 	*/
-	return mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
+	obj = mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
+	return obj;
 }
 
 static gboolean    

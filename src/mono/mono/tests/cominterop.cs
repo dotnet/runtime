@@ -92,13 +92,7 @@ public class Tests
     [DllImport ("libtest")]
     public static extern int mono_test_marshal_com_object_ref_count (IntPtr pUnk);
 
-	public static int Main ()
-	{
-		int i = Main2 ();
-		Console.WriteLine (i);
-		return i;
-	}
-	public static int Main2() {
+	public static int Main() {
 
         bool isWindows = !(((int)Environment.OSVersion.Platform == 4) || 
             ((int)Environment.OSVersion.Platform == 128));
@@ -230,6 +224,20 @@ public class Tests
 				Marshal.ReleaseComObject (diff2) != 0)
 				return 41;
 
+			IntPtr pUnk2 = Marshal.GetIUnknownForObject (imath);
+			if (pUnk2 == IntPtr.Zero)
+				return 50;
+
+			if (pUnk != pUnk2)
+				return 51;
+
+			IntPtr pDisp = Marshal.GetIDispatchForObject (imath);
+			if (pDisp == IntPtr.Zero)
+				return 52;
+
+			if (pUnk != pDisp)
+				return 53;
+
 
 			//if (mono_test_marshal_com_object_destroy (pUnk) != 0)
 			//    return 31;
@@ -240,7 +248,7 @@ public class Tests
 	}
 
     [ComImport()]
-    [Guid ("00000000-0000-0000-0000-000000000000")]
+    [Guid ("00000000-0000-0000-0000-000000000001")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IMath
     {
@@ -253,4 +261,18 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		int Different ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
     }
+
+	[ComImport ()]
+	[Guid ("00000000-0000-0000-0000-000000000002")]
+	public class Foo : IMath
+	{
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public extern int Add (int a, int b);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public extern int Subtract (int a, int b);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public extern int Same ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public extern int Different ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
+	}
 }

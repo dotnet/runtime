@@ -1819,6 +1819,15 @@ ves_icall_type_isbyref (MonoReflectionType *type)
 	return type->type->byref;
 }
 
+static MonoBoolean
+ves_icall_type_iscomobject (MonoReflectionType *type)
+{
+	MonoClass *klass = mono_class_from_mono_type (type->type);
+	MONO_ARCH_SAVE_REGS;
+
+	return (klass && klass->is_com_object);
+}
+
 static MonoReflectionModule*
 ves_icall_MonoType_get_Module (MonoReflectionType *type)
 {
@@ -6756,6 +6765,7 @@ static const IcallEntry monotype_icalls [] = {
 	{"GetPropertiesByName", ves_icall_Type_GetPropertiesByName},
 	{"InternalGetEvent", ves_icall_MonoType_GetEvent},
 	{"IsByRefImpl", ves_icall_type_isbyref},
+	{"IsCOMObjectImpl", ves_icall_type_iscomobject},
 	{"IsPointerImpl", ves_icall_type_ispointer},
 	{"IsPrimitiveImpl", ves_icall_type_isprimitive},
 	{"getFullName", ves_icall_System_MonoType_getFullName},

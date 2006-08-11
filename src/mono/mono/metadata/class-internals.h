@@ -268,6 +268,12 @@ struct _MonoClass {
 	/* next byte */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
+	/* directly or indirectly derives from ComImport attributed class.
+	 * this means we need to create a proxy for instances of this class
+	 * for COM Interop. set this flag on loading so all we need is a quick check
+	 * during object creation rather than having to traverse supertypes
+	 */
+	guint is_com_object : 1; 
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 	void*      exception_data;	/* Additional information about the exception */

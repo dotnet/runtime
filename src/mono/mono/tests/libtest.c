@@ -7,6 +7,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include "initguid.h"
 #endif
 
 #ifdef WIN32
@@ -2065,10 +2066,26 @@ struct MonoComObject
 	int m_ref;
 };
 
+DEFINE_GUID(IID_IMath, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+DEFINE_GUID(IID_IMonoUnknown, 0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+DEFINE_GUID(IID_IMonoDispatch, 0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+
 int COM_STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 {
-	*ppv = pUnk;
-	return 0;
+	*ppv = NULL;
+	if (!memcmp(riid, &IID_IMonoUnknown, sizeof(GUID))) {
+		*ppv = pUnk;
+		return S_OK;
+	}
+	else if (!memcmp(riid, &IID_IMath, sizeof(GUID))) {
+		*ppv = pUnk;
+		return S_OK;
+	}
+	else if (!memcmp(riid, &IID_IMonoDispatch, sizeof(GUID))) {
+		*ppv = pUnk;
+		return S_OK;
+	}
+	return E_NOINTERFACE;
 }
 
 int COM_STDCALL MonoAddRef(MonoComObject* pUnk)

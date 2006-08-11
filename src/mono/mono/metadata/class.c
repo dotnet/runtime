@@ -2656,9 +2656,12 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		/* Imported COM Objects always derive from __ComObject. */
-		if (MONO_CLASS_IS_IMPORT (class) && parent == mono_defaults.object_class)
-			parent = mono_defaults.com_object_class;
+		if (MONO_CLASS_IS_IMPORT (class)) {
+			if (parent == mono_defaults.object_class)
+				parent = mono_defaults.com_object_class;
+		}
 		class->parent = parent;
+
 
 		if (!parent)
 			g_assert_not_reached (); /* FIXME */
@@ -2675,6 +2678,10 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		class->marshalbyref = parent->marshalbyref;
 		class->contextbound  = parent->contextbound;
 		class->delegate  = parent->delegate;
+		if (MONO_CLASS_IS_IMPORT (class))
+			class->is_com_object = 1;
+		else
+			class->is_com_object = parent->is_com_object;
 		
 		if (system_namespace) {
 			if (*class->name == 'M' && !strcmp (class->name, "MarshalByRefObject"))
