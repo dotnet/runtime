@@ -8795,22 +8795,22 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
 	return mono_string_to_bstr(ptr);
 }
 
-#ifndef _MSC_VER
-typedef struct
-{
-	int (__attribute__((stdcall)) *QueryInterface)(gpointer pUnk, gpointer riid, gpointer* ppv);
-	int (__attribute__((stdcall)) *AddRef)(gpointer pUnk);
-	int (__attribute__((stdcall)) *Release)(gpointer pUnk);
-} MonoIUnknown;
+#ifdef  __i386__
+#ifdef _MSC_VER
+#define STDCALL __stdcall
 #else
-typedef struct
-{
-	int (__stdcall *QueryInterface)(gpointer pUnk, gpointer riid, gpointer* ppv);
-	int (__stdcall *AddRef)(gpointer pUnk);
-	int (__stdcall *Release)(gpointer pUnk);
-} MonoIUnknown;
+#define STDCALL __attribute__((stdcall))
+#endif
+#else
+#define STDCALL
 #endif
 
+typedef struct
+{
+	int (STDCALL *QueryInterface)(gpointer pUnk, gpointer riid, gpointer* ppv);
+	int (STDCALL *AddRef)(gpointer pUnk);
+	int (STDCALL *Release)(gpointer pUnk);
+} MonoIUnknown;
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
