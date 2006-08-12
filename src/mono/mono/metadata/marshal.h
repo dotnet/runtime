@@ -146,6 +146,9 @@ mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);
 guint32
 mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op);
 
+guint32
+mono_mb_emit_short_branch (MonoMethodBuilder *mb, guint8 op);
+
 void
 mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr);
 
