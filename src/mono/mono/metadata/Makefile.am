@@ -93,6 +93,7 @@ libmonoruntime_la_SOURCES = \
 	environment.h	\
 	locales.c	\
 	locales.h	\
+	normalization-tables.h	\
 	filewatcher.c	\
 	filewatcher.h	\
 	culture-info.h  \

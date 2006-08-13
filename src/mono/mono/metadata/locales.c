@@ -21,6 +21,7 @@
 #include <mono/metadata/locales.h>
 #include <mono/metadata/culture-info.h>
 #include <mono/metadata/culture-info-tables.h>
+#include <mono/metadata/normalization-tables.h>
 
 
 #include <locale.h>
@@ -937,4 +938,20 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 		return(-1);
 	}
 }
+
+void load_normalization_resource (guint8 **argProps,
+				  guint8 **argMappedChars,
+				  guint8 **argCharMapIndex,
+				  guint8 **argHelperIndex,
+				  guint8 **argMapIdxToComposite,
+				  guint8 **argCombiningClass)
+{
+	*argProps = props;
+	*argMappedChars = (guint8*) mappedChars;
+	*argCharMapIndex = (guint8*) charMapIndex;
+	*argHelperIndex = (guint8*) helperIndex;
+	*argMapIdxToComposite = (guint8*) mapIdxToComposite;
+	*argCombiningClass = combiningClass;
+}
+
 

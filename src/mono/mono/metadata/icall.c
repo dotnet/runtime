@@ -6641,6 +6641,10 @@ static const IcallEntry compareinfo_icalls [] = {
 	{"internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index}
 };
 
+static const IcallEntry normalization_icalls [] = {
+	{"load_normalization_resource(intptr&,intptr&,intptr&,intptr&,intptr&,intptr&)", load_normalization_resource}
+};
+
 static const IcallEntry gc_icalls [] = {
 	{"GetTotalMemory", ves_icall_System_GC_GetTotalMemory},
 	{"InternalCollect", ves_icall_System_GC_InternalCollect},
@@ -7342,6 +7346,7 @@ static const IcallEntry array_icalls [] = {
 
 /* keep the entries all sorted */
 static const IcallMap icall_entries [] = {
+	{"Mono.Globalization.Unicode.Normalization", normalization_icalls, G_N_ELEMENTS (normalization_icalls)},
 	{"Mono.Runtime", runtime_icalls, G_N_ELEMENTS (runtime_icalls)},
 	{"Mono.Security.Cryptography.KeyPairPersistence", keypair_icalls, G_N_ELEMENTS (keypair_icalls)},
 	{"System.Activator", activator_icalls, G_N_ELEMENTS (activator_icalls)},
