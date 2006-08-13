@@ -1135,13 +1135,18 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 	mb->pos += 2;
 }
 
+static inline void
+mono_mb_emit_op (MonoMethodBuilder *mb, guint8 op, gpointer data)
+{
+	mono_mb_emit_byte (mb, op);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, data));
+}
+
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str)
 {
-	mono_mb_emit_byte (mb, CEE_LDSTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, str));
+	mono_mb_emit_op (mb, CEE_LDSTR, str);
 }
-
 
 void
 mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
@@ -1265,22 +1270,19 @@ static void
 mono_mb_emit_ptr (MonoMethodBuilder *mb, gpointer ptr)
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ptr));
+	mono_mb_emit_op (mb, CEE_MONO_LDPTR, ptr);
 }
 
 static void
 mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 {
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, sig));
+	mono_mb_emit_op (mb, CEE_CALLI, sig);
 }
 
 void
 mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig)
 {
-	mono_mb_emit_byte (mb, CEE_CALL);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_op (mb, CEE_CALL, method);
 }
 
 void
@@ -1298,8 +1300,7 @@ static void
 mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func)
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_ICALL);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, func));
+	mono_mb_emit_op (mb, CEE_MONO_ICALL, func);
 }
 
 static void
@@ -1326,8 +1327,7 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 	mono_class_init (mme);
 	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
 	g_assert (ctor);
-	mono_mb_emit_byte (mb, CEE_NEWOBJ);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ctor));
+	mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
 	if (msg != NULL) {
 		mono_mb_emit_byte (mb, CEE_DUP);
 		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoException, message));
@@ -1512,8 +1512,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		/* create a new array */
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_byte (mb, CEE_NEWARR);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+		mono_mb_emit_op (mb, CEE_NEWARR, eklass);	
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 
 		if (eklass->blittable) {
@@ -1564,8 +1563,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			/* Set dst */
 			mono_mb_emit_ldloc (mb, array_var);
 			mono_mb_emit_ldloc (mb, index_var);
-			mono_mb_emit_byte (mb, CEE_LDELEMA);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+			mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
 			mono_mb_emit_stloc (mb, 1);
 
 			/* Do the conversion */
@@ -1594,8 +1592,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		/* create a new array */
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_byte (mb, CEE_NEWARR);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
+		mono_mb_emit_op (mb, CEE_NEWARR, eclass);	
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 		mono_mb_emit_ldloc (mb, 1);
@@ -1643,8 +1640,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		/* *dst = new object */
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);	
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 	
 		/* save the old src pointer */
@@ -1676,8 +1672,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall (mb, mono_ftnptr_to_delegate);
@@ -1833,10 +1828,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_ldloc (mb, 0);	
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);	
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
-			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_CPBLK);			
@@ -1875,8 +1867,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			/* Set src */
 			mono_mb_emit_ldloc (mb, array_var);
 			mono_mb_emit_ldloc (mb, index_var);
-			mono_mb_emit_byte (mb, CEE_LDELEMA);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+			mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
 			mono_mb_emit_stloc (mb, 0);
 
 			/* dst is already set */
@@ -2136,8 +2127,7 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 	/* Call DestroyStructure */
 	/* FIXME: Only do this if needed */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+	mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 	mono_mb_emit_ldloc (mb, struct_var);
 	mono_mb_emit_icall (mb, mono_struct_delete_old);
 }
@@ -2684,8 +2674,7 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (return_type)));
+		mono_mb_emit_op (mb, CEE_UNBOX, mono_class_from_mono_type (return_type));
 		mono_mb_emit_byte (mb, mono_type_to_ldind (return_type));
 		break;
 	case MONO_TYPE_GENERICINST:
@@ -2693,12 +2682,9 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 			break;
 		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
-		int class;
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		class = mono_mb_add_data (mb, mono_class_from_mono_type (return_type));
-		mono_mb_emit_i4 (mb, class);
-		mono_mb_emit_byte (mb, CEE_LDOBJ);
-		mono_mb_emit_i4 (mb, class);
+		MonoClass *klass = mono_class_from_mono_type (return_type);
+		mono_mb_emit_op (mb, CEE_UNBOX, klass);
+		mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		break;
 	}
 	default:
@@ -3023,10 +3009,9 @@ cominterop_get_invoke (MonoMethod *method)
 	}
 	else {
 		if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, method);
 		else
-			mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+			mono_mb_emit_op (mb, CEE_CALL, method);
 	}
 
 	if (!strcmp(method->name, ".ctor"))	{
@@ -3248,8 +3233,7 @@ static void
 mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
 	mono_mb_emit_icall (mb, mono_marshal_xdomain_copy_value);
-	mono_mb_emit_byte (mb, CEE_CASTCLASS);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+	mono_mb_emit_op (mb, CEE_CASTCLASS, pclass);
 }
 
 static void
@@ -3407,24 +3391,19 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 			if (pt->byref) {
 				if (pclass->valuetype) {
 					mono_mb_emit_byte (mb, CEE_LDELEM_REF);
-					mono_mb_emit_byte (mb, CEE_UNBOX);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+					mono_mb_emit_op (mb, CEE_UNBOX, pclass);
 				} else {
-					mono_mb_emit_byte (mb, CEE_LDELEMA);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+					mono_mb_emit_op (mb, CEE_LDELEMA, pclass);
 				}
 			} else {
 				if (pclass->valuetype) {
 					mono_mb_emit_byte (mb, CEE_LDELEM_REF);
-					mono_mb_emit_byte (mb, CEE_UNBOX);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-					mono_mb_emit_byte (mb, CEE_LDOBJ);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+					mono_mb_emit_op (mb, CEE_UNBOX, pclass);
+					mono_mb_emit_op (mb, CEE_LDOBJ, pclass);
 				} else {
 					mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 					if (pclass != mono_defaults.object_class) {
-						mono_mb_emit_byte (mb, CEE_CASTCLASS);
-						mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+						mono_mb_emit_op (mb, CEE_CASTCLASS, pclass);
 					}
 				}
 			}
@@ -3463,8 +3442,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	emit_thread_force_interrupt_checkpoint (mb);
 	
-	mono_mb_emit_byte (mb, CEE_CALLVIRT);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_op (mb, CEE_CALLVIRT, method);
 
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_stloc (mb, loc_return);
@@ -3506,8 +3484,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 			mono_mb_emit_icon (mb, complex_count);	/* The array has an additional slot to hold the ret value */
 			mono_mb_emit_ldloc (mb, loc_return);
 			if (ret_class->valuetype) {
-				mono_mb_emit_byte (mb, CEE_BOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+				mono_mb_emit_op (mb, CEE_BOX, ret_class);
 			}
 			mono_mb_emit_byte (mb, CEE_STELEM_REF);
 		}
@@ -3522,8 +3499,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_ldloc (mb, loc_return);
 		if (ret_class->valuetype) {
-			mono_mb_emit_byte (mb, CEE_BOX);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+			mono_mb_emit_op (mb, CEE_BOX, ret_class);
 		}
 		mono_mb_emit_managed_call (mb, method_rs_serialize, NULL);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
@@ -3675,8 +3651,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 
 	if (complex_count > 0) {
 		mono_mb_emit_icon (mb, (ret_marshal_type == MONO_MARSHAL_SERIALIZE && complex_out_count > 0) ? complex_count + 1 : complex_count);	/* +1 for the return type */
-		mono_mb_emit_byte (mb, CEE_NEWARR);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.object_class));
+		mono_mb_emit_op (mb, CEE_NEWARR, mono_defaults.object_class);
 	
 		j = 0;
 		for (i = 0; i < sig->param_count; i++) {
@@ -3687,17 +3662,13 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 			mono_mb_emit_icon (mb, j);
 			mono_mb_emit_ldarg (mb, i + 1);		/* 0=this */
 			if (sig->params[i]->byref) {
-				if (pclass->valuetype) {
-					mono_mb_emit_byte (mb, CEE_LDOBJ);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-				} else {
+				if (pclass->valuetype)
+					mono_mb_emit_op (mb, CEE_LDOBJ, pclass);
+				else
 					mono_mb_emit_byte (mb, CEE_LDIND_REF);
-				}
 			}
-			if (pclass->valuetype) {
-				mono_mb_emit_byte (mb, CEE_BOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-			}
+			if (pclass->valuetype)
+				mono_mb_emit_op (mb, CEE_BOX, pclass);
 			mono_mb_emit_byte (mb, CEE_STELEM_REF);
 			j++;
 		}
@@ -3792,8 +3763,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	mono_mb_emit_ldloc (mb, loc_serialized_exc);
 	mono_marshal_emit_xdomain_copy_value (mb, byte_array_class);
 	mono_mb_emit_managed_call (mb, method_rs_deserialize, NULL);
-	mono_mb_emit_byte (mb, CEE_CASTCLASS);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.exception_class));
+	mono_mb_emit_op (mb, CEE_CASTCLASS, mono_defaults.exception_class);
 	mono_mb_emit_managed_call (mb, method_exc_fixexc, NULL);
 	mono_mb_emit_byte (mb, CEE_THROW);
 	mono_mb_patch_addr_s (mb, pos_noex, mb->pos - pos_noex - 1);
@@ -3829,17 +3799,12 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 				mono_mb_emit_icon (mb, j);
 				mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 				if (pclass->valuetype) {
-					mono_mb_emit_byte (mb, CEE_UNBOX);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-					mono_mb_emit_byte (mb, CEE_LDOBJ);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-					mono_mb_emit_byte (mb, CEE_STOBJ);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
+					mono_mb_emit_op (mb, CEE_UNBOX, pclass);
+					mono_mb_emit_op (mb, CEE_LDOBJ, pclass);
+					mono_mb_emit_op (mb, CEE_STOBJ, pclass);
 				} else {
-					if (pclass != mono_defaults.object_class) {
-						mono_mb_emit_byte (mb, CEE_CASTCLASS);
-						mono_mb_emit_i4 (mb, mono_mb_add_data (mb, pclass));
-					}
+					if (pclass != mono_defaults.object_class)
+						mono_mb_emit_op (mb, CEE_CASTCLASS, pclass);
 					mono_mb_emit_byte (mb, CEE_STIND_REF);
 				}
 			}
@@ -3851,10 +3816,8 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 			mono_mb_emit_icon (mb, complex_count);
 			mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 			if (ret_class->valuetype) {
-				mono_mb_emit_byte (mb, CEE_UNBOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
-				mono_mb_emit_byte (mb, CEE_LDOBJ);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+				mono_mb_emit_op (mb, CEE_UNBOX, ret_class);
+				mono_mb_emit_op (mb, CEE_LDOBJ, ret_class);
 			}
 		}
 	} else if (ret_marshal_type == MONO_MARSHAL_SERIALIZE) {
@@ -3862,13 +3825,10 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 		mono_marshal_emit_xdomain_copy_value (mb, byte_array_class);
 		mono_mb_emit_managed_call (mb, method_rs_deserialize, NULL);
 		if (ret_class->valuetype) {
-			mono_mb_emit_byte (mb, CEE_UNBOX);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
-			mono_mb_emit_byte (mb, CEE_LDOBJ);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+			mono_mb_emit_op (mb, CEE_UNBOX, ret_class);
+			mono_mb_emit_op (mb, CEE_LDOBJ, ret_class);
 		} else if (ret_class != mono_defaults.object_class) {
-			mono_mb_emit_byte (mb, CEE_CASTCLASS);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ret_class));
+			mono_mb_emit_op (mb, CEE_CASTCLASS, ret_class);
 		}
 	} else {
 		mono_mb_emit_ldloc (mb, loc_serialized_data);
@@ -4053,8 +4013,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 	mono_mb_emit_byte (mb, CEE_LDIND_I );
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, sig));
+	mono_mb_emit_op (mb, CEE_CALLI, sig);
 
 	pos1 = mono_mb_emit_branch (mb, CEE_BR);
 
@@ -4066,8 +4025,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 	mono_mb_emit_byte (mb, CEE_LDIND_I );
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, static_sig));
+	mono_mb_emit_op (mb, CEE_CALLI, static_sig);
 
 	/* return */
 	mono_mb_patch_branch (mb, pos1);
@@ -4288,13 +4246,10 @@ handle_enum:
 			}
 			if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
 				/* Need to convert a boxed vtype to an mp to a Nullable struct */
-				mono_mb_emit_byte (mb, CEE_UNBOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
-				mono_mb_emit_byte (mb, CEE_LDOBJ);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
+				mono_mb_emit_op (mb, CEE_UNBOX, mono_class_from_mono_type (sig->params [i]));
+				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type (sig->params [i]));
 			} else {
-				mono_mb_emit_byte (mb, CEE_LDOBJ);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->params [i])));
+				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type (sig->params [i]));
 			}
 			break;
 		default:
@@ -4334,8 +4289,7 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_GENERICINST:
 		/* box value types */
-		mono_mb_emit_byte (mb, CEE_BOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->ret)));
+		mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (sig->ret));
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS:  
@@ -4385,8 +4339,7 @@ handle_enum:
 
 	/* Check for the abort exception */
 	mono_mb_emit_ldloc (mb, 1);
-	mono_mb_emit_byte (mb, CEE_ISINST);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.threadabortexception_class));
+	mono_mb_emit_op (mb, CEE_ISINST, mono_defaults.threadabortexception_class);
 	posna = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 	/* Delay the abort exception */
@@ -4577,8 +4530,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	*/
 
 	if (klass->valuetype) {
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
+		mono_mb_emit_op (mb, CEE_UNBOX, klass);
 		pos1 = mono_mb_emit_branch (mb, CEE_BR);
 	} else {
 		mono_mb_emit_byte (mb, CEE_RET);
@@ -4622,13 +4574,11 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		break;
 	case MONO_TYPE_VALUETYPE:
 		g_assert (!klass->enumtype);
-		mono_mb_emit_byte (mb, CEE_LDOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (mono_type_generic_inst_is_valuetype (type)) {
-			mono_mb_emit_byte (mb, CEE_LDOBJ);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		}
@@ -4768,10 +4718,8 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 3);
 
-	if (klass->valuetype) {
-		mono_mb_emit_byte (mb, CEE_BOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
-	}
+	if (klass->valuetype)
+		mono_mb_emit_op (mb, CEE_BOX, klass);
 
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
@@ -4900,12 +4848,10 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		break;
 	case MONO_TYPE_VALUETYPE:
 		g_assert (!klass->enumtype);
-		mono_mb_emit_byte (mb, CEE_STOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_STOBJ, klass);
 		break;
 	case MONO_TYPE_GENERICINST:
-		mono_mb_emit_byte (mb, CEE_STOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_STOBJ, klass);
 		break;
 	default:
 		g_warning ("type %x not implemented", type->type);
@@ -5091,8 +5037,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 				
 		mono_mb_emit_ldarg (mb, argnum);
 		if (t->byref)
@@ -5105,12 +5050,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			 */
 			*conv_arg_type = &mono_defaults.int_class->byval_arg;
 
-			mono_mb_emit_byte (mb, CEE_BOX);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (t)));
+			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (t));
 		}
 
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_managed_to_native);
 		mono_mb_emit_stloc (mb, conv_arg);
 
 		mono_mb_patch_branch (mb, pos2);
@@ -5126,24 +5069,20 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-			mono_mb_emit_byte (mb, CEE_CALL);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+			mono_mb_emit_op (mb, CEE_CALL, get_instance);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		}
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 
 		mono_mb_emit_ldloc (mb, conv_arg);
 
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_native);
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -5169,18 +5108,15 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 		mono_mb_emit_byte (mb, CEE_DUP);
 
 		mono_mb_emit_ldloc (mb, 3);
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 		mono_mb_emit_stloc (mb, 3);
 
 		mono_mb_emit_ldloc (mb, loc1);
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_native);
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -5201,13 +5137,11 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 				
 		mono_mb_emit_ldarg (mb, argnum);
 				
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 		mono_mb_emit_stloc (mb, conv_arg);
 
 		mono_mb_patch_branch (mb, pos2);
@@ -5228,18 +5162,15 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 		mono_mb_emit_byte (mb, CEE_DUP);
 
 		mono_mb_emit_ldloc (mb, 3);
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_managed_to_native);
 		mono_mb_emit_stloc (mb, 3);
 
 		mono_mb_emit_ldloc (mb, loc1);
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -5254,12 +5185,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* Call CleanUpManagedData */
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-		mono_mb_emit_byte (mb, CEE_CALL);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_op (mb, CEE_CALL, get_instance);
 				
 		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_byte (mb, CEE_CALLVIRT);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
+		mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
@@ -5394,8 +5323,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, conv_arg);
 		if (!t->byref) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_LDNATIVEOBJ);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_op (mb, CEE_MONO_LDNATIVEOBJ, klass);
 		}
 		break;
 
@@ -5796,10 +5724,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_stloc (mb, conv_arg);
 		} else if (klass->blittable) {
 			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 			mono_mb_emit_stloc (mb, conv_arg);
 			break;
 		} else {
@@ -5840,10 +5765,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			/* set the src_ptr */
 			mono_mb_emit_ldloc (mb, 0);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 			mono_mb_emit_stloc (mb, 0);
 
 			/* set dst_ptr */
@@ -5913,10 +5835,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, real_proxy);
 				mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
-				if (klass && klass != mono_defaults.object_class) {
-					mono_mb_emit_byte (mb, CEE_CASTCLASS);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-				}
+				if (klass && klass != mono_defaults.object_class)
+					mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
 				mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 				// case if null
@@ -5954,8 +5874,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* allocate a new object */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
+			mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, t->data.klass);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		}
 
@@ -6026,8 +5945,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			g_assert (!t->byref);
 			mono_mb_emit_stloc (mb, 0);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
 			mono_mb_emit_stloc (mb, 3);
@@ -6054,17 +5972,13 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* allocate result object */
 	
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);	
 			mono_mb_emit_stloc (mb, 3);
 					
 			/* set dst  */
 	
 			mono_mb_emit_ldloc (mb, 3);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 			mono_mb_emit_stloc (mb, 1);
 								
 			/* emit conversion code */
@@ -6085,8 +5999,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (klass->delegate) {
 			g_assert (!t->byref);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
 			mono_mb_emit_stloc (mb, conv_arg);
@@ -6130,14 +6043,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Create and set dst */
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);	
 		mono_mb_emit_stloc (mb, conv_arg);
 		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_stloc (mb, 1); 
 
 		/* emit valuetype conversion code */
@@ -6159,10 +6068,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			
 		/* Set src */
 		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_stloc (mb, 0);
 
 		/* Allocate and set dest */
@@ -6207,10 +6113,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Set src */
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 		mono_mb_emit_stloc (mb, 0);
 
 		/* Allocate and set dest */
@@ -6347,8 +6250,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				/* set the src_ptr */
 				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_ldloc (mb, index_var);
-				mono_mb_emit_byte (mb, CEE_LDELEMA);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+				mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
 				mono_mb_emit_stloc (mb, 0);
 
 				/* set dst_ptr */
@@ -6469,8 +6371,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					if (t->byref)
 						mono_mb_emit_byte (mb, CEE_LDIND_I);
 					mono_mb_emit_ldloc (mb, index_var);
-					mono_mb_emit_byte (mb, CEE_LDELEMA);
-					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+					mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
 					mono_mb_emit_stloc (mb, 1);
 
 					/* emit valuetype conversion code */
@@ -6625,8 +6526,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 		}
 
-		mono_mb_emit_byte (mb, CEE_NEWARR);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+		mono_mb_emit_op (mb, CEE_NEWARR, eklass);
 		mono_mb_emit_stloc (mb, conv_arg);
 
 		if (eklass->blittable) {
@@ -7729,8 +7629,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (m.retobj_var) {
 		mono_mb_emit_ldloc (mb, m.retobj_var);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_RETOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, m.retobj_class));
+		mono_mb_emit_op (mb, CEE_MONO_RETOBJ, m.retobj_class);
 	}
 	else {
 		if (!MONO_TYPE_IS_VOID(sig->ret))
@@ -7808,8 +7707,7 @@ mono_marshal_get_isinst (MonoClass *klass)
 	/* check if the object is a proxy that needs special cast */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_CISINST);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+	mono_mb_emit_op (mb, CEE_MONO_CISINST, klass);
 
 	/* The result of MONO_ISINST can be:
 	   	0) the type check succeeded
@@ -7891,8 +7789,7 @@ mono_marshal_get_castclass (MonoClass *klass)
 	/* check if the object is a proxy that needs special cast */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_CCASTCLASS);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+	mono_mb_emit_op (mb, CEE_MONO_CCASTCLASS, klass);
 
 	/* The result of MONO_ISINST can be:
 	   	0) the cast is valid
@@ -7970,9 +7867,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	can_cast_to = mono_method_desc_search_in_class (desc, mono_defaults.iremotingtypeinfo_class);
 	g_assert (can_cast_to);
 	mono_method_desc_free (desc);
-	mono_mb_emit_byte (mb, CEE_CALLVIRT);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, can_cast_to));
-
+	mono_mb_emit_op (mb, CEE_CALLVIRT, can_cast_to);
 	
 	pos_failed = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -8125,8 +8020,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 		/* initialize dst_ptr */
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_byte (mb, CEE_UNBOX);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_op (mb, CEE_UNBOX, klass);
 		mono_mb_emit_stloc (mb, 1);
 
 		emit_struct_conv (mb, klass, TRUE);
@@ -8224,8 +8118,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	
 	/* this is needed to avoid recursion */
 	mono_mb_emit_byte (mb, CEE_PREFIX1);
-	mono_mb_emit_byte (mb, CEE_LDFTN);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_op (mb, CEE_LDFTN, method);
 	mono_mb_emit_calli (mb, mono_method_signature (method));
 
 	if (!MONO_TYPE_IS_VOID (sig->ret))
@@ -8357,8 +8250,7 @@ mono_marshal_get_stelemref ()
 	/* ldelema (implicit bound check) */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_byte (mb, CEE_LDELEMA);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.object_class));
+	mono_mb_emit_op (mb, CEE_LDELEMA, mono_defaults.object_class);
 	mono_mb_emit_stloc (mb, array_slot_addr);
 		
 	/* if (!value) goto do_store */
