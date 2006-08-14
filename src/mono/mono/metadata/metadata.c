@@ -1914,6 +1914,8 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	igclass->klass = g_new0 (MonoClass, 1);
 
 	gtype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	if (gtype == NULL)
+		return FALSE;
 	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
 	g_assert (gklass->generic_container);
