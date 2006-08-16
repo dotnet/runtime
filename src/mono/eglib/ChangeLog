@@ -1,0 +1,9 @@
+2006-08-16  Miguel de Icaza  <miguel@novell.com>
+
+	* test: Add test driver, and initial tests. 
+
+2006-08-15  Miguel de Icaza  <miguel@novell.com>
+
+	* src/ghashtable.c: Implement most of this, it is completely
+	untested at this point.
+

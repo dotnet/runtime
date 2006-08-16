@@ -47,7 +47,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libeglib_la_LIBADD =
+libeglib_la_DEPENDENCIES =
 am_libeglib_la_OBJECTS = ghashtable.lo
 libeglib_la_OBJECTS = $(am_libeglib_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -77,7 +77,7 @@ AUTOMAKE = ${SHELL} /cvs/mono/missing --run automake-1.9
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O0
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -174,6 +174,7 @@ libeglib_la_SOURCES = \
 	ghashtable.c
 
 INCLUDES = -I$(srcdir)
+libeglib_la_LIBADD = -lm
 all: all-am
 
 .SUFFIXES:
