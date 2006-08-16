@@ -1,3 +1,16 @@
+
+* Code that we will drop from Mono, because we do not really need this:
+
+  Directory, File manipulation:
+
+       g_dir_open, g_dir_close, g_dir_read_name,
+       G_FILE_ERROR_*
+
+       These will be replaced in io-layer with direct Unix calls.
+
+       These will be replaced in metadata with two code paths, native
+       Unix and native Windows.
+
 Routines missing from eglib, by count number:
 
     148 g_string_append
@@ -58,7 +71,6 @@ Routines missing from eglib, by count number:
       5 g_list_first
       5 g_get_current_dir
       5 g_file_get_contents
-      5 g_dir_open
       5 g_ascii_strcasecmp
       4 g_unsetenv
       4 g_strdown
@@ -78,8 +90,6 @@ Routines missing from eglib, by count number:
       3 g_list_insert_before
       3 g_list_foreach
       3 g_file_open_tmp
-      3 g_dir_read_name
-      3 g_dir_close
       3 g_convert
       3 g_array_new
       3 g_array_free
@@ -194,28 +204,6 @@ Macros:
       2 G_USEC_PER_SEC
       2 G_STRLOC
       2 G_IO_NVAL
-      2 G_FILE_ERROR_TXTBSY
-      2 G_FILE_ERROR_ROFS
-      2 G_FILE_ERROR_PIPE
-      2 G_FILE_ERROR_PERM
-      2 G_FILE_ERROR_NXIO
-      2 G_FILE_ERROR_NOTDIR
-      2 G_FILE_ERROR_NOSPC
-      2 G_FILE_ERROR_NOMEM
-      2 G_FILE_ERROR_NOENT
-      2 G_FILE_ERROR_NODEV
-      2 G_FILE_ERROR_NFILE
-      2 G_FILE_ERROR_NAMETOOLONG
-      2 G_FILE_ERROR_MFILE
-      2 G_FILE_ERROR_LOOP
-      2 G_FILE_ERROR_IO
-      2 G_FILE_ERROR_INVAL
-      2 G_FILE_ERROR_INTR
-      2 G_FILE_ERROR_FAULT
-      2 G_FILE_ERROR_FAILED
-      2 G_FILE_ERROR_BADF
-      2 G_FILE_ERROR_AGAIN
-      2 G_FILE_ERROR_ACCES
       2 G_BIG_ENDIAN
       1 G_SPAWN_SEARCH_PATH
       1 G_IO_PRI

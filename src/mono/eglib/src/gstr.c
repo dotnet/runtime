@@ -105,4 +105,5 @@ g_strconcat (const gchar *first, ...)
 gchar **
 g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
+	return NULL;
 }
