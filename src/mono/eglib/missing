@@ -11,6 +11,12 @@
        These will be replaced in metadata with two code paths, native
        Unix and native Windows.
 
+  g_unichar_
+
+       We probably do not need these anymore, we should kill the unmanaged
+       string collation and just leave the unmanaged string collation in
+       place.
+
 Routines missing from eglib, by count number:
 
     148 g_string_append
@@ -93,8 +99,6 @@ Routines missing from eglib, by count number:
       3 g_convert
       3 g_array_new
       3 g_array_free
-      2 g_unichar_type
-      2 g_unichar_tolower
       2 g_timer_stop
       2 g_timer_start
       2 g_timer_new
@@ -208,3 +212,8 @@ Macros:
       1 G_SPAWN_SEARCH_PATH
       1 G_IO_PRI
       1 G_ALLOC_ONLY
+
+Unlikely that we will implement:
+
+      2 g_unichar_type
+      2 g_unichar_tolower
