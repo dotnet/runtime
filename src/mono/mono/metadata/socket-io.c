@@ -827,7 +827,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	if (saddr->sa_family == AF_UNIX) {
 		/* sa_len includes the entire sockaddr size, so we don't need the
 		 * N bytes (sizeof (unsigned short)) of the family. */
-		data=mono_array_new(domain, mono_get_byte_class (), sa_size - 2);
+		data=mono_array_new(domain, mono_get_byte_class (), sa_size);
 	} else
 #endif
 	{
@@ -1059,7 +1059,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		struct sockaddr_un *sock_un;
 		int i;
 
-		/* Need a byte for the '\0' terminator, and the first
+		/* Need a byte for the '\0' terminator/prefix, and the first
 		 * two bytes hold the SocketAddress family
 		 */
 		if (len - 2 >= MONO_SIZEOF_SUNPATH) {
@@ -1074,8 +1074,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 								i + 2);
 		}
 		
-		sock_un->sun_path [len - 2] = '\0';
-		*sa_size = sizeof (struct sockaddr_un);
+		*sa_size = len;
 
 		return (struct sockaddr *)sock_un;
 #endif
