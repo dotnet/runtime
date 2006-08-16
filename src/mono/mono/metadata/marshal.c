@@ -3688,13 +3688,11 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	mono_mb_emit_ldloc (mb, loc_domainid);
 	mono_mb_emit_ptr (mb, method->klass->image);
 	mono_mb_emit_icall (mb, mono_marshal_check_domain_image);
-	mono_mb_emit_byte (mb, CEE_BRTRUE_S);
-	pos_dispatch = mb->pos;
-	mono_mb_emit_byte (mb, 0);
+	pos_dispatch = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
 	/* Use the whole remoting sink to dispatch this message */
 
-	mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
+	mono_mb_patch_short_branch (mb, pos);
 
 	mono_mb_emit_ldarg (mb, 0);
 	for (i = 0; i < sig->param_count; i++)
@@ -3702,7 +3700,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	
 	mono_mb_emit_managed_call (mb, mono_marshal_get_remoting_invoke (method), NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
-	mono_mb_patch_addr_s (mb, pos_dispatch, mb->pos - pos_dispatch - 1);
+	mono_mb_patch_short_branch (mb, pos_dispatch);
 
 	/* Create the array that will hold the parameters to be serialized */
 

@@ -471,11 +471,9 @@ ves_icall_System_AppDomain_getRootDomain ()
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
-	GSList *tmp;
 	
 	MONO_ARCH_SAVE_REGS;
 
