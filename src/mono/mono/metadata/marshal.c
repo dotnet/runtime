@@ -137,6 +137,9 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 static gint32
 mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push);
 
+static gboolean
+mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image);
+
 void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
 
@@ -389,6 +392,7 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
+		register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
 		register_icall (mono_compile_method, "mono_compile_method", "ptr ptr", FALSE);
 		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
@@ -3289,6 +3293,29 @@ mono_marshal_emit_load_domain_method (MonoMethodBuilder *mb, MonoMethod *method)
 	mono_mb_emit_icall (mb, mono_compile_method);
 }
 
+/* mono_marshal_check_domain_image ()
+ * Returns TRUE if the image is loaded in the specified
+ * application domain.
+ */
+static gboolean
+mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image)
+{
+	MonoAssembly* ass;
+	GSList *tmp;
+	
+	MonoDomain *domain = mono_domain_get_by_id (domain_id);
+	
+	mono_domain_assemblies_lock (domain);
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		ass = tmp->data;
+		if (ass->image == image)
+			break;
+	}
+	mono_domain_assemblies_unlock (domain);
+	
+	return tmp != NULL;
+}
+
 /* mono_marshal_get_xappdomain_dispatch ()
  * Generates a method that dispatches a method call from another domain into
  * the current domain.
@@ -3563,8 +3590,8 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	MonoMethod *xdomain_method;
 	int ret_marshal_type = MONO_MARSHAL_NONE;
 	int loc_array=0, loc_serialized_data=-1, loc_real_proxy;
-	int loc_old_domainid, loc_return=0, loc_serialized_exc=0, loc_context;
-	int pos, pos_noex;
+	int loc_old_domainid, loc_domainid, loc_return=0, loc_serialized_exc=0, loc_context;
+	int pos, pos_dispatch, pos_noex;
 	gboolean copy_return = FALSE;
 
 	g_assert (method);
@@ -3624,6 +3651,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	if (copy_return)
 		loc_return = mono_mb_add_local (mb, sig->ret);
 	loc_old_domainid = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	loc_domainid = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	loc_serialized_exc = mono_mb_add_local (mb, &byte_array_class->byval_arg);
 	loc_context = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
@@ -3637,15 +3665,44 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	 * through the whole remoting sink, since the context is going to change
 	 */
 	mono_mb_emit_managed_call (mb, method_needs_context_sink, NULL);
-	pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+	pos = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 	
+	/* Another case in which the fast path can't be used: when the target domain
+	 * has a different image for the same assembly.
+	 */
+
+	/* Get the target domain id */
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_byte (mb, CEE_DUP);
+	mono_mb_emit_stloc (mb, loc_real_proxy);
+
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_stloc (mb, loc_domainid);
+
+	/* Check if the target domain has the same image for the required assembly */
+
+	mono_mb_emit_ldloc (mb, loc_domainid);
+	mono_mb_emit_ptr (mb, method->klass->image);
+	mono_mb_emit_icall (mb, mono_marshal_check_domain_image);
+	mono_mb_emit_byte (mb, CEE_BRTRUE_S);
+	pos_dispatch = mb->pos;
+	mono_mb_emit_byte (mb, 0);
+
+	/* Use the whole remoting sink to dispatch this message */
+
+	mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
+
 	mono_mb_emit_ldarg (mb, 0);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
 	
 	mono_mb_emit_managed_call (mb, mono_marshal_get_remoting_invoke (method), NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
-	mono_mb_patch_short_branch (mb, pos);
+	mono_mb_patch_addr_s (mb, pos_dispatch, mb->pos - pos_dispatch - 1);
 
 	/* Create the array that will hold the parameters to be serialized */
 
@@ -3685,20 +3742,10 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 		mono_mb_emit_stloc (mb, loc_serialized_data);
 	}
 
-	/* Get the target domain id */
-
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
-	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_byte (mb, CEE_DUP);
-	mono_mb_emit_stloc (mb, loc_real_proxy);
-
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
-	mono_mb_emit_byte (mb, CEE_LDIND_I4);
-	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-
 	/* switch domain */
 
+	mono_mb_emit_ldloc (mb, loc_domainid);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
 	mono_marshal_emit_switch_domain (mb);
 	mono_mb_emit_stloc (mb, loc_old_domainid);
 

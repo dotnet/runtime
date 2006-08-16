@@ -500,12 +500,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 
 	mono_context_init (data);
 
-	/* The new appdomain should have all assemblies loaded */
-	mono_domain_assemblies_lock (domain);
-	/*g_print ("copy assemblies from domain %p (%s)\n", domain, domain->friendly_name);*/
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next)
-		add_assemblies_to_domain (data, tmp->data, NULL);
-	mono_domain_assemblies_unlock (domain);
+	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
 
 	return ad;
 }
