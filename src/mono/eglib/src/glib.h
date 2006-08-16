@@ -26,6 +26,9 @@
 #define g_new0(type,size)    ((type *) calloc (sizeof (type), (size))) 
 #define g_free(obj)          free (obj);
 #define g_realloc(obj,size)  realloc((obj), (size))
+#define g_strdup(x)          strdup(x)
+#define g_malloc(x)          malloc(x)
+#define g_malloc0(x)         calloc(1,x)
 
 /*
  * Basic data types
@@ -77,5 +80,12 @@ gboolean g_int_equal    (gconstpointer v1, gconstpointer v2);
 guint    g_int_hash     (gconstpointer v1);
 gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
 guint    g_str_hash     (gconstpointer v1);
+
+#define  g_assert(x)     do { fprintf (stderr, "* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x); abort (); } while (0)
+#define  g_assert_not_reached() do { fprintf (stderr, "* This line should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
+
+/*
+ * Strings
+ */
 
 #endif
