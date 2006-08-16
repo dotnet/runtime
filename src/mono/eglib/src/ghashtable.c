@@ -9,6 +9,7 @@
  *
  * (C) 2006 Novell, Inc.
  */
+#include <stdio.h>
 #include <glib.h>
 #include <math.h>
 
@@ -78,11 +79,11 @@ to_prime (int x)
 static void
 adjust_threshold (GHashTable *hash)
 {
-	int size = table->size;
+	int size = hash->table_size;
 
 	hash->threshold = (int) hash->table_size * hash->load_factor;
 	if (hash->threshold >= hash->table_size)
-		threshold = hash->table_size-1;
+		hash->threshold = hash->table_size-1;
 }
 	
 static void
@@ -103,7 +104,7 @@ g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 	table->load_factor = 0.75;
 	
 	table->table_size = to_prime (1);
-	set_table (table, g_new0 (slot, table->table_size));
+	set_table (table, g_new0 (Slot, table->table_size));
 	
 	return table;
 }
@@ -112,8 +113,8 @@ void
 g_hash_table_insert (GHashTable *hash, gpointer key, gpointer value)
 {
 	Slot *table, *entry;
-	guint size, spot;
-	int h, free_index;
+	guint size, spot, step;
+	int h, free_index, i;
 	
 	g_return_if_fail (hash != NULL);
 	
@@ -130,8 +131,7 @@ g_hash_table_insert (GHashTable *hash, gpointer key, gpointer value)
 
 	for (i = 0; i < size; i++){
 		int indx = (int) (spot % size);
-		entry = table [indx];
-		
+		entry = &table [indx];
 	}
 	
 }

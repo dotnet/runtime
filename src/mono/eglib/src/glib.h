@@ -1,6 +1,8 @@
 #ifndef __GLIB_H
 #define __GLIB_H
 
+#include <stdlib.h>
+
 /*
  * Macros
  */
@@ -37,7 +39,7 @@ typedef unsigned char  guchar;
 /*
  * Precondition macros
  */
-#define g_return_if_fail(x)  do { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #expr); return; } while (0) 
+#define g_return_if_fail(x)  do { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return; } } while (0) ;
 
 /*
  * Hashtables

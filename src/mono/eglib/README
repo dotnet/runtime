@@ -7,4 +7,8 @@ The implementation is done from the public documentation available here:
 
     http://developer.gnome.org/doc/API/2.0/glib/
 
+Currently this is only being built standalone, use:
+
+	  ./autogen.sh --prefix=/tmp/test
+
 
