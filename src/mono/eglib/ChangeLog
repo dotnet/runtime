@@ -1,3 +1,15 @@
+2006-08-16  Aaron Bockover  <abockover@novell.com>
+
+	* src/gstr.c: Added g_strsplit implementation
+
+	* test/driver.c: Run the split test
+
+	* test/str.c: Added a test for g_strsplit
+
+	* Makefile.am:
+	* src/Makefile.am:
+	* test/Makefile.am: Added MAINTAINERCLEANFILES
+
 2006-08-16  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gouput.c: Implement some output routines, update missing

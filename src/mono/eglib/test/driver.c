@@ -8,4 +8,5 @@ int main ()
 	test ("hash-1", hash_t1);
 	test ("s-freev", test_strfreev);
 	test ("s-concat", test_concat);
+	test ("s-split", test_split);
 }

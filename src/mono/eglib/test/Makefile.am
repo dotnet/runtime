@@ -9,3 +9,6 @@ test_SOURCES = \
 INCLUDES = -I../src
 
 test_LDADD = -L../src -leglib
+
+MAINTAINERCLEANFILES = Makefile.in
+

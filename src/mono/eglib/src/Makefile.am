@@ -8,3 +8,6 @@ libeglib_la_SOURCES = \
 INCLUDES = -I$(srcdir)
 
 libeglib_la_LIBADD = -lm
+
+MAINTAINERCLEANFILES = Makefile.in
+

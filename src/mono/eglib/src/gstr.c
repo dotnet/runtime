@@ -3,6 +3,7 @@
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
+ *   Aaron Bockover (abockover@novell.com)
  *
  * (C) 2006 Novell, Inc.
  *
@@ -102,8 +103,55 @@ g_strconcat (const gchar *first, ...)
 	return ret;
 }
 
-gchar **
-g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
+gchar ** 
+g_strsplit(const gchar *string, const gchar *delimiter, gint max_tokens)
 {
-	return NULL;
+	gchar *string_c;
+	gchar *strtok_save, **vector;
+	gchar *token, *token_c;
+	gint size = 1;
+	gint token_length;
+
+	g_return_val_if_fail(string != NULL, NULL);
+	g_return_val_if_fail(delimiter != NULL, NULL);
+	g_return_val_if_fail(delimiter[0] != '\0', NULL);
+	
+	token_length = strlen(string);
+	string_c = (gchar *)g_malloc(token_length + 1);
+	strncpy(string_c, string, token_length);
+	string_c[token_length] = '\0';
+	
+	vector = NULL;
+	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
+	
+	while(token != NULL) {
+		token_length = strlen(token);
+		token_c = (gchar *)malloc(token_length + 1);
+		strncpy(token_c, token, token_length);
+		token_c[token_length] = '\0';
+
+		vector = vector == NULL ? 
+			(gchar **)g_malloc(sizeof(vector)) :
+			(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
+	
+		vector[size - 1] = token_c;	
+		size++;
+
+		if(max_tokens > 0 && size >= max_tokens) {
+			if(size > max_tokens) {
+				break;
+			}
+
+			token = strtok_save;
+		} else {
+			token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
+		}
+	}
+
+	vector[size - 1] = NULL;
+	g_free(string_c);
+	string_c = NULL;
+
+	return vector;
 }
+
