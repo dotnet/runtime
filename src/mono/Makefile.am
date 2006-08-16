@@ -9,7 +9,7 @@ DIST_SUBDIRS = libgc mono ikvm-native support docs data runtime scripts man samp
 
 vs_files = genmdesc.vcproj libmono.vcproj mono.vcproj mono.sln
 
-EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in mono-cairo.pc.in $(vs_files)
+EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in mono-cairo.pc.in LICENSE $(vs_files)
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
