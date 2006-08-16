@@ -104,7 +104,7 @@ g_strconcat (const gchar *first, ...)
 }
 
 gchar ** 
-g_strsplit(const gchar *string, const gchar *delimiter, gint max_tokens)
+g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
 	gchar *string_c;
 	gchar *strtok_save, **vector;
@@ -126,7 +126,7 @@ g_strsplit(const gchar *string, const gchar *delimiter, gint max_tokens)
 	
 	while(token != NULL) {
 		token_length = strlen(token);
-		token_c = (gchar *)malloc(token_length + 1);
+		token_c = (gchar *)g_malloc(token_length + 1);
 		strncpy(token_c, token, token_length);
 		token_c[token_length] = '\0';
 
