@@ -7,6 +7,6 @@ test_SOURCES = \
 
 INCLUDES = -I../src
 
-CFLAGS = -
+CFLAGS = 
 
 test_LDADD = -L../src -leglib
