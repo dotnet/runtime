@@ -48,7 +48,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libeglib_la_DEPENDENCIES =
-am_libeglib_la_OBJECTS = ghashtable.lo
+am_libeglib_la_OBJECTS = ghashtable.lo goutput.lo
 libeglib_la_OBJECTS = $(am_libeglib_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
@@ -171,7 +171,8 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 noinst_LTLIBRARIES = libeglib.la
 libeglib_la_SOURCES = \
-	ghashtable.c
+	ghashtable.c	\
+	goutput.c
 
 INCLUDES = -I$(srcdir)
 libeglib_la_LIBADD = -lm
@@ -227,6 +228,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ghashtable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/goutput.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

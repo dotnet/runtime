@@ -1,6 +1,7 @@
 #ifndef __GLIB_H
 #define __GLIB_H
 
+#include <stdarg.h>
 #include <stdlib.h>
 
 /*
@@ -22,13 +23,15 @@
 /*
  * Allocation
  */
-#define g_new(type,size)     ((type *) malloc (sizeof (type) * (size)))
-#define g_new0(type,size)    ((type *) calloc (sizeof (type), (size))) 
-#define g_free(obj)          free (obj);
-#define g_realloc(obj,size)  realloc((obj), (size))
-#define g_strdup(x)          strdup(x)
-#define g_malloc(x)          malloc(x)
-#define g_malloc0(x)         calloc(1,x)
+#define g_new(type,size)        ((type *) malloc (sizeof (type) * (size)))
+#define g_new0(type,size)       ((type *) calloc (sizeof (type), (size))) 
+#define g_free(obj)             free (obj);
+#define g_realloc(obj,size)     realloc((obj), (size))
+#define g_strdup(x)             strdup(x)
+#define g_malloc(x)             malloc(x)
+#define g_try_malloc(x)         malloc(x)
+#define g_try_realloc(obj,size) realloc((obj),(size))
+#define g_malloc0(x)            calloc(1,x)
 
 /*
  * Basic data types
@@ -87,5 +90,39 @@ guint    g_str_hash     (gconstpointer v1);
 /*
  * Strings
  */
+gchar   *g_strdup_printf (const gchar *format, ...);
 
+/*
+ * Messages
+ */
+#ifndef G_LOG_DOMAIN
+#define G_LOG_DOMAIN ((gchar*) 0)
+#endif
+
+typedef enum {
+	G_LOG_FLAG_RECURSION          = 1 << 0,
+	G_LOG_FLAG_FATAL              = 1 << 1,
+	
+	G_LOG_LEVEL_ERROR             = 1 << 2,
+	G_LOG_LEVEL_CRITICAL          = 1 << 3,
+	G_LOG_LEVEL_WARNING           = 1 << 4,
+	G_LOG_LEVEL_MESSAGE           = 1 << 5,
+	G_LOG_LEVEL_INFO              = 1 << 6,
+	G_LOG_LEVEL_DEBUG             = 1 << 7,
+	
+	G_LOG_LEVEL_MASK              = ~(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL)
+} GLogLevelFlags;
+
+void           g_print                (const gchar *format, ...);
+GLogLevelFlags g_log_set_always_fatal (GLogLevelFlags fatal_mask);
+GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags fatal_mask);
+void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
+void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
+
+#define g_error(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format)
+#define g_critical(format...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format)
+#define g_warning(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format)
+#define g_message(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format)
+#define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
+	
 #endif

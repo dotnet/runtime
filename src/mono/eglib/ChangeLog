@@ -1,5 +1,8 @@
 2006-08-16  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gouput.c: Implement some output routines, update missing
+	progress. 
+
 	* test: Add test driver, and initial tests. 
 
 2006-08-15  Miguel de Icaza  <miguel@novell.com>
