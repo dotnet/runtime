@@ -394,35 +394,36 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_CLASS_INIT: {
 		MonoJumpInfo *new_ji = g_new0 (MonoJumpInfo, 1);
+		gpointer patch_id = NULL;
 
 		memcpy (new_ji, patch_info, sizeof (MonoJumpInfo));
 
 		/* First check for an existing patch */
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_METHOD:
-			idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info->data.method));
-			if (idx)
-				res = idx;
-			else
-				g_hash_table_insert (acfg->patch_to_plt_offset, patch_info->data.method, GUINT_TO_POINTER (acfg->plt_offset));
+			patch_id = patch_info->data.method;
 			break;
 		case MONO_PATCH_INFO_INTERNAL_METHOD:
-			idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info->data.name));
-			if (idx)
-				res = idx;
-			else
-				g_hash_table_insert (acfg->patch_to_plt_offset, (char*)patch_info->data.name, GUINT_TO_POINTER (acfg->plt_offset));
+			patch_id = (gpointer)patch_info->data.name;
 			break;
 		case MONO_PATCH_INFO_CLASS_INIT:
-			idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info->data.klass));
+			patch_id = patch_info->data.klass;
+			break;
+		case MONO_PATCH_INFO_WRAPPER:
+			/* A bit ugly, but works */
+			g_assert (patch_info->data.method->wrapper_type < sizeof (MonoMethod));
+			patch_id = (gpointer)(((guint8*)patch_info->data.method) + patch_info->data.method->wrapper_type);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		if (patch_id) {
+			idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_id));
 			if (idx)
 				res = idx;
 			else
-				g_hash_table_insert (acfg->patch_to_plt_offset, (char*)patch_info->data.klass, GUINT_TO_POINTER (acfg->plt_offset));
-
-			break;
-		default:
-			break;
+				g_hash_table_insert (acfg->patch_to_plt_offset, patch_id, GUINT_TO_POINTER (acfg->plt_offset));
 		}
 
 		if (res == -1) {
