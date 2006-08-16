@@ -171,7 +171,6 @@ Routines missing from eglib, by count number:
       1 g_array_remove_index
 
 Macros:
-    562 G_STRUCT_OFFSET
     124 G_GNUC_PRETTY_FUNCTION
      40 G_GSIZE_FORMAT
      40 G_GNUC_UNUSED

@@ -21,6 +21,9 @@
 #define GINT_TO_POINTER(v)     ((gpointer) (v))
 #define GUINT_TO_POINTER(v)    ((gpointer) (v))
 
+#define G_STRUCT_OFFSET(p_type,field) \
+        ((long) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
+
 /*
  * Allocation
  */
