@@ -2,7 +2,8 @@ noinst_LTLIBRARIES = libeglib.la
 
 libeglib_la_SOURCES = \
 	ghashtable.c	\
-	goutput.c
+	goutput.c	\
+	gstr.c	
 
 INCLUDES = -I$(srcdir)
 

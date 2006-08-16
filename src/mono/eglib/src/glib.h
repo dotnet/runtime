@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * Macros
@@ -37,6 +38,8 @@
  * Basic data types
  */
 typedef int            gboolean;
+typedef int            gint;
+typedef unsigned int   gsize;
 typedef unsigned int   guint;
 typedef short          gshort;
 typedef unsigned short gushort;
@@ -90,7 +93,13 @@ guint    g_str_hash     (gconstpointer v1);
 /*
  * Strings
  */
-gchar   *g_strdup_printf (const gchar *format, ...);
+gchar       *g_strdup_printf (const gchar *format, ...);
+gchar       *g_strndup       (const gchar *str, gsize n);
+const gchar *g_strerror      (gint errnum);
+gchar       *g_strndup       (const gchar *str, gsize n);
+void         g_strfreev      (gchar **str_array);
+gchar       *g_strconcat     (const gchar *first, ...);
+
 
 /*
  * Messages
@@ -124,5 +133,5 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
 #define g_warning(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format)
 #define g_message(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format)
 #define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
-	
+
 #endif

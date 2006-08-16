@@ -48,7 +48,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libeglib_la_DEPENDENCIES =
-am_libeglib_la_OBJECTS = ghashtable.lo goutput.lo
+am_libeglib_la_OBJECTS = ghashtable.lo goutput.lo gstr.lo
 libeglib_la_OBJECTS = $(am_libeglib_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
@@ -172,7 +172,8 @@ target_vendor = suse
 noinst_LTLIBRARIES = libeglib.la
 libeglib_la_SOURCES = \
 	ghashtable.c	\
-	goutput.c
+	goutput.c	\
+	gstr.c	
 
 INCLUDES = -I$(srcdir)
 libeglib_la_LIBADD = -lm
@@ -229,6 +230,7 @@ distclean-compile:
 
 include ./$(DEPDIR)/ghashtable.Plo
 include ./$(DEPDIR)/goutput.Plo
+include ./$(DEPDIR)/gstr.Plo
 
 .c.o:
 	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
