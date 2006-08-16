@@ -390,13 +390,6 @@ if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
 fi
 
-dnl for use on the build system
-dnl pkg-config is stupid
-BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-AC_SUBST(BUILD_GLIB_CFLAGS)
-AC_SUBST(BUILD_GLIB_LIBS)
-
 pkg_config_path=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	if test x$with_crosspkgdir = "x"; then
@@ -410,16 +403,36 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	fi
 )
 
-## Versions of dependencies
-GLIB_REQUIRED_VERSION=1.3.11
+AC_ARG_WITH([glib],
+	[  --with-glib=embedded|system       Choose glib API: system or embedded (default to system)],
+	[], [with_glib=system])
 
-PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
+case $with_glib in
+embedded) 
+  GLIB_CFLAGS='-I$(top_srcdir)/eglib/src'
+  GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib'
+  AC_CONFIG_SUBDIRS(eglib)
+  ;;
+system)
+  BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+  BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+  AC_SUBST(BUILD_GLIB_CFLAGS)
+  AC_SUBST(BUILD_GLIB_LIBS)
 
-GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
-GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
-
+  ## Versions of dependencies
+  GLIB_REQUIRED_VERSION=1.3.11
+  
+  PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
+  
+  GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+  GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+  GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
+  GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
+  ;;
+*)
+  AC_MSG_ERROR([Invalid argument to --with-glib.])
+esac
+  
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
