@@ -1,0 +1,10 @@
+
+The purpose of eglib is to be an X11-licensed subset of glib that can
+be used with Mono when the Mono runtime is explicitly relicensed under
+a different license by Novell.
+
+The implementation is done from the public documentation available here:
+
+    http://developer.gnome.org/doc/API/2.0/glib/
+
+
