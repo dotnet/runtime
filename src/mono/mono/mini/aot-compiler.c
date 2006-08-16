@@ -81,6 +81,7 @@ typedef struct MonoAotCompile {
 	FILE *fp;
 	GHashTable *patch_to_plt_offset;
 	GHashTable *plt_offset_to_patch;
+	GHashTable *patch_to_got_offset;
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
 	GPtrArray *image_table;
@@ -305,6 +306,27 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		*endbuf = p;
 }
 
+static guint
+patch_info_hash (gconstpointer data)
+{
+	const MonoJumpInfo *patch_info = (MonoJumpInfo*)data;
+
+	return (patch_info->type << 8) && GPOINTER_TO_UINT (patch_info->data.name);
+}
+
+static gint
+patch_info_equal (gconstpointer ka, gconstpointer kb)
+{
+	const MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
+	const MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
+
+	/* 
+	 * This might fail to recognize equivalent patches, i.e. floats, but this is not
+	 * a problem in this case.
+	 */
+	return ((ji1->type == ji2->type) && (ji1->data.name == ji2->data.name)) ? 1 : 0;
+}
+
 static guint32
 get_image_index (MonoAotCompile *cfg, MonoImage *image)
 {
@@ -393,10 +415,8 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_CLASS_INIT: {
-		MonoJumpInfo *new_ji = g_new0 (MonoJumpInfo, 1);
+		MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
 		gpointer patch_id = NULL;
-
-		memcpy (new_ji, patch_info, sizeof (MonoJumpInfo));
 
 		/* First check for an existing patch */
 		switch (patch_info->type) {
@@ -460,6 +480,14 @@ get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		res = acfg->got_offset;
 		acfg->got_offset ++;
 		break;
+	}
+
+	/* FIXME: Make use of this cache */
+	if (g_hash_table_lookup (acfg->patch_to_got_offset, patch_info)) {
+		//printf ("HIT: %s\n", patch_types [patch_info->type]);
+	} else {
+		MonoJumpInfo *ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
+		g_hash_table_insert (acfg->patch_to_got_offset, ji, GUINT_TO_POINTER (res));
 	}
 
 	return res;
@@ -1818,6 +1846,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (NULL, NULL);
+	acfg->patch_to_got_offset = g_hash_table_new (patch_info_hash, patch_info_equal);
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
