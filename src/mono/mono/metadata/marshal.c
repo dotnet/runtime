@@ -3304,6 +3304,8 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image)
 	GSList *tmp;
 	
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
+	if (!domain)
+		return FALSE;
 	
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
