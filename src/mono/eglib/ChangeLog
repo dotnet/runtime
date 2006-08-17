@@ -1,3 +1,10 @@
+2006-08-17  Miguel de Icaza  <miguel@novell.com>
+
+	* src/glib.h: A handful of extra macros
+
+	* configure.in, src/eglib-config.h.in: Set some system-specific
+	settings that are probed at configure time.
+
 2006-08-17  Aaron Bockover  <abockover@novell.com>
 
 	* src/gptrarray.c: Added beginnings of GPtrArray (alloc, free, add, iterate)

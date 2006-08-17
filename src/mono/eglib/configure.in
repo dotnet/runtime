@@ -10,8 +10,44 @@ AM_PROG_LIBTOOL
 CFLAGS='-g -O0'
 AC_SUBST(CFLAGS)
 
+GNUC_PRETTY=
+GNUC_UNUSED=
+BREAKPOINT=
+if test x$GCC = xyes; then
+   GNUC_PRETTY=__PRETTY_FUNCTION__
+   GNUC_UNUSED='__attribute__((__unused__))'
+   GNUC_NORETURN='__attribute__((__noreturn__))'
+   case $target in
+     i[3456]86-*)
+       BREAKPOINT="G_STMT_START { __asm__ ("int $03"); } G_STMT_END"
+     ;;
+   esac
+fi
+AC_SUBST(GNUC_PRETTY)
+AC_SUBST(GNUC_UNUSED)
+AC_SUBST(GNUC_NORETURN)
+AC_SUBST(BREAKPOINT)
+
+AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
+AC_SUBST(ORDER)
+
+case $host in
+*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
+    PATHSEP='\\'
+    SEARCHSEP=';'
+    ;;
+*)
+    PATHSEP='/'
+    SEARCHSEP=':'
+    ;;
+esac
+
+AC_SUBST(PATHSEP)
+AC_SUBST(SEARCHSEP)
+
 AC_OUTPUT([
 Makefile
 src/Makefile
+src/eglib-config.h
 test/Makefile
 ])

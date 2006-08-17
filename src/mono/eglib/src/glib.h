@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <eglib-config.h>
 
 /*
  * Basic data types
@@ -38,8 +39,15 @@ typedef unsigned char  guchar;
 #define GINT_TO_POINTER(v)     ((gpointer) (v))
 #define GUINT_TO_POINTER(v)    ((gpointer) (v))
 
+#define G_GSIZE_FORMAT "u"
+#define G_LITTLE_ENDIAN 1234
+#define G_BIG_ENDIAN    4321
+#define G_STMT_START    do 
+#define G_STMT_END      while (0)
+
 #define G_STRUCT_OFFSET(p_type,field) \
         ((long) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
+
 
 /*
  * Allocation
@@ -66,8 +74,8 @@ gpointer g_memdup (gconstpointer mem, guint byte_size);
 /*
  * Precondition macros
  */
-#define g_return_if_fail(x)  do { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return; } } while (0) ;
-#define g_return_val_if_fail(x,e)  do { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return (e); } } while (0) ;
+#define g_return_if_fail(x)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return; } } G_STMT_END
+#define g_return_val_if_fail(x,e)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return (e); } } G_STMT_END
 
 /*
  * Hashtables
@@ -103,8 +111,8 @@ guint    g_int_hash     (gconstpointer v1);
 gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
 guint    g_str_hash     (gconstpointer v1);
 
-#define  g_assert(x)     do { if (!(x)) g_error ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x); } while (0)
-#define  g_assert_not_reached() do { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
+#define  g_assert(x)     G_STMT_START { if (!(x)) g_error ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
+#define  g_assert_not_reached() G_STMT_START { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END
 
 /*
  * Strings utility

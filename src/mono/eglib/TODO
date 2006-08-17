@@ -140,35 +140,23 @@ Routines missing from eglib, by count number:
       1 g_get_prgname
       1 g_get_charset
       1 g_filename_from_utf8
-      1 g_bit_nth_msf
       1 g_ascii_strdown
       1 g_ascii_isprint
       1 g_array_remove_index
 
 Macros:
-    124 G_GNUC_PRETTY_FUNCTION
      40 G_GSIZE_FORMAT
-     40 G_GNUC_UNUSED
-     20 G_LITTLE_ENDIAN
-     16 G_DIR_SEPARATOR_S
-     12 G_BREAKPOINT
-     10 G_STMT_START
-     10 G_STMT_END
       9 G_GUINT64_FORMAT
       7 G_FILE_TEST_IS_DIR
       6 G_UNLIKELY
       6 G_HASH_TABLE_RESIZE
-      6 G_DIR_SEPARATOR
       5 G_UNLOCK
       5 G_LOCK
       4 G_LIKELY
-      4 G_GNUC_NORETURN
       4 G_FILE_TEST_IS_REGULAR
-      3 G_SEARCHPATH_SEPARATOR_S
       2 G_USEC_PER_SEC
       2 G_STRLOC
       2 G_IO_NVAL
-      2 G_BIG_ENDIAN
       1 G_SPAWN_SEARCH_PATH
       1 G_IO_PRI
       1 G_ALLOC_ONLY
