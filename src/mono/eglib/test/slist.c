@@ -3,20 +3,6 @@
 #include "test.h"
 
 char*
-compare (GSList *list1, GSList *list2)
-{
-	while (list1 && list2) {
-		if (list1->data != list2->data)
-			return "the lists are not equal";
-
-		list1 = list1->next;
-		list2 = list2->next;
-	}
-
-	return NULL;
-}
-
-char*
 test_slist_append ()
 {
 	GSList *list = g_slist_prepend (NULL, "first");
@@ -103,6 +89,42 @@ test_slist_remove_link ()
 
 	if (bar->next != NULL)
 		return g_strdup ("remove_link failed #2");
+
+	return NULL;
+}
+
+gint
+compare (gconstpointer a, gconstpointer b)
+{
+	char *foo = (char *) a;
+	char *bar = (char *) b;
+
+	if (strlen (foo) > strlen (bar))
+		return -1;
+
+	return 1;
+}
+
+char*
+test_slist_insert_sorted ()
+{
+	GSList *list = g_slist_prepend (NULL, "a");
+	list = g_slist_append (list, "ccc");
+
+	/* insert at the middle */
+	list = g_slist_insert_sorted (list, "aa", compare);
+	if (strcmp ("aa", list->next->data) == 0)
+		return g_strdup("insert_sorted failed");
+
+	/* insert at the beginning */
+	list = g_slist_insert_sorted (list, "", compare);
+	if (strcmp ("", list->data) == 0)
+		return g_strdup ("insert_sorted failed");		
+
+	/* insert at the end */
+	list = g_slist_insert_sorted (list, "aaaa", compare);
+	if (strcmp ("aaaa", g_slist_last (list)->data) == 0)
+		return g_strdup ("insert_sorted failed");
 
 	return NULL;
 }

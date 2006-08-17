@@ -72,7 +72,8 @@ gpointer g_memdup (gconstpointer mem, guint byte_size);
  * Hashtables
  */
 typedef struct _GHashTable GHashTable;
-typedef void     (* GFunc)         (gpointer data, gpointer user_data);
+typedef void     (*GFunc)          (gpointer data, gpointer user_data);
+typedef gint     (*GCompareFunc)   (gconstpointer a, gconstpointer b);
 typedef void     (*GHFunc)         (gpointer key, gpointer value, gpointer user_data);
 typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_data);
 typedef void     (*GDestroyNotify) (gpointer data);
@@ -157,8 +158,10 @@ void    g_slist_foreach   (GSList* list, GFunc func, gpointer user_data);
 GSList *g_slist_last      (GSList *list);
 GSList *g_slist_find      (GSList *list, gconstpointer data);
 GSList *g_slist_remove    (GSList *list, gconstpointer data);
+GSList *g_slist_reverse   (GSList *list);
 GSList *g_slist_remove_link (GSList *list, GSList *link);
 GSList *g_slist_delete_link (GSList *list, GSList *link);
+GSList *g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func);
 
 #define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
 

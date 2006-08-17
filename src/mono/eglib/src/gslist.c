@@ -206,12 +206,40 @@ g_slist_reverse (GSList *list)
 	GSList *prev = NULL;
 	while (list){
 		GSList *next = list->next;
-
 		list->next = prev;
-		
 		prev = list;
 		list = next;
 	}
 
 	return prev;
+}
+
+GSList*
+g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func)
+{
+	GSList *current = NULL;
+	GSList *prev = NULL;
+	
+	if (!func)
+		return list;
+
+	if (!list)
+		return g_slist_prepend (NULL, data);
+
+	if (func (list->data, data) > 0)
+		return g_slist_prepend (list, data);
+	
+	prev = list;
+	current = list->next;
+
+	while (current){
+		if (func (current->data, data) > 0){
+			prev->next = g_slist_prepend (current, data);
+			break;
+		}
+		current = current->next;
+		prev = current;
+	}
+
+	return list;
 }

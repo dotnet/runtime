@@ -16,4 +16,5 @@ int main ()
 	test ("s-slist-find", test_slist_find);
 	test ("s-slist-remove", test_slist_remove);
 	test ("s-slist-remove-link", test_slist_remove_link);
+	test ("s-slist-insert-sorted", test_slist_insert_sorted);
 }

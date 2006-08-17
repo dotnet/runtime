@@ -4,6 +4,7 @@
 	signature. Re-implemented.
 	(g_slist_delete_link): Implemented.
 	(g_slist_reverse): Implemented.
+	(g_slist_insert_sorted): Implemented.
 
 2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
 
