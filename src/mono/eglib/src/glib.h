@@ -121,6 +121,12 @@ gchar       *g_strreverse     (gchar *str);
 gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
 gchar       *g_strjoin        (const gchar *separator, ...);
+gchar       *g_strchug        (gchar *str);
+gchar       *g_strchomp        (gchar *str);
+
+#define g_strcasecmp strcasecmp
+#define g_strncasecmp strncasecmp
+#define g_strstrip(a) g_strchug (g_strchomp (a))
 
 /*
  * String type

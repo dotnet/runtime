@@ -29,6 +29,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <glib.h>
 
 /* This is not a macro, because I dont want to put _GNU_SOURCE in the glib.h header */
@@ -270,3 +271,36 @@ g_strjoin (const gchar *separator, ...)
 
 	return res;
 }
+
+gchar *
+g_strchug (gchar *str)
+{
+	gint len;
+	gchar *tmp;
+
+	if (str == NULL)
+		return NULL;
+
+	tmp = str;
+	while (*tmp && isspace (*tmp)) tmp++;
+	if (str != tmp) {
+		len = strlen (str) - (tmp - str - 1);
+		memmove (str, tmp, len);
+	}
+	return str;
+}
+
+gchar *
+g_strchomp (gchar *str)
+{
+	gchar *tmp;
+
+	if (str == NULL)
+		return NULL;
+
+	tmp = str + strlen (str) - 1;
+	while (*tmp && isspace (*tmp)) tmp--;
+	*(tmp + 1) = '\0';
+	return str;
+}
+

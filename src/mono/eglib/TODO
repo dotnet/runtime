@@ -26,7 +26,6 @@ Routines missing from eglib, by count number:
      28 g_list_append
      27 g_build_filename
      24 g_utf16_to_utf8
-     22 g_strsplit
      22 g_list_length
      21 g_snprintf
      21 g_ptr_array_free
@@ -46,10 +45,7 @@ Routines missing from eglib, by count number:
      10 g_array_index
       9 g_path_get_basename
       8 g_get_home_dir
-      8 g_ascii_strncasecmp
-      7 g_strcasecmp
       7 g_list_reverse
-      6 g_strstrip
       6 g_io_channel_unix_get_fd
       5 g_timer_elapsed
       5 g_ptr_array_sort
@@ -113,7 +109,6 @@ Routines missing from eglib, by count number:
       1 g_string_truncate
       1 g_string_prepend
       1 g_strescape
-      1 g_strchug
       1 g_spawn_command_line_sync
       1 g_spawn_async_with_pipes
       1 g_source_unref

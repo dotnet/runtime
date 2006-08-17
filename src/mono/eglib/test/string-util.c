@@ -106,12 +106,60 @@ test_strjoin ()
 	return NULL;
 }
 
+char *
+test_strchug ()
+{
+	char *str = g_strdup (" \v\thola");
+
+	g_strchug (str);
+	if (strcmp ("hola", str)) {
+		fprintf (stderr, "%s\n", str);
+		g_free (str);
+		return "Failed.";
+	}
+	g_free (str);
+	return NULL;
+}
+
+char *
+test_strchomp ()
+{
+	char *str = g_strdup ("hola  \t");
+
+	g_strchomp (str);
+	if (strcmp ("hola", str)) {
+		fprintf (stderr, "%s\n", str);
+		g_free (str);
+		return "Failed.";
+	}
+	g_free (str);
+	return NULL;
+}
+
+char *
+test_strstrip ()
+{
+	char *str = g_strdup ("  \vhola   ");
+
+	g_strstrip (str);
+	if (strcmp ("hola", str)) {
+		fprintf (stderr, "%s\n", str);
+		g_free (str);
+		return "Failed.";
+	}
+	g_free (str);
+	return NULL;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
 	{"g_strsplit", test_split},
 	{"g_strreverse", test_strreverse},
 	{"g_strjoin", test_strjoin},
+	{"g_strchug", test_strchug},
+	{"g_strchomp", test_strchomp},
+	{"g_strstrip", test_strstrip},
 	{NULL, NULL}
 };
 
