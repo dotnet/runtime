@@ -37,6 +37,12 @@ struct Small {
 	public byte b2;
 }
 
+// Size=2, Align=1
+struct Foo {
+	bool b1;
+	bool b2;
+}
+
 struct Large {
 	int one;
 	int two;
@@ -993,6 +999,17 @@ ncells ) {
 		int i = RuntimeHelpers.OffsetToStringData;
 		
 		return i - i;
+	}
+
+	public class Bar {
+		bool allowLocation = true;
+        Foo f = new Foo ();	
+	}
+
+	static int test_0_regress_78990_unaligned_structs () {
+		new Bar ();
+
+		return 0;
 	}
 }
 
