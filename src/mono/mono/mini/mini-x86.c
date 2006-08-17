@@ -2053,7 +2053,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* handle shifts over 31 bits */
 			x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
-			x86_shift_reg_imm (code, X86_SHR, ins->unused, 31);
+			x86_clear_reg (code, ins->unused);
 			
 			x86_patch (jump_to_end, code);
 			}

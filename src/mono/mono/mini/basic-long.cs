@@ -523,6 +523,22 @@ class Tests {
 		return count;
 	}
 
+	public static int test_1_shift_u_32 ()
+	{
+		ulong a;
+		int count = 0;
+
+		a = UInt64.MaxValue;
+		// Avoid constant folding
+		for (int i = 0; i < 32; ++i)
+			count ++;
+
+		if ((a >> count) != 0xFFFFFFFFUL)
+			return 0;
+		else
+			return 1;
+	}
+
 	public static int test_1_simple_neg () {
 		long a = 9;
 		
