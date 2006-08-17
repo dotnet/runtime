@@ -1,10 +1,10 @@
 noinst_PROGRAMS = test 
 
-test_SOURCES = \
-	test.c      \
-	driver.c	\
-	hash.c		\
-	str.c 		\
+test_SOURCES =    \
+	test.c        \
+	driver.c      \
+	hashtable.c	  \
+	string-util.c \
 	slist.c
 
 test_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
