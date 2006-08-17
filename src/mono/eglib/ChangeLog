@@ -3,6 +3,7 @@
 	* src/gslist.c (g_slist_remove_link): I misread the function
 	signature. Re-implemented.
 	(g_slist_delete_link): Implemented.
+	(g_slist_reverse): Implemented.
 
 2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
 

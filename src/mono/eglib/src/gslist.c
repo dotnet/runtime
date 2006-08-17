@@ -196,3 +196,19 @@ g_slist_delete_link (GSList *list, GSList *link)
 
 	return list;
 }
+
+GSList*
+g_slist_reverse (GSList *list)
+{
+	GSList *prev = NULL;
+	while (list){
+		GSList *next = list->next;
+
+		list->next = prev;
+		
+		prev = list;
+		list = next;
+	}
+
+	return prev;
+}
