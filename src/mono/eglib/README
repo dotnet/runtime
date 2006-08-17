@@ -14,3 +14,19 @@ Currently this is only being built standalone, use:
 Currently all the definitions go into a single file: glib.h, there are 
 no separate files, please try to follow the convetions in the source code
 
+* Tests
+
+	Please run the tests in the test/ directory, like this:
+
+	        $ test
+
+	Once the tests pass, run them with valgrind to ensure that
+	there are no leaks, like this:
+
+		$ valgrind test
+
+        You can also run the tests against the original glib, to do
+	this, use:
+
+	        $ cd test
+		$ ./other

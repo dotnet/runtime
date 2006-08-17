@@ -110,7 +110,6 @@ Routines missing from eglib, by count number:
       2 g_array_append_val
       1 g_win32_getlocale
       1 g_timer_destroy
-      1 g_strjoin
       1 g_string_truncate
       1 g_string_prepend
       1 g_strescape

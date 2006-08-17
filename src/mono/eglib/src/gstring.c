@@ -211,3 +211,4 @@ g_string_printf (GString *string, const gchar *format, ...)
 	string->len = strlen (string->str);
 	string->allocated_len = string->len+1;
 }
+
