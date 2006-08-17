@@ -1,3 +1,9 @@
+2006-08-17  Aaron Bockover  <abockover@novell.com>
+
+	* src/gptrarray.c: Added g_ptr_array_set_size implementation
+
+	* test/ptrarray.c: Added test for g_ptr_array_set_size
+
 2006-08-17  Miguel de Icaza  <miguel@novell.com>
 
 	* src/glib.h: A handful of extra macros

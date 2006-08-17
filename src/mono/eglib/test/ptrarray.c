@@ -117,10 +117,43 @@ char *ptrarray_foreach_iterate()
 	return foreach_iterate_error;
 }
 
+char *ptrarray_set_size()
+{
+	GPtrArray *array = g_ptr_array_new();
+	gint i, grow_length = 50;
+	
+	g_ptr_array_add(array, (gpointer)items[0]);
+	g_ptr_array_add(array, (gpointer)items[1]);
+	g_ptr_array_set_size(array, grow_length);
+
+	if(array->len != grow_length) {
+		return g_strdup_printf("Array length should be 50, it is %d", 
+			array->len);
+	} else if(array->pdata[0] != items[0]) {
+		return g_strdup_printf("Item 0 was overwritten, should be %s", 
+			items[0]);
+	} else if(array->pdata[1] != items[1]) {
+		return g_strdup_printf("Item 1 was overwritten, should be %s",
+			items[1]);
+	}
+
+	for(i = 2; i < array->len; i++) {
+		if(array->pdata[i] != NULL) {
+			return g_strdup_printf("Item %d is not NULL, it is %p", 
+				i, array->pdata[i]);
+		}
+	}
+
+	g_ptr_array_free(array, TRUE);
+
+	return NULL;
+}
+
 static Test ptrarray_tests [] = {
 	{"ptrarray_alloc", ptrarray_alloc},
 	{"ptrarray_for_iterate", ptrarray_for_iterate},
 	{"ptrarray_foreach_iterate", ptrarray_foreach_iterate},
+	{"ptrarray_set_size", ptrarray_set_size},
 	{NULL, NULL}
 };
 

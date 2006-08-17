@@ -100,6 +100,20 @@ g_ptr_array_free(GPtrArray *array, gboolean free_seg)
 }
 
 void
+g_ptr_array_set_size(GPtrArray *array, gint length)
+{
+	g_return_if_fail(array != NULL);
+
+	if(length > array->len) {
+		g_ptr_array_grow((GPtrArrayPriv *)array, length);
+		memset(array->pdata + array->len, 0, (length - array->len) 
+			* sizeof(gpointer));
+	}
+
+	array->len = length;
+}
+
+void
 g_ptr_array_add(GPtrArray *array, gpointer data)
 {
 	g_return_if_fail(array != NULL);
