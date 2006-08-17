@@ -3,7 +3,10 @@ noinst_LTLIBRARIES = libeglib.la
 libeglib_la_SOURCES = \
 	ghashtable.c	\
 	goutput.c	\
-	gstr.c	
+	gstr.c		\
+	gstring.c
+
+libeglib_la_CFLAGS = -Wall -Werror
 
 INCLUDES = -I$(srcdir)
 

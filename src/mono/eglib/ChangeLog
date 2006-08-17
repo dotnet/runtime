@@ -1,3 +1,12 @@
+2006-08-16  Miguel de Icaza  <miguel@novell.com>
+
+	* src/Makefile.am: Added -Wall,-Werror, corrected lots of
+	mistakes. 
+	
+	* src/gstring.c: Gstring implementation.
+
+	* test/str.c (test_gstring): string tests.
+
 2006-08-16  Aaron Bockover  <abockover@novell.com>
 
 	* src/gstr.c: Added g_strsplit implementation

@@ -52,6 +52,19 @@ g_strfreev (gchar **str_array)
 }
 
 gchar *
+g_strdup_vprintf (const gchar *format, va_list args)
+{
+	int n;
+	char *ret;
+	
+	n = vasprintf (&ret, format, args);
+	if (n == -1)
+		return NULL;
+
+	return ret;
+}
+
+gchar *
 g_strdup_printf (const gchar *format, ...)
 {
 	gchar *ret;

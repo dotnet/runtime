@@ -100,8 +100,6 @@ to_prime (int x)
 static void
 adjust_threshold (GHashTable *hash)
 {
-	int size = hash->table_size;
-
 	hash->threshold = (int) hash->table_size * 0.75;
 	if (hash->threshold >= hash->table_size)
 		hash->threshold = hash->table_size-1;
@@ -109,13 +107,6 @@ adjust_threshold (GHashTable *hash)
 		hash->threshold = 1;
 }
 	
-static void
-set_table (GHashTable *hash, Slot **table)
-{
-	hash->table = table;
-	adjust_threshold (hash);
-}
-
 GHashTable *
 g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
@@ -194,7 +185,7 @@ g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gbo
 guint
 g_hash_table_size (GHashTable *hash)
 {
-	g_return_if_fail (hash != NULL);
+	g_return_val_if_fail (hash != NULL, 0);
 	
 	return hash->in_use;
 }
@@ -217,7 +208,7 @@ g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *ori
 	Slot *s;
 	guint hashcode;
 	
-	g_return_if_fail (hash != NULL);
+	g_return_val_if_fail (hash != NULL, FALSE);
 	equal = hash->key_equal_func;
 
 	hashcode = ((*hash->hash_func) (key)) % hash->table_size;	
@@ -252,16 +243,17 @@ g_hash_table_find (GHashTable *hash, GHRFunc predicate, gpointer user_data)
 {
 	int i;
 	
-	g_return_if_fail (hash != NULL);
-	g_return_if_fail (predicate != NULL);
+	g_return_val_if_fail (hash != NULL, NULL);
+	g_return_val_if_fail (predicate != NULL, NULL);
 
 	for (i = 0; i < hash->table_size; i++){
 		Slot *s;
 
 		for (s = hash->table [i]; s != NULL; s = s->next)
 			if ((*predicate)(s->key, s->value, user_data))
-				return;
+				return s->value;
 	}
+	return NULL;
 }
 
 gboolean
@@ -320,6 +312,7 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 	}
 	if (count > 0)
 		rehash (hash);
+	return count;
 }
 
 void

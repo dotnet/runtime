@@ -59,6 +59,7 @@ g_log_set_fatal_mask (const gchar *log_domain, GLogLevelFlags fatal_mask)
 	 * if we decide to set G_LOG_DOMAIN (we probably should) we should implement
 	 * this.
 	 */
+	return fatal_mask;
 }
 
 void
@@ -68,7 +69,6 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 		log_domain != NULL ? log_domain : "",
 		log_domain != NULL ? ": " : "",
 		format);
-	g_free (format);
 	if (log_level & fatal)
 		abort ();
 }

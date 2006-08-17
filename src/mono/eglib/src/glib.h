@@ -90,20 +90,41 @@ guint    g_int_hash     (gconstpointer v1);
 gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
 guint    g_str_hash     (gconstpointer v1);
 
-#define  g_assert(x)     do { fprintf (stderr, "* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x); abort (); } while (0)
-#define  g_assert_not_reached() do { fprintf (stderr, "* This line should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
+#define  g_assert(x)     do { if (!(x)) g_error ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x); } while (0)
+#define  g_assert_not_reached() do { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
 
 /*
- * Strings
+ * Strings utility
  */
-gchar       *g_strdup_printf (const gchar *format, ...);
-gchar       *g_strndup       (const gchar *str, gsize n);
-const gchar *g_strerror      (gint errnum);
-gchar       *g_strndup       (const gchar *str, gsize n);
-void         g_strfreev      (gchar **str_array);
-gchar       *g_strconcat     (const gchar *first, ...);
+gchar       *g_strdup_printf  (const gchar *format, ...);
+gchar       *g_strdup_vprintf (const gchar *format, va_list args);
+gchar       *g_strndup        (const gchar *str, gsize n);
+const gchar *g_strerror       (gint errnum);
+gchar       *g_strndup        (const gchar *str, gsize n);
+void         g_strfreev       (gchar **str_array);
+gchar       *g_strconcat      (const gchar *first, ...);
+gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint max_tokens);
 
+/*
+ * String type
+ */
+typedef struct {
+	char *str;
+	gsize len;
+	gsize allocated_len;
+} GString;
 
+GString     *g_string_new           (const gchar *init);
+GString     *g_string_new_len       (const gchar *init, gsize len);
+GString     *g_string_sized_new     (gsize default_size);
+gchar       *g_string_free          (GString *string, gboolean free_segment);
+GString     *g_string_append        (GString *string, const gchar *val);
+void         g_string_printf        (GString *string, const gchar *format, ...);
+void         g_string_append_printf (GString *string, const gchar *format, ...);
+GString     *g_string_append_c      (GString *string, gchar c);
+GString     *g_string_append        (GString *string, const gchar *val);
+
+#define g_string_sprintfa g_string_append_printf
 /*
  * Messages
  */

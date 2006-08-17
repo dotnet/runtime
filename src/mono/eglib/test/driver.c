@@ -9,4 +9,5 @@ int main ()
 	test ("s-freev", test_strfreev);
 	test ("s-concat", test_concat);
 	test ("s-split", test_split);
+	test ("s-gstring", test_gstring);
 }
