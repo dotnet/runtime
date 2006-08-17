@@ -2,6 +2,7 @@ noinst_LTLIBRARIES = libeglib.la
 
 libeglib_la_SOURCES = \
 	ghashtable.c	\
+	gmem.c	\
 	goutput.c	\
 	gstr.c		\
 	gslist.c        \

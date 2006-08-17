@@ -36,7 +36,14 @@
 #define g_try_malloc(x)         malloc(x)
 #define g_try_realloc(obj,size) realloc((obj),(size))
 #define g_malloc0(x)            calloc(1,x)
+#define g_memmove(dest,src,len) memmove (dest, src, len)
+#define g_renew(struct_type, mem, n_structs) realloc (mem, sizeof (struct_type) * n_structs)
+#define g_alloca(size)		alloca (size)
 
+/*
+ * Misc.
+ */
+#define g_atexit(func)	((void) atexit (func))
 /*
  * Basic data types
  */

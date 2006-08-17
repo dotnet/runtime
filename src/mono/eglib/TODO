@@ -38,7 +38,6 @@ Routines missing from eglib, by count number:
      17 g_ptr_array_new
      16 g_list_delete_link
      15 g_list_remove
-     14 g_memdup
      14 g_list_find
      13 g_error_free
      12 g_build_path
@@ -60,8 +59,6 @@ Routines missing from eglib, by count number:
       7 g_list_reverse
       6 g_strstrip
       6 g_slist_find
-      6 g_renew
-      6 g_memmove
       6 g_io_channel_unix_get_fd
       5 g_timer_elapsed
       5 g_ptr_array_sort
@@ -123,11 +120,9 @@ Routines missing from eglib, by count number:
       2 g_filename_to_uri
       2 g_filename_from_uri
       2 g_concat_dir_and_file
-      2 g_atexit
       2 g_ascii_isalpha
       2 g_array_insert_val
       2 g_array_append_val
-      2 g_alloca
       1 g_win32_getlocale
       1 g_timer_destroy
       1 g_strjoin
