@@ -11,4 +11,6 @@ Currently this is only being built standalone, use:
 
 	  ./autogen.sh --prefix=/tmp/test
 
+Currently all the definitions go into a single file: glib.h, there are 
+no separate files, please try to follow the convetions in the source code
 
