@@ -1203,6 +1203,16 @@ mono_class_layout_fields (MonoClass *class)
 		break;
 	}
 
+	if (layout != TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
+		/*
+		 * For small structs, set min_align to at least the struct size, since the
+		 * JIT memset/memcpy code assumes this and generates unaligned accesses
+		 * otherwise. See #78990 for a testcase.
+		 */
+		if (class->instance_size <= sizeof (MonoObject) + sizeof (gpointer))
+			class->min_align = MAX (class->min_align, class->instance_size - sizeof (MonoObject));
+	}
+
 	class->size_inited = 1;
 
 	/*
