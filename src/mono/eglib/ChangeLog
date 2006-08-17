@@ -1,5 +1,11 @@
 2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
 
+	* src/gslist.c (g_slist_remove_link): I misread the function
+	signature. Re-implemented.
+	(g_slist_delete_link): Implemented.
+
+2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
+
 	* src/gslist.c (g_slist_find): 
 	(g_slist_length):
 	(g_slist_remove):

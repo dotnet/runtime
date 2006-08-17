@@ -91,16 +91,18 @@ test_slist_remove_link ()
 	GSList *foo = g_slist_prepend (NULL, "a");
 	GSList *bar = g_slist_prepend (NULL, "b");
 	GSList *baz = g_slist_prepend (NULL, "c");
-	
-	GSList *list = g_slist_append (foo, bar);
-	list = g_slist_append (foo, baz);
+	GSList *list = foo;
+
+	g_slist_append (foo, bar);
+	g_slist_append (foo, baz);	
+
 	list = g_slist_remove_link (list, bar);
 
 	if (g_slist_length (list) != 2)
-		return "Remove failed";
+		return "remove_link failed #1";
 
 	if (bar->next != NULL)
-		return "Remove failed";
+		return "remove_link failed #2";
 
 	return NULL;
 }

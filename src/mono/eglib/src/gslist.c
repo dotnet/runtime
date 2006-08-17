@@ -129,8 +129,8 @@ g_slist_length (GSList *list)
 	return length;
 }
 
-static GSList*
-_g_slist_remove (GSList *list, gconstpointer data, gboolean free)
+GSList*
+g_slist_remove (GSList *list, gconstpointer data)
 {
 	GSList *prev = NULL;
 	GSList *current = NULL;
@@ -147,10 +147,8 @@ _g_slist_remove (GSList *list, gconstpointer data, gboolean free)
 	while (current) {
 		if (current->data == data){
 			prev->next = current->next;
-			if (free)
-				g_slist_free_1 (current);
-			else
-				current->next = NULL;
+			g_slist_free_1 (current);
+
 			break;
 		}
 		prev = current;
@@ -160,14 +158,41 @@ _g_slist_remove (GSList *list, gconstpointer data, gboolean free)
 	return list;
 }
 
+
 GSList*
-g_slist_remove (GSList *list, gconstpointer data)
+g_slist_remove_link (GSList *list, GSList *link)
 {
-	return _g_slist_remove (list, data, TRUE);
+	GSList *prev = NULL;
+	GSList *current = NULL;
+
+	if (!list)
+		return NULL;
+
+	if (list == link)
+		return list->next;
+	
+	prev = list;
+	current = list->next;
+
+	while (current){
+		if (current == link){
+			prev->next = current->next;
+			current->next = NULL;
+			break;
+		}
+
+		prev = current;
+		current = current->next;
+	}
+
+	return list;
 }
 
 GSList*
-g_slist_remove_link (GSList *list, gconstpointer data)
+g_slist_delete_link (GSList *list, GSList *link)
 {
-	return _g_slist_remove (list, data, FALSE);
+	list = g_slist_remove_link (list, link);
+	g_slist_free_1 (link);
+
+	return list;
 }
