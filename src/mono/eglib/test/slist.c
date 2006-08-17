@@ -49,13 +49,16 @@ char*
 test_slist_find ()
 {
 	GSList *list = g_slist_prepend (NULL, "three");
+	GSList *found;
+	char *data;
+		
 	list = g_slist_prepend (list, "two");
 	list = g_slist_prepend (list, "one");
 
-	char *data = "four";
+	data = "four";
 	list = g_slist_append (list, data);
 
-	GSList *found = g_slist_find (list, data);
+	found = g_slist_find (list, data);
 
 	if (found->data != data)
 		return "Find failed";

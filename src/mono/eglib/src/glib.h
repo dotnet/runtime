@@ -153,6 +153,9 @@ GSList *g_slist_copy      (GSList* list);
 GSList *g_slist_concat    (GSList* list1, GSList* list2);
 void    g_slist_foreach   (GSList* list, GFunc func, gpointer user_data);
 GSList *g_slist_last      (GSList *list);
+GSList *g_slist_find      (GSList *list, gconstpointer data);
+GSList *g_slist_remove    (GSList *list, gconstpointer data);
+GSList *g_slist_remove_link (GSList *list, gconstpointer data);
 
 #define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
 
