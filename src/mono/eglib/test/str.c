@@ -91,9 +91,8 @@ test_gstring ()
 	ret = g_string_free (s, FALSE);
 	g_free (ret);
 
-	s = g_string_new ("H\0y");
-	g_string_append_len (s, "1\02", 3);
-	printf ("got: %s\n", s->str);
+	s = g_string_new_len ("H\000H", 3);
+	g_string_append_len (s, "1\0002", 3);
 	sfail ('H', 0);
 	sfail (0, 1);
 	sfail ('y', 2);
@@ -101,7 +100,7 @@ test_gstring ()
 	sfail (0, 4);
 	sfail ('2', 5);
 	g_string_free (s, TRUE);
-
+	
 	return NULL;
 }
 
