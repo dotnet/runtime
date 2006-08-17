@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libeglib.la
 
 libeglib_la_SOURCES = \
 	eglib-config.h	\
-	glib.h	     	\	
+	glib.h	     	\
 	ghashtable.c 	\
 	gmem.c       	\
 	gmodule.c    	\
