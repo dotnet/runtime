@@ -95,11 +95,6 @@ guint    g_str_hash     (gconstpointer v1);
 #define  g_assert_not_reached() do { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
 
 /*
- * Singly-linked Lists
- */
-#include <gslist.h>
-
-/*
  * Strings utility
  */
 gchar       *g_strdup_printf  (const gchar *format, ...);
@@ -131,6 +126,28 @@ GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
 
 #define g_string_sprintfa g_string_append_printf
+
+/*
+ * Lists
+ */
+typedef struct _GSList GSList;
+struct _GSList {
+	gpointer data;
+	GSList *next;
+};
+
+GSList *g_slist_alloc     (void);
+GSList *g_slist_append    (GSList* list, gpointer data);
+GSList *g_slist_prepend   (GSList* list, gpointer data);
+void    g_slist_free      (GSList* list);
+void    g_slist_free_1    (GSList* list);
+GSList *g_slist_copy      (GSList* list);
+GSList *g_slist_concat    (GSList* list1, GSList* list2);
+void    g_slist_foreach   (GSList* list, GFunc func, gpointer user_data);
+GSList *g_slist_last      (GSList *list);
+
+#define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
+
 /*
  * Messages
  */
