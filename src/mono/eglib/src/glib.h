@@ -116,8 +116,9 @@ void         g_strfreev       (gchar **str_array);
 gchar       *g_strconcat      (const gchar *first, ...);
 gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint max_tokens);
 gchar       *g_strreverse     (gchar *str);
-gboolean    g_str_has_prefix  (const gchar *str, const gchar *prefix);
-gboolean    g_str_has_suffix  (const gchar *str, const gchar *suffix);
+gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
+gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
+gchar       *g_strjoin        (const gchar *separator, ...);
 
 /*
  * String type

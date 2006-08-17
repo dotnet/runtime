@@ -146,12 +146,45 @@ test_strreverse ()
 	return NULL;
 }
 
+char *
+test_strjoin ()
+{
+	char *s;
+	
+	s = g_strjoin (NULL, "a", "b", NULL);
+	if (strcmp (s, "ab") != 0)
+		return "Join of two strings with no separator fails";
+	g_free (s);
+
+	s = g_strjoin ("", "a", "b", NULL);
+	if (strcmp (s, "ab") != 0)
+		return "Join of two strings with empty separator fails";
+	g_free (s);
+
+	s = g_strjoin ("-", "a", "b", NULL);
+	if (strcmp (s, "a-b") != 0)
+		return "Join of two strings with separator fails";
+	g_free (s);
+
+	s = g_strjoin ("-", "aaaa", "bbbb", "cccc", "dddd", NULL);
+	if (strcmp (s, "aaaa-bbbb-cccc-dddd") != 0)
+		return "Join of multiple strings fails";
+	g_free (s);
+
+	s = g_strjoin ("-", NULL);
+	if (s == NULL || (strcmp (s, "") != 0))
+		return "Failed to join empty arguments";
+
+	return NULL;
+}
+
 static Test string_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
 	{"GString", test_gstring},
 	{"g_strsplit", test_split},
 	{"g_strreverse", test_strreverse},
+	{"g_strjoin", test_strjoin},
 	{NULL, NULL}
 };
 

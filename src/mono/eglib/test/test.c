@@ -14,7 +14,7 @@ run_test(Test *test)
 		printf("OK\n");
 	} else {
 		printf("FAILED (%s)\n", result);
-		free(result);
+		/* It is ok to leak if the test fails, so we dont force people to use g_strdup */
 	}
 }
 

@@ -232,3 +232,41 @@ g_strreverse (gchar *str)
 	return str;
 }
 
+gchar *
+g_strjoin (const gchar *separator, ...)
+{
+	va_list args;
+	char *res, *s;
+	int len, slen;
+
+	if (separator != NULL)
+		slen = strlen (separator);
+	else
+		slen = 0;
+	len = 0;
+	va_start (args, separator);
+	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
+		len += strlen (s);
+		len += slen;
+	}
+	va_end (args);
+	if (len == 0)
+		return g_strdup ("");
+	
+	/* Remove the last separator */
+	if (slen > 0 && len > 0)
+		len -= slen;
+	len++;
+	res = g_malloc (len);
+	va_start (args, separator);
+	s = va_arg (args, char *);
+	strcpy (res, s);
+	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
+		if (separator != NULL)
+			strcat (res, separator);
+		strcat (res, s);
+	}
+	va_end (args);
+
+	return res;
+}
