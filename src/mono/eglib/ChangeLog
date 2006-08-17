@@ -1,3 +1,14 @@
+2006-08-17  Raja R Harinath  <harinath@gmail.com>
+
+	* src/gslist.c (g_slist_free_1): New.  Free a single list node.
+	(g_slist_free): Use it to free the list nodes.  Don't free the
+	data, since the list doesn't own it.
+	(g_slist_append): Convert into a one-liner.
+	(g_slist_foreach): Remove redundant null check.
+	(g_slist_last): Actually return the last node.
+	(g_slist_copy): Simplify.
+	* src/gslist.h (g_slist_free_1): Add.
+
 2006-08-16  Duncan Mak  <duncan@a-chinaman.com>
 
 	* src/gslist.c:
@@ -10,8 +21,8 @@
 2006-08-16  Miguel de Icaza  <miguel@novell.com>
 
 	* src/Makefile.am: Added -Wall,-Werror, corrected lots of
-	mistakes. 
-	
+	mistakes.
+
 	* src/gstring.c: Gstring implementation.
 
 	* test/str.c (test_gstring): string tests.

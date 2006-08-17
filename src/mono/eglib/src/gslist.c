@@ -16,22 +16,19 @@ g_slist_alloc (void)
 	return g_new0 (GSList, 1);
 }
 
+void
+g_slist_free_1 (GSList *list)
+{
+	g_free (list);
+}
+
 GSList*
 g_slist_append (GSList *list, gpointer data)
 {
-	GSList *value = g_slist_alloc ();
-	value->data = data;
-	value->next = NULL;
-
-	if (list) {
-		GSList *last = g_slist_last (list);
-		last->next = value;
-		value = list;
-	}
-
-	return value;
+	return g_slist_concat (list, g_slist_prepend (NULL, data));
 }
 
+/* This is also a list node constructor. */
 GSList*
 g_slist_prepend (GSList *list, gpointer data)
 {
@@ -45,29 +42,29 @@ g_slist_prepend (GSList *list, gpointer data)
 void
 g_slist_free (GSList *list)
 {
+	GSList *next;
 	while (list) {
-		g_free (list->data);
-		list = list->next;
+		next = list->next;
+		g_slist_free_1 (list);
+		list = next;
 	}
 }
 
 GSList*
 g_slist_copy (GSList *list)
 {
+	GSList *copy, *tmp;
+
 	if (!list)
 		return NULL;
 
-	GSList *copy = g_slist_alloc ();
-	GSList *tmp = copy;	
-	copy->data = list->data;
+	copy = g_slist_prepend (NULL, list->data);
+	tmp = copy;
 
 	while (list->next) {
-		GSList *value = g_slist_alloc ();
-		value->data = list->next->data;
-		value->next = NULL;
-		
-		tmp->next = value;
-		tmp = value;
+		tmp->next = g_slist_prepend (NULL, list->next->data);
+
+		tmp = tmp->next;
 		list = list->next;
 	}
 
@@ -88,9 +85,6 @@ g_slist_concat (GSList *list1, GSList *list2)
 void
 g_slist_foreach (GSList *list, GFunc func, gpointer user_data)
 {
-	if (!list)
-		return;
-	
 	while (list) {
 		(*func) (list->data, user_data);
 		list = list->next;
@@ -100,13 +94,11 @@ g_slist_foreach (GSList *list, GFunc func, gpointer user_data)
 GSList*
 g_slist_last (GSList *list)
 {
-	GSList *last = list;
-
 	if (!list)
 		return NULL;
-	
-	while (last)
-		last = last->next;
-	
-	return last;
+
+	while (list->next)
+		list = list->next;
+
+	return list;
 }
