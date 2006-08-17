@@ -56,3 +56,14 @@ g_module_close (GModule *module)
 	return (0 == dlclose (handle));
 }
 
+gchar *
+g_module_build_path (const gchar *directory, const gchar *module_name)
+{
+	if (module_name == NULL)
+		return NULL;
+
+	if (directory)
+		return g_strdup_printf ("%s/lib%s.so", directory, module_name);
+	return g_strdup_printf ("lib%s.so", module_name);
+}
+

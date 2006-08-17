@@ -61,7 +61,6 @@ Routines missing from eglib, by count number:
       5 g_ptr_array_sort
       5 g_path_is_absolute
       5 g_newa
-      5 g_module_build_path
       5 g_list_first
       5 g_get_current_dir
       5 g_file_get_contents
