@@ -80,6 +80,7 @@ g_module_close (GModule *module)
 
 	handle = module->handle;
 	module->handle = NULL;
+	g_free (module);
 	return (0 == dlclose (handle));
 }
 
