@@ -102,3 +102,72 @@ g_slist_last (GSList *list)
 
 	return list;
 }
+
+GSList*
+g_slist_find (GSList *list, gconstpointer data)
+{
+	while (list){
+		if (list->data == data)
+			return list;
+
+		list = list->next;
+	}
+
+	return NULL;
+}
+
+guint
+g_slist_length (GSList *list)
+{
+	guint length = 0;
+
+	while (list) {
+		length ++;
+		list = list->next;
+	}
+
+	return length;
+}
+
+static GSList*
+_g_slist_remove (GSList *list, gconstpointer data, gboolean free)
+{
+	GSList *prev = NULL;
+	GSList *current = NULL;
+	
+	if (!list)
+		return NULL;
+
+	if (list->data == data)
+		return list->next;
+
+	prev = list;
+	current = list->next;
+
+	while (current) {
+		if (current->data == data){
+			prev->next = current->next;
+			if (free)
+				g_slist_free_1 (current);
+			else
+				current->next = NULL;
+			break;
+		}
+		prev = current;
+		current = current->next;
+	}
+
+	return list;
+}
+
+GSList*
+g_slist_remove (GSList *list, gconstpointer data)
+{
+	return _g_slist_remove (list, data, TRUE);
+}
+
+GSList*
+g_slist_remove_link (GSList *list, gconstpointer data)
+{
+	return _g_slist_remove (list, data, FALSE);
+}

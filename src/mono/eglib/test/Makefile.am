@@ -4,7 +4,8 @@ test_SOURCES = \
 	test.h		\
 	driver.c	\
 	hash.c		\
-	str.c
+	str.c 		\
+	slist.c
 
 INCLUDES = -I../src
 

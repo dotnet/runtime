@@ -1,3 +1,12 @@
+2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
+
+	* src/gslist.c (g_slist_find): 
+	(g_slist_length):
+	(g_slist_remove):
+	(g_slist_remove_link): Implemented.
+
+	* test/slist.c: Tests for GSList.
+
 2006-08-17  Raja R Harinath  <harinath@gmail.com>
 
 	* src/gslist.c (g_slist_free_1): New.  Free a single list node.
