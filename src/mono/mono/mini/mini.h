@@ -50,7 +50,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "27"
+#define MONO_AOT_FILE_VERSION "28"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
