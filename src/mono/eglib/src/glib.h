@@ -178,11 +178,11 @@ GSList *g_slist_last      (GSList *list);
 GSList *g_slist_find      (GSList *list, gconstpointer data);
 GSList *g_slist_remove    (GSList *list, gconstpointer data);
 GSList *g_slist_reverse   (GSList *list);
+guint  g_slist_length     (GSList *list);
 GSList *g_slist_remove_link (GSList *list, GSList *link);
 GSList *g_slist_delete_link (GSList *list, GSList *link);
 GSList *g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func);
-guint  g_slist_length     (GSList *list);
-#define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
+#define g_slist_next (slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
 
 /*
  * Pointer Array
@@ -206,7 +206,7 @@ void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc co
 void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
-#define    g_ptr_array_index(array,index) array->pdata[index]
+#define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 
 
 /*

@@ -1,0 +1,11 @@
+/*
+ * System-dependent settings
+ */
+#define G_GNUC_PRETTY_FUNCTION   @GNUC_PRETTY@
+#define G_GNUC_UNUSED            @GNUC_UNUSED@
+#define G_BYTE_ORDER             @ORDER@
+#define G_GNUC_NORETURN          @GNUC_NORETURN@
+#define G_SEARCHPATH_SEPARATOR_S "@SEARCHSEP@"
+#define G_DIR_SEPARATOR          '@PATHSEP@'
+#define G_DIR_SEPARATOR_S        "@PATHSEP@"
+#define G_BREAKPOINT             @BREAKPOINT@
