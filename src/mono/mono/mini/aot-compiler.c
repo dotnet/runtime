@@ -491,6 +491,9 @@ get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 	res = acfg->got_offset;
 	acfg->got_offset ++;
 
+	acfg->stats.got_slots ++;
+	acfg->stats.got_slot_types [ji->type] ++;
+
 	return res;
 }
 
@@ -893,9 +896,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		/* Only the type is needed */
 		*p = patch_info->type;
 		p++;
-
-		acfg->stats.got_slots ++;
-		acfg->stats.got_slot_types [patch_info->type] ++;
 	}
 
 	/*
@@ -1267,8 +1267,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		}
 	}
 }
-
-/* FIXME: Move this to mini.c */
 
 static void
 compile_method (MonoAotCompile *acfg, int index)
@@ -1837,6 +1835,11 @@ emit_got_info (MonoAotCompile *acfg)
 	 * - optimize offsets table.
 	 * - reduce number of exported symbols.
 	 * - emit info for a klass only once.
+	 * - determine when a method uses a GOT slot which is guaranteed to be already 
+	 *   initialized.
+	 * - clean up and document the code.
+	 * - use String.Empty in class libs.
+	 * - type_from_handle.
 	 */
 
 	/* Encode info required to decode shared GOT entries */
