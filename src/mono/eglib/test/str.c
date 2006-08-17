@@ -27,7 +27,7 @@ test_concat ()
 	return NULL;
 }
 
-#define sfail(k,p) if (s->str [p] != k) return g_strdup_printf ("Failed at %d, expected '%c'", p, k);
+#define sfail(k,p) if (s->str [p] != k) { g_string_free (s,TRUE); return g_strdup_printf ("Failed at %d, expected '%c'", p, k);}
 
 char *
 test_gstring ()
@@ -91,11 +91,12 @@ test_gstring ()
 	ret = g_string_free (s, FALSE);
 	g_free (ret);
 
-	s = g_string_new_len ("H\000H", 3);
-	g_string_append_len (s, "1\0002", 3);
+	s = g_string_new ("H\0y");
+	g_string_append_len (s, "1\02", 3);
+	printf ("got: %s\n", s->str);
 	sfail ('H', 0);
 	sfail (0, 1);
-	sfail ('H', 2);
+	sfail ('y', 2);
 	sfail ('1', 3);
 	sfail (0, 4);
 	sfail ('2', 5);
@@ -122,3 +123,30 @@ test_split ()
 	g_strfreev(v);
 	return NULL;
 }
+
+char *
+test_strreverse ()
+{
+	gchar *a = g_strdup ("onetwothree");
+	gchar *a_target = "eerhtowteno";
+	gchar *b = g_strdup ("onetwothre");
+	gchar *b_target = "erhtowteno";
+
+	g_strreverse (a);
+	if (strcmp (a, a_target)) {
+		g_free (b);
+		g_free (a);
+		return g_strdup_printf ("strreverse failed. Expecting: '%s' and got '%s'\n", a, a_target);
+	}
+
+	g_strreverse (b);
+	if (strcmp (b, b_target)) {
+		g_free (b);
+		g_free (a);
+		return g_strdup_printf ("strreverse failed. Expecting: '%s' and got '%s'\n", b, b_target);
+	}
+	g_free (b);
+	g_free (a);
+	return NULL;
+}
+

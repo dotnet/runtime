@@ -168,3 +168,24 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	return vector;
 }
 
+gchar *
+g_strreverse (gchar *str)
+{
+	guint len, half;
+	gint i;
+	gchar c;
+
+	if (str == NULL)
+		return NULL;
+
+	len = strlen (str);
+	half = len / 2;
+	len--;
+	for (i = 0; i < half; i++, len--) {
+		c = str [i];
+		str [i] = str [len];
+		str [len] = c;
+	}
+	return str;
+}
+

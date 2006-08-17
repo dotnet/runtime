@@ -10,4 +10,5 @@ int main ()
 	test ("s-concat", test_concat);
 	test ("s-split", test_split);
 	test ("s-gstring", test_gstring);
+	test ("s-gstrreverse", test_strreverse);
 }

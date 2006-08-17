@@ -112,6 +112,7 @@ gchar       *g_strndup        (const gchar *str, gsize n);
 void         g_strfreev       (gchar **str_array);
 gchar       *g_strconcat      (const gchar *first, ...);
 gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint max_tokens);
+gchar       *g_strreverse     (gchar *str);
 
 /*
  * String type
