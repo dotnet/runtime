@@ -91,12 +91,13 @@ test_gstring ()
 	ret = g_string_free (s, FALSE);
 	g_free (ret);
 
-	s = g_string_new ("H\0y");
-	g_string_append_len (s, "1\02", 3);
-	printf ("got: %s\n", s->str);
+	s = g_string_new_len ("H\000H", 3);
+	g_string_append_len (s, "1\0002", 3);
+	for (i = 0; i < 6; i++)
+		printf ("Got %d -> %d (%c)\n", i, s->str [i], s->str [i]);
 	sfail ('H', 0);
 	sfail (0, 1);
-	sfail ('y', 2);
+	sfail ('H', 2);
 	sfail ('1', 3);
 	sfail (0, 4);
 	sfail ('2', 5);
