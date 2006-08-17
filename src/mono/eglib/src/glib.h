@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /*
  * Basic data types
@@ -74,6 +75,7 @@ gpointer g_memdup (gconstpointer mem, guint byte_size);
 typedef struct _GHashTable GHashTable;
 typedef void     (*GFunc)          (gpointer data, gpointer user_data);
 typedef gint     (*GCompareFunc)   (gconstpointer a, gconstpointer b);
+typedef gint     (*GCompareDataFunc) (gconstpointer a, gconstpointer b, gpointer user_data);
 typedef void     (*GHFunc)         (gpointer key, gpointer value, gpointer user_data);
 typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_data);
 typedef void     (*GDestroyNotify) (gpointer data);
@@ -167,6 +169,31 @@ GSList *g_slist_delete_link (GSList *list, GSList *link);
 GSList *g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func);
 guint  g_slist_length     (GSList *list);
 #define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
+
+/*
+ * Pointer Array
+ */
+
+typedef struct _GPtrArray GPtrArray;
+struct _GPtrArray {
+	gpointer *pdata;
+	guint len;
+};
+
+GPtrArray *g_ptr_array_new                ();
+GPtrArray *g_ptr_array_sized_new          (guint reserved_size);
+void       g_ptr_array_add                (GPtrArray *array, gpointer data);
+gboolean   g_ptr_array_remove             (GPtrArray *array, gpointer data);
+gpointer   g_ptr_array_remove_index       (GPtrArray *array, guint index);
+gboolean   g_ptr_array_remove_fast        (GPtrArray *array, gpointer data);
+gpointer   g_ptr_array_remove_index_fast  (GPtrArray *array, gpointer data);
+void       g_ptr_array_sort               (GPtrArray *array, GCompareFunc compare_func);
+void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data);
+void       g_ptr_array_set_size           (GPtrArray *array, gint length);
+gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
+void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
+#define    g_ptr_array_index(array,index) array->pdata[index]
+
 
 /*
  * Modules

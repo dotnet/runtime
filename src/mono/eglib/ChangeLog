@@ -1,4 +1,17 @@
 2006-08-17  Aaron Bockover  <abockover@novell.com>
+
+	* src/gptrarray.c: Added beginnings of GPtrArray (alloc, free, add, iterate)
+
+	* src/glib.h: Added GPtrArray signatures
+
+	* src/Makefile.am: Added gptrarray.c to build
+
+	* test/ptrarray.c:
+	* test/tests.h:
+	* test/driver.c:
+	* test/Makefile.am: Add ptrarray tests for available functionality
+
+2006-08-17  Aaron Bockover  <abockover@novell.com>
 	
 	* test/test.h: 
 	* test/test.c: Added group iterator/test driver functionality

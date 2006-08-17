@@ -9,6 +9,7 @@ int main()
 		"string",    strutil_tests_init,
 		"hashtable", hashtable_tests_init,
 		"slist",     slist_tests_init,
+		"ptrarray",  ptrarray_tests_init,
 		"gstring",   string_tests_init,
 		NULL
 	);

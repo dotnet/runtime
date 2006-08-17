@@ -8,7 +8,8 @@ test_SOURCES =    \
 	hashtable.c	\
 	string-util.c 	\
 	string.c	\
-	slist.c
+	slist.c       \
+	ptrarray.c
 
 test_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 INCLUDES = -I../src
