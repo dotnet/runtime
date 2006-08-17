@@ -99,10 +99,10 @@ test_slist_remove_link ()
 	list = g_slist_remove_link (list, bar);
 
 	if (g_slist_length (list) != 2)
-		return "remove_link failed #1";
+		return g_strdup ("remove_link failed #1");
 
 	if (bar->next != NULL)
-		return "remove_link failed #2";
+		return g_strdup ("remove_link failed #2");
 
 	return NULL;
 }
