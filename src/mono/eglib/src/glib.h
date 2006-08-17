@@ -6,6 +6,22 @@
 #include <string.h>
 
 /*
+ * Basic data types
+ */
+typedef int            gboolean;
+typedef int            gint;
+typedef unsigned int   gsize;
+typedef unsigned int   guint;
+typedef short          gshort;
+typedef unsigned short gushort;
+typedef long           glong;
+typedef unsigned long  gulong;
+typedef void *         gpointer;
+typedef const void *   gconstpointer;
+typedef char           gchar;
+typedef unsigned char  guchar;
+
+/*
  * Macros
  */
 #define G_N_ELEMENTS(s)      (sizeof(s) / sizeof ((s) [0]))
@@ -40,26 +56,12 @@
 #define g_renew(struct_type, mem, n_structs) realloc (mem, sizeof (struct_type) * n_structs)
 #define g_alloca(size)		alloca (size)
 
+gpointer g_memdup (gconstpointer mem, guint byte_size);
+
 /*
  * Misc.
  */
 #define g_atexit(func)	((void) atexit (func))
-/*
- * Basic data types
- */
-typedef int            gboolean;
-typedef int            gint;
-typedef unsigned int   gsize;
-typedef unsigned int   guint;
-typedef short          gshort;
-typedef unsigned short gushort;
-typedef long           glong;
-typedef unsigned long  gulong;
-typedef void *         gpointer;
-typedef const void *   gconstpointer;
-typedef char           gchar;
-typedef unsigned char  guchar;
-
 /*
  * Precondition macros
  */
