@@ -4,6 +4,7 @@ libeglib_la_SOURCES = \
 	ghashtable.c	\
 	goutput.c	\
 	gstr.c		\
+	gslist.c        \
 	gstring.c
 
 libeglib_la_CFLAGS = -Wall -Werror

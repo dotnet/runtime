@@ -63,6 +63,7 @@ typedef unsigned char  guchar;
  * Hashtables
  */
 typedef struct _GHashTable GHashTable;
+typedef void     (* GFunc)         (gpointer data, gpointer user_data);
 typedef void     (*GHFunc)         (gpointer key, gpointer value, gpointer user_data);
 typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_data);
 typedef void     (*GDestroyNotify) (gpointer data);
@@ -92,6 +93,11 @@ guint    g_str_hash     (gconstpointer v1);
 
 #define  g_assert(x)     do { if (!(x)) g_error ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x); } while (0)
 #define  g_assert_not_reached() do { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } while (0)
+
+/*
+ * Singly-linked Lists
+ */
+#include <gslist.h>
 
 /*
  * Strings utility

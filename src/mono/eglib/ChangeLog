@@ -1,3 +1,12 @@
+2006-08-16  Duncan Mak  <duncan@a-chinaman.com>
+
+	* src/gslist.c:
+
+	* src/gslist.h: First attempt at implementing GSList, incomplete.
+
+	* src/Makefile.am (libeglib_la_SOURCES): add gslist.c
+	* src/glib.h: Add GFunc definition. #include the new gslist.h.
+
 2006-08-16  Miguel de Icaza  <miguel@novell.com>
 
 	* src/Makefile.am: Added -Wall,-Werror, corrected lots of
