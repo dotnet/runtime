@@ -23,7 +23,6 @@ Routines missing from eglib, by count number:
      59 g_list_free
      36 g_ptr_array_index
      29 g_getenv
-     28 g_module_symbol
      28 g_list_append
      27 g_build_filename
      25 g_slist_free
@@ -41,7 +40,6 @@ Routines missing from eglib, by count number:
      14 g_list_find
      13 g_error_free
      12 g_build_path
-     11 g_module_open
      11 g_file_test
      10 g_strlcpy
      10 g_slist_append
@@ -50,7 +48,6 @@ Routines missing from eglib, by count number:
      10 g_ascii_isspace
      10 g_array_index
       9 g_path_get_basename
-      8 g_module_error
       8 g_get_home_dir
       8 g_ascii_strncasecmp
       7 g_strcasecmp
@@ -93,7 +90,6 @@ Routines missing from eglib, by count number:
       2 g_timer_stop
       2 g_timer_start
       2 g_timer_new
-      2 g_strreverse
       2 g_string_append_len
       2 g_strdelimit
       2 g_slist_remove_link
@@ -143,7 +139,6 @@ Routines missing from eglib, by count number:
       1 g_queue_push_head
       1 g_queue_new
       1 g_queue_free
-      1 g_module_close
       1 g_mem_set_vtable
       1 g_main_loop_run
       1 g_main_context_new
@@ -177,7 +172,6 @@ Macros:
      20 G_LITTLE_ENDIAN
      16 G_DIR_SEPARATOR_S
      12 G_BREAKPOINT
-     11 G_MODULE_BIND_LAZY
      10 G_STMT_START
      10 G_STMT_END
       9 G_GUINT64_FORMAT
