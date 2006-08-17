@@ -168,8 +168,11 @@ g_slist_remove_link (GSList *list, GSList *link)
 	if (!list)
 		return NULL;
 
-	if (list == link)
-		return list->next;
+	if (list == link) {
+		GSList *next = list->next;
+		list->next = NULL;
+		return next;
+	}
 	
 	prev = list;
 	current = list->next;

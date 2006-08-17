@@ -93,8 +93,8 @@ test_slist_remove_link ()
 	GSList *baz = g_slist_prepend (NULL, "c");
 	GSList *list = foo;
 
-	g_slist_append (foo, bar);
-	g_slist_append (foo, baz);	
+	g_slist_concat (foo, bar);
+	g_slist_concat (foo, baz);	
 
 	list = g_slist_remove_link (list, bar);
 
