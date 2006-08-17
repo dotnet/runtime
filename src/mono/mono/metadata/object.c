@@ -747,8 +747,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			mono_raise_exception (exc);
 		}
 
+	/* 
+	 * FIXME: This breaks the AOT optimization below. This should be changed
+	 * to only init the interface offsets etc.
+	 */
 	mono_class_setup_vtable (class);
-
 
 	vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
 		sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
