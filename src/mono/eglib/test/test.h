@@ -1,23 +1,29 @@
-#define test(name,func) do { char *r; printf ("  test: %s: ", name); fflush (stdout);r = func (); if (r){printf ("failure (%s)\n",r); free (r);} else printf ("OK\n");} while (0);
+#ifndef _TEST_H
+#define _TEST_H
 
+#include <stdarg.h>
 
-char *test_concat ();
-char *test_strfreev ();
-char *test_gstring ();
-char *test_split ();
-char *test_strreverse ();
-char *hash_t1 (void);
-char *hash_t2 (void);
-char *test_slist_append ();
-char *test_slist_concat ();
-char *test_slist_find ();
-char *test_slist_remove ();
-char *test_slist_remove_link ();
+typedef struct _Test Test;
 
+typedef char * (* RunTestHandler)();
+typedef Test * (* LoadGroupHandler)();
 
+struct _Test {
+	const char *name;
+	RunTestHandler handler;
+};
 
+void run_test(Test *test);
+void run_group(const char *name, LoadGroupHandler group_handler);
+void run_groups(const char *first_name, LoadGroupHandler first_group_handler, ...);
 
+#define DEFINE_TEST_GROUP_INIT(name, table) \
+	Test * (name)() { return table; }
 
+#define DEFINE_TEST_GROUP_INIT_H(name) \
+	Test * (name)();
 
+#define RESULT(x) g_strdup_printf(x);
 
+#endif /* _TEST_H */
 

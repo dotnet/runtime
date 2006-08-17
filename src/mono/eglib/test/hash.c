@@ -44,5 +44,14 @@ char *hash_t1 (void)
 
 char *hash_t2 (void)
 {
-	
+	return RESULT("test body not defined");
 }
+
+static Test hashtable_tests [] = {
+	{"hash_t1", hash_t1},
+	{"hash_t2", hash_t2},
+	{NULL, NULL}
+};
+
+DEFINE_TEST_GROUP_INIT(hashtable_tests_init, hashtable_tests)
+

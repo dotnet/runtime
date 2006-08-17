@@ -1,3 +1,26 @@
+2006-08-17  Aaron Bockover  <abockover@novell.com>
+	
+	* test/test.h: 
+	* test/test.c: Added group iterator/test driver functionality
+	
+	* test/driver.c: Added groups to run using new test functionality
+	
+	* test/slist.h:
+	* test/hashtable.h:
+	* test/string-util.h: Test group definitions for string util/hashtable
+
+	* test/slist.c:
+	* test/str.c: 
+	* test/hash.c: Added test definition table 
+
+	* test/Makefile.am: Added -Wall -Werror -D_FORTIFY_SOURCE=2
+
+	* src/gstr.c: Added implementation for g_str_has_prefix, g_str_has_suffix
+
+	* src/glib.h: Added missing function signatures
+
+	* src/Makefile.am: added -D_FORTIFY_SOURCE=2 
+
 2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
 
 	* src/gslist.c (g_slist_remove_link): I misread the function

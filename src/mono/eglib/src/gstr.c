@@ -51,6 +51,49 @@ g_strfreev (gchar **str_array)
 	g_free (orig);
 }
 
+gint
+g_strv_length(gchar **str_array)
+{
+	gint length = 0;
+	g_return_val_if_fail(str_array != NULL, 0);
+	for(length = 0; str_array[length] != NULL; length++);
+	return length;
+}
+
+gboolean
+g_str_has_suffix(const gchar *str, const gchar *suffix)
+{
+	gint str_length;
+	gint suffix_length;
+	
+	g_return_val_if_fail(str != NULL, FALSE);
+	g_return_val_if_fail(suffix != NULL, FALSE);
+
+	str_length = strlen(str);
+	suffix_length = strlen(suffix);
+
+	return suffix_length <= str_length ?
+		strncmp(str + str_length - suffix_length, suffix, suffix_length) == 0 :
+		FALSE;
+}
+
+gboolean
+g_str_has_prefix(const gchar *str, const gchar *prefix)
+{
+	gint str_length;
+	gint prefix_length;
+	
+	g_return_val_if_fail(str != NULL, FALSE);
+	g_return_val_if_fail(prefix != NULL, FALSE);
+
+	str_length = strlen(str);
+	prefix_length = strlen(prefix);
+
+	return prefix_length <= str_length ?
+		strncmp(str, prefix, prefix_length) == 0 :
+		FALSE;
+}
+
 gchar *
 g_strdup_vprintf (const gchar *format, va_list args)
 {

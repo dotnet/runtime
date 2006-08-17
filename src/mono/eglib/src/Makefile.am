@@ -9,7 +9,7 @@ libeglib_la_SOURCES = \
 	gslist.c        \
 	gstring.c
 
-libeglib_la_CFLAGS = -Wall -Werror
+libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
 INCLUDES = -I$(srcdir)
 

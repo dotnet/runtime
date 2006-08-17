@@ -128,3 +128,16 @@ test_slist_insert_sorted ()
 
 	return NULL;
 }
+
+static Test slist_tests [] = {
+	{"slist_append", test_slist_append},
+	{"slist_concat", test_slist_concat},
+	{"slist_find", test_slist_find},
+	{"slist_remove", test_slist_remove},
+	{"slist_remove_link", test_slist_remove_link},
+	{"slist_insert_sorted", test_slist_insert_sorted},
+	{NULL, NULL}
+};
+
+DEFINE_TEST_GROUP_INIT(slist_tests_init, slist_tests)
+

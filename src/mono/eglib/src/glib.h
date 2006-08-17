@@ -116,6 +116,8 @@ void         g_strfreev       (gchar **str_array);
 gchar       *g_strconcat      (const gchar *first, ...);
 gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint max_tokens);
 gchar       *g_strreverse     (gchar *str);
+gboolean    g_str_has_prefix  (const gchar *str, const gchar *prefix);
+gboolean    g_str_has_suffix  (const gchar *str, const gchar *suffix);
 
 /*
  * String type
@@ -135,7 +137,7 @@ void         g_string_printf        (GString *string, const gchar *format, ...);
 void         g_string_append_printf (GString *string, const gchar *format, ...);
 GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
-
+GString     *g_string_append_len    (GString *string, const gchar *val, gsize len);
 #define g_string_sprintfa g_string_append_printf
 
 /*
@@ -162,7 +164,7 @@ GSList *g_slist_reverse   (GSList *list);
 GSList *g_slist_remove_link (GSList *list, GSList *link);
 GSList *g_slist_delete_link (GSList *list, GSList *link);
 GSList *g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func);
-
+guint  g_slist_length     (GSList *list);
 #define g_slist_next (slist) ((slist) ? (((GSList *) slist)->next) : NULL)
 
 /*
