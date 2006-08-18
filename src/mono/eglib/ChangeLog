@@ -1,5 +1,19 @@
 2006-08-18  Aaron Bockover  <abockover@novell.com>
 
+	* test/test.c: 
+	* test/test.h: Added result() to be used in place of g_strdup_printf(),
+	it's shorter to write and allows the duped string to be freed safely;
+	added license header to file
+
+	* test/driver.c: Added license header to file
+
+	* test/string-util.c:
+	* test/ptrarray.c:
+	* test/string.c:
+	* test/list.c: Use result() in place of g_strdup_printf(), it's nicer
+
+2006-08-18  Aaron Bockover  <abockover@novell.com>
+
 	* src/gptrarray.c: Implemented g_ptr_array_sort
 
 	* test/ptrarray.c: Added sort test

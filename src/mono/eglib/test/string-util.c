@@ -24,7 +24,7 @@ test_concat ()
 {
 	gchar *x = g_strconcat ("Hello", ", ", "world", NULL);
 	if (strcmp (x, "Hello, world") != 0)
-		return g_strdup_printf ("concat failed, got: %s", x);
+		return result("concat failed, got: %s", x);
 	g_free (x);
 	return NULL;
 }
@@ -36,11 +36,11 @@ test_split ()
 	int i = 0;
 	
 	if(v == NULL) {
-		return RESULT("split failed, got NULL vector");
+		return "split failed, got NULL vector";
 	} else {
 		for(i = 0; v[i] != NULL; i++);
 		if(i != 7) {
-			return g_strdup_printf("split failed, expected 7 tokens, got %d\n", i);
+			return result("split failed, expected 7 tokens, got %d\n", i);
 		}
 	}
 	
@@ -60,14 +60,14 @@ test_strreverse ()
 	if (strcmp (a, a_target)) {
 		g_free (b);
 		g_free (a);
-		return g_strdup_printf ("strreverse failed. Expecting: '%s' and got '%s'\n", a, a_target);
+		return result("strreverse failed. Expecting: '%s' and got '%s'\n", a, a_target);
 	}
 
 	g_strreverse (b);
 	if (strcmp (b, b_target)) {
 		g_free (b);
 		g_free (a);
-		return g_strdup_printf ("strreverse failed. Expecting: '%s' and got '%s'\n", b, b_target);
+		return result("strreverse failed. Expecting: '%s' and got '%s'\n", b, b_target);
 	}
 	g_free (b);
 	g_free (a);

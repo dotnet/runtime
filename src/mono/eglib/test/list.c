@@ -159,18 +159,18 @@ test_list_insert_sorted ()
 	/* insert at the middle */
 	list = g_list_insert_sorted (list, "aa", compare);
 	if (strcmp ("aa", list->next->data))
-		return g_strdup("insert_sorted failed. #1");
+		return result ("insert_sorted failed. #1");
 
 	/* insert at the beginning */
 	list = g_list_insert_sorted (list, "", compare);
 	
 	if (strcmp ("", list->data))
-		return g_strdup ("insert_sorted failed. #2");		
+		return result ("insert_sorted failed. #2");		
 
 	/* insert at the end */
 	list = g_list_insert_sorted (list, "aaaa", compare);
 	if (strcmp ("aaaa", g_list_last (list)->data))
-		return g_strdup ("insert_sorted failed. #3");
+		return result ("insert_sorted failed. #3");
 
 	return NULL;
 }

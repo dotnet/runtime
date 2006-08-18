@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "test.h"
 
-#define sfail(k,p) if (s->str [p] != k) { g_string_free (s,TRUE); return g_strdup_printf ("Got %s, Failed at %d, expected '%c'", s->str, p, k);}
+#define sfail(k,p) if (s->str [p] != k) { g_string_free (s,TRUE); return result ("Got %s, Failed at %d, expected '%c'", s->str, p, k);}
 
 char *
 test_gstring ()
@@ -13,21 +13,21 @@ test_gstring ()
 	int i;
 
 	if (strcmp (s->str, "My") != 0)
-		return RESULT("Expected only 'My' on the string");
+		return "Expected only 'My' on the string";
 	g_string_free (s, TRUE);
 
 	s = g_string_new_len ("My\0\0Rest", 6);
 	if (s->str [2] != 0)
-		return RESULT("Null was not copied");
+		return "Null was not copied";
 	if (strcmp (s->str+4, "Re") != 0){
-		return RESULT("Did not find the 'Re' part");
+		return "Did not find the 'Re' part";
 	}
 
 	g_string_append (s, "lalalalalalalalalalalalalalalalalalalalalalal");
 	if (s->str [2] != 0)
-		return RESULT("Null as not copied");
+		return "Null as not copied";
 	if (strncmp (s->str+4, "Relala", 6) != 0){
-		return g_strdup_printf("Did not copy correctly, got: %s", s->str+4);
+		return result("Did not copy correctly, got: %s", s->str+4);
 	}
 
 	g_string_free (s, TRUE);
@@ -36,7 +36,7 @@ test_gstring ()
 		g_string_append (s, "x");
 	}
 	if (strlen (s->str) != 1024){
-		return g_strdup_printf("Incorrect string size, got: %s %d", s->str, strlen (s->str));
+		return result("Incorrect string size, got: %s %d", s->str, strlen (s->str));
 	}
 	g_string_free (s, TRUE);
 
@@ -45,14 +45,14 @@ test_gstring ()
 		g_string_append_c (s, 'x');
 	}
 	if (strlen (s->str) != 1024){
-		return g_strdup_printf("Incorrect string size, got: %s %d\n", s->str, strlen (s->str));
+		return result("Incorrect string size, got: %s %d\n", s->str, strlen (s->str));
 	}
 	g_string_free (s, TRUE);
 
 	s = g_string_new ("hola");
 	g_string_sprintfa (s, "%s%d", ", bola", 5);
 	if (strcmp (s->str, "hola, bola5") != 0){
-		return g_strdup_printf("Incorrect data, got: %s\n", s->str);
+		return result("Incorrect data, got: %s\n", s->str);
 	}
 	g_string_free (s, TRUE);
 
