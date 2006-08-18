@@ -805,8 +805,6 @@ gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
             add128(alo, ahi, blo, bhi, &alo, &ahi);
         }
 
-        if (rc != DECIMAL_SUCCESS) return rc;
-
         rc = rescale128(&alo, &ahi,&scaleA, 0, 0, DECIMAL_MAX_SCALE, 1);
     }
 
