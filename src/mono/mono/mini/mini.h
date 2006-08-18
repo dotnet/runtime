@@ -50,7 +50,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "28"
+#define MONO_AOT_FILE_VERSION "29"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -853,6 +853,8 @@ void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 MonoJumpInfo* mono_patch_info_dup_mp        (MonoMemPool *mp, MonoJumpInfo *patch_info);
+guint     mono_patch_info_hash (gconstpointer data);
+gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors);
 MonoLMF** mono_get_lmf_addr                 (void);
 void      mono_jit_thread_attach            (MonoDomain *domain);

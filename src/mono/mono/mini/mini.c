@@ -8444,6 +8444,56 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 	return res;
 }
 
+guint
+mono_patch_info_hash (gconstpointer data)
+{
+	const MonoJumpInfo *ji = (MonoJumpInfo*)data;
+
+	switch (ji->type) {
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_DECLSEC:
+		return (ji->type << 8) | ji->data.token->token;
+	default:
+		return (ji->type << 8);
+	}
+}
+
+/* 
+ * mono_patch_info_equal:
+ * 
+ * This might fail to recognize equivalent patches, i.e. floats, so its only
+ * usable in those cases where this is not a problem, i.e. sharing GOT slots
+ * in AOT.
+ */
+gint
+mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
+{
+	const MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
+	const MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
+
+	if (ji1->type != ji2->type)
+		return 0;
+
+	switch (ji1->type) {
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_DECLSEC:
+		if ((ji1->data.token->image != ji2->data.token->image) ||
+			(ji1->data.token->token != ji2->data.token->token))
+			return 0;
+		break;
+	default:
+		if (ji1->data.name != ji2->data.name)
+			return 0;
+		break;
+	}
+
+	return 1;
+}
+
 gpointer
 mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors)
 {

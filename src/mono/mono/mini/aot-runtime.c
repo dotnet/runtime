@@ -1087,10 +1087,17 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_DECLSEC:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		image = load_image (aot_module, decode_value (p, &p));
-		if (!image)
-			goto cleanup;
-		ji->data.token = mono_jump_info_token_new (mp, image, decode_value (p, &p));
+		*got_offset = decode_value (p, &p);
+
+		if (aot_module->got [*got_offset]) {
+			/* Already loaded */
+		} else {
+			guint8 *tmp = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
+			image = load_image (aot_module, decode_value (tmp, &tmp));
+			if (!image)
+				goto cleanup;
+			ji->data.token = mono_jump_info_token_new (mp, image, decode_value (tmp, &tmp));
+		}
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
 		ji->data.klass = decode_klass_info (aot_module, p, &p);

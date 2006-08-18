@@ -81,7 +81,7 @@ typedef struct MonoAotCompile {
 	FILE *fp;
 	GHashTable *patch_to_plt_offset;
 	GHashTable *plt_offset_to_patch;
-	GHashTable *patch_to_got_offset;
+	GHashTable *patch_to_shared_got_offset;
 	GPtrArray *shared_patches;
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
@@ -307,27 +307,6 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		*endbuf = p;
 }
 
-static guint
-patch_info_hash (gconstpointer data)
-{
-	const MonoJumpInfo *patch_info = (MonoJumpInfo*)data;
-
-	return (patch_info->type << 8) && GPOINTER_TO_UINT (patch_info->data.name);
-}
-
-static gint
-patch_info_equal (gconstpointer ka, gconstpointer kb)
-{
-	const MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
-	const MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
-
-	/* 
-	 * This might fail to recognize equivalent patches, i.e. floats, but this is not
-	 * a problem in this case.
-	 */
-	return ((ji1->type == ji2->type) && (ji1->data.name == ji2->data.name)) ? 1 : 0;
-}
-
 static guint32
 get_image_index (MonoAotCompile *cfg, MonoImage *image)
 {
@@ -472,29 +451,35 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 static guint32
 get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 {
-	guint32 res;
+	guint32 got_offset;
 
-	res = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_got_offset, ji));
-	if (res)
-		/* FIXME: 0 */
-		return res;
+	got_offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_shared_got_offset, ji));
+	if (got_offset)
+		return got_offset - 1;
 
-	switch (ji->type) {
-	case MONO_PATCH_INFO_IMAGE:
-		if (ji->data.image == acfg->image)
-			return 0;
-		break;
-	default:
-		break;
-	}
-
-	res = acfg->got_offset;
+	got_offset = acfg->got_offset;
 	acfg->got_offset ++;
 
 	acfg->stats.got_slots ++;
 	acfg->stats.got_slot_types [ji->type] ++;
 
-	return res;
+	return got_offset;
+}
+
+static guint32
+get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
+{
+	MonoJumpInfo *copy;
+	guint32 got_offset;
+
+	if (!g_hash_table_lookup (acfg->patch_to_shared_got_offset, ji)) {
+		got_offset = get_got_offset (acfg, ji);
+		copy = mono_patch_info_dup_mp (acfg->mempool, ji);
+		g_hash_table_insert (acfg->patch_to_shared_got_offset, copy, GUINT_TO_POINTER (got_offset + 1));
+		g_ptr_array_add (acfg->shared_patches, copy);
+	}
+
+	return get_got_offset (acfg, ji);
 }
 
 static void
@@ -705,8 +690,13 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_DECLSEC:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);
-		encode_value (patch_info->data.token->token, p, &p);
+		if (shared) {
+			guint32 offset = get_got_offset (acfg, patch_info);
+			encode_value (offset, p, &p);
+		} else {
+			encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);
+			encode_value (patch_info->data.token->token, p, &p);
+		}
 		break;
 	case MONO_PATCH_INFO_EXC_NAME: {
 		MonoClass *ex_class;
@@ -864,7 +854,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 
 		if ((patch_info->type == MONO_PATCH_INFO_IMAGE) && (patch_info->data.image == acfg->image)) {
-			/* Stored in GOT slot 0 */
+			/* Stored in a GOT slot initialized at module load time */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
 		}
@@ -1523,12 +1513,16 @@ load_profile_files (MonoAotCompile *acfg)
 static void
 alloc_got_slots (MonoAotCompile *acfg)
 {
-	int i, got_offset;
+	int i;
 	GList *l;
-	MonoJumpInfo *ji, *copy;
+	MonoJumpInfo *ji;
 
 	/* Slot 0 is reserved for the address of the current assembly */
-	acfg->got_offset = 1;
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+	ji->type = MONO_PATCH_INFO_IMAGE;
+	ji->data.image = acfg->image;
+
+	get_shared_got_offset (acfg, ji);
 
 	for (l = acfg->method_order; l != NULL; l = l->next) {
 		i = GPOINTER_TO_UINT (l->data);
@@ -1544,13 +1538,10 @@ alloc_got_slots (MonoAotCompile *acfg)
 				case MONO_PATCH_INFO_ADJUSTED_IID:
 				case MONO_PATCH_INFO_FIELD:
 				case MONO_PATCH_INFO_SFLDA:
-					got_offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_got_offset, ji));
-					if (!got_offset) {
-						got_offset = get_got_offset (acfg, ji);
-						copy = mono_patch_info_dup_mp (acfg->mempool, ji);
-						g_hash_table_insert (acfg->patch_to_got_offset, copy, GUINT_TO_POINTER (got_offset));
-						g_ptr_array_add (acfg->shared_patches, copy);
-					}
+				case MONO_PATCH_INFO_DECLSEC:
+				case MONO_PATCH_INFO_LDTOKEN:
+				case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+					get_shared_got_offset (acfg, ji);
 					break;
 				default:
 					break;
@@ -1842,7 +1833,6 @@ emit_got_info (MonoAotCompile *acfg)
 	 *   initialized.
 	 * - clean up and document the code.
 	 * - use String.Empty in class libs.
-	 * - type_from_handle.
 	 */
 
 	/* Encode info required to decode shared GOT entries */
@@ -1878,9 +1868,6 @@ emit_got_info (MonoAotCompile *acfg)
 	emit_global (acfg->fp, symbol, FALSE);
 	emit_alignment (acfg->fp, 8);
 	emit_label (acfg->fp, symbol);
-
-	/* The first GOT entry is reserved */
-	fprintf (acfg->fp, ".long 0\n");
 
 	/* FIXME: Optimize this */
 	for (i = 0; i < acfg->shared_patches->len; ++i)
@@ -1946,7 +1933,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_got_offset = g_hash_table_new (patch_info_hash, patch_info_equal);
+	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->shared_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
