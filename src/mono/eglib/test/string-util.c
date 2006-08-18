@@ -109,7 +109,7 @@ test_strjoin ()
 char *
 test_strchug ()
 {
-	char *str = g_strdup (" \v\thola");
+	char *str = g_strdup (" \t\n hola");
 
 	g_strchug (str);
 	if (strcmp ("hola", str)) {
@@ -139,7 +139,7 @@ test_strchomp ()
 char *
 test_strstrip ()
 {
-	char *str = g_strdup ("  \vhola   ");
+	char *str = g_strdup (" \t hola   ");
 
 	g_strstrip (str);
 	if (strcmp ("hola", str)) {
