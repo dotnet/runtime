@@ -1,3 +1,10 @@
+2006-08-18  Duncan Mak  <duncan@a-chinaman.com>
+
+	* src/glist.c: Implemented. Missing remove,
+	remove_link and insert_before.
+
+	* test/list.c: Tests for GList.
+
 2006-08-17  Aaron Bockover  <abockover@novell.com>
 
 	* src/gptrarray.c: Implemented g_ptr_array_remove and 

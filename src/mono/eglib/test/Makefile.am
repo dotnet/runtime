@@ -1,15 +1,16 @@
 noinst_PROGRAMS = test-eglib test-glib
 
 SOURCES = \
-	test.c \
-	test.h \
-	tests.h \
-	driver.c \
-	hashtable.c \
-	string-util.c \
-	string.c \
-	slist.c \
-	ptrarray.c
+	test.c 		\
+	test.h 		\
+	tests.h 	\
+	driver.c 	\
+	hashtable.c 	\
+	string-util.c 	\
+	string.c 	\
+	slist.c 	\
+	ptrarray.c 	\
+	list.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)

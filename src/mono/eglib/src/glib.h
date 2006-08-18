@@ -166,23 +166,78 @@ struct _GSList {
 	GSList *next;
 };
 
-GSList *g_slist_alloc     (void);
-GSList *g_slist_append    (GSList* list, gpointer data);
-GSList *g_slist_prepend   (GSList* list, gpointer data);
-void    g_slist_free      (GSList* list);
-void    g_slist_free_1    (GSList* list);
-GSList *g_slist_copy      (GSList* list);
-GSList *g_slist_concat    (GSList* list1, GSList* list2);
-void    g_slist_foreach   (GSList* list, GFunc func, gpointer user_data);
-GSList *g_slist_last      (GSList *list);
-GSList *g_slist_find      (GSList *list, gconstpointer data);
-GSList *g_slist_remove    (GSList *list, gconstpointer data);
-GSList *g_slist_reverse   (GSList *list);
-guint  g_slist_length     (GSList *list);
-GSList *g_slist_remove_link (GSList *list, GSList *link);
-GSList *g_slist_delete_link (GSList *list, GSList *link);
-GSList *g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func);
-#define g_slist_next (slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
+GSList *g_slist_alloc         (void);
+GSList *g_slist_append        (GSList        *list,
+			       gpointer       data);
+GSList *g_slist_prepend       (GSList        *list,
+			       gpointer       data);
+void    g_slist_free          (GSList        *list);
+void    g_slist_free_1        (GSList        *list);
+GSList *g_slist_copy          (GSList        *list);
+GSList *g_slist_concat        (GSList        *list1,
+			       GSList        *list2);
+void    g_slist_foreach       (GSList        *list,
+			       GFunc          func,
+			       gpointer       user_data);
+GSList *g_slist_last          (GSList        *list);
+GSList *g_slist_find          (GSList        *list,
+			       gconstpointer  data);
+GSList *g_slist_remove        (GSList        *list,
+			       gconstpointer  data);
+GSList *g_slist_reverse       (GSList        *list);
+guint   g_slist_length        (GSList        *list);
+GSList *g_slist_remove_link   (GSList        *list,
+			       GSList        *link);
+GSList *g_slist_delete_link   (GSList        *list,
+			       GSList        *link);
+GSList *g_slist_insert_sorted (GSList        *list,
+			       gpointer       data,
+			       GCompareFunc   func);
+
+#define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
+
+typedef struct _GList GList;
+struct _GList {
+  gpointer data;
+  GList *next;
+  GList *prev;
+};
+
+#define g_list_next(list) ((list) ? (((GList *) (list))->next) : NULL);
+
+GList *g_list_alloc         (void);
+GList *g_list_append        (GList         *list,
+			     gpointer       data);
+GList *g_list_prepend       (GList         *list,
+			     gpointer       data);
+void   g_list_free          (GList         *list);
+void   g_list_free_1        (GList         *list);
+GList *g_list_copy          (GList         *list);
+guint  g_list_length        (GList         *list);
+gint   g_list_index         (GList         *list,
+			     gconstpointer  data);
+GList *g_list_nth           (GList         *list,
+			     guint          n);
+GList *g_list_last          (GList         *list);
+GList *g_list_concat        (GList         *list1,
+			     GList         *list2);
+void   g_list_foreach       (GList         *list,
+			     GFunc          func,
+			     gpointer       user_data);
+GList *g_list_first         (GList         *list);
+GList *g_list_find          (GList         *list,
+			     gconstpointer  data);
+GList *g_list_remove        (GList         *list,
+			     gconstpointer  data);
+GList *g_list_reverse       (GList         *list);
+GList *g_list_remove_link   (GList         *list,
+			     GList         *link);
+GList *g_list_delete_link   (GList         *list,
+			     GList         *link);
+GList *g_list_insert_sorted (GList         *list,
+			     gpointer       data,
+			     GCompareFunc   func);
+
 
 /*
  * Pointer Array

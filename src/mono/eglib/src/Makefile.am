@@ -10,7 +10,8 @@ libeglib_la_SOURCES = \
 	gstr.c       	\
 	gslist.c     	\
 	gstring.c    	\
-	gptrarray.c
+	gptrarray.c     \
+	glist.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
