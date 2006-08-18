@@ -21,7 +21,6 @@ Routines missing from eglib, by count number:
 
      82 g_list_prepend
      59 g_list_free
-     36 g_ptr_array_index
      29 g_getenv
      28 g_list_append
      27 g_build_filename

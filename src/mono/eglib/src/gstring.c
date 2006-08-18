@@ -215,4 +215,5 @@ g_string_printf (GString *string, const gchar *format, ...)
 GString *
 g_string_truncate (GString *string, gsize len)
 {
+	return string;
 }
