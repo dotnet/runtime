@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <eglib-config.h>
 
 /*
@@ -23,6 +24,17 @@ typedef const void *   gconstpointer;
 typedef char           gchar;
 typedef unsigned char  guchar;
 
+/* Types defined in terms of the stdint.h */
+typedef int8_t         gint8;
+typedef uint8_t        guint8;
+typedef int16_t        gint16;
+typedef uint16_t       guint16;
+typedef int32_t        gint32;
+typedef uint32_t       guint32;
+typedef int64_t        gint64;
+typedef uint64_t       guint64;
+typedef float          gfloat;
+typedef double         gdouble;
 /*
  * Macros
  */
@@ -31,8 +43,8 @@ typedef unsigned char  guchar;
 #define FALSE                0
 #define TRUE                 1
 
-#define G_MAXINT32           0xf7777777
-#define G_MININT32           0x80000000
+#define G_MAXINT32           INT32_MAX
+#define G_MININT32           INT32_MIN
 
 #define GPOINTER_TO_INT(ptr)   ((int)(ptr))
 #define GPOINTER_TO_UINT(ptr)  ((uint)(ptr))
@@ -318,5 +330,19 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
 #define g_warning(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format)
 #define g_message(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format)
 #define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
+
+/*
+ * Unicode Manipulation: most of this is not used by Mono by default, it is
+ * only used if the old collation code is activated, so this is only the
+ * bare minimum to build.
+ */
+typedef guint32 gunichar;
+
+typedef enum {
+	G_UNICODE_LOWERCASE_LETTER,
+} GUnicodeType;
+
+gunichar       g_unichar_tolower (gunichar c);
+GUnicodeType   g_unichar_type    (gunichar c);
 
 #endif

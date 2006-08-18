@@ -1,3 +1,11 @@
+2006-08-18  Miguel de Icaza  <miguel@novell.com>
+
+	* src/unicode.c: New file, to host unicode code, it will throw as
+	this code is no longer used in the Mono runtime anyways.
+	
+	* src/glib.h: Use stdint.h types, a lot of the good stuff is
+	replicated by glib.
+
 2006-08-18  Duncan Mak  <duncan@a-chinaman.com>
 
 	* src/glist.c: Implemented. Missing remove,
