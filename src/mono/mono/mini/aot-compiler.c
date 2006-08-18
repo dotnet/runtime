@@ -68,7 +68,7 @@ typedef struct MonoAotOptions {
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
-	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
+	int ccount, mcount, lmfcount, abscount, wrappercount, gcount, ocount;
 	int code_size, info_size, ex_info_size, got_size, class_info_size, got_info_size, got_info_offsets_size;
 	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
@@ -1474,6 +1474,24 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
+	skip = FALSE;
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_METHOD_JUMP) {
+			/* 
+			 * FIXME: We can't handle this because mono_jit_compile_method_inner will try
+			 * to patch the AOT code when the target of the jump is compiled.
+			 */
+			skip = TRUE;
+			break;
+		}
+	}
+
+	if (skip) {
+		acfg->stats.ocount++;
+		mono_destroy_compile (cfg);
+		return;
+	}
+
 	/* some wrappers are very common */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_METHODCONST) {
@@ -2058,6 +2076,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
 	load_profile_files (acfg);
+
+	if (mono_defaults.generic_nullable_class) {
+		/* 
+		 * FIXME: Its hard to skip generic methods or methods which use generics.
+		 */
+		printf ("Error: Can't AOT Net 2.0 assemblies.\n");
+		return 1;
+	}
 
 	emit_start (acfg);
 

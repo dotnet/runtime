@@ -1136,7 +1136,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 
 	/* First load the type + offset table */
 	last_offset = 0;
-	patches = mono_mempool_alloc (mp, sizeof (MonoJumpInfo) * n_patches);
+	patches = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
 
 	for (pindex = 0; pindex < n_patches; ++pindex) {		
 		MonoJumpInfo *ji = &patches [pindex];
