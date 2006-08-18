@@ -29,6 +29,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/* This is only needed for the canonicalize_path code, MAXSYMLINKS, could be moved */
+#include <sys/param.h>
+
 #define INVALID_ADDRESS 0xffffffff
 
 /*
@@ -85,6 +88,7 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 	return NULL;
 }
 
+
 static gchar *
 canonicalize_path (const char *path)
 {
@@ -127,6 +131,44 @@ canonicalize_path (const char *path)
 	
 	if (dest != lastpos) strcpy (dest, lastpos);
 	return g_strreverse (abspath);
+}
+
+/*
+ * This ensures that the path that we store points to the final file
+ * not a path to a symlink.
+ */
+static gchar *
+full_path (const char *path)
+{
+#if PLATFORM_WIN32
+	return canonicalize_path (path);
+#else
+	char *p, *concat, *dir;
+	char buffer [PATH_MAX+1];
+	int n, iterations = 0;
+
+	p = g_strdup (path);
+	do {
+		iterations++;
+		n = readlink (p, buffer, sizeof (buffer)-1);
+		if (n < 0){
+			char *copy = p;
+			p = canonicalize_path (copy);
+			g_free (copy);
+			return p;
+		}
+		
+		buffer [n] = 0;
+		dir = g_path_get_dirname (p);
+		concat = g_build_filename (dir, buffer, NULL);
+		g_free (dir);
+		g_free (p);
+		p = canonicalize_path (concat);
+		g_free (concat);
+	} while (iterations < MAXSYMLINKS);
+
+	return p;
+#endif
 }
 
 /**
@@ -854,7 +896,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->raw_data = mono_raw_buffer_load (fileno (filed), FALSE, 0, stat_buf.st_size);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
-	image->name = canonicalize_path (fname);
+	image->name = full_path (fname);
 	image->ref_only = refonly;
 	image->ref_count = 1;
 
