@@ -1,3 +1,20 @@
+2006-08-18  Aaron Bockover  <abockover@novell.com>
+
+	* src/gptrarray.c: Implemented g_ptr_array_sort
+
+	* test/ptrarray.c: Added sort test
+	
+	* test/driver.c: Added --help; support running N iterations and allow
+	selecting which test groups to run; uses the test group table in tests.h
+	
+	* test/tests.h: Added group table
+	
+	* test/test.h:
+	* test/test.c: Using a Group structure and table, removed run_groups
+	as we only need run_group now
+
+	* test/slist.h: Removed, not needed, tests/groups defined in tests.h
+
 2006-08-18  Miguel de Icaza  <miguel@novell.com>
 
 	* src/unicode.c: New file, to host unicode code, it will throw as
@@ -13,6 +30,7 @@
 
 	* test/list.c: Tests for GList.
 
+>>>>>>> .r63982
 2006-08-17  Aaron Bockover  <abockover@novell.com>
 
 	* src/gptrarray.c: Implemented g_ptr_array_remove and 

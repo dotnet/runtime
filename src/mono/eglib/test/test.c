@@ -19,42 +19,15 @@ run_test(Test *test)
 }
 
 void
-run_group(const char *name, LoadGroupHandler group_handler)
+run_group(Group *group)
 {
-	Test *tests = group_handler();
+	Test *tests = group->handler();
 	int i;
 	
-	printf("[%s]\n", name);
+	printf("[%s]\n", group->name);
 
 	for(i = 0; tests[i].name != NULL; i++) {
 		run_test(&(tests[i]));
 	}
-}
-
-void
-run_groups(const char *first_name, LoadGroupHandler first_group_handler, ...)
-{
-	va_list args;
-	va_start(args, first_group_handler);
-
-	run_group(first_name, first_group_handler);
-	
-	while(1) {
-		const char *name;
-		LoadGroupHandler group_handler;
-
-		if((name = (const char *)va_arg(args, const char **)) == NULL) {
-			break;
-		}
-		
-		if((group_handler = (LoadGroupHandler)va_arg(args, 
-			LoadGroupHandler)) == NULL) {
-			break;
-		}
-
-		run_group(name, group_handler);
-	}
-
-	va_end(args);
 }
 

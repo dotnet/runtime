@@ -197,6 +197,37 @@ char *ptrarray_remove()
 	return NULL;
 }
 
+static gint ptrarray_sort_compare(gconstpointer a, gconstpointer b)
+{
+	return strcmp(a, b);
+}
+
+char *ptrarray_sort()
+{
+	GPtrArray *array = g_ptr_array_new();
+	gint i;
+	static const gchar *letters [] = { "A", "B", "C", "D", "E" };
+	
+	g_ptr_array_add(array, "E");
+	g_ptr_array_add(array, "C");
+	g_ptr_array_add(array, "A");
+	g_ptr_array_add(array, "D");
+	g_ptr_array_add(array, "B");
+
+	g_ptr_array_sort(array, ptrarray_sort_compare);
+
+	for(i = 0; i < array->len; i++) {
+		if(strcmp((gchar *)array->pdata[i], letters[i]) != 0) {
+			return g_strdup_printf("Array out of order, expected %s got %s", 
+				(gchar *)array->pdata[i], letters[i]);
+		}
+	}
+
+	g_ptr_array_free(array, TRUE);
+	
+	return NULL;
+}
+
 static Test ptrarray_tests [] = {
 	{"ptrarray_alloc", ptrarray_alloc},
 	{"ptrarray_for_iterate", ptrarray_for_iterate},
@@ -204,6 +235,7 @@ static Test ptrarray_tests [] = {
 	{"ptrarray_set_size", ptrarray_set_size},
 	{"ptrarray_remove_index", ptrarray_remove_index},
 	{"ptrarray_remove", ptrarray_remove},
+	{"ptrarray_sort", ptrarray_sort},
 	{NULL, NULL}
 };
 

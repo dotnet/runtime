@@ -136,8 +136,8 @@ g_ptr_array_remove_index(GPtrArray *array, guint index)
 			(array->len - index - 1) * sizeof(gpointer));
 	}
 	
-	array->len -= 1;
-//	array->pdata[array->len - 1] = NULL;
+	array->len--;
+	array->pdata[array->len] = NULL;
 
 	return removed_node;
 }
@@ -168,4 +168,18 @@ g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 		func(g_ptr_array_index(array, i), user_data);
 	}
 }
+
+void
+g_ptr_array_sort(GPtrArray *array, GCompareFunc compare_func)
+{
+	g_return_if_fail(array != NULL);
+	qsort(array->pdata, array->len, sizeof(gpointer), compare_func);
+}
+
+void
+g_ptr_array_sort_with_data(GPtrArray *array, GCompareDataFunc compare_func, 
+	gpointer user_data)
+{
+}
+
 

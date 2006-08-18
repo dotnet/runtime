@@ -4,6 +4,7 @@
 #include <stdarg.h>
 
 typedef struct _Test Test;
+typedef struct _Group Group;
 
 typedef char * (* RunTestHandler)();
 typedef Test * (* LoadGroupHandler)();
@@ -13,9 +14,13 @@ struct _Test {
 	RunTestHandler handler;
 };
 
+struct _Group {
+	const char *name;
+	LoadGroupHandler handler;
+};
+
 void run_test(Test *test);
-void run_group(const char *name, LoadGroupHandler group_handler);
-void run_groups(const char *first_name, LoadGroupHandler first_group_handler, ...);
+void run_group(Group *group);
 
 #define DEFINE_TEST_GROUP_INIT(name, table) \
 	Test * (name)() { return table; }
