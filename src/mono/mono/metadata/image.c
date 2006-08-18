@@ -159,9 +159,13 @@ full_path (const char *path)
 		}
 		
 		buffer [n] = 0;
-		dir = g_path_get_dirname (p);
-		concat = g_build_filename (dir, buffer, NULL);
-		g_free (dir);
+		if (!g_path_is_absolute (buffer)) {
+			dir = g_path_get_dirname (p);
+			concat = g_build_filename (dir, buffer, NULL);
+			g_free (dir);
+		} else {
+			concat = g_strdup (buffer);
+		}
 		g_free (p);
 		p = canonicalize_path (concat);
 		g_free (concat);
