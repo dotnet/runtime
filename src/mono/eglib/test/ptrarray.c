@@ -149,11 +149,61 @@ char *ptrarray_set_size()
 	return NULL;
 }
 
+char *ptrarray_remove_index()
+{
+	GPtrArray *array;
+	gint i;
+	
+	array = ptrarray_alloc_and_fill(&i);
+	
+	g_ptr_array_remove_index(array, 0);
+	if(array->pdata[0] != items[1]) {
+		return g_strdup_printf("First item is not %s, it is %s", items[1],
+			array->pdata[0]);
+	}
+
+	g_ptr_array_remove_index(array, array->len - 1);
+	
+	if(array->pdata[array->len - 1] != items[array->len]) {
+		return g_strdup_printf("Last item is not %s, it is %s", 
+			items[array->len - 2], array->pdata[array->len - 1]);
+	}
+
+	return NULL;
+}
+
+char *ptrarray_remove()
+{
+	GPtrArray *array;
+	gint i;
+	
+	array = ptrarray_alloc_and_fill(&i);
+
+	g_ptr_array_remove(array, (gpointer)items[7]);
+
+	if(!g_ptr_array_remove(array, (gpointer)items[4])) {
+		return g_strdup_printf("Item %s not removed", items[4]);
+	}
+
+	if(g_ptr_array_remove(array, (gpointer)items[4])) {
+		return g_strdup_printf("Item %s still in array after removal", 
+			items[4]);
+	}
+
+	if(array->pdata[array->len - 1] != items[array->len + 1]) {
+		return g_strdup_printf("Last item in GPtrArray not correct");
+	}
+
+	return NULL;
+}
+
 static Test ptrarray_tests [] = {
 	{"ptrarray_alloc", ptrarray_alloc},
 	{"ptrarray_for_iterate", ptrarray_for_iterate},
 	{"ptrarray_foreach_iterate", ptrarray_foreach_iterate},
 	{"ptrarray_set_size", ptrarray_set_size},
+	{"ptrarray_remove_index", ptrarray_remove_index},
+	{"ptrarray_remove", ptrarray_remove},
 	{NULL, NULL}
 };
 

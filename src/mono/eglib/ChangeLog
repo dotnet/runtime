@@ -1,3 +1,16 @@
+2006-08-17  Aaron Bockover  <abockover@novell.com>
+
+	* src/gptrarray.c: Implemented g_ptr_array_remove and 
+	g_ptr_array_remove_index
+
+	* test/other: Removed, rewritten in Makefile.am
+
+	* test/Makefile.am: Build test-eglib against local eglib and 
+	test-glib against GLib 2.0 (replaces 'other')
+
+	* test/ptrarray.c: Added tests for g_ptr_array_remove and
+	g_ptr_array_remove_index
+
 2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
 
 	* src/gslist.c: Added MIT license.

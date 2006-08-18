@@ -121,6 +121,44 @@ g_ptr_array_add(GPtrArray *array, gpointer data)
 	array->pdata[array->len++] = data;
 }
 
+gpointer
+g_ptr_array_remove_index(GPtrArray *array, guint index)
+{
+	gpointer removed_node;
+	
+	g_return_val_if_fail(array != NULL, NULL);
+	g_return_val_if_fail(index >= 0 || index < array->len, NULL);
+
+	removed_node = array->pdata[index];
+
+	if(index != array->len - 1) {
+		g_memmove(array->pdata + index, array->pdata + index + 1,
+			(array->len - index - 1) * sizeof(gpointer));
+	}
+	
+	array->len -= 1;
+//	array->pdata[array->len - 1] = NULL;
+
+	return removed_node;
+}
+
+gboolean
+g_ptr_array_remove(GPtrArray *array, gpointer data)
+{
+	guint i;
+
+	g_return_val_if_fail(array != NULL, FALSE);
+
+	for(i = 0; i < array->len; i++) {
+		if(array->pdata[i] == data) {
+			g_ptr_array_remove_index(array, i);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 void 
 g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 {
