@@ -548,6 +548,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				break;
 		}
 
+#ifdef MONO_ARCH_HAVE_PIC_AOT
+
 		skip = FALSE;
 		if (patch_info && (pindex < patches->len)) {
 			switch (patch_info->type) {
@@ -630,6 +632,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 			}
 			}
 		}
+#endif /* MONO_ARCH_HAVE_PIC_AOT */
 
 		if (!skip) {
 			if (byte_index == 0)
