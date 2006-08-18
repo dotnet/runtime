@@ -92,7 +92,10 @@ gint main(gint argc, gchar **argv)
 			}
 			
 			if(run) {
-				run_group(&(test_groups[j]));
+				gint total, passed;
+				run_group(&(test_groups[j]), &total, &passed);
+				printf("  -- %d / %d (%g%%) --\n", passed, total,
+					((gdouble)passed / (gdouble)total) * 100.0);
 			}
 		}
 	}

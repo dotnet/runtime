@@ -48,8 +48,8 @@ struct _Group {
 	LoadGroupHandler handler;
 };
 
-void run_test(Test *test);
-void run_group(Group *group);
+gboolean run_test(Test *test);
+void run_group(Group *group, gint *total, gint *passed);
 gchar *result(const gchar *format, ...);
 
 #define DEFINE_TEST_GROUP_INIT(name, table) \

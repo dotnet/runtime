@@ -36,7 +36,7 @@
 
 static gchar *last_result = NULL;
 
-void 
+gboolean 
 run_test(Test *test)
 {
 	gchar *result; 
@@ -44,25 +44,36 @@ run_test(Test *test)
 	fflush(stdout);
 	if((result = test->handler()) == NULL) {
 		printf("OK\n");
+		return TRUE;
 	} else {
 		printf("FAILED (%s)\n", result);
 		if(last_result == result) {
 			last_result = NULL;
 			g_free(result);
 		}
+		
+		return FALSE;
 	}
 }
 
 void
-run_group(Group *group)
+run_group(Group *group, gint *total, gint *passed)
 {
 	Test *tests = group->handler();
-	gint i;
-	
+	gint i, _passed = 0;
+
 	printf("[%s]\n", group->name);
 
 	for(i = 0; tests[i].name != NULL; i++) {
-		run_test(&(tests[i]));
+		_passed += run_test(&(tests[i]));
+	}
+
+	if(total != NULL) {
+		*total = i;
+	}
+
+	if(passed != NULL) {
+		*passed = _passed;
 	}
 }
 

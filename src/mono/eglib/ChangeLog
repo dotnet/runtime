@@ -1,5 +1,10 @@
 2006-08-18  Aaron Bockover  <abockover@novell.com>
 
+	* test/test.[ch]:
+	* test/driver.c: Support pass/fail logging on tests to show group report
+
+2006-08-18  Aaron Bockover  <abockover@novell.com>
+
 	* test/test.c: 
 	* test/test.h: Added result() to be used in place of g_strdup_printf(),
 	it's shorter to write and allows the duped string to be freed safely;
