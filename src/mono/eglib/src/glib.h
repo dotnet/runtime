@@ -130,9 +130,15 @@ gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
-gchar       *g_strchomp        (gchar *str);
+gchar       *g_strchomp       (gchar *str);
 
+#define g_ascii_isspace(c) (isspace (c) != 0)
+#define g_ascii_isalpha(c) (isalpha (c) != 0)
+#define g_ascii_isprint(c) (isprint (c) != 0)
+
+/* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #define g_strcasecmp strcasecmp
+#define g_ascii_strcasecmp strcasecmp
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 

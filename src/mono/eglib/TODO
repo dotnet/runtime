@@ -40,7 +40,6 @@ Routines missing from eglib, by count number:
      10 g_strlcpy
      10 g_path_get_dirname
      10 g_ascii_xdigit_value
-     10 g_ascii_isspace
      10 g_array_index
       9 g_path_get_basename
       8 g_get_home_dir
@@ -53,7 +52,6 @@ Routines missing from eglib, by count number:
       5 g_list_first
       5 g_get_current_dir
       5 g_file_get_contents
-      5 g_ascii_strcasecmp
       4 g_unsetenv
       4 g_strdown
       4 g_get_tmp_dir
@@ -100,7 +98,6 @@ Routines missing from eglib, by count number:
       2 g_filename_to_uri
       2 g_filename_from_uri
       2 g_concat_dir_and_file
-      2 g_ascii_isalpha
       2 g_array_insert_val
       2 g_array_append_val
       1 g_win32_getlocale
@@ -140,7 +137,6 @@ Routines missing from eglib, by count number:
       1 g_get_charset
       1 g_filename_from_utf8
       1 g_ascii_strdown
-      1 g_ascii_isprint
       1 g_array_remove_index
 
 Macros:
@@ -164,3 +160,4 @@ Unlikely that we will implement:
 
       2 g_unichar_type
       2 g_unichar_tolower
+
