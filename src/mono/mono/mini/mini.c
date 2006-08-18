@@ -7906,28 +7906,32 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		}
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);
-		switch (t->type) {
-		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (t)) {
-				slot_info = &scalar_stack_slots [t->type];
-				break;
-			}
-			/* Fall through */
-		case MONO_TYPE_VALUETYPE:
-			for (i = 0; i < nvtypes; ++i)
-				if (t->data.klass == vtype_stack_slots [i].vtype)
+		if (t->byref) {
+			slot_info = &scalar_stack_slots [MONO_TYPE_I];
+		} else {
+			switch (t->type) {
+			case MONO_TYPE_GENERICINST:
+				if (!mono_type_generic_inst_is_valuetype (t)) {
+					slot_info = &scalar_stack_slots [t->type];
 					break;
-			if (i < nvtypes)
-				slot_info = &vtype_stack_slots [i];
-			else {
-				g_assert (nvtypes < 256);
-				vtype_stack_slots [nvtypes].vtype = t->data.klass;
-				slot_info = &vtype_stack_slots [nvtypes];
-				nvtypes ++;
+				}
+				/* Fall through */
+			case MONO_TYPE_VALUETYPE:
+				for (i = 0; i < nvtypes; ++i)
+					if (t->data.klass == vtype_stack_slots [i].vtype)
+						break;
+				if (i < nvtypes)
+					slot_info = &vtype_stack_slots [i];
+				else {
+					g_assert (nvtypes < 256);
+					vtype_stack_slots [nvtypes].vtype = t->data.klass;
+					slot_info = &vtype_stack_slots [nvtypes];
+					nvtypes ++;
+				}
+				break;
+			default:
+				slot_info = &scalar_stack_slots [t->type];
 			}
-			break;
-		default:
-			slot_info = &scalar_stack_slots [t->type];
 		}
 
 		slot = 0xffffff;
