@@ -9,3 +9,4 @@
 #define G_DIR_SEPARATOR          '@PATHSEP@'
 #define G_DIR_SEPARATOR_S        "@PATHSEP@"
 #define G_BREAKPOINT             @BREAKPOINT@
+#define G_OS_@OS@

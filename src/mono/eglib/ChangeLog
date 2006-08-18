@@ -1,3 +1,8 @@
+2006-08-18  Miguel de Icaza  <miguel@novell.com>
+
+	* src/eglib-config.h (G_OS_): Add the G_OS_UNIX and G_OS_WIN32
+	defines that we can use to check on the host OS.
+
 2006-08-18  Aaron Bockover  <abockover@novell.com>
 
 	* test/test.[ch]:

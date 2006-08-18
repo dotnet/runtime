@@ -26,7 +26,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <glib.h>
+
+#ifdef G_OS_UNIX
 #include <dlfcn.h>
+
+/* For Linux and Solaris, need to add others as we port this */
+#define LIBSUFFIX "lib"
+#define LIBPREFIX ".so"
 
 struct _GModule {
 	void *handle;
@@ -84,6 +90,33 @@ g_module_close (GModule *module)
 	return (0 == dlclose (handle));
 }
 
+#else
+
+GModule *
+g_module_open (const gchar *file, GModuleFlags flags)
+{
+	g_error ("g_module_open not implemented on this platform");
+}
+
+gboolean
+g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
+{
+	g_error ("g_module_open not implemented on this platform");
+}
+
+const gchar *
+g_module_error (void)
+{
+	g_error ("g_module_open not implemented on this platform");
+}
+
+gboolean
+g_module_close (GModule *module)
+{
+	g_error ("g_module_open not implemented on this platform");
+}
+#endif
+
 gchar *
 g_module_build_path (const gchar *directory, const gchar *module_name)
 {
@@ -91,7 +124,6 @@ g_module_build_path (const gchar *directory, const gchar *module_name)
 		return NULL;
 
 	if (directory)
-		return g_strdup_printf ("%s/lib%s.so", directory, module_name);
-	return g_strdup_printf ("lib%s.so", module_name);
+		return g_strdup_printf ("%s/" LIBPREFIX "%s" LIBSUFFIX, directory, module_name);
+	return g_strdup_printf (LIBPREFIX "%s" LIBSUFFIX, module_name); 
 }
-

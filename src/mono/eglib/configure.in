@@ -35,15 +35,18 @@ case $host in
 *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
     PATHSEP='\\'
     SEARCHSEP=';'
+    OS="WIN32"
     ;;
 *)
     PATHSEP='/'
     SEARCHSEP=':'
+    OS="UNIX"
     ;;
 esac
 
 AC_SUBST(PATHSEP)
 AC_SUBST(SEARCHSEP)
+AC_SUBST(OS)
 
 AC_OUTPUT([
 Makefile

@@ -30,3 +30,24 @@ no separate files, please try to follow the convetions in the source code
 
 	        $ cd test
 		$ ./other
+
+* Plans: short and long term.
+
+	The short term plans for eglib is to allow Mono to optionally
+	build with it instead of using glib, gmodule and gthread, but
+	the default build will continue to be done against glib 2.0.
+
+	Our first target is to make this work with Linux, other
+	platforms will follow after that.
+
+	In the long-term (Mono 2.0) we are considering dropping glib
+	as a dependency, considering that Mono requires a modern Unix
+	system to run anyways (for its thread support) it would allow
+	us to fix some of the glib API limitations we have to live
+	with (explicit thread support for example), rework the API to
+	use types from stdint.h and we would be able to drop three
+	external shared libraries.
+
+	This would reduce memory usage for the handful of routines
+	that we use from glib, dynamic linker overhead for those and
+	would allow us to tune the implementation to Mono's needs. 
