@@ -94,13 +94,13 @@ test_slist_remove_link ()
 	return NULL;
 }
 
-gint
+static gint
 compare (gconstpointer a, gconstpointer b)
 {
 	char *foo = (char *) a;
 	char *bar = (char *) b;
 
-	if (strlen (foo) > strlen (bar))
+	if (strlen (foo) < strlen (bar))
 		return -1;
 
 	return 1;
@@ -110,22 +110,22 @@ char*
 test_slist_insert_sorted ()
 {
 	GSList *list = g_slist_prepend (NULL, "a");
-	list = g_slist_append (list, "ccc");
+	list = g_slist_append (list, "aaa");
 
 	/* insert at the middle */
 	list = g_slist_insert_sorted (list, "aa", compare);
-	if (strcmp ("aa", list->next->data) == 0)
-		return g_strdup("insert_sorted failed");
+	if (strcmp ("aa", list->next->data))
+		return g_strdup("insert_sorted failed #1");
 
 	/* insert at the beginning */
 	list = g_slist_insert_sorted (list, "", compare);
-	if (strcmp ("", list->data) == 0)
-		return g_strdup ("insert_sorted failed");		
+	if (strcmp ("", list->data))
+		return g_strdup ("insert_sorted failed #2");
 
 	/* insert at the end */
 	list = g_slist_insert_sorted (list, "aaaa", compare);
-	if (strcmp ("aaaa", g_slist_last (list)->data) == 0)
-		return g_strdup ("insert_sorted failed");
+	if (strcmp ("aaaa", g_slist_last (list)->data))
+		return g_strdup ("insert_sorted failed #3");
 
 	return NULL;
 }

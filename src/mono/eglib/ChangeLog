@@ -1,3 +1,11 @@
+2006-08-17  Duncan Mak  <duncan@a-chinaman.com>
+
+	* src/gslist.c: Added MIT license.
+	(g_slist_insert_sorted): Forgot the case where the data is
+	appended to the end of the list.
+
+	* test/slist.c (test_slist_insert_sorted): Fix the test.	
+
 2006-08-17  Aaron Bockover  <abockover@novell.com>
 
 	* src/gptrarray.c: Added g_ptr_array_set_size implementation
