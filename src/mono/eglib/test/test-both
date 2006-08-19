@@ -1,5 +1,29 @@
 #!/bin/sh
 
+for arg in $@; do 
+	if [ "x$arg" = "x--help" ]; then
+		echo "Usage: $0 [OPTION]... [ITERATIONS] [TESTGROUP]..."
+		echo ""
+		echo "Works the same as test-eglib or test-glib with the following"
+		echo "exception. Run test-eglib --help for details on normal testing"
+		echo ""
+		echo "If the first OPTION is --speed-compare, the following is"
+		echo "applicable to this program:"
+		echo ""
+		echo "  --speed-compare    run drivers in -qtni mode and report"
+		echo "                     speed comparison information"
+		echo ""
+		echo "After --speed-compare, the number of iterations "
+		echo "(optional, default is 100000) can be specified, followed "
+		echo "by specific tests to run (or none to run all)"
+		echo ""
+		echo "If --speed-compare is not the first argument, all arguments are"
+		echo "passed on directly to each driver"
+		echo ""
+		exit 1
+	fi
+done
+
 if [ "x$1" = "x--speed-compare" ]; then
 	ITERATIONS=100000
 	if [ ! -z "$2" ]; then
