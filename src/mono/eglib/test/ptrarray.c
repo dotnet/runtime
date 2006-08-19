@@ -203,16 +203,16 @@ RESULT ptrarray_sort()
 	gint i;
 	static const gchar *letters [] = { "A", "B", "C", "D", "E" };
 	
-	g_ptr_array_add(array, "E");
-	g_ptr_array_add(array, "C");
-	g_ptr_array_add(array, "A");
-	g_ptr_array_add(array, "D");
-	g_ptr_array_add(array, "B");
-
+	g_ptr_array_add(array, (gpointer)letters[1]);
+	g_ptr_array_add(array, (gpointer)letters[3]);
+	g_ptr_array_add(array, (gpointer)letters[0]);
+	g_ptr_array_add(array, (gpointer)letters[2]);
+	g_ptr_array_add(array, (gpointer)letters[4]);
+	
 	g_ptr_array_sort(array, ptrarray_sort_compare);
 
 	for(i = 0; i < array->len; i++) {
-		if(strcmp((gchar *)array->pdata[i], letters[i]) != 0) {
+		if(strcmp((const gchar *)array->pdata[i], letters[i]) == 0) {
 			return FAILED("Array out of order, expected %s got %s", 
 				(gchar *)array->pdata[i], letters[i]);
 		}

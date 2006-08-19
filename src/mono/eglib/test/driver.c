@@ -75,12 +75,16 @@ static void print_help(char *s)
 	printf("  -i, --iterations    number of times to run tests\n");
 	printf("  -q, --quiet         do not print test results; "
 		"final time always prints\n");
-	printf("  -n                  print final time without labels, "
-		"nice for scripts\n\n");
+	printf("  -n, --no-labels     print final time without labels, "
+		"nice for scripts\n");
+	printf("  -d, --debug         do not run tests, "
+		"debug the driver itself for valgrind\n\n");
 	printf("TESTGROUPS available:\n");
 
 	for(i = 0; test_groups[i].name != NULL; i++) {
-		printf("  %s\n", test_groups[i].name);
+		if(test_groups[i].handler != fake_tests_init) {
+			printf("  %s\n", test_groups[i].name);
+		}
 	}
 
 	printf("\n");
@@ -95,16 +99,19 @@ gint main(gint argc, gchar **argv)
 	gboolean quiet = FALSE;
 	gboolean global_failure = FALSE;
 	gboolean no_final_time_labels = FALSE;
+	gboolean debug = FALSE;
 	
 	static struct option long_options [] = {
 		{"help",       no_argument,       0, 'h'},
 		{"time",       no_argument,       0, 't'},
 		{"quiet",      no_argument,       0, 'q'},
 		{"iterations", required_argument, 0, 'i'},
+		{"debug",      no_argument,       0, 'd'},
+		{"no-labels",  no_argument,       0, 'n'},
 		{0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "htqni:", long_options, NULL)) != -1) {			switch(c) {
+	while((c = getopt_long(argc, argv, "dhtqni:", long_options, NULL)) != -1) {			switch(c) {
 			case 'h':
 				print_help(argv[0]);
 				return 1;
@@ -119,6 +126,9 @@ gint main(gint argc, gchar **argv)
 				break;
 			case 'n':
 				no_final_time_labels = TRUE;
+				break;
+			case 'd':
+				debug = TRUE;
 				break;
 		}
 	}
@@ -149,6 +159,14 @@ gint main(gint argc, gchar **argv)
 		}
 			
 		if(run) {
+			if(debug && test_groups[j].handler != fake_tests_init) {
+				printf("Skipping %s, in driver debug mode\n", 
+					test_groups[j].name);
+				continue;
+			} else if(!debug && test_groups[j].handler == fake_tests_init) {
+				continue;
+			}
+		
 			gboolean passed = run_group(&(test_groups[j]), 
 				iterations, quiet, report_time);
 			if(!passed && !global_failure) {

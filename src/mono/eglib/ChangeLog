@@ -1,5 +1,17 @@
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
+	* test/driver.c: Added --debug mode that allows for testing all paths
+	of the driver without actually running real tests; runs only the 'fake'
+	test, which does nothing; useful for running the driver through valgrind
+
+	* test/Makefile.am:
+	* test/tests.h:
+	* test/fake.c: Added fake test for valgrinding the driver
+
+	* test/ptrarray.c: update sort test
+
+2006-08-19  Aaron Bockover  <abockover@novell.com>
+
 	* test/test-both: added --help
 
 2006-08-19  Aaron Bockover  <abockover@novell.com>
