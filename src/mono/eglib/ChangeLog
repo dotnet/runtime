@@ -1,5 +1,14 @@
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
+	* test/driver.c: added -n mode to show only raw global run times,
+	which is useful for scripts (test-both --speed-compare)
+
+	* test/test-both: added --speed-compare mode
+
+	* test/README: updated with information on --speed-compare
+
+2006-08-19  Aaron Bockover  <abockover@novell.com>
+
 	* test/test.c: do not print times if -t is not passed
 
 	* test/driver.c: removed use of GList from the driver to avoid skews due

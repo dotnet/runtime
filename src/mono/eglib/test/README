@@ -92,7 +92,22 @@ Example: show test output of all available groups
 The 'test-both' script can be used to run both test-eglib and test-glib
 with the same options back to back:
 
-	$./test-both -tqi 100000 ptrarray
+	$ ./test-both -tqi 100000 ptrarray
 	EGlib Total Time: 1.1961s
 	GLib Total Time: 0.955957s
+
+test-both also has a nice --speed-compare mode that shows comparison
+information about EGlib vs GLib. It can run all tests or specific tests
+with a configurable number of iterations. --speed-compare mode always runs
+the drivers with -qtni
+
+The syntax for --speed-compare is:
+
+	./test-both --speed-compare [ITERATIONS] [GROUPS...]
+
+	$ ./test-both --speed-compare       Runs all tests with default iterations
+	$ ./test-both --speed-compare 500   Runs all tests with 500 iterations
+	$ ./test-both --speed-compare ptrarray   Runs ptrarray test with default
+	                                         iterations
+
 

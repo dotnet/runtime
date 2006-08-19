@@ -74,7 +74,9 @@ static void print_help(char *s)
 	printf("  -t, --time          time the tests\n");
 	printf("  -i, --iterations    number of times to run tests\n");
 	printf("  -q, --quiet         do not print test results; "
-		"time always prints\n\n");
+		"final time always prints\n");
+	printf("  -n                  print final time without labels, "
+		"nice for scripts\n\n");
 	printf("TESTGROUPS available:\n");
 
 	for(i = 0; test_groups[i].name != NULL; i++) {
@@ -92,6 +94,7 @@ gint main(gint argc, gchar **argv)
 	gboolean report_time = FALSE;
 	gboolean quiet = FALSE;
 	gboolean global_failure = FALSE;
+	gboolean no_final_time_labels = FALSE;
 	
 	static struct option long_options [] = {
 		{"help",       no_argument,       0, 'h'},
@@ -101,7 +104,7 @@ gint main(gint argc, gchar **argv)
 		{0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "htqi:", long_options, NULL)) != -1) {			switch(c) {
+	while((c = getopt_long(argc, argv, "htqni:", long_options, NULL)) != -1) {			switch(c) {
 			case 'h':
 				print_help(argv[0]);
 				return 1;
@@ -113,6 +116,9 @@ gint main(gint argc, gchar **argv)
 				break;
 			case 'q':
 				quiet = TRUE;
+				break;
+			case 'n':
+				no_final_time_labels = TRUE;
 				break;
 		}
 	}
@@ -158,7 +164,11 @@ gint main(gint argc, gchar **argv)
 	
 	if(report_time) {
 		gdouble duration = get_timestamp() - time_start;
-		printf("%s Total Time: %g\n", DRIVER_NAME, duration);
+		if(no_final_time_labels) {
+			printf("%g\n", duration);
+		} else {
+			printf("%s Total Time: %g\n", DRIVER_NAME, duration);
+		}
 	}
 
 	if(tests_to_run != NULL) {
