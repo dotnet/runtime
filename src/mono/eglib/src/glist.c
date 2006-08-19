@@ -284,6 +284,12 @@ g_list_nth (GList *list, guint n)
 	return value;
 }
 
+gpointer
+g_list_nth_data (GList *list, guint n)
+{
+	return g_list_nth(list, n)->data;
+}
+
 GList*
 g_list_copy (GList *list)
 {

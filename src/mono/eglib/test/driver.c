@@ -28,6 +28,9 @@
  
 #include <stdio.h>
 #include <glib.h>
+#include <stddef.h>
+#include <sys/time.h>
+#include <getopt.h>
 
 #include "test.h"
 #include "tests.h"
@@ -36,10 +39,13 @@ static void print_help(char *s)
 {
 	gint i;
 	
-	printf("Usage: %s [options] [iterations [test1 test2 ... testN]]\n\n", s);
+	printf("Usage: %s [options] [test1 test2 ... testN]\n\n", s);
 	printf(" options are:\n");
-	printf("   --help      show this help\n\n");
-	printf(" iterations:   number of times to run tests\n");
+	printf("   --help|-h          show this help\n");
+	printf("   --time|-t          time the tests\n");
+	printf("   --iterations|-i    number of times to run tests\n");
+	printf("   --quiet|-q         do not print test results; if -t\n");
+	printf("                      is passed, the time will print\n\n");
 	printf(" test1..testN  name of test to run (all run by default)\n\n");
 	printf(" available tests:\n");
 
@@ -52,39 +58,57 @@ static void print_help(char *s)
 
 gint main(gint argc, gchar **argv)
 {
-	gint i, j, k, iterations = 1, tests_to_run_count = 0;
-	gchar **tests_to_run = NULL;
+	gint i, j, c, iterations = 1;
+	GList *tests_to_run = NULL;
+	double time_start, time_end;
+	struct timeval tp;
+	gboolean report_time = FALSE;
+	gboolean quiet = FALSE;
 	
-	if(argc > 1) {
-		for(i = 1; i < argc; i++) {
-			if(strcmp(argv[i], "--help") == 0) {
+	static struct option long_options [] = {
+		{"help", no_argument, 0, 'h'},
+		{"time", no_argument, 0, 't'},
+		{"iterations", required_argument, 0, 'i'},
+		{0, 0, 0, 0}
+	};
+
+	while((c = getopt_long(argc, argv, "htqi:", long_options, NULL)) != -1) {			switch(c) {
+			case 'h':
 				print_help(argv[0]);
 				return 1;
-			}
-		}
-	
-		iterations = atoi(argv[1]);
-		tests_to_run_count = argc - 2;
-
-		if(tests_to_run_count > 0) {
-			tests_to_run = (gchar **)g_new0(gchar *, tests_to_run_count + 1);
-
-			for(i = 0; i < tests_to_run_count; i++) {
-				tests_to_run[i] = argv[i + 2];
-			}
-
-			tests_to_run[tests_to_run_count] = NULL;
+			case 't':
+				report_time = TRUE;
+				break;
+			case 'i':
+				iterations = atoi(optarg);
+				break;
+			case 'q':
+				quiet = TRUE;
+				break;
 		}
 	}
+
+	for(i = optind; i < argc; i++) {
+		if(argv[i][0] == '-') {
+			continue;
+		}
+
+		tests_to_run = g_list_append(tests_to_run, argv[i]);
+	}
+
+	gettimeofday(&tp, NULL);
+	time_start = (double)tp.tv_sec + (1.e-6) * tp.tv_usec;
 
 	for(i = 0; i < iterations; i++) {
 		for(j = 0; test_groups[j].name != NULL; j++) {
 			gboolean run = TRUE;
 			
 			if(tests_to_run != NULL) {
+				gint k, n;
 				run = FALSE;
-				for(k = 0; tests_to_run[k] != NULL; k++) {
-					if(strcmp(tests_to_run[k], test_groups[j].name) == 0) {
+				for(k = 0, n = g_list_length(tests_to_run); k < n; k++) {
+					if(strcmp((char *)g_list_nth_data(tests_to_run, k), 
+						test_groups[j].name) == 0) {
 						run = TRUE;
 						break;
 					}
@@ -93,15 +117,25 @@ gint main(gint argc, gchar **argv)
 			
 			if(run) {
 				gint total, passed;
-				run_group(&(test_groups[j]), &total, &passed);
-				printf("  -- %d / %d (%g%%) --\n", passed, total,
-					((gdouble)passed / (gdouble)total) * 100.0);
+				run_group(&(test_groups[j]), &total, &passed, quiet);
+				if(!quiet) {
+					printf("  -- %d / %d (%g%%) --\n", passed, total,
+						((gdouble)passed / (gdouble)total) * 100.0);
+				}
 			}
 		}
 	}
+	
+	gettimeofday(&tp, NULL);
+	time_end = (double)tp.tv_sec + (1.e-6) * tp.tv_usec;
+	
+	if(report_time) {
+		gdouble duration = time_end - time_start;
+		printf("Total Time: %gs\n", duration);
+	}
 
 	if(tests_to_run != NULL) {
-		g_free(tests_to_run);
+		g_list_free(tests_to_run);
 	}
 
 	return 0;

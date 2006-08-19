@@ -3,7 +3,7 @@
 #include <glib.h>
 #include "test.h"
 
-char*
+RESULT
 test_slist_append ()
 {
 	GSList *list = g_slist_prepend (NULL, "first");
@@ -15,10 +15,10 @@ test_slist_append ()
 	if (g_slist_length (list) != 2)
 		return "Append failed";
 
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_slist_concat ()
 {
 	GSList *foo = g_slist_prepend (NULL, "foo");
@@ -29,10 +29,10 @@ test_slist_concat ()
 	if (g_slist_length (list) != 2)
 		return "Concat failed.";
 
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_slist_find ()
 {
 	GSList *list = g_slist_prepend (NULL, "three");
@@ -50,10 +50,10 @@ test_slist_find ()
 	if (found->data != data)
 		return "Find failed";
 
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_slist_remove ()
 {
 	GSList *list = g_slist_prepend (NULL, "three");
@@ -69,10 +69,10 @@ test_slist_remove ()
 	if (strcmp ("two", list->data) != 0)
 		return "Remove failed";
 
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_slist_remove_link ()
 {
 	GSList *foo = g_slist_prepend (NULL, "a");
@@ -86,12 +86,12 @@ test_slist_remove_link ()
 	list = g_slist_remove_link (list, bar);
 
 	if (g_slist_length (list) != 2)
-		return g_strdup ("remove_link failed #1");
+		return FAILED ("remove_link failed #1");
 
 	if (bar->next != NULL)
-		return g_strdup ("remove_link failed #2");
+		return FAILED ("remove_link failed #2");
 
-	return NULL;
+	return OK;
 }
 
 static gint
@@ -106,7 +106,7 @@ compare (gconstpointer a, gconstpointer b)
 	return 1;
 }
 
-char*
+RESULT
 test_slist_insert_sorted ()
 {
 	GSList *list = g_slist_prepend (NULL, "a");
@@ -115,19 +115,19 @@ test_slist_insert_sorted ()
 	/* insert at the middle */
 	list = g_slist_insert_sorted (list, "aa", compare);
 	if (strcmp ("aa", list->next->data))
-		return g_strdup("insert_sorted failed #1");
+		return FAILED("insert_sorted failed #1");
 
 	/* insert at the beginning */
 	list = g_slist_insert_sorted (list, "", compare);
 	if (strcmp ("", list->data))
-		return g_strdup ("insert_sorted failed #2");
+		return FAILED ("insert_sorted failed #2");
 
 	/* insert at the end */
 	list = g_slist_insert_sorted (list, "aaaa", compare);
 	if (strcmp ("aaaa", g_slist_last (list)->data))
-		return g_strdup ("insert_sorted failed #3");
+		return FAILED ("insert_sorted failed #3");
 
-	return NULL;
+	return OK;
 }
 
 static Test slist_tests [] = {

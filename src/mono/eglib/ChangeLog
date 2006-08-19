@@ -1,3 +1,21 @@
+2006-08-18  Aaron Bockover  <abockover@novell.com>
+
+	* test/driver.c: Added getopt support and code timing, among other 
+	nice features to make testing/profiling easier
+
+	* test/test.c: Add support for suppressing output (quiet) and
+	define RESULT, FAILED, and OK
+
+	* src/glib.h:
+	* src/glist.c: Added g_list_nth_data implementation
+
+	* test/slist.c:
+	* test/string-util.c:
+	* test/ptrarray.c:
+	* test/string.c:
+	* test/hashtable.c:
+	* test/list.c: Use RESULT, FAILURE, and OK for tests
+
 2006-08-18  Miguel de Icaza  <miguel@novell.com>
 
 	* src/eglib-config.h (G_OS_): Add the G_OS_UNIX and G_OS_WIN32

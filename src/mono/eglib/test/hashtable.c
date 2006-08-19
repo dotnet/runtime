@@ -13,7 +13,7 @@ void foreach (gpointer key, gpointer value, gpointer user_data)
 		foreach_fail = 1;
 }
 
-char *hash_t1 (void)
+RESULT hash_t1 (void)
 {
 	GHashTable *t = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -40,12 +40,12 @@ char *hash_t1 (void)
 		return "unexpected size";
 	g_hash_table_destroy (t);
 
-	return NULL;
+	return OK;
 }
 
-char *hash_t2 (void)
+RESULT hash_t2 (void)
 {
-	return NULL;
+	return OK;
 }
 
 static Test hashtable_tests [] = {

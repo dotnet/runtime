@@ -3,7 +3,7 @@
 #include <glib.h>
 #include "test.h"
 
-char*
+RESULT
 test_list_length ()
 {
 	GList *list = g_list_prepend (NULL, "foo");
@@ -22,7 +22,7 @@ test_list_length ()
 	return NULL;
 }
 
-char*
+RESULT
 test_list_nth ()
 {
 	char *foo = "foo";
@@ -45,10 +45,10 @@ test_list_nth ()
 	if (nth->data != baz)
 		return "nth failed. #3";
 
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_list_index ()
 {
 	int i;
@@ -72,10 +72,10 @@ test_list_index ()
 	if (i != 2)
 		return "index failed. #3";
 
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_list_append ()
 {
 	GList *list = g_list_prepend (NULL, "first");
@@ -87,9 +87,10 @@ test_list_append ()
 	if (g_list_length (list) != 2)
 		return "Append failed";
 
-	return NULL;
+	return OK;
 }
-char *
+
+RESULT
 test_list_last ()
 {
 	GList *foo = g_list_prepend (NULL, "foo");
@@ -109,10 +110,10 @@ test_list_last ()
 	if (strcmp ("quux", last->data))
 		return "last failed. #2";
 
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_list_concat ()
 {
 	GList *foo = g_list_prepend (NULL, "foo");
@@ -134,7 +135,7 @@ test_list_concat ()
 	if (g_list_last (list) != bar)
 		return "Concat failed. #5";
 
-	return NULL;
+	return OK;
 }
 
 
@@ -150,7 +151,7 @@ compare (gconstpointer a, gconstpointer b)
 	return 1;
 }
 
-char*
+RESULT
 test_list_insert_sorted ()
 {
 	GList *list = g_list_prepend (NULL, "a");
@@ -159,23 +160,23 @@ test_list_insert_sorted ()
 	/* insert at the middle */
 	list = g_list_insert_sorted (list, "aa", compare);
 	if (strcmp ("aa", list->next->data))
-		return result ("insert_sorted failed. #1");
+		return FAILED ("insert_sorted failed. #1");
 
 	/* insert at the beginning */
 	list = g_list_insert_sorted (list, "", compare);
 	
 	if (strcmp ("", list->data))
-		return result ("insert_sorted failed. #2");		
+		return FAILED ("insert_sorted failed. #2");		
 
 	/* insert at the end */
 	list = g_list_insert_sorted (list, "aaaa", compare);
 	if (strcmp ("aaaa", g_list_last (list)->data))
-		return result ("insert_sorted failed. #3");
+		return FAILED ("insert_sorted failed. #3");
 
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_list_copy ()
 {
 	int i, length;
@@ -192,10 +193,10 @@ test_list_copy ()
 		if (strcmp (g_list_nth (list, i)->data,
 			    g_list_nth (copy, i)->data))
 			return "copy failed.";
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_list_reverse ()
 {
 	guint i, length;
@@ -217,7 +218,7 @@ test_list_reverse ()
 			    g_list_nth (reverse, j)->data))
 			return "reverse failed. #2";
 	}
-	return NULL;
+	return OK;
 }
 
 static Test list_tests [] = {

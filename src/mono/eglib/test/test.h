@@ -32,6 +32,8 @@
 #include <stdarg.h>
 #include <glib.h>
 
+typedef gchar * RESULT;
+
 typedef struct _Test Test;
 typedef struct _Group Group;
 
@@ -48,9 +50,11 @@ struct _Group {
 	LoadGroupHandler handler;
 };
 
-gboolean run_test(Test *test);
-void run_group(Group *group, gint *total, gint *passed);
-gchar *result(const gchar *format, ...);
+gboolean run_test(Test *test, gboolean quiet);
+void run_group(Group *group, gint *total, gint *passed, gboolean quiet);
+RESULT FAILED(const gchar *format, ...);
+
+#define OK NULL
 
 #define DEFINE_TEST_GROUP_INIT(name, table) \
 	Test * (name)() { return table; }

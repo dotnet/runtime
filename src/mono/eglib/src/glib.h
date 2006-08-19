@@ -236,6 +236,8 @@ gint   g_list_index         (GList         *list,
 			     gconstpointer  data);
 GList *g_list_nth           (GList         *list,
 			     guint          n);
+gpointer g_list_nth_data      (GList         *list,
+			     guint          n);
 GList *g_list_last          (GList         *list);
 GList *g_list_concat        (GList         *list1,
 			     GList         *list2);

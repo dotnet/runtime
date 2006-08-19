@@ -37,16 +37,26 @@
 static gchar *last_result = NULL;
 
 gboolean 
-run_test(Test *test)
+run_test(Test *test, gboolean quiet)
 {
 	gchar *result; 
-	printf("  %s: ", test->name);
-	fflush(stdout);
+	
+	if(!quiet) {
+		printf("  %s: ", test->name);
+		fflush(stdout);
+	}
+	
 	if((result = test->handler()) == NULL) {
-		printf("OK\n");
+		if(!quiet) {
+			printf("OK\n");
+		}
+		
 		return TRUE;
 	} else {
-		printf("FAILED (%s)\n", result);
+		if(!quiet) {
+			printf("FAILED (%s)\n", result);
+		}
+		
 		if(last_result == result) {
 			last_result = NULL;
 			g_free(result);
@@ -57,15 +67,17 @@ run_test(Test *test)
 }
 
 void
-run_group(Group *group, gint *total, gint *passed)
+run_group(Group *group, gint *total, gint *passed, gboolean quiet)
 {
 	Test *tests = group->handler();
 	gint i, _passed = 0;
 
-	printf("[%s]\n", group->name);
+	if(!quiet) {
+		printf("[%s]\n", group->name);
+	}
 
 	for(i = 0; tests[i].name != NULL; i++) {
-		_passed += run_test(&(tests[i]));
+		_passed += run_test(&(tests[i]), quiet);
 	}
 
 	if(total != NULL) {
@@ -77,8 +89,8 @@ run_group(Group *group, gint *total, gint *passed)
 	}
 }
 
-gchar *
-result(const gchar *format, ...)
+RESULT
+FAILED(const gchar *format, ...)
 {
 	gchar *ret;
 	va_list args;

@@ -4,7 +4,7 @@
 #include "test.h"
 
 /* This test is just to be used with valgrind */
-char *
+RESULT
 test_strfreev ()
 {
 	gchar **array = g_new (gchar *, 4);
@@ -16,20 +16,20 @@ test_strfreev ()
 	g_strfreev (array);
 	g_strfreev (NULL);
 
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_concat ()
 {
 	gchar *x = g_strconcat ("Hello", ", ", "world", NULL);
 	if (strcmp (x, "Hello, world") != 0)
-		return result("concat failed, got: %s", x);
+		return FAILED("concat failed, got: %s", x);
 	g_free (x);
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_split ()
 {
 	gchar **v = g_strsplit("Hello world, how are we doing today?", " ", 0);
@@ -40,15 +40,15 @@ test_split ()
 	} else {
 		for(i = 0; v[i] != NULL; i++);
 		if(i != 7) {
-			return result("split failed, expected 7 tokens, got %d\n", i);
+			return FAILED("split failed, expected 7 tokens, got %d\n", i);
 		}
 	}
 	
 	g_strfreev(v);
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_strreverse ()
 {
 	gchar *a = g_strdup ("onetwothree");
@@ -60,21 +60,21 @@ test_strreverse ()
 	if (strcmp (a, a_target)) {
 		g_free (b);
 		g_free (a);
-		return result("strreverse failed. Expecting: '%s' and got '%s'\n", a, a_target);
+		return FAILED("strreverse failed. Expecting: '%s' and got '%s'\n", a, a_target);
 	}
 
 	g_strreverse (b);
 	if (strcmp (b, b_target)) {
 		g_free (b);
 		g_free (a);
-		return result("strreverse failed. Expecting: '%s' and got '%s'\n", b, b_target);
+		return FAILED("strreverse failed. Expecting: '%s' and got '%s'\n", b, b_target);
 	}
 	g_free (b);
 	g_free (a);
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_strjoin ()
 {
 	char *s;
@@ -103,10 +103,10 @@ test_strjoin ()
 	if (s == NULL || (strcmp (s, "") != 0))
 		return "Failed to join empty arguments";
 
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_strchug ()
 {
 	char *str = g_strdup (" \t\n hola");
@@ -118,10 +118,10 @@ test_strchug ()
 		return "Failed.";
 	}
 	g_free (str);
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_strchomp ()
 {
 	char *str = g_strdup ("hola  \t");
@@ -133,10 +133,10 @@ test_strchomp ()
 		return "Failed.";
 	}
 	g_free (str);
-	return NULL;
+	return OK;
 }
 
-char *
+RESULT
 test_strstrip ()
 {
 	char *str = g_strdup (" \t hola   ");
@@ -148,7 +148,7 @@ test_strstrip ()
 		return "Failed.";
 	}
 	g_free (str);
-	return NULL;
+	return OK;
 }
 
 static Test strutil_tests [] = {
