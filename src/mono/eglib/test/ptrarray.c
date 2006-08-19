@@ -216,7 +216,7 @@ RESULT ptrarray_sort()
 	g_ptr_array_sort(array, ptrarray_sort_compare);
 
 	for(i = 0; i < array->len; i++) {
-		if(strcmp((const gchar *)array->pdata[i], letters[i]) == 0) {
+		if(strcmp((const gchar *)array->pdata[i], letters[i]) != 0) {
 			return FAILED("Array out of order, expected %s got %s", 
 				(gchar *)array->pdata[i], letters[i]);
 		}
