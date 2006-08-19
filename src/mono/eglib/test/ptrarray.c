@@ -165,6 +165,8 @@ RESULT ptrarray_remove_index()
 			items[array->len - 2], array->pdata[array->len - 1]);
 	}
 
+	g_ptr_array_free(array, TRUE);
+
 	return OK;
 }
 
@@ -188,6 +190,8 @@ RESULT ptrarray_remove()
 	if(array->pdata[array->len - 1] != items[array->len + 1]) {
 		return FAILED("Last item in GPtrArray not correct");
 	}
+
+	g_ptr_array_free(array, TRUE);
 
 	return OK;
 }
