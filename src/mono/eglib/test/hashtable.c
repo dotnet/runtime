@@ -17,12 +17,14 @@ RESULT hash_t1 (void)
 {
 	GHashTable *t = g_hash_table_new (g_str_hash, g_str_equal);
 
+	foreach_count = 0;
+	foreach_fail = 0;
 	g_hash_table_insert (t, "hello", "world");
 	g_hash_table_insert (t, "my", "god");
 
 	g_hash_table_foreach (t, foreach, GINT_TO_POINTER('a'));
 	if (foreach_count != 2)
-		return FAILED ("did not find all keys");
+		return FAILED ("did not find all keys, got %d expected 2", foreach_count);
 	if (foreach_fail)
 		return FAILED("failed to pass the user-data to foreach");
 	
