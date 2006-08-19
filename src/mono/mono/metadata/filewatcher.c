@@ -14,7 +14,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/filewatcher.h>
-
+#include <mono/metadata/marshal.h>
 #if (defined (PLATFORM_WIN32) && WINVER >= 0x0400)
 
 /*
@@ -195,7 +195,7 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 }
 #endif
 
-#ifdef __linux__ && defined(HAVE_SYS_SYSCALL_H) && !defined(__NR_inotify_init)
+#if defined(__linux__) && defined(HAVE_SYS_SYSCALL_H) && !defined(__NR_inotify_init)
 #  if defined(__i386__)
 #     define __NR_inotify_init		291
 #  elif defined(__x86_64__)
@@ -214,8 +214,12 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 #     define __NR_inotify_init		444
 #  endif
 #ifdef __NR_inotify_init
-#  define __NR_inotify_add_watch (__NR_inotify_init + 1)
-#  define __NR_inotify_rm_watch (__NR_inotify_init + 2)
+#  ifndef __NR_inotify_add_watch
+#    define __NR_inotify_add_watch (__NR_inotify_init + 1)
+#  endif
+#  ifndef __NR_inotify_rm_watch
+#    define __NR_inotify_rm_watch (__NR_inotify_init + 2)
+#  endif
 #endif
 #endif
 
