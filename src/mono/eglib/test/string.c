@@ -164,7 +164,7 @@ test_appendlen ()
 	if (s->len != 7)
 		return FAILED ("The length is not seven %d", s->len);
 		
-	g_string_free (s, FALSE);
+	g_string_free (s, TRUE);
 
 	return NULL;
 }

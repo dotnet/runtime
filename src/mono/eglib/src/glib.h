@@ -13,8 +13,6 @@
  */
 typedef int            gboolean;
 typedef int            gint;
-typedef unsigned int   gsize;
-typedef signed int     gssize;
 typedef unsigned int   guint;
 typedef short          gshort;
 typedef unsigned short gushort;
@@ -47,12 +45,6 @@ typedef double         gdouble;
 #define G_MAXINT32           INT32_MAX
 #define G_MININT32           INT32_MIN
 
-#define GPOINTER_TO_INT(ptr)   ((int)(ptr))
-#define GPOINTER_TO_UINT(ptr)  ((uint)(ptr))
-#define GINT_TO_POINTER(v)     ((gpointer) (v))
-#define GUINT_TO_POINTER(v)    ((gpointer) (v))
-
-#define G_GSIZE_FORMAT "u"
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321
 #define G_STMT_START    do 

@@ -9,15 +9,15 @@ test_list_length ()
 	GList *list = g_list_prepend (NULL, "foo");
 
 	if (g_list_length (list) != 1)
-		return "length failed. #1";
+		return FAILED ("length failed. #1");
 
 	list = g_list_prepend (list, "bar");
 	if (g_list_length (list) != 2)
-		return "length failed. #2";
+		return FAILED ("length failed. #2");
 
 	list = g_list_append (list, "bar");
 	if (g_list_length (list) != 3)
-		return "length failed. #3";
+		return FAILED ("length failed. #3");
 	
 	return NULL;
 }
@@ -35,15 +35,15 @@ test_list_nth ()
 
 	nth = g_list_nth (list, 0);
 	if (nth->data != foo)
-		return "nth failed. #1";
+		return FAILED ("nth failed. #1");
 
 	nth = g_list_nth (list, 1);
 	if (nth->data != bar)
-		return "nth failed. #2";
+		return FAILED ("nth failed. #2");
 	
 	nth = g_list_nth (list, 2);
 	if (nth->data != baz)
-		return "nth failed. #3";
+		return FAILED ("nth failed. #3");
 
 	return OK;
 }
@@ -62,15 +62,15 @@ test_list_index ()
 
 	i = g_list_index (list, foo);
 	if (i != 0)
-		return "index failed. #1";
+		return FAILED ("index failed. #1");
 
 	i = g_list_index (list, bar);
 	if (i != 1)
-		return "index failed. #2";
+		return FAILED ("index failed. #2");
 	
 	i = g_list_index (list, baz);
 	if (i != 2)
-		return "index failed. #3";
+		return FAILED ("index failed. #3");
 
 	return OK;
 }
@@ -80,12 +80,12 @@ test_list_append ()
 {
 	GList *list = g_list_prepend (NULL, "first");
 	if (g_list_length (list) != 1)
-		return "Prepend failed";
+		return FAILED ("Prepend failed");
 
 	g_list_append (list, g_list_prepend (NULL, "second"));
 
 	if (g_list_length (list) != 2)
-		return "Append failed";
+		return FAILED ("Append failed");
 
 	return OK;
 }
@@ -101,14 +101,14 @@ test_list_last ()
 	last = g_list_last (foo);
 
 	if (last != bar)
-		return "last failed. #1";
+		return FAILED ("last failed. #1");
 
 	foo = g_list_concat (foo, g_list_prepend (NULL, "baz"));
 	foo = g_list_concat (foo, g_list_prepend (NULL, "quux"));
 
 	last = g_list_last (foo);	
 	if (strcmp ("quux", last->data))
-		return "last failed. #2";
+		return FAILED ("last failed. #2");
 
 	return OK;
 }
@@ -121,19 +121,19 @@ test_list_concat ()
 	GList *list = g_list_concat (foo, bar);
 
 	if (g_list_length (list) != 2)
-		return "Concat failed. #1";
+		return FAILED ("Concat failed. #1");
 
 	if (strcmp (list->data, "foo"))
-		return "Concat failed. #2";
+		return FAILED ("Concat failed. #2");
 
 	if (strcmp (list->next->data, "bar"))
-		return "Concat failed. #3";
+		return FAILED ("Concat failed. #3");
 
 	if (g_list_first (list) != foo)
-		return "Concat failed. #4";
+		return FAILED ("Concat failed. #4");
 	
 	if (g_list_last (list) != bar)
-		return "Concat failed. #5";
+		return FAILED ("Concat failed. #5");
 
 	return OK;
 }
@@ -192,7 +192,7 @@ test_list_copy ()
 	for (i = 0; i < length; i++)
 		if (strcmp (g_list_nth (list, i)->data,
 			    g_list_nth (copy, i)->data))
-			return "copy failed.";
+			return FAILED ("copy failed.");
 	return OK;
 }
 
@@ -210,13 +210,13 @@ test_list_reverse ()
 	reverse = g_list_reverse (g_list_copy (list));
 
 	if (g_list_length (reverse) != length)
-		return "reverse failed #1";
+		return FAILED ("reverse failed #1");
 
 	for (i = 0; i < length; i++){
 		guint j = length - i - 1;
 		if (strcmp (g_list_nth (list, i)->data,
 			    g_list_nth (reverse, j)->data))
-			return "reverse failed. #2";
+			return FAILED ("reverse failed. #2");
 	}
 	return OK;
 }

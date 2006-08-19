@@ -8,12 +8,12 @@ test_slist_append ()
 {
 	GSList *list = g_slist_prepend (NULL, "first");
 	if (g_slist_length (list) != 1)
-		return "Prepend failed";
+		return FAILED ("Prepend failed");
 
 	g_slist_append (list, g_slist_prepend (NULL, "second"));
 
 	if (g_slist_length (list) != 2)
-		return "Append failed";
+		return FAILED ("Append failed");
 
 	return OK;
 }
@@ -27,7 +27,7 @@ test_slist_concat ()
 	GSList *list = g_slist_concat (foo, bar);
 
 	if (g_slist_length (list) != 2)
-		return "Concat failed.";
+		return FAILED ("Concat failed.");
 
 	return OK;
 }
@@ -48,7 +48,7 @@ test_slist_find ()
 	found = g_slist_find (list, data);
 
 	if (found->data != data)
-		return "Find failed";
+		return FAILED ("Find failed");
 
 	return OK;
 }
@@ -64,10 +64,10 @@ test_slist_remove ()
 	list = g_slist_remove (list, one);
 
 	if (g_slist_length (list) != 2)
-		return "Remove failed";
+		return FAILED ("Remove failed");
 
 	if (strcmp ("two", list->data) != 0)
-		return "Remove failed";
+		return FAILED ("Remove failed");
 
 	return OK;
 }

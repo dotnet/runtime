@@ -1,3 +1,30 @@
+2006-08-19  Miguel de Icaza  <miguel@novell.com>
+
+	* Makefile.am: Removed MAINTAINERCLEANFILES that was too
+	aggresive, it failed make distcheck and the resulting tarball was
+	not buildable.
+
+	* src/glib.h: remove the various GPOINTER_TO_*, G*_TO_POINTER,
+	GSIZE_FORMAT macros, and move them into src/eglib-config.h
+
+	Moved also gssize and gsize to be arch specific.   This should fix
+	the 32/64 problems that Jon Chambers reported. 
+
+	* configure.in: test for pointer size, define the various values
+	depending on 32 vs 32/64 worlds, might need further porting in the
+	future. 
+
+	Change package name to eglib
+
+	* test/slist.c, test/list.c, test/hashtable.c: Update tests to use
+	FAILURE macro.
+
+	* test/string-util.c: fix leak for valgrind tests.
+
+	* test/tests.h: New size test, for testing datatypes.
+
+	* test/sizes.c: New tests.
+	
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
 	* test/README: Added quick guide on adding new tests/groups to the 
@@ -84,7 +111,6 @@
 
 	* test/list.c: Tests for GList.
 
->>>>>>> .r63982
 2006-08-17  Aaron Bockover  <abockover@novell.com>
 
 	* src/gptrarray.c: Implemented g_ptr_array_remove and 

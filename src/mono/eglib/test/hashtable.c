@@ -22,22 +22,22 @@ RESULT hash_t1 (void)
 
 	g_hash_table_foreach (t, foreach, GINT_TO_POINTER('a'));
 	if (foreach_count != 2)
-		return "did not find all keys";
+		return FAILED ("did not find all keys");
 	if (foreach_fail)
-		return "failed to pass the user-data to foreach";
+		return FAILED("failed to pass the user-data to foreach");
 	
 	if (!g_hash_table_remove (t, "my"))
-		return "did not find known key";
+		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 1)
-		return "unexpected size";
+		return FAILED ("unexpected size");
 	g_hash_table_insert(t, "hello", "moon");
 	if (strcmp (g_hash_table_lookup (t, "hello"), "moon") != 0)
-		return "did not replace world with moon";
+		return FAILED ("did not replace world with moon");
 		
 	if (!g_hash_table_remove (t, "hello"))
-		return "did not find known key";
+		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 0)
-		return "unexpected size";
+		return FAILED ("unexpected size");
 	g_hash_table_destroy (t);
 
 	return OK;

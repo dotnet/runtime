@@ -102,6 +102,7 @@ test_strjoin ()
 	s = g_strjoin ("-", NULL);
 	if (s == NULL || (strcmp (s, "") != 0))
 		return "Failed to join empty arguments";
+	g_free (s);
 
 	return OK;
 }
