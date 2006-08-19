@@ -1,0 +1,5 @@
+#!/bin/sh
+
+./test-eglib $@
+./test-glib $@
+

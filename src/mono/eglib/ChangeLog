@@ -1,3 +1,27 @@
+2006-08-19  Aaron Bockover  <abockover@novell.com>
+
+	* test/test.c: Perform iterations at the test level, only output one
+	report for all iterations of tests in a group to produce more usable
+	output; add timing for the tests and group; added get_timestamp for
+	easy code timing
+
+	* test/test.h: Removed run_test as it should only be called from 
+	run_group, added get_timestamp
+
+	* test/Makefile.am: Added -DDRIVER_NAME 
+
+	* test/test-both: simple script to run both drivers with the same options
+
+	* test/driver.c: Iterations are now run at the test level, show a global
+	status (OK/FAIL) indicator
+
+	* test/README: Updated
+
+	* configure.ac: Renamed from configure.in as configure.in naming 
+	convention is deprecated in favor of configure.ac
+
+	* autogen.sh: s/configure.in/configure.ac/
+
 2006-08-19  Miguel de Icaza  <miguel@novell.com>
 
 	* Makefile.am: Removed MAINTAINERCLEANFILES that was too

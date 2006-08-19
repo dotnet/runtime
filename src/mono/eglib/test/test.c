@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <sys/time.h>
 #include <glib.h>
 
 #include "test.h"
@@ -37,56 +38,72 @@
 static gchar *last_result = NULL;
 
 gboolean 
-run_test(Test *test, gboolean quiet)
+run_test(Test *test, gchar **result_out)
 {
 	gchar *result; 
-	
-	if(!quiet) {
-		printf("  %s: ", test->name);
-		fflush(stdout);
-	}
-	
+
 	if((result = test->handler()) == NULL) {
-		if(!quiet) {
-			printf("OK\n");
-		}
-		
+		*result_out = NULL;
 		return TRUE;
 	} else {
-		if(!quiet) {
-			printf("FAILED (%s)\n", result);
-		}
-		
-		if(last_result == result) {
-			last_result = NULL;
-			g_free(result);
-		}
-		
+		*result_out = result;	
 		return FALSE;
 	}
 }
 
-void
-run_group(Group *group, gint *total, gint *passed, gboolean quiet)
+gboolean
+run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 {
 	Test *tests = group->handler();
-	gint i, _passed = 0;
-
+	gint i, j, _passed = 0;
+	gdouble start_time_group, start_time_test;
+	
 	if(!quiet) {
-		printf("[%s]\n", group->name);
+		printf("[%s] (%dx)\n", group->name, iterations);
 	}
+
+	start_time_group = get_timestamp();
 
 	for(i = 0; tests[i].name != NULL; i++) {
-		_passed += run_test(&(tests[i]), quiet);
+		gchar *result;
+		gboolean iter_pass;
+		
+		if(!quiet) {
+			printf("  %s: ", tests[i].name);
+		}
+
+		start_time_test = get_timestamp();
+		
+		for(j = 0; j < iterations; j++) {
+			iter_pass = run_test(&(tests[i]), &result);
+			if(!iter_pass) {
+				break;
+			}
+		}
+
+		if(iter_pass) {
+			_passed++;
+			if(!quiet) {
+				printf("OK (%g)\n", get_timestamp() - start_time_test);
+			}
+		} else  {			
+			if(!quiet) {
+				printf("FAILED (%s)\n", result);
+			}
+			if(last_result == result) {
+				last_result = NULL;
+				g_free(result);
+			}
+		}
 	}
 
-	if(total != NULL) {
-		*total = i;
+	if(!quiet) {
+		printf("  -- %d / %d (%g%%, %g)--\n", _passed, i,
+			((gdouble)_passed / (gdouble)i) * 100.0,
+			get_timestamp() - start_time_group);
 	}
 
-	if(passed != NULL) {
-		*passed = _passed;
-	}
+	return _passed == i;
 }
 
 RESULT
@@ -107,5 +124,13 @@ FAILED(const gchar *format, ...)
 
 	last_result = ret;
 	return ret;
+}
+
+gdouble
+get_timestamp()
+{
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	return (gdouble)tp.tv_sec + (1.e-6) * tp.tv_usec;
 }
 

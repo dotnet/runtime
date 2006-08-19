@@ -89,4 +89,10 @@ Example: show test output of all available groups
 
 	./test-eglib
 
+The 'test-both' script can be used to run both test-eglib and test-glib
+with the same options back to back:
+
+	$./test-both -tqi 100000 ptrarray
+	EGlib Total Time: 1.1961s
+	GLib Total Time: 0.955957s
 

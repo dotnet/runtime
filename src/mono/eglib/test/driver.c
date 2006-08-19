@@ -28,8 +28,6 @@
  
 #include <stdio.h>
 #include <glib.h>
-#include <stddef.h>
-#include <sys/time.h>
 #include <getopt.h>
 
 #include "test.h"
@@ -39,18 +37,17 @@ static void print_help(char *s)
 {
 	gint i;
 	
-	printf("Usage: %s [options] [test1 test2 ... testN]\n\n", s);
-	printf(" options are:\n");
-	printf("   --help|-h          show this help\n");
-	printf("   --time|-t          time the tests\n");
-	printf("   --iterations|-i    number of times to run tests\n");
-	printf("   --quiet|-q         do not print test results; if -t\n");
-	printf("                      is passed, the time will print\n\n");
-	printf(" test1..testN  name of test to run (all run by default)\n\n");
-	printf(" available tests:\n");
+	printf("Usage: %s [OPTION]... [TESTGROUP]...\n\n", s);
+	printf("OPTIONS are:\n");
+	printf("  -h, --help          show this help\n");
+	printf("  -t, --time          time the tests\n");
+	printf("  -i, --iterations    number of times to run tests\n");
+	printf("  -q, --quiet         do not print test results; "
+		"time always prints\n\n");
+	printf("TESTGROUPS available:\n");
 
 	for(i = 0; test_groups[i].name != NULL; i++) {
-		printf("   %s\n", test_groups[i].name);
+		printf("  %s\n", test_groups[i].name);
 	}
 
 	printf("\n");
@@ -60,14 +57,15 @@ gint main(gint argc, gchar **argv)
 {
 	gint i, j, c, iterations = 1;
 	GList *tests_to_run = NULL;
-	double time_start, time_end;
-	struct timeval tp;
+	gdouble time_start;
 	gboolean report_time = FALSE;
 	gboolean quiet = FALSE;
+	gboolean global_failure = FALSE;
 	
 	static struct option long_options [] = {
-		{"help", no_argument, 0, 'h'},
-		{"time", no_argument, 0, 't'},
+		{"help",       no_argument,       0, 'h'},
+		{"time",       no_argument,       0, 't'},
+		{"quiet",      no_argument,       0, 'q'},
 		{"iterations", required_argument, 0, 'i'},
 		{0, 0, 0, 0}
 	};
@@ -96,42 +94,40 @@ gint main(gint argc, gchar **argv)
 		tests_to_run = g_list_append(tests_to_run, argv[i]);
 	}
 
-	gettimeofday(&tp, NULL);
-	time_start = (double)tp.tv_sec + (1.e-6) * tp.tv_usec;
-
-	for(i = 0; i < iterations; i++) {
-		for(j = 0; test_groups[j].name != NULL; j++) {
-			gboolean run = TRUE;
+	time_start = get_timestamp();
+	
+	for(j = 0; test_groups[j].name != NULL; j++) {
+		gboolean run = TRUE;
 			
-			if(tests_to_run != NULL) {
-				gint k, n;
-				run = FALSE;
-				for(k = 0, n = g_list_length(tests_to_run); k < n; k++) {
-					if(strcmp((char *)g_list_nth_data(tests_to_run, k), 
-						test_groups[j].name) == 0) {
-						run = TRUE;
-						break;
-					}
+		if(tests_to_run != NULL) {
+			gint k, n;
+			run = FALSE;
+			for(k = 0, n = g_list_length(tests_to_run); k < n; k++) {
+				if(strcmp((char *)g_list_nth_data(tests_to_run, k), 
+					test_groups[j].name) == 0) {
+					run = TRUE;
+					break;
 				}
 			}
+		}
 			
-			if(run) {
-				gint total, passed;
-				run_group(&(test_groups[j]), &total, &passed, quiet);
-				if(!quiet) {
-					printf("  -- %d / %d (%g%%) --\n", passed, total,
-						((gdouble)passed / (gdouble)total) * 100.0);
-				}
+		if(run) {
+			gboolean passed = run_group(&(test_groups[j]), 
+				iterations, quiet, report_time);
+			if(!passed && !global_failure) {
+				global_failure = TRUE;
 			}
 		}
 	}
 	
-	gettimeofday(&tp, NULL);
-	time_end = (double)tp.tv_sec + (1.e-6) * tp.tv_usec;
+	if(!quiet) {
+		printf("=============================\n");
+		printf("Overall result: %s\n", global_failure ? "FAILED" : "OK");
+	}
 	
 	if(report_time) {
-		gdouble duration = time_end - time_start;
-		printf("Total Time: %gs\n", duration);
+		gdouble duration = get_timestamp() - time_start;
+		printf("%s Total Time: %g\n", DRIVER_NAME, duration);
 	}
 
 	if(tests_to_run != NULL) {

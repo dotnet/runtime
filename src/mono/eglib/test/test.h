@@ -50,9 +50,10 @@ struct _Group {
 	LoadGroupHandler handler;
 };
 
-gboolean run_test(Test *test, gboolean quiet);
-void run_group(Group *group, gint *total, gint *passed, gboolean quiet);
+gboolean run_group(Group *group, gint iterations, gboolean quiet, 
+	gboolean time);
 RESULT FAILED(const gchar *format, ...);
+gdouble get_timestamp();
 
 #define OK NULL
 
