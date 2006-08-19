@@ -10,7 +10,7 @@ test_slist_append ()
 	if (g_slist_length (list) != 1)
 		return FAILED ("Prepend failed");
 
-	g_slist_append (list, g_slist_prepend (NULL, "second"));
+	g_slist_append (list, "second");
 
 	if (g_slist_length (list) != 2)
 		return FAILED ("Append failed");
@@ -84,8 +84,8 @@ test_slist_remove_link ()
 	GSList *baz = g_slist_prepend (NULL, "c");
 	GSList *list = foo;
 
-	g_slist_concat (foo, bar);
-	g_slist_concat (foo, baz);	
+	foo = g_slist_concat (foo, bar);
+	foo = g_slist_concat (foo, baz);	
 
 	list = g_slist_remove_link (list, bar);
 
@@ -96,6 +96,8 @@ test_slist_remove_link ()
 		return FAILED ("remove_link failed #2");
 
 	g_slist_free (list);	
+	g_slist_free (bar);
+
 	return OK;
 }
 

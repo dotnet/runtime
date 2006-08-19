@@ -85,7 +85,7 @@ test_list_append ()
 	if (g_list_length (list) != 1)
 		return FAILED ("Prepend failed");
 
-	list = g_list_append (list, g_list_prepend (NULL, "second"));
+	list = g_list_append (list, "second");
 
 	if (g_list_length (list) != 2)
 		return FAILED ("Append failed");
@@ -235,7 +235,7 @@ test_list_reverse ()
 	return OK;
 }
 
-char*
+RESULT
 test_list_remove ()
 {
 	GList *list = g_list_prepend (NULL, "three");
@@ -246,16 +246,16 @@ test_list_remove ()
 	list = g_list_remove (list, one);
 
 	if (g_list_length (list) != 2)
-		return "Remove failed";
+		return FAILED ("Remove failed");
 
 	if (strcmp ("two", list->data) != 0)
-		return "Remove failed";
+		return FAILED ("Remove failed");
 
 	g_list_free (list);
-	return NULL;
+	return OK;
 }
 
-char*
+RESULT
 test_list_remove_link ()
 {
 	GList *foo = g_list_prepend (NULL, "a");
@@ -263,18 +263,19 @@ test_list_remove_link ()
 	GList *baz = g_list_prepend (NULL, "c");
 	GList *list = foo;
 
-	g_list_concat (foo, bar);
-	g_list_concat (foo, baz);	
+	foo = g_list_concat (foo, bar);
+	foo = g_list_concat (foo, baz);	
 
 	list = g_list_remove_link (list, bar);
 
 	if (g_list_length (list) != 2)
-		return g_strdup ("remove_link failed #1");
+		return FAILED ("remove_link failed #1");
 
 	if (bar->next != NULL)
-		return g_strdup ("remove_link failed #2");
+		return FAILED ("remove_link failed #2");
 
-	g_list_free (list);
+	g_list_free (list);	
+	g_list_free (bar);
 	return OK;
 }
 
