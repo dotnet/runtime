@@ -157,8 +157,11 @@ g_slist_remove (GSList *list, gconstpointer data)
 	if (!list)
 		return NULL;
 
-	if (list->data == data)
-		return list->next;
+	if (list->data == data){
+		GSList *next = list->next;
+		g_slist_free_1 (list);
+		return next;
+	}
 
 	prev = list;
 	current = list->next;

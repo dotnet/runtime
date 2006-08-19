@@ -253,7 +253,9 @@ GList *g_list_delete_link   (GList         *list,
 GList *g_list_insert_sorted (GList         *list,
 			     gpointer       data,
 			     GCompareFunc   func);
-
+GList *g_list_insert_before (GList         *list,
+			     GList         *sibling,
+			     gpointer       data);
 
 /*
  * Pointer Array

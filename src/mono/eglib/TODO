@@ -29,7 +29,6 @@ Routines missing from eglib, by count number:
      21 g_ptr_array_add
      20 g_utf8_to_utf16
      17 g_ptr_array_new
-     15 g_list_remove     
      13 g_error_free
      12 g_build_path
      11 g_file_test
@@ -106,7 +105,6 @@ Routines missing from eglib, by count number:
       1 g_main_context_iteration
       1 g_log_set_handler
       1 g_locale_from_utf8
-      1 g_list_remove_link
       1 g_io_create_watch
       1 g_io_channel_unref
       1 g_io_channel_unix_new

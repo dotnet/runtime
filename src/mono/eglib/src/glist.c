@@ -47,8 +47,7 @@ _prepend (GList *list, gpointer data)
 			list->prev->next = head;
 		
 		list->prev = head;
-	} else
-		head->prev = NULL;
+	}
 	
 	return head;
 }
@@ -124,13 +123,62 @@ g_list_length (GList *list)
 GList*
 g_list_remove (GList *list, gconstpointer data)
 {
-	return NULL;
+	GList *current;
+
+	if (!list)
+		return NULL;
+
+	if (list->data == data){
+		GList *next = list->next;
+		g_list_free_1 (list);
+		return next;
+	}
+	
+	current = list->next;
+
+	while (current){
+		if (current->data == data){
+			current->prev->next = current->next;
+			current->next->prev = current->prev;
+
+			g_list_free_1 (current);
+			break;
+		}
+		
+		current = current->next;
+	}
+
+	return list;
 }
 
 GList*
 g_list_remove_link (GList *list, GList *link)
 {
-	return NULL;
+	GList *current;
+
+	if (!list)
+		return NULL;
+
+	if (list == link){
+		GList *next = list->next;
+		list->next = NULL;
+		return next;
+	}
+
+	current = list->next;
+
+	while (current){
+		if (current == link){
+			current->prev->next = current->next;
+			current->next->prev = current->prev;
+			current->next = NULL;
+			break;
+		}
+
+		current = current->next;
+	}
+
+	return list;
 }
 
 GList*
@@ -228,10 +276,23 @@ g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 	return list;
 }
 
+/* TODO */
 GList*
 g_list_insert_before (GList *list, GList *sibling, gpointer data)
 {
-	return NULL;
+	if (!sibling)
+		return g_list_append (list, g_list_prepend (NULL, data));
+	
+	while (list){
+		if (list->next == sibling){
+			g_list_prepend (sibling, g_list_prepend (NULL, data));
+			break;
+		}
+		
+		list = list->next;
+	}
+
+	return list;
 }
 
 void
@@ -287,7 +348,7 @@ g_list_nth (GList *list, guint n)
 gpointer
 g_list_nth_data (GList *list, guint n)
 {
-	return g_list_nth(list, n)->data;
+	return g_list_nth (list, n)->data;
 }
 
 GList*

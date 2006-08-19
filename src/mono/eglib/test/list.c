@@ -18,7 +18,8 @@ test_list_length ()
 	list = g_list_append (list, "bar");
 	if (g_list_length (list) != 3)
 		return FAILED ("length failed. #3");
-	
+
+	g_list_free (list);
 	return NULL;
 }
 
@@ -45,6 +46,7 @@ test_list_nth ()
 	if (nth->data != baz)
 		return FAILED ("nth failed. #3");
 
+	g_list_free (list);
 	return OK;
 }
 
@@ -72,6 +74,7 @@ test_list_index ()
 	if (i != 2)
 		return FAILED ("index failed. #3");
 
+	g_list_free (list);
 	return OK;
 }
 
@@ -82,11 +85,12 @@ test_list_append ()
 	if (g_list_length (list) != 1)
 		return FAILED ("Prepend failed");
 
-	g_list_append (list, g_list_prepend (NULL, "second"));
+	list = g_list_append (list, g_list_prepend (NULL, "second"));
 
 	if (g_list_length (list) != 2)
 		return FAILED ("Append failed");
 
+	g_list_free (list);
 	return OK;
 }
 
@@ -109,6 +113,8 @@ test_list_last ()
 	last = g_list_last (foo);	
 	if (strcmp ("quux", last->data))
 		return FAILED ("last failed. #2");
+
+	g_list_free (foo);
 
 	return OK;
 }
@@ -134,6 +140,8 @@ test_list_concat ()
 	
 	if (g_list_last (list) != bar)
 		return FAILED ("Concat failed. #5");
+
+	g_list_free (list);
 
 	return OK;
 }
@@ -164,7 +172,6 @@ test_list_insert_sorted ()
 
 	/* insert at the beginning */
 	list = g_list_insert_sorted (list, "", compare);
-	
 	if (strcmp ("", list->data))
 		return FAILED ("insert_sorted failed. #2");		
 
@@ -173,6 +180,7 @@ test_list_insert_sorted ()
 	if (strcmp ("aaaa", g_list_last (list)->data))
 		return FAILED ("insert_sorted failed. #3");
 
+	g_list_free (list);
 	return OK;
 }
 
@@ -193,6 +201,9 @@ test_list_copy ()
 		if (strcmp (g_list_nth (list, i)->data,
 			    g_list_nth (copy, i)->data))
 			return FAILED ("copy failed.");
+
+	g_list_free (list);
+	g_list_free (copy);	
 	return OK;
 }
 
@@ -218,6 +229,52 @@ test_list_reverse ()
 			    g_list_nth (reverse, j)->data))
 			return FAILED ("reverse failed. #2");
 	}
+
+	g_list_free (list);
+	g_list_free (reverse);	
+	return OK;
+}
+
+char*
+test_list_remove ()
+{
+	GList *list = g_list_prepend (NULL, "three");
+	char *one = "one";
+	list = g_list_prepend (list, "two");
+	list = g_list_prepend (list, one);
+
+	list = g_list_remove (list, one);
+
+	if (g_list_length (list) != 2)
+		return "Remove failed";
+
+	if (strcmp ("two", list->data) != 0)
+		return "Remove failed";
+
+	g_list_free (list);
+	return NULL;
+}
+
+char*
+test_list_remove_link ()
+{
+	GList *foo = g_list_prepend (NULL, "a");
+	GList *bar = g_list_prepend (NULL, "b");
+	GList *baz = g_list_prepend (NULL, "c");
+	GList *list = foo;
+
+	g_list_concat (foo, bar);
+	g_list_concat (foo, baz);	
+
+	list = g_list_remove_link (list, bar);
+
+	if (g_list_length (list) != 2)
+		return g_strdup ("remove_link failed #1");
+
+	if (bar->next != NULL)
+		return g_strdup ("remove_link failed #2");
+
+	g_list_free (list);
 	return OK;
 }
 
@@ -231,6 +288,8 @@ static Test list_tests [] = {
 	{"list_insert_sorted", test_list_insert_sorted},
 	{"list_copy", test_list_copy},
 	{"list_reverse", test_list_reverse},
+	{"list_remove", test_list_remove},
+	{"list_remove_link", test_list_remove_link},
 	{NULL, NULL}
 };
 

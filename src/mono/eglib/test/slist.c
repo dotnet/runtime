@@ -15,6 +15,7 @@ test_slist_append ()
 	if (g_slist_length (list) != 2)
 		return FAILED ("Append failed");
 
+	g_slist_free (list);
 	return OK;
 }
 
@@ -29,6 +30,7 @@ test_slist_concat ()
 	if (g_slist_length (list) != 2)
 		return FAILED ("Concat failed.");
 
+	g_slist_free (list);
 	return OK;
 }
 
@@ -50,6 +52,7 @@ test_slist_find ()
 	if (found->data != data)
 		return FAILED ("Find failed");
 
+	g_slist_free (list);
 	return OK;
 }
 
@@ -69,6 +72,7 @@ test_slist_remove ()
 	if (strcmp ("two", list->data) != 0)
 		return FAILED ("Remove failed");
 
+	g_slist_free (list);
 	return OK;
 }
 
@@ -91,6 +95,7 @@ test_slist_remove_link ()
 	if (bar->next != NULL)
 		return FAILED ("remove_link failed #2");
 
+	g_slist_free (list);	
 	return OK;
 }
 
@@ -127,6 +132,7 @@ test_slist_insert_sorted ()
 	if (strcmp ("aaaa", g_slist_last (list)->data))
 		return FAILED ("insert_sorted failed #3");
 
+	g_slist_free (list);	
 	return OK;
 }
 

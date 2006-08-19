@@ -150,6 +150,13 @@
 
 2006-08-18  Duncan Mak  <duncan@a-chinaman.com>
 
+	* src/glist.c (g_list_remove, g_list_remove_link): Implemented.	
+
+	* src/gslist.c (g_slist_remove): Remember to set the next pointer
+	to NULL when the item to remove is the first item in the list.
+	
+2006-08-18  Duncan Mak  <duncan@a-chinaman.com>
+
 	* src/glist.c: Implemented. Missing remove,
 	remove_link and insert_before.
 
