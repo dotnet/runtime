@@ -1,5 +1,12 @@
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
+	* test/test.c: do not print times if -t is not passed
+
+	* test/driver.c: removed use of GList from the driver to avoid skews due
+	to performance differences between GLib and EGLib
+	
+2006-08-19  Aaron Bockover  <abockover@novell.com>
+
 	* test/test.c: Perform iterations at the test level, only output one
 	report for all iterations of tests in a group to produce more usable
 	output; add timing for the tests and group; added get_timestamp for

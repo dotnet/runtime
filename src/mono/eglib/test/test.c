@@ -55,11 +55,15 @@ gboolean
 run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 {
 	Test *tests = group->handler();
-	gint i, j, _passed = 0;
+	gint i, j, passed = 0;
 	gdouble start_time_group, start_time_test;
 	
 	if(!quiet) {
-		printf("[%s] (%dx)\n", group->name, iterations);
+		if(iterations > 1) {
+			printf("[%s] (%dx)\n", group->name, iterations);
+		} else {
+			printf("[%s]\n", group->name);
+		}
 	}
 
 	start_time_group = get_timestamp();
@@ -82,14 +86,19 @@ run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 		}
 
 		if(iter_pass) {
-			_passed++;
+			passed++;
 			if(!quiet) {
-				printf("OK (%g)\n", get_timestamp() - start_time_test);
+				if(time) {
+					printf("OK (%g)\n", get_timestamp() - start_time_test);
+				} else {
+					printf("OK\n");
+				}
 			}
 		} else  {			
 			if(!quiet) {
 				printf("FAILED (%s)\n", result);
 			}
+			
 			if(last_result == result) {
 				last_result = NULL;
 				g_free(result);
@@ -98,12 +107,16 @@ run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 	}
 
 	if(!quiet) {
-		printf("  -- %d / %d (%g%%, %g)--\n", _passed, i,
-			((gdouble)_passed / (gdouble)i) * 100.0,
-			get_timestamp() - start_time_group);
+		gdouble pass_percentage = ((gdouble)passed / (gdouble)i) * 100.0;
+		if(time) {
+			printf("  %d / %d (%g%%, %g)\n", passed, i,
+				pass_percentage, get_timestamp() - start_time_group);
+		} else {
+			printf("  %d / %d (%g%%)\n", passed, i, pass_percentage);
+		}
 	}
 
-	return _passed == i;
+	return passed == i;
 }
 
 RESULT

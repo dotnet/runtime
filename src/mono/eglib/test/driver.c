@@ -33,6 +33,37 @@
 #include "test.h"
 #include "tests.h"
 
+typedef struct _StringArray {
+	gchar **strings;
+	gint length;
+} StringArray;
+
+static StringArray *
+string_array_append(StringArray *array, gchar *string)
+{
+	if(array == NULL) {
+		array = g_new0(StringArray, 1);
+		array->length = 1;
+		array->strings = g_malloc(sizeof(gchar *) * 2);
+	} else {
+		array->length++;
+		array->strings = g_realloc(array->strings, sizeof(gchar *) 
+			* (array->length + 1));
+	}
+	
+	array->strings[array->length - 1] = string;
+	array->strings[array->length] = NULL;
+
+	return array;
+}
+
+static void
+string_array_free(StringArray *array)
+{
+	g_free(array->strings);
+	g_free(array);
+}
+
 static void print_help(char *s)
 {
 	gint i;
@@ -56,7 +87,7 @@ static void print_help(char *s)
 gint main(gint argc, gchar **argv)
 {
 	gint i, j, c, iterations = 1;
-	GList *tests_to_run = NULL;
+	StringArray *tests_to_run = NULL;
 	gdouble time_start;
 	gboolean report_time = FALSE;
 	gboolean quiet = FALSE;
@@ -91,7 +122,7 @@ gint main(gint argc, gchar **argv)
 			continue;
 		}
 
-		tests_to_run = g_list_append(tests_to_run, argv[i]);
+		tests_to_run = string_array_append(tests_to_run, argv[i]);
 	}
 
 	time_start = get_timestamp();
@@ -100,10 +131,10 @@ gint main(gint argc, gchar **argv)
 		gboolean run = TRUE;
 			
 		if(tests_to_run != NULL) {
-			gint k, n;
+			gint k;
 			run = FALSE;
-			for(k = 0, n = g_list_length(tests_to_run); k < n; k++) {
-				if(strcmp((char *)g_list_nth_data(tests_to_run, k), 
+			for(k = 0; k < tests_to_run->length; k++) {
+				if(strcmp((char *)tests_to_run->strings[k], 
 					test_groups[j].name) == 0) {
 					run = TRUE;
 					break;
@@ -131,7 +162,7 @@ gint main(gint argc, gchar **argv)
 	}
 
 	if(tests_to_run != NULL) {
-		g_list_free(tests_to_run);
+		string_array_free(tests_to_run);
 	}
 
 	return 0;
