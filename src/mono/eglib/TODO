@@ -64,7 +64,6 @@ Routines missing from eglib, by count number:
       2 g_timer_stop
       2 g_timer_start
       2 g_timer_new
-      2 g_string_append_len
       2 g_strdelimit
       2 g_shell_parse_argv
       2 g_set_prgname
@@ -90,8 +89,6 @@ Routines missing from eglib, by count number:
       2 g_array_append_val
       1 g_win32_getlocale
       1 g_timer_destroy
-      1 g_string_truncate
-      1 g_string_prepend
       1 g_strescape
       1 g_spawn_command_line_sync
       1 g_spawn_async_with_pipes

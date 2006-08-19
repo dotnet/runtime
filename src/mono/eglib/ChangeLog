@@ -18,6 +18,13 @@
 
 2006-08-18  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gstring.c (g_string_truncate): Implement truncate. 
+	(g_string_prepend): implement. 
+
+	Fix various bugs uncovered by new tests. 
+
+	* src/glib.h: introduce gssize type, the signed one.  Important. 
+
 	* src/eglib-config.h (G_OS_): Add the G_OS_UNIX and G_OS_WIN32
 	defines that we can use to check on the host OS.
 

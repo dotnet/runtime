@@ -30,8 +30,6 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-
 typedef struct _GPtrArrayPriv {
 	gpointer *pdata;
 	guint len;

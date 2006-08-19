@@ -76,8 +76,105 @@ test_gstring ()
 	return OK;
 }
 
+static char *
+test_sized ()
+{
+	GString *s = g_string_sized_new (20);
+
+	if (s->str [0] != 0)
+		return result ("Expected an empty string");
+	if (s->len != 0)
+		return result ("Expected an empty len");
+
+	g_string_free (s, TRUE);
+	
+	return NULL;
+}
+
+static char *
+test_truncate ()
+{
+	GString *s = g_string_new ("0123456789");
+	g_string_truncate (s, 3);
+
+	if (strlen (s->str) != 3)
+		return result ("size of string should have been 3, instead it is [%s]\n", s->str);
+	g_string_free (s, TRUE);
+	
+	s = g_string_new ("a");
+	s = g_string_truncate (s, 10);
+	if (strlen (s->str) != 1)
+		return result ("The size is not 1");
+	g_string_truncate (s, -1);
+	if (strlen (s->str) != 1)
+		return result ("The size is not 1");
+	g_string_truncate (s, 0);
+	if (strlen (s->str) != 0)
+		return result ("The size is not 0");
+	
+	g_string_free (s, TRUE);
+
+	return NULL;
+}
+
+static char *
+test_prepend ()
+{
+	GString *s = g_string_new ("dingus");
+	g_string_prepend (s, "one");
+
+	if (strcmp (s->str, "onedingus") != 0)
+		return result ("Failed, expected onedingus, got [%s]", s->str);
+
+	g_string_free (s, TRUE);
+
+	/* This is to force the code that where stuff does not fit in the allocated block */
+	s = g_string_sized_new (1);
+	g_string_prepend (s, "one");
+	if (strcmp (s->str, "one") != 0)
+		return result ("Got erroneous result, expected [one] got [%s]", s->str);
+	g_string_free (s, TRUE);
+
+	/* This is to force the path where things fit */
+	s = g_string_new ("123123123123123123123123");
+	g_string_truncate (s, 1);
+	if (strcmp (s->str, "1") != 0)
+		return result ("Expected [1] string, got [%s]", s->str);
+
+	g_string_prepend (s, "pre");
+	if (strcmp (s->str, "pre1") != 0)
+		return result ("Expected [pre1], got [%s]", s->str);
+	g_string_free (s, TRUE);
+	
+	return NULL;
+}
+
+static char *
+test_appendlen ()
+{
+	GString *s = g_string_new ("");
+
+	g_string_append_len (s, "boo\000x", 0);
+	if (s->len != 0)
+		return result ("The length is not zero %d", s->len);
+	g_string_append_len (s, "boo\000x", 5);
+	if (s->len != 5)
+		return result ("The length is not five %d", s->len);
+	g_string_append_len (s, "ha", -1);
+	if (s->len != 7)
+		return result ("The length is not seven %d", s->len);
+		
+	g_string_free (s, FALSE);
+
+	return NULL;
+}
+
 static Test string_tests [] = {
-	{"GString", test_gstring},
+	{"constructors+append", test_gstring },
+	{"constructor-sized", test_sized },
+	{"truncate", test_truncate },
+	{"prepend", test_prepend },
+	{"append_len", test_appendlen },
 	{NULL, NULL}
 };
 

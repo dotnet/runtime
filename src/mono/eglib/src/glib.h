@@ -14,6 +14,7 @@
 typedef int            gboolean;
 typedef int            gint;
 typedef unsigned int   gsize;
+typedef signed int     gssize;
 typedef unsigned int   guint;
 typedef short          gshort;
 typedef unsigned short gushort;
@@ -164,7 +165,7 @@ typedef struct {
 } GString;
 
 GString     *g_string_new           (const gchar *init);
-GString     *g_string_new_len       (const gchar *init, gsize len);
+GString     *g_string_new_len       (const gchar *init, gssize len);
 GString     *g_string_sized_new     (gsize default_size);
 gchar       *g_string_free          (GString *string, gboolean free_segment);
 GString     *g_string_append        (GString *string, const gchar *val);
@@ -172,7 +173,10 @@ void         g_string_printf        (GString *string, const gchar *format, ...);
 void         g_string_append_printf (GString *string, const gchar *format, ...);
 GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
-GString     *g_string_append_len    (GString *string, const gchar *val, gsize len);
+GString     *g_string_append_len    (GString *string, const gchar *val, gssize len);
+GString     *g_string_truncate      (GString *string, gsize len);
+GString     *g_string_prepend       (GString *string, const gchar *val);
+
 #define g_string_sprintfa g_string_append_printf
 
 /*
@@ -346,5 +350,9 @@ typedef enum {
 
 gunichar       g_unichar_tolower (gunichar c);
 GUnicodeType   g_unichar_type    (gunichar c);
+
+#ifndef MAX
+#define MAX(a,b) (((a)>(b)) ? (a) : (b))
+#endif
 
 #endif

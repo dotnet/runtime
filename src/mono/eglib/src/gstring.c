@@ -49,7 +49,7 @@ g_string_new (const gchar *init)
 }
 
 GString *
-g_string_new_len (const gchar *init, gsize len)
+g_string_new_len (const gchar *init, gssize len)
 {
 	GString *ret = g_new (GString, 1);
 
@@ -151,13 +151,15 @@ g_string_append_c (GString *string, gchar c)
 }
 
 GString *
-g_string_append_len (GString *string, const gchar *val, gsize len)
+g_string_append_len (GString *string, const gchar *val, gssize len)
 {
 	int size;
 	char *new;
 	
 	g_return_val_if_fail (string != NULL, NULL);
 	g_return_val_if_fail (val != NULL, string);
+	if (len < 0)
+		return g_string_append (string, val);
 	
 	if ((string->len + len) < string->allocated_len){
 		memcpy (string->str+string->len, val, len);
@@ -215,5 +217,55 @@ g_string_printf (GString *string, const gchar *format, ...)
 GString *
 g_string_truncate (GString *string, gsize len)
 {
+	g_return_val_if_fail (string != NULL, string);
+
+	/* Silent return */
+	if (len < 0)
+		return string;
+	
+	if (len >= string->len)
+		return string;
+	string->len = len;
+	string->str [len] = 0;
 	return string;
 }
+
+GString *
+g_string_prepend (GString *string, const gchar *val)
+{
+	int vallen;
+	g_return_val_if_fail (string != NULL, string);
+	g_return_val_if_fail (val != NULL, string);
+
+	vallen = strlen (val);
+	
+	if ((string->len + vallen + 1) < string->allocated_len){
+		memmove (string->str+vallen, string->str, string->len+1);
+		memcpy (string->str, val, vallen);
+	} else {
+		/*
+		 * Add some extra space, so we do not reallocate too often
+		 * maybe we should centralize this decision somewhere else. 
+		 */
+		char *new;
+		int nl = MAX (string->len + vallen + 1, string->allocated_len);
+		nl = nl < 8192 ? (nl * 3) : nl + 1024;
+
+		new = malloc (nl);
+		/* Failure */
+		if (new == NULL) {
+			g_error ("No more memory");
+			return string;
+		}
+		strcpy (new, val);
+		/* To cope with embedded nulls */
+		memcpy (new + vallen, string->str, string->len);
+		string->len = string->len + vallen;
+		g_free (string->str);
+		string->str = new;
+		string->allocated_len = nl;
+	}
+	
+	return string;
+}
+
