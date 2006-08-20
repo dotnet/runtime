@@ -304,3 +304,56 @@ g_strchomp (gchar *str)
 	return str;
 }
 
+gint
+g_printf(gchar const *format, ...)
+{
+	va_list args;
+	gint ret;
+
+	va_start(args, format);
+	ret = vprintf(format, args);
+	va_end(args);
+
+	return ret;
+}
+
+gint
+g_fprintf(FILE *file, gchar const *format, ...)
+{
+	va_list args;
+	gint ret;
+
+	va_start(args, format);
+	ret = vfprintf(file, format, args);
+	va_end(args);
+
+	return ret;
+}
+
+gint
+g_sprintf(gchar *string, gchar const *format, ...)
+{
+	va_list args;
+	gint ret;
+
+	va_start(args, format);
+	ret = vsprintf(string, format, args);
+	va_end(args);
+
+	return ret;
+}
+
+gint
+g_snprintf(gchar *string, gulong n, gchar const *format, ...)
+{
+	va_list args;
+	gint ret;
+	
+	va_start(args, format);
+	ret = vsnprintf(string, n, format, args);
+	va_end(args);
+
+	return ret;
+}
+
+

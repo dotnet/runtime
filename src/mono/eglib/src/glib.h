@@ -76,6 +76,11 @@ gpointer g_memdup (gconstpointer mem, guint byte_size);
  * Misc.
  */
 #define g_atexit(func)	((void) atexit (func))
+
+const gchar *    g_getenv(const gchar *variable);
+gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
+void             g_unsetenv(const gchar *variable);
+
 /*
  * Precondition macros
  */
@@ -136,6 +141,17 @@ gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
+
+gint         g_printf          (gchar const *format, ...);
+gint         g_fprintf         (FILE *file, gchar const *format, ...);
+gint         g_sprintf         (gchar *string, gchar const *format, ...);
+gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ...);
+
+#define g_vprintf vprintf
+#define g_vfprintf vfprintf
+#define g_vsprintf vsprintf
+#define g_vsnprintf vsnprintf
+#define g_vasprintf vasprintf
 
 #define g_ascii_isspace(c) (isspace (c) != 0)
 #define g_ascii_isalpha(c) (isalpha (c) != 0)
