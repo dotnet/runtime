@@ -1,5 +1,10 @@
 2006-08-20  Chris Toshok  <toshok@ximian.com>
 
+	* test/array.c (test_array_big): add a test from the glib
+	documentation.
+
+2006-08-20  Chris Toshok  <toshok@ximian.com>
+
 	* test/tests.h: add array tests to the mix.
 
 	* test/array.c: a few array tests.

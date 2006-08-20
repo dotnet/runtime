@@ -3,6 +3,28 @@
 #include <glib.h>
 #include "test.h"
 
+/* example from glib documentation */
+RESULT
+test_array_big ()
+{
+	GArray *garray;
+	gint i;
+
+	/* We create a new array to store gint values.
+	   We don't want it zero-terminated or cleared to 0's. */
+	garray = g_array_new (FALSE, FALSE, sizeof (gint));
+	for (i = 0; i < 10000; i++)
+		g_array_append_val (garray, i);
+
+	for (i = 0; i < 10000; i++)
+		if (g_array_index (garray, gint, i) != i)
+			return FAILED ("array value didn't match");
+	
+	g_array_free (garray, TRUE);
+
+	return NULL;
+}
+
 RESULT
 test_array_index ()
 {
@@ -86,6 +108,7 @@ test_array_remove ()
 }
 
 static Test array_tests [] = {
+	{"array_big", test_array_big},
 	{"array_append", test_array_append},
 	{"array_index", test_array_index},
 	{"array_remove", test_array_remove},
