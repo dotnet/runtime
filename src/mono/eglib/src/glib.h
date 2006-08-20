@@ -59,7 +59,7 @@ typedef double         gdouble;
  */
 #define g_new(type,size)        ((type *) malloc (sizeof (type) * (size)))
 #define g_new0(type,size)       ((type *) calloc (sizeof (type), (size))) 
-#define g_free(obj)             free (obj);
+#define g_free(obj)             free (obj)
 #define g_realloc(obj,size)     realloc((obj), (size))
 #define g_strdup(x)             strdup(x)
 #define g_malloc(x)             malloc(x)
