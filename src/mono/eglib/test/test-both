@@ -24,6 +24,10 @@ for arg in $@; do
 	fi
 done
 
+if [ ! -x "./test-glib" -o ! -x "./test-eglib" ]; then
+	make
+fi
+
 if [ "x$1" = "x--speed-compare" ]; then
 	ITERATIONS=100000
 	if [ ! -z "$2" ]; then

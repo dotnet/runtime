@@ -3,6 +3,7 @@
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
+ *   Aaron Bockover (abockover@novell.com)
  *
  * (C) 2006 Novell, Inc.
  *
@@ -29,23 +30,11 @@
 #include <stdio.h>
 #include <glib.h>
 
-GString *
-g_string_new (const gchar *init)
-{
-	GString *ret = g_new (GString, 1);
-	int len, alloc;
-
-	len = strlen (init);
-	if (len < 15)
-		alloc = 16;
-	else
-		alloc = len+1;
-	ret->str = g_malloc (alloc);
-	ret->len = len;
-	ret->allocated_len = alloc;
-	strcpy (ret->str, init);
-
-	return ret;
+#define GROW_IF_NECESSARY(s,l) { \
+	if(s->len + l >= s->allocated_len) { \
+		s->allocated_len = (s->allocated_len + l + 16) * 2; \
+		s->str = g_realloc(s->str, s->allocated_len); \
+	} \
 }
 
 GString *
@@ -53,14 +42,19 @@ g_string_new_len (const gchar *init, gssize len)
 {
 	GString *ret = g_new (GString, 1);
 
-	ret->str = g_malloc (len+1);
-	ret->allocated_len = len + 1;
-	ret->len = len;
+	ret->len = len < 0 ? strlen(init) : len;
+	ret->allocated_len = MAX(ret->len + 1, 16);
+	ret->str = g_malloc(ret->allocated_len);
+	memcpy(ret->str, init, ret->len);
+	ret->str[ret->len] = 0;
 
-	memcpy (ret->str, init, len);
-	ret->str [len] = 0;
-	
 	return ret;
+}
+
+GString *
+g_string_new (const gchar *init)
+{
+	return g_string_new_len(init, -1);
 }
 
 GString *
@@ -79,106 +73,79 @@ g_string_sized_new (gsize default_size)
 gchar *
 g_string_free (GString *string, gboolean free_segment)
 {
-	char *data;
+	gchar *data;
+	
 	g_return_val_if_fail (string != NULL, NULL);
 
 	data = string->str;
-	if (free_segment)
-		g_free (data);
-	g_free (string);
-
-	if (free_segment)
-		return NULL;
-	else
+	g_free(string);
+	
+	if(!free_segment) {
 		return data;
-	
-}
-
-GString *
-g_string_append (GString *string, const gchar *val)
-{
-	int len, size;
-	char *new;
-	
-	g_return_val_if_fail (string != NULL, NULL);
-	g_return_val_if_fail (val != NULL, string);
-	
-	len = strlen (val);
-	if ((string->len + len) < string->allocated_len){
-		strcat (string->str, val);
-		string->len += len;
-		return string;
 	}
-	size = (len + string->len + 16) * 2;
-	new = g_malloc (size);
-	memcpy (new, string->str, string->len);
-	memcpy (new + string->len, val, len);
-	g_free (string->str);
-	string->str = new;
-	string->allocated_len = size;
-	string->len += len;
-	new [string->len] = 0;
-	
-	return string;
-}
 
-GString *
-g_string_append_c (GString *string, gchar c)
-{
-	gsize size;
-	char *new;
-	
-	g_return_val_if_fail (string != NULL, NULL);
-
-	if (string->len + 1 < string->allocated_len){
-		string->str [string->len] = c;
-		string->str [string->len+1] = 0;
-		string->len++;
-		return string;
-	}
-	size = (string->allocated_len + 16) * 2;
-	new = g_malloc (size);
-	memcpy (new, string->str, string->len);
-	new [string->len] = c;
-	new [string->len+1] = 0;
-	
-	g_free (string->str);
-	string->allocated_len = size;
-	string->len++;
-	string->str = new;
-
-	return string;
+	g_free(data);
+	return NULL;
 }
 
 GString *
 g_string_append_len (GString *string, const gchar *val, gssize len)
 {
-	int size;
-	char *new;
-	
-	g_return_val_if_fail (string != NULL, NULL);
-	g_return_val_if_fail (val != NULL, string);
-	if (len < 0)
-		return g_string_append (string, val);
-	
-	if ((string->len + len) < string->allocated_len){
-		memcpy (string->str+string->len, val, len);
-		string->len += len;
-		return string;
+	g_return_val_if_fail(string != NULL, NULL);
+	g_return_val_if_fail(val != NULL, string);
+
+	if(len < 0) {
+		len = strlen(val);
 	}
-	size = (len + string->len + 16) * 2;
-	new = g_malloc (size);
-	memcpy (new, string->str, string->len);
-	memcpy (new + string->len, val, len);
-	g_free (string->str);
-	string->str = new;
-	string->allocated_len = size;
+
+	GROW_IF_NECESSARY(string, len);
+	memcpy(string->str + string->len, val, len);
 	string->len += len;
-	new [string->len] = 0;
-	
+	string->str[string->len] = 0;
+
 	return string;
 }
+
+GString *
+g_string_append (GString *string, const gchar *val)
+{
+	g_return_val_if_fail(string != NULL, NULL);
+	g_return_val_if_fail(val != NULL, string);
+
+	return g_string_append_len(string, val, -1);
+}
+
+GString *
+g_string_append_c (GString *string, gchar c)
+{
+	g_return_val_if_fail(string != NULL, NULL);
+
+	GROW_IF_NECESSARY(string, 1);
 	
+	string->str[string->len] = c;
+	string->str[string->len + 1] = 0;
+	string->len++;
+
+	return string;
+}
+
+GString *
+g_string_prepend (GString *string, const gchar *val)
+{
+	gssize len;
+	
+	g_return_val_if_fail (string != NULL, string);
+	g_return_val_if_fail (val != NULL, string);
+
+	len = strlen (val);
+	
+	GROW_IF_NECESSARY(string, len);	
+	memmove(string->str + len, string->str, string->len + 1);
+	memcpy(string->str, val, len);
+
+	return string;
+}
+
 void
 g_string_append_printf (GString *string, const gchar *format, ...)
 {
@@ -220,52 +187,12 @@ g_string_truncate (GString *string, gsize len)
 	g_return_val_if_fail (string != NULL, string);
 
 	/* Silent return */
-	if (len < 0)
+	if (len < 0 || len >= string->len) {
 		return string;
-	
-	if (len >= string->len)
-		return string;
-	string->len = len;
-	string->str [len] = 0;
-	return string;
-}
-
-GString *
-g_string_prepend (GString *string, const gchar *val)
-{
-	int vallen;
-	g_return_val_if_fail (string != NULL, string);
-	g_return_val_if_fail (val != NULL, string);
-
-	vallen = strlen (val);
-	
-	if ((string->len + vallen + 1) < string->allocated_len){
-		memmove (string->str+vallen, string->str, string->len+1);
-		memcpy (string->str, val, vallen);
-	} else {
-		/*
-		 * Add some extra space, so we do not reallocate too often
-		 * maybe we should centralize this decision somewhere else. 
-		 */
-		char *new;
-		int nl = MAX (string->len + vallen + 1, string->allocated_len);
-		nl = nl < 8192 ? (nl * 3) : nl + 1024;
-
-		new = malloc (nl);
-		/* Failure */
-		if (new == NULL) {
-			g_error ("No more memory");
-			return string;
-		}
-		strcpy (new, val);
-		/* To cope with embedded nulls */
-		memcpy (new + vallen, string->str, string->len);
-		string->len = string->len + vallen;
-		g_free (string->str);
-		string->str = new;
-		string->allocated_len = nl;
 	}
 	
+	string->len = len;
+	string->str[len] = 0;
 	return string;
 }
 

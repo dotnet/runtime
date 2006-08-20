@@ -1,3 +1,14 @@
+2006-08-19  Aaron Bockover  <abockover@novell.com>
+
+	* src/gstring.c: optimize and generalize reallocation by providing
+	a GROW_IF_NECESSARY macro, do not use strcpy/strcat as they are 
+	very, very slow; GString is now much closer to GLib's implementation
+	in terms of performance
+
+	* test/string.c: added speed-specific tests to beat on reallocation code
+
+	* test/test-both: run make if the test drivers don't exist
+
 2006-08-19  Jonathan Chambers  <jonathan.chambers@gmail.com>
 
 	* src/gmodule.c: Add gmodule support for windows and fix

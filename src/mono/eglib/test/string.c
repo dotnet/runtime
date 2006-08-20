@@ -6,6 +6,46 @@
 #define sfail(k,p) if (s->str [p] != k) { g_string_free (s,TRUE); return FAILED("Got %s, Failed at %d, expected '%c'", s->str, p, k);}
 
 RESULT
+test_append_speed()
+{
+	GString *s = g_string_new("");
+	gint i;
+	
+	for(i = 0; i < 1024; i++) {
+		g_string_append(s, "x");
+	}
+	
+	if(strlen (s->str) != 1024) {
+		return FAILED("Incorrect string size, got: %s %d", 
+			s->str, strlen(s->str));
+	}
+	
+	g_string_free (s, TRUE);
+
+	return OK;
+}
+
+RESULT
+test_append_c_speed()
+{
+	GString *s = g_string_new("");
+	gint i;
+	
+	for(i = 0; i < 1024; i++) {
+		g_string_append_c(s, 'x');
+	}
+	
+	if(strlen(s->str) != 1024) {
+		return FAILED("Incorrect string size, got: %s %d", s->str, 
+			strlen(s->str));
+	}
+	
+	g_string_free(s, TRUE);
+
+	return OK;
+}
+
+RESULT
 test_gstring ()
 {
 	GString *s = g_string_new_len ("My stuff", 2);
@@ -30,14 +70,6 @@ test_gstring ()
 		return FAILED("Did not copy correctly, got: %s", s->str+4);
 	}
 
-	g_string_free (s, TRUE);
-	s = g_string_new ("");
-	for (i = 0; i < 1024; i++){
-		g_string_append (s, "x");
-	}
-	if (strlen (s->str) != 1024){
-		return FAILED("Incorrect string size, got: %s %d", s->str, strlen (s->str));
-	}
 	g_string_free (s, TRUE);
 
 	s = g_string_new ("");
@@ -76,7 +108,7 @@ test_gstring ()
 	return OK;
 }
 
-static char *
+RESULT
 test_sized ()
 {
 	GString *s = g_string_sized_new (20);
@@ -91,7 +123,7 @@ test_sized ()
 	return NULL;
 }
 
-static char *
+RESULT
 test_truncate ()
 {
 	GString *s = g_string_new ("0123456789");
@@ -117,7 +149,7 @@ test_truncate ()
 	return NULL;
 }
 
-static char *
+RESULT
 test_prepend ()
 {
 	GString *s = g_string_new ("dingus");
@@ -149,7 +181,7 @@ test_prepend ()
 	return NULL;
 }
 
-static char *
+RESULT
 test_appendlen ()
 {
 	GString *s = g_string_new ("");
@@ -170,6 +202,8 @@ test_appendlen ()
 }
 
 static Test string_tests [] = {
+	{"append-speed", test_append_speed},
+    {"append_c-speed", test_append_c_speed},
 	{"constructors+append", test_gstring },
 	{"constructor-sized", test_sized },
 	{"truncate", test_truncate },
