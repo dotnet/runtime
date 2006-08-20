@@ -1,3 +1,8 @@
+2006-08-19  Jonathan Chambers  <jonathan.chambers@gmail.com>
+
+	* src/gmodule.c: Add gmodule support for windows and fix
+	windows build. Contribution is licensed as MIT/X11.
+	
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
 	* test/driver.c: Added --debug mode that allows for testing all paths

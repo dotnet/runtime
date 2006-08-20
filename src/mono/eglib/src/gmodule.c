@@ -3,8 +3,10 @@
  *
  * Author:
  *   Gonzalo Paniagua Javier (gonzalo@novell.com)
+ *   Jonathan Chambers (joncham@gmail.com)
  *
  * (C) 2006 Novell, Inc.
+ * (C) 2006 Jonathan Chambers
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -90,7 +92,74 @@ g_module_close (GModule *module)
 	return (0 == dlclose (handle));
 }
 
+#elif defined (G_OS_WIN32)
+#include <windows.h>
+
+#define LIBSUFFIX ".dll"
+#define LIBPREFIX 
+
+struct _GModule {
+	HMODULE handle;
+};
+
+GModule *
+g_module_open (const gchar *file, GModuleFlags flags)
+{
+	GModule *module;
+	module = g_malloc (sizeof (GModule));
+	if (module == NULL)
+		return NULL;
+
+	module->handle = LoadLibrary (file);
+	return module;
+}
+
+gboolean
+g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
+{
+	if (symbol_name == NULL || symbol == NULL)
+		return FALSE;
+
+	if (module == NULL || module->handle == NULL)
+		return FALSE;
+
+	*symbol = GetProcAddress (module->handle, symbol_name);
+	return (*symbol != NULL);
+}
+
+const gchar *
+g_module_error (void)
+{
+	gchar* ret = NULL;
+	TCHAR* buf = NULL;
+	DWORD code = GetLastError ();
+
+	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, 
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
+
+	ret = g_strdup (buf);
+	LocalFree(buf);
+
+	return ret;
+}
+
+gboolean
+g_module_close (GModule *module)
+{
+	HMODULE handle;
+	if (module == NULL || module->handle == NULL)
+		return FALSE;
+
+	handle = module->handle;
+	module->handle = NULL;
+	g_free (module);
+	return (0 == FreeLibrary (handle));
+}
+
 #else
+
+#define LIBSUFFIX
+#define LIBPREFIX
 
 GModule *
 g_module_open (const gchar *file, GModuleFlags flags)
