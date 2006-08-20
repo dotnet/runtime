@@ -1,3 +1,17 @@
+2006-08-20  Chris Toshok  <toshok@ximian.com>
+
+	* test/tests.h: add array tests to the mix.
+
+	* test/array.c: a few array tests.
+
+	* src/glib.h: add array prototypes.
+
+	* src/garray.c: initial array foo.
+
+	* test/Makefile.am (SOURCES): add array.c
+
+	* src/Makefile.am (libeglib_la_SOURCES): add garray.c
+
 2006-08-19  Aaron Bockover  <abockover@novell.com>
 
 	* src/gstring.c: optimize and generalize reallocation by providing

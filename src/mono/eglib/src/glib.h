@@ -258,6 +258,26 @@ GList *g_list_insert_before (GList         *list,
 			     gpointer       data);
 
 /*
+ * Array
+ */
+
+typedef struct _GArray GArray;
+struct _GArray {
+	gchar *data;
+	gint len;
+};
+
+GArray *g_array_new               (gboolean zero_terminated, gboolean clear_, guint element_size);
+gchar*  g_array_free              (GArray *array, gboolean free_segment);
+GArray *g_array_append_vals       (GArray *array, gconstpointer data, guint len);
+GArray* g_array_insert_vals       (GArray *array, guint index_, gconstpointer data, guint len);
+GArray* g_array_remove_index      (GArray *array, guint index_);
+
+#define g_array_append_val(a,v)   (g_array_append_vals((a),&(v),1))
+#define g_array_insert_val(a,i,v) (g_array_insert_vals((a),(i),&(v),1))
+#define g_array_index(a,t,i)      *(t*)(((a)->data) + sizeof(t) * (i))
+
+/*
  * Pointer Array
  */
 

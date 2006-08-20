@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libeglib.la
 libeglib_la_SOURCES = \
 	eglib-config.h	\
 	glib.h	     	\
+	garray.c	\
 	ghashtable.c 	\
 	gmem.c       	\
 	gmodule.c    	\

@@ -11,7 +11,8 @@ SOURCES = \
 	slist.c 	\
 	sizes.c		\
 	ptrarray.c 	\
-	list.c	\
+	list.c		\
+	array.c		\
 	fake.c
 
 test_eglib_SOURCES = $(SOURCES)
