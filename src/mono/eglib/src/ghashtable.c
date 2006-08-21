@@ -167,6 +167,8 @@ rehash (GHashTable *hash)
 	int diff = ABS (hash->last_rehash, hash->in_use);
 
 	/* These are the factors to play with to change the rehashing strategy */
+	/* I played with them with a large range, and could not really get */
+	/* something that was too good, maybe the tests are not that great */
 	if (!(diff * 0.75 > hash->table_size * 2))
 		return;
 	do_rehash (hash);
