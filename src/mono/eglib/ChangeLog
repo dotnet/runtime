@@ -1,3 +1,14 @@
+2006-08-21  Miguel de Icaza  <miguel@novell.com>
+
+	* src/goutput.c: Fix g_log so it actually formats the data. 
+
+	* src/ghashtable.c (g_hash_table_new): The glib test suite
+	uncovered a bunch of bugs, the g_hash_table_new should actually
+	have parameters.
+
+	(g_hash_table_remove, g_hash_table_foreach_remove): Fixed bugs
+	uncovered. 
+
 2006-08-20  Aaron Bockover  <abockover@novell.com>
 
 	* src/gmisc.c: added g_setenv, g_getenv, g_unsetenv

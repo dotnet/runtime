@@ -112,9 +112,10 @@ g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
 	GHashTable *hash;
 
-	g_return_val_if_fail (hash_func != NULL, NULL);
-	g_return_val_if_fail (key_equal_func != NULL, NULL);
-			  
+	if (hash_func == NULL)
+		hash_func = g_direct_hash;
+	if (key_equal_func == NULL)
+		key_equal_func = g_direct_equal;
 	hash = g_new0 (GHashTable, 1);
 
 	hash->hash_func = hash_func;
@@ -211,7 +212,8 @@ g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *ori
 	g_return_val_if_fail (hash != NULL, FALSE);
 	equal = hash->key_equal_func;
 
-	hashcode = ((*hash->hash_func) (key)) % hash->table_size;	
+	hashcode = ((*hash->hash_func) (key)) % hash->table_size;
+	
 	for (s = hash->table [hashcode]; s != NULL; s = s->next){
 		if ((*equal)(s->key, key)){
 			*orig_key = s->key;
@@ -260,26 +262,29 @@ gboolean
 g_hash_table_remove (GHashTable *hash, gconstpointer key)
 {
 	GEqualFunc equal;
-	Slot *s, **last;
+	Slot *s, *last;
 	guint hashcode;
 	
 	g_return_val_if_fail (hash != NULL, FALSE);
 	equal = hash->key_equal_func;
 
 	hashcode = ((*hash->hash_func)(key)) % hash->table_size;
-	last = &hash->table [hashcode];
-	for (s = *last; s != NULL; s = s->next){
+	last = NULL;
+	for (s = hash->table [hashcode]; s != NULL; s = s->next){
 		if ((*equal)(s->key, key)){
 			if (hash->key_destroy_func != NULL)
 				(*hash->key_destroy_func)(s->key);
 			if (hash->value_destroy_func != NULL)
 				(*hash->value_destroy_func)(s->value);
-			*last = s->next;
+			if (last == NULL)
+				hash->table [hashcode] = s->next;
+			else
+				last->next = s->next;
 			g_free (s);
 			hash->in_use--;
 			return TRUE;
 		}
-		last = &s;
+		last = s;
 	}
 	return FALSE;
 }
@@ -294,19 +299,31 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 	g_return_val_if_fail (func != NULL, 0);
 
 	for (i = 0; i < hash->table_size; i++){
-		Slot *s, **last;
+		Slot *s, *last;
 
-		last = &hash->table [i];
-		for (s = hash->table [i]; s != NULL; s = s->next){
+		last = NULL;
+		for (s = hash->table [i]; s != NULL; ){
 			if ((*func)(s->key, s->value, user_data)){
+				Slot *n;
+
 				if (hash->key_destroy_func != NULL)
 					(*hash->key_destroy_func)(s->key);
 				if (hash->value_destroy_func != NULL)
 					(*hash->value_destroy_func)(s->value);
-				*last = s->next;
+				if (last == NULL){
+					hash->table [i] = s->next;
+					n = s->next;
+				} else  {
+					last->next = s->next;
+					n = last->next;
+				}
 				g_free (s);
 				hash->in_use--;
 				count++;
+				s = n;
+			} else {
+				last = s;
+				s = s->next;
 			}
 		}
 	}
