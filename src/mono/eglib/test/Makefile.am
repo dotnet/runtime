@@ -13,7 +13,8 @@ SOURCES = \
 	ptrarray.c 	\
 	list.c		\
 	array.c		\
-	fake.c
+	fake.c		\
+	queue.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)

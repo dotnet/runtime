@@ -67,9 +67,8 @@ g_list_free_1 (GList *list)
 void
 g_list_free (GList *list)
 {
-	GList *next;
 	while (list){
-		next = list->next;
+		GList *next = list->next;
 		g_list_free_1 (list);
 		list = next;
 	}

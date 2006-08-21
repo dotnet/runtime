@@ -61,9 +61,8 @@ g_slist_prepend (GSList *list, gpointer data)
 void
 g_slist_free (GSList *list)
 {
-	GSList *next;
 	while (list) {
-		next = list->next;
+		GSList *next = list->next;
 		g_slist_free_1 (list);
 		list = next;
 	}

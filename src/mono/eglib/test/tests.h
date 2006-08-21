@@ -9,6 +9,7 @@ DEFINE_TEST_GROUP_INIT_H(ptrarray_tests_init);
 DEFINE_TEST_GROUP_INIT_H(size_tests_init);
 DEFINE_TEST_GROUP_INIT_H(fake_tests_init);
 DEFINE_TEST_GROUP_INIT_H(array_tests_init);
+DEFINE_TEST_GROUP_INIT_H(queue_tests_init);
 
 static Group test_groups [] = {	
 	{"string",    string_tests_init}, 
@@ -20,6 +21,7 @@ static Group test_groups [] = {
 	{"sizes",     size_tests_init},
 	{"fake",      fake_tests_init},
 	{"array",     array_tests_init},
+	{"queue",     queue_tests_init},
 	{NULL, NULL}
 };
 

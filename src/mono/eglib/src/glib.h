@@ -321,6 +321,22 @@ gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
 #define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 
+/*
+ * Queues
+ */
+typedef struct {
+	GList *head;
+	GList *tail;
+	guint length;
+} GQueue;
+
+gpointer g_queue_pop_head  (GQueue   *queue);
+void     g_queue_push_head (GQueue   *queue,
+			    gpointer  data);
+gboolean g_queue_is_empty  (GQueue   *queue);
+GQueue  *g_queue_new       (void);
+void     g_queue_free      (GQueue   *queue);
+
 
 /*
  * Modules
