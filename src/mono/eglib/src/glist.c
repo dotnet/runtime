@@ -276,23 +276,17 @@ g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 	return list;
 }
 
-/* TODO */
 GList*
 g_list_insert_before (GList *list, GList *sibling, gpointer data)
 {
-	if (!sibling)
-		return g_list_append (list, g_list_prepend (NULL, data));
-	
-	while (list){
-		if (list->next == sibling){
-			g_list_prepend (sibling, g_list_prepend (NULL, data));
-			break;
-		}
-		
-		list = list->next;
-	}
+	if (!list)
+		return g_list_prepend (NULL, data);
 
-	return list;
+	if (!sibling)
+		return g_list_append (list, data);
+
+	else 
+		return g_list_prepend (sibling, data);
 }
 
 void

@@ -279,6 +279,26 @@ test_list_remove_link ()
 	return OK;
 }
 
+RESULT
+test_list_insert_before ()
+{
+	GList *foo, *bar;
+
+	foo = g_list_prepend (NULL, "foo");
+	foo = g_list_insert_before (foo, NULL, "bar");
+	bar = g_list_last (foo);
+
+	if (strcmp (bar->data, "bar"))
+		return FAILED ("1");
+
+	g_list_insert_before (foo, bar, "baz");
+
+	if (strcmp (g_list_nth (foo, 1)->data, "baz"))
+		return FAILED ("2");	
+
+	return OK;
+}
+
 static Test list_tests [] = {
 	{"list_length", test_list_length},
 	{"list_nth", test_list_nth},
@@ -287,6 +307,7 @@ static Test list_tests [] = {
 	{"list_append", test_list_append},
 	{"list_concat", test_list_concat},
 	{"list_insert_sorted", test_list_insert_sorted},
+	{"list_insert_before", test_list_insert_before},
 	{"list_copy", test_list_copy},
 	{"list_reverse", test_list_reverse},
 	{"list_remove", test_list_remove},
