@@ -145,20 +145,34 @@ gint main(gint argc, gchar **argv)
 	
 	for(j = 0; test_groups[j].name != NULL; j++) {
 		gboolean run = TRUE;
-			
+		gchar *tests = NULL;
+		gchar *group = NULL;
+		
 		if(tests_to_run != NULL) {
 			gint k;
 			run = FALSE;
-			for(k = 0; k < tests_to_run->length; k++) {
-				if(strcmp((char *)tests_to_run->strings[k], 
-					test_groups[j].name) == 0) {
+			
+			for(k = 0; k < tests_to_run->length; k++) {	
+				gchar *user = tests_to_run->strings[k];
+				const gchar *table = test_groups[j].name;
+				gint user_len = strlen(user);
+				gint table_len = strlen(table);
+				
+				if(strncmp(user, table, table_len) == 0) {
+					if(user_len > table_len && user[table_len] != ':') {
+						break;
+					}
+					
 					run = TRUE;
+					group = tests_to_run->strings[k];
 					break;
 				}
 			}
 		}
-			
+	
 		if(run) {
+			gchar **split = NULL;
+			
 			if(debug && test_groups[j].handler != fake_tests_init) {
 				printf("Skipping %s, in driver debug mode\n", 
 					test_groups[j].name);
@@ -166,9 +180,28 @@ gint main(gint argc, gchar **argv)
 			} else if(!debug && test_groups[j].handler == fake_tests_init) {
 				continue;
 			}
-		
+
+			if(group != NULL) {
+				split = eg_strsplit(group, ":", -1);	
+				if(split != NULL) {
+					gint m;
+					for(m = 0; split[m] != NULL; m++) {
+						if(m == 1) {
+							tests = strdup(split[m]);
+							break;
+						}
+					}
+					eg_strfreev(split);
+				}
+			}
+			
 			gboolean passed = run_group(&(test_groups[j]), 
-				iterations, quiet, report_time);
+				iterations, quiet, report_time, tests);
+
+			if(tests != NULL) {
+				g_free(tests);
+			}
+
 			if(!passed && !global_failure) {
 				global_failure = TRUE;
 			}

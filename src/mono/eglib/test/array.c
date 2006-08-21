@@ -108,11 +108,11 @@ test_array_remove ()
 }
 
 static Test array_tests [] = {
-	{"array_big", test_array_big},
-	{"array_append", test_array_append},
-	{"array_index", test_array_index},
-	{"array_remove", test_array_remove},
-	{"array_append_zero_terminated", test_array_append_zero_terminated},
+	{"big", test_array_big},
+	{"append", test_array_append},
+	{"index", test_array_index},
+	{"remove", test_array_remove},
+	{"append_zero_term", test_array_append_zero_terminated},
 	{NULL, NULL}
 };
 

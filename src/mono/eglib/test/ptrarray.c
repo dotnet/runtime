@@ -205,18 +205,18 @@ RESULT ptrarray_sort()
 {
 	GPtrArray *array = g_ptr_array_new();
 	gint i;
-	static const gchar *letters [] = { "A", "B", "C", "D", "E" };
+	gchar *letters [] = { "A", "B", "C", "D", "E" };
 	
-	g_ptr_array_add(array, (gpointer)letters[1]);
-	g_ptr_array_add(array, (gpointer)letters[3]);
-	g_ptr_array_add(array, (gpointer)letters[0]);
-	g_ptr_array_add(array, (gpointer)letters[2]);
-	g_ptr_array_add(array, (gpointer)letters[4]);
+	g_ptr_array_add(array, letters[0]);
+	g_ptr_array_add(array, letters[1]);
+	g_ptr_array_add(array, letters[2]);
+	g_ptr_array_add(array, letters[3]);
+	g_ptr_array_add(array, letters[4]);
 	
 	g_ptr_array_sort(array, ptrarray_sort_compare);
 
 	for(i = 0; i < array->len; i++) {
-		if(strcmp((const gchar *)array->pdata[i], letters[i]) != 0) {
+		if(array->pdata[i] != letters[i]) {
 			return FAILED("Array out of order, expected %s got %s", 
 				(gchar *)array->pdata[i], letters[i]);
 		}
@@ -228,13 +228,13 @@ RESULT ptrarray_sort()
 }
 
 static Test ptrarray_tests [] = {
-	{"ptrarray_alloc", ptrarray_alloc},
-	{"ptrarray_for_iterate", ptrarray_for_iterate},
-	{"ptrarray_foreach_iterate", ptrarray_foreach_iterate},
-	{"ptrarray_set_size", ptrarray_set_size},
-	{"ptrarray_remove_index", ptrarray_remove_index},
-	{"ptrarray_remove", ptrarray_remove},
-	{"ptrarray_sort", ptrarray_sort},
+	{"alloc", ptrarray_alloc},
+	{"for_iterate", ptrarray_for_iterate},
+	{"foreach_iterate", ptrarray_foreach_iterate},
+	{"set_size", ptrarray_set_size},
+	{"remove_index", ptrarray_remove_index},
+	{"remove", ptrarray_remove},
+	{"sort", ptrarray_sort},
 	{NULL, NULL}
 };
 

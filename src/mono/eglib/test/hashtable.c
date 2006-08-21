@@ -131,11 +131,11 @@ RESULT hash_grow (void)
 }
 
 static Test hashtable_tests [] = {
-	{"hash_t1", hash_t1},
-	{"hash_t2", hash_t2},
-	{"hash_grow", hash_grow},
-	{"hash_default", hash_default},
-	{"hash_null_lookup", hash_null_lookup},
+	{"t1", hash_t1},
+	{"t2", hash_t2},
+	{"grow", hash_grow},
+	{"default", hash_default},
+	{"null_lookup", hash_null_lookup},
 	{NULL, NULL}
 };
 

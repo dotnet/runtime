@@ -1,3 +1,27 @@
+2006-08-21  Aaron Bockover  <abockover@novell.com>
+
+	* src/gstr.c: fixed bug/invalid read/write on malloc-only case (no
+	realloc/delimiter token not found); use memcpy instead of strncpy for
+	better performance
+
+	* test/test.c (run_group): allow running specific tests under a group;
+	added copied g_strsplit/g_strfreev from EGlib source as eg_strsplit
+	and eg_strfreev to avoid performance skews in the driver
+	
+	* test/driver.c: allow user-specified group name to contain specific
+	test to run under the group as 'group_name:test1,test2,...testN'
+
+	* test/string-util.c: Added more g_strsplit tests
+
+	* test/slist.c:
+	* test/ptrarray.c:
+	* test/fake.c:
+	* test/string.c:
+	* test/list.c:
+	* test/array.c:
+	* test/hashtable.c: make test names shorter (no need to prefix with
+	the group since it runs under the group)
+
 2006-08-21  Miguel de Icaza  <miguel@novell.com>
 
 	* src/glib.h (g_hash_table_new_full): Add missing prototype.

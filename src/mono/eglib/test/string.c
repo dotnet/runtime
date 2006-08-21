@@ -204,8 +204,8 @@ test_appendlen ()
 static Test string_tests [] = {
 	{"append-speed", test_append_speed},
     {"append_c-speed", test_append_c_speed},
-	{"constructors+append", test_gstring },
-	{"constructor-sized", test_sized },
+	{"ctor+append", test_gstring },
+	{"ctor+sized", test_sized },
 	{"truncate", test_truncate },
 	{"prepend", test_prepend },
 	{"append_len", test_appendlen },

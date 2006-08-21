@@ -139,12 +139,12 @@ test_slist_insert_sorted ()
 }
 
 static Test slist_tests [] = {
-	{"slist_append", test_slist_append},
-	{"slist_concat", test_slist_concat},
-	{"slist_find", test_slist_find},
-	{"slist_remove", test_slist_remove},
-	{"slist_remove_link", test_slist_remove_link},
-	{"slist_insert_sorted", test_slist_insert_sorted},
+	{"append", test_slist_append},
+	{"concat", test_slist_concat},
+	{"find", test_slist_find},
+	{"remove", test_slist_remove},
+	{"remove_link", test_slist_remove_link},
+	{"insert_sorted", test_slist_insert_sorted},
 	{NULL, NULL}
 };
 

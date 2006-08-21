@@ -171,24 +171,24 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 
 	g_return_val_if_fail(string != NULL, NULL);
 	g_return_val_if_fail(delimiter != NULL, NULL);
-	g_return_val_if_fail(delimiter[0] != '\0', NULL);
+	g_return_val_if_fail(delimiter[0] != 0, NULL);
 	
 	token_length = strlen(string);
 	string_c = (gchar *)g_malloc(token_length + 1);
-	strncpy(string_c, string, token_length);
-	string_c[token_length] = '\0';
+	memcpy(string_c, string, token_length);
+	string_c[token_length] = 0;
 	
 	vector = NULL;
 	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
-	
+
 	while(token != NULL) {
 		token_length = strlen(token);
 		token_c = (gchar *)g_malloc(token_length + 1);
-		strncpy(token_c, token, token_length);
-		token_c[token_length] = '\0';
+		memcpy(token_c, token, token_length);
+		token_c[token_length] = 0;
 
 		vector = vector == NULL ? 
-			(gchar **)g_malloc(sizeof(vector)) :
+			(gchar **)g_malloc(2 * sizeof(vector)) :
 			(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
 	
 		vector[size - 1] = token_c;	
@@ -205,7 +205,10 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 		}
 	}
 
-	vector[size - 1] = NULL;
+	if(vector != NULL && size > 0) {
+		vector[size - 1] = NULL;
+	}
+	
 	g_free(string_c);
 	string_c = NULL;
 

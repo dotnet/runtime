@@ -52,12 +52,14 @@ run_test(Test *test, gchar **result_out)
 }
 
 gboolean
-run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
+run_group(Group *group, gint iterations, gboolean quiet, 
+	gboolean time, gchar *tests_to_run_s)
 {
 	Test *tests = group->handler();
-	gint i, j, passed = 0;
+	gint i, j, passed = 0, total = 0;
 	gdouble start_time_group, start_time_test;
-	
+	gchar **tests_to_run = NULL;
+
 	if(!quiet) {
 		if(iterations > 1) {
 			printf("[%s] (%dx)\n", group->name, iterations);
@@ -66,12 +68,35 @@ run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 		}
 	}
 
+	if(tests_to_run_s != NULL) {
+		tests_to_run = eg_strsplit(tests_to_run_s, ",", -1);
+	}
+
 	start_time_group = get_timestamp();
 
 	for(i = 0; tests[i].name != NULL; i++) {
 		gchar *result;
-		gboolean iter_pass;
-		
+		gboolean iter_pass, run;
+	
+		if(tests_to_run != NULL) {
+			gint j;
+			run = FALSE;
+			for(j = 0; tests_to_run[j] != NULL; j++) {
+				if(strcmp(tests_to_run[j], tests[i].name) == 0) {
+					run = TRUE;
+					break;
+				}
+			}
+		} else {
+			run = TRUE;
+		}
+
+		if(!run) {
+			continue;
+		}
+	
+		total++;
+	
 		if(!quiet) {
 			printf("  %s: ", tests[i].name);
 		}
@@ -107,16 +132,20 @@ run_group(Group *group, gint iterations, gboolean quiet, gboolean time)
 	}
 
 	if(!quiet) {
-		gdouble pass_percentage = ((gdouble)passed / (gdouble)i) * 100.0;
+		gdouble pass_percentage = ((gdouble)passed / (gdouble)total) * 100.0;
 		if(time) {
-			printf("  %d / %d (%g%%, %g)\n", passed, i,
+			printf("  %d / %d (%g%%, %g)\n", passed, total,
 				pass_percentage, get_timestamp() - start_time_group);
 		} else {
-			printf("  %d / %d (%g%%)\n", passed, i, pass_percentage);
+			printf("  %d / %d (%g%%)\n", passed, total, pass_percentage);
 		}
 	}
 
-	return passed == i;
+	if(tests_to_run != NULL) {
+		eg_strfreev(tests_to_run);
+	}
+
+	return passed == total;
 }
 
 RESULT
@@ -146,4 +175,78 @@ get_timestamp()
 	gettimeofday(&tp, NULL);
 	return (gdouble)tp.tv_sec + (1.e-6) * tp.tv_usec;
 }
+
+/* 
+ * Duplicating code here from EGlib to avoid g_strsplit skew between
+ * EGLib and GLib
+ */
+ 
+gchar ** 
+eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
+{
+	gchar *string_c;
+	gchar *strtok_save, **vector;
+	gchar *token, *token_c;
+	gint size = 1;
+	gint token_length;
+
+	g_return_val_if_fail(string != NULL, NULL);
+	g_return_val_if_fail(delimiter != NULL, NULL);
+	g_return_val_if_fail(delimiter[0] != 0, NULL);
+	
+	token_length = strlen(string);
+	string_c = (gchar *)g_malloc(token_length + 1);
+	memcpy(string_c, string, token_length);
+	string_c[token_length] = 0;
+	
+	vector = NULL;
+	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
+
+	while(token != NULL) {
+		token_length = strlen(token);
+		token_c = (gchar *)g_malloc(token_length + 1);
+		memcpy(token_c, token, token_length);
+		token_c[token_length] = 0;
+
+		vector = vector == NULL ? 
+			(gchar **)g_malloc(2 * sizeof(vector)) :
+			(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
+	
+		vector[size - 1] = token_c;	
+		size++;
+
+		if(max_tokens > 0 && size >= max_tokens) {
+			if(size > max_tokens) {
+				break;
+			}
+
+			token = strtok_save;
+		} else {
+			token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
+		}
+	}
+
+	if(vector != NULL && size > 0) {
+		vector[size - 1] = NULL;
+	}
+	
+	g_free(string_c);
+	string_c = NULL;
+
+	return vector;
+}
+
+void
+eg_strfreev (gchar **str_array)
+{
+	gchar **orig = str_array;
+	if (str_array == NULL)
+		return;
+	while (*str_array != NULL){
+		g_free (*str_array);
+		str_array++;
+	}
+	g_free (orig);
+}
+
 

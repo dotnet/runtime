@@ -32,19 +32,38 @@ test_concat ()
 RESULT
 test_split ()
 {
-	gchar **v = g_strsplit("Hello world, how are we doing today?", " ", 0);
-	int i = 0;
+	const gchar *to_split = "Hello world, how are we doing today?";
+	gint i;
+	gchar **v;
+	
+	v= g_strsplit(to_split, " ", 0);
 	
 	if(v == NULL) {
-		return "split failed, got NULL vector";
-	} else {
-		for(i = 0; v[i] != NULL; i++);
-		if(i != 7) {
-			return FAILED("split failed, expected 7 tokens, got %d\n", i);
-		}
+		return FAILED("split failed, got NULL vector (1)");
+	}
+	
+	for(i = 0; v[i] != NULL; i++);
+	if(i != 7) {
+		return FAILED("split failed, expected 7 tokens, got %d", i);
 	}
 	
 	g_strfreev(v);
+
+	v = g_strsplit(to_split, ":", -1);
+	if(v == NULL) {
+		return FAILED("split failed, got NULL vector (2)");
+	}
+
+	for(i = 0; v[i] != NULL; i++);
+	if(i != 1) {
+		return FAILED("split failed, expected 1 token, got %d", i);
+	}
+
+	if(strcmp(v[0], to_split) != 0) {
+		return FAILED("expected vector[0] to be '%s' but it was '%s'",
+			to_split, v[0]);
+	}
+	
 	return OK;
 }
 

@@ -11,7 +11,7 @@ test_fake()
 }
 
 static Test fake_tests [] = {
-	{"test_fake", test_fake},
+	{"fake", test_fake},
 	{NULL, NULL}
 };
 

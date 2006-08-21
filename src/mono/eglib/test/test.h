@@ -51,9 +51,11 @@ struct _Group {
 };
 
 gboolean run_group(Group *group, gint iterations, gboolean quiet, 
-	gboolean time);
+	gboolean time, gchar *tests);
 RESULT FAILED(const gchar *format, ...);
 gdouble get_timestamp();
+gchar ** eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens);
+void eg_strfreev (gchar **str_array);
 
 #define OK NULL
 

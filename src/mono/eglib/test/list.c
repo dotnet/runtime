@@ -300,18 +300,18 @@ test_list_insert_before ()
 }
 
 static Test list_tests [] = {
-	{"list_length", test_list_length},
-	{"list_nth", test_list_nth},
-	{"list_index", test_list_index},	
-	{"list_last", test_list_last},	
-	{"list_append", test_list_append},
-	{"list_concat", test_list_concat},
-	{"list_insert_sorted", test_list_insert_sorted},
-	{"list_insert_before", test_list_insert_before},
-	{"list_copy", test_list_copy},
-	{"list_reverse", test_list_reverse},
-	{"list_remove", test_list_remove},
-	{"list_remove_link", test_list_remove_link},
+	{"length", test_list_length},
+	{"nth", test_list_nth},
+	{"index", test_list_index},	
+	{"last", test_list_last},	
+	{"append", test_list_append},
+	{"concat", test_list_concat},
+	{"insert_sorted", test_list_insert_sorted},
+	{"insert_before", test_list_insert_before},
+	{"copy", test_list_copy},
+	{"reverse", test_list_reverse},
+	{"remove", test_list_remove},
+	{"remove_link", test_list_remove_link},
 	{NULL, NULL}
 };
 
