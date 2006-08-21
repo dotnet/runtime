@@ -1,5 +1,14 @@
 2006-08-21  Miguel de Icaza  <miguel@novell.com>
 
+	* src/glib.h (g_hash_table_new_full): Add missing prototype.
+	Replace g_free(x) with plain free, so it can be used as a function
+	argument. 
+	Add ABS
+
+	* src/ghashtable.c: Add rehashing. 
+
+	* test/hashtable.c: Add a bunch of extra tests.
+
 	* src/goutput.c: Fix g_log so it actually formats the data. 
 
 	* src/ghashtable.c (g_hash_table_new): The glib test suite

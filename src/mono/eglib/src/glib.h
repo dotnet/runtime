@@ -50,6 +50,8 @@ typedef double         gdouble;
 #define G_STMT_START    do 
 #define G_STMT_END      while (0)
 
+#define ABS(a,b)        (((a)>(b)) ? ((a)-(b)) : ((b)-(a)))
+
 #define G_STRUCT_OFFSET(p_type,field) \
         ((long) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
 
@@ -59,7 +61,6 @@ typedef double         gdouble;
  */
 #define g_new(type,size)        ((type *) malloc (sizeof (type) * (size)))
 #define g_new0(type,size)       ((type *) calloc (sizeof (type), (size))) 
-#define g_free(obj)             free (obj)
 #define g_realloc(obj,size)     realloc((obj), (size))
 #define g_strdup(x)             strdup(x)
 #define g_malloc(x)             malloc(x)
@@ -69,6 +70,7 @@ typedef double         gdouble;
 #define g_memmove(dest,src,len) memmove (dest, src, len)
 #define g_renew(struct_type, mem, n_structs) realloc (mem, sizeof (struct_type) * n_structs)
 #define g_alloca(size)		alloca (size)
+#define g_free                  free
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
 
@@ -101,6 +103,8 @@ typedef guint    (*GHashFunc)      (gconstpointer key);
 typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
 
 GHashTable     *g_hash_table_new             (GHashFunc hash_func, GEqualFunc key_equal_func);
+GHashTable     *g_hash_table_new_full        (GHashFunc hash_func, GEqualFunc key_equal_func,
+					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func);
 void            g_hash_table_insert_replace  (GHashTable *hash, gpointer key, gpointer value, gboolean replace);
 guint           g_hash_table_size            (GHashTable *hash);
 gpointer        g_hash_table_lookup          (GHashTable *hash, gconstpointer key);

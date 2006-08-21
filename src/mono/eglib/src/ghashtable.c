@@ -47,6 +47,7 @@ struct _GHashTable {
 	int   table_size;
 	int   in_use;
 	int   threshold;
+	int   last_rehash;
 	GDestroyNotify value_destroy_func, key_destroy_func;
 };
 
@@ -97,16 +98,6 @@ to_prime (int x)
 	return calc_prime (x);
 }
 
-static void
-adjust_threshold (GHashTable *hash)
-{
-	hash->threshold = (int) hash->table_size * 0.75;
-	if (hash->threshold >= hash->table_size)
-		hash->threshold = hash->table_size-1;
-	if (hash->threshold == 0)
-		hash->threshold = 1;
-}
-	
 GHashTable *
 g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
@@ -123,7 +114,7 @@ g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 
 	hash->table_size = to_prime (1);
 	hash->table = g_new0 (Slot *, hash->table_size);
-	adjust_threshold (hash);
+	hash->last_rehash = hash->table_size;
 	
 	return hash;
 }
@@ -143,9 +134,42 @@ g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
 }
 
 void
+do_rehash (GHashTable *hash)
+{
+	int current_size, i;
+	Slot **table;
+
+	/* printf ("Resizing diff=%d slots=%d\n", hash->in_use - hash->last_rehash, hash->table_size); */
+	hash->last_rehash = hash->table_size;
+	current_size = hash->table_size;
+	hash->table_size = to_prime (hash->in_use);
+	/* printf ("New size: %d\n", hash->table_size); */
+	table = hash->table;
+	hash->table = g_new0 (Slot *, hash->table_size);
+	
+	for (i = 0; i < current_size; i++){
+		Slot *s, *next;
+
+		for (s = table [i]; s != NULL; s = next){
+			guint hashcode = ((*hash->hash_func) (s->key)) % hash->table_size;
+			next = s->next;
+
+			s->next = hash->table [hashcode];
+			hash->table [hashcode] = s;
+		}
+	}
+	g_free (table);
+}
+
+void
 rehash (GHashTable *hash)
 {
-	/* FIXME */
+	int diff = ABS (hash->last_rehash, hash->in_use);
+
+	/* These are the factors to play with to change the rehashing strategy */
+	if (!(diff * 0.75 > hash->table_size * 2))
+		return;
+	do_rehash (hash);
 }
 
 void
