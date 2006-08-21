@@ -25,22 +25,17 @@ Routines missing from eglib, by count number:
      27 g_build_filename
      24 g_utf16_to_utf8
      21 g_snprintf
-     21 g_ptr_array_free
-     21 g_ptr_array_add
      20 g_utf8_to_utf16
-     17 g_ptr_array_new
      13 g_error_free
      12 g_build_path
      11 g_file_test
      10 g_strlcpy
      10 g_path_get_dirname
      10 g_ascii_xdigit_value
-     10 g_array_index
       9 g_path_get_basename
       8 g_get_home_dir
       6 g_io_channel_unix_get_fd
       5 g_timer_elapsed
-      5 g_ptr_array_sort
       5 g_path_is_absolute
       5 g_newa
       5 g_get_current_dir
@@ -58,8 +53,6 @@ Routines missing from eglib, by count number:
       3 g_list_insert_before
       3 g_file_open_tmp
       3 g_convert
-      3 g_array_new
-      3 g_array_free
       2 g_timer_stop
       2 g_timer_start
       2 g_timer_new
@@ -68,8 +61,6 @@ Routines missing from eglib, by count number:
       2 g_set_prgname
       2 g_queue_pop_head
       2 g_queue_is_empty
-      2 g_ptr_array_set_size
-      2 g_ptr_array_remove
       2 g_printerr
       2 g_pattern_spec_new
       2 g_pattern_spec_free
@@ -84,8 +75,6 @@ Routines missing from eglib, by count number:
       2 g_filename_to_uri
       2 g_filename_from_uri
       2 g_concat_dir_and_file
-      2 g_array_insert_val
-      2 g_array_append_val
       1 g_win32_getlocale
       1 g_timer_destroy
       1 g_strescape
@@ -118,14 +107,12 @@ Routines missing from eglib, by count number:
       1 g_get_charset
       1 g_filename_from_utf8
       1 g_ascii_strdown
-      1 g_array_remove_index
 
 Macros:
      40 G_GSIZE_FORMAT
       9 G_GUINT64_FORMAT
       7 G_FILE_TEST_IS_DIR
       6 G_UNLIKELY
-      6 G_HASH_TABLE_RESIZE
       4 G_LIKELY
       4 G_FILE_TEST_IS_REGULAR
       2 G_USEC_PER_SEC
