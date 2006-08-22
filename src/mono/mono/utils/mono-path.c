@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 /* This is only needed for the mono_path_canonicalize code, MAXSYMLINKS, could be moved */
 #include <sys/param.h>
 
