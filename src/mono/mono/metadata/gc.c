@@ -475,7 +475,8 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
 			for (i = 0; i < handles->size; ++i) {
 				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
-				mono_gc_weak_link_remove (&(handles->entries [i]));
+				if (handles->entries [i])
+					mono_gc_weak_link_remove (&(handles->entries [i]));
 				/*g_print ("reg/unreg entry %d of type %d at %p to object %p (%p), was: %p\n", i, handles->type, &(entries [i]), obj, entries [i], handles->entries [i]);*/
 				if (obj) {
 					mono_gc_weak_link_add (&(entries [i]), obj);
@@ -600,7 +601,8 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
-			mono_gc_weak_link_remove (&handles->entries [slot]);
+			if (handles->entries [slot])
+				mono_gc_weak_link_remove (&handles->entries [slot]);
 			if (obj)
 				mono_gc_weak_link_add (&handles->entries [slot], obj);
 		} else {
@@ -666,10 +668,12 @@ mono_gchandle_free (guint32 gchandle)
 		return;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK)
-			mono_gc_weak_link_remove (&handles->entries [slot]);
-		else
+		if (handles->type <= HANDLE_WEAK_TRACK) {
+			if (handles->entries [slot])
+				mono_gc_weak_link_remove (&handles->entries [slot]);
+		} else {
 			handles->entries [slot] = NULL;
+		}
 		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
 	} else {
 		/* print a warning? */
