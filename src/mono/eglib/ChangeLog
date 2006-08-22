@@ -1,3 +1,13 @@
+2006-08-21  Duncan Mak  <duncan@a-chinaman.com>
+
+	* src/gqueue.c: GQueue implementation.
+	* src/glib.h: Add prototypes.
+	* src/Makefile.am (libeglib_la_SOURCES): Include gqueue.c.
+
+	* test/queue.c: 	
+	* test/Makefile.am (SOURCES):
+	* test/tests.h (DEFINE_TEST_GROUP_INIT_H): add tests for GQueue.
+
 2006-08-21  Aaron Bockover  <abockover@novell.com>
 
 	* src/gstr.c: fixed bug/invalid read/write on malloc-only case (no

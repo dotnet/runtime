@@ -296,6 +296,7 @@ test_list_insert_before ()
 	if (strcmp (g_list_nth (foo, 1)->data, "baz"))
 		return FAILED ("2");	
 
+	g_list_free (foo);
 	return OK;
 }
 

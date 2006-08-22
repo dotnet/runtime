@@ -56,8 +56,10 @@ g_queue_is_empty (GQueue *queue)
 void
 g_queue_push_head (GQueue *queue, gpointer head)
 {
-	if (queue)
-		queue->head = g_list_prepend (queue->head, head);
+	if (!queue)
+		return;
+	
+	queue->head = g_list_prepend (queue->head, head);
 	
 	if (!queue->tail)
 		queue->tail = queue->head;
@@ -78,7 +80,7 @@ void
 g_queue_free (GQueue *queue)
 {
 	if (!queue)
-		return NULL;
+		return;
 	
 	g_list_free (queue->head);
 	g_free (queue);

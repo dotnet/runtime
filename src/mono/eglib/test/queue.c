@@ -15,6 +15,7 @@ test_queue_push ()
 	if (queue->length != 3)
 		return FAILED ("push failed");
 
+	g_queue_free (queue);
 	return OK;
 }
 
@@ -22,18 +23,22 @@ RESULT
 test_queue_pop ()
 {
 	GQueue *queue = g_queue_new ();
+	gpointer data;
 
 	g_queue_push_head (queue, "foo");
 	g_queue_push_head (queue, "bar");
 	g_queue_push_head (queue, "baz");
 
-	if (strcmp ("baz", g_queue_pop_head (queue)))
+	data = g_queue_pop_head (queue);
+	if (strcmp ("baz", data))
 		return FAILED ("expect baz.");
 
-	if (strcmp ("bar", g_queue_pop_head (queue)))
+	data = g_queue_pop_head (queue);
+	if (strcmp ("bar", data))
 		return FAILED ("expect bar.");	
 
-	if (strcmp ("foo", g_queue_pop_head (queue)))
+	data = g_queue_pop_head (queue);
+	if (strcmp ("foo", data))
 		return FAILED ("expect foo.");
 	
 	if (g_queue_is_empty (queue) == FALSE)
@@ -42,6 +47,8 @@ test_queue_pop ()
 	if (queue->length != 0)
 		return FAILED ("expect 0 length .");
 
+	g_free (data);
+	g_queue_free (queue);
 	return OK;
 }
 
@@ -59,24 +66,26 @@ test_queue_new ()
 	if (queue->tail != NULL)
 		return FAILED ("expect tail == NULL");
 
+	g_queue_free (queue);
 	return OK;
 }
 
 RESULT
 test_queue_is_empty ()
 {
-	if (g_queue_is_empty (g_queue_new ()) == FALSE)
+	GQueue *queue = g_queue_new ();
+
+	if (g_queue_is_empty (queue) == FALSE)
 		return FAILED ("new queue should be empty");
 
-	else {
-		GQueue *queue = g_queue_new ();
-		g_queue_push_head (queue, "foo");
+	g_queue_push_head (queue, "foo");
 
-		if (g_queue_is_empty (queue) == TRUE)
-			return FAILED ("expected TRUE");
+	if (g_queue_is_empty (queue) == TRUE)
+		return FAILED ("expected TRUE");
 
-		return OK;
-	}
+	g_queue_free (queue);
+
+	return OK;
 }
 
 static Test queue_tests [] = {
