@@ -1,3 +1,7 @@
+2006-08-22  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (mcs-compileall): Remove mention of Microsoft.VisualBasic.
+
 2006-07-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: add check for sys/syscall.h. Remove aio_* detection as
