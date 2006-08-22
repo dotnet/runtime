@@ -244,13 +244,14 @@ TEST_CSC_SRC=			\
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
-	jmpTest.il			\
+	vbinterface.il		\
+	jmpTest.il		\
 	calliTest.il		\
 	ckfiniteTest.il		\
 	locallocTest.il		\
 	initblkTest.il		\
 	qt-instance.il		\
-	vararg.il			\
+	vararg.il		\
 	bug-29859.il		\
 	bug-78549.il		\
 	static-fields-nonconst.il	\
