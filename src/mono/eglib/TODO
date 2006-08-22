@@ -21,7 +21,6 @@
 
 Routines missing from eglib, by count number:
 
-     29 g_getenv
      27 g_build_filename
      24 g_utf16_to_utf8
      21 g_snprintf
@@ -40,7 +39,6 @@ Routines missing from eglib, by count number:
       5 g_newa
       5 g_get_current_dir
       5 g_file_get_contents
-      4 g_unsetenv
       4 g_strdown
       4 g_get_tmp_dir
       3 g_utf8_validate
@@ -48,7 +46,6 @@ Routines missing from eglib, by count number:
       3 g_thread_init
       3 g_spaced_primes_closest
       3 g_shell_quote
-      3 g_setenv
       3 g_locale_to_utf8
       3 g_list_insert_before
       3 g_file_open_tmp
@@ -59,8 +56,6 @@ Routines missing from eglib, by count number:
       2 g_strdelimit
       2 g_shell_parse_argv
       2 g_set_prgname
-      2 g_queue_pop_head
-      2 g_queue_is_empty
       2 g_printerr
       2 g_pattern_spec_new
       2 g_pattern_spec_free
@@ -85,9 +80,6 @@ Routines missing from eglib, by count number:
       1 g_source_remove
       1 g_source_attach
       1 g_shell_unquote
-      1 g_queue_push_head
-      1 g_queue_new
-      1 g_queue_free
       1 g_mem_set_vtable
       1 g_main_loop_run
       1 g_main_context_new
@@ -109,8 +101,6 @@ Routines missing from eglib, by count number:
       1 g_ascii_strdown
 
 Macros:
-     40 G_GSIZE_FORMAT
-      9 G_GUINT64_FORMAT
       7 G_FILE_TEST_IS_DIR
       6 G_UNLIKELY
       4 G_LIKELY

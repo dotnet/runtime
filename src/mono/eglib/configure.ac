@@ -58,6 +58,7 @@ if test $ac_cv_sizeof_void_p != $ac_cv_sizeof_int; then
    GUINT_TO_POINTER="((gpointer)(gulong) (v))"
    GSIZE="long"
    GSIZE_FORMAT='"lu"'
+   G_GUINT64_FORMAT='"lu"'
 else
    GPOINTER_TO_INT="((gint) (ptr))"
    GPOINTER_TO_UINT="((guint) (ptr))"
@@ -65,6 +66,7 @@ else
    GUINT_TO_POINTER="((gpointer) (v))"
    GSIZE="int"
    GSIZE_FORMAT='"u"'
+   G_GUINT64_FORMAT='"llu"'
 fi
 AC_SUBST(GPOINTER_TO_INT)
 AC_SUBST(GPOINTER_TO_UINT)
@@ -72,6 +74,7 @@ AC_SUBST(GINT_TO_POINTER)
 AC_SUBST(GUINT_TO_POINTER)
 AC_SUBST(GSIZE)
 AC_SUBST(GSIZE_FORMAT)
+AC_SUBST(G_GUINT64_FORMAT)
 
 AC_OUTPUT([
 Makefile

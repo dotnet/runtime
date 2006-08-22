@@ -18,4 +18,5 @@
 typedef unsigned @GSIZE@ gsize;
 typedef signed   @GSIZE@ gssize;
 
-#define G_GSIZE_FORMAT @GSIZE_FORMAT@
+#define G_GSIZE_FORMAT   @GSIZE_FORMAT@
+#define G_GUINT64_FORMAT @G_GUINT64_FORMAT@

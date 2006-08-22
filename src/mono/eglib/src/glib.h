@@ -405,4 +405,7 @@ GUnicodeType   g_unichar_type    (gunichar c);
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
 #endif
 
+/* FIXME: Implement these two for gcc */
+#define G_LIKELY(x) (x)
+#define G_UNLIKELY(x) (x)
 #endif
