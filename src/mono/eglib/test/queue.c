@@ -47,7 +47,6 @@ test_queue_pop ()
 	if (queue->length != 0)
 		return FAILED ("expect 0 length .");
 
-	g_free (data);
 	g_queue_free (queue);
 	return OK;
 }
