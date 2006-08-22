@@ -2020,11 +2020,14 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					 */
 					if (!(vtable [io + l])) {
 						MonoClass *parent = class->parent;
-
-						if ((ic->interface_id <= parent->max_interface_id) && 
-							(parent->interface_offsets [ic->interface_id] != -1) &&
-							parent->vtable)
-							vtable [io + l] = parent->vtable [parent->interface_offsets [ic->interface_id] + l];
+						
+						for (; parent; parent = parent->parent) {
+							if ((ic->interface_id <= parent->max_interface_id) && 
+									(parent->interface_offsets [ic->interface_id] != -1) &&
+									parent->vtable) {
+								vtable [io + l] = parent->vtable [parent->interface_offsets [ic->interface_id] + l];
+							}
+						}
 					}
 
 					if (!(vtable [io + l])) {
