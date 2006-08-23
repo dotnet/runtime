@@ -1,3 +1,7 @@
+2006-08-23 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: check for mkstemp.
+
 2006-08-22  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (mcs-compileall): Remove mention of Microsoft.VisualBasic.
