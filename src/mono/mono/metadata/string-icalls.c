@@ -64,11 +64,10 @@ ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 	domain = mono_domain_get ();
 
 	if (value == NULL)
-		length = 0;
-	else {
-		for (i = 0; *(value + i) != '\0'; i++);
-		length = i;
-	}
+		return empty_string (domain);
+
+	for (i = 0; *(value + i) != '\0'; i++);
+	length = i;
 
 	return mono_string_new_utf16 (domain, value, length);
 }
