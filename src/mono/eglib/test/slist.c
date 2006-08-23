@@ -138,6 +138,29 @@ test_slist_insert_sorted ()
 	return OK;
 }
 
+RESULT
+test_slist_insert_before ()
+{
+	GSList *foo, *bar, *baz;
+
+	foo = g_slist_prepend (NULL, "foo");
+	foo = g_slist_insert_before (foo, NULL, "bar");
+	bar = g_slist_last (foo);
+
+	if (strcmp (bar->data, "bar"))
+		return FAILED ("1");
+
+	baz = g_slist_insert_before (foo, bar, "baz");
+	if (foo != baz)
+		return FAILED ("2");
+
+	if (strcmp (foo->next->data, "baz"))
+		return FAILED ("3: %s", foo->next->data);
+
+	g_slist_free (foo);
+	return OK;
+}
+
 static Test slist_tests [] = {
 	{"append", test_slist_append},
 	{"concat", test_slist_concat},
@@ -145,6 +168,7 @@ static Test slist_tests [] = {
 	{"remove", test_slist_remove},
 	{"remove_link", test_slist_remove_link},
 	{"insert_sorted", test_slist_insert_sorted},
+	{"insert_before", test_slist_insert_before},
 	{NULL, NULL}
 };
 

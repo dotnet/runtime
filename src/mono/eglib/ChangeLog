@@ -1,5 +1,8 @@
 2006-08-23  Raja R Harinath  <rharinath@novell.com>
 
+	* test/slist.c (test_slist_insert_before): Add.
+	* src/gslist.c (g_slist_insert_before): Append if 'sibling' is null.
+
 	* test/list.c (test_list_insert_before): Add test for return value
 	of g_list_insert_before.
 	* test/Makefile.am (test_eglib_LDADD): Refer to the .la file so as

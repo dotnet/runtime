@@ -109,11 +109,6 @@ g_slist_insert_before (GSList *list, GSList *sibling, gpointer data)
 	if (!prev)
 		return g_slist_prepend (list, data);
 
-	if (!prev->next) {
-		/* g_warning ("'sibling' is not found"); */
-		return g_slist_prepend (list, data);
-	}
-
 	insert_after (prev, data);
 	return list;
 }
