@@ -222,10 +222,11 @@ g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 GList*
 g_list_insert_before (GList *list, GList *sibling, gpointer data)
 {
-	if (!sibling)
-		return g_list_append (list, data);
-	GList *node = new_node (sibling->prev, data, sibling);
-	return list == sibling ? node : list;
+	if (sibling) {
+		GList *node = new_node (sibling->prev, data, sibling);
+		return list == sibling ? node : list;
+	}
+	return g_list_append (list, data);
 }
 
 void

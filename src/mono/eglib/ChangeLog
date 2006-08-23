@@ -1,5 +1,7 @@
 2006-08-23  Raja R Harinath  <rharinath@novell.com>
 
+	* src/glist.c (g_list_insert_before): Avoid non-head declaration.
+
 	* test/slist.c (test_slist_insert_before): Add.
 	* src/gslist.c (g_slist_insert_before): Append if 'sibling' is null.
 
