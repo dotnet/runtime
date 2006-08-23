@@ -874,7 +874,6 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolea
 
 	filename =  g_strconcat (name, ".dll", NULL);
 	len = strlen (filename);
-	printf ("Loading %s as %s\n", filename, (search_path && *search_path && **search_path) ? "Publico" : "Privado");
 
 	for (path = search_path; *path; path++) {
 		if (**path == '\0') {
