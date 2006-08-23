@@ -19,86 +19,92 @@
       These are currently only used for the GC-safe hash table, and 
       we will be replacing that with a copy of our own hashtable.
 
-Routines missing from eglib, by count number:
+Important Groups:
 
-     27 g_build_filename
-     24 g_utf16_to_utf8
-     21 g_snprintf
-     20 g_utf8_to_utf16
-     13 g_error_free
-     12 g_build_path
-     11 g_file_test
-     10 g_strlcpy
-     10 g_path_get_dirname
-     10 g_ascii_xdigit_value
-      9 g_path_get_basename
-      8 g_get_home_dir
-      6 g_io_channel_unix_get_fd
-      5 g_timer_elapsed
-      5 g_path_is_absolute
-      5 g_newa
-      5 g_get_current_dir
-      5 g_file_get_contents
-      4 g_strdown
-      4 g_get_tmp_dir
-      3 g_utf8_validate
-      3 g_thread_supported
-      3 g_thread_init
-      3 g_spaced_primes_closest
-      3 g_shell_quote
-      3 g_locale_to_utf8
-      3 g_list_insert_before
-      3 g_file_open_tmp
-      3 g_convert
-      2 g_timer_stop
-      2 g_timer_start
-      2 g_timer_new
-      2 g_strdelimit
-      2 g_shell_parse_argv
-      2 g_set_prgname
-      2 g_printerr
-      2 g_pattern_spec_new
-      2 g_pattern_spec_free
-      2 g_pattern_match_string
-      2 g_markup_parse_context_parse
-      2 g_markup_parse_context_new
-      2 g_markup_parse_context_free
-      2 g_markup_parse_context_end_parse
-      2 g_list_sort
-      2 g_get_current_time
-      2 g_find_program_in_path
-      2 g_filename_to_uri
-      2 g_filename_from_uri
-      2 g_concat_dir_and_file
-      1 g_win32_getlocale
-      1 g_timer_destroy
-      1 g_strescape
-      1 g_spawn_command_line_sync
-      1 g_spawn_async_with_pipes
-      1 g_source_unref
-      1 g_source_set_callback
-      1 g_source_remove
-      1 g_source_attach
-      1 g_shell_unquote
-      1 g_mem_set_vtable
-      1 g_main_loop_run
-      1 g_main_context_new
-      1 g_main_context_iteration
-      1 g_log_set_handler
-      1 g_locale_from_utf8
-      1 g_io_create_watch
-      1 g_io_channel_unref
-      1 g_io_channel_unix_new
-      1 g_io_channel_shutdown
-      1 g_io_channel_set_encoding
-      1 g_io_channel_set_buffered
-      1 g_io_channel_get_buffer_condition
-      1 g_io_add_watch
-      1 g_get_user_name
-      1 g_get_prgname
-      1 g_get_charset
-      1 g_filename_from_utf8
-      1 g_ascii_strdown
+	* Pattern Matching
+	      2 g_pattern_spec_new
+	      2 g_pattern_spec_free
+	      2 g_pattern_match_string
+	
+	* Markup, used to load config files.
+	      2 g_markup_parse_context_parse
+	      2 g_markup_parse_context_new
+	      2 g_markup_parse_context_free
+	      2 g_markup_parse_context_end_parse
+
+	* Timers, used for the Mini built-in test suite
+	      5 g_timer_elapsed
+	      2 g_timer_stop
+	      2 g_timer_start
+	      2 g_timer_new
+	      1 g_timer_destroy
+		     
+	* Process launching
+	      1 g_spawn_command_line_sync
+	      1 g_spawn_async_with_pipes
+	      3 g_shell_quote
+	      2 g_shell_parse_argv
+	      1 g_shell_unquote
+
+        * Thread enabling, these might be just no-ops, check with Paolo/Zoltan
+	      3 g_thread_supported
+	      3 g_thread_init
+
+	* Path string manipulation and utilities.
+	     27 g_build_filename
+	     12 g_build_path
+	     10 g_path_get_dirname
+	      9 g_path_get_basename
+	      2 g_find_program_in_path
+	      2 g_filename_to_uri
+	      2 g_filename_from_uri
+	      2 g_concat_dir_and_file
+	      5 g_path_is_absolute
+	     10 g_ascii_xdigit_value
+	
+        * Information retrieval
+	      8 g_get_home_dir
+	      5 g_get_current_dir
+	      4 g_get_tmp_dir
+	      2 g_get_current_time
+	      1 g_get_user_name
+	      1 g_get_prgname
+	      1 g_get_charset
+	      1 g_win32_getlocale
+	
+	* String manipulation
+	      1 g_filename_from_utf8
+	      1 g_ascii_strdown
+	      4 g_strdown
+	     21 g_snprintf
+	     10 g_strlcpy
+	      2 g_strdelimit
+	      1 g_strescape
+	
+	* Character encoding
+	     24 g_utf16_to_utf8
+	     20 g_utf8_to_utf16
+	      3 g_utf8_validate
+	      3 g_locale_to_utf8
+	      3 g_convert
+	      1 g_locale_from_utf8
+
+	* File 
+	      5 g_file_get_contents
+	     11 g_file_test
+	      3 g_file_open_tmp
+	
+	* List
+	      3 g_list_insert_before
+	      2 g_list_sort
+	
+	* Miscelaneous
+	      5 g_newa
+	      3 g_spaced_primes_closest
+	      2 g_set_prgname
+	      2 g_printerr
+	      1 g_mem_set_vtable
+	      1 g_log_set_handler
 
 Macros:
       7 G_FILE_TEST_IS_DIR
@@ -107,9 +113,9 @@ Macros:
       4 G_FILE_TEST_IS_REGULAR
       2 G_USEC_PER_SEC
       2 G_STRLOC
-      2 G_IO_NVAL
       1 G_SPAWN_SEARCH_PATH
-      1 G_IO_PRI
       1 G_ALLOC_ONLY
 
-	
+* Dead Code
+
+	The GMainLoop code was no longer in use in Mono.

@@ -238,12 +238,6 @@ g_list_foreach (GList *list, GFunc func, gpointer user_data)
 	}
 }
 
-GList*
-g_list_sort (GList *list, GCompareFunc func)
-{
-	return NULL;
-}
-
 gint
 g_list_index (GList *list, gconstpointer data)
 {

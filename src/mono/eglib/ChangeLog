@@ -1,3 +1,10 @@
+2006-08-23  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gerror.c: Implement. 
+
+	* src/glist.c (g_list_sort): Remove routine instead of hoping that
+	it wont crash when we run it.
+
 2006-08-23  Raja R Harinath  <rharinath@novell.com>
 
 	* src/glist.c (g_list_insert_before): Avoid non-head declaration.

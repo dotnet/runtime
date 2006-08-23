@@ -4,6 +4,7 @@ libeglib_la_SOURCES = \
 	eglib-config.h	\
 	glib.h	     	\
 	garray.c	\
+	gerror.c	\
 	ghashtable.c 	\
 	gmem.c       	\
 	gmodule.c    	\

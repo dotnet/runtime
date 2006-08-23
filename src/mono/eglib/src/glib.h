@@ -150,7 +150,6 @@ gint         g_printf          (gchar const *format, ...);
 gint         g_fprintf         (FILE *file, gchar const *format, ...);
 gint         g_sprintf         (gchar *string, gchar const *format, ...);
 gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ...);
-
 #define g_vprintf vprintf
 #define g_vfprintf vfprintf
 #define g_vsprintf vsprintf
@@ -413,4 +412,19 @@ GUnicodeType   g_unichar_type    (gunichar c);
 /* FIXME: Implement these two for gcc */
 #define G_LIKELY(x) (x)
 #define G_UNLIKELY(x) (x)
+
+/*
+ * Errors
+ */
+typedef struct {
+	/* In the real glib, this is a GQuark, but we dont use/need that */
+	gpointer domain;
+	gint     code;
+	gchar   *message;
+} GError;
+
+void    g_error_free (GError *error);
+GError *g_error_new (gpointer domain, gint code, const char *format, ...);
+
+
 #endif
