@@ -36,15 +36,19 @@ test_list_nth ()
 
 	nth = g_list_nth (list, 0);
 	if (nth->data != foo)
-		return FAILED ("nth failed. #1");
+		return FAILED ("nth failed. #0");
 
 	nth = g_list_nth (list, 1);
 	if (nth->data != bar)
-		return FAILED ("nth failed. #2");
+		return FAILED ("nth failed. #1");
 	
 	nth = g_list_nth (list, 2);
 	if (nth->data != baz)
-		return FAILED ("nth failed. #3");
+		return FAILED ("nth failed. #2");
+
+	nth = g_list_nth (list, 3);
+	if (nth)
+		return FAILED ("nth failed. #3: %s", nth->data);
 
 	g_list_free (list);
 	return OK;
@@ -64,15 +68,15 @@ test_list_index ()
 
 	i = g_list_index (list, foo);
 	if (i != 0)
-		return FAILED ("index failed. #1");
+		return FAILED ("index failed. #0: %d", i);
 
 	i = g_list_index (list, bar);
 	if (i != 1)
-		return FAILED ("index failed. #2");
+		return FAILED ("index failed. #1: %d", i);
 	
 	i = g_list_index (list, baz);
 	if (i != 2)
-		return FAILED ("index failed. #3");
+		return FAILED ("index failed. #2: %d", i);
 
 	g_list_free (list);
 	return OK;
@@ -282,7 +286,7 @@ test_list_remove_link ()
 RESULT
 test_list_insert_before ()
 {
-	GList *foo, *bar;
+	GList *foo, *bar, *baz;
 
 	foo = g_list_prepend (NULL, "foo");
 	foo = g_list_insert_before (foo, NULL, "bar");
@@ -291,10 +295,12 @@ test_list_insert_before ()
 	if (strcmp (bar->data, "bar"))
 		return FAILED ("1");
 
-	g_list_insert_before (foo, bar, "baz");
+	baz = g_list_insert_before (foo, bar, "baz");
+	if (foo != baz)
+		return FAILED ("2");
 
-	if (strcmp (g_list_nth (foo, 1)->data, "baz"))
-		return FAILED ("2");	
+	if (strcmp (g_list_nth_data (foo, 1), "baz"))
+		return FAILED ("3: %s", g_list_nth_data (foo, 1));	
 
 	g_list_free (foo);
 	return OK;

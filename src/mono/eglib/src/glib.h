@@ -218,6 +218,8 @@ GSList *g_slist_find          (GSList        *list,
 			       gconstpointer  data);
 GSList *g_slist_remove        (GSList        *list,
 			       gconstpointer  data);
+GSList *g_slist_remove_all    (GSList        *list,
+			       gconstpointer  data);
 GSList *g_slist_reverse       (GSList        *list);
 guint   g_slist_length        (GSList        *list);
 GSList *g_slist_remove_link   (GSList        *list,
@@ -227,6 +229,9 @@ GSList *g_slist_delete_link   (GSList        *list,
 GSList *g_slist_insert_sorted (GSList        *list,
 			       gpointer       data,
 			       GCompareFunc   func);
+GSList *g_slist_insert_before (GSList        *list,
+			       GSList        *sibling,
+			       gpointer       data);
 
 #define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
 

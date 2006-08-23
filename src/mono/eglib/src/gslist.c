@@ -58,6 +58,66 @@ g_slist_prepend (GSList *list, gpointer data)
 	return head;
 }
 
+/*
+ * Insert the given data in a new node after the current node. 
+ * Return new node.
+ */
+static inline GSList *
+insert_after (GSList *list, gpointer data)
+{
+	list->next = g_slist_prepend (list->next, data);
+	return list->next;
+}
+
+/*
+ * Return the node prior to the node containing 'data'.
+ * If the list is empty, or the first node contains 'data', return NULL.
+ * If no node contains 'data', return the last node.
+ */
+static inline GSList*
+find_prev (GSList *list, gconstpointer data)
+{
+	GSList *prev = NULL;
+	while (list) {
+		if (list->data == data)
+			break;
+		prev = list;
+		list = list->next;
+	}
+	return prev;
+}
+
+/* like 'find_prev', but searches for node 'link' */
+static inline GSList*
+find_prev_link (GSList *list, GSList *link)
+{
+	GSList *prev = NULL;
+	while (list) {
+		if (list == link)
+			break;
+		prev = list;
+		list = list->next;
+	}
+	return prev;
+}
+
+GSList*
+g_slist_insert_before (GSList *list, GSList *sibling, gpointer data)
+{
+	GSList *prev = find_prev_link (list, sibling);
+
+	if (!prev)
+		return g_slist_prepend (list, data);
+
+	if (!prev->next) {
+		/* g_warning ("'sibling' is not found"); */
+		return g_slist_prepend (list, data);
+	}
+
+	insert_after (prev, data);
+	return list;
+}
+
 void
 g_slist_free (GSList *list)
 {
@@ -79,12 +139,8 @@ g_slist_copy (GSList *list)
 	copy = g_slist_prepend (NULL, list->data);
 	tmp = copy;
 
-	while (list->next) {
-		tmp->next = g_slist_prepend (NULL, list->next->data);
-
-		tmp = tmp->next;
-		list = list->next;
-	}
+	for (list = list->next; list; list = list->next)
+		tmp = insert_after (tmp, list->data);
 
 	return copy;
 }
@@ -92,11 +148,10 @@ g_slist_copy (GSList *list)
 GSList*
 g_slist_concat (GSList *list1, GSList *list2)
 {
-	if (list1)
-		g_slist_last (list1)->next = list2;
-	else
-		list1 = list2;
+	if (!list1)
+		return list2;
 
+	g_slist_last (list1)->next = list2;
 	return list1;
 }
 
@@ -124,14 +179,10 @@ g_slist_last (GSList *list)
 GSList*
 g_slist_find (GSList *list, gconstpointer data)
 {
-	while (list){
+	for (; list; list = list->next)
 		if (list->data == data)
-			return list;
-
-		list = list->next;
-	}
-
-	return NULL;
+			break;
+	return list;
 }
 
 guint
@@ -150,63 +201,60 @@ g_slist_length (GSList *list)
 GSList*
 g_slist_remove (GSList *list, gconstpointer data)
 {
-	GSList *prev = NULL;
-	GSList *current = NULL;
-	
-	if (!list)
-		return NULL;
+	GSList *prev = find_prev (list, data);
+	GSList *current = prev ? prev->next : list;
 
-	if (list->data == data){
-		GSList *next = list->next;
-		g_slist_free_1 (list);
-		return next;
-	}
-
-	prev = list;
-	current = list->next;
-
-	while (current) {
-		if (current->data == data){
+	if (current) {
+		if (prev)
 			prev->next = current->next;
-			g_slist_free_1 (current);
-
-			break;
-		}
-		prev = current;
-		current = current->next;
+		else
+			list = current->next;
+		g_slist_free_1 (current);
 	}
 
 	return list;
 }
 
+GSList*
+g_slist_remove_all (GSList *list, gconstpointer data)
+{
+	GSList *next = list;
+	GSList *prev = NULL;
+	GSList *current;
+
+	while (next) {
+		GSList *tmp_prev = find_prev (next, data);
+		if (tmp_prev)
+			prev = tmp_prev;
+		current = prev ? prev->next : list;
+
+		if (!current)
+			break;
+
+		next = current->next;
+
+		if (prev)
+			prev->next = next;
+		else
+			list = next;
+		g_slist_free_1 (current);
+	}
+
+	return list;
+}
 
 GSList*
 g_slist_remove_link (GSList *list, GSList *link)
 {
-	GSList *prev = NULL;
-	GSList *current = NULL;
+	GSList *prev = find_prev_link (list, link);
+	GSList *current = prev ? prev->next : list;
 
-	if (!list)
-		return NULL;
-
-	if (list == link) {
-		GSList *next = list->next;
-		list->next = NULL;
-		return next;
-	}
-	
-	prev = list;
-	current = list->next;
-
-	while (current){
-		if (current == link){
+	if (current) {
+		if (prev)
 			prev->next = current->next;
-			current->next = NULL;
-			break;
-		}
-
-		prev = current;
-		current = current->next;
+		else
+			list = current->next;
+		current->next = NULL;
 	}
 
 	return list;
@@ -238,35 +286,20 @@ g_slist_reverse (GSList *list)
 GSList*
 g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func)
 {
-	GSList *current = NULL;
 	GSList *prev = NULL;
 	
 	if (!func)
 		return list;
 
-	if (!list)
-		return g_slist_prepend (NULL, data);
-
-	if (func (list->data, data) > 0)
+	if (!list || func (list->data, data) > 0)
 		return g_slist_prepend (list, data);
-	
-	prev = list;
-	current = list->next;
 
-	while (current){
-		if (func (current->data, data) > 0){
-			prev->next = g_slist_prepend (current, data);
+	/* Invariant: func (prev->data, data) <= 0) */
+	for (prev = list; prev->next; prev = prev->next)
+		if (func (prev->next->data, data) > 0)
 			break;
-		}
 
-		if (current->next == NULL){
-			g_slist_append (list, data);
-			break;
-		}
-		
-		prev = current;
-		current = current->next;
-	}
-
+	/* ... && (prev->next == 0 || func (prev->next->data, data) > 0)) */
+	insert_after (prev, data);
 	return list;
 }

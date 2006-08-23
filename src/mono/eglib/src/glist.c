@@ -35,27 +35,33 @@ g_list_alloc ()
 }
 
 static inline GList*
-_prepend (GList *list, gpointer data)
+new_node (GList *prev, gpointer data, GList *next)
 {
-	GList *head = g_list_alloc ();
-	head->data = data;
-	head->next = list;
+	GList *node = g_list_alloc ();
+	node->data = data;
+	node->prev = prev;
+	node->next = next;
+	if (prev)
+		prev->next = node;
+	if (next)
+		next->prev = node;
+	return node;
+}
 
-	if (list){
-		head->prev = list->prev;
-		if (list->prev)
-			list->prev->next = head;
-		
-		list->prev = head;
-	}
-	
-	return head;
+static inline GList*
+disconnect_node (GList *node)
+{
+	if (node->next)
+		node->next->prev = node->prev;
+	if (node->prev)
+		node->prev->next = node->next;
+	return node;
 }
 
 GList *
 g_list_prepend (GList *list, gpointer data)
 {
-	return _prepend (list, data);
+	return new_node (list ? list->prev : NULL, data, list);
 }
 
 void
@@ -77,33 +83,18 @@ g_list_free (GList *list)
 GList*
 g_list_append (GList *list, gpointer data)
 {
-	return g_list_concat (list, g_list_prepend (NULL, data));
-}
-
-static inline GList*
-_concat (GList *list1, GList *list2)
-{
-	GList *last;
-	if (!list1 && !list2)
-		return NULL;
-	
-	if (!list1)
-		return list2;
-
-	if (!list2)
-		return list1;
-
-	last = g_list_last (list1);
-	last->next = list2;
-	list2->prev = last;
-
-	return list1;
+	GList *node = new_node (g_list_last (list), data, NULL);
+	return list ? list : node;
 }
 
 GList *
 g_list_concat (GList *list1, GList *list2)
 {
-	return _concat (list1, list2);
+	if (list1 && list2) {
+		list2->prev = g_list_last (list1);
+		list2->prev->next = list2;
+	}
+	return list1 ? list1 : list2;
 }
 
 guint
@@ -122,30 +113,13 @@ g_list_length (GList *list)
 GList*
 g_list_remove (GList *list, gconstpointer data)
 {
-	GList *current;
+	GList *current = g_list_find (list, data);
+	if (!current)
+		return list;
 
-	if (!list)
-		return NULL;
-
-	if (list->data == data){
-		GList *next = list->next;
-		g_list_free_1 (list);
-		return next;
-	}
-	
-	current = list->next;
-
-	while (current){
-		if (current->data == data){
-			current->prev->next = current->next;
-			current->next->prev = current->prev;
-
-			g_list_free_1 (current);
-			break;
-		}
-		
-		current = current->next;
-	}
+	if (current == list)
+		list = list->next;
+	g_list_free_1 (disconnect_node (current));
 
 	return list;
 }
@@ -153,29 +127,12 @@ g_list_remove (GList *list, gconstpointer data)
 GList*
 g_list_remove_link (GList *list, GList *link)
 {
-	GList *current;
+	if (list == link)
+		list = list->next;
 
-	if (!list)
-		return NULL;
-
-	if (list == link){
-		GList *next = list->next;
-		list->next = NULL;
-		return next;
-	}
-
-	current = list->next;
-
-	while (current){
-		if (current == link){
-			current->prev->next = current->next;
-			current->next->prev = current->prev;
-			current->next = NULL;
-			break;
-		}
-
-		current = current->next;
-	}
+	disconnect_node (link);
+	link->next = NULL;
+	link->prev = NULL;
 
 	return list;
 }
@@ -245,47 +202,30 @@ g_list_last (GList *list)
 GList*
 g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 {
-	GList *current = NULL;
+	GList *prev = NULL;
+	GList *current;
 	
 	if (!func)
 		return list;
 
-	if (!list)
-		return g_list_prepend (NULL, data);
-
-	if (func (list->data, data) > 0)
-		return g_list_prepend (list, data);
-	
-	current = list->next;
-
-	while (current){
-		if (func (current->data, data) > 0){
-			current->prev->next = g_list_prepend (current, data);
+	/* Invariant: !prev || func (prev->data, data) <= 0) */
+	for (current = list; current; current = current->next) {
+		if (func (current->data, data) > 0)
 			break;
-		}
-
-		if (current->next == NULL){
-			g_list_append (list, data);
-			break;
-		}
-		
-		current = current->next;
+		prev = current;
 	}
 
-	return list;
+	GList *node = new_node (prev, data, current);
+	return list == current ? node : list;
 }
 
 GList*
 g_list_insert_before (GList *list, GList *sibling, gpointer data)
 {
-	if (!list)
-		return g_list_prepend (NULL, data);
-
 	if (!sibling)
 		return g_list_append (list, data);
-
-	else 
-		return g_list_prepend (sibling, data);
+	GList *node = new_node (sibling->prev, data, sibling);
+	return list == sibling ? node : list;
 }
 
 void
@@ -322,47 +262,32 @@ g_list_index (GList *list, gconstpointer data)
 GList*
 g_list_nth (GList *list, guint n)
 {
-	guint i = n;
-	GList *value = list;
-	
-	while (i > 0){
-		if (value){
-			value = value->next;
-			i --;
-		} else {
-			value = NULL;
+	for (; list; list = list->next) {
+		if (n == 0)
 			break;
-		}
+		n--;
 	}
-
-	return value;
+	return list;
 }
 
 gpointer
 g_list_nth_data (GList *list, guint n)
 {
-	return g_list_nth (list, n)->data;
+	GList *node = g_list_nth (list, n);
+	return node ? node->data : NULL;
 }
 
 GList*
 g_list_copy (GList *list)
 {
-	GList *copy, *tmp;
+	GList *copy = NULL;
 
-	if (!list)
-		return NULL;
+	if (list) {
+		GList *tmp = new_node (NULL, list->data, NULL);
+		copy = tmp;
 
-	copy = g_list_prepend (NULL, list->data);
-
-	if (list->next == NULL)
-		return copy;
-	
-	tmp = copy;
-
-	while (list->next) {
-		tmp = g_list_concat (tmp, g_list_prepend (NULL, list->next->data));
-		tmp = tmp->next;
-		list = list->next;
+		for (list = list->next; list; list = list->next)
+			tmp = new_node (tmp, list->data, NULL);
 	}
 
 	return copy;

@@ -1,3 +1,32 @@
+2006-08-23  Raja R Harinath  <rharinath@novell.com>
+
+	* test/list.c (test_list_insert_before): Add test for return value
+	of g_list_insert_before.
+	* test/Makefile.am (test_eglib_LDADD): Refer to the .la file so as
+	to rebuild test if eglib changes.
+	* src/glist.c (new_node, disconnect_node): New helpers that
+	maintain doubly-linked list invariants.
+	(g_list_prepend, g_list_append): Express in terms of new_node.
+	(g_list_insert_before): Likewise.  Fix return value when inserting
+	in the middle of the list.
+	(g_list_concat): Reorganize to make more compact.
+	(g_list_nth): Likewise.
+	(g_list_nth_data): Don't segfault if 'n' is too large.
+	(g_list_remove): Rewrite using _find and disconnect_node.
+	(g_list_remove_link): Don't traverse list: use disconnect_node.
+	(g_list_insert_sorted): Rewrite to make more compact.  Use new_node.
+	(g_list_copy): Likewise.
+	(_prepend, _concat): Remove.
+	* src/gslist.c (insert_after, find_prev, find_prev_link):
+	New helpers.
+	(g_slist_copy): Simplify slightly, using insert_after.
+	(g_slist_concat): Reorganize to make more compact.
+	(g_slist_find): Likewise.
+	(g_slist_insert_sorted): Likewise.
+	(g_slist_remove): Rewrite using find_prev.
+	(g_slist_remove_link): Rewrite using find_prev_link.
+	(g_slist_remove_all, g_slist_insert_before): New.
+
 2006-08-21  Duncan Mak  <duncan@a-chinaman.com>
 
 	* src/gqueue.c: GQueue implementation.
