@@ -8,10 +8,11 @@
  *
  * (c) 2001-2003 Ximian, Inc. (http://www.ximian.com)
  */
-
+#undef ASSEMBLY_LOAD_DEBUG
 #include <config.h>
 #include <glib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -30,6 +31,8 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-path.h>
+#include <mono/utils/mono-stdlib.h>
 
 #define MONO_CORLIB_VERSION 54
 
@@ -646,7 +649,9 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	if (!domain->domain)
 		/* This can happen during startup */
 		return;
-
+#ifdef ASSEMBLY_LOAD_DEBUG
+	fprintf (stderr, "Loading %s into domain %s\n", assembly->aname.name, domain->friendly_name);
+#endif
 	klass = domain->domain->mbr.obj.vtable->klass;
 
 	mono_domain_assemblies_lock (domain);
@@ -674,56 +679,6 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	*params = ref_assembly;
 	mono_runtime_invoke (assembly_load_method, domain->domain, params, NULL);
-}
-
-static gchar *
-reduce_path (const gchar *dirname)
-{
-	gchar **parts;
-	gchar *part;
-	GList *list, *tmp;
-	GString *result;
-	gchar *res;
-	gint i;
-
-	parts = g_strsplit (dirname, G_DIR_SEPARATOR_S, 0);
-	list = NULL;
-	for (i = 0; (part = parts [i]) != NULL; i++) {
-		if (!strcmp (part, "."))
-			continue;
-
-		if (!strcmp (part, "..")) {
-			if (list && list->next) /* Don't remove root */
-				list = g_list_delete_link (list, list);
-		} else {
-			list = g_list_prepend (list, part);
-		}
-	}
-
-	result = g_string_new ("");
-	list = g_list_reverse (list);
-
-	for (tmp = list; tmp; tmp = tmp->next) {
-		gchar *data = (gchar *) tmp->data;
-
-		if (data && *data) {
-#ifdef PLATFORM_WIN32
-			if (result->len == 0)
-				g_string_append_printf (result, "%s\\", data);
-			else if (result->str [result->len - 1] == '\\')
-				g_string_append_printf (result, "%s", data);
-			else
-#endif
-				g_string_append_printf (result, "%c%s",
-							G_DIR_SEPARATOR, data);
-		}
-	}
-	
-	res = result->str;
-	g_string_free (result, FALSE);
-	g_list_free (list);
-	g_strfreev (parts);
-	return res;
 }
 
 static void
@@ -813,7 +768,7 @@ set_domain_search_path (MonoDomain *domain)
 			gchar *reduced;
 			gchar *freeme;
 
-			reduced = reduce_path (tmp [i]);
+			reduced = mono_path_canonicalize (tmp [i]);
 			if (appbaselen == -1)
 				appbaselen = strlen (tmp [0]);
 
@@ -840,16 +795,62 @@ set_domain_search_path (MonoDomain *domain)
 	g_strfreev (pvt_split);
 }
 
+static char *
+make_shadow_copy (const char *filename)
+{
+	gchar *tmp;
+	guint16 *orig, *dest;
+	MonoDomain *domain = mono_domain_get ();
+	char *db;
+	int fd;
+	gboolean copy_result;
+	MonoException *exc;
+
+	db = mono_string_to_utf8 (domain->setup->dynamic_base);
+	tmp = g_build_filename (db, "shadow-XXXXXX", NULL);
+	fd = mono_mkstemp (tmp);
+	if (fd == -1) {
+		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (mkstemp).");
+		g_free (tmp);
+		g_free (db);
+		mono_raise_exception (exc);
+	}
+	close (fd);
+	remove (tmp);
+	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
+	dest = g_utf8_to_utf16 (tmp, strlen (tmp), NULL, NULL, NULL);
+	copy_result = CopyFile (orig, dest, TRUE);
+	g_free (dest);
+	g_free (orig);
+	g_free (db);
+
+	if (copy_result == FALSE) {
+		g_free (tmp);
+		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (CopyFile).");
+		mono_raise_exception (exc);
+	}
+	return tmp;
+}
+
 static gboolean
 try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
-					const gchar *path3, const gchar *path4, gboolean refonly)
+					const gchar *path3, const gchar *path4,
+					gboolean refonly, gboolean is_private)
 {
+	
 	gchar *fullpath;
 
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
-	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
+	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR)) {
+		if (is_private) {
+			char *new_path = make_shadow_copy (fullpath);
+			g_free (fullpath);
+			fullpath = new_path;
+		}
+
 		*assembly = mono_assembly_open_full (fullpath, NULL, refonly);
+	}
 
 	g_free (fullpath);
 	return (*assembly != NULL);
@@ -863,6 +864,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolea
 	gchar *filename;
 	const gchar *local_culture;
 	gint len;
+	gboolean is_private = FALSE;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -872,30 +874,33 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolea
 
 	filename =  g_strconcat (name, ".dll", NULL);
 	len = strlen (filename);
+	printf ("Loading %s as %s\n", filename, (search_path && *search_path && **search_path) ? "Publico" : "Privado");
 
 	for (path = search_path; *path; path++) {
-		if (**path == '\0')
+		if (**path == '\0') {
+			is_private = TRUE;
 			continue; /* Ignore empty ApplicationBase */
+		}
 
 		/* See test cases in bug #58992 and bug #57710 */
 		/* 1st try: [culture]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private))
 			break;
 
 		/* 2nd try: [culture]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private))
 			break;
 
 		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private))
 			break;
 
 		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private))
 			break;
 	}
 
