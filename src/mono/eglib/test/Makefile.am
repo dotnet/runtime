@@ -14,6 +14,7 @@ SOURCES = \
 	list.c		\
 	array.c		\
 	fake.c		\
+	path.c		\
 	queue.c
 
 test_eglib_SOURCES = $(SOURCES)

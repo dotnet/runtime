@@ -426,5 +426,10 @@ typedef struct {
 void    g_error_free (GError *error);
 GError *g_error_new (gpointer domain, gint code, const char *format, ...);
 
+/*
+ * Path
+ */
+gchar  *g_build_path  (const gchar *separator, const gchar *first_element, ...);
+#define g_build_filename(x...) g_build_path(G_DIR_SEPARATOR_S, x)
 
 #endif

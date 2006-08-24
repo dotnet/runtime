@@ -15,7 +15,8 @@ libeglib_la_SOURCES = \
 	gptrarray.c     \
 	glist.c		\
 	gmisc.c		\
-	gqueue.c
+	gqueue.c	\
+	gpath.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
