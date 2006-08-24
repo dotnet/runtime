@@ -1,6 +1,6 @@
 2006-08-24  Miguel de Icaza  <miguel@novell.com>
 
-	* src/gport.c: Start routines used in porting applications. 
+	* src/gport.c: Path routines
 
 2006-08-23  Miguel de Icaza  <miguel@novell.com>
 
