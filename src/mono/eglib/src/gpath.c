@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <unistd.h>
+#include <errno.h>
 
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
@@ -146,4 +147,22 @@ g_find_program_in_path (const gchar *program)
 	}
 	g_free (p);
 	return NULL;
+}
+
+gchar *
+g_get_current_dir (void)
+{
+	int s = 32;
+	char *buffer, *r;
+	gboolean fail;
+	
+	do {
+		buffer = g_malloc (s);
+		r = getcwd  (buffer, s);
+		fail = (r == NULL && errno == ERANGE);
+		if (fail)
+			g_free (buffer);
+	} while (fail);
+
+	return r;
 }

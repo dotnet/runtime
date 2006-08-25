@@ -434,6 +434,7 @@ gchar  *g_build_path           (const gchar *separator, const gchar *first_eleme
 #define g_build_filename(x...) g_build_path(G_DIR_SEPARATOR_S, x)
 gchar  *g_path_get_dirname     (const gchar *filename);
 gchar  *g_path_get_basename    (const char *filename);
-gchar *g_find_program_in_path  (const gchar *program);
+gchar  *g_find_program_in_path (const gchar *program);
+gchar  *g_get_current_dir      (void);
 
 #endif

@@ -57,6 +57,7 @@ RESULT hash_default (void)
 	if (hash == NULL)
 		return FAILED ("g_hash_table_new should return a valid hash");
 
+	g_hash_table_destroy (hash);
 	return NULL;
 }
 

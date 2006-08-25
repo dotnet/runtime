@@ -1,6 +1,7 @@
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "test.h"
 
 /* This test is just to be used with valgrind */
@@ -134,16 +135,34 @@ test_basename ()
 }
 
 gchar *
-test_ppath (const gchar *program)
+test_ppath ()
 {
 	char *s;
 	
-	g_return_val_if_fail (program != NULL, NULL);
-
 	s = g_find_program_in_path ("ls");
 	if (s == NULL)
 		return FAILED ("No shell on this system (This assumes Unix)?");
+	g_free (s);
+	return OK;
+}
 
+gchar *
+test_cwd ()
+{
+	char *dir = g_get_current_dir ();
+
+	if (dir == NULL)
+		return FAILED ("No current directory?");
+	g_free (dir);
+	
+	if (chdir ("/bin") == -1)
+		return FAILED ("No /bin?");
+	
+	dir = g_get_current_dir ();
+	if (strcmp (dir, "/bin") != 0)
+		return "Did not go to /bin?";
+	g_free (dir);
+	
 	return OK;
 }
 
@@ -153,6 +172,7 @@ static Test path_tests [] = {
 	{"g_path_get_dirname", test_dirname},
 	{"g_path_get_basename", test_basename},
 	{"g_find_program_in_path", test_ppath},
+	{"test_cwd", test_cwd },
 	{NULL, NULL}
 };
 

@@ -1,6 +1,10 @@
 2006-08-24  Miguel de Icaza  <miguel@novell.com>
 
-	* src/gpath.c (g_find_program_in_path, g_path_is_absolute): implement.
+	* test/ Fix leaks.
+	
+	* src/gpath.c (g_get_current_dir): Implement.
+
+	(g_find_program_in_path, g_path_is_absolute): implement.
 	
 	Add g_path_get_dirname, g_path_get_basename
 

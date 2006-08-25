@@ -63,6 +63,7 @@ test_split ()
 		return FAILED("expected vector[0] to be '%s' but it was '%s'",
 			to_split, v[0]);
 	}
+	g_strfreev(v);
 	
 	return OK;
 }
