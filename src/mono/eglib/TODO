@@ -54,7 +54,6 @@ Important Groups:
 	      2 g_find_program_in_path
 	      2 g_filename_to_uri
 	      2 g_filename_from_uri
-	      2 g_concat_dir_and_file
 	      5 g_path_is_absolute
 	     10 g_ascii_xdigit_value
 	
