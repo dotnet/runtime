@@ -13,6 +13,7 @@ DEFINE_TEST_GROUP_INIT_H(queue_tests_init);
 DEFINE_TEST_GROUP_INIT_H(path_tests_init);
 DEFINE_TEST_GROUP_INIT_H(shell_tests_init);
 DEFINE_TEST_GROUP_INIT_H(spawn_tests_init);
+DEFINE_TEST_GROUP_INIT_H(timer_tests_init);
 
 static Group test_groups [] = {	
 	{"string",    string_tests_init}, 
@@ -28,6 +29,7 @@ static Group test_groups [] = {
 	{"path",      path_tests_init},
 	{"shell",     shell_tests_init},
 	{"spawn",     spawn_tests_init},
+	{"timer",     timer_tests_init},
 	{NULL, NULL}
 };
 

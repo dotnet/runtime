@@ -1,11 +1,21 @@
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/tests.h:
+	* test/timer.c:
+	* test/Makefile.am:
+	* TODO:
+	* src/glib.h:
+	* src/gtimer.c:
+	* src/Makefile.am: implemented GTimer.
+
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/tests.h:
 	* test/Makefile.am:
 	* test/spawn.c:
 	* src/gspawn.c:
 	* src/glib.h:
-	* src/Makefile.am: initial implemtation of g_spawn_command_line_sync.
+	* src/Makefile.am: initial implentation of g_spawn_command_line_sync.
 	Still need better error handling, but works for the most part.
 
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>

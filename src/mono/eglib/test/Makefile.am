@@ -17,7 +17,8 @@ SOURCES = \
 	path.c		\
 	queue.c		\
 	shell.c		\
-	spawn.c
+	spawn.c		\
+	timer.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)

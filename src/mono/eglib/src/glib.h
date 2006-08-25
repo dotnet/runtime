@@ -442,7 +442,6 @@ gchar  *g_get_current_dir      (void);
 const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
 const gchar *g_get_user_name   (void);
-#endif
 
 /*
  * Shell
@@ -455,3 +454,18 @@ gboolean g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***ar
  */
 
 gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **error);
+
+
+/*
+ * Timer
+ */
+typedef struct _GTimer GTimer;
+
+GTimer *g_timer_new (void);
+void g_timer_destroy (GTimer *timer);
+gdouble g_timer_elapsed (GTimer *timer, gulong *microseconds);
+void g_timer_stop (GTimer *timer);
+void g_timer_start (GTimer *timer);
+
+#endif
+

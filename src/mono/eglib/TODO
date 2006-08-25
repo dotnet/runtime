@@ -32,13 +32,6 @@ Important Groups:
 	      2 g_markup_parse_context_free
 	      2 g_markup_parse_context_end_parse
 
-	* Timers, used for the Mini built-in test suite
-	      5 g_timer_elapsed
-	      2 g_timer_stop
-	      2 g_timer_start
-	      2 g_timer_new
-	      1 g_timer_destroy
-		     
 	* Process launching
 	      1 g_spawn_async_with_pipes
 	      3 g_shell_quote
