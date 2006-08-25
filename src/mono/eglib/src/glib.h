@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <eglib-config.h>
 
 /*
@@ -442,3 +443,9 @@ const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
 const gchar *g_get_user_name   (void);
 #endif
+
+/*
+ * Shell
+ */
+
+gboolean g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **error);

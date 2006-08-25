@@ -15,7 +15,8 @@ SOURCES = \
 	array.c		\
 	fake.c		\
 	path.c		\
-	queue.c
+	queue.c		\
+	shell.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)
@@ -27,4 +28,12 @@ test_glib_CFLAGS = `pkg-config --cflags glib-2.0` -DDRIVER_NAME=\"GLib\"
 test_glib_LDFLAGS = `pkg-config --libs glib-2.0`
 
 MAINTAINERCLEANFILES = Makefile.in
+
+run-glib: all
+	./test-glib
+
+run-eglib: all
+	./test-eglib
+
+run-both: run-glib run-eglib
 
