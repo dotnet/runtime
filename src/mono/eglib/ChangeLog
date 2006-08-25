@@ -1,5 +1,9 @@
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* src/garray.c: grow faster so that the 'big' test does not crawl.
+
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* test/shell.c:
 	* src/gqueue.c: plugged leaks.
 

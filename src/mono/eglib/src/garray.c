@@ -47,14 +47,16 @@ static void
 ensure_capacity (GArrayPriv *priv,
 		 int capacity)
 {
+	int new_capacity = MAX (priv->capacity, INITIAL_CAPACITY);
+
 	if (capacity < priv->capacity)
 		return;
 
-	if (priv->array.data == NULL)
-		priv->array.data = (gchar*)g_malloc (element_length (priv, capacity));
-	else
-		priv->array.data = (gchar*)g_realloc (priv->array.data,
-						      element_length (priv, capacity));
+	while (new_capacity < capacity) {
+		new_capacity <<= 1;
+	}
+	capacity = new_capacity;
+	priv->array.data = (gchar*)g_realloc (priv->array.data, element_length (priv, capacity));
 
 	if (priv->clear_) {
 		memset (element_offset (priv, priv->capacity),
