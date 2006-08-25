@@ -67,3 +67,54 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 
 	return g_string_free (result, FALSE);
 }
+
+gchar *
+g_path_get_dirname (const gchar *filename)
+{
+	char *p, *r;
+	int count;
+	g_return_val_if_fail (filename != NULL, NULL);
+
+	p = strrchr (filename, G_DIR_SEPARATOR);
+	if (p == NULL)
+		return g_strdup ("");
+	count = p - filename;
+	r = g_malloc (count + 1);
+	strncpy (r, filename, count);
+	r [count] = 0;
+
+	return r;
+}
+
+gchar *
+g_path_get_basename (const char *filename)
+{
+	char *r;
+	g_return_val_if_fail (filename != NULL, NULL);
+
+	/* Empty filename -> . */
+	if (!*filename)
+		return g_strdup (".");
+
+	/* No separator -> filename */
+	r = strrchr (filename, G_DIR_SEPARATOR);
+	if (r == NULL)
+		return g_strdup (filename);
+
+	/* Trailing slash, remove component */
+	if (r [1] == 0){
+		char *copy = g_strdup (filename);
+		copy [r-filename] = 0;
+		r = strrchr (copy, G_DIR_SEPARATOR);
+
+		if (r == NULL){
+			g_free (copy);			
+			return g_strdup ("/");
+		}
+		r = g_strdup (&r[1]);
+		g_free (copy);
+		return r;
+	}
+
+	return g_strdup (&r[1]);
+}
