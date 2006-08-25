@@ -85,8 +85,7 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str)
 				err_closed = (nread <= 0);
 			}
 		}
-		
-	} while (res == -1 && errno == EINTR);
+	} while (res > 0 || (res == -1 && errno == EINTR));
 
 	g_free (buffer);
 	if (out_str)
