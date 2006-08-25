@@ -17,7 +17,8 @@ libeglib_la_SOURCES = \
 	gmisc.c		\
 	gqueue.c	\
 	gpath.c		\
-	gshell.c
+	gshell.c	\
+	gspawn.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 

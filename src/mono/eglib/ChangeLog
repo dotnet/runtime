@@ -1,5 +1,15 @@
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* test/tests.h:
+	* test/Makefile.am:
+	* test/spawn.c:
+	* src/gspawn.c:
+	* src/glib.h:
+	* src/Makefile.am: initial implemtation of g_spawn_command_line_sync.
+	Still need better error handling, but works for the most part.
+
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* src/garray.c: grow faster so that the 'big' test does not crawl.
 
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>

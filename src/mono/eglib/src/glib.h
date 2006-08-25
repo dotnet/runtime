@@ -449,3 +449,9 @@ const gchar *g_get_user_name   (void);
  */
 
 gboolean g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **error);
+
+/*
+ * Spawn
+ */
+
+gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **error);
