@@ -183,9 +183,14 @@ g_get_home_dir (void)
 
 		pthread_mutex_lock (&home_lock);
 		if (home_dir == NULL){
-			uid = getuid ();
+			struct passwd pwbuf, *track;
+			char buf [4096];
 			
-			while ((p = getpwent ()) != NULL){
+			uid = getuid ();
+
+			setpwent ();
+			
+			while (getpwent_r (&pwbuf, buf, sizeof (buf), &track) == 0){
 				if (p->pw_uid == uid){
 					home_dir = g_strdup (p->pw_dir);
 					break;

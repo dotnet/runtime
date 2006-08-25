@@ -161,9 +161,24 @@ test_cwd ()
 	
 	dir = g_get_current_dir ();
 	if (strcmp (dir, "/bin") != 0)
-		return "Did not go to /bin?";
+		return FAILED("Did not go to /bin?");
 	g_free (dir);
 	
+	return OK;
+}
+
+gchar *
+test_misc ()
+{
+	const char *home = g_get_home_dir ();
+	const char *tmp = g_get_tmp_dir ();
+	
+	if (home == NULL)
+		return FAILED ("Where did my home go?");
+
+	if (tmp == NULL)
+		return FAILED ("Where did my /tmp go?");
+
 	return OK;
 }
 
@@ -174,6 +189,7 @@ static Test path_tests [] = {
 	{"g_path_get_basename", test_basename},
 	{"g_find_program_in_path", test_ppath},
 	{"test_cwd", test_cwd },
+	{"test_misc", test_misc },
 	{NULL, NULL}
 };
 
