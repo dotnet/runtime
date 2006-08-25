@@ -1,3 +1,11 @@
+2006-08-26  Raja R Harinath  <rharinath@novell.com>
+
+	* src/sort.frag.h: Add copyright notice and some explanation.
+	(increment): Remove null check.
+	(combine_digits): Add 'list' argument to seed the summation.
+	(do_sort): Use the empty or singleton tail as the seed, rather
+	than calling 'increment'.
+
 2006-08-25  Raja R Harinath  <rharinath@novell.com>
 
 	* TODO: Remove 'List' entries.

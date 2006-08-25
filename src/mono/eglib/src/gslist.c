@@ -1,8 +1,9 @@
 /*
  * gslist.c: Singly-linked list implementation
  *
- * Author:
+ * Authors:
  *   Duncan Mak (duncan@novell.com)
+ *   Raja R Harinath (rharinath@novell.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
