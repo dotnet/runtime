@@ -28,7 +28,7 @@ combine_digits (digit *digits, int max_digit, GCompareFunc func)
 	int i;
 	digit list = digits [0];
 	for (i = 1; i <= max_digit; ++i)
-		list = add_digits (digit [i], list, func);
+		list = add_digits (digits [i], list, func);
 	return list;
 }
 

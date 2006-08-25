@@ -306,7 +306,7 @@ test_list_insert_before ()
 	return OK;
 }
 
-#define N_ELEMS 100
+#define N_ELEMS 101
 
 static int intcompare (gconstpointer p1, gconstpointer p2)
 {
