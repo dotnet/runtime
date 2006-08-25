@@ -163,8 +163,10 @@ g_get_current_dir (void)
 		buffer = g_malloc (s);
 		r = getcwd  (buffer, s);
 		fail = (r == NULL && errno == ERANGE);
-		if (fail)
+		if (fail) {
 			g_free (buffer);
+			s <<= 1;
+		}
 	} while (fail);
 
 	return r;
