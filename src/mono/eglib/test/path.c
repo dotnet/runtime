@@ -148,6 +148,27 @@ test_ppath ()
 }
 
 gchar *
+test_ppath2 ()
+{
+	char *s;
+	const char *path = g_getenv ("PATH");
+	
+	g_setenv ("PATH", "", TRUE);
+	s = g_find_program_in_path ("ls");
+	if (s != NULL) {
+		g_setenv ("PATH", path, TRUE);
+		return FAILED ("Found something interesting here: %s", s);
+	}
+	s = g_find_program_in_path ("test-glib");
+	if (s == NULL) {
+		g_setenv ("PATH", path, TRUE);
+		return FAILED ("It should find 'test-glib' in the current directory.");
+	}
+	g_setenv ("PATH", path, TRUE);
+	return OK;
+}
+
+gchar *
 test_cwd ()
 {
 	char *dir = g_get_current_dir ();
@@ -188,6 +209,7 @@ static Test path_tests [] = {
 	{"g_path_get_dirname", test_dirname},
 	{"g_path_get_basename", test_basename},
 	{"g_find_program_in_path", test_ppath},
+	{"g_find_program_in_path2", test_ppath2},
 	{"test_cwd", test_cwd },
 	{"test_misc", test_misc },
 	{NULL, NULL}

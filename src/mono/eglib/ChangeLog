@@ -1,3 +1,9 @@
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/path.c:
+	* src/gpath.c: when PATH is not defined, the current dir is used.
+	See execvp(3).
+
 2006-08-25  Alp Toker  <alp@atoker.com>
 
 	* src/gstr.c: g_strv_length() should return guint, not gint

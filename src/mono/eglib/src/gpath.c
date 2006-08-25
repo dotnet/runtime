@@ -127,6 +127,7 @@ g_path_get_basename (const char *filename)
 gboolean
 g_path_is_absolute (const char *filename)
 {
+	g_return_val_if_fail (filename != NULL, FALSE);
 	return (*filename == '/');
 }
 
@@ -137,11 +138,16 @@ g_find_program_in_path (const gchar *program)
 	char *x = p, *l;
 	char *save;
 
+	g_return_val_if_fail (program != NULL, NULL);
+
+	if (x == NULL)
+		x = g_get_current_dir ();
+
 	while ((l = strtok_r (x, G_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
 		char *probe_path; 
 		
 		x = NULL;
-		probe_path = g_build_path ("/", l, program, NULL);
+		probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program, NULL);
 		if (access (probe_path, X_OK) == 0){
 			g_free (p);
 			return probe_path;
@@ -156,15 +162,14 @@ gchar *
 g_get_current_dir (void)
 {
 	int s = 32;
-	char *buffer, *r;
+	char *buffer = NULL, *r;
 	gboolean fail;
 	
 	do {
-		buffer = g_malloc (s);
+		buffer = g_realloc (buffer, s);
 		r = getcwd  (buffer, s);
 		fail = (r == NULL && errno == ERANGE);
 		if (fail) {
-			g_free (buffer);
 			s <<= 1;
 		}
 	} while (fail);
