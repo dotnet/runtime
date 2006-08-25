@@ -1190,6 +1190,7 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
+	case MONO_TYPE_TYPEDBYREF:
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_CLASS:
 		{
