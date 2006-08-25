@@ -159,6 +159,7 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_ascii_isspace(c) (isspace (c) != 0)
 #define g_ascii_isalpha(c) (isalpha (c) != 0)
 #define g_ascii_isprint(c) (isprint (c) != 0)
+#define g_ascii_isxdigit(c) (isxdigit (c) != 0)
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #define g_strcasecmp strcasecmp
