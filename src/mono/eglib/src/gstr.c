@@ -52,7 +52,7 @@ g_strfreev (gchar **str_array)
 	g_free (orig);
 }
 
-gint
+guint
 g_strv_length(gchar **str_array)
 {
 	gint length = 0;

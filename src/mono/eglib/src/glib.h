@@ -142,6 +142,7 @@ gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint
 gchar       *g_strreverse     (gchar *str);
 gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
+guint        g_strv_length    (gchar **str_array);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
