@@ -40,7 +40,6 @@ Important Groups:
 	      1 g_timer_destroy
 		     
 	* Process launching
-	      1 g_spawn_command_line_sync
 	      1 g_spawn_async_with_pipes
 	      3 g_shell_quote
 	      1 g_shell_unquote
