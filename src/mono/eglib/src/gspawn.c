@@ -36,8 +36,23 @@
 #include <sys/types.h>
 #include <glib.h>
 
-static void
-read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str)
+static int
+safe_read (int fd, gchar *buffer, gint count, GError **error)
+{
+	int res;
+
+	do {
+		res = read (fd, buffer, count);
+	} while (res == -1 && errno == EINTR);
+
+	if (res == -1 && error) {
+		*error = g_error_new (G_LOG_DOMAIN, errno, "Error reading from pipe.");
+	}
+	return res;
+}
+
+static int
+read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **error)
 {
 	fd_set rfds;
 	int res;
@@ -69,20 +84,37 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str)
 			FD_SET (outfd, &rfds);
 		if (!err_closed && errfd >= 0)
 			FD_SET (errfd, &rfds);
+
 		res = select (MAX (outfd, errfd) + 1, &rfds, NULL, NULL, NULL);
 		if (res > 0) {
 			if (buffer == NULL)
 				buffer = g_malloc (1024);
 			if (!out_closed && FD_ISSET (outfd, &rfds)) {
-				nread = read (outfd, buffer, 1024);
+				nread = safe_read (outfd, buffer, 1024, error);
+				if (nread < 0) {
+					close (errfd);
+					close (outfd);
+					return -1;
+				}
 				g_string_append_len (out, buffer, nread);
-				out_closed = (nread <= 0);
+				if (nread <= 0) {
+					out_closed = TRUE;
+					close (outfd);
+				}
 			}
 
 			if (!err_closed && FD_ISSET (errfd, &rfds)) {
-				nread = read (errfd, buffer, 1024);
+				nread = safe_read (errfd, buffer, 1024, error);
+				if (nread < 0) {
+					close (errfd);
+					close (outfd);
+					return -1;
+				}
 				g_string_append_len (err, buffer, nread);
-				err_closed = (nread <= 0);
+				if (nread <= 0) {
+					err_closed = TRUE;
+					close (errfd);
+				}
 			}
 		}
 	} while (res > 0 || (res == -1 && errno == EINTR));
@@ -93,6 +125,8 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str)
 
 	if (err_str)
 		*err_str = g_string_free (err, FALSE);
+
+	return 0;
 }
 
 gboolean
@@ -156,8 +190,18 @@ g_spawn_command_line_sync (const gchar *command_line,
 		exit (1); /* TODO: What now? */
 	}
 
+	if (standard_output)
+		close (stdout_pipe [1]);
+
+	if (standard_error)
+		close (stderr_pipe [1]);
+
 	if (standard_output || standard_error) {
-		read_pipes (stdout_pipe [0], standard_output, stderr_pipe [0], standard_error);
+		res = read_pipes (stdout_pipe [0], standard_output, stderr_pipe [0], standard_error, error);
+		if (res) {
+			waitpid (pid, &status, WNOHANG); /* avoid zombie */
+			return FALSE;
+		}
 	}
 
 	do {

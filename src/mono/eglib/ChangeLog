@@ -1,5 +1,10 @@
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* src/gspawn.c: propagate errors from reads.
+	* src/gpath.c: an empty PATH is like a NULL one.
+
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* test/tests.h:
 	* test/timer.c:
 	* test/Makefile.am:

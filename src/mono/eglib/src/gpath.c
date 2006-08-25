@@ -140,8 +140,9 @@ g_find_program_in_path (const gchar *program)
 
 	g_return_val_if_fail (program != NULL, NULL);
 
-	if (x == NULL)
+	if (x == NULL || *x == '\0') {
 		x = g_get_current_dir ();
+	}
 
 	while ((l = strtok_r (x, G_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
 		char *probe_path; 
