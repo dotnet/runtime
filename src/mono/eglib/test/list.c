@@ -306,6 +306,68 @@ test_list_insert_before ()
 	return OK;
 }
 
+#define N_ELEMS 100
+
+static int intcompare (gconstpointer p1, gconstpointer p2)
+{
+	return GPOINTER_TO_INT (p1) - GPOINTER_TO_INT (p2);
+}
+
+static gboolean verify_sort (GList *list)
+{
+	list = g_list_sort (list, intcompare);
+	if (list->prev)
+		return FALSE;
+
+	int prev = GPOINTER_TO_INT (list->data);
+	for (list = list->next; list; list = list->next) {
+		int curr = GPOINTER_TO_INT (list->data);
+		if (prev > curr)
+			return FALSE;
+		prev = curr;
+
+		if (!list->prev || list->prev->next != list)
+			return FALSE;
+	}
+	return TRUE;
+}
+
+RESULT
+test_list_sort ()
+{
+	int i = 0;
+	GList *list = NULL;
+
+	for (i = 0; i < N_ELEMS; ++i)
+		list = g_list_prepend (list, GINT_TO_POINTER (i));
+	if (!verify_sort (list))
+		return FAILED ("decreasing list");
+
+	g_list_free (list);
+
+	list = NULL;
+	for (i = 0; i < N_ELEMS; ++i)
+		list = g_list_prepend (list, GINT_TO_POINTER (-i));
+	if (!verify_sort (list))
+		return FAILED ("increasing list");
+
+	g_list_free (list);
+
+	list = NULL;
+	int mul = 1;
+	for (i = 0; i < N_ELEMS; ++i) {
+		list = g_list_prepend (list, GINT_TO_POINTER (mul * i));
+		mul = -mul;
+	}
+
+	if (!verify_sort (list))
+		return FAILED ("alternating list");
+
+	g_list_free (list);
+
+	return OK;
+}
+
 static Test list_tests [] = {
 	{       "length", test_list_length},
 	{          "nth", test_list_nth},
@@ -320,6 +382,7 @@ static Test list_tests [] = {
 	{       "remove", test_list_remove},
 	{  "remove_link", test_list_remove_link},
 	{  "remove_link", test_list_remove_link},
+	{         "sort", test_list_sort},
 	{NULL, NULL}
 };
 

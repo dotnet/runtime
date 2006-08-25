@@ -298,3 +298,14 @@ g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func)
 	insert_after (prev, data);
 	return list;
 }
+
+typedef GSList *digit;
+#include "sort.frag.h"
+
+GSList*
+g_slist_sort (GSList *list, GCompareFunc func)
+{
+	if (!list || !list->next)
+		return list;
+	return do_sort (list, func);	
+}

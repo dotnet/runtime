@@ -234,6 +234,8 @@ GSList *g_slist_insert_sorted (GSList        *list,
 GSList *g_slist_insert_before (GSList        *list,
 			       GSList        *sibling,
 			       gpointer       data);
+GSList *g_slist_sort          (GSList        *list,
+			       GCompareFunc   func);
 
 #define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
 
@@ -283,6 +285,8 @@ GList *g_list_insert_sorted (GList         *list,
 GList *g_list_insert_before (GList         *list,
 			     GList         *sibling,
 			     gpointer       data);
+GList *g_list_sort          (GList         *sort,
+			     GCompareFunc   func);
 
 /*
  * Array

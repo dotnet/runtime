@@ -1,3 +1,14 @@
+2006-08-25  Raja R Harinath  <rharinath@novell.com>
+
+	* TODO: Remove 'List' entries.
+	* src/Makefile.am (libeglib_la_SOURCES): Add sort.frag.h.
+	* src/sort.frag.h: New.  Implements a "generic" bottom-up "counting"
+	mergesort that works both on singly- and doubly-linked lists.
+	* src/gslist.c (g_slist_sort): Use it.
+	* src/glist.c (g_list_sort): Likewise.
+	* src/glib.h (g_slist_sort, g_list_sort): Declare.
+	* test/slist.c, test/list.c: Add basic testcases.
+
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* src/gspawn.c: propagate errors from reads.

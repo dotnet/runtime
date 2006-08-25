@@ -2,6 +2,7 @@ noinst_LTLIBRARIES = libeglib.la
 
 libeglib_la_SOURCES = \
 	eglib-config.h	\
+	sort.frag.h	\
 	glib.h	     	\
 	garray.c	\
 	gerror.c	\

@@ -161,6 +161,63 @@ test_slist_insert_before ()
 	return OK;
 }
 
+#define N_ELEMS 100
+
+static int intcompare (gconstpointer p1, gconstpointer p2)
+{
+	return GPOINTER_TO_INT (p1) - GPOINTER_TO_INT (p2);
+}
+
+static gboolean verify_sort (GSList *list)
+{
+	list = g_slist_sort (list, intcompare);
+
+	int prev = GPOINTER_TO_INT (list->data);
+	for (list = list->next; list; list = list->next) {
+		int curr = GPOINTER_TO_INT (list->data);
+		if (prev > curr)
+			return FALSE;
+		prev = curr;
+	}
+	return TRUE;
+}
+
+RESULT
+test_slist_sort ()
+{
+	int i = 0;
+	GSList *list = NULL;
+
+	for (i = 0; i < N_ELEMS; ++i)
+		list = g_slist_prepend (list, GINT_TO_POINTER (i));
+	if (!verify_sort (list))
+		return FAILED ("decreasing list");
+
+	g_slist_free (list);
+
+	list = NULL;
+	for (i = 0; i < N_ELEMS; ++i)
+		list = g_slist_prepend (list, GINT_TO_POINTER (-i));
+	if (!verify_sort (list))
+		return FAILED ("increasing list");
+
+	g_slist_free (list);
+
+	list = NULL;
+	int mul = 1;
+	for (i = 0; i < N_ELEMS; ++i) {
+		list = g_slist_prepend (list, GINT_TO_POINTER (mul * i));
+		mul = -mul;
+	}
+
+	if (!verify_sort (list))
+		return FAILED ("alternating list");
+
+	g_slist_free (list);
+
+	return OK;
+}
+
 static Test slist_tests [] = {
 	{"append", test_slist_append},
 	{"concat", test_slist_concat},
@@ -169,6 +226,7 @@ static Test slist_tests [] = {
 	{"remove_link", test_slist_remove_link},
 	{"insert_sorted", test_slist_insert_sorted},
 	{"insert_before", test_slist_insert_before},
+	{"sort", test_slist_sort},
 	{NULL, NULL}
 };
 

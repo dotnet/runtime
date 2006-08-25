@@ -71,10 +71,6 @@ Important Groups:
 	     11 g_file_test
 	      3 g_file_open_tmp
 	
-	* List
-	      3 g_list_insert_before
-	      2 g_list_sort
-	
 	* Miscelaneous
 	      5 g_newa
 	      3 g_spaced_primes_closest

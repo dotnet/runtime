@@ -288,3 +288,21 @@ g_list_copy (GList *list)
 	return copy;
 }
 
+typedef GList *digit;
+#include "sort.frag.h"
+
+GList*
+g_list_sort (GList *list, GCompareFunc func)
+{
+	GList *current;
+	if (!list || !list->next)
+		return list;
+	list = do_sort (list, func);
+
+	/* Fixup: do_sort doesn't update 'prev' pointers */
+	list->prev = NULL;
+	for (current = list; current->next; current = current->next)
+		current->next->prev = current;
+
+	return list;
+}
