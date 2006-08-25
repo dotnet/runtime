@@ -165,6 +165,7 @@ test_shell_argv2 ()
 	if (error != NULL)
 		return FAILED ("21. error is not null");
 
+	g_strfreev (argv);
 	return OK;
 }
 

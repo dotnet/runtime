@@ -36,9 +36,13 @@ g_queue_pop_head (GQueue *queue)
 	gpointer head = NULL;
 
 	if (queue->length != 0){
-		head = queue->head->data;
-		queue->head = queue->head->next;
-		queue->length--;		
+		GList *old_head;
+
+		old_head = queue->head;
+		head = old_head->data;
+		queue->head = old_head->next;
+		queue->length--;
+		g_list_free_1 (old_head);
 	}
 
 	return head;
