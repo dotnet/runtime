@@ -28,6 +28,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <glib.h>
+#include <unistd.h>
 
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
@@ -117,4 +118,32 @@ g_path_get_basename (const char *filename)
 	}
 
 	return g_strdup (&r[1]);
+}
+
+gboolean
+g_path_is_absolute (const char *filename)
+{
+	return (*filename == '/');
+}
+
+gchar *
+g_find_program_in_path (const gchar *program)
+{
+	char *p = g_strdup (getenv ("PATH"));
+	char *x = p, *l;
+	char *save;
+
+	while ((l = strtok_r (x, G_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
+		char *probe_path; 
+		
+		x = NULL;
+		probe_path = g_build_path ("/", l, program, NULL);
+		if (access (probe_path, X_OK) == 0){
+			g_free (p);
+			return probe_path;
+		}
+		g_free (probe_path);
+	}
+	g_free (p);
+	return NULL;
 }

@@ -133,11 +133,26 @@ test_basename ()
 	return OK;
 }
 
+gchar *
+test_ppath (const gchar *program)
+{
+	char *s;
+	
+	g_return_val_if_fail (program != NULL, NULL);
+
+	s = g_find_program_in_path ("ls");
+	if (s == NULL)
+		return FAILED ("No shell on this system (This assumes Unix)?");
+
+	return OK;
+}
+
 static Test path_tests [] = {
 	{"g_buildpath", test_buildpath},
 	{"g_build_filename", test_buildfname},
 	{"g_path_get_dirname", test_dirname},
 	{"g_path_get_basename", test_basename},
+	{"g_find_program_in_path", test_ppath},
 	{NULL, NULL}
 };
 

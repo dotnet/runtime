@@ -51,10 +51,8 @@ Important Groups:
 	      3 g_thread_init
 
 	* Path string manipulation and utilities.
-	      2 g_find_program_in_path
 	      2 g_filename_to_uri
 	      2 g_filename_from_uri
-	      5 g_path_is_absolute
 	
         * Information retrieval
 	      8 g_get_home_dir

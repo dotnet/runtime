@@ -430,9 +430,10 @@ GError *g_error_new (gpointer domain, gint code, const char *format, ...);
 /*
  * Path
  */
-gchar  *g_build_path  (const gchar *separator, const gchar *first_element, ...);
+gchar  *g_build_path           (const gchar *separator, const gchar *first_element, ...);
 #define g_build_filename(x...) g_build_path(G_DIR_SEPARATOR_S, x)
-gchar  *g_path_get_dirname (const gchar *filename);
-gchar  *g_path_get_basename (const char *filename);
+gchar  *g_path_get_dirname     (const gchar *filename);
+gchar  *g_path_get_basename    (const char *filename);
+gchar *g_find_program_in_path  (const gchar *program);
 
 #endif
