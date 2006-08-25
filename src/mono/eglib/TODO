@@ -55,7 +55,6 @@ Important Groups:
 	      2 g_filename_to_uri
 	      2 g_filename_from_uri
 	      5 g_path_is_absolute
-	     10 g_ascii_xdigit_value
 	
         * Information retrieval
 	      8 g_get_home_dir
