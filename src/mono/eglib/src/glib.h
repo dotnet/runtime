@@ -437,4 +437,7 @@ gchar  *g_path_get_basename    (const char *filename);
 gchar  *g_find_program_in_path (const gchar *program);
 gchar  *g_get_current_dir      (void);
 
+const gchar *g_get_home_dir    (void);
+const gchar *g_get_tmp_dir     (void);
+const gchar *g_get_user_name   (void);
 #endif

@@ -55,12 +55,7 @@ Important Groups:
 	      2 g_filename_from_uri
 	
         * Information retrieval
-	      8 g_get_home_dir
-	      5 g_get_current_dir
-	      4 g_get_tmp_dir
 	      2 g_get_current_time
-	      1 g_get_user_name
-	      1 g_get_prgname
 	      1 g_get_charset
 	      1 g_win32_getlocale
 	
@@ -68,7 +63,6 @@ Important Groups:
 	      1 g_filename_from_utf8
 	      1 g_ascii_strdown
 	      4 g_strdown
-	     21 g_snprintf
 	     10 g_strlcpy
 	      2 g_strdelimit
 	      1 g_strescape

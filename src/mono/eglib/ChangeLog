@@ -1,5 +1,8 @@
 2006-08-24  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gpath.c (g_get_home_dir, g_get_tmp_dir, g_get_user_name,
+	g_get_prgname, g_set_prgname): implemented.
+
 	* test/ Fix leaks.
 	
 	* src/gpath.c (g_get_current_dir): Implement.
