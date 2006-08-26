@@ -65,9 +65,6 @@ Important Groups:
 	      3 g_convert
 	      1 g_locale_from_utf8
 
-	* File 
-	     11 g_file_test
-	
 	* Miscelaneous
 	      5 g_newa
 	      3 g_spaced_primes_closest
