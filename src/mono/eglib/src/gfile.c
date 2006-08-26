@@ -103,7 +103,7 @@ g_file_error_from_errno (gint err_no)
 gboolean
 g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **error)
 {
-	GString *str;
+	gchar *str;
 	int fd;
 	struct stat st;
 	long offset;
@@ -135,22 +135,68 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 		return FALSE;
 	}
 
-	str = g_string_sized_new (st.st_size + 1);
-	str->len = st.st_size;
+	str = g_malloc (st.st_size + 1);
 	offset = 0;
 	do {
-		nread = read (fd, str->str + offset, str->len - offset);
+		nread = read (fd, str + offset, st.st_size - offset);
 		if (nread > 0) {
 			offset += nread;
 		}
 	} while ((nread > 0 && offset < st.st_size) || (nread == -1 && errno == EINTR));
 
 	close (fd);
-	str->str [str->len] = '\0';
+	str [st.st_size] = '\0';
 	if (length) {
-		*length = str->len;
+		*length = st.st_size;
 	}
-	*contents = g_string_free (str, FALSE);
+	*contents = str;
 	return TRUE;
+}
+
+gint
+g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
+{
+	const static gchar *default_tmpl = "file-g-XXXXXX";
+	gchar *t;
+	gint fd;
+	gint len;
+
+	g_return_val_if_fail (error == NULL || *error == NULL, -1);
+
+	if (tmpl == NULL)
+		tmpl = default_tmpl;
+
+	if (strchr (tmpl, G_DIR_SEPARATOR) != NULL) {
+		if (error) {
+			*error = g_error_new (G_LOG_DOMAIN, 24, "Template should not have any " G_DIR_SEPARATOR_S);
+		}
+		return -1;
+	}
+
+	len = strlen (tmpl);
+	if (len < 6 || strcmp (tmpl + len - 6, "XXXXXX")) {
+		if (error) {
+			*error = g_error_new (G_LOG_DOMAIN, 24, "Template should end with XXXXXX");
+		}
+		return -1;
+	}
+
+	t = g_build_filename (g_get_tmp_dir (), tmpl, NULL);
+	fd = mkstemp (t);
+	if (fd == -1) {
+		if (error) {
+			int err = errno;
+			*error = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), "Error in mkstemp()");
+		}
+		g_free (t);
+		return -1;
+	}
+
+	if (name_used) {
+		*name_used = t;
+	} else {
+		g_free (t);
+	}
+	return fd;
 }
 

@@ -1,5 +1,7 @@
 #include <glib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "test.h"
 
@@ -45,8 +47,51 @@ test_file_get_contents ()
 	return OK;
 }
 
+RESULT
+test_open_tmp ()
+{
+	GError *error;
+	gint fd;
+	gchar *name;
+
+	fd = g_file_open_tmp (NULL, NULL, NULL);
+	if (fd < 0)
+		return FAILED ("Default failed.");
+	close (fd);
+	error = NULL;
+	fd = g_file_open_tmp ("invalidtemplate", NULL, &error);
+	if (fd != -1)
+		return FAILED ("The template was invalid and accepted");
+	if (error == NULL)
+		return FAILED ("No error returned.");
+	g_error_free (error);
+
+	error = NULL;
+	fd = g_file_open_tmp ("i/nvalidtemplate", &name, &error);
+	if (fd != -1)
+		return FAILED ("The template was invalid and accepted");
+	if (error == NULL)
+		return FAILED ("No error returned.");
+	if (name == NULL)
+		return FAILED ("'name' is not reset");
+	g_error_free (error);
+
+	error = NULL;
+	fd = g_file_open_tmp ("valid-XXXXXX", &name, &error);
+	if (fd == -1)
+		return FAILED ("This should be valid");
+	if (error != NULL)
+		return FAILED ("No error returned.");
+	if (name == NULL)
+		return FAILED ("No name returned.");
+	close (fd);
+	unlink (name);
+	return OK;
+}
+
 static Test file_tests [] = {
 	{"g_file_test_contents", test_file_get_contents},
+	{"g_file_open_tmp", test_open_tmp},
 	{NULL, NULL}
 };
 

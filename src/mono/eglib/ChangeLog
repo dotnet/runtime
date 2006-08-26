@@ -1,6 +1,13 @@
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* TODO:
+	* test/file.c:
+	* src/glib.h:
+	* src/gfile.c: implement g_file_open_tmp.
+
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* TODO:
 	* src/glib.h:
 	* src/gdate.c: New file.
 	* src/gfile.c: New file.
