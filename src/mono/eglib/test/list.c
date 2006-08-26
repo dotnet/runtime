@@ -313,13 +313,13 @@ static int intcompare (gconstpointer p1, gconstpointer p2)
 	return GPOINTER_TO_INT (p1) - GPOINTER_TO_INT (p2);
 }
 
-static gboolean verify_sort (GList *list)
+static gboolean verify_sort (GList *list, int len)
 {
-	list = g_list_sort (list, intcompare);
 	if (list->prev)
 		return FALSE;
 
 	int prev = GPOINTER_TO_INT (list->data);
+	len--;
 	for (list = list->next; list; list = list->next) {
 		int curr = GPOINTER_TO_INT (list->data);
 		if (prev > curr)
@@ -328,8 +328,12 @@ static gboolean verify_sort (GList *list)
 
 		if (!list->prev || list->prev->next != list)
 			return FALSE;
+
+		if (len == 0)
+			return FALSE;
+		len--;
 	}
-	return TRUE;
+	return len == 0;
 }
 
 RESULT
@@ -340,7 +344,8 @@ test_list_sort ()
 
 	for (i = 0; i < N_ELEMS; ++i)
 		list = g_list_prepend (list, GINT_TO_POINTER (i));
-	if (!verify_sort (list))
+	list = g_list_sort (list, intcompare);
+	if (!verify_sort (list, N_ELEMS))
 		return FAILED ("decreasing list");
 
 	g_list_free (list);
@@ -348,19 +353,19 @@ test_list_sort ()
 	list = NULL;
 	for (i = 0; i < N_ELEMS; ++i)
 		list = g_list_prepend (list, GINT_TO_POINTER (-i));
-	if (!verify_sort (list))
+	list = g_list_sort (list, intcompare);
+	if (!verify_sort (list, N_ELEMS))
 		return FAILED ("increasing list");
 
 	g_list_free (list);
 
-	list = NULL;
-	int mul = 1;
-	for (i = 0; i < N_ELEMS; ++i) {
-		list = g_list_prepend (list, GINT_TO_POINTER (mul * i));
-		mul = -mul;
+	list = g_list_prepend (NULL, GINT_TO_POINTER (0));
+	for (i = 1; i < N_ELEMS; ++i) {
+		list = g_list_prepend (list, GINT_TO_POINTER (i));
+		list = g_list_prepend (list, GINT_TO_POINTER (-i));
 	}
-
-	if (!verify_sort (list))
+	list = g_list_sort (list, intcompare);
+	if (!verify_sort (list, 2*N_ELEMS-1))
 		return FAILED ("alternating list");
 
 	g_list_free (list);

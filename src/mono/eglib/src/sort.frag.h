@@ -48,7 +48,7 @@
  */
 
 #define FLOOR_LOG2(x) (((x)>=2) + ((x)>=4) + ((x)>=8) + ((x)>=16) + ((x)>=32) + ((x)>=64) + ((x)>=128))
-#define N_DIGITS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (digit)))
+#define MAX_DIGITS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (digit)))
 
 static inline digit
 add_digits (digit first, digit second, GCompareFunc func)
@@ -71,10 +71,10 @@ add_digits (digit first, digit second, GCompareFunc func)
 }
 
 static inline digit
-combine_digits (digit *digits, digit list, int max_pos, GCompareFunc func)
+combine_digits (digit *digits, digit list, int n_digits, GCompareFunc func)
 {
 	int i;
-	for (i = 0; i <= max_pos; ++i)
+	for (i = 0; i < n_digits; ++i)
 		list = add_digits (digits [i], list, func);
 	return list;
 }
@@ -84,17 +84,20 @@ combine_digits (digit *digits, digit list, int max_pos, GCompareFunc func)
  * Invariant: digit[i] == NULL || length(digit[i]) == k * 2**i
  */
 static inline int
-increment (digit *digits, digit list, int max_pos, GCompareFunc func)
+increment (digit *digits, digit list, int n_digits, GCompareFunc func)
 {
 	int i;
-	for (i = 0; digits [i]; i++) {
+	for (i = 0; i < n_digits && digits [i]; i++) {
 		list = add_digits (digits [i], list, func);
 		digits [i] = NULL;
-		if (i == N_DIGITS-1) /* Will _never_ happen: so we can just devolve into quadratic ;-) */
-			break;
 	}
+	if (i == MAX_DIGITS) /* Will _never_ happen: so we can just devolve into quadratic ;-) */
+		--i;
+
+	if (i == n_digits)
+		++n_digits;
 	digits [i] = list;
-	return i > max_pos ? i : max_pos;
+	return n_digits;
 }
 
 /*
@@ -106,9 +109,8 @@ increment (digit *digits, digit list, int max_pos, GCompareFunc func)
 static inline digit
 do_sort (digit list, GCompareFunc func)
 {
-	int max_pos = 0;
-	digit digits [N_DIGITS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit */
-	memset (digits, 0, sizeof digits);
+	int n_digits = 0;
+	digit digits [MAX_DIGITS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit */
 
 	while (list && list->next) {
 		digit next = list->next;
@@ -121,13 +123,13 @@ do_sort (digit list, GCompareFunc func)
 		}
 		next->next = NULL;
 
-		max_pos = increment (digits, list, max_pos, func);
+		n_digits = increment (digits, list, n_digits, func);
 
 		list = tail;
 	}
 
-	return combine_digits (digits, list, max_pos, func);
+	return combine_digits (digits, list, n_digits, func);
 }
 
-#undef N_DIGITS
-#undef LOG2_FLOOR
+#undef MAX_DIGITS
+#undef FLOOR_LOG2

@@ -6,11 +6,14 @@
 RESULT
 test_slist_append ()
 {
-	GSList *list = g_slist_prepend (NULL, "first");
+	GSList *foo;
+	GSList *list = g_slist_append (NULL, "first");
 	if (g_slist_length (list) != 1)
-		return FAILED ("Prepend failed");
+		return FAILED ("append(null,...) failed");
 
-	g_slist_append (list, "second");
+	foo = g_slist_append (list, "second");
+	if (foo != list)
+		return FAILED ("changed list head on non-empty");
 
 	if (g_slist_length (list) != 2)
 		return FAILED ("Append failed");
@@ -168,18 +171,21 @@ static int intcompare (gconstpointer p1, gconstpointer p2)
 	return GPOINTER_TO_INT (p1) - GPOINTER_TO_INT (p2);
 }
 
-static gboolean verify_sort (GSList *list)
+static gboolean verify_sort (GSList *list, int len)
 {
-	list = g_slist_sort (list, intcompare);
-
 	int prev = GPOINTER_TO_INT (list->data);
+	len--;
 	for (list = list->next; list; list = list->next) {
 		int curr = GPOINTER_TO_INT (list->data);
 		if (prev > curr)
 			return FALSE;
 		prev = curr;
+
+		if (len == 0)
+			return FALSE;
+		len--;
 	}
-	return TRUE;
+	return len == 0;
 }
 
 RESULT
@@ -190,7 +196,8 @@ test_slist_sort ()
 
 	for (i = 0; i < N_ELEMS; ++i)
 		list = g_slist_prepend (list, GINT_TO_POINTER (i));
-	if (!verify_sort (list))
+	list = g_slist_sort (list, intcompare);
+	if (!verify_sort (list, N_ELEMS))
 		return FAILED ("decreasing list");
 
 	g_slist_free (list);
@@ -198,19 +205,19 @@ test_slist_sort ()
 	list = NULL;
 	for (i = 0; i < N_ELEMS; ++i)
 		list = g_slist_prepend (list, GINT_TO_POINTER (-i));
-	if (!verify_sort (list))
+	list = g_slist_sort (list, intcompare);
+	if (!verify_sort (list, N_ELEMS))
 		return FAILED ("increasing list");
 
 	g_slist_free (list);
 
-	list = NULL;
-	int mul = 1;
-	for (i = 0; i < N_ELEMS; ++i) {
-		list = g_slist_prepend (list, GINT_TO_POINTER (mul * i));
-		mul = -mul;
+	list = g_slist_prepend (NULL, GINT_TO_POINTER (0));
+	for (i = 1; i < N_ELEMS; ++i) {
+		list = g_slist_prepend (list, GINT_TO_POINTER (-i));
+		list = g_slist_prepend (list, GINT_TO_POINTER (i));
 	}
-
-	if (!verify_sort (list))
+	list = g_slist_sort (list, intcompare);
+	if (!verify_sort (list, 2*N_ELEMS-1))
 		return FAILED ("alternating list");
 
 	g_slist_free (list);

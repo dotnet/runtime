@@ -1,3 +1,15 @@
+2006-08-26  Raja R Harinath  <rharinath@novell.com>
+
+	* test/slist.c (verify_sort): Verify the length of the list too.
+	(test_slist_sort): Free the correct list.
+	* test/list.c: Likewise.
+	* src/sort.frag.h (MAX_DIGITS): Rename from N_DIGITS.
+	(combine_sort): Change 'max_pos' argument to more natural
+	'n_digits'.
+	(increment): Likewise.  Use 'n_digits' to avoid reading at an
+	offset that hasn't been initialized.
+	(do_sort): Remove memset.
+
 2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* TODO:
