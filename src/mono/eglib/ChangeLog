@@ -1,3 +1,10 @@
+2006-08-26 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/file.c:
+	* src/glib.h:
+	* src/gfile.c:  implemented g_file_test. Changed the default mask to
+	.XXXXXX. Add tests.
+
 2006-08-26  Raja R Harinath  <rharinath@novell.com>
 
 	* src/sort.frag.h (digit): Declare here based on externally

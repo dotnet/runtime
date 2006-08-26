@@ -89,9 +89,113 @@ test_open_tmp ()
 	return OK;
 }
 
+RESULT
+test_file ()
+{
+	gboolean res;
+	const gchar *tmp;
+	gchar *path, *sympath;
+
+	res = g_file_test (NULL, 0);
+	if (res)
+		return FAILED ("Should return FALSE HERE");
+
+	res = g_file_test ("file.c", 0);
+	if (res)
+		return FAILED ("Should return FALSE HERE");
+
+	tmp = g_get_tmp_dir ();
+	res = g_file_test (tmp, G_FILE_TEST_EXISTS);
+	if (!res)
+		return FAILED ("tmp does not exist.");
+	res = g_file_test (tmp, G_FILE_TEST_IS_REGULAR);
+	if (res)
+		return FAILED ("tmp is regular");
+
+	res = g_file_test (tmp, G_FILE_TEST_IS_DIR);
+	if (!res)
+		return FAILED ("tmp is not a directory");
+	res = g_file_test (tmp, G_FILE_TEST_IS_EXECUTABLE);
+	if (!res)
+		return FAILED ("tmp is not a executable");
+
+	res = g_file_test (tmp, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_SYMLINK);
+	if (!res)
+		return FAILED ("2 tmp does not exist.");
+	res = g_file_test (tmp, G_FILE_TEST_IS_REGULAR | G_FILE_TEST_IS_SYMLINK);
+	if (res)
+		return FAILED ("2 tmp is regular");
+
+	res = g_file_test (tmp, G_FILE_TEST_IS_DIR | G_FILE_TEST_IS_SYMLINK);
+	if (!res)
+		return FAILED ("2 tmp is not a directory");
+	res = g_file_test (tmp, G_FILE_TEST_IS_EXECUTABLE | G_FILE_TEST_IS_SYMLINK);
+	if (!res)
+		return FAILED ("2 tmp is not a executable");
+
+	close (g_file_open_tmp (NULL, &path, NULL)); /* create an empty file */
+	res = g_file_test (path, G_FILE_TEST_EXISTS);
+	if (!res)
+		return FAILED ("3 %s should exist", path);
+	res = g_file_test (path, G_FILE_TEST_IS_REGULAR);
+	/* This is strange. Empty file is reported as not existing! */
+	if (!res)
+		return FAILED ("3 %s IS_REGULAR", path);
+	res = g_file_test (path, G_FILE_TEST_IS_DIR);
+	if (res)
+		return FAILED ("3 %s should not be a directory", path);
+	res = g_file_test (path, G_FILE_TEST_IS_EXECUTABLE);
+	if (res)
+		return FAILED ("3 %s should not be executable", path);
+	res = g_file_test (path, G_FILE_TEST_IS_SYMLINK);
+	if (res)
+		return FAILED ("3 %s should not be a symlink", path);
+
+	sympath = g_strconcat (path, "-link", NULL);
+	symlink (path, sympath);
+	res = g_file_test (sympath, G_FILE_TEST_EXISTS);
+	if (!res)
+		return FAILED ("4 %s should not exist", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_REGULAR);
+	if (!res)
+		return FAILED ("4 %s should not be a regular file", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_DIR);
+	if (res)
+		return FAILED ("4 %s should not be a directory", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_EXECUTABLE);
+	if (res)
+		return FAILED ("4 %s should not be executable", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_SYMLINK);
+	if (!res)
+		return FAILED ("4 %s should be a symlink", sympath);
+
+	unlink (path);
+
+	res = g_file_test (sympath, G_FILE_TEST_EXISTS);
+	if (res)
+		return FAILED ("5 %s should exist", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_REGULAR);
+	if (res)
+		return FAILED ("5 %s should be a regular file", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_DIR);
+	if (res)
+		return FAILED ("5 %s should not be a directory", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_EXECUTABLE);
+	if (res)
+		return FAILED ("5 %s should not be executable", sympath);
+	res = g_file_test (sympath, G_FILE_TEST_IS_SYMLINK);
+	if (!res)
+		return FAILED ("5 %s should be a symlink", sympath);
+	unlink (sympath);
+	g_free (path);
+	g_free (sympath);
+	return OK;
+}
+
 static Test file_tests [] = {
-	{"g_file_test_contents", test_file_get_contents},
+	{"g_file_get_contents", test_file_get_contents},
 	{"g_file_open_tmp", test_open_tmp},
+	{"g_file_test", test_file},
 	{NULL, NULL}
 };
 
