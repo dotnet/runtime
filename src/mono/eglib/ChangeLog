@@ -1,5 +1,11 @@
 2006-08-26  Raja R Harinath  <rharinath@novell.com>
 
+	* src/sort.frag.h (digit): Declare here based on externally
+	provided typedef 'list_node'.
+	(MAX_DIGITS): Use 'sizeof (list_node)'.
+	* src/gslist.c (list_node): Declare instead of 'digit'.
+	* src/glist.c: Likewise.
+
 	* test/slist.c (verify_sort): Verify the length of the list too.
 	(test_slist_sort): Free the correct list.
 	* test/list.c: Likewise.

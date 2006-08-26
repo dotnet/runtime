@@ -289,7 +289,7 @@ g_list_copy (GList *list)
 	return copy;
 }
 
-typedef GList *digit;
+typedef GList list_node;
 #include "sort.frag.h"
 
 GList*

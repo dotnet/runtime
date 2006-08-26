@@ -27,7 +27,7 @@
  */
 
 /*
- * This code requires a typedef named 'digit' for the list type.  It
+ * This code requires a typedef named 'list_node' for the list node.  It
  * is assumed that the list type is the type of a pointer to a list
  * node, and that the node has a field named 'next' that implements to
  * the linked list.  No additional invariant is maintained (e.g. the
@@ -39,16 +39,18 @@
  * maintaining the invariants of the core data structure parallels the
  * code for incrementing the binary representation of a number.
  */
+typedef list_node *digit;
 
 /*
  * The maximum possible depth of the merge tree
  *   = ceiling (log2 (maximum number of list nodes))
  *   = ceiling (log2 (maximum possible memory size/size of each list node))
  *   = number of bits in 'size_t' - floor (log2 (sizeof digit))
+ * Also, each "digit" is at least 2 nodes long: we can reduce the depth by 1
  */
 
 #define FLOOR_LOG2(x) (((x)>=2) + ((x)>=4) + ((x)>=8) + ((x)>=16) + ((x)>=32) + ((x)>=64) + ((x)>=128))
-#define MAX_DIGITS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (digit)))
+#define MAX_DIGITS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (list_node)) - 1)
 
 static inline digit
 add_digits (digit first, digit second, GCompareFunc func)

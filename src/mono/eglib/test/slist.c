@@ -191,7 +191,7 @@ static gboolean verify_sort (GSList *list, int len)
 RESULT
 test_slist_sort ()
 {
-	int i = 0;
+	int i, j, mul;
 	GSList *list = NULL;
 
 	for (i = 0; i < N_ELEMS; ++i)
@@ -219,6 +219,19 @@ test_slist_sort ()
 	list = g_slist_sort (list, intcompare);
 	if (!verify_sort (list, 2*N_ELEMS-1))
 		return FAILED ("alternating list");
+
+	g_slist_free (list);
+
+	list = NULL;
+	mul = 1;
+	for (i = 1; i < N_ELEMS; ++i) {
+		mul = -mul;
+		for (j = 0; j < i; ++j)
+			list = g_slist_prepend (list, GINT_TO_POINTER (mul * j));
+	}
+	list = g_slist_sort (list, intcompare);
+	if (!verify_sort (list, (N_ELEMS*N_ELEMS - N_ELEMS)/2))
+		return FAILED ("wavering list");
 
 	g_slist_free (list);
 
