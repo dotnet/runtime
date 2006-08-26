@@ -1,3 +1,16 @@
+2006-08-25 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* TODO:
+	* src/glib.h:
+	* src/gdate.c: New file.
+	* src/gfile.c: New file.
+	* src/Makefile.am: implemented g_file_get_contents and
+	g_get_current_time.
+
+	* test/tests.h:
+	* test/file.c: New file.
+	* test/Makefile.am: tests for the above.
+
 2006-08-26  Raja R Harinath  <rharinath@novell.com>
 
 	* src/sort.frag.h: Add copyright notice and some explanation.

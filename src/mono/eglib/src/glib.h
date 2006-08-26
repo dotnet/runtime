@@ -87,8 +87,8 @@ void             g_unsetenv(const gchar *variable);
 /*
  * Precondition macros
  */
-#define g_return_if_fail(x)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return; } } G_STMT_END
-#define g_return_val_if_fail(x,e)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion %s failed", __FILE__, __LINE__, #x); return (e); } } G_STMT_END
+#define g_return_if_fail(x)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); return; } } G_STMT_END
+#define g_return_val_if_fail(x,e)  G_STMT_START { if (!(x)) { printf ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); return (e); } } G_STMT_END
 
 /*
  * Hashtables
@@ -470,6 +470,51 @@ void g_timer_destroy (GTimer *timer);
 gdouble g_timer_elapsed (GTimer *timer, gulong *microseconds);
 void g_timer_stop (GTimer *timer);
 void g_timer_start (GTimer *timer);
+
+/*
+ * Date and time
+ */
+typedef struct {
+	glong tv_sec;
+	glong tv_usec;
+} GTimeVal;
+
+void g_get_current_time (GTimeVal *result);
+
+/*
+ * File
+ */
+
+typedef enum {
+	G_FILE_ERROR_EXIST,
+	G_FILE_ERROR_ISDIR,
+	G_FILE_ERROR_ACCES,
+	G_FILE_ERROR_NAMETOOLONG,
+	G_FILE_ERROR_NOENT,
+	G_FILE_ERROR_NOTDIR,
+	G_FILE_ERROR_NXIO,
+	G_FILE_ERROR_NODEV,
+	G_FILE_ERROR_ROFS,
+	G_FILE_ERROR_TXTBSY,
+	G_FILE_ERROR_FAULT,
+	G_FILE_ERROR_LOOP,
+	G_FILE_ERROR_NOSPC,
+	G_FILE_ERROR_NOMEM,
+	G_FILE_ERROR_MFILE,
+	G_FILE_ERROR_NFILE,
+	G_FILE_ERROR_BADF,
+	G_FILE_ERROR_INVAL,
+	G_FILE_ERROR_PIPE,
+	G_FILE_ERROR_AGAIN,
+	G_FILE_ERROR_INTR,
+	G_FILE_ERROR_IO,
+	G_FILE_ERROR_PERM,
+	G_FILE_ERROR_NOSYS,
+	G_FILE_ERROR_FAILED
+} GFileError;
+
+gboolean g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **error);
+GFileError g_file_error_from_errno (gint err_no);
 
 #endif
 

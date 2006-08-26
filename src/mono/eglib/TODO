@@ -46,7 +46,6 @@ Important Groups:
 	      2 g_filename_from_uri
 	
         * Information retrieval
-	      2 g_get_current_time
 	      1 g_get_charset
 	      1 g_win32_getlocale
 	
@@ -67,7 +66,6 @@ Important Groups:
 	      1 g_locale_from_utf8
 
 	* File 
-	      5 g_file_get_contents
 	     11 g_file_test
 	      3 g_file_open_tmp
 	

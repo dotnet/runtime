@@ -20,7 +20,9 @@ libeglib_la_SOURCES = \
 	gpath.c		\
 	gshell.c	\
 	gspawn.c	\
-	gtimer.c
+	gtimer.c	\
+	gdate.c		\
+	gfile.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
