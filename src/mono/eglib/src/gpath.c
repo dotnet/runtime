@@ -136,12 +136,14 @@ g_find_program_in_path (const gchar *program)
 {
 	char *p = g_strdup (getenv ("PATH"));
 	char *x = p, *l;
+	gchar *curdir = NULL;
 	char *save;
 
 	g_return_val_if_fail (program != NULL, NULL);
 
 	if (x == NULL || *x == '\0') {
-		x = g_get_current_dir ();
+		curdir = g_get_current_dir ();
+		x = curdir;
 	}
 
 	while ((l = strtok_r (x, G_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
@@ -150,11 +152,13 @@ g_find_program_in_path (const gchar *program)
 		x = NULL;
 		probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program, NULL);
 		if (access (probe_path, X_OK) == 0){
+			g_free (curdir);
 			g_free (p);
 			return probe_path;
 		}
 		g_free (probe_path);
 	}
+	g_free (curdir);
 	g_free (p);
 	return NULL;
 }
@@ -186,7 +190,6 @@ const gchar *
 g_get_home_dir (void)
 {
 	if (home_dir == NULL){
-		struct passwd *p;
 		uid_t uid;
 
 		pthread_mutex_lock (&home_lock);
@@ -199,8 +202,8 @@ g_get_home_dir (void)
 			setpwent ();
 			
 			while (getpwent_r (&pwbuf, buf, sizeof (buf), &track) == 0){
-				if (p->pw_uid == uid){
-					home_dir = g_strdup (p->pw_dir);
+				if (pwbuf.pw_uid == uid){
+					home_dir = g_strdup (pwbuf.pw_dir);
 					break;
 				}
 			}

@@ -198,7 +198,9 @@ RESULT ptrarray_remove()
 
 static gint ptrarray_sort_compare(gconstpointer a, gconstpointer b)
 {
-	return strcmp(a, b);
+	gchar *stra = *(gchar **) a;
+	gchar *strb = *(gchar **) b;
+	return strcmp(stra, strb);
 }
 
 RESULT ptrarray_sort()

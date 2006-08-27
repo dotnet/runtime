@@ -19,7 +19,8 @@ SOURCES = \
 	shell.c		\
 	spawn.c		\
 	timer.c		\
-	file.c
+	file.c		\
+	pattern.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)

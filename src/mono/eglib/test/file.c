@@ -52,7 +52,7 @@ test_open_tmp ()
 {
 	GError *error;
 	gint fd;
-	gchar *name;
+	gchar *name = GINT_TO_POINTER (-1);
 
 	fd = g_file_open_tmp (NULL, NULL, NULL);
 	if (fd < 0)
@@ -86,6 +86,7 @@ test_open_tmp ()
 		return FAILED ("No name returned.");
 	close (fd);
 	unlink (name);
+	g_free (name);
 	return OK;
 }
 

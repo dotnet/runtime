@@ -527,6 +527,13 @@ GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error);
 gboolean   g_file_test (const gchar *filename, GFileTest test);
 
+/*
+ * Pattern matching
+ */
+typedef struct _GPatternSpec GPatternSpec;
+GPatternSpec * g_pattern_spec_new (const gchar *pattern);
+void           g_pattern_spec_free (GPatternSpec *pspec);
+gboolean       g_pattern_match_string (GPatternSpec *pspec, const gchar *string);
 
 #endif
 

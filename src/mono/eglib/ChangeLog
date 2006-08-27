@@ -1,3 +1,19 @@
+2006-08-27 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* src/glib.h:
+	* test/Makefile.am: Modified file.
+	* test/tests.h:
+	* src/Makefile.am: Modified file.
+	* test/pattern.c:
+	* src/gpattern.c: implemented the 3 pattern matching functions used.
+
+	* test/ptrarray.c: fix the compare function to work with qsort.
+
+	* test/file.c:
+	* test/path.c:
+	* src/gspawn.c:
+	* src/gpath.c: made valgrind happy.
+
 2006-08-26 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/file.c:

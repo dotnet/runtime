@@ -21,11 +21,6 @@
 
 Important Groups:
 
-	* Pattern Matching
-	      2 g_pattern_spec_new
-	      2 g_pattern_spec_free
-	      2 g_pattern_match_string
-	
 	* Markup, used to load config files.
 	      2 g_markup_parse_context_parse
 	      2 g_markup_parse_context_new

@@ -159,11 +159,13 @@ test_ppath2 ()
 		g_setenv ("PATH", path, TRUE);
 		return FAILED ("Found something interesting here: %s", s);
 	}
+	g_free (s);
 	s = g_find_program_in_path ("test-glib");
 	if (s == NULL) {
 		g_setenv ("PATH", path, TRUE);
 		return FAILED ("It should find 'test-glib' in the current directory.");
 	}
+	g_free (s);
 	g_setenv ("PATH", path, TRUE);
 	return OK;
 }

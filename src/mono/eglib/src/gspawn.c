@@ -190,6 +190,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 		exit (1); /* TODO: What now? */
 	}
 
+	g_strfreev (argv);
 	if (standard_output)
 		close (stdout_pipe [1]);
 
