@@ -81,6 +81,7 @@ g_dir_read_name (GDir *dir)
 		return NULL;
 
 	return entry->d_name;
+#endif
 }
 
 void
@@ -90,6 +91,7 @@ g_dir_rewind (GDir *dir)
 #else
 	g_return_if_fail (dir != NULL && dir->dir != NULL);
 	rewinddir (dir->dir);
+#endif
 }
 
 void

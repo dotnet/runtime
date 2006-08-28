@@ -61,6 +61,7 @@ compile_pattern (const gchar *pattern)
 	if (pattern == NULL)
 		return NULL;
 
+	data = NULL;
 	list = NULL;
 	free_str = TRUE;
 	str = g_string_new ("");
