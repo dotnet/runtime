@@ -1,3 +1,15 @@
+2006-08-28 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* TODO: Modified file.
+	* test/tests.h:
+	* test/pattern.c:
+	* test/dir.c:
+	* test/Makefile.am:
+	* src/Makefile.am:
+	* src/glib.h:
+	* src/gdir.c:
+	* src/gfile.c: implemented g_dir_*, unix version.
+
 2006-08-27 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* src/glib.h:

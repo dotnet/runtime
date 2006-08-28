@@ -22,7 +22,6 @@ test_pattern_spec ()
 	gboolean res;
 
 	/* spec = g_pattern_spec_new (NULL); */
-	printf ("%s\n", g_get_home_dir ());
 	TEST_MATCH ("*", "hola", 1);
 	TEST_MATCH ("hola", "hola", 2);
 	TEST_MATCH ("????", "hola", 3);

@@ -23,7 +23,8 @@ libeglib_la_SOURCES = \
 	gtimer.c	\
 	gdate.c		\
 	gfile.c		\
-	gpattern.c
+	gpattern.c	\
+	gdir.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 

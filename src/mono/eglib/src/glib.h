@@ -535,5 +535,13 @@ GPatternSpec * g_pattern_spec_new (const gchar *pattern);
 void           g_pattern_spec_free (GPatternSpec *pspec);
 gboolean       g_pattern_match_string (GPatternSpec *pspec, const gchar *string);
 
+/*
+ * Directory
+ */
+typedef struct _GDir GDir;
+GDir        *g_dir_open (const gchar *path, guint flags, GError **error);
+const gchar *g_dir_read_name (GDir *dir);
+void         g_dir_rewind (GDir *dir);
+void         g_dir_close (GDir *dir);
 #endif
 

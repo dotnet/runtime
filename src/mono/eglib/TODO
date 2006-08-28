@@ -3,13 +3,9 @@
 
   Directory, File manipulation:
 
-       g_dir_open, g_dir_close, g_dir_read_name,
-       G_FILE_ERROR_*
+       g_dir_open, g_dir_close, g_dir_read_name
 
-       These will be replaced in io-layer with direct Unix calls.
-
-       These will be replaced in metadata with two code paths, native
-       Unix and native Windows.
+       We're missing a native windows implementation. The unix one is in place.
 
   Locking:
 
@@ -69,10 +65,8 @@ Important Groups:
 	      1 g_log_set_handler
 
 Macros:
-      7 G_FILE_TEST_IS_DIR
       6 G_UNLIKELY
       4 G_LIKELY
-      4 G_FILE_TEST_IS_REGULAR
       2 G_USEC_PER_SEC
       2 G_STRLOC
       1 G_SPAWN_SEARCH_PATH
