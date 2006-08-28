@@ -29,6 +29,7 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <sys/time.h>
 #include <glib.h>
@@ -78,6 +79,7 @@ run_group(Group *group, gint iterations, gboolean quiet,
 		gchar *result;
 		gboolean iter_pass, run;
 	
+		iter_pass = FALSE;
 		if(tests_to_run != NULL) {
 			gint j;
 			run = FALSE;

@@ -96,6 +96,7 @@ test_file ()
 	gboolean res;
 	const gchar *tmp;
 	gchar *path, *sympath;
+	gint ignored;
 
 	res = g_file_test (NULL, 0);
 	if (res)
@@ -153,7 +154,7 @@ test_file ()
 		return FAILED ("3 %s should not be a symlink", path);
 
 	sympath = g_strconcat (path, "-link", NULL);
-	symlink (path, sympath);
+	ignored = symlink (path, sympath);
 	res = g_file_test (sympath, G_FILE_TEST_EXISTS);
 	if (!res)
 		return FAILED ("4 %s should not exist", sympath);
