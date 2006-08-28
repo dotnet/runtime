@@ -22,7 +22,7 @@ test_timer ()
 	g_timer_stop (timer);
 	elapsed1 = g_timer_elapsed (timer, NULL);
 	elapsed2 = g_timer_elapsed (timer, &usec);
-	if (elapsed1 != elapsed2)
+	if (fabs (elapsed1 - elapsed2) > 0.000001)
 		return FAILED ("The elapsed times are not equal %f - %f.", elapsed1, elapsed2);
 
 	elapsed2 *= 1000000;
