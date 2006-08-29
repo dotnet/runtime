@@ -262,6 +262,7 @@ typedef struct {
 
 typedef struct {
 	int nargs;
+	int lastgr;
 	guint32 stack_usage;
 	guint32 struct_ret;
 	ArgInfo ret;
@@ -297,6 +298,7 @@ gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_registers (guint8 *, MonoCompile *);
 static CompRelation opcode_to_cond (int);
 static void catch_SIGILL(int, siginfo_t *, void *);
+static void emit_sig_cookie (MonoCompile *, MonoCallInst *, CallInfo *, int);
 
 /*========================= End of Prototypes ======================*/
 
@@ -556,7 +558,7 @@ enum_parmtype:
 				printf ("[BOOL:%ld], ", *((gint64 *) curParm));
 				break;
 			case MONO_TYPE_CHAR :
-				printf ("[CHAR:%c], ", *((gint64  *) curParm));
+				printf ("[CHAR:%c], ", *((int  *) curParm));
 				break;
 			case MONO_TYPE_I1 :
 				printf ("[INT1:%ld], ", *((gint64 *) curParm));
@@ -599,7 +601,7 @@ enum_parmtype:
 					printf("%p [%p] ",obj,curParm);
 					if (class == mono_defaults.string_class) {
 						printf("[STRING:%p:%s]", 
-						       obj, mono_string_to_utf8 (obj));
+						       obj, mono_string_to_utf8 ((MonoString *) obj));
 					} else if (class == mono_defaults.int32_class) { 
 						printf("[INT32:%p:%d]", 
 							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
@@ -1599,6 +1601,15 @@ enum_retvalue:
 	}
 
 	/*----------------------------------------------------------*/
+	/* Handle the case where there are no implicit arguments    */
+	/*----------------------------------------------------------*/
+	if ((sig->call_convention == MONO_CALL_VARARG) &&
+	    (sig->param_count == sig->sentinelpos)) {
+		gr = S390_LAST_ARG_REG + 1;
+		add_general (&gr, sz, &cinfo->sigCookie);
+	}
+
+	/*----------------------------------------------------------*/
 	/* If we are passing a structure back then if it won't be   */
 	/* in a register(s) then we make room at the end of the     */
 	/* parameters that may have been placed on the stack        */
@@ -1617,6 +1628,7 @@ enum_retvalue:
 		}
 	}
 
+	cinfo->lastgr   = gr;
 	sz->stack_size  = sz->stack_size + sz->local_size + sz->parm_size + 
 			  sz->offset;
 	sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
@@ -1876,22 +1888,10 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
-		if ((sig->call_convention == MONO_CALL_VARARG) &&
+		if (!(sig->pinvoke) &&
+		    (sig->call_convention == MONO_CALL_VARARG) &&
 		    (i == sig->sentinelpos)) {
-			MonoInst *sigArg;
-			
-			cfg->disable_aot = TRUE;
-			MONO_INST_NEW (cfg, sigArg, OP_ICONST);
-			sigArg->inst_p0 = call->signature;
-
-			MONO_INST_NEW_CALL_ARG (cfg, arg, OP_OUTARG_MEMBASE);
-			arg->ins.inst_left   = sigArg;
-			arg->ins.inst_right  = (MonoInst *) call;
-			arg->size            = ainfo->size;
-			arg->offset          = cinfo->sigCookie.offset;
-			call->used_iregs    |= 1 << ainfo->reg;
-			arg->ins.next        = call->out_args;
-			call->out_args       = (MonoInst *) arg;
+			emit_sig_cookie (cfg, call, cinfo, ainfo->size);
 		}
 
 		if (is_virtual && i == 0) {
@@ -1904,6 +1904,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			arg->ins.cil_code   = in->cil_code;
 			arg->ins.inst_left  = in;
 			arg->ins.type       = in->type;
+
 			/* prepend, we'll need to reverse them later */
 			arg->ins.next       = call->out_args;
 			call->out_args      = (MonoInst *) arg;
@@ -1944,6 +1945,16 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			}
 		}
 	}
+
+	/*
+	 * Handle the case where there are no implicit arguments 
+	 */
+	if (!(sig->pinvoke) &&
+	    (sig->call_convention == MONO_CALL_VARARG) &&
+	    (n == sig->sentinelpos)) {
+		emit_sig_cookie (cfg, call, cinfo, sizeof(MonoType *));
+	}
+
 	/*
 	 * Reverse the call->out_args list.
 	 */
@@ -1960,6 +1971,55 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 
 	g_free (cinfo);
 	return call;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- emit_sig_cookie.                                  */
+/*                                                                  */
+/* Function	- For variable length parameter lists construct a   */
+/*		  signature cookie and emit it.			    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+static void
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, 
+		 CallInfo *cinfo, int argSize)
+{
+	MonoCallArgParm *arg;
+	MonoMethodSignature *tmpSig;
+	MonoInst *sigArg;
+			
+	cfg->disable_aot = TRUE;
+
+	/*----------------------------------------------------------*/
+	/* mono_ArgIterator_Setup assumes the signature cookie is   */
+	/* passed first and all the arguments which were before it  */
+	/* passed on the stack after the signature. So compensate   */
+	/* by passing a different signature.			    */
+	/*----------------------------------------------------------*/
+	tmpSig = mono_metadata_signature_dup (call->signature);
+	tmpSig->param_count -= call->signature->sentinelpos;
+	tmpSig->sentinelpos  = 0;
+	if (tmpSig->param_count > 0)
+		memcpy (tmpSig->params, 
+			call->signature->params + call->signature->sentinelpos, 
+			tmpSig->param_count * sizeof(MonoType *));
+
+	MONO_INST_NEW (cfg, sigArg, OP_ICONST);
+	sigArg->inst_p0 = tmpSig;
+
+	MONO_INST_NEW_CALL_ARG (cfg, arg, OP_OUTARG_MEMBASE);
+	arg->ins.inst_left   = sigArg;
+	arg->ins.inst_right  = (MonoInst *) call;
+	arg->size            = argSize;
+	arg->offset          = cinfo->sigCookie.offset;
+
+	/* prepend, we'll need to reverse them later */
+	arg->ins.next       = call->out_args;
+	call->out_args      = (MonoInst *) arg;
 }
 
 /*========================= End of Function ========================*/
@@ -5329,6 +5389,24 @@ opcode_to_cond (int opcode)
 		g_error("Not implemented\n");
 	}
 	return CMP_EQ;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_patch_offset                        */
+/*                                                                  */
+/* Function	- Dummy entry point until s390x supports aot.       */
+/*		                               			    */
+/* Returns	- Offset for patch.				    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+guint32
+mono_arch_get_patch_offset (guint8 *code)
+{
+	return 0;
 }
 
 /*========================= End of Function ========================*/

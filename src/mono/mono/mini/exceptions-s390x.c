@@ -426,7 +426,7 @@ mono_arch_get_throw_exception_by_name (void)
 /*                                                                  */
 /* Name		- mono_arch_find_jit_info                           */
 /*                                                                  */
-/* Function	- This function is used to gather informatoin from  */
+/* Function	- This function is used to gather information from  */
 /*                @ctx. It returns the MonoJitInfo of the corres-   */
 /*                ponding function, unwinds one stack frame and     */
 /*                stores the resulting context into @new_ctx. It    */
@@ -434,7 +434,7 @@ mono_arch_get_throw_exception_by_name (void)
 /*                into @trace (if not NULL), and modifies the @lmf  */
 /*                if necessary. @native_offset returns the IP off-  */
 /*                set from the start of the function or -1 if that  */
-/*                informatoin is not available.                     */
+/*                information is not available.                     */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
@@ -458,8 +458,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (trace)
 		*trace = NULL;
 
-	if (native_offset)
-		*native_offset = -1;
+//	if (native_offset)
+//		*native_offset = -1;
 
 	if (managed)
 		*managed = FALSE;
@@ -489,6 +489,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
 		memcpy (&new_ctx->uc_mcontext.gregs[6], sframe->regs, (8*sizeof(gint64)));
 		return ji;
+
 	} else if (*lmf) {
 		
 		*new_ctx = *ctx;
