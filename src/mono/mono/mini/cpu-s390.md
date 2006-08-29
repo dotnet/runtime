@@ -412,7 +412,7 @@ move: dest:i src1:i len:4
 mul.ovf.un: dest:i src1:i src2:i len:20
 mul.ovf: dest:i src1:i src2:i len:42
 mul: dest:i src1:i src2:i len:6
-mul_imm: dest:i src1:i len:18
+mul_imm: dest:i src1:i len:20
 neg: dest:i src1:i len:4
 newarr:
 newobj:

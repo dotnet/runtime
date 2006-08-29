@@ -147,7 +147,6 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 	int reg;
 	guchar* base;
 	unsigned short opcode;
-	char *fname;
 	MonoJitInfo *codeJi, 
 		    *addrJi;
 
@@ -160,7 +159,6 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 		/* The top bit needs to be ignored on S/390 */
 		code = (guchar*)((guint32)code & 0x7fffffff);
 
-		fname  = mono_method_full_name (method, TRUE);
 		codeJi = mono_jit_info_table_find (mono_domain_get(), code);
 		addrJi = mono_jit_info_table_find (mono_domain_get(), addr);
 		if (mono_method_same_domain (codeJi, addrJi)) {
@@ -187,7 +185,7 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 				code = base + displace;
 				if (mono_domain_owns_vtable_slot(mono_domain_get(), 
 								 code))
-					s390_patch(code, addr);
+					s390_patch(code, (guint32) addr);
 				break;
 			case 0xc0e5 :
 				/* This is the 'brasl' instruction */
