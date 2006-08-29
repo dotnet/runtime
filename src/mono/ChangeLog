@@ -1,3 +1,7 @@
+2006-08-29 Wade Berrier <wberrier@novell.com>
+
+	* configure.in: Add required CFLAGS for s390[x] (-mbackchain)
+
 2006-08-23 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: check for mkstemp.

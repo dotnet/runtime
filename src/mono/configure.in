@@ -1609,6 +1609,8 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
+		# Required CFLAGS for s390[x].  USE_STRING_INLINES is automatic with gcc 4.1
+		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
 	s390x-*-linux*)
 		TARGET=S390x;
@@ -1617,6 +1619,7 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
+		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
 esac
 
