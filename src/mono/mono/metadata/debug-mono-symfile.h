@@ -130,8 +130,10 @@ struct _MonoSymbolFile {
 G_BEGIN_DECLS
 
 MonoSymbolFile *
-mono_debug_open_mono_symbol_file   (MonoDebugHandle           *handle,
-				    gboolean                   create_symfile);
+mono_debug_open_mono_symbols       (MonoDebugHandle          *handle,
+				    const guint8             *raw_contents,
+				    int                       size,
+				    gboolean                  in_the_debugger);
 
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);

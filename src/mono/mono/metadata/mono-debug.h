@@ -196,6 +196,7 @@ extern GHashTable *mono_debug_handles;
 void mono_debug_init (MonoDebugFormat format);
 void mono_debug_init_1 (MonoDomain *domain);
 void mono_debug_init_2 (MonoAssembly *assembly);
+void mono_debug_init_2_memory (MonoImage *image, const guint8 *raw_contents, int size);
 void mono_debug_cleanup (void);
 
 gboolean mono_debug_using_mono_debugger (void);

@@ -100,7 +100,8 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 }
 
 MonoSymbolFile *
-mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean in_the_debugger)
+mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_contents,
+			      int size, gboolean in_the_debugger)
 {
 	MonoSymbolFile *symfile;
 	FILE* f;
@@ -108,21 +109,28 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean in_the_debug
 	mono_debugger_lock ();
 	symfile = g_new0 (MonoSymbolFile, 1);
 
-	symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
+	if (raw_contents != NULL) {
+		symfile->raw_contents_size = size;
+		symfile->raw_contents = g_malloc (size);
+		memcpy(symfile->raw_contents, raw_contents, size);
+		symfile->filename = g_strdup_printf ("LoadedFromMemory");
+	} else {
+		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 
-	if ((f = fopen (symfile->filename, "rb")) > 0) {
-		struct stat stat_buf;
+		if ((f = fopen (symfile->filename, "rb")) > 0) {
+			struct stat stat_buf;
 			
-		if (fstat (fileno (f), &stat_buf) < 0) {
-			if (!in_the_debugger)
-				g_warning ("stat of %s failed: %s",
-					   symfile->filename,  g_strerror (errno));
-		} else {	
-			symfile->raw_contents_size = stat_buf.st_size;
-			symfile->raw_contents = mono_raw_buffer_load (fileno (f), FALSE, 0, stat_buf.st_size);
+			if (fstat (fileno (f), &stat_buf) < 0) {
+				if (!in_the_debugger)
+					g_warning ("stat of %s failed: %s",
+						   symfile->filename,  g_strerror (errno));
+			} else {
+				symfile->raw_contents_size = stat_buf.st_size;
+				symfile->raw_contents = mono_raw_buffer_load (fileno (f), FALSE, 0, stat_buf.st_size);
+			}
+
+			fclose (f);
 		}
-		
-		fclose (f);
 	}
 	
 	if (load_symfile (handle, symfile, in_the_debugger)) {

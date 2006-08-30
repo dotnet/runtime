@@ -40,7 +40,8 @@ GHashTable *mono_debug_handles = NULL;
 
 static GHashTable *method_hash = NULL;
 
-static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image);
+static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image, const guint8 *raw_contents, int size);
+
 static void                 mono_debug_close_image     (MonoDebugHandle *debug);
 
 static MonoDebugHandle     *_mono_debug_get_image      (MonoImage *image);
@@ -116,7 +117,7 @@ mono_debug_init (MonoDebugFormat format)
 void
 mono_debug_init_1 (MonoDomain *domain)
 {
-	MonoDebugHandle *handle = mono_debug_open_image (mono_get_corlib ());
+	MonoDebugHandle *handle = mono_debug_open_image (mono_get_corlib (), NULL, 0);
 
 	mono_symbol_table->corlib = handle;
 }
@@ -129,8 +130,20 @@ mono_debug_init_1 (MonoDomain *domain)
 void
 mono_debug_init_2 (MonoAssembly *assembly)
 {
-	mono_debug_open_image (mono_assembly_get_image (assembly));
+	mono_debug_open_image (mono_assembly_get_image (assembly), NULL, 0);
 }
+
+/*
+ * Initialize debugging support - part 2.
+ *
+ * This method must be called between loading the image and loading the assembly.
+ */
+void
+mono_debug_init_2_memory (MonoImage *image, const guint8 *raw_contents, int size)
+{
+	mono_debug_open_image (image, raw_contents, size);
+}
+
 
 gboolean
 mono_debug_using_mono_debugger (void)
@@ -175,7 +188,7 @@ allocate_debug_handle (MonoSymbolTable *table)
 }
 
 static MonoDebugHandle *
-mono_debug_open_image (MonoImage *image)
+mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 {
 	MonoDebugHandle *handle;
 
@@ -194,7 +207,7 @@ mono_debug_open_image (MonoImage *image)
 
 	g_hash_table_insert (mono_debug_handles, image, handle);
 
-	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
+	handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, in_the_mono_debugger);
 	if (in_the_mono_debugger)
 		mono_debugger_add_symbol_file (handle);
 
@@ -217,7 +230,7 @@ static void
 mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 {
 	mono_debugger_lock ();
-	mono_debug_open_image (mono_assembly_get_image (assembly));
+	mono_debug_open_image (mono_assembly_get_image (assembly), NULL, 0);
 	mono_debugger_unlock ();
 }
 

@@ -29,6 +29,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threadpool.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -1008,15 +1009,16 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 	guint32 raw_assembly_len = mono_array_length (raw_assembly);
 	MonoImage *image = mono_image_open_from_data_full (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, TRUE, NULL, refonly);
 
-	if (raw_symbol_store)
-		mono_raise_exception (mono_get_exception_not_implemented ("LoadAssemblyRaw: Raw Symbol Store not Implemented"));
-  
 	if (!image) {
 		mono_raise_exception (mono_get_exception_bad_image_format (""));
 		return NULL;
 	}
 
+	if (raw_symbol_store != NULL)
+		mono_debug_init_2_memory (image, mono_array_addr (raw_symbol_store, guint8, 0), mono_array_length (raw_symbol_store));
+
 	ass = mono_assembly_load_from_full (image, "", &status, refonly);
+
 
 	if (!ass) {
 		mono_image_close (image);
