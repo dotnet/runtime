@@ -3348,11 +3348,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_FNEG:
 			if (use_sse2) {
-				amd64_mov_reg_imm_size (code, AMD64_R11, 0x8000000000000000, 8);
-				amd64_push_reg (code, AMD64_R11);
-				amd64_push_reg (code, AMD64_R11);
-				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RSP, 0);
-				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 16);
+				static double r8_0 = -0.0;
+
+				g_assert (ins->sreg1 == ins->dreg);
+					
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &r8_0);
+				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
 			}
 			else
 				amd64_fchs (code);
@@ -4525,38 +4526,31 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		gboolean remove = FALSE;
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_R8: {
-			guint8 *pos;
-
-			code = (guint8*)ALIGN_TO (code, 8);
-
-			pos = cfg->native_code + patch_info->ip.i;
-
-			*(double*)code = *(double*)patch_info->data.target;
-
-			if (use_sse2)
-				*(guint32*)(pos + 4) = (guint8*)code - pos - 8;
-			else
-				*(guint32*)(pos + 3) = (guint8*)code - pos - 7;
-			code += 8;
-
-			remove = TRUE;
-			break;
-		}
+		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4: {
 			guint8 *pos;
 
-			code = (guint8*)ALIGN_TO (code, 8);
+			if (use_sse2) {
+				/* The SSE opcodes require a 16 byte alignment */
+				code = (guint8*)ALIGN_TO (code, 16);
+			} else {
+				code = (guint8*)ALIGN_TO (code, 8);
+			}
 
 			pos = cfg->native_code + patch_info->ip.i;
-
-			*(float*)code = *(float*)patch_info->data.target;
 
 			if (use_sse2)
 				*(guint32*)(pos + 4) = (guint8*)code - pos - 8;
 			else
 				*(guint32*)(pos + 3) = (guint8*)code - pos - 7;
-			code += 4;
+
+			if (patch_info->type == MONO_PATCH_INFO_R8) {
+				*(double*)code = *(double*)patch_info->data.target;
+				code += sizeof (double);
+			} else {
+				*(float*)code = *(float*)patch_info->data.target;
+				code += sizeof (float);
+			}
 
 			remove = TRUE;
 			break;
