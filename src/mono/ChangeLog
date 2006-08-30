@@ -1,3 +1,7 @@
+2006-08-15  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Add support for an altenative version of glib.
+
 2006-08-29 Wade Berrier <wberrier@novell.com>
 
 	* configure.in: Add required CFLAGS for s390[x] (-mbackchain)
