@@ -4444,9 +4444,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
 			code_size += 40;
 		if (patch_info->type == MONO_PATCH_INFO_R8)
-			code_size += 8 + 7; /* sizeof (double) + alignment */
+			code_size += 8 + 15; /* sizeof (double) + alignment */
 		if (patch_info->type == MONO_PATCH_INFO_R4)
-			code_size += 4 + 7; /* sizeof (float) + alignment */
+			code_size += 4 + 15; /* sizeof (float) + alignment */
 	}
 
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
