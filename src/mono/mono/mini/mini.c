@@ -10752,6 +10752,18 @@ add_signal_handler (int signo, gpointer handler)
 #endif
 	g_assert (sigaction (signo, &sa, NULL) != -1);
 }
+
+static void
+remove_signal_handler (int signo)
+{
+	struct sigaction sa;
+
+	sa.sa_handler = SIG_DFL;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+
+	g_assert (sigaction (signo, &sa, NULL) != -1);
+}
 #endif
 
 static void
@@ -10770,11 +10782,6 @@ mono_runtime_install_handlers (void)
 		win32_seh_set_handler(SIGINT, sigint_signal_handler);
 
 #else /* !PLATFORM_WIN32 */
-
-	/* libpthreads has its own implementation of sigaction(),
-	 * but it seems to work well with our current exception
-	 * handlers. If not we must call syscall directly instead 
-	 * of sigaction */
 
 	if (debug_options.handle_sigint)
 		add_signal_handler (SIGINT, sigint_signal_handler);
@@ -10800,6 +10807,30 @@ mono_runtime_install_handlers (void)
 #else
 	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
 #endif
+#endif /* PLATFORM_WIN32 */
+}
+
+static void
+mono_runtime_cleanup_handlers (void)
+{
+#ifdef PLATFORM_WIN32
+	win32_seh_cleanup();
+#else
+	if (debug_options.handle_sigint)
+		remove_signal_handler (SIGINT);
+
+	remove_signal_handler (SIGFPE);
+	remove_signal_handler (SIGQUIT);
+	remove_signal_handler (SIGILL);
+	remove_signal_handler (SIGBUS);
+	if (mono_jit_trace_calls != NULL)
+		remove_signal_handler (SIGUSR2);
+
+	remove_signal_handler (mono_thread_get_abort_signal ());
+
+	remove_signal_handler (SIGABRT);
+
+	remove_signal_handler (SIGSEGV);
 #endif /* PLATFORM_WIN32 */
 }
 
@@ -11263,9 +11294,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_icall_cleanup ();
 
-#ifdef PLATFORM_WIN32
-	win32_seh_cleanup();
-#endif
+	mono_runtime_cleanup_handlers ();
 
 	mono_domain_free (domain, TRUE);
 
