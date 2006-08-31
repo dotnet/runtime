@@ -2857,16 +2857,16 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 	/* Need to register the icall so it gets an icall wrapper */
 	sprintf (icall_name, "ves_array_new_va_%d", rank);
 
+	mono_jit_lock ();
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_array_new_va_signature (rank);
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
 
-		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
-		mono_jit_unlock ();
 	}
+	mono_jit_unlock ();
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
@@ -3062,16 +3062,16 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	/* Need to register the icall so it gets an icall wrapper */
 	sprintf (icall_name, "ves_array_element_address_%d", rank);
 
+	mono_jit_lock ();
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_element_address_signature (rank);
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (ves_array_element_address, name, esig, FALSE);
 
-		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
-		mono_jit_unlock ();
 	}
+	mono_jit_unlock ();
 
 	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
