@@ -9229,7 +9229,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 
-	info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
 	/* Try to find a size for this type in metadata */
@@ -9302,14 +9302,6 @@ mono_marshal_load_type_info (MonoClass* klass)
 	/* Update the class's blittable info, if the layouts don't match */
 	if (info->native_size != mono_class_value_size (klass, NULL))
 		klass->blittable = FALSE;
-
-	mono_loader_lock ();
-	if (klass->marshal_info)
-		/* Another thread already initialized it */
-		g_free (info);
-	else
-		klass->marshal_info = info;
-	mono_loader_unlock ();
 
 	/* If this is an array type, ensure that we have element info */
 	if (klass->element_class) {
