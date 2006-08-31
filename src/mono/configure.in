@@ -67,6 +67,8 @@ case "$host" in
 		fi
 		HOST_CC="gcc"
 		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS -DFD_SETSIZE=1024"
+		libmono_cflags="-mno-cygwin"
+		libmono_ldflags="-mno-cygwin"
 		libdl=
 		libgc_threads=win32
 		gc_default=included
