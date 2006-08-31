@@ -543,5 +543,55 @@ GDir        *g_dir_open (const gchar *path, guint flags, GError **error);
 const gchar *g_dir_read_name (GDir *dir);
 void         g_dir_rewind (GDir *dir);
 void         g_dir_close (GDir *dir);
+
+/*
+ * GMarkup
+ */
+typedef struct _GMarkupParseContext GMarkupParseContext;
+
+typedef enum
+{
+	G_MARKUP_DO_NOT_USE_THIS_UNSUPPORTED_FLAG = 1 << 0,
+	G_MARKUP_TREAT_CDATA_AS_TEXT              = 1 << 1
+} GMarkupParseFlags;
+
+typedef struct {
+	void (*start_element)  (GMarkupParseContext *context,
+				const gchar *element_name,
+				const gchar **attribute_names,
+				const gchar **attribute_values,
+				gpointer user_data,
+				GError **error);
+
+	void (*end_element)    (GMarkupParseContext *context,
+				const gchar         *element_name,
+				gpointer             user_data,
+				GError             **error);
+	
+	void (*text)           (GMarkupParseContext *context,
+				const gchar         *text,
+				gsize                text_len,  
+				gpointer             user_data,
+				GError             **error);
+	
+	void (*passthrough)    (GMarkupParseContext *context,
+				const gchar         *passthrough_text,
+				gsize                text_len,  
+				gpointer             user_data,
+				GError             **error);
+	void (*error)          (GMarkupParseContext *context,
+				GError              *error,
+				gpointer             user_data);
+} GMarkupParser;
+
+GMarkupParseContext *g_markup_parse_context_new   (const GMarkupParser *parser,
+						   GMarkupParseFlags flags,
+						   gpointer user_data,
+						   GDestroyNotify user_data_dnotify);
+void                 g_markup_parse_context_free  (GMarkupParseContext *context);
+gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
+						   const gchar *text, gssize text_len,
+						   GError **error);
+
 #endif
 

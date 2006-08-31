@@ -59,7 +59,6 @@ Important Groups:
 	* Miscelaneous
 	      5 g_newa
 	      3 g_spaced_primes_closest
-	      2 g_set_prgname
 	      2 g_printerr
 	      1 g_mem_set_vtable
 	      1 g_log_set_handler
