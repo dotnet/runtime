@@ -1,5 +1,9 @@
 2006-08-31 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* src/gspawn.c: small touch-ups and make read/write EINTR-proof.
+
+2006-08-31 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* test/file.c: remove useless test.
 
 	* test/spawn.c: new g_spawn_async_with_pipes test.

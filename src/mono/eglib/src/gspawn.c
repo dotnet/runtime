@@ -37,19 +37,18 @@
 #include <sys/types.h>
 #include <glib.h>
 
-#define set_error(msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0);
-#define set_error_cond(cond,msg...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0);
-#define set_error_status(status,msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, status, msg); } while (0);
+#define set_error(msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0)
+#define set_error_cond(cond,msg...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0)
+#define set_error_status(status,msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, status, msg); } while (0)
+#define NO_INTR(var,cmd) do { (var) = (cmd); } while ((var) == -1 && errno == EINTR)
+#define CLOSE_PIPE(p) do { close (p [0]); close (p [1]); } while (0)
 
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **error)
 {
 	int res;
 
-	do {
-		res = read (fd, buffer, count);
-	} while (res == -1 && errno == EINTR);
-
+	NO_INTR (res, read (fd, buffer, count));
 	set_error_cond (res == -1, "Error reading from pipe.");
 	return res;
 }
@@ -165,8 +164,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 
 	if (standard_error && !create_pipe (stderr_pipe, error)) {
 		if (standard_output) {
-			close (stdout_pipe [1]);
-			close (stdout_pipe [0]);
+			CLOSE_PIPE (stdout_pipe);
 		}
 		return FALSE;
 	}
@@ -206,9 +204,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 		}
 	}
 
-	do {
-		res = waitpid (pid, &status, 0);
-	} while (res == -1 && errno == EINTR);
+	NO_INTR (res, waitpid (pid, &status, 0));
 
 	/* TODO: What if error? */
 	if (WIFEXITED (status) && exit_status) {
@@ -248,39 +244,29 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		return FALSE;
 
 	if (standard_output && !create_pipe (out_pipe, error)) {
-		close (info_pipe [0]);
-		close (info_pipe [1]);
+		CLOSE_PIPE (info_pipe);
 		return FALSE;
 	}
 
 	if (standard_error && !create_pipe (err_pipe, error)) {
-		close (out_pipe [0]);
-		close (out_pipe [1]);
-		close (info_pipe [0]);
-		close (info_pipe [1]);
+		CLOSE_PIPE (info_pipe);
+		CLOSE_PIPE (out_pipe);
 		return FALSE;
 	}
 
 	if (standard_input && !create_pipe (in_pipe, error)) {
-		close (err_pipe [0]);
-		close (err_pipe [1]);
-		close (out_pipe [0]);
-		close (out_pipe [1]);
-		close (info_pipe [0]);
-		close (info_pipe [1]);
+		CLOSE_PIPE (info_pipe);
+		CLOSE_PIPE (out_pipe);
+		CLOSE_PIPE (err_pipe);
 		return FALSE;
 	}
 
 	pid = fork ();
 	if (pid == -1) {
-		close (info_pipe [0]);
-		close (info_pipe [1]);
-		close (err_pipe [0]);
-		close (err_pipe [1]);
-		close (out_pipe [0]);
-		close (out_pipe [1]);
-		close (in_pipe [0]);
-		close (in_pipe [1]);
+		CLOSE_PIPE (info_pipe);
+		CLOSE_PIPE (out_pipe);
+		CLOSE_PIPE (err_pipe);
+		CLOSE_PIPE (in_pipe);
 		set_error ("Error in fork ()");
 		return FALSE;
 	}
@@ -298,6 +284,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			int fd;
 			gchar *arg0;
 			gchar **actual_args;
+			gint unused;
 
 			close (info_pipe [1]);
 			close (in_pipe [1]);
@@ -310,12 +297,13 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			 */
 			fcntl (info_pipe [1], F_SETFD, FD_CLOEXEC);
 
-			if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0)
-				write (info_pipe [1], &pid, sizeof (pid_t));
+			if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+				NO_INTR (unused, write (info_pipe [1], &pid, sizeof (pid_t)));
+			}
 
 			if (working_directory && chdir (working_directory) == -1) {
 				int err = errno;
-				write (info_pipe [1], &err, sizeof (int));
+				NO_INTR (unused, write (info_pipe [1], &err, sizeof (int)));
 				exit (0);
 			}
 
@@ -367,17 +355,14 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			exit (0);
 		}
 	} else if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+		int w;
 		/* Wait for the first child if two are created */
-		waitpid (pid, &status, 0);
-		if (status == 1) {
-			close (info_pipe [0]);
-			close (info_pipe [1]);
-			close (err_pipe [0]);
-			close (err_pipe [1]);
-			close (out_pipe [0]);
-			close (out_pipe [1]);
-			close (in_pipe [0]);
-			close (in_pipe [1]);
+		NO_INTR (w, waitpid (pid, &status, 0));
+		if (status == 1 || w == -1) {
+			CLOSE_PIPE (info_pipe);
+			CLOSE_PIPE (out_pipe);
+			CLOSE_PIPE (err_pipe);
+			CLOSE_PIPE (in_pipe);
 			set_error ("Error in fork (): %d", status);
 			return FALSE;
 		}
@@ -387,8 +372,10 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	close (out_pipe [0]);
 	close (err_pipe [0]);
 
-	if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0)
-		read (info_pipe [0], &pid, sizeof (pid_t)); /* if we read < sizeof (pid_t)... */
+	if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+		int x;
+		NO_INTR (x, read (info_pipe [0], &pid, sizeof (pid_t))); /* if we read < sizeof (pid_t)... */
+	}
 
 	if (child_pid) {
 		*child_pid = pid;
