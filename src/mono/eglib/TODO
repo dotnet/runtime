@@ -24,7 +24,6 @@ Important Groups:
 	      2 g_markup_parse_context_end_parse
 
 	* Process launching
-	      1 g_spawn_async_with_pipes
 	      3 g_shell_quote
 	      1 g_shell_unquote
 
