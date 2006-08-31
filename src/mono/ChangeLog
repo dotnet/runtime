@@ -1,5 +1,7 @@
 2006-08-31  Zoltan Varga  <vargaz@freemail.hu>
 
+	* samples/embed/test-invoke.vcproj samples/embed/teste.vcproj: Fix include paths for newer glib versions.
+
 	* genmdesc.vcproj: Fix include paths for newer glib versions.
 
 	* libmono.vcproj: Add further missing sources, fix include paths for newer glib versions.
