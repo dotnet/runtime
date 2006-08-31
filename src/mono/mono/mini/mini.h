@@ -626,6 +626,7 @@ typedef struct {
 	guint            ret_var_is_local : 1;
 	guint            dont_verify_stack_merge : 1;
 	guint            unverifiable : 1;
+	guint            skip_visibility : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;

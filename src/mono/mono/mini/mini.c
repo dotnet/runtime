@@ -4409,7 +4409,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (!cmethod)
 					goto load_error;
-				if (!dont_verify && !can_access_method (method, cil_method))
+				if (!dont_verify && !cfg->skip_visibility && !can_access_method (method, cil_method))
 					UNVERIFIED;
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
@@ -5751,7 +5751,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
-			if (!dont_verify && !can_access_field (method, field))
+			if (!dont_verify && !cfg->skip_visibility && !can_access_field (method, field))
 				UNVERIFIED;
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
@@ -9876,6 +9876,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
+	cfg->skip_visibility = method->skip_visibility;
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
