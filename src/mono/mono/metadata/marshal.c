@@ -6472,6 +6472,11 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
 		}
+		if (!spec) {
+			char *msg = g_strdup ("[MarshalAs] attribute required to marshal arrays to managed code.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			return conv_arg;
+		}			
 		if (spec->native != MONO_NATIVE_LPARRAY) {
 			char *msg = g_strdup ("Non LPArray marshalling of arrays to managed code is not implemented.");
 			mono_mb_emit_exception_marshal_directive (mb, msg);
@@ -6637,6 +6642,10 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		int index_var, dest_ptr, loc, esize, param_num, num_elem;
 		MonoMarshalConv conv;
 		gboolean is_string = FALSE;
+
+		if (!spec)
+			/* Already handled in CONV_IN */
+			break;
 		
 		/* These are already checked in CONV_IN */
 		g_assert (!t->byref);
