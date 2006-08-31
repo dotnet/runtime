@@ -49,8 +49,8 @@ Important Groups:
 	      1 g_strescape
 	
 	* Character encoding
-	     24 g_utf16_to_utf8
-	     20 g_utf8_to_utf16
+	     24 g_utf16_to_utf8 -> soon to be done
+	     20 g_utf8_to_utf16 -> soon to be done
 	      3 g_utf8_validate
 	      3 g_locale_to_utf8
 	      3 g_convert
