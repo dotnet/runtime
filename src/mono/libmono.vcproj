@@ -119,7 +119,7 @@
 				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0\glib&quot;"
+				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -151,7 +151,7 @@
 				Name="VCLibrarianTool"
 				AdditionalDependencies="libgc.lib"
 				OutputFile=".\libmono.lib"
-				AdditionalLibraryDirectories="C:\cygwin\home\poupou\svn\mono;C:\cygwin\home\poupou\svn\mono\VSDependancies\lib\"
+				AdditionalLibraryDirectories="C:\cygwin\home\poupou\svn\mono;.\VSDependancies\lib\"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -223,6 +223,35 @@
 			</File>
 			<File
 				RelativePath=".\mono\utils\mono-compiler.h"
+				>
+			</File>
+			<File
+				RelativePath="mono\utils\mono-counters.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="mono\utils\mono-counters.h"
 				>
 			</File>
 			<File
@@ -342,6 +371,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\mono\utils\mono-path.c"
+				>
+			</File>
+			<File
+				RelativePath=".\mono\utils\mono-path.h"
+				>
+			</File>
+			<File
 				RelativePath=".\mono\utils\mono-poll.c"
 				>
 			</File>
@@ -373,6 +410,14 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\mono\utils\mono-stdlib.c"
+				>
+			</File>
+			<File
+				RelativePath=".\mono\utils\mono-stdlib.h"
+				>
 			</File>
 			<File
 				RelativePath="mono\utils\mono-uri.c"
@@ -489,35 +534,6 @@
 			<File
 				RelativePath="mono\utils\strtod.h"
 				>
-			</File>
-			<File
-				RelativePath="mono\utils\mono-counters.h"
-				>
-			</File>
-			<File
-				RelativePath="mono\utils\mono-counters.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -1962,6 +1978,35 @@
 				>
 			</File>
 			<File
+				RelativePath="mono\mini\jit-icalls.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="mono\mini\jit-icalls.h"
+				>
+			</File>
+			<File
 				RelativePath="mono\mini\linear-scan.c"
 				>
 				<FileConfiguration
@@ -2010,6 +2055,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\mono\mini\local-propagation.c"
+				>
 			</File>
 			<File
 				RelativePath="mono\mini\mini-arch.h"
@@ -2082,10 +2131,6 @@
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\jit-icalls.h"
-				>
-			</File>
-			<File
 				RelativePath="mono\mini\mini.c"
 				>
 				<FileConfiguration
@@ -2113,31 +2158,6 @@
 			<File
 				RelativePath="mono\mini\mini.h"
 				>
-			</File>
-			<File
-				RelativePath="mono\mini\jit-icalls.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="mono\mini\regalloc.c"
@@ -2262,6 +2282,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\mono\mini\wapihandles.c"
+				>
 			</File>
 		</Filter>
 	</Files>

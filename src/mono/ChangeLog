@@ -1,5 +1,7 @@
 2006-08-31  Zoltan Varga  <vargaz@freemail.hu>
 
+	* libmono.vcproj: Add further missing sources, fix include paths for newer glib versions.
+	
 	* libmono.vcproj: Add aot-compiler.c and aot-runtime.c as source files.
 
 	* README.vsnet: Fix a typo.
