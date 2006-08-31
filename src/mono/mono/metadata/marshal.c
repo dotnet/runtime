@@ -6472,11 +6472,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
 		}
-		if (!spec) {
-			char *msg = g_strdup ("[MarshalAs] attribute required to marshal arrays to managed code.");
-			mono_mb_emit_exception_marshal_directive (mb, msg);
-			return conv_arg;
-		}			
 		if (spec->native != MONO_NATIVE_LPARRAY) {
 			char *msg = g_strdup ("Non LPArray marshalling of arrays to managed code is not implemented.");
 			mono_mb_emit_exception_marshal_directive (mb, msg);
@@ -6642,10 +6637,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		int index_var, dest_ptr, loc, esize, param_num, num_elem;
 		MonoMarshalConv conv;
 		gboolean is_string = FALSE;
-
-		if (!spec)
-			/* Already handled in CONV_IN */
-			break;
 		
 		/* These are already checked in CONV_IN */
 		g_assert (!t->byref);
@@ -9229,7 +9220,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 
-	info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
 	/* Try to find a size for this type in metadata */
@@ -9302,14 +9293,6 @@ mono_marshal_load_type_info (MonoClass* klass)
 	/* Update the class's blittable info, if the layouts don't match */
 	if (info->native_size != mono_class_value_size (klass, NULL))
 		klass->blittable = FALSE;
-
-	mono_loader_lock ();
-	if (klass->marshal_info)
-		/* Another thread already initialized it */
-		g_free (info);
-	else
-		klass->marshal_info = info;
-	mono_loader_unlock ();
 
 	/* If this is an array type, ensure that we have element info */
 	if (klass->element_class) {

@@ -2857,16 +2857,16 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 	/* Need to register the icall so it gets an icall wrapper */
 	sprintf (icall_name, "ves_array_new_va_%d", rank);
 
-	mono_jit_lock ();
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_array_new_va_signature (rank);
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
 
+		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
+		mono_jit_unlock ();
 	}
-	mono_jit_unlock ();
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
@@ -3062,16 +3062,16 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	/* Need to register the icall so it gets an icall wrapper */
 	sprintf (icall_name, "ves_array_element_address_%d", rank);
 
-	mono_jit_lock ();
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
 		esig = mono_get_element_address_signature (rank);
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (ves_array_element_address, name, esig, FALSE);
 
+		mono_jit_lock ();
 		g_hash_table_insert (jit_icall_name_hash, name, name);
+		mono_jit_unlock ();
 	}
-	mono_jit_unlock ();
 
 	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
@@ -10752,18 +10752,6 @@ add_signal_handler (int signo, gpointer handler)
 #endif
 	g_assert (sigaction (signo, &sa, NULL) != -1);
 }
-
-static void
-remove_signal_handler (int signo)
-{
-	struct sigaction sa;
-
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	g_assert (sigaction (signo, &sa, NULL) != -1);
-}
 #endif
 
 static void
@@ -10782,6 +10770,11 @@ mono_runtime_install_handlers (void)
 		win32_seh_set_handler(SIGINT, sigint_signal_handler);
 
 #else /* !PLATFORM_WIN32 */
+
+	/* libpthreads has its own implementation of sigaction(),
+	 * but it seems to work well with our current exception
+	 * handlers. If not we must call syscall directly instead 
+	 * of sigaction */
 
 	if (debug_options.handle_sigint)
 		add_signal_handler (SIGINT, sigint_signal_handler);
@@ -10807,30 +10800,6 @@ mono_runtime_install_handlers (void)
 #else
 	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
 #endif
-#endif /* PLATFORM_WIN32 */
-}
-
-static void
-mono_runtime_cleanup_handlers (void)
-{
-#ifdef PLATFORM_WIN32
-	win32_seh_cleanup();
-#else
-	if (debug_options.handle_sigint)
-		remove_signal_handler (SIGINT);
-
-	remove_signal_handler (SIGFPE);
-	remove_signal_handler (SIGQUIT);
-	remove_signal_handler (SIGILL);
-	remove_signal_handler (SIGBUS);
-	if (mono_jit_trace_calls != NULL)
-		remove_signal_handler (SIGUSR2);
-
-	remove_signal_handler (mono_thread_get_abort_signal ());
-
-	remove_signal_handler (SIGABRT);
-
-	remove_signal_handler (SIGSEGV);
 #endif /* PLATFORM_WIN32 */
 }
 
@@ -11294,7 +11263,9 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_icall_cleanup ();
 
-	mono_runtime_cleanup_handlers ();
+#ifdef PLATFORM_WIN32
+	win32_seh_cleanup();
+#endif
 
 	mono_domain_free (domain, TRUE);
 
