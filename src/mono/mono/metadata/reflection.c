@@ -56,6 +56,7 @@ typedef struct {
 	MonoObject *type;
 	MonoString *name;
 	MonoBoolean init_locals;
+	MonoBoolean skip_visibility;
 	MonoArray *return_modreq;
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
@@ -1423,6 +1424,7 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->name = mb->name;
 	rmb->table_idx = NULL;
 	rmb->init_locals = mb->init_locals;
+	rmb->skip_visibility = mb->skip_visibility;
 	rmb->return_modreq = NULL;
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = NULL;
@@ -8390,6 +8392,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->name = dynamic ? mono_string_to_utf8 (rmb->name) : mono_string_to_utf8_mp (mp, rmb->name);
 	m->klass = klass;
 	m->signature = sig;
+	m->skip_visibility = rmb->skip_visibility;
 	if (rmb->table_idx)
 		m->token = MONO_TOKEN_METHOD_DEF | (*rmb->table_idx);
 
