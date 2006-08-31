@@ -40,15 +40,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0\glib&quot;;..\..\VSDependancies\include"
+				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="TRUE"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				BufferSecurityCheck="FALSE"
+				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 				DisableSpecificWarnings="4996"
 			/>
@@ -66,7 +66,7 @@
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib "
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -122,10 +122,10 @@
 				Optimization="2"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="TRUE"
+				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -140,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
