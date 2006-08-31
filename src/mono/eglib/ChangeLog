@@ -1,3 +1,17 @@
+2006-08-31 Atsushi Enomoto <atsushi@ximian.com>
+
+	* src/gerror.h,
+	  src/gerror.c : added g_set_error().
+	* src/gutf8.c :
+	  g_utf8_to_utf16() and g_utf16_to_utf8() implementation.
+	* src/glib.h : added all above, and some dependent bits.
+	* src/Makefile.am : added gutf8.c.
+	* TODO: removed above.
+	* test/Makefile.am,
+	  test/tests.h : added utf8 tests.
+	* test/utf8.c : test for g_utf8_to_utf16 and g_utf16_to_utf8.
+	  It still needs more tests e.g. for multibytes.
+
 2006-08-31 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* src/gspawn.c: small touch-ups and make read/write EINTR-proof.

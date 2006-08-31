@@ -17,6 +17,7 @@ DEFINE_TEST_GROUP_INIT_H(timer_tests_init);
 DEFINE_TEST_GROUP_INIT_H(file_tests_init);
 DEFINE_TEST_GROUP_INIT_H(pattern_tests_init);
 DEFINE_TEST_GROUP_INIT_H(dir_tests_init);
+DEFINE_TEST_GROUP_INIT_H(utf8_tests_init);
 
 static Group test_groups [] = {	
 	{"string",    string_tests_init}, 
@@ -36,6 +37,7 @@ static Group test_groups [] = {
 	{"file",      file_tests_init},
 	{"pattern",   pattern_tests_init},
 	{"dir",       dir_tests_init},
+	{"utf8",      utf8_tests_init},
 	{NULL, NULL}
 };
 

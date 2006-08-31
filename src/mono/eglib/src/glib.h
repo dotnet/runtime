@@ -35,6 +35,7 @@ typedef int64_t        gint64;
 typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
+typedef uint16_t       gunichar2;
 /*
  * Macros
  */
@@ -399,6 +400,13 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
 #define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
 
 /*
+ * Conversions
+ */
+
+gpointer g_convert_error_quark();
+
+
+/*
  * Unicode Manipulation: most of this is not used by Mono by default, it is
  * only used if the old collation code is activated, so this is only the
  * bare minimum to build.
@@ -432,6 +440,27 @@ typedef struct {
 
 void    g_error_free (GError *error);
 GError *g_error_new (gpointer domain, gint code, const char *format, ...);
+void   g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...);
+
+/*
+ * Unicode conversion
+ */
+
+#define G_CONVERT_ERROR g_convert_error_quark()
+
+typedef enum {
+	G_CONVERT_ERROR_NO_CONVERSION,
+	G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+	G_CONVERT_ERROR_FAILED,
+	G_CONVERT_ERROR_PARTIAL_INPUT,
+	G_CONVERT_ERROR_BAD_URI,
+	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
+} GConvertError;
+
+gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong     *items_written, GError **error);
+glong     utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error);
+gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong     *items_written, GError **error);
+glong     utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **error);
 
 /*
  * Path

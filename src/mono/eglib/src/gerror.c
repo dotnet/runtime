@@ -57,5 +57,14 @@ g_error_free (GError *error)
 	g_free (error);
 }
 
+void
+g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...)
+{
+	va_list args;
 
-
+	if (err) {
+		va_start (args, format);
+		*err = g_error_new (domain, code, format, args);
+		va_end (args);
+	}
+}

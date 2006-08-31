@@ -21,7 +21,8 @@ SOURCES = \
 	timer.c		\
 	file.c		\
 	pattern.c	\
-	dir.c
+	dir.c		\
+	utf8.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)
