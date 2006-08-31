@@ -1692,7 +1692,32 @@
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\aot.c"
+				RelativePath="mono\mini\aot-compiler.c"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="mono\mini\aot-runtime.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"

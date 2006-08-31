@@ -1,3 +1,9 @@
+2006-08-31  Zoltan Varga  <vargaz@freemail.hu>
+
+	* libmono.vcproj: Add aot-compiler.c and aot-runtime.c as source files.
+
+	* README.vsnet: Fix a typo.
+
 2006-08-31  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in (PLATFORM_WIN32): Add -mno-cygwin to libmono_cflags/ldflags. Fixes
