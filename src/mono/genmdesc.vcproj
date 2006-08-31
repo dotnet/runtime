@@ -5,7 +5,6 @@
 	Name="genmdesc"
 	ProjectGUID="{B7098DFA-31E6-4006-8A15-1C9A4E925149}"
 	RootNamespace="genmdesc"
-	SignManifests="true"
 	>
 	<Platforms>
 		<Platform
@@ -44,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;.\mono\;.\mono\jit;&quot;C:\Program Files\Microsoft SDK\include&quot;"
+				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;;.\mono\;.\mono\jit;&quot;C:\Program Files\Microsoft SDK\include&quot;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
