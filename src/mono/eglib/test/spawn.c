@@ -1,6 +1,7 @@
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "test.h"
 
 RESULT
@@ -25,8 +26,46 @@ test_spawn_sync ()
 	return OK;
 }
 
+RESULT
+test_spawn_async ()
+{
+	/*
+gboolean
+g_spawn_async_with_pipes (const gchar *working_directory,
+			gchar **argv,
+			gchar **envp,
+			GSpawnFlags flags,
+			GSpawnChildSetupFunc child_setup,
+			gpointer user_data,
+			GPid *child_pid,
+			gint *standard_input,
+			gint *standard_output,
+			gint *standard_error,
+			GError **error) */
+	char *argv [15];
+	int stdout_fd = -1;
+	char buffer [512];
+	pid_t child_pid = 0;
+
+	memset (argv, 0, 15 * sizeof (char *));
+	argv [0] = "ls";
+	if (!g_spawn_async_with_pipes (NULL, argv, NULL, 0, NULL, NULL, &child_pid, NULL, &stdout_fd, NULL, NULL))
+		return FAILED ("1 Failed to run ls");
+	if (child_pid == 0)
+		return FAILED ("2 child pid not returned");
+	if (stdout_fd == -1)
+		return FAILED ("3 out fd is -1");
+
+	while (read (stdout_fd, buffer, 512) > 0);
+	close (stdout_fd);
+	printf ("Child pid: %d\n", child_pid);
+
+	return OK;
+}
+
 static Test spawn_tests [] = {
 	{"g_shell_spawn_sync", test_spawn_sync},
+	{"g_shell_spawn_async_with_pipes", test_spawn_async},
 	{NULL, NULL}
 };
 

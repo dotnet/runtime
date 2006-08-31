@@ -54,10 +54,13 @@ test_open_tmp ()
 	gint fd;
 	gchar *name = GINT_TO_POINTER (-1);
 
-	fd = g_file_open_tmp (NULL, NULL, NULL);
-	if (fd < 0)
-		return FAILED ("Default failed.");
-	close (fd);
+	/*
+	 * Okay, this works, but creates a .xxx file in /tmp on every run. Disabled.
+	 * fd = g_file_open_tmp (NULL, NULL, NULL);
+	 * if (fd < 0)
+	 *	return FAILED ("Default failed.");
+	 * close (fd);
+	*/
 	error = NULL;
 	fd = g_file_open_tmp ("invalidtemplate", NULL, &error);
 	if (fd != -1)

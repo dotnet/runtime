@@ -442,6 +442,7 @@ gchar  *g_path_get_dirname     (const gchar *filename);
 gchar  *g_path_get_basename    (const char *filename);
 gchar  *g_find_program_in_path (const gchar *program);
 gchar  *g_get_current_dir      (void);
+gboolean g_path_is_absolute    (const char *filename);
 
 const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
@@ -456,8 +457,23 @@ gboolean g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***ar
 /*
  * Spawn
  */
+typedef enum {
+	G_SPAWN_LEAVE_DESCRIPTORS_OPEN = 1,
+	G_SPAWN_DO_NOT_REAP_CHILD      = 1 << 1,
+	G_SPAWN_SEARCH_PATH            = 1 << 2,
+	G_SPAWN_STDOUT_TO_DEV_NULL     = 1 << 3,
+	G_SPAWN_STDERR_TO_DEV_NULL     = 1 << 4,
+	G_SPAWN_CHILD_INHERITS_STDIN   = 1 << 5,
+	G_SPAWN_FILE_AND_ARGV_ZERO     = 1 << 6
+} GSpawnFlags;
+
+typedef pid_t GPid;
+
+typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
 
 gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **error);
+gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
+				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **error);
 
 
 /*

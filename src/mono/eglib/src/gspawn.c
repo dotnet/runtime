@@ -31,10 +31,15 @@
 #include <errno.h>
 #include <unistd.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <glib.h>
+
+#define set_error(msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0);
+#define set_error_cond(cond,msg...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0);
+#define set_error_status(status,msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, status, msg); } while (0);
 
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **error)
@@ -45,9 +50,7 @@ safe_read (int fd, gchar *buffer, gint count, GError **error)
 		res = read (fd, buffer, count);
 	} while (res == -1 && errno == EINTR);
 
-	if (res == -1 && error) {
-		*error = g_error_new (G_LOG_DOMAIN, errno, "Error reading from pipe.");
-	}
+	set_error_cond (res == -1, "Error reading from pipe.");
 	return res;
 }
 
@@ -129,6 +132,16 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **err
 	return 0;
 }
 
+static gboolean
+create_pipe (int *fds, GError **error)
+{
+	if (pipe (fds) == -1) {
+		set_error ("Error creating pipe.");
+		return FALSE;
+	}
+	return TRUE;
+}
+
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
 				gchar **standard_output,
@@ -139,35 +152,23 @@ g_spawn_command_line_sync (const gchar *command_line,
 	pid_t pid;
 	gchar **argv;
 	gint argc;
-	int stdout_pipe [2];
-	int stderr_pipe [2];
+	int stdout_pipe [2] = { -1, -1 };
+	int stderr_pipe [2] = { -1, -1 };
 	int status;
 	int res;
 	
 	if (!g_shell_parse_argv (command_line, &argc, &argv, error))
 		return FALSE;
 
-	stdout_pipe [0] = -1;
-	stdout_pipe [1] = -1;
-	stderr_pipe [0] = -1;
-	stderr_pipe [1] = -1;
-	if (standard_output) {
-		if (pipe (stdout_pipe) == -1) {
-			if (error)
-				*error = g_error_new (G_LOG_DOMAIN, errno, "Error creating out pipe.");
-			return FALSE;
+	if (standard_output && !create_pipe (stdout_pipe, error))
+		return FALSE;
+
+	if (standard_error && !create_pipe (stderr_pipe, error)) {
+		if (standard_output) {
+			close (stdout_pipe [1]);
+			close (stdout_pipe [0]);
 		}
-	}
-	if (standard_error) {
-		if (pipe (stderr_pipe) == -1) {
-			if (standard_output) {
-				close (stdout_pipe [1]);
-				close (stdout_pipe [0]);
-			}
-			if (error)
-				*error = g_error_new (G_LOG_DOMAIN, errno, "Error creating out pipe.");
-			return FALSE;
-		}
+		return FALSE;
 	}
 
 	pid = fork ();
@@ -213,6 +214,201 @@ g_spawn_command_line_sync (const gchar *command_line,
 	if (WIFEXITED (status) && exit_status) {
 		*exit_status = WEXITSTATUS (status);
 	}
+
+	return TRUE;
+}
+
+/*
+ * This is the only use we have in mono/metadata
+!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, &ch_in, &ch_out, NULL, NULL)
+*/
+gboolean
+g_spawn_async_with_pipes (const gchar *working_directory,
+			gchar **argv,
+			gchar **envp,
+			GSpawnFlags flags,
+			GSpawnChildSetupFunc child_setup,
+			gpointer user_data,
+			GPid *child_pid,
+			gint *standard_input,
+			gint *standard_output,
+			gint *standard_error,
+			GError **error)
+{
+	pid_t pid;
+	int info_pipe [2];
+	int in_pipe [2] = { -1, -1 };
+	int out_pipe [2] = { -1, -1 };
+	int err_pipe [2] = { -1, -1 };
+	int status;
+
+	g_return_val_if_fail (argv != NULL, FALSE); /* Only mandatory arg */
+
+	if (!create_pipe (info_pipe, error))
+		return FALSE;
+
+	if (standard_output && !create_pipe (out_pipe, error)) {
+		close (info_pipe [0]);
+		close (info_pipe [1]);
+		return FALSE;
+	}
+
+	if (standard_error && !create_pipe (err_pipe, error)) {
+		close (out_pipe [0]);
+		close (out_pipe [1]);
+		close (info_pipe [0]);
+		close (info_pipe [1]);
+		return FALSE;
+	}
+
+	if (standard_input && !create_pipe (in_pipe, error)) {
+		close (err_pipe [0]);
+		close (err_pipe [1]);
+		close (out_pipe [0]);
+		close (out_pipe [1]);
+		close (info_pipe [0]);
+		close (info_pipe [1]);
+		return FALSE;
+	}
+
+	pid = fork ();
+	if (pid == -1) {
+		close (info_pipe [0]);
+		close (info_pipe [1]);
+		close (err_pipe [0]);
+		close (err_pipe [1]);
+		close (out_pipe [0]);
+		close (out_pipe [1]);
+		close (in_pipe [0]);
+		close (in_pipe [1]);
+		set_error ("Error in fork ()");
+		return FALSE;
+	}
+
+	if (pid == 0) {
+		/* No zombie left behind */
+		if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+			pid = fork ();
+		}
+
+		if (pid != 0) {
+			exit (pid == -1 ? 1 : 0);
+		}  else {
+			gint i;
+			int fd;
+			gchar *arg0;
+			gchar **actual_args;
+
+			close (info_pipe [1]);
+			close (in_pipe [1]);
+			close (out_pipe [0]);
+			close (err_pipe [0]);
+
+			/* when exec* succeeds, we want to close this fd, which will return
+			 * a 0 read on the parent. We're not supposed to keep it open forever.
+			 * If exec fails, we still can write the error to it before closing.
+			 */
+			fcntl (info_pipe [1], F_SETFD, FD_CLOEXEC);
+
+			if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0)
+				write (info_pipe [1], &pid, sizeof (pid_t));
+
+			if (working_directory && chdir (working_directory) == -1) {
+				int err = errno;
+				write (info_pipe [1], &err, sizeof (int));
+				exit (0);
+			}
+
+			if (standard_output) {
+				dup2 (*standard_output, STDOUT_FILENO);
+			} else if ((flags & G_SPAWN_STDOUT_TO_DEV_NULL) != 0) {
+				fd = open ("/dev/null", O_WRONLY);
+				dup2 (fd, STDOUT_FILENO);
+			}
+
+			if (standard_error) {
+				dup2 (*standard_error, STDERR_FILENO);
+			} else if ((flags & G_SPAWN_STDERR_TO_DEV_NULL) != 0) {
+				fd = open ("/dev/null", O_WRONLY);
+				dup2 (fd, STDERR_FILENO);
+			}
+
+			if (standard_input) {
+				dup2 (*standard_input, STDERR_FILENO);
+			} else if ((flags & G_SPAWN_CHILD_INHERITS_STDIN) == 0) {
+				fd = open ("/dev/null", O_RDONLY);
+				dup2 (fd, STDERR_FILENO);
+			}
+
+			if ((flags & G_SPAWN_LEAVE_DESCRIPTORS_OPEN) != 0) {
+				for (i = getdtablesize () - 1; i >= 3; i--)
+					close (i);
+			}
+
+			actual_args = ((flags & G_SPAWN_FILE_AND_ARGV_ZERO) == 0) ? argv : argv + 1;
+			if (envp == NULL)
+				envp = environ;
+
+			if (child_setup)
+				child_setup (user_data);
+
+			arg0 = argv [0];
+			if (!g_path_is_absolute (arg0) || (flags & G_SPAWN_SEARCH_PATH) != 0) {
+				arg0 = g_find_program_in_path (argv [0]);
+				if (arg0 == NULL) {
+					int err = ENOENT;
+					write (info_pipe [1], &err, sizeof (int));
+					exit (0);
+				}
+			}
+
+			execve (arg0, actual_args, envp);
+			write (info_pipe [1], &errno, sizeof (int));
+			exit (0);
+		}
+	} else if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+		/* Wait for the first child if two are created */
+		waitpid (pid, &status, 0);
+		if (status == 1) {
+			close (info_pipe [0]);
+			close (info_pipe [1]);
+			close (err_pipe [0]);
+			close (err_pipe [1]);
+			close (out_pipe [0]);
+			close (out_pipe [1]);
+			close (in_pipe [0]);
+			close (in_pipe [1]);
+			set_error ("Error in fork (): %d", status);
+			return FALSE;
+		}
+	}
+	close (info_pipe [1]);
+	close (in_pipe [1]);
+	close (out_pipe [0]);
+	close (err_pipe [0]);
+
+	if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0)
+		read (info_pipe [0], &pid, sizeof (pid_t)); /* if we read < sizeof (pid_t)... */
+
+	if (child_pid) {
+		*child_pid = pid;
+	}
+
+	if (read (info_pipe [0], &status, sizeof (int)) != 0) {
+		close (info_pipe [0]);
+		close (in_pipe [0]);
+		close (out_pipe [1]);
+		close (err_pipe [1]);
+		set_error_status (status, "Error in exec (%d)", status);
+		return FALSE;
+	}
+	close (info_pipe [0]);
+	if (standard_input)
+		*standard_input = in_pipe [1];
+	if (standard_output)
+		*standard_output = out_pipe [0];
+	if (standard_error)
+		*standard_error = err_pipe [0];
 
 	return TRUE;
 }
