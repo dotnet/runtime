@@ -1979,17 +1979,14 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 
 	g_assert (is_var || type == MONO_TYPE_MVAR);
 
-	if (is_var && gc->parent)
-		/*
-		 * The current MonoGenericContainer is a generic method -> its `parent'
-		 * points to the containing class'es container.
-		 */
-		gc = gc->parent;
-
-	/*
-	 * Ensure that we have the correct type of GenericContainer.
-	 */
-	g_assert (is_var == !gc->is_method);
+	if (is_var) {
+		if (gc->is_method || gc->parent)
+			/*
+			 * The current MonoGenericContainer is a generic method -> its `parent'
+			 * points to the containing class'es container.
+			 */
+			return gc->parent;
+	}
 
 	return gc;
 }

@@ -2914,8 +2914,6 @@ mini_class_is_system_array (MonoClass *klass)
 {
 	if (klass->parent == mono_defaults.array_class)
 		return TRUE;
-	else if (mono_defaults.generic_array_class && klass->parent && klass->parent->generic_class)
-		return klass->parent->generic_class->container_class == mono_defaults.generic_array_class;
 	else
 		return FALSE;
 }

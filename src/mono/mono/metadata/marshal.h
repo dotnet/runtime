@@ -253,6 +253,10 @@ mono_marshal_get_proxy_cancast (MonoClass *klass);
 MonoMethod *
 mono_marshal_get_stelemref (void);
 
+MonoMethod *
+mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface,
+				       gchar *name, MonoMethod *method);
+
 /* marshaling internal calls */
 
 void * 

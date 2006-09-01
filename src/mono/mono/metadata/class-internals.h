@@ -704,7 +704,7 @@ typedef struct {
 	MonoClass *runtimesecurityframe_class;
 	MonoClass *executioncontext_class;
 	MonoClass *internals_visible_class;
-	MonoClass *generic_array_class;
+	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
 	MonoClass *variant_class;
 	MonoClass *com_object_class;

@@ -9623,3 +9623,34 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 		break;
 	}
 }
+
+MonoMethod *
+mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar *name, MonoMethod *method)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	int i;
+
+	mb = mono_mb_new (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb->method->slot = -1;
+
+	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
+		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
+
+	sig = mono_method_signature (method);
+	csig = signature_dup (method->klass->image, sig);
+	csig->generic_param_count = 0;
+
+	mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < csig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_managed_call (mb, method, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+
+	mono_mb_free (mb);
+
+	return res;
+}

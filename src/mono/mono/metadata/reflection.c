@@ -5507,7 +5507,7 @@ verify_safe_for_managed_space (MonoType *type)
 #endif
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return type->data.generic_param->owner != NULL;
+		return TRUE;
 	}
 	return TRUE;
 }

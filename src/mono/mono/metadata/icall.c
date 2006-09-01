@@ -668,8 +668,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 }
 
 static void
-ves_icall_System_Array_InternalArray_GetGenericValueImpl (MonoObject *this, guint32 pos,
-							  gpointer value)
+ves_icall_System_Array_GetGenericValueImpl (MonoObject *this, guint32 pos, gpointer value)
 {
 	MonoClass *ac;
 	MonoArray *ao;
@@ -1682,12 +1681,6 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	mono_class_setup_vtable (class);
 
 	slots = mono_bitset_new (class->max_interface_id + 1, 0);
-
-	if (class->rank) {
-		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
-		mono_bitset_free (slots);
-		return mono_array_new (domain, mono_defaults.monotype_class, 0);
-	}
 
 	for (parent = class; parent; parent = parent->parent) {
 		GPtrArray *tmp_ifaces = mono_class_get_implemented_interfaces (parent);
@@ -6509,6 +6502,7 @@ static const IcallEntry array_icalls [] = {
 	{"Clone",            mono_array_clone},
 	{"CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl},
 	{"FastCopy",         ves_icall_System_Array_FastCopy},
+	{"GetGenericValueImpl", ves_icall_System_Array_GetGenericValueImpl},
 	{"GetLength",        ves_icall_System_Array_GetLength},
 	{"GetLowerBound",    ves_icall_System_Array_GetLowerBound},
 	{"GetRank",          ves_icall_System_Array_GetRank},
@@ -7345,10 +7339,6 @@ static const IcallEntry securitymanager_icalls [] = {
 	{"set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled}
 };
 
-static const IcallEntry generic_array_icalls [] = {
-	{"GetGenericValueImpl", ves_icall_System_Array_InternalArray_GetGenericValueImpl}
-};
-
 static const IcallEntry comobject_icalls [] = {
 	{"CacheInterface", ves_icall_System_ComObject_CacheInterface},
 	{"CreateRCW", ves_icall_System_ComObject_CreateRCW},
@@ -7373,7 +7363,6 @@ static const IcallMap icall_entries [] = {
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
 	{"System.ArgIterator", argiterator_icalls, G_N_ELEMENTS (argiterator_icalls)},
 	{"System.Array", array_icalls, G_N_ELEMENTS (array_icalls)},
-	{"System.Array/InternalArray`1", generic_array_icalls, G_N_ELEMENTS (generic_array_icalls)},
 	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},
 	{"System.Char", char_icalls, G_N_ELEMENTS (char_icalls)},
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
@@ -7578,9 +7567,6 @@ mono_lookup_internal_call (MonoMethod *method)
 	const IcallMap *imap;
 
 	g_assert (method != NULL);
-
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
 
 	if (method->klass->nested_in) {
 		int pos = concat_class_name (mname, sizeof (mname)-2, method->klass->nested_in);

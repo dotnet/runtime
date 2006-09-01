@@ -808,10 +808,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	 * using the 2.0 corlib.
 	 */
 	mono_class_init (mono_defaults.array_class);
-	mono_defaults.generic_array_class = mono_class_from_name (
-	        mono_defaults.corlib, "System", "Array/InternalArray`1");
 	mono_defaults.generic_nullable_class = mono_class_from_name (
 		mono_defaults.corlib, "System", "Nullable`1");
+	mono_defaults.generic_ilist_class = mono_class_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
 
 	domain->friendly_name = g_path_get_basename (filename);
 
