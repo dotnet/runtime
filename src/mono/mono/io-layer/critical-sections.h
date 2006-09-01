@@ -30,8 +30,18 @@ extern gboolean InitializeCriticalSectionAndSpinCount(WapiCriticalSection *secti
 extern void DeleteCriticalSection(WapiCriticalSection *section);
 extern guint32 SetCriticalSectionSpinCount(WapiCriticalSection *section, guint32 spincount);
 extern gboolean TryEnterCriticalSection(WapiCriticalSection *section);
-extern void EnterCriticalSection(WapiCriticalSection *section);
-extern void LeaveCriticalSection(WapiCriticalSection *section);
+
+/* These two are perf critical so avoid the wrapper function */
+
+#define EnterCriticalSection(section) do { \
+	int ret = mono_mutex_lock(&(section)->mutex);    \
+    g_assert (ret == 0);    \
+} while (0)
+
+#define LeaveCriticalSection(section) do { \
+	int ret = mono_mutex_unlock(&(section)->mutex);      \
+	g_assert (ret == 0);    \
+} while (0)
 
 G_END_DECLS
 
