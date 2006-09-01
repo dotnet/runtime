@@ -246,3 +246,13 @@ mono_mempool_strdup (MonoMemPool *pool,
 	return res;
 }
 
+/**
+ * mono_mempool_get_allocated:
+ *
+ * Return the amount of memory allocated for this mempool.
+ */
+guint32
+mono_mempool_get_allocated (MonoMemPool *pool)
+{
+	return pool->d.allocated;
+}

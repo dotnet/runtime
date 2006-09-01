@@ -36,6 +36,9 @@ char*
 mono_mempool_strdup        (MonoMemPool *pool,
 							const char *s);
 
+guint32
+mono_mempool_get_allocated (MonoMemPool *pool);
+
 G_END_DECLS
 
 #endif
