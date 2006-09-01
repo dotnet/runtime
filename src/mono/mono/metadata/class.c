@@ -1775,6 +1775,8 @@ mono_class_setup_vtable (MonoClass *class)
 		return;
 	}
 
+	mono_stats.generic_vtable_count ++;
+
 	if (class->generic_class) {
 		context = class->generic_class->context;
 		type_token = class->generic_class->container_class->type_token;

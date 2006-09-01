@@ -1311,6 +1311,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	else
 		result = (MonoMethod *)mono_mempool_alloc0 (image->mempool, sizeof (MonoMethodNormal));
 
+	mono_stats.method_count ++;
+
 	if (!klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);

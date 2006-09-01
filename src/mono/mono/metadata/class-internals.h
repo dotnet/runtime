@@ -545,7 +545,9 @@ typedef struct {
 typedef struct {
 	gulong new_object_count;
 	gulong initialized_class_count;
+	gulong generic_vtable_count;
 	gulong used_class_count;
+	gulong method_count;
 	gulong class_vtable_size;
 	gulong class_static_data_size;
 	gulong generic_instance_count;
