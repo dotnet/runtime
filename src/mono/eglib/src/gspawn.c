@@ -286,7 +286,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			gchar **actual_args;
 			gint unused;
 
-			close (info_pipe [1]);
+			close (info_pipe [0]);
 			close (in_pipe [1]);
 			close (out_pipe [0]);
 			close (err_pipe [0]);
@@ -298,6 +298,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			fcntl (info_pipe [1], F_SETFD, FD_CLOEXEC);
 
 			if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
+				pid = getpid ();
 				NO_INTR (unused, write (info_pipe [1], &pid, sizeof (pid_t)));
 			}
 
@@ -308,21 +309,21 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			}
 
 			if (standard_output) {
-				dup2 (*standard_output, STDOUT_FILENO);
+				dup2 (out_pipe [1], STDOUT_FILENO);
 			} else if ((flags & G_SPAWN_STDOUT_TO_DEV_NULL) != 0) {
 				fd = open ("/dev/null", O_WRONLY);
 				dup2 (fd, STDOUT_FILENO);
 			}
 
 			if (standard_error) {
-				dup2 (*standard_error, STDERR_FILENO);
+				dup2 (err_pipe [1], STDERR_FILENO);
 			} else if ((flags & G_SPAWN_STDERR_TO_DEV_NULL) != 0) {
 				fd = open ("/dev/null", O_WRONLY);
 				dup2 (fd, STDERR_FILENO);
 			}
 
 			if (standard_input) {
-				dup2 (*standard_input, STDERR_FILENO);
+				dup2 (in_pipe [0], STDERR_FILENO);
 			} else if ((flags & G_SPAWN_CHILD_INHERITS_STDIN) == 0) {
 				fd = open ("/dev/null", O_RDONLY);
 				dup2 (fd, STDERR_FILENO);
@@ -368,9 +369,9 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		}
 	}
 	close (info_pipe [1]);
-	close (in_pipe [1]);
-	close (out_pipe [0]);
-	close (err_pipe [0]);
+	close (in_pipe [0]);
+	close (out_pipe [1]);
+	close (err_pipe [1]);
 
 	if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
 		int x;
@@ -386,9 +387,10 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		close (in_pipe [0]);
 		close (out_pipe [1]);
 		close (err_pipe [1]);
-		set_error_status (status, "Error in exec (%d)", status);
+		set_error_status (status, "Error in exec (%d -> %s)", status, strerror (status));
 		return FALSE;
 	}
+
 	close (info_pipe [0]);
 	if (standard_input)
 		*standard_input = in_pipe [1];
