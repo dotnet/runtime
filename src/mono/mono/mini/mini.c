@@ -11247,6 +11247,7 @@ print_jit_stats (void)
 		g_print ("Methods:                %ld\n", mono_stats.method_count);
 		g_print ("Static data size:       %ld\n", mono_stats.class_static_data_size);
 		g_print ("VTable data size:       %ld\n", mono_stats.class_vtable_size);
+		g_print ("Mscorlib mempool size:  %d\n", mono_mempool_get_allocated (mono_defaults.corlib->mempool));
 
 		g_print ("\nGeneric instances:      %ld\n", mono_stats.generic_instance_count);
 		g_print ("Initialized classes:    %ld\n", mono_stats.generic_class_count);
