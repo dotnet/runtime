@@ -67,6 +67,12 @@
 static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
 
+static inline MonoBoolean
+is_generic_parameter (MonoType *type)
+{
+	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
+}
+
 /*
  * We expect a pointer to a char, not a string
  */
@@ -1967,6 +1973,9 @@ ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return FALSE;
+
 	klass = mono_class_from_mono_type (type->type);
 
 	return klass->generic_container != NULL;
@@ -1977,6 +1986,9 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 {
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return NULL;
 
 	klass = mono_class_from_mono_type (type->type);
 	if (klass->generic_container) {
@@ -2022,6 +2034,9 @@ ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return FALSE;
+
 	klass = mono_class_from_mono_type (type->type);
 	return klass->generic_class != NULL;
 }
@@ -2032,6 +2047,9 @@ ves_icall_Type_get_IsGenericType (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
+	if (type->type->byref)
+		return FALSE;
+
 	klass = mono_class_from_mono_type (type->type);
 	return klass->generic_class != NULL || klass->generic_container != NULL;
 }
@@ -2041,7 +2059,7 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
+	if (is_generic_parameter (type->type))
 		return type->type->data.generic_param->num;
 	return -1;
 }
@@ -2050,6 +2068,7 @@ static GenericParameterAttributes
 ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
+	g_assert (is_generic_parameter (type->type));
 	return type->type->data.generic_param->flags;
 }
 
@@ -2081,20 +2100,14 @@ static MonoBoolean
 ves_icall_MonoType_get_IsGenericParameter (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
-
-	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
-		return !type->type->byref;
-	return FALSE;
+	return is_generic_parameter (type->type);
 }
 
 static MonoBoolean
 ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 {
 	MONO_ARCH_SAVE_REGS;
-
-	if (tb->type.type->type == MONO_TYPE_VAR || tb->type.type->type == MONO_TYPE_MVAR)
-		return !tb->type.type->byref;
-	return FALSE;
+	return is_generic_parameter (tb->type.type);
 }
 
 static void
