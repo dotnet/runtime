@@ -2172,8 +2172,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	} else
 		class->vtable_size = cur_slot;
 
-	class->vtable = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
-	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
+	/* Try to share the vtable with our parent. */
+	if (class->parent && (class->parent->vtable_size == class->vtable_size) && (memcmp (class->parent->vtable, vtable, sizeof (gpointer) * class->vtable_size) == 0)) {
+		class->vtable = class->parent->vtable;
+	} else {
+		class->vtable = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
+		memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
+	}
 
 	if (mono_print_vtable) {
 		int icount = 0;
