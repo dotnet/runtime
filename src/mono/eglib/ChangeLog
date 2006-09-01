@@ -1,3 +1,9 @@
+2006-09-01  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmarkup.c: Builds and does minimal parsing.
+
+	* test/markup.c: Sample test cases I have been using
+
 2006-08-31 Atsushi Enomoto <atsushi@ximian.com>
 
 	* src/gerror.h,

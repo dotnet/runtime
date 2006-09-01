@@ -31,10 +31,12 @@
 #include <stdio.h>
 #include <glib.h>
 
-#define set_error(msg...) do { if (error != NULL) *error = g_error_new (1, 1, msg); } while (0);
+#define set_error(msg...) do { if (error != NULL) *error = g_error_new (GINT_TO_POINTER (1), 1, msg); } while (0);
 
 typedef enum {
 	START,
+	START_ELEMENT,
+	TEXT
 } ParseState;
 
 struct _GMarkupParseContext {
@@ -65,11 +67,114 @@ g_markup_parse_context_free (GMarkupParseContext *context)
 	g_free (context);
 }
 
+static const char *
+skip_space (const char *p, const char *end)
+{
+	for (; p < end && isspace (*p); p++)
+		;
+	return p;
+}
+
+static const char *
+parse_value (const char *p, const char *end, char **value, GError **error)
+{
+	const char *start;
+	int l;
+	
+	if (*p != '"'){
+		set_error ("Expected the attribute value to start with a quote");
+		return end;
+	}
+	start = ++p;
+	for (++p; p < end && *p != '"'; p++)
+	if (p == end)
+		return end;
+	l = p - start;
+	p++;
+	*value = malloc (l + 1);
+	if (*value == NULL)
+		return end;
+	strncpy (*value, start, l);
+	(*value) [l] = 0;
+	return p;
+}
+
+static const char *
+parse_name (const char *p, const char *end, char **value)
+{
+	const char *start = p;
+	int l;
+	
+	for (; p < end && isalnum (*p); p++)
+		;
+	if (p == end)
+		return end;
+
+	l = p - start;
+	*value = malloc (l + 1);
+	if (*value == NULL)
+		return end;
+	strncpy (*value, start, l);
+	(*value) [l] = 0;
+	return p;
+}
+
+static const char *
+parse_attributes (const char *p, const char *end, char ***names, char ***values, GError **error, int *full_stop)
+{
+	int nnames = 0;
+
+	while (TRUE){
+		p = skip_space (p, end);
+		if (p == end)
+			return end;
+			
+		if (*p == '>'){
+			*full_stop = 0;
+			return p; 
+		}
+		if (*p == '/' && ((p+1) < end && *p == '>')){
+			*full_stop = 1;
+			return p+1;
+		} else {
+			char *name, *value;
+			
+			p = parse_name (p, end, &name);
+			if (p == end)
+				return p;
+			p = skip_space (p, end);
+			if (p == end)
+				return p;
+			if (*p != '='){
+				set_error ("Expected an = after the attribute name `%s'", name);
+				return end;
+			}
+			p++;
+			p = skip_space (p, end);
+			if (p == end)
+				return end;
+
+			p = parse_value (p, end, &value, error);
+			if (p == end)
+				return p;
+
+			++nnames;
+			*names = g_realloc (*names, sizeof (char **) * (nnames+1));
+			*values = g_realloc (*values, sizeof (char **) * (nnames+1));
+			(*names) [nnames-1] = name;
+			(*values) [nnames-1] = name;			
+			(*names) [nnames] = NULL;
+			(*values) [nnames] = NULL;			
+		}
+	} 
+}
+
 gboolean
 g_markup_parse_context_parse (GMarkupParseContext *context,
-			      const gchar *text, gssize text_len, GError **error)
+			      const gchar *text, gssize text_len,
+			      GError **error)
 {
-	char *p, *end;
+	const char *p,  *end;
 	
 	g_return_val_if_fail (context != NULL, FALSE);
 	g_return_val_if_fail (text != NULL, FALSE);
@@ -94,8 +199,9 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 
 		case START_ELEMENT: {
-			char *element_start = p;
-			char **names, *values;
+			const char *element_start = p, *element_end;
+			int full_stop = 0;
+			gchar **names = NULL, **values = NULL;
 
 			if (!(isascii (*p) && isalpha (*p)))
 				set_error ("Must start with a letter");
@@ -106,20 +212,53 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				set_error ("Expected an element");
 				return FALSE;
 			}
+			element_end = p;
+			
 			for (; p < end && isspace (*p); p++)
 				;
 			if (p == end){
 				set_error ("Unfinished element");
 				return FALSE;
 			}
-			p = parse_attributes (p, end, &names, &values);
+			p = parse_attributes (p, end, &names, &values, error, &full_stop);
 			if (p == end){
-				set_error ("unfinished element");
+				if (*error == NULL)
+					set_error ("Unfinished sequence");
+				
 				return FALSE;
 			}
+			if (context->parser.start_element != NULL){
+				int l = element_end - element_start;
+				char *ename = malloc (l + 1);
+
+				if (ename == NULL)
+					return FALSE;
+				strncpy (ename, element_start, l);
+				ename [l] = 0;
+				
+				context->parser.start_element (context, ename,
+							       (const gchar **) names,
+							       (const gchar **) values,
+							       context->user_data, error);
+				free (ename);
+			}
+			if (names != NULL){
+				g_strfreev (names);
+				g_strfreev (values);
+			}
+			if (*error != NULL)
+				return FALSE;
+			context->state = full_stop ? START : TEXT;
+			break;
+		} /* case START_ELEMENT */
+
+		case TEXT: {
+			break;
+		}
 			
 		}
-		}
 	}
+
+	return TRUE;
 }
 

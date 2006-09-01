@@ -17,6 +17,7 @@ DEFINE_TEST_GROUP_INIT_H(timer_tests_init);
 DEFINE_TEST_GROUP_INIT_H(file_tests_init);
 DEFINE_TEST_GROUP_INIT_H(pattern_tests_init);
 DEFINE_TEST_GROUP_INIT_H(dir_tests_init);
+DEFINE_TEST_GROUP_INIT_H(markup_tests_init);
 DEFINE_TEST_GROUP_INIT_H(utf8_tests_init);
 
 static Group test_groups [] = {	
@@ -32,6 +33,7 @@ static Group test_groups [] = {
 	{"queue",     queue_tests_init},
 	{"path",      path_tests_init},
 	{"shell",     shell_tests_init},
+	{"markup",    markup_tests_init},
 	{"spawn",     spawn_tests_init},
 	{"timer",     timer_tests_init},
 	{"file",      file_tests_init},

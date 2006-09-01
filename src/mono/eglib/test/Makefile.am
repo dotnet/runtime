@@ -22,6 +22,7 @@ SOURCES = \
 	file.c		\
 	pattern.c	\
 	dir.c		\
+	markup.c	\
 	utf8.c
 
 test_eglib_SOURCES = $(SOURCES)
