@@ -1,3 +1,7 @@
+2006-09-01  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: More alpha updates from Sergey Tikhonov <tsv@solvo.ru>.
+
 2006-08-31  Zoltan Varga  <vargaz@freemail.hu>
 
 	* samples/embed/test-invoke.vcproj samples/embed/teste.vcproj: Fix include paths for newer glib versions.

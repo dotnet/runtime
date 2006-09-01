@@ -1565,6 +1565,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		arch_target=alpha;
+		CFLAGS="$CFLAGS -mieee"
 		case $host_os in
 		  linux*)
 			LIBC="libc.so.6.1"
