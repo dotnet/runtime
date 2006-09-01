@@ -11243,6 +11243,8 @@ print_jit_stats (void)
 		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
 		g_print ("Initialized classes:    %ld\n", mono_stats.initialized_class_count);
 		g_print ("Used classes:           %ld\n", mono_stats.used_class_count);
+		g_print ("Generic vtables:        %ld\n", mono_stats.generic_vtable_count);
+		g_print ("Methods:                %ld\n", mono_stats.method_count);
 		g_print ("Static data size:       %ld\n", mono_stats.class_static_data_size);
 		g_print ("VTable data size:       %ld\n", mono_stats.class_vtable_size);
 
