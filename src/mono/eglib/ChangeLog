@@ -1,3 +1,8 @@
+2006-09-01  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmarkup.c (g_markup_parse_context_parse): Add text parsing
+	support, and end-element support; not tested yet.
+
 2006-09-01 Atsushi Enomoto <atsushi@ximian.com>
 
 	* gutf8.c : bad allocation size. multiply sizeof gchar/gunichar2.
