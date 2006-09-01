@@ -43,6 +43,8 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	if (error)
 		if (*error)
 			return NULL;
+	if (utf16_len < 0)
+		return NULL;
 
 	ret = g_malloc (utf16_len);
 
@@ -244,6 +246,8 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	if (error)
 		if (*error)
 			return NULL;
+	if (utf8_len < 0)
+		return NULL;
 
 	ret = g_malloc (utf8_len);
 
