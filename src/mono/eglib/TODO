@@ -1,12 +1,6 @@
 
 * Code that we will drop from Mono, because we do not really need this:
 
-  Directory, File manipulation:
-
-       g_dir_open, g_dir_close, g_dir_read_name
-
-       We're missing a native windows implementation. The unix one is in place.
-
   Locking:
 
       5 G_LOCK
@@ -17,7 +11,7 @@
 
 Important Groups:
 
-	* Markup, used to load config files.
+	* Markup: currently under development. 
 	      2 g_markup_parse_context_parse
 	      2 g_markup_parse_context_new
 	      2 g_markup_parse_context_free
@@ -71,3 +65,12 @@ Macros:
 * Dead Code
 
 	The GMainLoop code was no longer in use in Mono.
+
+* Windows implementations needed
+
+  Directory, File manipulation:
+
+       g_dir_open, g_dir_close, g_dir_read_name
+
+       We're missing a native windows implementation. The unix one is in place.
+
