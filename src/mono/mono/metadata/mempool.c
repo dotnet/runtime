@@ -52,7 +52,7 @@ mono_mempool_new ()
 	MonoMemPool *pool = g_malloc (MONO_MEMPOOL_PAGESIZE);
 
 	pool->next = NULL;
-	pool->pos = (char *)pool + sizeof (MonoMemPool);
+	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
 	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 	pool->d.allocated = pool->size = MONO_MEMPOOL_PAGESIZE;
 	return pool;
@@ -99,7 +99,7 @@ mono_mempool_invalidate (MonoMemPool *pool)
 void
 mono_mempool_empty (MonoMemPool *pool)
 {
-	pool->pos = (char *)pool + sizeof (MonoMemPool);
+	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
 	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 }
 
@@ -112,15 +112,14 @@ mono_mempool_empty (MonoMemPool *pool)
 void
 mono_mempool_stats (MonoMemPool *pool)
 {
-	MonoMemPool *p, *n;
+	MonoMemPool *p;
 	int count = 0;
 	guint32 still_free = 0;
 
 	p = pool;
 	while (p) {
 		still_free += p->end - p->pos;
-		n = p->next;
-		p = n;
+		p = p->next;
 		count++;
 	}
 	if (pool) {
@@ -148,7 +147,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
 
 	rval = pool->pos;
-	pool->pos = (char*)rval + size;
+	pool->pos = (guint8*)rval + size;
 
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		pool->pos -= size;
@@ -156,15 +155,19 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
 			np->next = pool->next;
 			pool->next = np;
+			np->pos = (guint8*)np + sizeof (MonoMemPool);
 			np->size = sizeof (MonoMemPool) + size;
+			np->end = np->pos + np->size - sizeof (MonoMemPool);
 			pool->d.allocated += sizeof (MonoMemPool) + size;
-			return (char *)np + sizeof (MonoMemPool);
+			return (guint8*)np + sizeof (MonoMemPool);
 		} else {
 			MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
 			np->next = pool->next;
 			pool->next = np;
-			pool->pos = (char *)np + sizeof (MonoMemPool);
+			pool->pos = (guint8*)np + sizeof (MonoMemPool);
+			np->pos = (guint8*)np + sizeof (MonoMemPool);
 			np->size = MONO_MEMPOOL_PAGESIZE;
+			np->end = np->pos;
 			pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 			pool->d.allocated += MONO_MEMPOOL_PAGESIZE;
 
@@ -189,7 +192,7 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
 
 	rval = pool->pos;
-	pool->pos = (char*)rval + size;
+	pool->pos = (guint8*)rval + size;
 
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		rval = mono_mempool_alloc (pool, size);
