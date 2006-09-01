@@ -23,7 +23,10 @@
    g_error ("FIXME: %s is not yet implemented.", x);
 
 #define ALPHA_DEBUG(x) \
-   g_debug ("ALPHA_DEBUG: %s is called.", x);
+   if (mini_alpha_verbose_level) \
+   	g_debug ("ALPHA_DEBUG: %s is called.", x);
+
+#define ALPHA_PRINT if (mini_alpha_verbose_level)
 
 #define NEW_INS(cfg,dest,op) do {       \
    (dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));       \
@@ -36,6 +39,7 @@
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
 #define CFG_DEBUG(LVL) if (cfg->verbose_level > LVL)
+//#define CFG_DEBUG(LVL) if (mini_alpha_verbose_level > LVL)
 
 //#define ALPHA_IS_CALLEE_SAVED_REG(reg) (MONO_ARCH_CALLEE_SAVED_REGS & (1 << (reg)))
 #define ALPHA_ARGS_REGS ((regmask_t)0x03F0000)
@@ -43,6 +47,7 @@
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define alpha_is_imm(X) ((X >= 0 && X <= 255))
+#define ALPHA_LOAD_GP(IP) { AlphaGotData ge_data;  add_got_entry(cfg, GT_LD_GTADDR, ge_data, IP, MONO_PATCH_INFO_NONE, 0); }
 
 /*========================= End of Defines =========================*/
 
@@ -69,6 +74,8 @@
 /*                 G l o b a l   V a r i a b l e s                  */
 /*------------------------------------------------------------------*/
 static int indent_level = 0;
+
+int mini_alpha_verbose_level = 0;
 
 static const char*const * ins_spec = alpha_desc;
 
@@ -124,6 +131,8 @@ typedef struct {
 } CallInfo;
 
 static CallInfo* get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke);
+static unsigned int *emit_call(MonoCompile *cfg, unsigned int *code,
+			       guint32 patch_type, gconstpointer data);
 
 #define PARAM_REGS 6
 static int param_regs [] =
@@ -208,6 +217,17 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
     return;
   }
 
+        info = mono_marshal_load_type_info (klass);
+        g_assert (info);
+        if (info->native_size/* > 16*/) {
+                ainfo->offset = *stack_size;
+                *stack_size += ALIGN_TO (info->native_size, 8);
+                ainfo->storage = ArgOnStack;
+
+                return;
+        }
+
+
   NOT_IMPLEMENTED("add_valuetype: more");
 }
 
@@ -290,6 +310,9 @@ static void add_got_entry(MonoCompile *cfg, AlphaGotType ge_type,
     case GT_DOUBLE:
       AGE->value.data.d = ge_data.data.d;
       break;
+    case GT_LD_GTADDR:
+      AGE->value.data.l = ip;
+      break;
     default:
       AGE->type = GT_NONE;
     }
@@ -302,8 +325,11 @@ static void add_got_entry(MonoCompile *cfg, AlphaGotType ge_type,
   else
     AGE->patch_info = 0;
 
-  mono_add_patch_info(cfg, ip, MONO_PATCH_INFO_GOT_OFFSET, 0);
-  AGE->got_patch_info = cfg->patch_info;
+  if (AGE->type != GT_LD_GTADDR)
+  {
+      mono_add_patch_info(cfg, ip, MONO_PATCH_INFO_GOT_OFFSET, 0);
+      AGE->got_patch_info = cfg->patch_info;
+  }
 
   AGE->next = cfg->arch.got_data;
 
@@ -467,7 +493,7 @@ static guint16 cvt_branch_opcode(guint16 opcode)
   switch (opcode)
     {
     case CEE_BEQ:
-      g_print("ALPHA: Branch cvt: CEE_BEQ -> CEE_BNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BEQ -> CEE_BNE_UN\n");
       return CEE_BNE_UN;
 
 
@@ -484,90 +510,94 @@ static guint16 cvt_branch_opcode(guint16 opcode)
       //return OP_IBEQ;
 
     case OP_IBEQ:
-      g_print("ALPHA: Branch cvt: OP_IBEQ -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBEQ -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case OP_FBEQ:
-      g_print("ALPHA: Branch cvt: OP_FBEQ -> OP_FBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_FBEQ -> OP_FBNE_UN\n");
       return OP_FBNE_UN;
 
     case OP_FBNE_UN:
-      g_print("ALPHA: Branch cvt: OP_FBNE_UN -> OP_FBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_FBNE_UN -> OP_FBEQ\n");
       return OP_FBEQ;
 		
     case OP_IBNE_UN:
-      g_print("ALPHA: Branch cvt: OP_IBNE_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBNE_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 		
     case CEE_BNE_UN:
-      g_print("ALPHA: Branch cvt: CEE_BNE_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BNE_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case OP_IBLE:
-      printf("ALPHA: Branch cvt: OP_IBLE -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBLE -> OP_IBNE_UN\n");
+      return OP_IBNE_UN;
+
+    case OP_IBLE_UN:
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBLE_UN -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case CEE_BLE:
-      printf("ALPHA: Branch cvt: CEE_BLE -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BLE -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case CEE_BLE_UN:
-      printf("ALPHA: Branch cvt: CEE_BLE_UN -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BLE_UN -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case OP_IBLT:
-      printf("ALPHA: Branch cvt: OP_IBLT -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBLT -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case CEE_BLT:
-      printf("ALPHA: Branch cvt: CEE_BLT -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BLT -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case CEE_BLT_UN:
-      printf("ALPHA: Branch cvt: CEE_BLT_UN -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BLT_UN -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case OP_IBLT_UN:
-      printf("ALPHA: Branch cvt: OP_IBLT_UN -> OP_IBNE_UN\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBLT_UN -> OP_IBNE_UN\n");
       return OP_IBNE_UN;
 
     case OP_IBGE:
-      printf("ALPHA: Branch cvt: OP_IBGE -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBGE -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case CEE_BGE:
-      printf("ALPHA: Branch cvt: CEE_BGE -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BGE -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case CEE_BGT:
-      printf("ALPHA: Branch cvt: CEE_BGT -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BGT -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case OP_IBGT:
-      printf("ALPHA: Branch cvt: OP_IBGT -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBGT -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case CEE_BGT_UN:
-      printf("ALPHA: Branch cvt: CEE_BGT_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BGT_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case OP_IBGT_UN:
-      printf("ALPHA: Branch cvt: OP_IBGT_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBGT_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case CEE_BGE_UN:
-      printf("ALPHA: Branch cvt: CEE_BGE_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: CEE_BGE_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 
     case OP_IBGE_UN:
-      printf("ALPHA: Branch cvt: OP_IBGE_UN -> OP_IBEQ\n");
+      ALPHA_PRINT g_debug("ALPHA: Branch cvt: OP_IBGE_UN -> OP_IBEQ\n");
       return OP_IBEQ;
 
     default:
       break;
     }
 
-  printf("ALPHA: No Branch cvt for: %d\n", opcode);
+  ALPHA_PRINT g_debug("ALPHA: WARNING: No Branch cvt for: %d\n", opcode);
    
   return opcode;
 }
@@ -580,14 +610,8 @@ static guint16 cvt_cmp_opcode(guint16 opcode, ALPHA_CMP_OPS cond)
 
   switch (opcode)
     {
+      /* Use inssel-alpha.brg to handle cmp+b<cond> -> cmp<cond>+b<cond> cvt */
     case OP_FCOMPARE:
-      {
-	switch(cond)
-	  {
-	  case EQ:
-	    return OP_ALPHA_CMPT_EQ;
-	  }
-      }
       break;
 
     case OP_COMPARE:
@@ -643,18 +667,6 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
    
   switch(next->opcode)
     {
-    case OP_FBEQ:
-      // Convert fcmp + beq -> cmpteq + fbne
-      curr->opcode = cvt_cmp_opcode(curr->opcode, EQ);
-      next->opcode = cvt_branch_opcode(next->opcode);
-      break;
-
-    case OP_FBNE_UN:
-      // cmp + fbne_un -> cmpteq + fbeq
-      curr->opcode = cvt_cmp_opcode(curr->opcode, EQ);
-      next->opcode = cvt_branch_opcode(next->opcode);
-      break;
-
     case CEE_BEQ:
     case OP_IBEQ:
       // Convert cmp + beq -> cmpeq + bne
@@ -662,7 +674,6 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
       next->opcode = cvt_branch_opcode(next->opcode);
       break;
 		
-      
     case OP_IBNE_UN:
     case CEE_BNE_UN:
       // cmp + ibne_un -> cmpeq + beq
@@ -678,7 +689,8 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
       break;
 
     case CEE_BLE_UN:
-      // lcmp + ble.un -> cmpule + bne
+    case OP_IBLE_UN:
+      // cmp + ible_un -> cmpule + bne, lcmp + ble.un -> cmpule + bne
       curr->opcode = cvt_cmp_opcode(curr->opcode, ULE);
       next->opcode = cvt_branch_opcode(next->opcode);
       break;
@@ -713,6 +725,11 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
 
     case OP_IBGT:
     case CEE_BGT:
+      // lcmp + bgt -> cmple + beq, cmp + ibgt -> cmple + beq
+      curr->opcode = cvt_cmp_opcode(curr->opcode, LE);
+      next->opcode = cvt_branch_opcode(next->opcode);
+      break;
+
     case CEE_BGT_UN:
     case OP_IBGT_UN:
       // lcmp + bgt -> cmpule + beq, cmp + ibgt -> cmpule + beq
@@ -728,21 +745,25 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
       break;
 
     case OP_ICEQ:
+    case OP_CEQ:
       // cmp + iceq -> cmpeq + bne
       curr->opcode = cvt_cmp_opcode(curr->opcode, EQ);
       break;
 
     case OP_ICGT:
+    case OP_CGT:
       // cmp + int_cgt -> cmple + beq
       curr->opcode = cvt_cmp_opcode(curr->opcode, LE);
       break;
 
     case OP_ICLT:
+    case OP_CLT:
       // cmp + int_clt -> cmplt + bne
       curr->opcode = cvt_cmp_opcode(curr->opcode, LT);
       break;
 
     case OP_ICLT_UN:
+    case OP_CLT_UN:
       // cmp + int_clt_un -> cmpult + bne
       curr->opcode = cvt_cmp_opcode(curr->opcode, ULT);
       break;
@@ -761,6 +782,10 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
 
     case OP_COND_EXC_LT:
       curr->opcode = cvt_cmp_opcode(curr->opcode, LT);
+      break;
+
+    case OP_COND_EXC_LT_UN:
+      curr->opcode = cvt_cmp_opcode(curr->opcode, ULT);
       break;
 
     case OP_COND_EXC_LE_UN:
@@ -1064,9 +1089,6 @@ static void
    bb->max_freg = cfg->rs->next_vfreg;
 }
 
-
-
-
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name         - mono_arch_local_regalloc.                         */
@@ -1202,6 +1224,7 @@ static void calculate_size(MonoMethodSignature *sig, int * INSTRUCTIONS,
      }
 }
 
+//*****
 
 
 /*------------------------------------------------------------------*/
@@ -1214,8 +1237,10 @@ static void calculate_size(MonoMethodSignature *sig, int * INSTRUCTIONS,
  * For method we will allocate array of qword after method epiloge.
  * These qword will hold readonly info to method to properly to run.
  * For example: qword constants, method addreses
- * GP should hold pointer to this array and could be easily calculated
- * from passed PV (method start address). This array would not be far
+ * GP will point to method start. Offsets to the data will be equal
+ * to "address" of data itself (GP = 0 during method jiting). 
+ * GP is easily calculated from passed PV (method start address).
+ * This array should not be far
  * from method and I hope +- 32Kb offset is enough to get to it.
  * The patch code should put proper offset since the real position of
  * qword array will be known after the function epiloge.
@@ -1234,7 +1259,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
    CallInfo *cinfo;
    int	stack_size, code_size;
    gint32 lmf_offset = cfg->arch.lmf_offset;
-   
+
    CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_emit_prolog");
    
 //   calculate_size( sig, &code_size, &stack_size );	
@@ -1250,6 +1275,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
    
    // Emit method prolog
    // Calculate GP from passed PV, allocate stack
+   ALPHA_LOAD_GP(0)
    alpha_ldah( code, alpha_gp, alpha_pv, 0 );
    alpha_lda( code, alpha_gp, alpha_gp, 0 );     // ldgp gp, 0(pv)
    alpha_lda( code, alpha_sp, alpha_sp, -stack_size );
@@ -1260,14 +1286,49 @@ mono_arch_emit_prolog (MonoCompile *cfg)
    
    /* set the frame pointer */
    alpha_mov1( code, alpha_sp, alpha_fp );
+
+   /* Save LMF */
+   if (method->save_lmf)
+     {
+       // Save IP
+       alpha_stq(code, alpha_pv, alpha_fp,
+		 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, eip)));
+       // Save SP
+       alpha_stq(code, alpha_sp, alpha_fp,
+		 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, rsp)));
+       // Save FP
+       alpha_stq(code, alpha_fp, alpha_fp,
+                 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, ebp)));
+       // Save GP
+       alpha_stq(code, alpha_gp, alpha_fp,
+                 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, rgp)));
+
+       // Save method
+       alpha_stq(code, alpha_pv, alpha_fp,
+                 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, method)));
+
+     }
    
    offset = cfg->arch.args_save_area_offset;
 
    cinfo = get_call_info (sig, FALSE);
-   
+
+   if (sig->ret->type != MONO_TYPE_VOID)
+     {
+       if ((cinfo->ret.storage == ArgInIReg) &&
+	   (cfg->ret->opcode != OP_REGVAR))
+	 {
+	   /* Save volatile arguments to the stack */
+	   alpha_stq(code, cinfo->ret.reg, cfg->ret->inst_basereg,
+		     cfg->ret->inst_offset);
+	 }
+     }
+
+   /* Keep this in sync with emit_load_volatile_arguments */
    for (i = 0; i < sig->param_count + sig->hasthis; ++i)
      {
        ArgInfo *ainfo = &cinfo->args [i];
+       MonoInst *inst = cfg->varinfo [i];
 
        switch(ainfo->storage)
 	 {
@@ -1277,10 +1338,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	   //  {
 	   //    if (i < cinfo->reg_usage)
 	   {
-	     alpha_stq(code, ainfo->reg, alpha_fp, offset);
+	     //alpha_stq(code, ainfo->reg, alpha_fp, offset);
+	     alpha_stq(code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 		   
 	     CFG_DEBUG(3) g_print("ALPHA: Saved int arg reg %d at offset: %0x\n",
-				  ainfo->reg, offset);
+				  ainfo->reg, inst->inst_offset/*offset*/);
 		   
 	     offset += 8;
 	   }
@@ -1296,17 +1358,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	     switch(cinfo->args[i].storage)
 	       {
 	       case ArgInFloatSSEReg:
-		 alpha_sts(code, ainfo->reg, alpha_fp, offset);
+		 //alpha_sts(code, ainfo->reg, alpha_fp, offset);
+		 alpha_sts(code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 		 break;
 	       case ArgInDoubleSSEReg:
-		 alpha_stt(code, ainfo->reg, alpha_fp, offset);
+		 //alpha_stt(code, ainfo->reg, alpha_fp, offset);
+		 alpha_stt(code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 		 break;
 	       default:
 		 ;
 	       }
 		   
 	     CFG_DEBUG(3) g_print("ALPHA: Saved float arg reg %d at offset: %0x\n",
-				  ainfo->reg, offset);
+				  ainfo->reg, /*offset*/inst->inst_offset);
 		   
 	     offset += 8;
 	   }
@@ -1325,6 +1389,33 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		i, offset);
 	 offset += 8;
        }
+
+   // TODO - check amd64 code for "Might need to attach the thread to the JIT"
+
+   if (method->save_lmf)
+     {
+       /*
+	* The call might clobber argument registers, but they are already
+	* saved to the stack/global regs.
+	*/
+
+       code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
+			 (gpointer)"mono_get_lmf_addr");
+
+       // Save lmf_addr
+       alpha_stq(code, alpha_r0, alpha_fp,
+		 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, lmf_addr)));
+       // Load "previous_lmf" member of MonoLMF struct
+       alpha_ldq(code, alpha_r1, alpha_r0, 0);
+
+       // Save it to MonoLMF struct
+       alpha_stq(code, alpha_r1, alpha_fp,
+                 (lmf_offset + G_STRUCT_OFFSET(MonoLMF, previous_lmf)));
+       
+       // Set new LMF
+       alpha_lda(code, alpha_r1, alpha_fp, lmf_offset);
+       alpha_stq(code, alpha_r1, alpha_r0, 0);
+     }
 
    g_free (cinfo);
 
@@ -1382,12 +1473,17 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 /*========================= End of Function ========================*/
 
-
+/*
+** 
+** This method emits call sequience
+**
+*/
 static unsigned int *
 emit_call(MonoCompile *cfg, unsigned int *code,
 	  guint32 patch_type, gconstpointer data)
 {
   int offset;
+  short high_off, low_off;
   AlphaGotData ge_data;
   
   offset = (char *)code - (char *)cfg->native_code;
@@ -1404,12 +1500,11 @@ emit_call(MonoCompile *cfg, unsigned int *code,
   
   offset = (char *)code - (char *)cfg->native_code;
   
-  g_assert(offset < 0x7FFF);
-  
   // Restore GP
+  ALPHA_LOAD_GP(offset)
   alpha_ldah(code, alpha_gp, alpha_ra, 0);
-  alpha_lda(code, alpha_gp, alpha_gp, -offset);
-  
+  alpha_lda(code, alpha_gp, alpha_gp, 0);
+
   return code;
 }
 
@@ -1494,6 +1589,16 @@ mono_arch_emit_epilog (MonoCompile *cfg)
   if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
     code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method,
 					code, TRUE);
+
+  if (method->save_lmf)
+    {
+      /* Restore previous lmf */
+      alpha_ldq(code, alpha_at, alpha_fp,
+		(lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf)));
+      alpha_ldq(code, alpha_ra, alpha_fp,
+                (lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr)));
+      alpha_stq(code, alpha_at, alpha_ra, 0);
+    }
   
   // 5 instructions.
   alpha_mov1( code, alpha_fp, alpha_sp );
@@ -1540,7 +1645,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 {
   MonoJumpInfo *patch_info;
   int nthrows, i;
-  unsigned int *code;
+  unsigned int *code, *got_start;
   unsigned long *corlib_exc_adr;
   MonoClass *exc_classes [16];
   guint8 *exc_throw_start [16], *exc_throw_end [16];
@@ -1566,7 +1671,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
        got_data = got_data->next)
     {
        // Reserve space for 8 byte const (for now)
-      code_size += 8;
+       if (got_data->type != GT_LD_GTADDR)
+      	   code_size += 8;
     }
 
   while (cfg->code_len + code_size > (cfg->code_size - 16))
@@ -1578,6 +1684,12 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
   
   code = (unsigned int *)((char *)cfg->native_code + cfg->code_len);
 
+  // Set code alignment
+  if (((unsigned long)code) % 8)
+      code++;
+
+  got_start = code; 
+
   /* Add code to store conts and modify patch into to store offset in got */
   for (got_data = cfg->arch.got_data; got_data;
        got_data = got_data->next)
@@ -1585,13 +1697,37 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
       unsigned long data = got_data->value.data.l;
       MonoJumpInfo *got_ref = got_data->got_patch_info;
       
+      // Modify loading of GP
+      if (got_data->type == GT_LD_GTADDR)
+      {
+	short high_off, low_off;
+	unsigned int *ldgp_code =
+		(unsigned int *)(cfg->native_code + got_data->value.data.l);
+	unsigned int got_off = (char *)got_start - (char *)ldgp_code;
+
+	high_off = got_off / 0x10000;
+  	low_off = got_off % 0x10000;
+	if (low_off < 0)
+	  high_off++;
+	
+	// Set offset from current point to GOT array
+	// modify the following code sequence
+	// ldah gp, 0(pv) or ldah gp, 0(ra)
+	// lda  gp, 0(gp) 
+	*ldgp_code = (*ldgp_code | (high_off & 0xFFFF));
+	ldgp_code++;
+	*ldgp_code = (*ldgp_code | (low_off & 0xFFFF));
+
+	continue;
+      }
+
       patch_info = got_data->patch_info;
 
       // Check code alignment
       if (((unsigned long)code) % 8)
 	code++;
 
-      got_ref->data.offset = ((char *)code - (char *)cfg->native_code);
+      got_ref->data.offset = ((char *)code - (char *)got_start);
 
       if (patch_info)
 	patch_info->ip.i = ((char *)code - (char *)cfg->native_code);
@@ -1629,8 +1765,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				    "mono_arch_throw_corlib_exception");
 		
 		// Skip longword before starting the code
-		code++;
-		code++;
+		*code++ = 0;
+		*code++ = 0;
 	      }
 	    
 	    exc_class = mono_class_from_name (mono_defaults.corlib,
@@ -1687,11 +1823,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		
 		// Load exception token
 		alpha_ldl(code, alpha_a0, alpha_gp,
-			  ((char *)buf - (char *)cfg->native_code));
+			  ((char *)buf - (char *)got_start /*cfg->native_code*/));
 		// Load corlib exception raiser code address
 		alpha_ldq(code, alpha_pv, alpha_gp,
 			  ((char *)corlib_exc_adr -
-			   (char *)cfg->native_code));
+			   (char *)got_start /*cfg->native_code*/));
 
 		//amd64_mov_reg_imm (code, AMD64_RDI, exc_class->type_token);
 		//patch_info->data.name = "mono_arch_throw_corlib_exception";
@@ -1801,7 +1937,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 /*========================= End of Function ========================*/
 
-#define EMIT_ALPHA_BRANCH(Tins, ALPHA_BR)	\
+#define EMIT_ALPHA_BRANCH(Tins, PRED_REG, ALPHA_BR)	\
+  offset = ((char *)code -                      \
+	    (char *)cfg->native_code);          \
   if (Tins->flags & MONO_INST_BRLABEL)		\
     {						\
       if (Tins->inst_i0->inst_c0)		\
@@ -1809,7 +1947,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	  CFG_DEBUG(3) g_print("inst_c0: %0lX, data: %p]\n",		\
 		 Tins->inst_i0->inst_c0,				\
 		 cfg->native_code + Tins->inst_i0->inst_c0);		\
-	  alpha_##ALPHA_BR (code, alpha_at, 0);				\
+	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
 	}								\
       else								\
 	{								\
@@ -1817,7 +1955,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		 offset, Tins->inst_i0);				\
 	  mono_add_patch_info (cfg, offset,				\
 			       MONO_PATCH_INFO_LABEL, Tins->inst_i0);	\
-	  alpha_##ALPHA_BR (code, alpha_at, 0);				\
+	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
 	}								\
     }									\
   else									\
@@ -1830,7 +1968,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		 Tins->inst_target_bb->native_offset,			\
 		 cfg->native_code +					\
 		 Tins->inst_true_bb->native_offset);			\
-	  alpha_##ALPHA_BR (code, alpha_at, br_offset/4);		\
+	  alpha_##ALPHA_BR (code, PRED_REG, br_offset/4);		\
 	}								\
       else								\
 	{								\
@@ -1839,12 +1977,12 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	  mono_add_patch_info (cfg, offset,				\
 			       MONO_PATCH_INFO_BB,			\
 			       Tins->inst_true_bb);			\
-	  alpha_##ALPHA_BR (code, alpha_at, 0);				\
+	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
 	}								\
     }
 
 
-#define EMIT_COND_EXC_BRANCH(ALPHA_BR, EXC_NAME)			\
+#define EMIT_COND_EXC_BRANCH(ALPHA_BR, PRED_REG, EXC_NAME)		\
   do									\
     {									\
       MonoInst *tins = mono_branch_optimize_exception_target (cfg,	\
@@ -1856,11 +1994,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			       ((char *)code -				\
 				(char *)cfg->native_code),		\
 			       MONO_PATCH_INFO_EXC, EXC_NAME);		\
-	  alpha_##ALPHA_BR(code, alpha_at, 0);				\
+	  alpha_##ALPHA_BR(code, PRED_REG, 0);				\
 	}								\
       else								\
 	{								\
-	  EMIT_ALPHA_BRANCH(tins, ALPHA_BR);				\
+	  EMIT_ALPHA_BRANCH(tins, PRED_REG, ALPHA_BR);			\
 	}								\
     } while(0);
 
@@ -1998,8 +2136,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            alpha_srl_(code, ins->dreg, ins->inst_imm, ins->dreg);
            break;
 
+         case OP_LSHR_UN_IMM:
+           // Shift 64 bit unassigned value rigth by constant
+           g_assert(alpha_is_imm(ins->inst_imm));
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [long_shr_un_imm] dreg=%d, sreg1=%d, const=%ld\n",
+				ins->dreg, ins->sreg1, ins->inst_imm);
+           alpha_srl_(code, ins->sreg1, ins->inst_imm, ins->dreg);
+           break;
 
-	 case OP_ADDCC:
 	 case CEE_ADD:
 	   // Sum two 64 bits regs
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [add] dreg=%d, sreg1=%d, sreg2=%d\n",
@@ -2031,9 +2175,48 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	 case OP_IADDCC:
 	   // Add two 32 bit ints with overflow detection
+	   // Use AT to hold flag of signed overflow
+	   // Use t12(PV) to hold unsigned overflow
+	   // Use RA to hold intermediate result
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [iaddcc] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
-           alpha_addl(code, ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_addl(code, ins->sreg1, ins->sreg2, alpha_ra);
+	   alpha_ble(code, ins->sreg2, 2);
+
+	   /* (sreg2 > 0) && (res < ins->sreg1) => signed overflow */
+	   alpha_cmplt(code, alpha_ra, ins->sreg1, alpha_at);
+	   alpha_br(code, alpha_zero, 1);
+
+	   /* (sreg2 <= 0) && (res > ins->sreg1) => signed overflow */
+	   alpha_cmplt(code, ins->sreg1, alpha_ra, alpha_at);
+
+	   /* res <u sreg1 => unsigned overflow */
+	   alpha_cmpult(code, alpha_ra, ins->sreg1, alpha_pv);
+
+	   alpha_mov1(code, alpha_ra, ins->dreg);
+           break;
+
+         case OP_ADDCC:
+           // Add two 64 bit ints with overflow detection
+           // Use AT to hold flag of signed overflow
+           // Use t12(PV) to hold unsigned overflow
+           // Use RA to hold intermediate result
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [addcc] dreg=%d, sreg1=%d, sreg2=%d\n",
+				ins->dreg, ins->sreg1, ins->sreg2);
+           alpha_addq(code, ins->sreg1, ins->sreg2, alpha_ra);
+           alpha_ble(code, ins->sreg2, 2);
+
+           /* (sreg2 > 0) && (res < ins->sreg1) => signed overflow */
+           alpha_cmplt(code, alpha_ra, ins->sreg1, alpha_at);
+           alpha_br(code, alpha_zero, 1);
+
+           /* (sreg2 <= 0) && (res > ins->sreg1) => signed overflow */
+           alpha_cmplt(code, ins->sreg1, alpha_ra, alpha_at);
+
+           /* res <u sreg1 => unsigned overflow */
+           alpha_cmpult(code, alpha_ra, ins->sreg1, alpha_pv);
+
+           alpha_mov1(code, alpha_ra, ins->dreg);
            break;
 
 	 case OP_IADD_IMM:
@@ -2063,9 +2246,43 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // Sub to 32 bit ints with overflow detection
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [isubcc] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
-           alpha_subl(code, ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_subl(code, ins->sreg1, ins->sreg2, alpha_ra);
+	   alpha_ble(code, ins->sreg2, 2);
+
+	   /* (sreg2 > 0) && (res > ins->sreg1) => signed overflow */
+	   alpha_cmplt(code, ins->sreg1, alpha_ra, alpha_at);
+           alpha_br(code, alpha_zero, 1);
+
+	   /* (sreg2 <= 0) && (res < ins->sreg1) => signed overflow */
+	   alpha_cmplt(code, alpha_ra, ins->sreg1, alpha_at);
+
+	   /* sreg1 <u sreg2 => unsigned overflow */
+	   alpha_cmpult(code, ins->sreg1, ins->sreg2, alpha_pv);
+
+           alpha_mov1(code, alpha_ra, ins->dreg);
            break;
-	   
+
+         case OP_SUBCC:
+           // Sub to 64 bit ints with overflow detection
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [subcc] dreg=%d, sreg1=%d, sreg2=%d\n",
+				ins->dreg, ins->sreg1, ins->sreg2);
+
+           alpha_subq(code, ins->sreg1, ins->sreg2, alpha_ra);
+           alpha_ble(code, ins->sreg2, 2);
+
+           /* (sreg2 > 0) && (res > ins->sreg1) => signed overflow */
+           alpha_cmplt(code, ins->sreg1, alpha_ra, alpha_at);
+           alpha_br(code, alpha_zero, 1);
+
+           /* (sreg2 <= 0) && (res < ins->sreg1) => signed overflow */
+           alpha_cmplt(code, alpha_ra, ins->sreg1, alpha_at);
+
+           /* sreg1 <u sreg2 => unsigned overflow */
+           alpha_cmpult(code, ins->sreg1, ins->sreg2, alpha_pv);
+
+           alpha_mov1(code, alpha_ra, ins->dreg);
+           break;
+
 	 case OP_IAND:
 	 case CEE_AND:
 	   // AND to 32 bit ints
@@ -2086,8 +2303,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   break;
 
          case OP_IOR:
-           // OR to 32 bit ints
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [ior] dreg=%d, sreg1=%d, sreg2=%d\n",
+	 case CEE_OR:
+           // OR two 32/64 bit ints
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [ior/or] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
            alpha_bis(code, ins->sreg1, ins->sreg2, ins->dreg);
            break;
@@ -2103,8 +2321,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            break;
 
          case OP_IXOR:
-           // XOR two 32 bit ints
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [ixor] dreg=%d, sreg1=%d, sreg2=%d\n",
+	 case CEE_XOR:
+           // XOR two 32/64 bit ints
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [ixor/xor] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
            alpha_xor(code, ins->sreg1, ins->sreg2, ins->dreg);
            break;
@@ -2126,9 +2345,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_subl(code, alpha_zero, ins->sreg1, ins->dreg);
 	   break;
 
+         case CEE_NEG:
+           // NEG 64 bit reg
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [neg] dreg=%d, sreg1=%d\n",
+				ins->dreg, ins->sreg1);
+           alpha_subq(code, alpha_zero, ins->sreg1, ins->dreg);
+           break;
+
          case OP_INOT:
-           // NOT 32 bit reg
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [inot] dreg=%d, sreg1=%d\n",
+	 case CEE_NOT:
+           // NOT 32/64 bit reg
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [inot/not] dreg=%d, sreg1=%d\n",
                   ins->dreg, ins->sreg1);
            alpha_not(code, ins->sreg1, ins->dreg);
            break;
@@ -2159,7 +2386,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_CHECK_THIS:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [check_this] sreg1=%d\n",
 		  ins->sreg1);
-	   alpha_cmpeq_(code, ins->sreg1, 0, alpha_at);
+	   //alpha_cmpeq_(code, ins->sreg1, 0, alpha_at);
+	   alpha_ldl(code, alpha_at, ins->sreg1, 0);
 	   break;
 
 	 case OP_SEXT_I1:
@@ -2207,6 +2435,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	       int lo = (char *)code - (char *)cfg->native_code;
 	       AlphaGotData ge_data;
 
+	       //ge_data.data.l = (ins->inst_c0 & 0xFFFFFFFF);
 	       ge_data.data.l = ins->inst_c0;
 
 	       add_got_entry(cfg, GT_LONG, ge_data,
@@ -2298,7 +2527,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		  ins->dreg, ins->inst_basereg, ins->inst_offset);
 
 	   alpha_ldl(code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-	   alpha_zapnot_(code, ins->dreg, 0x0F, ins->dreg);
+	   //	   alpha_zapnot_(code, ins->dreg, 0x0F, ins->dreg);
 	   break;
 	   
 	 case OP_LOADU1_MEMBASE:
@@ -2507,6 +2736,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_cpysn(code, ins->sreg1, ins->sreg1, ins->dreg);
 	   break;
 
+	 case OP_ALPHA_TRAPB:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_trapb]\n");
+	   alpha_trapb(code);
+	   break;
+
+	 case OP_ABS:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [float_abs] sreg1=%d, dreg=%d\n",
+				ins->sreg1, ins->dreg);
+	   alpha_cpys(code, alpha_f31, ins->sreg1, ins->dreg);
+           break;
+
 	 case OP_STORE_MEMBASE_IMM:
 	 case OP_STOREI8_MEMBASE_IMM:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [store_membase_imm/storei8_membase_imm] const=%0lx, destbasereg=%d, offset=%0lx\n",
@@ -2548,19 +2788,63 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   
 	 case OP_COMPARE:  // compare two 32 bit regs
 	 case OP_LCOMPARE: // compare two 64 bit regs
-	   CFG_DEBUG(4) g_print("ALPHA_FIX: [compare/lcompare] sreg1=%d, sreg2=%d, dreg=%d\n",
+	 case OP_FCOMPARE: // compare two floats
+	   CFG_DEBUG(4) g_print("ALPHA_FIX: [compare/lcompare/fcompare] sreg1=%d, sreg2=%d, dreg=%d\n",
 		  ins->sreg1, ins->sreg2, ins->dreg);
 
 	   g_assert_not_reached();
 	   
 	   break;
 
+         case OP_ALPHA_CMPT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_un] sreg1=%d, sreg2=%d, dreg=%d\n",
+				ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptun(code, ins->sreg1, ins->sreg2, (alpha_at+1));
+           break;
+
+         case OP_ALPHA_CMPT_UN_SU:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_un_su] sreg1=%d, sreg2=%d, dreg=%d\n",
+                                ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptun_su(code, ins->sreg1, ins->sreg2, (alpha_at+1));
+           break;
+
 	 case OP_ALPHA_CMPT_EQ:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_eq] sreg1=%d, sreg2=%d, dreg=%d\n",
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_eq] sreg1=%d, sreg2=%d, dreg=%d\n",
 				 ins->sreg1, ins->sreg2, ins->dreg);
 	   alpha_cmpteq(code, ins->sreg1, ins->sreg2, alpha_at);
 	   break;
-	   
+
+         case OP_ALPHA_CMPT_EQ_SU:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_eq_su] sreg1=%d, sreg2=%d, dreg=%d\n",
+				ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmpteq_su(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
+
+         case OP_ALPHA_CMPT_LT:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_lt] sreg1=%d, sreg2=%d, dreg=%d\n",
+				ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptlt(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
+         case OP_ALPHA_CMPT_LT_SU:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_lt_su] sreg1=%d, sreg2=%d, dreg=%d\n",
+                                ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptlt_su(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
+         case OP_ALPHA_CMPT_LE:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_le] sreg1=%d, sreg2=%d, dreg=%d\n",
+                                ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptle(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
+         case OP_ALPHA_CMPT_LE_SU:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmpt_le_su] sreg1=%d, sreg2=%d, dreg=%d\n",
+                                ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmptle_su(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
 	 case OP_ALPHA_CMP_EQ:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_eq] sreg1=%d, sreg2=%d, dreg=%d\n",
 		  ins->sreg1, ins->sreg2, ins->dreg);
@@ -2571,12 +2855,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_eq] sreg1=%d, const=%0lX, dreg=%d\n",
                   ins->sreg1, ins->inst_imm, ins->dreg);
            alpha_cmpeq_(code, ins->sreg1, ins->inst_imm, alpha_at);
-           break;
-
-         case OP_ALPHA_CMP_ULE:
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_ule] sreg1=%d, sreg2=%d, dreg=%d\n",
-                  ins->sreg1, ins->sreg2, ins->dreg);
-           alpha_cmpule(code, ins->sreg1, ins->sreg2, alpha_at);
            break;
 
          case OP_ALPHA_CMP_IMM_ULE:
@@ -2603,6 +2881,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            alpha_cmple(code, ins->sreg1, ins->sreg2, alpha_at);
            break;
 
+         case OP_ALPHA_CMP_ULE:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_ule] sreg1=%d, sreg2=%d, dreg=%d\n",
+				ins->sreg1, ins->sreg2, ins->dreg);
+           alpha_cmpule(code, ins->sreg1, ins->sreg2, alpha_at);
+           break;
+
+
          case OP_ALPHA_CMP_IMM_LE:
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_le] sreg1=%d, const=%0lX, dreg=%\d\n",
                   ins->sreg1, ins->inst_imm, ins->dreg);
@@ -2625,39 +2910,80 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_gt] (cmple + beq) Exc: %s\n",
 				(char *)ins->inst_p1);
 
-	   EMIT_COND_EXC_BRANCH(beq, ins->inst_p1);
+	   EMIT_COND_EXC_BRANCH(beq, alpha_at, ins->inst_p1);
            break;
 
 	 case OP_COND_EXC_GT_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_gt_un] (cmpule + beq) Exc: %s\n",
 				(char *)ins->inst_p1);
 
-	   EMIT_COND_EXC_BRANCH(beq, ins->inst_p1);
+	   EMIT_COND_EXC_BRANCH(beq, alpha_at, ins->inst_p1);
 	   break;
 
 	 case OP_COND_EXC_LT:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_lt] (cmplt + bne) Exc: %s\n",
 				(char *)ins->inst_p1);
 
-	   EMIT_COND_EXC_BRANCH(bne, ins->inst_p1);
+	   EMIT_COND_EXC_BRANCH(bne, alpha_at, ins->inst_p1);
 	   break;
+
+         case OP_COND_EXC_LT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_lt_un] (cmpult + bne) Exc: %s\n",
+                                (char *)ins->inst_p1);
+
+           EMIT_COND_EXC_BRANCH(bne, alpha_at, ins->inst_p1);
+           break;
+
 
 	 case OP_COND_EXC_LE_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_le_un] (cmpule + bne) Exc: %s\n",
 				(char *)ins->inst_p1);
-	   EMIT_COND_EXC_BRANCH(bne, ins->inst_p1);
+	   EMIT_COND_EXC_BRANCH(bne, alpha_at, ins->inst_p1);
 	   break;
 
 	 case OP_COND_EXC_NE_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_ne_un] (cmpeq + beq) Exc: %s\n",
 				(char *)ins->inst_p1);
-	   EMIT_COND_EXC_BRANCH(beq, ins->inst_p1);
+	   EMIT_COND_EXC_BRANCH(beq, alpha_at, ins->inst_p1);
 	   break;
 
 	 case OP_COND_EXC_EQ:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [op_cond_exc_eq] (cmpeq + bne) Exc: %s\n",
                                 (char *)ins->inst_p1);
-           EMIT_COND_EXC_BRANCH(bne, ins->inst_p1);
+           EMIT_COND_EXC_BRANCH(bne, alpha_at, ins->inst_p1);
+           break;
+
+	 case OP_COND_EXC_IOV:
+	 case OP_COND_EXC_OV:
+	   EMIT_COND_EXC_BRANCH(bne, alpha_at, "OverflowException");
+	   //emit_cond_system_exception (cfg, code, "OverflowException", 6);
+	   break;
+
+	 case OP_COND_EXC_IC:
+	 case OP_COND_EXC_C:
+	   EMIT_COND_EXC_BRANCH(bne, alpha_pv, "OverflowException");
+	   //emit_cond_system_exception (cfg, code, "OverflowException", 7);
+	   break;
+
+	 case CEE_CONV_OVF_U4:
+	   // Convert unsigned 32 bit value to 64 bit reg
+	   // Check overflow
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [conv_ovf_u4] sreg=%d, dreg=%d\n",
+				ins->sreg1, ins->dreg);
+	   alpha_cmplt_(code, ins->sreg1, 0, alpha_at);
+	   EMIT_COND_EXC_BRANCH(bne, alpha_at, "OverflowException");
+	   alpha_mov1(code, ins->sreg1, ins->dreg);
+	   break;
+
+         case CEE_CONV_OVF_I4_UN:
+           // Convert unsigned 32 bit value to 64 bit reg
+           // Check overflow
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [conv_ovf_i4_un] sreg=%d, dreg=%d\n",
+                                ins->sreg1, ins->dreg);
+   	   alpha_zap_(code, ins->sreg1, 0x0F, alpha_at);
+
+           EMIT_COND_EXC_BRANCH(bne, alpha_at, "OverflowException");
+           alpha_mov1(code, ins->sreg1, ins->dreg);
            break;
 
 
@@ -2683,7 +3009,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case CEE_CONV_I8:
 	 case CEE_CONV_I:
 	   // Convert I4 (32 bit) to dreg (64 bit) and sign extend it
-	   CFG_DEBUG(4) g_print("ALPHA_FIX: [conv_i8/conv_i] sreg=%d, dreg=%d\n",
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [conv_i8/conv_i] sreg=%d, dreg=%d\n",
 		  ins->sreg1, ins->dreg);
 	   alpha_addl(code, ins->sreg1, alpha_zero, ins->dreg);
 	   break;
@@ -2710,8 +3036,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   break;
 	   
          case CEE_CONV_U8:
+	 case CEE_CONV_U:
            // Move U4 (long) to dreg(64 bits) don't sign extend it
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [conv_u8] sreg=%d, dreg=%d\n",
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [conv_u8/conv_u] sreg=%d, dreg=%d\n",
                   ins->sreg1, ins->dreg);
            alpha_extll_(code, ins->sreg1, 0, ins->dreg);
            break;
@@ -2728,6 +3055,60 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_ldq(code, ins->dreg, alpha_sp, 0);
 	   alpha_lda(code, alpha_sp, alpha_sp, 8);
 	   break;
+
+	 case OP_FCONV_TO_I2:
+	   // Move float to 16 bit reg
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_to_i2] sreg=%d, dreg=%d\n",
+				ins->sreg1, ins->dreg);
+           //alpha_ftoit(code, ins->sreg1, ins->dreg); - 21264/EV6
+           alpha_cvttq_c(code, ins->sreg1, ins->sreg1);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, ins->sreg1, alpha_sp, 0);
+           alpha_ldq(code, ins->dreg, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+	   alpha_sll_(code, ins->dreg, 48, ins->dreg);
+	   alpha_sra_(code, ins->dreg, 48, ins->dreg);
+           break;
+
+	 case OP_FCONV_TO_U2:
+           // Move float to 16 bit reg as unsigned 
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_to_u2] sreg=%d, dreg=%d\n",
+                                ins->sreg1, ins->dreg);
+           //alpha_ftoit(code, ins->sreg1, ins->dreg); - 21264/EV6
+           alpha_cvttq_c(code, ins->sreg1, ins->sreg1);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, ins->sreg1, alpha_sp, 0);
+           alpha_ldq(code, ins->dreg, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+           alpha_zapnot_(code, ins->dreg, 3, ins->dreg);
+	   break;
+
+         case OP_FCONV_TO_U1:
+           // Move float to 8 bit reg as unsigned
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_to_u1] sreg=%d, dreg=%d\n",
+                                ins->sreg1, ins->dreg);
+           //alpha_ftoit(code, ins->sreg1, ins->dreg); - 21264/EV6
+           alpha_cvttq_c(code, ins->sreg1, ins->sreg1);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, ins->sreg1, alpha_sp, 0);
+           alpha_ldq(code, ins->dreg, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+           alpha_and_(code, ins->dreg, 0xff, ins->dreg);
+           break;
+
+         case OP_FCONV_TO_I1:
+           // Move float to 8 bit reg
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_to_i1] sreg=%d, dreg=%d\n",
+                                ins->sreg1, ins->dreg);
+           //alpha_ftoit(code, ins->sreg1, ins->dreg); - 21264/EV6
+           alpha_cvttq_c(code, ins->sreg1, ins->sreg1);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, ins->sreg1, alpha_sp, 0);
+           alpha_ldq(code, ins->dreg, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+           alpha_sll_(code, ins->dreg, 56, ins->dreg);
+           alpha_sra_(code, ins->dreg, 56, ins->dreg);
+           break;
 
 	 case CEE_CONV_R4:
 	 case OP_LCONV_TO_R4:
@@ -2753,7 +3134,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            alpha_cvtqt(code, ins->dreg, ins->dreg);
            break;
 
-
 	 case OP_FCONV_TO_R4:
 	   // Convert 64 bit float to 32 bit float (T -> S)
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_r4] sreg=%d, dreg=%d\n",
@@ -2761,6 +3141,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_cvtts(code, ins->sreg1, ins->dreg);
 	   break;
 
+	 case OP_LOCALLOC:
+	   // Allocate sreg1 bytes on stack, modify SP and put it into dreg
+	   CFG_DEBUG(4) g_print("ALPHA_FIX: [localloc] sreg=%d, dreg=%d\n",
+				ins->sreg1, ins->dreg);
+	   alpha_addq_(code, ins->sreg1, (MONO_ARCH_FRAME_ALIGNMENT - 1), ins->sreg1);
+	   alpha_and_(code, ins->sreg1, ~(MONO_ARCH_FRAME_ALIGNMENT - 1), ins->sreg1);
+	   alpha_subq(code, alpha_sp, ins->sreg1, alpha_sp);
+	   alpha_mov1(code, alpha_sp, ins->dreg);
+	   break;
 
 	 case OP_MOVE:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [move] sreg=%d, dreg=%d\n",
@@ -2768,14 +3157,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_mov1(code, ins->sreg1, ins->dreg);
 	   break;
 	   
-	 case OP_CGT:
-	   CFG_DEBUG(4) g_print("ALPHA_TODO: [cgt]\n");
-	   break;
-	   
 	 case OP_CGT_UN:
 	 case OP_ICGT_UN:
 	 case OP_ICGT:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [cgt_un/icgt_un/int_cgt] dreg=%d\n",
+	 case OP_CGT:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [cgt/cgt_un/icgt_un/int_cgt] dreg=%d\n",
 		  ins->dreg);
 	   alpha_clr(code, ins->dreg);
 	   alpha_cmoveq_(code, alpha_at, 1, ins->dreg);
@@ -2783,47 +3169,139 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	 case OP_ICLT:
 	 case OP_ICLT_UN:
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_clt/int_clt_un] dreg=%d\n",
+	 case OP_CLT:
+	 case OP_CLT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_clt/int_clt_un/clt/clt_un] dreg=%d\n",
                   ins->dreg);
            alpha_clr(code, ins->dreg);
            alpha_cmovne_(code, alpha_at, 1, ins->dreg);
            break;
 
 	 case OP_ICEQ:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [iceq] dreg=%d\n",
+	 case OP_CEQ:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [iceq/ceq] dreg=%d\n",
 		  ins->dreg);
 	   alpha_clr(code, ins->dreg);
 	   alpha_cmovne_(code, alpha_at, 1, ins->dreg);
 	   break;
 
+	 case OP_FCEQ:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fceq] dreg=%d\n",
+				ins->dreg);
+           alpha_clr(code, ins->dreg);
+	   alpha_fbeq(code, alpha_at, 1);
+	   alpha_lda(code, ins->dreg, alpha_zero, 1);
+
+	   /*
+	   alpha_cvttq_c(code, alpha_at, alpha_at);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, alpha_at, alpha_sp, 0);
+           alpha_ldq(code, alpha_at, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+
+           alpha_cmovne_(code, alpha_at, 1, ins->dreg);
+	   */
+           break;
+
+         case OP_FCGT:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fcgt] dreg=%d\n",
+                                ins->dreg);
+           alpha_clr(code, ins->dreg);
+           alpha_fbne(code, alpha_at, 1);
+           alpha_lda(code, ins->dreg, alpha_zero, 1);
+
+	   /*
+           alpha_cvttq_c(code, alpha_at, alpha_at);
+           alpha_lda(code, alpha_sp, alpha_sp, -8);
+           alpha_stt(code, alpha_at, alpha_sp, 0);
+           alpha_ldq(code, alpha_at, alpha_sp, 0);
+           alpha_lda(code, alpha_sp, alpha_sp, 8);
+
+           alpha_cmoveq_(code, alpha_at, 1, ins->dreg);
+	   */
+           break;
+
+
+         case OP_FCLT:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fclt] dreg=%d\n",
+                                ins->dreg);
+           alpha_clr(code, ins->dreg);
+           alpha_fbeq(code, alpha_at, 1);
+           alpha_lda(code, ins->dreg, alpha_zero, 1);
+	   break;
+
+         case OP_FCLT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fclt_un] dreg=%d\n",
+                                ins->dreg);
+ 
+           alpha_clr(code, ins->dreg);
+	   alpha_fbne(code, (alpha_at+1), 1);
+           alpha_fbeq(code, alpha_at, 1);
+           alpha_lda(code, ins->dreg, alpha_zero, 1);
+           break;
+
+
 	 case OP_IBNE_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [ibne_un] [");
-	   EMIT_ALPHA_BRANCH(ins, bne);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, bne);
 	   break;
 
 	 case OP_FBNE_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbne_un] [");
-	   EMIT_ALPHA_BRANCH(ins, fbne);
+	   alpha_fbeq(code, (alpha_at+1), 1);
+	   alpha_cpys(code, alpha_zero, alpha_zero, alpha_at);
+	   //EMIT_ALPHA_BRANCH(ins, fbne);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
 	   break;
-	   
+
+         case OP_FBGE_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbge_un] [");
+           alpha_fbeq(code, (alpha_at+1), 1);
+           alpha_cpys(code, alpha_zero, alpha_zero, alpha_at);
+           //EMIT_ALPHA_BRANCH(ins, fbne);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
+           break;
+
+         case OP_FBLE_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fble_un] [");
+           alpha_fbeq(code, (alpha_at+1), 1);
+           alpha_cpys(code, (alpha_at+1), (alpha_at+1), alpha_at);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
+           break;
+
+         case OP_FBLT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fblt_un] [");
+           alpha_fbeq(code, (alpha_at+1), 1);
+           alpha_cpys(code, (alpha_at+1), (alpha_at+1), alpha_at);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
+           break;
+
+         case OP_FBGT_UN:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbgt_un] [");
+           alpha_fbeq(code, (alpha_at+1), 1);
+           alpha_cpys(code, alpha_zero, alpha_zero, alpha_at);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
+           break;
+
+
 	 case OP_IBEQ:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [ibeq] [");
-	   EMIT_ALPHA_BRANCH(ins, beq);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, beq);
 	   break;
 
          case OP_FBEQ:
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbeq] [");
-           EMIT_ALPHA_BRANCH(ins, fbeq);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
            break;
 	   
 	 case CEE_BEQ:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [beq] [");
-	   EMIT_ALPHA_BRANCH(ins, beq);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, beq);
 	   break;
 	   
 	 case CEE_BNE_UN:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [bne_un] [");
-	   EMIT_ALPHA_BRANCH(ins, bne);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, bne);
 	   break;
 	   
 	 case OP_LABEL:
@@ -2914,7 +3392,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	       code = emit_call (cfg, code,
 				 MONO_PATCH_INFO_ABS, call->fptr);
 	     }
-	   
+
 	   //code = emit_move_return_value (cfg, ins, code);
 
            if (call->stack_usage)
@@ -2929,39 +3407,56 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_CALL_REG:
 	   {
 	     int offset;
+
 	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [fcall_reg/lcall_reg/vcall_reg/voidcall_reg/call_reg]: TargetReg: %d\n", ins->sreg1);
 	     call = (MonoCallInst*)ins;
 	   
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, -(call->stack_usage));
+
 	     alpha_mov1(code, ins->sreg1, alpha_pv);
 
 	     alpha_jsr(code, alpha_ra, alpha_pv, 0);
 
 	     offset = (char *)code - (char *)cfg->native_code;
-	     g_assert(offset < 0x7FFF);
 
-	     alpha_ldah(code, alpha_gp, alpha_ra, 0);
-	     alpha_lda(code, alpha_gp, alpha_gp, -offset);
+             // Restore GP
+	     ALPHA_LOAD_GP(offset)
+             alpha_ldah(code, alpha_gp, alpha_ra, 0);
+             alpha_lda(code, alpha_gp, alpha_gp, 0);
+
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, (call->stack_usage));
 
 	   }
 	   break;
 
+	 case OP_FCALL_MEMBASE:
 	 case OP_CALL_MEMBASE:
 	 case OP_LCALL_MEMBASE:
 	 case OP_VCALL_MEMBASE:
 	   {
 	     int offset;
 
-	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [(l/v)call_membase] basereg=%d, offset=%0lx\n",
+	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [(lvf)call_membase] basereg=%d, offset=%0lx\n",
 		    ins->inst_basereg, ins->inst_offset);
+             call = (MonoCallInst*)ins;
+
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, -(call->stack_usage));
 
 	     alpha_ldq(code, alpha_pv, ins->inst_basereg, ins->inst_offset);
              alpha_jsr(code, alpha_ra, alpha_pv, 0);
 
              offset = (char *)code - (char *)cfg->native_code;
-             g_assert(offset < 0x7FFF);
-
+           
+             // Restore GP
+	     ALPHA_LOAD_GP(offset)
              alpha_ldah(code, alpha_gp, alpha_ra, 0);
-             alpha_lda(code, alpha_gp, alpha_gp, -offset);	     
+             alpha_lda(code, alpha_gp, alpha_gp, 0);
+
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, (call->stack_usage));
 	   }
 	   break;
 
@@ -2971,15 +3466,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
              CFG_DEBUG(4) g_print("ALPHA_CHECK: [voidcall_membase] basereg=%d, offset=%0lx\n",
                     ins->inst_basereg, ins->inst_offset);
+             call = (MonoCallInst*)ins;
+
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, -(call->stack_usage));
 
              alpha_ldq(code, alpha_pv, ins->inst_basereg, ins->inst_offset);
              alpha_jsr(code, alpha_ra, alpha_pv, 0);
 
              offset = (char *)code - (char *)cfg->native_code;
-             g_assert(offset < 0x7FFF);
 
-             alpha_ldah(code, alpha_gp, alpha_ra, 0);
-             alpha_lda(code, alpha_gp, alpha_gp, -offset);
+	     // Restore GP
+	     ALPHA_LOAD_GP(offset)
+	     alpha_ldah(code, alpha_gp, alpha_ra, 0);
+	     alpha_lda(code, alpha_gp, alpha_gp, 0);
+
+	     if (call->stack_usage)
+	       alpha_lda(code, alpha_sp, alpha_sp, (call->stack_usage));
            }
            break;
 
@@ -3054,7 +3557,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			     (gpointer)"mono_arch_throw_exception");
 	   break;
 
-         case CEE_RETHROW:
+         case OP_RETHROW:
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [rethrow] sreg1=%0lx\n",
                                 ins->sreg1);
            alpha_mov1(code, ins->sreg1, alpha_a0);
@@ -3114,6 +3617,9 @@ guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
    guint32 opts = 0;
+
+   if (getenv("MONO_ALPHA_DEBUG"))
+	mini_alpha_verbose_level = 1;
    
    ALPHA_DEBUG("mono_arch_cpu_optimizazions");
    
@@ -3255,22 +3761,23 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 	    unsigned int inst = *ip2;
 	    unsigned int off = patch_info->data.offset & 0xFFFFFFFF;
 
-	    g_assert(!(off & 0xFFFF0000));
+	    g_assert(!(off & 0xFFFF8000));
 
 	    inst |= off;
 
 	    *ip2 = inst;
-
-	    break;
 	  }
-
+	  continue;
 
 	case MONO_PATCH_INFO_CLASS_INIT: 
 	  {		  
 	    /* Might already been changed to a nop */
 	    unsigned int* ip2 = ip;
-	    
-	    //	    NOT_IMPLEMENTED("mono_arch_patch_code: MONO_PATCH_INFO_CLASS_INIT");
+	   unsigned long t_addr = (unsigned long)target;
+ 
+	    if (*ip2 != (t_addr & 0xFFFFFFFF) ||
+		*(ip2+1) != ((t_addr>>32) & 0xFFFFFFFF))
+	    	    NOT_IMPLEMENTED("mono_arch_patch_code: MONO_PATCH_INFO_CLASS_INIT");
 	    //  amd64_call_code (ip2, 0);
 	    break;
 	  }
@@ -3292,9 +3799,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 
 	    t_addr = *(p+1);
 	    t_addr <<= 32;
-	    t_addr += *(p);
+	    t_addr |= *(p);
 
-	    g_print("ALPHA_PATCH: MONO_PATCH_INFO_METHOD(CONST) calc target: %p, stored target: %0lX\n",
+	    ALPHA_PRINT
+	    g_debug("ALPHA_PATCH: MONO_PATCH_INFO_METHOD(CONST) calc target: %p, stored target: %0lX",
 		   target, t_addr);
 	    if (target != ((void *)t_addr))
 	      {
@@ -3314,7 +3822,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
             t_addr <<= 32;
 	    t_addr += *(p);
 
-            g_print("ALPHA_PATCH: MONO_PATCH_INFO_ABS calc target: %p, stored target: %0lX\n",
+            ALPHA_PRINT g_debug("ALPHA_PATCH: MONO_PATCH_INFO_ABS calc target: %p, stored target: %0lX",
                    target, t_addr);
 
 	  }
@@ -3332,11 +3840,16 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 		ip += 4;
 	      }
 	    
-	    alpha_ldq(pcode, alpha_at, alpha_gp, (ip - code + 8));
-	    alpha_br(pcode, alpha_zero, 2);
+	    //alpha_ldq(pcode, alpha_at, alpha_gp, (ip - code + 8));
+	    alpha_nop(pcode);        // TODO optimize later
+	    alpha_bsr(pcode, alpha_at, 2);
 
 	    *pcode = (unsigned int)(t_addr & 0xFFFFFFFF);
-	    *(pcode+1) = (unsigned int)((t_addr >> 32) & 0xFFFFFFFF);
+	    pcode++;
+	    *pcode = (unsigned int)((t_addr >> 32) & 0xFFFFFFFF);
+	    pcode++;
+
+	    alpha_ldq(pcode, alpha_at, alpha_at, 0);
 
 	  }
 	  continue;
@@ -3499,7 +4012,8 @@ mono_arch_cpu_init (void)
 /*
  * get_call_info:
  *
- *  Obtain information about a call according to the calling convention.
+ * Obtain information about a call according to the calling convention.
+ *
  * For x86 ELF, see the "System V Application Binary Interface Intel386
  * Architecture Processor Supplment, Fourth Edition" document for more
  * information.
@@ -3810,11 +4324,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
    n = sig->param_count + sig->hasthis;
 
    // Collect info about method we age going to call
-   cinfo = get_call_info (sig, FALSE);
+   cinfo = get_call_info (sig, sig->pinvoke);
 
-   CFG_DEBUG(3) g_print("ALPHA: Will call method with %d(%d) parameters. RetType: %s(0x%X)\n",
-			 sig->param_count, sig->hasthis,
-			 CvtMonoType(sig->ret->type), sig->ret->type);
+   CFG_DEBUG(3) g_print("ALPHA: Will call %s method with %d(%d) params. RetType: %s(0x%X)\n",
+			sig->pinvoke ? "PInvoke" : "Managed",
+			sig->param_count, sig->hasthis,
+			CvtMonoType(sig->ret->type), sig->ret->type);
    
    if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 	 sentinelpos = sig->sentinelpos + (is_virtual ? 1 : 0);
@@ -3866,6 +4381,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	  */
 	 in = call->args [i];
        } else {
+	 MonoType *arg_type;
+
 	 MONO_INST_NEW (cfg, arg, OP_OUTARG);
 	 in = call->args [i];
 	 arg->cil_code = in->cil_code;
@@ -3876,14 +4393,19 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	 call->out_args = arg;
 
 	 CFG_DEBUG(3) g_print("ALPHA: Param[%d] - ", i);
+
+	 if (sig->hasthis && (i == 0))
+	   arg_type = &mono_defaults.object_class->byval_arg;
+	 else
+	   arg_type = sig->params [i - sig->hasthis];
 	 
 	 if ((i >= sig->hasthis) &&
-	     (MONO_TYPE_ISSTRUCT(sig->params[i - sig->hasthis])))
+	     (MONO_TYPE_ISSTRUCT(arg_type)))
 	   {
 	     gint align;
 	     guint32 size;
 	     
-	     if (sig->params[i-sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
+	     if (arg_type->type == MONO_TYPE_TYPEDBYREF) {
 	       size = sizeof (MonoTypedRef);
 	       align = sizeof (gpointer);
 	     }
@@ -3897,12 +4419,14 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	     {
 	       MonoInst *stack_addr;
 
-	       CFG_DEBUG(3) g_print("value type\n");
+	       CFG_DEBUG(3) g_print("value type, size:%d\n", size);
 
 	       MONO_INST_NEW (cfg, stack_addr, OP_REGOFFSET);
 	       stack_addr->inst_basereg = alpha_sp;
 	       stack_addr->inst_offset = -(cinfo->stack_usage - ainfo->offset);
+	       //stack_addr->inst_offset = 16 + ainfo->offset;
 	       stack_addr->inst_imm = size;
+
 	       arg->opcode = OP_OUTARG_VT;
 	       arg->inst_right = stack_addr;
 	     }
@@ -3947,38 +4471,36 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
        }
      }
 
-#if 0
    if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
-	  if (cinfo->ret.storage == ArgValuetypeInReg) {
-		 MonoInst *zero_inst;
-		 /*
-		  * After the call, the struct is in registers, but needs
-		  to be saved to the memory pointed
-		  * to by vt_arg in this_vret_args. This means that vt_ar
-		  g needs to be saved somewhere
-		  * before calling the function. So we add a dummy instru
-		  ction to represent pushing the
-		  * struct return address to the stack. The return addres
-		  s will be saved to this stack slot
-		  * by the code emitted in this_vret_args.
-		  */
-		 MONO_INST_NEW (cfg, arg, OP_OUTARG);
-		 MONO_INST_NEW (cfg, zero_inst, OP_ICONST);
-		 zero_inst->inst_p0 = 0;
-		 arg->inst_left = zero_inst;
-		 arg->type = STACK_PTR;
-		 /* prepend, so they get reversed */
-		 arg->next = call->out_args;
-		 call->out_args = arg;
-	  }
-	  else
-		/* if the function returns a struct, the called method a
-		 lready does a ret $0x4 */
-		if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
-		  cinfo->stack_usage -= 4;
+     if (cinfo->ret.storage == ArgValuetypeInReg) {
+       MonoInst *zero_inst;
+       /*
+	* After the call, the struct is in registers, but needs to be saved to the
+	memory pointed
+	* to by vt_arg in this_vret_args. This means that vt_ar
+	g needs to be saved somewhere
+	* before calling the function. So we add a dummy instru
+	ction to represent pushing the
+	* struct return address to the stack. The return addres
+	s will be saved to this stack slot
+	* by the code emitted in this_vret_args.
+	*/
+       MONO_INST_NEW (cfg, arg, OP_OUTARG);
+       MONO_INST_NEW (cfg, zero_inst, OP_ICONST);
+       zero_inst->inst_p0 = 0;
+       arg->inst_left = zero_inst;
+       arg->type = STACK_PTR;
+       /* prepend, so they get reversed */
+       arg->next = call->out_args;
+       call->out_args = arg;
+     }
+     else
+       /* if the function returns a struct, the called method a
+	  lready does a ret $0x4 */
+       if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
+	 ; //cinfo->stack_usage -= 4;
    }
-#endif
-
+   
    // stack_usage shows how much stack we would need to do the call
    // (for example for params that we pass on stack
    call->stack_usage = cinfo->stack_usage;
@@ -4229,7 +4751,10 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
    
    CFG_DEBUG(3) g_print("mono_arch_get_inst_for_method: %s\n", cmethod->name);
    
-   //	NOT_IMPLEMENTED("mono_arch_get_inst_for_method");
+   if (cmethod->klass == mono_defaults.thread_class &&
+       strcmp (cmethod->name, "MemoryBarrier") == 0) {
+     MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+   }
    
    return ins;
 }
@@ -4486,7 +5011,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p,
 /* Name         - mono_arch_allocate_vars                           */
 /*                                                                  */
 /* Function     - Set var information according to the calling      */
-/*                convention for S/390. The local var stuff should  */
+/*                convention for Alpha. The local var stuff should  */
 /*                most likely be split in another method.           */
 /*                                                                  */
 /* Parameter    - @m - Compile unit.                                */
@@ -4503,6 +5028,8 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p,
  * 0:    RA
  * 8:    old FP
  * 16:
+ *       [LMF info]
+ * .
  *       [possible return values allocated on stack]
  *
  * .     [locals]
@@ -4554,6 +5081,22 @@ mono_arch_allocate_vars (MonoCompile *cfg)
      cfg->frame_reg = alpha_fp;
      offset = MONO_ALPHA_VARS_OFFSET;
    }
+
+   if (cfg->method->save_lmf)
+     {
+       /* Reserve stack space for saving LMF + argument regs */
+       guint32 size = sizeof (MonoLMF);
+
+       //if (lmf_tls_offset == -1)
+       //	 /* Need to save argument regs too */
+       //	 size += (AMD64_NREG * 8) + (8 * 8);
+
+       cfg->arch.lmf_offset = offset;
+       offset += size;
+
+       CFG_DEBUG(3) g_print ("ALPHA: Method %s needs LMF. Offset: %x, Size: %x\n",
+			     cfg->method->name, cfg->arch.lmf_offset, size);
+     }
    
    if (sig->ret->type != MONO_TYPE_VOID)
      {
@@ -4575,8 +5118,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		 offset += 8;
 		 } else */
 	       {
-		 offset += 8;
 		 cfg->ret->inst_offset = offset;
+		 CFG_DEBUG(3) g_print ("ALPHA: Return offset is %x\n", offset);
+		 offset += 8;
 	       }
 	     }
 	   else
@@ -4802,10 +5346,73 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 
 /*========================= End of Function ========================*/
 
+/*
+**
+** mono_arch_get_vcall_slot_addr
+**  is called by mono_magic_trampoline to determine that the JIT compiled
+**  method is called via vtable slot. We need to analyze call sequence
+**  and determine that. In case it is true - we need to return address
+**  of vtable slot.
+**
+** code - points to the next instruction after call
+** reg - points to saved regs before the call (this is done
+**        by mono_magic_trampoline function
+*/
+
 gpointer*
 mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 {
-  ALPHA_DEBUG("mono_arch_get_vcall_slot_addr");
+  unsigned int *pc = (unsigned int *)code;
+  guint32 reg, disp;
+  int     start_index = -2;
+
+  ALPHA_PRINT g_debug("ALPHA_TODO: [mono_arch_get_vcall_slot_addr] code: %p regs: %p",
+	  pc, regs);
+
+  // Check if we have parameters on stack
+  if (pc[-2] & 0xFFFF0000 == 0x23DE0000)     // lda     sp,-n(sp)
+    start_index = -3;
+
+  // Check for (call_membase):
+  // -4: mov     v0,a0        - load this ???
+  // -3: ldq     v0,0(v0)     - load vtable
+  // -2: ldq     t12,64(v0)   - load method (object->vtable->vtable[method->slot])
+  if ((pc[start_index-1] & 0xFFFFFFFF) == 0xA4000000 &&
+      (pc[start_index] & 0xFFFF0000) == 0xA7600000
+      )
+    {
+      disp = pc[start_index] & 0xFFFF;
+      reg = 0; // For now
+
+      ALPHA_PRINT g_debug("ALPHA_TODO: [mono_arch_get_vcall_slot_addr callvirt] call_membase");
+
+      return (gpointer)(((guint64)(regs [reg])) + disp);
+    }
+
+  // Check for interface call
+  // -5: mov     v0,a0
+  // -4: ldq     v0,0(v0)
+  // -3: ldq     v0,-n(v0)
+  // -2: ldq     t12,0(v0)
+  if ((pc[start_index-2] & 0xFFFFFFFF) == 0xA4000000 &&
+      (pc[start_index-1] & 0xFFFF0000) == 0xA4000000 &&
+      (pc[start_index] & 0xFFFF0000) == 0xA7600000
+      )
+    {
+      disp = pc[start_index] & 0xFFFF;;
+      reg = 0; // For now
+
+      ALPHA_PRINT g_debug("ALPHA_TODO: [mono_arch_get_vcall_slot_addr interf callvir] call_membase");
+
+      return (gpointer)(((guint64)(regs [reg])) + disp);
+    }
 
   return 0;
+}
+
+
+guint32
+mono_arch_get_patch_offset (guint8 *code)
+{
+  return 3;
 }

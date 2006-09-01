@@ -124,8 +124,8 @@ conv.u: dest:i src1:i len:4
 ceq: dest:c len:8
 cgt: dest:c len:8
 cgt.un: dest:c len:8
-clt: dest:c len:4
-clt.un: dest:c len:4
+clt: dest:c len:8
+clt.un: dest:c len:8
 localloc: dest:i src1:i len:84
 compare: src1:i src2:i len:4
 lcompare: src1:i src2:i len:4
@@ -145,7 +145,14 @@ alpha_cmp_imm_lt: src1:i len:4
 alpha_cmp_ult: src1:i src2:i len:4
 alpha_cmp_imm_ult: src1:i len:4
 
+alpha_cmpt_un: src1:f src2:f len:4
+alpha_cmpt_un_su: src1:f src2:f len:4
 alpha_cmpt_eq: src1:f src2:f len:4
+alpha_cmpt_eq_su: src1:f src2:f len:4
+alpha_cmpt_lt: src1:f src2:f len:4
+alpha_cmpt_lt_su: src1:f src2:f len:4
+alpha_cmpt_le: src1:f src2:f len:4
+alpha_cmpt_le_su: src1:f src2:f len:4
 
 oparglist: src1:b len:11
 outarg: src1:i len:4
@@ -249,16 +256,16 @@ long_conv_to_r_un: dest:f src1:i src2:i len:48
 long_shr_imm: dest:i src1:i len:4
 long_shr_un_imm: dest:i src1:i len:4
 long_shl_imm: dest:i src1:i clob:1 len:11
-float_beq: len:13
-float_bne_un: len:18
-float_blt: len:13
-float_blt_un: len:30
-float_bgt: len:13
-float_btg_un: len:30
-float_bge: len:32
-float_bge_un: len:13
-float_ble: len:32
-float_ble_un: len:13
+float_beq: len:4
+float_bne_un: len:12
+float_blt: len:4
+float_blt_un: len:12
+float_bgt: len:4
+float_btg_un: len:12
+float_bge: len:4
+float_bge_un: len:12
+float_ble: len:4
+float_ble_un: len:12
 float_add: dest:f src1:f src2:f len:4
 float_sub: dest:f src1:f src2:f len:4
 float_mul: dest:f src1:f src2:f len:5
@@ -337,16 +344,17 @@ atomic_add_i8: src1:b src2:i dest:i len:32
 atomic_add_new_i8: src1:b src2:i dest:i len:32
 atomic_exchange_i8: src1:b src2:i dest:i len:32
 memory_barrier: len:16
+alpha_trapb: len:4
 adc: dest:i src1:i src2:i len:3 clob:1
-addcc: dest:i src1:i src2:i len:3 clob:1
-subcc: dest:i src1:i src2:i len:3 clob:1
+addcc: dest:i src1:i src2:i len:28
+subcc: dest:i src1:i src2:i len:28
 adc_imm: dest:i src1:i len:8 clob:1
 sbb: dest:i src1:i src2:i len:3 clob:1
 sbb_imm: dest:i src1:i len:8 clob:1
 br_reg: src1:i len:4
 sin: dest:f src1:f len:32
 cos: dest:f src1:f len:32
-abs: dest:f src1:f len:32
+abs: dest:f src1:f len:4
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:32
@@ -377,8 +385,8 @@ int_adc: dest:i src1:i src2:i clob:1 len:64
 int_adc_imm: dest:i src1:i clob:1 len:64
 int_sbb: dest:i src1:i src2:i clob:1 len:64
 int_sbb_imm: dest:i src1:i clob:1 len:64
-int_addcc: dest:i src1:i src2:i len:4
-int_subcc: dest:i src1:i src2:i len:4
+int_addcc: dest:i src1:i src2:i len:28
+int_subcc: dest:i src1:i src2:i len:28
 int_add_imm: dest:i src1:i len:4
 int_sub_imm: dest:i src1:i len:4
 int_mul_imm: dest:i src1:i clob:1 len:64
@@ -397,8 +405,8 @@ int_not: dest:i src1:i len:4
 int_ceq: dest:c len:64
 int_cgt: dest:c len:64
 int_cgt_un: dest:c len:64
-int_clt: dest:c len:64
-int_clt_un: dest:c len:64
+int_clt: dest:c len:8
+int_clt_un: dest:c len:8
 int_beq: len:4
 int_bne_un: len:4
 int_blt: len:4

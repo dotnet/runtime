@@ -15,7 +15,7 @@
 #define MONO_MAX_FREGS 32
 
 typedef enum {GT_NONE, GT_INT, GT_LONG,
-	      GT_PTR, GT_FLOAT, GT_DOUBLE} AlphaGotType;
+	      GT_PTR, GT_FLOAT, GT_DOUBLE, GT_LD_GTADDR} AlphaGotType;
 
 typedef struct
 {
@@ -60,11 +60,13 @@ typedef struct ucontext MonoContext;
 
 struct MonoLMF
 {
-   gpointer    previous_lmf;
-   gpointer    lmf_addr;
-   MonoMethod *method;
-   guint32     ebp;
-   guint32     eip;
+  gpointer    previous_lmf;
+  gpointer    lmf_addr;
+  MonoMethod *method;
+  guint64     ebp;          // FP ? caller FP
+  guint64     eip;          // RA ? or caller PC
+  guint64     rsp;          // SP ? caller SP
+  guint64     rgp;          // GP
 };
 
 #define MONO_ALPHA_VARS_OFFSET 16

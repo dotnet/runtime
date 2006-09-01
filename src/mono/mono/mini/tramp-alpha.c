@@ -22,7 +22,10 @@
         g_error ("FIXME: %s is not yet implemented.", x);
 
 #define ALPHA_DEBUG(x) \
-        g_debug ("ALPHA_DEBUG: %s is called.", x);
+	if (mini_alpha_verbose_level) \
+        	g_debug ("ALPHA_DEBUG: %s is called.", x);
+
+#define ALPHA_PRINT if (mini_alpha_verbose_level)
 
 /*========================= End of Defines =========================*/
 
@@ -64,9 +67,11 @@
 
 /*====================== End of Global Variables ===================*/
 
+extern int mini_alpha_verbose_level;
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name         - mono_arch_create_trampoline_code                            */
+/* Name         - mono_arch_create_trampoline_code                  */
 /*                                                                  */
 /* Function     - Create the designated type of trampoline according*/
 /*                to the 'tramp_type' parameter.                    */
@@ -78,6 +83,7 @@
   - at points to start of this trampoline
   - allocate stack to save all regs and lmfs
   - save regs
+  - save lmf
   - fill params for trampoline methods (They expect 4 params)
   - call trampoline method (by standard call convention (pv + ra))
   - save return value (r0)
@@ -96,8 +102,9 @@ guchar *
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
   unsigned int *buf, *code, *tramp;
-  int i, lmf_offset, offset, method_offset, tramp_offset,
-    saved_regs_offset, saved_fpregs_offset, framesize, off;
+  int i, offset, framesize, off, lmf_offset, saved_regs_offset;
+  //int saved_fpregs_offset, saved_regs_offset, method_offset, tramp_offset;
+
   gboolean has_caller;
   
   ALPHA_DEBUG("mono_arch_create_trampoline_code");
@@ -107,9 +114,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
   else
     has_caller = TRUE;
   
-  code = buf = mono_global_codeman_reserve (512);
+  code = buf = mono_global_codeman_reserve (1024);
   
-  framesize = 512 + sizeof (MonoLMF);
+  framesize = 1024 + sizeof (MonoLMF);
   framesize = (framesize +
 	       (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
   
@@ -124,7 +131,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
   /* store call convention parameters on stack.*/
   alpha_stq( code, alpha_ra, alpha_sp, 0 ); // ra
   alpha_stq( code, alpha_fp, alpha_sp, 8 ); // fp
-  
+
+  saved_regs_offset = offset;
+
   // Store all integer regs
   for (i=0; i<30 /*alpha_pc*/; i++)
     {
@@ -132,7 +141,77 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
       offset += 8;
     }
   
-  // Store all fp regs (TODO)
+  // Store all fp regs
+  for (i=0; i<alpha_fzero; i++)
+    {
+      alpha_stt(code, i, alpha_sp, offset);
+      offset += 8;
+    }
+
+  if (1)
+  {
+    // Save LMF (TSV_TODO don't forget callee saved regs)
+    lmf_offset = offset;
+    offset += sizeof (MonoLMF);
+
+    // Save PC
+    if (has_caller)
+      alpha_stq(code, alpha_ra, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip)));
+    else
+      alpha_stq(code, alpha_zero, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip)));
+    // Save FP
+    alpha_stq(code, alpha_fp, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp)));
+    
+    // Save method
+    alpha_ldq(code, alpha_r0, alpha_sp, framesize);
+    alpha_stq(code, alpha_r0, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, method)));
+
+    // Save SP
+    alpha_lda(code, alpha_r0, alpha_sp, (framesize+16));
+    alpha_stq(code, alpha_r0, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp)));
+    
+    // Save GP
+    alpha_stq(code, alpha_gp, alpha_sp, (lmf_offset + G_STRUCT_OFFSET (MonoLMF, rgp)));
+    
+    // Get "lmf_addr"
+    off = (char *)code - (char *)buf;
+    off += 2*4;
+    
+    if (off % 8)
+      {
+	alpha_nop(code);
+	off += 4;
+      }
+    
+    // alpha_at points to start of this method !!!
+    alpha_ldq(code, alpha_r0, alpha_at, off);
+    alpha_br(code, alpha_zero, 2);
+    
+    *code = (unsigned int)(((unsigned long)mono_get_lmf_addr) & 0xFFFFFFFF);
+    code++;
+    *code = (unsigned int)((((unsigned long)mono_get_lmf_addr) >> 32) & 0xFFFFFFFF);
+    code++;
+    
+    /*
+     * The call might clobber argument registers, but they are already
+     * saved to the stack/global regs.
+     */
+    alpha_jsr(code, alpha_ra, alpha_r0, 0);
+    
+    // Save lmf_addr
+    alpha_stq(code, alpha_r0, alpha_sp,
+	      (lmf_offset + G_STRUCT_OFFSET(MonoLMF, lmf_addr)));
+    // Load "previous_lmf" member of MonoLMF struct
+    alpha_ldq(code, alpha_r1, alpha_r0, 0);
+    
+    // Save it to MonoLMF struct
+    alpha_stq(code, alpha_r1, alpha_sp,
+	      (lmf_offset + G_STRUCT_OFFSET(MonoLMF, previous_lmf)));
+    // Set new LMF
+    alpha_lda(code, alpha_r1, alpha_sp, lmf_offset);
+    alpha_stq(code, alpha_r1, alpha_r0, 0);
+  }
+
 
   /* set the frame pointer */
   alpha_mov1( code, alpha_sp, alpha_fp );
@@ -142,12 +221,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
   //alpha_mov1(code, alpha_a0, alpha_a2);
   
   /* Arg4 is the trampoline address */
+  // Load PV from saved regs - later optimize it and load into a3 directly
+  alpha_ldq(code, alpha_pv, alpha_sp, (saved_regs_offset + (alpha_pv*8)));
   alpha_mov1(code, alpha_pv, alpha_a3);
   //alpha_mov1(code, alpha_a1, alpha_a3);
   
   /* Arg1 is the pointer to the saved registers */
   alpha_lda(code, alpha_a0, alpha_sp, 16);
-  
+
+  alpha_ldq(code, alpha_ra, alpha_sp, (saved_regs_offset + (alpha_ra*8)));  
   /* Arg2 is the address of the calling code */
   if (has_caller)
     alpha_mov1(code, alpha_ra, alpha_a1);
@@ -170,6 +252,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
   else
     tramp = (unsigned int*)mono_magic_trampoline;
   
+  // Restore AT
+  alpha_ldq(code, alpha_at, alpha_sp, (saved_regs_offset + (alpha_at*8)));
+
   off = (char *)code - (char *)buf;
   off += 2*4;
   
@@ -193,6 +278,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
   alpha_stq(code, alpha_r0, alpha_sp, framesize);
   
   /* Restore LMF */
+  if (1)
+  {
+    /* Restore previous lmf */
+    alpha_ldq(code, alpha_at, alpha_sp,
+	      (lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf)));
+    alpha_ldq(code, alpha_ra, alpha_sp,
+	      (lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr)));
+    alpha_stq(code, alpha_at, alpha_ra, 0);
+  }
   
   offset = 16;
   
@@ -202,11 +296,18 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
       alpha_ldq(code, i, alpha_sp, offset);
       offset += 8;
     }
+
+  // Restore all float regs
+  for (i=0; i<alpha_fzero; i++)
+    {
+      alpha_ldt(code, i, alpha_sp, offset);
+      offset += 8;
+    }
   
   alpha_ldq(code, alpha_r0, alpha_sp, framesize);
   
   // Restore stack
-  alpha_lda(code, alpha_sp, alpha_sp, framesize+16);
+  alpha_lda(code, alpha_sp, alpha_sp, (framesize+16));
   
   if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
     alpha_ret (code, alpha_ra, 1);
@@ -219,11 +320,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
       alpha_jsr (code, alpha_zero, alpha_pv, 0);
     }
   
-  g_assert (((char *)code - (char *)buf) <= 512);
+  g_assert (((char *)code - (char *)buf) <= 1024);
   
-  mono_arch_flush_icache (buf, (char *)code - (char *)buf);
+  mono_arch_flush_icache ((guchar *)buf, (char *)code - (char *)buf);
   
-  return buf;
+  return (guchar *)buf;
 }
 
 /*========================= End of Function ========================*/
@@ -309,18 +410,18 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 */
 /*------------------------------------------------------------------*/
 
-#define TRAMPOLINE_SIZE 52
+#define TRAMPOLINE_SIZE 64
 
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1,
 	MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
   unsigned int *code, *buf, *tramp, *real_code;
-  int offset, size, jump_offset;
+  int offset, size; //, jump_offset;
   
-  //  ALPHA_DEBUG("mono_arch_create_specific_trampoline");
+  ALPHA_DEBUG("mono_arch_create_specific_trampoline");
   
-  tramp = mono_get_trampoline_code (tramp_type);
+  tramp = (unsigned int *)mono_get_trampoline_code (tramp_type);
   
   code = buf = g_alloca (TRAMPOLINE_SIZE);
   
@@ -330,7 +431,8 @@ mono_arch_create_specific_trampoline (gpointer arg1,
   
   // Allocate two qwords on stack
   alpha_lda(code, alpha_sp, alpha_sp, -16);
-  
+
+  // Save my stub address at 8(sp)
   alpha_stq(code, alpha_pv, alpha_sp, 8);
   
   // Load arg1 into alpha_at
@@ -372,18 +474,6 @@ mono_arch_create_specific_trampoline (gpointer arg1,
   // Jump to trampoline
   alpha_jmp(code, alpha_zero, alpha_at, 0);
   
-  
-  /* push argument */
-  //if (amd64_is_imm32 ((gint64)arg1))
-  //        amd64_push_imm (code, (gint64)arg1);
-  //else {
-  //        amd64_mov_reg_imm (code, AMD64_R11, arg1);
-  //        amd64_push_reg (code, AMD64_R11);
-  //}
-  
-  // jump_offset = code - buf;
-  //amd64_jump_disp (code, 0xffffffff);
-  
   g_assert (((char *)code - (char *)buf) <= TRAMPOLINE_SIZE);
   mono_domain_lock (domain);
   /*
@@ -395,21 +485,17 @@ mono_arch_create_specific_trampoline (gpointer arg1,
   mono_domain_unlock (domain);
   
   memcpy (real_code, buf, size);
-  
-  printf("mono_arch_create_specific_trampoline: Target: %p, Arg1: %p\n",
+ 
+  ALPHA_PRINT 
+  	g_debug("mono_arch_create_specific_trampoline: Target: %p, Arg1: %p",
 	 real_code, arg1);
-  
-  /* Fix up jump */
-  //g_assert ((((gint64)tramp) >> 32) == 0);
-  //code = (guint8*)real_code + jump_offset;
-  //amd64_jump_disp (code, tramp - code);
   
   mono_jit_stats.method_trampolines++;
   
   if (code_len)
     *code_len = size;
   
-  mono_arch_flush_icache (real_code, size);
+  mono_arch_flush_icache ((guchar *)real_code, size);
   
   return real_code;
 }
@@ -418,7 +504,10 @@ mono_arch_create_specific_trampoline (gpointer arg1,
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
+  unsigned int *pcode = (unsigned int *)code;
+
   ALPHA_DEBUG("mono_arch_nullify_class_init_trampoline");
+
 }
 
 
@@ -435,7 +524,7 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
   unsigned long *p = (unsigned int *)(code-12);
   
   unsigned int *pcode = (unsigned int *)code;
-  unsigned long gp = pcode;
+  unsigned long gp = (unsigned long)pcode;
   unsigned int call_addr_inst;
   short high_offset, low_offset;
 
@@ -466,9 +555,9 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
   {
     gp += *((short *)(pcode - 2));
 
-    p = gp;
+    p = (unsigned long *)gp;
 
-    printf("Patch callsite at %p to %p\n", p, addr);
+    ALPHA_PRINT g_debug("Patch callsite at %p to %p\n", p, addr);
 
     // TODO - need to to interlocked update here
     *p = (unsigned long)addr;
@@ -487,9 +576,41 @@ mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
+  unsigned int *code, *start_code;
+  int this_reg = 16; //R16
+  int off;
+  MonoDomain *domain = mono_domain_get ();
+
   ALPHA_DEBUG("mono_arch_get_unbox_trampoline");
 
-  return 0;
+  if (!mono_method_signature (m)->ret->byref &&
+      MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
+    this_reg = 17; //R17
+
+  mono_domain_lock (domain);
+  start_code = code = (unsigned int *)mono_code_manager_reserve (domain->code_mp, 32);
+  mono_domain_unlock (domain);
+
+  // Adjust this by size of MonoObject
+  alpha_addq_(code, this_reg, sizeof(MonoObject), this_reg);  // 0
+  alpha_bsr(code, alpha_pv, 2);  // 4
+
+  *code = (unsigned int)(((unsigned long)addr) & 0xFFFFFFFF);
+  code++;
+  *code = (unsigned int)((((unsigned long)addr) >> 32) & 0xFFFFFFFF);
+  code++;
+
+  // Load "addr" into PV (R12)
+  alpha_ldq(code, alpha_pv, alpha_pv, 0);
+
+  // Jump to addr
+  alpha_jsr(code, alpha_zero, alpha_pv, 0);
+
+  g_assert (((char *)code - (char *)start_code) < 32);
+
+  mono_arch_flush_icache (start_code, (char *)code - (char *)start_code);
+
+  return start_code;
 }
 
 void

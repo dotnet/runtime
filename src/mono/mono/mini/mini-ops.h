@@ -734,5 +734,13 @@ MINI_OP(OP_ALPHA_CMP_LE, "alpha_cmp_le")
 MINI_OP(OP_ALPHA_CMP_IMM_LE, "alpha_cmp_imm_le")
 
 MINI_OP(OP_ALPHA_CMPT_EQ, "alpha_cmpt_eq")
-#endif
+MINI_OP(OP_ALPHA_CMPT_EQ_SU, "alpha_cmpt_eq_su")
+MINI_OP(OP_ALPHA_CMPT_LT, "alpha_cmpt_lt")
+MINI_OP(OP_ALPHA_CMPT_LT_SU, "alpha_cmpt_lt_su")
+MINI_OP(OP_ALPHA_CMPT_LE, "alpha_cmpt_le")
+MINI_OP(OP_ALPHA_CMPT_LE_SU, "alpha_cmpt_le_su")
+MINI_OP(OP_ALPHA_CMPT_UN, "alpha_cmpt_un")
+MINI_OP(OP_ALPHA_CMPT_UN_SU, "alpha_cmpt_un_su")
+MINI_OP(OP_ALPHA_TRAPB, "alpha_trapb")
 
+#endif

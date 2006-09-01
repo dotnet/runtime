@@ -94,7 +94,18 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
         mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
 }
 
-stmt: OP_OUTARG_REG (OP_I8CONST),
+stmt: OP_OUTARG_REG (OP_I8CONST) {
+        /* FIXME: Move this to inssel.brg or inssel-long.brg */
+        MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+        tree->opcode = OP_I8CONST;
+        tree->inst_c0 = state->left->tree->inst_c0;
+        tree->dreg = mono_regstate_next_int (s->rs);
+        mono_bblock_add_inst (s->cbb, tree);
+
+        mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+}
+
 stmt: OP_OUTARG_REG (OP_ICONST) {
         /* FIXME: Move this to inssel.brg or inssel-long.brg */
         MonoCallInst *call = (MonoCallInst*)tree->inst_right;
@@ -255,6 +266,7 @@ stmt: CEE_SWITCH (reg) {
 		MONO_EMIT_NEW_UNALU(s, OP_MOVE, alpha_at, alpha_at);
 		MONO_EMIT_NEW_UNALU(s, OP_MOVE, alpha_at, alpha_at);
 		MONO_EMIT_NEW_UNALU(s, OP_MOVE, alpha_at, alpha_at);
+		MONO_EMIT_NEW_UNALU(s, OP_MOVE, alpha_at, alpha_at);
 
 		MONO_EMIT_NEW_BIALU (s, CEE_ADD, target_reg, alpha_at,
 			offset_reg);
@@ -286,55 +298,170 @@ reg: CEE_LDIND_I2 (OP_REGVAR) {
 }
 
 
-stmt: CEE_BEQ (fpcflags) {
-        tree->opcode = OP_FBEQ;
+#stmt: CEE_BEQ (fpcflags) {
+#        tree->opcode = OP_FBEQ;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BNE_UN (fpcflags) {
+#        tree->opcode = OP_FBNE_UN;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BLT (fpcflags) {
+#        tree->opcode = OP_FBLT;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BLT_UN (fpcflags) {
+#        tree->opcode = OP_FBLT_UN;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BGT (fpcflags) {
+#        tree->opcode = OP_FBGT;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BGT_UN (fpcflags) {
+#        tree->opcode = OP_FBGT_UN;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BGE  (fpcflags) {
+#        tree->opcode = OP_FBGE;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BGE_UN (fpcflags) {
+#        tree->opcode = OP_FBGE_UN;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BLE  (fpcflags) {
+#        tree->opcode = OP_FBLE;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+#
+#stmt: CEE_BLE_UN (fpcflags) {
+#        tree->opcode = OP_FBLE_UN;
+#        mono_bblock_add_inst (s->cbb, tree);
+#}
+
+
+stmt: CEE_BLT_UN (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+	MONO_EMIT_UNALU (s, tree, OP_FBLT_UN, -1, -1);
+}
+
+stmt: CEE_BLE_UN (OP_COMPARE (freg, freg)) {
+	MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LE_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        MONO_EMIT_UNALU (s, tree, OP_FBLE_UN, -1, -1);
+}
+
+stmt: CEE_BGT_UN (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LE_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        MONO_EMIT_UNALU (s, tree, OP_FBGT_UN, -1, -1);
+}
+
+stmt: CEE_BGE_UN (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        MONO_EMIT_UNALU (s, tree, OP_FBGE_UN, -1, -1);
+}
+
+reg: OP_CEQ (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_EQ_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        tree->opcode = OP_FCEQ;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BNE_UN (fpcflags) {
-        tree->opcode = OP_FBNE_UN;
+reg: OP_CLT (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        tree->opcode = OP_FCLT;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLT (fpcflags) {
-        tree->opcode = OP_FBLT;
+reg: OP_CLT_UN (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->right->reg1, state->left->left->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        tree->opcode = OP_FCLT_UN;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLT_UN (fpcflags) {
-        tree->opcode = OP_FBLT_UN;
+
+reg: OP_CGT (OP_COMPARE (freg, freg)) {
+// Same as CLT_n (OP_COMPARE) - just exchange parameters
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+//                state->left->left->reg1, state->left->right->reg1);
+		state->left->right->reg1, state->left->left->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+//        tree->opcode = OP_FCGT;
+	tree->opcode = OP_FCLT;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGT (fpcflags) {
-        tree->opcode = OP_FBGT;
+reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {
+// Same as above
+	MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->right->reg1, state->left->left->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_LT_SU, alpha_at,
+                state->left->right->reg1, state->left->left->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        tree->opcode = OP_FCLT_UN;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGT_UN (fpcflags) {
-        tree->opcode = OP_FBGT_UN;
-        mono_bblock_add_inst (s->cbb, tree);
+
+stmt: CEE_BEQ (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_EQ_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        MONO_EMIT_UNALU (s, tree, OP_FBEQ, -1, -1);
 }
 
-stmt: CEE_BGE  (fpcflags) {
-        tree->opcode = OP_FBGE;
-        mono_bblock_add_inst (s->cbb, tree);
+stmt: CEE_BNE_UN (OP_COMPARE (freg, freg)) {
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_EQ_SU, alpha_at,
+                state->left->left->reg1, state->left->right->reg1);
+        MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
+
+        MONO_EMIT_UNALU (s, tree, OP_FBNE_UN, -1, -1);
 }
 
-stmt: CEE_BGE_UN (fpcflags) {
-        tree->opcode = OP_FBGE_UN;
-        mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE  (fpcflags) {
-        tree->opcode = OP_FBLE;
-        mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE_UN (fpcflags) {
-        tree->opcode = OP_FBLE_UN;
-        mono_bblock_add_inst (s->cbb, tree);
-}
 
 fpcflags: OP_COMPARE (freg, freg) {
         tree->opcode = OP_FCOMPARE;
