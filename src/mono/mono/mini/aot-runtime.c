@@ -110,6 +110,12 @@ static gboolean use_loaded_code = TRUE;
  */
 static gboolean use_aot_cache = FALSE;
 
+/*
+ * Whenever to spawn a new process to AOT a file or do it in-process. Only relevant if
+ * use_aot_cache is TRUE.
+ */
+static gboolean spawn_compiler = TRUE;
+
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
 
@@ -347,11 +353,12 @@ create_cache_structure (void)
 static GModule*
 load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 {
-	char *fname, *cmd, *tmp2;
+	char *fname, *cmd, *tmp2, *aot_options;
 	const char *home;
 	GModule *module;
 	gboolean res;
 	gchar *out, *err;
+	gint exit_status;
 
 	*aot_name = NULL;
 
@@ -375,19 +382,38 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 
 		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT precompiling assembly '%s'... ", assembly->image->name);
 
-		/* FIXME: security */
-		cmd = g_strdup_printf ("mono -O=all --aot=outfile=%s %s", fname, assembly->image->name);
+		aot_options = g_strdup_printf ("outfile=%s", fname);
 
-		res = g_spawn_command_line_sync (cmd, &out, &err, NULL, NULL);
-		g_free (cmd);
-		if (!res) {
-			mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed.");
-			return NULL;
+		if (spawn_compiler) {
+			/* FIXME: security */
+			/* FIXME: Has to pass the assembly loading path to the child process */
+			cmd = g_strdup_printf ("mono -O=all --aot=%s %s", aot_options, assembly->image->name);
+
+			res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
+
+#ifndef PLATFORM_WIN32
+			if (res) {
+				if (!WIFEXITED (exit_status) && (WEXITSTATUS (exit_status) == 0))
+					mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed: %s.", err);
+				else
+					mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
+				g_free (out);
+				g_free (err);
+			}
+#endif
+			g_free (cmd);
+		} else {
+			res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
+			if (!res) {
+				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed.");
+			} else {
+				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
+			}
 		}
 
-		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
-
 		module = g_module_open (fname, G_MODULE_BIND_LAZY);	
+
+		g_free (aot_options);
 	}
 
 	return module;
@@ -410,7 +436,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (mono_compile_aot)
 		return;
-							
+
 	if (use_aot_cache)
 		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
 	else {

@@ -3920,7 +3920,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot || security || pinvoke) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -9906,7 +9906,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
-	if ((cfg->num_varinfo > 2000) && !mono_compile_aot) {
+	if ((cfg->num_varinfo > 2000) && !cfg->compile_aot) {
 		/* 
 		 * we disable some optimizations if there are too many variables
 		 * because JIT time may become too expensive. The actual number needs 
@@ -10202,7 +10202,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	method = mono_get_inflated_method (method);
 
 #ifdef MONO_USE_AOT_COMPILER
-	if (!mono_compile_aot && (opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
+	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
 		MonoJitInfo *info;
 		MonoDomain *domain = mono_domain_get ();
 
