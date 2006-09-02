@@ -392,8 +392,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	code = (guint8*)real_code + jump_offset;
 	amd64_jump_disp (code, tramp - code);
 
-	mono_jit_stats.method_trampolines++;
-
 	if (code_len)
 		*code_len = size;
 

@@ -377,8 +377,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	mono_arch_flush_icache (code, buf - code);
 
-	mono_jit_stats.method_trampolines++;
-
 	if (code_len)
 		*code_len = buf - code;
 
