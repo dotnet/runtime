@@ -1380,6 +1380,13 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	GList *loading;
 	GHashTable *ass_loading;
 
+	/* Check runtime versions */
+	/* FIXME: Do this more elegantly */
+	if (mono_get_runtime_info ()->runtime_version [1] == '1' && image->version [1] == '2') {
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
+
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
