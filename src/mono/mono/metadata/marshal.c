@@ -725,6 +725,15 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	if (!sb)
 		return NULL;
 
+	if ((sb->str == sb->cached_str) && (sb->str->length == 0)) {
+		/* 
+		 * The sb could have been allocated with the default capacity and be empty.
+		 * we need to alloc a buffer of the default capacity in this case.
+		 */
+		MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), 16));
+		sb->cached_str = NULL;
+	}
+
 	res = mono_marshal_alloc (mono_stringbuilder_capacity (sb) + 1);
 
 	tmp = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, res, &error);
@@ -746,19 +755,22 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	if (!sb)
 		return NULL;
 
-	/* 
-	 * The sb could have been allocated with the default capacity and be empty.
-	 * we need to alloc a buffer of the default capacity in this case.
-	 */
-	if (! sb->str)
-		MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), mono_stringbuilder_capacity (sb)));
+	g_assert (sb->str);
+
 	/*
 	 * The stringbuilder might not have ownership of this string. If this is
 	 * the case, we must duplicate the string, so that we don't munge immutable
 	 * strings
 	 */
-	else if (sb->str == sb->cached_str) {
-		MONO_OBJECT_SETREF (sb, str, mono_string_new_utf16 (mono_domain_get (), mono_string_chars (sb->str), mono_stringbuilder_capacity (sb)));
+	if (sb->str == sb->cached_str) {
+		/* 
+		 * The sb could have been allocated with the default capacity and be empty.
+		 * we need to alloc a buffer of the default capacity in this case.
+		 */
+		if (sb->str->length == 0)
+			MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), 16));
+		else
+			MONO_OBJECT_SETREF (sb, str, mono_string_new_utf16 (mono_domain_get (), mono_string_chars (sb->str), mono_stringbuilder_capacity (sb)));
 		sb->cached_str = NULL;
 	}
 	
