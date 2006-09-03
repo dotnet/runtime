@@ -349,6 +349,7 @@ create_cache_structure (void)
  * - Add options for excluding assemblies during development
  * - Maybe add a threshold after an assembly is AOT compiled
  * - invoking a new mono process is a security risk
+ * - recompile the AOT module if one of its dependencies changes
  */
 static GModule*
 load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
@@ -1700,6 +1701,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	guint8 *p, *target, *plt_entry;
 	MonoJumpInfo ji;
 	MonoAotModule *module = (MonoAotModule*)aot_module;
+	gboolean res;
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
@@ -1707,8 +1709,9 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 
 	ji.type = decode_value (p, &p);
 
-	// FIXME: Error handling
-	decode_patch_info (module, NULL, &ji, p, &p, NULL);
+	res = decode_patch_info (module, NULL, &ji, p, &p, NULL);
+	// FIXME: Error handling (how ?)
+	g_assert (res);
 
 	target = mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE);
 
