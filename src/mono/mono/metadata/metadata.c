@@ -2348,7 +2348,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			mh->locals [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
-				g_free (mh);
 				return NULL;
 			}
 		}
