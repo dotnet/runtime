@@ -7567,6 +7567,8 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 {
 	char *name;
 	MonoMethod *wrapper;
+	gconstpointer trampoline;
+	MonoDomain *domain = mono_get_root_domain ();
 	
 	if (callinfo->wrapper) {
 		return callinfo->wrapper;
@@ -7575,13 +7577,28 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	if (callinfo->trampoline)
 		return callinfo->trampoline;
 
+	/* 
+	 * We use the lock on the root domain instead of the JIT lock to protect 
+	 * callinfo->trampoline, since we do a lot of stuff inside the critical section.
+	 */
+	mono_domain_lock (domain);
+
+	if (callinfo->trampoline) {
+		mono_domain_unlock (domain);
+		return callinfo->trampoline;
+	}
+
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
 	g_free (name);
 
-	callinfo->trampoline = mono_create_ftnptr (mono_get_root_domain (), mono_create_jit_trampoline_in_domain (mono_get_root_domain (), wrapper));
-	mono_register_jit_icall_wrapper (callinfo, callinfo->trampoline);
+	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
+	mono_register_jit_icall_wrapper (callinfo, trampoline);
 
+	callinfo->trampoline = trampoline;
+
+	mono_domain_unlock (domain);
+	
 	return callinfo->trampoline;
 }
 
