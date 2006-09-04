@@ -2021,6 +2021,10 @@ echo "
 	$disabled
 
 "
+if test x$with_static_mono = xno; then
+   AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexepcted bugs)
+fi
+
 if test x$gc = xsgen; then
         echo IMPORTANT:
 	echo IMPORTANT: You have selected an experimental, work-in-progress 
