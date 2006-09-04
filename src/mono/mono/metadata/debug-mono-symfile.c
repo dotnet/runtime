@@ -88,6 +88,8 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s doesn't match image %s", symfile->filename,
 				   handle->image_file);
+		if (guid)
+			g_free (guid);
 		return FALSE;
 	}
 
@@ -96,6 +98,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 	symfile->method_hash = g_hash_table_new_full (
 		g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) free_method_info);
 
+	g_free (guid);
 	return TRUE;
 }
 
@@ -139,6 +142,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 	} else if (!in_the_debugger) {
 		mono_debug_close_mono_symbol_file (symfile);
 		mono_debugger_unlock ();
+		g_free (symfile);
 		return NULL;
 	}
 
@@ -158,7 +162,9 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 
 	if (symfile->raw_contents)
 		mono_raw_buffer_free ((gpointer) symfile->raw_contents);
-	
+
+	if (symfile->filename)
+		g_free (symfile->filename);
 	g_free (symfile);
 	mono_debugger_unlock ();
 }
