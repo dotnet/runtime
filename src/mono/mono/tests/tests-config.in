@@ -1,5 +1,0 @@
-<configuration>
-	<dllmap dll="cygwin1.dll" target="@LIBC@" />
-	<dllmap dll="libc" target="@LIBC@" />
-</configuration>
-
