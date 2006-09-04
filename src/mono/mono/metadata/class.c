@@ -2267,7 +2267,6 @@ g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
 static void
 setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 {
-	MonoMethodSignature *sig;
 	MonoGenericContext *context;
 	int i;
 
