@@ -42,14 +42,13 @@ mono_mkstemp (char *templ)
 			return -1;
 		}
 
-			
 		ret = open (templ, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
-		if (ret == -1 && errno != EEXIST) {
-			return -1;
-		}
-
 		if (ret == -1) {
+			if (errno != EEXIST)
+				return -1;
 			memcpy (templ + len - 6, "XXXXXX", 6);
+		} else {
+			break;
 		}
 
 	} while (count-- > 0);
