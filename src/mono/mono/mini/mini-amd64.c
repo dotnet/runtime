@@ -148,6 +148,16 @@ debug_omit_fp (void)
 #endif
 }
 
+static inline gboolean
+amd64_is_near_call (guint8 *code)
+{
+	/* Skip REX */
+	if ((code [0] >= 0x40) && (code [0] <= 0x4f))
+		code += 1;
+
+	return code [0] == 0xe8;
+}
+
 static inline void 
 amd64_patch (unsigned char* code, gpointer target)
 {
@@ -1499,8 +1509,11 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 						if ((((guint64)info->func) >> 32) == 0)
 							near_call = TRUE;
 					}
-					else
-						near_call = TRUE;
+					else {
+						/* See the comment in mono_codegen () */
+						if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL)
+							near_call = TRUE;
+					}
 				}
 				else if ((((guint64)data) >> 32) == 0)
 					near_call = TRUE;
@@ -3971,6 +3984,30 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		default:
 			break;
 		}
+
+		/* 
+		 * Debug code to help track down problems where the target of a near call is
+		 * is not valid.
+		 */
+		if (amd64_is_near_call (ip)) {
+			gint64 disp = (guint8*)target - (guint8*)ip;
+
+			if (!amd64_is_imm32 (disp)) {
+				printf ("TYPE: %d\n", patch_info->type);
+				switch (patch_info->type) {
+				case MONO_PATCH_INFO_INTERNAL_METHOD:
+					printf ("V: %s\n", patch_info->data.name);
+					break;
+				case MONO_PATCH_INFO_METHOD_JUMP:
+				case MONO_PATCH_INFO_METHOD:
+					printf ("V: %s\n", patch_info->data.method->name);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
 		amd64_patch (ip, (gpointer)target);
 	}
 }
