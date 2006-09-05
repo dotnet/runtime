@@ -11,12 +11,6 @@
 
 Important Groups:
 
-	* Markup: currently under development. 
-	      2 g_markup_parse_context_parse
-	      2 g_markup_parse_context_new
-	      2 g_markup_parse_context_free
-	      2 g_markup_parse_context_end_parse
-
 	* Process launching
 	      3 g_shell_quote
 	      1 g_shell_unquote

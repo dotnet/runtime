@@ -1,3 +1,21 @@
+2006-09-04  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmarkup.c (g_markup_parse_context_end_parse): Add missing
+	method. 
+	(g_markup_parse_context_free): Implement. 
+	(parse_attributes): Store the value, not the attribute name
+	twice. 
+	Properly check the /> section.
+	(g_markup_parse_context_parse): When checking for error, use the
+	"error!=NULL && *error != NULL" upon return from callbacks,
+	it is only then that its valid to check for *error for error
+	conditions. 
+	
+	Only release one element of the list.
+
+	* test/markup.c: Incorporate the kind of code that is used in Mono
+	for domain loading;  Will test the rest later. 
+
 2006-09-01  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gmarkup.c (g_markup_parse_context_parse): Add text parsing

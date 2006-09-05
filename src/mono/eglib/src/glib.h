@@ -637,6 +637,8 @@ void                 g_markup_parse_context_free  (GMarkupParseContext *context)
 gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
 						   const gchar *text, gssize text_len,
 						   GError **error);
+gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
+						   GError **error);
 
 #endif
 
