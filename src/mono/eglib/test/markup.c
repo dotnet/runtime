@@ -3,7 +3,7 @@
 #include <glib.h>
 #include "test.h"
 
-#define do_bad_test(s) do { char *r = markup_test (s); if (r == NULL) return FAILED ("Failed on test " # s); } while (0)
+#define do_bad_test(s) do { char *r = markup_test (s); if (r == NULL) return FAILED ("Failed on test " # s); else free (r); } while (0)
 #define do_ok_test(s) do { char *r = markup_test (s); if (r != NULL) return FAILED ("Could not parse valid " # s); } while (0)
 
 static char *
@@ -22,8 +22,10 @@ markup_test (const char *s)
 		char *msg = g_strdup (error->message);
 		g_error_free (error);
 
+		g_free (parser);
 		return msg;
 	}
+	g_free (parser);
 	return NULL;
 }
 
@@ -162,7 +164,7 @@ mono_domain (void)
 {
 	AppConfigInfo *info;
 
-	info = domain_test ("<configuration><!--hello--><startup><!--world--><requiredRuntime version=\"v1\"><!--r--></requiredRuntime></startup></configuration>");
+	info = domain_test ("<configuration><!--hello--><startup><!--world--><requiredRuntime version=\"v1\"><!--r--></requiredRuntime></startup></configuration>"); 
 	if (info->required_runtime == NULL)
 		return FAILED ("No required runtime section");
 	if (strcmp (info->required_runtime, "v1") != 0)

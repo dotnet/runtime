@@ -173,21 +173,29 @@ parse_attributes (const char *p, const char *end, char ***names, char ***values,
 			p = parse_name (p, end, &name);
 			if (p == end)
 				return p;
+
 			p = skip_space (p, end);
-			if (p == end)
+			if (p == end){
+				free (name);
 				return p;
+			}
 			if (*p != '='){
 				set_error ("Expected an = after the attribute name `%s'", name);
+				free (name);
 				return end;
 			}
 			p++;
 			p = skip_space (p, end);
-			if (p == end)
+			if (p == end){
+				free (name);
 				return end;
+			}
 
 			p = parse_value (p, end, &value, error);
-			if (p == end)
+			if (p == end){
+				free (name);
 				return p;
+			}
 
 			++nnames;
 			*names = g_realloc (*names, sizeof (char **) * (nnames+1));
@@ -287,8 +295,9 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 					g_strfreev (names);
 					g_strfreev (values);
 				}
-				
-				set_error ("Unfinished sequence");
+				/* Only set the error if parse_attributes did not */
+				if (error != NULL && *error == NULL)
+					set_error ("Unfinished sequence");
 				goto fail;
 			}
 			l = element_end - element_start;
@@ -309,15 +318,20 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				g_strfreev (values);
 			}
 
-			if (error != NULL && *error != NULL)
+			if (error != NULL && *error != NULL){
+				free (ename);
 				goto fail;
+			}
 			
 			if (full_stop){
 				if (context->parser.end_element != NULL){
 					context->parser.end_element (context, ename, context->user_data, error);
-					if (error != NULL && *error != NULL)
+					if (error != NULL && *error != NULL){
+						free (ename);
 						goto fail;
+					}
 				}
+				free (ename);
 			} else
 				context->level = g_slist_prepend (context->level, ename);
 			
@@ -366,19 +380,23 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 		case CLOSING_ELEMENT: {
 			GSList *current = context->level;
+			char *text;
 
 			if (context->level == NULL){
 				set_error ("Too many closing tags, not enough open tags");
 				goto fail;
 			}
+			text = current->data;
 			
 			if (context->parser.end_element != NULL){
-				char *text = current->data;
-				
 				context->parser.end_element (context, text, context->user_data, error);
-				if (error != NULL && *error != NULL)
+				if (error != NULL && *error != NULL){
+					free (text);
 					goto fail;
+				}
 			}
+			free (text);
+			
 			context->level = context->level->next;
 			g_slist_free_1 (current);
 			break;
