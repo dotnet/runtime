@@ -42,7 +42,6 @@ Important Groups:
 	      1 g_locale_from_utf8
 
 	* Miscelaneous
-	      5 g_newa
 	      3 g_spaced_primes_closest
 	      2 g_printerr
 	      1 g_mem_set_vtable
