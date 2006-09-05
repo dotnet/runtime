@@ -142,7 +142,6 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 	} else if (!in_the_debugger) {
 		mono_debug_close_mono_symbol_file (symfile);
 		mono_debugger_unlock ();
-		g_free (symfile);
 		return NULL;
 	}
 
