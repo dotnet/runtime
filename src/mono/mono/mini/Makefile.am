@@ -64,7 +64,7 @@ monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono
 endif
 
 if PLATFORM_WIN32
-libmono_la_LDFLAGS=-no-undefined -version-info 1:0:0 $(monoldflags)
+libmono_la_LDFLAGS=-no-undefined -avoid-version $(monoldflags)
 else
 libmono_la_LDFLAGS=$(monoldflags)
 endif
