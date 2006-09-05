@@ -162,21 +162,21 @@ mono_domain (void)
 {
 	AppConfigInfo *info;
 
-	info = domain_test ("<configuration><startup><requiredRuntime version=\"v1\"></requiredRuntime></startup></configuration>");
+	info = domain_test ("<configuration><!--hello--><startup><!--world--><requiredRuntime version=\"v1\"><!--r--></requiredRuntime></startup></configuration>");
 	if (info->required_runtime == NULL)
 		return FAILED ("No required runtime section");
 	if (strcmp (info->required_runtime, "v1") != 0)
 		return FAILED ("Got a runtime version %s, expected v1", info->required_runtime);
 	domain_free (info);
 
-	info = domain_test ("<configuration><startup><requiredRuntime version=\"v1\"/></configuration>");
+	info = domain_test ("<configuration><startup><requiredRuntime version=\"v1\"/><!--comment--></configuration><!--end-->");
 	if (info->required_runtime == NULL)
 		return FAILED ("No required runtime section on auto-close section");
 	if (strcmp (info->required_runtime, "v1") != 0)
 		return FAILED ("Got a runtime version %s, expected v1", info->required_runtime);
 	domain_free (info);
 
-	info = domain_test ("<configuration><startup><supportedRuntime version=\"v1\"><supportedRuntime version=\"v2\"/></startup></configuration>");
+	info = domain_test ("<!--start--><configuration><startup><supportedRuntime version=\"v1\"/><!--middle--><supportedRuntime version=\"v2\"/></startup></configuration>");
 	if ((strcmp ((char*)info->supported_runtimes->data, "v1") == 0)){
 		if (info->supported_runtimes->next == NULL)
 			return FAILED ("Expected 2 supported runtimes");

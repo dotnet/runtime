@@ -10,7 +10,8 @@
 	"error!=NULL && *error != NULL" upon return from callbacks,
 	it is only then that its valid to check for *error for error
 	conditions. 
-	
+	(g_markup_parse_context_parse): Add comment processing.
+
 	Only release one element of the list.
 
 	* test/markup.c: Incorporate the kind of code that is used in Mono

@@ -9,7 +9,11 @@
  * "return to caller" and only at end parse this would be a fatal
  * error.
  *
- * Not that it matters to Mono, but it is very simple to change. 
+ * Not that it matters to Mono, but it is very simple to change, there
+ * is a tricky situation: there are a few places where we check p+n
+ * in the source, and that would have to change to be progressive, instead
+ * of depending on the string to be complete at that point, so we would
+ * have to introduce extra states to cope with that.
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)
@@ -45,7 +49,8 @@ typedef enum {
 	START_ELEMENT,
 	TEXT,
 	FLUSH_TEXT,
-	CLOSING_ELEMENT
+	CLOSING_ELEMENT,
+	COMMENT
 } ParseState;
 
 struct _GMarkupParseContext {
@@ -250,6 +255,13 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				set_error ("Unfinished element");
 				goto fail;
 			}
+
+			if (*p == '!' && (p+2 < end) && (p [1] == '-') && (p [2] == '-')){
+				context->state = COMMENT;
+				p += 2;
+				break;
+			}
+			
 			if (!(isascii (*p) && isalpha (*p))){
 				set_error ("Expected an element name");
 				goto fail;
@@ -326,6 +338,16 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			break;
 		}
 
+		case COMMENT:
+			if (*p != '-')
+				break;
+			if (p+2 < end && (p [1] == '-') && (p [2] == '>')){
+				context->state = TEXT;
+				p += 2;
+				break;
+			}
+
+			
 		case FLUSH_TEXT:
 			if (context->parser.text != NULL){
 				context->parser.text (context, context->text->str, context->text->len,
