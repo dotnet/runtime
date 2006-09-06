@@ -5715,6 +5715,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	MonoType *type = NULL;
 	MonoObject *dbnull = mono_get_dbnull_object (domain);
 	MonoMarshalSpec **mspecs;
+	MonoMethodSignature *sig;
 	int i;
 
 	if (!System_Reflection_ParameterInfo)
@@ -5729,29 +5730,30 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	 */
 	CHECK_OBJECT (MonoArray*, &(method->signature), NULL);
 
+	sig = mono_method_signature (method);
 	member = mono_method_get_object (domain, method, NULL);
-	names = g_new (char *, mono_method_signature (method)->param_count);
+	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 
-	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
+	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	res = mono_array_new (domain, System_Reflection_ParameterInfo, mono_method_signature (method)->param_count);
-	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
+	res = mono_array_new (domain, System_Reflection_ParameterInfo, sig->param_count);
+	for (i = 0; i < sig->param_count; ++i) {
 		param = (MonoReflectionParameter *)mono_object_new (domain, System_Reflection_ParameterInfo);
-		MONO_OBJECT_SETREF (param, ClassImpl, mono_type_get_object (domain, mono_method_signature (method)->params [i]));
+		MONO_OBJECT_SETREF (param, ClassImpl, mono_type_get_object (domain, sig->params [i]));
 		MONO_OBJECT_SETREF (param, MemberImpl, (MonoObject*)member);
 		MONO_OBJECT_SETREF (param, NameImpl, mono_string_new (domain, names [i]));
 		param->PositionImpl = i;
-		param->AttrsImpl = mono_method_signature (method)->params [i]->attrs;
+		param->AttrsImpl = sig->params [i]->attrs;
 
 		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
 			MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
 		} else {
 
 			if (!blobs) {
-				blobs = g_new0 (char *, mono_method_signature (method)->param_count);
-				types = g_new0 (guint32, mono_method_signature (method)->param_count);
+				blobs = g_new0 (char *, sig->param_count);
+				types = g_new0 (guint32, sig->param_count);
 				get_default_param_value_blobs (method, blobs, types); 
 			}
 
@@ -5762,9 +5764,14 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			type->data.klass = NULL;
 			if (types [i] == MONO_TYPE_CLASS)
 				type->data.klass = mono_defaults.object_class;
-			else	
+			else if ((sig->params [i]->type == MONO_TYPE_VALUETYPE) && sig->params [i]->data.klass->enumtype) {
+				/* For enums, types [i] contains the base type */
+
+					type->type = MONO_TYPE_VALUETYPE;
+					type->data.klass = mono_class_from_mono_type (sig->params [i]);
+			} else
 				type->data.klass = mono_class_from_mono_type (type);
-			
+
 			MONO_OBJECT_SETREF (param, DefaultValueImpl, mono_get_object_from_blob (domain, type, blobs [i]));
 
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
