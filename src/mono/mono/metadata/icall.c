@@ -7568,6 +7568,9 @@ mono_lookup_internal_call (MonoMethod *method)
 
 	g_assert (method != NULL);
 
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
+
 	if (method->klass->nested_in) {
 		int pos = concat_class_name (mname, sizeof (mname)-2, method->klass->nested_in);
 		if (!pos)
