@@ -849,6 +849,31 @@ public class Tests {
 	}
 
 	/*
+	 * [In, Out] classes
+	 */
+
+	public delegate int InOutByvalClassDelegate ([In, Out] SimpleClass ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_byval_class_delegate")]
+	public static extern int mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate d);
+
+	public static int delegate_test_byval_class_inout (SimpleClass ss) {
+		if ((ss.a != false) || (ss.b != true) || (ss.c != false) || (ss.d != "FOO"))
+			return 1;
+
+		ss.a = true;
+		ss.b = false;
+		ss.c = true;
+		ss.d = "RES";
+
+		return 0;
+	}
+
+	public static int test_0_marshal_inout_byval_class_delegate () {
+		return mono_test_marshal_inout_byval_class_delegate (new InOutByvalClassDelegate (delegate_test_byval_class_inout));
+	}
+
+	/*
 	 * Returning string arrays
 	 */
 	public delegate string[] ReturnArrayDelegate (int i);
