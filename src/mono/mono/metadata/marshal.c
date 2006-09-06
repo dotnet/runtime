@@ -6115,36 +6115,54 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
-		/* Check for null */
-		mono_mb_emit_ldloc (mb, conv_arg);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		pos2 = mono_mb_emit_branch (mb, CEE_BR);
+		if (t->byref) {
+			/* Check for null */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+			pos2 = mono_mb_emit_branch (mb, CEE_BR);
 
-		mono_mb_patch_branch (mb, pos);			
+			mono_mb_patch_branch (mb, pos);			
 			
-		/* Set src */
-		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_stloc (mb, 0);
+			/* Set src */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+			mono_mb_emit_stloc (mb, 0);
 
-		/* Allocate and set dest */
-		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-		mono_mb_emit_byte (mb, CEE_CONV_I);
-		mono_mb_emit_icall (mb, mono_marshal_alloc);
-		mono_mb_emit_stloc (mb, 1);
-
-		/* Update argument pointer */
-		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
+			/* Allocate and set dest */
+			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_CONV_I);
+			mono_mb_emit_icall (mb, mono_marshal_alloc);
+			mono_mb_emit_stloc (mb, 1);
+			
+			/* Update argument pointer */
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, 1);
+			mono_mb_emit_byte (mb, CEE_STIND_I);
 		
-		/* emit valuetype conversion code */
-		emit_struct_conv (mb, klass, FALSE);
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, FALSE);
 
-		mono_mb_patch_branch (mb, pos2);
+			mono_mb_patch_branch (mb, pos2);
+		} else {
+			/* byval [Out] marshalling */
+
+			/* FIXME: Handle null */
+
+			/* Set src */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+			mono_mb_emit_stloc (mb, 0);
+
+			/* Set dest */
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_stloc (mb, 1);
+			
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, FALSE);
+		}			
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
@@ -7686,6 +7704,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			/* The [Out] information is encoded in the delegate signature */
 			switch (t->type) {
 			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_VALUETYPE:
 				emit_marshal (&m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			default:
