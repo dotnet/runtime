@@ -823,8 +823,6 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 		}
 	}
 
-	printf ("A: %s %s %s %d\n", image->name, name_space, name, hash);
-
 	mono_aot_unlock ();
 	
 	return TRUE;
