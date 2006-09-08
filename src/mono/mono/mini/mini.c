@@ -329,8 +329,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
         (vi)->idx = (id); \
 } while (0)
 
-//#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
-#define UNVERIFIED do { goto unverified; } while (0)
+#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
+//#define UNVERIFIED do { goto unverified; } while (0)
 
 /*
  * Basic blocks have two numeric identifiers:
@@ -11079,6 +11079,7 @@ mini_init (const char *filename)
 	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_init_vtable (mono_aot_init_vtable);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
+	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
 	if (debug_options.collect_pagefault_stats) {

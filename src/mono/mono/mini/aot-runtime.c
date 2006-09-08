@@ -88,6 +88,7 @@ typedef struct MonoAotModule {
 	guint8 *class_info;
 	guint32 *class_info_offsets;
 	guint32 *methods_loaded;
+	guint32 *class_name_table;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
@@ -121,6 +122,7 @@ static gint32 mono_last_aot_method = -1;
 
 static gboolean make_unreadable = FALSE;
 static guint32 n_pagefaults = 0;
+static guint32 name_table_accesses = 0;
 
 /* Used to speed-up find_aot_module () */
 static gsize aot_code_low_addr = (gssize)-1;
@@ -545,6 +547,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "method_order_end", (gpointer*)&info->method_order_end);
 	g_module_symbol (assembly->aot_module, "class_info", (gpointer*)&info->class_info);
 	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
+	g_module_symbol (assembly->aot_module, "class_name_table", (gpointer *)&info->class_name_table);
 	g_module_symbol (assembly->aot_module, "got_info", (gpointer*)&info->got_info);
 	g_module_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&info->got_info_offsets);
 	g_module_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
@@ -742,6 +745,88 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 
 	mono_aot_unlock ();
 
+	return TRUE;
+}
+
+/**
+ * mono_aot_get_class_from_name:
+ *
+ *  Obtains a MonoClass with a given namespace and a given name which is located in IMAGE,
+ * using a cache stored in the AOT file.
+ * Stores the resulting class in *KLASS if found, stores NULL otherwise.
+ *
+ * Returns: TRUE if the klass was found/not found in the cache, FALSE if no aot file was 
+ * found.
+ */
+gboolean
+mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const char *name, MonoClass **klass)
+{
+	MonoAotModule *aot_module;
+	guint32 *table, *entry;
+	guint32 table_size, hash;
+	char *full_name;
+	const char *name2, *name_space2;
+	MonoTableInfo  *t;
+	guint32 cols [MONO_TYPEDEF_SIZE];
+
+	if (!aot_modules)
+		return FALSE;
+
+	mono_aot_lock ();
+
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
+	if (!aot_module || !aot_module->class_name_table) {
+		mono_aot_unlock ();
+		return FALSE;
+	}
+
+	*klass = NULL;
+
+	table_size = aot_module->class_name_table [0];
+	table = aot_module->class_name_table + 1;
+
+	if (name_space [0] == '\0')
+		full_name = g_strdup_printf ("%s", name);
+	else
+		full_name = g_strdup_printf ("%s.%s", name_space, name);
+	hash = g_str_hash (full_name) % table_size;
+	g_free (full_name);
+
+	entry = &table [hash * 2];
+
+	if (entry [0] != 0) {
+		t = &image->tables [MONO_TABLE_TYPEDEF];
+
+		while (TRUE) {
+			guint32 token = entry [0];
+			guint32 next = entry [1];
+			guint32 index = mono_metadata_token_index (token);
+
+			name_table_accesses ++;
+
+			mono_metadata_decode_row (t, index - 1, cols, MONO_TYPEDEF_SIZE);
+
+			name2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+			name_space2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+
+			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
+				mono_aot_unlock ();
+				*klass = mono_class_get (image, token);
+				return TRUE;
+			}
+
+			if (next != 0) {
+				entry = &table [next * 2];
+			} else {
+				break;
+			}
+		}
+	}
+
+	printf ("A: %s %s %s %d\n", image->name, name_space, name, hash);
+
+	mono_aot_unlock ();
+	
 	return TRUE;
 }
 
@@ -1839,6 +1924,12 @@ mono_aot_init_vtable (MonoVTable *vtable)
 
 gboolean
 mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
+{
+	return FALSE;
+}
+
+gboolean
+mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const char *name, MonoClass **klass)
 {
 	return FALSE;
 }

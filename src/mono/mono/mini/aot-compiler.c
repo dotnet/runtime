@@ -2962,6 +2962,80 @@ emit_class_info (MonoAotCompile *acfg)
 	emit_line (acfg);
 }
 
+typedef struct ClassNameTableEntry {
+	guint32 token, index;
+	struct ClassNameTableEntry *next;
+} ClassNameTableEntry;
+
+static void
+emit_class_name_table (MonoAotCompile *acfg)
+{
+	int i, table_size;
+	guint32 token, hash;
+	MonoClass *klass;
+	GPtrArray *table;
+	char *full_name;
+	char *symbol;
+	ClassNameTableEntry *entry, *new_entry;
+
+	/*
+	 * Construct a chained hash table for mapping class names to typedef tokens.
+	 */
+	table_size = g_spaced_primes_closest ((int)(acfg->image->tables [MONO_TABLE_TYPEDEF].rows * 1.5));
+	table = g_ptr_array_sized_new (table_size);
+	for (i = 0; i < table_size; ++i)
+		g_ptr_array_add (table, NULL);
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		token = MONO_TOKEN_TYPE_DEF | (i + 1);
+		klass = mono_class_get (acfg->image, token);
+		full_name = mono_type_get_full_name (klass);
+		hash = g_str_hash (full_name) % table_size;
+
+		//printf ("A: '%s' %d %d\n", full_name, g_str_hash (full_name), hash);
+
+		/* FIXME: Allocate from the mempool */
+		new_entry = g_new0 (ClassNameTableEntry, 1);
+		new_entry->token = token;
+
+		entry = g_ptr_array_index (table, hash);
+		if (entry == NULL) {
+			new_entry->index = hash;
+			g_ptr_array_index (table, hash) = new_entry;
+		} else {
+			while (entry->next)
+				entry = entry->next;
+			
+			entry->next = new_entry;
+			new_entry->index = table->len;
+			g_ptr_array_add (table, new_entry);
+		}
+	}
+
+	/* Emit the table */
+	symbol = g_strdup_printf ("class_name_table");
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
+	/* FIXME: Optimize memory usage */
+	emit_int32 (acfg, table_size);
+	for (i = 0; i < table->len; ++i) {
+		ClassNameTableEntry *entry = g_ptr_array_index (table, i);
+
+		if (entry == NULL) {
+			emit_int32 (acfg, 0);
+			emit_int32 (acfg, 0);
+		} else {
+			emit_int32 (acfg, entry->token);
+			if (entry->next)
+				emit_int32 (acfg, entry->next->index);
+			else
+				emit_int32 (acfg, 0);
+		}
+	}
+}
+
 static void
 emit_image_table (MonoAotCompile *acfg)
 {
@@ -3156,6 +3230,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_info (acfg);
 
 	emit_method_order (acfg);
+
+	emit_class_name_table (acfg);
 
 	emit_got_info (acfg);
 

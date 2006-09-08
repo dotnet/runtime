@@ -880,6 +880,7 @@ gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 guint8*   mono_aot_get_plt_entry            (guint8 *code);
 gboolean  mono_aot_init_vtable              (MonoVTable *vtable);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
+gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass);
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
 void mono_aot_set_make_unreadable           (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
