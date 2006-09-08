@@ -569,6 +569,8 @@ typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token, Mon
 
 typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
 
+typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
+
 void
 mono_classes_init (void) MONO_INTERNAL;
 
@@ -641,6 +643,9 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func) MONO_INTERNAL;
 
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func) MONO_INTERNAL;
+
+void
+mono_install_get_class_from_name (MonoGetClassFromName func) MONO_INTERNAL;
 
 MonoInflatedGenericClass*
 mono_get_inflated_generic_class (MonoGenericClass *gclass) MONO_INTERNAL;
@@ -806,6 +811,9 @@ mono_type_get_full_name (MonoClass *class) MONO_INTERNAL;
 
 MonoArrayType *mono_dup_array_type (MonoArrayType *a) MONO_INTERNAL;
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig) MONO_INTERNAL;
+
+void
+mono_image_init_name_cache (MonoImage *image);
 
 gboolean mono_class_is_nullable (MonoClass *klass) MONO_INTERNAL;
 MonoClass *mono_class_get_nullable_param (MonoClass *klass) MONO_INTERNAL;

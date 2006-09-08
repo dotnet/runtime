@@ -35,6 +35,9 @@ MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
 
+/* Function supplied by the runtime to find classes by name using information from the AOT file */
+static MonoGetClassFromName get_class_from_name = NULL;
+
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 static void mono_class_create_generic (MonoInflatedGenericClass *gclass);
 static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
@@ -3932,6 +3935,100 @@ mono_class_get (MonoImage *image, guint32 type_token)
 	return mono_class_get_full (image, type_token, NULL);
 }
 
+/**
+ * mono_image_init_name_cache:
+ *
+ *  Initializes the class name cache stored in image->name_cache.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_image_init_name_cache (MonoImage *image)
+{
+	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
+	guint32 cols [MONO_TYPEDEF_SIZE];
+	const char *name;
+	const char *nspace;
+	guint32 i, visib, nspace_index;
+	GHashTable *name_cache2, *nspace_table;
+
+	mono_loader_lock ();
+
+	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+
+	/* Temporary hash table to avoid lookups in the nspace_table */
+	name_cache2 = g_hash_table_new (NULL, NULL);
+
+	for (i = 1; i <= t->rows; ++i) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
+		/* nested types are accessed from the nesting name */
+		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
+			continue;
+		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+
+		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
+		nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
+		if (!nspace_table) {
+			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+			g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
+								 nspace_table);
+		}
+		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
+	}
+
+	/* Load type names from EXPORTEDTYPES table */
+	{
+		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
+		guint32 cols [MONO_EXP_TYPE_SIZE];
+		int i;
+
+		for (i = 0; i < t->rows; ++i) {
+			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
+			name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
+			nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+
+			nspace_index = cols [MONO_EXP_TYPE_NAMESPACE];
+			nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
+			if (!nspace_table) {
+				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+				g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
+									 nspace_table);
+			}
+			g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
+		}
+	}
+
+	g_hash_table_destroy (name_cache2);
+
+	mono_loader_unlock ();
+}
+
+void
+mono_image_add_to_name_cache (MonoImage *image, const char *nspace, 
+							  const char *name, guint32 index)
+{
+	GHashTable *nspace_table;
+	GHashTable *name_cache;
+
+	mono_loader_lock ();
+
+	if (!image->name_cache)
+		mono_image_init_name_cache (image);
+
+	name_cache = image->name_cache;
+	if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
+		nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
+	}
+	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
+
+	mono_loader_unlock ();
+}
+
 typedef struct {
 	gconstpointer key;
 	gpointer value;
@@ -3977,6 +4074,9 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 		FindUserData user_data;
 
 		mono_loader_lock ();
+
+		if (image->name_cache)
+			mono_image_init_name_cache (image);
 
 		user_data.key = name_space;
 		user_data.value = NULL;
@@ -4076,7 +4176,20 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		name = buf;
 	}
 
+	if (get_class_from_name) {
+		gboolean res = get_class_from_name (image, name_space, name, &class);
+		if (res) {
+			if (nested)
+				return class ? return_nested_in (class, nested) : NULL;
+			else
+				return class;
+		}
+	}
+
 	mono_loader_lock ();
+
+	if (!image->name_cache)
+		mono_image_init_name_cache (image);
 
 	nspace_table = g_hash_table_lookup (image->name_cache, name_space);
 
@@ -4468,6 +4581,12 @@ mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 		return FALSE;
 	else
 		return get_cached_class_info (klass, res);
+}
+
+void
+mono_install_get_class_from_name (MonoGetClassFromName func)
+{
+	get_class_from_name = func;
 }
 
 MonoImage*

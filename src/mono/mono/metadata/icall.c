@@ -4044,7 +4044,10 @@ ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *asse
 	NameSpaceInfo info;
 
 	MONO_ARCH_SAVE_REGS;
-	
+
+	if (!img->name_cache)
+		mono_image_init_name_cache (img);
+
 	res = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, g_hash_table_size (img->name_cache));
 	info.res = res;
 	info.idx = 0;
@@ -7642,7 +7645,7 @@ mono_lookup_internal_call (MonoMethod *method)
 		mono_loader_unlock ();
 		return res;
 	}
-	
+
 	g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
 	g_print ("\nYour mono runtime and class libraries are out of sync.\n");
 	g_print ("The out of sync library is: %s\n", method->klass->image->name);

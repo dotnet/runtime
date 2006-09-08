@@ -422,20 +422,6 @@ load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 	return load_tables (image);
 }
 
-void
-mono_image_add_to_name_cache (MonoImage *image, const char *nspace, 
-							  const char *name, guint32 index)
-{
-	GHashTable *nspace_table;
-	GHashTable *name_cache = image->name_cache;
-
-	if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
-		nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
-	}
-	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
-}
-
 static void
 load_modules (MonoImage *image, MonoImageOpenStatus *status)
 {
@@ -455,7 +441,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
 		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
 			continue;
-		valid_modules = g_list_prepend (valid_modules, mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
+		valid_modules = g_list_prepend (valid_modules, (char*)mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
 	}
 
 	t = &image->tables [MONO_TABLE_MODULEREF];
@@ -498,65 +484,6 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 }
 
 static void
-load_class_names (MonoImage *image)
-{
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
-	guint32 cols [MONO_TYPEDEF_SIZE];
-	const char *name;
-	const char *nspace;
-	guint32 i, visib, nspace_index;
-	GHashTable *name_cache2, *nspace_table;
-
-	/* Temporary hash table to avoid lookups in the nspace_table */
-	name_cache2 = g_hash_table_new (NULL, NULL);
-
-	for (i = 1; i <= t->rows; ++i) {
-		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
-		/* nested types are accessed from the nesting name */
-		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
-		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
-			continue;
-		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
-		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
-
-		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
-		nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-		if (!nspace_table) {
-			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
-			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-								 nspace_table);
-		}
-		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
-	}
-
-	/* Load type names from EXPORTEDTYPES table */
-	{
-		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
-		guint32 cols [MONO_EXP_TYPE_SIZE];
-		int i;
-
-		for (i = 0; i < t->rows; ++i) {
-			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
-			name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
-			nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
-
-			nspace_index = cols [MONO_EXP_TYPE_NAMESPACE];
-			nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-			if (!nspace_table) {
-				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-				g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
-				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-									 nspace_table);
-			}
-			g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
-		}
-	}
-
-	g_hash_table_destroy (name_cache2);
-}
-
-static void
 register_guid (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoImage *image = (MonoImage*)value;
@@ -579,7 +506,6 @@ mono_image_init (MonoImage *image)
 	image->method_cache = g_hash_table_new (NULL, NULL);
 	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->field_cache = g_hash_table_new (NULL, NULL);
-	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
@@ -758,8 +684,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (!load_metadata (image, iinfo))
 		goto invalid_image;
-
-	load_class_names (image);
 
 	/* modules don't have an assembly table row */
 	if (image->tables [MONO_TABLE_ASSEMBLY].rows)
@@ -1130,8 +1054,10 @@ mono_image_close (MonoImage *image)
 	}
 	if (image->ptr_cache)
 		g_hash_table_destroy (image->ptr_cache);
-	g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
-	g_hash_table_destroy (image->name_cache);
+	if (image->name_cache) {
+		g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
+		g_hash_table_destroy (image->name_cache);
+	}
 	g_hash_table_destroy (image->native_wrapper_cache);
 	g_hash_table_destroy (image->managed_wrapper_cache);
 	g_hash_table_destroy (image->delegate_begin_invoke_cache);
