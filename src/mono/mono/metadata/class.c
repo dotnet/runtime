@@ -2440,6 +2440,7 @@ mono_class_init (MonoClass *class)
 		class->blittable = cached_info.blittable;
 		class->has_references = cached_info.has_references;
 		class->has_static_refs = cached_info.has_static_refs;
+		class->no_special_static_fields = cached_info.no_special_static_fields;
 	}
 	else
 		if (!class->size_inited){
