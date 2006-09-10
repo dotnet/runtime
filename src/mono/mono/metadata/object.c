@@ -3936,8 +3936,14 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE: {
-				size = mono_class_value_size (((MonoObject*)arg)->vtable->klass, NULL);
-				memcpy (*((gpointer *)params [i]), arg + sizeof (MonoObject), size); 
+				if (arg) {
+					size = mono_class_value_size (((MonoObject*)arg)->vtable->klass, NULL);
+					memcpy (*((gpointer *)params [i]), arg + sizeof (MonoObject), size); 
+				}
+				else {
+					size = mono_class_value_size (mono_class_from_mono_type (pt), NULL);
+					memset (*((gpointer *)params [i]), 0, size);
+				}
 				break;
 			}
 			case MONO_TYPE_STRING:
