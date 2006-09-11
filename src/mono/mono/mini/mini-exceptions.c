@@ -32,6 +32,16 @@
 #include <sys/mman.h>
 #endif
 
+/* FreeBSD and NetBSD need SA_STACK and MAP_ANON re-definitions */
+#	if defined(__FreeBSD__) || defined(__NetBSD__) 
+#		ifndef SA_STACK
+#			define SA_STACK SA_ONSTACK
+#		endif
+#		ifndef MAP_ANONYMOUS
+#			define MAP_ANONYMOUS MAP_ANON
+#		endif
+#	endif /* BSDs */
+
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
 #ifndef MONO_ARCH_CONTEXT_DEF

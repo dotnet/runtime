@@ -187,16 +187,6 @@ typedef struct {
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
-/* FreeBSD and NetBSD need SA_STACK and MAP_ANON re-definitions */
-#	if defined(__FreeBSD__) || defined(__NetBSD__) 
-#		ifndef SA_STACK
-#			define SA_STACK SA_ONSTACK
-#		endif
-#		ifndef MAP_ANONYMOUS
-#			define MAP_ANONYMOUS MAP_ANON
-#		endif
-#	endif /* BSDs */
-
 #endif
 
 #endif /* PLATFORM_WIN32 */
