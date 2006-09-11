@@ -47,7 +47,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #ifdef sun    // Solaris x86
 #  undef SIGSEGV_ON_ALTSTACK
-#  define MONO_ARCH_USE_SIGACTION 1
+
 struct sigcontext {
         unsigned short gs, __gsh;
         unsigned short fs, __fsh;
@@ -219,11 +219,15 @@ typedef struct {
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
-/* NetBSD doesn't define SA_STACK */
-#ifndef SA_STACK
-#define SA_STACK SA_ONSTACK
-#endif
-#endif
+/* FreeBSD and NetBSD need SA_STACK and MAP_ANON re-definitions */
+#	if defined(__FreeBSD__) || defined(__NetBSD__) 
+#		ifndef SA_STACK
+#			define SA_STACK SA_ONSTACK
+#		endif
+#		ifndef MAP_ANONYMOUS
+#			define MAP_ANONYMOUS MAP_ANON
+#		endif
+#	endif /* BSDs */
 
 #endif
 
