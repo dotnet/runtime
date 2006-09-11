@@ -4792,12 +4792,6 @@ mono_arch_is_inst_imm (gint64 imm)
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
-static int reg_to_ucontext_reg [] = {
-	REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
-	REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
-	REG_RIP
-};
-
 /*
  * Determine whenever the trap whose info is in SIGINFO is caused by
  * integer overflow.
@@ -4805,11 +4799,14 @@ static int reg_to_ucontext_reg [] = {
 gboolean
 mono_arch_is_int_overflow (void *sigctx, void *info)
 {
-	ucontext_t *ctx = (ucontext_t*)sigctx;
+	MonoContext ctx;
 	guint8* rip;
 	int reg;
+	gint64 value;
 
-	rip = (guint8*)ctx->uc_mcontext.gregs [REG_RIP];
+	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+
+	rip = (guint8*)ctx.rip;
 
 	if (IS_REX (rip [0])) {
 		reg = amd64_rex_b (rip [0]);
@@ -4822,7 +4819,49 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 		/* idiv REG */
 		reg += x86_modrm_rm (rip [1]);
 
-		if (ctx->uc_mcontext.gregs [reg_to_ucontext_reg [reg]] == -1)
+		switch (reg) {
+		case AMD64_RAX:
+			value = ctx.rax;
+			break;
+		case AMD64_RBX:
+			value = ctx.rbx;
+			break;
+		case AMD64_RCX:
+			value = ctx.rcx;
+			break;
+		case AMD64_RDX:
+			value = ctx.rdx;
+			break;
+		case AMD64_RBP:
+			value = ctx.rbp;
+			break;
+		case AMD64_RSP:
+			value = ctx.rsp;
+			break;
+		case AMD64_RSI:
+			value = ctx.rsi;
+			break;
+		case AMD64_RDI:
+			value = ctx.rdi;
+			break;
+		case AMD64_R12:
+			value = ctx.r12;
+			break;
+		case AMD64_R13:
+			value = ctx.r13;
+			break;
+		case AMD64_R14:
+			value = ctx.r14;
+			break;
+		case AMD64_R15:
+			value = ctx.r15;
+			break;
+		default:
+			g_assert_not_reached ();
+			reg = -1;
+		}			
+
+		if (value == -1)
 			return TRUE;
 	}
 

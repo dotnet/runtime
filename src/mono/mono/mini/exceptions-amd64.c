@@ -619,40 +619,55 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
-	ucontext_t *ctx = (ucontext_t*)sigctx;
 	MonoContext mctx;
 
-	mctx.rax = ctx->uc_mcontext.gregs [REG_RAX];
-	mctx.rbx = ctx->uc_mcontext.gregs [REG_RBX];
-	mctx.rcx = ctx->uc_mcontext.gregs [REG_RCX];
-	mctx.rdx = ctx->uc_mcontext.gregs [REG_RDX];
-	mctx.rbp = ctx->uc_mcontext.gregs [REG_RBP];
-	mctx.rsp = ctx->uc_mcontext.gregs [REG_RSP];
-	mctx.rsi = ctx->uc_mcontext.gregs [REG_RSI];
-	mctx.rdi = ctx->uc_mcontext.gregs [REG_RDI];
-	mctx.rip = ctx->uc_mcontext.gregs [REG_RIP];
-	mctx.r12 = ctx->uc_mcontext.gregs [REG_R12];
-	mctx.r13 = ctx->uc_mcontext.gregs [REG_R13];
-	mctx.r14 = ctx->uc_mcontext.gregs [REG_R14];
-	mctx.r15 = ctx->uc_mcontext.gregs [REG_R15];
+	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
-	mono_handle_exception (&mctx, obj, (gpointer)mctx.rip, test_only);
+	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), test_only);
 
-	ctx->uc_mcontext.gregs [REG_RAX] = mctx.rax;
-	ctx->uc_mcontext.gregs [REG_RBX] = mctx.rbx;
-	ctx->uc_mcontext.gregs [REG_RCX] = mctx.rcx;
-	ctx->uc_mcontext.gregs [REG_RDX] = mctx.rdx;
-	ctx->uc_mcontext.gregs [REG_RBP] = mctx.rbp;
-	ctx->uc_mcontext.gregs [REG_RSP] = mctx.rsp;
-	ctx->uc_mcontext.gregs [REG_RSI] = mctx.rsi;
-	ctx->uc_mcontext.gregs [REG_RDI] = mctx.rdi;
-	ctx->uc_mcontext.gregs [REG_RIP] = mctx.rip;
-	ctx->uc_mcontext.gregs [REG_R12] = mctx.r12;
-	ctx->uc_mcontext.gregs [REG_R13] = mctx.r13;
-	ctx->uc_mcontext.gregs [REG_R14] = mctx.r14;
-	ctx->uc_mcontext.gregs [REG_R15] = mctx.r15;
+	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
 
 	return TRUE;
+}
+
+void
+mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+	mctx->rax = ctx->uc_mcontext.gregs [REG_RAX];
+	mctx->rbx = ctx->uc_mcontext.gregs [REG_RBX];
+	mctx->rcx = ctx->uc_mcontext.gregs [REG_RCX];
+	mctx->rdx = ctx->uc_mcontext.gregs [REG_RDX];
+	mctx->rbp = ctx->uc_mcontext.gregs [REG_RBP];
+	mctx->rsp = ctx->uc_mcontext.gregs [REG_RSP];
+	mctx->rsi = ctx->uc_mcontext.gregs [REG_RSI];
+	mctx->rdi = ctx->uc_mcontext.gregs [REG_RDI];
+	mctx->rip = ctx->uc_mcontext.gregs [REG_RIP];
+	mctx->r12 = ctx->uc_mcontext.gregs [REG_R12];
+	mctx->r13 = ctx->uc_mcontext.gregs [REG_R13];
+	mctx->r14 = ctx->uc_mcontext.gregs [REG_R14];
+	mctx->r15 = ctx->uc_mcontext.gregs [REG_R15];
+}
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+	ctx->uc_mcontext.gregs [REG_RAX] = mctx->rax;
+	ctx->uc_mcontext.gregs [REG_RBX] = mctx->rbx;
+	ctx->uc_mcontext.gregs [REG_RCX] = mctx->rcx;
+	ctx->uc_mcontext.gregs [REG_RDX] = mctx->rdx;
+	ctx->uc_mcontext.gregs [REG_RBP] = mctx->rbp;
+	ctx->uc_mcontext.gregs [REG_RSP] = mctx->rsp;
+	ctx->uc_mcontext.gregs [REG_RSI] = mctx->rsi;
+	ctx->uc_mcontext.gregs [REG_RDI] = mctx->rdi;
+	ctx->uc_mcontext.gregs [REG_RIP] = mctx->rip;
+	ctx->uc_mcontext.gregs [REG_R12] = mctx->r12;
+	ctx->uc_mcontext.gregs [REG_R13] = mctx->r13;
+	ctx->uc_mcontext.gregs [REG_R14] = mctx->r14;
+	ctx->uc_mcontext.gregs [REG_R15] = mctx->r15;
 }
 
 gpointer

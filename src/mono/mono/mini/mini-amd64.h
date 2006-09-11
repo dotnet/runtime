@@ -201,6 +201,28 @@ typedef struct {
 
 #endif /* PLATFORM_WIN32 */
 
+#ifdef __FreeBSD__
+
+#define REG_RAX 7
+#define REG_RCX 4
+#define REG_RDX 3
+#define REG_RBX 8
+#define REG_RSP 23
+#define REG_RBP 9
+#define REG_RSI 2
+#define REG_RDI 1
+#define REG_R8  5
+#define REG_R9  6
+#define REG_R10 10
+#define REG_R11 11
+#define REG_R12 12
+#define REG_R13 13
+#define REG_R14 14
+#define REG_R15 15
+#define REG_RIP 20
+
+#endif /* __FreeBSD__ */
+
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 
