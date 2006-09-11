@@ -182,6 +182,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\declsec.c"
+				>
+			</File>
+			<File
 				RelativePath=".\dis-cil.c"
 				>
 			</File>
@@ -207,6 +211,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\declsec.h"
+				>
+			</File>
 			<File
 				RelativePath=".\dis-cil.h"
 				>
