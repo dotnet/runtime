@@ -100,16 +100,26 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		arm_patch (code - 4, start_loop);
 		return code;
 	}
-	g_assert (arm_is_imm12 (doffset));
-	g_assert (arm_is_imm12 (doffset + size));
-	g_assert (arm_is_imm12 (soffset));
-	g_assert (arm_is_imm12 (soffset + size));
-	while (size >= 4) {
-		ARM_LDR_IMM (code, ARMREG_LR, sreg, soffset);
-		ARM_STR_IMM (code, ARMREG_LR, dreg, doffset);
-		doffset += 4;
-		soffset += 4;
-		size -= 4;
+	if (arm_is_imm12 (doffset) && arm_is_imm12 (doffset + size) &&
+			arm_is_imm12 (soffset) && arm_is_imm12 (soffset + size)) {
+		while (size >= 4) {
+			ARM_LDR_IMM (code, ARMREG_LR, sreg, soffset);
+			ARM_STR_IMM (code, ARMREG_LR, dreg, doffset);
+			doffset += 4;
+			soffset += 4;
+			size -= 4;
+		}
+	} else if (size) {
+		code = emit_big_add (code, ARMREG_R0, sreg, soffset);
+		code = emit_big_add (code, ARMREG_R1, dreg, doffset);
+		doffset = soffset = 0;
+		while (size >= 4) {
+			ARM_LDR_IMM (code, ARMREG_LR, ARMREG_R0, soffset);
+			ARM_STR_IMM (code, ARMREG_LR, ARMREG_R1, doffset);
+			doffset += 4;
+			soffset += 4;
+			size -= 4;
+		}
 	}
 	g_assert (size == 0);
 	return code;
@@ -2810,8 +2820,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				case 2:
-					g_assert (arm_is_imm8 (inst->inst_offset));
-					ARM_STRH_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm8 (inst->inst_offset)) {
+						ARM_STRH_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STRH_IMM (code, ainfo->reg, ARMREG_IP, 0);
+					}
 					break;
 				case 8:
 					g_assert (arm_is_imm12 (inst->inst_offset));
@@ -2838,8 +2853,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				case 2:
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
-					g_assert (arm_is_imm8 (inst->inst_offset));
-					ARM_STRH_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm8 (inst->inst_offset)) {
+						ARM_STRH_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STRH_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
 					break;
 				case 8:
 					g_assert (arm_is_imm12 (inst->inst_offset));
