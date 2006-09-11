@@ -3957,6 +3957,11 @@ mono_image_init_name_cache (MonoImage *image)
 
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
+	if (image->dynamic) {
+		mono_loader_unlock ();
+		return;
+	}
+
 	/* Temporary hash table to avoid lookups in the nspace_table */
 	name_cache2 = g_hash_table_new (NULL, NULL);
 
@@ -4076,7 +4081,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 
 		mono_loader_lock ();
 
-		if (image->name_cache)
+		if (!image->name_cache)
 			mono_image_init_name_cache (image);
 
 		user_data.key = name_space;
