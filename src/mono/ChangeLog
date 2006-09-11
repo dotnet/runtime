@@ -1,3 +1,7 @@
+2006-09-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* mono.vcproj: Fix VC build.
+
 2006-09-01  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: More alpha updates from Sergey Tikhonov <tsv@solvo.ru>.

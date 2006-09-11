@@ -6,7 +6,6 @@
 	ProjectGUID="{A0EDDCD9-940F-432C-A28F-7EF322437D79}"
 	RootNamespace="mono"
 	Keyword="Win32Proj"
-	SignManifests="true"
 	>
 	<Platforms>
 		<Platform
@@ -41,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include"
+				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
