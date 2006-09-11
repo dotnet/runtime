@@ -7863,7 +7863,7 @@ typedef struct {
 } StackSlotInfo;
 
 /*
- * mono_allocate_stack_slots_full:
+ *  mono_allocate_stack_slots_full:
  *
  *  Allocate stack slots for all non register allocated variables using a
  * linear scan algorithm.
@@ -11035,7 +11035,17 @@ mini_init (const char *filename)
 		 * GC_register_stackbottom as well, but don't know how.
 		 */
 #else
-		GC_stackbottom = (char*)sstart + size;
+		/* apparently with some linuxthreads implementations sstart can be NULL,
+		 * fallback to the more imprecise method (bug# 78096).
+		 */
+		if (sstart) {
+			GC_stackbottom = (char*)sstart + size;
+		} else {
+			gsize stack_bottom = (gsize)&domain;
+			stack_bottom += 4095;
+			stack_bottom &= ~4095;
+			GC_stackbottom = (char*)stack_bottom;
+		}
 #endif
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
