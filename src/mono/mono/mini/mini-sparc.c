@@ -4238,32 +4238,6 @@ mono_arch_get_lmf_addr (void)
  */
 #error "--with-sigaltstack=yes not supported on solaris"
 
-static void
-setup_stack (MonoJitTlsData *tls)
-{
-#ifdef __linux__
-	struct sigaltstack sa;
-#else
-	stack_t         sigstk;
-#endif
- 
-	/* Setup an alternate signal stack */
-	tls->signal_stack = mmap (0, SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	tls->signal_stack_size = SIGNAL_STACK_SIZE;
-
-#ifdef __linux__
-	sa.ss_sp = tls->signal_stack;
-	sa.ss_size = SIGNAL_STACK_SIZE;
-	sa.ss_flags = 0;
-	g_assert (sigaltstack (&sa, NULL) == 0);
-#else
-	sigstk.ss_sp = tls->signal_stack;
-	sigstk.ss_size = SIGNAL_STACK_SIZE;
-	sigstk.ss_flags = 0;
-	g_assert (sigaltstack (&sigstk, NULL) == 0);
-#endif
-}
-
 #endif
 
 void
@@ -4287,10 +4261,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	thr_setspecific (lmf_addr_key, &tls->lmf);
 #else
 	pthread_setspecific (lmf_addr_key, &tls->lmf);
-#endif
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	setup_stack (tls);
 #endif
 }
 
