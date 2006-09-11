@@ -1324,6 +1324,9 @@ unload_thread_main (void *arg)
 
 	/* printf ("UNLOADED %s.\n", domain->friendly_name); */
 
+	/* remove from the handle table the items related to this domain */
+	//mono_gchandle_free_domain (domain);
+
 	mono_domain_free (domain, FALSE);
 
 	mono_gc_collect (mono_gc_max_generation ());

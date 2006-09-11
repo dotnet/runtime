@@ -69,6 +69,7 @@ void  mono_gc_free_fixed             (void* addr);
 
 /* make sure the gchandle was allocated for an object in domain */
 gboolean mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain);
+void     mono_gchandle_free_domain  (MonoDomain *domain);
 
 /* if there are finalizers to run, run them. Returns the number of finalizers run */
 int      mono_gc_invoke_finalizers  (void);

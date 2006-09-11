@@ -682,6 +682,43 @@ mono_gchandle_free (guint32 gchandle)
 	unlock_handles (handles);
 }
 
+/**
+ * mono_gchandle_free_domain:
+ * @domain: domain that is unloading
+ *
+ * Function used internally to cleanup any GC handle for objects belonging
+ * to the specified domain during appdomain unload.
+ */
+void
+mono_gchandle_free_domain (MonoDomain *domain)
+{
+	guint type;
+
+	for (type = 0; type < 3; ++type) {
+		guint slot;
+		HandleData *handles = &gc_handles [type];
+		lock_handles (handles);
+		for (slot = 0; slot < handles->size; ++slot) {
+			if (!(handles->bitmap [slot / 32] & (1 << (slot % 32))))
+				continue;
+			if (type <= HANDLE_WEAK_TRACK) {
+				if (domain->domain_id == handles->domain_ids [slot]) {
+					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+					if (handles->entries [slot])
+						mono_gc_weak_link_remove (&handles->entries [slot]);
+				}
+			} else {
+				if (handles->entries [slot] && mono_object_domain (handles->entries [slot]) == domain) {
+					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+					handles->entries [slot] = NULL;
+				}
+			}
+		}
+		unlock_handles (handles);
+	}
+
+}
+
 #ifndef HAVE_NULL_GC
 
 static HANDLE finalizer_event;
