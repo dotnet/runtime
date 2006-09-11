@@ -10990,6 +10990,13 @@ mini_init (const char *filename)
 {
 	MonoDomain *domain;
 
+#ifdef __linux__
+	if (access ("/proc/self/maps", F_OK) != 0) {
+		g_print ("Mono requires /proc to be mounted.\n");
+		exit (1);
+	}
+#endif
+
 	/* Happens when using the embedding interface */
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
