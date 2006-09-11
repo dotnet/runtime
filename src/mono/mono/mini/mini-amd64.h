@@ -159,38 +159,6 @@ typedef struct {
 	guint64 r15;
 } MonoContext;
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-# define SC_EAX sc_eax
-# define SC_EBX sc_ebx
-# define SC_ECX sc_ecx
-# define SC_EDX sc_edx
-# define SC_EBP sc_ebp
-# define SC_EIP sc_eip
-# define SC_ESP sc_esp
-# define SC_EDI sc_edi
-# define SC_ESI sc_esi
-#else
-# define SC_EAX rax
-# define SC_EBX rbx
-# define SC_ECX rcx
-# define SC_EDX rdx
-# define SC_EBP rbp
-# define SC_EIP rip
-# define SC_ESP rsp
-# define SC_EDI rdi
-# define SC_ESI rsi
-
-# define SC_RIP rip
-# define SC_RSP rsp
-# define SC_RBP rbp
-# define SC_RBX rbx
-# define SC_R12 r12
-# define SC_R13 r13
-# define SC_R14 r14
-# define SC_R15 r15
-
-#endif
-
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (long)(ip); } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->rbp = (long)(bp); } while (0); 
 #define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->rsp = (long)(esp); } while (0); 
@@ -230,6 +198,8 @@ typedef struct {
 #	endif /* BSDs */
 
 #endif
+
+#endif /* PLATFORM_WIN32 */
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS

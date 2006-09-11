@@ -521,7 +521,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 						offset ++;
 					}
 					else {
-						reg = *((guint64 *)ctx->SC_EBP + offset);
+						reg = *((guint64 *)ctx->rbp + offset);
 						offset --;
 					}
 
@@ -558,16 +558,16 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (omit_fp) {
 			/* Pop frame */
 			new_ctx->rsp += (ji->used_regs >> 16) & (0x7fff);
-			new_ctx->SC_EIP = *((guint64 *)new_ctx->rsp) - 1;
+			new_ctx->rip = *((guint64 *)new_ctx->rsp) - 1;
 			/* Pop return address */
 			new_ctx->rsp += 8;
 		}
 		else {
 			/* Pop EBP and the return address */
-			new_ctx->SC_ESP = ctx->SC_EBP + (2 * sizeof (gpointer));
+			new_ctx->rsp = ctx->rbp + (2 * sizeof (gpointer));
 			/* we substract 1, so that the IP points into the call instruction */
-			new_ctx->SC_EIP = *((guint64 *)ctx->SC_EBP + 1) - 1;
-			new_ctx->SC_EBP = *((guint64 *)ctx->SC_EBP);
+			new_ctx->rip = *((guint64 *)ctx->rbp + 1) - 1;
+			new_ctx->rbp = *((guint64 *)ctx->rbp);
 		}
 
 		/* Pop arguments off the stack */
@@ -575,7 +575,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (ji->method)->param_count + 1);
 
 			guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (ji->method), mono_method_signature (ji->method)->param_count, arg_info);
-			new_ctx->SC_ESP += stack_to_pop;
+			new_ctx->rsp += stack_to_pop;
 		}
 
 		return ji;
@@ -592,15 +592,15 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			res->method = (*lmf)->method;
 		}
 
-		new_ctx->SC_RIP = (*lmf)->rip;
-		new_ctx->SC_RBP = (*lmf)->ebp;
-		new_ctx->SC_ESP = (*lmf)->rsp;
+		new_ctx->rip = (*lmf)->rip;
+		new_ctx->rbp = (*lmf)->ebp;
+		new_ctx->rsp = (*lmf)->rsp;
 
-		new_ctx->SC_RBX = (*lmf)->rbx;
-		new_ctx->SC_R12 = (*lmf)->r12;
-		new_ctx->SC_R13 = (*lmf)->r13;
-		new_ctx->SC_R14 = (*lmf)->r14;
-		new_ctx->SC_R15 = (*lmf)->r15;
+		new_ctx->rbx = (*lmf)->rbx;
+		new_ctx->r12 = (*lmf)->r12;
+		new_ctx->r13 = (*lmf)->r13;
+		new_ctx->r14 = (*lmf)->r14;
+		new_ctx->r15 = (*lmf)->r15;
 
 		*lmf = (*lmf)->previous_lmf;
 
