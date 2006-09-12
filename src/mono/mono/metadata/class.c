@@ -3497,6 +3497,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 				fclass = mono_defaults.byte_class;
 
 			class->interface_count = fclass ? 2 : 1;
+		} else if (MONO_CLASS_IS_INTERFACE (eclass)) {
+			class->interface_count = 2 + eclass->interface_count;
 		} else {
 			class->interface_count = eclass->idepth + eclass->interface_count;
 		}
@@ -3509,10 +3511,19 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 			if (eclass->valuetype)
 				iface = (i == 0) ? eclass : fclass;
-			else if (i < eclass->idepth)
-				iface = eclass->supertypes [i];
-			else
-				iface = eclass->interfaces [i - eclass->idepth];
+			else if (MONO_CLASS_IS_INTERFACE (eclass)) {
+				if (i == 0)
+					iface = mono_defaults.object_class;
+				else if (i == 1)
+					iface = eclass;
+				else
+					iface = eclass->interfaces [i - 2];
+			} else {
+				if (i < eclass->idepth)
+					iface = eclass->supertypes [i];
+				else
+					iface = eclass->interfaces [i - eclass->idepth];
+			}
 
 			args = g_new0 (MonoType *, 1);
 			args [0] = &iface->byval_arg;
