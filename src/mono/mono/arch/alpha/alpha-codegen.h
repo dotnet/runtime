@@ -292,7 +292,7 @@ typedef enum {
 /* pal calls */
 /* #define alpha_halt( ins )            alpha_encode_palcall( ins, 0, 0 ) */
 
-#define alpha_call_pal( ins, func )  alpha_encode_palcall( ins, 0, x )
+#define alpha_call_pal( ins, func )  alpha_encode_palcall( ins, 0, func )
 
 /*memory*/
 #define alpha_lda( ins, Rdest, Rsrc, offset )	alpha_encode_mem( ins, 0x08, Rdest, Rsrc, offset )
@@ -538,10 +538,16 @@ typedef enum {
 #define alpha_subt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A1, Rsrc1, Rsrc2, Rdest )
 #define alpha_mult(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A2, Rsrc1, Rsrc2, Rdest )
 #define alpha_divt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A3, Rsrc1, Rsrc2, Rdest )
+
 #define alpha_cmptun(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A4, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmpteq(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A5, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmptlt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A6, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmptle(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A7, Rsrc1, Rsrc2, Rdest )
+
+#define alpha_cmptun_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A4, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmpteq_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A5, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmptlt_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A6, Rsrc1, Rsrc2, Rdest )
+#define alpha_cmptle_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A7, Rsrc1, Rsrc2, Rdest )                                                                           
 
 #define alpha_cvtts(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0AC, alpha_fzero, Rsrc2, Rdest )
 #define alpha_cvttq(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0AF, alpha_fzero, Rsrc2, Rdest )
@@ -553,6 +559,7 @@ typedef enum {
 #define alpha_cpysn(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x021, Rsrc1, Rsrc2, Rdest )
 #define alpha_cpyse(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x022, Rsrc1, Rsrc2, Rdest )
 
+#define	alpha_trapb(ins)	alpha_encode_op(ins, 0x18, 0, 0, 0, 0);
 
 #endif
 
