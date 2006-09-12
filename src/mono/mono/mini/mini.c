@@ -329,8 +329,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
         (vi)->idx = (id); \
 } while (0)
 
-#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
-//#define UNVERIFIED do { goto unverified; } while (0)
+//#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
+#define UNVERIFIED do { goto unverified; } while (0)
 
 /*
  * Basic blocks have two numeric identifiers:
