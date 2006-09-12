@@ -797,6 +797,7 @@ typedef struct {
 	gboolean handle_sigint;
 	gboolean keep_delegates;
 	gboolean collect_pagefault_stats;
+	gboolean break_on_unverified;
 } MonoDebugOptions;
 
 enum {

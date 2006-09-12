@@ -330,7 +330,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 } while (0)
 
 //#define UNVERIFIED do { G_BREAKPOINT (); goto unverified; } while (0)
-#define UNVERIFIED do { goto unverified; } while (0)
+#define UNVERIFIED do { if (debug_options.break_on_unverified) G_BREAKPOINT (); else goto unverified; } while (0)
 
 /*
  * Basic blocks have two numeric identifiers:
@@ -10977,9 +10977,11 @@ mini_parse_debug_options (void)
 			debug_options.keep_delegates = TRUE;
 		else if (!strcmp (arg, "collect-pagefault-stats"))
 			debug_options.collect_pagefault_stats = TRUE;
+		else if (!strcmp (arg, "break-on-unverified"))
+			debug_options.break_on_unverified = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified'\n");
 			exit (1);
 		}
 	}
