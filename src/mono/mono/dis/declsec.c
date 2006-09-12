@@ -14,6 +14,7 @@
 #include "mono/metadata/blob.h"
 #include "mono/metadata/metadata.h"
 #include "mono/metadata/mono-endian.h"
+#include "mono/utils/mono-compiler.h"
 
 #include "declsec.h"
 
