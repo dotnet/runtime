@@ -1436,6 +1436,38 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 }	
 
 static void
+mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
+{
+	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 tok;
+
+	if (!mb->override_method)
+		return;
+
+	table = &assembly->tables [MONO_TABLE_METHODIMPL];
+	table->rows ++;
+	alloc_table (table, table->rows);
+	values = table->values + table->rows * MONO_METHODIMPL_SIZE;
+	values [MONO_METHODIMPL_CLASS] = tb->table_idx;
+	values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
+
+	tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method, FALSE);
+	switch (mono_metadata_token_table (tok)) {
+	case MONO_TABLE_MEMBERREF:
+		tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
+		break;
+	case MONO_TABLE_METHOD:
+		tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODDEF;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+	values [MONO_METHODIMPL_DECLARATION] = tok;
+}
+
+static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
 {
 	MonoDynamicTable *table;
@@ -1477,30 +1509,6 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 			table->values [table->rows * MONO_MODULEREF_SIZE + MONO_MODULEREF_NAME] = moduleref;
 			values [MONO_IMPLMAP_SCOPE] = table->rows;
 		}
-	}
-
-	if (mb->override_method) {
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
-		guint32 tok;
-		table = &assembly->tables [MONO_TABLE_METHODIMPL];
-		table->rows ++;
-		alloc_table (table, table->rows);
-		values = table->values + table->rows * MONO_METHODIMPL_SIZE;
-		values [MONO_METHODIMPL_CLASS] = tb->table_idx;
-		values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
-
-		tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method, FALSE);
-		switch (mono_metadata_token_table (tok)) {
-		case MONO_TABLE_MEMBERREF:
-			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
-			break;
-		case MONO_TABLE_METHOD:
-			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODDEF;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-		values [MONO_METHODIMPL_DECLARATION] = tok;
 	}
 
 	if (mb->generic_params) {
@@ -3692,42 +3700,6 @@ fixup_cattrs (MonoDynamicImage *assembly)
 	}
 }
 
-/*
- * fixup_methodimpl:
- *
- * The METHODIMPL table might contain METHODDEF tokens whose final
- * value is not known when the table is emitted.
- */
-static void
-fixup_methodimpl (MonoDynamicImage *assembly)
-{
-	MonoDynamicTable *table;
-	guint32 *values;
-	guint32 decl, i, idx, token;
-	MonoObject *method;
-
-	table = &assembly->tables [MONO_TABLE_METHODIMPL];
-
-	for (i = 0; i < table->rows; ++i) {
-		values = table->values + ((i + 1) * MONO_METHODIMPL_SIZE);
-		decl = values [MONO_METHODIMPL_DECLARATION];
-
-		idx = decl >> MONO_METHODDEFORREF_BITS;
-		if ((decl & MONO_METHODDEFORREF_MASK) != MONO_METHODDEFORREF_METHODDEF)
-			continue;
-
-		token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
-		method = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-		g_assert (method);
-
-		if (!strcmp (method->vtable->klass->name, "MethodBuilder")) {
-			token = mono_image_create_token (assembly, method, FALSE);
-			idx = mono_metadata_token_index (token);
-			values [MONO_METHODIMPL_DECLARATION] = (idx << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
-		}
-	}
-}
-
 static void
 assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc, guint32 implementation)
 {
@@ -3959,8 +3931,9 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
 	MonoDomain *domain;
+	GPtrArray *types;
 	guint32 *values;
-	int i;
+	int i, j;
 
 	assemblyb = moduleb->assemblyb;
 	assembly = moduleb->dynamic_image;
@@ -4015,48 +3988,44 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	alloc_table (table, 1);
 	mono_image_fill_module_table (domain, moduleb, assembly);
 
-	/* Emit types */
-	{
-		/* Collect all types into a list sorted by their table_idx */
-		GPtrArray *types = g_ptr_array_new ();
+	/* Collect all types into a list sorted by their table_idx */
+	types = g_ptr_array_new ();
 
-		if (moduleb->types)
-			for (i = 0; i < moduleb->num_types; ++i) {
-				MonoReflectionTypeBuilder *type = mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i);
-				collect_types (types, type);
-			}
-
-		g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
-		table = &assembly->tables [MONO_TABLE_TYPEDEF];
-		table->rows += types->len;
-		alloc_table (table, table->rows);
-
-		/*
-		 * Emit type names + namespaces at one place inside the string heap,
-		 * so load_class_names () needs to touch fewer pages.
-		 */
-		for (i = 0; i < types->len; ++i) {
-			MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
-			char *n;
-
-			n = mono_string_to_utf8 (tb->nspace);
-			string_heap_insert (&assembly->sheap, n);
-			g_free (n);
-		}
-		for (i = 0; i < types->len; ++i) {
-			MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
-			char *n;
-
-			n = mono_string_to_utf8 (tb->name);
-			string_heap_insert (&assembly->sheap, n);
-			g_free (n);
+	if (moduleb->types)
+		for (i = 0; i < moduleb->num_types; ++i) {
+			MonoReflectionTypeBuilder *type = mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i);
+			collect_types (types, type);
 		}
 
-		for (i = 0; i < types->len; ++i) {
-			MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
-			mono_image_get_type_info (domain, type, assembly);
-		}
-		g_ptr_array_free (types, TRUE);
+	g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
+	table = &assembly->tables [MONO_TABLE_TYPEDEF];
+	table->rows += types->len;
+	alloc_table (table, table->rows);
+
+	/*
+	 * Emit type names + namespaces at one place inside the string heap,
+	 * so load_class_names () needs to touch fewer pages.
+	 */
+	for (i = 0; i < types->len; ++i) {
+		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+		char *n;
+
+		n = mono_string_to_utf8 (tb->nspace);
+		string_heap_insert (&assembly->sheap, n);
+		g_free (n);
+	}
+	for (i = 0; i < types->len; ++i) {
+		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+		char *n;
+
+		n = mono_string_to_utf8 (tb->name);
+		string_heap_insert (&assembly->sheap, n);
+		g_free (n);
+	}
+
+	for (i = 0; i < types->len; ++i) {
+		MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
+		mono_image_get_type_info (domain, type, assembly);
 	}
 
 	/* 
@@ -4077,8 +4046,33 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 
 	/* fixup tokens */
 	mono_g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
+
+	/* Create the MethodImpl table.  We do this after emitting all methods so we already know
+	 * the final tokens and don't need another fixup pass. */
+
+	if (moduleb->global_methods) {
+		for (i = 0; i < mono_array_length (moduleb->global_methods); ++i) {
+			MonoReflectionMethodBuilder *mb = mono_array_get (
+				moduleb->global_methods, MonoReflectionMethodBuilder*, i);
+			mono_image_add_methodimpl (assembly, mb);
+		}
+	}
+
+	for (i = 0; i < types->len; ++i) {
+		MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
+		if (type->methods) {
+			for (j = 0; j < type->num_methods; ++j) {
+				MonoReflectionMethodBuilder *mb = mono_array_get (
+					type->methods, MonoReflectionMethodBuilder*, j);
+
+				mono_image_add_methodimpl (assembly, mb);
+			}
+		}
+	}
+
+	g_ptr_array_free (types, TRUE);
+
 	fixup_cattrs (assembly);
-	fixup_methodimpl (assembly);
 }
 
 /*
