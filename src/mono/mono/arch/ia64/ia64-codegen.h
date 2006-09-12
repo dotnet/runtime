@@ -1791,6 +1791,12 @@ typedef enum {
 #define ia64_xma_h_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 3)
 #define ia64_xma_hu_pred(code, qp, f1, f3, f4, f2) ia64_f2 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 1, 2)
 
+/* Pseudo ops */
+#define ia64_xmpy_l_pred(code, qp, f1, f3, f4) ia64_xma_l_pred ((code), (qp), (f1), (f3), (f4), 0)
+#define ia64_xmpy_lu_pred(code, qp, f1, f3, f4) ia64_xma_l_pred ((code), (qp), (f1), (f3), (f4), 0)
+#define ia64_xmpy_h_pred(code, qp, f1, f3, f4) ia64_xma_h_pred ((code), (qp), (f1), (f3), (f4), 0)
+#define ia64_xmpy_hu_pred(code, qp, f1, f3, f4) ia64_xma_hu_pred ((code), (qp), (f1), (f3), (f4), 0)
+
 #define ia64_f3(code, qp, f1, f3, f4, f2, opcode, x) do { read_pr ((code), (qp)); write_fr ((code), (f1)); read_fr ((code), (f3)); read_fr ((code), (f4)); read_fr ((code), (f2)); ia64_emit_ins_7 ((code), IA64_INS_TYPE_F, (qp), 0, (f1), 6, (f2), 13, (f3), 20, (f4), 27, (x), 36, (opcode), 37); } while (0)
 
 #define ia64_fselect_pred(code, qp, f1, f3, f4, f2) ia64_f3 ((code), (qp), (f1), (f3), (f4), (f2), 0xE, 0)
@@ -3077,6 +3083,12 @@ typedef enum {
 #define ia64_xma_l(code, f1, f3, f4, f2) ia64_xma_l_pred ((code), 0, f1, f3, f4, f2)
 #define ia64_xma_h(code, f1, f3, f4, f2) ia64_xma_h_pred ((code), 0, f1, f3, f4, f2)
 #define ia64_xma_hu(code, f1, f3, f4, f2) ia64_xma_hu_pred ((code), 0, f1, f3, f4, f2)
+
+/* Pseudo ops */
+#define ia64_xmpy_l(code, f1, f3, f4) ia64_xmpy_l_pred ((code), 0, (f1), (f3), (f4))
+#define ia64_xmpy_lu(code, f1, f3, f4) ia64_xmpy_lu_pred ((code), 0, (f1), (f3), (f4))
+#define ia64_xmpy_h(code, f1, f3, f4) ia64_xmpy_h_pred ((code), 0, (f1), (f3), (f4))
+#define ia64_xmpy_hu(code, f1, f3, f4) ia64_xmpy_hu_pred ((code), 0, (f1), (f3), (f4))
 
 #define ia64_fselect(code, f1, f3, f4, f2) ia64_fselect_pred ((code), 0, f1, f3, f4, f2)
 
