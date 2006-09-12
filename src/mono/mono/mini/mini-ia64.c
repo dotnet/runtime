@@ -59,6 +59,7 @@ static const char*const * ins_spec = ia64_desc;
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 #define FP_SCRATCH_REG 32
+#define FP_SCRATCH_REG2 33
 
 #define LOOP_ALIGNMENT 8
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
@@ -1040,7 +1041,6 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
  * instructions to properly call the function in call.
  * This includes pushing, moving arguments to the right register
  * etc.
- * Issue: who does the spilling if needed, and when?
  */
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual)
@@ -1526,7 +1526,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI8_MEMBASE_IMM:
 		case OP_STORE_MEMBASE_IMM:
 			/* There are no store_membase instructions on ia64 */
-			if (ia64_is_imm14 (ins->inst_offset)) {
+			if (ins->inst_offset == 0) {
+				temp2 = NULL;
+			} else if (ia64_is_imm14 (ins->inst_offset)) {
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
@@ -1570,7 +1572,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			ins->inst_offset = 0;
-			ins->inst_destbasereg = temp2->dreg;
+			if (temp2)
+				ins->inst_destbasereg = temp2->dreg;
 			break;
 		case OP_STOREI1_MEMBASE_REG:
 		case OP_STOREI2_MEMBASE_REG:
@@ -2501,6 +2504,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LSHR_UN_IMM:
 			ia64_shr_u_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case CEE_MUL:
+			/* Based on gcc code */
+			ia64_setf_sig (code, FP_SCRATCH_REG, ins->sreg1);
+			ia64_setf_sig (code, FP_SCRATCH_REG2, ins->sreg2);
+			ia64_xmpy_l (code, FP_SCRATCH_REG, FP_SCRATCH_REG, FP_SCRATCH_REG2);
+			ia64_getf_sig (code, ins->dreg, FP_SCRATCH_REG);
 			break;
 
 		case OP_STOREI1_MEMBASE_REG:

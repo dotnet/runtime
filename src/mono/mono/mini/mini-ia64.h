@@ -17,9 +17,9 @@
 /* r8..r11, r14..r29 */
 #define MONO_ARCH_CALLEE_REGS ((regmask_t)(0x700UL) | (regmask_t)(0x3fffc000UL))
 
-/* f6..f15, f33..f127 */
+/* f6..f15, f34..f127 */
 /* FIXME: Use the upper 64 bits as well */
-#define MONO_ARCH_CALLEE_FREGS ((regmask_t)(0xfffffffe00000000UL) | ((regmask_t)(0x3ffUL) << 6))
+#define MONO_ARCH_CALLEE_FREGS ((regmask_t)(0xfffffffc00000000UL) | ((regmask_t)(0x3ffUL) << 6))
 
 #define MONO_ARCH_CALLEE_SAVED_REGS ~(MONO_ARCH_CALLEE_REGS)
 
@@ -164,6 +164,7 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_MUL_IMM 1
+#define MONO_ARCH_NO_EMULATE_MUL     1
 
 #define MONO_ARCH_EMULATE_CONV_R8_UN     1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1

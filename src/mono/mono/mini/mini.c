@@ -3042,7 +3042,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	}
 
 	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) && !defined(MONO_ARCH_NO_EMULATE_MUL)
 		/* OP_LDELEMA2D depends on OP_LMUL */
 #else
 		MonoInst *indexes;
