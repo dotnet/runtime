@@ -46,13 +46,13 @@ typedef struct MonoCompileArch
   gint32 localloc_offset;
   gint32 reg_save_area_offset;
   gint32 args_save_area_offset;
-  
+  gint32 stack_size;        // Allocated stack size in bytes
+  gint32 params_stack_size;  // Stack size reserved for call params by this compile method
+
   gpointer    got_data;
  
 //  gpointer    litpool;
 //  glong       litsize;
-  glong       stack_size;	// Allocated stack size in bytes
-
   glong       bwx;
 } MonoCompileArch;
 
@@ -68,8 +68,6 @@ struct MonoLMF
   guint64     rsp;          // SP ? caller SP
   guint64     rgp;          // GP
 };
-
-#define MONO_ALPHA_VARS_OFFSET 16
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 #define MONO_ARCH_CODE_ALIGNMENT 8

@@ -310,6 +310,7 @@ get_throw_trampoline (gboolean rethrow)
   /* Exception is in a0 already */
   alpha_mov1(code, alpha_ra, alpha_a1);  // Return address
   alpha_mov1(code, alpha_sp, alpha_a2);  // Stack pointer
+
   if (rethrow)
     alpha_lda(code, alpha_a3, alpha_zero, 1);
   else
@@ -746,6 +747,7 @@ mono_arch_get_throw_exception_by_name (void)
 {
   static guint8 *start;
   static int inited = 0;
+  unsigned int *code;
   
   if (inited)
     return start;
@@ -753,6 +755,10 @@ mono_arch_get_throw_exception_by_name (void)
   start = mono_global_codeman_reserve (SZ_THROW);
   //        get_throw_exception_generic (start, SZ_THROW, TRUE, FALSE);
   inited = 1;
+
+  code = (unsigned int *)start;
+
+  alpha_call_pal(code, 0x80);
 
   return start;
 }
@@ -912,9 +918,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	  /* Some how we should find size of frame. One way:
 	   read 3rd instruction (alpha_lda(alpha_sp, alpha_sp, -stack_size ))
 	   and extract "stack_size" from there
+	   read 4th and 5th insts to get offsets to saved RA & FP
 	  */
 	  unsigned int *code = (unsigned int *)ji->code_start;
 	  short stack_size = -((short)(code[2] & 0xFFFF));
+	  short ra_off = code[3] & 0xFFFF;
+	  short fp_off = code[4] & 0xFFFF;
 
 	  /* Restore stack - value of FP reg + stack_size */
 	  new_ctx->uc_mcontext.sc_regs[alpha_sp] =
@@ -923,11 +932,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	  /* we substract 1, so that the IP points into the call instruction */
 	  /* restore PC - @FP + 0 */
 	  new_ctx->uc_mcontext.sc_pc = 
-	    *((guint64 *)ctx->uc_mcontext.sc_regs[alpha_r15]);
+	    *((guint64 *)(ctx->uc_mcontext.sc_regs[alpha_r15] + ra_off));
 	  
 	  /* Restore FP reg - @FP + 8 */
 	  new_ctx->uc_mcontext.sc_regs[alpha_r15] = 
-	    *((guint64 *)(ctx->uc_mcontext.sc_regs[alpha_r15] + 8));
+	    *((guint64 *)(ctx->uc_mcontext.sc_regs[alpha_r15] + fp_off));
 
 	  /* Restore GP - read two insts that restore GP from sc_pc and */
 	  /* do the same. Use sc_pc as RA */
@@ -945,7 +954,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	    }
 	}
 
+#if 0
       /* Pop arguments off the stack */
+      // No poping args off stack on Alpha
+      // We use fixed place
       {
 	MonoJitArgumentInfo *arg_info =
 	  g_newa (MonoJitArgumentInfo,
@@ -957,7 +969,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				       arg_info);
 	new_ctx->uc_mcontext.sc_regs[alpha_sp] += stack_to_pop;
       }
-
+#endif
       return ji;
     }
   else if (*lmf)

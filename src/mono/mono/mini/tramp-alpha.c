@@ -625,3 +625,25 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
         g_assert_not_reached ();
 }
 
+/*
+ * This method is only called when running in the Mono Debugger.
+ */
+guint8 *
+mono_debugger_create_notification_function (MonoCodeManager *codeman)
+{
+  guint8 *code;
+  unsigned int *buf;
+
+  code = mono_code_manager_reserve (codeman, 16);
+  buf = (unsigned int *)code;
+
+  *buf = 0;
+
+  alpha_call_pal(buf, 0x80);
+  alpha_ret(buf, alpha_ra, 1);
+  //x86_breakpoint (buf);
+  //x86_ret (buf);
+
+  return code;
+}
+

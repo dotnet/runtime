@@ -57,7 +57,7 @@
 arg:
 arglist:
 break: len:4
-jmp: len:4
+jmp: len:48
 br: len:4
 beq: len:4
 bge: len:4
@@ -99,8 +99,8 @@ shr: dest:i src1:i src2:s len:8
 shr.un: dest:i src1:i src2:s len:8
 neg: dest:i src1:i len:4
 not: dest:i src1:i len:4
-conv.i1: dest:i src1:i len:4
-conv.i2: dest:i src1:i len:4
+conv.i1: dest:i src1:i len:12
+conv.i2: dest:i src1:i len:12
 conv.i4: dest:i src1:i len:4
 conv.i8: dest:i src1:i len:4
 conv.r4: dest:f src1:i len:20
@@ -126,7 +126,7 @@ cgt: dest:c len:8
 cgt.un: dest:c len:8
 clt: dest:c len:8
 clt.un: dest:c len:8
-localloc: dest:i src1:i len:84
+localloc: dest:i src1:i len:20
 compare: src1:i src2:i len:4
 lcompare: src1:i src2:i len:4
 icompare: src1:i src2:i len:4
@@ -304,7 +304,7 @@ fmove: dest:f src1:f len:8
 call_handler: len:4
 start_handler: len:96
 endfinally: len:96
-op_endfilter: len:96
+op_endfilter: src1:i len:96
 aot_const: dest:i len:10
 # x86_test_null: src1:i len:5
 # x86_compare_membase_reg: src1:b src2:i len:9
