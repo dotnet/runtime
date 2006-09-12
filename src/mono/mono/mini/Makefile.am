@@ -242,7 +242,7 @@ if X86
 arch_sources = \
 	$(x86_sources) $(mono_debugger_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
-arch_built=cpu-pentium.h
+arch_built=cpu-x86.h
 endif
 
 if AMD64
@@ -353,7 +353,7 @@ TestDriver.dll: $(srcdir)/TestDriver.cs
 
 if CROSS_COMPILING
 
-cpu-pentium.h: cpu-pentium.md
+cpu-x86.h: cpu-x86.md
 cpu-amd64.h: cpu-amd64.md
 cpu-g4.h: cpu-g4.md
 cpu-arm.h: cpu-arm.md
@@ -370,8 +370,8 @@ $(arch_built):
 
 else !CROSS_COMPILING
 
-cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium_desc
+cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-x86.md cpu-x86.h x86_desc
 
 cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
@@ -459,7 +459,7 @@ CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(test_sources) $(test_sources2) \
 	inssel-long.brg inssel-long32.brg \
-	$(x86_sources) inssel-x86.brg cpu-pentium.md \
+	$(x86_sources) inssel-x86.brg cpu-x86.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(arm_sources) inssel-arm.brg cpu-arm.md \
