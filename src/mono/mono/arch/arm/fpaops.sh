@@ -19,6 +19,6 @@ gen "$DYADIC" fpa_macros
 echo -e "\n/* monadic */\n"
 gen "$MONADIC" fpam_macros
 
-echo -e "\n\n" >> $OUTFILE
+echo -e "\n\n"
 
 echo -e "\n/* end generated */\n"
