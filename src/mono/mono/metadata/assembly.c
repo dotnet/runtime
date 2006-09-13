@@ -2141,6 +2141,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	MonoAssemblyName maped_aname, maped_name_pp;
 	int ext_index;
 	const char *ext;
+	int len;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 	
@@ -2165,12 +2166,16 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
+	len = strlen (aname->name);
 	for (ext_index = 0; ext_index < 2; ext_index ++) {
 		ext = ext_index == 0 ? ".dll" : ".exe";
-		if (strstr (aname->name, ".dll"))
+		if (len > 4 && (!strcmp (aname->name + len - 4, ".dll") || !strcmp (aname->name + len - 4, ".exe"))) {
 			filename = g_strdup (aname->name);
-		else
+			/* Don't try appending .dll/.exe if it already has one of those extensions */
+			ext_index++;
+		} else {
 			filename = g_strconcat (aname->name, ext, NULL);
+		}
 
 		result = mono_assembly_load_from_gac (aname, filename, status, refonly);
 		if (result) {
