@@ -5782,9 +5782,17 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			mono_mb_emit_stloc (mb, conv_arg);
 		} else if (klass->blittable) {
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			mono_mb_emit_stloc (mb, conv_arg);
+
+			mono_mb_emit_ldarg (mb, argnum);
+			pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldflda (mb, sizeof (MonoObject));
 			mono_mb_emit_stloc (mb, conv_arg);
+
+			mono_mb_patch_branch (mb, pos);
 			break;
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
