@@ -1,3 +1,7 @@
+2006-09-14  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* src/gutf8.c, test/utf8.c : EOL fix.
+
 2006-09-04  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gmarkup.c: The leak fixing commit.
