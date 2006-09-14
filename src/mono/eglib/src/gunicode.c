@@ -37,3 +37,11 @@ g_unichar_tolower (gunichar c)
 {
 	g_abort ("g_unichar_type is not implemented");
 }
+
+gchar *
+g_convert (const gchar *str, gssize len,
+	   const gchar *to_codeset, const gchar *from_codeset,
+	   gsize *bytes_read, gsize *bytes_written, GError **error)
+{
+	g_abort ("g_convert is not supposed in eglib");
+}

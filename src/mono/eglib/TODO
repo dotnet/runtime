@@ -38,7 +38,6 @@ Important Groups:
 	* Character encoding
 	      3 g_utf8_validate
 	      3 g_locale_to_utf8
-	      3 g_convert
 	      1 g_locale_from_utf8
 
 	* Miscelaneous
@@ -54,6 +53,12 @@ Macros:
       2 G_STRLOC
       1 G_SPAWN_SEARCH_PATH
       1 G_ALLOC_ONLY
+
+* Unimplemented, not supported currently:
+
+	      3 g_convert   	 	(used for MONO_EXTERNAL_ENCODINGS)
+		g_unichar_tolower	Used for deprecated unmanaged string collation
+		g_unichar_type		Used for deprecated unmanaged string collation
 
 * Dead Code
 
