@@ -1148,20 +1148,26 @@ string_marshal_test3 (char *str)
 typedef struct {
 	int a;
 	int b;
-} VectorList;
+} BlittableClass;
 
-STDCALL VectorList* 
-TestVectorList (VectorList *vl)
+STDCALL BlittableClass* 
+TestBlittableClass (BlittableClass *vl)
 {
-	VectorList *res;
+	BlittableClass *res;
 
-	// printf ("TestVectorList %d %d\n", vl->a, vl->b);
+	// printf ("TestBlittableClass %d %d\n", vl->a, vl->b);
 
-	vl->a++;
-	vl->b++;
+	if (vl) {
+		vl->a++;
+		vl->b++;
 
-	res = g_new0 (VectorList, 1);
-	memcpy (res, vl, sizeof (VectorList));
+		res = g_new0 (BlittableClass, 1);
+		memcpy (res, vl, sizeof (BlittableClass));
+	} else {
+		res = g_new0 (BlittableClass, 1);
+		res->a = 42;
+		res->b = 43;
+	}
 
 	return res;
 }

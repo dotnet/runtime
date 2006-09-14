@@ -85,7 +85,7 @@ public class Tests {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	public class VectorList
+	public class BlittableClass
 	{
 		public int a = 1;
 		public int b = 2;
@@ -988,19 +988,25 @@ public class Tests {
 	
 	/* Blittable class */
 	[DllImport("libtest")]
-	private static extern VectorList TestVectorList (VectorList vl);
+	private static extern BlittableClass TestBlittableClass (BlittableClass vl);
 
 	public static int test_0_marshal_blittable_class () {
-		VectorList v1 = new VectorList ();
+		BlittableClass v1 = new BlittableClass ();
 
 		/* Since it is blittable, it looks like it is passed as in/out */
-		VectorList v2 = TestVectorList (v1);
+		BlittableClass v2 = TestBlittableClass (v1);
 
 		if (v1.a != 2 || v1.b != 3)
 			return 1;
 		
 		if (v2.a != 2 || v2.b != 3)
 			return 2;
+
+		// Test null
+		BlittableClass v3 = TestBlittableClass (null);
+
+		if (v3.a != 42 || v3.b != 43)
+			return 3;
 		
 		return 0;
 	}
