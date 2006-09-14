@@ -1,3 +1,11 @@
+2006-09-13  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add command to create runtime/etc/mono/config.  This is
+	  needed so that programs which use the bootstrap mono build get the
+	  appropriate <dllmap/> entries (in particular, the mono-shlib-cop unit
+	  tests requires that a $prefix/etc/mono/config be present to run).
+	* runtime/Makefile.am: Create runtime/etc/mono/config.
+
 2006-09-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* mono.vcproj: Fix VC build.
