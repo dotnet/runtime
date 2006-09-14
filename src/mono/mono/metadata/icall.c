@@ -6626,6 +6626,7 @@ static const IcallEntry environment_icalls [] = {
 	{"get_MachineName", ves_icall_System_Environment_get_MachineName},
 	{"get_NewLine", ves_icall_System_Environment_get_NewLine},
 	{"get_Platform", ves_icall_System_Environment_get_Platform},
+	{"get_ProcessorCount", ves_icall_System_Environment_get_ProcessorCount},
 	{"get_TickCount", ves_icall_System_Environment_get_TickCount},
 	{"get_UserName", ves_icall_System_Environment_get_UserName},
 	{"internalGetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},

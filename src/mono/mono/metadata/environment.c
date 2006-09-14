@@ -64,3 +64,10 @@ ves_icall_System_Environment_GetOSVersionString (void)
 #endif
 	return mono_string_new (mono_domain_get (), "0.0.0.0");
 }
+
+gint32 ves_icall_System_Environment_get_ProcessorCount(void)
+{
+	SYSTEM_INFO sys_info;
+	GetSystemInfo(&sys_info);
+	return sys_info.dwNumberOfProcessors;
+}
