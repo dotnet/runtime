@@ -1,3 +1,7 @@
+2006-09-15  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Remove check for setkey(3).
+
 2006-09-13  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add command to create runtime/etc/mono/config.  This is
