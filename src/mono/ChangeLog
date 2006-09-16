@@ -1,3 +1,7 @@
+2006-09-16  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Avoid non-static build warning on windows.
+
 2006-09-16  Raja R Harinath  <rharinath@novell.com>
 
 	Fix srcdir!=builddir issue.

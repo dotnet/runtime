@@ -2014,7 +2014,7 @@ echo "
 	$disabled
 
 "
-if test x$with_static_mono = xno; then
+if test x$with_static_mono = xno -a "x$platform_win32" != "xyes"; then
    AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexepcted bugs)
 fi
 
