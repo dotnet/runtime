@@ -1,3 +1,10 @@
+2006-09-16  Raja R Harinath  <rharinath@novell.com>
+
+	Fix srcdir!=builddir issue.
+	* configure.in (runtime/etc/mono/config): Remove erroneous code.
+	* runtime/Makefile.am (etc/mono/config): Rename from wrapper-config.
+	* runtime/mono-wrapper.in: Update.
+
 2006-09-15  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Remove check for setkey(3).
