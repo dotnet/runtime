@@ -287,7 +287,12 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 if POWERPC
 test:	testjit test-type-load test-inline-call-stack
 else
+# Can't use mkbundle on win32 since there is no static build there
+if PLATFORM_WIN32
+test:   testjit test-type-load test-inline-call-stack
+else
 test:	testjit testbundle test-type-load test-inline-call-stack
+endif
 endif
 
 TestDriver.dll:
