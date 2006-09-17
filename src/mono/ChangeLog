@@ -1,3 +1,7 @@
+2006-09-17  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/thread-safety.txt: Moved here from mono/metadata.
+
 2006-09-16  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Avoid non-static build warning on windows.
