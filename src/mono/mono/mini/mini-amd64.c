@@ -1527,6 +1527,10 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 		if (cfg->compile_aot)
 			near_call = TRUE;
 
+#ifdef MONO_ARCH_NOMAP32BIT
+		near_call = FALSE;
+#endif
+
 		if (near_call) {
 			amd64_call_code (code, 0);
 		}
@@ -3968,12 +3972,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_NONE:
 			continue;
-		case MONO_PATCH_INFO_CLASS_INIT: {
-			/* Might already been changed to a nop */
-			guint8* ip2 = ip;
-			amd64_call_code (ip2, 0);
-			break;
-		}
 		case MONO_PATCH_INFO_METHOD_REL:
 		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4:

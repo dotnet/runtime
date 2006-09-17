@@ -211,6 +211,12 @@ typedef struct {
 #define REG_R15 15
 #define REG_RIP 20
 
+/* 
+ * FreeBSD does not have MAP_32BIT, so code allocated by the code manager might not have a
+ * 32 bit address.
+ */
+#define MONO_ARCH_NOMAP32BIT
+
 #endif /* __FreeBSD__ */
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS

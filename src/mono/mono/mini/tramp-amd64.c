@@ -388,8 +388,8 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	memcpy (real_code, buf, size);
 
 	/* Fix up jump */
-	g_assert ((((gint64)tramp) >> 32) == 0);
 	code = (guint8*)real_code + jump_offset;
+	g_assert (amd64_is_imm32 (((gint64)tramp - (gint64)code)));
 	amd64_jump_disp (code, tramp - code);
 
 	if (code_len)
