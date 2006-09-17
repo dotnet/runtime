@@ -150,7 +150,7 @@ static void
 mono_marshal_set_last_error_windows (int error);
 
 static void
-mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func);
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func);
 
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
@@ -560,7 +560,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		sig = mono_metadata_signature_dup (mono_method_signature (invoke));
 		sig->hasthis = 0;
 
-		wrapper = mono_marshal_get_native_func_wrapper (sig, &piinfo, mspecs, ftn);
+		wrapper = mono_marshal_get_native_func_wrapper (klass->image, sig, &piinfo, mspecs, ftn);
 
 		for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 			if (mspecs [i])
@@ -2849,7 +2849,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 
 	mspecs[0] = NULL;
 
-	mono_marshal_emit_native_wrapper(mb_native, sig_native, piinfo, mspecs, piinfo->addr);
+	mono_marshal_emit_native_wrapper(mono_defaults.corlib, mb_native, sig_native, piinfo, mspecs, piinfo->addr);
 
 	mono_loader_lock ();
 	mono_marshal_lock ();
@@ -4975,6 +4975,7 @@ typedef struct {
 	int retobj_var;
 	MonoClass *retobj_class;
 	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
+	MonoImage *image; /* The image to use for looking up custom marshallers */
 } EmitMarshalContext;
 
 typedef enum {
@@ -5018,7 +5019,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		g_assert (marshal_native_to_managed);
 	}
 
-	mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, mb->method->klass->image);
+	mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, m->image);
 	g_assert (mtype != NULL);
 	mklass = mono_class_from_mono_type (mtype);
 	g_assert (mklass != NULL);
@@ -7101,6 +7102,7 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 
 /**
  * mono_marshal_emit_native_wrapper:
+ * @image: the image to use for looking up custom marshallers
  * @sig: The signature of the native function
  * @piinfo: Marshalling information
  * @mspecs: Marshalling information
@@ -7109,7 +7111,7 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
  * generates IL code for the pinvoke wrapper, the generated code calls @func.
  */
 static void
-mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -7125,6 +7127,7 @@ mono_marshal_emit_native_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *si
 	csig = signature_dup (mb->method->klass->image, sig);
 	csig->pinvoke = 1;
 	m.csig = csig;
+	m.image = image;
 
 	/* we allocate local for use with emit_struct_conv() */
 	/* allocate local 0 (pointer) src_ptr */
@@ -7425,7 +7428,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, piinfo->addr);
+	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr);
 
 	csig = signature_dup (method->klass->image, sig);
 	csig->pinvoke = 0;
@@ -7445,6 +7448,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 /**
  * mono_marshal_get_native_func_wrapper:
+ * @image: The image to use for memory allocation and for looking up custom marshallers.
  * @sig: The signature of the function
  * @func: The native function to wrap
  *
@@ -7452,7 +7456,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
  * wrapper.
  */
 MonoMethod *
-mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, 
+mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig, 
 									  MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
 {
 	MonoMethodSignature *csig;
@@ -7462,7 +7466,7 @@ mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig,
 	GHashTable *cache;
 	char *name;
 
-	cache = mono_defaults.corlib->native_wrapper_cache;
+	cache = image->native_wrapper_cache;
 	if ((res = mono_marshal_find_in_cache (cache, func)))
 		return res;
 
@@ -7470,9 +7474,9 @@ mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig,
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, func);
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func);
 
-	csig = signature_dup (mb->method->klass->image, sig);
+	csig = signature_dup (image, sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache (cache, func,
 									mb, csig, csig->param_count + 16);
@@ -7546,6 +7550,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.piinfo = NULL;
 	m.retobj_var = 0;
 	m.csig = csig;
+	m.image = method->klass->image;
 
 #ifdef PLATFORM_WIN32
 	/* 
