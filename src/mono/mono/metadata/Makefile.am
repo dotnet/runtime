@@ -68,8 +68,6 @@ libmonoruntime_la_SOURCES = \
 	socket-io.h	\
 	exception.c	\
 	exception.h	\
-	unicode.c	\
-	unicode.h	\
 	appdomain.c	\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
