@@ -18,7 +18,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
-#include <mono/metadata/unicode.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>
 
