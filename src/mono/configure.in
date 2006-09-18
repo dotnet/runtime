@@ -2018,6 +2018,10 @@ if test x$with_static_mono = xno -a "x$platform_win32" != "xyes"; then
    AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexepcted bugs)
 fi
 
+if test x$have_zlib = xno; then
+   AC_MSG_WARN(ZLib devel files not available, compression file support in 2.0 won't work.)
+fi
+
 if test x$gc = xsgen; then
         echo IMPORTANT:
 	echo IMPORTANT: You have selected an experimental, work-in-progress 

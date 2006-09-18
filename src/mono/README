@@ -37,6 +37,11 @@ This is Mono.
 		  If you want to get support for System.Drawing, you will need to get
 		  Libgdiplus.
 
+		* libzlib
+
+		  This library and the development headers are required for compression
+		  file support in the 2.0 profile.
+
     b. Building the Software
     ------------------------
   	
