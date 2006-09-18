@@ -132,6 +132,20 @@ guint    g_str_hash     (gconstpointer v1);
 #define  g_assert_not_reached() G_STMT_START { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END
 
 /*
+ * Errors
+ */
+typedef struct {
+	/* In the real glib, this is a GQuark, but we dont use/need that */
+	gpointer domain;
+	gint     code;
+	gchar   *message;
+} GError;
+
+void    g_error_free (GError *error);
+GError *g_error_new (gpointer domain, gint code, const char *format, ...);
+void   g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...);
+
+/*
  * Strings utility
  */
 gchar       *g_strdup_printf  (const gchar *format, ...);
@@ -149,6 +163,7 @@ guint        g_strv_length    (gchar **str_array);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
+gchar       *g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error);
 
 gint         g_printf          (gchar const *format, ...);
 gint         g_fprintf         (FILE *file, gchar const *format, ...);
@@ -428,20 +443,6 @@ GUnicodeType   g_unichar_type    (gunichar c);
 /* FIXME: Implement these two for gcc */
 #define G_LIKELY(x) (x)
 #define G_UNLIKELY(x) (x)
-
-/*
- * Errors
- */
-typedef struct {
-	/* In the real glib, this is a GQuark, but we dont use/need that */
-	gpointer domain;
-	gint     code;
-	gchar   *message;
-} GError;
-
-void    g_error_free (GError *error);
-GError *g_error_new (gpointer domain, gint code, const char *format, ...);
-void   g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...);
 
 /*
  * Unicode conversion

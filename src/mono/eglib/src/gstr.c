@@ -359,4 +359,59 @@ g_snprintf(gchar *string, gulong n, gchar const *format, ...)
 	return ret;
 }
 
+static const char const hx [] = { '0', '1', '2', '3', '4', '5', '6', '7',
+				  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
+static gboolean
+char_needs_encoding (char c)
+{
+	if (((unsigned char)c) >= 0x80)
+		return TRUE;
+	
+	if ((c >= '@' && c <= 'Z') ||
+	    (c >= 'a' && c <= 'z') ||
+	    (c >= '&' && c < 0x3b) ||
+	    (c == '!') || (c == '$') || (c == '_') || c == '=')
+		return FALSE;
+	return TRUE;
+}
+
+gchar *
+g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
+{
+	int n;
+	char *ret, *rp;
+	const char *p;
+	
+	g_return_val_if_fail (filename != NULL, NULL);
+
+	if (hostname != NULL)
+		g_warning ("g_filename_to_uri: hostname and error not handled");
+
+	if (*filename != '/'){
+		if (error != NULL)
+			*error = g_error_new (NULL, 2, "Not an absolute filename");
+		
+		return NULL;
+	}
+	
+	n = strlen ("file://") + 1;
+	for (p = filename; *p; p++){
+		if (char_needs_encoding (*p))
+			n += 3;
+		else
+			n++;
+	}
+	ret = g_malloc (n);
+	strcpy (ret, "file://");
+	for (p = filename, rp = ret + strlen (ret); *p; p++){
+		if (char_needs_encoding (*p)){
+			*rp++ = '%';
+			*rp++ = hx [((unsigned char)(*p)) >> 4];
+			*rp++ = hx [((unsigned char)(*p)) & 0xf];
+		} else
+			*rp++ = *p;
+	}
+	*rp = 0;
+	return ret;
+}

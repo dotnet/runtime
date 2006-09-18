@@ -101,27 +101,27 @@ test_strjoin ()
 	
 	s = g_strjoin (NULL, "a", "b", NULL);
 	if (strcmp (s, "ab") != 0)
-		return "Join of two strings with no separator fails";
+		return FAILED ("Join of two strings with no separator fails");
 	g_free (s);
 
 	s = g_strjoin ("", "a", "b", NULL);
 	if (strcmp (s, "ab") != 0)
-		return "Join of two strings with empty separator fails";
+		return FAILED ("Join of two strings with empty separator fails");
 	g_free (s);
 
 	s = g_strjoin ("-", "a", "b", NULL);
 	if (strcmp (s, "a-b") != 0)
-		return "Join of two strings with separator fails";
+		return FAILED ("Join of two strings with separator fails");
 	g_free (s);
 
 	s = g_strjoin ("-", "aaaa", "bbbb", "cccc", "dddd", NULL);
 	if (strcmp (s, "aaaa-bbbb-cccc-dddd") != 0)
-		return "Join of multiple strings fails";
+		return FAILED ("Join of multiple strings fails");
 	g_free (s);
 
 	s = g_strjoin ("-", NULL);
 	if (s == NULL || (strcmp (s, "") != 0))
-		return "Failed to join empty arguments";
+		return FAILED ("Failed to join empty arguments");
 	g_free (s);
 
 	return OK;
@@ -136,7 +136,7 @@ test_strchug ()
 	if (strcmp ("hola", str)) {
 		fprintf (stderr, "%s\n", str);
 		g_free (str);
-		return "Failed.";
+		return FAILED ("Failed.");
 	}
 	g_free (str);
 	return OK;
@@ -151,7 +151,7 @@ test_strchomp ()
 	if (strcmp ("hola", str)) {
 		fprintf (stderr, "%s\n", str);
 		g_free (str);
-		return "Failed.";
+		return FAILED ("Failed.");
 	}
 	g_free (str);
 	return OK;
@@ -166,9 +166,32 @@ test_strstrip ()
 	if (strcmp ("hola", str)) {
 		fprintf (stderr, "%s\n", str);
 		g_free (str);
-		return "Failed.";
+		return FAILED ("Failed.");
 	}
 	g_free (str);
+	return OK;
+}
+
+#define urit(so,j) do { s = g_filename_to_uri (so, NULL, NULL); if (strcmp (s, j) != 0) return FAILED("Got %s expected %s", s, j); g_free (s); } while (0);
+
+#define errit(so) do { s = g_filename_to_uri (so, NULL, NULL); if (s != NULL) return FAILED ("got %s, expected NULL", s); } while (0);
+
+RESULT
+test_filename_to_uri ()
+{
+	char *s;
+
+	urit ("/a", "file:///a");
+	urit ("/home/miguel", "file:///home/miguel");
+	urit ("/home/mig uel", "file:///home/mig%20uel");
+	urit ("/\303\241", "file:///%C3%A1");
+	urit ("/\303\241/octal", "file:///%C3%A1/octal");
+	urit ("/%", "file:///%25");
+	urit ("/\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017\020\021\022\023\024\025\026\027\030\031\032", "file:///%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A");
+	
+	errit ("a");
+	errit ("./hola");
+	
 	return OK;
 }
 
@@ -181,6 +204,7 @@ static Test strutil_tests [] = {
 	{"g_strchug", test_strchug},
 	{"g_strchomp", test_strchomp},
 	{"g_strstrip", test_strstrip},
+	{"g_filename_to_uri", test_filename_to_uri},
 	{NULL, NULL}
 };
 
