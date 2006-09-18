@@ -240,8 +240,12 @@ signature_cominterop (MonoImage *image, MonoMethodSignature *sig)
 	// return type is always int32 (HRESULT)
 	res->ret = &mono_defaults.int32_class->byval_arg;
 
-	// com is always stdcall
+	// STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM
+#ifdef PLATFORM_WIN32
 	res->call_convention = MONO_CALL_STDCALL;
+#else
+	res->call_convention = MONO_CALL_C;
+#endif
 
 	return res;
 }
@@ -276,7 +280,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 	guint32 offset = 7; 
 	guint32 slot = method->slot;
 	GPtrArray *ifaces;
-	MonoClass *ic = method->klass;
+	MonoClass *ic = NULL;
 	int i;
 
 	ifaces = mono_class_get_implemented_interfaces (method->klass);
@@ -292,6 +296,12 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 		}
 		g_ptr_array_free (ifaces, TRUE);
 	}
+
+	if (!ic)
+		ic = method->klass;
+	
+	g_assert (ic);
+	g_assert (MONO_CLASS_IS_INTERFACE (ic));
 
 	if (!interface_type_attribute)
 		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
@@ -320,7 +330,8 @@ static MonoReflectionType*
 cominterop_get_method_interface (MonoMethod* method)
 {
 	GPtrArray *ifaces;
-	MonoClass *ic = method->klass;
+	MonoType* t = NULL;
+	MonoClass *ic = NULL;
 	int i;
 	MonoReflectionType* rt = NULL;
 
@@ -337,10 +348,14 @@ cominterop_get_method_interface (MonoMethod* method)
 		g_ptr_array_free (ifaces, TRUE);
 	}
 
-	if (ic) {
-		MonoType* t = mono_class_get_type (ic);
-		rt = mono_type_get_object (mono_domain_get(), t);
-	}
+	if (!ic)
+		ic = method->klass;
+
+	g_assert (ic);
+	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+
+	t = mono_class_get_type (ic);
+	rt = mono_type_get_object (mono_domain_get(), t);
 
 	return rt;
 }
@@ -826,6 +841,8 @@ gpointer
 mono_string_to_bstr (MonoString *string_obj)
 {
 #ifdef PLATFORM_WIN32
+	if (!string_obj)
+		return NULL;
 	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
 #else
 	g_error ("UnmanagedMarshal.BStr is not implemented.");
@@ -837,8 +854,9 @@ MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
 #ifdef PLATFORM_WIN32
-	MonoDomain *domain = mono_domain_get ();
-	return mono_string_new_utf16 (domain, bstr, SysStringLen (bstr));
+	if (!bstr)
+		return NULL;
+	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
 	g_error ("UnmanagedMarshal.BStr is not implemented.");
 	return NULL;
@@ -8792,7 +8810,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
 	return mono_string_to_bstr(ptr);
 }
 
-#ifdef  __i386__
+// STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM
+#ifdef  PLATFORM_WIN32
 #ifdef _MSC_VER
 #define STDCALL __stdcall
 #else

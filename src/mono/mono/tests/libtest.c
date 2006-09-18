@@ -1893,6 +1893,21 @@ mono_test_marshal_bstr_out(BSTR* bstr)
 }
 
 STDCALL int
+mono_test_marshal_bstr_in_null(BSTR bstr)
+{
+	if (!bstr)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_bstr_out_null(BSTR* bstr)
+{
+	*bstr = NULL;
+	return 0;
+}
+
+STDCALL int
 mono_test_marshal_variant_in_sbyte(VARIANT variant)
 {
 	if (variant.vt == VT_I1 && variant.cVal == 100)
