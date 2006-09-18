@@ -1459,7 +1459,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	vtable = NULL;
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
-		vtable = mono_class_vtable (domain, field->klass);
+		vtable = mono_class_vtable (domain, cf->parent);
 		if (!vtable->initialized && !(cf->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			mono_runtime_class_init (vtable);
 	}
@@ -1572,7 +1572,7 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable (mono_object_domain (field), field->klass);
+		MonoVTable *vtable = mono_class_vtable (mono_object_domain (field), cf->parent);
 		if (!vtable->initialized)
 			mono_runtime_class_init (vtable);
 		mono_field_static_set_value (vtable, cf, v);
