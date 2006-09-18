@@ -201,6 +201,30 @@ test_filename_to_uri ()
 	return OK;
 }
 
+#define fileit(so,j) do { s = g_filename_from_uri (so, NULL, NULL); if (strcmp (s, j) != 0) return FAILED("Got %s expected %s", s, j); g_free (s); } while (0);
+
+#define ferrit(so) do { s = g_filename_from_uri (so, NULL, NULL); if (s != NULL) return FAILED ("got %s, expected NULL", s); } while (0);
+
+RESULT
+test_filename_from_uri ()
+{
+	char *s;
+
+	fileit ("file:///a", "/a");
+	fileit ("file:///%41", "/A");
+	fileit ("file:///home/miguel", "/home/miguel");
+	fileit ("file:///home/mig%20uel", "/home/mig uel");
+	ferrit ("/a");
+	ferrit ("a");
+	ferrit ("file://a");
+	ferrit ("file:a");
+	ferrit ("file:///%");
+	ferrit ("file:///%0");
+	ferrit ("file:///%jj");
+	
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -211,6 +235,7 @@ static Test strutil_tests [] = {
 	{"g_strchomp", test_strchomp},
 	{"g_strstrip", test_strstrip},
 	{"g_filename_to_uri", test_filename_to_uri},
+	{"g_filename_from_uri", test_filename_from_uri},
 	{NULL, NULL}
 };
 

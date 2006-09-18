@@ -386,7 +386,7 @@ g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
 	g_return_val_if_fail (filename != NULL, NULL);
 
 	if (hostname != NULL)
-		g_warning ("g_filename_to_uri: hostname and error not handled");
+		g_warning ("eglib: g_filename_to_uri: hostname not handled");
 
 	if (*filename != '/'){
 		if (error != NULL)
@@ -414,4 +414,64 @@ g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
 	}
 	*rp = 0;
 	return ret;
+}
+
+static int
+decode (char p)
+{
+	if (p >= '0' && p <= '9')
+		return p - '0';
+	if (p >= 'A' && p <= 'F')
+		return p - 'A';
+	if (p >= 'a' && p <= 'f')
+		return p - 'a';
+	g_assert_not_reached ();
+	return 0;
+}
+
+gchar *
+g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error)
+{
+	const char *p;
+	char *r, *result;
+	int flen = 0;
+	
+	g_return_val_if_fail (uri != NULL, NULL);
+
+	if (hostname != NULL)
+		g_warning ("eglib: g_filename_from_uri: hostname not handled");
+
+	if (strncmp (uri, "file:///", 8) != 0){
+		if (error != NULL)
+			*error = g_error_new (NULL, 2, "URI does not start with the file: scheme");
+		return NULL;
+	}
+
+	for (p = uri + 8; *p; p++){
+		if (*p == '%'){
+			if (p [1] && p [2] && isxdigit (p [1]) && isxdigit (p [2])){
+				p += 2;
+			} else {
+				if (error != NULL)
+					*error = g_error_new (NULL, 2, "URI contains an invalid escape sequence");
+				return NULL;
+			}
+		} 
+		flen++;
+	}
+	flen++;
+	
+	result = g_malloc (flen + 1);
+	*result = '/';
+	result [flen] = 0;
+
+	for (p = uri + 8, r = result + 1; *p; p++){
+		if (*p == '%'){
+			*r++ = (decode (p [1]) << 4) | decode (p [2]);
+			p += 2;
+		} else
+			*r++ = *p;
+		flen++;
+	}
+	return result;
 }

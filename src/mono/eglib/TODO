@@ -19,9 +19,6 @@ Important Groups:
 	      3 g_thread_supported
 	      3 g_thread_init
 
-	* Path string manipulation and utilities.
-	      2 g_filename_from_uri
-	
         * Information retrieval
 	      1 g_get_charset
 	      1 g_win32_getlocale

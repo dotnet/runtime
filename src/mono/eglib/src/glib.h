@@ -142,8 +142,8 @@ typedef struct {
 } GError;
 
 void    g_error_free (GError *error);
-GError *g_error_new (gpointer domain, gint code, const char *format, ...);
-void   g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...);
+GError *g_error_new  (gpointer domain, gint code, const char *format, ...);
+void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...);
 
 /*
  * Strings utility
@@ -163,7 +163,9 @@ guint        g_strv_length    (gchar **str_array);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
-gchar       *g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error);
+
+gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **error);
+gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error);
 
 gint         g_printf          (gchar const *format, ...);
 gint         g_fprintf         (FILE *file, gchar const *format, ...);
