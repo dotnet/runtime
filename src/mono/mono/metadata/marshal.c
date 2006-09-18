@@ -92,6 +92,8 @@ static GHashTable *wrapper_hash;
 
 static guint32 last_error_tls_id;
 
+static guint32 load_type_info_tls_id;
+
 static void
 delegate_hash_table_add (MonoDelegate *d);
 
@@ -353,6 +355,7 @@ mono_marshal_init (void)
 		InitializeCriticalSection (&marshal_mutex);
 		wrapper_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		last_error_tls_id = TlsAlloc ();
+		load_type_info_tls_id = TlsAlloc ();
 
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
@@ -408,6 +411,7 @@ void
 mono_marshal_cleanup (void)
 {
 	g_hash_table_destroy (wrapper_hash);
+	TlsFree (load_type_info_tls_id);
 	TlsFree (last_error_tls_id);
 	DeleteCriticalSection (&marshal_mutex);
 }
@@ -9245,6 +9249,29 @@ ves_icall_System_ComObject_SetIUnknown (MonoComObject* obj, gpointer pUnk)
 	g_hash_table_insert (obj->itf_hash, MONO_IUNKNOWN_INTERFACE_SLOT, pUnk);
 }
 
+/**
+ * mono_marshal_is_loading_type_info:
+ *
+ *  Return whenever mono_marshal_load_type_info () is being executed for KLASS by this
+ * thread.
+ */
+static gboolean
+mono_marshal_is_loading_type_info (MonoClass *klass)
+{
+	GSList *loads_list = TlsGetValue (load_type_info_tls_id);
+
+	return g_slist_find (loads_list, klass) != NULL;
+}
+
+/**
+ * mono_marshal_load_type_info:
+ *
+ *  Initialize klass->marshal_info using information from metadata. This function can
+ * recursively call itself, and the caller is responsible to avoid that by calling 
+ * mono_marshal_is_loading_type_info () beforehand.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
@@ -9254,6 +9281,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 	MonoClassField* field;
 	gpointer iter;
 	guint32 layout;
+	GSList *loads_list;
 
 	g_assert (klass != NULL);
 
@@ -9262,6 +9290,22 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	if (!klass->inited)
 		mono_class_init (klass);
+
+	mono_loader_lock ();
+
+	if (klass->marshal_info) {
+		mono_marshal_unlock ();
+		return klass->marshal_info;
+	}
+
+	/*
+	 * This function can recursively call itself, so we keep the list of classes which are
+	 * under initialization in a TLS list.
+	 */
+	g_assert (!mono_marshal_is_loading_type_info (klass));
+	loads_list = TlsGetValue (load_type_info_tls_id);
+	loads_list = g_slist_prepend (loads_list, klass);
+	TlsSetValue (load_type_info_tls_id, loads_list);
 	
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
@@ -9274,7 +9318,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 
-	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
 	/* Try to find a size for this type in metadata */
@@ -9349,9 +9393,17 @@ mono_marshal_load_type_info (MonoClass* klass)
 		klass->blittable = FALSE;
 
 	/* If this is an array type, ensure that we have element info */
-	if (klass->element_class) {
+	if (klass->element_class && !mono_marshal_is_loading_type_info (klass->element_class)) {
 		mono_marshal_load_type_info (klass->element_class);
 	}
+
+	loads_list = TlsGetValue (load_type_info_tls_id);
+	loads_list = g_slist_remove (loads_list, klass);
+	TlsSetValue (load_type_info_tls_id, loads_list);
+
+	klass->marshal_info = info;
+
+	mono_loader_unlock ();
 
 	return klass->marshal_info;
 }
@@ -9366,8 +9418,12 @@ mono_marshal_load_type_info (MonoClass* klass)
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align)
 {	
-	if (!klass->marshal_info)
-		mono_marshal_load_type_info (klass);
+	if (!klass->marshal_info) {
+		if (mono_marshal_is_loading_type_info (klass))
+			return 0;
+		else
+			mono_marshal_load_type_info (klass);
+	}
 
 	if (align)
 		*align = klass->min_align;
