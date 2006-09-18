@@ -17,6 +17,56 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/utils/mono-logger.h"
 
+#if defined(__linux__)
+#define CONFIG_OS "linux"
+#elif defined(__APPLE__)
+#define CONFIG_OS "osx"
+#elif defined(sun)
+#define CONFIG_OS "solaris"
+#elif defined(__FreeBSD__)
+#define CONFIG_OS "freebsd"
+#elif defined(__NetBSD__)
+#define CONFIG_OS "netbsd"
+#elif defined(__OpenBSD__)
+#define CONFIG_OS "openbsd"
+#elif defined(__WIN32__)
+#define CONFIG_OS "windows"
+#elif defined(_IBMR2)
+#define CONFIG_OS "aix"
+#elif defined(__hpux)
+#define CONFIG_OS "hpux"
+#else
+#warning Unknown operating system
+#define CONFIG_OS "unknownOS"
+#endif
+
+#if defined(__i386__)
+#define CONFIG_CPU "x86"
+#elif defined(__x86_64__)
+#define CONFIG_CPU "x86-64"
+#elif defined(sparc) || defined(__sparc__)
+#define CONFIG_CPU "sparc"
+#elif defined(__ppc__) || defined(__powerpc__)
+#define CONFIG_CPU "ppc"
+#elif defined(__s390x__)
+#define CONFIG_CPU "s390x"
+#elif defined(__s390__)
+#define CONFIG_CPU "s390"
+#elif defined(__arm__)
+#define CONFIG_CPU "arm"
+#elif defined(__ia64__)
+#define CONFIG_CPU "ia64"
+#elif defined(__alpha__)
+#define CONFIG_CPU "alpha"
+#elif defined(hppa) || defined(__hppa__)
+#define CONFIG_CPU "hppa"
+#elif defined(mips) || defined(__mips) || defined(_mips)
+#define CONFIG_CPU "mips"
+#else
+#warning Unknown CPU
+#define CONFIG_CPU "unknownCPU"
+#endif
+
 static void start_element (GMarkupParseContext *context, 
                            const gchar         *element_name,
 			   const gchar        **attribute_names,
@@ -141,6 +191,7 @@ static void parse_error   (GMarkupParseContext *context,
 typedef struct {
 	char *dll;
 	char *target;
+	int ignore;
 	MonoImage *assembly;
 } DllInfo;
 
@@ -164,15 +215,22 @@ dllmap_start (gpointer user_data,
 		g_free (info->dll);
 		g_free (info->target);
 		info->dll = info->target = NULL;
+		info->ignore = FALSE;
 		for (i = 0; attribute_names [i]; ++i) {
 			if (strcmp (attribute_names [i], "dll") == 0)
 				info->dll = g_strdup (attribute_values [i]);
 			else if (strcmp (attribute_names [i], "target") == 0)
 				info->target = g_strdup (attribute_values [i]);
+			else if (strcmp (attribute_names [i], "os") == 0 && strcmp (CONFIG_OS, attribute_values [i]))
+				info->ignore = TRUE;
+			else if (strcmp (attribute_names [i], "cpu") == 0 && strcmp (CONFIG_CPU, attribute_values [i]))
+				info->ignore = TRUE;
 		}
-		mono_dllmap_insert (info->assembly, info->dll, NULL, info->target, NULL);
+		if (!info->ignore)
+			mono_dllmap_insert (info->assembly, info->dll, NULL, info->target, NULL);
 	} else if (strcmp (element_name, "dllentry") == 0) {
 		const char *name = NULL, *target = NULL, *dll = NULL;
+		int ignore = FALSE;
 		for (i = 0; attribute_names [i]; ++i) {
 			if (strcmp (attribute_names [i], "dll") == 0)
 				dll = attribute_values [i];
@@ -180,10 +238,15 @@ dllmap_start (gpointer user_data,
 				target = attribute_values [i];
 			else if (strcmp (attribute_names [i], "name") == 0)
 				name = attribute_values [i];
+			else if (strcmp (attribute_names [i], "os") == 0 && strcmp (CONFIG_OS, attribute_values [i]))
+				ignore = TRUE;
+			else if (strcmp (attribute_names [i], "cpu") == 0 && strcmp (CONFIG_CPU, attribute_values [i]))
+				ignore = TRUE;
 		}
 		if (!dll)
 			dll = info->dll;
-		mono_dllmap_insert (info->assembly, info->dll, name, dll, target);
+		if (!info->ignore && !ignore)
+			mono_dllmap_insert (info->assembly, info->dll, name, dll, target);
 	}
 }
 
