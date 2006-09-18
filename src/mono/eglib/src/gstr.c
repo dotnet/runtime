@@ -371,7 +371,7 @@ char_needs_encoding (char c)
 	if ((c >= '@' && c <= 'Z') ||
 	    (c >= 'a' && c <= 'z') ||
 	    (c >= '&' && c < 0x3b) ||
-	    (c == '!') || (c == '$') || (c == '_') || c == '=')
+	    (c == '!') || (c == '$') || (c == '_') || (c == '=') || (c == '~'))
 		return FALSE;
 	return TRUE;
 }
