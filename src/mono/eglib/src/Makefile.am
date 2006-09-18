@@ -26,7 +26,8 @@ libeglib_la_SOURCES = \
 	gpattern.c	\
 	gdir.c		\
 	gmarkup.c	\
-	gutf8.c
+	gutf8.c		\
+	gunicode.c
 
 libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
