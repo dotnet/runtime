@@ -188,6 +188,25 @@ static void parse_error   (GMarkupParseContext *context,
 {
 }
 
+static int
+arch_matches (const char* arch, const char *value)
+{
+	char **splitted, **p;
+	int found = FALSE;
+	if (value [0] == '!')
+		return !arch_matches (arch, value + 1);
+	p = splitted = g_strsplit (value, ",", 0);
+	while (*p) {
+		if (strcmp (arch, *p) == 0) {
+			found = TRUE;
+			break;
+		}
+		p++;
+	}
+	g_strfreev (splitted);
+	return found;
+}
+
 typedef struct {
 	char *dll;
 	char *target;
@@ -221,9 +240,9 @@ dllmap_start (gpointer user_data,
 				info->dll = g_strdup (attribute_values [i]);
 			else if (strcmp (attribute_names [i], "target") == 0)
 				info->target = g_strdup (attribute_values [i]);
-			else if (strcmp (attribute_names [i], "os") == 0 && strcmp (CONFIG_OS, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "os") == 0 && !arch_matches (CONFIG_OS, attribute_values [i]))
 				info->ignore = TRUE;
-			else if (strcmp (attribute_names [i], "cpu") == 0 && strcmp (CONFIG_CPU, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "cpu") == 0 && !arch_matches (CONFIG_CPU, attribute_values [i]))
 				info->ignore = TRUE;
 		}
 		if (!info->ignore)
@@ -238,9 +257,9 @@ dllmap_start (gpointer user_data,
 				target = attribute_values [i];
 			else if (strcmp (attribute_names [i], "name") == 0)
 				name = attribute_values [i];
-			else if (strcmp (attribute_names [i], "os") == 0 && strcmp (CONFIG_OS, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "os") == 0 && !arch_matches (CONFIG_OS, attribute_values [i]))
 				ignore = TRUE;
-			else if (strcmp (attribute_names [i], "cpu") == 0 && strcmp (CONFIG_CPU, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "cpu") == 0 && !arch_matches (CONFIG_CPU, attribute_values [i]))
 				ignore = TRUE;
 		}
 		if (!dll)
