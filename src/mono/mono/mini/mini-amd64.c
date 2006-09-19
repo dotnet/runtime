@@ -1456,10 +1456,13 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 } while (0);
 
 static guint8*
-emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
+emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 
+	/* 
+	 * FIXME: Add support for thunks
+	 */
 	{
 		gboolean near_call = FALSE;
 
@@ -1541,6 +1544,14 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 	}
 
 	return code;
+}
+
+static inline guint8*
+emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
+{
+	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+
+	return emit_call_body (cfg, code, patch_type, data);
 }
 
 /* FIXME: Add more instructions */
@@ -4532,12 +4543,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 				patch_info->ip.i = code - cfg->native_code;
 
-				if (cfg->compile_aot) {
-					amd64_call_code (code, 0);
-				} else {
-					/* The callee is in memory allocated using the code manager */
-					amd64_call_code (code, 0);
-				}
+				code = emit_call_body (cfg, code, patch_info->type, patch_info->data.name);
 
 				amd64_mov_reg_imm (buf, AMD64_RSI, (code - cfg->native_code) - throw_ip);
 				while (buf < buf2)
