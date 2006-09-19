@@ -17,6 +17,9 @@
 #include "inssel.h"
 #include "cpu-g4.h"
 #include "trace.h"
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 
 enum {
 	TLS_MODE_DETECT,
@@ -308,29 +311,67 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 	return 2;
 }
 
-// code from ppc/tramp.c, try to keep in sync
-#define MIN_CACHE_LINE 8
+typedef struct {
+	long int type;
+	long int value;
+} AuxVec;
 
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	guint i;
-	guint8 *p;
+	guint8 *p, *endp, *start;
+	static int cachelinesize = 0;
+	static int cachelineinc = 16;
 
-	p = code;
+	if (!cachelinesize) {
+#ifdef __APPLE__
+		int mib [3], len;
+		mib [0] = CTL_HW;
+		mib [1] = HW_CACHELINE;
+		len = sizeof (cachelinesize);
+		if (sysctl(mib, 2, &cachelinesize, &len, NULL, 0) == -1) {
+			perror ("sysctl");
+			cachelinesize = 128;
+		} else {
+			cachelineinc = cachelinesize;
+			/*g_print ("setting cl size to %d\n", cachelinesize);*/
+		}
+#elif defined(__linux__)
+		/* sadly this will work only with 2.6 kernels... */
+		FILE* f = fopen ("/proc/self/auxv", "rb");
+		if (f) {
+			AuxVec vec;
+			while (fread (&vec, sizeof (vec), 1, f) == 1) {
+				if (vec.type == 19) {
+					cachelinesize = vec.value;
+					break;
+				}
+			}
+			fclose (f);
+		}
+		if (!cachelinesize)
+			cachelinesize = 128;
+#else
+#warning Need a way to get cache line size
+		cachelinesize = 128;
+#endif
+	}
+	p = start = code;
+	endp = p + size;
+	start = (guint8*)((guint32)start & ~(cachelinesize - 1));
 	/* use dcbf for smp support, later optimize for UP, see pem._64bit.d20030611.pdf page 211 */
 	if (1) {
-		for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
+		for (p = start; p < endp; p += cachelineinc) {
 			asm ("dcbf 0,%0;" : : "r"(p) : "memory");
 		}
 	} else {
-		for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
+		for (p = start; p < endp; p += cachelineinc) {
 			asm ("dcbst 0,%0;" : : "r"(p) : "memory");
 		}
 	}
 	asm ("sync");
 	p = code;
-	for (i = 0; i < size; i += MIN_CACHE_LINE, p += MIN_CACHE_LINE) {
+	for (p = start; p < endp; p += cachelineinc) {
 		asm ("icbi 0,%0; sync;" : : "r"(p) : "memory");
 	}
 	asm ("sync");
