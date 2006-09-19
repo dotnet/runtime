@@ -1,3 +1,8 @@
+2006-09-19  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (etc/mono/config): Fix rule to avoid writing
+	into a symlink created by the 2006-09-13 change below.
+
 2006-09-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/thread-safety.txt: Moved here from mono/metadata.
