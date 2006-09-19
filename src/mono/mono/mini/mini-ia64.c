@@ -1118,32 +1118,32 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 				if (ainfo->storage == ArgAggregate) {
 					MonoInst *vtaddr, *load, *load2, *offset_ins, *set_reg;
-					int slot;
+					int slot, j;
 
 					vtaddr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
 					/* 
 					 * Part of the structure is passed in registers.
 					 */
-					for (i = 0; i < ainfo->nregs; ++i) {
+					for (j = 0; j < ainfo->nregs; ++j) {
 						int offset, load_op, dest_reg, arg_storage;
 
-						slot = ainfo->reg + i;
+						slot = ainfo->reg + j;
 						
 						if (ainfo->atype == AggregateSingleHFA) {
 							load_op = CEE_LDIND_R4;
-							offset = i * 4;
-							dest_reg = ainfo->reg + i;
+							offset = j * 4;
+							dest_reg = ainfo->reg + j;
 							arg_storage = ArgInFloatReg;
 						} else if (ainfo->atype == AggregateDoubleHFA) {
 							load_op = CEE_LDIND_R8;
-							offset = i * 8;
-							dest_reg = ainfo->reg + i;
+							offset = j * 8;
+							dest_reg = ainfo->reg + j;
 							arg_storage = ArgInFloatReg;
 						} else {
 							load_op = CEE_LDIND_I;
-							offset = i * 8;
-							dest_reg = cfg->arch.reg_out0 + ainfo->reg + i;
+							offset = j * 8;
+							dest_reg = cfg->arch.reg_out0 + ainfo->reg + j;
 							arg_storage = ArgInIReg;
 						}
 
@@ -1159,7 +1159,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, load_op);
 						load->inst_left = load2;
 
-						if (i == 0)
+						if (j == 0)
 							set_reg = arg;
 						else
 							MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
@@ -1173,16 +1173,16 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					/* 
 					 * Part of the structure is passed on the stack.
 					 */
-					for (i = ainfo->nregs; i < ainfo->nslots; ++i) {
+					for (j = ainfo->nregs; j < ainfo->nslots; ++j) {
 						MonoInst *outarg;
 
-						slot = ainfo->reg + i;
+						slot = ainfo->reg + j;
 
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->ssa_op = MONO_SSA_LOAD;
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
 
-						NEW_ICONST (cfg, offset_ins, (i * sizeof (gpointer)));
+						NEW_ICONST (cfg, offset_ins, (j * sizeof (gpointer)));
 						MONO_INST_NEW (cfg, load2, CEE_ADD);
 						load2->inst_left = load;
 						load2->inst_right = offset_ins;
@@ -1190,7 +1190,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->inst_left = load2;
 
-						if (i == 0)
+						if (j == 0)
 							outarg = arg;
 						else
 							MONO_INST_NEW (cfg, outarg, OP_OUTARG);
