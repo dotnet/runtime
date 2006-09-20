@@ -101,8 +101,8 @@ static gpointer
 get_real_call_filter (void)
 {
 	static gpointer filter;
+	static gboolean inited = FALSE;
 	guint8 *start;
-	gboolean inited = FALSE;
 	Ia64CodegenState code;
 	int in0, local0, out0, nout;
 	unw_dyn_info_t *di;
@@ -420,8 +420,9 @@ mono_arch_get_throw_exception_by_name (void)
 gpointer 
 mono_arch_get_throw_corlib_exception (void)
 {
-	static guint8* start;
+	static guint8* res;
 	static gboolean inited = FALSE;
+	guint8 *start;
 	gpointer ptr;
 	int i, in0, local0, out0, nout;
 	Ia64CodegenState code;
@@ -429,7 +430,7 @@ mono_arch_get_throw_corlib_exception (void)
 	unw_dyn_region_info_t *r_pro;
 
 	if (inited)
-		return start;
+		return res;
 
 	start = mono_global_codeman_reserve (1024);
 
@@ -501,7 +502,10 @@ mono_arch_get_throw_corlib_exception (void)
 
 	mono_arch_flush_icache (start, code.buf - start);
 
-	return ia64_create_ftnptr (start);
+	res = ia64_create_ftnptr (start);
+	inited = TRUE;
+
+	return res;
 }
 
 /* mono_arch_find_jit_info:
