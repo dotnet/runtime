@@ -816,5 +816,11 @@ mono_image_init_name_cache (MonoImage *image);
 gboolean mono_class_is_nullable (MonoClass *klass) MONO_INTERNAL;
 MonoClass *mono_class_get_nullable_param (MonoClass *klass) MONO_INTERNAL;
 
+/* object debugging functions, for use inside gdb */
+void mono_object_describe        (MonoObject *obj);
+void mono_object_describe_fields (MonoObject *obj);
+void mono_value_describe_fields  (MonoClass* klass, const char* addr);
+void mono_class_describe_statics (MonoClass* klass);
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

@@ -5,6 +5,8 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/tabledefs.h"
+#include "mono/metadata/appdomain.h"
 
 struct MonoMethodDesc {
 	char *namespace;
@@ -540,3 +542,222 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 
 	return res;
 }
+
+static const char*
+print_name_space (MonoClass *klass)
+{
+	if (klass->nested_in) {
+		print_name_space (klass->nested_in);
+		g_print (klass->nested_in->name);
+		return "/";
+	}
+	if (klass->name_space [0]) {
+		g_print (klass->name_space);
+		return ".";
+	}
+	return "";
+}
+
+/**
+ * mono_object_describe:
+ *
+ * Prints to stdout a small description of the object @obj.
+ * For use in a debugger.
+ */
+void
+mono_object_describe (MonoObject *obj)
+{
+	MonoClass* klass;
+	const char* sep;
+	if (!obj) {
+		g_print ("(null)\n");
+		return;
+	}
+	klass = mono_object_class (obj);
+	if (klass == mono_defaults.string_class) {
+		char *utf8 = mono_string_to_utf8 ((MonoString*)obj);
+		if (strlen (utf8) > 60) {
+			utf8 [57] = '.';
+			utf8 [58] = '.';
+			utf8 [59] = '.';
+			utf8 [60] = 0;
+		}
+		g_print ("String at %p, length: %d, '%s'\n", obj, mono_string_length ((MonoString*) obj), utf8);
+		g_free (utf8);
+	} else if (klass->rank) {
+		MonoArray *array = (MonoArray*)obj;
+		sep = print_name_space (klass);
+		g_print ("%s%s", sep, klass->name);
+		g_print (" at %p, rank: %d, length: %d\n", obj, klass->rank, mono_array_length (array));
+	} else {
+		sep = print_name_space (klass);
+		g_print ("%s%s", sep, klass->name);
+		g_print (" object at %p (klass: %p)\n", obj, klass);
+	}
+
+}
+
+static void
+print_field_value (const char *field_ptr, MonoClassField *field, int type_offset)
+{
+	MonoType *type;
+	g_print ("At %p (ofs: %2d) %s: ", field_ptr, field->offset + type_offset, field->name);
+	type = mono_type_get_underlying_type (field->type);
+
+	switch (type->type) {
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		g_print ("%p\n", *(const void**)field_ptr);
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_ARRAY:
+		mono_object_describe (*(MonoObject**)field_ptr);
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (type)) {
+			mono_object_describe (*(MonoObject**)field_ptr);
+			break;
+		} else {
+			/* fall through */
+		}
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *k = mono_class_from_mono_type (type);
+		g_print ("%s ValueType (type: %p) at %p\n", k->name, k, field_ptr);
+		break;
+	}
+	case MONO_TYPE_I1:
+		g_print ("%d\n", *(gint8*)field_ptr);
+		break;
+	case MONO_TYPE_U1:
+		g_print ("%d\n", *(guint8*)field_ptr);
+		break;
+	case MONO_TYPE_I2:
+		g_print ("%d\n", *(gint16*)field_ptr);
+		break;
+	case MONO_TYPE_U2:
+		g_print ("%d\n", *(guint16*)field_ptr);
+		break;
+	case MONO_TYPE_I4:
+		g_print ("%d\n", *(gint32*)field_ptr);
+		break;
+	case MONO_TYPE_U4:
+		g_print ("%u\n", *(guint32*)field_ptr);
+		break;
+	case MONO_TYPE_I8:
+		g_print ("%lld\n", *(gint64*)field_ptr);
+		break;
+	case MONO_TYPE_U8:
+		g_print ("%llu\n", *(guint64*)field_ptr);
+		break;
+	case MONO_TYPE_R4:
+		g_print ("%f\n", *(gfloat*)field_ptr);
+		break;
+	case MONO_TYPE_R8:
+		g_print ("%f\n", *(gdouble*)field_ptr);
+		break;
+	case MONO_TYPE_BOOLEAN:
+		g_print ("%s (%d)\n", *(guint8*)field_ptr? "True": "False", *(guint8*)field_ptr);
+		break;
+	case MONO_TYPE_CHAR:
+		g_print ("'%c' (%d 0x%04x)\n", *(guint16*)field_ptr, *(guint16*)field_ptr, *(guint16*)field_ptr);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+static void
+objval_describe (MonoClass *class, const char *addr)
+{
+	MonoClassField *field;
+	MonoClass *p;
+	const char *field_ptr;
+	int type_offset = 0;
+	if (class->valuetype)
+		type_offset = -sizeof (MonoObject);
+
+	for (p = class; p != NULL; p = p->parent) {
+		gpointer iter = NULL;
+		int printed_header = FALSE;
+		while ((field = mono_class_get_fields (p, &iter))) {
+			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
+				continue;
+
+			if (p != class && !printed_header) {
+				const char *sep;
+				g_print ("In class ");
+				sep = print_name_space (p);
+				g_print ("%s%s:\n", sep, p->name);
+				printed_header = TRUE;
+			}
+			field_ptr = (const char*)addr + field->offset + type_offset;
+
+			print_field_value (field_ptr, field, type_offset);
+		}
+	}
+}
+
+/**
+ * mono_object_describe_fields:
+ *
+ * Prints to stdout a small description of each field of the object @obj.
+ * For use in a debugger.
+ */
+void
+mono_object_describe_fields (MonoObject *obj)
+{
+	MonoClass *class = mono_object_class (obj);
+	objval_describe (class, (char*)obj);
+}
+
+/**
+ * mono_value_describe_fields:
+ *
+ * Prints to stdout a small description of each field of the value type
+ * stored at @addr of type @klass.
+ * For use in a debugger.
+ */
+void
+mono_value_describe_fields (MonoClass* klass, const char* addr)
+{
+	objval_describe (klass, addr);
+}
+
+/**
+ * mono_class_describe_statics:
+ *
+ * Prints to stdout a small description of each static field of the type @klass
+ * in the current application domain.
+ * For use in a debugger.
+ */
+void
+mono_class_describe_statics (MonoClass* klass)
+{
+	MonoClassField *field;
+	MonoClass *p;
+	const char *field_ptr;
+	const char *addr = mono_class_vtable (mono_domain_get (), klass)->data;
+	if (!addr)
+		return;
+
+	for (p = klass; p != NULL; p = p->parent) {
+		gpointer iter = NULL;
+		while ((field = mono_class_get_fields (p, &iter))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
+				continue;
+			if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
+				continue;
+
+			field_ptr = (const char*)addr + field->offset;
+
+			print_field_value (field_ptr, field, 0);
+		}
+	}
+}
+
