@@ -820,6 +820,7 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	if (strcmp (s, "ABCD") != 0)
 		return 1;
 	strncpy(s, m, n);
+	s [n] = '\0';
 	return 0;
 }
 
@@ -829,6 +830,7 @@ mono_test_marshal_stringbuilder_default (char *s, int n)
 	const char m[] = "This is my message.  Isn't it nice?";
 
 	strncpy(s, m, n);
+	s [n] = '\0';
 	return 0;
 }
 
