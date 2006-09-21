@@ -596,7 +596,7 @@ reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {
 	int realidx2_reg = mono_regstate_next_int (s->rs);
 	int sum_reg = mono_regstate_next_int (s->rs);
 	int index1, index2;
-	guint32 size = mono_array_element_size (tree->klass);
+	guint32 size = mono_class_array_element_size (tree->klass);
 	
 	index1 = state->right->left->reg1;
 	index2 = state->right->right->reg1;

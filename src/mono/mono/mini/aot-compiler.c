@@ -2236,7 +2236,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 			encode_method_ref (acfg, mono_class_get_finalizer (klass), p, &p);
  
 		encode_value (klass->instance_size, p, &p);
-		encode_value (klass->class_size, p, &p);
+		encode_value (mono_class_data_size (klass), p, &p);
 		encode_value (klass->packing_size, p, &p);
 		encode_value (klass->min_align, p, &p);
 
