@@ -1035,7 +1035,6 @@ static void
 start_thread_or_queue (MonoAsyncResult *ares)
 {
 	int busy, worker;
-	MonoDomain *domain;
 
 	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
 	worker = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
@@ -1043,7 +1042,6 @@ start_thread_or_queue (MonoAsyncResult *ares)
 	    worker < mono_max_worker_threads) {
 		InterlockedIncrement (&mono_worker_threads);
 		InterlockedIncrement (&busy_worker_threads);
-		domain = ((MonoObject *) ares)->vtable->domain;
 		mono_thread_create (mono_get_root_domain (), async_invoke_thread, ares);
 	} else {
 		append_job (&mono_delegate_section, &async_call_queue, ares);
