@@ -302,8 +302,11 @@ struct _MonoClass {
 	 * Computed object instance size, total.
 	 */
 	int        instance_size;
-	int        class_size;
 	int        vtable_size; /* number of slots */
+	union {
+		int class_size; /* size of area for static fields */
+		int element_size; /* for array types */
+	} sizes;
 
 	/*
 	 * From the TypeDef table
