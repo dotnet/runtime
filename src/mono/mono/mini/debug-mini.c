@@ -556,3 +556,67 @@ mono_debug_add_icall_wrapper (MonoMethod *method, MonoJitICallInfo* callinfo)
 
 	// mono_debug_add_wrapper (method, callinfo->wrapper, callinfo->func);
 }
+
+static void
+print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *type)
+{
+	switch (info->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) {
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
+		g_print ("%s %s (%d) in register %s\n", type, name, idx, mono_arch_regname (info->index & (~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS)));
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
+		g_print ("%s %s (%d) in memory: base register %s + %d\n", type, name, idx, mono_arch_regname (info->index & (~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS)), info->offset);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS:
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+/**
+ * mono_debug_print_locals:
+ *
+ * Prints to stdout the information about the local variables in
+ * a method (if @only_arguments is false) or about the arguments.
+ * The information includes the storage info (where the variable 
+ * lives, in a register or in memory).
+ * The method is found by looking up what method has been emitted at
+ * the instruction address @ip.
+ * This is for use inside a debugger.
+ */
+void
+mono_debug_print_vars (gpointer ip, gboolean only_arguments)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
+	MonoDebugMethodInfo *minfo;
+	MonoDebugMethodJitInfo *jit;
+	int i;
+
+	if (!ji)
+		return;
+
+	minfo = mono_debug_lookup_method (mono_jit_info_get_method (ji));
+	if (!minfo)
+		return;
+
+	jit = mono_debug_find_method (minfo, domain);
+	if (!jit)
+		return;
+	if (only_arguments) {
+		char **names;
+		names = g_new (char *, jit->num_params);
+		mono_method_get_param_names (mono_jit_info_get_method (ji), (const char **) names);
+		if (jit->this_var)
+			print_var_info (jit->this_var, 0, "this", "Arg");
+		for (i = 0; i < jit->num_params; ++i) {
+			print_var_info (&jit->params [i], i, names [i]? names [i]: "unknown name", "Arg");
+		}
+		g_free (names);
+	} else {
+		for (i = 0; i < jit->num_locals; ++i) {
+			print_var_info (&jit->locals [i], i, "", "Local");
+		}
+	}
+}
+

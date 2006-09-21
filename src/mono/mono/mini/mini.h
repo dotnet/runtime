@@ -1046,6 +1046,7 @@ void      mono_debug_add_aot_method             (MonoDomain *domain,
 						 MonoMethod *method, guint8 *code_start, 
 						 guint8 *debug_info, guint32 debug_info_len);
 void      mono_debug_add_icall_wrapper          (MonoMethod *method, MonoJitICallInfo* info);
+void      mono_debug_print_vars                 (gpointer ip, gboolean only_arguments);
 void      mono_debugger_run_finally             (MonoContext *start_ctx);
 
 /* Mono Debugger support */
