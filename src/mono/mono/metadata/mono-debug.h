@@ -208,6 +208,9 @@ void mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
 
 MonoDebugMethodInfo *mono_debug_lookup_method (MonoMethod *method);
 
+MonoDebugMethodJitInfo*
+mono_debug_find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain);
+
 /*
  * Line number support.
  */

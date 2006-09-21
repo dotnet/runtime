@@ -832,6 +832,16 @@ find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain)
 	return mono_debug_read_method (address);
 }
 
+MonoDebugMethodJitInfo *
+mono_debug_find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain)
+{
+	MonoDebugMethodJitInfo *res;
+	mono_debugger_lock ();
+	res = find_method (minfo, domain);
+	mono_debugger_unlock ();
+	return res;
+}
+
 static gint32
 il_offset_from_address (MonoDebugMethodInfo *minfo, MonoDomain *domain, guint32 native_offset)
 {
@@ -939,3 +949,4 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 	mono_debug_free_source_location (location);
 	return res;
 }
+
