@@ -986,7 +986,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			exc = mono_get_exception_bad_image_format (name);
 		else
-			exc = mono_get_exception_file_not_found (fname);
+			exc = mono_get_exception_file_not_found2 (NULL, fname);
 		g_free (name);
 		mono_raise_exception (exc);
 	}
@@ -1054,7 +1054,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 		MonoException *exc;
 
 		/* This is a parse error... */
-		exc = mono_get_exception_file_not_found (assRef);
+		exc = mono_get_exception_file_not_found2 (NULL, assRef);
 		mono_raise_exception (exc);
 	}
 
@@ -1063,7 +1063,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!ass && (refass = try_assembly_resolve (domain, assRef, refOnly)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
-		MonoException *exc = mono_get_exception_file_not_found (assRef);
+		MonoException *exc = mono_get_exception_file_not_found2 (NULL, assRef);
 		mono_raise_exception (exc);
 	}
 
@@ -1130,7 +1130,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	g_free (filename);
 
 	if (!assembly)
-		mono_raise_exception (mono_get_exception_file_not_found (file));
+		mono_raise_exception (mono_get_exception_file_not_found2 (NULL, file));
 
 	image = assembly->image;
 
