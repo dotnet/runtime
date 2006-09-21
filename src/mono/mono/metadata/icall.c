@@ -3794,7 +3794,10 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	
 	MONO_ARCH_SAVE_REGS;
 
-	absolute = g_build_filename (mass->basedir, mass->image->module_name, NULL);
+	if (g_path_is_absolute (mass->image->name))
+		absolute = g_strdup (mass->image->name);
+	else
+		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
 #if PLATFORM_WIN32
 	{
 		gint i;
@@ -4450,13 +4453,19 @@ static void
 ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
 {
 	gchar *absolute;
+	MonoAssembly *mass = assembly->assembly;
 
 	MONO_ARCH_SAVE_REGS;
 
-	absolute = g_build_filename (assembly->assembly->basedir, assembly->assembly->image->module_name, NULL);
+	if (g_path_is_absolute (mass->image->name)) {
+		fill_reflection_assembly_name (mono_object_domain (assembly),
+			aname, &mass->aname, mass->image->name, TRUE);
+		return;
+	}
+	absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
 
-	fill_reflection_assembly_name (mono_object_domain (assembly), aname, 
-								   &assembly->assembly->aname, absolute, TRUE);
+	fill_reflection_assembly_name (mono_object_domain (assembly),
+		aname, &mass->aname, absolute, TRUE);
 
 	g_free (absolute);
 }
