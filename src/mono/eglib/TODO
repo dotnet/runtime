@@ -42,6 +42,11 @@ Important Groups:
 	      1 g_mem_set_vtable
 	      1 g_log_set_handler
 
+Remove code from Mono:
+
+	Multi-threaded aware GHashTable.
+	utils/mono-uri.c
+
 Macros:
       6 G_UNLIKELY
       4 G_LIKELY
