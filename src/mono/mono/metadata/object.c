@@ -490,7 +490,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 	int max_size;
 
 	if (static_fields)
-		max_size = mono_class_data_size (class) / sizeof (gpointer);
+		max_size = class->class_size / sizeof (gpointer);
 	else
 		max_size = class->instance_size / sizeof (gpointer);
 	if (max_size > size) {
@@ -726,7 +726,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	char *t;
 	int i;
 	gboolean inited = FALSE;
-	guint32 vtable_size, class_size;
+	guint32 vtable_size;
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	gpointer iter;
@@ -785,7 +785,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 #endif
 		vt->gc_descr = class->gc_descr;
 
-	if ((class_size = mono_class_data_size (class))) {
+	if (class->class_size) {
 		if (class->has_static_refs) {
 			gpointer statics_gc_descr;
 			int max_set = 0;
@@ -793,16 +793,16 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			gsize *bitmap;
 
 			bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
-			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], class->name_space, class->name, class_size);*/
+			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], class->name_space, class->name, class->class_size);*/
 			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set? max_set + 1: 0);
-			vt->data = mono_gc_alloc_fixed (class_size, statics_gc_descr);
+			vt->data = mono_gc_alloc_fixed (class->class_size, statics_gc_descr);
 			mono_domain_add_class_static_data (domain, class, vt->data, NULL);
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		} else {
-			vt->data = mono_mempool_alloc0 (domain->mp, class_size);
+			vt->data = mono_mempool_alloc0 (domain->mp, class->class_size);
 		}
-		mono_stats.class_static_data_size += class_size;
+		mono_stats.class_static_data_size += class->class_size;
 	}
 
 	cindex = -1;
