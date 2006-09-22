@@ -398,6 +398,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		return;
 	}
 
+	args [0] = ARG_CLASS_NO_CLASS;
+	args [1] = ARG_CLASS_NO_CLASS;
 	for (quad = 0; quad < nquads; ++quad) {
 		int size;
 		guint32 align;
