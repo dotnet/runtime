@@ -11,8 +11,6 @@ void* mono_ldftn_nosync (MonoMethod *method);
 
 void* mono_ldvirtfn (MonoObject *obj, MonoMethod *method);
 
-void mono_helper_stelem_ref (MonoArray *array, int index, MonoObject *val);
-
 void mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val);
 
 gint64 mono_llmult (gint64 a, gint64 b);
