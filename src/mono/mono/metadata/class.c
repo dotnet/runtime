@@ -819,7 +819,8 @@ mono_class_setup_fields (MonoClass *class)
 	}
 
 	class->instance_size = 0;
-	class->class_size = 0;
+	if (!class->rank)
+		class->sizes.class_size = 0;
 
 	if (class->parent) {
 		/* For generic instances, class->parent might not have been initialized */
@@ -1232,10 +1233,10 @@ mono_class_layout_fields (MonoClass *class)
 			continue;
 
 		size = mono_type_size (field->type, &align);
-		field->offset = class->class_size;
+		field->offset = class->sizes.class_size;
 		field->offset += align - 1;
 		field->offset &= ~(align - 1);
-		class->class_size = field->offset + size;
+		class->sizes.class_size = field->offset + size;
 	}
 }
 
@@ -2434,7 +2435,7 @@ mono_class_init (MonoClass *class)
 	 */
 	if (has_cached_info) {
 		class->instance_size = cached_info.instance_size;
-		class->class_size = cached_info.class_size;
+		class->sizes.class_size = cached_info.class_size;
 		class->packing_size = cached_info.packing_size;
 		class->min_align = cached_info.min_align;
 		class->blittable = cached_info.blittable;
@@ -3111,7 +3112,7 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 
 	if (gclass->generic_class.is_dynamic) {
 		klass->instance_size = gklass->instance_size;
-		klass->class_size = gklass->class_size;
+		klass->sizes.class_size = gklass->sizes.class_size;
 		klass->size_inited = 1;
 		klass->inited = 1;
 
@@ -3471,7 +3472,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		(eclass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
-	class->class_size = 0;
+	class->sizes.element_size = mono_class_array_element_size (eclass);
 	mono_class_setup_supertypes (class);
 
 	if (mono_defaults.generic_ilist_class) {
@@ -3660,7 +3661,12 @@ mono_class_data_size (MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	return klass->class_size;
+	/* in arrays, sizes.class_size is unioned with element_size
+	 * and arrays have no static fields
+	 */
+	if (klass->rank)
+		return 0;
+	return klass->sizes.class_size;
 }
 
 /*
@@ -4476,7 +4482,8 @@ handle_enum:
 gint32
 mono_array_element_size (MonoClass *ac)
 {
-	return mono_class_array_element_size (ac->element_class);
+	g_assert (ac->rank);
+	return ac->sizes.element_size;
 }
 
 gpointer
