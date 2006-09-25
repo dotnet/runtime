@@ -229,16 +229,20 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 			return NULL; 
 		get_entropy_from_server (socket_path, mono_array_addr (arry, guchar, 0), mono_array_length (arry));
 		return (gpointer) -1;
-	}
-	else {
+	} else {
 		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
 		gint count = 0;
 		gint err;
 
 		do {
 			err = read (file, buf + count, len - count);
+			if (err < 0) {
+				if (errno == EINTR)
+					continue;
+				break;
+			}
 			count += err;
-		} while (err >= 0 && count < len);
+		} while (count < len);
 
 		if (err < 0) {
 			g_warning("Entropy error! Error in read (%s).", strerror (errno));
