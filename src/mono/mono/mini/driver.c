@@ -62,38 +62,49 @@ int _CRT_glob = 0;
 
 typedef void (*OptFunc) (const char *p);
 
-/* keep in sync with enum in mini.h */
+#undef OPTFLAG
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+
+static const struct msgstr_t {
+#define OPTFLAG(id,shift,name,desc) char MSGSTRFIELD(__LINE__) [sizeof (name) + sizeof (desc)];
+#include "optflags-def.h"
+#undef OPTFLAG
+} opstr = {
+#define OPTFLAG(id,shift,name,desc) name "\0" desc,
+#include "optflags-def.h"
+#undef OPTFLAG
+};
+static const gint16 opt_names [] = {
+#define OPTFLAG(id,shift,name,desc) [(shift)] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "optflags-def.h"
+#undef OPTFLAG
+};
+
+#define optflag_get_name(id) ((const char*)&opstr + opt_names [(id)])
+#define optflag_get_desc(id) (optflag_get_name(id) + 1 + strlen (optflag_get_name(id)))
+
+#else /* !HAVE_ARRAY_ELEM_INIT */
 typedef struct {
 	const char* name;
 	const char* desc;
-	const OptFunc func;
 } OptName;
 
+#define OPTFLAG(id,shift,name,desc) {name,desc},
 static const OptName 
 opt_names [] = {
-	{"peephole",   "Peephole postpass"},
-	{"branch",     "Branch optimizations"},
-	{"inline",     "Inline method calls"},
-	{"cfold",      "Constant folding"},
-	{"consprop",   "Constant propagation"},
-	{"copyprop",   "Copy propagation"},
-	{"deadce",     "Dead code elimination"},
-	{"linears",    "Linear scan global reg allocation"},
-	{"cmov",       "Conditional moves"},
-	{"shared",     "Emit per-domain code"},
-	{"sched",      "Instruction scheduling"},
-	{"intrins",    "Intrinsic method implementations"},
-	{"tailc",      "Tail recursion and tail calls"},
-	{"loop",       "Loop related optimizations"},
-	{"fcmov",      "Fast x86 FP compares"},
-	{"leaf",       "Leaf procedures optimizations"},
-	{"aot",        "Usage of Ahead Of Time compiled code"},
-	{"precomp",    "Precompile all methods before executing Main"},
-	{"abcrem",     "Array bound checks removal"},	
-	{"ssapre",     "SSA based Partial Redundancy Elimination"},
-	{"exception",  "Optimize exception catch blocks"},
-	{"ssa",        "Use plain SSA form"},
-	{"treeprop",   "Tree propagation"}
+#include "optflags-def.h"
+	{NULL, NULL}
+};
+#define optflag_get_name(id) (opt_names [(id)].name)
+#define optflag_get_desc(id) (opt_names [(id)].desc)
+
+#endif
+
+static const OptFunc
+opt_funcs [sizeof (int) * 8] = {
+	NULL
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -135,8 +146,8 @@ parse_optimizations (const char* p)
 		} else {
 			invert = FALSE;
 		}
-		for (i = 0; i < G_N_ELEMENTS (opt_names); ++i) {
-			n = opt_names [i].name;
+		for (i = 0; i < G_N_ELEMENTS (opt_names) && optflag_get_name (i); ++i) {
+			n = optflag_get_name (i);
 			len = strlen (n);
 			if (strncmp (p, n, len) == 0) {
 				if (invert)
@@ -149,8 +160,8 @@ parse_optimizations (const char* p)
 					break;
 				} else if (*p == '=') {
 					p++;
-					if (opt_names [i].func)
-						opt_names [i].func (p);
+					if (opt_funcs [i])
+						opt_funcs [i] (p);
 					while (*p && *p++ != ',');
 					break;
 				}
@@ -177,18 +188,18 @@ parse_optimizations (const char* p)
 }
 
 typedef struct {
-	const char* name;
-	const char* desc;
+	const char name [6];
+	const char desc [18];
 	MonoGraphOptions value;
 } GraphName;
 
 static const GraphName 
 graph_names [] = {
-	{"cfg",      "Control Flow Graph (CFG)" ,               MONO_GRAPH_CFG},
+	{"cfg",      "Control Flow",                            MONO_GRAPH_CFG},
 	{"dtree",    "Dominator Tree",                          MONO_GRAPH_DTREE},
 	{"code",     "CFG showing code",                        MONO_GRAPH_CFG_CODE},
-	{"ssa",      "CFG showing code after SSA translation",  MONO_GRAPH_CFG_SSA},
-	{"optcode",  "CFG showing code after IR optimizations", MONO_GRAPH_CFG_OPTCODE}
+	{"ssa",      "CFG after SSA",                           MONO_GRAPH_CFG_SSA},
+	{"optc",     "CFG after IR opts",                       MONO_GRAPH_CFG_OPTCODE}
 };
 
 static MonoGraphOptions
@@ -227,7 +238,7 @@ opt_descr (guint32 flags) {
 		if (flags & (1 << i)) {
 			if (need_comma)
 				g_string_append_c (str, ',');
-			g_string_append (str, opt_names [i].name);
+			g_string_append (str, optflag_get_name (i));
 			need_comma = 1;
 		}
 	}
@@ -588,7 +599,7 @@ mini_usage_list_opt (void)
 	int i;
 	
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
-		fprintf (stdout, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
+		fprintf (stdout, "                           %-10s %s\n", optflag_get_name (i), optflag_get_desc (i));
 }
 
 static void

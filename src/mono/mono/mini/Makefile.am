@@ -178,6 +178,7 @@ alpha_sources = \
 common_sources = \
 	mini.c		\
 	mini.h		\
+	optflags-def.h		\
 	jit-icalls.h \
 	jit-icalls.c \
 	trace.c		\

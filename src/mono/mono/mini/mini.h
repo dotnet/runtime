@@ -516,31 +516,11 @@ typedef enum {
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
-/* optimization flags: keep up to date with the name array in driver.c */
+/* optimization flags */
+#define OPTFLAG(id,shift,name,descr) MONO_OPT_ ## id = 1 << shift,
 enum {
-	MONO_OPT_PEEPHOLE = 1 << 0,
-	MONO_OPT_BRANCH   = 1 << 1,
-	MONO_OPT_INLINE   = 1 << 2,
-	MONO_OPT_CFOLD    = 1 << 3,
-	MONO_OPT_CONSPROP = 1 << 4,
-	MONO_OPT_COPYPROP = 1 << 5,
-	MONO_OPT_DEADCE   = 1 << 6,
-	MONO_OPT_LINEARS  = 1 << 7,
-	MONO_OPT_CMOV     = 1 << 8,
-	MONO_OPT_SHARED   = 1 << 9,
-	MONO_OPT_SCHED    = 1 << 10,
-	MONO_OPT_INTRINS  = 1 << 11,
-	MONO_OPT_TAILC    = 1 << 12,
-	MONO_OPT_LOOP     = 1 << 13,
-	MONO_OPT_FCMOV    = 1 << 14,
-	MONO_OPT_LEAF     = 1 << 15,
-	MONO_OPT_AOT      = 1 << 16,
-	MONO_OPT_PRECOMP  = 1 << 17,
-	MONO_OPT_ABCREM   = 1 << 18,
-	MONO_OPT_SSAPRE   = 1 << 19,
-	MONO_OPT_EXCEPTION= 1 << 20,
-	MONO_OPT_SSA      = 1 << 21,
-	MONO_OPT_TREEPROP = 1 << 22
+#include "optflags-def.h"
+	MONO_OPT_LAST
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
