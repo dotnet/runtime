@@ -6548,7 +6548,9 @@ icall_type_names [] = {
 
 #define icall_type_name_get(id) (icall_type_names [(id)])
 
+#undef ICALL_TYPE
 #undef ICALL
+#define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) name,
 static const char* const
 icall_names [] = {
