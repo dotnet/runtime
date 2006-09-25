@@ -6457,1012 +6457,116 @@ InternalFromBase64CharArray (MonoArray *input, gint offset, gint length)
 		length, FALSE);
 }
 
-/* icall map */
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) Icall_ ## id,
+
+enum {
+#include "metadata/icall-def.h"
+	Icall_last
+};
+
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,first) Icall_type_ ## id,
+#define ICALL(id,name,func)
+enum {
+#include "metadata/icall-def.h"
+	Icall_type_num
+};
+
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,firstic) {(Icall_ ## firstic)},
+#define ICALL(id,name,func)
 typedef struct {
-	const char *method;
-	gconstpointer func;
-} IcallEntry;
-
-typedef struct {
-	const char *klass;
-	const IcallEntry *icalls;
-	const int size;
-} IcallMap;
-
-static const IcallEntry runtime_icalls [] = {
-	{"GetDisplayName", ves_icall_Mono_Runtime_GetDisplayName}
-};
-
-static const IcallEntry activator_icalls [] = {
-	{"CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal}
-};
-static const IcallEntry appdomain_icalls [] = {
-	{"ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly},
-	{"GetAssemblies", ves_icall_System_AppDomain_GetAssemblies},
-	{"GetData", ves_icall_System_AppDomain_GetData},
-	{"InternalGetContext", ves_icall_System_AppDomain_InternalGetContext},
-	{"InternalGetDefaultContext", ves_icall_System_AppDomain_InternalGetDefaultContext},
-	{"InternalGetProcessGuid", ves_icall_System_AppDomain_InternalGetProcessGuid},
-	{"InternalIsFinalizingForUnload", ves_icall_System_AppDomain_InternalIsFinalizingForUnload},
-	{"InternalPopDomainRef", ves_icall_System_AppDomain_InternalPopDomainRef},
-	{"InternalPushDomainRef", ves_icall_System_AppDomain_InternalPushDomainRef},
-	{"InternalPushDomainRefByID", ves_icall_System_AppDomain_InternalPushDomainRefByID},
-	{"InternalSetContext", ves_icall_System_AppDomain_InternalSetContext},
-	{"InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain},
-	{"InternalSetDomainByID", ves_icall_System_AppDomain_InternalSetDomainByID},
-	{"InternalUnload", ves_icall_System_AppDomain_InternalUnload},
-	{"LoadAssembly", ves_icall_System_AppDomain_LoadAssembly},
-	{"LoadAssemblyRaw", ves_icall_System_AppDomain_LoadAssemblyRaw},
-	{"SetData", ves_icall_System_AppDomain_SetData},
-	{"createDomain", ves_icall_System_AppDomain_createDomain},
-	{"getCurDomain", ves_icall_System_AppDomain_getCurDomain},
-	{"getFriendlyName", ves_icall_System_AppDomain_getFriendlyName},
-	{"getRootDomain", ves_icall_System_AppDomain_getRootDomain},
-	{"getSetup", ves_icall_System_AppDomain_getSetup}
-};
-
-static const IcallEntry argiterator_icalls [] = {
-	{"IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg},
-	{"IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT},
-	{"IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType},
-	{"Setup",                            mono_ArgIterator_Setup}
-};
-
-static const IcallEntry array_icalls [] = {
-	{"ClearInternal",    ves_icall_System_Array_ClearInternal},
-	{"Clone",            mono_array_clone},
-	{"CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl},
-	{"FastCopy",         ves_icall_System_Array_FastCopy},
-	{"GetGenericValueImpl", ves_icall_System_Array_GetGenericValueImpl},
-	{"GetLength",        ves_icall_System_Array_GetLength},
-	{"GetLowerBound",    ves_icall_System_Array_GetLowerBound},
-	{"GetRank",          ves_icall_System_Array_GetRank},
-	{"GetValue",         ves_icall_System_Array_GetValue},
-	{"GetValueImpl",     ves_icall_System_Array_GetValueImpl},
-	{"SetValue",         ves_icall_System_Array_SetValue},
-	{"SetValueImpl",     ves_icall_System_Array_SetValueImpl}
-};
-
-static const IcallEntry buffer_icalls [] = {
-	{"BlockCopyInternal", ves_icall_System_Buffer_BlockCopyInternal},
-	{"ByteLengthInternal", ves_icall_System_Buffer_ByteLengthInternal},
-	{"GetByteInternal", ves_icall_System_Buffer_GetByteInternal},
-	{"SetByteInternal", ves_icall_System_Buffer_SetByteInternal}
-};
-
-static const IcallEntry char_icalls [] = {
-	{"GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers}
-};
-
-static const IcallEntry defaultconf_icalls [] = {
-	{"get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path}
-};
-
-static const IcallEntry consoledriver_icalls [] = {
-	{"GetTtySize", ves_icall_System_ConsoleDriver_GetTtySize },
-	{"InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable },
-	{"Isatty", ves_icall_System_ConsoleDriver_Isatty },
-	{"SetBreak", ves_icall_System_ConsoleDriver_SetBreak },
-	{"SetEcho", ves_icall_System_ConsoleDriver_SetEcho },
-	{"TtySetup", ves_icall_System_ConsoleDriver_TtySetup }
-};
-
-static const IcallEntry convert_icalls [] = {
-	{"InternalFromBase64CharArray", InternalFromBase64CharArray },
-	{"InternalFromBase64String", InternalFromBase64String }
-};
-
-static const IcallEntry timezone_icalls [] = {
-	{"GetTimeZoneData", ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData}
-};
-
-static const IcallEntry datetime_icalls [] = {
-	{"GetNow", ves_icall_System_DateTime_GetNow}
-};
-
-#ifndef DISABLE_DECIMAL
-static const IcallEntry decimal_icalls [] = {
-	{"decimal2Int64", mono_decimal2Int64},
-	{"decimal2UInt64", mono_decimal2UInt64},
-	{"decimal2double", mono_decimal2double},
-	{"decimal2string", mono_decimal2string},
-	{"decimalCompare", mono_decimalCompare},
-	{"decimalDiv", mono_decimalDiv},
-	{"decimalFloorAndTrunc", mono_decimalFloorAndTrunc},
-	{"decimalIncr", mono_decimalIncr},
-	{"decimalIntDiv", mono_decimalIntDiv},
-	{"decimalMult", mono_decimalMult},
-	{"decimalRound", mono_decimalRound},
-	{"decimalSetExponent", mono_decimalSetExponent},
-	{"double2decimal", mono_double2decimal}, /* FIXME: wrong signature. */
-	{"string2decimal", mono_string2decimal}
-};
-#endif
-
-static const IcallEntry delegate_icalls [] = {
-	{"CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal},
-	{"FreeTrampoline", ves_icall_System_Delegate_FreeTrampoline}
-};
-
-static const IcallEntry tracelist_icalls [] = {
-	{"WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString}
-};
-
-static const IcallEntry fileversion_icalls [] = {
-	{"GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal}
-};
-
-static const IcallEntry process_icalls [] = {
-	{"CreateProcess_internal(System.Diagnostics.ProcessStartInfo,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_CreateProcess_internal},
-	{"ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal},
-	{"ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal},
-	{"GetModules_internal()", ves_icall_System_Diagnostics_Process_GetModules_internal},
-	{"GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal},
-	{"GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal},
-	{"GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal},
-	{"GetWorkingSet_internal(intptr,int&,int&)", ves_icall_System_Diagnostics_Process_GetWorkingSet_internal},
-	{"Kill_internal", ves_icall_System_Diagnostics_Process_Kill_internal},
-	{"ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal},
-	{"Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal},
-	{"SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal},
-	{"ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal},
-	{"StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal},
-	{"WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal}
-};
-
-static const IcallEntry double_icalls [] = {
-	{"AssertEndianity", ves_icall_System_Double_AssertEndianity},
-	{"ParseImpl",    mono_double_ParseImpl}
-};
-
-static const IcallEntry enum_icalls [] = {
-	{"ToObject", ves_icall_System_Enum_ToObject},
-	{"get_value", ves_icall_System_Enum_get_value}
-};
-
-static const IcallEntry environment_icalls [] = {
-	{"Exit", ves_icall_System_Environment_Exit},
-	{"GetCommandLineArgs", mono_runtime_get_main_args},
-	{"GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames},
-	{"GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives },
- 	{"GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
- 	{"GetOSVersionString", ves_icall_System_Environment_GetOSVersionString},
-	{"GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath},
-	{"InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable},
-	{"get_ExitCode", mono_environment_exitcode_get},
-	{"get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted},
-	{"get_MachineName", ves_icall_System_Environment_get_MachineName},
-	{"get_NewLine", ves_icall_System_Environment_get_NewLine},
-	{"get_Platform", ves_icall_System_Environment_get_Platform},
-	{"get_ProcessorCount", ves_icall_System_Environment_get_ProcessorCount},
-	{"get_TickCount", ves_icall_System_Environment_get_TickCount},
-	{"get_UserName", ves_icall_System_Environment_get_UserName},
-	{"internalGetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},
-	{"internalGetGacPath", ves_icall_System_Environment_GetGacPath},
-	{"internalGetHome", ves_icall_System_Environment_InternalGetHome},
-	{"set_ExitCode", mono_environment_exitcode_set}
-};
-
-static const IcallEntry cultureinfo_icalls [] = {
-	{"construct_compareinfo(object,string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo},
-	{"construct_datetime_format", ves_icall_System_Globalization_CultureInfo_construct_datetime_format},
-	{"construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale},
-	{"construct_internal_locale_from_current_locale", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale},
-	{"construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid},
-	{"construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name},
-	{"construct_internal_locale_from_specific_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name},
-	{"construct_number_format", ves_icall_System_Globalization_CultureInfo_construct_number_format},
-	{"internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures},
-	{"internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral}
-};
-
-static const IcallEntry regioninfo_icalls [] = {
-	{"construct_internal_region_from_lcid", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid},
-	{"construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name}
-};
-
-static const IcallEntry compareinfo_icalls [] = {
-	{"assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey},
-	{"construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo},
-	{"free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator},
-	{"internal_compare(string,int,int,string,int,int,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare},
-	{"internal_index(string,int,int,char,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index_char},
-	{"internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index}
-};
-
-static const IcallEntry normalization_icalls [] = {
-	{"load_normalization_resource(intptr&,intptr&,intptr&,intptr&,intptr&,intptr&)", load_normalization_resource}
-};
-
-static const IcallEntry gc_icalls [] = {
-	{"GetTotalMemory", ves_icall_System_GC_GetTotalMemory},
-	{"InternalCollect", ves_icall_System_GC_InternalCollect},
-	{"KeepAlive", ves_icall_System_GC_KeepAlive},
-	{"ReRegisterForFinalize", ves_icall_System_GC_ReRegisterForFinalize},
-	{"SuppressFinalize", ves_icall_System_GC_SuppressFinalize},
-	{"WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers}
-};
-
-static const IcallEntry famwatcher_icalls [] = {
-	{"InternalFAMNextEvent", ves_icall_System_IO_FAMW_InternalFAMNextEvent}
-};
-
-static const IcallEntry inotifywatcher_icalls [] = {
-	{"AddWatch", ves_icall_System_IO_InotifyWatcher_AddWatch},
-	{"GetInotifyInstance", ves_icall_System_IO_InotifyWatcher_GetInotifyInstance},
-	{"RemoveWatch", ves_icall_System_IO_InotifyWatcher_RemoveWatch}
-};
-
-static const IcallEntry filewatcher_icalls [] = {
-	{"InternalCloseDirectory", ves_icall_System_IO_FSW_CloseDirectory},
-	{"InternalOpenDirectory", ves_icall_System_IO_FSW_OpenDirectory},
-	{"InternalReadDirectoryChanges", ves_icall_System_IO_FSW_ReadDirectoryChanges},
-	{"InternalSupportsFSW", ves_icall_System_IO_FSW_SupportsFSW}
-};
-
-static const IcallEntry path_icalls [] = {
-	{"get_temp_path", ves_icall_System_IO_get_temp_path}
-};
-
-static const IcallEntry monoio_icalls [] = {
-	{"Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close},
-	{"CopyFile(string,string,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile},
-	{"CreateDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CreateDirectory},
-	{"CreatePipe(intptr&,intptr&)", ves_icall_System_IO_MonoIO_CreatePipe},
-	{"DeleteFile(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_DeleteFile},
-	{"Flush(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Flush},
-	{"GetCurrentDirectory(System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetCurrentDirectory},
-	{"GetFileAttributes(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileAttributes},
-	{"GetFileStat(string,System.IO.MonoIOStat&,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileStat},
-	{"GetFileSystemEntries", ves_icall_System_IO_MonoIO_GetFileSystemEntries},
-	{"GetFileType(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileType},
-	{"GetLength(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetLength},
-	{"GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath},
-	{"Lock(intptr,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Lock},
-	{"MoveFile(string,string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_MoveFile},
-	{"Open(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.IO.FileOptions,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Open},
-	{"Read(intptr,byte[],int,int,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Read},
-	{"RemoveDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_RemoveDirectory},
-	{"Seek(intptr,long,System.IO.SeekOrigin,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Seek},
-	{"SetCurrentDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetCurrentDirectory},
-	{"SetFileAttributes(string,System.IO.FileAttributes,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetFileAttributes},
-	{"SetFileTime(intptr,long,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetFileTime},
-	{"SetLength(intptr,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_SetLength},
-	{"Unlock(intptr,long,long,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Unlock},
-	{"Write(intptr,byte[],int,int,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Write},
-	{"get_AltDirectorySeparatorChar", ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar},
-	{"get_ConsoleError", ves_icall_System_IO_MonoIO_get_ConsoleError},
-	{"get_ConsoleInput", ves_icall_System_IO_MonoIO_get_ConsoleInput},
-	{"get_ConsoleOutput", ves_icall_System_IO_MonoIO_get_ConsoleOutput},
-	{"get_DirectorySeparatorChar", ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar},
-	{"get_InvalidPathChars", ves_icall_System_IO_MonoIO_get_InvalidPathChars},
-	{"get_PathSeparator", ves_icall_System_IO_MonoIO_get_PathSeparator},
-	{"get_VolumeSeparatorChar", ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar}
-};
-
-static const IcallEntry math_icalls [] = {
-	{"Acos", ves_icall_System_Math_Acos},
-	{"Asin", ves_icall_System_Math_Asin},
-	{"Atan", ves_icall_System_Math_Atan},
-	{"Atan2", ves_icall_System_Math_Atan2},
-	{"Cos", ves_icall_System_Math_Cos},
-	{"Cosh", ves_icall_System_Math_Cosh},
-	{"Exp", ves_icall_System_Math_Exp},
-	{"Floor", ves_icall_System_Math_Floor},
-	{"Log", ves_icall_System_Math_Log},
-	{"Log10", ves_icall_System_Math_Log10},
-	{"Pow", ves_icall_System_Math_Pow},
-	{"Round", ves_icall_System_Math_Round},
-	{"Round2", ves_icall_System_Math_Round2},
-	{"Sin", ves_icall_System_Math_Sin},
-	{"Sinh", ves_icall_System_Math_Sinh},
-	{"Sqrt", ves_icall_System_Math_Sqrt},
-	{"Tan", ves_icall_System_Math_Tan},
-	{"Tanh", ves_icall_System_Math_Tanh}
-};
-
-static const IcallEntry customattrs_icalls [] = {
-	{"GetCustomAttributesDataInternal", mono_reflection_get_custom_attrs_data},
-	{"GetCustomAttributesInternal", custom_attrs_get_by_type},
-	{"IsDefinedInternal", custom_attrs_defined_internal}
-};
-
-static const IcallEntry enuminfo_icalls [] = {
-	{"get_enum_info", ves_icall_get_enum_info}
-};
-
-static const IcallEntry fieldinfo_icalls [] = {
-	{"GetUnmanagedMarshal", ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal},
-	{"internal_from_handle", ves_icall_System_Reflection_FieldInfo_internal_from_handle}
-};
-
-static const IcallEntry memberinfo_icalls [] = {
-	{"get_MetadataToken", mono_reflection_get_token}
-};
-
-static const IcallEntry monotype_icalls [] = {
-	{"GetArrayRank", ves_icall_MonoType_GetArrayRank},
-	{"GetConstructors", ves_icall_Type_GetConstructors_internal},
-	{"GetConstructors_internal", ves_icall_Type_GetConstructors_internal},
-	{"GetCorrespondingInflatedConstructor", ves_icall_MonoType_GetCorrespondingInflatedMethod},
-	{"GetCorrespondingInflatedMethod", ves_icall_MonoType_GetCorrespondingInflatedMethod},
-	{"GetElementType", ves_icall_MonoType_GetElementType},
-	{"GetEvents_internal", ves_icall_Type_GetEvents_internal},
-	{"GetField", ves_icall_Type_GetField},
-	{"GetFields_internal", ves_icall_Type_GetFields_internal},
-	{"GetGenericArguments", ves_icall_MonoType_GetGenericArguments},
-	{"GetInterfaces", ves_icall_Type_GetInterfaces},
-	{"GetMethodsByName", ves_icall_Type_GetMethodsByName},
-	{"GetNestedType", ves_icall_Type_GetNestedType},
-	{"GetNestedTypes", ves_icall_Type_GetNestedTypes},
-	{"GetPropertiesByName", ves_icall_Type_GetPropertiesByName},
-	{"InternalGetEvent", ves_icall_MonoType_GetEvent},
-	{"IsByRefImpl", ves_icall_type_isbyref},
-	{"IsCOMObjectImpl", ves_icall_type_iscomobject},
-	{"IsPointerImpl", ves_icall_type_ispointer},
-	{"IsPrimitiveImpl", ves_icall_type_isprimitive},
-	{"getFullName", ves_icall_System_MonoType_getFullName},
-	{"get_Assembly", ves_icall_MonoType_get_Assembly},
-	{"get_BaseType", ves_icall_get_type_parent},
-	{"get_DeclaringMethod", ves_icall_MonoType_get_DeclaringMethod},
-	{"get_DeclaringType", ves_icall_MonoType_get_DeclaringType},
-	{"get_IsGenericParameter", ves_icall_MonoType_get_IsGenericParameter},
-	{"get_Module", ves_icall_MonoType_get_Module},
-	{"get_Name", ves_icall_MonoType_get_Name},
-	{"get_Namespace", ves_icall_MonoType_get_Namespace},
-	{"get_UnderlyingSystemType", ves_icall_MonoType_get_UnderlyingSystemType},
-	{"get_attributes", ves_icall_get_attributes},
-	{"type_from_obj", mono_type_type_from_obj}
-};
-
-static const IcallEntry assembly_icalls [] = {
-	{"FillName", ves_icall_System_Reflection_Assembly_FillName},
-	{"GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly},
-	{"GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEntryAssembly},
-	{"GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly},
-	{"GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal},
-	{"GetManifestResourceInfoInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal},
-	{"GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal},
-	{"GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames},
-	{"GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal},
-	{"GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces},
-	{"GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies},
-	{"GetTypes", ves_icall_System_Reflection_Assembly_GetTypes},
-	{"InternalGetAssemblyName", ves_icall_System_Reflection_Assembly_InternalGetAssemblyName},
-	{"InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType},
-	{"InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion},
-	{"LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom},
-	{"LoadPermissions", ves_icall_System_Reflection_Assembly_LoadPermissions},
-	/*
-	 * Private icalls for the Mono Debugger
-	 */
-	{"MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken},
-
-	/* normal icalls again */
-	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
-	{"get_ManifestModule", ves_icall_System_Reflection_Assembly_get_ManifestModule},
-	{"get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly},
-	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
-	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
-	{"get_location", ves_icall_System_Reflection_Assembly_get_location},
-	{"load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name}
-};
-
-static const IcallEntry assembly_name_icalls [] = {
-	{"ParseName", ves_icall_System_Reflection_AssemblyName_ParseName}
-};
-
-static const IcallEntry methodbase_icalls [] = {
-	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
-	{"GetMethodBodyInternal", ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal},
-	{"GetMethodFromHandleInternal", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternal}
-};
-
-static const IcallEntry module_icalls [] = {
-	{"Close", ves_icall_System_Reflection_Module_Close},
-	{"GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType},
-	{"GetGuidInternal", ves_icall_System_Reflection_Module_GetGuidInternal},
-	{"GetPEKind", ves_icall_System_Reflection_Module_GetPEKind},
-	{"InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes},
-	{"ResolveFieldToken", ves_icall_System_Reflection_Module_ResolveFieldToken},
-	{"ResolveMemberToken", ves_icall_System_Reflection_Module_ResolveMemberToken},
-	{"ResolveMethodToken", ves_icall_System_Reflection_Module_ResolveMethodToken},
-	{"ResolveStringToken", ves_icall_System_Reflection_Module_ResolveStringToken},
-	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken},
-	{"get_MDStreamVersion", ves_icall_System_Reflection_Module_get_MDStreamVersion},
-	{"get_MetadataToken", mono_reflection_get_token}
-};
-
-static const IcallEntry monocmethod_icalls [] = {
-  	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
-	{"InternalInvoke", ves_icall_InternalInvoke},
-};
-
-static const IcallEntry monoeventinfo_icalls [] = {
-	{"get_event_info", ves_icall_get_event_info}
-};
-
-static const IcallEntry monofield_icalls [] = {
-	{"GetFieldOffset", ves_icall_MonoField_GetFieldOffset},
-	{"GetParentType", ves_icall_MonoField_GetParentType},
-	{"GetValueInternal", ves_icall_MonoField_GetValueInternal},
-	{"SetValueInternal", ves_icall_FieldInfo_SetValueInternal}
-};
-
-static const IcallEntry monogenericclass_icalls [] = {
-	{"GetConstructors_internal", ves_icall_MonoGenericClass_GetConstructors},
-	{"GetCorrespondingInflatedConstructor", ves_icall_MonoGenericClass_GetCorrespondingInflatedConstructor},
-	{"GetCorrespondingInflatedField", ves_icall_MonoGenericClass_GetCorrespondingInflatedField},
-	{"GetCorrespondingInflatedMethod", ves_icall_MonoGenericClass_GetCorrespondingInflatedMethod},
-	{"GetEvents_internal", ves_icall_MonoGenericClass_GetEvents},
-	{"GetFields_internal", ves_icall_MonoGenericClass_GetFields},
-	{"GetInterfaces_internal", ves_icall_MonoGenericClass_GetInterfaces},
-	{"GetMethods_internal", ves_icall_MonoGenericClass_GetMethods},
-	{"GetParentType", ves_icall_MonoGenericClass_GetParentType},
-	{"GetProperties_internal", ves_icall_MonoGenericClass_GetProperties},
-	{"initialize", mono_reflection_generic_class_initialize}
-};
-
-static const IcallEntry monogenericmethod_icalls [] = {
-	{"get_ReflectedType", ves_icall_MonoGenericMethod_get_ReflectedType}
-};
-
-static const IcallEntry generictypeparambuilder_icalls [] = {
-	{"initialize", mono_reflection_initialize_generic_parameter}
-};
-
-static const IcallEntry monomethod_icalls [] = {
-	{"GetDllImportAttribute", ves_icall_MonoMethod_GetDllImportAttribute},
-	{"GetGenericArguments", ves_icall_MonoMethod_GetGenericArguments},
-  	{"GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition},
-	{"InternalInvoke", ves_icall_InternalInvoke},
-	{"MakeGenericMethod_impl", mono_reflection_bind_generic_method_parameters},
-	{"get_IsGenericMethod", ves_icall_MonoMethod_get_IsGenericMethod},
-	{"get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition},
-	{"get_base_definition", ves_icall_MonoMethod_get_base_definition}
-};
-
-static const IcallEntry monomethodinfo_icalls [] = {
-	{"get_method_info", ves_icall_get_method_info},
-	{"get_parameter_info", ves_icall_get_parameter_info},
-	{"get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal}
-};
-
-static const IcallEntry monopropertyinfo_icalls [] = {
-	{"get_property_info", ves_icall_get_property_info}
-};
-
-static const IcallEntry parameterinfo_icalls [] = {
-	{"get_MetadataToken", mono_reflection_get_token}
-};
-
-static const IcallEntry dns_icalls [] = {
-	{"GetHostByAddr_internal(string,string&,string[]&,string[]&)", ves_icall_System_Net_Dns_GetHostByAddr_internal},
-	{"GetHostByName_internal(string,string&,string[]&,string[]&)", ves_icall_System_Net_Dns_GetHostByName_internal},
-	{"GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal}
-};
-
-static const IcallEntry socket_icalls [] = {
-	{"Accept_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Accept_internal},
-	{"Available_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Available_internal},
-	{"Bind_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Bind_internal},
-	{"Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal},
-	{"Close_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Close_internal},
-	{"Connect_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Connect_internal},
-	{"GetSocketOption_arr_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,byte[]&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal},
-	{"GetSocketOption_obj_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object&,int&)", ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal},
-	{"Listen_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_Listen_internal},
-	{"LocalEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal},
-	{"Poll_internal", ves_icall_System_Net_Sockets_Socket_Poll_internal},
-	{"Receive_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Receive_internal},
-	{"RecvFrom_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress&,int&)", ves_icall_System_Net_Sockets_Socket_RecvFrom_internal},
-	{"RemoteEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal},
-	{"Select_internal(System.Net.Sockets.Socket[]&,int,int&)", ves_icall_System_Net_Sockets_Socket_Select_internal},
-	{"SendTo_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_SendTo_internal},
-	{"Send_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Send_internal},
-	{"SetSocketOption_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object,byte[],int,int&)", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal},
-	{"Shutdown_internal(intptr,System.Net.Sockets.SocketShutdown,int&)", ves_icall_System_Net_Sockets_Socket_Shutdown_internal},
-	{"Socket_internal(System.Net.Sockets.AddressFamily,System.Net.Sockets.SocketType,System.Net.Sockets.ProtocolType,int&)", ves_icall_System_Net_Sockets_Socket_Socket_internal},
-	{"WSAIoctl(intptr,int,byte[],byte[],int&)", ves_icall_System_Net_Sockets_Socket_WSAIoctl}
-};
-
-static const IcallEntry socketex_icalls [] = {
-	{"WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal}
-};
-
-static const IcallEntry object_icalls [] = {
-	{"GetType", ves_icall_System_Object_GetType},
-	{"InternalGetHashCode", mono_object_hash},
-	{"MemberwiseClone", ves_icall_System_Object_MemberwiseClone},
-	{"obj_address", ves_icall_System_Object_obj_address}
-};
-
-static const IcallEntry assemblybuilder_icalls[] = {
-	{"InternalAddModule", mono_image_load_module},
-	{"basic_init", mono_image_basic_init}
-};
-
-static const IcallEntry customattrbuilder_icalls [] = {
-	{"GetBlob", mono_reflection_get_custom_attrs_blob}
-};
-
-static const IcallEntry dynamicmethod_icalls [] = {
-	{"create_dynamic_method", mono_reflection_create_dynamic_method}
-};
-
-static const IcallEntry methodbuilder_icalls [] = {
-	{"MakeGenericMethod", mono_reflection_bind_generic_method_parameters}
-};
-
-static const IcallEntry modulebuilder_icalls [] = {
-	{"WriteToFile", ves_icall_ModuleBuilder_WriteToFile},
-	{"basic_init", mono_image_module_basic_init},
-	{"build_metadata", ves_icall_ModuleBuilder_build_metadata},
-	{"create_modified_type", ves_icall_ModuleBuilder_create_modified_type},
-	{"getMethodToken", ves_icall_ModuleBuilder_getMethodToken},
-	{"getToken", ves_icall_ModuleBuilder_getToken},
-	{"getUSIndex", mono_image_insert_string}
-};
-
-static const IcallEntry signaturehelper_icalls [] = {
-	{"get_signature_field", mono_reflection_sighelper_get_signature_field},
-	{"get_signature_local", mono_reflection_sighelper_get_signature_local}
-};
-
-static const IcallEntry typebuilder_icalls [] = {
-	{"create_generic_class", mono_reflection_create_generic_class},
-	{"create_internal_class", mono_reflection_create_internal_class},
-	{"create_runtime_class", mono_reflection_create_runtime_class},
-	{"get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter},
-	{"get_event_info", mono_reflection_event_builder_get_event_info},
-	{"setup_generic_class", mono_reflection_setup_generic_class},
-	{"setup_internal_class", mono_reflection_setup_internal_class}
-};
-
-static const IcallEntry enumbuilder_icalls [] = {
-	{"setup_enum_type", ves_icall_EnumBuilder_setup_enum_type}
-};
-
-static const IcallEntry runtimehelpers_icalls [] = {
-	{"GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue},
-	 /* REMOVEME: no longer needed, just so we dont break things when not needed */
-	{"GetOffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData},
-	{"InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray},
-	{"RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor},
-	{"get_OffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData}
-};
-
-static const IcallEntry gchandle_icalls [] = {
-	{"CheckCurrentDomain", GCHandle_CheckCurrentDomain},
-	{"FreeHandle", ves_icall_System_GCHandle_FreeHandle},
-	{"GetAddrOfPinnedObject", ves_icall_System_GCHandle_GetAddrOfPinnedObject},
-	{"GetTarget", ves_icall_System_GCHandle_GetTarget},
-	{"GetTargetHandle", ves_icall_System_GCHandle_GetTargetHandle}
-};
-
-static const IcallEntry marshal_icalls [] = {
-	{"AddRef", ves_icall_System_Runtime_InteropServices_Marshal_AddRef},
-	{"AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem},
-	{"AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal},
-	{"DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure},
-	{"FreeBSTR", ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR},
-	{"FreeCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem},
-	{"FreeHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal},
-	{"GetComSlotForMethodInfoInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal},
-	{"GetDelegateForFunctionPointerInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal},
-	{"GetFunctionPointerForDelegateInternal", mono_delegate_to_ftnptr},
-	{"GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error},
-	{"OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf},
-	{"Prelink", ves_icall_System_Runtime_InteropServices_Marshal_Prelink},
-	{"PrelinkAll", ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll},
-	{"PtrToStringAnsi(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi},
-	{"PtrToStringAnsi(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len},
-	{"PtrToStringBSTR", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR},
-	{"PtrToStringUni(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni},
-	{"PtrToStringUni(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len},
-	{"PtrToStructure(intptr,System.Type)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type},
-	{"PtrToStructure(intptr,object)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure},
-	{"QueryInterface", ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface},
-	{"ReAllocHGlobal", mono_marshal_realloc},
-	{"ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte},
-	{"ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16},
-	{"ReadInt32", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32},
-	{"ReadInt64", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64},
-	{"ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr},
-	{"Release", ves_icall_System_Runtime_InteropServices_Marshal_Release},
-	{"SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf},
-	{"StringToBSTR", ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR},
-	{"StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi},
-	{"StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni},
-	{"StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr},
-	{"UnsafeAddrOfPinnedArrayElement", ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement},
-	{"WriteByte", ves_icall_System_Runtime_InteropServices_Marshal_WriteByte},
-	{"WriteInt16", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16},
-	{"WriteInt32", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32},
-	{"WriteInt64", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64},
-	{"WriteIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr},
-	{"copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged},
-	{"copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged}
-};
-
-static const IcallEntry activationservices_icalls [] = {
-	{"AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance},
-	{"EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation}
-};
-
-static const IcallEntry monomethodmessage_icalls [] = {
-	{"InitMessage", ves_icall_MonoMethodMessage_InitMessage}
-};
-	
-static const IcallEntry realproxy_icalls [] = {
-	{"InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetProxyType},
-	{"InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy}
-};
-
-static const IcallEntry remotingservices_icalls [] = {
-	{"InternalExecute", ves_icall_InternalExecute},
-	{"IsTransparentProxy", ves_icall_IsTransparentProxy}
-};
-
-static const IcallEntry rng_icalls [] = {
-	{"RngClose", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose},
-	{"RngGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes},
-	{"RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize},
-	{"RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen}
-};
-
-static const IcallEntry methodhandle_icalls [] = {
-	{"GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer}
-};
-
-static const IcallEntry string_icalls [] = {
-	{".ctor(char*)", ves_icall_System_String_ctor_charp},
-	{".ctor(char*,int,int)", ves_icall_System_String_ctor_charp_int_int},
-	{".ctor(char,int)", ves_icall_System_String_ctor_char_int},
-	{".ctor(char[])", ves_icall_System_String_ctor_chara},
-	{".ctor(char[],int,int)", ves_icall_System_String_ctor_chara_int_int},
-	{".ctor(sbyte*)", ves_icall_System_String_ctor_RedirectToCreateString},
-	{".ctor(sbyte*,int,int)", ves_icall_System_String_ctor_RedirectToCreateString},
-	{".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_RedirectToCreateString},
-	{"InternalAllocateStr", ves_icall_System_String_InternalAllocateStr},
-	{"InternalCharCopy", ves_icall_System_String_InternalCharCopy},
-	{"InternalCopyTo", ves_icall_System_String_InternalCopyTo},
-	{"InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny},
-	{"InternalInsert", ves_icall_System_String_InternalInsert},
-	{"InternalIntern", ves_icall_System_String_InternalIntern},
-	{"InternalIsInterned", ves_icall_System_String_InternalIsInterned},
-	{"InternalJoin", ves_icall_System_String_InternalJoin},
-	{"InternalLastIndexOfAny", ves_icall_System_String_InternalLastIndexOfAny},
-	{"InternalPad", ves_icall_System_String_InternalPad},
-	{"InternalRemove", ves_icall_System_String_InternalRemove},
-	{"InternalReplace(char,char)", ves_icall_System_String_InternalReplace_Char},
-	{"InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp},
-	{"InternalSplit", ves_icall_System_String_InternalSplit},
-	{"InternalStrcpy(string,int,char[])", ves_icall_System_String_InternalStrcpy_Chars},
-	{"InternalStrcpy(string,int,char[],int,int)", ves_icall_System_String_InternalStrcpy_CharsN},
-	{"InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str},
-	{"InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN},
-	{"InternalTrim", ves_icall_System_String_InternalTrim},
-	{"get_Chars", ves_icall_System_String_get_Chars}
-};
-
-static const IcallEntry encoding_icalls [] = {
-	{"InternalCodePage", ves_icall_System_Text_Encoding_InternalCodePage}
-};
-
-static const IcallEntry monitor_icalls [] = {
-	{"Monitor_exit", ves_icall_System_Threading_Monitor_Monitor_exit},
-	{"Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse},
-	{"Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all},
-	{"Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner},
-	{"Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised},
-	{"Monitor_try_enter", ves_icall_System_Threading_Monitor_Monitor_try_enter},
-	{"Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait}
-};
-
-static const IcallEntry interlocked_icalls [] = {
-	{"Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int},
-	{"Add(long&,long)", ves_icall_System_Threading_Interlocked_Add_Long},
-	{"CompareExchange(T&,T,T)", ves_icall_System_Threading_Interlocked_CompareExchange_T},
-	{"CompareExchange(double&,double,double)", ves_icall_System_Threading_Interlocked_CompareExchange_Double},
-	{"CompareExchange(int&,int,int)", ves_icall_System_Threading_Interlocked_CompareExchange_Int},
-	{"CompareExchange(intptr&,intptr,intptr)", ves_icall_System_Threading_Interlocked_CompareExchange_Object},
-	{"CompareExchange(long&,long,long)", ves_icall_System_Threading_Interlocked_CompareExchange_Long},
-	{"CompareExchange(object&,object,object)", ves_icall_System_Threading_Interlocked_CompareExchange_Object},
-	{"CompareExchange(single&,single,single)", ves_icall_System_Threading_Interlocked_CompareExchange_Single},
-	{"Decrement(int&)", ves_icall_System_Threading_Interlocked_Decrement_Int},
-	{"Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long},
-	{"Exchange(T&,T)", ves_icall_System_Threading_Interlocked_Exchange_T},
-	{"Exchange(double&,double)", ves_icall_System_Threading_Interlocked_Exchange_Double},
-	{"Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int},
-	{"Exchange(intptr&,intptr)", ves_icall_System_Threading_Interlocked_Exchange_Object},
-	{"Exchange(long&,long)", ves_icall_System_Threading_Interlocked_Exchange_Long},
-	{"Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object},
-	{"Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single},
-	{"Increment(int&)", ves_icall_System_Threading_Interlocked_Increment_Int},
-	{"Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long},
-	{"Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long}
-};
-
-static const IcallEntry mutex_icalls [] = {
-	{"CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal},
-	{"OpenMutex_internal(string,System.Security.AccessControl.MutexRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Mutex_OpenMutex_internal},
-	{"ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal}
-};
-
-static const IcallEntry semaphore_icalls [] = {
-	{"CreateSemaphore_internal(int,int,string,bool&)", ves_icall_System_Threading_Semaphore_CreateSemaphore_internal},
-	{"OpenSemaphore_internal(string,System.Security.AccessControl.SemaphoreRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Semaphore_OpenSemaphore_internal},
-	{"ReleaseSemaphore_internal(intptr,int,bool&)", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal}
-};
-
-static const IcallEntry nativeevents_icalls [] = {
-	{"CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal},
-	{"CreateEvent_internal(bool,bool,string,bool&)", ves_icall_System_Threading_Events_CreateEvent_internal},
-	{"OpenEvent_internal(string,System.Security.AccessControl.EventWaitHandleRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Events_OpenEvent_internal},
-	{"ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal},
-	{"SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal}
-};
-
-static const IcallEntry thread_icalls [] = {
-	{"Abort_internal(object)", ves_icall_System_Threading_Thread_Abort},
-	{"ClrState", ves_icall_System_Threading_Thread_ClrState},
-	{"CurrentThread_internal", mono_thread_current},
-	{"FreeLocalSlotValues", mono_thread_free_local_slot_values},
-	{"GetCachedCurrentCulture", ves_icall_System_Threading_Thread_GetCachedCurrentCulture},
-	{"GetCachedCurrentUICulture", ves_icall_System_Threading_Thread_GetCachedCurrentUICulture},
-	{"GetDomainID", ves_icall_System_Threading_Thread_GetDomainID},
-	{"GetName_internal", ves_icall_System_Threading_Thread_GetName_internal},
-	{"GetSerializedCurrentCulture", ves_icall_System_Threading_Thread_GetSerializedCurrentCulture},
-	{"GetSerializedCurrentUICulture", ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture},
-	{"GetState", ves_icall_System_Threading_Thread_GetState},
-	{"Join_internal", ves_icall_System_Threading_Thread_Join_internal},
-	{"MemoryBarrier", ves_icall_System_Threading_Thread_MemoryBarrier},
-	{"ResetAbort_internal()", ves_icall_System_Threading_Thread_ResetAbort},
-	{"Resume_internal()", ves_icall_System_Threading_Thread_Resume},
-	{"SetCachedCurrentCulture", ves_icall_System_Threading_Thread_SetCachedCurrentCulture},
-	{"SetCachedCurrentUICulture", ves_icall_System_Threading_Thread_SetCachedCurrentUICulture},
-	{"SetName_internal", ves_icall_System_Threading_Thread_SetName_internal},
-	{"SetSerializedCurrentCulture", ves_icall_System_Threading_Thread_SetSerializedCurrentCulture},
-	{"SetSerializedCurrentUICulture", ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture},
-	{"SetState", ves_icall_System_Threading_Thread_SetState},
-	{"Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal},
-	{"Suspend_internal", ves_icall_System_Threading_Thread_Suspend},
-	{"Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal},
-	{"Thread_internal", ves_icall_System_Threading_Thread_Thread_internal},
-	{"VolatileRead(byte&)", ves_icall_System_Threading_Thread_VolatileRead1},
-	{"VolatileRead(double&)", ves_icall_System_Threading_Thread_VolatileRead8},
-	{"VolatileRead(int&)", ves_icall_System_Threading_Thread_VolatileRead4},
-	{"VolatileRead(int16&)", ves_icall_System_Threading_Thread_VolatileRead2},
-	{"VolatileRead(intptr&)", ves_icall_System_Threading_Thread_VolatileReadIntPtr},
-	{"VolatileRead(long&)", ves_icall_System_Threading_Thread_VolatileRead8},
-	{"VolatileRead(object&)", ves_icall_System_Threading_Thread_VolatileReadIntPtr},
-	{"VolatileRead(sbyte&)", ves_icall_System_Threading_Thread_VolatileRead1},
-	{"VolatileRead(single&)", ves_icall_System_Threading_Thread_VolatileRead4},
-	{"VolatileRead(uint&)", ves_icall_System_Threading_Thread_VolatileRead2},
-	{"VolatileRead(uint16&)", ves_icall_System_Threading_Thread_VolatileRead2},
-	{"VolatileRead(uintptr&)", ves_icall_System_Threading_Thread_VolatileReadIntPtr},
-	{"VolatileRead(ulong&)", ves_icall_System_Threading_Thread_VolatileRead8},
-	{"VolatileWrite(byte&,byte)", ves_icall_System_Threading_Thread_VolatileWrite1},
-	{"VolatileWrite(double&,double)", ves_icall_System_Threading_Thread_VolatileWrite8},
-	{"VolatileWrite(int&,int)", ves_icall_System_Threading_Thread_VolatileWrite4},
-	{"VolatileWrite(int16&,int16)", ves_icall_System_Threading_Thread_VolatileWrite2},
-	{"VolatileWrite(intptr&,intptr)", ves_icall_System_Threading_Thread_VolatileWriteIntPtr},
-	{"VolatileWrite(long&,long)", ves_icall_System_Threading_Thread_VolatileWrite8},
-	{"VolatileWrite(object&,object)", ves_icall_System_Threading_Thread_VolatileWriteIntPtr},
-	{"VolatileWrite(sbyte&,sbyte)", ves_icall_System_Threading_Thread_VolatileWrite1},
-	{"VolatileWrite(single&,single)", ves_icall_System_Threading_Thread_VolatileWrite4},
-	{"VolatileWrite(uint&,uint)", ves_icall_System_Threading_Thread_VolatileWrite2},
-	{"VolatileWrite(uint16&,uint16)", ves_icall_System_Threading_Thread_VolatileWrite2},
-	{"VolatileWrite(uintptr&,uintptr)", ves_icall_System_Threading_Thread_VolatileWriteIntPtr},
-	{"VolatileWrite(ulong&,ulong)", ves_icall_System_Threading_Thread_VolatileWrite8},
-	{"current_lcid()", ves_icall_System_Threading_Thread_current_lcid}
-};
-
-static const IcallEntry threadpool_icalls [] = {
-	{"GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads},
-	{"GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads},
-	{"GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinThreads},
-	{"SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads}
-};
-
-static const IcallEntry waithandle_icalls [] = {
-	{"WaitAll_internal", ves_icall_System_Threading_WaitHandle_WaitAll_internal},
-	{"WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny_internal},
-	{"WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal}
-};
-
-static const IcallEntry type_icalls [] = {
-	{"Equals", ves_icall_type_Equals},
-	{"GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes},
-	{"GetGenericParameterConstraints_impl", ves_icall_Type_GetGenericParameterConstraints},
-	{"GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition},
-	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
-	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
-	{"GetPacking", ves_icall_Type_GetPacking},
-	{"GetTypeCode", ves_icall_type_GetTypeCodeInternal},
-	{"GetTypeCodeInternal", ves_icall_type_GetTypeCodeInternal},
-	{"IsArrayImpl", ves_icall_Type_IsArrayImpl},
-	{"IsInstanceOfType", ves_icall_type_IsInstanceOfType},
-	{"MakeGenericType", ves_icall_Type_MakeGenericType},
-	{"MakePointerType", ves_icall_Type_MakePointerType},
-	{"get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance},
-	{"get_IsGenericType", ves_icall_Type_get_IsGenericType},
-	{"get_IsGenericTypeDefinition", ves_icall_Type_get_IsGenericTypeDefinition},
-	{"internal_from_handle", ves_icall_type_from_handle},
-	{"internal_from_name", ves_icall_type_from_name},
-	{"make_array_type", ves_icall_Type_make_array_type},
-	{"make_byref_type", ves_icall_Type_make_byref_type},
-	{"type_is_assignable_from", ves_icall_type_is_assignable_from},
-	{"type_is_subtype_of", ves_icall_type_is_subtype_of}
-};
-
-static const IcallEntry typedref_icalls [] = {
-	{"ToObject",	mono_TypedReference_ToObject},
-	{"ToObjectInternal",	mono_TypedReference_ToObjectInternal}
-};
-
-static const IcallEntry valuetype_icalls [] = {
-	{"InternalEquals", ves_icall_System_ValueType_Equals},
-	{"InternalGetHashCode", ves_icall_System_ValueType_InternalGetHashCode}
-};
-
-static const IcallEntry web_icalls [] = {
-	{"GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
-	{"GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir}
-};
-
-static const IcallEntry identity_icalls [] = {
-	{"GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken},
-	{"GetTokenName", ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName},
-	{"GetUserToken", ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken},
-	{"_GetRoles", ves_icall_System_Security_Principal_WindowsIdentity_GetRoles}
-};
-
-static const IcallEntry impersonation_icalls [] = {
-	{"CloseToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken},
-	{"DuplicateToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken},
-	{"RevertToSelf", ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf},
-	{"SetCurrentToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken}
-};
-
-static const IcallEntry principal_icalls [] = {
-	{"IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId},
-	{"IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName}
-};
-
-static const IcallEntry keypair_icalls [] = {
-	{"_CanSecure", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure},
-	{"_IsMachineProtected", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected},
-	{"_IsUserProtected", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected},
-	{"_ProtectMachine", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine},
-	{"_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser}
-};
-
-static const IcallEntry evidence_icalls [] = {
-	{"IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent}
-};
-
-static const IcallEntry securitymanager_icalls [] = {
-	{"GetLinkDemandSecurity", ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity},
-	{"get_CheckExecutionRights", ves_icall_System_Security_SecurityManager_get_CheckExecutionRights},
-	{"get_SecurityEnabled", ves_icall_System_Security_SecurityManager_get_SecurityEnabled},
-	{"set_CheckExecutionRights", ves_icall_System_Security_SecurityManager_set_CheckExecutionRights},
-	{"set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled}
-};
-
-static const IcallEntry comobject_icalls [] = {
-	{"CacheInterface", ves_icall_System_ComObject_CacheInterface},
-	{"CreateRCW", ves_icall_System_ComObject_CreateRCW},
-	{"Finalizer", ves_icall_System_ComObject_Finalizer},
-	{"FindInterface", ves_icall_System_ComObject_FindInterface},
-	{"GetIUnknown", ves_icall_System_ComObject_GetIUnknown},
-	{"SetIUnknown", ves_icall_System_ComObject_SetIUnknown},
-};
-
-/* proto
-static const IcallEntry array_icalls [] = {
-};
-
-*/
-
-/* keep the entries all sorted */
-static const IcallMap icall_entries [] = {
-	{"Mono.Globalization.Unicode.Normalization", normalization_icalls, G_N_ELEMENTS (normalization_icalls)},
-	{"Mono.Runtime", runtime_icalls, G_N_ELEMENTS (runtime_icalls)},
-	{"Mono.Security.Cryptography.KeyPairPersistence", keypair_icalls, G_N_ELEMENTS (keypair_icalls)},
-	{"System.Activator", activator_icalls, G_N_ELEMENTS (activator_icalls)},
-	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
-	{"System.ArgIterator", argiterator_icalls, G_N_ELEMENTS (argiterator_icalls)},
-	{"System.Array", array_icalls, G_N_ELEMENTS (array_icalls)},
-	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},
-	{"System.Char", char_icalls, G_N_ELEMENTS (char_icalls)},
-	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
-	{"System.ConsoleDriver", consoledriver_icalls, G_N_ELEMENTS (consoledriver_icalls)},
-	{"System.Convert", convert_icalls, G_N_ELEMENTS (convert_icalls)},
-	{"System.CurrentSystemTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
-	{"System.DateTime", datetime_icalls, G_N_ELEMENTS (datetime_icalls)},
-#ifndef DISABLE_DECIMAL
-	{"System.Decimal", decimal_icalls, G_N_ELEMENTS (decimal_icalls)},
-#endif	
-	{"System.Delegate", delegate_icalls, G_N_ELEMENTS (delegate_icalls)},
-	{"System.Diagnostics.DefaultTraceListener", tracelist_icalls, G_N_ELEMENTS (tracelist_icalls)},
-	{"System.Diagnostics.FileVersionInfo", fileversion_icalls, G_N_ELEMENTS (fileversion_icalls)},
-	{"System.Diagnostics.Process", process_icalls, G_N_ELEMENTS (process_icalls)},
-	{"System.Double", double_icalls, G_N_ELEMENTS (double_icalls)},
-	{"System.Enum", enum_icalls, G_N_ELEMENTS (enum_icalls)},
-	{"System.Environment", environment_icalls, G_N_ELEMENTS (environment_icalls)},
-	{"System.GC", gc_icalls, G_N_ELEMENTS (gc_icalls)},
-	{"System.Globalization.CompareInfo", compareinfo_icalls, G_N_ELEMENTS (compareinfo_icalls)},
-	{"System.Globalization.CultureInfo", cultureinfo_icalls, G_N_ELEMENTS (cultureinfo_icalls)},
-	{"System.Globalization.RegionInfo", regioninfo_icalls, G_N_ELEMENTS (regioninfo_icalls)},
-	{"System.IO.FAMWatcher", famwatcher_icalls, G_N_ELEMENTS (famwatcher_icalls)},
-	{"System.IO.FileSystemWatcher", filewatcher_icalls, G_N_ELEMENTS (filewatcher_icalls)},
-	{"System.IO.InotifyWatcher", inotifywatcher_icalls, G_N_ELEMENTS (inotifywatcher_icalls)},
-	{"System.IO.MonoIO", monoio_icalls, G_N_ELEMENTS (monoio_icalls)},
-	{"System.IO.Path", path_icalls, G_N_ELEMENTS (path_icalls)},
-	{"System.Math", math_icalls, G_N_ELEMENTS (math_icalls)},
-	{"System.MonoCustomAttrs", customattrs_icalls, G_N_ELEMENTS (customattrs_icalls)},
-	{"System.MonoEnumInfo", enuminfo_icalls, G_N_ELEMENTS (enuminfo_icalls)},
-	{"System.MonoType", monotype_icalls, G_N_ELEMENTS (monotype_icalls)},
-	{"System.Net.Dns", dns_icalls, G_N_ELEMENTS (dns_icalls)},
-	{"System.Net.Sockets.Socket", socket_icalls, G_N_ELEMENTS (socket_icalls)},
-	{"System.Net.Sockets.SocketException", socketex_icalls, G_N_ELEMENTS (socketex_icalls)},
-	{"System.Object", object_icalls, G_N_ELEMENTS (object_icalls)},
-	{"System.Reflection.Assembly", assembly_icalls, G_N_ELEMENTS (assembly_icalls)},
-	{"System.Reflection.AssemblyName", assembly_name_icalls, G_N_ELEMENTS (assembly_name_icalls)},
-	{"System.Reflection.Emit.AssemblyBuilder", assemblybuilder_icalls, G_N_ELEMENTS (assemblybuilder_icalls)},
-	{"System.Reflection.Emit.CustomAttributeBuilder", customattrbuilder_icalls, G_N_ELEMENTS (customattrbuilder_icalls)},
-	{"System.Reflection.Emit.DynamicMethod", dynamicmethod_icalls, G_N_ELEMENTS (dynamicmethod_icalls)},
-	{"System.Reflection.Emit.EnumBuilder", enumbuilder_icalls, G_N_ELEMENTS (enumbuilder_icalls)},
-	{"System.Reflection.Emit.GenericTypeParameterBuilder", generictypeparambuilder_icalls, G_N_ELEMENTS (generictypeparambuilder_icalls)},
-	{"System.Reflection.Emit.MethodBuilder", methodbuilder_icalls, G_N_ELEMENTS (methodbuilder_icalls)},
-	{"System.Reflection.Emit.ModuleBuilder", modulebuilder_icalls, G_N_ELEMENTS (modulebuilder_icalls)},
-	{"System.Reflection.Emit.SignatureHelper", signaturehelper_icalls, G_N_ELEMENTS (signaturehelper_icalls)},
-	{"System.Reflection.Emit.TypeBuilder", typebuilder_icalls, G_N_ELEMENTS (typebuilder_icalls)},
-	{"System.Reflection.FieldInfo", fieldinfo_icalls, G_N_ELEMENTS (fieldinfo_icalls)},
-	{"System.Reflection.MemberInfo", memberinfo_icalls, G_N_ELEMENTS (memberinfo_icalls)},
-	{"System.Reflection.MethodBase", methodbase_icalls, G_N_ELEMENTS (methodbase_icalls)},
-	{"System.Reflection.Module", module_icalls, G_N_ELEMENTS (module_icalls)},
-	{"System.Reflection.MonoCMethod", monocmethod_icalls, G_N_ELEMENTS (monocmethod_icalls)},
-	{"System.Reflection.MonoEventInfo", monoeventinfo_icalls, G_N_ELEMENTS (monoeventinfo_icalls)},
-	{"System.Reflection.MonoField", monofield_icalls, G_N_ELEMENTS (monofield_icalls)},
-	{"System.Reflection.MonoGenericCMethod", monogenericmethod_icalls, G_N_ELEMENTS (monogenericmethod_icalls)},
-	{"System.Reflection.MonoGenericClass", monogenericclass_icalls, G_N_ELEMENTS (monogenericclass_icalls)},
-	{"System.Reflection.MonoGenericMethod", monogenericmethod_icalls, G_N_ELEMENTS (monogenericmethod_icalls)},
-	{"System.Reflection.MonoMethod", monomethod_icalls, G_N_ELEMENTS (monomethod_icalls)},
-	{"System.Reflection.MonoMethodInfo", monomethodinfo_icalls, G_N_ELEMENTS (monomethodinfo_icalls)},
-	{"System.Reflection.MonoPropertyInfo", monopropertyinfo_icalls, G_N_ELEMENTS (monopropertyinfo_icalls)},
-	{"System.Reflection.ParameterInfo", parameterinfo_icalls, G_N_ELEMENTS (parameterinfo_icalls)},
-	{"System.Runtime.CompilerServices.RuntimeHelpers", runtimehelpers_icalls, G_N_ELEMENTS (runtimehelpers_icalls)},
-	{"System.Runtime.InteropServices.GCHandle", gchandle_icalls, G_N_ELEMENTS (gchandle_icalls)},
-	{"System.Runtime.InteropServices.Marshal", marshal_icalls, G_N_ELEMENTS (marshal_icalls)},
-	{"System.Runtime.Remoting.Activation.ActivationServices", activationservices_icalls, G_N_ELEMENTS (activationservices_icalls)},
-	{"System.Runtime.Remoting.Messaging.MonoMethodMessage", monomethodmessage_icalls, G_N_ELEMENTS (monomethodmessage_icalls)},
-	{"System.Runtime.Remoting.Proxies.RealProxy", realproxy_icalls, G_N_ELEMENTS (realproxy_icalls)},
-	{"System.Runtime.Remoting.RemotingServices", remotingservices_icalls, G_N_ELEMENTS (remotingservices_icalls)},
-	{"System.RuntimeMethodHandle", methodhandle_icalls, G_N_ELEMENTS (methodhandle_icalls)},
-	{"System.Security.Cryptography.RNGCryptoServiceProvider", rng_icalls, G_N_ELEMENTS (rng_icalls)},
-	{"System.Security.Policy.Evidence", evidence_icalls, G_N_ELEMENTS (evidence_icalls)},
-	{"System.Security.Principal.WindowsIdentity", identity_icalls, G_N_ELEMENTS (identity_icalls)},
-	{"System.Security.Principal.WindowsImpersonationContext", impersonation_icalls, G_N_ELEMENTS (impersonation_icalls)},
-	{"System.Security.Principal.WindowsPrincipal", principal_icalls, G_N_ELEMENTS (principal_icalls)},
-	{"System.Security.SecurityManager", securitymanager_icalls, G_N_ELEMENTS (securitymanager_icalls)},
-	{"System.String", string_icalls, G_N_ELEMENTS (string_icalls)},
-	{"System.Text.Encoding", encoding_icalls, G_N_ELEMENTS (encoding_icalls)},
-	{"System.Threading.Interlocked", interlocked_icalls, G_N_ELEMENTS (interlocked_icalls)},
-	{"System.Threading.Monitor", monitor_icalls, G_N_ELEMENTS (monitor_icalls)},
-	{"System.Threading.Mutex", mutex_icalls, G_N_ELEMENTS (mutex_icalls)},
-	{"System.Threading.NativeEventCalls", nativeevents_icalls, G_N_ELEMENTS (nativeevents_icalls)},
-	{"System.Threading.Semaphore", semaphore_icalls, G_N_ELEMENTS (semaphore_icalls)},
-	{"System.Threading.Thread", thread_icalls, G_N_ELEMENTS (thread_icalls)},
-	{"System.Threading.ThreadPool", threadpool_icalls, G_N_ELEMENTS (threadpool_icalls)},
-	{"System.Threading.WaitHandle", waithandle_icalls, G_N_ELEMENTS (waithandle_icalls)},
-	{"System.Type", type_icalls, G_N_ELEMENTS (type_icalls)},
-	{"System.TypedReference", typedref_icalls, G_N_ELEMENTS (typedref_icalls)},
-	{"System.ValueType", valuetype_icalls, G_N_ELEMENTS (valuetype_icalls)},
-	{"System.Web.Util.ICalls", web_icalls, G_N_ELEMENTS (web_icalls)},
-	{"System.__ComObject", comobject_icalls, G_N_ELEMENTS (comobject_icalls)}
+	guint16 first_icall;
+} IcallTypeDesc;
+
+static const IcallTypeDesc
+icall_type_descs [] = {
+#include "metadata/icall-def.h"
+	{Icall_last}
+};
+
+#define icall_desc_num_icalls(desc) ((desc) [1].first_icall - (desc) [0].first_icall)
+
+#undef ICALL_TYPE
+#define ICALL_TYPE(id,name,first)
+#undef ICALL
+
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+
+static const struct msgstrtn_t {
+#define ICALL(id,name,func)
+#undef ICALL_TYPE
+#define ICALL_TYPE(id,name,first) char MSGSTRFIELD(__LINE__) [sizeof (name)];
+#include "metadata/icall-def.h"
+#undef ICALL_TYPE
+} icall_type_names_str = {
+#define ICALL_TYPE(id,name,first) (name),
+#include "metadata/icall-def.h"
+#undef ICALL_TYPE
+};
+static const guint16 icall_type_names_idx [] = {
+#define ICALL_TYPE(id,name,first) [Icall_type_ ## id] = offsetof (struct msgstrtn_t, MSGSTRFIELD(__LINE__)),
+#include "metadata/icall-def.h"
+#undef ICALL_TYPE
+};
+#define icall_type_name_get(id) ((const char*)&icall_type_names_str + icall_type_names_idx [(id)])
+
+static const struct msgstr_t {
+#undef ICALL
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) char MSGSTRFIELD(__LINE__) [sizeof (name)];
+#include "metadata/icall-def.h"
+#undef ICALL
+} icall_names_str = {
+#define ICALL(id,name,func) (name),
+#include "metadata/icall-def.h"
+#undef ICALL
+};
+static const guint16 icall_names_idx [] = {
+#define ICALL(id,name,func) [Icall_ ## id] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "metadata/icall-def.h"
+#undef ICALL
+};
+#define icall_name_get(id) ((const char*)&icall_names_str + icall_names_idx [(id)])
+
+#else
+
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,first) name,
+#define ICALL(id,name,func)
+static const char* const
+icall_type_names [] = {
+#include "metadata/icall-def.h"
+	NULL
+};
+
+#define icall_type_name_get(id) (icall_type_names [(id)])
+
+#undef ICALL
+#define ICALL(id,name,func) name,
+static const char* const
+icall_names [] = {
+#include "metadata/icall-def.h"
+	NULL
+};
+#define icall_name_get(id) icall_names [(id)]
+
+#endif /* !HAVE_ARRAY_ELEM_INIT */
+
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) func,
+static const gconstpointer
+icall_functions [] = {
+#include "metadata/icall-def.h"
+	NULL
 };
 
 static GHashTable *icall_hash = NULL;
@@ -7477,22 +6581,24 @@ mono_icall_init (void)
 	/* check that tables are sorted: disable in release */
 	if (TRUE) {
 		int j;
-		const IcallMap *imap;
-		const IcallEntry *ientry;
 		const char *prev_class = NULL;
 		const char *prev_method;
 		
-		for (i = 0; i < G_N_ELEMENTS (icall_entries); ++i) {
-			imap = &icall_entries [i];
+		for (i = 0; i < Icall_type_num; ++i) {
+			const IcallTypeDesc *desc;
+			int num_icalls;
 			prev_method = NULL;
-			if (prev_class && strcmp (prev_class, imap->klass) >= 0)
-				g_print ("class %s should come before class %s\n", imap->klass, prev_class);
-			prev_class = imap->klass;
-			for (j = 0; j < imap->size; ++j) {
-				ientry = &imap->icalls [j];
-				if (prev_method && strcmp (prev_method, ientry->method) >= 0)
-					g_print ("method %s should come before method %s\n", ientry->method, prev_method);
-				prev_method = ientry->method;
+			if (prev_class && strcmp (prev_class, icall_type_name_get (i)) >= 0)
+				g_print ("class %s should come before class %s\n", icall_type_name_get (i), prev_class);
+			prev_class = icall_type_name_get (i);
+			desc = &icall_type_descs [i];
+			num_icalls = icall_desc_num_icalls (desc);
+			/*g_print ("class %s has %d icalls starting at %d\n", prev_class, num_icalls, desc->first_icall);*/
+			for (j = 0; j < num_icalls; ++j) {
+				const char *methodn = icall_name_get (desc->first_icall + j);
+				if (prev_method && strcmp (prev_method, methodn) >= 0)
+					g_print ("method %s should come before method %s\n", methodn, prev_method);
+				prev_method = methodn;
 			}
 		}
 	}
@@ -7518,34 +6624,73 @@ mono_add_internal_call (const char *name, gconstpointer method)
 	mono_loader_unlock ();
 }
 
-static int
-compare_class_imap (const void *key, const void *elem)
-{
-	const IcallMap* imap = (const IcallMap*)elem;
-	return strcmp (key, imap->klass);
-}
-
-static const IcallMap*
-find_class_icalls (const char *name)
-{
-	return (const IcallMap*) bsearch (name, icall_entries, G_N_ELEMENTS (icall_entries), sizeof (IcallMap), compare_class_imap);
-}
-
+#ifdef HAVE_ARRAY_ELEM_INIT
 static int
 compare_method_imap (const void *key, const void *elem)
 {
-	const IcallEntry* ientry = (const IcallEntry*)elem;
-	return strcmp (key, ientry->method);
+	const char* method_name = (const char*)&icall_names_str + (*(guint16*)elem);
+	return strcmp (key, method_name);
 }
 
-static void*
-find_method_icall (const IcallMap *imap, const char *name)
+static gpointer
+find_method_icall (const IcallTypeDesc *imap, const char *name)
 {
-	const IcallEntry *ientry = (const IcallEntry*) bsearch (name, imap->icalls, imap->size, sizeof (IcallEntry), compare_method_imap);
-	if (ientry)
-		return (void*)ientry->func;
-	return NULL;
+	const guint16 *nameslot = bsearch (name, icall_names_idx + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names_idx [0]), compare_method_imap);
+	if (!nameslot)
+		return NULL;
+	return (gpointer)icall_functions [(nameslot - &icall_names_idx [0])];
 }
+
+static int
+compare_class_imap (const void *key, const void *elem)
+{
+	const char* class_name = (const char*)&icall_type_names_str + (*(guint16*)elem);
+	return strcmp (key, class_name);
+}
+
+static const IcallTypeDesc*
+find_class_icalls (const char *name)
+{
+	const guint16 *nameslot = bsearch (name, icall_type_names_idx, Icall_type_num, sizeof (icall_type_names_idx [0]), compare_class_imap);
+	if (!nameslot)
+		return NULL;
+	return &icall_type_descs [nameslot - &icall_type_names_idx [0]];
+}
+
+#else
+static int
+compare_method_imap (const void *key, const void *elem)
+{
+	const char** method_name = (const char**)elem;
+	return strcmp (key, *method_name);
+}
+
+static gpointer
+find_method_icall (const IcallTypeDesc *imap, const char *name)
+{
+	const char **nameslot = bsearch (name, icall_names + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names [0]), compare_method_imap);
+	if (!nameslot)
+		return NULL;
+	return (gpointer)icall_functions [(nameslot - icall_names)];
+}
+
+static int
+compare_class_imap (const void *key, const void *elem)
+{
+	const char** class_name = (const char**)elem;
+	return strcmp (key, *class_name);
+}
+
+static const IcallTypeDesc*
+find_class_icalls (const char *name)
+{
+	const char **nameslot = bsearch (name, icall_type_names, Icall_type_num, sizeof (icall_type_names [0]), compare_class_imap);
+	if (!nameslot)
+		return NULL;
+	return &icall_type_descs [nameslot - icall_type_names];
+}
+
+#endif
 
 /* 
  * we should probably export this as an helper (handle nested types).
@@ -7576,7 +6721,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	char mname [2048];
 	int typelen = 0, mlen, siglen;
 	gpointer res;
-	const IcallMap *imap;
+	const IcallTypeDesc *imap;
 
 	g_assert (method != NULL);
 

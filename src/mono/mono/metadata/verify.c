@@ -56,8 +56,8 @@ mono_free_verify_list (GSList *list)
 		(list) = g_slist_prepend ((list), vinfo);	\
 	} while (0)
 
-static const char* const
-valid_cultures[] = {
+static const char
+valid_cultures[][9] = {
 	"ar-SA", "ar-IQ", "ar-EG", "ar-LY",
 	"ar-DZ", "ar-MA", "ar-TN", "ar-OM",
 	"ar-YE", "ar-SY", "ar-JO", "ar-LB",
@@ -92,8 +92,7 @@ valid_cultures[] = {
 	"Lt-uz-UZ", "Cy-uz-UZ", "tt-TA", "pa-IN",
 	"gu-IN", "ta-IN", "te-IN", "kn-IN",
 	"mr-IN", "sa-IN", "mn-MN", "gl-ES",
-	"kok-IN", "syr-SY", "div-MV",
-	NULL
+	"kok-IN", "syr-SY", "div-MV"
 };
 
 static int
@@ -103,9 +102,11 @@ is_valid_culture (const char *cname)
 	int found;
 			
 	found = *cname == 0;
-	for (i = 0; !found && valid_cultures [i]; ++i) {
-		if (g_strcasecmp (valid_cultures [i], cname))
+	for (i = 0; i < G_N_ELEMENTS (valid_cultures); ++i) {
+		if (g_strcasecmp (valid_cultures [i], cname)) {
 			found = 1;
+			break;
+		}
 	}
 	return found;
 }

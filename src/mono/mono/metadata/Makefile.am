@@ -43,6 +43,7 @@ libmonoruntime_la_SOURCES = \
 	object.c	\
 	object-internals.h	\
 	icall.c		\
+	icall-def.h		\
 	char-conversions.h \
 	decimal.c	\
 	decimal.h	\
