@@ -300,6 +300,7 @@ struct MonoInst {
 		gint32 size; /* in OP_MEMSET and OP_MEMCPY */
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
+		gpointer data;
 	} backend;
 	
 	MonoInst *next;
