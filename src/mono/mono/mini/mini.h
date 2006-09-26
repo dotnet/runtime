@@ -293,7 +293,6 @@ struct MonoInst {
 	/* used by the register allocator */
 	gint32 dreg, sreg1, sreg2;
 	/* used mostly by the backend to store additional info it may need */
-	/* keep this <= 32 bits long */
 	union {
 		gint32 reg3;
 		gint32 arg_info;
