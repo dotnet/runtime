@@ -4060,14 +4060,18 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_stloc (mb, 0);
 
 	/* if prev != null */
-	mono_mb_emit_ldloc (mb, 0);
 	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/* then recurse */
-	mono_mb_emit_ldloc (mb, 0);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
 	mono_mb_emit_managed_call (mb, method, mono_method_signature (method));
