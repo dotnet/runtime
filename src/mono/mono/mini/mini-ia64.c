@@ -1615,12 +1615,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
-		case OP_IA64_FETCHADD4_IMM:
-		case OP_IA64_FETCHADD8_IMM:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8:
 		case OP_ATOMIC_ADD_NEW_I4:
 		case OP_ATOMIC_ADD_NEW_I8:
+		case OP_ATOMIC_ADD_IMM_NEW_I4:
+		case OP_ATOMIC_ADD_IMM_NEW_I8:
 			/* There are no membase instructions on ia64 */
 			if (ins->inst_offset == 0) {
 				break;
@@ -3079,12 +3079,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			ia64_mf (code);
 			break;
-		case OP_IA64_FETCHADD4_IMM:
+		case OP_ATOMIC_ADD_IMM_NEW_I4:
 			g_assert (ins->inst_offset == 0);
 			ia64_fetchadd4_acq_hint (code, ins->dreg, ins->inst_basereg, ins->inst_imm, 0);
 			ia64_adds_imm (code, ins->dreg, ins->inst_imm, ins->dreg);
 			break;
-		case OP_IA64_FETCHADD8_IMM:
+		case OP_ATOMIC_ADD_IMM_NEW_I8:
 			g_assert (ins->inst_offset == 0);
 			ia64_fetchadd8_acq_hint (code, ins->dreg, ins->inst_basereg, ins->inst_imm, 0);
 			ia64_adds_imm (code, ins->dreg, ins->inst_imm, ins->dreg);
@@ -4771,38 +4771,29 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
 
 		if (strcmp (cmethod->name, "Increment") == 0) {
-			MonoInst *ins_iconst;
 			guint32 opcode;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
+				opcode = OP_ATOMIC_ADD_IMM_NEW_I4;
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
+				opcode = OP_ATOMIC_ADD_IMM_NEW_I8;
 			else
 				g_assert_not_reached ();
 			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_imm = 1;
-
+			ins->inst_imm = 1;
 			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
 		} else if (strcmp (cmethod->name, "Decrement") == 0) {
-			MonoInst *ins_iconst;
 			guint32 opcode;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
+				opcode = OP_ATOMIC_ADD_IMM_NEW_I4;
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
+				opcode = OP_ATOMIC_ADD_IMM_NEW_I8;
 			else
 				g_assert_not_reached ();
 			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_imm = -1;
-
+			ins->inst_imm = -1;
 			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
-			/* FIXME: */
 		} else if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
 
