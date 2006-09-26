@@ -136,7 +136,7 @@ stmt: OP_OUTARG_REG (reg) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG_REG (CEE_LDIND_I (base)),
@@ -157,7 +157,7 @@ stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode),
 				  	dreg, base->inst_basereg, base->inst_offset);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG_REG (OP_I8CONST),
@@ -170,7 +170,7 @@ stmt: OP_OUTARG_REG (OP_ICONST) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG_REG (CEE_LDIND_I (OP_REGVAR)),
@@ -185,7 +185,7 @@ stmt: OP_OUTARG_REG (CEE_LDIND_REF (OP_REGVAR)) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG_FREG (freg) {
@@ -196,7 +196,7 @@ stmt: OP_OUTARG_FREG (freg) {
 	tree->dreg = mono_regstate_next_float (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, TRUE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, TRUE);
 }
 
 stmt: OP_OUTARG (reg) {
@@ -222,7 +222,7 @@ stmt: OP_OUTARG_REG (CEE_LDOBJ (OP_REGOFFSET)) {
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
 
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->unused, FALSE);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_SETRET (reg) {
@@ -337,7 +337,7 @@ reg: OP_ATOMIC_ADD_IMM_NEW_I8 (base) {
 # Optimized memset implementation
 stmt: OP_MEMSET (base) "0" {
 	int dest_reg, dest_reg2, val_reg, unit, align;
-	int size = tree->unused;
+	int size = tree->backend.size;
 
 	dest_reg = mono_regstate_next_int (s->rs);
 
@@ -389,7 +389,7 @@ stmt: OP_MEMSET (base) "0" {
 # Optimized memcpy implementation
 stmt: OP_MEMCPY (base, base) "0" {
 	int cur_reg, src_reg, dest_reg, unit;
-	int size = tree->unused;
+	int size = tree->backend.size;
 	int align;
 
 	src_reg = mono_regstate_next_int (s->rs);

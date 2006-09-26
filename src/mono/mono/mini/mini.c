@@ -1562,7 +1562,7 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	inst->inst_vtype = type;
 	inst->klass = mono_class_from_mono_type (type);
 	/* if set to 1 the variable is native */
-	inst->unused = 0;
+	inst->backend.is_pinvoke = 0;
 
 	cfg->varinfo [num] = inst;
 
@@ -2343,7 +2343,7 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 				MONO_ADD_INS (bblock, dummy_store);
 
 			/* we use this to allocate native sized structs */
-			temp->unused = sig->pinvoke;
+			temp->backend.is_pinvoke = sig->pinvoke;
 
 			NEW_TEMPLOADA (cfg, loada, temp->inst_c0);
 			if (call->inst.opcode == OP_VCALL)
@@ -2690,7 +2690,7 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 		inst->inst_left = dest;
 		inst->inst_right = src;
 		inst->cil_code = ip;
-		inst->unused = n;
+		inst->backend.size = n;
 		MONO_ADD_INS (bblock, inst);
 		return;
 	}
@@ -2747,7 +2747,7 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 		if (n <= sizeof (gpointer) * 5) {
 			ins->opcode = OP_MEMSET;
 			ins->inst_imm = 0;
-			ins->unused = n;
+			ins->backend.size = n;
 			MONO_ADD_INS (bblock, ins);
 			break;
 		}
@@ -5164,7 +5164,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					copy->inst_left = sp [0];
 					copy->inst_right = sp [1];
 					copy->cil_code = ip;
-					copy->unused = n;
+					copy->backend.size = n;
 					MONO_ADD_INS (bblock, copy);
 				} else {
 					MonoMethod *memcpy_method = get_memcpy_method ();
@@ -5246,7 +5246,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				copy->inst_left = iargs [0];
 				copy->inst_right = *sp;
 				copy->cil_code = ip;
-				copy->unused = n;
+				copy->backend.size = n;
 				MONO_ADD_INS (bblock, copy);
 			} else {
 				MonoMethod *memcpy_method = get_memcpy_method ();
@@ -5593,7 +5593,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				copy->inst_left = iargs [0];
 				copy->inst_right = *sp;
 				copy->cil_code = ip;
-				copy->unused = n;
+				copy->backend.size = n;
 				MONO_ADD_INS (bblock, copy);
 			} else {
 				MonoMethod *memcpy_method = get_memcpy_method ();
@@ -7180,7 +7180,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					copy->inst_left = sp [0];
 					copy->inst_right = sp [1];
 					copy->cil_code = ip;
-					copy->unused = n;
+					copy->backend.size = n;
 					MONO_ADD_INS (bblock, copy);
 					ip += 2;
 					break;
@@ -7909,9 +7909,9 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		vmv = l->data;
 		inst = m->varinfo [vmv->idx];
 
-		/* inst->unused indicates native sized value types, this is used by the
+		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else {
 			int ialign;

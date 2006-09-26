@@ -985,14 +985,14 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		arg->opcode = OP_OUTARG_REG;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
-		arg->unused = reg;
+		arg->backend.reg3 = reg;
 		call->used_iregs |= 1 << reg;
 		break;
 	case ArgInFloatReg:
 		arg->opcode = OP_OUTARG_FREG;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
-		arg->unused = reg;
+		arg->backend.reg3 = reg;
 		call->used_fregs |= 1 << reg;
 		break;
 	default:

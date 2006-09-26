@@ -1148,19 +1148,19 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		arg->opcode = OP_OUTARG_REG;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
-		arg->unused = reg;
+		arg->backend.reg3 = reg;
 		break;
 	case ArgInFloatSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
-		arg->unused = reg;
+		arg->backend.reg3 = reg;
 		break;
 	case ArgInDoubleSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
-		arg->unused = reg;
+		arg->backend.reg3 = reg;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1355,7 +1355,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				else {
 					arg->opcode = OP_OUTARG_VT;
 					arg->klass = in->klass;
-					arg->unused = sig->pinvoke;
+					arg->backend.is_pinvoke = sig->pinvoke;
 					arg->inst_imm = size;
 				}
 			}
@@ -2855,7 +2855,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else {
 				amd64_fst_membase (code, AMD64_RSP, -8, FALSE, TRUE);
 				/* ins->dreg is set to -1 by the reg allocator */
-				amd64_movss_reg_membase (code, ins->unused, AMD64_RSP, -8);
+				amd64_movss_reg_membase (code, ins->backend.reg3, AMD64_RSP, -8);
 			}
 			break;
 		}
@@ -2867,7 +2867,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else {
 				amd64_fst_membase (code, AMD64_RSP, -8, TRUE, TRUE);
 				/* ins->dreg is set to -1 by the reg allocator */
-				amd64_movsd_reg_membase (code, ins->unused, AMD64_RSP, -8);
+				amd64_movsd_reg_membase (code, ins->backend.reg3, AMD64_RSP, -8);
 			}
 			break;
 		}
@@ -3045,7 +3045,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_pop_reg (code, AMD64_RDI);
 			break;
 		case OP_X86_LEA:
-			amd64_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->unused);
+			amd64_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
 			break;
 		case OP_X86_LEA_MEMBASE:
 			amd64_lea_membase (code, ins->dreg, ins->sreg1, ins->inst_imm);

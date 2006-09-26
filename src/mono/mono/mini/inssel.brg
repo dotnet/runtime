@@ -571,14 +571,14 @@ stmt: CEE_STIND_I (OP_REGVAR, reg) {
 }
 
 stmt: OP_MEMCPY (base, base) {
-	int size = tree->unused;
+	int size = tree->backend.size;
 	if (size > 0)
 		mini_emit_memcpy (s, state->left->tree->inst_basereg, state->left->tree->inst_offset,
 				  state->right->tree->inst_basereg, state->right->tree->inst_offset, size, 0);
 }
 
 stmt: OP_MEMSET (base) {
-	int size = tree->unused;
+	int size = tree->backend.size;
 	if (size > 0)
 		mini_emit_memset (s, state->left->tree->inst_basereg, state->left->tree->inst_offset, size, tree->inst_imm, 0);
 }

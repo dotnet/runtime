@@ -990,7 +990,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					}
 				arg->opcode = OP_OUTARG_VT;
 				arg->klass = in->klass;
-				arg->unused = sig->pinvoke;
+				arg->backend.is_pinvoke = sig->pinvoke;
 				arg->inst_imm = size; 
 			}
 			else {
@@ -2011,14 +2011,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *jump_to_end;
 
 			/* handle shifts below 32 bits */
-			x86_shld_reg (code, ins->unused, ins->sreg1);
+			x86_shld_reg (code, ins->backend.reg3, ins->sreg1);
 			x86_shift_reg (code, X86_SHL, ins->sreg1);
 
 			x86_test_reg_imm (code, X86_ECX, 32);
 			jump_to_end = code; x86_branch8 (code, X86_CC_EQ, 0, TRUE);
 
 			/* handle shift over 32 bit */
-			x86_mov_reg_reg (code, ins->unused, ins->sreg1, 4);
+			x86_mov_reg_reg (code, ins->backend.reg3, ins->sreg1, 4);
 			x86_clear_reg (code, ins->sreg1);
 			
 			x86_patch (jump_to_end, code);
@@ -2028,15 +2028,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *jump_to_end;
 
 			/* handle shifts below 32 bits */
-			x86_shrd_reg (code, ins->sreg1, ins->unused);
-			x86_shift_reg (code, X86_SAR, ins->unused);
+			x86_shrd_reg (code, ins->sreg1, ins->backend.reg3);
+			x86_shift_reg (code, X86_SAR, ins->backend.reg3);
 
 			x86_test_reg_imm (code, X86_ECX, 32);
 			jump_to_end = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
 
 			/* handle shifts over 31 bits */
-			x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
-			x86_shift_reg_imm (code, X86_SAR, ins->unused, 31);
+			x86_mov_reg_reg (code, ins->sreg1, ins->backend.reg3, 4);
+			x86_shift_reg_imm (code, X86_SAR, ins->backend.reg3, 31);
 			
 			x86_patch (jump_to_end, code);
 			}
@@ -2045,47 +2045,47 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *jump_to_end;
 
 			/* handle shifts below 32 bits */
-			x86_shrd_reg (code, ins->sreg1, ins->unused);
-			x86_shift_reg (code, X86_SHR, ins->unused);
+			x86_shrd_reg (code, ins->sreg1, ins->backend.reg3);
+			x86_shift_reg (code, X86_SHR, ins->backend.reg3);
 
 			x86_test_reg_imm (code, X86_ECX, 32);
 			jump_to_end = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
 
 			/* handle shifts over 31 bits */
-			x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
-			x86_clear_reg (code, ins->unused);
+			x86_mov_reg_reg (code, ins->sreg1, ins->backend.reg3, 4);
+			x86_clear_reg (code, ins->backend.reg3);
 			
 			x86_patch (jump_to_end, code);
 			}
 			break;
 		case OP_LSHL_IMM:
 			if (ins->inst_imm >= 32) {
-				x86_mov_reg_reg (code, ins->unused, ins->sreg1, 4);
+				x86_mov_reg_reg (code, ins->backend.reg3, ins->sreg1, 4);
 				x86_clear_reg (code, ins->sreg1);
-				x86_shift_reg_imm (code, X86_SHL, ins->unused, ins->inst_imm - 32);
+				x86_shift_reg_imm (code, X86_SHL, ins->backend.reg3, ins->inst_imm - 32);
 			} else {
-				x86_shld_reg_imm (code, ins->unused, ins->sreg1, ins->inst_imm);
+				x86_shld_reg_imm (code, ins->backend.reg3, ins->sreg1, ins->inst_imm);
 				x86_shift_reg_imm (code, X86_SHL, ins->sreg1, ins->inst_imm);
 			}
 			break;
 		case OP_LSHR_IMM:
 			if (ins->inst_imm >= 32) {
-				x86_mov_reg_reg (code, ins->sreg1, ins->unused,  4);
-				x86_shift_reg_imm (code, X86_SAR, ins->unused, 0x1f);
+				x86_mov_reg_reg (code, ins->sreg1, ins->backend.reg3,  4);
+				x86_shift_reg_imm (code, X86_SAR, ins->backend.reg3, 0x1f);
 				x86_shift_reg_imm (code, X86_SAR, ins->sreg1, ins->inst_imm - 32);
 			} else {
-				x86_shrd_reg_imm (code, ins->sreg1, ins->unused, ins->inst_imm);
-				x86_shift_reg_imm (code, X86_SAR, ins->unused, ins->inst_imm);
+				x86_shrd_reg_imm (code, ins->sreg1, ins->backend.reg3, ins->inst_imm);
+				x86_shift_reg_imm (code, X86_SAR, ins->backend.reg3, ins->inst_imm);
 			}
 			break;
 		case OP_LSHR_UN_IMM:
 			if (ins->inst_imm >= 32) {
-				x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
-				x86_clear_reg (code, ins->unused);
+				x86_mov_reg_reg (code, ins->sreg1, ins->backend.reg3, 4);
+				x86_clear_reg (code, ins->backend.reg3);
 				x86_shift_reg_imm (code, X86_SHR, ins->sreg1, ins->inst_imm - 32);
 			} else {
-				x86_shrd_reg_imm (code, ins->sreg1, ins->unused, ins->inst_imm);
-				x86_shift_reg_imm (code, X86_SHR, ins->unused, ins->inst_imm);
+				x86_shrd_reg_imm (code, ins->sreg1, ins->backend.reg3, ins->inst_imm);
+				x86_shift_reg_imm (code, X86_SHR, ins->backend.reg3, ins->inst_imm);
 			}
 			break;
 		case CEE_NOT:
@@ -2381,7 +2381,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_pop_reg (code, X86_EDI);
 			break;
 		case OP_X86_LEA:
-			x86_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->unused);
+			x86_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
 			break;
 		case OP_X86_LEA_MEMBASE:
 			x86_lea_membase (code, ins->dreg, ins->sreg1, ins->inst_imm);
@@ -2607,7 +2607,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
 			x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
 			x86_pop_reg (code, ins->dreg);
-			x86_pop_reg (code, ins->unused);
+			x86_pop_reg (code, ins->backend.reg3);
 			x86_fldcw_membase (code, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			break;

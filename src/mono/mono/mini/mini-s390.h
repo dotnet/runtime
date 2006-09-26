@@ -49,7 +49,7 @@
 			}							\
 		}								\
                 inst->opcode 	  = OP_S390_MOVE; 				\
-		inst->unused	  = size;					\
+		inst->backend.size	  = size;					\
 	        mono_bblock_add_inst (cfg->cbb, inst); 				\
 	} while (0)
 

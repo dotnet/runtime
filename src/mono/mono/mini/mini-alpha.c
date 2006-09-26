@@ -274,21 +274,21 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg,
       arg->opcode = OP_OUTARG_REG;
       arg->inst_left = tree;
       arg->inst_right = (MonoInst*)call;
-      arg->unused = reg;
+      arg->backend.reg3 = reg;
       call->used_iregs |= 1 << reg;
       break;
     case ArgInFloatReg:
       arg->opcode = OP_OUTARG_FREG;
       arg->inst_left = tree;
       arg->inst_right = (MonoInst*)call;
-      arg->unused = reg;
+      arg->backend.reg3 = reg;
       call->used_fregs |= 1 << reg;
       break;
     case ArgInDoubleReg:
       arg->opcode = OP_OUTARG_FREG;
       arg->inst_left = tree;
       arg->inst_right = (MonoInst*)call;
-      arg->unused = reg;
+      arg->backend.reg3 = reg;
       call->used_fregs |= 1 << reg;
       break;
     default:
@@ -4755,7 +4755,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	     /*
 	       arg->opcode = OP_OUTARG_VT;
 	       arg->klass = in->klass;
-	       arg->unused = sig->pinvoke;
+	       arg->backend.is_pinvoke = sig->pinvoke;
 	       arg->inst_imm = size; */
 	   }
 	 else

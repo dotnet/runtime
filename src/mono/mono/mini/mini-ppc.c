@@ -866,9 +866,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
 			continue;
 
-		/* inst->unused indicates native sized value types, this is used by the
+		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -980,13 +980,13 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->next = call->out_args;
 			call->out_args = arg;
 			if (ainfo->regtype == RegTypeGeneral) {
-				arg->unused = ainfo->reg;
+				arg->backend.reg3 = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
 				if (arg->type == STACK_I8)
 					call->used_iregs |= 1 << (ainfo->reg + 1);
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				/* FIXME: where si the data allocated? */
-				arg->unused = ainfo->reg;
+				arg->backend.reg3 = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int cur_reg;
@@ -995,15 +995,15 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					call->used_iregs |= 1 << (ainfo->reg + cur_reg);
 				}
 				arg->opcode = OP_OUTARG_VT;
-				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
+				arg->backend.arg_info = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
 				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->opcode = OP_OUTARG;
-				arg->unused = ainfo->reg | (ainfo->size << 8);
+				arg->backend.arg_info = ainfo->reg | (ainfo->size << 8);
 				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->opcode = OP_OUTARG_R8;
-				arg->unused = ainfo->reg;
+				arg->backend.reg3 = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
 				if (ainfo->size == 4) {
 					arg->opcode = OP_OUTARG_R8;

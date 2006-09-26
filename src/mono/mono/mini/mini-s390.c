@@ -1701,14 +1701,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					size		   = abs(cinfo->args[iParm].vtsize);
 					offset 		   = S390_ALIGN(offset, sizeof(long));
 					inst->inst_offset  = offset; 
-					inst->unused       = cinfo->args[iParm].offset;
+					inst->backend.arg_info       = cinfo->args[iParm].offset;
 				} else {
 					inst->opcode 	   = OP_S390_ARGREG;
 					inst->inst_basereg = frame_reg;
 					size		   = sizeof(gpointer);
 					offset		   = S390_ALIGN(offset, size);
 					inst->inst_offset  = offset;
-					inst->unused       = cinfo->args[iParm].offset;
+					inst->backend.arg_info       = cinfo->args[iParm].offset;
 				}
 					break;
 				case RegTypeStructByVal :
@@ -1717,7 +1717,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					size		   = cinfo->args[iParm].size;
 					offset		   = S390_ALIGN(offset, size);
 					inst->inst_offset  = offset;
-					inst->unused       = cinfo->args[iParm].offset;
+					inst->backend.arg_info       = cinfo->args[iParm].offset;
 					break;
 				default :
 				if (cinfo->args[iParm].reg != STK_BASE) {
@@ -1736,7 +1736,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 							      : 0);
 					inst->inst_offset  = cinfo->args[iParm].offset + 
 							     size;
-					inst->unused       = 0;
+					inst->backend.arg_info       = 0;
 					size		   = sizeof(long);
 				} 
 			}
@@ -1758,11 +1758,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			continue;
 
 		/*--------------------------------------------------*/
-		/* inst->unused indicates native sized value types, */
+		/* inst->backend.is_pinvoke indicates native sized value types, */
 		/* this is used by the pinvoke wrappers when they   */
 		/* call functions returning structure 		    */
 		/*--------------------------------------------------*/
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
 			size = mono_class_native_size (mono_class_from_mono_type(inst->inst_vtype), &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -1858,7 +1858,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			call->out_args      = (MonoInst *) arg;
 			arg->ins.inst_right = (MonoInst *) call;
 			if (ainfo->regtype == RegTypeGeneral) {
-				arg->ins.unused   = ainfo->reg;
+				arg->ins.backend.reg3   = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
 				if (arg->ins.type == STACK_I8)
 					call->used_iregs |= 1 << (ainfo->reg + 1);
@@ -1898,7 +1898,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->offset       = ainfo->offset;
 				call->used_iregs |= 1 << ainfo->reg;
 			} else if (ainfo->regtype == RegTypeFP) {
-				arg->ins.unused   = ainfo->reg;
+				arg->ins.backend.reg3   = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
 				if (ainfo->size == 4)
 					arg->ins.opcode = OP_OUTARG_R4;
@@ -3947,9 +3947,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_S390_MOVE: {
-			if (ins->unused > 0) {
-				if (ins->unused <= 256) {
-					s390_mvc  (code, ins->unused, ins->dreg, 
+			if (ins->backend.size > 0) {
+				if (ins->backend.size <= 256) {
+					s390_mvc  (code, ins->backend.size, ins->dreg, 
 						   ins->inst_offset, ins->sreg1, ins->inst_imm);
 				} else {
 					s390_lr   (code, s390_r0, ins->dreg);
@@ -4333,7 +4333,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst         = cfg->ret;
-		inst->unused = ainfo->vtsize;
+		inst->backend.size = ainfo->vtsize;
 		s390_st (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
 
@@ -4892,7 +4892,7 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			break;
 		case OP_S390_MOVE:
 			printf ("[0x%lx(%d,%s),0x%lx(%s)]",
-				tree->inst_offset, tree->unused,
+				tree->inst_offset, tree->backend.size,
 				mono_arch_regname(tree->dreg), tree->inst_imm, 
 				mono_arch_regname(tree->sreg1));
 			done = 1;

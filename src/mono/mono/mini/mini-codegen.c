@@ -1364,7 +1364,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			assign_reg (cfg, rs, reg2, val, fp);
 
 			dreg_high = val;
-			ins->unused = val;
+			ins->backend.reg3 = val;
 
 			if (reg_is_freeable (val, fp) && reg2 >= 0 && (reginfo [reg2].born_in >= i)) {
 				DEBUG (printf ("\tfreeable %s (R%d)\n", mono_arch_regname (val), reg2));
