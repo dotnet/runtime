@@ -293,13 +293,13 @@ struct MonoInst {
 	/* used by the register allocator */
 	gint32 dreg, sreg1, sreg2;
 	/* used mostly by the backend to store additional info it may need */
+	/* keep this <= 32 bits long */
 	union {
 		gint32 reg3;
 		gint32 arg_info;
 		gint32 size; /* in OP_MEMSET and OP_MEMCPY */
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
-		gpointer data;
 	} backend;
 	
 	MonoInst *next;
