@@ -4746,6 +4746,20 @@ mono_class_get_type (MonoClass *klass)
 }
 
 /**
+ * mono_class_get_type_token
+ * @klass: the MonoClass to act on
+ *
+ * This method returns type token for the class.
+ *
+ * Returns: the type token for the class.
+ */
+guint32
+mono_class_get_type_token (MonoClass *klass)
+{
+  return klass->type_token;
+}
+
+/**
  * mono_class_get_byref_type:
  * @klass: the MonoClass to act on
  *
@@ -5088,6 +5102,19 @@ guint32
 mono_field_get_flags (MonoClassField *field)
 {
 	return field->type->attrs;
+}
+
+/**
+ * mono_field_get_data;
+ * @field: the MonoClassField to act on
+ *
+ * Returns: pointer to the metadata constant value or to the field
+ * data if it has an RVA flag.
+ */
+const char *
+mono_field_get_data  (MonoClassField *field)
+{
+  return field->data;
 }
 
 /**

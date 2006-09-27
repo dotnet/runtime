@@ -162,6 +162,9 @@ mono_class_get_namespace     (MonoClass *klass);
 MonoType*
 mono_class_get_type          (MonoClass *klass);
 
+guint32
+mono_class_get_type_token    (MonoClass *klass);
+
 MonoType*
 mono_class_get_byref_type    (MonoClass *klass);
 
@@ -207,6 +210,9 @@ mono_field_get_parent (MonoClassField *field);
 
 guint32
 mono_field_get_flags  (MonoClassField *field);
+
+const char *
+mono_field_get_data  (MonoClassField *field);
 
 /* MonoProperty acessors */
 const char*

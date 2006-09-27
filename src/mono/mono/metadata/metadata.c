@@ -4455,6 +4455,13 @@ mono_type_get_array_type (MonoType *type)
 	return type->data.array;
 }
 
+/* For MONO_TYPE_PTR */
+MonoType*
+mono_type_get_ptr_type (MonoType *type)
+{
+	return type->data.type;
+}
+
 MonoClass*
 mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 {

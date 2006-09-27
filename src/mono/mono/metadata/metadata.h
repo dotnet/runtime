@@ -380,6 +380,10 @@ mono_type_get_class      (MonoType *type);
 MonoArrayType*
 mono_type_get_array_type (MonoType *type);
 
+/* For MONO_TYPE_PTR */
+MonoType*
+mono_type_get_ptr_type (MonoType *type);
+
 MonoClass*
 mono_type_get_modifiers  (MonoType *type, gboolean *is_required, gpointer *iter);
 
