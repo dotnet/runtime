@@ -4076,12 +4076,6 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
  * Obtains a MonoClass with a given namespace and a given name which
  * is located in the given MonoImage.   The namespace and name
  * lookups are case insensitive.
- *
- * You can also pass @NULL to the image, and that will lookup for
- * a type with the given namespace and name in all of the loaded
- * assemblies: notice that since there might be a name clash in this
- * case, passing @NULL is not encouraged if you need a precise type.
- *
  */
 MonoClass *
 mono_class_from_name_case (MonoImage *image, const char* name_space, const char *name)
@@ -4171,12 +4165,6 @@ return_nested_in (MonoClass *class, char *nested) {
  *
  * Obtains a MonoClass with a given namespace and a given name which
  * is located in the given MonoImage.   
- *
- * You can also pass `NULL' to the image, and that will lookup for
- * a type with the given namespace and name in all of the loaded
- * assemblies: notice that since there might be a name clash in this
- * case, passing NULL is not encouraged if you need a precise type.
- *
  */
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
