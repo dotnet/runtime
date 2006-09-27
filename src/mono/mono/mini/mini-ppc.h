@@ -50,6 +50,31 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_BIGMUL_INTRINS 1
+//#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
+
+/* Parameters used by the register allocator */
+#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
+
+#define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r12))
+#define MONO_ARCH_CALLEE_SAVED_REGS (0xfffff << ppc_r13) /* ppc_13 - ppc_31 */
+
+#ifdef __APPLE__
+#define MONO_ARCH_CALLEE_FREGS (0x1fff << ppc_f1)
+#else
+#define MONO_ARCH_CALLEE_FREGS (0xff << ppc_f1)
+#endif
+#define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FREGS | 1))
+
+#define MONO_ARCH_USE_FPSTACK FALSE
+#define MONO_ARCH_FPSTACK_SIZE 0
+
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ppc_r4:\
+					((desc) == 'g'? ppc_f1:-1))
+#define MONO_ARCH_INST_SREG2_MASK(ins) (0)
+
+#define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l')
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? ppc_r3 : -1)
+#define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 
 /* deal with some of the ABI differences here */
 #ifdef __APPLE__
@@ -128,5 +153,12 @@ typedef struct {
 #define mono_find_jit_info mono_arch_find_jit_info
 #define CUSTOM_STACK_WALK 1
 #define CUSTOM_EXCEPTION_HANDLING 1
+
+typedef struct {
+	gint8 reg;
+	gint8 size;
+	int vtsize;
+	int offset;
+} MonoPPCArgInfo;
 
 #endif /* __MONO_MINI_PPC_H__ */  

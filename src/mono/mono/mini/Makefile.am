@@ -128,6 +128,7 @@ ppc_sources = \
 	mini-ppc.c		\
 	mini-ppc.h		\
 	exceptions-ppc.c	\
+	mini-codegen.c		\
 	tramp-ppc.c
 
 arm_sources = \

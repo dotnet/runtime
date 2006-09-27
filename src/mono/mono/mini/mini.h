@@ -281,6 +281,7 @@ struct MonoInst {
 			MonoType *vtype;
 			MonoClass *klass;
 			int *phi_args;
+			MonoCallInst *call_inst;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -380,6 +381,7 @@ enum {
 #define inst_destbasereg dreg
 #define inst_offset data.op[0].const_val
 #define inst_imm    data.op[1].const_val
+#define inst_call   data.op[1].call_inst
 
 #define inst_phi_args   data.op[1].phi_args
 

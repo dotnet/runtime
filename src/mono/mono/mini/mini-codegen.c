@@ -45,6 +45,9 @@ static const char*const * ins_spec = s390_cpu_desc;
 #elif defined(__alpha__)
 const char * const alpha_desc [OP_LAST];
 static const char*const * ins_spec = alpha_desc;
+#elif defined(__ppc__) || defined(__powerpc__)
+const char * const ppcg4 [OP_LAST];
+static const char*const * ins_spec = ppcg4;
 #else
 #error "Not implemented"
 #endif

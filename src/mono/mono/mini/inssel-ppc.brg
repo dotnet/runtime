@@ -149,89 +149,89 @@ stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG_MEMBASE (reg) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, ai->offset, state->left->reg1);
+}
+
+stmt: OP_OUTARG_MEMBASE (OP_REGVAR) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, ai->offset, state->left->tree->dreg);
+}
+
+stmt: OP_OUTARG_MEMBASE (lreg) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, ai->offset, state->left->reg2);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, ai->offset + 4, state->left->reg1);
+}
+
+stmt: OP_OUTARG_MEMBASE (OP_ICONST) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, ppc_r1, ai->offset, state->left->tree->inst_c0);
+}
+
+stmt: OP_OUTARG_MEMBASE (CEE_LDIND_REF (OP_REGVAR)) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, ai->offset, state->left->left->tree->dreg);
+}
+
+stmt: OP_OUTARG_MEMBASE (freg) {
+	MonoPPCArgInfo *ai = tree->backend.data;
+	int opcode = ai->size  == 4? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
+	MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, ppc_r1, ai->offset, state->left->reg1);
+}
+
 stmt: OP_OUTARG (reg) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
-		return;
-	}
+	MonoCallInst *call = tree->inst_call;
+
 	tree->opcode = OP_SETREG;
-	tree->dreg = tree->backend.reg3;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG (OP_REGVAR) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->tree->dreg);
-		return;
-	}
+	MonoCallInst *call = tree->inst_call;
+
 	tree->opcode = OP_SETREG;
-	tree->dreg = tree->backend.reg3;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 stmt: OP_OUTARG (lreg) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg2);
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm + 4, state->left->reg1);
-		return;
-	}
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->backend.reg3, state->left->reg2);
+	MonoCallInst *call = tree->inst_call;
+	int tdreg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
+	mono_call_inst_add_outarg_reg (s, call, tdreg, tree->backend.reg3, FALSE);
 	tree->opcode = OP_SETREG;
-	tree->dreg = tree->backend.reg3 + 1;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3 + 1, FALSE);
 }
 
 stmt: OP_OUTARG (OP_ICONST) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, ppc_r1, tree->inst_imm, state->left->tree->inst_c0);
-		return;
-	}
+	MonoCallInst *call = tree->inst_call;
+
 	tree->opcode = OP_SETREGIMM;
-	tree->dreg = tree->backend.reg3;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
-#stmt: OP_OUTARG (CEE_LDIND_I4 (base)) {
-#	tree->opcode = OP_X86_PUSH_MEMBASE;
-#	tree->inst_basereg = state->left->left->tree->inst_basereg;
-#	tree->inst_offset = state->left->left->tree->inst_offset;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (CEE_LDIND_U4 (base)) {
-#	tree->opcode = OP_X86_PUSH_MEMBASE;
-#	tree->inst_basereg = state->left->left->tree->inst_basereg;
-#	tree->inst_offset = state->left->left->tree->inst_offset;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (CEE_LDIND_I (base)) {
-#	tree->opcode = OP_X86_PUSH_MEMBASE;
-#	tree->inst_basereg = state->left->left->tree->inst_basereg;
-#	tree->inst_offset = state->left->left->tree->inst_offset;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
-#stmt: OP_OUTARG (CEE_LDIND_REF (base)) {
-#	tree->opcode = OP_X86_PUSH_MEMBASE;
-#	tree->inst_basereg = state->left->left->tree->inst_basereg;
-#	tree->inst_offset = state->left->left->tree->inst_offset;
-#	mono_bblock_add_inst (s->cbb, tree);
-#}
-
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->left->tree->dreg);
-		return;
-	}
+	MonoCallInst *call = tree->inst_call;
+
 	tree->opcode = OP_SETREG;
+	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->left->tree->dreg;
-	tree->dreg = tree->backend.reg3;
 	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
 
 #stmt: OP_OUTARG (CEE_LDOBJ (reg)) {
@@ -240,56 +240,39 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 #	mono_bblock_add_inst (s->cbb, tree);
 #}
 
+stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
-	if (tree->inst_imm) {
-		int opcode = (tree->backend.arg_info & 0xff00) == 0x0400? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
-		MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, ppc_r1, tree->inst_imm, state->left->reg1);
-		return;
-	}
-	tree->opcode = OP_SETFREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->backend.arg_info & 0xff;
-	mono_bblock_add_inst (s->cbb, tree);
-}
+	MonoCallInst *call = tree->inst_call;
 
-stmt: OP_OUTARG_R4 (freg) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
-		return;
-	}
 	tree->opcode = OP_SETFREG;
+	tree->dreg = mono_regstate_next_float (s->rs);
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->backend.reg3;
 	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG_R8 (freg) {
-	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
-		return;
-	}
-	tree->opcode = OP_SETFREG;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->backend.reg3;
-	mono_bblock_add_inst (s->cbb, tree);
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, TRUE);
 }
 
 stmt: OP_OUTARG_R8 (CEE_LDOBJ (base)) {
 	/* small struct with fp value goes in a fp register */
 	MonoInst *vt = state->left->left->tree;
-	int tmpr, soffset;
+	int tmpr, soffset, dreg;
+	MonoCallInst *call = tree->inst_call;
+
 	soffset = vt->inst_offset;
 	tmpr = mono_regstate_next_float (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR4_MEMBASE, tmpr, vt->inst_basereg, soffset);
-	MONO_EMIT_NEW_UNALU (s, OP_SETFREG, tree->backend.reg3, tmpr);
+	dreg = mono_regstate_next_float (s->rs);
+	MONO_EMIT_NEW_UNALU (s, OP_SETFREG, dreg, tmpr);
+	mono_call_inst_add_outarg_reg (s, call, dreg, tree->backend.reg3, TRUE);
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
+	MonoCallInst *call = tree->inst_call;
+	MonoPPCArgInfo *ai = tree->backend.data;
 	MonoInst *vt = state->left->left->tree;
-	int start_reg = tree->backend.arg_info & 0xff;
-	int nregs = (tree->backend.arg_info >> 8) & 0xff;
-	int ovf_size = (tree->backend.arg_info >> 16) & 0xffff;
-	int i, tmpr, soffset;
+	int start_reg = ai->reg;
+	int nregs = ai->size;
+	int ovf_size = ai->vtsize;
+	int i, tmpr, soffset, dreg;
 	int size = 0;
 	soffset = vt->inst_offset;
 /*
@@ -304,42 +287,52 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, tmpr, vt->inst_basereg, soffset);
 		else
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI2_MEMBASE, tmpr, vt->inst_basereg, soffset);
-		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg, tmpr);
+		dreg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, tmpr);
+		mono_call_inst_add_outarg_reg (s, call, dreg, start_reg, FALSE);
 	} else
 #endif
 	for (i = 0; i < nregs; ++i) {
 		tmpr = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, soffset);
-		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+		dreg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, tmpr);
+		mono_call_inst_add_outarg_reg (s, call, dreg, start_reg + i, FALSE);
 		soffset += sizeof (gpointer);
 	}
-	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
+	//g_print ("vt size: %d at R%d + %d\n", ai->offset, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0) {
-		mini_emit_memcpy (s, ppc_r1, tree->inst_imm + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
+		mini_emit_memcpy (s, ppc_r1, ai->offset + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
 	}
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
-	int start_reg = tree->backend.arg_info & 0xff;
-	int nregs = (tree->backend.arg_info >> 8) & 0xff;
+	MonoCallInst *call = tree->inst_call;
+	MonoPPCArgInfo *ai = tree->backend.data;
+	int start_reg = ai->reg;
+	int nregs = ai->size;
 	if (nregs) {
 		tree->opcode = OP_SETREGIMM;
-		tree->dreg = start_reg;
+		tree->dreg = mono_regstate_next_int (s->rs);
 		tree->inst_c0 = state->left->tree->inst_c0;
 		mono_bblock_add_inst (s->cbb, tree);
+		mono_call_inst_add_outarg_reg (s, call, tree->dreg, start_reg, FALSE);
 	} else {
 		g_assert_not_reached ();
 	}
 }
 
 stmt: OP_OUTARG_VT (reg) {
-	int start_reg = tree->backend.arg_info & 0xff;
-	int nregs = (tree->backend.arg_info >> 8) & 0xff;
+	MonoCallInst *call = tree->inst_call;
+	MonoPPCArgInfo *ai = tree->backend.data;
+	int start_reg = ai->reg;
+	int nregs = ai->size;
 	if (nregs) {
 		tree->opcode = OP_SETREG;
-		tree->dreg = start_reg;
+		tree->dreg = mono_regstate_next_int (s->rs);
 		tree->sreg1 = state->left->reg1;
 		mono_bblock_add_inst (s->cbb, tree);
+		mono_call_inst_add_outarg_reg (s, call, tree->dreg, start_reg, FALSE);
 	} else {
 		g_assert_not_reached ();
 	}

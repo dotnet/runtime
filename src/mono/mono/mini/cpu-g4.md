@@ -305,9 +305,9 @@ checkthis: src1:b len:4
 voidcall: len:16 clob:c
 voidcall_reg: src1:i len:8 clob:c
 voidcall_membase: src1:b len:12 clob:c
-fcall: dest:f len:16 clob:c
-fcall_reg: dest:f src1:i len:8 clob:c
-fcall_membase: dest:f src1:b len:12 clob:c
+fcall: dest:g len:16 clob:c
+fcall_reg: dest:g src1:i len:8 clob:c
+fcall_membase: dest:g src1:b len:12 clob:c
 lcall: dest:l len:16 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c
@@ -325,34 +325,43 @@ regvar:
 reg:
 regoffset:
 label:
-store_membase_imm: dest:b len:20
-store_membase_reg: dest:b src1:i len:12
-storei1_membase_imm: dest:b len:20
-storei1_membase_reg: dest:b src1:i len:12
-storei2_membase_imm: dest:b len:20
-storei2_membase_reg: dest:b src1:i len:12
-storei4_membase_imm: dest:b len:20
-storei4_membase_reg: dest:b src1:i len:12
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
-storer4_membase_reg: dest:b src1:f len:16
-storer8_membase_reg: dest:b src1:f len:12
-load_membase: dest:i src1:b len:12
-loadi1_membase: dest:i src1:b len:12
-loadu1_membase: dest:i src1:b len:12
-loadi2_membase: dest:i src1:b len:12
-loadu2_membase: dest:i src1:b len:12
-loadi4_membase: dest:i src1:b len:12
-loadu4_membase: dest:i src1:b len:12
-loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:12
-loadr8_membase: dest:f src1:b len:12
+store_membase_imm:
+store_membase_reg: dest:b src1:i len:4
+storei1_membase_imm:
+storei1_membase_reg: dest:b src1:i len:4
+storei2_membase_imm:
+storei2_membase_reg: dest:b src1:i len:4
+storei4_membase_imm:
+storei4_membase_reg: dest:b src1:i len:4
+storei8_membase_imm:
+storei8_membase_reg:
+storer4_membase_reg: dest:b src1:f len:8
+storer8_membase_reg: dest:b src1:f len:4
+load_membase: dest:i src1:b len:4
+loadi1_membase: dest:i src1:b len:8
+loadu1_membase: dest:i src1:b len:4
+loadi2_membase: dest:i src1:b len:4
+loadu2_membase: dest:i src1:b len:4
+loadi4_membase: dest:i src1:b len:4
+loadu4_membase: dest:i src1:b len:4
+loadi8_membase:
+loadr4_membase: dest:f src1:b len:4
+loadr8_membase: dest:f src1:b len:4
+load_memindex: dest:i src1:b src2:i len:4
+loadi1_memindex: dest:i src1:b src2:i len:8
+loadu1_memindex: dest:i src1:b src2:i len:4
+loadi2_memindex: dest:i src1:b src2:i len:4
+loadu2_memindex: dest:i src1:b src2:i len:4
+loadi4_memindex: dest:i src1:b src2:i len:4
+loadu4_memindex: dest:i src1:b src2:i len:4
+loadr4_memindex: dest:f src1:b src2:i len:4
+loadr8_memindex: dest:f src1:b src2:i len:4
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:4
-add_imm: dest:i src1:i len:12
-sub_imm: dest:i src1:i len:12
-mul_imm: dest:i src1:i len:12
+add_imm: dest:i src1:i len:4
+sub_imm: dest:i src1:i len:4
+mul_imm: dest:i src1:i len:4
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
@@ -360,12 +369,12 @@ div_imm: dest:i src1:i src2:i len:20
 div_un_imm: dest:i src1:i src2:i len:12
 rem_imm: dest:i src1:i src2:i len:28
 rem_un_imm: dest:i src1:i src2:i len:16
-and_imm: dest:i src1:i len:12
-or_imm: dest:i src1:i len:12
-xor_imm: dest:i src1:i len:12
-shl_imm: dest:i src1:i len:8
-shr_imm: dest:i src1:i len:8
-shr_un_imm: dest:i src1:i len:8
+and_imm: dest:i src1:i len:4
+or_imm: dest:i src1:i len:4
+xor_imm: dest:i src1:i len:4
+shl_imm: dest:i src1:i len:4
+shr_imm: dest:i src1:i len:4
+shr_un_imm: dest:i src1:i len:4
 cond_exc_eq: len:8
 cond_exc_ne_un: len:8
 cond_exc_lt: len:8
@@ -523,14 +532,14 @@ sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
-adc_imm: dest:i src1:i len:12
-addcc_imm: dest:i src1:i len:12
-subcc_imm: dest:i src1:i len:12
+adc_imm:
+addcc_imm: dest:i src1:i len:4
+subcc_imm:
 sbb: dest:i src1:i src2:i len:4
-sbb_imm: dest:i src1:i len:12
+sbb_imm:
 br_reg: src1:i len:8
 ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4
-op_bigmul: len:8 dest:l src1:i src2:i
-op_bigmul_un: len:8 dest:l src1:i src2:i
+op_bigmul: len:12 dest:l src1:i src2:i
+op_bigmul_un: len:12 dest:l src1:i src2:i
 tls_get: len:8 dest:i
