@@ -9317,7 +9317,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 	mono_loader_lock ();
 
 	if (klass->marshal_info) {
-		mono_marshal_unlock ();
+		mono_loader_unlock ();
 		return klass->marshal_info;
 	}
 
