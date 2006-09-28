@@ -292,20 +292,6 @@
 		} \
 	} while (0)
 
-/* we need to kludge state because monoburg puts this stuff before the definition of MBState */
-void mini_emit_virtual_call (MonoCompile *s, void *state, MonoInst *tree, int novirt_op, int virtop);
-void mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target);
-void mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target);
-void mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target);
-void mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass);
-void mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass);
-void mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass);
-
-void mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soffset, int size, int align);
-void mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, int align);
-int ldind_to_load_membase (int opcode);
-void mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons);
-
 %%
 
 %termprefix OP_ CEE_
@@ -1587,6 +1573,8 @@ stmt: CEE_MKREFANY (OP_GROUP (reg, OP_I8CONST), reg) {
 
 %%
 
+static void mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons);
+
 /* 
  * Emit code which checks whenever the interface id of @klass is smaller than
  * than the value given by max_iid_reg.
@@ -1667,7 +1655,7 @@ mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, Mono
 	}
 }
 
-void 
+static void 
 mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
 {
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
@@ -1718,7 +1706,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	mono_bblock_add_inst (cfg->cbb, tree);
 }
 
-void 
+static void
 mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int idepth_reg = mono_regstate_next_int (s->rs);
@@ -1742,7 +1730,7 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, true_target);
 }
 
-void 
+static void
 mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int intf_reg = mono_regstate_next_int (s->rs);
@@ -1758,7 +1746,7 @@ mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, 
  * Variant of the above that takes a register to the class, not the vtable.
  * Note that inside interfaces_offsets the empty value is -1, not NULL, in this case.
  */
-void 
+static void
 mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int intf_reg = mono_regstate_next_int (s->rs);
@@ -1770,7 +1758,7 @@ mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *kl
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BGE, true_target);
 }
 
-void 
+static void
 mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
 	int idepth_reg = mono_regstate_next_int (s->rs);
@@ -1794,7 +1782,7 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 }
 
-void 
+static void
 mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 {
 	int intf_reg = mono_regstate_next_int (s->rs);
@@ -1809,7 +1797,7 @@ mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
  * Variant of the aboce that takes a register to the class, not the vtable.
  * Note that inside interfaces_offsets the empty value is -1, not NULL, in this case.
  */
-void 
+static void
 mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
 	int intf_reg = mono_regstate_next_int (s->rs);
@@ -1820,7 +1808,7 @@ mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass
 	MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
 }
 
-void 
+static void
 mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	int cur_reg;
@@ -1865,7 +1853,7 @@ mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soff
 	}
 }
 
-void 
+static void
 mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, int align)
 {
 	int val_reg = mono_regstate_next_int (s->rs);
@@ -1909,7 +1897,7 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 }
 
 /* This is similar to NEW_AOTCONST in mini.c, but generates linear IL */
-void
+static void
 mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons)
 {
 	MonoInst *dest, *pinfo;
@@ -1943,7 +1931,7 @@ mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpo
 	mono_bblock_add_inst (cfg->cbb, dest);
 }
 
-int
+static int
 ldind_to_load_membase (int opcode)
 {
 	switch (opcode) {

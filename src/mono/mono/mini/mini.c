@@ -9415,7 +9415,6 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 	MBState *kids [10];
 	int ern = mono_burg_rule (state, goal);
 	const guint16 *nts = mono_burg_nts_data + mono_burg_nts [ern];
-	MBEmitFunc emit;
 
 	//g_print ("rule: %s\n", mono_burg_rule_string [ern]);
 	switch (goal) {
@@ -9467,8 +9466,7 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 	}
 
 //	g_print ("emit: %s (%p)\n", mono_burg_rule_string [ern], state);
-	if ((emit = mono_burg_func [ern]))
-		emit (state, state->tree, cfg);	
+	mono_burg_emit (ern, state, state->tree, cfg);
 }
 
 #define DEBUG_SELECTION
