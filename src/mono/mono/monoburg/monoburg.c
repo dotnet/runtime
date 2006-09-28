@@ -703,48 +703,48 @@ static void
 emit_emitter_func ()
 {
 	GList *l;
-	int i, rulen;
+	int i;
 	GHashTable *cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	for (l =  rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
 		
 		if (rule->code) {
-			if ((rulen = GPOINTER_TO_INT (g_hash_table_lookup (cache, rule->code)))) {
-				emit_rule_string (rule, "");
-				output ("#define mono_burg_emit_%d mono_burg_emit_%d\n\n", i, rulen);
-				i++;
-				continue;
+			GList *cases;
+			if ((cases = g_hash_table_lookup (cache, rule->code))) {
+				cases = g_list_append (cases, GINT_TO_POINTER (i));
+			} else {
+				cases = g_list_append (NULL, GINT_TO_POINTER (i));
 			}
-			output ("static void ");
-
-			emit_rule_string (rule, "");
-
-			if (dag_mode)
-				output ("mono_burg_emit_%d (MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
-			else
-				output ("mono_burg_emit_%d (MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n", i);
-			output ("{\n");
-			output ("%s\n", rule->code);
-			output ("}\n\n");
-			g_hash_table_insert (cache, rule->code, GINT_TO_POINTER (i));
+			g_hash_table_insert (cache, rule->code, cases);
 		}
 		i++;
 	}
 
-	g_hash_table_destroy (cache);
-
-	output ("MBEmitFunc const mono_burg_func [] = {\n");
-	output ("\tNULL,\n");
+	output ("void mono_burg_emit (int ern, MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s)\n {\n");
+	output ("\tswitch (ern) {");
 	for (l =  rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
-		if (rule->code)
-			output ("\tmono_burg_emit_%d,\n", i);
-		else
-			output ("\tNULL,\n");
+
+		if (rule->code) {
+			GList *cases, *tmp;
+			cases = g_hash_table_lookup (cache, rule->code);
+			if (cases && i != GPOINTER_TO_INT (cases->data)) {
+				i++;
+				continue;
+			}
+			emit_rule_string (rule, "");
+			for (tmp = cases; tmp; tmp = tmp->next) {
+				output ("\tcase %d:\n", GPOINTER_TO_INT (tmp->data) + 1);
+			}
+			output ("\t{\n");
+			output ("%s\n", rule->code);
+			output ("\t}\n\treturn;\n");
+		}
 		i++;
 	}
-	output ("};\n\n");
+	output ("\t}\n}\n\n");
+	g_hash_table_destroy (cache);
 }
 
 static void
@@ -840,6 +840,7 @@ emit_vardefs ()
 	int *nts_offsets;
 	int current_offset;
 
+	output ("\n");
 	if (predefined_terms) {
 		output ("#if HAVE_ARRAY_ELEM_INIT\n");
 		output ("const guint8 mono_burg_arity [MBMAX_OPCODES] = {\n"); 
@@ -940,18 +941,13 @@ emit_vardefs ()
 static void
 emit_prototypes ()
 {
-	if (dag_mode)
-		output ("typedef void (*MBEmitFunc) (MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
-	else
-		output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
-	
 	output ("extern const char * const mono_burg_term_string [];\n");
 	output ("#if MONOBURG_LOG\n");
 	output ("extern const char * const mono_burg_rule_string [];\n");
 	output ("#endif /* MONOBURG_LOG */\n");
 	output ("extern const guint16 mono_burg_nts_data [];\n");
 	output ("extern const guint8 mono_burg_nts [];\n");
-	output ("extern MBEmitFunc const mono_burg_func [];\n");
+	output ("extern void mono_burg_emit (int ern, MBState *state, MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
 
 	output ("MBState *mono_burg_label (MBTREE_TYPE *tree, MBCOST_DATA *data);\n");
 	output ("int mono_burg_rule (MBState *state, int goal);\n");
@@ -1125,16 +1121,6 @@ main (int argc, char *argv [])
 		output ("#include \"%s\"\n\n", deffile);
 	}
 	
-	emit_vardefs ();
-	emit_cost_func ();
-	emit_emitter_func ();
-	emit_decoders ();
-
-	emit_closure ();
-	emit_label_func ();
-
-	emit_kids ();
-
 	if (infiles) {
 		GList *l = infiles;
 		while (l) {
@@ -1146,6 +1132,16 @@ main (int argc, char *argv [])
 	} else {
 		yyparsetail ();
 	}
+
+	emit_vardefs ();
+	emit_cost_func ();
+	emit_emitter_func ();
+	emit_decoders ();
+
+	emit_closure ();
+	emit_label_func ();
+
+	emit_kids ();
 
 	if (cfile)
 		fclose (cfd);
