@@ -37,10 +37,6 @@
 		} \
 	} while (0)
 
-int call_reg_to_call_membase (int opcode);
-int alu_reg_to_alu_imm (int op);
-int alu_reg_to_alu_membase_imm (int op);
-
 %%
 
 #
@@ -809,7 +805,7 @@ reg: OP_STR_CHAR_ADDR (reg, reg) "2" {
 
 %%
 
-int
+static int
 alu_reg_to_alu_imm (int op)
 {
 	switch (op) {
@@ -829,7 +825,7 @@ alu_reg_to_alu_imm (int op)
 	return -1;
 }
 
-int
+static int
 alu_reg_to_alu_membase_imm (int op)
 {
 	switch (op) {
@@ -849,7 +845,7 @@ alu_reg_to_alu_membase_imm (int op)
 	return -1;
 }
 
-int
+static int
 call_reg_to_call_membase (int opcode)
 {
 	switch (opcode) {
