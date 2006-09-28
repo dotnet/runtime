@@ -1147,19 +1147,19 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 	case ArgInIReg:
 		arg->opcode = OP_OUTARG_REG;
 		arg->inst_left = tree;
-		arg->inst_right = (MonoInst*)call;
+		arg->inst_call = call;
 		arg->backend.reg3 = reg;
 		break;
 	case ArgInFloatSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
 		arg->inst_left = tree;
-		arg->inst_right = (MonoInst*)call;
+		arg->inst_call = call;
 		arg->backend.reg3 = reg;
 		break;
 	case ArgInDoubleSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
 		arg->inst_left = tree;
-		arg->inst_right = (MonoInst*)call;
+		arg->inst_call = call;
 		arg->backend.reg3 = reg;
 		break;
 	default:

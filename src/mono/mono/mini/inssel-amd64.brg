@@ -37,11 +37,6 @@
 		} \
 	} while (0)
 
-int cbranch_to_fcbranch (int opcode);
-int bialu_to_bialu_imm (int opcode);
-int ceq_to_fceq (int opcode);
-int call_reg_to_call_membase (int opcode);
-
 %%
 
 #
@@ -202,7 +197,7 @@ stmt: OP_OUTARG (reg) {
 }
 
 stmt: OP_OUTARG_REG (reg) {	
-	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	MonoCallInst *call = tree->inst_call;
 
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
@@ -291,7 +286,7 @@ stmt: OP_OUTARG_R8 (freg) {
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
-	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	MonoCallInst *call = tree->inst_call;
 
 	tree->opcode = OP_AMD64_SET_XMMREG_R4;
 	tree->sreg1 = state->left->reg1;
@@ -302,7 +297,7 @@ stmt: OP_AMD64_OUTARG_XMMREG_R4 (freg) {
 }
 
 stmt: OP_AMD64_OUTARG_XMMREG_R8 (freg) {
-	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	MonoCallInst *call = tree->inst_call;
 
 	tree->opcode = OP_AMD64_SET_XMMREG_R8;
 	tree->sreg1 = state->left->reg1;
@@ -686,7 +681,7 @@ stmt: OP_VCALL_REG (CEE_LDIND_I (base), reg) {
 
 %%
 
-int
+static int
 bialu_to_bialu_imm (int opcode)
 {
 	switch (opcode) {
@@ -705,7 +700,7 @@ bialu_to_bialu_imm (int opcode)
 	return -1;
 }
 
-int
+static int
 cbranch_to_fcbranch (int opcode)
 {
 	switch (opcode) {
@@ -736,7 +731,7 @@ cbranch_to_fcbranch (int opcode)
 	return -1;
 }
 
-int
+static int
 ceq_to_fceq (int opcode)
 {
 	switch (opcode) {
@@ -757,7 +752,7 @@ ceq_to_fceq (int opcode)
 	return -1;
 }
 
-int
+static int
 call_reg_to_call_membase (int opcode)
 {
 	switch (opcode) {
