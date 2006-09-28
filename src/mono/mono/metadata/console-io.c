@@ -231,7 +231,6 @@ do_console_cancel_event (void)
 	mono_thread_pool_add ((MonoObject *) load_value, msg, NULL, NULL);
 }
 
-static void (*prev_int_handler)(int);
 static gboolean in_sigint;
 static void
 sigint_handler (int signo)
@@ -243,8 +242,6 @@ sigint_handler (int signo)
 
 	in_sigint = TRUE;
 	do_console_cancel_event ();
-	if (prev_int_handler != SIG_DFL && prev_int_handler != NULL)
-		prev_int_handler (signo);
 	in_sigint = FALSE;
 }
 
@@ -262,10 +259,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
-	prev_int_handler = signal (SIGINT, sigint_handler);
 	/* TODO: handle SIGTSTP - Ctrl-Z */
 	attr = initial_attr;
-	/* TODO: Perhaps ISIG too? Or we intercept signals from unmanaged code */
 	attr.c_lflag &= ~ICANON;
 	attr.c_cc [VMIN] = 1;
 	attr.c_cc [VTIME] = 0;
