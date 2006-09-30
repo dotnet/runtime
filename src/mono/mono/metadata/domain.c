@@ -803,6 +803,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.com_object_class = mono_class_from_name (
 	        mono_defaults.corlib, "System", "__ComObject");
 
+	mono_defaults.com_interop_proxy_class = mono_class_from_name (
+	        mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+
+
 	/*
 	 * Note that mono_defaults.generic_*_class is only non-NULL if we're
 	 * using the 2.0 corlib.

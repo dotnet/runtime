@@ -714,6 +714,7 @@ typedef struct {
 	MonoClass *generic_nullable_class;
 	MonoClass *variant_class;
 	MonoClass *com_object_class;
+	MonoClass *com_interop_proxy_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

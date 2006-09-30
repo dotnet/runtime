@@ -23,6 +23,34 @@ public class Test
 		public int		c;
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public class TestStruct4
+	{
+		[MarshalAs (UnmanagedType.Interface)]
+		object itf;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
+	public class TestStruct5
+	{
+		[MarshalAs (UnmanagedType.IUnknown)]
+		object itf;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
+	public class TestStruct6
+	{
+		[MarshalAs (UnmanagedType.IDispatch)]
+		object itf;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
+	public class TestStruct7
+	{
+		[MarshalAs (UnmanagedType.Struct)]
+		object itf;
+	}
+
 	public unsafe static int Main () 
 	{
 		///
@@ -98,6 +126,17 @@ public class Test
 		catch(Exception e) {
 			return 9;
 		}
+
+		// test size of structs with objects
+		if (Marshal.SizeOf (typeof (TestStruct4)) != IntPtr.Size)
+			return 10;
+		if (Marshal.SizeOf (typeof (TestStruct5)) != IntPtr.Size)
+			return 11;
+		if (Marshal.SizeOf (typeof (TestStruct6)) != IntPtr.Size)
+			return 12;
+		// a VARIANT is 
+		if (Marshal.SizeOf (typeof (TestStruct7)) != 16)
+			return 13;
 
 		return 0;
 	}
