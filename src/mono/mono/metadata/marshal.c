@@ -5115,6 +5115,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))
 			break;
 
+		/* Minic MS.NET behavior */
+		if (!t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT) && !(t->attrs & PARAM_ATTRIBUTE_IN))
+			break;
+
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
 		if (t->byref)
@@ -5160,6 +5164,16 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
+		} else if (t->attrs &PARAM_ATTRIBUTE_OUT) {
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+
+			mono_mb_emit_op (mb, CEE_CALL, get_instance);
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
+
+			/* We have nowhere to store the result */
+			mono_mb_emit_byte (mb, CEE_POP);
 		}
 
 		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
