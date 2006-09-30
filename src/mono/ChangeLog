@@ -1,3 +1,8 @@
+
+Sat Sep 30 12:11:56 CEST 2006 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: link to libnsl only if needed.
+
 2006-09-19  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (etc/mono/config): Fix rule to avoid writing
