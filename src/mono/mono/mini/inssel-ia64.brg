@@ -1,8 +1,4 @@
 
-int size_to_ia64_load_u_membase_inc (int size);
-int size_to_store_membase_reg (int size);
-int size_to_ia64_store_membase_inc_reg (int size);
-
 %%
 
 #
@@ -417,7 +413,7 @@ stmt: OP_MEMCPY (base, base) "0" {
 
 %%
 
-int
+static int
 size_to_ia64_load_u_membase_inc (int size)
 {
 	switch (size) {
@@ -435,7 +431,7 @@ size_to_ia64_load_u_membase_inc (int size)
 	}
 }
 
-int
+static int
 size_to_store_membase_reg (int size)
 {
 	switch (size) {
@@ -453,7 +449,7 @@ size_to_store_membase_reg (int size)
 	}
 }
 
-int
+static int
 size_to_ia64_store_membase_inc_reg (int size)
 {
 	switch (size) {
