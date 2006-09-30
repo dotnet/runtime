@@ -1470,6 +1470,21 @@ mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
 }
 
 STDCALL int
+mono_test_marshal_pass_inout_custom (int i, guint32 *ptr, int j)
+{
+	ptr [0] = 0;
+	ptr [1] = i + ptr [1] + j;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_pass_out_byval_custom (int i, guint32 *ptr, int j)
+{
+	return ptr == NULL ? 0 : 1;
+}
+
+STDCALL int
 mono_test_marshal_pass_byref_custom (int i, guint32 **ptr, int j)
 {
 	(*ptr)[1] += i + j;

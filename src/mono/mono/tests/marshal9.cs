@@ -13,6 +13,10 @@ public class Marshal1 : ICustomMarshaler
 
 	public static int cleanup_native_count = 0;
 
+	public static int native_to_managed_count = 0;
+
+	public static object native_to_managed_result = null;
+
 	public Marshal1 (int param) {
 		this.param = param;
 	}
@@ -39,7 +43,7 @@ public class Marshal1 : ICustomMarshaler
 	}
 
 	// I really do not understand the purpose of this method
-	// or went it would be called. In fact, Rotor never seems
+	// or when it would be called. In fact, Rotor never seems
 	// to call it.
 	public int GetNativeDataSize ()
 	{
@@ -64,7 +68,9 @@ public class Marshal1 : ICustomMarshaler
 	public object MarshalNativeToManaged (IntPtr pNativeData)
 	{
 		//Console.WriteLine ("ToManaged: " + pNativeData);
-		return param + Marshal.ReadInt32 (new IntPtr (pNativeData.ToInt64 () + 4));
+		native_to_managed_count ++;
+		native_to_managed_result = param + Marshal.ReadInt32 (new IntPtr (pNativeData.ToInt64 () + 4));
+		return native_to_managed_result;
 	}
 }
 
@@ -119,6 +125,54 @@ public class Tests
 		return 0;
 	}
 
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_inout_custom (int i,
+															[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5"), In, Out] object number, int j);
+
+	public static int test_0_pass_inout () {
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+		Marshal1.native_to_managed_result = null;
+
+		int res = mono_test_marshal_pass_inout_custom (5, 5, 5);
+
+		// The changes made by the [Out] custom marshaller are not visible to the caller
+		if ((int)Marshal1.native_to_managed_result != 20)
+			return 1;
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 2;
+		if (Marshal1.cleanup_native_count != 1)
+			return 3;
+
+		return 0;
+	}
+
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_out_byval_custom (int i,
+															[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5"), Out] object number, int j);
+
+	public static int test_0_pass_out_byval () {
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+		Marshal1.native_to_managed_result = null;
+
+		// MS.NET passes NULL and does no marshalling in this case
+		int res = mono_test_marshal_pass_out_byval_custom (5, 5, 5);
+
+		if (res != 0)
+			return 1;
+
+		if (Marshal1.native_to_managed_result != null)
+			return 2;
+
+		if (Marshal1.cleanup_managed_count != 0)
+			return 3;
+		if (Marshal1.cleanup_native_count != 0)
+			return 4;
+
+		return 0;
+	}
 
 	[DllImport ("libtest")]
 	private static extern int mono_test_marshal_pass_byref_custom (int i,  
