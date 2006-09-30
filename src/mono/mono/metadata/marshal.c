@@ -9341,7 +9341,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 
-	info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	/* The mempool is protected by the loader lock */
+	info = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
 	/* Try to find a size for this type in metadata */
