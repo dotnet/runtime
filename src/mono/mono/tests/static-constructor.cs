@@ -1,6 +1,7 @@
 
 using System;
 using System.Reflection;
+using System.Threading;
 
 struct A {
 	public A (int i) {
@@ -9,6 +10,21 @@ struct A {
 
 struct B {
 	public B (int i) {
+	}
+}
+
+public class StaticInitFails {
+
+	public static string s;
+
+	static StaticInitFails () {
+		Thread.Sleep (1000);
+		throw new Exception ();
+		s = "FOO";
+	}
+
+	public static void foo () {
+		Console.WriteLine (s);
 	}
 }
 
@@ -39,6 +55,34 @@ public class Tests {
 		con1.Invoke (null, new Object [] { 0 });
 		con2.Invoke (null, new Object [] { 0 });
 
+		// Test what happens when static initialization throws an exception
+		// First start a thread which will trigger the initialization
+		Thread t = new Thread (new ThreadStart (Run));
+		t.Start ();
+
+		Thread.Sleep (500);
+
+		// While the thread waits, trigger initialization on this thread too so this
+		// thread will wait for the other thread to finish initialization
+		try {
+			Run ();
+			return 1;
+		}
+		catch (TypeInitializationException ex) {
+		}
+
+		// Try again synchronously
+		try {
+			Run ();
+			return 1;
+		}
+		catch (TypeInitializationException ex) {
+		}
+
 		return 0;
+	}
+
+	private static void Run () {
+		StaticInitFails.foo ();
 	}
 }
