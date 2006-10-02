@@ -218,6 +218,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			sf->il_offset = 0;
 
 		if (need_file_info) {
+			printf ("A: %s %p\n", ji->method->name, location);
 			if (location) {
 				MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, location->source_file));
 				sf->line = location->row;
@@ -1044,7 +1045,10 @@ mono_handle_native_sigsegv (int signal, void *ctx)
  {
 	void *array [256];
 	char **names;
+	char cmd [1024];
 	int i, size;
+	gchar *out, *err;
+	gint exit_status;
 
 	fprintf (stderr, "\nNative stacktrace:\n\n");
 
@@ -1054,9 +1058,23 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		fprintf (stderr, "\t%s\n", names [i]);
 	}
 	free (names);
- }
 
 	fflush (stderr);
+
+	/* Try to get more meaningful information using gdb */
+
+#ifndef PLATFORM_WIN32
+	sprintf (cmd, "gdb --ex 'attach %ld' --ex 'info threads' --ex 'thread apply all bt' --batch", (long)getpid ());
+	{
+		int res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
+
+		if (res) {
+			fprintf (stderr, "\nDebug info from gdb:\n\n");
+			fprintf (stderr, "%s\n", out);
+		}
+	}
+#endif
+ }
 #endif
 
 #ifndef PLATFORM_WIN32
