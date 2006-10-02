@@ -771,6 +771,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	MonoAotModule *aot_module;
 	guint32 *table, *entry;
 	guint32 table_size, hash;
+	char full_name_buf [1024];
 	char *full_name;
 	const char *name2, *name_space2;
 	MonoTableInfo  *t;
@@ -794,10 +795,17 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
-	else
-		full_name = g_strdup_printf ("%s.%s", name_space, name);
+	else {
+		if (strlen (name_space) + strlen (name) < 1000) {
+			sprintf (full_name_buf, "%s.%s", name_space, name);
+			full_name = full_name_buf;
+		} else {
+			full_name = g_strdup_printf ("%s.%s", name_space, name);
+		}
+	}
 	hash = g_str_hash (full_name) % table_size;
-	g_free (full_name);
+	if (full_name != full_name_buf)
+		g_free (full_name);
 
 	entry = &table [hash * 2];
 

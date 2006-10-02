@@ -65,6 +65,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	gboolean save_temps;
 	gboolean write_symbols;
+	gboolean metadata_only;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -2449,6 +2450,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->save_temps = TRUE;
 		} else if (str_begins_with (arg, "write-symbols")) {
 			opts->write_symbols = TRUE;
+		} else if (str_begins_with (arg, "metadata-only")) {
+			opts->metadata_only = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -2465,6 +2468,9 @@ compile_method (MonoAotCompile *acfg, int index)
 	gboolean skip;
 	guint32 token = MONO_TOKEN_METHOD_DEF | (index + 1);
 	guint32 method_idx;
+
+	if (acfg->aot_opts.metadata_only)
+		return;
 
 	method = mono_get_method (acfg->image, token, NULL);
 
