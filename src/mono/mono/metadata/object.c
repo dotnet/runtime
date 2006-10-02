@@ -185,6 +185,43 @@ mono_type_initialization_cleanup (void)
 	DeleteCriticalSection (&ldstr_section);
 }
 
+/**
+ * get_type_init_exception_for_vtable:
+ *
+ *   Return the stored type initialization exception for VTABLE.
+ */
+static MonoException*
+get_type_init_exception_for_vtable (MonoVTable *vtable)
+{
+	MonoDomain *domain = vtable->domain;
+	MonoClass *klass = vtable->klass;
+	MonoException *ex;
+	gchar *full_name;
+
+	g_assert (vtable->init_failed);
+
+	/* 
+	 * If the initializing thread was rudely aborted, the exception is not stored
+	 * in the hash.
+	 */
+	ex = NULL;
+	mono_domain_lock (domain);
+	if (domain->type_init_exception_hash)
+		ex = mono_g_hash_table_lookup (domain->type_init_exception_hash, klass);
+	mono_domain_unlock (domain);
+
+	if (!ex) {
+		if (klass->name_space && *klass->name_space)
+			full_name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
+		else
+			full_name = g_strdup (klass->name);
+		ex = mono_get_exception_type_initialization (full_name, NULL);
+		g_free (full_name);
+	}
+
+	return ex;
+}
+
 /*
  * mono_runtime_class_init:
  * @vtable: vtable that needs to be initialized
@@ -227,12 +264,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			mono_type_initialization_unlock ();
 
 			/* The type initialization already failed once, rethrow the same exception */
-			mono_domain_lock (domain);
-			exc_to_throw = mono_g_hash_table_lookup (domain->type_init_exception_hash, klass);
-			g_assert (exc_to_throw);
-			mono_domain_unlock (domain);
-
-			mono_raise_exception (exc_to_throw);
+			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
 			return;
 		}			
 		lock = g_hash_table_lookup (type_initialization_hash, vtable);
@@ -340,12 +372,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 
 		if (vtable->init_failed) {
 			/* Either we were the initializing thread or we waited for the initialization */
-			mono_domain_lock (domain);
-			exc_to_throw = mono_g_hash_table_lookup (domain->type_init_exception_hash, klass);
-			g_assert (exc_to_throw);
-			mono_domain_unlock (domain);
-
-			mono_raise_exception (exc_to_throw);
+			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
 		}
 	} else {
 		vtable->initialized = 1;
@@ -356,9 +383,17 @@ mono_runtime_class_init (MonoVTable *vtable)
 static
 gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 {
+	MonoVTable *vtable = (MonoVTable*)key;
+
 	TypeInitializationLock *lock = (TypeInitializationLock*) value;
 	if (lock->initializing_tid == GPOINTER_TO_UINT (user) && !lock->done) {
 		lock->done = TRUE;
+		/* 
+		 * Have to set this since it cannot be set by the normal code in 
+		 * mono_runtime_class_init (). In this case, the exception object is not stored,
+		 * and get_type_init_exception_for_class () needs to be aware of this.
+		 */
+		vtable->init_failed = 1;
 		LeaveCriticalSection (&lock->initialization_section);
 		--lock->waiting_count;
 		if (lock->waiting_count == 0) {
