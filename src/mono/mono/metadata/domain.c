@@ -1078,6 +1078,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		mono_g_hash_table_destroy (domain->refobject_hash);
 		domain->refobject_hash = NULL;
 	}
+	if (domain->type_init_exception_hash) {
+		mono_g_hash_table_destroy (domain->type_init_exception_hash);
+		domain->type_init_exception_hash = NULL;
+	}
 	g_hash_table_destroy (domain->class_init_trampoline_hash);
 	domain->class_init_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->jump_trampoline_hash);

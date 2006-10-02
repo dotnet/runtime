@@ -364,6 +364,7 @@ struct MonoVTable {
 	guint8      rank;
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
+	guint init_failed     : 1; /* cctor execution failed */
 	/* do not add any fields after vtable, the structure is dynamically extended */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };

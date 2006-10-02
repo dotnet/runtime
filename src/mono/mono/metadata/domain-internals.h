@@ -105,6 +105,8 @@ struct _MonoDomain {
 	MonoGHashTable     *refobject_hash;
 	/* a GC-tracked array to keep references to the static fields of types */
 	gpointer           *static_data_array;
+	/* maps class -> type initialization exception object */
+	MonoGHashTable    *type_init_exception_hash;
 	/* maps delegate trampoline addr -> delegate object */
 	MonoGHashTable     *delegate_hash_table;
 #define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
