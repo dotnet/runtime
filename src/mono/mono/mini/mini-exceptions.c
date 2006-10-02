@@ -218,7 +218,6 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			sf->il_offset = 0;
 
 		if (need_file_info) {
-			printf ("A: %s %p\n", ji->method->name, location);
 			if (location) {
 				MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, location->source_file));
 				sf->line = location->row;
