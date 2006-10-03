@@ -169,7 +169,7 @@ parse_optimizations (const char* p)
 				break;
 			}
 		}
-		if (i == G_N_ELEMENTS (opt_names)) {
+		if (i == G_N_ELEMENTS (opt_names) || !optflag_get_name (i)) {
 			if (strncmp (p, "all", 3) == 0) {
 				if (invert)
 					opt = 0;
