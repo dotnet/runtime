@@ -20,6 +20,7 @@ OTHER_H = \
 	handles.h	\
 	io.h		\
 	io-layer.h	\
+	io-portability.h	\
 	macros.h	\
 	mono-mutex.h	\
 	mutexes.h	\
@@ -57,6 +58,8 @@ OTHER_SRC = \
 	handles-private.h	\
 	io.c			\
 	io.h			\
+	io-portability.c	\
+	io-portability.h	\
 	io-private.h		\
 	io-layer.h		\
 	macros.h		\

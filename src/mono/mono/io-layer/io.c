@@ -27,6 +27,7 @@
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/io-layer/thread-private.h>
+#include <mono/io-layer/io-portability.h>
 #include <mono/utils/strenc.h>
 
 #undef DEBUG
@@ -234,7 +235,7 @@ static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
 	if (S_ISSOCK (buf->st_mode))
 		buf->st_mode &= ~S_IFSOCK; /* don't consider socket protection */
 
-	filename = g_path_get_basename (pathname);
+	filename = _wapi_basename (pathname);
 
 	if (S_ISDIR (buf->st_mode)) {
 		attrs = FILE_ATTRIBUTE_DIRECTORY;
@@ -280,12 +281,12 @@ static void _wapi_set_last_path_error_from_errno (const gchar *dir,
 
 
 		if (dir == NULL) {
-			dirname = g_path_get_dirname (path);
+			dirname = _wapi_dirname (path);
 		} else {
 			dirname = g_strdup (dir);
 		}
 		
-		if (access (dirname, F_OK) == 0) {
+		if (_wapi_access (dirname, F_OK) == 0) {
 			SetLastError (ERROR_FILE_NOT_FOUND);
 		} else {
 			SetLastError (ERROR_PATH_NOT_FOUND);
@@ -309,7 +310,7 @@ static void file_close (gpointer handle, gpointer data)
 #endif
 
 	if (file_handle->attrs & FILE_FLAG_DELETE_ON_CLOSE)
-		unlink (file_handle->filename);
+		_wapi_unlink (file_handle->filename);
 	
 	g_free (file_handle->filename);
 	
@@ -988,15 +989,15 @@ static gboolean file_setfiletime(gpointer handle,
 	}
 
 #ifdef DEBUG
-	g_message("%s: setting handle %p access %ld write %ld", __func__,
-		  handle, utbuf.actime, utbuf.modtime);
+	g_message ("%s: setting handle %p access %ld write %ld", __func__,
+		   handle, utbuf.actime, utbuf.modtime);
 #endif
 
-	ret=utime(file_handle->filename, &utbuf);
-	if(ret==-1) {
+	ret = _wapi_utime (file_handle->filename, &utbuf);
+	if (ret == -1) {
 #ifdef DEBUG
-		g_message("%s: handle %p [%s] utime failed: %s", __func__,
-			  handle, file_handle->filename, strerror(errno));
+		g_message ("%s: handle %p [%s] utime failed: %s", __func__,
+			   handle, file_handle->filename, strerror(errno));
 
 #endif
 		SetLastError (ERROR_INVALID_PARAMETER);
@@ -1543,7 +1544,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		   filename, sharemode, fileaccess);
 #endif
 	
-	fd = open(filename, flags, perms);
+	fd = _wapi_open (filename, flags, perms);
     
 	/* If we were trying to open a directory with write permissions
 	 * (e.g. O_WRONLY or O_RDWR), this call will fail with
@@ -1697,7 +1698,7 @@ gboolean DeleteFile(const gunichar2 *name)
 		return(FALSE);
 	}
 	
-	retval = unlink (filename);
+	retval = _wapi_unlink (filename);
 	
 	if (retval == -1) {
 		_wapi_set_last_path_error_from_errno (NULL, filename);
@@ -1775,14 +1776,16 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	 * We check it here and return the failure if dest exists and is not
 	 * the same file as src.
 	 */
-	if (!stat (utf8_dest_name, &stat_dest) && !stat (utf8_name, &stat_src)) {
-		if (stat_dest.st_dev != stat_src.st_dev || stat_dest.st_ino != stat_src.st_ino) {
+	if (!_wapi_stat (utf8_dest_name, &stat_dest) &&
+	    !_wapi_stat (utf8_name, &stat_src)) {
+		if (stat_dest.st_dev != stat_src.st_dev ||
+		    stat_dest.st_ino != stat_src.st_ino) {
 			SetLastError (ERROR_ALREADY_EXISTS);
 			return FALSE;
 		}	
 	}
 
-	result = rename (utf8_name, utf8_dest_name);
+	result = _wapi_rename (utf8_name, utf8_dest_name);
 
 	if (result == -1) {
 		switch(errno) {
@@ -1881,7 +1884,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		return(FALSE);
 	}
 	
-	src_fd = open (utf8_src, O_RDONLY);
+	src_fd = _wapi_open (utf8_src, O_RDONLY, 0);
 	if (src_fd < 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_src);
 		
@@ -2729,15 +2732,15 @@ mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 	gint result;
 	GPatternSpec *patspec;
 
-	dir = g_dir_open (dirname, 0, &error);
+	dir = _wapi_g_dir_open (dirname, 0, &error);
 	if (dir == NULL) {
 		/* g_dir_open returns ENOENT on directories on which we don't
 		 * have read/x permission */
 		gint errnum = get_errno_from_g_file_error (error->code);
 		g_error_free (error);
 		if (errnum == ENOENT &&
-		    !access (dirname, F_OK) &&
-		    access (dirname, R_OK|X_OK)) {
+		    !_wapi_access (dirname, F_OK) &&
+		    _wapi_access (dirname, R_OK|X_OK)) {
 			errnum = EACCES;
 		}
 
@@ -2798,8 +2801,8 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 #endif
 	
 	/* Figure out which bit of the pattern is the directory */
-	dir_part = g_path_get_dirname (utf8_pattern);
-	entry_part = g_path_get_basename (utf8_pattern);
+	dir_part = _wapi_dirname (utf8_pattern);
+	entry_part = _wapi_basename (utf8_pattern);
 
 #if 0
 	/* Don't do this check for now, it breaks if directories
@@ -2932,7 +2935,7 @@ retry:
 	/* stat next match */
 
 	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++], NULL);
-	if (lstat (filename, &buf) != 0) {
+	if (_wapi_lstat (filename, &buf) != 0) {
 #ifdef DEBUG
 		g_message ("%s: stat failed: %s", __func__, filename);
 #endif
@@ -2947,7 +2950,7 @@ retry:
 	 * it isn't there.)
 	 */
 	if(S_ISLNK (buf.st_mode)) {
-		if(stat (filename, &buf) != 0) {
+		if(_wapi_stat (filename, &buf) != 0) {
 			g_free (filename);
 			goto retry;
 		}
@@ -2992,7 +2995,7 @@ retry:
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	utf8_basename = g_path_get_basename (utf8_filename);
+	utf8_basename = _wapi_basename (utf8_filename);
 	utf16_basename = g_utf8_to_utf16 (utf8_basename, -1, NULL, &bytes,
 					  NULL);
 	if(utf16_basename==NULL) {
@@ -3107,7 +3110,7 @@ gboolean CreateDirectory (const gunichar2 *name,
 		return FALSE;
 	}
 
-	result = mkdir (utf8_name, 0777);
+	result = _wapi_mkdir (utf8_name, 0777);
 
 	if (result == 0) {
 		g_free (utf8_name);
@@ -3152,7 +3155,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 		return FALSE;
 	}
 
-	result = rmdir (utf8_name);
+	result = _wapi_rmdir (utf8_name);
 	if (result == -1) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
@@ -3198,10 +3201,10 @@ guint32 GetFileAttributes (const gunichar2 *name)
 		return (INVALID_FILE_ATTRIBUTES);
 	}
 
-	result = stat (utf8_name, &buf);
+	result = _wapi_stat (utf8_name, &buf);
 	if (result == -1 && errno == ENOENT) {
 		/* Might be a dangling symlink... */
-		result = lstat (utf8_name, &buf);
+		result = _wapi_lstat (utf8_name, &buf);
 	}
 
 	if (result != 0) {
@@ -3264,10 +3267,10 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		return FALSE;
 	}
 
-	result = stat (utf8_name, &buf);
+	result = _wapi_stat (utf8_name, &buf);
 	if (result == -1 && errno == ENOENT) {
 		/* Might be a dangling symlink... */
-		result = lstat (utf8_name, &buf);
+		result = _wapi_lstat (utf8_name, &buf);
 	}
 	
 	if (result != 0) {
@@ -3346,7 +3349,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 		return FALSE;
 	}
 
-	result = stat (utf8_name, &buf);
+	result = _wapi_stat (utf8_name, &buf);
 	if (result != 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
@@ -3358,9 +3361,9 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 * catch that case here.
 	 */
 	if (attrs & FILE_ATTRIBUTE_READONLY) {
-		result = chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
+		result = _wapi_chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
 	} else {
-		result = chmod (utf8_name, buf.st_mode | S_IWRITE);
+		result = _wapi_chmod (utf8_name, buf.st_mode | S_IWRITE);
 	}
 
 	/* Ignore the other attributes for now */
@@ -3451,7 +3454,7 @@ extern gboolean SetCurrentDirectory (const gunichar2 *path)
 	}
 	
 	utf8_path = mono_unicode_to_external (path);
-	if (chdir (utf8_path) != 0) {
+	if (_wapi_chdir (utf8_path) != 0) {
 		_wapi_set_last_error_from_errno ();
 		result = FALSE;
 	}
