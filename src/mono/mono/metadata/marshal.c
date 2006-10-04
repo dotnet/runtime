@@ -1933,7 +1933,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
-		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		if (eklass->blittable) {
 			mono_mb_emit_ldloc (mb, 1);
@@ -2002,7 +2002,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			mono_mb_emit_stloc (mb, 1);
 		}
 
-		mono_mb_patch_short_branch (mb, pos);
+		mono_mb_patch_branch (mb, pos);
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY: {
@@ -2027,7 +2027,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		pos = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		
 		/* save the old src pointer */
 		mono_mb_emit_ldloc (mb, 0);
@@ -2052,7 +2052,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, dst_var);
 		mono_mb_emit_stloc (mb, 1);
 
-		mono_mb_patch_short_branch (mb, pos);
+		mono_mb_patch_branch (mb, pos);
 		break;
 	}
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
