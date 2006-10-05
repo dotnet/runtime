@@ -1617,16 +1617,16 @@ mono_metadata_get_param_attrs (MonoImage *m, int def)
 	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_PARAM_SIZE];
-	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+	guint lastp, i, param_index = mono_metadata_decode_table_row_col (m, MONO_TABLE_METHOD, def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
 
 	if (def < methodt->rows)
-		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
+		lastp = mono_metadata_decode_table_row_col (m, MONO_TABLE_METHOD, def, MONO_METHOD_PARAMLIST);
 	else
 		lastp = paramt->rows + 1;
 
 	for (i = param_index; i < lastp; ++i) {
-		mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
+		mono_metadata_decode_table_row (m, MONO_TABLE_PARAM, i - 1, cols, MONO_PARAM_SIZE);
 		if (cols [MONO_PARAM_FLAGS]) {
 			if (!pattrs)
 				pattrs = g_new0 (int, 1 + (lastp - param_index));

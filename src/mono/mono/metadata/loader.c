@@ -1792,7 +1792,7 @@ mono_method_signature (MonoMethod *m)
 	idx = mono_metadata_token_index (m->token);
 	img = m->klass->image;
 
-	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
+	sig = mono_metadata_blob_heap (img, mono_metadata_decode_table_row_col (img, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_SIGNATURE));
 
 	g_assert (!m->klass->generic_class);
 	container = m->generic_container;
