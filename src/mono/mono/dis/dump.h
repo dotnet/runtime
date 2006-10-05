@@ -31,4 +31,9 @@ void dump_table_methodspec   (MonoImage *m);
 void dump_table_parconstraint(MonoImage *m);
 void dump_table_implmap      (MonoImage *m);
 void dump_table_standalonesig (MonoImage *m);
+void dump_table_methodptr    (MonoImage *m);
+void dump_table_fieldptr     (MonoImage *m);
+void dump_table_paramptr     (MonoImage *m);
+void dump_table_eventptr     (MonoImage *m);
 void dump_stream_blob        (MonoImage *m);
+

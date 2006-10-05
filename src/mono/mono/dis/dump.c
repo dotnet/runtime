@@ -592,7 +592,7 @@ dump_table_method (MonoImage *m)
 		method_container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | i, type_container);
 		if (method_container)
 			mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | i, method_container);
-		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SIZE);
+		mono_metadata_decode_table_row (m, MONO_TABLE_METHOD, i - 1, cols, MONO_METHOD_SIZE);
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
 		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob);
@@ -1233,4 +1233,44 @@ dump_table_standalonesig (MonoImage *m)
 		}
 		fprintf (output, "\n");
 	}
+}
+
+static void
+dump_table_ptr (MonoImage *m, int table, const char *name)
+{
+	MonoTableInfo *t = &m->tables [table];
+	guint32 cols [1];
+	int i;
+	
+	fprintf (output, "%s (1..%d)\n", name, t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, 1);
+
+		fprintf (output, "%d: %d\n", i, cols [0]);
+	}
+}
+
+void
+dump_table_methodptr (MonoImage *m)
+{
+	dump_table_ptr (m, MONO_TABLE_METHOD_POINTER, "Method Ptr");
+}
+
+void
+dump_table_fieldptr (MonoImage *m)
+{
+	dump_table_ptr (m, MONO_TABLE_FIELD_POINTER, "Field Ptr");
+}
+
+void
+dump_table_paramptr (MonoImage *m)
+{
+	dump_table_ptr (m, MONO_TABLE_PARAM_POINTER, "Param Ptr");
+}
+
+void
+dump_table_eventptr (MonoImage *m)
+{
+	dump_table_ptr (m, MONO_TABLE_EVENT_POINTER, "Event Ptr");
 }

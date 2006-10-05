@@ -1445,6 +1445,10 @@ struct {
 	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
 	{ "--standalonesig", MONO_TABLE_STANDALONESIG,  dump_table_standalonesig },
+	{ "--methodptr", MONO_TABLE_METHOD_POINTER,  dump_table_methodptr },
+	{ "--fieldptr", MONO_TABLE_FIELD_POINTER,  dump_table_fieldptr },
+	{ "--paramptr", MONO_TABLE_PARAM_POINTER,  dump_table_paramptr },
+	{ "--eventptr", MONO_TABLE_EVENT_POINTER,  dump_table_eventptr },
 	{ "--blob",	   0,			dump_stream_blob },
 	{ NULL, -1, }
 };
