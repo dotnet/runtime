@@ -744,7 +744,6 @@ mono_class_find_enum_basetype (MonoClass *class)
 {
 	MonoImage *m = class->image; 
 	const int top = class->field.count;
-	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i;
 
 	g_assert (class->enumtype);
@@ -759,7 +758,7 @@ mono_class_find_enum_basetype (MonoClass *class)
 		MonoGenericContainer *container = NULL;
 		MonoType *ftype;
 
-		mono_metadata_decode_row (t, idx, cols, MONO_FIELD_SIZE);
+		mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
@@ -800,7 +799,6 @@ mono_class_setup_fields (MonoClass *class)
 	MonoImage *m = class->image; 
 	int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i, blittable = TRUE;
 	guint32 real_size = 0;
 	guint32 packing_size = 0;
@@ -900,7 +898,7 @@ mono_class_setup_fields (MonoClass *class)
 			const char *sig;
 			guint32 cols [MONO_FIELD_SIZE];
 
-			mono_metadata_decode_row (t, idx, cols, MONO_FIELD_SIZE);
+			mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 			/* The name is needed for fieldrefs */
 			field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
 			sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
@@ -1395,7 +1393,6 @@ mono_class_setup_events (MonoClass *class)
 {
 	guint startm, endm, i, j;
 	guint32 cols [MONO_EVENT_SIZE];
-	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_EVENT];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 last;
 	MonoEvent *events;
@@ -1440,8 +1437,8 @@ mono_class_setup_events (MonoClass *class)
 	events = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoEvent) * class->event.count);
 	for (i = class->event.first; i < last; ++i) {
 		MonoEvent *event = &events [i - class->event.first];
-			
-		mono_metadata_decode_row (pt, i, cols, MONO_EVENT_SIZE);
+
+		mono_metadata_decode_table_row (class->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
 		event->parent = class;
 		event->attrs = cols [MONO_EVENT_FLAGS];
 		event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);

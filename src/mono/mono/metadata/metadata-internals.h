@@ -81,6 +81,9 @@ struct _MonoImage {
 	/* Whenever this is a reflection only image */
 	guint8 ref_only;
 
+	/* Whenever this image contains uncompressed metadata */
+	guint8 uncompressed_metadata;
+
 	char *name;
 	const char *assembly_name;
 	const char *module_name;

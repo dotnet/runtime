@@ -175,7 +175,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_TABLE_IDX,  /* "EventType" }, TypeDef or TypeRef  */
 	MONO_MT_END,
 
-#define EXPORTED_TYPE_SCHEMA_OFFSET EVENT_SCHEMA_OFFSET + 4
+#define EVENT_POINTER_SCHEMA_OFFSET EVENT_SCHEMA_OFFSET + 4
+	MONO_MT_TABLE_IDX,  /* "Event" }, */
+	MONO_MT_END,
+
+#define EXPORTED_TYPE_SCHEMA_OFFSET EVENT_POINTER_SCHEMA_OFFSET + 2
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_TABLE_IDX,  /* "TypeDefId" }, */
 	MONO_MT_STRING_IDX, /* "TypeName" }, */
@@ -204,7 +208,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
 	MONO_MT_END,
 
-#define FILE_SCHEMA_OFFSET FIELD_RVA_SCHEMA_OFFSET + 3
+#define FIELD_POINTER_SCHEMA_OFFSET FIELD_RVA_SCHEMA_OFFSET + 3
+	MONO_MT_TABLE_IDX,  /* "Field" }, */
+	MONO_MT_END,
+
+#define FILE_SCHEMA_OFFSET FIELD_POINTER_SCHEMA_OFFSET + 2
 	MONO_MT_UINT32,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Value" },  */
@@ -256,7 +264,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_HS_IDX,     /* "Association" }, */
 	MONO_MT_END,
 
-#define MODULE_SCHEMA_OFFSET METHOD_SEMA_SCHEMA_OFFSET + 4
+#define METHOD_POINTER_SCHEMA_OFFSET METHOD_SEMA_SCHEMA_OFFSET + 4
+	MONO_MT_TABLE_IDX,  /* "Method" }, */
+	MONO_MT_END,
+
+#define MODULE_SCHEMA_OFFSET METHOD_POINTER_SCHEMA_OFFSET + 2
 	MONO_MT_UINT16,     /* "Generation" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_GUID_IDX,   /* "MVID" }, */
@@ -279,7 +291,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_END,
 
-#define PROPERTY_SCHEMA_OFFSET PARAM_SCHEMA_OFFSET + 4
+#define PARAM_POINTER_SCHEMA_OFFSET PARAM_SCHEMA_OFFSET + 4
+	MONO_MT_TABLE_IDX,  /* "Param" }, */
+	MONO_MT_END,
+
+#define PROPERTY_SCHEMA_OFFSET PARAM_POINTER_SCHEMA_OFFSET + 2
 	MONO_MT_UINT16,     /* "Flags" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
 	MONO_MT_BLOB_IDX,   /* "Type" }, */
@@ -340,11 +356,11 @@ table_description [] = {
 	MODULE_SCHEMA_OFFSET,
 	TYPEREF_SCHEMA_OFFSET,
 	TYPEDEF_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	FIELD_POINTER_SCHEMA_OFFSET,
 	FIELD_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	METHOD_POINTER_SCHEMA_OFFSET,
 	METHOD_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	PARAM_POINTER_SCHEMA_OFFSET,
 	PARAM_SCHEMA_OFFSET,
 	IFACEMAP_SCHEMA_OFFSET,
 	MEMBERREF_SCHEMA_OFFSET, /* 0xa */
@@ -356,7 +372,7 @@ table_description [] = {
 	FIELD_LAYOUT_SCHEMA_OFFSET, /* 0x10 */
 	STDALON_SIG_SCHEMA_OFFSET,
 	EVENTMAP_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	EVENT_POINTER_SCHEMA_OFFSET,
 	EVENT_SCHEMA_OFFSET,
 	PROPERTY_MAP_SCHEMA_OFFSET,
 	NULL_SCHEMA_OFFSET,
@@ -512,6 +528,9 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				field_size = MAX (idx_size (MONO_TABLE_TYPEDEF), idx_size(MONO_TABLE_TYPEREF));
 				field_size = MAX (field_size, idx_size(MONO_TABLE_TYPESPEC));
 				break;
+			case MONO_TABLE_EVENT_POINTER:
+				g_assert (i == 0);
+				field_size = idx_size (MONO_TABLE_EVENT); break;
 			case MONO_TABLE_EXPORTEDTYPE:
 				g_assert (i == 1);
 				/* the index is in another metadata file, so it must be 4 */
@@ -521,6 +540,9 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				field_size = idx_size (MONO_TABLE_FIELD); break;
 			case MONO_TABLE_FIELDRVA:
 				g_assert (i == 1);
+				field_size = idx_size (MONO_TABLE_FIELD); break;
+			case MONO_TABLE_FIELD_POINTER:
+				g_assert (i == 0);
 				field_size = idx_size (MONO_TABLE_FIELD); break;
 			case MONO_TABLE_IMPLMAP:
 				g_assert (i == 3);
@@ -537,9 +559,15 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			case MONO_TABLE_METHODSEMANTICS:
 				g_assert (i == 1);
 				field_size = idx_size (MONO_TABLE_METHOD); break;
+			case MONO_TABLE_METHOD_POINTER:
+				g_assert (i == 0);
+				field_size = idx_size (MONO_TABLE_METHOD); break;
 			case MONO_TABLE_NESTEDCLASS:
 				g_assert (i == 0 || i == 1);
 				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+			case MONO_TABLE_PARAM_POINTER:
+				g_assert (i == 0);
+				field_size = idx_size (MONO_TABLE_PARAM); break;
 			case MONO_TABLE_PROPERTYMAP:
 				g_assert (i == 0 || i == 1);
 				field_size = i ? idx_size (MONO_TABLE_PROPERTY):
@@ -967,6 +995,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 	}
 	return 0;
 }
+
 /**
  * mono_metadata_decode_blob_size:
  * @ptr: pointer to a blob object
@@ -1066,6 +1095,76 @@ mono_metadata_decode_signed_value (const char *ptr, const char **rptr)
 	g_assert (ival < 0x20000000);
 	g_warning ("compressed signed value appears to use 29 bits for compressed representation: %x (raw: %8x)", ival, uval);
 	return ival - 0x20000000;
+}
+
+/* 
+ * Translates the given 1-based index into the Method, Field, Event, or Param tables
+ * using the *Ptr tables in uncompressed metadata, if they are available.
+ *
+ * FIXME: The caller is not forced to call this function, which is error-prone, since 
+ * forgetting to call it would only show up as a bug on uncompressed metadata.
+ */
+guint32
+mono_metadata_translate_token_index (MonoImage *image, int table, guint32 idx)
+{
+	if (!image->uncompressed_metadata)
+		return idx;
+
+	switch (table) {
+	case MONO_TABLE_METHOD:
+		if (image->tables [MONO_TABLE_METHOD_POINTER].rows)
+			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_METHOD_POINTER], idx - 1, MONO_METHOD_POINTER_METHOD);
+		else
+			return idx;
+	case MONO_TABLE_FIELD:
+		if (image->tables [MONO_TABLE_FIELD_POINTER].rows)
+			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_FIELD_POINTER], idx - 1, MONO_FIELD_POINTER_FIELD);
+		else
+			return idx;
+	case MONO_TABLE_EVENT:
+		if (image->tables [MONO_TABLE_EVENT_POINTER].rows)
+			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_EVENT_POINTER], idx - 1, MONO_EVENT_POINTER_EVENT);
+		else
+			return idx;
+	case MONO_TABLE_PARAM:
+		if (image->tables [MONO_TABLE_PARAM_POINTER].rows)
+			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_PARAM_POINTER], idx - 1, MONO_PARAM_POINTER_PARAM);
+		else
+			return idx;
+	default:
+		return idx;
+	}
+}
+
+/**
+ * mono_metadata_decode_table_row:
+ *
+ *   Same as mono_metadata_decode_row, but takes an IMAGE+TABLE ID pair, and takes
+ * uncompressed metadata into account, so it should be used to access the
+ * Method, Field, Param and Event tables.
+ */
+void
+mono_metadata_decode_table_row (MonoImage *image, int table, int idx, guint32 *res, int res_size)
+{
+	if (image->uncompressed_metadata)
+		idx = mono_metadata_translate_token_index (image, table, idx + 1) - 1;
+
+	mono_metadata_decode_row (&image->tables [table], idx, res, res_size);
+}
+
+/**
+ * mono_metadata_decode_table_row_col:
+ *
+ *   Same as mono_metadata_decode_row_col, but takes an IMAGE+TABLE ID pair, and takes
+ * uncompressed metadata into account, so it should be used to access the
+ * Method, Field, Param and Event tables.
+ */
+guint32 mono_metadata_decode_table_row_col (MonoImage *image, int table, int idx, guint col)
+{
+	if (image->uncompressed_metadata)
+		idx = mono_metadata_translate_token_index (image, table, idx + 1) - 1;
+
+	return mono_metadata_decode_row_col (&image->tables [table], idx, col);
 }
 
 /*

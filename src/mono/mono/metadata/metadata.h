@@ -512,6 +512,17 @@ char *mono_guid_to_string (const guint8 *guid);
 
 guint32 mono_metadata_declsec_from_index (MonoImage *meta, guint32 idx);
 
+guint32 mono_metadata_translate_token_index (MonoImage *image, int table, guint32 idx);
+
+void    mono_metadata_decode_table_row (MonoImage *image, int table,
+				       int                    idx,
+				       guint32               *res,
+				       int                    res_size);
+
+guint32      mono_metadata_decode_table_row_col (MonoImage *image, int table,
+					   int            idx, 
+					   guint          col);
+
 G_END_DECLS
 
 #endif /* __MONO_METADATA_H__ */
