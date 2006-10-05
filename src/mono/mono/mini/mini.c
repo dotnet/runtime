@@ -4544,14 +4544,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
+				/*
+				 * We implement tail calls by storing the actual arguments into the 
+				 * argument variables, then emitting a CEE_JMP. Since the actual arguments
+				 * can refer to the arg variables, we have to spill them.
+				 */
+				handle_loaded_temps (cfg, bblock, sp, sp + n);
 				for (i = 0; i < n; ++i) {
+					/* Prevent argument from being register allocated */
+					arg_array [i]->flags |= MONO_INST_VOLATILE;
+
 					/* Check if argument is the same */
+					/* 
+					 * FIXME: This loses liveness info, so it can only be done if the
+					 * argument is not register allocated.
+					 */
 					NEW_ARGLOAD (cfg, ins, i);
 					if ((ins->opcode == sp [i]->opcode) && (ins->inst_i0 == sp [i]->inst_i0))
 						continue;
 
-					/* Prevent argument from being register allocated */
-					arg_array [i]->flags |= MONO_INST_VOLATILE;
 					NEW_ARGSTORE (cfg, ins, i, sp [i]);
 					ins->cil_code = ip;
 					if (ins->opcode == CEE_STOBJ) {

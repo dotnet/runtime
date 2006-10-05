@@ -510,6 +510,53 @@ COND:   ldloc.0
 		ret
 	}
 
+	.method static public int32 tail3 (int32 i, int32 j) il managed {
+		ldarg.0
+		ldarg.1
+		add
+		ret
+	}
+
+	.method static public int32 tail4 (int32 i, int32 j) il managed {
+		.maxstack 16
+		.locals init (
+			int32 k)
+
+		// Test arg0 allocated to a register
+		ldarg.0
+		ldarg.0
+		ldarg.0
+		ldarg.0
+		add
+		add
+		add
+		starg 0
+
+		// Test switched up argument variables as the actual arguments
+		ldarg.1
+		ldarg.0
+		tail.
+		call int32 Tests::tail3 (int32, int32)
+		ret
+	}
+
+	.method static public int32 test_24_tail_calls2 () il managed {
+		.maxstack 16
+		.locals init (
+			int32 i,
+			int32 j)
+
+		ldc.i4.4
+		stloc.0
+		ldc.i4.8
+		stloc.1
+
+		ldloc.0	
+		ldloc.1
+		call int32 Tests::tail4 (int32, int32)
+		ret
+	}
+
 	.method public static int32 test_5_jmp () cil managed {
 		jmp int32 Tests::jmp2 ()
 		ldc.i4.0

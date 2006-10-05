@@ -1702,6 +1702,55 @@ emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
+/*
+ * emit_load_volatile_arguments:
+ *
+ *  Load volatile arguments from the stack to the original input registers.
+ * Required before a tail call.
+ */
+static guint8*
+emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoInst *inst;
+	CallInfo *cinfo;
+	guint32 i;
+
+	/* FIXME: Generate intermediate code instead */
+
+	sig = mono_method_signature (method);
+
+	cinfo = get_call_info (sig, FALSE);
+	
+	/* This is the opposite of the code in emit_prolog */
+
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		MonoType *arg_type;
+		inst = cfg->varinfo [i];
+
+		if (sig->hasthis && (i == 0))
+			arg_type = &mono_defaults.object_class->byval_arg;
+		else
+			arg_type = sig->params [i - sig->hasthis];
+
+		/*
+		 * On x86, the arguments are either in their original stack locations, or in
+		 * global regs.
+		 */
+		if (inst->opcode == OP_REGVAR) {
+			g_assert (ainfo->storage == ArgOnStack);
+			
+			x86_mov_membase_reg (code, X86_EBP, inst->inst_offset, inst->dreg, 4);
+		}
+	}
+
+	g_free (cinfo);
+
+	return code;
+}
+
 #define REAL_PRINT_REG(text,reg) \
 mono_assert (reg >= 0); \
 x86_push_reg (code, X86_EAX); \
@@ -2249,6 +2298,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			offset = code - cfg->native_code;
 
 			g_assert (!cfg->method->save_lmf);
+
+			code = emit_load_volatile_arguments (cfg, code);
 
 			if (cfg->used_int_regs & (1 << X86_EBX))
 				pos -= 4;
