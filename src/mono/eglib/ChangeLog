@@ -1,3 +1,8 @@
+2006-10-05  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gunicode.c: Some work in progress to implement g_convert
+	(which is needed by g_locale_to_utf8).    
+
 2006-09-18  Miguel de Icaza  <miguel@novell.com>
 
 	* test/string-util.c (test_filename_from_uri): tests for new

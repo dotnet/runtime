@@ -20,7 +20,6 @@ Important Groups:
 	      3 g_thread_init
 
         * Information retrieval
-	      1 g_get_charset
 	      1 g_win32_getlocale
 	
 	* String manipulation

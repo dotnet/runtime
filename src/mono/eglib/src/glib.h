@@ -644,5 +644,19 @@ gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
 gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
 						   GError **error);
 
+/*
+ * Character set conversion
+ */
+gboolean  g_get_charset        (char **charset);
+gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
+				gsize *bytes_read, gsize *bytes_written,
+				GError **error);
+gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read,
+				gsize *bytes_written, GError **error);
+gchar    *g_convert            (const gchar *str, gssize len,
+				const gchar *to_codeset, const gchar *from_codeset,
+				gsize *bytes_read, gsize *bytes_written, GError **error);
+
+
 #endif
 
