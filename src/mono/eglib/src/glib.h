@@ -52,6 +52,8 @@ typedef uint16_t       gunichar2;
 #define G_STMT_START    do 
 #define G_STMT_END      while (0)
 
+#define G_USEC_PER_SEC  1000000
+
 #define ABS(a,b)        (((a)>(b)) ? ((a)-(b)) : ((b)-(a)))
 
 #define G_STRUCT_OFFSET(p_type,field) \
@@ -77,6 +79,16 @@ typedef uint16_t       gunichar2;
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
 
+typedef struct {
+	gpointer (*malloc)      (gsize    n_bytes);
+	gpointer (*realloc)     (gpointer mem, gsize n_bytes);
+	void     (*free)        (gpointer mem);
+	gpointer (*calloc)      (gsize    n_blocks, gsize n_block_bytes);
+	gpointer (*try_malloc)  (gsize    n_bytes);
+	gpointer (*try_realloc) (gpointer mem, gsize n_bytes);
+} GMemVTable;
+
+#define g_mem_set_vtable(x)
 /*
  * Misc.
  */
@@ -417,6 +429,8 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
 #define g_message(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format)
 #define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
 
+#define g_log_set_handler(a,b,c,d)
+#define g_printerr(format...) fprintf (stderr, format)
 /*
  * Conversions
  */
@@ -659,7 +673,6 @@ gchar    *g_convert            (const gchar *str, gssize len,
 				const gchar *to_codeset, const gchar *from_codeset,
 				gsize *bytes_read, gsize *bytes_written, GError **error);
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
-
 
 #endif
 

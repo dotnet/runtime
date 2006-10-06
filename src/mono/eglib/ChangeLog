@@ -1,5 +1,11 @@
 2006-10-06  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gstr.c (g_ascii_strdown): Implement.
+
+	* str/glib.c (g_log_set_handler): empty.
+	(g_printerr): empty.
+	(GMemVTable): define, empty, ignored.
+
 	* src/gunicode.c (g_convert): Add bytes_read, bytes_written
 	support;   Small fixes to avoid valgrind errors. 
 	

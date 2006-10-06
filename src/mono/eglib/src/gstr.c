@@ -485,3 +485,26 @@ g_strdown (gchar *string)
 		*string = tolower (*string);
 	}
 }
+
+gchar *
+g_ascii_strdown (const gchar *str, gssize len)
+{
+	char *ret;
+	int i;
+	
+	g_return_val_if_fail  (str != NULL, NULL);
+
+	if (len == -1)
+		len = strlen (str);
+	
+	ret = g_malloc (len + 1);
+	for (i = 0; i < len; i++){
+		guchar c = (guchar) str [i];
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+		ret [i] = c;
+	}
+	ret [i] = 0;
+	
+	return ret;
+}

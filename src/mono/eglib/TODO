@@ -19,21 +19,14 @@ Important Groups:
 	      3 g_thread_supported
 	      3 g_thread_init
 
-        * Information retrieval
-	      1 g_win32_getlocale
-	
 	* String manipulation
 	      1 g_filename_from_utf8	[LIMITATION: UTF8 only today]
-	      1 g_ascii_strdown
 	     10 g_strlcpy
 	      2 g_strdelimit
 	      1 g_strescape
 	
 	* Miscelaneous
 	      3 g_spaced_primes_closest
-	      2 g_printerr
-	      1 g_mem_set_vtable
-	      1 g_log_set_handler
 
 Remove code from Mono:
 
@@ -43,10 +36,7 @@ Remove code from Mono:
 Macros:
       6 G_UNLIKELY
       4 G_LIKELY
-      2 G_USEC_PER_SEC
       2 G_STRLOC
-      1 G_SPAWN_SEARCH_PATH
-      1 G_ALLOC_ONLY
 
 * Unimplemented, not supported currently:
 
@@ -63,5 +53,8 @@ Macros:
 
        g_dir_open, g_dir_close, g_dir_read_name
 
-       We're missing a native windows implementation. The unix one is in place.
+  We're missing a native windows implementation. The unix one is in place.
 
+     * Information retrieval
+      1 g_win32_getlocale
+	
