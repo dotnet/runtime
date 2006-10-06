@@ -282,6 +282,13 @@ ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	/* delegates have no finalizers, but we register them to deal with the
+	 * unmanaged->managed trampoline. We don't let the user suppress it
+	 * otherwise we'd leak it.
+	 */
+	if (obj->vtable->klass->delegate)
+		return;
+
 	object_register_finalizer (obj, NULL);
 }
 
