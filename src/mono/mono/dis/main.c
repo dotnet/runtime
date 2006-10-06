@@ -183,9 +183,16 @@ dis_directive_assembly (MonoImage *m)
 		 cols [MONO_ASSEMBLY_HASH_ALG],
 		 cols [MONO_ASSEMBLY_MAJOR_VERSION], cols [MONO_ASSEMBLY_MINOR_VERSION], 
 		 cols [MONO_ASSEMBLY_BUILD_NUMBER], cols [MONO_ASSEMBLY_REV_NUMBER]);
-	if (cols [MONO_ASSEMBLY_CULTURE])
-		fprintf (output, "  .locale %s\n", mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_CULTURE]));
-	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
+	if (cols [MONO_ASSEMBLY_CULTURE]){
+		const char *locale = mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_CULTURE]);
+		glong items_read, items_written;
+		gunichar2 *render = g_utf8_to_utf16 (locale, strlen (locale), &items_read, &items_written, NULL);
+		char *dump = data_dump ((const char *) render, items_written * sizeof (gunichar2), "\t\t");
+		fprintf (output, "  .locale %s\n", dump);
+		g_free (dump);
+		g_free (render);
+		
+	} if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
 		const char* b = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
 		int len = mono_metadata_decode_blob_size (b, &b);
 		char *dump = data_dump (b, len, "\t\t");
