@@ -43,7 +43,7 @@ static void options_init (void)
 	
 	portability_helpers = PORTABILITY_NONE;
 	
-	env = g_getenv ("MONO_IO_PORTABILITY_HELP");
+	env = g_getenv ("MONO_IOMAP");
 	if (env != NULL) {
 		/* parse the environment setting and set up some vars
 		 * here
