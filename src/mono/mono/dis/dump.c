@@ -1274,3 +1274,9 @@ dump_table_eventptr (MonoImage *m)
 {
 	dump_table_ptr (m, MONO_TABLE_EVENT_POINTER, "Event Ptr");
 }
+
+void
+dump_table_propertyptr (MonoImage *m)
+{
+	dump_table_ptr (m, MONO_TABLE_PROPERTY_POINTER, "Property Ptr");
+}

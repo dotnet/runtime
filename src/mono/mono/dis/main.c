@@ -1449,6 +1449,7 @@ struct {
 	{ "--fieldptr", MONO_TABLE_FIELD_POINTER,  dump_table_fieldptr },
 	{ "--paramptr", MONO_TABLE_PARAM_POINTER,  dump_table_paramptr },
 	{ "--eventptr", MONO_TABLE_EVENT_POINTER,  dump_table_eventptr },
+	{ "--propertyptr", MONO_TABLE_PROPERTY_POINTER,  dump_table_propertyptr },
 	{ "--blob",	   0,			dump_stream_blob },
 	{ NULL, -1, }
 };

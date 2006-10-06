@@ -35,5 +35,6 @@ void dump_table_methodptr    (MonoImage *m);
 void dump_table_fieldptr     (MonoImage *m);
 void dump_table_paramptr     (MonoImage *m);
 void dump_table_eventptr     (MonoImage *m);
+void dump_table_propertyptr  (MonoImage *m);
 void dump_stream_blob        (MonoImage *m);
 
