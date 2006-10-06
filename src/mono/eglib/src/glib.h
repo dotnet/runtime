@@ -651,11 +651,14 @@ gboolean  g_get_charset        (char **charset);
 gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
 				gsize *bytes_read, gsize *bytes_written,
 				GError **error);
+gchar    *g_locale_from_utf8   (const gchar *utf8string, gssize len, gsize *bytes_read,
+				gsize *bytes_written, GError **error);
 gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read,
 				gsize *bytes_written, GError **error);
 gchar    *g_convert            (const gchar *str, gssize len,
 				const gchar *to_codeset, const gchar *from_codeset,
 				gsize *bytes_read, gsize *bytes_written, GError **error);
+gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 
 
 #endif

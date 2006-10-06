@@ -1,3 +1,12 @@
+2006-10-06  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gunicode.c (g_convert): Add bytes_read, bytes_written
+	support;   Small fixes to avoid valgrind errors. 
+	
+	(g_utf8_validate): Add, based on the libxml code.
+
+	gstr.c: implement g_strdown. 
+
 2006-10-05  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gunicode.c: Some work in progress to implement g_convert

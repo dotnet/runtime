@@ -475,3 +475,13 @@ g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error)
 	}
 	return result;
 }
+
+void
+g_strdown (gchar *string)
+{
+	g_return_if_fail (string != NULL);
+
+	while (*string){
+		*string = tolower (*string);
+	}
+}

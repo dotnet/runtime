@@ -197,9 +197,19 @@ RESULT
 test_convert ()
 {
 	gsize n;
-	char *s = g_convert ("\242", -1, "UTF-8", "ISO-8859-1", NULL, &n, NULL);
+	char *s = g_convert ("\242\241\243\242\241\243\242\241\243\242\241\243", -1, "UTF-8", "ISO-8859-1", NULL, &n, NULL);
+	guchar *u = (guchar *) s;
+	
+	if (strlen (s) != 24)
+		return FAILED ("Expected 24 bytes, got: %d", strlen (s));
 
-	printf ("Result: %s %d\n", s, strlen (s));
+	if (u [1] != 162 || u [2] != 194 ||
+	    u [3] != 161 || u [4] != 194 ||
+	    u [5] != 163 || u [6] != 194)
+		return FAILED ("Incorrect conversion");
+	
+	g_free (s);
+	
 	return OK;
 }
 
