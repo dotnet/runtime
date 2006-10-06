@@ -5300,13 +5300,14 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 		res->token = mono_metadata_make_token (MONO_TABLE_MODULE, 1);
 	} else {
 		int i;
-		g_assert (image->assembly->image->modules);
 		res->token = 0;
-		for (i = 0; i < image->assembly->image->module_count; i++) {
-			if (image->assembly->image->modules [i] == image)
-				res->token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
+		if (image->assembly->image->modules) {
+			for (i = 0; i < image->assembly->image->module_count; i++) {
+				if (image->assembly->image->modules [i] == image)
+					res->token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
+			}
+			g_assert (res->token);
 		}
-		g_assert (res->token);
 	}
 
 	CACHE_OBJECT (MonoReflectionModule *, image, res, NULL);
