@@ -345,11 +345,14 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			image->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else if (strncmp (ptr + 8, "#-", 3) == 0) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).\n", image->name);
 			image->heap_tables.data = image->raw_metadata + read32 (ptr);
 			image->heap_tables.size = read32 (ptr + 4);
 			ptr += 8 + 3;
 			image->uncompressed_metadata = TRUE;
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).\n", image->name);
+			/* This doesn't work yet (bug #38532) */
+			g_print ("Assembly '%s' has the non-standard metadata heap #-.\nRecompile it correctly (without the /incremental switch or in Release mode).\n", image->name);
+			return FALSE;
 		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr + 8) + 1;
