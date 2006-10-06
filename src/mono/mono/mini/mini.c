@@ -1075,6 +1075,27 @@ reverse_branch_op (guint32 opcode)
 	return opcode;
 }
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+static int
+condbr_to_fp_br (int opcode)
+{
+	switch (opcode) {
+	case CEE_BEQ: return OP_FBEQ;
+	case CEE_BGE: return OP_FBGE;
+	case CEE_BGT: return OP_FBGT;
+	case CEE_BLE: return OP_FBLE;
+	case CEE_BLT: return OP_FBLT;
+	case CEE_BNE_UN: return OP_FBNE_UN;
+	case CEE_BGE_UN: return OP_FBGE_UN;
+	case CEE_BGT_UN: return OP_FBGT_UN;
+	case CEE_BLE_UN: return OP_FBLE_UN;
+	case CEE_BLT_UN: return OP_FBLT_UN;
+	}
+	g_assert_not_reached ();
+	return 0;
+}
+#endif
+
 /*
  * Returns the type used in the eval stack when @type is loaded.
  * FIXME: return a MonoType/MonoClass for the byref and VALUETYPE cases.
@@ -4863,7 +4884,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip++;
 			target = ip + 1 + *(signed char*)ip;
 			ip++;
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (sp [-1]->type == STACK_R8 || sp [-2]->type == STACK_R8) {
+				ins->opcode = condbr_to_fp_br (ins->opcode);
+				sp -= 2;
+				ins->inst_left = sp [0];
+				ins->inst_right = sp [1];
+				*sp++ = emit_tree (cfg, bblock, ins, ins->cil_code);
+				ADD_UNCOND (TRUE);
+			} else {
+				ADD_BINCOND (NULL);
+			}
+#else
 			ADD_BINCOND (NULL);
+#endif
 			if (sp != stack_start) {
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
@@ -4924,7 +4958,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip++;
 			target = ip + 4 + (gint32)read32(ip);
 			ip += 4;
-			ADD_BINCOND(NULL);
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (sp [-1]->type == STACK_R8 || sp [-2]->type == STACK_R8) {
+				ins->opcode = condbr_to_fp_br (ins->opcode);
+				sp -= 2;
+				ins->inst_left = sp [0];
+				ins->inst_right = sp [1];
+				*sp++ = emit_tree (cfg, bblock, ins, ins->cil_code);
+				ADD_UNCOND (TRUE);
+			} else {
+				ADD_BINCOND (NULL);
+			}
+#else
+			ADD_BINCOND (NULL);
+#endif
 			if (sp != stack_start) {
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
@@ -11193,6 +11240,8 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", "int32 int32 int32", mono_imul_ovf, FALSE);
 	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", "int32 int32 int32", mono_imul_ovf_un, FALSE);
 	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", "int32 int32 int32", mono_imul, TRUE);
+#endif
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT)
 	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", "double double double", mono_fdiv, FALSE);
 #endif
 
@@ -11218,6 +11267,30 @@ mini_init (const char *filename)
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
 	mono_register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", fmod, FALSE);
+#endif
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+	mono_register_opcode_emulation (OP_FSUB, "__emul_fsub", "double double double", mono_fsub, FALSE);
+	mono_register_opcode_emulation (OP_FADD, "__emul_fadd", "double double double", mono_fadd, FALSE);
+	mono_register_opcode_emulation (OP_FMUL, "__emul_fmul", "double double double", mono_fmul, FALSE);
+	mono_register_opcode_emulation (OP_FNEG, "__emul_fneg", "double double", mono_fneg, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_R4, "__emul_fconv_to_r4", "double double", mono_fconv_r4, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_I1, "__emul_fconv_to_i1", "int8 double", mono_fconv_i1, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_I2, "__emul_fconv_to_i2", "int16 double", mono_fconv_i2, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_I4, "__emul_fconv_to_i4", "int32 double", mono_fconv_i4, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U1, "__emul_fconv_to_u1", "uint8 double", mono_fconv_u1, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U2, "__emul_fconv_to_u2", "uint16 double", mono_fconv_u2, FALSE);
+
+	mono_register_opcode_emulation (OP_FBEQ, "__emul_fcmp_eq", "uint32 double double", mono_fcmp_eq, FALSE);
+	mono_register_opcode_emulation (OP_FBLT, "__emul_fcmp_lt", "uint32 double double", mono_fcmp_lt, FALSE);
+	mono_register_opcode_emulation (OP_FBGT, "__emul_fcmp_gt", "uint32 double double", mono_fcmp_gt, FALSE);
+	mono_register_opcode_emulation (OP_FBLE, "__emul_fcmp_le", "uint32 double double", mono_fcmp_le, FALSE);
+	mono_register_opcode_emulation (OP_FBGE, "__emul_fcmp_ge", "uint32 double double", mono_fcmp_ge, FALSE);
+	mono_register_opcode_emulation (OP_FBNE_UN, "__emul_fcmp_ne_un", "uint32 double double", mono_fcmp_ne_un, FALSE);
+	mono_register_opcode_emulation (OP_FBLT_UN, "__emul_fcmp_lt_un", "uint32 double double", mono_fcmp_lt_un, FALSE);
+	mono_register_opcode_emulation (OP_FBGT_UN, "__emul_fcmp_gt_un", "uint32 double double", mono_fcmp_gt_un, FALSE);
+	mono_register_opcode_emulation (OP_FBLE_UN, "__emul_fcmp_le_un", "uint32 double double", mono_fcmp_le_un, FALSE);
+	mono_register_opcode_emulation (OP_FBGE_UN, "__emul_fcmp_ge_un", "uint32 double double", mono_fcmp_ge_un, FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4

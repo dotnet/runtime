@@ -310,7 +310,9 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 
 	return res;
 }
+#endif
 
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT)
 double
 mono_fdiv (double a, double b)
 {
@@ -413,6 +415,130 @@ mono_lshr (gint64 a, gint32 shamt)
 	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
 
 	return res;
+}
+
+#endif
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+
+double
+mono_fsub (double a, double b)
+{
+	return a - b;
+}
+
+double
+mono_fadd (double a, double b)
+{
+	return a + b;
+}
+
+double
+mono_fmul (double a, double b)
+{
+	return a * b;
+}
+
+double
+mono_fneg (double a)
+{
+	return -a;
+}
+
+double
+mono_fconv_r4 (double a)
+{
+	return (float)a;
+}
+
+gint8
+mono_fconv_i1 (double a)
+{
+	return (gint8)a;
+}
+
+gint16
+mono_fconv_i2 (double a)
+{
+	return (gint16)a;
+}
+
+gint32
+mono_fconv_i4 (double a)
+{
+	return (gint32)a;
+}
+
+guint8
+mono_fconv_u1 (double a)
+{
+	return (guint8)a;
+}
+
+guint16
+mono_fconv_u2 (double a)
+{
+	return (guint16)a;
+}
+
+gboolean
+mono_fcmp_eq (double a, double b)
+{
+	return a == b;
+}
+
+gboolean
+mono_fcmp_ge (double a, double b)
+{
+	return a >= b;
+}
+
+gboolean
+mono_fcmp_gt (double a, double b)
+{
+	return a > b;
+}
+
+gboolean
+mono_fcmp_le (double a, double b)
+{
+	return a <= b;
+}
+
+gboolean
+mono_fcmp_lt (double a, double b)
+{
+	return a < b;
+}
+
+gboolean
+mono_fcmp_ne_un (double a, double b)
+{
+	return isunordered (a, b) || a != b;
+}
+
+gboolean
+mono_fcmp_ge_un (double a, double b)
+{
+	return isunordered (a, b) || a >= b;
+}
+
+gboolean
+mono_fcmp_gt_un (double a, double b)
+{
+	return isunordered (a, b) || a > b;
+}
+
+gboolean
+mono_fcmp_le_un (double a, double b)
+{
+	return isunordered (a, b) || a <= b;
+}
+
+gboolean
+mono_fcmp_lt_un (double a, double b)
+{
+	return isunordered (a, b) || a < b;
 }
 
 #endif

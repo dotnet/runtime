@@ -208,26 +208,18 @@ freg: CEE_CKFINITE (freg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# when using soft float
+reg: OP_FBEQ (freg, freg),
+reg: OP_FBGE (freg, freg),
+reg: OP_FBGT (freg, freg),
+reg: OP_FBLE (freg, freg),
+reg: OP_FBLT (freg, freg),
+reg: OP_FBNE_UN (freg, freg),
+reg: OP_FBGE_UN (freg, freg),
+reg: OP_FBGT_UN (freg, freg),
+reg: OP_FBLE_UN (freg, freg),
+reg: OP_FBLT_UN (freg, freg) {
+	g_assert_not_reached ();
+}
 
 %%
