@@ -1289,7 +1289,6 @@ mono_class_setup_properties (MonoClass *class)
 {
 	guint startm, endm, i, j;
 	guint32 cols [MONO_PROPERTY_SIZE];
-	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_PROPERTY];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoProperty *properties;
 	guint32 last;
@@ -1312,7 +1311,7 @@ mono_class_setup_properties (MonoClass *class)
 
 	properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
 	for (i = class->property.first; i < last; ++i) {
-		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
+		mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
 		properties [i - class->property.first].parent = class;
 		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
 		properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);

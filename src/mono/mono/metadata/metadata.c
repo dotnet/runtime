@@ -301,7 +301,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_BLOB_IDX,   /* "Type" }, */
 	MONO_MT_END,
 
-#define PROPERTY_MAP_SCHEMA_OFFSET PROPERTY_SCHEMA_OFFSET + 4
+#define PROPERTY_POINTER_SCHEMA_OFFSET PROPERTY_SCHEMA_OFFSET + 4
+	MONO_MT_TABLE_IDX, /* "Property" }, */
+	MONO_MT_END,
+
+#define PROPERTY_MAP_SCHEMA_OFFSET PROPERTY_POINTER_SCHEMA_OFFSET + 2
 	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
 	MONO_MT_TABLE_IDX,  /* "PropertyList:Property" }, */
 	MONO_MT_END,
@@ -375,7 +379,7 @@ table_description [] = {
 	EVENT_POINTER_SCHEMA_OFFSET,
 	EVENT_SCHEMA_OFFSET,
 	PROPERTY_MAP_SCHEMA_OFFSET,
-	NULL_SCHEMA_OFFSET,
+	PROPERTY_POINTER_SCHEMA_OFFSET,
 	PROPERTY_SCHEMA_OFFSET,
 	METHOD_SEMA_SCHEMA_OFFSET,
 	METHOD_IMPL_SCHEMA_OFFSET,
@@ -573,6 +577,9 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				field_size = i ? idx_size (MONO_TABLE_PROPERTY):
 					idx_size(MONO_TABLE_TYPEDEF); 
 				break;
+			case MONO_TABLE_PROPERTY_POINTER:
+				g_assert (i == 0);
+				field_size = idx_size (MONO_TABLE_PROPERTY); break;
 			case MONO_TABLE_TYPEDEF:
 				g_assert (i == 4 || i == 5);
 				field_size = i == 4 ? idx_size (MONO_TABLE_FIELD):
@@ -1124,6 +1131,11 @@ mono_metadata_translate_token_index (MonoImage *image, int table, guint32 idx)
 	case MONO_TABLE_EVENT:
 		if (image->tables [MONO_TABLE_EVENT_POINTER].rows)
 			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_EVENT_POINTER], idx - 1, MONO_EVENT_POINTER_EVENT);
+		else
+			return idx;
+	case MONO_TABLE_PROPERTY:
+		if (image->tables [MONO_TABLE_PROPERTY_POINTER].rows)
+			return mono_metadata_decode_row_col (&image->tables [MONO_TABLE_PROPERTY_POINTER], idx - 1, MONO_PROPERTY_POINTER_PROPERTY);
 		else
 			return idx;
 	case MONO_TABLE_PARAM:
