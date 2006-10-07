@@ -9,7 +9,7 @@ test_spawn_sync ()
 {
 	gchar *out;
 	gchar *err;
-	gint status;
+	gint status = -1;
 	GError *error = NULL;
 
 	if (!g_spawn_command_line_sync ("ls", &out, &err, &status, &error))
@@ -49,7 +49,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 
 	memset (argv, 0, 15 * sizeof (char *));
 	argv [0] = "ls";
-	if (!g_spawn_async_with_pipes (NULL, argv, NULL, 0, NULL, NULL, &child_pid, NULL, &stdout_fd, NULL, NULL))
+	if (!g_spawn_async_with_pipes (NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, NULL, &stdout_fd, NULL, NULL))
 		return FAILED ("1 Failed to run ls");
 	if (child_pid == 0)
 		return FAILED ("2 child pid not returned");
@@ -58,7 +58,6 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 
 	while (read (stdout_fd, buffer, 512) > 0);
 	close (stdout_fd);
-	printf ("Child pid: %d\n", child_pid);
 
 	return OK;
 }

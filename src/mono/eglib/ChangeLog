@@ -1,5 +1,11 @@
 2006-10-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* test/spawn.c: add search path flag when running ls.
+	* src/gspawn.c: g_spawn_command_line_sync searches the program in the
+	PATH if it's not an absolute path.
+
+2006-10-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* test/string-util.c:
 	* src/glib.h: implement g_ascii_xdigit_value and tests.
 

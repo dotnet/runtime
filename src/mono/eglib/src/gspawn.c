@@ -185,6 +185,17 @@ g_spawn_command_line_sync (const gchar *command_line,
 		for (i = getdtablesize () - 1; i >= 3; i--)
 			close (i);
 
+		/* G_SPAWN_SEARCH_PATH is always enabled for g_spawn_command_line_sync */
+		if (!g_path_is_absolute (argv [0])) {
+			gchar *arg0;
+
+			arg0 = g_find_program_in_path (argv [0]);
+			if (arg0 == NULL) {
+				exit (1);
+			}
+			//g_free (argv [0]);
+			argv [0] = arg0;
+		}
 		execv (argv [0], argv);
 		exit (1); /* TODO: What now? */
 	}
