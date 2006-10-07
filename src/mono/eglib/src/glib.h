@@ -193,6 +193,10 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_ascii_isalpha(c) (isalpha (c) != 0)
 #define g_ascii_isprint(c) (isprint (c) != 0)
 #define g_ascii_isxdigit(c) (isxdigit (c) != 0)
+#define g_ascii_xdigit_value(c) ((isxdigit (c) == 0) ? -1 : \
+					((c >= '0' && c <= '9') ? (c - '0') : \
+					 	((c >= 'a' && c <= 'f') ? (c - 'a' + 10) : \
+						 (c - 'A' + 10))))
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #define g_strcasecmp strcasecmp

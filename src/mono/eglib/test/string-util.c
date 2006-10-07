@@ -225,6 +225,48 @@ test_filename_from_uri ()
 	return OK;
 }
 
+RESULT
+test_ascii_xdigit_value ()
+{
+	int i;
+
+	i = g_ascii_xdigit_value ('9' + 1);
+	if (i != -1)
+		return FAILED ("'9' + 1");
+	i = g_ascii_xdigit_value ('0' - 1);
+	if (i != -1)
+		return FAILED ("'0' - 1");
+	i = g_ascii_xdigit_value ('a' - 1);
+	if (i != -1)
+		return FAILED ("'a' - 1");
+	i = g_ascii_xdigit_value ('f' + 1);
+	if (i != -1)
+		return FAILED ("'f' + 1");
+	i = g_ascii_xdigit_value ('A' - 1);
+	if (i != -1)
+		return FAILED ("'A' - 1");
+	i = g_ascii_xdigit_value ('F' + 1);
+	if (i != -1)
+		return FAILED ("'F' + 1");
+
+	for (i = '0'; i < '9'; i++) {
+		int c = g_ascii_xdigit_value (i);
+		if (c  != (i - '0'))
+			return FAILED ("Digits %c -> %d", i, c);
+	}
+	for (i = 'a'; i < 'f'; i++) {
+		int c = g_ascii_xdigit_value (i);
+		if (c  != (i - 'a' + 10))
+			return FAILED ("Lower %c -> %d", i, c);
+	}
+	for (i = 'A'; i < 'F'; i++) {
+		int c = g_ascii_xdigit_value (i);
+		if (c  != (i - 'A' + 10))
+			return FAILED ("Upper %c -> %d", i, c);
+	}
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -236,6 +278,7 @@ static Test strutil_tests [] = {
 	{"g_strstrip", test_strstrip},
 	{"g_filename_to_uri", test_filename_to_uri},
 	{"g_filename_from_uri", test_filename_from_uri},
+	{"g_ascii_xdigit_value", test_ascii_xdigit_value},
 	{NULL, NULL}
 };
 
