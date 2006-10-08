@@ -1,3 +1,10 @@
+2006-10-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/string-util.c:
+	* TODO:
+	* src/gstr.c:
+	* src/glib.h: implemented g_strdelimit.
+
 2006-10-07 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/spawn.c: add search path flag when running ls.

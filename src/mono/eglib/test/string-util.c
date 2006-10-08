@@ -267,6 +267,24 @@ test_ascii_xdigit_value ()
 	return OK;
 }
 
+RESULT
+test_strdelimit ()
+{
+	gchar *str;
+
+	str = g_strdup (G_STR_DELIMITERS);
+	str = g_strdelimit (str, NULL, 'a');
+	if (0 != strcmp ("aaaaaaa", str))
+		return FAILED ("All delimiters: '%s'", str);
+	g_free (str);
+	str = g_strdup ("hola");
+	str = g_strdelimit (str, "ha", '+');
+	if (0 != strcmp ("+ol+", str))
+		return FAILED ("2 delimiters: '%s'", str);
+	g_free (str);
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -279,6 +297,7 @@ static Test strutil_tests [] = {
 	{"g_filename_to_uri", test_filename_to_uri},
 	{"g_filename_from_uri", test_filename_from_uri},
 	{"g_ascii_xdigit_value", test_ascii_xdigit_value},
+	{"g_strdelimit", test_strdelimit},
 	{NULL, NULL}
 };
 

@@ -175,6 +175,7 @@ guint        g_strv_length    (gchar **str_array);
 gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
+gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
 
 gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **error);
 gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error);
@@ -203,6 +204,8 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_ascii_strcasecmp strcasecmp
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
+
+#define	G_STR_DELIMITERS "_-|> <."
 
 /*
  * String type

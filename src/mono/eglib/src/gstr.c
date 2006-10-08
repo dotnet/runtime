@@ -508,3 +508,23 @@ g_ascii_strdown (const gchar *str, gssize len)
 	
 	return ret;
 }
+
+
+gchar *
+g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)
+{
+	gchar *ptr;
+
+	g_return_val_if_fail (string != NULL, NULL);
+
+	if (delimiters == NULL)
+		delimiters = G_STR_DELIMITERS;
+
+	for (ptr = string; *ptr; ptr++) {
+		if (strchr (delimiters, *ptr))
+			*ptr = new_delimiter;
+	}
+	
+	return string;
+}
+

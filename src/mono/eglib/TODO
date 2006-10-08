@@ -22,7 +22,6 @@ Important Groups:
 	* String manipulation
 	      1 g_filename_from_utf8	[LIMITATION: UTF8 only today]
 	     10 g_strlcpy
-	      2 g_strdelimit
 	      1 g_strescape
 	
 	* Miscelaneous
