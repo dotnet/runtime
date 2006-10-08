@@ -14,7 +14,6 @@ GNUC_PRETTY=
 GNUC_UNUSED=
 BREAKPOINT=
 if test x$GCC = xyes; then
-   GNUC_PRETTY=__PRETTY_FUNCTION__
    GNUC_UNUSED='__attribute__((__unused__))'
    GNUC_NORETURN='__attribute__((__noreturn__))'
    case $target in

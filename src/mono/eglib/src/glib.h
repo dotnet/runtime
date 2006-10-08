@@ -65,6 +65,12 @@ typedef uint16_t       gunichar2;
 #define EGLIB_STRINGIFY(x) #x
 #define EGLIB_TOSTRING(x) EGLIB_STRINGIFY(x)
 #define G_STRLOC __FILE__ ":" EGLIB_TOSTRING(__LINE__) ":"
+
+#define G_BEGIN_DECLS
+#define G_END_DECLS
+ 
+#define G_CONST_RETURN const
+
 /*
  * Allocation
  */
@@ -204,6 +210,8 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #else
 gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
 #endif
+
+gchar  *g_ascii_strdown (const gchar *str, gssize len);
 
 #define g_ascii_isspace(c) (isspace (c) != 0)
 #define g_ascii_isalpha(c) (isalpha (c) != 0)
@@ -371,7 +379,7 @@ struct _GPtrArray {
 	guint len;
 };
 
-GPtrArray *g_ptr_array_new                ();
+GPtrArray *g_ptr_array_new                (void);
 GPtrArray *g_ptr_array_sized_new          (guint reserved_size);
 void       g_ptr_array_add                (GPtrArray *array, gpointer data);
 gboolean   g_ptr_array_remove             (GPtrArray *array, gpointer data);
@@ -401,23 +409,6 @@ gboolean g_queue_is_empty  (GQueue   *queue);
 GQueue  *g_queue_new       (void);
 void     g_queue_free      (GQueue   *queue);
 
-
-/*
- * Modules
- */
-typedef enum {
-	G_MODULE_BIND_LAZY = 0x01,
-	G_MODULE_BIND_LOCAL = 0x02,
-	G_MODULE_BIND_MASK = 0x03
-} GModuleFlags;
-typedef struct _GModule GModule;
-
-GModule *g_module_open (const gchar *file, GModuleFlags flags);
-gboolean g_module_symbol (GModule *module, const gchar *symbol_name,
-			  gpointer *symbol);
-const gchar *g_module_error (void);
-gboolean g_module_close (GModule *module);
-gchar *  g_module_build_path (const gchar *directory, const gchar *module_name);
 /*
  * Messages
  */
@@ -457,7 +448,7 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
  * Conversions
  */
 
-gpointer g_convert_error_quark();
+gpointer g_convert_error_quark(void);
 
 
 /*
@@ -476,6 +467,10 @@ GUnicodeType   g_unichar_type    (gunichar c);
 
 #ifndef MAX
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a,b) (((a)<(b)) ? (a) : (b))
 #endif
 
 /* FIXME: Implement these two for gcc */
@@ -516,6 +511,8 @@ gboolean g_path_is_absolute    (const char *filename);
 const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
 const gchar *g_get_user_name   (void);
+gchar *g_get_prgname           (void);
+void  g_set_prgname            (const gchar *prgname);
 
 /*
  * Shell
@@ -712,6 +709,8 @@ GHashTable     *g_hash_table_new_alloc       (GHashFunc hash_func, GEqualFunc ke
 GHashTable     *g_hash_table_new_full_alloc  (GHashFunc hash_func, GEqualFunc key_equal_func,
 					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func,
 					      GMAlloc allocfn, GMFree freefn);
+
+#define GLIB_CHECK_VERSION(a,b,c)    TRUE
  
 #endif
 

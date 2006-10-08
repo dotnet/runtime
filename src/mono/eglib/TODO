@@ -4,8 +4,17 @@
 	      3 g_shell_quote
 	      1 g_shell_unquote
 
+	* String
+		g_ascii_strncasecmp
+		g_strjoinv
+
 	* Miscelaneous
 	      3 g_spaced_primes_closest
+		g_propagate_error
+		
+	GUINT32_FROM_LE
+	GLIB_CHECK_VERSION	 -- currently broken, but does not matterh much
+	MIN
 
 ---------------------------------------------------------------------- 
 
