@@ -4,16 +4,8 @@
 	      3 g_shell_quote
 	      1 g_shell_unquote
 
-        * Thread enabling, these might be just no-ops, check with Paolo/Zoltan
-	      3 g_thread_supported
-	      3 g_thread_init
-
 	* Miscelaneous
 	      3 g_spaced_primes_closest
-
-Macros:
-      6 G_UNLIKELY
-      4 G_LIKELY
 
 ---------------------------------------------------------------------- 
 

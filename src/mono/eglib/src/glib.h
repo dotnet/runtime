@@ -697,6 +697,18 @@ gchar    *g_convert            (const gchar *str, gssize len,
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 
 /*
+ * Empty thread functions, not used by eglib
+ */
+#define g_thread_supported()   TRUE
+#define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } G_STMT_END
+
+/*
+ * Should implement these
+ */
+#define G_LIKELY(expr)   (expr)
+#define G_UNLIKELY(expr) (expr)
+ 
+/*
  * Eglib-only routines:
  *
  * These are extensions, not found on regular glib.
@@ -706,6 +718,6 @@ GHashTable     *g_hash_table_new_alloc       (GHashFunc hash_func, GEqualFunc ke
 GHashTable     *g_hash_table_new_full_alloc  (GHashFunc hash_func, GEqualFunc key_equal_func,
 					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func,
 					      GMAlloc allocfn, GMFree freefn);
-
+ 
 #endif
 
