@@ -201,14 +201,36 @@ test_appendlen ()
 	return NULL;
 }
 
+RESULT
+test_macros ()
+{
+	char *s = g_strdup (G_STRLOC);
+	char *p = strchr (s, ':');
+	int n;
+	
+	if (p == NULL)
+		return FAILED ("Did not find a separator");
+	n = atoi (p+1);
+	if (n <= 0)
+		return FAILED ("did not find a valid line number");
+
+	*p = 0;
+	if (strcmp (s, "string.c") != 0)
+		return FAILED ("This did not store the filename on G_STRLOC");
+	
+	g_free (s);
+	return NULL;
+}
+
 static Test string_tests [] = {
 	{"append-speed", test_append_speed},
-    {"append_c-speed", test_append_c_speed},
+	{"append_c-speed", test_append_c_speed},
 	{"ctor+append", test_gstring },
 	{"ctor+sized", test_sized },
 	{"truncate", test_truncate },
 	{"prepend", test_prepend },
 	{"append_len", test_appendlen },
+	{"macros", test_macros },
 	{NULL, NULL}
 };
 

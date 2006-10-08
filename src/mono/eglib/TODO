@@ -1,15 +1,4 @@
-
-* Code that we will drop from Mono, because we do not really need this:
-
-  Locking:
-
-      5 G_LOCK
-      5 G_UNLOCK
-
-      These are currently only used for the GC-safe hash table, and 
-      we will be replacing that with a copy of our own hashtable.
-
-Important Groups:
+* Missing code
 
 	* Process launching
 	      3 g_shell_quote
@@ -19,21 +8,15 @@ Important Groups:
 	      3 g_thread_supported
 	      3 g_thread_init
 
-	* String manipulation
-	      1 g_filename_from_utf8	[LIMITATION: UTF8 only today]
-	
 	* Miscelaneous
 	      3 g_spaced_primes_closest
-
-Remove code from Mono:
-
-	Multi-threaded aware GHashTable.
-	utils/mono-uri.c
 
 Macros:
       6 G_UNLIKELY
       4 G_LIKELY
       2 G_STRLOC
+
+---------------------------------------------------------------------- 
 
 * Unimplemented, not supported currently:
 
