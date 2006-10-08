@@ -9,6 +9,12 @@
 
 ---------------------------------------------------------------------- 
 
+* Should implement, for better performance:
+ 
+Macros:
+      6 G_UNLIKELY
+      4 G_LIKELY
+
 * Unimplemented, not supported currently:
 
 		g_unichar_tolower	Used for deprecated unmanaged string collation

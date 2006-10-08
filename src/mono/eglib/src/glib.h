@@ -703,12 +703,6 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } G_STMT_END
 
 /*
- * Should implement these
- */
-#define G_LIKELY(expr)   (expr)
-#define G_UNLIKELY(expr) (expr)
- 
-/*
  * Eglib-only routines:
  *
  * These are extensions, not found on regular glib.
