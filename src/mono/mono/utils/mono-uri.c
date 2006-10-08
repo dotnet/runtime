@@ -93,3 +93,16 @@ mono_escape_uri_string (const gchar *string)
   return result;
 }
 
+main ()
+{
+	char *s = malloc (256);
+	int i = 0;
+	
+	s [255] = 0;
+
+	for (i = 1; i < 256; i++)
+		s [i-1] = i;
+
+	printf ("escape: %s\n", mono_escape_uri_string (s));
+
+}
