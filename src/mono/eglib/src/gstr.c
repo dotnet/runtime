@@ -609,7 +609,7 @@ g_strescape (const gchar *source, const gchar *exceptions)
 			if (op != 1) {
 				*res_ptr++ = op;
 			} else {
-				*res_ptr++ = '0' + ((c >> 6) & 7);
+				*res_ptr++ = '0' + ((c >> 6) & 3);
 				*res_ptr++ = '0' + ((c >> 3) & 7);
 				*res_ptr++ = '0' + (c & 7);
 			}
