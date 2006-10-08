@@ -1,3 +1,9 @@
+2006-10-08  Miguel de Icaza  <miguel@novell.com>
+
+	* src/ghashtable.c (g_hash_table_new_alloc,
+	g_hash_table_new_full_alloc): Add new entry points that will be
+	used for GC-aware hashtables. 
+
 2006-10-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/string-util.c:
@@ -38,6 +44,7 @@
 	* str/glib.c (g_log_set_handler): empty.
 	(g_printerr): empty.
 	(GMemVTable): define, empty, ignored.
+	(G_USEC_PER_SEC) :-)
 
 	* src/gunicode.c (g_convert): Add bytes_read, bytes_written
 	support;   Small fixes to avoid valgrind errors. 
