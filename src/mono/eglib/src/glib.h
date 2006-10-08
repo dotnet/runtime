@@ -190,6 +190,12 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_vsnprintf vsnprintf
 #define g_vasprintf vasprintf
 
+#ifdef HAVE_STRLCPY
+#define g_strlcpy	strlcpy
+#else
+gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
+#endif
+
 #define g_ascii_isspace(c) (isspace (c) != 0)
 #define g_ascii_isalpha(c) (isalpha (c) != 0)
 #define g_ascii_isprint(c) (isprint (c) != 0)

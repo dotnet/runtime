@@ -285,6 +285,43 @@ test_strdelimit ()
 	return OK;
 }
 
+RESULT
+test_strlcpy ()
+{
+	const gchar *src = "onetwothree";
+	gchar *dest;
+	int i;
+
+	dest = g_malloc (strlen (src) + 1);
+	memset (dest, 0, strlen (src) + 1);
+	i = g_strlcpy (dest, src, -1);
+	if (i != strlen (src))
+		return FAILED ("Test1 got %d", i);
+
+	if (0 != strcmp (dest, src))
+		return FAILED ("Src and dest not equal");
+
+	i = g_strlcpy (dest, src, 3);
+	if (i != strlen (src))
+		return FAILED ("Test1 got %d", i);
+	if (0 != strcmp (dest, "on"))
+		return FAILED ("Test2");
+
+	i = g_strlcpy (dest, src, 1);
+	if (i != strlen (src))
+		return FAILED ("Test3 got %d", i);
+	if (*dest != '\0')
+		return FAILED ("Test4");
+
+	i = g_strlcpy (dest, src, 12345);
+	if (i != strlen (src))
+		return FAILED ("Test4 got %d", i);
+	if (0 != strcmp (dest, src))
+		return FAILED ("Src and dest not equal 2");
+	g_free (dest);
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -298,6 +335,7 @@ static Test strutil_tests [] = {
 	{"g_filename_from_uri", test_filename_from_uri},
 	{"g_ascii_xdigit_value", test_ascii_xdigit_value},
 	{"g_strdelimit", test_strdelimit},
+	{"g_strlcpy", test_strlcpy},
 	{NULL, NULL}
 };
 

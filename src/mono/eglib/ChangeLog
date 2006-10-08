@@ -1,6 +1,14 @@
 2006-10-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/string-util.c:
+	* configure.ac:
+	* TODO:
+	* src/gstr.c:
+	* src/glib.h: implemented g_strlcpy.
+
+2006-10-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/string-util.c:
 	* TODO:
 	* src/gstr.c:
 	* src/glib.h: implemented g_strdelimit.

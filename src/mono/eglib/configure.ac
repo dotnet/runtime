@@ -50,6 +50,7 @@ AC_SUBST(OS)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
+AC_CHECK_FUNCS(strlcpy)
 
 if test $ac_cv_sizeof_void_p != $ac_cv_sizeof_int; then
    GPOINTER_TO_INT="((gint)(long) (ptr))"
