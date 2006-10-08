@@ -78,7 +78,6 @@ typedef uint16_t       gunichar2;
 #define g_new0(type,size)       ((type *) calloc (sizeof (type), (size)))
 #define g_newa(type,size)       ((type *) alloca (sizeof (type) * (size)))
 #define g_realloc(obj,size)     realloc((obj), (size))
-#define g_strdup(x)             strdup(x)
 #define g_malloc(x)             malloc(x)
 #define g_try_malloc(x)         malloc(x)
 #define g_try_realloc(obj,size) realloc((obj),(size))
@@ -89,6 +88,7 @@ typedef uint16_t       gunichar2;
 #define g_free                  free
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
+gchar   *g_strdup (const gchar *str);
 
 typedef struct {
 	gpointer (*malloc)      (gsize    n_bytes);

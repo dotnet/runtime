@@ -14,7 +14,12 @@
 		
 	GUINT32_FROM_LE
 	GLIB_CHECK_VERSION	 -- currently broken, but does not matterh much
-	MIN
+	GUINT16_TO_LE
+	GUINT32_TO_LE
+	GUINT64_TO_LE
+
+        *rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset + 14); /* 14 is hint+strlen+1 of func name */
+
 
 ---------------------------------------------------------------------- 
 

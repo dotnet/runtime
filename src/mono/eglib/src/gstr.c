@@ -619,3 +619,12 @@ g_strescape (const gchar *source, const gchar *exceptions)
 	return result;
 }
 
+gchar *
+g_strdup (const gchar *str)
+{
+	if (str == NULL)
+		return str;
+
+	return strdup (str);
+}
+
