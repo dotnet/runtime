@@ -2,8 +2,14 @@ noinst_LTLIBRARIES = libmonoutils.la
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
+if EGLIB_BUILD 
+	hash_sources = 
+else
+	hash_sources = mono-hash.c
+endif
+
 libmonoutils_la_SOURCES = \
-	mono-hash.c	\
+	$(hash_sources)	\
 	mono-md5.c	\
 	mono-sha1.c	\
 	mono-logger.c	\
@@ -36,5 +42,4 @@ libmonoutilsinclude_HEADERS = \
 	mono-uri.h	\
 	mono-stdlib.h
 
-EXTRA_DIST = ChangeLog
-
+EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h
