@@ -1,6 +1,6 @@
 CC=$(CC_FOR_BUILD)
 
-am_CFLAGS = $(BUILD_GLIB_CFLAGS) -I$(srcdir) $(CFLAGS_FOR_BUILD)
+am_CFLAGS = $(GLIB_CFLAGS) -I$(srcdir) $(CFLAGS_FOR_BUILD)
 
 #noinst_PROGRAMS = sample
 
@@ -12,12 +12,12 @@ parser.c:  $(srcdir)/monoburg.y
 	bison $(srcdir)/monoburg.y -o parser.c
 
 monoburg$(BUILD_EXEEXT): $(srcdir)/monoburg.c $(srcdir)/monoburg.h parser.c
-	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c parser.c $(am_CFLAGS) $(LDFLAGS) $(BUILD_GLIB_LIBS)
+	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c parser.c $(am_CFLAGS) $(LDFLAGS) $(GLIB_LIBS)
 
 sample.c: monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg
 	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg > sample.c
 
-#sample_LDADD = $(BUILD_GLIB_LIBS)
+#sample_LDADD = $(GLIB_LIBS)
 
 BUILT_SOURCES = parser.c sample.c
 
