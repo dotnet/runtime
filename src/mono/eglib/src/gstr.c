@@ -561,3 +561,61 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 }
 #endif
 
+static gchar escaped_dflt [256] = {
+	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, '"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\\', 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
+
+gchar *
+g_strescape (const gchar *source, const gchar *exceptions)
+{
+	gchar escaped [256];
+	const gchar *ptr;
+	gchar c;
+	int op;
+	gchar *result;
+	gchar *res_ptr;
+
+	g_return_val_if_fail (source != NULL, NULL);
+
+	memcpy (escaped, escaped_dflt, 256);
+	if (exceptions != NULL) {
+		for (ptr = exceptions; *ptr; ptr++)
+			escaped [(int) *ptr] = 0;
+	}
+	result = g_malloc (strlen (source) * 4 + 1); /* Worst case: everything octal. */
+	res_ptr = result;
+	for (ptr = source; *ptr; ptr++) {
+		c = *ptr;
+		op = escaped [(int) c];
+		if (op == 0) {
+			*res_ptr++ = c;
+		} else {
+			*res_ptr++ = '\\';
+			if (op != 1) {
+				*res_ptr++ = op;
+			} else {
+				*res_ptr++ = '0' + ((c >> 6) & 7);
+				*res_ptr++ = '0' + ((c >> 3) & 7);
+				*res_ptr++ = '0' + (c & 7);
+			}
+		}
+	}
+	*res_ptr = '\0';
+	return result;
+}
+

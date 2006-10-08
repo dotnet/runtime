@@ -176,6 +176,7 @@ gchar       *g_strjoin        (const gchar *separator, ...);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
 gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
+gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
 
 gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **error);
 gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error);

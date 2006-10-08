@@ -322,6 +322,26 @@ test_strlcpy ()
 	return OK;
 }
 
+RESULT
+test_strescape ()
+{
+	gchar *str;
+
+	str = g_strescape ("abc", NULL);
+	if (strcmp ("abc", str))
+		return FAILED ("#1");
+	str = g_strescape ("\t\b\f\n\r\\\"abc", NULL);
+	if (strcmp ("\\t\\b\\f\\n\\r\\\\\\\"abc", str))
+		return FAILED ("#2 %s", str);
+	str = g_strescape ("\001abc", NULL);
+	if (strcmp ("\\001abc", str))
+		return FAILED ("#3 %s", str);
+	str = g_strescape ("\001abc", "\001");
+	if (strcmp ("\001abc", str))
+		return FAILED ("#3 %s", str);
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -336,6 +356,7 @@ static Test strutil_tests [] = {
 	{"g_ascii_xdigit_value", test_ascii_xdigit_value},
 	{"g_strdelimit", test_strdelimit},
 	{"g_strlcpy", test_strlcpy},
+	{"g_strescape", test_strescape},
 	{NULL, NULL}
 };
 
