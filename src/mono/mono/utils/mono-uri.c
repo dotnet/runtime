@@ -1,4 +1,12 @@
-
+/*
+ * mono-uri.c: Simple routine used to escape uris.
+ *
+ * Author:
+ *   Miguel de Icaza (miguel@novell.com)
+ *
+ * (C) 2006 Ximian, Inc.
+ *
+ */
 #include "mono-uri.h"
 
 gchar *
