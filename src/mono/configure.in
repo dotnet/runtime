@@ -434,6 +434,7 @@ system)
 *)
   AC_MSG_ERROR([Invalid argument to --with-glib.])
 esac
+AM_CONDITIONAL(EGLIB_BUILD, test x$with_glib = xembedded)
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
