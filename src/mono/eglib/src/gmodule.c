@@ -28,6 +28,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <glib.h>
+#include <gmodule.h>
 
 #ifdef G_OS_UNIX
 #include <dlfcn.h>

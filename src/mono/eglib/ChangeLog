@@ -1,3 +1,7 @@
+2006-10-09  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmodule.h: Move definitions of gmodule to gmodule.h because
+	Mono expects it there.
 
 Mon Oct 9 12:59:16 CEST 2006 Paolo Molaro <lupus@ximian.com>
 

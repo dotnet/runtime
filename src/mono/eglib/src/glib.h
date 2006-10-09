@@ -675,23 +675,6 @@ gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
 						   GError **error);
 
 /*
- * GModule support
- */
-
-typedef struct _GModule GModule;
-
-typedef enum {
-	G_MODULE_BIND_LAZY = 1,
-	G_MODULE_BIND_LOCAL = 2,
-	G_MODULE_BIND_MASK = 3
-} GModuleFlags;
-
-GModule     *g_module_open (const gchar *file, GModuleFlags flags);
-gboolean     g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol);
-const gchar *g_module_error (void);
-gboolean     g_module_close (GModule *module);
-
-/*
  * Character set conversion
  */
 gboolean  g_get_charset        (char **charset);

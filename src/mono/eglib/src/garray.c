@@ -36,11 +36,11 @@
 #define element_length(p,i) ((i) * (p)->element_size)
 
 typedef struct {
-  GArray array;
-  gboolean clear_;
-  gboolean element_size;
-  gboolean zero_terminated;
-  gint capacity;
+	GArray array;
+	gboolean clear_;
+	gboolean element_size;
+	gboolean zero_terminated;
+	gint capacity;
 } GArrayPriv;
 
 static void
