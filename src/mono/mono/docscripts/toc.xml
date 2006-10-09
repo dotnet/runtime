@@ -147,12 +147,6 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="Target Architecture"/>
-	    <param name="Local" value="deploy/mono-api-target.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
 	    <param name="Name" value="Threading API"/>
 	    <param name="Local" value="deploy/mono-api-threads.html"/>
 	  </object>
