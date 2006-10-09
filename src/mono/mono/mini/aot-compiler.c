@@ -2701,6 +2701,7 @@ load_profile_files (MonoAotCompile *acfg)
 		res = fscanf (infile, "%32s\n", ver);
 		if ((res != 1) || strcmp (ver, "#VER:1") != 0) {
 			printf ("Profile file has wrong version or invalid.\n");
+			fclose (infile);
 			continue;
 		}
 
@@ -2714,6 +2715,7 @@ load_profile_files (MonoAotCompile *acfg)
 			if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (method_index)))
 				acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (method_index));
 		}
+		fclose (infile);
 	}
 
 	/* Add missing methods */
