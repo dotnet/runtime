@@ -22,6 +22,7 @@ marshal_test_ref_bool
 TestVectorList
 __bsd_dtoa
 bsd_strtod
+TestBlittableClass
 # 
 # Produced by the tests
 #
@@ -162,6 +163,7 @@ mono_debug_read_method
 mono_domain_get_tls_offset 
 mono_thread_get_tls_offset
 mono_class_init_trampoline
+mono_classes_init
 mono_class_inflate_generic_method_full
 mono_class_setup_interface_offsets
 mono_class_get_overrides_full
@@ -182,9 +184,12 @@ mono_metadata_load_generic_param_constraints
 mono_find_jit_opcode_emulation
 mono_marshal_get_ldflda_wrapper
 mono_debug_free_method_jit_info
+mono_jit_info_table_add
+mono_jit_info_table_remove
+mono_jit_info_add_aot_module
+mono_install_jit_info_find_in_aot
 mono_reflection_get_dynamic_overrides
 mono_poll
-mono_array_new_va
 mono_dynamic_stream_reset
 mono_domain_get_tls_offset
 mono_domain_add_class_static_data
@@ -195,6 +200,38 @@ mono_profiler_coverage_free
 mini_method_compile
 mono_destroy_compile
 mono_get_method_constrained
+mono_constant_fold_inst
+mono_is_power_of_two
+mono_blockset_print
+mono_print_tree
+mono_print_tree_nl
+mono_resolve_patch_target
+mono_get_lmf_addr
+mono_draw_graph
+mono_icall_get_wrapper
+mono_find_class_init_trampoline_by_addr
+mono_class_init_trampoline
+mono_regname_full
+mono_codegen
+mono_free_loop_info
+mono_varlist_sort
+mono_varlist_insert_sorted
+mono_metadata_generic_method_hash
+mono_metadata_lookup_generic_inst
+mono_metadata_lookup_generic_class
+mono_config_parse_publisher_policy
+mono_unload_interface_ids
+mono_metadata_type_dup_mp
+mono_array_new_va
+mono_ldtoken_wrapper
+mono_jump_info_token_new
+#
+# declarative security
+#
+mono_method_has_declsec
+mono_declsec_cache_stack_modifiers
+mono_declsec_create_frame
+mono_declsec_linkdemand
 #
 # Bundles, internal:
 #
@@ -202,6 +239,7 @@ mono_register_config_for_assembly
 #
 # Optimizations methods, exposed because they are used across files
 #
+mono_analyze_liveness
 mono_perform_ssapre
 mono_local_cprop
 mono_local_regalloc
@@ -214,18 +252,54 @@ mono_branch_optimize_exception_target
 mono_destroy_aliasing_information
 mono_build_aliasing_information
 mono_unlink_bblock
+mono_ssa_compute
+mono_ssa_remove
+mono_ssa_cprop
+mono_ssa_deadce
+mono_find_spvar_for_region
+mono_add_varcopy_to_end
 #
 # JIT code genreation internals
 #
+mono_bblock_add_inst
+mono_constant_fold
 mono_delegate_trampoline
 mono_magic_trampoline
 mono_call_inst_add_outarg_reg
+mono_compile_create_var
+mono_compile_make_var_load
+mono_compile_create_var_load
+mono_compile_create_var_store
+mono_compile_assembly
+mono_compile_dominator_info
+mono_compute_natural_loops
+mono_compile_iterated_dfrontier
+mono_create_jump_table
+mono_create_ftnptr
+mono_create_class_init_trampoline
+mono_class_init_trampoline
+mono_create_jit_trampoline
+mono_create_jit_trampoline_from_token
+mono_find_jit_icall_by_name
+mono_find_jit_icall_by_addr
+mono_register_jit_icall
+mono_running_on_valgrind
+mono_global_codeman_reserve
+mono_linear_scan
 #
 # Most init/cleanup routines are internally called, so they do not need to be
 # documented
 #
 mono_thread_init
 mono_assemblies_init
+mono_assembly_load_corlib
+mono_get_runtime_info
+mono_aligned_addr_hash
+mono_meta_table_name
+mono_ldtoken_wrapper
+mini_init
+mini_cleanup
+mono_metadata_compute_table_bases
 mono_debug_init_1
 mono_debug_init_2
 mono_debug_init
@@ -304,6 +378,20 @@ mono_assembly_name_parse_full
 mono_assembly_set_main
 mono_assembly_get_assemblyref
 mono_assembly_setrootdir
+mono_trace_enable
+mono_trace_is_enabled
+mono_trace_set_assembly
+mono_trace_eval
+mono_patch_info_dup_mp
+mono_patch_info_hash
+mono_patch_info_equal
+mono_remove_patch_info
+mono_add_patch_info
+mono_disassemble_code
+mono_inst_foreach
+mono_print_code
+mono_method_same_domain
+mono_register_opcode_emulation
 #
 # I believe these are internal, but I should check with the JIT guys
 #
@@ -320,6 +408,8 @@ mono_raw_buffer_set_make_unreadable
 # AOT: I believe that the AOT API is completely internal, so am listing it
 # here for now, unless we decide there are pieces that should be documneted
 #
+mono_precompile_assemblies
+mono_aot_get_class_from_name
 mono_aot_find_jit_info
 mono_aot_get_method_from_token
 mono_aot_get_n_pagefaults
@@ -339,6 +429,7 @@ mono_aot_trampoline
 mono_aot_get_cached_class_info
 mono_aot_get_method
 mono_aot_is_got_entry
+mono_aot_get_class_from_name
 #
 # These should be static, but require some ugly changes
 #
@@ -349,3 +440,22 @@ alu_reg_to_alu_membase_imm
 #
 mono_secman_inheritancedemand_method
 mono_secman_inheritancedemand_class
+#
+# Produced by matching against the MONO_INTERNAL macro
+# 
+mono_regstate_free
+mono_regstate_free_float
+mono_regstate_free_int
+mono_regstate_alloc_float
+mono_regstate_alloc_int
+mono_regstate_assign
+mono_regstate_new
+mono_regstate_next_long
+mono_regstate_reset
+mono_debug_open_method
+mono_debug_close_method
+mono_debug_open_block
+mono_debug_record_line_number
+mono_debug_serialize_debug_info
+mono_debug_add_icall_wrapper
+__i686.get_pc_thunk
