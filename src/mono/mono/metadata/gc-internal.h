@@ -12,36 +12,36 @@
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
 
-void   mono_object_register_finalizer               (MonoObject  *obj);
-void   ves_icall_System_GC_InternalCollect          (int          generation);
-gint64 ves_icall_System_GC_GetTotalMemory           (MonoBoolean  forceCollection);
-void   ves_icall_System_GC_KeepAlive                (MonoObject  *obj);
-void   ves_icall_System_GC_ReRegisterForFinalize    (MonoObject  *obj);
-void   ves_icall_System_GC_SuppressFinalize         (MonoObject  *obj);
-void   ves_icall_System_GC_WaitForPendingFinalizers (void);
+void   mono_object_register_finalizer               (MonoObject  *obj) MONO_INTERNAL;
+void   ves_icall_System_GC_InternalCollect          (int          generation) MONO_INTERNAL;
+gint64 ves_icall_System_GC_GetTotalMemory           (MonoBoolean  forceCollection) MONO_INTERNAL;
+void   ves_icall_System_GC_KeepAlive                (MonoObject  *obj) MONO_INTERNAL;
+void   ves_icall_System_GC_ReRegisterForFinalize    (MonoObject  *obj) MONO_INTERNAL;
+void   ves_icall_System_GC_SuppressFinalize         (MonoObject  *obj) MONO_INTERNAL;
+void   ves_icall_System_GC_WaitForPendingFinalizers (void) MONO_INTERNAL;
 
-MonoObject *ves_icall_System_GCHandle_GetTarget (guint32 handle);
-guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type);
-void        ves_icall_System_GCHandle_FreeHandle (guint32 handle);
-gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
+MonoObject *ves_icall_System_GCHandle_GetTarget (guint32 handle) MONO_INTERNAL;
+guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type) MONO_INTERNAL;
+void        ves_icall_System_GCHandle_FreeHandle (guint32 handle) MONO_INTERNAL;
+gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle) MONO_INTERNAL;
 
-extern void mono_gc_init (void);
-extern void mono_gc_base_init (void);
-extern void mono_gc_cleanup (void);
-extern void mono_gc_enable (void);
-extern void mono_gc_disable (void);
+extern void mono_gc_init (void) MONO_INTERNAL;
+extern void mono_gc_base_init (void) MONO_INTERNAL;
+extern void mono_gc_cleanup (void) MONO_INTERNAL;
+extern void mono_gc_enable (void) MONO_INTERNAL;
+extern void mono_gc_disable (void) MONO_INTERNAL;
 
 /*
  * Return whenever the current thread is registered with the GC (i.e. started
  * by the GC pthread wrappers on unix.
  */
-extern gboolean mono_gc_is_gc_thread (void);
+extern gboolean mono_gc_is_gc_thread (void) MONO_INTERNAL;
 
 /*
  * Try to register a foreign thread with the GC, if we fail or the backend
  * can't cope with this concept - we return FALSE.
  */
-extern gboolean mono_gc_register_thread (void *baseptr);
+extern gboolean mono_gc_register_thread (void *baseptr) MONO_INTERNAL;
 
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
@@ -52,39 +52,40 @@ extern gpointer mono_gc_out_of_memory (size_t size);
 extern void     mono_gc_enable_events (void);
 
 /* disappearing link functionality */
-void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj);
-void        mono_gc_weak_link_remove (void **link_addr);
-MonoObject *mono_gc_weak_link_get    (void **link_addr);
+void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj) MONO_INTERNAL;
+void        mono_gc_weak_link_remove (void **link_addr) MONO_INTERNAL;
+MonoObject *mono_gc_weak_link_get    (void **link_addr) MONO_INTERNAL;
 
 /* simple interface for data structures needed in the runtime */
-void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits);
+void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits) MONO_INTERNAL;
 /* desc is the result from mono_gc_make_descr*. A NULL value means
  * all the words contain GC pointers.
  * The memory is non-moving and it will be explicitly deallocated.
  * size bytes will be available from the returned address (ie, descr
  * must not be stored in the returned memory)
  */
-void* mono_gc_alloc_fixed            (size_t size, void *descr);
-void  mono_gc_free_fixed             (void* addr);
+void* mono_gc_alloc_fixed            (size_t size, void *descr) MONO_INTERNAL;
+void  mono_gc_free_fixed             (void* addr) MONO_INTERNAL;
 
 /* make sure the gchandle was allocated for an object in domain */
-gboolean mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain);
-void     mono_gchandle_free_domain  (MonoDomain *domain);
+gboolean mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain) MONO_INTERNAL;
+void     mono_gchandle_free_domain  (MonoDomain *domain) MONO_INTERNAL;
 
 /* if there are finalizers to run, run them. Returns the number of finalizers run */
-int      mono_gc_invoke_finalizers  (void);
-gboolean mono_gc_pending_finalizers (void);
-void     mono_gc_finalize_notify    (void);
+int      mono_gc_invoke_finalizers  (void) MONO_INTERNAL;
+gboolean mono_gc_pending_finalizers (void) MONO_INTERNAL;
+void     mono_gc_finalize_notify    (void) MONO_INTERNAL;
 
-void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size);
-void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size);
-void* mono_gc_make_descr_for_string (void);
-void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size);
-void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size);
+void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
+void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
+void* mono_gc_make_descr_for_string (void) MONO_INTERNAL;
+void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size) MONO_INTERNAL;
+void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size) MONO_INTERNAL;
 
-void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data);
-void  mono_gc_add_memory_pressure (gint64 value);
-int   mono_gc_register_root (char *start, size_t size, void *descr);
-void  mono_gc_deregister_root (char* addr);
+void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data) MONO_INTERNAL;
+void  mono_gc_add_memory_pressure (gint64 value) MONO_INTERNAL;
+int   mono_gc_register_root (char *start, size_t size, void *descr) MONO_INTERNAL;
+void  mono_gc_deregister_root (char* addr) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_H__ */
 

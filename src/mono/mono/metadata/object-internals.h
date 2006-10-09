@@ -5,6 +5,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/io-layer/io-layer.h>
+#include "mono/utils/mono-compiler.h"
 
 #if 1
 #ifdef __GNUC__
@@ -421,74 +422,74 @@ typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
 
 MonoAsyncResult *
 mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
-			     MonoObject *state, gpointer data, MonoObject *object_data);
+			     MonoObject *state, gpointer data, MonoObject *object_data) MONO_INTERNAL;
 
 MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
+mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle) MONO_INTERNAL;
 
 void
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args);
+			     MonoReflectionMethod *method, MonoArray *out_args) MONO_INTERNAL;
 
 MonoObject *
 mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
+			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
+			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
+			      MonoDelegate **cb, MonoObject **state) MONO_INTERNAL;
 
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args) MONO_INTERNAL;
 
 void
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
+mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr) MONO_INTERNAL;
 
 void*
-mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
+mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words) MONO_INTERNAL;
 
 void
-mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
+mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 
 /* runtime initialization functions */
 typedef void (*MonoExceptionFunc) (MonoException *ex);
 
 void
-mono_install_handler	    (MonoExceptionFunc func);
+mono_install_handler	    (MonoExceptionFunc func) MONO_INTERNAL;
 
 void	    
-mono_install_runtime_invoke (MonoInvokeFunc func);
+mono_install_runtime_invoke (MonoInvokeFunc func) MONO_INTERNAL;
 
 void	    
-mono_install_compile_method (MonoCompileFunc func);
+mono_install_compile_method (MonoCompileFunc func) MONO_INTERNAL;
 
 void
-mono_install_free_method    (MonoFreeMethodFunc func);
+mono_install_free_method    (MonoFreeMethodFunc func) MONO_INTERNAL;
 
 void
-mono_install_init_vtable    (MonoInitVTableFunc func);
+mono_install_init_vtable    (MonoInitVTableFunc func) MONO_INTERNAL;
 
 void
-mono_type_initialization_init (void);
+mono_type_initialization_init (void) MONO_INTERNAL;
 
 void
-mono_type_initialization_cleanup (void);
+mono_type_initialization_cleanup (void) MONO_INTERNAL;
 
 guint32
-mono_thread_get_tls_key    (void);
+mono_thread_get_tls_key    (void) MONO_INTERNAL;
 
 gint32
-mono_thread_get_tls_offset (void);
+mono_thread_get_tls_offset (void) MONO_INTERNAL;
 
 guint32
-mono_domain_get_tls_key    (void);
+mono_domain_get_tls_key    (void) MONO_INTERNAL;
 
 gint32
-mono_domain_get_tls_offset (void);
+mono_domain_get_tls_offset (void) MONO_INTERNAL;
 
 /* Reflection and Reflection.Emit support */
 
@@ -1034,88 +1035,88 @@ typedef enum {
 	GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK	= 28
 } GenericParameterAttributes;
 
-void          mono_image_create_pefile (MonoReflectionModuleBuilder *module, HANDLE file);
-void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
-MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
-guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
-guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec);
-guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types);
-void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
+void          mono_image_create_pefile (MonoReflectionModuleBuilder *module, HANDLE file) MONO_INTERNAL;
+void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly) MONO_INTERNAL;
+MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name) MONO_INTERNAL;
+guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str) MONO_INTERNAL;
+guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec) MONO_INTERNAL;
+guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types) MONO_INTERNAL;
+void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module) MONO_INTERNAL;
 
-void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
+void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb) MONO_INTERNAL;
 
-void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb);
+void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb) MONO_INTERNAL;
 
-void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb);
+void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb) MONO_INTERNAL;
 
-void        mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb);
+void        mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb) MONO_INTERNAL;
 
-MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
+MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb) MONO_INTERNAL;
 
-void        mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides);
+void        mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides) MONO_INTERNAL;
 
-void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
+void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m) MONO_INTERNAL;
 
-void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
+void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam) MONO_INTERNAL;
 
 MonoType*
-mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types);
+mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types) MONO_INTERNAL;
 MonoType*
-mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types);
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types) MONO_INTERNAL;
 MonoReflectionMethod*
-mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
+mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types) MONO_INTERNAL;
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events);
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events) MONO_INTERNAL;
 MonoReflectionEvent *
-mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
+mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb) MONO_INTERNAL;
 
-MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
+MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig) MONO_INTERNAL;
 
-MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
+MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig) MONO_INTERNAL;
 
-MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec);
+MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
 
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class);
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class) MONO_INTERNAL;
 
 gboolean
-mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass);
+mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass) MONO_INTERNAL;
 
 void
-mono_image_build_metadata (MonoReflectionModuleBuilder *module);
+mono_image_build_metadata (MonoReflectionModuleBuilder *module) MONO_INTERNAL;
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value) MONO_INTERNAL;
 
 void
-mono_release_type_locks (MonoThread *thread);
+mono_release_type_locks (MonoThread *thread) MONO_INTERNAL;
 
 char *
-mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s);
+mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s) MONO_INTERNAL;
 
 MonoArray*
-mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array);
+mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array) MONO_INTERNAL;
 
 void
-mono_array_full_copy (MonoArray *src, MonoArray *dest);
+mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy);
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy) MONO_INTERNAL;
 
 MonoMethodSignature*
-mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context);
+mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
 
 void
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass) MONO_INTERNAL;
 
 gpointer
-mono_get_addr_from_ftnptr (gpointer descr);
+mono_get_addr_from_ftnptr (gpointer descr) MONO_INTERNAL;
 
 void
-mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass);
+mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass) MONO_INTERNAL;
 
 MonoObject*
-mono_nullable_box (guint8 *buf, MonoClass *klass);
+mono_nullable_box (guint8 *buf, MonoClass *klass) MONO_INTERNAL;
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

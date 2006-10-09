@@ -3,6 +3,7 @@
 #define __MONO_PROFILER_PRIVATE_H__
 
 #include <mono/metadata/profiler.h>
+#include "mono/utils/mono-compiler.h"
 
 extern MonoProfileFlags mono_profiler_events;
 
@@ -21,36 +22,36 @@ typedef struct {
         } data [1];
 } MonoProfileCoverageInfo;
 
-void mono_profiler_shutdown        (void);
+void mono_profiler_shutdown        (void) MONO_INTERNAL;
 
-void mono_profiler_method_enter    (MonoMethod *method);
-void mono_profiler_method_leave    (MonoMethod *method);
-void mono_profiler_method_jit      (MonoMethod *method);
-void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result);
+void mono_profiler_method_enter    (MonoMethod *method) MONO_INTERNAL;
+void mono_profiler_method_leave    (MonoMethod *method) MONO_INTERNAL;
+void mono_profiler_method_jit      (MonoMethod *method) MONO_INTERNAL;
+void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result) MONO_INTERNAL;
 
-void mono_profiler_code_transition (MonoMethod *method, int result);
-void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass);
-void mono_profiler_stat_hit        (guchar *ip, void *context);
-void mono_profiler_thread_start    (gsize tid);
-void mono_profiler_thread_end      (gsize tid);
+void mono_profiler_code_transition (MonoMethod *method, int result) MONO_INTERNAL;
+void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;
+void mono_profiler_stat_hit        (guchar *ip, void *context) MONO_INTERNAL;
+void mono_profiler_thread_start    (gsize tid) MONO_INTERNAL;
+void mono_profiler_thread_end      (gsize tid) MONO_INTERNAL;
 
-void mono_profiler_assembly_event  (MonoAssembly *assembly, int code);
-void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result);
+void mono_profiler_assembly_event  (MonoAssembly *assembly, int code) MONO_INTERNAL;
+void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result) MONO_INTERNAL;
 
-void mono_profiler_module_event  (MonoImage *image, int code);
-void mono_profiler_module_loaded (MonoImage *image, int result);
+void mono_profiler_module_event  (MonoImage *image, int code) MONO_INTERNAL;
+void mono_profiler_module_loaded (MonoImage *image, int result) MONO_INTERNAL;
 
-void mono_profiler_class_event  (MonoClass *klass, int code);
-void mono_profiler_class_loaded (MonoClass *klass, int result);
+void mono_profiler_class_event  (MonoClass *klass, int code) MONO_INTERNAL;
+void mono_profiler_class_loaded (MonoClass *klass, int result) MONO_INTERNAL;
 
-void mono_profiler_appdomain_event  (MonoDomain *domain, int code);
-void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
+void mono_profiler_appdomain_event  (MonoDomain *domain, int code) MONO_INTERNAL;
+void mono_profiler_appdomain_loaded (MonoDomain *domain, int result) MONO_INTERNAL;
 
-MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
-void                     mono_profiler_coverage_free  (MonoMethod *method);
+MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries) MONO_INTERNAL;
+void                     mono_profiler_coverage_free  (MonoMethod *method) MONO_INTERNAL;
 
-void mono_profiler_gc_event       (MonoGCEvent e, int generation);
-void mono_profiler_gc_heap_resize (gint64 new_size);
+void mono_profiler_gc_event       (MonoGCEvent e, int generation) MONO_INTERNAL;
+void mono_profiler_gc_heap_resize (gint64 new_size) MONO_INTERNAL;
 
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 
