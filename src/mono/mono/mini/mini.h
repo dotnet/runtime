@@ -701,7 +701,7 @@ enum {
 #endif
 #define MINI_OP(a,b) a,
 enum {
-	OP_START = MONO_CEE_LAST,
+	OP_START = MONO_CEE_LAST - 1,
 #include "mini-ops.h"
 	OP_LAST
 };
