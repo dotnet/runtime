@@ -66,7 +66,7 @@ struct _GHashTable {
 	GMAlloc allocfn;
 };
 
-static int prime_tbl[] = {
+static const int prime_tbl[] = {
 	11, 19, 37, 73, 109, 163, 251, 367, 557, 823, 1237,
 	1861, 2777, 4177, 6247, 9371, 14057, 21089, 31627,
 	47431, 71143, 106721, 160073, 240101, 360163,
@@ -101,8 +101,8 @@ calc_prime (int x)
 	return x;
 }
 
-static int
-to_prime (int x)
+guint
+g_spaced_primes_closest (guint x)
 {
 	int i;
 	
@@ -158,7 +158,7 @@ g_hash_table_new_full_alloc (GHashFunc hash_func, GEqualFunc key_equal_func,
 	hash->key_equal_func = key_equal_func;
 	hash->key_destroy_func = key_destroy_func;
 	hash->value_destroy_func = value_destroy_func;
-	hash->table_size = to_prime (1);
+	hash->table_size = g_spaced_primes_closest (1);
 	hash->table = (*allocfn) (sizeof (Slot *) * hash->table_size);
 	hash->last_rehash = hash->table_size;
 	hash->freefn = freefn;
@@ -176,7 +176,7 @@ do_rehash (GHashTable *hash)
 	/* printf ("Resizing diff=%d slots=%d\n", hash->in_use - hash->last_rehash, hash->table_size); */
 	hash->last_rehash = hash->table_size;
 	current_size = hash->table_size;
-	hash->table_size = to_prime (hash->in_use);
+	hash->table_size = g_spaced_primes_closest (hash->in_use);
 	/* printf ("New size: %d\n", hash->table_size); */
 	table = hash->table;
 	hash->table = (*hash->allocfn)(sizeof (Slot *) * hash->table_size);

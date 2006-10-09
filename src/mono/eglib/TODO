@@ -9,7 +9,6 @@
 		g_strjoinv
 
 	* Miscelaneous
-	      3 g_spaced_primes_closest
 		g_propagate_error
 		
 	GUINT32_FROM_LE

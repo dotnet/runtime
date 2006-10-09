@@ -33,8 +33,8 @@
 #include <dlfcn.h>
 
 /* For Linux and Solaris, need to add others as we port this */
-#define LIBSUFFIX "lib"
-#define LIBPREFIX ".so"
+#define LIBPREFIX "lib"
+#define LIBSUFFIX ".so"
 
 struct _GModule {
 	void *handle;

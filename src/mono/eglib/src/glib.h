@@ -144,6 +144,8 @@ gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer ke
 guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
 void            g_hash_table_destroy         (GHashTable *hash);
 
+guint           g_spaced_primes_closest      (guint x);
+
 #define g_hash_table_insert(h,k,v)    g_hash_table_insert_replace ((h),(k),(v),FALSE)
 #define g_hash_table_replace(h,k,v)   g_hash_table_insert_replace ((h),(k),(v),TRUE)
 
@@ -676,6 +678,23 @@ gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
 						   GError **error);
 gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
 						   GError **error);
+
+/*
+ * GModule support
+ */
+
+typedef struct _GModule GModule;
+
+typedef enum {
+	G_MODULE_BIND_LAZY = 1,
+	G_MODULE_BIND_LOCAL = 2,
+	G_MODULE_BIND_MASK = 3
+} GModuleFlags;
+
+GModule     *g_module_open (const gchar *file, GModuleFlags flags);
+gboolean     g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol);
+const gchar *g_module_error (void);
+gboolean     g_module_close (GModule *module);
 
 /*
  * Character set conversion

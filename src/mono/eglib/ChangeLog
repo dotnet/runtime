@@ -1,3 +1,11 @@
+
+Mon Oct 9 12:59:16 CEST 2006 Paolo Molaro <lupus@ximian.com>
+
+	* src/ghashtable.c: s/to_prime/g_spaced_primes_closest/g
+	and put the array in readonly memory.
+	* src/gstr.c: fixed the build and made array const.
+	* src/gmodule.c: fixed thinko.
+
 2006-10-08  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gstr.c (g_strdup): should allow NULL as an argument.

@@ -561,7 +561,7 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 }
 #endif
 
-static gchar escaped_dflt [256] = {
+static const gchar escaped_dflt [256] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 	0, 0, '"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -623,7 +623,7 @@ gchar *
 g_strdup (const gchar *str)
 {
 	if (str == NULL)
-		return str;
+		return NULL;
 
 	return strdup (str);
 }
