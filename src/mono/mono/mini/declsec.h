@@ -19,6 +19,7 @@
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
+#include "mono/utils/mono-compiler.h"
 
 
 /* Definitions */
@@ -57,10 +58,10 @@ enum {
 };
 
 /* Prototypes */
-MonoBoolean mono_method_has_declsec (MonoMethod *method);
-void mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo);
-MonoSecurityFrame* mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo);
+MonoBoolean mono_method_has_declsec (MonoMethod *method) MONO_INTERNAL;
+void mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo) MONO_INTERNAL;
+MonoSecurityFrame* mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo) MONO_INTERNAL;
 
-guint32 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee);
+guint32 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee) MONO_INTERNAL;
 
 #endif /* _MONO_MINI_DECLSEC_H_ */

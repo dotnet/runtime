@@ -111,17 +111,17 @@ typedef struct MonoAliasingInformation {
 } MonoAliasingInformation;
 
 extern MonoAliasingInformation*
-mono_build_aliasing_information (MonoCompile *cfg);
+mono_build_aliasing_information (MonoCompile *cfg) MONO_INTERNAL;
 extern void
-mono_destroy_aliasing_information (MonoAliasingInformation *info);
+mono_destroy_aliasing_information (MonoAliasingInformation *info) MONO_INTERNAL;
 extern void
-mono_aliasing_initialize_code_traversal (MonoAliasingInformation *info, MonoBasicBlock *bb);
+mono_aliasing_initialize_code_traversal (MonoAliasingInformation *info, MonoBasicBlock *bb) MONO_INTERNAL;
 extern MonoLocalVariableList*
-mono_aliasing_get_affected_variables_for_inst_traversing_code (MonoAliasingInformation *info, MonoInst *inst);
+mono_aliasing_get_affected_variables_for_inst_traversing_code (MonoAliasingInformation *info, MonoInst *inst) MONO_INTERNAL;
 extern MonoLocalVariableList*
-mono_aliasing_get_affected_variables_for_inst (MonoAliasingInformation *info, MonoInst *inst);
+mono_aliasing_get_affected_variables_for_inst (MonoAliasingInformation *info, MonoInst *inst) MONO_INTERNAL;
 
 extern void
-mono_aliasing_deadce (MonoAliasingInformation *info);
+mono_aliasing_deadce (MonoAliasingInformation *info) MONO_INTERNAL;
 
 #endif /* __MONO_ALIASING_H__ */

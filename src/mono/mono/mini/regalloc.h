@@ -48,14 +48,14 @@ typedef struct {
 #define mono_regstate_next_float(rs) ((rs)->next_vfreg++)
 
 
-MonoRegState* mono_regstate_new (void);
+MonoRegState* mono_regstate_new (void) MONO_INTERNAL;
 
-void          mono_regstate_free      (MonoRegState *rs);
-void          mono_regstate_reset     (MonoRegState *rs);
-void          mono_regstate_assign    (MonoRegState *rs);
-int           mono_regstate_alloc_int   (MonoRegState *rs, regmask_t allow);
-void          mono_regstate_free_int  (MonoRegState *rs, int reg);
-int           mono_regstate_alloc_float (MonoRegState *rs, regmask_t allow);
-void          mono_regstate_free_float  (MonoRegState *rs, int reg);
-inline int    mono_regstate_next_long (MonoRegState *rs);
+void          mono_regstate_free      (MonoRegState *rs) MONO_INTERNAL;
+void          mono_regstate_reset     (MonoRegState *rs) MONO_INTERNAL;
+void          mono_regstate_assign    (MonoRegState *rs) MONO_INTERNAL;
+int           mono_regstate_alloc_int   (MonoRegState *rs, regmask_t allow) MONO_INTERNAL;
+void          mono_regstate_free_int  (MonoRegState *rs, int reg) MONO_INTERNAL;
+int           mono_regstate_alloc_float (MonoRegState *rs, regmask_t allow) MONO_INTERNAL;
+void          mono_regstate_free_float  (MonoRegState *rs, int reg) MONO_INTERNAL;
+inline int    mono_regstate_next_long (MonoRegState *rs) MONO_INTERNAL;
 
