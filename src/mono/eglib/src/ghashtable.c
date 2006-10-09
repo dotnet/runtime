@@ -24,19 +24,6 @@
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * NOTES:
- *
- *   In addition to supporting the standard g_hash_table behavior,
- *   this version adds support for providing a malloc/free set of
- *   routines, these by default are malloc and free, but with a GC,
- *   they could be GC_malloc and the free routine could be NULL.  If
- *   the value for free is NULL, we set all the fields that we would
- *   have otherwise released to NULL, to assist the garbage collector.
- *   
- *   This is designed to support the GC-aware hashtable that Mono uses,
- *   and replaces mono-hash.c.   To do this, a new constructor is introduced
- *   that contains the extra parameters.
  */
 #include <stdio.h>
 #include <math.h>
@@ -62,8 +49,6 @@ struct _GHashTable {
 	int   threshold;
 	int   last_rehash;
 	GDestroyNotify value_destroy_func, key_destroy_func;
-	GMFree  freefn;
-	GMAlloc allocfn;
 };
 
 static const int prime_tbl[] = {
@@ -113,37 +98,8 @@ g_spaced_primes_closest (guint x)
 	return calc_prime (x);
 }
 
-#undef g_new0
-static void *
-g_new0 (size_t t)
-{
-	return calloc (1, t);
-}
-
 GHashTable *
 g_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func)
-{
-	return g_hash_table_new_full_alloc (hash_func, key_equal_func, NULL, NULL, g_new0, free);
-}
-
-GHashTable *
-g_hash_table_new_alloc (GHashFunc hash_func, GEqualFunc key_equal_func, GMAlloc allocfn, GMFree freefn)
-{
-	return g_hash_table_new_full_alloc (hash_func, key_equal_func, NULL, NULL, allocfn, freefn);
-}
-
-
-GHashTable *
-g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
-		       GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
-{
-	return g_hash_table_new_full_alloc (hash_func, key_equal_func, key_destroy_func, value_destroy_func, g_new0, free);
-}
-
-GHashTable *
-g_hash_table_new_full_alloc (GHashFunc hash_func, GEqualFunc key_equal_func,
-			     GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func,
-			     GMAlloc allocfn, GMFree freefn)
 {
 	GHashTable *hash;
 
@@ -151,18 +107,28 @@ g_hash_table_new_full_alloc (GHashFunc hash_func, GEqualFunc key_equal_func,
 		hash_func = g_direct_hash;
 	if (key_equal_func == NULL)
 		key_equal_func = g_direct_equal;
-
-	hash = (*allocfn) (sizeof (GHashTable));
+	hash = g_new0 (GHashTable, 1);
 
 	hash->hash_func = hash_func;
 	hash->key_equal_func = key_equal_func;
+
+	hash->table_size = g_spaced_primes_closest (1);
+	hash->table = g_new0 (Slot *, hash->table_size);
+	hash->last_rehash = hash->table_size;
+	
+	return hash;
+}
+
+GHashTable *
+g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
+		       GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
+{
+	GHashTable *hash = g_hash_table_new (hash_func, key_equal_func);
+	if (hash == NULL)
+		return NULL;
+	
 	hash->key_destroy_func = key_destroy_func;
 	hash->value_destroy_func = value_destroy_func;
-	hash->table_size = g_spaced_primes_closest (1);
-	hash->table = (*allocfn) (sizeof (Slot *) * hash->table_size);
-	hash->last_rehash = hash->table_size;
-	hash->freefn = freefn;
-	hash->allocfn = allocfn;
 	
 	return hash;
 }
@@ -179,7 +145,7 @@ do_rehash (GHashTable *hash)
 	hash->table_size = g_spaced_primes_closest (hash->in_use);
 	/* printf ("New size: %d\n", hash->table_size); */
 	table = hash->table;
-	hash->table = (*hash->allocfn)(sizeof (Slot *) * hash->table_size);
+	hash->table = g_new0 (Slot *, hash->table_size);
 	
 	for (i = 0; i < current_size; i++){
 		Slot *s, *next;
@@ -192,7 +158,7 @@ do_rehash (GHashTable *hash)
 			hash->table [hashcode] = s;
 		}
 	}
-	(*hash->freefn)(table);
+	g_free (table);
 }
 
 void
@@ -235,7 +201,7 @@ g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gbo
 			return;
 		}
 	}
-	s = (*hash->allocfn) (sizeof (Slot));
+	s = g_new (Slot, 1);
 	s->key = key;
 	s->value = value;
 	s->next = hash->table [hashcode];
@@ -340,12 +306,7 @@ g_hash_table_remove (GHashTable *hash, gconstpointer key)
 				hash->table [hashcode] = s->next;
 			else
 				last->next = s->next;
-			if (hash->freefn)
-				(*hash->freefn) (s);
-			else {
-				s->key = NULL;
-				s->value = NULL;
-			}
+			g_free (s);
 			hash->in_use--;
 			return TRUE;
 		}
@@ -382,13 +343,7 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 					last->next = s->next;
 					n = last->next;
 				}
-				if (hash->freefn)
-					(*hash->freefn)(s);
-				else {
-					s->key = NULL;
-					s->value = NULL;
-				}
-				
+				g_free (s);
 				hash->in_use--;
 				count++;
 				s = n;
@@ -420,20 +375,12 @@ g_hash_table_destroy (GHashTable *hash)
 				(*hash->key_destroy_func)(s->key);
 			if (hash->value_destroy_func != NULL)
 				(*hash->value_destroy_func)(s->value);
-			if (hash->freefn)
-				(*hash->freefn)(s);
-			else {
-				s->key = NULL;
-				s->value = NULL;
-			}
+			g_free (s);
 		}
 	}
-	if (hash->freefn){
-		(*hash->freefn) (hash->table);
-		(*hash->freefn) (hash);
-	} else {
-		hash->table = NULL;
-	}
+	g_free (hash->table);
+	
+	g_free (hash);
 }
 
 gboolean

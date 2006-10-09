@@ -1,9 +1,6 @@
 #ifndef __GLIB_H
 #define __GLIB_H
 
-/* Define to detect that we are being built with eglib */
-#define __EGLIB_X11 1
-
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +9,7 @@
 #include <ctype.h>
 #include <eglib-config.h>
 
+#define __EGLIB_X11 1
 /*
  * Basic data types
  */
@@ -127,9 +125,6 @@ typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_
 typedef void     (*GDestroyNotify) (gpointer data);
 typedef guint    (*GHashFunc)      (gconstpointer key);
 typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
-
-typedef void    (*GMFree)  (void *ptr);
-typedef void   *(*GMAlloc) (size_t size);
 
 GHashTable     *g_hash_table_new             (GHashFunc hash_func, GEqualFunc key_equal_func);
 GHashTable     *g_hash_table_new_full        (GHashFunc hash_func, GEqualFunc key_equal_func,
@@ -718,18 +713,5 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define g_thread_supported()   TRUE
 #define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } G_STMT_END
 
-/*
- * Eglib-only routines:
- *
- * These are extensions, not found on regular glib.
- */
-GHashTable     *g_hash_table_new_alloc       (GHashFunc hash_func, GEqualFunc key_equal_func,
-					      GMAlloc allocfn, GMFree freefn);
-GHashTable     *g_hash_table_new_full_alloc  (GHashFunc hash_func, GEqualFunc key_equal_func,
-					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func,
-					      GMAlloc allocfn, GMFree freefn);
-
-#define GLIB_CHECK_VERSION(a,b,c)    TRUE
- 
 #endif
 

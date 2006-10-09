@@ -10,10 +10,6 @@ Mon Oct 9 12:59:16 CEST 2006 Paolo Molaro <lupus@ximian.com>
 
 	* src/gstr.c (g_strdup): should allow NULL as an argument.
 
-	* src/ghashtable.c (g_hash_table_new_alloc,
-	g_hash_table_new_full_alloc): Add new entry points that will be
-	used for GC-aware hashtables. 
-
 2006-10-08 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* test/string-util.c:
