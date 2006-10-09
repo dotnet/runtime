@@ -800,7 +800,8 @@ static guint32 finalizer_thread (gpointer unused)
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
-		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
+		/* Use alertable=FALSE since we will be asked to exit using the event too */
+		WaitForSingleObjectEx (finalizer_event, INFINITE, FALSE);
 
 		if (domains_to_finalize) {
 			mono_finalizer_lock ();
