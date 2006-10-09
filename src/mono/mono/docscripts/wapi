@@ -1,9 +1,7 @@
 GetThreadContext
 DeleteCriticalSection
-EnterCriticalSection
 InitializeCriticalSection
 InitializeCriticalSectionAndSpinCount
-LeaveCriticalSection
 SetCriticalSectionSpinCount
 TryEnterCriticalSection
 errno_to_WSA
@@ -15,6 +13,7 @@ PulseEvent
 ResetEvent
 SetEvent
 CloseHandle
+DuplicateHandle
 CopyFile
 CreateDirectory
 CreateFile

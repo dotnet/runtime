@@ -72,6 +72,7 @@ DATAFILES:
 		ignored, they come from tests for example, or are known
 		to be exposed.
 
+		This is consumed by produce-lists
 	
 	public-api 
 	wapi
