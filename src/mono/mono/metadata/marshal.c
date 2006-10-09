@@ -7833,6 +7833,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
 		if (this) {
+			/* FIXME: need a solution for the moving GC here */
 			mono_mb_emit_ptr (mb, this);
 		} else {
 			/* fixme: */

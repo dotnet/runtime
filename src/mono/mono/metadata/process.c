@@ -126,6 +126,7 @@ static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
 
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
+	/* FIXME: moving GC */
 	*(MonoObject **)(((char *)obj) + field->offset)=data;
 }
 
@@ -144,6 +145,7 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
+	/* FIXME: moving GC */
 	*(MonoString **)(((char *)obj) + field->offset)=string;
 }
 
@@ -163,6 +165,7 @@ static void process_set_field_string_utf8 (MonoObject *obj,
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
+	/* FIXME: moving GC */
 	*(MonoString **)(((char *)obj) + field->offset)=string;
 }
 
@@ -588,6 +591,7 @@ static void process_add_module (GPtrArray *modules, MonoAssembly *ass)
 	process_set_field_string_utf8 (item, "modulename", modulename);
 	g_free (modulename);
 
+	/* FIXME: moving GC */
 	g_ptr_array_add (modules, item);
 }
 

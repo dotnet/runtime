@@ -4980,7 +4980,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	/* write the section tables and section content */
 	section = (MonoSectionTable*)(pefile->data + section_start);
 	for (i = 0; i < MONO_SECTION_MAX; ++i) {
-		static const char *section_names [] = {
+		static const char section_names [][7] = {
 			".text", ".rsrc", ".reloc"
 		};
 		if (!assembly->sections [i].size)
