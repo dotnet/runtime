@@ -758,7 +758,7 @@ mono_class_find_enum_basetype (MonoClass *class)
 		MonoGenericContainer *container = NULL;
 		MonoType *ftype;
 
-		mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx, cols, MONO_FIELD_SIZE);
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
@@ -898,7 +898,7 @@ mono_class_setup_fields (MonoClass *class)
 			const char *sig;
 			guint32 cols [MONO_FIELD_SIZE];
 
-			mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
+			mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx, cols, MONO_FIELD_SIZE);
 			/* The name is needed for fieldrefs */
 			field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
 			sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
@@ -1311,7 +1311,7 @@ mono_class_setup_properties (MonoClass *class)
 
 	properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
 	for (i = class->property.first; i < last; ++i) {
-		mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_PROPERTY], i, cols, MONO_PROPERTY_SIZE);
 		properties [i - class->property.first].parent = class;
 		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
 		properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
@@ -1437,7 +1437,7 @@ mono_class_setup_events (MonoClass *class)
 	for (i = class->event.first; i < last; ++i) {
 		MonoEvent *event = &events [i - class->event.first];
 
-		mono_metadata_decode_table_row (class->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_EVENT], i, cols, MONO_EVENT_SIZE);
 		event->parent = class;
 		event->attrs = cols [MONO_EVENT_FLAGS];
 		event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);

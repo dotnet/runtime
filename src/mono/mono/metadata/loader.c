@@ -1303,7 +1303,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		return result;
 	}
 
-	mono_metadata_decode_table_row (image, MONO_TABLE_METHOD, idx - 1, cols, 6);
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
@@ -1539,14 +1539,14 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index;
 
-		param_index = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_PARAMLIST);
+		param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
 		if (idx < methodt->rows)
-			lastp = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx, MONO_METHOD_PARAMLIST);
+			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
 			lastp = paramt->rows + 1;
 		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_PARAM, i -1, cols, MONO_PARAM_SIZE);
+			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 			if (cols [MONO_PARAM_SEQUENCE]) /* skip return param spec */
 				names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass->image, cols [MONO_PARAM_NAME]);
 		}
@@ -1573,7 +1573,7 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
-		guint param_index = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_PARAMLIST);
+		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
 		return mono_metadata_make_token (MONO_TABLE_PARAM, param_index + index);
 	}
@@ -1615,15 +1615,15 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_PARAMLIST);
+		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
 		if (idx < methodt->rows)
-			lastp = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx, MONO_METHOD_PARAMLIST);
+			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
 			lastp = paramt->rows + 1;
 
 		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_PARAM, i -1, cols, MONO_PARAM_SIZE);
+			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 
 			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
 				const char *tp;
@@ -1666,15 +1666,15 @@ mono_method_has_marshal_info (MonoMethod *method)
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_PARAMLIST);
+		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
 		if (idx + 1 < methodt->rows)
-			lastp = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, idx, MONO_METHOD_PARAMLIST);
+			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
 			lastp = paramt->rows + 1;
 
 		for (i = param_index; i < lastp; ++i) {
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_PARAM, i -1, cols, MONO_PARAM_SIZE);
+			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 
 			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL)
 				return TRUE;
@@ -1792,7 +1792,7 @@ mono_method_signature (MonoMethod *m)
 	idx = mono_metadata_token_index (m->token);
 	img = m->klass->image;
 
-	sig = mono_metadata_blob_heap (img, mono_metadata_decode_table_row_col (img, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_SIGNATURE));
+	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 
 	g_assert (!m->klass->generic_class);
 	container = m->generic_container;
@@ -1932,7 +1932,7 @@ mono_method_get_header (MonoMethod *method)
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 	img = method->klass->image;
-	rva = mono_metadata_decode_table_row_col (img, MONO_TABLE_METHOD, idx - 1, MONO_METHOD_RVA);
+	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 	loc = mono_image_rva_map (img, rva);
 
 	g_assert (loc);
