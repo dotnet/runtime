@@ -459,3 +459,8 @@ mono_debug_record_line_number
 mono_debug_serialize_debug_info
 mono_debug_add_icall_wrapper
 __i686.get_pc_thunk
+mono_trace_enable
+mono_trace_is_enabled
+mono_trace_eval
+mono_trace_leave_method
+mono_trace_enter_method
