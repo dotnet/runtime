@@ -120,7 +120,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 	} else {
 		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 
-		if ((f = fopen (symfile->filename, "rb")) > 0) {
+		if ((f = fopen (symfile->filename, "rb"))) {
 			struct stat stat_buf;
 			
 			if (fstat (fileno (f), &stat_buf) < 0) {
