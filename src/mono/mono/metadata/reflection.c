@@ -7387,11 +7387,6 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	method_index = mono_method_get_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
-	if (method->klass->generic_class || mono_method_signature (method)->generic_param_count) {
-		/* FIXME FIXME FIXME */
-		return NULL;
-	}
-
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
 	if (method_index == ca->rows) {
 		ca = &image->tables [MONO_TABLE_PARAM];
