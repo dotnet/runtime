@@ -27,6 +27,7 @@
 #include <config.h>
 #include <ctype.h>
 #include <errno.h>
+#include "strtod.h"
 
 #define UCHAR(x) ((unsigned char) (x))
 
@@ -38,12 +39,12 @@
 #define NULL 0
 #endif
 
-static int maxExponent = 511;  /* Largest possible base 10 exponent.  Any
+static const int maxExponent = 511;  /* Largest possible base 10 exponent.  Any
          * exponent larger than this will already
          * produce underflow or overflow, so there's
          * no need to worry about additional digits.
          */
-static double powersOf10[] = {  /* Table giving binary powers of 10.  Entry */
+static const double powersOf10[] = {  /* Table giving binary powers of 10.  Entry */
     10.,      /* is 10^2^i.  Used to convert decimal */
     100.,      /* exponents into floating-point numbers. */
     1.0e4,
@@ -77,8 +78,8 @@ static double powersOf10[] = {  /* Table giving binary powers of 10.  Entry */
  */
 
 double
-bsd_strtod(string, endPtr)
-    const char *string;    /* A decimal ASCII floating-point number,
+bsd_strtod(const char *string, char **endPtr)
+			    /* string: A decimal ASCII floating-point number,
 			    * optionally preceded by white space.
 			    * Must have form "-I.FE-X", where I is the
 			    * integer part of the mantissa, F is the
@@ -90,11 +91,12 @@ bsd_strtod(string, endPtr)
 			    * The "E" may actually be an "e".  E and X
 			    * may both be omitted (but not just one).
 			    */
-char **endPtr;    /* If non-NULL, store terminating character's
+		  /* endPtr: If non-NULL, store terminating character's
 		   * address here. */
 {
 	int sign, expSign = FALSE;
-	double fraction, dblExp, *d;
+	double fraction, dblExp;
+	const double *d;
 	register const char *p;
 	register int c;
 	int exp = 0;    /* Exponent read from "EX" field. */
