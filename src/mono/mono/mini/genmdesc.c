@@ -161,9 +161,6 @@ build_table (const char *fname, const char *name) {
 			fprintf (f, "\",\t/* %s */\n", desc->name);
 		}
 	}
-	for (i = MONO_CEE_LAST; i < OP_LOAD; ++i) {
-		fprintf (f, "\tNULL, /* unassigned */\n");
-	}
 	for (i = OP_LOAD; i < OP_LAST; ++i) {
 		desc = opcodes + i;
 		if (!desc->desc)
