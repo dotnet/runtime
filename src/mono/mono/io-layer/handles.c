@@ -1397,26 +1397,33 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
+static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout, gboolean alertable)
 {
 	struct timespec fake_timeout;
 	int ret;
-	
-	_wapi_calc_timeout (&fake_timeout, 100);
-	
-	if (timeout != NULL && ((fake_timeout.tv_sec > timeout->tv_sec) ||
-	   (fake_timeout.tv_sec == timeout->tv_sec &&
-		fake_timeout.tv_nsec > timeout->tv_nsec))) {
-		/* Real timeout is less than 100ms time */
-		ret=mono_cond_timedwait (cond, mutex, timeout);
-	} else {
-		ret=mono_cond_timedwait (cond, mutex, &fake_timeout);
 
-		/* Mask the fake timeout, this will cause
-		 * another poll if the cond was not really signaled
-		 */
-		if (ret==ETIMEDOUT) {
-			ret=0;
+	if (!alertable) {
+		if (timeout)
+			ret=mono_cond_timedwait (cond, mutex, timeout);
+		else
+			ret=mono_cond_wait (cond, mutex);
+	} else {
+		_wapi_calc_timeout (&fake_timeout, 100);
+	
+		if (timeout != NULL && ((fake_timeout.tv_sec > timeout->tv_sec) ||
+								(fake_timeout.tv_sec == timeout->tv_sec &&
+								 fake_timeout.tv_nsec > timeout->tv_nsec))) {
+			/* Real timeout is less than 100ms time */
+			ret=mono_cond_timedwait (cond, mutex, timeout);
+		} else {
+			ret=mono_cond_timedwait (cond, mutex, &fake_timeout);
+
+			/* Mask the fake timeout, this will cause
+			 * another poll if the cond was not really signaled
+			 */
+			if (ret==ETIMEDOUT) {
+				ret=0;
+			}
 		}
 	}
 	
@@ -1425,25 +1432,25 @@ static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex
 
 int _wapi_handle_wait_signal (void)
 {
-	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, NULL);
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, NULL, TRUE);
 }
 
 int _wapi_handle_timedwait_signal (struct timespec *timeout)
 {
-	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, timeout);
+	return timedwait_signal_poll_cond (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, timeout, TRUE);
 }
 
-int _wapi_handle_wait_signal_handle (gpointer handle)
+int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable)
 {
 #ifdef DEBUG
 	g_message ("%s: waiting for %p", __func__, handle);
 #endif
 	
-	return _wapi_handle_timedwait_signal_handle (handle, NULL);
+	return _wapi_handle_timedwait_signal_handle (handle, NULL, alertable);
 }
 
 int _wapi_handle_timedwait_signal_handle (gpointer handle,
-					  struct timespec *timeout)
+					  struct timespec *timeout, gboolean alertable)
 {
 #ifdef DEBUG
 	g_message ("%s: waiting for %p (type %s)", __func__, handle,
@@ -1479,7 +1486,7 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 		
 	} else {
 		guint32 idx = GPOINTER_TO_UINT(handle);
-		return timedwait_signal_poll_cond (&_WAPI_PRIVATE_HANDLES(idx).signal_cond, &_WAPI_PRIVATE_HANDLES(idx).signal_mutex, timeout);
+		return timedwait_signal_poll_cond (&_WAPI_PRIVATE_HANDLES(idx).signal_cond, &_WAPI_PRIVATE_HANDLES(idx).signal_mutex, timeout, alertable);
 	}
 }
 

@@ -197,9 +197,9 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		}
 			
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_wait_signal_handle (handle);
+			waited = _wapi_handle_wait_signal_handle (handle, alertable);
 		} else {
-			waited = _wapi_handle_timedwait_signal_handle (handle, &abstime);
+			waited = _wapi_handle_timedwait_signal_handle (handle, &abstime, alertable);
 		}
 	
 		if (alertable)
@@ -398,9 +398,9 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 		
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_wait_signal_handle (wait);
+			waited = _wapi_handle_wait_signal_handle (wait, alertable);
 		} else {
-			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime);
+			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime, alertable);
 		}
 
 		if (alertable) {

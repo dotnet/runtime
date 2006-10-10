@@ -79,9 +79,9 @@ extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
 extern int _wapi_handle_wait_signal (void);
 extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
-extern int _wapi_handle_wait_signal_handle (gpointer handle);
+extern int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
-						 struct timespec *timeout);
+						 struct timespec *timeout, gboolean alertable);
 extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,
