@@ -1894,7 +1894,7 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 			encode_reflection_type (assembly, pt, p, &p);
 		}
-	} else if (smb) {
+	} else if (smb && smb->parameters) {
 		/* the property type is the last param */
 		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), p, &p);
 		for (i = 0; i < nparams; ++i) {
@@ -6734,7 +6734,7 @@ handle_type:
 			n [slen] = 0;
 			t = mono_reflection_type_from_name (n, image);
 			if (!t)
-				g_warning ("Cannot load type '%s'", n);
+				g_error ("Cannot load type '%s'", n);
 			g_free (n);
 			p += slen;
 			subc = mono_class_from_mono_type (t);
@@ -7779,7 +7779,7 @@ handle_enum:
 		k = mono_object_class (arg);
 		if (!mono_object_isinst (arg, mono_defaults.monotype_class) &&
 				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
-			g_error ("only types allowed, not %s.%s", k->name_space, k->name);
+			g_error ("Only System.Type allowed, not %s.%s", k->name_space, k->name);
 handle_type:
 		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
 		slen = strlen (str);
