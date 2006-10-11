@@ -1164,7 +1164,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 			errno = err;
 		}
 
-	} while ((ret == SOCKET_ERROR) && (*error == WSAGetLastError ()) == WSAEINTR);
+	} while ((ret == SOCKET_ERROR) && (*error = WSAGetLastError ()) == WSAEINTR);
 
 	return (ret != SOCKET_ERROR && _wapi_FD_ISSET (sock, &fds));
 }
