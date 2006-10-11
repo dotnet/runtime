@@ -50,9 +50,6 @@ typedef struct MonoCompileArch
   gint32 params_stack_size;  // Stack size reserved for call params by this compile method
 
   gpointer    got_data;
- 
-//  gpointer    litpool;
-//  glong       litsize;
   glong       bwx;
 } MonoCompileArch;
 
@@ -74,7 +71,12 @@ struct MonoLMF
 
 // Regs available for allocation in compile unit
 // For Alpha: r1-r14, r22-r25
-#define MONO_ARCH_CALLEE_REGS	((regmask_t)0x03C07FFF)
+// 1111 1111 1111 1111 1111 1111 1111 1111
+//  098 7654 3210 9876 5432 1098 7654 3210
+// RRRR RRLL LLAA AAAA RLLL LLLL LLLL LLLL - No global regs
+// RRRR RRLL LLAA AAAA RGGG LLLL LLLL LLLL - 3 global regs
+//#define MONO_ARCH_CALLEE_REGS	((regmask_t)0x03C07FFF)
+#define MONO_ARCH_CALLEE_REGS ((regmask_t)0x03C00FFF)
 #define MONO_ARCH_CALLEE_FREGS	((regmask_t)0x03C07FFF)
 
 // These are the regs that are considered global
@@ -86,8 +88,8 @@ struct MonoLMF
 // For Alpha - r9-r14. Actually later we could use some of the
 // upper "t" regs, since local reg allocator doesn't like registers
 // very much, so we could safely keep vars in them
-//#define MONO_ARCH_CALLEE_SAVED_REGS ((regmask_t)0xFC0080000)
-#define MONO_ARCH_CALLEE_SAVED_REGS ((regmask_t)0x3C00FE00)
+//#define MONO_ARCH_CALLEE_SAVED_REGS ((regmask_t)0x3C00FE00)
+#define MONO_ARCH_CALLEE_SAVED_REGS ((regmask_t)0x3C00F000)
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
 #define ALPHA_IS_CALLEE_SAVED_REG(reg) (MONO_ARCH_CALLEE_SAVED_REGS & (1 << (reg)))
@@ -112,7 +114,7 @@ struct MonoLMF
 #define MONO_ARCH_USE_SIGACTION 1
 
 /* Use prerefered create trampoline callback method */
-#define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE
+#define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
 
 //#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'r') ? IA64_R8 : ((desc == 'g') ? 8 : -1))
 //#define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
@@ -124,8 +126,6 @@ struct MonoLMF
 // by md file (letter after "dest"). Overwise return -1
 //#define MONO_ARCH_INST_FIXED_REG(desc)	(-1)
 #define MONO_ARCH_INST_FIXED_REG(desc)  ((desc == 'o') ? alpha_at : ( (desc == 'a') ? alpha_r0 : -1) )
-
-//#define MONO_ARCH_IS_GLOBAL_IREG(reg) (is_hard_ireg (reg) && ((reg) >= cfg->arch.reg_local0) && ((reg) < cfg->arch.reg_out0))
 
 #define MONO_ARCH_HAVE_CREATE_VARS 1
 
@@ -277,21 +277,19 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 
 unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
-#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 #define MONO_ARCH_NO_EMULATE_MUL_IMM 1
 
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
-#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
-#define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_HAVE_PIC_AOT 1
-#define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
-#define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
-#define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_SAVE_UNWIND_INFO 1
 
 #endif
+
+#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
+
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 

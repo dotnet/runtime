@@ -510,12 +510,68 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 
 }
 
+/*
+** This method is called after delegate method is compiled.
+** We need to patch call site to call compiled method directly
+** (not via trampoline stub)
+** Determine address to patch using fp reg
+** 
+*/
 
 void
 mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp,
 				     gssize *regs, guint8 *addr)
 {
+  unsigned int *pcode = (unsigned int *)code;
+  int reg;
+  short fp_disp, obj_disp;
+  unsigned long *pobj, obj;
+
   ALPHA_DEBUG("mono_arch_patch_delegate_trampoline");
+
+  // The call signature for now is
+  // -4 - ldq     v0,24(fp)
+  // -3 - ldq     v0,40(v0)
+  // -2 - mov     v0,t12
+  // -1 - jsr     ra,(t12),0x200041476e4
+  //  0 - ldah    gp,0(ra)
+  if (((pcode[-4] & 0xFF000000) == 0xA4000000) &&
+      ((pcode[-3] & 0xFF000000) == 0xA4000000) &&
+      ((pcode[-2] & 0xFF00FF00) == 0x47000400) &&
+      ((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
+    {
+      fp_disp = (pcode[-4] & 0xFFFF);
+      obj_disp = (pcode[-3] & 0xFFFF);
+
+      pobj = regs[15] + fp_disp;
+      obj = *pobj;
+      reg = 0;
+    }
+  else
+    // The non-optimized call signature for now is
+    // -5 - ldq     v0,24(fp)
+    // -4 - mov     v0,v0
+    // -3 - ldq     v0,40(v0)
+    // -2 - mov     v0,t12
+    // -1 - jsr     ra,(t12),0x200041476e4
+    //  0 - ldah    gp,0(ra)
+    if (((pcode[-5] & 0xFF000000) == 0xA4000000) &&
+	((pcode[-4] & 0xFF00FF00) == 0x47000400) &&
+	((pcode[-3] & 0xFF000000) == 0xA4000000) &&
+	((pcode[-2] & 0xFF00FF00) == 0x47000400) &&
+	((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
+      {
+	fp_disp = (pcode[-5] & 0xFFFF);
+	obj_disp = (pcode[-3] & 0xFFFF);
+
+	pobj = regs[15] + fp_disp;
+	obj = *pobj;
+	reg = 0;
+      }
+    else
+      g_assert_not_reached ();
+
+  *((gpointer*)(obj + obj_disp)) = addr;
 }
 
 void

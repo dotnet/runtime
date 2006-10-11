@@ -869,12 +869,12 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 	
 	__asm__ __volatile__ (
 		"1:	ldl_l %0, %1\n"
-		"	addl %0, %3, %0\n"
+		"	subl %0, %3, %0\n"
 		"	mov %0, %2\n"
 		"	stl_c %0, %1\n"
 		"	beq %0, 1b\n"
 		: "=&r" (temp), "=m" (*val), "=r" (cur)
-		: "Ir" (-1), "m" (*val));
+		: "Ir" (1), "m" (*val));
 	return(cur);
 }
 

@@ -94,9 +94,9 @@ rem.un: dest:d src1:a src2:i len:16 clob:a
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
-shl: dest:i src1:i src2:s len:4
-shr: dest:i src1:i src2:s len:8
-shr.un: dest:i src1:i src2:s len:8
+shl: dest:i src1:i src2:i len:4
+shr: dest:i src1:i src2:i len:4
+shr.un: dest:i src1:i src2:i len:8
 neg: dest:i src1:i len:4
 not: dest:i src1:i len:4
 conv.i1: dest:i src1:i len:12
@@ -244,9 +244,9 @@ long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
 long_rem: dest:d src1:a src2:i len:16 clob:a
 long_rem_un: dest:d src1:a src2:i len:16 clob:a
-long_shl: dest:i src1:i src2:s clob:1 len:31
-long_shr: dest:i src1:i src2:s len:4
-long_shr_un: dest:i src1:i src2:s len:4
+long_shl: dest:i src1:i src2:i len:4
+long_shr: dest:i src1:i src2:i len:4
+long_shr_un: dest:i src1:i src2:i len:4
 long_conv_to_r4: dest:f src1:i len:20
 long_conv_to_r8: dest:f src1:i len:20
 long_conv_to_ovf_i: dest:i src1:i src2:i len:40
@@ -255,7 +255,7 @@ long_mul_ovf_un: dest:i src1:i src2:i len:22
 long_conv_to_r_un: dest:f src1:i src2:i len:48 
 long_shr_imm: dest:i src1:i len:4
 long_shr_un_imm: dest:i src1:i len:4
-long_shl_imm: dest:i src1:i clob:1 len:11
+long_shl_imm: dest:i src1:i len:4
 float_beq: len:4
 float_bne_un: len:12
 float_blt: len:4
@@ -378,9 +378,9 @@ int_rem_un: dest:d src1:a src2:i clob:a len:64
 int_and: dest:i src1:i src2:i len:4
 int_or: dest:i src1:i src2:i len:4
 int_xor: dest:i src1:i src2:i len:4
-int_shl: dest:i src1:i src2:s len:4
-int_shr: dest:i src1:i src2:s len:8
-int_shr_un: dest:i src1:i src2:s len:8
+int_shl: dest:i src1:i src2:i len:4
+int_shr: dest:i src1:i src2:i len:8
+int_shr_un: dest:i src1:i src2:i len:8
 int_adc: dest:i src1:i src2:i clob:1 len:64
 int_adc_imm: dest:i src1:i clob:1 len:64
 int_sbb: dest:i src1:i src2:i clob:1 len:64

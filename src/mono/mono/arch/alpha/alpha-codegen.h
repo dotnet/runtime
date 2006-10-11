@@ -516,6 +516,9 @@ typedef enum {
 #define alpha_mulq(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_op( ins, 0x13, 0x20, Rsrc1, Rsrc2, Rdest )
 #define alpha_mulq_(ins,  Rsrc1, lit, Rdest) alpha_encode_op( ins, 0x13, 0x20, Rsrc1, lit, Rdest )
 
+#define	alpha_sextb(ins, Rsrc2, Rdest) alpha_encode_op( ins, 0x1c, 0x00, alpha_zero, Rsrc2, Rdest )
+#define alpha_sextw(ins, Rsrc2, Rdest) alpha_encode_op( ins, 0x1c, 0x01, alpha_zero, Rsrc2, Rdest )
+
 // For 264 
 #define alpha_ftois( ins, RFsrc, Rdest ) alpha_encode_fpop( ins, 0x1c, 0x078, RFsrc, alpha_zero, Rdest ) 
 #define alpha_ftoit( ins, RFsrc, Rdest ) alpha_encode_fpop( ins, 0x1c, 0x070, RFsrc, alpha_zero, Rdest )
