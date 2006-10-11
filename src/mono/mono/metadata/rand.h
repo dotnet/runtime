@@ -13,10 +13,11 @@
 #define _MONO_METADATA_RAND_H_
 
 #include <mono/metadata/object.h>
+#include "mono/utils/mono-compiler.h"
 
-MonoBoolean ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void);
-gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed);
-gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry);
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle);
+MonoBoolean ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void) MONO_INTERNAL;
+gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed) MONO_INTERNAL;
+gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry) MONO_INTERNAL;
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) MONO_INTERNAL;
 
 #endif

@@ -12,6 +12,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
+#include "mono/utils/mono-compiler.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -23,11 +24,11 @@
 
 G_BEGIN_DECLS
 
-gboolean ves_icall_System_IO_FSW_SupportsFSW (void);
+gboolean ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
 
-gpointer ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved);
+gpointer ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved) MONO_INTERNAL;
 
-gboolean ves_icall_System_IO_FSW_CloseDirectory (gpointer handle);
+gboolean ves_icall_System_IO_FSW_CloseDirectory (gpointer handle) MONO_INTERNAL;
 
 gboolean ves_icall_System_IO_FSW_ReadDirectoryChanges (
 						gpointer handle,
@@ -35,16 +36,16 @@ gboolean ves_icall_System_IO_FSW_ReadDirectoryChanges (
 						gboolean includeSubdirs,
 						gint filters,
 						gpointer overlap,
-						gpointer callback);
+						gpointer callback) MONO_INTERNAL;
 
 gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,
 							gint *code,
-							gint *reqnum);
+							gint *reqnum) MONO_INTERNAL;
 
-int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void);
-int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask);
-int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor);
+int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void) MONO_INTERNAL;
+int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask) MONO_INTERNAL;
+int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor) MONO_INTERNAL;
 
 G_END_DECLS
 

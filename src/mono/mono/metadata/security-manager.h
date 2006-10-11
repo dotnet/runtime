@@ -59,22 +59,22 @@ typedef struct {
 
 
 /* Initialization/utility functions */
-void mono_activate_security_manager (void);
-gboolean mono_is_security_manager_active (void);
-MonoSecurityManager* mono_security_manager_get_methods (void);
-gboolean mono_is_ecma_key (const char *publickey, int size);
-MonoMethod* mono_get_context_capture_method (void);
+void mono_activate_security_manager (void) MONO_INTERNAL;
+gboolean mono_is_security_manager_active (void) MONO_INTERNAL;
+MonoSecurityManager* mono_security_manager_get_methods (void) MONO_INTERNAL;
+gboolean mono_is_ecma_key (const char *publickey, int size) MONO_INTERNAL;
+MonoMethod* mono_get_context_capture_method (void) MONO_INTERNAL;
 
-void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent);
-void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base);
+void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
+void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base) MONO_INTERNAL;
 
 
 /* internal calls */
-MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void);
-void ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value);
-MonoBoolean ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (void);
-void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value);
-MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions);
+MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void) MONO_INTERNAL;
+void ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value) MONO_INTERNAL;
+MonoBoolean ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (void) MONO_INTERNAL;
+void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value) MONO_INTERNAL;
+MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions) MONO_INTERNAL;
 
 
 #endif /* _MONO_METADATA_SECURITY_MANAGER_H_ */

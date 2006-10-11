@@ -18,13 +18,13 @@
 
 G_BEGIN_DECLS
 
-MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle);
-gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout);
-MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo);
-MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break);
-MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, char *vsusp, char *intr);
-MonoBoolean ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height);
-void ves_icall_System_ConsoleDriver_Suspend (void);
+MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle) MONO_INTERNAL;
+gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout) MONO_INTERNAL;
+MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo) MONO_INTERNAL;
+MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break) MONO_INTERNAL;
+MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, char *vsusp, char *intr) MONO_INTERNAL;
+MonoBoolean ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height) MONO_INTERNAL;
+void ves_icall_System_ConsoleDriver_Suspend (void) MONO_INTERNAL;
 
 G_END_DECLS
 

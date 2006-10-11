@@ -16,38 +16,38 @@
 G_BEGIN_DECLS
 
 /* System.Environment */
-extern MonoString* ves_icall_System_Environment_get_UserName (void);
+extern MonoString* ves_icall_System_Environment_get_UserName (void) MONO_INTERNAL;
 
 
 /* System.Security.Principal.WindowsIdentity */
-extern MonoArray* ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
-extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void);
-extern MonoString* ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token);
-extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username);
+extern MonoArray* ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token) MONO_INTERNAL;
+extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void) MONO_INTERNAL;
+extern MonoString* ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token) MONO_INTERNAL;
+extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username) MONO_INTERNAL;
 
 
 /* System.Security.Principal.WindowsImpersonationContext */
-extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpointer token);
-extern gpointer ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token);
-extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token);
-extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void);
+extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpointer token) MONO_INTERNAL;
+extern gpointer ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token) MONO_INTERNAL;
+extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token) MONO_INTERNAL;
+extern gboolean ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void) MONO_INTERNAL;
 
 
 /* System.Security.Principal.WindowsPrincipal */
-extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group);
-extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group);
+extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group) MONO_INTERNAL;
+extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group) MONO_INTERNAL;
 
 
 /* Mono.Security.Cryptography.KeyPairPersistance */
-extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root);
-extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path);
-extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path);
-extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path);
-extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path);
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root) MONO_INTERNAL;
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path) MONO_INTERNAL;
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path) MONO_INTERNAL;
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path) MONO_INTERNAL;
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path) MONO_INTERNAL;
 
 
 /* System.Security.Policy.Evidence */
-MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass);
+MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass) MONO_INTERNAL;
 
 G_END_DECLS
 
