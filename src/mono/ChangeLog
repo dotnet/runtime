@@ -1,3 +1,7 @@
+2006-10-12  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Disable visibility("hidden") on cygwin as well.
+
 2006-10-10  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Get rid of --with-nptl.

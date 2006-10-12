@@ -1553,6 +1553,8 @@ case "$host" in
 		esac
 	       ;;
 	*-*-mingw*|*-*-cygwin*)
+		# When this is enabled, it leads to very strange crashes at runtime (gcc-3.4.4)
+		have_visibility_hidden=no
 		INTL="intl"
 		;;
 	hppa2.0w-hp-hpux11.00 | hppa64-hp-hpux11.00)
