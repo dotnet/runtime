@@ -162,6 +162,11 @@ void _wapi_process_reap (void)
 #endif
 			
 			process_set_termination_details (proc, status);
+
+			/* _wapi_search_handle adds a reference, so
+			 * drop it here
+			 */
+			_wapi_handle_unref (proc);
 		}
 	} while (proc != NULL);
 }
@@ -180,6 +185,16 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 #ifdef DEBUG
 	g_message ("%s: Waiting for process %p", __func__, handle);
 #endif
+	
+	if (_wapi_handle_issignalled (handle)) {
+		/* We've already done this one */
+#ifdef DEBUG
+		g_message ("%s: Process %p already signalled", __func__,
+			   handle);
+#endif
+
+		return (WAIT_OBJECT_0);
+	}
 
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process_handle);
@@ -246,7 +261,6 @@ void _wapi_process_signal_self ()
 		process_set_termination_details (current_process, 0);
 	}
 }
-
 	
 static void process_set_defaults (struct _WapiHandle_process *process_handle)
 {
