@@ -453,9 +453,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		if (csig->pinvoke)
 			size = mono_type_native_stack_size (csig->params [k], &align);
 		else {
-			int ialign;
-			size = mono_type_stack_size (csig->params [k], &ialign);
-			align = ialign;
+			size = mono_type_stack_size (csig->params [k], &align);
 		}
 
 		/* ignore alignment for now */
@@ -984,9 +982,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					if (sig->pinvoke)
 						size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 					else {
-						int ialign;
-						size = mono_type_stack_size (&in->klass->byval_arg, &ialign);
-						align = ialign;
+						size = mono_type_stack_size (&in->klass->byval_arg, &align);
 					}
 				arg->opcode = OP_OUTARG_VT;
 				arg->klass = in->klass;
