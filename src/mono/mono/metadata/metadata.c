@@ -3155,7 +3155,7 @@ mono_backtrace (int limit)
  * type in memory
  */
 int
-mono_type_size (MonoType *t, guint32 *align)
+mono_type_size (MonoType *t, int *align)
 {
 	if (!t) {
 		*align = 1;
@@ -3260,7 +3260,7 @@ mono_type_size (MonoType *t, guint32 *align)
  * type on the runtime stack
  */
 int
-mono_type_stack_size (MonoType *t, guint32 *align)
+mono_type_stack_size (MonoType *t, int *align)
 {
 	guint32 tmp;
 
