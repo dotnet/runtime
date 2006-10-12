@@ -1964,8 +1964,12 @@ mono_method_get_index (MonoMethod *method) {
 
 	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
-		if (method == klass->methods [i])
-			return klass->method.first + 1 + i;
+		if (method == klass->methods [i]) {
+			if (klass->image->uncompressed_metadata)
+				return mono_metadata_translate_token_index (klass->image, MONO_TABLE_METHOD, klass->method.first + i + 1);
+			else
+				return klass->method.first + i + 1;
+		}
 	}
 	return 0;
 }

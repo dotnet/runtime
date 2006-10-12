@@ -1153,7 +1153,8 @@ mono_metadata_translate_token_index (MonoImage *image, int table, guint32 idx)
  *
  *   Same as mono_metadata_decode_row, but takes an IMAGE+TABLE ID pair, and takes
  * uncompressed metadata into account, so it should be used to access the
- * Method, Field, Param and Event tables.
+ * Method, Field, Param and Event tables when the access is made from metadata, i.e.
+ * IDX is retrieved from a metadata table, like MONO_TYPEDEF_FIELD_LIST.
  */
 void
 mono_metadata_decode_table_row (MonoImage *image, int table, int idx, guint32 *res, int res_size)
@@ -2786,6 +2787,30 @@ declsec_locator (const void *a, const void *b)
 }
 
 /**
+ * search_ptr_table:
+ *
+ *  Return the 1-based row index in TABLE, which must be one of the *Ptr tables, 
+ * which contains IDX.
+ */
+static guint32
+search_ptr_table (MonoImage *image, int table, int idx)
+{
+	MonoTableInfo *ptrdef = &image->tables [table];
+	int i;
+
+	/* Use a linear search to find our index in the table */
+	for (i = 0; i < ptrdef->rows; i ++)
+		/* All the Ptr tables have the same structure */
+		if (mono_metadata_decode_row_col (ptrdef, i, 0) == idx)
+			break;
+
+	if (i < ptrdef->rows)
+		return i + 1;
+	else
+		return idx;
+}
+
+/**
  * mono_metadata_typedef_from_field:
  * @meta: metadata context
  * @index: FieldDef token
@@ -2805,6 +2830,9 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_TYPEDEF_FIELD_LIST;
 	loc.t = tdef;
+
+	if (meta->uncompressed_metadata)
+		loc.idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, loc.idx);
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
 		g_assert_not_reached ();
@@ -2833,6 +2861,9 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_TYPEDEF_METHOD_LIST;
 	loc.t = tdef;
+
+	if (meta->uncompressed_metadata)
+		loc.idx = search_ptr_table (meta, MONO_TABLE_METHOD_POINTER, loc.idx);
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
 		g_assert_not_reached ();
@@ -3049,6 +3080,8 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	loc.idx = index;
 	loc.col_idx = MONO_CUSTOM_ATTR_PARENT;
 	loc.t = tdef;
+
+	/* FIXME: Index translation */
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
 		return 0;
@@ -3672,6 +3705,9 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
 	locator_t loc;
 
 	loc.idx = index + 1;
+	if (meta->uncompressed_metadata)
+		loc.idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, loc.idx);
+
 	if (offset) {
 		tdef = &meta->tables [MONO_TABLE_FIELDLAYOUT];
 
@@ -3746,6 +3782,8 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 	loc.col_idx = MONO_CONSTANT_PARENT;
 	loc.t = tdef;
 
+	/* FIXME: Index translation */
+
 	if ((hint > 0) && (hint < tdef->rows) && (mono_metadata_decode_row_col (tdef, hint - 1, MONO_CONSTANT_PARENT) == index))
 		return hint;
 
@@ -3814,6 +3852,9 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	*end_idx = 0;
 	if (!msemt->base)
 		return 0;
+
+	if (meta->uncompressed_metadata)
+	    index = search_ptr_table (meta, MONO_TABLE_EVENT_POINTER, index + 1) - 1;
 
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
@@ -3903,6 +3944,9 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 	if (!msemt->base)
 		return 0;
 
+	if (meta->uncompressed_metadata)
+	    index = search_ptr_table (meta, MONO_TABLE_PROPERTY_POINTER, index + 1) - 1;
+
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
 	loc.idx = ((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_PROPERTY; /* Method association coded index */
@@ -3939,6 +3983,8 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 
 	if (!tdef->base)
 		return 0;
+
+	/* No index translation seems to be needed */
 
 	loc.t = tdef;
 	loc.col_idx = MONO_IMPLMAP_MEMBER;
@@ -4261,6 +4307,8 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
 	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
 
+	/* FIXME: Index translation */
+
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
 		return NULL;
 
@@ -4271,6 +4319,7 @@ static MonoMethod*
 method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context)
 {
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
+
 	switch (tok & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
 		return mono_get_method_full (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context);

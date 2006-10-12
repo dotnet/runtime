@@ -758,7 +758,8 @@ mono_class_find_enum_basetype (MonoClass *class)
 		MonoGenericContainer *container = NULL;
 		MonoType *ftype;
 
-		mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx, cols, MONO_FIELD_SIZE);
+		/* class->field.first and idx points into the fieldptr table */
+		mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
@@ -898,7 +899,8 @@ mono_class_setup_fields (MonoClass *class)
 			const char *sig;
 			guint32 cols [MONO_FIELD_SIZE];
 
-			mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx, cols, MONO_FIELD_SIZE);
+			/* class->field.first and idx points into the fieldptr table */
+			mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 			/* The name is needed for fieldrefs */
 			field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
 			sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
@@ -1269,7 +1271,8 @@ mono_class_setup_methods (MonoClass *class)
 	if (!class->methods) {
 		methods = mono_mempool_alloc (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
 		for (i = 0; i < class->method.count; ++i) {
-			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
+			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | idx, class);
 		}
 	}
 
@@ -1311,20 +1314,29 @@ mono_class_setup_properties (MonoClass *class)
 
 	properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
 	for (i = class->property.first; i < last; ++i) {
-		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_PROPERTY], i, cols, MONO_PROPERTY_SIZE);
+		mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
 		properties [i - class->property.first].parent = class;
 		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
 		properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
 
 		startm = mono_metadata_methods_from_property (class->image, i, &endm);
 		for (j = startm; j < endm; ++j) {
+			MonoMethod *method;
+
 			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+
+			if (class->image->uncompressed_metadata)
+				/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
+				method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
+			else
+				method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+
 			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 			case METHOD_SEMANTIC_SETTER:
-				properties [i - class->property.first].set = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				properties [i - class->property.first].set = method;
 				break;
 			case METHOD_SEMANTIC_GETTER:
-				properties [i - class->property.first].get = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				properties [i - class->property.first].get = method;
 				break;
 			default:
 				break;
@@ -1437,23 +1449,32 @@ mono_class_setup_events (MonoClass *class)
 	for (i = class->event.first; i < last; ++i) {
 		MonoEvent *event = &events [i - class->event.first];
 
-		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_EVENT], i, cols, MONO_EVENT_SIZE);
+		mono_metadata_decode_table_row (class->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
 		event->parent = class;
 		event->attrs = cols [MONO_EVENT_FLAGS];
 		event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
 
 		startm = mono_metadata_methods_from_event (class->image, i, &endm);
 		for (j = startm; j < endm; ++j) {
+			MonoMethod *method;
+
 			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+
+			if (class->image->uncompressed_metadata)
+				/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
+				method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
+			else
+				method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+
 			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 			case METHOD_SEMANTIC_ADD_ON:
-				event->add = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->add = method;
 				break;
 			case METHOD_SEMANTIC_REMOVE_ON:
-				event->remove = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->remove = method;
 				break;
 			case METHOD_SEMANTIC_FIRE:
-				event->raise = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->raise = method;
 				break;
 			case METHOD_SEMANTIC_OTHER: {
 				int n = 0;
@@ -1465,7 +1486,7 @@ mono_class_setup_events (MonoClass *class)
 						n++;
 					event->other = g_realloc (event->other, (n + 2) * sizeof (MonoMethod*));
 				}
-				event->other [n] = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				event->other [n] = method;
 				/* NULL terminated */
 				event->other [n + 1] = NULL;
 				break;
@@ -3676,9 +3697,23 @@ mono_class_get_field_idx (MonoClass *class, int idx)
 	mono_class_setup_fields_locking (class);
 
 	while (class) {
-		if (class->field.count) {
-			if ((idx >= class->field.first) && (idx < class->field.first + class->field.count)){
-				return &class->fields [idx - class->field.first];
+		if (class->image->uncompressed_metadata) {
+			/* 
+			 * class->field.first points to the FieldPtr table, while idx points into the
+			 * Field table, so we have to do a search.
+			 */
+			const char *name = mono_metadata_string_heap (class->image, mono_metadata_decode_row_col (&class->image->tables [MONO_TABLE_FIELD], idx, MONO_FIELD_NAME));
+			int i;
+
+			for (i = 0; i < class->field.count; ++i)
+				if (class->fields [i].name == name)
+					return &class->fields [i];
+			g_assert_not_reached ();
+		} else {			
+			if (class->field.count) {
+				if ((idx >= class->field.first) && (idx < class->field.first + class->field.count)){
+					return &class->fields [idx - class->field.first];
+				}
 			}
 		}
 		class = class->parent;
@@ -3748,8 +3783,13 @@ mono_class_get_field_token (MonoClassField *field)
 	mono_class_setup_fields_locking (klass);
 	while (klass) {
 		for (i = 0; i < klass->field.count; ++i) {
-			if (&klass->fields [i] == field)
-				return mono_metadata_make_token (MONO_TABLE_FIELD, klass->field.first + i + 1);
+			if (&klass->fields [i] == field) {
+				int idx = klass->field.first + i + 1;
+
+				if (klass->image->uncompressed_metadata)
+					idx = mono_metadata_translate_token_index (klass->image, MONO_TABLE_FIELD, idx);
+				return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
+			}
 		}
 		klass = klass->parent;
 	}
@@ -5304,7 +5344,8 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 			guint32 cols [MONO_METHOD_SIZE];
 			MonoMethod *method;
 
-			mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_METHOD], klass->method.first + i, cols, MONO_METHOD_SIZE);
+			/* class->methos.first points into the methodptr table */
+			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
 
 			if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
 				method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
