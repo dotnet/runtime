@@ -5344,7 +5344,7 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 			guint32 cols [MONO_METHOD_SIZE];
 			MonoMethod *method;
 
-			/* class->methos.first points into the methodptr table */
+			/* class->method.first points into the methodptr table */
 			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
 
 			if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
