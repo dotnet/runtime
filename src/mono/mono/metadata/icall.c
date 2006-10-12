@@ -2743,7 +2743,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 		} else if (!strcmp (m->name, "FieldSetter")) {
 			MonoClass *k = this->vtable->klass;
 			MonoString *name;
-			int size, align;
+			guint32 size, align;
 			char *str;
 			
 			/* If this is a proxy, then it must be a CBO */
@@ -6143,7 +6143,7 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 	if (start) {
 		iter->args = start;
 	} else {
-		int i, align, arg_size;
+		guint32 i, align, arg_size;
 		iter->args = argsp + sizeof (gpointer);
 #ifndef MONO_ARCH_REGPARMS
 		for (i = 0; i < iter->sig->sentinelpos; ++i) {
@@ -6160,7 +6160,7 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 static MonoTypedRef
 mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 {
-	gint i, align, arg_size;
+	guint32 i, align, arg_size;
 	MonoTypedRef res;
 	MONO_ARCH_SAVE_REGS;
 
@@ -6184,7 +6184,7 @@ mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 static MonoTypedRef
 mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 {
-	gint i, align, arg_size;
+	guint32 i, align, arg_size;
 	MonoTypedRef res;
 	MONO_ARCH_SAVE_REGS;
 

@@ -883,8 +883,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = class->no_special_static_fields ? SPECIAL_STATIC_NONE : field_is_special_static (class, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
-				guint32 size, offset;
-				int align;
+				guint32 size, offset, align;
 				size = mono_type_size (field->type, &align);
 				offset = mono_alloc_special_static_data (special_static, size, align);
 				if (!domain->special_static_fields)

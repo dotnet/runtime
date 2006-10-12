@@ -3153,10 +3153,9 @@ mono_backtrace (int limit)
  *
  * Returns: the number of bytes required to hold an instance of this
  * type in memory
- * FIXME: This should really use 'guint32*' for the align parameter.
  */
 int
-mono_type_size (MonoType *t, gint *align)
+mono_type_size (MonoType *t, guint32 *align)
 {
 	if (!t) {
 		*align = 1;
@@ -3259,12 +3258,11 @@ mono_type_size (MonoType *t, gint *align)
  *
  * Returns: the number of bytes required to hold an instance of this
  * type on the runtime stack
- * FIXME: This should really use 'guint32*' for the align parameter.
  */
 int
-mono_type_stack_size (MonoType *t, gint *align)
+mono_type_stack_size (MonoType *t, guint32 *align)
 {
-	int tmp;
+	guint32 tmp;
 
 	g_assert (t != NULL);
 

@@ -438,9 +438,9 @@ MonoType      *mono_type_create_from_typespec  (MonoImage        *image,
 					        guint32           type_spec);
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
-						int             *alignment);
+						guint32             *alignment);
 int            mono_type_stack_size            (MonoType        *type, 
-						int             *alignment);
+						guint32             *alignment);
 
 gboolean       mono_type_generic_inst_is_valuetype      (MonoType *type);
 gboolean       mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass);
