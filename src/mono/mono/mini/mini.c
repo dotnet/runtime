@@ -3743,7 +3743,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoGenericContainer *generic_container = NULL;
 	MonoType **param_types;
 	GList *bb_recheck = NULL, *tmp;
-	int i, n, start_new_bblock;
+	int i, n, start_new_bblock, ialign;
 	int num_calls = 0, inline_costs = 0;
 	int breakpoint_id = 0;
 	guint32 align;
@@ -7310,7 +7310,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXXME: handle generics. */
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
-					token = mono_type_size (type, &align);
+					token = mono_type_size (type, &ialign);
 				} else {
 					MonoClass *klass = mono_class_get_full (image, token, generic_context);
 					if (!klass)
@@ -7980,7 +7980,10 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else {
-			size = mono_type_size (inst->inst_vtype, &align);
+			int ialign;
+
+			size = mono_type_size (inst->inst_vtype, &ialign);
+			align = ialign;
 		}
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);

@@ -550,7 +550,7 @@ handle_enum:
 			goto handle_enum;
 		} else {
 			guint8 *p = va_arg (ap, gpointer);
-			guint32 j, size, align;
+			int j, size, align;
 			size = mono_type_size (type, &align);
 			printf ("[");
 			for (j = 0; p && j < size; j++)
