@@ -1,3 +1,9 @@
+2006-10-13  Joe Shaw  <joeshaw@novell.com>
+
+	* samples/size/size.c: Flesh this out quite a bit more so that
+	its results are more accurate.
+	* samples/size/sample.cs: Add a few more test cases.
+
 2006-10-12  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Disable visibility("hidden") on cygwin as well.
