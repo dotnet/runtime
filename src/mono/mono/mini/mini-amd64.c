@@ -4119,14 +4119,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
 		/* Save sp */
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
-		/* Save method */
-		/* FIXME: add a relocation for this */
-		if (IS_IMM32 (cfg->method))
-			amd64_mov_membase_imm (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), (guint64)cfg->method, 8);
-		else {
-			amd64_mov_reg_imm (code, AMD64_R11, cfg->method);
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
-		}
+		/* Skip method (only needed for trampoline LMF frames) */
 		/* Save callee saved regs */
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
