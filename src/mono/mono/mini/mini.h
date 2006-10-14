@@ -431,7 +431,9 @@ struct MonoMethodVar {
 typedef struct {
 	gpointer          end_of_stack;
 	guint32           stack_size;
+#if !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	MonoLMF          *lmf;
+#endif
 	MonoLMF          *first_lmf;
 	gpointer         signal_stack;
 	guint32          signal_stack_size;
@@ -849,10 +851,12 @@ MonoJumpInfo* mono_patch_info_dup_mp        (MonoMemPool *mp, MonoJumpInfo *patc
 guint     mono_patch_info_hash (gconstpointer data) MONO_INTERNAL;
 gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
 gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors) MONO_INTERNAL;
+MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_jit_thread_attach            (MonoDomain *domain);
 guint32   mono_get_jit_tls_key              (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
+gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end) MONO_INTERNAL;
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type) MONO_INTERNAL;
 void      mono_analyze_liveness             (MonoCompile *cfg) MONO_INTERNAL;

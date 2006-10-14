@@ -3766,7 +3766,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #endif
 			tls_offset_inited = TRUE;
 			appdomain_tls_offset = mono_domain_get_tls_offset ();
-			lmf_tls_offset = mono_get_lmf_tls_offset ();
+			lmf_tls_offset = mono_get_lmf_addr_tls_offset ();
 			thread_tls_offset = mono_thread_get_tls_offset ();
 #endif
 		}

@@ -8320,6 +8320,13 @@ mono_destroy_compile (MonoCompile *cfg)
 
 #ifdef HAVE_KW_THREAD
 static __thread gpointer mono_lmf_addr MONO_TLS_FAST;
+#ifdef MONO_ARCH_ENABLE_MONO_LMF_VAR
+/* 
+ * When this is defined, the current lmf is stored in this tls variable instead of in 
+ * jit_tls->lmf.
+ */
+static __thread gpointer mono_lmf MONO_TLS_FAST;
+#endif
 #endif
 
 guint32
@@ -8331,9 +8338,37 @@ mono_get_jit_tls_key (void)
 gint32
 mono_get_lmf_tls_offset (void)
 {
+#if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	int offset;
+	MONO_THREAD_VAR_OFFSET(mono_lmf,offset);
+	return offset;
+#else
+	return -1;
+#endif
+}
+
+gint32
+mono_get_lmf_addr_tls_offset (void)
+{
 	int offset;
 	MONO_THREAD_VAR_OFFSET(mono_lmf_addr,offset);
 	return offset;
+}
+
+MonoLMF *
+mono_get_lmf (void)
+{
+#if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	return mono_lmf;
+#else
+	MonoJitTlsData *jit_tls;
+
+	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+		return jit_tls->lmf;
+
+	g_assert_not_reached ();
+	return NULL;
+#endif
 }
 
 MonoLMF **
@@ -8403,10 +8438,18 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	lmf = g_new0 (MonoLMF, 1);
 	lmf->ebp = -1;
 
-	jit_tls->lmf = jit_tls->first_lmf = lmf;
+	jit_tls->first_lmf = lmf;
 
-#ifdef HAVE_KW_THREAD
-	mono_lmf_addr = &jit_tls->lmf;
+#if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	/* jit_tls->lmf is unused */
+	mono_lmf = lmf;
+	mono_lmf_addr = &mono_lmf;
+#else
+#if defined(HAVE_KW_THREAD)
+	mono_lmf_addr = &jit_tls->lmf;	
+#endif
+
+	jit_tls->lmf = lmf;
 #endif
 
 	mono_arch_setup_jit_tls_data (jit_tls);

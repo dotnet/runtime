@@ -253,7 +253,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 void
 mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data)
 {
-	MonoLMF *lmf = jit_tls->lmf;
+	MonoLMF *lmf = mono_get_lmf ();
 	MonoJitInfo *ji, rji;
 	gint native_offset;
 	gboolean managed;
@@ -284,7 +284,7 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboole
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
+	MonoLMF *lmf = mono_get_lmf ();
 	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
@@ -341,7 +341,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
+	MonoLMF *lmf = mono_get_lmf ();
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
@@ -595,7 +595,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
 	static void (*restore_context) (void *);
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;		
+	MonoLMF *lmf = mono_get_lmf ();
 	MonoArray *initial_trace_ips = NULL;
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
@@ -784,7 +784,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							jit_tls->lmf = lmf;
+							*(mono_get_lmf_addr ()) = lmf;
 
 							if (gc_disabled)
 								mono_gc_enable ();
@@ -811,7 +811,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				mono_gc_enable ();
 
 			if (!test_only) {
-				jit_tls->lmf = lmf;
+				*(mono_get_lmf_addr ()) = lmf;
 
 				if (IS_ON_SIGALTSTACK (jit_tls)) {
 					/* Switch back to normal stack */
@@ -865,7 +865,7 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
+	MonoLMF *lmf = mono_get_lmf ();
 	MonoContext ctx, new_ctx;
 	MonoJitInfo *ji, rji;
 	int i;
