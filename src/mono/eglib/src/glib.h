@@ -696,5 +696,31 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define g_thread_supported()   TRUE
 #define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } G_STMT_END
 
+#define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))
+#define GUINT32_SWAP_LE_BE(x) ((guint32) \
+			       ( (((guint32) (x)) << 24)| \
+				 ((((guint32) (x)) & 0xff0000) >> 8) | \
+		                 ((((guint32) (x)) & 0xff00) << 8) | \
+			         (((guint32) (x)) >> 24)) )
+ 
+#define GUINT64_SWAP_LE_BE(x) ((guint64) (((guint64)(GUINT32_SWAP_LE_BE(((guint64)x) & 0xffffffff))) << 32) | \
+	      	               GUINT32_SWAP_LE_BE(((guint64)x) >> 32))
+
+				  
+ 
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#   define GUINT32_TO_LE(x) (x)
+#   define GUINT64_TO_LE(x) (x)
+#   define GUINT16_TO_LE(x) (x)
+#else
+#   define GUINT32_TO_LE(x) GUINT32_SWAP_LE_BE(x)
+#   define GUINT64_TO_LE(x) GUINT64_SWAP_LE_BE(x)
+#   define GUINT16_TO_LE(x) GUINT16_SWAP_LE_BE(x)
+#endif
+
+#define GUINT32_FROM_LE(x)  (GUINT32_TO_LE (x))
+#define GUINT64_FROM_LE(x)  (GUIN64_TO_LE (x))
+#define GUINT16_FROM_LE(x)  (GUINT16_TO_LE (x))
+ 
 #endif
 

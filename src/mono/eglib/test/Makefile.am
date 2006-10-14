@@ -23,7 +23,8 @@ SOURCES = \
 	pattern.c	\
 	dir.c		\
 	markup.c	\
-	utf8.c
+	utf8.c		\
+	endian.c
 
 test_eglib_SOURCES = $(SOURCES)
 test_glib_SOURCES = $(SOURCES)

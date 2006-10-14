@@ -19,6 +19,7 @@ DEFINE_TEST_GROUP_INIT_H(pattern_tests_init);
 DEFINE_TEST_GROUP_INIT_H(dir_tests_init);
 DEFINE_TEST_GROUP_INIT_H(markup_tests_init);
 DEFINE_TEST_GROUP_INIT_H(utf8_tests_init);
+DEFINE_TEST_GROUP_INIT_H(endian_tests_init);
 
 static Group test_groups [] = {	
 	{"string",    string_tests_init}, 
@@ -40,6 +41,7 @@ static Group test_groups [] = {
 	{"pattern",   pattern_tests_init},
 	{"dir",       dir_tests_init},
 	{"utf8",      utf8_tests_init},
+	{"endian",    endian_tests_init},
 	{NULL, NULL}
 };
 

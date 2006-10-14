@@ -1,3 +1,9 @@
+2006-10-14  Miguel de Icaza  <miguel@novell.com>
+
+	* src/glib.h: add various _TO_LE and _FROM_LE macros.
+
+	* test/endian.c: tests for endian conversion macros.
+
 2006-10-09  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gmodule.h: Move definitions of gmodule to gmodule.h because
