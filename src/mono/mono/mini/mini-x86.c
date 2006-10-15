@@ -26,14 +26,20 @@
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
+static gint lmf_addr_tls_offset = -1;
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
 #ifdef MONO_XEN_OPT
-/* TRUE by default until we add runtime detection of Xen */
 static gboolean optimize_for_xen = TRUE;
 #else
 #define optimize_for_xen 0
+#endif
+
+#ifdef PLATFORM_WIN32
+static gboolean is_win32 = TRUE;
+#else
+static gboolean is_win32 = FALSE;
 #endif
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
@@ -3346,32 +3352,50 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		x86_push_reg (code, X86_EDI);
 		x86_push_reg (code, X86_EBX);
 
-		/* save method info */
-		x86_push_imm (code, method);
-
-		/* get the address of lmf for the current thread */
-		/* 
-		 * This is performance critical so we try to use some tricks to make
-		 * it fast.
-		 */
-		if (lmf_tls_offset != -1) {
-			/* Load lmf quicky using the GS register */
-			code = emit_tls_get (code, X86_EAX, lmf_tls_offset);
-#ifdef PLATFORM_WIN32
-			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-			/* FIXME: Add a separate key for LMF to avoid this */
-			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#endif
+		if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
+			/*
+			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
+			 * through the mono_lmf_addr TLS variable.
+			 */
+			/* %eax = previous_lmf */
+			x86_prefix (code, X86_GS_PREFIX);
+			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+			/* skip method_info + lmf */
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+			/* push previous_lmf */
+			x86_push_reg (code, X86_EAX);
+			/* new lmf = ESP */
+			x86_prefix (code, X86_GS_PREFIX);
+			x86_mov_mem_reg (code, lmf_tls_offset, X86_ESP, 4);
 		} else {
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
-		}
+			/* get the address of lmf for the current thread */
+			/* 
+			 * This is performance critical so we try to use some tricks to make
+			 * it fast.
+			 */									   
 
-		/* push lmf */
-		x86_push_reg (code, X86_EAX); 
-		/* push *lfm (previous_lmf) */
-		x86_push_membase (code, X86_EAX, 0);
-		/* *(lmf) = ESP */
-		x86_mov_membase_reg (code, X86_EAX, 0, X86_ESP, 4);
+			if (lmf_addr_tls_offset != -1) {
+				/* Load lmf quicky using the GS register */
+				code = emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
+#ifdef PLATFORM_WIN32
+				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+				/* FIXME: Add a separate key for LMF to avoid this */
+				x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
+			} else {
+				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
+			}
+
+			/* Skip method info */
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+
+			/* push lmf */
+			x86_push_reg (code, X86_EAX); 
+			/* push *lfm (previous_lmf) */
+			x86_push_membase (code, X86_EAX, 0);
+			/* *(lmf) = ESP */
+			x86_mov_membase_reg (code, X86_EAX, 0, X86_ESP, 4);
+		}
 	} else {
 
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
@@ -3511,26 +3535,39 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		gint32 prev_lmf_reg;
 		gint32 lmf_offset = -sizeof (MonoLMF);
 
-		/* Find a spare register */
-		switch (sig->ret->type) {
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			prev_lmf_reg = X86_EDI;
-			cfg->used_int_regs |= (1 << X86_EDI);
-			break;
-		default:
-			prev_lmf_reg = X86_EDX;
-			break;
+		if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
+			/*
+			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
+			 * through the mono_lmf_addr TLS variable.
+			 */
+			/* reg = previous_lmf */
+			x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
+
+			/* lmf = previous_lmf */
+			x86_prefix (code, X86_GS_PREFIX);
+			x86_mov_mem_reg (code, lmf_tls_offset, X86_ECX, 4);
+		} else {
+			/* Find a spare register */
+			switch (sig->ret->type) {
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				prev_lmf_reg = X86_EDI;
+				cfg->used_int_regs |= (1 << X86_EDI);
+				break;
+			default:
+				prev_lmf_reg = X86_EDX;
+				break;
+			}
+
+			/* reg = previous_lmf */
+			x86_mov_reg_membase (code, prev_lmf_reg, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
+
+			/* ecx = lmf */
+			x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
+
+			/* *(lmf) = previous_lmf */
+			x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
 		}
-
-		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, prev_lmf_reg, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
-
-		/* ecx = lmf */
-		x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
-
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
@@ -3766,7 +3803,8 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #endif
 			tls_offset_inited = TRUE;
 			appdomain_tls_offset = mono_domain_get_tls_offset ();
-			lmf_tls_offset = mono_get_lmf_addr_tls_offset ();
+			lmf_tls_offset = mono_get_lmf_tls_offset ();
+			lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 			thread_tls_offset = mono_thread_get_tls_offset ();
 #endif
 		}
