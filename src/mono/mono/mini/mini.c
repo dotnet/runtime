@@ -6705,7 +6705,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, load, mono_find_exvar_for_offset (cfg, clause->handler_offset)->inst_c0);
 					load->cil_code = ip;
 
-					temp = mono_emit_jit_icall (cfg, bblock, mono_thread_get_undeniable_exception, NULL, ip);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_thread_get_pending_exception, NULL, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				
 					MONO_INST_NEW (cfg, ins, OP_THROW_OR_NULL);
@@ -11379,7 +11379,7 @@ mini_init (const char *filename)
 	register_icall (mono_arch_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
 				 "void ptr", TRUE);
 #endif
-	register_icall (mono_thread_get_undeniable_exception, "mono_thread_get_undeniable_exception", "object", FALSE);
+	register_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", "object", FALSE);
 	register_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", "void", FALSE);
 	register_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", "void", FALSE);
 	register_icall (mono_load_remote_field_new, "mono_load_remote_field_new", "object object ptr ptr", FALSE);
