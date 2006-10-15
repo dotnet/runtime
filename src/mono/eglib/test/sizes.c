@@ -79,9 +79,27 @@ test_ptrconv ()
 	
 }
 
+typedef struct {
+	int a;
+	int b;
+} my_struct;
+
+RESULT
+test_offset ()
+{
+	if (G_STRUCT_OFFSET (my_struct, a) != 0)
+		return FAILED ("offset of a is not zero");
+	
+	if (G_STRUCT_OFFSET (my_struct, b) != 4 && G_STRUCT_OFFSET (my_struct, b) != 8)
+		return FAILED ("offset of b is 4 or 8, macro might be busted");
+
+	return OK;
+}
+
 static Test size_tests [] = {
 	{"formats", test_formats},
 	{"ptrconv", test_ptrconv},
+	{"g_struct_offset", test_offset},
 	{NULL, NULL}
 };
 

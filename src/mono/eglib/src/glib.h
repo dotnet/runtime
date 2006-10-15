@@ -58,7 +58,7 @@ typedef uint16_t       gunichar2;
 #define ABS(a,b)        (((a)>(b)) ? ((a)-(b)) : ((b)-(a)))
 
 #define G_STRUCT_OFFSET(p_type,field) \
-        ((long) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
+        ((long) (((char *) (&(((p_type *)NULL)->field))) - ((char *) NULL)))
 
 #define EGLIB_STRINGIFY(x) #x
 #define EGLIB_TOSTRING(x) EGLIB_STRINGIFY(x)
