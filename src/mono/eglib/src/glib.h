@@ -515,7 +515,9 @@ void  g_set_prgname            (const gchar *prgname);
  * Shell
  */
 
-gboolean g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **error);
+gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **error);
+gchar    *g_shell_unquote    (const gchar *quoted_string, GError **error);
+gchar    *g_shell_quote      (const gchar *unquoted_string);
 
 /*
  * Spawn
@@ -721,6 +723,12 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define GUINT32_FROM_LE(x)  (GUINT32_TO_LE (x))
 #define GUINT64_FROM_LE(x)  (GUIN64_TO_LE (x))
 #define GUINT16_FROM_LE(x)  (GUINT16_TO_LE (x))
+
+#define _EGLIB_MAJOR  2
+#define _EGLIB_MIDDLE 4
+#define _EGLIB_MINOR  0
  
+#define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
+
 #endif
 
