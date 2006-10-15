@@ -1,5 +1,14 @@
 2006-10-15  Miguel de Icaza  <miguel@novell.com>
 
+	* configure.in: Fix detection of platforms the [3456] stuff does
+	not work inside autoconf.
+
+	* src/eglib-config.h.in: Make G_BREAKPOINT into a function-macro
+
+	* src/glib.h (offsetof): Mono sources depend on this, bring this
+	from the standard definition.  Redefine G_STRUCT_OFFSET in terms
+	of this. 
+	
 	* src/glib.h (G_STRUCT_OFFSET): fix macro definition. 
 	fix typo.
 

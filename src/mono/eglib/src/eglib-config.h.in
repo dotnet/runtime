@@ -9,7 +9,7 @@
 #define G_SEARCHPATH_SEPARATOR   '@SEARCHSEP@'
 #define G_DIR_SEPARATOR          '@PATHSEP@'
 #define G_DIR_SEPARATOR_S        "@PATHSEP@"
-#define G_BREAKPOINT             @BREAKPOINT@
+#define G_BREAKPOINT()           @BREAKPOINT@
 #define G_OS_@OS@
 #define GPOINTER_TO_INT(ptr)   @GPOINTER_TO_INT@
 #define GPOINTER_TO_UINT(ptr)  @GPOINTER_TO_UINT@

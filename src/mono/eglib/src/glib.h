@@ -6,8 +6,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <ctype.h>
 #include <eglib-config.h>
+
+#ifndef offsetof
+#   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
+#endif
 
 #define __EGLIB_X11 1
 /*
@@ -57,8 +62,7 @@ typedef uint16_t       gunichar2;
 
 #define ABS(a,b)        (((a)>(b)) ? ((a)-(b)) : ((b)-(a)))
 
-#define G_STRUCT_OFFSET(p_type,field) \
-        ((long) (((char *) (&(((p_type *)NULL)->field))) - ((char *) NULL)))
+#define G_STRUCT_OFFSET(p_type,field) offsetof(p_type,field)
 
 #define EGLIB_STRINGIFY(x) #x
 #define EGLIB_TOSTRING(x) EGLIB_STRINGIFY(x)
