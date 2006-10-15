@@ -4489,7 +4489,10 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 		MonoException *exc;
 
 		g_free (filename);
-		exc = mono_get_exception_file_not_found (fname);
+		if (status == MONO_IMAGE_IMAGE_INVALID)
+			exc = mono_get_exception_bad_image_format2 (NULL, fname);
+		else
+			exc = mono_get_exception_file_not_found2 (NULL, fname);
 		mono_raise_exception (exc);
 	}
 

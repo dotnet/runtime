@@ -595,6 +595,22 @@ mono_get_exception_bad_image_format (const char *msg)
 }	
 
 /**
+ * mono_get_exception_bad_image_format2:
+ * @msg: an informative message for the user.
+ * @fname: The full name of the file with the invalid image.
+ *
+ * Returns: a new instance of the System.BadImageFormatException
+ */
+MonoException *
+mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname)
+{
+	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
+
+	return mono_exception_from_name_two_strings (
+		mono_get_corlib (), "System", "BadImageFormatException", s, fname);
+}
+
+/**
  * mono_get_exception_stack_overflow:
  *
  * Returns: a new instance of the System.StackOverflowException

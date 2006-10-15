@@ -118,6 +118,9 @@ MonoException *
 mono_get_exception_bad_image_format (const char *msg);
 
 MonoException *
+mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname);
+
+MonoException *
 mono_get_exception_stack_overflow (void);
 
 MonoException *

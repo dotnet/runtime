@@ -984,7 +984,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 		MonoException *exc;
 
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			exc = mono_get_exception_bad_image_format (name);
+			exc = mono_get_exception_bad_image_format2 (NULL, fname);
 		else
 			exc = mono_get_exception_file_not_found2 (NULL, fname);
 		g_free (name);
