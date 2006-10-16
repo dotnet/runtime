@@ -86,6 +86,7 @@ void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data) MONO_
 void  mono_gc_add_memory_pressure (gint64 value) MONO_INTERNAL;
 int   mono_gc_register_root (char *start, size_t size, void *descr) MONO_INTERNAL;
 void  mono_gc_deregister_root (char* addr) MONO_INTERNAL;
+int   mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_GC_H__ */
 

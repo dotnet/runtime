@@ -2982,6 +2982,58 @@ null_link_in_range (void **start, void **end)
 	}
 }
 
+/**
+ * mono_gc_finalizers_for_domain:
+ * @domain: the unloading appdomain
+ * @out_array: output array
+ * @out_size: size of output array
+ *
+ * Store inside @out_array up to @out_size objects that belong to the unloading
+ * appdomain @domain. Returns the number of stored items. Can be called repeteadly
+ * until it returns 0.
+ * The items are removed from the finalizer data structure, so the caller is supposed
+ * to finalize them.
+ * @out_array should be on the stack to allow the GC to know the objects are still alive.
+ */
+int
+mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size)
+{
+	FinalizeEntry *entry, *prev;
+	int i, count;
+	if (no_finalize || !out_size || !out_array)
+		return;
+	count = 0;
+	LOCK_GC;
+	for (i = 0; i < finalizable_hash_size; ++i) {
+		prev = NULL;
+		for (entry = finalizable_hash [i]; entry;) {
+			if (mono_object_domain (entry->object) == domain) {
+				char *from;
+				FinalizeEntry *next;
+				/* remove and put in out_array */
+				if (prev)
+					prev->next = entry->next;
+				else
+					finalizable_hash [i] = entry->next;
+				next = entry->next;
+				num_registered_finalizers--;
+				out_array [count ++] = entry->object;
+				DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", entry->object, safe_name (entry->object), num_ready_finalizers, num_registered_finalizers));
+				entry = next;
+				if (count == out_size) {
+					UNLOCK_GC;
+					return count;
+				}
+				continue;
+			}
+			prev = entry;
+			entry = entry->next;
+		}
+	}
+	UNLOCK_GC;
+	return count;
+}
+
 static void
 rehash_fin_table (void)
 {
@@ -3688,6 +3740,7 @@ unregister_current_thread (void)
 	} else {
 		prev->next = p->next;
 	}
+	/* FIXME: transfer remsets if any */
 	free (p);
 }
 
