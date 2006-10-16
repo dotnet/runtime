@@ -4,13 +4,6 @@
 	      3 g_shell_quote
 	      1 g_shell_unquote
 
-	* String
-		g_ascii_strncasecmp
-		g_strjoinv
-
-	* Miscelaneous
-		g_propagate_error
-		
 ---------------------------------------------------------------------- 
 
 * Should implement, for better performance:

@@ -68,3 +68,14 @@ g_set_error (GError **err, gpointer domain, gint code, const gchar *format, ...)
 		va_end (args);
 	}
 }
+
+void
+g_propagate_error (GError **dest, GError *src)
+{
+	if (dest == NULL){
+		if (src)
+			g_error_free (src);
+	} else {
+		*dest = src;
+	}
+}

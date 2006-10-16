@@ -212,11 +212,11 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
 #endif
 
-gchar  *g_ascii_strdown (const gchar *str, gssize len);
-
-#define g_ascii_isspace(c) (isspace (c) != 0)
-#define g_ascii_isalpha(c) (isalpha (c) != 0)
-#define g_ascii_isprint(c) (isprint (c) != 0)
+gchar  *g_ascii_strdown     (const gchar *str, gssize len);
+gint    g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n);
+#define g_ascii_isspace(c)  (isspace (c) != 0)
+#define g_ascii_isalpha(c)  (isalpha (c) != 0)
+#define g_ascii_isprint(c)  (isprint (c) != 0)
 #define g_ascii_isxdigit(c) (isxdigit (c) != 0)
 #define g_ascii_xdigit_value(c) ((isxdigit (c) == 0) ? -1 : \
 					((c >= '0' && c <= '9') ? (c - '0') : \

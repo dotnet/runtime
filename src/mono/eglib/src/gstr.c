@@ -276,6 +276,37 @@ g_strjoin (const gchar *separator, ...)
 }
 
 gchar *
+g_strjoinv (const gchar *separator, gchar **str_array)
+{
+	char *res;
+	int slen, len, i;
+	
+	if (separator != NULL)
+		slen = strlen (separator);
+	else
+		slen = 0;
+	
+	len = 0;
+	for (i = 0; str_array [i] != NULL; i++){
+		len += strlen (str_array [i]);
+		len += slen;
+	}
+	if (len == 0)
+		return g_strdup ("");
+	if (slen > 0 && len > 0)
+		len -= slen;
+	len++;
+	res = g_malloc (len);
+	strcpy (res, str_array [0]);
+	for (i = 1; str_array [i] != NULL; i++){
+		if (separator != NULL)
+			strcat (res, separator);
+		strcat (res, str_array [i]);
+	}
+	return res;
+}
+
+gchar *
 g_strchug (gchar *str)
 {
 	gint len;
@@ -509,6 +540,29 @@ g_ascii_strdown (const gchar *str, gssize len)
 	return ret;
 }
 
+gint
+g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
+{
+	int i;
+	
+	g_return_val_if_fail (s1 != NULL, 0);
+	g_return_val_if_fail (s2 != NULL, 0);
+
+	for (i = 0; i < n; i++){
+		gchar c1 = *s1++;
+		gchar c2 = *s2++;
+		
+		if (c1 == c2)
+			continue;
+		
+		if (c1 == 0)
+			return -1;
+		if (c2 == 0)
+			return 1;
+		return c1-c2;
+	}
+	return 0;
+}
 
 gchar *
 g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)

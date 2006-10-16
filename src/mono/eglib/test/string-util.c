@@ -342,6 +342,29 @@ test_strescape ()
 	return OK;
 }
 
+RESULT
+test_ascii_strncasecmp ()
+{
+	int n;
+
+	n = g_ascii_strncasecmp ("123", "123", 1);
+	if (n != 0)
+		return FAILED ("Should have been 0");
+	
+	n = g_ascii_strncasecmp ("423", "123", 1);
+	if (n != 3)
+		return FAILED ("Should have been 3, got %d", n);
+
+	n = g_ascii_strncasecmp ("123", "423", 1);
+	if (n != -3)
+		return FAILED ("Should have been -3, got %d", n);
+
+	n = g_ascii_strncasecmp ("1", "1", 10);
+	if (n != 0)
+		return FAILED ("Should have been 0, got %d", n);
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -357,6 +380,7 @@ static Test strutil_tests [] = {
 	{"g_strdelimit", test_strdelimit},
 	{"g_strlcpy", test_strlcpy},
 	{"g_strescape", test_strescape},
+	{"g_ascii_strncasecmp", test_ascii_strncasecmp },
 	{NULL, NULL}
 };
 

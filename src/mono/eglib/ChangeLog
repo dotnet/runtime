@@ -1,3 +1,11 @@
+2006-10-16  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gerror.c (g_propagate_error): Implement.
+
+	* src/gstr.c (g_strjoinv, g_ascii_strncasecmp): implement.
+
+	* test/string-util.c (test_ascii_strncasecmp): test
+
 2006-10-15  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: Fix detection of platforms the [3456] stuff does
