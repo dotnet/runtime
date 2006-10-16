@@ -10327,17 +10327,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 #ifdef MONO_USE_AOT_COMPILER
 	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
-		MonoJitInfo *info;
 		MonoDomain *domain = mono_domain_get ();
 
-		mono_domain_lock (domain);
-
 		mono_class_init (method->klass);
-		if ((info = mono_aot_get_method (domain, method))) {
-			g_hash_table_insert (domain->jit_code_hash, method, info);
+
+		mono_domain_lock (domain);
+		if ((code = mono_aot_get_method (domain, method))) {
 			mono_domain_unlock (domain);
 			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
-			return info->code_start;
+			return code;
 		}
 
 		mono_domain_unlock (domain);

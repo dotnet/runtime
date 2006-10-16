@@ -94,6 +94,7 @@ typedef struct _BinSection BinSection;
 enum {
 	EMIT_NONE,
 	EMIT_BYTE,
+	EMIT_WORD,
 	EMIT_LONG
 };
 
@@ -364,6 +365,18 @@ emit_pointer (MonoAotCompile *acfg, const char *target)
 		g_print ("reloc: %s at %d\n", target, acfg->cur_section->cur_offset);
 	}
 	acfg->cur_section->cur_offset += sizeof (gpointer);
+}
+
+static void
+emit_int16 (MonoAotCompile *acfg, int value)
+{
+	guint8 *data;
+	emit_ensure_buffer (acfg->cur_section, 2);
+	data = acfg->cur_section->data + acfg->cur_section->cur_offset;
+	acfg->cur_section->cur_offset += 2;
+	/* FIXME: little endian */
+	data [0] = value;
+	data [1] = value >> 8;
 }
 
 static void
@@ -1369,7 +1382,21 @@ emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 	}
 }
 
-static void
+static inline void
+emit_int16 (MonoAotCompile *acfg, int value)
+{
+	if (acfg->mode != EMIT_WORD) {
+		acfg->mode = EMIT_WORD;
+		acfg->col_count = 0;
+	}
+	if ((acfg->col_count++ % 8) == 0)
+		fprintf (acfg->fp, "\n\t.word ");
+	else
+		fprintf (acfg->fp, ", ");
+	fprintf (acfg->fp, "%d", value);
+}
+
+static inline void
 emit_int32 (MonoAotCompile *acfg, int value)
 {
 	if (acfg->mode != EMIT_LONG) {
@@ -3027,19 +3054,21 @@ emit_class_name_table (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 
 	/* FIXME: Optimize memory usage */
-	emit_int32 (acfg, table_size);
+	g_assert (table_size < 65000);
+	emit_int16 (acfg, table_size);
+	g_assert (table->len < 65000);
 	for (i = 0; i < table->len; ++i) {
 		ClassNameTableEntry *entry = g_ptr_array_index (table, i);
 
 		if (entry == NULL) {
-			emit_int32 (acfg, 0);
-			emit_int32 (acfg, 0);
+			emit_int16 (acfg, 0);
+			emit_int16 (acfg, 0);
 		} else {
-			emit_int32 (acfg, entry->token);
+			emit_int16 (acfg, mono_metadata_token_index (entry->token));
 			if (entry->next)
-				emit_int32 (acfg, entry->next->index);
+				emit_int16 (acfg, entry->next->index);
 			else
-				emit_int32 (acfg, 0);
+				emit_int16 (acfg, 0);
 		}
 	}
 }

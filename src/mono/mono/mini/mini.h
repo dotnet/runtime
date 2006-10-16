@@ -50,7 +50,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "29"
+#define MONO_AOT_FILE_VERSION "30"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -869,7 +869,7 @@ MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode) MONO_INTERNAL;
 
 
 void      mono_aot_init                     (void) MONO_INTERNAL;
-MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
+gpointer  mono_aot_get_method               (MonoDomain *domain,
 											 MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token) MONO_INTERNAL;
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr) MONO_INTERNAL;
