@@ -151,7 +151,7 @@
 				Name="VCLibrarianTool"
 				AdditionalDependencies="libgc.lib"
 				OutputFile=".\libmono.lib"
-				AdditionalLibraryDirectories="C:\cygwin\home\poupou\svn\mono;.\VSDependancies\lib\"
+				AdditionalLibraryDirectories=".;.\VSDependancies\lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -1607,35 +1607,6 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="mono\metadata\unicode.c"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="mono\metadata\unicode.h"
-				>
 			</File>
 			<File
 				RelativePath="mono\metadata\verify.c"

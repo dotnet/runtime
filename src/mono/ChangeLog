@@ -1,3 +1,8 @@
+2006-10-16  Kornél Pál  <kornelpal@gmail.com>
+
+	* libmono.vcproj: Removed unicode.h and unicode.c. Changed absolute
+	  path in AdditionalLibraryDirectories to relative.
+
 2006-10-13  Joe Shaw  <joeshaw@novell.com>
 
 	* samples/size/size.c: Flesh this out quite a bit more so that
