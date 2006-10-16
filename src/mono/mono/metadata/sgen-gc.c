@@ -433,6 +433,7 @@ static mword nursery_size = DEFAULT_NURSERY_SIZE;
 static mword next_section_size = DEFAULT_NURSERY_SIZE * 4;
 static mword max_section_size = DEFAULT_MAX_SECTION;
 static int section_size_used = 0;
+static int degraded_mode = 0;
 
 static LOSObject *los_object_list = NULL;
 static mword los_memory_usage = 0;
@@ -1396,10 +1397,23 @@ new_gap (int gap)
 	return gap;
 }
 
+#if 0
+static int
+compare_addr (const void *a, const void *b)
+{
+	return *(const void **)a - *(const void **)b;
+}
+#endif
+
 /* sort the addresses in array in increasing order */
 static void
 sort_addresses (void **array, int size)
 {
+	/*
+	 * qsort is slower as predicted.
+	 * qsort (array, size, sizeof (gpointer), compare_addr);
+	 * return;
+	 */
 	int gap = size;
 	int swapped, end;
 	while (TRUE) {
@@ -1446,7 +1460,7 @@ optimize_pin_queue (int start_slot)
 	/* it may be better to keep ranges of pinned memory instead of individually pinning objects */
 	DEBUG (5, fprintf (gc_debug_file, "Sorting pin queue, size: %d\n", next_pin_slot));
 	if ((next_pin_slot - start_slot) > 1)
-		sort_addresses (pin_queue + start_slot, next_pin_slot);
+		sort_addresses (pin_queue + start_slot, next_pin_slot - start_slot);
 	start = cur = pin_queue + start_slot;
 	end = pin_queue + next_pin_slot;
 	while (cur < end) {
@@ -1846,11 +1860,11 @@ build_nursery_fragments (int start_pin, int end_pin)
 	if (frag_size)
 		add_nursery_frag (frag_size, frag_start, frag_end);
 	if (!nursery_fragments) {
-		g_warning ("Nursery fully pinned (%d)", end_pin - start_pin);
+		DEBUG (1, fprintf (gc_debug_file, "Nursery fully pinned (%d)\n", end_pin - start_pin));
 		for (i = start_pin; i < end_pin; ++i) {
-			DEBUG (1, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
+			DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
 		}
-		g_assert_not_reached ();
+		degraded_mode = 1;
 	}
 }
 
@@ -1905,6 +1919,7 @@ collect_nursery (size_t requested_size)
 	size_t frag_size;
 	struct timeval atv, btv;
 
+	degraded_mode = 0;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
@@ -1914,14 +1929,18 @@ collect_nursery (size_t requested_size)
 	/* 
 	 * not enough room in the old generation to store all the possible data from 
 	 * the nursery in a single continuous space.
+	 * We reset to_space if we allocated objects in degraded mode.
 	 */
+	if (to_space_section)
+		to_space = gray_objects = to_space_section->next_data;
 	if ((to_space_end - to_space) < max_garbage_amount) {
 		section = alloc_section (nursery_section->size * 4);
 		g_assert (nursery_section->size >= max_garbage_amount);
-		to_space = gray_objects = section->data;
+		to_space = gray_objects = section->next_data;
 		to_space_end = section->end_data;
 		to_space_section = section;
 	}
+	DEBUG (2, fprintf (gc_debug_file, "To space setup: %p-%p in section %p\n", to_space, to_space_end, to_space_section));
 	nursery_section->next_data = nursery_next;
 
 	num_minor_gcs++;
@@ -2007,6 +2026,7 @@ major_collection (void)
 	char *heap_end = (char*)-1;
 	size_t copy_space_required = 0;
 
+	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
 	num_major_gcs++;
 	/* 
@@ -2072,7 +2092,7 @@ major_collection (void)
 	/* allocate the big to space */
 	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %d\n", copy_space_required));
 	section = alloc_section (copy_space_required);
-	to_space = gray_objects = section->data;
+	to_space = gray_objects = section->next_data;
 	to_space_end = section->end_data;
 	to_space_section = section;
 
@@ -2257,11 +2277,11 @@ minor_collect_or_expand_inner (size_t size)
 		if (!search_fragment_for_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-			g_warning ("nursery collection didn't find enough room for %d alloc (%d pinned)", size, last_num_pinned);
+			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %d alloc (%d pinned)", size, last_num_pinned));
 			for (i = 0; i < last_num_pinned; ++i) {
-				DEBUG (1, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
+				DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
 			}
-			g_assert_not_reached ();
+			degraded_mode = 1;
 		}
 	}
 	//report_internal_mem_usage ();
@@ -2735,6 +2755,32 @@ search_fragment_for_size (size_t size)
 }
 
 /*
+ * size is already rounded up.
+ */
+static void*
+alloc_degraded (MonoVTable *vtable, size_t size)
+{
+	GCMemSection *section;
+	void **p = NULL;
+	for (section = section_list; section; section = section->next) {
+		if (section != nursery_section && (section->end_data - section->next_data) >= size) {
+			p = section->next_data;
+			break;
+		}
+	}
+	if (!p) {
+		section = alloc_section (nursery_section->size * 4);
+		/* FIXME: handle OOM */
+		p = section->next_data;
+	}
+	section->next_data += size;
+	degraded_mode += size;
+	DEBUG (3, fprintf (gc_debug_file, "Allocated (degraded) object %p, vtable: %p (%s), size: %d in section %p\n", p, vtable, vtable->klass->name, size, section));
+	*p = vtable;
+	return p;
+}
+
+/*
  * Provide a variant that takes just the vtable for small fixed-size objects.
  * The aligned size is already computed and stored in vt->gc_descr.
  * Note: every SCAN_START_SIZE or so we are given the chance to do some special
@@ -2773,10 +2819,23 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		} else {
 			if (nursery_next >= nursery_frag_real_end) {
 				nursery_next -= size;
+				/* when running in degraded mode, we continue allocing that way
+				 * for a while, to decrease the number of useless nursery collections.
+				 */
+				if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
+					p = alloc_degraded (vtable, size);
+					UNLOCK_GC;
+					return p;
+				}
 				if (!search_fragment_for_size (size)) {
 					/* get ready for possible collection */
 					update_current_thread_stack (&dummy);
 					minor_collect_or_expand_inner (size);
+					if (degraded_mode) {
+						p = alloc_degraded (vtable, size);
+						UNLOCK_GC;
+						return p;
+					}
 				}
 				/* nursery_next changed by minor_collect_or_expand_inner () */
 				p = (void*)nursery_next;
