@@ -59,6 +59,8 @@ mono_arch_get_restore_context (void)
 
 	g_assert ((code - start) < 32);
 
+	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+
 	inited = 1;
 
 	return start;
@@ -146,6 +148,8 @@ mono_arch_get_call_filter (void)
 
 	g_assert ((code - start) < 64);
 
+	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+
 	inited = 1;
 
 	return start;
@@ -196,6 +200,8 @@ get_throw_exception (gboolean rethrow)
 	sparc_nop (code);
 
 	g_assert ((code - start) <= 16);
+
+	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
 
 	return start;
 }
@@ -287,6 +293,8 @@ mono_arch_get_throw_exception_by_name (void)
 
 	g_assert ((code - start) < 32);
 
+	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+
 	return start;
 }
 
@@ -343,6 +351,8 @@ mono_arch_get_throw_corlib_exception (void)
 	sparc_nop (code);
 
 	g_assert ((code - start) < 32);
+
+	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
 
 	return start;
 }

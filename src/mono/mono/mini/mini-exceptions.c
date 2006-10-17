@@ -16,6 +16,11 @@
 #include <execinfo.h>
 #endif
 
+#ifndef PLATFORM_WIN32
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>

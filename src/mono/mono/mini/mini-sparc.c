@@ -316,6 +316,8 @@ mono_sparc_flushw (void)
 
 		g_assert ((code - start) < 64);
 
+		mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+
 		flushw = (gpointer)start;
 
 		inited = 1;
