@@ -133,7 +133,7 @@ g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
 	return hash;
 }
 
-void
+static void
 do_rehash (GHashTable *hash)
 {
 	int current_size, i;
@@ -161,7 +161,7 @@ do_rehash (GHashTable *hash)
 	g_free (table);
 }
 
-void
+static void
 rehash (GHashTable *hash)
 {
 	int diff = ABS (hash->last_rehash, hash->in_use);

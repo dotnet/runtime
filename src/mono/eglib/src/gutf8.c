@@ -104,7 +104,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	return ret;
 }
 
-glong
+static glong
 utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error)
 {
 	/* It is almost identical to UTF8Encoding.GetCharCount() */
@@ -304,7 +304,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	return ret;
 }
 
-glong
+static glong
 utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **error)
 {
 	glong ret, in_pos;
