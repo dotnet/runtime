@@ -2074,6 +2074,10 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
+#ifdef HAVE_SGEN_GC
+	/* FIXME: track where gen_params should be freed and remove the GC root as well */
+	MONO_GC_REGISTER_ROOT (entry->gparam);
+#endif
 	entry->gparam = gparam; /* FIXME: GC object stored in unmanaged mem */
 
 	g_ptr_array_add (assembly->gen_params, entry);
@@ -5467,7 +5471,12 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 
 	mono_class_init (gclass->klass);
 
+#ifdef HAVE_SGEN_GC
+	/* FIXME: allow unpinned later */
+	res = (MonoReflectionGenericClass *) mono_gc_alloc_pinned_obj (mono_class_vtable (domain, System_Reflection_MonoGenericClass), mono_class_instance_size (System_Reflection_MonoGenericClass));
+#else
 	res = (MonoReflectionGenericClass *) mono_object_new (domain, System_Reflection_MonoGenericClass);
+#endif
 
 	res->type.type = geninst;
 	if (gklass->wastypebuilder && gklass->reflection_info)
