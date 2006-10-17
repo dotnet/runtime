@@ -239,6 +239,16 @@ string_heap_insert (MonoDynamicStream *sh, const char *str)
 	return idx;
 }
 
+static guint32
+string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str)
+{
+	char *name = mono_string_to_utf8 (str);
+	guint32 idx;
+	idx = string_heap_insert (sh, name);
+	g_free (name);
+	return idx;
+}
+
 static void
 string_heap_init (MonoDynamicStream *sh)
 {
@@ -1266,7 +1276,6 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 	guint i, count;
 
 	/* room in this table is already allocated */
@@ -1274,9 +1283,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 	*mb->table_idx = table->next_idx ++;
 	g_hash_table_insert (assembly->method_to_table_idx, mb->mhandle, GUINT_TO_POINTER ((*mb->table_idx)));
 	values = table->values + *mb->table_idx * MONO_METHOD_SIZE;
-	name = mono_string_to_utf8 (mb->name);
-	values [MONO_METHOD_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_METHOD_NAME] = string_heap_insert_mstring (&assembly->sheap, mb->name);
 	values [MONO_METHOD_FLAGS] = mb->attrs;
 	values [MONO_METHOD_IMPLFLAGS] = mb->iattrs;
 	values [MONO_METHOD_SIGNATURE] = method_builder_encode_signature (assembly, mb);
@@ -1309,9 +1316,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 				values [MONO_PARAM_FLAGS] = pb->attrs;
 				values [MONO_PARAM_SEQUENCE] = i;
 				if (pb->name != NULL) {
-					name = mono_string_to_utf8 (pb->name);
-					values [MONO_PARAM_NAME] = string_heap_insert (&assembly->sheap, name);
-					g_free (name);
+					values [MONO_PARAM_NAME] = string_heap_insert_mstring (&assembly->sheap, pb->name);
 				} else {
 					values [MONO_PARAM_NAME] = 0;
 				}
@@ -1472,7 +1477,6 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 	ReflectionMethodBuilder rmb;
 	int i;
 
@@ -1494,14 +1498,10 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | ncharset | extra_flags;
 		values [MONO_IMPLMAP_MEMBER] = (mb->table_idx << 1) | 1; /* memberforwarded: method */
 		if (mb->dllentry)
-			name = mono_string_to_utf8 (mb->dllentry);
+			values [MONO_IMPLMAP_NAME] = string_heap_insert_mstring (&assembly->sheap, mb->dllentry);
 		else
-			name = mono_string_to_utf8 (mb->name);
-		values [MONO_IMPLMAP_NAME] = string_heap_insert (&assembly->sheap, name);
-		g_free (name);
-		name = mono_string_to_utf8 (mb->dll);
-		moduleref = string_heap_insert (&assembly->sheap, name);
-		g_free (name);
+			values [MONO_IMPLMAP_NAME] = string_heap_insert_mstring (&assembly->sheap, mb->name);
+		moduleref = string_heap_insert_mstring (&assembly->sheap, mb->dll);
 		if (!(values [MONO_IMPLMAP_SCOPE] = find_index_in_table (assembly, MONO_TABLE_MODULEREF, MONO_MODULEREF_NAME, moduleref))) {
 			table = &assembly->tables [MONO_TABLE_MODULEREF];
 			table->rows ++;
@@ -1808,7 +1808,6 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 
 	/* maybe this fixup should be done in the C# code */
 	if (fb->attrs & FIELD_ATTRIBUTE_LITERAL)
@@ -1817,9 +1816,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 	fb->table_idx = table->next_idx ++;
 	g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb->table_idx));
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
-	name = mono_string_to_utf8 (fb->name);
-	values [MONO_FIELD_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_FIELD_NAME] = string_heap_insert_mstring (&assembly->sheap, fb->name);
 	values [MONO_FIELD_FLAGS] = fb->attrs;
 	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb);
 
@@ -1919,7 +1916,6 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 	guint num_methods = 0;
 	guint32 semaidx;
 
@@ -1933,9 +1929,7 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 	table = &assembly->tables [MONO_TABLE_PROPERTY];
 	pb->table_idx = table->next_idx ++;
 	values = table->values + pb->table_idx * MONO_PROPERTY_SIZE;
-	name = mono_string_to_utf8 (pb->name);
-	values [MONO_PROPERTY_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_PROPERTY_NAME] = string_heap_insert_mstring (&assembly->sheap, pb->name);
 	values [MONO_PROPERTY_FLAGS] = pb->attrs;
 	values [MONO_PROPERTY_TYPE] = property_encode_signature (assembly, pb);
 
@@ -1968,7 +1962,6 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 	guint num_methods = 0;
 	guint32 semaidx;
 
@@ -1982,9 +1975,7 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 	table = &assembly->tables [MONO_TABLE_EVENT];
 	eb->table_idx = table->next_idx ++;
 	values = table->values + eb->table_idx * MONO_EVENT_SIZE;
-	name = mono_string_to_utf8 (eb->name);
-	values [MONO_EVENT_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_EVENT_NAME] = string_heap_insert_mstring (&assembly->sheap, eb->name);
 	values [MONO_EVENT_FLAGS] = eb->attrs;
 	values [MONO_EVENT_TYPE] = mono_image_typedef_or_ref (assembly, eb->type->type);
 
@@ -3112,13 +3103,10 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 {
 	MonoDynamicTable *table;
 	int i;
-	char *name;
 
 	table = &assembly->tables [MONO_TABLE_MODULE];
 	mb->table_idx = table->next_idx ++;
-	name = mono_string_to_utf8 (mb->module.name);
-	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert_mstring (&assembly->sheap, mb->module.name);
 	i = mono_image_add_stream_data (&assembly->guid, mono_array_addr (mb->guid, char, 0), 16);
 	i /= 16;
 	++i;
@@ -3709,7 +3697,6 @@ assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImag
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *name;
 
 	table = &assembly->tables [MONO_TABLE_MANIFESTRESOURCE];
 	table->rows++;
@@ -3717,9 +3704,7 @@ assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImag
 	values = table->values + table->next_idx * MONO_MANIFEST_SIZE;
 	values [MONO_MANIFEST_OFFSET] = rsrc->offset;
 	values [MONO_MANIFEST_FLAGS] = rsrc->attrs;
-	name = mono_string_to_utf8 (rsrc->name);
-	values [MONO_MANIFEST_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_MANIFEST_NAME] = string_heap_insert_mstring (&assembly->sheap, rsrc->name);
 	values [MONO_MANIFEST_IMPLEMENTATION] = implementation;
 	table->next_idx++;
 }
@@ -3846,7 +3831,6 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 	MonoReflectionAssemblyBuilder *assemblyb;
 	MonoDomain *domain;
 	guint32 *values;
-	char *name;
 	int i;
 	guint32 module_index;
 
@@ -3859,13 +3843,9 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 	alloc_table (table, 1);
 	values = table->values + MONO_ASSEMBLY_SIZE;
 	values [MONO_ASSEMBLY_HASH_ALG] = assemblyb->algid? assemblyb->algid: ASSEMBLY_HASH_SHA1;
-	name = mono_string_to_utf8 (assemblyb->name);
-	values [MONO_ASSEMBLY_NAME] = string_heap_insert (&assembly->sheap, name);
-	g_free (name);
+	values [MONO_ASSEMBLY_NAME] = string_heap_insert_mstring (&assembly->sheap, assemblyb->name);
 	if (assemblyb->culture) {
-		name = mono_string_to_utf8 (assemblyb->culture);
-		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, name);
-		g_free (name);
+		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert_mstring (&assembly->sheap, assemblyb->culture);
 	} else {
 		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, "");
 	}
@@ -4012,19 +3992,11 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	 */
 	for (i = 0; i < types->len; ++i) {
 		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
-		char *n;
-
-		n = mono_string_to_utf8 (tb->nspace);
-		string_heap_insert (&assembly->sheap, n);
-		g_free (n);
+		string_heap_insert_mstring (&assembly->sheap, tb->nspace);
 	}
 	for (i = 0; i < types->len; ++i) {
 		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
-		char *n;
-
-		n = mono_string_to_utf8 (tb->name);
-		string_heap_insert (&assembly->sheap, n);
-		g_free (n);
+		string_heap_insert_mstring (&assembly->sheap, tb->name);
 	}
 
 	for (i = 0; i < types->len; ++i) {
