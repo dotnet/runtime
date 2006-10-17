@@ -494,9 +494,7 @@ typedef enum {
 } GConvertError;
 
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong     *items_written, GError **error);
-glong     utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error);
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong     *items_written, GError **error);
-glong     utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **error);
 
 /*
  * Path

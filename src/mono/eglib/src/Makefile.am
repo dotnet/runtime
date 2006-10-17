@@ -9,6 +9,7 @@ libeglib_la_SOURCES = \
 	ghashtable.c 	\
 	gmem.c       	\
 	gmodule.c    	\
+	gmodule.h	\
 	goutput.c    	\
 	gstr.c       	\
 	gslist.c     	\
