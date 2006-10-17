@@ -1,5 +1,10 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
+	* src/glib.h (g_thread_init): Adding missing brace
+	(g_list_next): remove ; from the macro definition.
+
+2006-10-17  Miguel de Icaza  <miguel@novell.com>
+
 	* src/gutf8.c: internal methods
 
 	* src/ghashtable.c: internal methods.

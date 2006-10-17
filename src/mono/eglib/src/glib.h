@@ -308,7 +308,7 @@ struct _GList {
   GList *prev;
 };
 
-#define g_list_next(list) ((list) ? (((GList *) (list))->next) : NULL);
+#define g_list_next(list) ((list) ? (((GList *) (list))->next) : NULL)
 
 GList *g_list_alloc         (void);
 GList *g_list_append        (GList         *list,
@@ -700,7 +700,7 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
  * Empty thread functions, not used by eglib
  */
 #define g_thread_supported()   TRUE
-#define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } G_STMT_END
+#define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } } G_STMT_END
 
 #define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))
 #define GUINT32_SWAP_LE_BE(x) ((guint32) \
