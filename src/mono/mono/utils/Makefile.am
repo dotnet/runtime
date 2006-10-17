@@ -3,7 +3,7 @@ noinst_LTLIBRARIES = libmonoutils.la
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
 if EGLIB_BUILD 
-hash_sources = 
+hash_sources = mono-ehash.c
 else
 hash_sources = mono-hash.c
 endif
