@@ -10667,12 +10667,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #define GET_CONTEXT \
 	struct sigcontext *ctx = (struct sigcontext*)_dummy;
 #else
-#ifdef __sparc
+#ifdef MONO_ARCH_USE_SIGACTION
 #define GET_CONTEXT \
     void *ctx = context;
-#elif defined (MONO_ARCH_USE_SIGACTION)
+#elif defined(__sparc__)
 #define GET_CONTEXT \
-    void *ctx = context;
+    void *ctx = sigctx;
 #else
 #define GET_CONTEXT \
 	void **_p = (void **)&_dummy; \
@@ -10682,6 +10682,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 #ifdef MONO_ARCH_USE_SIGACTION
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#elif defined(__sparc__)
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
 #else
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
 #endif
