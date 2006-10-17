@@ -64,7 +64,11 @@ test_split ()
 			to_split, v[0]);
 	}
 	g_strfreev(v);
-	
+
+	v = g_strsplit ("", ":", 0);
+	if (v == NULL)
+		return FAILED ("g_strsplit returned NULL");
+	g_strfreev (v);
 	return OK;
 }
 

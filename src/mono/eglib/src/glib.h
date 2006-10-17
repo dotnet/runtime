@@ -52,6 +52,8 @@ typedef uint16_t       gunichar2;
 
 #define G_MAXINT32           INT32_MAX
 #define G_MININT32           INT32_MIN
+#define G_MININT64           INT64_MIN
+#define G_MAXINT64	     INT64_MAX
 
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321

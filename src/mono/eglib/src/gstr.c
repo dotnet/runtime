@@ -26,7 +26,6 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -205,7 +204,10 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 		}
 	}
 
-	if(vector != NULL && size > 0) {
+	if (vector == NULL){
+		vector = (gchar **) g_malloc (2 * sizeof (vector));
+		vector [0] = NULL;
+	} else if (size > 0){
 		vector[size - 1] = NULL;
 	}
 	

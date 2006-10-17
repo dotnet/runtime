@@ -1,7 +1,14 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
-	* src/glib.h: Move private prototypes elsewhere
+	* Add _GNU_SOURCE at configure time, remove from sources.
 	
+	* src/gstr.c (g_strsplit): Empty strings return a 0 value vector.
+
+	* src/glib.h (G_MAXINT64, G_MININT64): Add another set of macros
+	for the support stuff.
+	
+	Move private prototypes elsewhere
+
 	* src/glib.h (g_thread_init): Adding missing brace
 	(g_list_next): remove ; from the macro definition.
 
