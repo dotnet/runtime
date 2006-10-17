@@ -93,6 +93,9 @@ test_array_append2 ()
 	if (array != g_array_index (array, gpointer, 0))
 		return FAILED ("The value in the array is incorrect");
 
+	g_array_insert_val (array, 1, array);
+	g_array_insert_val (array, 2, array);
+	
 	g_array_free (array, TRUE);
 	return NULL;
 }

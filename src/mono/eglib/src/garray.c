@@ -132,7 +132,7 @@ g_array_insert_vals (GArray *array,
 	/* first move the existing elements out of the way */
 	memmove (element_offset (priv, index_ + len),
 		 element_offset (priv, index_),
-		 element_length (priv, len - index_));
+		 element_length (priv, array->len - index_));
 
 	/* then copy the new elements into the array */
 	memmove (element_offset (priv, array->len),

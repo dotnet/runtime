@@ -1,6 +1,9 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
-	* src/garray.c (g_array_insert_vals): Should actually use the
+	* src/garray.c (g_array_insert_vals): Shift the elements the
+	correct amount.
+
+	(g_array_insert_vals): Should actually use the
 	number of elements to insert.
 
 	* test/array.c: Add new test case, this was happening in the JIT. 
