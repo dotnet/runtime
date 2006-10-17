@@ -1,5 +1,10 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
+	* src/garray.c (g_array_insert_vals): Should actually use the
+	number of elements to insert.
+
+	* test/array.c: Add new test case, this was happening in the JIT. 
+
 	* Add _GNU_SOURCE at configure time, remove from sources.
 	
 	* src/gstr.c (g_strsplit): Empty strings return a 0 value vector.

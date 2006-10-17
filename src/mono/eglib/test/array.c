@@ -84,6 +84,20 @@ test_array_append ()
 }
 
 RESULT
+test_array_append2 ()
+{
+	GArray *array = g_array_new (FALSE, FALSE, sizeof (gpointer));
+
+	g_array_insert_val (array, 0, array);
+
+	if (array != g_array_index (array, gpointer, 0))
+		return FAILED ("The value in the array is incorrect");
+
+	g_array_free (array, TRUE);
+	return NULL;
+}
+
+RESULT
 test_array_remove ()
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (int));
@@ -110,6 +124,7 @@ test_array_remove ()
 static Test array_tests [] = {
 	{"big", test_array_big},
 	{"append", test_array_append},
+	{"append2", test_array_append2},
 	{"index", test_array_index},
 	{"remove", test_array_remove},
 	{"append_zero_term", test_array_append_zero_terminated},
