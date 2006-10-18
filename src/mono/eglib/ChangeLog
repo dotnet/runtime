@@ -1,3 +1,8 @@
+2006-10-18 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* test/array.c: new test for insertion in the middle of other values.
+	* src/garray.c: fixed destination index.
+
 2006-10-18  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gpath.c (g_build_path): Do not append terminator if the next

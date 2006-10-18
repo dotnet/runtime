@@ -84,18 +84,44 @@ test_array_append ()
 }
 
 RESULT
-test_array_append2 ()
+test_array_insert_val ()
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (gpointer));
+	gpointer ptr0, ptr1, ptr2, ptr3;
 
 	g_array_insert_val (array, 0, array);
 
 	if (array != g_array_index (array, gpointer, 0))
-		return FAILED ("The value in the array is incorrect");
+		return FAILED ("1 The value in the array is incorrect");
 
 	g_array_insert_val (array, 1, array);
+	if (array != g_array_index (array, gpointer, 1))
+		return FAILED ("2 The value in the array is incorrect");
+
 	g_array_insert_val (array, 2, array);
+	if (array != g_array_index (array, gpointer, 2))
+		return FAILED ("3 The value in the array is incorrect");
 	
+	g_array_free (array, TRUE);
+	array = g_array_new (FALSE, FALSE, sizeof (gpointer));
+	ptr0 = array;
+	ptr1 = array + 1;
+	ptr2 = array + 2;
+	ptr3 = array + 3;
+
+	g_array_insert_val (array, 0, ptr0);
+	g_array_insert_val (array, 1, ptr1);
+	g_array_insert_val (array, 2, ptr2);
+	g_array_insert_val (array, 1, ptr3);
+	if (ptr0 != g_array_index (array, gpointer, 0))
+		return FAILED ("4 The value in the array is incorrect");
+	if (ptr3 != g_array_index (array, gpointer, 1))
+		return FAILED ("5 The value in the array is incorrect");
+	if (ptr1 != g_array_index (array, gpointer, 2))
+		return FAILED ("6 The value in the array is incorrect");
+	if (ptr2 != g_array_index (array, gpointer, 3))
+		return FAILED ("7 The value in the array is incorrect");
+
 	g_array_free (array, TRUE);
 	return NULL;
 }
@@ -127,7 +153,7 @@ test_array_remove ()
 static Test array_tests [] = {
 	{"big", test_array_big},
 	{"append", test_array_append},
-	{"append2", test_array_append2},
+	{"insert_val", test_array_insert_val},
 	{"index", test_array_index},
 	{"remove", test_array_remove},
 	{"append_zero_term", test_array_append_zero_terminated},
