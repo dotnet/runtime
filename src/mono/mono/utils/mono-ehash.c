@@ -346,12 +346,12 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 void
 mono_g_hash_table_insert (MonoGHashTable *h, gpointer k, gpointer v)
 {
-	g_hash_table_insert_replace (h, k, v, FALSE);
+	mono_g_hash_table_insert_replace (h, k, v, FALSE);
 }
 
 void
 mono_g_hash_table_replace(MonoGHashTable *h, gpointer k, gpointer v)
 {
-	g_hash_table_insert_replace (h, k, v, TRUE);
+	mono_g_hash_table_insert_replace (h, k, v, TRUE);
 }
 
