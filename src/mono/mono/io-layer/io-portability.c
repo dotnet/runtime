@@ -88,13 +88,16 @@ static gchar *find_in_dir (DIR *current, const gchar *name)
 #endif
 		
 		if (!g_ascii_strcasecmp (name, entry->d_name)) {
+			char *ret;
+			
 #ifdef DEBUG
 			g_message ("%s: matched [%s] to [%s]\n", __func__,
 				   entry->d_name, name);
 #endif
-			
+
+			ret = g_strdup (entry->d_name);
 			closedir (current);
-			return(g_strdup (entry->d_name));
+			return ret;
 		}
 	}
 	
