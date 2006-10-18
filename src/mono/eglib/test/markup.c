@@ -194,10 +194,18 @@ mono_domain (void)
 	return NULL;
 }
 
+RESULT
+mcs_config (void)
+{
+	return markup_test ("<configuration>\r\n  <system.diagnostics>\r\n    <trace autoflush=\"true\" indentsize=\"4\">\r\n      <listeners>\r\n        <add name=\"compilerLogListener\" type=\"System.Diagnostics.TextWriterTraceListener,System\"/>      </listeners>    </trace>   </system.diagnostics> </configuration>");
+
+}
+
 static Test markup_tests [] = {
 	{"invalid_documents", invalid_documents},
 	{"good_documents", valid_documents},
 	{"mono_domain", mono_domain},
+	{"mcs_config", mcs_config},
 	{NULL, NULL}
 };
 

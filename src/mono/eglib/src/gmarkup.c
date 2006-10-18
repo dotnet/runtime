@@ -238,7 +238,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 	
 	for (p = text; p < end; p++){
 		char c = *p;
-		
+
 		switch (context->state){
 		case START:
 			if (c == ' ' || c == '\t' || c == '\f' || c == '\n')
@@ -275,7 +275,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				goto fail;
 			}
 			
-			for (++p; p < end && isalnum (*p); p++)
+			for (++p; p < end && (isalnum (*p) || (*p == '.')); p++)
 				;
 			if (p == end){
 				set_error ("Expected an element");
@@ -332,8 +332,9 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 					}
 				}
 				free (ename);
-			} else
+			} else {
 				context->level = g_slist_prepend (context->level, ename);
+			}
 			
 			context->state = TEXT;
 			break;
@@ -387,7 +388,6 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				goto fail;
 			}
 			text = current->data;
-			
 			if (context->parser.end_element != NULL){
 				context->parser.end_element (context, text, context->user_data, error);
 				if (error != NULL && *error != NULL){
@@ -396,9 +396,10 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				}
 			}
 			free (text);
-			
+
 			context->level = context->level->next;
 			g_slist_free_1 (current);
+			context->state = FLUSH_TEXT;
 			break;
 		} /* case CLOSING_ELEMENT */
 			
@@ -408,7 +409,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 	return TRUE;
  fail:
-	if (context->parser.error)
+	if (context->parser.error && *error)
 		context->parser.error (context, *error, context->user_data);
 	
 	destroy_parse_state (context);

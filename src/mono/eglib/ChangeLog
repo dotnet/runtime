@@ -1,5 +1,8 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gmarkup.c (g_markup_parse_context_parse): Accept dots in the
+	sequence, reset the state after a closing element.
+
 	* src/garray.c (g_array_insert_vals): Shift the elements the
 	correct amount.
 
