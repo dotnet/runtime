@@ -60,13 +60,14 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 		}
 		g_string_append_len (result, s, p - s);
 
-		if (next){
+		if (next && *next){
 			g_string_append (result, separator);
 
 			for (; strncmp (next, separator, slen) == 0; )
 				next += slen;
 		}
 	}
+	g_string_append_c (result, 0);
 	va_end (args);
 
 	return g_string_free (result, FALSE);

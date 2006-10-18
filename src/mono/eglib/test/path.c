@@ -77,6 +77,12 @@ test_buildpath ()
 	if (strcmp (s, "a/b/c/d") != 0)
 		return FAILED ("13 Got wrong result, got: %s", s);
 	g_free (s);
+
+	s = g_build_path ("/", "/a", "", "/c/", NULL);
+	if (strcmp (s, "/a/c/") != 0)
+		return FAILED ("14 Got wrong result, got: %s", s);
+	g_free (s);
+        return OK;
 	
 	return OK;
 }

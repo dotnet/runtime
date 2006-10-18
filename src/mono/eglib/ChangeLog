@@ -1,3 +1,12 @@
+2006-10-18  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gpath.c (g_build_path): Do not append terminator if the next
+	string is empty.
+
+	* src/gutf8.c (g_utf8_to_utf16): Include trailing zero as
+	documented.
+	(g_utf16_to_utf8): Include trailing zero as documented.
+
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gstr.c (g_strdown): Actually move.

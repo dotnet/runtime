@@ -49,7 +49,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	if (utf16_len < 0)
 		return NULL;
 
-	ret = g_malloc (utf16_len * sizeof (gunichar2));
+	ret = g_malloc ((1 + utf16_len) * sizeof (gunichar2));
 
 	for (in_pos = 0; len < 0 ? str [in_pos] : in_pos < len; in_pos++) {
 		ch = (guchar) str [in_pos];
@@ -102,6 +102,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 		}
 	}
 
+	ret [out_pos] = 0;
 	if (items_written)
 		*items_written = out_pos;
 	return ret;
@@ -252,7 +253,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	if (utf8_len < 0)
 		return NULL;
 
-	ret = g_malloc (utf8_len * sizeof (gchar));
+	ret = g_malloc ((1+utf8_len) * sizeof (gchar));
 
 	while (len < 0 ? str [in_pos] : in_pos < len) {
 		ch = str [in_pos];
@@ -301,6 +302,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 			ret [out_pos++] = (gchar) (0x80 | (codepoint & 0x3F));
 		}
 	}
+	ret [out_pos] = 0;
 
 	if (items_written)
 		*items_written = out_pos;
