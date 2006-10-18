@@ -516,6 +516,7 @@ g_strdown (gchar *string)
 
 	while (*string){
 		*string = tolower (*string);
+		string++;
 	}
 }
 

@@ -1,5 +1,7 @@
 2006-10-17  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gstr.c (g_strdown): Actually move.
+
 	* src/gmarkup.c (g_markup_parse_context_parse): Accept dots in the
 	sequence, reset the state after a closing element.
 
