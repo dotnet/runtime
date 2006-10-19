@@ -42,4 +42,4 @@ libmonoutilsinclude_HEADERS = \
 	mono-uri.h	\
 	mono-stdlib.h
 
-EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h
+EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h mono-ehash.c
