@@ -410,9 +410,12 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			}
 			free (text);
 
+			while (p < end && *p != '>')
+				p++;
+			
 			context->level = context->level->next;
 			g_slist_free_1 (current);
-			context->state = FLUSH_TEXT;
+			context->state = TEXT;
 			break;
 		} /* case CLOSING_ELEMENT */
 			
