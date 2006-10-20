@@ -54,7 +54,13 @@ public class Tests
 	public static extern int mono_test_marshal_variant_in_double([MarshalAs(UnmanagedType.Struct)]object obj);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_in_bstr([MarshalAs(UnmanagedType.Struct)]object obj);
+	public static extern int mono_test_marshal_variant_in_bstr ([MarshalAs (UnmanagedType.Struct)]object obj);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_variant_in_bool_true ([MarshalAs (UnmanagedType.Struct)]object obj);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_variant_in_bool_false ([MarshalAs (UnmanagedType.Struct)]object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_sbyte([MarshalAs(UnmanagedType.Struct)]out object obj);
@@ -87,7 +93,13 @@ public class Tests
 	public static extern int mono_test_marshal_variant_out_double([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_out_bstr([MarshalAs(UnmanagedType.Struct)]out object obj);
+	public static extern int mono_test_marshal_variant_out_bstr ([MarshalAs (UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_bool_true ([MarshalAs (UnmanagedType.Struct)]out object obj);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_variant_out_bool_false ([MarshalAs (UnmanagedType.Struct)]out object obj);
 
     [DllImport ("libtest")]
     public static extern int mono_test_marshal_com_object_create (out IntPtr pUnk);
@@ -95,8 +107,8 @@ public class Tests
     [DllImport ("libtest")]
     public static extern int mono_test_marshal_com_object_destroy (IntPtr pUnk);
 
-    [DllImport ("libtest")]
-    public static extern int mono_test_marshal_com_object_ref_count (IntPtr pUnk);
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_com_object_ref_count (IntPtr pUnk);
 
 	public static int Main() {
 
