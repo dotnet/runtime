@@ -1,5 +1,7 @@
 2006-10-21  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gdir.c (g_dir_read_name): Do not return . or ..
+
 	* src/gstr.c (g_ascii_xdigit_value): Make this into a function,
 	thanks to Paolo for pointing the problem with the double macro
 	expansion. 

@@ -76,9 +76,11 @@ g_dir_read_name (GDir *dir)
 	struct dirent *entry;
 
 	g_return_val_if_fail (dir != NULL && dir->dir != NULL, NULL);
-	entry = readdir (dir->dir);
-	if (entry == NULL)
-		return NULL;
+	do {
+		entry = readdir (dir->dir);
+		if (entry == NULL)
+			return NULL;
+	} while ((strcmp (entry->d_name, ".") == 0) || (strcmp (entry->d_name, "..") == 0));
 
 	return entry->d_name;
 #endif

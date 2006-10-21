@@ -37,11 +37,16 @@ test_dir ()
 		return FAILED ("5 opendir should succeed");
 	if (error != NULL)
 		return FAILED ("6 got an error");
-
 	name = NULL;
 	name = g_dir_read_name (dir);
 	if (name == NULL)
 		return FAILED ("7 didn't read a file name");
+	while ((name = g_dir_read_name (dir)) != NULL) {
+		if (strcmp (name, ".") == 0)
+			return FAILED (". directory found");
+		if (strcmp (name, "..") == 0)
+			return FAILED (".. directory found");
+	}
 	g_dir_close (dir);
 	return OK;
 }
