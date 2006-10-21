@@ -204,7 +204,7 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 					break;
 				}
 				
-				token = strtok_save;
+				token = *strtok_save ? strtok_save : NULL;
 			} else {
 				token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
 			}

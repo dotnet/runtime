@@ -74,7 +74,22 @@ test_split ()
 	if (v [0][0] != 0)
 		return FAILED ("Got a non-empty first element");
 	g_strfreev (v);
-		
+
+	v = g_strsplit ("appdomain1, Version=0.0.0.0, Culture=neutral", ",", 4);
+	if (strcmp (v [0], "appdomain1") != 0)
+		return FAILED ("Invalid value");
+	
+	if (strcmp (v [1], " Version=0.0.0.0") != 0)
+		return FAILED ("Invalid value");
+	
+	if (strcmp (v [2], " Culture=neutral") != 0)
+		return FAILED ("Invalid value");
+
+	if (v [3] != NULL)
+		return FAILED ("Expected only 3 elements");
+	
+	g_strfreev (v);
+
 	return OK;
 }
 
