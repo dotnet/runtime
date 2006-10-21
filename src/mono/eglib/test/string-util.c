@@ -69,6 +69,12 @@ test_split ()
 	if (v == NULL)
 		return FAILED ("g_strsplit returned NULL");
 	g_strfreev (v);
+
+	v = g_strsplit ("/home/miguel/dingus", "/", 0);
+	if (v [0][0] != 0)
+		return FAILED ("Got a non-empty first element");
+	g_strfreev (v);
+		
 	return OK;
 }
 

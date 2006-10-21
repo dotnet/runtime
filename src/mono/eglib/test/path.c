@@ -114,7 +114,10 @@ test_dirname ()
 	if (strcmp (s, "/home/dingus") != 0)
 		return FAILED ("Expected /home/dingus, got %s", s);
 	g_free (s);
-	
+
+	s = g_path_get_dirname ("dir.c");
+	if (strcmp (s, ".") != 0)
+		return FAILED ("Expected `.', got %s", s);
 	return OK;
 }
 

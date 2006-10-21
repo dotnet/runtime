@@ -176,34 +176,41 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	string_c = (gchar *)g_malloc(token_length + 1);
 	memcpy(string_c, string, token_length);
 	string_c[token_length] = 0;
-	
-	vector = NULL;
+
+	if (strncmp (string_c, delimiter, strlen (delimiter)) == 0){
+		vector = (gchar **) g_malloc (2 * sizeof (vector));
+		vector [0]  = g_strdup ("");
+		size++;
+	} else
+		vector = NULL;
 	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
 
-	while(token != NULL) {
-		token_length = strlen(token);
-		token_c = (gchar *)g_malloc(token_length + 1);
-		memcpy(token_c, token, token_length);
-		token_c[token_length] = 0;
-
-		vector = vector == NULL ? 
-			(gchar **)g_malloc(2 * sizeof(vector)) :
-			(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
-	
-		vector[size - 1] = token_c;	
-		size++;
-
-		if(max_tokens > 0 && size >= max_tokens) {
-			if(size > max_tokens) {
-				break;
+	if (!(max_tokens > 0 && size >= max_tokens)){
+		while(token != NULL) {
+			token_length = strlen(token);
+			token_c = (gchar *)g_malloc(token_length + 1);
+			memcpy(token_c, token, token_length);
+			token_c[token_length] = 0;
+			
+			vector = vector == NULL ? 
+				(gchar **)g_malloc(2 * sizeof(vector)) :
+				(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
+			
+			vector[size - 1] = token_c;	
+			size++;
+			
+			if(max_tokens > 0 && size >= max_tokens) {
+				if(size > max_tokens) {
+					break;
+				}
+				
+				token = strtok_save;
+			} else {
+				token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
 			}
-
-			token = strtok_save;
-		} else {
-			token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
 		}
 	}
-
+	
 	if (vector == NULL){
 		vector = (gchar **) g_malloc (2 * sizeof (vector));
 		vector [0] = NULL;
