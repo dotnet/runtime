@@ -692,3 +692,13 @@ g_strdup (const gchar *str)
 	return strdup (str);
 }
 
+gint
+g_ascii_xdigit_value (gchar c)
+{
+	return ((isxdigit (c) == 0) ? -1 :
+		((c >= '0' && c <= '9') ? (c - '0') :
+		 ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) :
+		  (c - 'A' + 10))));
+}
+
+

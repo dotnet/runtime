@@ -214,16 +214,13 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
 #endif
 
-gchar  *g_ascii_strdown     (const gchar *str, gssize len);
-gint    g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n);
-#define g_ascii_isspace(c)  (isspace (c) != 0)
-#define g_ascii_isalpha(c)  (isalpha (c) != 0)
-#define g_ascii_isprint(c)  (isprint (c) != 0)
-#define g_ascii_isxdigit(c) (isxdigit (c) != 0)
-#define g_ascii_xdigit_value(c) ((isxdigit (c) == 0) ? -1 : \
-					((c >= '0' && c <= '9') ? (c - '0') : \
-					 	((c >= 'a' && c <= 'f') ? (c - 'a' + 10) : \
-						 (c - 'A' + 10))))
+gchar  *g_ascii_strdown      (const gchar *str, gssize len);
+gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
+gint    g_ascii_xdigit_value (gchar c);
+#define g_ascii_isspace(c)   (isspace (c) != 0)
+#define g_ascii_isalpha(c)   (isalpha (c) != 0)
+#define g_ascii_isprint(c)   (isprint (c) != 0)
+#define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #define g_strcasecmp strcasecmp
@@ -300,7 +297,6 @@ GSList *g_slist_insert_before (GSList        *list,
 			       gpointer       data);
 GSList *g_slist_sort          (GSList        *list,
 			       GCompareFunc   func);
-
 #define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
 
 typedef struct _GList GList;

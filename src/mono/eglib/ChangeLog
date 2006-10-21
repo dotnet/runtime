@@ -1,5 +1,9 @@
 2006-10-21  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gstr.c (g_ascii_xdigit_value): Make this into a function,
+	thanks to Paolo for pointing the problem with the double macro
+	expansion. 
+
 	* src/gmodule.c (g_module_open): Actually return NULL if we fail
 	to load the module (was hiding the real bug in the pinvoke tests).
 
