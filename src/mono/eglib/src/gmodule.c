@@ -46,18 +46,21 @@ g_module_open (const gchar *file, GModuleFlags flags)
 {
 	int f = 0;
 	GModule *module;
-
+	void *handle;
+	
 	flags &= G_MODULE_BIND_MASK;
 	if ((flags & G_MODULE_BIND_LAZY) != 0)
 		f |= RTLD_LAZY;
 	if ((flags & G_MODULE_BIND_LOCAL) != 0)
 		f |= RTLD_LOCAL;
 
-	module = g_malloc (sizeof (GModule));
-	if (module == NULL)
+	handle = dlopen (file, f);
+	if (handle == NULL)
 		return NULL;
-
-	module->handle = dlopen (file, f);
+	
+	module = g_new (GModule,1);
+	module->handle = handle;
+	
 	return module;
 }
 
@@ -194,10 +197,17 @@ g_module_close (GModule *module)
 gchar *
 g_module_build_path (const gchar *directory, const gchar *module_name)
 {
+	char *lib_prefix = "";
+	
 	if (module_name == NULL)
 		return NULL;
 
-	if (directory)
-		return g_strdup_printf ("%s/" LIBPREFIX "%s" LIBSUFFIX, directory, module_name);
-	return g_strdup_printf (LIBPREFIX "%s" LIBSUFFIX, module_name); 
+	if (strncmp (module_name, "lib", 3) != 0)
+		lib_prefix = LIBPREFIX;
+	
+	if (directory && *directory){ 
+		
+		return g_strdup_printf ("%s/%s%s" LIBSUFFIX, directory, lib_prefix, module_name);
+	}
+	return g_strdup_printf ("%s%s" LIBSUFFIX, lib_prefix, module_name); 
 }

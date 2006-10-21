@@ -1,5 +1,11 @@
 2006-10-21  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gmodule.c (g_module_open): Actually return NULL if we fail
+	to load the module (was hiding the real bug in the pinvoke tests).
+
+	(g_module_build_path): Do not prepend "lib" if the "lib" is part
+	of the call.
+
 	* src/gstr.c (g_strsplit): this routine has some non-expected
 	behavior, if the string begins with the delimiter, it will return
 	an empty first string, unlike strtok
