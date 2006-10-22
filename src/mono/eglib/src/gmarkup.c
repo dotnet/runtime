@@ -425,7 +425,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 	return TRUE;
  fail:
-	if (context->parser.error && *error)
+	if (context->parser.error && error != NULL && *error)
 		context->parser.error (context, *error, context->user_data);
 	
 	destroy_parse_state (context);

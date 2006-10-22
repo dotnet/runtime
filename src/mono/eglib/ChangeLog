@@ -1,5 +1,11 @@
 2006-10-21  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gunicode.c (g_filename_from_utf8): Use g_strlcpy here. 
+
+	* src/gmarkup.c (g_markup_parse_context_parse): Do not dereference
+	null values here.   This gets things a little bit further in
+	corlib, but not too far.
+
 	* src/gdir.c (g_dir_read_name): Do not return . or ..
 
 	* src/gstr.c (g_ascii_xdigit_value): Make this into a function,
