@@ -1587,18 +1587,29 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 {
 	gint major, minor, build, revision;
 	gint len;
+	gint version_parts;
 	gchar *pkey, *pkeyptr, *encoded, tok [8];
 
 	memset (aname, 0, sizeof (MonoAssemblyName));
 
 	if (version) {
-		if (sscanf (version, "%u.%u.%u.%u", &major, &minor, &build, &revision) != 4)
+		version_parts = sscanf (version, "%u.%u.%u.%u", &major, &minor, &build, &revision);
+		if (version_parts < 2 || version_parts > 4)
 			return FALSE;
 
+		/* FIXME: we should set build & revision to -1 (instead of 0)
+		if these are not set in the version string. That way, later on,
+		we can still determine if these were specified.	*/
 		aname->major = major;
 		aname->minor = minor;
-		aname->build = build;
-		aname->revision = revision;
+		if (version_parts >= 3)
+			aname->build = build;
+		else
+			aname->build = 0;
+		if (version_parts == 4)
+			aname->revision = revision;
+		else
+			aname->revision = 0;
 	}
 	
 	aname->name = g_strdup (name);
