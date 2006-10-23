@@ -2099,6 +2099,13 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			continue;
 		}
 
+		if ((patch_info->type == MONO_PATCH_INFO_METHOD) ||
+			(patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) ||
+			(patch_info->type == MONO_PATCH_INFO_WRAPPER)) {
+			patch_info->type = MONO_PATCH_INFO_NONE;
+			continue;
+		}
+
 		n_patches ++;
 	}
 

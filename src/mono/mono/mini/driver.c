@@ -326,7 +326,6 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 	*total_run = 0;
 	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
 		double elapsed, comp_time, start_time;
-		MonoJitInfo *jinfo;
 
 		opt_flags = opt_sets [opt];
 		mono_set_defaults (verbose, opt_flags);
@@ -358,8 +357,8 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 					if (verbose >= 2)
 						g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-					if ((jinfo = mono_aot_get_method (mono_get_root_domain (), method)))
-						func = jinfo->code_start;
+					if ((func = mono_aot_get_method (mono_get_root_domain (), method)))
+						;
 					else
 #endif
 						func = (TestMethod)(gpointer)cfg->native_code;
