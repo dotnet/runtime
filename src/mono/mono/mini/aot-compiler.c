@@ -2101,7 +2101,9 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 		if ((patch_info->type == MONO_PATCH_INFO_METHOD) ||
 			(patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) ||
-			(patch_info->type == MONO_PATCH_INFO_WRAPPER)) {
+			(patch_info->type == MONO_PATCH_INFO_WRAPPER) ||
+			(patch_info->type == MONO_PATCH_INFO_CLASS_INIT)) {
+			/* Calls are made through the PLT */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
 		}
