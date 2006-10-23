@@ -170,6 +170,9 @@ mono_gc_flush_info (void)
 
 #define MAX_DEBUG_LEVEL 9
 #define DEBUG(level,a) do {if ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level) a;} while (0)
+
+#define TV_DECLARE(name) struct timeval name
+#define TV_GETTIME(tv) gettimeofday (&(tv), NULL)
 #define TV_ELAPSED(start,end) (int)((((end).tv_sec - (start).tv_sec) * 1000000) + end.tv_usec - start.tv_usec)
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
@@ -1860,7 +1863,8 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 static void
 drain_gray_stack (char *start_addr, char *end_addr)
 {
-	struct timeval atv, btv;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
 	int fin_ready;
 	char *gray_start;
 
@@ -1875,14 +1879,14 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	 * (use a flag since this is needed only on major collections). We need to loop
 	 * here as well, so keep a counter of marked LO (increasing it in copy_object).
 	 */
-	gettimeofday (&btv, NULL);
+	TV_GETTIME (btv);
 	gray_start = to_space;
 	DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area: %p-%p, size: %d\n", gray_start, gray_objects, (int)(gray_objects - gray_start)));
 	while (gray_start < gray_objects) {
 		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
 		gray_start = scan_object (gray_start, start_addr, end_addr);
 	}
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Gray stack scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 	//scan_old_generation (start_addr, end_addr);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation done\n"));
@@ -1918,7 +1922,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	 * called.
 	 */
 	null_link_in_range ((void**)start_addr, (void**)end_addr);
-	gettimeofday (&btv, NULL);
+	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 }
 
@@ -2010,7 +2014,8 @@ collect_nursery (size_t requested_size)
 	size_t max_garbage_amount;
 	int i;
 	RootRecord *root;
-	struct timeval atv, btv;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
 
 	degraded_mode = 0;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
@@ -2038,13 +2043,13 @@ collect_nursery (size_t requested_size)
 
 	num_minor_gcs++;
 	/* world must be stopped already */
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	/* pin from pinned handles */
 	pin_from_roots (nursery_start, nursery_next);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
 	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next);
-	gettimeofday (&btv, NULL);
+	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
@@ -2055,7 +2060,7 @@ collect_nursery (size_t requested_size)
 
 	scan_from_remsets (nursery_start, nursery_next);
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 	/* FIXME: later scan also alloc_pinned objects */
 
@@ -2074,7 +2079,7 @@ collect_nursery (size_t requested_size)
 			precisely_scan_objects_from ((void**)root->start_root, root->end_root, nursery_start, nursery_next, root->root_desc);
 		}
 	}
-	gettimeofday (&btv, NULL);
+	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	drain_gray_stack (nursery_start, nursery_next);
@@ -2084,7 +2089,7 @@ collect_nursery (size_t requested_size)
 	 * next allocations.
 	 */
 	build_nursery_fragments (0, next_pin_slot);
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %d bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
 
 	/* prepare the pin queue for the next collection */
@@ -2106,7 +2111,8 @@ major_collection (void)
 	PinnedChunk *chunk;
 	FinalizeEntry *fin;
 	int count;
-	struct timeval atv, btv;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
 	/* FIXME: only use these values for the precise scan
 	 * note that to_space pointers should be excluded anyway...
 	 */
@@ -2135,7 +2141,7 @@ major_collection (void)
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
 	/* world must be stopped already */
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
 	for (section = section_list; section; section = section->next) {
 		section->pin_queue_start = count = next_pin_slot;
@@ -2173,7 +2179,7 @@ major_collection (void)
 		}
 	}
 
-	gettimeofday (&btv, NULL);
+	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
@@ -2210,7 +2216,7 @@ major_collection (void)
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
 		fin->object = copy_object (fin->object, heap_start, heap_end);
 	}
-	gettimeofday (&atv, NULL);
+	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
 	/* all the objects in the heap */
@@ -3553,7 +3559,7 @@ restart_handler (int sig)
 	errno = old_errno;
 }
 
-static struct timeval stop_world_time;
+static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
 /* LOCKING: assumes the GC lock is held */
@@ -3564,7 +3570,7 @@ stop_world (void)
 
 	global_stop_count++;
 	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (pthread_self ()), (gpointer)pthread_self ()));
-	gettimeofday (&stop_world_time, NULL);
+	TV_GETTIME (stop_world_time);
 	count = thread_handshake (suspend_signal_num);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
 	return count;
@@ -3575,13 +3581,12 @@ static int
 restart_world (void)
 {
 	int count;
-	struct timeval end_sw;
+	TV_DECLARE (end_sw);
 	unsigned long usec;
 
 	count = thread_handshake (restart_signal_num);
-	gettimeofday (&end_sw, NULL);
-	usec = (end_sw.tv_sec - stop_world_time.tv_sec) * 1000000;
-	usec += end_sw.tv_usec - stop_world_time.tv_usec;
+	TV_GETTIME (end_sw);
+	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
 	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
 	return count;
@@ -4026,7 +4031,6 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 void
 mono_gc_collect (int generation)
 {
-	SgenThreadInfo *info;
 	LOCK_GC;
 	update_current_thread_stack (&generation);
 	stop_world ();
@@ -4049,7 +4053,6 @@ gint64
 mono_gc_get_used_size (void)
 {
 	gint64 tot = 0;
-	LOSObject *bigo;
 	GCMemSection *section;
 	LOCK_GC;
 	tot = los_memory_usage;
