@@ -698,7 +698,8 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 *error)
 {
 	HANDLE ret;
-	int attributes;
+	int attributes, attrs;
+	gunichar2 *chars = mono_string_chars (filename);
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -725,12 +726,18 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 	} else
 		attributes = FILE_ATTRIBUTE_NORMAL;
 
-
-	ret=CreateFile (mono_string_chars (filename),
-			convert_access (access_mode), convert_share (share),
-			NULL, convert_mode (mode),
-			attributes,
-			NULL);
+	/* If we're opening a directory we need to set the extra flag
+	 */
+	attrs = GetFileAttributes (chars);
+	if (attrs != INVALID_FILE_ATTRIBUTES) {
+		if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+			attributes |= FILE_FLAG_BACKUP_SEMANTICS;
+		}
+	}
+	
+	ret=CreateFile (chars, convert_access (access_mode),
+			convert_share (share), NULL, convert_mode (mode),
+			attributes, NULL);
 	if(ret==INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
 	} 
