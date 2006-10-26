@@ -1,3 +1,10 @@
+2006-10-26  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add type checks for structs pollfd, stat, timeval, timezone.
+	  This is so that support/map.c can use HAVE_STRUCT_... wrappers around
+	  structure conversion functions, allowing them to be omitted from the Win32
+	  build.
+
 2006-10-16  Kornél Pál  <kornelpal@gmail.com>
 
 	* libmono.vcproj: Removed unicode.h and unicode.c. Changed absolute

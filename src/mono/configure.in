@@ -1273,6 +1273,18 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(strerror_r)
 	AC_CHECK_FUNCS(ttyname_r)
 	AC_CHECK_SIZEOF(size_t)
+	AC_CHECK_TYPES([struct pollfd], [AC_DEFINE(HAVE_STRUCT_POLLFD)], ,
+		[#include <sys/poll.h>])
+	AC_CHECK_TYPES([struct stat], [AC_DEFINE(HAVE_STRUCT_STAT)], ,
+		[#include <sys/types.h>
+		 #include <sys/stat.h>
+		 #include <unistd.h>])
+	AC_CHECK_TYPES([struct timeval], [AC_DEFINE(HAVE_STRUCT_TIMEVAL)], ,
+		[#include <sys/time.h>
+		 #include <sys/types.h>
+		 #include <utime.h>])
+	AC_CHECK_TYPES([struct timezone], [AC_DEFINE(HAVE_STRUCT_TIMEZONE)], ,
+		[#include <sys/time.h>])
 	AC_CHECK_MEMBERS(
 		[struct dirent.d_off, struct dirent.d_reclen, struct dirent.d_type],,, 
 		[#include <sys/types.h>
