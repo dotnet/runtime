@@ -3178,7 +3178,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 guint32 GetFileAttributes (const gunichar2 *name)
 {
 	gchar *utf8_name;
-	struct stat buf;
+	struct stat buf, linkbuf;
 	int result;
 	guint32 ret;
 	
@@ -3212,8 +3212,23 @@ guint32 GetFileAttributes (const gunichar2 *name)
 		g_free (utf8_name);
 		return (INVALID_FILE_ATTRIBUTES);
 	}
+
+	result = _wapi_lstat (utf8_name, &linkbuf);
+	if (result != 0) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		g_free (utf8_name);
+		return (INVALID_FILE_ATTRIBUTES);
+	}
 	
-	ret = _wapi_stat_to_file_attributes (utf8_name, &buf);
+	/* Don't treat symlinks to directories as directories.  See
+	 * bug 79733
+	 */
+	if (S_ISDIR (buf.st_mode) && S_ISLNK (linkbuf.st_mode)) {
+		ret = _wapi_stat_to_file_attributes (utf8_name, &linkbuf);
+	} else {
+		ret = _wapi_stat_to_file_attributes (utf8_name, &buf);
+	}
+	
 	g_free (utf8_name);
 
 	return(ret);

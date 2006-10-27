@@ -341,9 +341,11 @@ get_file_attributes (const char *filename)
 		result = stat (filename, &linkbuf);
 		if (result != -1) {
 			buf = linkbuf;
-		} else {
-			buf.st_mode |= ~S_IFDIR; /* force it to be returned as regular file */
 		}
+		/* force dangling symlinks or symlinks to directories
+		 * to be returned as a regular file (see bug 79733)
+		 */
+		buf.st_mode |= ~S_IFDIR;
 	}
 
 	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
