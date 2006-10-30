@@ -187,6 +187,7 @@ mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp, gssize *regs, 
 		for (i = -16; i < 0; ++i)
 			printf ("%d ", code [i]);
 		printf ("\n");
+		disp = reg = 0;
 		g_assert_not_reached ();
 	}
 

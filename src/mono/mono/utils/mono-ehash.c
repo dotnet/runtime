@@ -338,9 +338,43 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 			mg_free (s);
 		}
 	}
-	g_free (hash->table);
+	mg_free (hash->table);
+	mg_free (hash);
+}
+
+void
+mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer value, gboolean replace)
+{
+	guint hashcode;
+	Slot *s;
+	GEqualFunc equal;
 	
-	g_free (hash);
+	g_return_if_fail (hash != NULL);
+
+	equal = hash->key_equal_func;
+	if (hash->in_use >= hash->threshold)
+		rehash (hash);
+
+	hashcode = ((*hash->hash_func) (key)) % hash->table_size;
+	for (s = hash->table [hashcode]; s != NULL; s = s->next){
+		if ((*equal) (s->key, key)){
+			if (replace){
+				if (hash->key_destroy_func != NULL)
+					(*hash->key_destroy_func)(s->key);
+				s->key = key;
+			}
+			if (hash->value_destroy_func != NULL)
+				(*hash->value_destroy_func) (s->value);
+			s->value = value;
+			return;
+		}
+	}
+	s = mg_new (Slot, 1);
+	s->key = key;
+	s->value = value;
+	s->next = hash->table [hashcode];
+	hash->table [hashcode] = s;
+	hash->in_use++;
 }
 
 void
