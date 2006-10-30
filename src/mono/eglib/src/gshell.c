@@ -136,13 +136,15 @@ g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GErr
 gchar *
 g_shell_quote (const gchar *unquoted_string)
 {
-	g_error ("Not implemented");
-	return NULL;
+	//g_error ("Not implemented");
+	return g_strdup (unquoted_string);
+//	return NULL;
 }
 
 gchar *
 g_shell_unquote (const gchar *quoted_string, GError **error)
 {
-	g_error ("Not implemented");
-	return NULL;
+//	g_error ("Not implemented");
+	return g_strdup (quoted_string);
+//	return NULL;
 }

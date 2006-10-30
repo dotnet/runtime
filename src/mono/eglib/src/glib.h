@@ -173,6 +173,7 @@ typedef struct {
 void    g_error_free (GError *error);
 GError *g_error_new  (gpointer domain, gint code, const char *format, ...);
 void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...);
+void    g_propagate_error (GError **dest, GError *src);
 
 /*
  * Strings utility
@@ -190,8 +191,11 @@ gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
 guint        g_strv_length    (gchar **str_array);
 gchar       *g_strjoin        (const gchar *separator, ...);
+gchar       *g_strjoinv       (const gchar *separator, gchar **str_array);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
+void         g_strdown        (gchar *string);
+
 gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
 gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
 
@@ -679,7 +683,7 @@ gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
 /*
  * Character set conversion
  */
-gboolean  g_get_charset        (char **charset);
+gboolean  g_get_charset        (G_CONST_RETURN char **charset);
 gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
 				gsize *bytes_read, gsize *bytes_written,
 				GError **error);
