@@ -145,7 +145,7 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 }
 
 gboolean
-g_get_charset (char **charset)
+g_get_charset (G_CONST_RETURN char **charset)
 {
 	if (my_charset == NULL){
 		my_charset = g_strdup (nl_langinfo (CODESET));
