@@ -1,3 +1,13 @@
+2006-10-30  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* src/gutf8.c : several fixes:
+	  - fixed incorrect mb_size clear and mb_remain computation.
+	  - initialize items_written to 0 for error case.
+	  - in utf8_to_utf16_len differentiate error messages completely.
+	  - in g_utf8_to_utf16 use guchar instead of gchar.
+	* test/utf8.c : added test case string in test_utf8_seq() to
+	  both test_utf8_to_utf16() and test_utf16_to_utf8().
+
 2006-10-21  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gunicode.c (g_filename_from_utf8): Use g_strlcpy here. 

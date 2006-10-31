@@ -82,11 +82,10 @@ compare_utf16_to_utf8 (const gchar *expected, const gunichar2 *utf16, glong len_
 RESULT
 test_utf16_to_utf8 ()
 {
-	const gchar *src0 = "", *src1 = "ABCDE";
-	gunichar2 str0 [1], str1 [6];
+	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27";
+	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0};
 	RESULT result;
 
-	str0 [0] = 0;
 	gchar_to_gunichar2 (str1, src1);
 
 	/* empty string */
@@ -95,6 +94,9 @@ test_utf16_to_utf8 ()
 		return result;
 
 	result = compare_utf16_to_utf8 (src1, str1, 5, 5);
+	if (result != OK)
+		return result;
+	result = compare_utf16_to_utf8 (src2, str2, 2, 4);
 	if (result != OK)
 		return result;
 
@@ -174,28 +176,35 @@ compare_utf8_to_utf16 (const gunichar2 *expected, const gchar *utf8, glong len_i
 RESULT
 test_utf8_seq ()
 {
-	const gchar *src = "\345\271\264\47";
+	const gchar *src = "\xE5\xB9\xB4\x27";
 	glong in_read, out_read;
 	//gunichar2 expected [6];
 	GError *error = NULL;
+	gunichar2 *dst;
 
 	printf ("got: %s\n", src);
-	g_utf8_to_utf16 (src, strlen (src), &in_read, &out_read, &error);
+	dst = g_utf8_to_utf16 (src, strlen (src), &in_read, &out_read, &error);
 	if (error != NULL){
 		return error->message;
 	}
-	
+
+	if (in_read != 4) {
+		return FAILED ("in_read is expected to be 4 but was %d\n", in_read);
+	}
+	if (out_read != 2) {
+		return FAILED ("out_read is expected to be 2 but was %d\n", out_read);
+	}
+
 	return OK;
 }
 
 RESULT
 test_utf8_to_utf16 ()
 {
-	const gchar *src0 = "", *src1 = "ABCDE";
-	gunichar2 str0 [1], str1 [6];
+	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27";
+	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0};
 	RESULT result;
 
-	str0 [0] = 0;
 	gchar_to_gunichar2 (str1, src1);
 
 	/* empty string */
@@ -204,6 +213,9 @@ test_utf8_to_utf16 ()
 		return result;
 
 	result = compare_utf8_to_utf16 (str1, src1, 5, 5);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16 (str2, src2, 4, 2);
 	if (result != OK)
 		return result;
 

@@ -29,7 +29,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	   the conversion core below simply resets erroreous bits */
 	glong utf16_len;
 	gunichar2 *ret;
-	gchar ch, mb_size, mb_remain;
+	guchar ch, mb_size, mb_remain;
 	guint32 codepoint;
 	glong in_pos, out_pos;
 
@@ -42,6 +42,8 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	if (error)
 		*error = NULL;
 
+	if (items_written)
+		*items_written = 0;
 	utf16_len = utf8_to_utf16_len (str, len, items_read, error);
 	if (error)
 		if (*error)
@@ -54,35 +56,37 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	for (in_pos = 0; len < 0 ? str [in_pos] : in_pos < len; in_pos++) {
 		ch = (guchar) str [in_pos];
 		if (mb_size == 0) {
-			if (0 < ch)
+			if (ch < 0x80)
 				ret [out_pos++] = ch;
 			else if ((ch & 0xE0) == 0xC0) {
 				codepoint = ch & 0x1F;
-				mb_remain = mb_size = 2;
+				mb_size = 2;
 			} else if ((ch & 0xF0) == 0xE0) {
 				codepoint = ch & 0x0F;
-				mb_remain = mb_size = 3;
+				mb_size = 3;
 			} else if ((ch & 0xF8) == 0xF0) {
 				codepoint = ch & 7;
-				mb_remain = mb_size = 4;
+				mb_size = 4;
 			} else if ((ch & 0xFC) == 0xF8) {
 				codepoint = ch & 3;
-				mb_remain = mb_size = 5;
+				mb_size = 5;
 			} else if ((ch & 0xFE) == 0xFC) {
 				codepoint = ch & 3;
-				mb_remain = mb_size = 6;
+				mb_size = 6;
 			} else {
 				/* invalid utf-8 sequence */
 				codepoint = 0;
 				mb_remain = mb_size = 0;
 			}
+			if (mb_size > 1)
+				mb_remain = mb_size - 1;
 		} else {
 			if ((ch & 0xC0) == 0x80) {
 				codepoint = (codepoint << 6) | (ch & 0x3F);
 				if (--mb_remain == 0) {
 					/* multi byte character is fully consumed now. */
 					if (codepoint < 0x10000) {
-						ret [out_pos++] = codepoint;
+						ret [out_pos++] = codepoint % 0x10000;
 					} else if (codepoint < 0x110000) {
 						/* surrogate pair */
 						codepoint -= 0x10000;
@@ -91,8 +95,9 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 					} else {
 						/* invalid utf-8 sequence (excess) */
 						codepoint = 0;
-						mb_remain = mb_size = 0;
+						mb_remain = 0;
 					}
+					mb_size = 0;
 				}
 			} else {
 				/* invalid utf-8 sequence */
@@ -130,23 +135,23 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 				ret++;
 			else if ((ch & 0xE0) == 0xC0) {
 				codepoint = ch & 0x1F;
-				mb_remain = mb_size = 2;
+				mb_size = 2;
 			} else if ((ch & 0xF0) == 0xE0) {
 				codepoint = ch & 0x0F;
-				mb_remain = mb_size = 3;
+				mb_size = 3;
 			} else if ((ch & 0xF8) == 0xF0) {
 				codepoint = ch & 7;
-				mb_remain = mb_size = 4;
+				mb_size = 4;
 			} else if ((ch & 0xFC) == 0xF8) {
 				codepoint = ch & 3;
-				mb_remain = mb_size = 5;
+				mb_size = 5;
 			} else if ((ch & 0xFE) == 0xFC) {
 				codepoint = ch & 3;
-				mb_remain = mb_size = 6;
+				mb_size = 6;
 			} else {
 				/* invalid utf-8 sequence */
 				if (error) {
-					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "invalid utf-8 sequence at %d", in_pos);
+					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "invalid utf-8 sequence at %d (illegal first byte)", in_pos);
 					if (items_read)
 						*items_read = in_pos;
 					return -1;
@@ -155,6 +160,8 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 					mb_remain = mb_size = 0;
 				}
 			}
+			if (mb_size > 1)
+				mb_remain = mb_size - 1;
 		} else {
 			if ((ch & 0xC0) == 0x80) {
 				codepoint = (codepoint << 6) | (ch & 0x3F);
@@ -187,7 +194,7 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 								return -1;
 							} else {
 								codepoint = 0;
-								mb_remain = mb_size = 0;
+								mb_remain = 0;
 								overlong = FALSE;
 							}
 						}
@@ -205,14 +212,15 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 							return -1;
 						} else {
 							codepoint = 0;
-							mb_remain = mb_size = 0;
+							mb_remain = 0;
 						}
 					}
+					mb_size = 0;
 				}
 			} else {
 				/* invalid utf-8 sequence */
 				if (error) {
-					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "invalid utf-8 sequence at %d", in_pos);
+					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "invalid utf-8 sequence at %d (illegal following bytes)", in_pos);
 					if (items_read)
 						*items_read = in_pos;
 					return -1;
@@ -246,6 +254,8 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	out_pos = 0;
 	surrogate = FALSE;
 
+	if (items_written)
+		*items_written = 0;
 	utf8_len = utf16_to_utf8_len (str, len, items_read, error);
 	if (error)
 		if (*error)
