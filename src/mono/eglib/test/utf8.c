@@ -172,6 +172,23 @@ compare_utf8_to_utf16 (const gunichar2 *expected, const gchar *utf8, glong len_i
 }
 
 RESULT
+test_utf8_seq ()
+{
+	const gchar *src = "\345\271\264\47";
+	glong in_read, out_read;
+	//gunichar2 expected [6];
+	GError *error = NULL;
+
+	printf ("got: %s\n", src);
+	g_utf8_to_utf16 (src, strlen (src), &in_read, &out_read, &error);
+	if (error != NULL){
+		return error->message;
+	}
+	
+	return OK;
+}
+
+RESULT
 test_utf8_to_utf16 ()
 {
 	const gchar *src0 = "", *src1 = "ABCDE";
@@ -220,6 +237,7 @@ test_convert ()
 static Test utf8_tests [] = {
 	{"g_utf16_to_utf8", test_utf16_to_utf8},
 	{"g_utf8_to_utf16", test_utf8_to_utf16},
+	{"g_utf8_seq", test_utf8_seq},
 	{"g_convert", test_convert },
 	{NULL, NULL}
 };
