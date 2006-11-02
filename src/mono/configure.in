@@ -1273,6 +1273,16 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(strerror_r)
 	AC_CHECK_FUNCS(ttyname_r)
 	AC_CHECK_SIZEOF(size_t)
+	AC_CHECK_TYPES([blksize_t], [AC_DEFINE(HAVE_BLKSIZE_T)], , 
+		[#include <sys/types.h>
+		 #include <sys/stat.h>
+		 #include <unistd.h>])
+	AC_CHECK_TYPES([blkcnt_t], [AC_DEFINE(HAVE_BLKCNT_T)], ,
+		[#include <sys/types.h>
+		 #include <sys/stat.h>
+		 #include <unistd.h>])
+	AC_CHECK_TYPES([suseconds_t], [AC_DEFINE(HAVE_SUSECONDS_T)], ,
+		[#include <sys/time.h>])
 	AC_CHECK_TYPES([struct pollfd], [AC_DEFINE(HAVE_STRUCT_POLLFD)], ,
 		[#include <sys/poll.h>])
 	AC_CHECK_TYPES([struct stat], [AC_DEFINE(HAVE_STRUCT_STAT)], ,

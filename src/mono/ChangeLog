@@ -1,3 +1,8 @@
+2006-11-01  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add type checks for blkcnt_t, blksize_t, suseconds_t.  Some
+	  versions of Mac OS X don't define these, needed by support/map.c.
+
 2006-10-26  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add type checks for structs pollfd, stat, timeval, timezone.
