@@ -205,6 +205,18 @@ mono_get_exception_thread_abort ()
 }
 
 /**
+ * mono_get_exception_thread_interrupted:
+ *
+ * Returns: a new instance of the System.Threading.ThreadInterruptedException.
+ */
+MonoException *
+mono_get_exception_thread_interrupted ()
+{
+	return mono_exception_from_name (mono_get_corlib (), "System.Threading",
+					 "ThreadInterruptedException");
+}
+
+/**
  * mono_get_exception_arithmetic:
  *
  * Returns: a new instance of the System.ArithmeticException.

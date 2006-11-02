@@ -55,6 +55,9 @@ MonoException *
 mono_get_exception_thread_state        (const char *msg);
 
 MonoException *
+mono_get_exception_thread_interrupted  (void);
+
+MonoException *
 mono_get_exception_serialization       (const char *msg);
 
 MonoException *

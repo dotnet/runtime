@@ -6,6 +6,7 @@
  *	Dick Porter (dick@ximian.com)
  *
  * (C) 2001 Ximian, Inc
+ * (C) Copyright 2002-2006 Novell, Inc
  */
 
 #ifndef _MONO_METADATA_THREADS_TYPES_H_
@@ -115,7 +116,10 @@ void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64) MONO_I
 void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *) MONO_INTERNAL;
 
 void ves_icall_System_Threading_Thread_MemoryBarrier (void) MONO_INTERNAL;
+extern void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj) MONO_INTERNAL;
+extern void ves_icall_System_Threading_Thread_SpinWait_internal (gint32) MONO_INTERNAL;
 
 void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
+extern void mono_thread_current_check_pending_interrupt (void);
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

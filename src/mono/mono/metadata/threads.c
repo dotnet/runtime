@@ -144,6 +144,7 @@ static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoThread* thread);
 static void mono_thread_start (MonoThread *thread);
+static void signal_thread_state_change (MonoThread *thread);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 #define mono_interlocked_lock() EnterCriticalSection (&interlocked_mutex)
@@ -600,6 +601,8 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
+	mono_thread_current_check_pending_interrupt ();
+	
 	mono_monitor_enter (thread->synch_lock);
 	thread->state |= ThreadState_WaitSleepJoin;
 	mono_monitor_exit (thread->synch_lock);
@@ -609,6 +612,18 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	mono_monitor_enter (thread->synch_lock);
 	thread->state &= ~ThreadState_WaitSleepJoin;
 	mono_monitor_exit (thread->synch_lock);
+}
+
+void ves_icall_System_Threading_Thread_SpinWait_internal (gint32 iterations)
+{
+	gint32 i;
+	
+	for(i = 0; i < iterations; i++) {
+		/* We're busy waiting, but at least we can tell the
+		 * scheduler to let someone else have a go...
+		 */
+		sched_yield ();
+	}
 }
 
 gint32
@@ -814,6 +829,8 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 		return FALSE;
 	}
 	
+	mono_thread_current_check_pending_interrupt ();
+	
 	this->state |= ThreadState_WaitSleepJoin;
 	mono_monitor_exit (this->synch_lock);
 
@@ -851,6 +868,9 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	MonoThread *thread = mono_thread_current ();
 		
 	MONO_ARCH_SAVE_REGS;
+
+	/* Do this WaitSleepJoin check before creating objects */
+	mono_thread_current_check_pending_interrupt ();
 
 	numhandles = mono_array_length(mono_handles);
 	handles = g_new0(HANDLE, numhandles);
@@ -910,6 +930,9 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	MonoThread *thread = mono_thread_current ();
 		
 	MONO_ARCH_SAVE_REGS;
+
+	/* Do this WaitSleepJoin check before creating objects */
+	mono_thread_current_check_pending_interrupt ();
 
 	numhandles = mono_array_length(mono_handles);
 	handles = g_new0(HANDLE, numhandles);
@@ -971,6 +994,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 		ms=INFINITE;
 	}
 	
+	mono_thread_current_check_pending_interrupt ();
+
 	mono_monitor_enter (thread->synch_lock);
 	thread->state |= ThreadState_WaitSleepJoin;
 	mono_monitor_exit (thread->synch_lock);
@@ -1454,6 +1479,47 @@ ves_icall_System_Threading_Thread_GetState (MonoThread* this)
 	state = this->state;
 	mono_monitor_exit (this->synch_lock);
 	return state;
+}
+
+void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this)
+{
+	gboolean throw = FALSE;
+	
+	mono_monitor_enter (this->synch_lock);
+	
+	/* Clear out any previous request */
+	this->thread_interrupt_requested = FALSE;
+	
+	if (this->state & ThreadState_WaitSleepJoin) {
+		throw = TRUE;
+	} else {
+		this->thread_interrupt_requested = TRUE;
+	}
+	
+	mono_monitor_exit (this->synch_lock);
+
+	if (throw) {
+		signal_thread_state_change (this);
+	}
+}
+
+void mono_thread_current_check_pending_interrupt ()
+{
+	MonoThread *thread = mono_thread_current ();
+	gboolean throw = FALSE;
+	
+	mono_monitor_enter (thread->synch_lock);
+
+	if (thread->thread_interrupt_requested) {
+		throw = TRUE;
+		thread->thread_interrupt_requested = FALSE;
+	}
+	
+	mono_monitor_exit (thread->synch_lock);
+
+	if (throw) {
+		mono_raise_exception (mono_get_exception_thread_interrupted ());
+	}
 }
 
 int  
@@ -2709,6 +2775,9 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		mono_monitor_exit (thread->synch_lock);
 		mono_thread_exit ();
 		return NULL;
+	} else if (thread->thread_interrupt_requested) {
+		mono_monitor_exit (thread->synch_lock);
+		return(mono_get_exception_thread_interrupted ());
 	}
 	
 	mono_monitor_exit (thread->synch_lock);

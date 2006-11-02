@@ -755,6 +755,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return FALSE;
 	}
+
+	/* Do this WaitSleepJoin check before creating the event handle */
+	mono_thread_current_check_pending_interrupt ();
 	
 	event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	if (event == NULL) {
