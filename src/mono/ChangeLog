@@ -1,3 +1,8 @@
+2006-11-02 Michael Hutchinson <m.j.hutchinson@gmail.com>
+
+	* data/net_2_0/machine.config: defaultProxy section is no longer 
+	  necessary, so remove.
+
 2006-11-01  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add type checks for blkcnt_t, blksize_t, suseconds_t.  Some
