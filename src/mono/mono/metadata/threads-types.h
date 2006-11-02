@@ -120,6 +120,6 @@ extern void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *th
 extern void ves_icall_System_Threading_Thread_SpinWait_internal (gint32) MONO_INTERNAL;
 
 void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
-extern void mono_thread_current_check_pending_interrupt (void);
+extern void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
