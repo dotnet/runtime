@@ -1,3 +1,7 @@
+2006-11-02  Wade Berrier  <wberrier@novell.com>
+
+	* configure.in: version bump to 1.2
+
 2006-11-02 Michael Hutchinson <m.j.hutchinson@gmail.com>
 
 	* data/net_2_0/machine.config: defaultProxy section is no longer 
