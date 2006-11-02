@@ -18,7 +18,7 @@ RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
-	$(RUNTIME) $(mcs_topdir)/tools/mkbundle/mkbundle.exe
+	$(RUNTIME) $(mcs_topdir)/class/lib/default/mkbundle.exe
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 GMCS = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
