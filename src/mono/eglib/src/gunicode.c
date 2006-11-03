@@ -140,7 +140,7 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 		len = strlen (utf8string);
 
 	res = g_malloc (len + 1);
-	g_strlcpy (res, utf8string, len);
+	g_strlcpy (res, utf8string, len + 1);
 	return res;
 }
 

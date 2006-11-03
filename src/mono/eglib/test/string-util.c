@@ -310,6 +310,8 @@ test_strdelimit ()
 	return OK;
 }
 
+#define TEXT "0123456789"
+
 RESULT
 test_strlcpy ()
 {
@@ -344,6 +346,13 @@ test_strlcpy ()
 	if (0 != strcmp (dest, src))
 		return FAILED ("Src and dest not equal 2");
 	g_free (dest);
+
+	/* This is a test for g_filename_from_utf8, even if it does not look like it */
+	dest = g_filename_from_utf8 (TEXT, strlen (TEXT), NULL, NULL, NULL);
+	if (0 != strcmp (dest, TEXT))
+		return FAILED ("problem [%s] and [%s]", dest, TEXT);
+	g_free (dest);
+	
 	return OK;
 }
 

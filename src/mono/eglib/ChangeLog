@@ -1,3 +1,15 @@
+2006-11-03  Miguel de Icaza  <miguel@novell.com>
+
+	* test/string-util.c (test_strlcpy): Add new test.
+
+	* src/gunicode.c (g_filename_from_utf8): g_strlcpy needs the full
+	size, with the extra zero at the end;  Fixes the stack trace
+	issue. 
+
+2006-10-30  Miguel de Icaza  <miguel@novell.com>
+
+	* test/utf8.c (test_utf8_seq): Add new failing test.
+
 2006-10-30  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* src/gutf8.c : several fixes:
