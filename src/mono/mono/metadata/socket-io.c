@@ -2132,6 +2132,20 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 
 	return(TRUE);
 }
+
+static gboolean ipaddr_to_IPHostEntry(const char *addr, MonoString **h_name,
+				      MonoArray **h_aliases,
+				      MonoArray **h_addr_list)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	*h_name=mono_string_new(domain, addr);
+	*h_aliases=mono_array_new(domain, mono_get_string_class (), 0);
+	*h_addr_list=mono_array_new(domain, mono_get_string_class (), 1);
+	mono_array_setref (*h_addr_list, 0, *h_name);
+
+	return(TRUE);
+}
 #endif
 
 #if defined(AF_INET6) && defined(HAVE_GETHOSTBYNAME2_R)
@@ -2538,7 +2552,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	char *hostname;
 	gboolean add_local_ips = FALSE;
 #ifdef HAVE_SIOCGIFCONF
-	guchar this_hostname [256];
+	gchar this_hostname [256];
 #endif
 	
 	MONO_ARCH_SAVE_REGS;
@@ -2614,6 +2628,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 #else
 	struct in_addr inaddr;
 	struct hostent *he;
+	gboolean ret;
 #endif
 
 	MONO_ARCH_SAVE_REGS;
@@ -2640,14 +2655,12 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 
 	if(family == AF_INET) {
 		if(getnameinfo ((struct sockaddr*)&saddr, sizeof(saddr),
-				hostname, sizeof(hostname), NULL, 0,
-				NI_NAMEREQD) != 0) {
+				hostname, sizeof(hostname), NULL, 0, 0) != 0) {
 			return(FALSE);
 		}
 	} else if(family == AF_INET6) {
 		if(getnameinfo ((struct sockaddr*)&saddr6, sizeof(saddr6),
-				hostname, sizeof(hostname), NULL, 0,
-				NI_NAMEREQD) != 0) {
+				hostname, sizeof(hostname), NULL, 0, 0) != 0) {
 			return(FALSE);
 		}
 	}
@@ -2667,13 +2680,17 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 		g_free (address);
 		return(FALSE);
 	}
-	g_free (address);
 
 	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL) {
-		return(FALSE);
+		ret = ipaddr_to_IPHostEntry (address, h_name, h_aliases,
+					     h_addr_list);
+	} else {
+		ret = hostent_to_IPHostEntry (he, h_name, h_aliases,
+					      h_addr_list, FALSE);
 	}
 
-	return(hostent_to_IPHostEntry (he, h_name, h_aliases, h_addr_list, FALSE));
+	g_free (address);
+	return(ret);
 #endif
 }
 
