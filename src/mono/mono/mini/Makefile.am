@@ -70,7 +70,12 @@ libmono_la_LDFLAGS=$(monoldflags)
 endif
 
 if JIT_SUPPORTED
+
+if PLATFORM_WIN32
+bin_PROGRAMS = mono monow
+else
 bin_PROGRAMS = mono
+endif
 
 noinst_PROGRAMS = genmdesc
 
@@ -96,6 +101,13 @@ mono_LDADD = \
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags)
+
+# Create monow.exe, linked for the 'windows' subsystem
+if PLATFORM_WIN32
+monow_LDADD = $(mono_LDADD)
+monow_LDFLAGS = $(mono_LDFLAGS) -mwindows
+monow_SOURCES = $(mono_SOURCES)
+endif
 
 genmdesc_SOURCES = \
 	mini.h		\
