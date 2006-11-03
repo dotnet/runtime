@@ -622,7 +622,7 @@ void ves_icall_System_Threading_Thread_SpinWait_internal (gint32 iterations)
 		/* We're busy waiting, but at least we can tell the
 		 * scheduler to let someone else have a go...
 		 */
-		sched_yield ();
+		Sleep (0);
 	}
 }
 
