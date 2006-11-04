@@ -1,5 +1,8 @@
 2006-11-03  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gpath.c (g_path_get_dirname): If the pathname starts with a
+	"/", return the "/".
+
 	* test/string-util.c (test_strlcpy): Add new test.
 
 	* src/gunicode.c (g_filename_from_utf8): g_strlcpy needs the full
