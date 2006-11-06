@@ -45,6 +45,7 @@ TEST_CS_SRC=			\
 	create-instance.cs	\
 	field-layout.cs		\
 	pack-layout.cs		\
+	pack-bug.cs		\
 	hash-table.cs		\
 	test-ops.cs		\
 	obj.cs			\
