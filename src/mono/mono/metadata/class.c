@@ -1121,6 +1121,7 @@ mono_class_layout_fields (MonoClass *class)
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				guint32 size, align;
+				MonoType *ftype;
 
 				field = &class->fields [i];
 
@@ -1156,6 +1157,13 @@ mono_class_layout_fields (MonoClass *class)
 			
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
 				align = class->packing_size ? MIN (class->packing_size, align): align;
+				/* if the field has managed references, we need to force-align it
+				 * see bug #77788
+				 */
+				ftype = mono_type_get_underlying_type (field->type);
+				if (MONO_TYPE_IS_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+					align = sizeof (gpointer);
+
 				class->min_align = MAX (align, class->min_align);
 				field->offset = real_size;
 				field->offset += align - 1;
