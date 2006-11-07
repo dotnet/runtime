@@ -480,6 +480,7 @@ socket_io_poll_main (gpointer p)
 		EnterCriticalSection (&data->io_lock);
 		if (data->inited == 0) {
 			g_free (pfds);
+			LeaveCriticalSection (&data->io_lock);
 			return; /* cleanup called */
 		}
 
@@ -785,7 +786,9 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 		data->newpfd = g_new0 (mono_pollfd, 1);
 
 	EnterCriticalSection (&data->io_lock);
+	/* FIXME: 64 bit issue: handle can be a pointer on windows? */
 	list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (state->handle));
+	/* FIXME: GC issue: state is an object stored in a GList */
 	if (list == NULL) {
 		list = g_slist_alloc ();
 		list->data = state;
@@ -819,6 +822,7 @@ socket_io_add_epoll (MonoSocketAsyncResult *state)
 	fd = GPOINTER_TO_INT (state->handle);
 	EnterCriticalSection (&data->io_lock);
 	list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
+	/* FIXME: GC issue: state is an object stored in a GList */
 	if (list == NULL) {
 		list = g_slist_alloc ();
 		list->data = state;
@@ -917,6 +921,8 @@ mono_async_invoke (MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->object_data;
 	MonoThread *thread = NULL;
+	MonoObject *res, *exc = NULL;
+	MonoArray *out_args = NULL;
 
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
@@ -928,8 +934,10 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	ac->msg->exc = NULL;
-	ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
-				       &ac->msg->exc, &ac->out_args);
+	res = mono_message_invoke (ares->async_delegate, ac->msg, &exc, &out_args);
+	MONO_OBJECT_SETREF (ac, res, res);
+	MONO_OBJECT_SETREF (ac, msg->exc, exc);
+	MONO_OBJECT_SETREF (ac, out_args, out_args);
 
 	ares->completed = 1;
 
@@ -998,21 +1006,13 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
 
-#ifdef HAVE_BOEHM_GC
-	ac = GC_MALLOC (sizeof (ASyncCall));
-#elif defined(HAVE_SGEN_GC)
-	ac = mono_object_new (mono_domain_get (), async_call_klass);
-#else
-	/* We'll leak the event if creaated... */
-	ac = g_new0 (ASyncCall, 1);
-#endif
-	ac->wait_event = 0;
+	ac = (ASyncCall*)mono_object_new (mono_domain_get (), async_call_klass);
 	MONO_OBJECT_SETREF (ac, msg, msg);
 	MONO_OBJECT_SETREF (ac, state, state);
 
 	if (async_callback) {
 		ac->cb_method = mono_get_delegate_invoke (((MonoObject *)async_callback)->vtable->klass);
-		ac->cb_target = async_callback;
+		MONO_OBJECT_SETREF (ac, cb_target, async_callback);
 	}
 
 	ares = mono_async_result_new (domain, NULL, ac->state, NULL, (MonoObject*)ac);
@@ -1106,6 +1106,7 @@ mono_thread_pool_cleanup (void)
 	socket_io_cleanup (&socket_io_data);
 }
 
+/* FIXME: GC: adds managed objects to the list... */
 static void
 append_job (CRITICAL_SECTION *cs, GList **plist, gpointer ar)
 {
