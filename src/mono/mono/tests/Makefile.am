@@ -70,6 +70,7 @@ TEST_CS_SRC=			\
 	exception14.cs		\
 	exception15.cs		\
 	exception16.cs		\
+	typeload-unaligned.cs	\
 	struct.cs		\
 	valuetype-gettype.cs	\
 	typeof-ptr.cs		\
