@@ -29,6 +29,7 @@
 /* FIXME change this code to not mess so much with the internals */
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threadpool-internals.h>
+#include <mono/metadata/domain-internals.h>
 
 #include <sys/time.h> 
 #ifdef HAVE_SYS_IOCTL_H
@@ -2618,13 +2619,16 @@ inet_pton (int family, const char *address, void *inaddrp)
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *address;
-
+	const char *version;
+	gboolean v1;
+	
 #ifdef AF_INET6
 	struct sockaddr_in saddr;
 	struct sockaddr_in6 saddr6;
 	struct addrinfo *info = NULL, hints;
 	gint32 family;
 	char hostname[1024] = {0};
+	int flags = 0;
 #else
 	struct in_addr inaddr;
 	struct hostent *he;
@@ -2632,6 +2636,9 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 #endif
 
 	MONO_ARCH_SAVE_REGS;
+
+	version = mono_get_runtime_info ()->framework_version;
+	v1 = (version[0] == '1');
 
 	address = mono_string_to_utf8 (addr);
 
@@ -2653,14 +2660,20 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 	g_free(address);
 
+	if (v1) {
+		flags = NI_NAMEREQD;
+	}
+	
 	if(family == AF_INET) {
 		if(getnameinfo ((struct sockaddr*)&saddr, sizeof(saddr),
-				hostname, sizeof(hostname), NULL, 0, 0) != 0) {
+				hostname, sizeof(hostname), NULL, 0,
+				flags) != 0) {
 			return(FALSE);
 		}
 	} else if(family == AF_INET6) {
 		if(getnameinfo ((struct sockaddr*)&saddr6, sizeof(saddr6),
-				hostname, sizeof(hostname), NULL, 0, 0) != 0) {
+				hostname, sizeof(hostname), NULL, 0,
+				flags) != 0) {
 			return(FALSE);
 		}
 	}
@@ -2682,8 +2695,12 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 
 	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL) {
-		ret = ipaddr_to_IPHostEntry (address, h_name, h_aliases,
-					     h_addr_list);
+		if (v1) {
+			ret = FALSE;
+		} else {
+			ret = ipaddr_to_IPHostEntry (address, h_name,
+						     h_aliases, h_addr_list);
+		}
 	} else {
 		ret = hostent_to_IPHostEntry (he, h_name, h_aliases,
 					      h_addr_list, FALSE);
