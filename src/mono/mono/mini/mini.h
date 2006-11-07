@@ -628,6 +628,7 @@ typedef struct {
 	guint32          exception_type;	/* MONO_EXCEPTION_* */
 	guint32          exception_data;
 	char*            exception_message;
+	gpointer         exception_ptr;
 
 	/* Fields used by the local reg allocator */
 	void*            reginfo;

@@ -3424,6 +3424,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) UNVERIFIED
 #define CHECK_OPSIZE(size) if (ip + size > end) UNVERIFIED
 #define CHECK_UNVERIFIABLE(cfg) if (cfg->unverifiable) UNVERIFIED
+#define CHECK_TYPELOAD(klass) if (!(klass) || (klass)->exception_type) {cfg->exception_ptr = klass; goto load_error;}
 
 /* offset from br.s -> br like opcodes */
 #define BIG_BRANCH_OFFSET 13
@@ -5204,8 +5205,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			sp -= 2;
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoInst *store, *load;
@@ -5255,8 +5255,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
@@ -5523,8 +5522,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
@@ -5580,8 +5578,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				/* CASTCLASS */
@@ -5682,8 +5679,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 
 			if (mono_class_is_nullable (klass)) {
 				int v = handle_unbox_nullable (cfg, bblock, *sp, ip, klass);
@@ -5720,8 +5716,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
@@ -6158,8 +6153,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			n = mono_type_to_stind (&klass->byval_arg);
 			if (n == CEE_STOBJ) {
 				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE, TRUE);
@@ -6185,8 +6179,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				*sp++ = val;
@@ -6257,8 +6250,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_get_got_var (cfg);
 
 			klass = mini_get_class (method, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			ins->inst_newa_class = klass;
 			ins->inst_newa_len = *sp;
 			ins->type = STACK_OBJ;
@@ -6301,8 +6293,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			klass = mini_get_class (method, read32 (ip + 1), generic_context);
-			if (!klass)
-				goto load_error;			
+			CHECK_TYPELOAD (klass);
 			/* we need to make sure that this array is exactly the type it needs
 			 * to be for correctness. the wrappers are lax with their usage
 			 * so we need to ignore them here
@@ -6333,8 +6324,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
@@ -6423,8 +6413,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				MonoMethod* helper = mono_marshal_get_stelemref ();
@@ -6519,8 +6508,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			ins->type = STACK_MP;
 			ins->inst_left = *sp;
@@ -6538,8 +6526,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			CHECK_OPSIZE (5);
 			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
-			if (!klass)
-				goto load_error;
+			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			ins->cil_code = ip;
 
@@ -7206,8 +7193,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				klass = mini_get_class (method, token, generic_context);
-				if (!klass)
-					goto load_error;
+				CHECK_TYPELOAD (klass);
 				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
@@ -7231,8 +7217,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				constrained_call = mono_class_get_full (image, token, generic_context);
-				if (!constrained_call)
-					goto load_error;
+				CHECK_TYPELOAD (constrained_call);
 				ip += 6;
 				break;
 			case CEE_CPBLK:
@@ -7313,8 +7298,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					token = mono_type_size (type, &ialign);
 				} else {
 					MonoClass *klass = mono_class_get_full (image, token, generic_context);
-					if (!klass)
-						goto load_error;
+					CHECK_TYPELOAD (klass);
 					mono_class_init (klass);
 					token = mono_class_value_size (klass, &align);
 				}
@@ -10395,11 +10379,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		/* Throw a type load exception if needed */
 		MonoLoaderError *error = mono_loader_get_last_error ();
 
-		mono_destroy_compile (cfg);
 		if (error) {
 			MonoException *ex = mono_loader_error_prepare_exception (error);
+			mono_destroy_compile (cfg);
 			mono_raise_exception (ex);
 		} else {
+			if (cfg->exception_ptr) {
+				MonoException *ex = mono_class_get_exception_for_failure (cfg->exception_ptr);
+				mono_destroy_compile (cfg);
+				mono_raise_exception (ex);
+			}
 			g_assert_not_reached ();
 		}
 	}
