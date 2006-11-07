@@ -747,8 +747,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						/* catch block */
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							/* store the exception object in cfg->excvar */
-							g_assert (ei->exvar_offset);
+							/* store the exception object in bp + ei->exvar_offset */
 							*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
 						}
 
