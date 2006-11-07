@@ -1183,6 +1183,7 @@ mono_class_layout_fields (MonoClass *class)
 		real_size = 0;
 		for (i = 0; i < top; i++) {
 			guint32 size, align;
+			MonoType *ftype;
 
 			field = &class->fields [i];
 
@@ -1205,6 +1206,12 @@ mono_class_layout_fields (MonoClass *class)
 			 * classes and valuetypes.
 			 */
 			field->offset += sizeof (MonoObject);
+			ftype = mono_type_get_underlying_type (field->type);
+			if (MONO_TYPE_IS_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
+				if (field->offset % sizeof (gpointer)) {
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				}
+			}
 
 			/*
 			 * Calc max size.
@@ -5446,9 +5453,17 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		mono_runtime_invoke (secman->inheritsecurityexception, NULL, args, &exc);
 		return (MonoException*) exc;
 	}
-	case MONO_EXCEPTION_TYPE_LOAD:
-		return mono_exception_from_name (mono_defaults.corlib, "System", "TypeLoadException");
-
+	case MONO_EXCEPTION_TYPE_LOAD: {
+		MonoString *name;
+		MonoException *ex;
+		char *str = mono_type_get_full_name (klass);
+		char *astr = klass->image->assembly? mono_stringify_assembly_name (&klass->image->assembly->aname): NULL;
+		name = mono_string_new (mono_domain_get (), str);
+		g_free (str);
+		ex = mono_get_exception_type_load (name, astr);
+		g_free (astr);
+		return ex;
+	}
 	default: {
 		MonoLoaderError *error;
 		MonoException *ex;

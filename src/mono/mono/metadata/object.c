@@ -806,14 +806,15 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		mono_domain_unlock (domain);
 		return runtime_info->domain_vtables [domain->domain_id];
 	}
-	if (!class->inited)
-		if (!mono_class_init (class)){
+	if (!class->inited || class->exception_type) {
+		if (!mono_class_init (class) || class->exception_type){
 			MonoException *exc;
 			mono_domain_unlock (domain);
 			exc = mono_class_get_exception_for_failure (class);
 			g_assert (exc);
 			mono_raise_exception (exc);
 		}
+	}
 
 	mono_class_init (class);
 
