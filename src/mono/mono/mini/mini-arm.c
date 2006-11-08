@@ -17,7 +17,11 @@
 #include "inssel.h"
 #include "cpu-arm.h"
 #include "trace.h"
+#ifdef ARM_FPU_FPA
 #include "mono/arch/arm/arm-fpa-codegen.h"
+#elif defined(ARM_FPU_VFP)
+#include "mono/arch/arm/arm-vfp-codegen.h"
+#endif
 
 /*
  * TODO:
@@ -816,7 +820,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->backend.arg_info = (ainfo->offset << 8) | ainfo->size;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->backend.reg3 = ainfo->reg;
-				/* FPA args are passed in int regs */
+				/* FP args are passed in int regs */
 				call->used_iregs |= 1 << ainfo->reg;
 				if (ainfo->size == 8) {
 					arg->opcode = OP_OUTARG_R8;
@@ -1384,7 +1388,7 @@ loop_start:
 				ins->inst_offset = low_imm;
 				break;
 			}
-			/* FPA doesn't have indexed load instructions */
+			/* VFP/FPA doesn't have indexed load instructions */
 			g_assert_not_reached ();
 			break;
 		case OP_STORE_MEMBASE_REG:
@@ -1422,7 +1426,7 @@ loop_start:
 				break;
 			}
 			/*g_print ("fail with: %d (%d, %d)\n", ins->inst_offset, ins->inst_offset & ~0x1ff, low_imm);*/
-			/* FPA doesn't have indexed store instructions */
+			/* VFP/FPA doesn't have indexed store instructions */
 			g_assert_not_reached ();
 			break;
 		case OP_STORE_MEMBASE_IMM:
@@ -1458,7 +1462,15 @@ static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
 	/* sreg is a float, dreg is an integer reg  */
+#ifdef ARM_FPU_FPA
 	ARM_FIXZ (code, dreg, sreg);
+#elif defined(ARM_FPU_VFP)
+	if (is_signed)
+		ARM_TOSIZD (code, ARM_VFP_F0, sreg);
+	else
+		ARM_TOUIZD (code, ARM_VFP_F0, sreg);
+	ARM_FMRS (code, dreg, ARM_VFP_F0);
+#endif
 	if (!is_signed) {
 		if (size == 1)
 			ARM_AND_REG_IMM8 (code, dreg, dreg, 0xff);
@@ -2079,10 +2091,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_SETFREG:
 		case OP_FMOVE:
+#ifdef ARM_FPU_FPA
 			ARM_MVFD (code, ins->dreg, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CPYD (code, ins->dreg, ins->sreg1);
+#endif
 			break;
 		case OP_FCONV_TO_R4:
+#ifdef ARM_FPU_FPA
 			ARM_MVFS (code, ins->dreg, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CVTD (code, ins->dreg, ins->sreg1);
+			ARM_CVTS (code, ins->dreg, ins->dreg);
+#endif
 			break;
 		case CEE_JMP:
 			/*
@@ -2350,6 +2371,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		/* floating point opcodes */
+#ifdef ARM_FPU_FPA
 		case OP_R8CONST:
 			/* FIXME: we can optimize the imm load by dealing with part of 
 			 * the displacement in LDFD (aligning to 512).
@@ -2409,6 +2431,48 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_R8:
 			ARM_FLTD (code, ins->dreg, ins->sreg1);
 			break;
+#elif defined(ARM_FPU_VFP)
+		case OP_R8CONST:
+			/* FIXME: we can optimize the imm load by dealing with part of 
+			 * the displacement in LDFD (aligning to 512).
+			 */
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, (guint32)ins->inst_p0);
+			ARM_FLDD (code, ins->dreg, ARMREG_LR, 0);
+			break;
+		case OP_R4CONST:
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, (guint32)ins->inst_p0);
+			ARM_FLDS (code, ins->dreg, ARMREG_LR, 0);
+			ARM_CVTS (code, ins->dreg, ins->dreg);
+			break;
+		case OP_STORER8_MEMBASE_REG:
+			g_assert (arm_is_fpimm8 (ins->inst_offset));
+			ARM_FSTD (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+			break;
+		case OP_LOADR8_MEMBASE:
+			g_assert (arm_is_fpimm8 (ins->inst_offset));
+			ARM_FLDD (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			break;
+		case OP_STORER4_MEMBASE_REG:
+			g_assert (arm_is_fpimm8 (ins->inst_offset));
+			ARM_FSTS (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+			break;
+		case OP_LOADR4_MEMBASE:
+			g_assert (arm_is_fpimm8 (ins->inst_offset));
+			ARM_FLDS (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+			break;
+		case CEE_CONV_R_UN: {
+			g_assert_not_reached ();
+			break;
+		}
+		case CEE_CONV_R4:
+			g_assert_not_reached ();
+			//ARM_FLTS (code, ins->dreg, ins->sreg1);
+			break;
+		case CEE_CONV_R8:
+			g_assert_not_reached ();
+			//ARM_FLTD (code, ins->dreg, ins->sreg1);
+			break;
+#endif
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
@@ -2467,6 +2531,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ins->dreg, ins->sreg1);
 			break;
 		}
+#if ARM_FPU_FPA
 		case OP_FADD:
 			ARM_FPA_ADFD (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -2481,7 +2546,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_FNEG:
 			ARM_MNFD (code, ins->dreg, ins->sreg1);
+			break;
+#elif defined(ARM_FPU_VFP)
+		case OP_FADD:
+			ARM_VFP_ADDD (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_FSUB:
+			ARM_VFP_SUBD (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;		
+		case OP_FMUL:
+			ARM_VFP_MULD (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;		
+		case OP_FDIV:
+			ARM_VFP_DIVD (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;		
+		case OP_FNEG:
+			ARM_NEGD (code, ins->dreg, ins->sreg1);
+			break;
+#endif
 		case OP_FREM:
 			/* emulated */
 			g_assert_not_reached ();
@@ -2489,33 +2571,53 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCOMPARE:
 			/* each fp compare op needs to do its own */
 			g_assert_not_reached ();
-			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+			//ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_NE);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_EQ);
 			break;
 		case OP_FCLT:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			break;
 		case OP_FCLT_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_VS);
 			break;
 		case OP_FCGT:
 			/* swapped */
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			break;
 		case OP_FCGT_UN:
 			/* swapped */
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_VS);
@@ -2527,46 +2629,86 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		 * V        Unordered               ARMCOND_VS
 		 */
 		case OP_FBEQ:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH (ins, CEE_BEQ - CEE_BEQ);
 			break;
 		case OP_FBNE_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH (ins, CEE_BNE_UN - CEE_BEQ);
 			break;
 		case OP_FBLT:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set */
 			break;
 		case OP_FBLT_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set */
 			break;
 		case OP_FBGT:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set, swapped args */
 			break;
 		case OP_FBGT_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_MI); /* N set, swapped args */
 			break;
 		case OP_FBGE:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
 			break;
 		case OP_FBGE_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg1, ins->sreg2);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg1, ins->sreg2);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE);
 			break;
 		case OP_FBLE:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS); /* swapped */
 			break;
 		case OP_FBLE_UN:
+#ifdef ARM_FPU_FPA
 			ARM_FCMP (code, ARM_FPA_CMF, ins->sreg2, ins->sreg1);
+#elif defined(ARM_FPU_VFP)
+			ARM_CMPD (code, ins->sreg2, ins->sreg1);
+#endif
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE); /* swapped */
 			break;
