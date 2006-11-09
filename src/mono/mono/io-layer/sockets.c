@@ -871,15 +871,28 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 		 fd_set *exceptfds, struct timeval *timeout)
 {
-	int ret;
+	int ret, maxfd;
 	
 	if (startup_count == 0) {
 		WSASetLastError (WSANOTINITIALISED);
 		return(SOCKET_ERROR);
 	}
 
+	for (maxfd = FD_SETSIZE-1; maxfd >= 0; maxfd--) {
+		if ((readfds && FD_ISSET (maxfd, readfds)) ||
+		    (writefds && FD_ISSET (maxfd, writefds)) ||
+		    (exceptfds && FD_ISSET (maxfd, exceptfds))) {
+			break;
+		}
+	}
+
+	if (maxfd == -1) {
+		WSASetLastError (WSAEINVAL);
+		return(SOCKET_ERROR);
+	}
+
 	do {
-		ret = select(getdtablesize (), readfds, writefds, exceptfds,
+		ret = select(maxfd + 1, readfds, writefds, exceptfds,
 			     timeout);
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
@@ -902,6 +915,11 @@ void _wapi_FD_CLR(guint32 fd, fd_set *set)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	
+	if (fd >= FD_SETSIZE) {
+		WSASetLastError (WSAEINVAL);
+		return;
+	}
+	
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return;
@@ -913,6 +931,11 @@ void _wapi_FD_CLR(guint32 fd, fd_set *set)
 int _wapi_FD_ISSET(guint32 fd, fd_set *set)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
+	
+	if (fd >= FD_SETSIZE) {
+		WSASetLastError (WSAEINVAL);
+		return(0);
+	}
 	
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
@@ -926,6 +949,11 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	
+	if (fd >= FD_SETSIZE) {
+		WSASetLastError (WSAEINVAL);
+		return;
+	}
+
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return;
