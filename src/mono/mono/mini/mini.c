@@ -9595,7 +9595,6 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 		state->reg1 = mono_regstate_next_int (cfg->rs);
 		state->reg2 = mono_regstate_next_int (cfg->rs);
 #else
-		g_assert_not_reached ();
 		state->reg1 = mono_regstate_next_float (cfg->rs);
 #endif
 		break;
