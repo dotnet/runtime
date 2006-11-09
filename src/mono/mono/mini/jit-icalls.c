@@ -451,6 +451,12 @@ mono_fconv_r4 (double a)
 	return (float)a;
 }
 
+double
+mono_conv_to_r8 (int a)
+{
+	return (double)a;
+}
+
 gint8
 mono_fconv_i1 (double a)
 {
@@ -539,6 +545,36 @@ gboolean
 mono_fcmp_lt_un (double a, double b)
 {
 	return isunordered (a, b) || a < b;
+}
+
+gboolean
+mono_fceq (double a, double b)
+{
+	return a == b;
+}
+
+gboolean
+mono_fcgt (double a, double b)
+{
+	return a > b;
+}
+
+gboolean
+mono_fcgt_un (double a, double b)
+{
+	return a > b;
+}
+
+gboolean
+mono_fclt (double a, double b)
+{
+	return a < b;
+}
+
+gboolean
+mono_fclt_un (double a, double b)
+{
+	return a < b;
 }
 
 #endif

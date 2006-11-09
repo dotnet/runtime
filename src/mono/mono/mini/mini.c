@@ -1272,7 +1272,7 @@ ovf3ops_op_map [STACK_MAX] = {
 /* handles from CEE_CEQ to CEE_CLT_UN */
 static const guint16
 ceqops_op_map [STACK_MAX] = {
-	0, 0, OP_LCEQ-CEE_CEQ, OP_PCEQ-CEE_CEQ, OP_FCEQ-CEE_CEQ, OP_LCEQ-CEE_CEQ
+	0, 0, OP_LCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, OP_FCEQ-OP_CEQ, OP_LCEQ-OP_CEQ
 };
 
 /*
@@ -3108,11 +3108,12 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	return addr;
 }
 
-MonoJitICallInfo **emul_opcode_map = NULL;
+static MonoJitICallInfo **emul_opcode_map = NULL;
 
 MonoJitICallInfo *
 mono_find_jit_opcode_emulation (int opcode)
 {
+	g_assert (opcode >= 0 && opcode <= OP_LAST);
 	if  (emul_opcode_map)
 		return emul_opcode_map [opcode];
 	else
@@ -4899,7 +4900,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp -= 2;
 				ins->inst_left = sp [0];
 				ins->inst_right = sp [1];
+				ins->type = STACK_I4;
 				*sp++ = emit_tree (cfg, bblock, ins, ins->cil_code);
+				MONO_INST_NEW (cfg, ins, CEE_BRTRUE);
 				ADD_UNCOND (TRUE);
 			} else {
 				ADD_BINCOND (NULL);
@@ -4973,7 +4976,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp -= 2;
 				ins->inst_left = sp [0];
 				ins->inst_right = sp [1];
+				ins->type = STACK_I4;
 				*sp++ = emit_tree (cfg, bblock, ins, ins->cil_code);
+				MONO_INST_NEW (cfg, ins, CEE_BRTRUE);
 				ADD_UNCOND (TRUE);
 			} else {
 				ADD_BINCOND (NULL);
@@ -6957,13 +6962,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmp->cil_code = ip;
 				type_from_op (cmp);
 				CHECK_TYPE (cmp);
+				ins->cil_code = ip;
+				ins->type = STACK_I4;
+				ins->inst_i0 = cmp;
+#if MONO_ARCH_SOFT_FLOAT
+				if (sp [0]->type == STACK_R8) {
+					cmp->type = STACK_I4;
+					*sp++ = emit_tree (cfg, bblock, cmp, ip + 2);
+					ip += 2;
+					break;
+				}
+#endif
 				if ((sp [0]->type == STACK_I8) || ((sizeof (gpointer) == 8) && ((sp [0]->type == STACK_PTR) || (sp [0]->type == STACK_OBJ) || (sp [0]->type == STACK_MP))))
 					cmp->opcode = OP_LCOMPARE;
 				else
 					cmp->opcode = OP_COMPARE;
-				ins->cil_code = ip;
-				ins->type = STACK_I4;
-				ins->inst_i0 = cmp;
 				*sp++ = ins;
 				/* spill it to reduce the expression complexity
 				 * and workaround bug 54209 
@@ -8172,6 +8185,58 @@ decompose_foreach (MonoInst *tree, gpointer data)
 			dec_foreach (iargs [i], cfg);
 		break;
 	}
+#ifdef MONO_ARCH_SOFT_FLOAT
+	case OP_FBEQ:
+	case OP_FBGE:
+	case OP_FBGT:
+	case OP_FBLE:
+	case OP_FBLT:
+	case OP_FBNE_UN:
+	case OP_FBGE_UN:
+	case OP_FBGT_UN:
+	case OP_FBLE_UN:
+	case OP_FBLT_UN: {
+		if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
+			MonoCompile *cfg = data;
+			MonoInst *iargs [2];
+		
+			iargs [0] = tree->inst_i0;
+			iargs [1] = tree->inst_i1;
+		
+			mono_emulate_opcode (cfg, tree, iargs, info);
+
+			dec_foreach (iargs [0], cfg);
+			dec_foreach (iargs [1], cfg);
+			break;
+		} else {
+			g_assert_not_reached ();
+		}
+		break;
+	}
+	case OP_FCEQ:
+	case OP_FCGT:
+	case OP_FCGT_UN:
+	case OP_FCLT:
+	case OP_FCLT_UN: {
+		if ((info = mono_find_jit_opcode_emulation (tree->opcode))) {
+			MonoCompile *cfg = data;
+			MonoInst *iargs [2];
+
+			/* the args are in the compare opcode ... */
+			iargs [0] = tree->inst_i0;
+			iargs [1] = tree->inst_i1;
+		
+			mono_emulate_opcode (cfg, tree, iargs, info);
+
+			dec_foreach (iargs [0], cfg);
+			dec_foreach (iargs [1], cfg);
+			break;
+		} else {
+			g_assert_not_reached ();
+		}
+		break;
+	}
+#endif
 
 	default:
 		break;
@@ -9526,7 +9591,13 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 		state->reg2 = mono_regstate_next_int (cfg->rs);
 		break;
 	case MB_NTERM_freg:
+#ifdef MONO_ARCH_SOFT_FLOAT
+		state->reg1 = mono_regstate_next_int (cfg->rs);
+		state->reg2 = mono_regstate_next_int (cfg->rs);
+#else
+		g_assert_not_reached ();
 		state->reg1 = mono_regstate_next_float (cfg->rs);
+#endif
 		break;
 	default:
 #ifdef MONO_ARCH_ENABLE_EMIT_STATE_OPT
@@ -11440,6 +11511,7 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_FADD, "__emul_fadd", "double double double", mono_fadd, FALSE);
 	mono_register_opcode_emulation (OP_FMUL, "__emul_fmul", "double double double", mono_fmul, FALSE);
 	mono_register_opcode_emulation (OP_FNEG, "__emul_fneg", "double double", mono_fneg, FALSE);
+	mono_register_opcode_emulation (CEE_CONV_R8, "__emul_conv_r8", "double int32", mono_conv_to_r8, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_R4, "__emul_fconv_to_r4", "double double", mono_fconv_r4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I1, "__emul_fconv_to_i1", "int8 double", mono_fconv_i1, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I2, "__emul_fconv_to_i2", "int16 double", mono_fconv_i2, FALSE);
@@ -11457,6 +11529,12 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_FBGT_UN, "__emul_fcmp_gt_un", "uint32 double double", mono_fcmp_gt_un, FALSE);
 	mono_register_opcode_emulation (OP_FBLE_UN, "__emul_fcmp_le_un", "uint32 double double", mono_fcmp_le_un, FALSE);
 	mono_register_opcode_emulation (OP_FBGE_UN, "__emul_fcmp_ge_un", "uint32 double double", mono_fcmp_ge_un, FALSE);
+
+	mono_register_opcode_emulation (OP_FCEQ, "__emul_fcmp_ceq", "uint32 double double", mono_fceq, FALSE);
+	mono_register_opcode_emulation (OP_FCGT, "__emul_fcmp_cgt", "uint32 double double", mono_fcgt, FALSE);
+	mono_register_opcode_emulation (OP_FCGT_UN, "__emul_fcmp_cgt_un", "uint32 double double", mono_fcgt_un, FALSE);
+	mono_register_opcode_emulation (OP_FCLT, "__emul_fcmp_clt", "uint32 double double", mono_fclt, FALSE);
+	mono_register_opcode_emulation (OP_FCLT_UN, "__emul_fcmp_clt_un", "uint32 double double", mono_fclt_un, FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4

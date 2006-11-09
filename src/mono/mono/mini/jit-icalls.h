@@ -69,6 +69,8 @@ guint64 mono_fconv_ovf_u8 (double v) MONO_INTERNAL;
 
 double mono_lconv_to_r8 (gint64 a) MONO_INTERNAL;
 
+double mono_conv_to_r8 (gint32 a) MONO_INTERNAL;
+
 float mono_lconv_to_r4 (gint64 a) MONO_INTERNAL;
 
 double mono_conv_to_r8_un (guint32 a) MONO_INTERNAL;
@@ -122,6 +124,16 @@ gboolean mono_fcmp_gt_un (double a, double b) MONO_INTERNAL;
 gboolean mono_fcmp_le_un (double a, double b) MONO_INTERNAL;
 
 gboolean mono_fcmp_lt_un (double a, double b) MONO_INTERNAL;
+
+gboolean mono_fceq (double a, double b) MONO_INTERNAL;
+
+gboolean mono_fcgt (double a, double b) MONO_INTERNAL;
+
+gboolean mono_fcgt_un (double a, double b) MONO_INTERNAL;
+
+gboolean mono_fclt (double a, double b) MONO_INTERNAL;
+
+gboolean mono_fclt_un (double a, double b) MONO_INTERNAL;
 
 #endif /* __MONO_JIT_ICALLS_H__ */
 
