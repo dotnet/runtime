@@ -162,19 +162,29 @@ dump_declarative_security (MonoImage *m, guint32 objectType, guint32 token, cons
 	}
 }
 
+static char *
+assembly_flags (guint32 f)
+{
+	if (f & ASSEMBLYREF_RETARGETABLE_FLAG)
+		return g_strdup ("retargetable ");
+	return g_strdup ("");
+}
+
 static void
 dis_directive_assembly (MonoImage *m)
 {
 	MonoTableInfo *t  = &m->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [MONO_ASSEMBLY_SIZE];
+	char *flags;
 	
 	if (t->base == NULL)
 		return;
 
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
+	flags = assembly_flags (cols [MONO_ASSEMBLY_FLAGS]);
 	
-	fprintf (output, ".assembly '%s'\n{\n",
-		 mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
+	fprintf (output, ".assembly %s'%s'\n{\n",
+		 flags, mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
 	dump_cattrs (m, MONO_TOKEN_ASSEMBLY | 1, "  ");
 	dump_declarative_security (m, OBJECT_TYPE_ASSEMBLYDEF, 1, "  ");
 	fprintf (output,
@@ -200,6 +210,8 @@ dis_directive_assembly (MonoImage *m)
 		g_free (dump);
 	}
 	fprintf (output, "}\n");
+	
+	g_free (flags);
 }
 
 static void
@@ -213,16 +225,18 @@ dis_directive_assemblyref (MonoImage *m)
 		return;
 
 	for (i = 0; i < t->rows; i++){
-		char *esc;
+		char *esc, *flags;
 
 		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
 
 		esc = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+		flags = assembly_flags (cols [MONO_ASSEMBLYREF_FLAGS]);
 		
 		fprintf (output,
-			 ".assembly extern %s\n"
+			 ".assembly extern %s%s\n"
 			 "{\n"
 			 "  .ver %d:%d:%d:%d\n",
+			 flags,
 			 esc,
 			 cols [MONO_ASSEMBLYREF_MAJOR_VERSION], cols [MONO_ASSEMBLYREF_MINOR_VERSION], 
 			 cols [MONO_ASSEMBLYREF_BUILD_NUMBER], cols [MONO_ASSEMBLYREF_REV_NUMBER]
@@ -239,6 +253,7 @@ dis_directive_assemblyref (MonoImage *m)
 			g_free (dump);
 		}
 		fprintf (output, "}\n");
+		g_free (flags);
 		g_free (esc);
 	}
 }

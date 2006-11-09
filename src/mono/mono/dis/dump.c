@@ -142,6 +142,7 @@ dump_table_assemblyref (MonoImage *m)
 			 cols [MONO_ASSEMBLYREF_BUILD_NUMBER], 
 			 cols [MONO_ASSEMBLYREF_REV_NUMBER],
 			 mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
+		fprintf (output, "\tFlags=0x%08x\n", cols [MONO_ASSEMBLYREF_FLAGS]);
 		ptr = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
 		len = mono_metadata_decode_value (ptr, &ptr);
 		if (len > 0){
