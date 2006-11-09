@@ -1122,52 +1122,78 @@ MonoBoolean
 ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 						   gint timeout, gint32 *error)
 {
-	fd_set fds;
-	int ret = 0;
-	struct timeval tv;
-	struct timeval *tvptr;
-	div_t divvy;
+	MonoThread *thread = NULL;
+	mono_pollfd *pfds;
+	int ret;
 	time_t start;
+	
 
 	MONO_ARCH_SAVE_REGS;
+	
+	pfds = g_new0 (mono_pollfd, 1);
+	pfds[0].fd = GPOINTER_TO_INT (sock);
+	pfds[0].events = (mode == SelectModeRead) ? MONO_POLLIN :
+		(mode == SelectModeWrite) ? MONO_POLLOUT :
+		(MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL);
 
+	timeout = (timeout >= 0) ? (timeout / 1000) : -1;
 	start = time (NULL);
 	do {
 		*error = 0;
-		FD_ZERO (&fds);
-		_wapi_FD_SET (sock, &fds);
-		if (timeout >= 0) {
-			divvy = div (timeout, 1000000);
-			tv.tv_sec = divvy.quot;
-			tv.tv_usec = divvy.rem;
-			tvptr = &tv;
-		} else {
-			tvptr = NULL;
-		}
-
-		if (mode == SelectModeRead) {
-			ret = _wapi_select (0, &fds, NULL, NULL, tvptr);
-		} else if (mode == SelectModeWrite) {
-			ret = _wapi_select (0, NULL, &fds, NULL, tvptr);
-		} else if (mode == SelectModeError) {
-			ret = _wapi_select (0, NULL, NULL, &fds, tvptr);
-		} else {
-			g_assert_not_reached ();
-		}
-
+		
+		ret = mono_poll (pfds, 1, timeout);
 		if (timeout > 0 && ret < 0) {
 			int err = errno;
 			int sec = time (NULL) - start;
-
+			
 			timeout -= sec * 1000;
-			if (timeout < 0)
+			if (timeout < 0) {
 				timeout = 0;
+			}
+			
 			errno = err;
 		}
+		
+		if (ret == -1 && errno == EINTR) {
+			int leave = 0;
 
-	} while ((ret == SOCKET_ERROR) && (*error = WSAGetLastError ()) == WSAEINTR);
+			if (thread == NULL) {
+				thread = mono_thread_current ();
+			}
+			
+			mono_monitor_enter (thread->synch_lock);
+			leave = ((thread->state & ThreadState_AbortRequested) != 0 ||
+				 (thread->state & ThreadState_StopRequested) != 0);
+			mono_monitor_exit (thread->synch_lock);
+			
+			if (leave != 0) {
+				g_free (pfds);
+				return(FALSE);
+			} else {
+				/* Suspend requested? */
+				mono_thread_interruption_checkpoint ();
+			}
+			errno = EINTR;
+		}
+	} while (ret == -1 && errno == EINTR);
 
-	return (ret != SOCKET_ERROR && _wapi_FD_ISSET (sock, &fds));
+	if (ret == -1) {
+#ifdef PLATFORM_WIN32
+		*error = WSAGetLastError ();
+#else
+		*error = errno_to_WSA (errno, __func__);
+#endif
+		g_free (pfds);
+		return(FALSE);
+	}
+	
+	g_free (pfds);
+
+	if (ret == 0) {
+		return(FALSE);
+	} else {
+		return (TRUE);
+	}
 }
 
 extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
