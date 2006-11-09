@@ -1380,6 +1380,13 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	GList *loading;
 	GHashTable *ass_loading;
 
+	if (!image->tables [MONO_TABLE_ASSEMBLY].rows) {
+		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
+
+
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
