@@ -112,7 +112,7 @@ enum {
 
 #define ARM_DEF_VFP_LSF(cond,cp,post,ls,wback,basereg,Fd,offset)	\
 	((offset) >= 0? (offset)>>2: -(offset)>>2)	|	\
-	((6 << 25)					|	\
+	(6 << 25)					|	\
 	((cp) << 8)					|	\
 	(((Fd) >> 1) << 12)				|	\
 	(((Fd) & 1) << 22)				|	\
@@ -158,7 +158,6 @@ enum {
 
 #include "arm_vfpmacros.h"
 
-#define ARM_DEF_VFP_CPT(cond,cp,op,L,Fn,Rd)
 /* coprocessor register transfer */
 #define ARM_FMSR(p,freg,reg)	\
 	ARM_EMIT((p), ARM_DEF_VFP_CPT(ARMCOND_AL,ARM_VFP_COPROC_SINGLE,0,0,(freg),(reg)))
