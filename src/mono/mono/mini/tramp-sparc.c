@@ -60,7 +60,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 void
 mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 {
-	if (sparc_inst_op (*code) == 0x1) {
+	if (sparc_inst_op (*(guint32*)code) == 0x1) {
 		sparc_call_simple (code, (guint8*)addr - (guint8*)code);
 	}
 }
