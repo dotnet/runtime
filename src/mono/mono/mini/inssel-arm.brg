@@ -116,10 +116,18 @@ stmt: OP_SETRET (lreg) {
 }
 
 stmt: OP_SETRET (freg) {
-	tree->opcode = OP_FMOVE;
-	tree->sreg1 = state->left->reg1;
-	tree->dreg = 0;
-	mono_bblock_add_inst (s->cbb, tree);
+	if (SOFT_FLOAT_IMPL) {
+		tree->opcode = OP_SETLRET;
+		tree->sreg1 = state->left->reg1;
+		tree->sreg2 = state->left->reg2;
+		tree->dreg = ARMREG_R0;
+		mono_bblock_add_inst (s->cbb, tree);
+	} else {
+		tree->opcode = OP_FMOVE;
+		tree->sreg1 = state->left->reg1;
+		tree->dreg = 0;
+		mono_bblock_add_inst (s->cbb, tree);
+	}
 }
 
 stmt: OP_SETRET (OP_ICONST) {
@@ -218,14 +226,37 @@ stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
 	int creg;
-	/* FIXME: call mono_call_inst_add_outarg_reg () on the out regs */
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
-	creg = mono_regstate_next_int (s->rs);
-	mono_call_inst_add_outarg_reg (s, call, creg, tree->backend.reg3, FALSE);
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8));
-	creg = mono_regstate_next_int (s->rs);
-	mono_call_inst_add_outarg_reg (s, call, creg, tree->backend.reg3 + 1, FALSE);
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8 + 4));
+	if (SOFT_FLOAT_IMPL) {
+		/* same as the OUTARG (lreg) case */
+		int tdreg;
+		tdreg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
+	
+		/* An #if would be better here, but monoburg
+		   strips them out as comments */
+		if (G_BYTE_ORDER == G_BIG_ENDIAN)
+			mono_call_inst_add_outarg_reg (s, call, tdreg, tree->backend.reg3, FALSE);
+		else
+			mono_call_inst_add_outarg_reg (s, call, tdreg, tree->backend.reg3 + 1, FALSE);
+
+		tree->opcode = OP_SETREG;
+		tree->dreg = mono_regstate_next_int (s->rs);
+		tree->sreg1 = state->left->reg1;
+		mono_bblock_add_inst (s->cbb, tree);
+	
+		if (G_BYTE_ORDER == G_BIG_ENDIAN)
+			mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3 + 1, FALSE);
+		else
+			mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
+	} else {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
+		creg = mono_regstate_next_int (s->rs);
+		mono_call_inst_add_outarg_reg (s, call, creg, tree->backend.reg3, FALSE);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8));
+		creg = mono_regstate_next_int (s->rs);
+		mono_call_inst_add_outarg_reg (s, call, creg, tree->backend.reg3 + 1, FALSE);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8 + 4));
+	}
 }
 
 stmt: OP_OUTARG_R4 (freg) {
@@ -254,12 +285,23 @@ stmt: OP_OUTARG_MEMBASE (lreg) {
 
 stmt: OP_OUTARG_MEMBASE (freg) {
 	int offset = tree->backend.arg_info >> 8;
-	if ((tree->backend.arg_info & 0xff) == 8)
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
-	else if ((tree->backend.arg_info & 0xff) == 4)
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
-	else
-		g_assert_not_reached ();
+	if (SOFT_FLOAT_IMPL) {
+		/* same as OP_OUTARG_MEMBASE (lreg) */
+		if (G_BYTE_ORDER == G_BIG_ENDIAN) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg2);
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg1);
+		} else {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg2);
+		}
+	} else {
+		if ((tree->backend.arg_info & 0xff) == 8)
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+		else if ((tree->backend.arg_info & 0xff) == 4)
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+		else
+			g_assert_not_reached ();
+	}
 }
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {

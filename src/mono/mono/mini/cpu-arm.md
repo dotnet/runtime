@@ -16,6 +16,7 @@
 #	a  r3 register (output from calls)
 #	b  base register (used in address references)
 #	f  floating point register
+#	g  floating point register returned in r0:r1 for soft-float mode
 #
 # len:number         describe the maximun length in bytes of the instruction
 # number is a positive integer
@@ -305,9 +306,9 @@ checkthis: src1:b len:4
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:8 clob:c
 voidcall_membase: src1:b len:12 clob:c
-fcall: dest:f len:20 clob:c
-fcall_reg: dest:f src1:i len:8 clob:c
-fcall_membase: dest:f src1:b len:12 clob:c
+fcall: dest:g len:20 clob:c
+fcall_reg: dest:g src1:i len:8 clob:c
+fcall_membase: dest:g src1:b len:12 clob:c
 lcall: dest:l len:20 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c

@@ -2531,7 +2531,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ins->dreg, ins->sreg1);
 			break;
 		}
-#if ARM_FPU_FPA
+#ifdef ARM_FPU_FPA
 		case OP_FADD:
 			ARM_FPA_ADFD (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;

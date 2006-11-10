@@ -4,6 +4,10 @@
 #include <mono/arch/arm/arm-codegen.h>
 #include <glib.h>
 
+#ifdef ARM_FPU_NONE
+#define MONO_ARCH_SOFT_FLOAT 1
+#endif
+
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define ARM_LSW_REG ARMREG_R0
 #define ARM_MSW_REG ARMREG_R1
@@ -33,12 +37,18 @@
 #define MONO_ARCH_USE_FPSTACK FALSE
 #define MONO_ARCH_FPSTACK_SIZE 0
 
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARM_LSW_REG: -1)
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l' || (desc == 'f') || (desc == 'g'))? ARM_LSW_REG: -1)
+#define MONO_ARCH_INST_IS_REGPAIR(desc) ((desc) == 'l' || (desc) == 'L' || (desc) == 'f' || (desc) == 'g')
+#define MONO_ARCH_INST_IS_FLOAT(desc) (FALSE)
+#else
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARM_LSW_REG: -1)
 #define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
-#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? ARM_MSW_REG : -1)
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
+#endif
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l'  || (desc == 'f') || (desc == 'g')? ARM_MSW_REG : -1)
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 
@@ -79,6 +89,7 @@ typedef struct {
 } MonoContext;
 
 typedef struct MonoCompileArch {
+	int dummy;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
