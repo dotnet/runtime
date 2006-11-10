@@ -577,6 +577,18 @@ mono_fclt_un (double a, double b)
 	return a < b;
 }
 
+double
+mono_fload_r4 (float *ptr)
+{
+	return *ptr;
+}
+
+void
+mono_fstore_r4 (double val, float *ptr)
+{
+	*ptr = (float)val;
+}
+
 #endif
 
 /**

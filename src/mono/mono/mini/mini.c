@@ -2665,6 +2665,56 @@ mono_get_array_new_va_signature (int arity)
 	return res;
 }
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+static void
+handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, MonoInst *val, const unsigned char *ip)
+{
+	MonoInst *iargs [2];
+	iargs [0] = val;
+	iargs [1] = ptr;
+
+	mono_emit_jit_icall (cfg, bblock, mono_fstore_r4, iargs, ip);
+}
+
+static int
+handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, const unsigned char *ip)
+{
+	MonoInst *iargs [1];
+	iargs [0] = ptr;
+
+	return mono_emit_jit_icall (cfg, bblock, mono_fload_r4, iargs, ip);
+}
+
+#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4) {	\
+			int temp;	\
+			NEW_LOCLOADA (cfg, (ins), (idx));	\
+			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
+			NEW_TEMPLOAD (cfg, (ins), temp);	\
+		}	\
+	} while (0)
+#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4) {	\
+			int temp;	\
+			NEW_LOCLOADA (cfg, (ins), (idx));	\
+			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
+			MONO_INST_NEW (cfg, (ins), CEE_NOP);	\
+		}	\
+	} while (0)
+#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (param_types [(idx)]->type == MONO_TYPE_R4) {	\
+			int temp;	\
+			NEW_ARGLOADA (cfg, (ins), (idx));	\
+			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
+			NEW_TEMPLOAD (cfg, (ins), temp);	\
+		}	\
+	} while (0)
+#else
+#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip)
+#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip)
+#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip)
+#endif
+
 static MonoMethod*
 get_memcpy_method (void)
 {
@@ -4130,6 +4180,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			n = (*ip)-CEE_LDARG_0;
 			CHECK_ARG (n);
 			NEW_ARGLOAD (cfg, ins, n);
+			LDARG_SOFT_FLOAT (cfg, ins, n, ip);
 			ins->cil_code = ip++;
 			*sp++ = ins;
 			break;
@@ -4141,6 +4192,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			n = (*ip)-CEE_LDLOC_0;
 			CHECK_LOCAL (n);
 			NEW_LOCLOAD (cfg, ins, n);
+			LDLOC_SOFT_FLOAT (cfg, ins, n, ip);
 			ins->cil_code = ip++;
 			*sp++ = ins;
 			break;
@@ -4157,6 +4209,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
 				UNVERIFIED;
+			STLOC_SOFT_FLOAT (cfg, ins, n, ip);
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, n);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
@@ -4170,6 +4223,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			CHECK_ARG (ip [1]);
 			NEW_ARGLOAD (cfg, ins, ip [1]);
+			LDARG_SOFT_FLOAT (cfg, ins, ip [1], ip);
 			ins->cil_code = ip;
 			*sp++ = ins;
 			ip += 2;
@@ -4205,6 +4259,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			CHECK_LOCAL (ip [1]);
 			NEW_LOCLOAD (cfg, ins, ip [1]);
+			LDLOC_SOFT_FLOAT (cfg, ins, ip [1], ip);
 			ins->cil_code = ip;
 			*sp++ = ins;
 			ip += 2;
@@ -4228,6 +4283,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [ip [1]], *sp))
 				UNVERIFIED;
+			STLOC_SOFT_FLOAT (cfg, ins, ip [1], ip);
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_LOCLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
@@ -5050,6 +5106,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 			if (ins->type == STACK_OBJ)
 				ins->klass = mono_defaults.object_class;
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (*ip == CEE_LDIND_R4) {
+				int temp;
+				++sp;
+				temp = handle_load_float (cfg, bblock, ins->inst_i0, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+				sp++;
+			}
+#endif
 			++ip;
 			break;
 		case CEE_STIND_REF:
@@ -5060,6 +5125,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STIND_R4:
 		case CEE_STIND_R8:
 			CHECK_STACK (2);
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (*ip == CEE_STIND_R4) {
+				sp -= 2;
+				handle_store_float (cfg, bblock, sp [0], sp [1], ip);
+				ip++;
+				break;
+			}
+#endif
 #if HAVE_WRITE_BARRIERS
 			if (*ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER) {
 				/* insert call to write barrier */
@@ -5871,6 +5944,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					iargs [1] = sp [1];
 					mono_emit_method_call_spilled (cfg, bblock, write_barrier, mono_method_signature (write_barrier), iargs, ip, NULL);
 #endif
+#ifdef MONO_ARCH_SOFT_FLOAT
+				} else if (mono_type_to_stind (field->type) == CEE_STIND_R4) {
+					NEW_ICONST (cfg, offset_ins, foffset);
+					MONO_INST_NEW (cfg, ins, OP_PADD);
+					ins->cil_code = ip;
+					ins->inst_left = *sp;
+					ins->inst_right = offset_ins;
+					ins->type = STACK_MP;
+					ins->klass = mono_defaults.object_class;
+					handle_store_float (cfg, bblock, ins, sp [1], ip);
+#endif
 				} else {
 					MonoInst *store;
 					NEW_ICONST (cfg, offset_ins, foffset);
@@ -5950,6 +6034,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						load->inst_left = ins;
 						load->flags |= ins_flag;
 						ins_flag = 0;
+#ifdef MONO_ARCH_SOFT_FLOAT
+						if (mono_type_to_ldind (field->type) == CEE_LDIND_R4) {
+							int temp;
+							temp = handle_load_float (cfg, bblock, ins, ip);
+							NEW_TEMPLOAD (cfg, *sp, temp);
+							sp++;
+						} else
+#endif
 						*sp++ = load;
 					}
 				}
@@ -6365,6 +6457,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = array_access_to_klass (*ip);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (*ip == CEE_LDELEM_R4) {
+				int temp;
+				temp = handle_load_float (cfg, bblock, load, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+				sp++;
+				++ip;
+				break;
+			}
+#endif
 			MONO_INST_NEW (cfg, ins, ldelem_to_ldind [*ip - CEE_LDELEM_I1]);
 			ins->cil_code = ip;
 			ins->inst_left = load;
@@ -6394,6 +6496,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = array_access_to_klass (*ip);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (*ip == CEE_STELEM_R4) {
+				handle_store_float (cfg, bblock, load, sp [2], ip);
+				ip++;
+				break;
+			}
+#endif
 			MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
 			ins->cil_code = ip;
 			ins->inst_left = load;
@@ -7055,6 +7164,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
 				NEW_ARGLOAD (cfg, ins, n);
+				LDARG_SOFT_FLOAT (cfg, ins, n, ip);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
@@ -7093,6 +7203,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
 				NEW_LOCLOAD (cfg, ins, n);
+				LDLOC_SOFT_FLOAT (cfg, ins, n, ip);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 4;
@@ -7118,6 +7229,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
 					UNVERIFIED;
 				ins->cil_code = ip;
+				STLOC_SOFT_FLOAT (cfg, ins, n, ip);
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_LOCLOADA (cfg, ins, n);
 					handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
@@ -7393,11 +7505,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
 			} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+#ifdef MONO_ARCH_SOFT_FLOAT
+				/* FIXME: handle init of R4 */
+#else
 				MONO_INST_NEW (cfg, ins, OP_R8CONST);
 				ins->type = STACK_R8;
 				ins->inst_p0 = (void*)&r8_0;
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
+#endif
 			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 				   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (ptype))) {
 				NEW_LOCLOADA (cfg, ins, i);
@@ -11534,6 +11650,9 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_FCGT_UN, "__emul_fcmp_cgt_un", "uint32 double double", mono_fcgt_un, FALSE);
 	mono_register_opcode_emulation (OP_FCLT, "__emul_fcmp_clt", "uint32 double double", mono_fclt, FALSE);
 	mono_register_opcode_emulation (OP_FCLT_UN, "__emul_fcmp_clt_un", "uint32 double double", mono_fclt_un, FALSE);
+
+	register_icall (mono_fload_r4, "mono_fload_r4", "double ptr", FALSE);
+	register_icall (mono_fstore_r4, "mono_fstore_r4", "void double ptr", FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4
