@@ -832,7 +832,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* FIXME: we might need to handle the thread info some
 		 * day
 		 */
-		process_info->hThread = NULL;
+		process_info->hThread = INVALID_HANDLE_VALUE;
 		process_info->dwThreadId = 0;
 	}
 

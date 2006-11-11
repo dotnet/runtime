@@ -873,7 +873,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 		process_info->process_handle=procinfo.hProcess;
 		/*process_info->thread_handle=procinfo.hThread;*/
 		process_info->thread_handle=NULL;
-		if (procinfo.hThread != NULL)
+		if (procinfo.hThread != NULL && procinfo.hThread != INVALID_HANDLE_VALUE)
 			CloseHandle(procinfo.hThread);
 		process_info->pid=procinfo.dwProcessId;
 		process_info->tid=procinfo.dwThreadId;

@@ -1222,6 +1222,10 @@ gboolean CloseHandle(gpointer handle)
 			return(FALSE);
 		}
 	}
+	if (handle == _WAPI_HANDLE_INVALID){
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return(FALSE);
+	}
 	
 	_wapi_handle_unref (handle);
 	
