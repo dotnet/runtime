@@ -155,7 +155,7 @@ static void
 check_path_env (void)
 {
 	const char *path;
-	char **splitted;
+	char **splitted, **dest;
 	
 	path = g_getenv ("MONO_PATH");
 	if (!path)
@@ -164,7 +164,14 @@ check_path_env (void)
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
-	assemblies_path = splitted;
+	assemblies_path = dest = splitted;
+	while (*splitted){
+		if (**splitted)
+			*dest++ = *splitted;
+		splitted++;
+	}
+	*dest = *splitted;
+	
 	if (g_getenv ("MONO_DEBUG") == NULL)
 		return;
 
@@ -179,7 +186,7 @@ check_path_env (void)
 static void
 check_extra_gac_path_env (void) {
 	const char *path;
-	char **splitted;
+	char **splitted, **dest;
 	
 	path = g_getenv ("MONO_GAC_PREFIX");
 	if (!path)
@@ -188,7 +195,14 @@ check_extra_gac_path_env (void) {
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (extra_gac_paths)
 		g_strfreev (extra_gac_paths);
-	extra_gac_paths = splitted;
+	extra_gac_paths = dest = splitted;
+	while (*splitted){
+		if (**splitted)
+			*dest++ = *splitted;
+		splitted++;
+	}
+	*dest = *splitted;
+	
 	if (g_getenv ("MONO_DEBUG") == NULL)
 		return;
 
@@ -1171,11 +1185,12 @@ absolute_dir (const gchar *filename)
 	list = g_list_reverse (list);
 
 	/* Ignores last data pointer, which should be the filename */
-	for (tmp = list; tmp && tmp->next != NULL; tmp = tmp->next)
+	for (tmp = list; tmp && tmp->next != NULL; tmp = tmp->next){
 		if (tmp->data)
 			g_string_append_printf (result, "%s%c", (char *) tmp->data,
 								G_DIR_SEPARATOR);
-	
+	}
+
 	res = result->str;
 	g_string_free (result, FALSE);
 	g_list_free (list);
