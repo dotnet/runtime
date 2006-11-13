@@ -222,7 +222,8 @@ static void io_ops_init (void)
  */
 
 static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
-					      struct stat *buf)
+					      struct stat *buf,
+					      struct stat *lbuf)
 {
 	guint32 attrs = 0;
 	gchar *filename;
@@ -256,6 +257,12 @@ static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
 			attrs = FILE_ATTRIBUTE_HIDDEN;
 		} else {
 			attrs = FILE_ATTRIBUTE_NORMAL;
+		}
+	}
+
+	if (lbuf != NULL) {
+		if (S_ISLNK (lbuf->st_mode)) {
+			attrs |= FILE_ATTRIBUTE_REPARSE_POINT;
 		}
 	}
 	
@@ -2944,18 +2951,6 @@ retry:
 		goto retry;
 	}
 
-	/* Check for dangling symlinks, and ignore them (principle of
-	 * least surprise, avoiding confusion where we report the file
-	 * exists, but when someone tries to open it we would report
-	 * it isn't there.)
-	 */
-	if(S_ISLNK (buf.st_mode)) {
-		if(_wapi_stat (filename, &buf) != 0) {
-			g_free (filename);
-			goto retry;
-		}
-	}
-	
 	utf8_filename = mono_utf8_from_external (filename);
 	if (utf8_filename == NULL) {
 		/* We couldn't turn this filename into utf8 (eg the
@@ -2978,7 +2973,7 @@ retry:
 	else
 		create_time = buf.st_ctime;
 	
-	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf);
+	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf, &buf);
 
 	_wapi_time_t_to_filetime (create_time, &find_data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
@@ -3220,14 +3215,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 		return (INVALID_FILE_ATTRIBUTES);
 	}
 	
-	/* Don't treat symlinks to directories as directories.  See
-	 * bug 79733
-	 */
-	if (S_ISDIR (buf.st_mode) && S_ISLNK (linkbuf.st_mode)) {
-		ret = _wapi_stat_to_file_attributes (utf8_name, &linkbuf);
-	} else {
-		ret = _wapi_stat_to_file_attributes (utf8_name, &buf);
-	}
+	ret = _wapi_stat_to_file_attributes (utf8_name, &buf, &linkbuf);
 	
 	g_free (utf8_name);
 
@@ -3249,7 +3237,7 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	gchar *utf8_name;
 	WapiFileAttributesData *data;
 
-	struct stat buf;
+	struct stat buf, linkbuf;
 	time_t create_time;
 	int result;
 	
@@ -3294,6 +3282,13 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		return FALSE;
 	}
 
+	result = _wapi_lstat (utf8_name, &linkbuf);
+	if (result != 0) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		g_free (utf8_name);
+		return(FALSE);
+	}
+
 	/* fill data block */
 
 	data = (WapiFileAttributesData *)info;
@@ -3304,7 +3299,8 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		create_time = buf.st_ctime;
 	
 	data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_name,
-								&buf);
+								&buf,
+								&linkbuf);
 
 	g_free (utf8_name);
 

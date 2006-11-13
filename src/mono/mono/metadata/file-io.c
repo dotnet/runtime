@@ -332,20 +332,18 @@ get_file_attributes (const char *filename)
 	struct stat linkbuf;
 	int result;
 	int file_attrs;
-
+	gboolean issymlink = FALSE;
+	
 	result = lstat (filename, &buf);
 	if (result == -1)
 		return FALSE;
 
 	if (S_ISLNK (buf.st_mode)) {
+		issymlink = TRUE;
 		result = stat (filename, &linkbuf);
 		if (result != -1) {
 			buf = linkbuf;
 		}
-		/* force dangling symlinks or symlinks to directories
-		 * to be returned as a regular file (see bug 79733)
-		 */
-		buf.st_mode |= ~S_IFDIR;
 	}
 
 	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
@@ -364,6 +362,10 @@ get_file_attributes (const char *filename)
 	if (*filename == '.')
 		file_attrs |= FILE_ATTRIBUTE_HIDDEN;
 
+	if (issymlink) {
+		file_attrs |= FILE_ATTRIBUTE_REPARSE_POINT;
+	}
+	
 	return file_attrs;
 #endif
 }
