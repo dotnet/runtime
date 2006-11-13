@@ -23,6 +23,8 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 #endif
 
+static int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
+
 /*
  * TODO:
  * floating point support: on ARM it is a mess, there are at least 3
@@ -903,7 +905,6 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 		code = cfg->native_code + offset;
 	}
-handle_enum:
 	switch (rtype) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
@@ -1295,7 +1296,7 @@ map_to_reg_reg_op (int op)
 static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *next, *temp, *last_ins = NULL;
+	MonoInst *ins, *temp, *last_ins = NULL;
 	int rot_amount, imm8, low_imm;
 
 	/* setup the virtual reg allocator */
@@ -1505,7 +1506,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	guchar *code = data;
 	guint32 *thunks = data;
 	guint32 *endthunks = (guint32*)(code + bsize);
-	int i, count = 0;
+	int count = 0;
 	int difflow, diffhigh;
 
 	/* always ensure a call from pdata->code can reach to the thunks without further thunks */
@@ -1582,7 +1583,6 @@ arm_patch (guchar *code, const guchar *target)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = (ins >> 25) & 7;
-	guint32 ovf;
 
 	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 5) { /* 101b */
@@ -1640,7 +1640,7 @@ arm_patch (guchar *code, const guchar *target)
  * to be used with the emit macros.
  * Return -1 otherwise.
  */
-int
+static int
 mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount)
 {
 	guint32 res, i;
@@ -2765,7 +2765,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		const unsigned char *target;
 
 		if (patch_info->type == MONO_PATCH_INFO_SWITCH) {
-			gpointer *table = (gpointer *)patch_info->data.table->table;
 			gpointer *jt = (gpointer*)(ip + 8);
 			int i;
 			/* jt is the inlined jump table, 2 instructions after ip
@@ -3079,7 +3078,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* *(lmf_addr) = r1 */
 		ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* save method info */
-		code = mono_arm_emit_load_imm (code, ARMREG_R2, method);
+		code = mono_arm_emit_load_imm (code, ARMREG_R2, GPOINTER_TO_INT (method));
 		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, method));
 		ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ebp));
 		/* save the current IP */
@@ -3100,7 +3099,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	int pos, i, rot_amount;
 	int max_epilog_size = 16 + 20*4;
@@ -3186,18 +3184,17 @@ exception_id_by_name (const char *name)
 	if (strcmp (name, "ArrayTypeMismatchException") == 0)
 		return MONO_EXC_ARRAY_TYPE_MISMATCH;
 	g_error ("Unknown intrinsic exception %s\n", name);
+	return -1;
 }
 
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
-	int nthrows, i;
+	int i;
 	guint8 *code;
 	const guint8* exc_throw_pos [MONO_EXC_INTRINS_NUM] = {NULL};
 	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM] = {0};
-	guint32 code_size;
-	int exc_count = 0;
 	int max_epilog_size = 50;
 
 	/* count the number of exception infos */
@@ -3248,7 +3245,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
 			ARM_B (code, 0);
-			*(gpointer*)code = ex_name;
+			*(gconstpointer*)code = ex_name;
 			code += 4;
 			break;
 		}
