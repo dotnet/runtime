@@ -213,6 +213,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	mono_gc_collect (mono_gc_max_generation ());
 
 	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (done_event == NULL) {
+		return(FALSE);
+	}
 
 	req = g_new0 (DomainFinalizationReq, 1);
 	req->domain = domain;

@@ -1703,6 +1703,10 @@ mono_thread_resume (MonoThread *thread)
 	}
 	
 	thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (thread->resume_event == NULL) {
+		mono_monitor_exit (thread->synch_lock);
+		return(FALSE);
+	}
 	
 	/* Awake the thread */
 	SetEvent (thread->suspend_event);
@@ -1837,6 +1841,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	g_assert(background_change_event != NULL);
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
@@ -2239,8 +2244,14 @@ void mono_thread_suspend_all_other_threads (void)
 			
 		thread->state |= ThreadState_SuspendRequested;
 
-		if (thread->suspended_event == NULL)
+		if (thread->suspended_event == NULL) {
 			thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+			if (thread->suspended_event == NULL) {
+				/* Forget this one and go on to the next */
+				mono_monitor_exit (thread->synch_lock);
+				continue;
+			}
+		}
 
 		events [eventidx++] = thread->suspended_event;
 		mono_monitor_exit (thread->synch_lock);
@@ -2752,6 +2763,10 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
 		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (thread->suspend_event == NULL) {
+			mono_monitor_exit (thread->synch_lock);
+			return(NULL);
+		}
 		if (thread->suspended_event)
 			SetEvent (thread->suspended_event);
 		mono_monitor_exit (thread->synch_lock);

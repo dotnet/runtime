@@ -748,9 +748,12 @@ socket_io_init (SocketIOData *data)
 
 	data->sock_to_state = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	if (data->epoll_disabled)
+	if (data->epoll_disabled) {
 		data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
+		g_assert (data->new_sem != NULL);
+	}
 	io_job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	g_assert (io_job_added != NULL);
 	InitializeCriticalSection (&io_queue_lock);
 	if (data->epoll_disabled) {
 		mono_thread_create (mono_get_root_domain (), socket_io_poll_main, data);
@@ -985,6 +988,7 @@ mono_thread_pool_init ()
 	InitializeCriticalSection (&ares_lock);
 	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	g_assert (job_added != NULL);
 	GetSystemInfo (&info);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
@@ -1076,6 +1080,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
 			ac->wait_event = (gsize)CreateEvent (NULL, TRUE, FALSE, NULL);
+			g_assert(ac->wait_event != 0);
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), (gpointer)(gsize)ac->wait_event));
 		}
 		mono_monitor_exit ((MonoObject *) ares);

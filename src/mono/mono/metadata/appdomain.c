@@ -1403,6 +1403,9 @@ mono_domain_unload (MonoDomain *domain)
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
 	thread_handle = CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	if (thread_handle == NULL) {
+		return;
+	}
 	ResumeThread (thread_handle);
 #endif
 

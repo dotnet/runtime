@@ -404,6 +404,7 @@ retry:
 	if (mon->entry_sem == NULL) {
 		/* Create the semaphore */
 		sem = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+		g_assert (sem != NULL);
 		if (InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
 			/* Someone else just put a handle here */
 			CloseHandle (sem);
