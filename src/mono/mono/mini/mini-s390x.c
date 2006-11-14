@@ -1121,6 +1121,8 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
