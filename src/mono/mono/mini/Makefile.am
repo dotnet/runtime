@@ -272,7 +272,7 @@ ARCH_CFLAGS = -I../arch/arm
 
 arch_sources = $(arm_sources)
 
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg $(srcdir)/inssel-softfloat.brg
 arch_built=cpu-arm.h
 endif
 
@@ -465,6 +465,7 @@ CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(test_sources) $(test_sources2) \
 	inssel-long.brg inssel-long32.brg \
+	inssel-softfloat.brg	\
 	$(x86_sources) inssel-x86.brg cpu-x86.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
