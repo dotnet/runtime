@@ -1494,6 +1494,13 @@ case "$host" in
 #		TARGET=MIPS;
 #		ACCESS_UNALIGNED="no"
 #		;;
+	mips*)
+		TARGET=MIPS;
+		arch_target=mips;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		jit_wanted=true
+		;;
 	i*86-*-*)
 		TARGET=X86;
 		arch_target=x86;
@@ -1818,6 +1825,7 @@ AM_CONDITIONAL(AMD64, test x$TARGET = xAMD64)
 AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
 AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
+AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
@@ -1930,6 +1938,7 @@ mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/alpha/Makefile
 mono/arch/ia64/Makefile
+mono/arch/mips/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
