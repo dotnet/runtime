@@ -146,6 +146,13 @@ arm_sources = \
 	exceptions-arm.c	\
 	tramp-arm.c
 
+mips_sources = \
+	mini-mips.c		\
+	mini-mips.h		\
+	exceptions-mips.c	\
+	mini-codegen.c		\
+	tramp-mips.c
+
 sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
@@ -265,6 +272,12 @@ arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-g4.h
 endif
 
+if MIPS
+arch_sources = $(mips_sources)
+arch_BURGSRC= $(srcdir)/inssel-long32-mips.brg $(srcdir)/inssel-mips.brg
+arch_built=cpu-mips.h
+endif
+
 if ARM
 
 # pick up arm_dpimacros.h and arm_fpamacros.h
@@ -368,6 +381,7 @@ cpu-s390.h: cpu-s390.md
 cpu-s390x.h: cpu-s390x.md
 cpu-ia64.h: cpu-ia64.md
 cpu-alpha.h: cpu-alpha.md
+cpu-mips.h: cpu-mips.md
 
 ## Gross hack.  Making 'genmdesc' a host binary takes more effort
 $(arch_built):
@@ -402,6 +416,9 @@ cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 
 cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-alpha.md cpu-alpha.h alpha_desc
+
+cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
 
 endif !CROSS_COMPILING
 
