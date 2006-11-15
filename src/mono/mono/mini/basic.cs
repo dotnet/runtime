@@ -152,6 +152,16 @@ class Tests {
 		return b / 2;
 	}
 
+	public static int test_2_div_fold4 () {
+		int b = -8;
+		return -(b / 4);
+	}
+
+	public static int test_2_div_fold16 () {
+		int b = 32;
+		return b / 16;
+	}
+
 	public static int test_719177_div_destreg () {
 		int year = 1970;
 		return ((365* (year-1)) + ((year-1)/4));
