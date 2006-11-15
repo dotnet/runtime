@@ -318,6 +318,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 enum {
 	RegTypeGeneral,
 	RegTypeBase,
+	RegTypeBaseGen,
 	RegTypeFP,
 	RegTypeStructByVal,
 	RegTypeStructByAddr
@@ -355,7 +356,13 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = *gr;
 		}
 	} else {
-		if (*gr > ARMREG_R2) {
+		if (*gr == ARMREG_R3) {
+			/* first word in r3 and the second on the stack */
+			ainfo->offset = *stack_size;
+			ainfo->reg = ARMREG_SP; /* in the caller */
+			ainfo->regtype = RegTypeBaseGen;
+			*stack_size += 4;
+		} else if (*gr > ARMREG_R3) {
 			/**stack_size += 7;
 			*stack_size &= ~7;*/
 			ainfo->offset = *stack_size;
@@ -820,6 +827,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->opcode = OP_OUTARG_MEMBASE;
 				arg->backend.arg_info = (ainfo->offset << 8) | ainfo->size;
+			} else if (ainfo->regtype == RegTypeBaseGen) {
+				call->used_iregs |= 1 << ARMREG_R3;
+				arg->opcode = OP_OUTARG_MEMBASE;
+				arg->backend.arg_info = (ainfo->offset << 8) | 0xff;
+				if (arg->type == STACK_R8)
+					cfg->flags |= MONO_CFG_HAS_FPOUT;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->backend.reg3 = ainfo->reg;
 				/* FP args are passed in int regs */
@@ -2984,6 +2997,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				}
+			} else if (ainfo->regtype == RegTypeBaseGen) {
+				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
+				g_assert (arm_is_imm12 (inst->inst_offset));
+				ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
+				ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
 			} else if (ainfo->regtype == RegTypeBase) {
 				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
 				switch (ainfo->size) {

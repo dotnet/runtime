@@ -274,6 +274,21 @@ stmt: OP_OUTARG_MEMBASE (reg) {
 
 stmt: OP_OUTARG_MEMBASE (lreg) {
 	int offset = tree->backend.arg_info >> 8;
+	int partial = (tree->backend.arg_info & 0xff) == 0xff;
+	if (partial) {
+		MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+		if (G_BYTE_ORDER == G_BIG_ENDIAN) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
+		} else {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg2);
+		}
+		tree->opcode = OP_SETREG;
+		tree->dreg = mono_regstate_next_int (s->rs);
+		tree->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN? state->left->reg2: state->left->reg1;
+		mono_bblock_add_inst (s->cbb, tree);
+		mono_call_inst_add_outarg_reg (s, call, tree->dreg, ARMREG_R3, FALSE);
+		return;
+	}
 	if (G_BYTE_ORDER == G_BIG_ENDIAN) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg2);
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset + 4, state->left->reg1);
@@ -286,6 +301,7 @@ stmt: OP_OUTARG_MEMBASE (lreg) {
 stmt: OP_OUTARG_MEMBASE (freg) {
 	int offset = tree->backend.arg_info >> 8;
 	if (SOFT_FLOAT_IMPL) {
+		int partial = (tree->backend.arg_info & 0xff) == 0xff;
 		/* same as OP_OUTARG_MEMBASE (lreg) */
 		if (G_BYTE_ORDER == G_BIG_ENDIAN) {
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, state->left->reg2);
@@ -299,7 +315,17 @@ stmt: OP_OUTARG_MEMBASE (freg) {
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
 		else if ((tree->backend.arg_info & 0xff) == 4)
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ARMREG_SP, offset, state->left->reg1);
-		else
+		else if ((tree->backend.arg_info & 0xff) == 0xff) {
+			MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+			int creg;
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ARMREG_SP, (s->param_area - 8), state->left->reg1);
+			creg = mono_regstate_next_int (s->rs);
+			mono_call_inst_add_outarg_reg (s, call, creg, ARMREG_R3, FALSE);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 8));
+			creg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, creg, ARMREG_SP, (s->param_area - 4));
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ARMREG_SP, offset, creg);
+		} else
 			g_assert_not_reached ();
 	}
 }
