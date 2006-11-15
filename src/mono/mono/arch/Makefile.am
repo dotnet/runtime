@@ -1,4 +1,4 @@
-DIST_SUBDIRS = x86 ppc sparc arm s390 s390x alpha hppa amd64 ia64
+DIST_SUBDIRS = x86 ppc sparc arm s390 s390x alpha hppa amd64 ia64 mips
 
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 

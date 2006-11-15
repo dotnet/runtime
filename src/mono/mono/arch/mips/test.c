@@ -1,10 +1,20 @@
-#include "mips-codegen.h"
+#include "config.h"
 #include <stdlib.h>
+#include <string.h>
 
-int main () {
-	unsigned int *code, * p;
+#define NO_MIPS_JIT_DEBUG
 
-	code = p = malloc (sizeof (int) * 1024);
+#include "mips-codegen.h"
+#include "mono/metadata/class.h"
+
+/* don't run the resulting program, it will destroy your computer,
+ * just objdump -d it to inspect we generated the correct assembler.
+ */
+
+int main (int argc, char *argv[]) {
+	guint32 *code, * p;
+
+	code = p = (guint32 *) malloc (sizeof (guint32) * 1024);
 	
 	mips_add (p, 3, 4, 5);
 	mips_addi (p, 3, 4, 5);

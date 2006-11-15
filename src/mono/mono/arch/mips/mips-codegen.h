@@ -33,7 +33,7 @@ enum {
 	mips_s6,
 	mips_s7,
 	mips_t8, /* 24 temps */
-	mips_t9,
+	mips_t9, /* 25 temp / pic call-through register */
 	mips_k0, /* 26 kernel-reserved */
 	mips_k1,
 	mips_gp, /* 28 */
@@ -45,28 +45,38 @@ enum {
 /* we treat the register file as containing just doubles... */
 enum {
 	mips_f0, /* return regs */
+	mips_f1,
 	mips_f2,
+	mips_f3,
 	mips_f4, /* temps */
+	mips_f5,
 	mips_f6,
+	mips_f7,
 	mips_f8,
+	mips_f9,
 	mips_f10,
+	mips_f11,
 	mips_f12, /* first arg */
+	mips_f13,
 	mips_f14, /* second arg */
+	mips_f15,
 	mips_f16, /* temps */
+	mips_f17,
 	mips_f18,
+	mips_f19,
 	mips_f20, /* callee saved */
+	mips_f21,
 	mips_f22,
+	mips_f23,
 	mips_f24,
+	mips_f25,
 	mips_f26,
+	mips_f27,
 	mips_f28,
-	mips_f30
+	mips_f29,
+	mips_f30,
+	mips_f31
 };
-
-#define mips_emit32(c,x) do { *((unsigned int *) c) = x; ((unsigned int *)c)++;} while (0)
-#define mips_format_i(code,op,rs,rt,imm) mips_emit32 ((code), (((op)<<26)|((rs)<<21)|((rt)<<16)|(imm)))
-#define mips_format_j(code,op,imm) mips_emit32 ((code), (((op)<<26)|(imm)))
-#define mips_format_r(code,op,rs,rt,rd,sa,func) mips_emit32 ((code), (((op)<<26)|((rs)<<21)|((rt)<<16)|((rd)<<11)|((sa)<<6)|(func)))
-#define mips_format_divmul(code,op,src1,src2,fun) mips_emit32 ((code), (((op)<<26)|((src1)<<21)|((src2)<<16)|(fun)))
 
 /* prefetch hints */
 enum {
@@ -118,17 +128,68 @@ enum {
 	MIPS_FPU_CAUSES_OFFSET = 12
 };
 
-/* fpu condition values */
+/* fpu condition values - see manual entry for C.cond.fmt instructions */
 enum {
-	MIPS_FPU_FALSE, /* TRUE */
-	MIPS_FPU_UNORDERED, /* ORDERED */
-	MIPS_FPU_EQ, /* NOT_EQUAL */
-	MIPS_FPU_UNORD_EQ, /* ORDERED or NEQ */
-	MIPS_FPU_ORD_LT, /* UNORDERED or GE */
-	MIPS_FPU_UNORD_LT, /* ORDERED or GE */
-	MIPS_FPU_ORD_LE, /* UNORDERED or GT */
-	MIPS_FPU_UNORD_LE /* OREDERED or GT */
+	MIPS_FPU_F,
+	MIPS_FPU_UN,
+	MIPS_FPU_EQ,
+	MIPS_FPU_UEQ,
+	MIPS_FPU_OLT,
+	MIPS_FPU_ULT,
+	MIPS_FPU_OLE,
+	MIPS_FPU_ULE,
+	MIPS_FPU_SF,
+	MIPS_FPU_NGLE,
+	MIPS_FPU_SEQ,
+	MIPS_FPU_NGL,
+	MIPS_FPU_LT,
+	MIPS_FPU_NGE,
+	MIPS_FPU_LE,
+	MIPS_FPU_NGT
 };
+
+#define mips_emit32(c,x) do {				\
+		*((guint32 *) (void *)(c)) = x;				\
+		(c) = (typeof(c))(((guint32 *)(void *)(c)) + 1);	\
+	} while (0)
+
+#define mips_format_i(code,op,rs,rt,imm) mips_emit32 ((code), (((op)<<26)|((rs)<<21)|((rt)<<16)|((imm)&0xffff)))
+#define mips_format_j(code,op,imm) mips_emit32 ((code), (((op)<<26)|((imm)&0x03ffffff)))
+#define mips_format_r(code,op,rs,rt,rd,sa,func) mips_emit32 ((code), (((op)<<26)|((rs)<<21)|((rt)<<16)|((rd)<<11)|((sa)<<6)|(func)))
+#define mips_format_divmul(code,op,src1,src2,fun) mips_emit32 ((code), (((op)<<26)|((src1)<<21)|((src2)<<16)|(fun)))
+
+#define mips_is_imm16(val) ((gint)(val) >= (gint)-(1<<15) && (gint)(val) <= (gint)((1<<15)-1))
+
+/* Load always using lui/addiu pair (for later patching) */
+#define mips_load(c,D,v) do {	\
+		if (!mips_is_imm16 ((v)))	{	\
+			if (((guint32)(v)) & (1 << 15)) {		\
+				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)+1); \
+			} \
+			else {			\
+				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)); \
+			}						\
+			mips_addiu ((c), (D), (D), ((guint32)(v)) & 0xffff); \
+		}							\
+		else							\
+			mips_addiu ((c), (D), mips_zero, ((guint32)(v)) & 0xffff); \
+	} while (0)
+
+/* load constant - no patch-up */
+#define mips_load_const(c,D,v) do {	\
+		if (!mips_is_imm16 ((v)))	{	\
+			if (((guint32)(v)) & (1 << 15)) {		\
+				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)+1); \
+			} \
+			else {			\
+				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)); \
+			}						\
+			if (((guint32)(v)) & 0xffff) \
+				mips_addiu ((c), (D), (D), ((guint32)(v)) & 0xffff); \
+		}							\
+		else							\
+			mips_addiu ((c), (D), mips_zero, ((guint32)(v)) & 0xffff); \
+	} while (0)
 
 /* arithmetric ops */
 #define mips_add(c,dest,src1,src2) mips_format_r(c,0,src1,src2,dest,0,32)
@@ -141,6 +202,7 @@ enum {
 #define mips_daddiu(c,dest,src1,imm) mips_format_i(c,25,src1,dest,imm)
 #define mips_dsub(c,dest,src1,src2) mips_format_r(c,0,src1,src2,dest,0,46)
 #define mips_dsubu(c,dest,src1,src2) mips_format_r(c,0,src1,src2,dest,0,47)
+#define mips_mul(c,dest,src1,src2) mips_format_r(c,28,src1,src2,dest,0,2)
 #define mips_sub(c,dest,src1,src2) mips_format_r(c,0,src1,src2,dest,0,34)
 #define mips_subu(c,dest,src1,src2) mips_format_r(c,0,src1,src2,dest,0,35)
 
@@ -226,6 +288,7 @@ enum {
 #define mips_lwl(c,dest,base,offset) mips_format_i(c,34,base,dest,offset)
 #define mips_lwr(c,dest,base,offset) mips_format_i(c,38,base,dest,offset)
 #define mips_lwu(c,dest,base,offset) mips_format_i(c,39,base,dest,offset)
+
 #define mips_sb(c,src,base,offset) mips_format_i(c,40,base,src,offset)
 #define mips_sc(c,src,base,offset) mips_format_i(c,56,base,src,offset)
 #define mips_scd(c,src,base,offset) mips_format_i(c,60,base,src,offset)
@@ -323,10 +386,10 @@ enum {
 /* fp moves, loads */
 #define mips_fmovs(c,dest,src) mips_format_r(c,17,MIPS_FMT_SINGLE,0,src,dest,6)
 #define mips_fmovd(c,dest,src) mips_format_r(c,17,MIPS_FMT_DOUBLE,0,src,dest,6)
-#define mips_wmovfc1(c,dest,src) mips_format_r(c,17,0,dest,src,0,0)
-#define mips_wmovtc1(c,dest,src) mips_format_r(c,17,4,src,dest,0,0)
-#define mips_dmovfc1(c,dest,src) mips_format_r(c,17,1,0,dest,src,0,0)
-#define mips_dmovtc1(c,dest,src) mips_format_r(c,17,1,0,src,dest,0,0)
+#define mips_mfc1(c,dest,src) mips_format_r(c,17,0,dest,src,0,0)
+#define mips_mtc1(c,dest,src) mips_format_r(c,17,4,src,dest,0,0)
+#define mips_dmfc1(c,dest,src) mips_format_r(c,17,1,0,dest,src,0)
+#define mips_dmtc1(c,dest,src) mips_format_r(c,17,1,0,src,dest,0)
 #define mips_ldc1(c,dest,base,offset) mips_ldc(c,1,dest,base,offset)
 #define mips_ldxc1(c,dest,base,idx) mips_format_r(c,19,base,idx,0,dest,1)
 #define mips_lwc1(c,dest,base,offset) mips_lwc(c,1,dest,base,offset)
