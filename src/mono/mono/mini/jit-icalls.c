@@ -457,6 +457,12 @@ mono_conv_to_r8 (int a)
 	return (double)a;
 }
 
+double
+mono_conv_to_r4 (int a)
+{
+	return (double)(float)a;
+}
+
 gint8
 mono_fconv_i1 (double a)
 {
@@ -587,6 +593,14 @@ void
 mono_fstore_r4 (double val, float *ptr)
 {
 	*ptr = (float)val;
+}
+
+/* returns the integer bitpattern that is passed in the regs or stack */
+guint32
+mono_fload_r4_arg (double val)
+{
+	float v = (float)val;
+	return *(guint32*)&v;
 }
 
 #endif

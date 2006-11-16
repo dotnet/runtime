@@ -803,7 +803,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					call->used_iregs |= 1 << (ainfo->reg + 1);
 				if (arg->type == STACK_R8) {
 					if (ainfo->size == 4) {
+#ifndef MONO_ARCH_SOFT_FLOAT
 						arg->opcode = OP_OUTARG_R4;
+#endif
 					} else {
 						call->used_iregs |= 1 << (ainfo->reg + 1);
 					}

@@ -2410,13 +2410,31 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	MonoInst *arg;
 
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual));
-	
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+	/* we need to convert the r4 value to an int value */
+	{
+		int i;
+		for (i = 0; i < sig->param_count; ++i) {
+			if (sig->params [i]->type == MONO_TYPE_R4) {
+				MonoInst *iargs [1];
+				int temp;
+				iargs [0] = args [i + sig->hasthis];
+
+				temp = mono_emit_jit_icall (cfg, bblock, mono_fload_r4_arg, iargs, ip);
+				NEW_TEMPLOAD (cfg, arg, temp);
+				args [i + sig->hasthis] = arg;
+			}
+		}
+	}
+#endif
+
 	call->inst.cil_code = ip;
 	call->args = args;
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
 	type_to_eval_stack_type (sig->ret, &call->inst);
-	
+
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
 		arg->next = NULL;
@@ -2686,7 +2704,7 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 }
 
 #define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (header->locals [(idx)]->type == MONO_TYPE_R4) {	\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
 			int temp;	\
 			NEW_LOCLOADA (cfg, (ins), (idx));	\
 			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
@@ -2694,7 +2712,7 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 		}	\
 	} while (0)
 #define STLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (header->locals [(idx)]->type == MONO_TYPE_R4) {	\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
 			int temp;	\
 			NEW_LOCLOADA (cfg, (ins), (idx));	\
 			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
@@ -2702,7 +2720,7 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 		}	\
 	} while (0)
 #define LDARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (param_types [(idx)]->type == MONO_TYPE_R4) {	\
+		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
 			int temp;	\
 			NEW_ARGLOADA (cfg, (ins), (idx));	\
 			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
@@ -3028,6 +3046,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		if (MONO_TYPE_ISSTRUCT (signature->params [i])) {
 			return FALSE;
 		}
+#ifdef MONO_ARCH_SOFT_FLOAT
+		/* this complicates things, fix later */
+		if (signature->params [i]->type == MONO_TYPE_R4)
+			return FALSE;
+#endif
 	}
 
 	/*
@@ -11627,6 +11650,7 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_FMUL, "__emul_fmul", "double double double", mono_fmul, FALSE);
 	mono_register_opcode_emulation (OP_FNEG, "__emul_fneg", "double double", mono_fneg, FALSE);
 	mono_register_opcode_emulation (CEE_CONV_R8, "__emul_conv_r8", "double int32", mono_conv_to_r8, FALSE);
+	mono_register_opcode_emulation (CEE_CONV_R4, "__emul_conv_r4", "double int32", mono_conv_to_r4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_R4, "__emul_fconv_to_r4", "double double", mono_fconv_r4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I1, "__emul_fconv_to_i1", "int8 double", mono_fconv_i1, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I2, "__emul_fconv_to_i2", "int16 double", mono_fconv_i2, FALSE);
@@ -11653,6 +11677,7 @@ mini_init (const char *filename)
 
 	register_icall (mono_fload_r4, "mono_fload_r4", "double ptr", FALSE);
 	register_icall (mono_fstore_r4, "mono_fstore_r4", "void double ptr", FALSE);
+	register_icall (mono_fload_r4_arg, "mono_fload_r4_arg", "uint32 double", FALSE);
 #endif
 
 #if SIZEOF_VOID_P == 4

@@ -71,6 +71,8 @@ double mono_lconv_to_r8 (gint64 a) MONO_INTERNAL;
 
 double mono_conv_to_r8 (gint32 a) MONO_INTERNAL;
 
+double mono_conv_to_r4 (gint32 a) MONO_INTERNAL;
+
 float mono_lconv_to_r4 (gint64 a) MONO_INTERNAL;
 
 double mono_conv_to_r8_un (guint32 a) MONO_INTERNAL;
@@ -138,6 +140,8 @@ gboolean mono_fclt_un (double a, double b) MONO_INTERNAL;
 double   mono_fload_r4 (float *ptr);
 
 void     mono_fstore_r4 (double val, float *ptr);
+
+guint32  mono_fload_r4_arg (double val);
 
 #endif /* __MONO_JIT_ICALLS_H__ */
 
