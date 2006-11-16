@@ -1,3 +1,10 @@
+
+Thu Nov 16 12:59:50 CET 2006 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: added --disable-mcs-build for use
+	with embedded systems or other cases where we don't want
+	or can't to spend time compiling the managed part of the runtime.
+
 2006-11-02  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: version bump to 1.2

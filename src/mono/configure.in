@@ -368,7 +368,7 @@ mcs_topdir='$(top_srcdir)/'$mcsdir
 mcs_topdir_from_srcdir='$(top_builddir)/'$mcsdir
 
 ## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
-AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno])
+AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_build != xno])
 
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
@@ -484,6 +484,7 @@ if test "x$platform_win32" = "xyes"; then
 fi
 
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
+AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], try_mcs_build=$enableval, enable_mcs_build=yes)
 
 AC_ARG_WITH(xen_opt,   [  --with-xen_opt=yes,no      Enable Xen-specific behaviour],[],[with_xen_opt=yes])
 if test "x$with_xen_opt" = "xyes"; then
@@ -1794,7 +1795,7 @@ if test ${TARGET} = ARM; then
 		])
 
 	AC_MSG_RESULT($fpu)
-	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu"
+	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
 	unset fpu
 fi
 
@@ -1994,7 +1995,7 @@ fi
   # any existing config.make.  This allows people to share the same source tree
   # with different build directories, one native and one cross
   #
-  if test x$cross_compiling = xno; then
+  if test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
     echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
     echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
     echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$mcsdir/build/config.make
