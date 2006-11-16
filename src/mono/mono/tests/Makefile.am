@@ -259,6 +259,7 @@ TEST_IL_SRC=			\
 	static-fields-nonconst.il	\
 	reload-at-bb-end.il	\
 	test-enum-indstoreil.il	\
+	filter-bug.il		\
 	even-odd.il
 
 TEST_CS2_SRC = interlocked-2.2.cs pinvoke-2.2.cs bug-79684.2.cs
