@@ -1,3 +1,6 @@
+2006-11-17  Wade Berrier  <wberrier@novell.com>
+
+	* configure.in: version bump to 1.2.1
 
 Thu Nov 16 12:59:50 CET 2006 Paolo Molaro <lupus@ximian.com>
 
