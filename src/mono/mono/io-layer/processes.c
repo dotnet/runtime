@@ -272,7 +272,7 @@ static void process_set_defaults (struct _WapiHandle_process *process_handle)
 }
 
 static int
-len16 (gunichar2 *str)
+len16 (const gunichar2 *str)
 {
 	int len = 0;
 	
@@ -287,13 +287,12 @@ utf16_concat (const gunichar2 *first, ...)
 {
 	va_list args;
 	int total = 0, i;
-	gunichar2 *s, *ret;
+	const gunichar2 *s;
+	gunichar2 *ret;
 
 	va_start (args, first);
 	total += len16 (first);
         for (s = va_arg (args, gunichar2 *); s != NULL; s = va_arg(args, gunichar2 *)){
-		int slen = 0;
-
 		total += len16 (s);
         }
 	va_end (args);
@@ -304,11 +303,11 @@ utf16_concat (const gunichar2 *first, ...)
 
 	ret [total] = 0;
 	i = 0;
-	for (s = first; *s != 0; *s++)
+	for (s = first; *s != 0; s++)
 		ret [i++] = *s;
 	va_start (args, first);
 	for (s = va_arg (args, gunichar2 *); s != NULL; s = va_arg (args, gunichar2 *)){
-		gunichar2 *p;
+		const gunichar2 *p;
 		
 		for (p = s; *p != 0; p++)
 			ret [i++] = *p;
@@ -319,7 +318,7 @@ utf16_concat (const gunichar2 *first, ...)
 }
 
 static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
-static const gunichar2 *utf16_space = &utf16_space_bytes; 
+static const gunichar2 *utf16_space = utf16_space_bytes; 
 
 /* Implemented as just a wrapper around CreateProcess () */
 gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
@@ -374,14 +373,15 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 		if (handler == NULL){
 			handler = g_find_program_in_path ("gnome-open");
 			if (handler == NULL){
-				handler == g_find_program_in_path ("kfmclient");
+				handler = g_find_program_in_path ("kfmclient");
 				if (handler == NULL){
 					handler_utf16 = (gunichar2 *) -1;
 					return (FALSE);
 				} else {
 					/* kfmclient needs exec argument */
 					char *old = handler;
-					handler = g_strconcat (old, " exec");
+					handler = g_strconcat (old, " exec",
+							       NULL);
 					g_free (old);
 				}
 			}
