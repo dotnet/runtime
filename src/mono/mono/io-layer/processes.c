@@ -271,13 +271,62 @@ static void process_set_defaults (struct _WapiHandle_process *process_handle)
 	_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
 }
 
+static int
+len16 (gunichar2 *str)
+{
+	int len = 0;
+	
+	while (*str++ != 0)
+		len++;
+
+	return len;
+}
+
+static gunichar2 *
+utf16_concat (const gunichar2 *first, ...)
+{
+	va_list args;
+	int total = 0, i;
+	gunichar2 *s, *ret;
+
+	va_start (args, first);
+	total += len16 (first);
+        for (s = va_arg (args, gunichar2 *); s != NULL; s = va_arg(args, gunichar2 *)){
+		int slen = 0;
+
+		total += len16 (s);
+        }
+	va_end (args);
+
+	ret = g_new (gunichar2, total + 1);
+	if (ret == NULL)
+		return NULL;
+
+	ret [total] = 0;
+	i = 0;
+	for (s = first; *s != 0; *s++)
+		ret [i++] = *s;
+	va_start (args, first);
+	for (s = va_arg (args, gunichar2 *); s != NULL; s = va_arg (args, gunichar2 *)){
+		gunichar2 *p;
+		
+		for (p = s; *p != 0; p++)
+			ret [i++] = *p;
+	}
+	va_end (args);
+	
+	return ret;
+}
+
+static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
+static const gunichar2 *utf16_space = &utf16_space_bytes; 
+
 /* Implemented as just a wrapper around CreateProcess () */
 gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 {
 	gboolean ret;
 	WapiProcessInformation process_info;
 	gunichar2 *args;
-	gchar *u8file, *u8params, *u8args;
 	
 	if (sei == NULL) {
 		/* w2k just segfaults here, but we can do better than
@@ -297,49 +346,59 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 	 * into and back out of utf8 is because there is no
 	 * g_strdup_printf () equivalent for gunichar2 :-(
 	 */
-	u8file = g_utf16_to_utf8 (sei->lpFile, -1, NULL, NULL, NULL);
-	if (u8file == NULL) {
+	args = utf16_concat (sei->lpFile, sei->lpParameters == NULL ? NULL : utf16_space, sei->lpParameters, NULL);
+	if (args == NULL){
 		SetLastError (ERROR_INVALID_DATA);
 		return (FALSE);
 	}
-	
-	if (sei->lpParameters != NULL) {
-		u8params = g_utf16_to_utf8 (sei->lpParameters, -1, NULL, NULL, NULL);
-		if (u8params == NULL) {
-			SetLastError (ERROR_INVALID_DATA);
-			g_free (u8file);
-			return (FALSE);
-		}
-	
-		u8args = g_strdup_printf ("%s %s", u8file, u8params);
-		if (u8args == NULL) {
-			SetLastError (ERROR_INVALID_DATA);
-			g_free (u8params);
-			g_free (u8file);
-			return (FALSE);
-		}
-	
-		args = g_utf8_to_utf16 (u8args, -1, NULL, NULL, NULL);
-	
-		g_free (u8file);
-		g_free (u8params);
-		g_free (u8args);
-	} else {
-		args = g_utf8_to_utf16 (u8file, -1, NULL, NULL, NULL);
-	}
-		
-	if (args == NULL) {
-		SetLastError (ERROR_INVALID_DATA);
-		return (FALSE);
-	}
-	
 	ret = CreateProcess (NULL, args, NULL, NULL, TRUE,
 			     CREATE_UNICODE_ENVIRONMENT, NULL,
 			     sei->lpDirectory, NULL, &process_info);
 	g_free (args);
 	
 	if (!ret) {
-		return (FALSE);
+		static char *handler;
+		static gunichar2 *handler_utf16;
+		
+		if (handler_utf16 == (gunichar2 *)-1)
+			return FALSE;
+
+#ifdef PLATFORM_MACOSX
+		handler = "/usr/bin/open";
+#else
+		/*
+		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
+		 * if that fails, try to use gnome-open, then kfmclient
+		 */
+		handler = g_find_program_in_path ("xdg-open");
+		if (handler == NULL){
+			handler = g_find_program_in_path ("gnome-open");
+			if (handler == NULL){
+				handler == g_find_program_in_path ("kfmclient");
+				if (handler == NULL){
+					handler_utf16 = (gunichar2 *) -1;
+					return (FALSE);
+				} else {
+					/* kfmclient needs exec argument */
+					char *old = handler;
+					handler = g_strconcat (old, " exec");
+					g_free (old);
+				}
+			}
+		}
+#endif
+		handler_utf16 = g_utf8_to_utf16 (handler, -1, NULL, NULL, NULL);
+		g_free (handler);
+		args = utf16_concat (handler_utf16, utf16_space, sei->lpFile,
+				     sei->lpParameters == NULL ? NULL : utf16_space,
+				     sei->lpParameters, NULL);
+		if (args == NULL){
+			SetLastError (ERROR_INVALID_DATA);
+			return FALSE;
+		}
+		ret = CreateProcess (NULL, args, NULL, NULL, TRUE,
+				     CREATE_UNICODE_ENVIRONMENT, NULL,
+				     sei->lpDirectory, NULL, &process_info);
 	}
 	
 	if (sei->fMask & SEE_MASK_NOCLOSEPROCESS) {
