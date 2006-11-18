@@ -745,6 +745,10 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 	g_free (ut);
 }
 
+/*
+ * FIXME: This routine does not seem to do what it seems to do
+ * the @text is never copied into the string builder
+ */
 void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 {
@@ -761,6 +765,16 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 	sb->length = len;
 }
 
+/**
+ * mono_string_builder_to_utf8:
+ * @sb: the string builder
+ *
+ * Converts to utf8 the contents of the MonoStringBuilder.
+ *
+ * Returns: a utf8 string with the contents of the StringBuilder.
+ *
+ * The return value must be released with g_free.
+ */
 gpointer
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
@@ -795,6 +809,16 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	return res;
 }
 
+/**
+ * mono_string_builder_to_utf16:
+ * @sb: the string builder
+ *
+ * Converts to utf16 the contents of the MonoStringBuilder.
+ *
+ * Returns: a utf16 string with the contents of the StringBuilder.
+ *
+ * The return value must not be freed.
+ */
 gpointer
 mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 {
@@ -900,6 +924,15 @@ mono_free_bstr (gpointer bstr)
 #endif
 }
 
+/**
+ * mono_string_to_byvalstr:
+ * @dst: Where to store the null-terminated utf8 decoded string.
+ * @src: the MonoString to copy.
+ * @size: the maximum number of bytes to copy.
+ *
+ * Copies the MonoString pointed to by @src as a utf8 string
+ * into @dst, it copies at most @size bytes into the destination.
+ */
 void
 mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 {
@@ -922,6 +955,15 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	*((char *)dst + size - 1) = 0;
 }
 
+/**
+ * mono_string_to_byvalwstr:
+ * @dst: Where to store the null-terminated utf16 decoded string.
+ * @src: the MonoString to copy.
+ * @size: the maximum number of bytes to copy.
+ *
+ * Copies the MonoString pointed to by @src as a utf16 string
+ * into @dst, it copies at most @size bytes into the destination.
+ */
 void
 mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 {

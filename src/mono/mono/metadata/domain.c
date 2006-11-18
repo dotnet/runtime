@@ -338,6 +338,13 @@ mono_jit_info_get_method (MonoJitInfo* ji)
 	return ji->method;
 }
 
+/**
+ * mono_string_equal:
+ * @s1: First string to compare
+ * @s2: Second string to compare
+ *
+ * Returns FALSE if the strings differ.
+ */
 gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
 {
@@ -352,6 +359,12 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1 * 2) == 0; 
 }
 
+/**
+ * mono_string_hash:
+ * @s: the string to hash
+ *
+ * Returns the hash for the string.
+ */
 guint
 mono_string_hash (MonoString *s)
 {

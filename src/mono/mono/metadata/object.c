@@ -3395,7 +3395,7 @@ mono_string_is_interned (MonoString *o)
 }
 
 /**
- * mono_string_interne:
+ * mono_string_intern:
  * @o: String to intern
  *
  * Interns the string passed.  
@@ -4282,3 +4282,30 @@ mono_get_addr_from_ftnptr (gpointer descr)
 	return descr;
 #endif
 }	
+
+#if 0
+/**
+ * mono_string_chars:
+ * @s: a MonoString
+ *
+ * Returns a pointer to the UCS16 characters stored in the MonoString
+ */
+gunichar2 *
+mono_string_chars(MonoString *s)
+{
+	/* This method is here only for documentation extraction, this is a macro */
+}
+
+/**
+ * mono_string_length:
+ * @s: MonoString
+ *
+ * Returns the lenght in characters of the string
+ */
+int
+mono_string_length (MonoString *s)
+{
+	/* This method is here only for documentation extraction, this is a macro */
+}
+
+#endif
