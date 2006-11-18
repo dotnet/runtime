@@ -27,17 +27,50 @@
 
 <h2>Array Methods</h2>
 
+	<p>Use the <tt>mono_array_new_*</tt> methods to create arrays
+	of a given type.
+
+	<p>For example, the following code creates an array with two
+	elements of type <tt>System.Byte</tt>, and sets the values
+	0xca and 0xfe on it:
+	
+	<pre class="code">
+
+	MonoArray *CreateByteArray (MonoDomain *domain)
+	{
+	    MonoArray *data;
+
+	    data = mono_array_new (domain, mono_get_byte_class (), 2);
+	    mono_array_set (data, guint8, 0, 0xca);
+	    mono_array_set (data, guint8, 0, 0xfe);
+
+	    return data;
+	}
+
+	</pre>
+
+<h3>Creating Arrays</h3>
+
+<h4><a name="api:mono_array_new">mono_array_new</a></h4>
+<h4><a name="api:mono_array_new_full">mono_array_new_full</a></h4>
+<h4><a name="api:mono_array_new_specific">mono_array_new_specific</a></h4>
 <h4><a name="api:mono_array_class_get">mono_array_class_get</a></h4>
 <h4><a name="api:mono_array_clone_in_domain">mono_array_clone_in_domain</a></h4>
 <h4><a name="api:mono_array_clone">mono_array_clone</a></h4>
-<h4><a name="api:mono_array_element_size">mono_array_element_size</a></h4>
 <h4><a name="api:mono_array_full_copy">mono_array_full_copy</a></h4>
-<h4><a name="api:mono_array_new_full">mono_array_new_full</a></h4>
-<h4><a name="api:mono_array_new">mono_array_new</a></h4>
-<h4><a name="api:mono_array_new_specific">mono_array_new_specific</a></h4>
 <h4><a name="api:mono_array_to_lparray">mono_array_to_lparray</a></h4>
 <h4><a name="api:mono_array_to_savearray">mono_array_to_savearray</a></h4>
 <h4><a name="api:mono_dup_array_type">mono_dup_array_type</a></h4>
+
+<h3>Using Arrays</h3>
+
+<h4><a name="api:mono_array_set">mono_array_set</a></h4>
+<h4><a name="api:mono_array_setref">mono_array_setref</a></h4>
+<h4><a name="api:mono_array_length">mono_array_length</a></h4>
+<h4><a name="api:mono_array_addr">mono_array_addr</a></h4>
+<h4><a name="api:mono_array_addr_with_size">mono_array_addr_with_size</a></h4>
+<h4><a name="api:mono_array_get">mono_array_get</a></h4>
+<h4><a name="api:mono_array_element_size">mono_array_element_size</a></h4>
 
 <h2>Fields</h2>
 
