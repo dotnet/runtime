@@ -399,6 +399,11 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 		ret = CreateProcess (NULL, args, NULL, NULL, TRUE,
 				     CREATE_UNICODE_ENVIRONMENT, NULL,
 				     sei->lpDirectory, NULL, &process_info);
+		g_free (args);
+		if (!ret){
+			SetLastError (ERROR_INVALID_DATA);
+			return FALSE;
+		}
 	}
 	
 	if (sei->fMask & SEE_MASK_NOCLOSEPROCESS) {
