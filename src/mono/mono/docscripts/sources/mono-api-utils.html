@@ -31,8 +31,16 @@
 <h4><a name="api:mono_bitset_find_first_unset">mono_bitset_find_first_unset</a></h4>
 <h4><a name="api:mono_bitset_intersection_2">mono_bitset_intersection_2</a></h4>
 
-<h3>Hashtable</h3>
+<h3>Hashtables</h3>
 
+	<p><tt>GHashTable</tt> is used when you need to store object
+	references into a hashtable, objects stored in a
+	<tt>MonoGHashTable</tt> are properly tracked by the garbage
+	collector.
+
+	<p>The <tt>MonoGHashTable</tt> data type has the same API as
+	the GLIB.
+	
 <h4><a name="api:mono_g_hash_table_destroy">mono_g_hash_table_destroy</a></h4>
 <h4><a name="api:mono_g_hash_table_foreach">mono_g_hash_table_foreach</a></h4>
 <h4><a name="api:mono_g_hash_table_foreach_remove">mono_g_hash_table_foreach_remove</a></h4>
@@ -50,6 +58,12 @@
 
 <h3>Raw buffer</h3>
 
+	<p>Raw buffers provide an abstraction to load segments of
+	files into memory.  If the operating system supports it, the
+	files are not loaded, but are mapped into the address space of
+	the process (On Unix, this is done using the <tt>mmap(2)</tt>
+	system call).
+	
 <h4><a name="api:mono_raw_buffer_load">mono_raw_buffer_load</a></h4>
 <h4><a name="api:mono_raw_buffer_update">mono_raw_buffer_update</a></h4>
 <h4><a name="api:mono_raw_buffer_free">mono_raw_buffer_free</a></h4>
@@ -74,12 +88,29 @@
 
 <h3>Memory Pools</h3>
 
-<h4><a name="api:mono_mempool_alloc0">mono_mempool_alloc0</a></h4>
-<h4><a name="api:mono_mempool_alloc">mono_mempool_alloc</a></h4>
+	<p>Memory pools are a convenient way of tracking memory
+	allocations that are used for one specific task, they are also
+	faster than using the standard memory allocation procedures,
+	as they are designed to be used only by a single thread at a
+	time. 
+
+	<p><tt>MonoMemPool</tt> objects are not thread safe, which
+	means that you should not share the objects across multiple
+	threads without providing proper locking around it (unlike
+	<tt>malloc</tt> and <tt>free</tt> which are thread safe). 
+
+	<p>When a <tt>MonoMemPool</tt> is released with
+	<tt>mono_mempool_destroy</tt> all of the of the memory
+	allocated from that memory pool with
+	<tt>mono_mempool_alloc</tt> and <tt>mono_mempool_alloc0</tt>
+	is released.
+	
+<h4><a name="api:mono_mempool_new">mono_mempool_new</a></h4>
 <h4><a name="api:mono_mempool_destroy">mono_mempool_destroy</a></h4>
+<h4><a name="api:mono_mempool_alloc">mono_mempool_alloc</a></h4>
+<h4><a name="api:mono_mempool_alloc0">mono_mempool_alloc0</a></h4>
 <h4><a name="api:mono_mempool_empty">mono_mempool_empty</a></h4>
 <h4><a name="api:mono_mempool_invalidate">mono_mempool_invalidate</a></h4>
-<h4><a name="api:mono_mempool_new">mono_mempool_new</a></h4>
 <h4><a name="api:mono_mempool_stats">mono_mempool_stats</a></h4>
 <h4><a name="api:mono_mempool_contains_addr">mono_mempool_contains_addr</a></h4> 
  

@@ -1,6 +1,33 @@
-
 <h2>Strings</h2>
 
+	<p>Strings inside the Mono runtime are represented with the
+	MonoString structure, which is:
+
+	<pre class="code">
+	
+	typedef struct {
+		MonoObject object;
+        	gint32 length;
+        	gunichar2 chars [0];
+	} MonoString;
+
+	</pre>
+
+	<p>All of the operations on strings are done on pointers to
+	MonoString objects, like this:
+
+	<pre class="code">
+	MonoString *hello = mono_string_new (mono_domain_get (), "hello, world");
+	</pre>
+
+	<p>Strings are bound to a particular application domain, which
+	is why it is necessary to pass a MonoDomain argument as the
+	first parameter to all the constructor functions. 
+
+	<p>Typically, you want to create the strings on the current
+	application domain, so a call to <tt>mono_domain_get()</tt> is
+	sufficient.
+	
 <h3>Constructors</h3>
 	
 <h4><a name="api:mono_string_new">mono_string_new</a></h4>
@@ -11,8 +38,6 @@
 
 <h3>Conversions</h3>
 
-<h4><a name="api:mono_string_to_ansibstr">mono_string_to_ansibstr</a></h4>
-<h4><a name="api:mono_string_to_bstr">mono_string_to_bstr</a></h4>
 <h4><a name="api:mono_string_to_byvalstr">mono_string_to_byvalstr</a></h4>
 <h4><a name="api:mono_string_to_byvalwstr">mono_string_to_byvalwstr</a></h4>
 <h4><a name="api:mono_string_to_utf16">mono_string_to_utf16</a></h4>
@@ -39,10 +64,23 @@
 <h4><a name="api:mono_string_builder_to_utf16">mono_string_builder_to_utf16</a></h4>
 <h4><a name="api:mono_string_builder_to_utf8">mono_string_builder_to_utf8</a></h4>
 
-<h3>From Metadata</h3>
-
 <h3>Other Encodings</h3>
 
+	<p>These routines are used when coping with strings that come
+	from Mono's environment, and might be encoded in one or more
+	of the external encodings.
+
+	<p>For example, some file systems might historically contain a
+	mix of file names with both old and new encodings, typically
+	UTF8 for new files, and the old files would be encoded in an 8
+	bit character set (ISO-8859-1 for example).
+	
+	<p>These routines try a number of encodings, those specified
+	in the <tt>MONO_ENCODINGS</tt> environment variable and return
+	unicode strings that can be used internally.
+
+	<p>See the mono(1) man page for more details.
+	
 <h4><a name="api:mono_unicode_from_external">mono_unicode_from_external</a></h4>
 <h4><a name="api:mono_unicode_to_external">mono_unicode_to_external</a></h4>
 <h4><a name="api:mono_utf8_from_external">mono_utf8_from_external</a></h4>
