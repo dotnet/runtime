@@ -102,8 +102,8 @@ EOF
 		}
 
 print OUT<<EOF;
+ <a name="api:$api"></a>
  <div class="api">
-    <a name="api:$api"></a>
     <div class="api-entry">$api</div>
 
     <div class="prototype">$proto</div>
