@@ -15,6 +15,10 @@ if ($html){
 	    $files[$filecount] = $n;
 	    while (<IN>){
 		@files_content[$filecount] .= $_;
+		if (/name="api:(.*?)"/){
+		    $_ =~ s/.*name="api:(\w+?)".*/\1/;
+		    $apis[$filecount] .= "$_";
+		}
 	    }
 	    $filecount++;
 	    close IN;
@@ -40,6 +44,48 @@ if ($html){
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
    <title>$name</title>
+   <style type="text/css">
+   h3 { 
+       font-size: 18px;
+       padding-bottom: 4pt;
+       border-bottom: 2px solid #dddddd;
+   }
+       
+   .api {
+     border: 1px solid;
+     padding: 10pt;
+     margin: 10pt;
+   } 
+
+   .api-entry { 
+       border-bottom: none;
+       font-size: 18px;
+   }
+
+   .prototype {
+     border: 1px solid;
+     background-color: #f2f2f2;
+     padding: 5pt;
+     margin-top: 5pt;
+     margin-bottom: 5pt;  
+   } 
+
+   .header {
+     border: 1px solid;
+     padding: 0 0 5pt 5pt;
+     margin: 10pt;
+     white-space: pre;
+       font-family: monospace;
+   }
+    
+   .code {
+     border: 1px solid;
+     padding: 0 0 5pt 5pt;
+     margin: 10pt;
+     white-space: pre;
+       font-family: monospace;
+   }
+   </style>
 </head>
 <body>
 EOF
@@ -47,7 +93,7 @@ EOF
 
 	for ($ai = 0; $ai < $#a; $ai++){
 	    $line = $a[$ai];
-
+	    
 	    ($api,$caption) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
 	    if ($api ne ""){
 		$proto = $prototype{$api};
@@ -56,49 +102,24 @@ EOF
 		}
 
 print OUT<<EOF;
-<blockquote>
+ <div class="api">
     <a name="api:$api"></a>
-                <table summary="" class="HeaderTable" width="100%" cellpadding="5">
-                        <tr bgcolor="#b0c4de"><td>
-			<h3 class="api">$api</h3>
-			</td></tr>
-		</table>
+    <div class="api-entry">$api</div>
 
-    <blockquote>
-        <table summary="" class="SignatureTable" bgcolor="#c0c0c0" cellspacing="0" width="100%">
-                <tr><td>
-                        <table summary="" class="InnerSignatureTalbe" cellpadding="10" cellspacing="0" width="100%">
-                        <tr bgcolor="#f2f2f2"><td>
-			<h4>$proto</h4>
-                        </td></tr>
-                        </table>
-	        </td></tr>
-	</table>
-    </blockquote>
+    <div class="prototype">$proto</div>
 <p>
 EOF
-		    if ($arguments{$api} ne ""){
-                        print OUT "<h4>Parameters</h4>";
-			print OUT "<blockquote><dl>";
-
-		        print OUT "$arguments{$api}\n";
-			print OUT "</dl></blockquote>";
-		    }
-		    if ($returns{$api} ne ""){
-		        print OUT "<h4>Returns</h4>";
-			print OUT "<blockquote>";
-		        print OUT "$returns{$api}\n";
-			print OUT "</blockquote>";
-                    }
-		    if ($bodies{$api} ne ""){
-			print OUT "<h4>Remarks</h4>";
-			print OUT "<blockquote>";
-		        print OUT "$bodies{$api}\n";
-			print OUT "</blockquote>";
-		    }
+		    &opt_print ("Parameters", $arguments{$api});
+		    &opt_print ("Remarks", $bodies{$api});
+		    &opt_print ("Returns", $returns{$api});
 		    print OUT "\n";
-                    print OUT "</blockquote>";
+                    print OUT "</div>";
 	    } else {
+		if ($line =~ /@API_IDX@/){
+		    $apis_toc = &create_toc ($apis[$f]);
+		    $line =~ s/\@API_IDX\@/$apis_toc/;
+		}
+
 		print OUT "$line\n";
 	    }
 	}
@@ -107,7 +128,18 @@ EOF
 </html>
 EOF
 	close OUT;
-	system ("mono convert.exe $dir/html/$name $dir/deploy/$name");
+	system ("mono convert.exe $dir/html/$name $dir/html/x-$name");
+
+	# clean up the mess that AgilityPack does, it CDATAs our CSS
+	open HACK, "$dir/html/x-$name" || die "Could not open $dir/html/x-$name";
+	open HACKOUT, ">$dir/deploy/$name" || die "Could not open output";
+
+	while (<HACK>){
+	    s/^\/\/<!\[CDATA\[//;
+	    s/^\/\/\]\]>\/\///;
+	    print HACKOUT $_;
+	}
+	#system ("cp.exe $dir/html/$name $dir/deploy/$name");
     }
 }
 
@@ -131,6 +163,7 @@ sub process_doc {
 		    $returns =~ s/[@#](\w+)/<i>\1<\/i>/g;
 
 		    $args =~ s/@(\w+)/<i>\1<\/i>/g;
+		    $body =~ s/\n/ /;
 		    $bodies{$func} = $body;
 		    $arguments{$func} = $args;
 		    $returns{$func} = $returns;
@@ -140,6 +173,10 @@ sub process_doc {
 			last if (/\{/);
 		    }
 		    $proto =~ s/{//;
+		    # clean it up a little, remove newlines, empty space at end
+		    $proto =~ s/ +$//;
+		    # Turn "Type * xxx" into "Type* xxx"
+		    $proto =~ s/^(\w+)\W+\*/\1\*/;
 		    $prototype{$func} = $proto;
 		    return;
 		}
@@ -156,8 +193,8 @@ sub process_doc {
 			$inbody = 1;
 		    }
 		} elsif ($inbody == 1) {
-		    if (/Returns:/){
-			s/Returns://;
+		    if (/Returns?:/){
+			s/Returns?://;
 			$returns = "\t$_\n";
 			$inbody = 2;
 		    } else {
@@ -168,4 +205,78 @@ sub process_doc {
 		}
 		   
 	}
+}
+
+sub create_toc {
+    my ($apis_listed) = @_;
+    my $type_size = 0;
+    my $name_size = 0;
+    my $ret, $xname, $args, $line;
+    $apis_toc = "";
+
+
+    # Try to align things, so compute type size, method size, and arguments
+    foreach $line (split /\n/, $apis_listed){
+	$p = $prototype{$line};
+	($ret, $xname, $args) = $p =~ /(.*)\n(\w+)[ \t](.*)/;
+	$tl = length ($ret);
+	$pl = length ($xname);
+
+	$type_size = $tl if ($tl > $type_size);
+	$name_size = $pl if ($pl > $name_size);
+    }
+
+    $type_size++;
+    $name_size++;
+
+    foreach $line (split /\n/, $apis_listed){
+	chop;
+	$p = $prototype{$line};
+	($ret, $xname, $args) = $p =~ /(.*)\n(\w+)[ \t](.*)/;
+	
+	$rspace = " " x ($type_size - length ($ret));
+	$nspace = " " x ($name_size - length ($xname));
+	$args = &format ($args, length ($ret . $rspace . $xname . $nspace), 60);
+	$apis_toc .= "$ret$rspace<a href=\"\#api:$line\">$xname</a>$nspace$args\n";
+    }
+    return $apis_toc;
+}
+
+#
+# Formats the rest of the arguments in a way that will fit in N columns
+#
+sub format {
+    my ($args, $size, $limit) = @_;
+    my $sret = "";
+
+#    return $args if ((length (args) + size) < $limit);
+    
+    $remain = $limit - $size;
+    @sa = split /,/, $args;
+    $linelen = $size;
+    foreach $arg (@sa){
+	if ($sret eq ""){
+	    $sret = $arg . ", ";
+	    $linelen += length ($sret);
+	} else {
+	    if ($linelen + length ($arg) < $limit){
+		$sret .= "FITS" . $arg . ", ";
+	    } else {
+		$newline = " " x ($size) . $arg . ", ";
+		$linelen = length ($newline);
+		$sret .= "\n" . $newline;
+	    }
+	}
+    }
+    $sret =~ s/, $/;/;
+    return $sret;
+}
+
+sub opt_print {
+    my ($caption, $opttext) = @_;
+
+    if ($opttext ne "" && (!($opttext =~ /^[ \t]+$/))){
+	print OUT "<b>$caption</b>\n";
+	print OUT "<blockquote>$opttext</blockquote>\n";
+    }
 }

@@ -1,5 +1,11 @@
-<h1>GC Hnadles</h1>
+<h1>GC Handles</h1>
 
+<h3>Synopsys</h3>
+
+	<div class="header">
+@API_IDX@
+	</div>
+	
 	<p>GC handles are wrappers that are used to keep references to
 	managed objects in the unmanaged space and preventing the
 	object from being disposed.
@@ -11,10 +17,10 @@
 
 	<ul>
 		<li>Handles to objects (use <tt><a
-		href="api:mono_gchandle_new">mono_gchandle_new</a></tt>). 
+		href="#api:mono_gchandle_new">mono_gchandle_new</a></tt>). 
 
 		<li>Weak handles to objects (use <tt><a
-		href="api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></tt>).
+		href="#api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></tt>).
 		Weak handles can have the objects reclaimed by the
 		garbage collector. 
 		
@@ -25,9 +31,9 @@
 	<tt>mono_gchandle_get_target</tt>.
 
 	<p>For example, consider the following C code:
-<pre>
+<div class="code">
 static MonoObject* o = NULL;
-</pre>
+</div>
 
 	<p>The object in `o' will *NOT* be scanned.
 
@@ -35,23 +41,23 @@ static MonoObject* o = NULL;
 	it from being collected, you need to acquire a GC handle for
 	it.
 
-<pre>
+<div class="code">
         guint32 handle = mono_gchandle_new (my_object, TRUE);
-</pre>
+</div>
 
 	<p>TRUE means the object will be pinned, so it won't move in
 	memory when we'll use a moving GC. You can access the
 	MonoObject* referenced by a handle with:
 
-<pre>
+<div class="code">
         MonoObject* obj = mono_gchandle_get_target (handle);
-</pre>
+</div>
 
 	<p>When you don't need the handle anymore you need to call:
 
-<pre>
+<div class="code">
         mono_gchandle_free (handle);
-</pre>
+</div>
 
 	<p>Note that if you assign a new object to the C var, you need
 	to get a new handle, it's not enough to store a new object in
@@ -59,7 +65,7 @@ static MonoObject* o = NULL;
 
 	<p>So code that looked like this:
 
-<pre>
+<div class="code">
         static MonoObject* o = NULL;
         ...
         o = mono_object_new (...);
@@ -67,11 +73,11 @@ static MonoObject* o = NULL;
         ...
         /* when done to allow the GC to collect o */
         o = NULL;
-</pre>
+</div>
 
 	<p>should now be changed to:
 
-<pre>
+<div class="code">
         static guint32 o_handle;
         ...
         MonoObject *o = mono_object_new (...);
@@ -80,7 +86,7 @@ static MonoObject* o = NULL;
         ...
         /* when done to allow the GC to collect o */
         mono_gchandle_free (o_handle);
-</pre>
+</div>
 		
 <h4><a name="api:mono_gchandle_new">mono_gchandle_new</a></h4>
 <h4><a name="api:mono_gchandle_new_weakref">mono_gchandle_new_weakref</a></h4>

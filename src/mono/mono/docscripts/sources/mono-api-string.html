@@ -1,24 +1,26 @@
 <h2>Strings</h2>
 
-	<p>Strings inside the Mono runtime are represented with the
-	MonoString structure, which is:
+	<p>Strings representation inside the Mono runtime.
 
-	<pre class="code">
-	
-	typedef struct {
-		MonoObject object;
-        	gint32 length;
-        	gunichar2 chars [0];
-	} MonoString;
+<h3>Synopsis</h3>
 
-	</pre>
+	<div class="header">
+#include &lt;metadata/object.h&gt;
+
+typedef struct {
+	MonoObject object;
+	gint32 length;
+	gunichar2 chars [0];
+} MonoString;
+
+	</div>
 
 	<p>All of the operations on strings are done on pointers to
 	MonoString objects, like this:
 
-	<pre class="code">
+	<div class="code">
 	MonoString *hello = mono_string_new (mono_domain_get (), "hello, world");
-	</pre>
+	</div>
 
 	<p>Strings are bound to a particular application domain, which
 	is why it is necessary to pass a MonoDomain argument as the
