@@ -345,6 +345,7 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
  * @r: second assembly.
  *
  * Compares two MonoAssemblyNames and returns whether they are equal.
+ *
  * This compares the names, the cultures, the release version and their
  * public tokens.
  *
@@ -425,8 +426,10 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
  * @root_dir: The pathname of the root directory where we will locate assemblies
  *
  * This routine sets the internal default root directory for looking up
- * assemblies.  This is used by Windows installations to compute dynamically
- * the place where the Mono assemblies are located.
+ * assemblies.
+ *
+ * This is used by Windows installations to compute dynamically the
+ * place where the Mono assemblies are located.
  *
  */
 void
@@ -441,8 +444,10 @@ mono_assembly_setrootdir (const char *root_dir)
 
 /**
  * mono_assembly_getrootdir:
+ * 
+ * Obtains the root directory used for looking up assemblies.
  *
- * Returns: The internal root directory used for looking up assemblies
+ * Returns: a string with the directory, this string should not be freed.
  */
 G_CONST_RETURN gchar *
 mono_assembly_getrootdir (void)
@@ -456,10 +461,11 @@ mono_assembly_getrootdir (void)
  * @config_dir: the base directory for configuration files
  *
  * This routine is used internally and by developers embedding
- * the runtime into their own applications.  There are a number
- * of cases to consider: Mono as a system-installed package that
- * is available on the location preconfigured or Mono in a relocated
- * location.
+ * the runtime into their own applications.
+ *
+ * There are a number of cases to consider: Mono as a system-installed
+ * package that is available on the location preconfigured or Mono in
+ * a relocated location.
  *
  * If you are using a system-installed Mono, you can pass NULL
  * to both parameters.  If you are not, you should compute both
@@ -696,11 +702,15 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	return TRUE;
 }
 
-/*
+/**
  * mono_stringify_assembly_name:
+ * @aname: the assembly name.
  *
- *   Convert @aname into its string format. The returned string is dynamically
+ * Convert @aname into its string format. The returned string is dynamically
  * allocated and should be freed by the caller.
+ *
+ * Returns: a newly allocated string with a string representation of
+ * the assembly name.
  */
 char*
 mono_stringify_assembly_name (MonoAssemblyName *aname)
@@ -1513,12 +1523,12 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 }
 
 /**
-* mono_assembly_name_free:
-* @aname: assembly name to free
-* 
-* Frees the provided assembly name object.
-* (it does not frees the object itself, only the name members).
-*/
+ * mono_assembly_name_free:
+ * @aname: assembly name to free
+ * 
+ * Frees the provided assembly name object.
+ * (it does not frees the object itself, only the name members).
+ */
 void
 mono_assembly_name_free (MonoAssemblyName *aname)
 {
@@ -1753,15 +1763,15 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 }
 
 /**
-* mono_assembly_name_parse:
-* @name: name to parse
-* @aname: the destination assembly name
-* 
-* Parses an assembly qualified type name and assigns the name,
-* version, culture and token to the provided assembly name object.
-*
-* Returns: true if the name could be parsed.
-*/
+ * mono_assembly_name_parse:
+ * @name: name to parse
+ * @aname: the destination assembly name
+ * 
+ * Parses an assembly qualified type name and assigns the name,
+ * version, culture and token to the provided assembly name object.
+ *
+ * Returns: true if the name could be parsed.
+ */
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 {

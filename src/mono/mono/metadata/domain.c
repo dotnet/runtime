@@ -1123,6 +1123,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 /**
  * mono_domain_get_id:
+ * @domainid: the ID
  *
  * Returns: the a domain for a specific domain id.
  */

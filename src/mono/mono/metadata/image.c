@@ -63,6 +63,17 @@ mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
 	return INVALID_ADDRESS;
 }
 
+/**
+ * mono_images_rva_map:
+ * @image: a MonoImage
+ * @addr: relative virtual address (RVA)
+ *
+ * This is a low-level routine used by the runtime to map relative
+ * virtual address (RVA) into their location in memory. 
+ *
+ * Returns: the address in memory for the given RVA, or NULL if the
+ * RVA is not valid for this image. 
+ */
 char *
 mono_image_rva_map (MonoImage *image, guint32 addr)
 {
@@ -757,6 +768,14 @@ mono_image_loaded_full (const char *name, gboolean refonly)
 	return res;
 }
 
+/**
+ * mono_image_loaded:
+ * @name: name of the image to load
+ *
+ * This routine ensures that the given image is loaded.
+ *
+ * Returns: the loaded MonoImage, or NULL on failure.
+ */
 MonoImage *
 mono_image_loaded (const char *name)
 {
@@ -1411,6 +1430,17 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 	return res;
 }
 
+/**
+ * mono_image_get_strong_name:
+ * @image: a MonoImage
+ * @size: a guint32 pointer, or NULL.
+ *
+ * If the image has a strong name, and @size is not NULL, the value
+ * pointed to by size will have the size of the strong name.
+ *
+ * Returns: NULL if the image does not have a strong name, or a
+ * pointer to the public key.
+ */
 const char*
 mono_image_get_strong_name (MonoImage *image, guint32 *size)
 {
@@ -1428,6 +1458,17 @@ mono_image_get_strong_name (MonoImage *image, guint32 *size)
 	return data;
 }
 
+/**
+ * mono_image_strong_name_position:
+ * @image: a MonoImage
+ * @size: a guint32 pointer, or NULL.
+ *
+ * If the image has a strong name, and @size is not NULL, the value
+ * pointed to by size will have the size of the strong name.
+ *
+ * Returns: the position within the image file where the strong name
+ * is stored.
+ */
 guint32
 mono_image_strong_name_position (MonoImage *image, guint32 *size)
 {
@@ -1454,6 +1495,19 @@ mono_image_strong_name_position (MonoImage *image, guint32 *size)
 	return 0;
 }
 
+/**
+ * mono_image_get_public_key:
+ * @image: a MonoImage
+ * @size: a guint32 pointer, or NULL.
+ *
+ * This is used to obtain the public key in the @image.
+ * 
+ * If the image has a public key, and @size is not NULL, the value
+ * pointed to by size will have the size of the public key.
+ * 
+ * Returns: NULL if the image does not have a public key, or a pointer
+ * to the public key.
+ */
 const char*
 mono_image_get_public_key (MonoImage *image, guint32 *size)
 {
@@ -1471,12 +1525,26 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 	return pubkey;
 }
 
+/**
+ * mono_image_get_name:
+ * @name: a MonoImage
+ *
+ * Returns: the name of the assembly.
+ */
 const char*
 mono_image_get_name (MonoImage *image)
 {
 	return image->assembly_name;
 }
 
+/**
+ * mono_image_get_filename:
+ * @image: a MonoImage
+ *
+ * Used to get the filename that hold the actual MonoImage
+ *
+ * Returns: the filename.
+ */
 const char*
 mono_image_get_filename (MonoImage *image)
 {
@@ -1511,18 +1579,45 @@ mono_table_info_get_rows (const MonoTableInfo *table)
 	return table->rows;
 }
 
+/**
+ * mono_image_get_assembly:
+ * @image: the MonoImage.
+ *
+ * Use this routine to get the assembly that owns this image.
+ *
+ * Returns: the assembly that holds this image.
+ */
 MonoAssembly* 
 mono_image_get_assembly (MonoImage *image)
 {
 	return image->assembly;
 }
 
+/**
+ * mono_image_is_dynamic:
+ * @image: the MonoImage
+ *
+ * Determines if the given image was created dynamically through the
+ * System.Reflection.Emit API
+ *
+ * Returns: TRUE if the image was created dynamically, FALSE if not.
+ */
 gboolean
 mono_image_is_dynamic (MonoImage *image)
 {
 	return image->dynamic;
 }
 
+/**
+ * mono_image_has_authenticode_entry:
+ * @image: the MonoImage
+ *
+ * Use this routine to determine if the image has a Authenticode
+ * Certificate Table.
+ *
+ * Returns: TRUE if the image contains an authenticode entry in the PE
+ * directory.
+ */
 gboolean
 mono_image_has_authenticode_entry (MonoImage *image)
 {
