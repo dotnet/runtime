@@ -1024,20 +1024,6 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	/* To prevent infinite loops when the stack walk causes a crash */
 	handling_sigsegv = TRUE;
 
-	/*
-	 * A SIGSEGV indicates something went very wrong so we can no longer depend
-	 * on anything working. So try to print out lots of diagnostics, starting 
-	 * with ones which have a greater chance of working.
-	 */
-	fprintf (stderr,
-			 "\n"
-			 "=================================================================\n"
-			 "Got a %s while executing native code. This usually indicates\n"
-			 "a fatal error in the mono runtime or one of the native libraries \n"
-			 "used by your application.\n"
-			 "=================================================================\n"
-			 "\n", signal_str);
-
 	fprintf (stderr, "Stacktrace:\n\n");
 
 	mono_jit_walk_stack (print_stack_frame, TRUE, stderr);
@@ -1077,6 +1063,20 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		}
 	}
 #endif
+	/*
+	 * A SIGSEGV indicates something went very wrong so we can no longer depend
+	 * on anything working. So try to print out lots of diagnostics, starting 
+	 * with ones which have a greater chance of working.
+	 */
+	fprintf (stderr,
+			 "\n"
+			 "=================================================================\n"
+			 "Got a %s while executing native code. This usually indicates\n"
+			 "a fatal error in the mono runtime or one of the native libraries \n"
+			 "used by your application.\n"
+			 "=================================================================\n"
+			 "\n", signal_str);
+
  }
 #endif
 
