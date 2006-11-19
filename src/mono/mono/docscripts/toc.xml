@@ -27,6 +27,24 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
+	    <param name="Name" value="Objects"/>
+	    <param name="Local" value="deploy/mono-api-object.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
+	    <param name="Name" value="Strings"/>
+	    <param name="Local" value="deploy/mono-api-string.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
+	    <param name="Name" value="Methods"/>
+	    <param name="Local" value="deploy/mono-api-methods.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
 	    <param name="Name" value="Classes"/>
 	    <param name="Local" value="deploy/mono-api-class.html"/>
 	  </object>
@@ -35,12 +53,6 @@
 	  <object type="text/sitemap">
 	    <param name="Name" value="Code Generation"/>
 	    <param name="Local" value="deploy/mono-api-codegen.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Debugging API"/>
-	    <param name="Local" value="deploy/mono-api-debug.html"/>
 	  </object>
 	</li>
 	<li>
@@ -87,18 +99,6 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="Internals"/>
-	    <param name="Local" value="deploy/mono-api-internal.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Interpreter"/>
-	    <param name="Local" value="deploy/mono-api-interpreter.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
 	    <param name="Name" value="Just in Time Compiler"/>
 	    <param name="Local" value="deploy/mono-api-jit.html"/>
 	  </object>
@@ -117,18 +117,6 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="Methods"/>
-	    <param name="Local" value="deploy/mono-api-methods.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Objects"/>
-	    <param name="Local" value="deploy/mono-api-object.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
 	    <param name="Name" value="Profiler"/>
 	    <param name="Local" value="deploy/mono-api-profiler.html"/>
 	  </object>
@@ -137,12 +125,6 @@
 	  <object type="text/sitemap">
 	    <param name="Name" value="Reflection"/>
 	    <param name="Local" value="deploy/mono-api-reflection.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Strings"/>
-	    <param name="Local" value="deploy/mono-api-string.html"/>
 	  </object>
 	</li>
 	<li>
@@ -177,8 +159,20 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="Unsorted"/>
-	    <param name="Local" value="deploy/mono-api-unsorted.html"/>
+	    <param name="Name" value="Security API calls"/>
+	    <param name="Local" value="deploy/mono-api-security.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
+	    <param name="Name" value="Portable Windows Layer"/>
+	    <param name="Local" value="deploy/mono-api-wapi.html"/>
+	  </object>
+	</li>
+	<li>
+	  <object type="text/sitemap">
+	    <param name="Name" value="Debugging API"/>
+	    <param name="Local" value="deploy/mono-api-debug.html"/>
 	  </object>
 	</li>
 	<li>
@@ -189,20 +183,8 @@
 	</li>
 	<li>
 	  <object type="text/sitemap">
-	    <param name="Name" value="VM calls"/>
-	    <param name="Local" value="deploy/mono-api-vm.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Security API calls"/>
-	    <param name="Local" value="deploy/mono-api-security.html"/>
-	  </object>
-	</li>
-	<li>
-	  <object type="text/sitemap">
-	    <param name="Name" value="Portable Windows Layer"/>
-	    <param name="Local" value="deploy/mono-api-wapi.html"/>
+	    <param name="Name" value="Unsorted"/>
+	    <param name="Local" value="deploy/mono-api-unsorted.html"/>
 	  </object>
 	</li>
       </ul>

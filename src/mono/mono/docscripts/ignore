@@ -319,6 +319,8 @@ mono_debug_init_method
 mono_image_init
 mono_images_init
 mono_burg_init
+mono_burg_kids
+mono_burg_label
 mono_interp_cleanup
 mono_marshal_init
 mono_loader_init
