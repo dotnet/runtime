@@ -101,6 +101,28 @@ reg: CEE_SUB_OVF_UN (reg, reg) {
 	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
 }
 
+reg: CEE_DIV (reg, OP_ICONST) {
+	int p2 = mono_is_power_of_two (state->right->tree->inst_c0);
+	int r = mono_regstate_next_int (s->rs);
+	if (p2 <= 0) {
+		MONO_EMIT_NEW_ICONST (s, r, state->right->tree->inst_c0);
+		MONO_EMIT_BIALU (s, tree, CEE_DIV, state->reg1, state->left->reg1, r);
+	} else if (p2 == 1) {
+		int r2 = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_UN_IMM, r, state->left->reg1, 31);
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, r2, r, state->left->reg1);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, state->reg1, r2, 1);
+	} else {
+		int r2 = mono_regstate_next_int (s->rs);
+		int r3 = mono_regstate_next_int (s->rs);
+		int r4 = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, r2, state->left->reg1, 31);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_UN_IMM, r3, r2, (32 - p2));
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, r4, r3, state->left->reg1);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, state->reg1, r4, p2);
+	}
+}
+
 cflags: OP_COMPARE (reg, reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->sreg2 = state->right->reg1;
