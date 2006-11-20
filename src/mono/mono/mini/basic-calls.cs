@@ -265,6 +265,54 @@ class Tests {
 		return 0;
 	}
 
+	struct struct1 {
+		public int	a;
+		public int	b;
+	};
+
+	static int check_struct1(struct1 x) {
+		if (x.a != 1)
+			return 1;
+		if (x.b != 2)
+			return 2;
+		return 0;
+	}
+
+	static int pass_struct1(int a, int b, struct1 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		return check_struct1(x);
+	}
+
+	static int pass_struct1(int a, struct1 x) {
+		if (a != 3)
+			return 3;
+		return check_struct1(x);
+	}
+
+	static int pass_struct1(struct1 x) {
+		return check_struct1(x);
+	}
+
+	static int test_0_struct1_args () {
+		int r;
+		struct1 x;
+
+		x.a = 1;
+		x.b = 2;
+		if ((r = check_struct1(x)) != 0)
+			return r;
+		if ((r = pass_struct1(x)) != 0)
+			return r + 10;
+		if ((r = pass_struct1(3, x)) != 0)
+			return r + 20;
+		if ((r = pass_struct1(3, 4, x)) != 0)
+			return r + 30;
+		return 0;
+	}
+
 	static void doit (double value, out long m) {
 		m = (long) value;
 	}
