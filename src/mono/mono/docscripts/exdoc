@@ -96,6 +96,10 @@ EOF
 	    
 	    ($api,$caption) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
 	    if ($api ne ""){
+		if ($api_shown == 1){
+		    print OUT "</div>";
+		}
+		$api_shown = 1;
 		$proto = $prototype{$api};
 		if ($proto eq ""){
 		    $proto = "Prototype: $api";
@@ -109,15 +113,18 @@ print OUT<<EOF;
     <div class="prototype">$proto</div>
 <p>
 EOF
-		    &opt_print ("Parameters", $arguments{$api});
-		    &opt_print ("Remarks", $bodies{$api});
-		    &opt_print ("Returns", $returns{$api});
+		    &opt_print ("Parameters", $arguments{$api}, 1);
+		    &opt_print ("Returns", $returns{$api}, 1);
+		    &opt_print ("Remarks", $bodies{$api}, 0);
 		    print OUT "\n";
-                    print OUT "</div>";
 	    } else {
 		if ($line =~ /@API_IDX@/){
 		    $apis_toc = &create_toc ($apis[$f]);
 		    $line =~ s/\@API_IDX\@/$apis_toc/;
+		}
+		if ($line =~ /^<h/){
+		    print OUT "</div>";
+		    $api_shown = 0;
 		}
 
 		print OUT "$line\n";
@@ -273,10 +280,14 @@ sub format {
 }
 
 sub opt_print {
-    my ($caption, $opttext) = @_;
+    my ($caption, $opttext, $quote) = @_;
 
     if ($opttext ne "" && (!($opttext =~ /^[ \t]+$/))){
 	print OUT "<b>$caption</b>\n";
-	print OUT "<blockquote>$opttext</blockquote>\n";
+	if ($quote == 1){
+	    print OUT "<blockquote>$opttext</blockquote>\n";
+	} else {
+	    print OUT "<p>$opttext\n";
+	}
     }
 }
