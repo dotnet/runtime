@@ -259,7 +259,13 @@ typedef struct {
 #define ARM_BL_COND(p, cond, offset) ARM_EMIT(p, ARM_DEF_BR(offset, 1, cond))
 #define ARM_BL(p, offs) ARM_BL_COND((p), ARMCOND_AL, (offs))
 
+#define ARM_DEF_BX(reg,sub,cond) (0x12fff << 8 | (reg) | ((sub) << 4) | ((cond) << ARMCOND_SHIFT))
 
+#define ARM_BX_COND(p, cond, reg) ARM_EMIT(p, ARM_DEF_BX(reg, 1, cond))
+#define ARM_BX(p, reg) ARM_BX_COND((p), ARMCOND_AL, (reg))
+
+#define ARM_BLX_REG_COND(p, cond, reg) ARM_EMIT(p, ARM_DEF_BX(reg, 3, cond))
+#define ARM_BLX_REG(p, reg) ARM_BLX_REG_COND((p), ARMCOND_AL, (reg))
 
 /* Data Processing Instructions - there are 3 types. */
 
