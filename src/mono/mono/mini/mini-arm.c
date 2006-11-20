@@ -23,6 +23,9 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 #endif
 
+static int v5_supported = 0;
+static int thumb_supported = 0;
+
 static int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 
 /*
@@ -131,6 +134,21 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 	return code;
 }
 
+static guint8*
+emit_call_reg (guint8 *code, int reg)
+{
+	if (v5_supported) {
+		ARM_BLX_REG (code, reg);
+	} else {
+		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+		if (thumb_supported)
+			ARM_BX (code, reg);
+		else
+			ARM_MOV_REG_REG (code, ARMREG_PC, reg);
+	}
+	return code;
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature
@@ -205,6 +223,31 @@ guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
+	char buf [512];
+	char *line;
+	FILE *file = fopen ("/proc/cpuinfo", "r");
+	if (file) {
+		while ((line = fgets (buf, 512, file))) {
+			if (strncmp (line, "Processor", 9) == 0) {
+				char *ver = strstr (line, "(v");
+				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7')) {
+					v5_supported = TRUE;
+				}
+				continue;
+			}
+			if (strncmp (line, "Features", 8) == 0) {
+				char *th = strstr (line, "thumb");
+				if (th) {
+					thumb_supported = TRUE;
+					if (v5_supported)
+						break;
+				}
+				continue;
+			}
+		}
+		fclose (file);
+		/*printf ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
+	}
 
 	/* no arm-specific optimizations yet */
 	*exclude_mask = 0;
@@ -888,8 +931,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
 	ARM_MOV_REG_IMM8 (code, ARMREG_R1, 0); /* NULL ebp for now */
 	code = mono_arm_emit_load_imm (code, ARMREG_R2, (guint32)func);
-	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R2);
+	code = emit_call_reg (code, ARMREG_R2);
 	return code;
 }
 
@@ -978,8 +1020,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
 	code = mono_arm_emit_load_imm (code, ARMREG_IP, (guint32)func);
-	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	code = emit_call_reg (code, ARMREG_IP);
 
 	switch (save_mode) {
 	case SAVE_TWO:
@@ -1550,7 +1591,10 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				/* found a free slot instead: emit thunk */
 				code = (guchar*)thunks;
 				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+				if (thumb_supported)
+					ARM_BX (code, ARMREG_IP);
+				else
+					ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 				thunks [2] = (guint32)pdata->target;
 				mono_arch_flush_icache ((guchar*)thunks, 12);
 
@@ -1596,18 +1640,37 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	guint32 ins = *(guint32*)code;
+	guint32 *code32 = (void*)code;
+	guint32 ins = *code32;
 	guint32 prim = (ins >> 25) & 7;
+	guint32 tval = GPOINTER_TO_UINT (target);
 
 	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 5) { /* 101b */
 		/* the diff starts 8 bytes from the branch opcode */
 		gint diff = target - code - 8;
+		gint tbits;
+		gint tmask = 0xffffffff;
+		if (tval & 1) { /* entering thumb mode */
+			diff = target - 1 - code - 8;
+			g_assert (thumb_supported);
+			tbits = 0xf << 28; /* bl->blx bit pattern */
+			g_assert ((ins & (1 << 24))); /* it must be a bl, not b instruction */
+			/* this low bit of the displacement is moved to bit 24 in the instruction encoding */
+			if (diff & 2) {
+				tbits |= 1 << 24;
+			}
+			tmask = ~(1 << 24); /* clear the link bit */
+			/*g_print ("blx to thumb: target: %p, code: %p, diff: %d, mask: %x\n", target, code, diff, tmask);*/
+		} else {
+			tbits = 0;
+		}
 		if (diff >= 0) {
 			if (diff <= 33554431) {
 				diff >>= 2;
 				ins = (ins & 0xff000000) | diff;
-				*(guint32*)code = ins;
+				ins &= tmask;
+				*code32 = ins | tbits;
 				return;
 			}
 		} else {
@@ -1615,7 +1678,8 @@ arm_patch (guchar *code, const guchar *target)
 			if (diff >= -33554432) {
 				diff >>= 2;
 				ins = (ins & 0xff000000) | (diff & ~0xff000000);
-				*(guint32*)code = ins;
+				ins &= tmask;
+				*code32 = ins | tbits;
 				return;
 			}
 		}
@@ -1624,24 +1688,47 @@ arm_patch (guchar *code, const guchar *target)
 		return;
 	}
 
-
+	/*
+	 * The alternative call sequences looks like this:
+	 *
+	 * 	ldr ip, [pc] // loads the address constant
+	 * 	b 1f         // jumps around the constant
+	 * 	address constant embedded in the code
+	 *   1f:
+	 * 	mov lr, pc
+	 * 	mov pc, ip
+	 *
+	 * There are two cases for patching:
+	 * a) at the end of method emission: in this case code points to the start
+	 *    of the call sequence
+	 * b) during runtime patching of the call site: in this case code points
+	 *    to the mov pc, ip instruction
+	 *
+	 * We have to handle also the thunk jump code sequence:
+	 *
+	 * 	ldr ip, [pc]
+	 * 	mov pc, ip
+	 * 	address constant // execution never reaches here
+	 */
 	if ((ins & 0x0ffffff0) == 0x12fff10) {
 		/* branch and exchange: the address is constructed in a reg */
 		g_assert_not_reached ();
 	} else {
-		guint32 ccode [3];
+		guint32 ccode [4];
 		guint32 *tmp = ccode;
-		ARM_LDR_IMM (tmp, ARMREG_IP, ARMREG_PC, 0);
-		ARM_MOV_REG_REG (tmp, ARMREG_LR, ARMREG_PC);
-		ARM_MOV_REG_REG (tmp, ARMREG_PC, ARMREG_IP);
+		guint8 *emit = (guint8*)tmp;
+		ARM_LDR_IMM (emit, ARMREG_IP, ARMREG_PC, 0);
+		ARM_MOV_REG_REG (emit, ARMREG_LR, ARMREG_PC);
+		ARM_MOV_REG_REG (emit, ARMREG_PC, ARMREG_IP);
+		ARM_BX (emit, ARMREG_IP);
 		if (ins == ccode [2]) {
-			tmp = (guint32*)code;
-			tmp [-1] = (guint32)target;
+			g_assert_not_reached (); // should be -2 ...
+			code32 [-1] = (guint32)target;
 			return;
 		}
 		if (ins == ccode [0]) {
-			tmp = (guint32*)code;
-			tmp [2] = (guint32)target;
+			/* handles both thunk jump code and the far call sequence */
+			code32 [2] = (guint32)target;
 			return;
 		}
 		g_assert_not_reached ();
@@ -2161,8 +2248,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_B (code, 0);
 				*(gpointer*)code = NULL;
 				code += 4;
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+				code = emit_call_reg (code, ARMREG_IP);
 			} else {
 				ARM_BL (code, 0);
 			}
@@ -2172,8 +2258,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
-			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-			ARM_MOV_REG_REG (code, ARMREG_PC, ins->sreg1);
+			code = emit_call_reg (code, ins->sreg1);
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
@@ -2229,8 +2314,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_B (code, 0);
 				*(gpointer*)code = NULL;
 				code += 4;
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+				code = emit_call_reg (code, ARMREG_IP);
 			} else {
 				ARM_BL (code, 0);
 			}
@@ -2246,8 +2330,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_B (code, 0);
 				*(gpointer*)code = NULL;
 				code += 4;
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+				code = emit_call_reg (code, ARMREG_IP);
 			} else {
 				ARM_BL (code, 0);
 			}
@@ -3077,8 +3160,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ARM_B (code, 0);
 			*(gpointer*)code = NULL;
 			code += 4;
-			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+			code = emit_call_reg (code, ARMREG_IP);
 		} else {
 			ARM_BL (code, 0);
 		}
@@ -3177,6 +3259,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
 			ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
 		}
+		/* FIXME: add v4 thumb interworking support */
 		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 	}
 
