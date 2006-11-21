@@ -150,7 +150,6 @@ mips_sources = \
 	mini-mips.c		\
 	mini-mips.h		\
 	exceptions-mips.c	\
-	mini-codegen.c		\
 	tramp-mips.c
 
 sparc_sources = \

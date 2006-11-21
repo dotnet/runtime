@@ -10887,6 +10887,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	return runtime_invoke (obj, params, exc, compiled_method);
 }
 
+#ifdef MONO_GET_CONTEXT
+#define GET_CONTEXT MONO_GET_CONTEXT
+#endif
+
+#ifndef GET_CONTEXT
 #ifdef PLATFORM_WIN32
 #define GET_CONTEXT \
 	struct sigcontext *ctx = (struct sigcontext*)_dummy;
@@ -10901,6 +10906,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #define GET_CONTEXT \
 	void **_p = (void **)&_dummy; \
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
+#endif
 #endif
 #endif
 

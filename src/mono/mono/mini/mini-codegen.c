@@ -27,6 +27,9 @@ static const char*const * ins_spec = amd64_desc;
 #elif defined(__sparc__) || defined(sparc)
 const char * const sparc_desc [OP_LAST];
 static const char*const * ins_spec = sparc_desc;
+#elif defined(__mips__) || defined(mips)
+const char * const mips_desc [OP_LAST];
+static const char*const * ins_spec = mips_desc;
 #elif defined(__i386__)
 extern const char * const x86_desc [OP_LAST];
 static const char*const * ins_spec = x86_desc;
@@ -202,9 +205,13 @@ mono_call_inst_add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, int vreg, i
 
 	regpair = (((guint32)hreg) << 24) + vreg;
 	if (fp) {
+		g_assert (vreg >= MONO_MAX_FREGS);
+		g_assert (hreg < MONO_MAX_FREGS);
 		call->used_fregs |= 1 << hreg;
 		call->out_freg_args = g_slist_append_mempool (cfg->mempool, call->out_freg_args, (gpointer)(gssize)(regpair));
 	} else {
+		g_assert (vreg >= MONO_MAX_IREGS);
+		g_assert (hreg < MONO_MAX_IREGS);
 		call->used_iregs |= 1 << hreg;
 		call->out_ireg_args = g_slist_append_mempool (cfg->mempool, call->out_ireg_args, (gpointer)(gssize)(regpair));
 	}
@@ -243,6 +250,9 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar)
 {
 	MonoSpillInfo *info;
 
+#if defined (__mips__)
+	g_assert_not_reached();
+#endif
 	if (G_UNLIKELY (spillvar >= cfg->spill_info_len)) {
 		resize_spill_info (cfg, FALSE);
 		g_assert (spillvar < cfg->spill_info_len);
@@ -277,6 +287,9 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 {
 	MonoSpillInfo *info;
 
+#if defined (__mips__)
+	g_assert_not_reached();
+#endif
 	if (G_UNLIKELY (spillvar >= cfg->spill_info_float_len)) {
 		resize_spill_info (cfg, TRUE);
 		g_assert (spillvar < cfg->spill_info_float_len);
@@ -383,8 +396,8 @@ typedef struct {
 } RegTrack;
 
 #ifndef DISABLE_LOGGING
-static void
-print_ins (int i, MonoInst *ins)
+void
+mono_print_ins (int i, MonoInst *ins)
 {
 	const char *spec = ins_spec [ins->opcode];
 	printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
@@ -893,7 +906,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
 		}
 		
-		DEBUG (print_ins (i, ins));
+		DEBUG (mono_print_ins (i, ins));
 
 		/*
 		 * TRACK FP STACK
@@ -1078,7 +1091,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		sreg2_mask = sreg2_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
 
 		DEBUG (printf ("processing:"));
-		DEBUG (print_ins (i, ins));
+		DEBUG (mono_print_ins (i, ins));
 
 		ip = ins->cil_code;
 
@@ -1771,7 +1784,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_regstate2_free_int (rs, ins->sreg2);
 		}*/
 	
-		DEBUG (print_ins (i, ins));
+		DEBUG (mono_print_ins (i, ins));
 		/* this may result from a insert_before call */
 		if (!tmp->next)
 			bb->code = tmp->data;

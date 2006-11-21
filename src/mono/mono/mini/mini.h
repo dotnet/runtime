@@ -867,7 +867,7 @@ int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, co
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts) MONO_INTERNAL;
 void      mono_destroy_compile              (MonoCompile *cfg) MONO_INTERNAL;
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode) MONO_INTERNAL;
-
+void	  mono_print_ins (int i, MonoInst *ins) MONO_INTERNAL;
 
 void      mono_aot_init                     (void) MONO_INTERNAL;
 gpointer  mono_aot_get_method               (MonoDomain *domain,
