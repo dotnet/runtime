@@ -51,6 +51,10 @@ monodis \- CIL image content dumper and disassembler.
 .SH DESCRIPTION
 The \fImonodis\fP program is used to dump the contents a CIL image
 (contained in .EXE files that contain extended PE/COFF CIL code).  
+.PP
+To roundtrip assemblies using ilasm, it is best to use the --output
+argument, as that will make monodis save the embedded resources in
+files that can later be properly embedded back by ilasm. 
 .SH OPTIONS
 The following Generic options are supported:
 .TP
