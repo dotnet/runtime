@@ -4,7 +4,12 @@
  * Authors:
  *   Mark Mason (mason@broadcom.com)
  *
+ * Based on exceptions-ppc.c by:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
+ *
  * (C) 2006 Broadcom
+ * (C) 2001 Ximian, Inc.
  */
 
 #include <config.h>

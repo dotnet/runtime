@@ -1,11 +1,15 @@
 %%
 
 #
-# inssel-long32.brg: burg file for integer instructions on 32bit architectures
+# inssel-long32-mips.brg: burg file for integer instructions on 32bit MIPS
 #
 # Author:
+#   Mark Mason (mason@broadcom.com)
+#
+# Based on inssel-long32.brg by:
 #   Dietmar Maurer (dietmar@ximian.com)
 #
+# (C) 2006 Broadcom
 # (C) 2002 Ximian, Inc.
 #
 

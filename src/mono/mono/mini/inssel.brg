@@ -292,6 +292,38 @@
 		} \
 	} while (0)
 
+#ifndef MONO_EMIT_NEW_COMPARE_BRANCH_LABEL
+#define MONO_EMIT_NEW_COMPARE_BRANCH_LABEL(cfg, cmp_op, sreg1, sreg2, label) \
+	do { \
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, (sreg1), (sreg2)); \
+		MONO_EMIT_NEW_BRANCH_LABEL (s, (cmp_op), (label)); \
+	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL
+#define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL(cfg, cmp_op, sreg1, imm, label) \
+	do { \
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, (sreg1), (imm)); \
+		MONO_EMIT_NEW_BRANCH_LABEL (s, (cmp_op), (label)); \
+	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK
+#define MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK(cfg, cmp_op, sreg1, sreg2, block) \
+	do { \
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, (sreg1), (sreg2)); \
+		MONO_EMIT_NEW_BRANCH_BLOCK (s, (cmp_op), (block)); \
+	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK
+#define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK(cfg, cmp_op, sreg1, imm, block) \
+	do { \
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, (sreg1), (imm)); \
+		MONO_EMIT_NEW_BRANCH_BLOCK (s, (cmp_op), (block)); \
+	} while (0)
+#endif
+
 %%
 
 %termprefix OP_ CEE_
@@ -349,6 +381,7 @@ base: CEE_ADD (CEE_LDIND_I (OP_REGVAR), OP_ICONST) "0" {
 #
 
 reg: OP_ICONST {
+	tree->dreg = state->reg1;
      	MONO_EMIT_NEW_ICONST (s, state->reg1, tree->inst_c0);
 }
 
@@ -926,8 +959,7 @@ stmt: OP_THROW_OR_NULL (reg, reg) {
 	 * that this is not correct. See thread6.cs for an example. But propagating
 	 * the abort exception is more important than getting the sematics right.
 	 */
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, dont_throw);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, state->left->reg1, 0, dont_throw);
 	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
 	mono_bblock_add_inst (s->cbb, dont_throw);
 }
@@ -970,8 +1002,7 @@ reg: CEE_ISINST (reg) {
 	MONO_NEW_LABEL (s, end_label);
 	MONO_NEW_LABEL (s, false_label);
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, obj_reg, 0, object_is_null);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -987,8 +1018,7 @@ reg: CEE_ISINST (reg) {
 			int eclass_reg = mono_regstate_next_int (s->rs);
 
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
-			MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+			MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, rank_reg, klass->rank, false_label);
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
@@ -998,18 +1028,21 @@ reg: CEE_ISINST (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
+							const_reg, object_is_null);
+
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
+							mono_defaults.enum_class->parent, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
+					MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
+						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
 				int const_reg = -1;
@@ -1017,28 +1050,28 @@ reg: CEE_ISINST (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
+						mono_defaults.enum_class->parent, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
+						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class) {
 				if (s->compile_aot) {
 					int const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
+						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				mini_emit_isninst_iface_class_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
@@ -1047,8 +1080,7 @@ reg: CEE_ISINST (reg) {
 					/* Check that the object is a vector too */
 					int bounds_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_LOAD_MEMBASE (s, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, bounds_reg, 0);
-					MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, bounds_reg, 0, false_label);
 				}
 
 				/* the object_is_null target simply copies the input register to the output */
@@ -1063,12 +1095,11 @@ reg: CEE_ISINST (reg) {
 				/* the remoting code is broken, access the class for now */
 				if (0) {
 					MonoVTable *vt = mono_class_vtable (s->domain, klass);
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, vtable_reg, vt);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, vtable_reg, vt, false_label);
 				} else {
 					MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, klass);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg, klass, false_label);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, object_is_null);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -1104,8 +1135,7 @@ reg: OP_CISINST (reg) {
 	MONO_NEW_LABEL (s, false_label);
 	MONO_NEW_LABEL (s, false2_label);
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, false_label);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, obj_reg, 0, false_label);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_NEW_LABEL (s, interface_fail_label);
@@ -1118,15 +1148,14 @@ reg: OP_CISINST (reg) {
 		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
-			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+			MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg, tproxy_reg, false_label);
 		} else {
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg,
+				mono_defaults.transparent_proxy_class, false_label);
 		}
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false_label);
 		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, false2_label);
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, tmp_reg, 0, false2_label);
 		
 	} else {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -1137,17 +1166,16 @@ reg: OP_CISINST (reg) {
 		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
-			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+			MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg, tproxy_reg, no_proxy_label);
 		} else {
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg,
+				mono_defaults.transparent_proxy_class, no_proxy_label);
 		}
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, no_proxy_label);
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
 		
 		mini_emit_isninst_cast (s, klass_reg, klass, false2_label, true_label);
 		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false2_label);
@@ -1208,8 +1236,7 @@ reg: CEE_CASTCLASS (reg) {
 
 	MONO_NEW_LABEL (s, object_is_null);
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, obj_reg, 0, object_is_null);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -1235,11 +1262,11 @@ reg: CEE_CASTCLASS (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
+						mono_defaults.enum_class->parent, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1251,11 +1278,11 @@ reg: CEE_CASTCLASS (reg) {
 				int const_reg = mono_regstate_next_int (s->rs);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
 				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
+					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
+						mono_defaults.enum_class->parent, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1322,8 +1349,7 @@ reg: OP_CCASTCLASS (reg) {
 	MONO_NEW_LABEL (s, end_label);
 	MONO_NEW_LABEL (s, ok_result_label);
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, ok_result_label);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, obj_reg, 0, ok_result_label);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 	
@@ -1366,18 +1392,17 @@ reg: OP_CCASTCLASS (reg) {
 		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
-			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
+			MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg, tproxy_reg, no_proxy_label);
 		} else {
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
+			MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg,
+				mono_defaults.transparent_proxy_class, no_proxy_label);
 		}
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy_label);
 		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, tmp_reg, 0);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, no_proxy_label);
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
 		
 		mini_emit_isninst_cast (s, klass_reg, klass, fail_label, ok_result_label);
 		mono_bblock_add_inst (s->cbb, fail_label);
@@ -1586,13 +1611,17 @@ mini_emit_max_iid_check (MonoCompile *s, int max_iid_reg, MonoClass *klass,
 	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, max_iid_reg, iid_reg);
+		if (false_target)
+			MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BLT_UN, max_iid_reg, iid_reg, false_target);
+		else
+			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, max_iid_reg, iid_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
+		if (false_target)
+			MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BLT_UN, max_iid_reg, klass->interface_id, false_target);
+		else
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
 	}
-	if (false_target)
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
-	else
+	if (!false_target)
 		MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
 }
 
@@ -1715,19 +1744,17 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BLT_UN, idepth_reg, klass->idepth, false_target);
 	}
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stype, stypes_reg, ((klass->idepth - 1) * SIZEOF_VOID_P));
 	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
-		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stype, const_reg);
+		MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, stype, const_reg, true_target);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, stype, klass);
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, stype, klass, true_target);
 	}
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, true_target);
 }
 
 static void
@@ -1737,9 +1764,8 @@ mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, 
 
 	mini_emit_max_iid_check_vtable (s, vtable_reg, klass, false_target);
 	mini_emit_load_intf_reg_vtable (s, intf_reg, vtable_reg, klass);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
 	/* the object_is_null target simply copies the input register to the output */
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, true_target);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_reg, 0, true_target);
 }
 
 /*
@@ -1753,9 +1779,8 @@ mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *kl
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, false_target);
 	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, -1);
 	/* the object_is_null target simply copies the input register to the output */
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BGE, true_target);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_reg, -1, true_target);
 }
 
 static void

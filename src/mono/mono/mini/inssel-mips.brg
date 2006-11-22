@@ -4,7 +4,12 @@
  * Author:
  *   Mark Mason (mason@broadcom.com)
  *
+ * Based on inssel-ppc.brg by
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
+ *
  * (C) 2006 Broadcom
+ * (C) 2002 Ximian, Inc.
  */
 
 /* override the arch independant versions with fast mips versions */

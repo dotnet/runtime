@@ -4,7 +4,13 @@
  * Authors:
  *    Mark Mason (mason@broadcom.com)
  *
+ * Based on tramp-ppc.c by:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
+ *   Carlos Valiente <yo@virutass.net>
+ *
  * (C) 2006 Broadcom
+ * (C) 2001 Ximian, Inc.
  */
 
 #include <config.h>

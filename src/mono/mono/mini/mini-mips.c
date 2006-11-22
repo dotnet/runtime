@@ -4,7 +4,12 @@
  * Authors:
  *   Mark Mason (mason@broadcom.com)
  *
+ * Based on mini-ppc.c by
+ *   Paolo Molaro (lupus@ximian.com)
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
  * (C) 2006 Broadcom
+ * (C) 2003 Ximian, Inc.
  */
 #include "mini.h"
 #include <string.h>
