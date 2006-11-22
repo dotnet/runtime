@@ -1028,21 +1028,18 @@ reg: CEE_ISINST (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
-							const_reg, object_is_null);
-
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
-							mono_defaults.enum_class->parent, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
-						mono_defaults.enum_class, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
 				int const_reg = -1;
@@ -1050,28 +1047,28 @@ reg: CEE_ISINST (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
-						mono_defaults.enum_class->parent, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
-						mono_defaults.enum_class, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class) {
 				if (s->compile_aot) {
 					int const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
-						mono_defaults.enum_class, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				mini_emit_isninst_iface_class_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
@@ -1262,11 +1259,11 @@ reg: CEE_CASTCLASS (reg) {
 				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, parent_reg,
-						mono_defaults.enum_class->parent, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1278,11 +1275,11 @@ reg: CEE_CASTCLASS (reg) {
 				int const_reg = mono_regstate_next_int (s->rs);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
-					MONO_EMIT_NEW_COMPARE_BRANCH_LABEL (s, CEE_BEQ, eclass_reg, const_reg, object_is_null);
+					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
-					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
-						mono_defaults.enum_class->parent, object_is_null);
+					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
 				}
+				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
