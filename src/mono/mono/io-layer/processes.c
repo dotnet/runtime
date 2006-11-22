@@ -211,9 +211,15 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 #endif
 
 	if (timeout == INFINITE) {
-		while ((ret = waitpid (pid, &status, 0)) != pid) {
-			if (ret == (pid_t)-1 && errno != EINTR) {
-				return(WAIT_FAILED);
+		if (pid == _wapi_getpid ()) {
+			do {
+				Sleep (10000);
+			} while(1);
+		} else {
+			while ((ret = waitpid (pid, &status, 0)) != pid) {
+				if (ret == (pid_t)-1 && errno != EINTR) {
+					return(WAIT_FAILED);
+				}
 			}
 		}
 	} else if (timeout == 0) {
@@ -224,18 +230,46 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 		}
 	} else {
 		/* Poll in a loop */
-		do {
-			ret = waitpid (pid, &status, WNOHANG);
-			if (ret == pid) {
-				break;
-			} else if (ret == (pid_t)-1 && errno != EINTR) {
-				return(WAIT_FAILED);
-			}
+		if (pid == _wapi_getpid ()) {
+			Sleep (timeout);
+			return(WAIT_TIMEOUT);
+		} else {
+			do {
+				ret = waitpid (pid, &status, WNOHANG);
+#ifdef DEBUG
+				g_message ("%s: waitpid returns: %d, timeout is %d", __func__, ret, timeout);
+#endif
+				
+				if (ret == pid) {
+					break;
+				} else if (ret == (pid_t)-1 &&
+					   errno != EINTR) {
+#ifdef DEBUG
+					g_message ("%s: waitpid failure: %s",
+						   __func__,
+						   g_strerror (errno));
+#endif
 
-			_wapi_handle_spin (100);
-			timeout -= 100;
-		} while (timeout > 0);
+					if (errno == ECHILD && _wapi_handle_issignalled (handle)) {
+						/* The background
+						 * process reaper must
+						 * have got this one
+						 */
+#ifdef DEBUG
+						g_message ("%s: Process %p already reaped", __func__, handle);
+#endif
 
+						return(WAIT_OBJECT_0);
+					} else {
+						return(WAIT_FAILED);
+					}
+				}
+
+				_wapi_handle_spin (100);
+				timeout -= 100;
+			} while (timeout > 0);
+		}
+		
 		if (timeout <= 0) {
 			return(WAIT_TIMEOUT);
 		}
@@ -959,6 +993,8 @@ static void process_set_current (void)
 	pid_t pid = _wapi_getpid ();
 	const char *handle_env;
 	struct _WapiHandle_process process_handle = {0};
+	
+	mono_once (&process_ops_once, process_ops_init);
 	
 	handle_env = g_getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
 	g_unsetenv ("_WAPI_PROCESS_HANDLE_OFFSET");
