@@ -24,8 +24,7 @@
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
-/* Next time I change this, remember to fix the process count in shared.c */
-#define _WAPI_HANDLE_VERSION 10
+#define _WAPI_HANDLE_VERSION 11
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,

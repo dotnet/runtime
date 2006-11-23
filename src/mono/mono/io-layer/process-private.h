@@ -31,6 +31,7 @@ struct _WapiHandle_process
 	gchar proc_name[_WAPI_PROC_NAME_MAX_LEN];
 	size_t min_working_set;
 	size_t max_working_set;
+	gboolean waited;
 };
 
 extern void _wapi_process_reap (void);

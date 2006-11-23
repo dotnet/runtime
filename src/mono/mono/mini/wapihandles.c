@@ -272,7 +272,7 @@ int mini_wapi_seminfo (int argc, char **argv)
 			sem_explain (sem_id, vals,
 				     _WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 			g_print ("Count: %d\n",
-				 vals[_WAPI_SHARED_SEM_PROCESS_COUNT] - 1);
+				 vals[_WAPI_SHARED_SEM_PROCESS_COUNT]);
 		}
 	}
 	

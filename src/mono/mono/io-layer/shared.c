@@ -292,12 +292,11 @@ void _wapi_shm_semaphores_init ()
 	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
 		def_vals[i] = 1;
 	}
-#ifdef NEXT_VERSION_INC
+
 	/* Process count must start at '0' - the 1 for all the others
 	 * sets the semaphore to "unlocked"
 	 */
 	def_vals[_WAPI_SHARED_SEM_PROCESS_COUNT] = 0;
-#endif
 	
 	defs.array = def_vals;
 	
@@ -438,19 +437,9 @@ void _wapi_shm_semaphores_remove (void)
 	
 	proc_count = semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT,
 			     GETVAL);
-#ifdef NEXT_VERSION_INC
+
 	g_assert (proc_count > 0);
 	if (proc_count == 1) {
-#else
-	/* Compatibility - the semaphore was initialised to '1' (which
-	 * normally means 'unlocked'.  Instead of fixing that right
-	 * now, which would mean a shared file version increment, just
-	 * cope with the value starting too high for now.  Fix this
-	 * next time I have to change the file version.
-	 */
-	g_assert (proc_count > 1);
-	if (proc_count == 2) {
-#endif
 		/* Just us, so blow away the semaphores and the shared
 		 * files
 		 */
