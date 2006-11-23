@@ -91,6 +91,63 @@ mono_monitor_cleanup (void)
 	/*DeleteCriticalSection (&monitor_mutex);*/
 }
 
+static int
+monitor_is_on_freelist (MonoThreadsSync *mon)
+{
+	MonitorArray *marray;
+	for (marray = monitor_allocated; marray; marray = marray->next) {
+		if (mon >= marray->monitors && mon < &marray->monitors [marray->num_monitors])
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/**
+ * mono_locks_dump:
+ * @include_untaken:
+ *
+ * Print a report on stdout of the managed locks currently held by
+ * threads. If @include_untaken is specified, list also inflated locks
+ * which are unheld.
+ * This is supposed to be used in debuggers like gdb.
+ */
+void
+mono_locks_dump (gboolean include_untaken)
+{
+	int i;
+	int used = 0, on_freelist = 0, to_recycle = 0, total = 0, num_arrays = 0;
+	MonoThreadsSync *mon;
+	MonitorArray *marray;
+	for (mon = monitor_freelist; mon; mon = mon->data)
+		on_freelist++;
+	for (marray = monitor_allocated; marray; marray = marray->next) {
+		total += marray->num_monitors;
+		num_arrays++;
+		for (i = 0; i < marray->num_monitors; ++i) {
+			mon = &marray->monitors [i];
+			if (mon->data == NULL) {
+				if (i < marray->num_monitors - 1)
+					to_recycle++;
+			} else {
+				if (!monitor_is_on_freelist (mon->data)) {
+					MonoObject *holder = mono_gc_weak_link_get (&mon->data);
+					if (mon->owner) {
+						g_print ("Lock %p in object %p held by thread %p, nest level: %d\n",
+							mon, holder, (void*)mon->owner, mon->nest);
+						if (mon->entry_sem)
+							g_print ("\tWaiting on semaphore %p: %d\n", mon->entry_sem, mon->entry_count);
+					} else if (include_untaken) {
+						g_print ("Lock %p in object %p untaken\n", mon, holder);
+					}
+					used++;
+				}
+			}
+		}
+	}
+	g_print ("Total locks (in %d array(s)): %d, used: %d, on freelist: %d, to recycle: %d\n",
+		num_arrays, total, used, on_freelist, to_recycle);
+}
+
 /* LOCKING: this is called with monitor_mutex held */
 static void 
 mon_finalize (MonoThreadsSync *mon)
