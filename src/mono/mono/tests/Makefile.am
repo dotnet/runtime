@@ -262,7 +262,8 @@ TEST_IL_SRC=			\
 	filter-bug.il		\
 	even-odd.il
 
-TEST_CS2_SRC = interlocked-2.2.cs pinvoke-2.2.cs bug-79684.2.cs
+TEST_CS2_SRC = interlocked-2.2.cs pinvoke-2.2.cs bug-79684.2.cs \
+	catch-generics.2.cs
 TEST_IL2_SRC = find-method.2.il
 
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
