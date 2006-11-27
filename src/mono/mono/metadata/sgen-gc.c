@@ -4052,7 +4052,7 @@ mono_gc_max_generation (void)
 int
 mono_gc_collection_count (int generation)
 {
-	if (generatiom == 0)
+	if (generation == 0)
 		return num_minor_gcs;
 	return num_major_gcs;
 }
