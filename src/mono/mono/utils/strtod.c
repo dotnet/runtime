@@ -17,6 +17,7 @@
  *
  ***************************************************************/
 #include "strtod.h"
+#include <glib.h>
 #define freedtoa __freedtoa
 #define dtoa __dtoa
 
@@ -189,12 +190,8 @@
 #define IEEE_MC68k
 #endif
 
-#ifndef Long
-#define Long long
-#endif
-#ifndef ULong
-typedef unsigned Long ULong;
-#endif
+#define Long gint32
+#define ULong guint32
 
 #ifdef DEBUG
 #include "stdio.h"
