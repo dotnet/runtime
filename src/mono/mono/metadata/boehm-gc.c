@@ -41,6 +41,23 @@ mono_gc_max_generation (void)
 	return 0;
 }
 
+int
+mono_gc_get_generation  (MonoObject *object)
+{
+	return 0;
+}
+
+int
+mono_gc_collection_count (int generation)
+{
+	return GC_gc_no;
+}
+
+void
+mono_gc_add_memory_pressure (gint64 value)
+{
+}
+
 gint64
 mono_gc_get_used_size (void)
 {

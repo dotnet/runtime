@@ -4049,6 +4049,21 @@ mono_gc_max_generation (void)
 	return 1;
 }
 
+int
+mono_gc_collection_count (int generation)
+{
+	if (generatiom == 0)
+		return num_minor_gcs;
+	return num_major_gcs;
+}
+
+int
+mono_gc_get_generation  (MonoObject *object)
+{
+	/* FIXME */
+	return 0;
+}
+
 gint64
 mono_gc_get_used_size (void)
 {
