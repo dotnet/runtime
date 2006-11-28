@@ -3103,8 +3103,10 @@ handle_parent:
 			if (bflags & BFLAGS_Public)
 				match++;
 		} else {
-			if (bflags & BFLAGS_NonPublic)
-				match++;
+			if (bflags & BFLAGS_NonPublic) {
+				if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE || startklass == klass)
+					match++;
+			}
 		}
 		if (!match)
 			continue;
