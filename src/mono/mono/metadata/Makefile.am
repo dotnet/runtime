@@ -129,6 +129,7 @@ libmonoruntime_static_la_LDFLAGS = -static
 libmonoruntimeincludedir = $(includedir)/mono/metadata
 
 libmonoruntimeinclude_HEADERS = \
+	attrdefs.h	\
 	appdomain.h	\
 	mono-debug.h	\
 	mono-gc.h	\
