@@ -77,6 +77,24 @@ typedef struct ucontext {
 
 */
 
+/*
+ * So, it turns out that the ucontext struct defined by libc is incorrect.
+ * We define our own version here and use it instead.
+ */
+
+typedef struct my_ucontext {
+	unsigned long       uc_flags;
+	struct my_ucontext *uc_link;
+	struct {
+		void *p;
+		int flags;
+		size_t size;
+	} sstack_data;
+	struct sigcontext sig_ctx;
+	/* some 2.6.x kernel has fp data here after a few other fields
+	 * we don't use them for now...
+	 */
+} my_ucontext;
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
@@ -453,31 +471,52 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 {
+#if BROKEN_LINUX
 	struct ucontext *uc = ctx;
+#else
+	my_ucontext *my_uc = ctx;
+#endif
 	MonoContext mctx;
 	gboolean result;
 
+#if BROKEN_LINUX
 	mctx.eip = uc->uc_mcontext.gregs [ARMREG_PC];
 	mctx.ebp = uc->uc_mcontext.gregs [ARMREG_SP];
 	memcpy (&mctx.regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
 	/* memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
+#else
+	mctx.eip = my_uc->sig_ctx.arm_pc;
+	mctx.ebp = my_uc->sig_ctx.arm_sp;
+	memcpy (&mctx.regs, &my_uc->sig_ctx.arm_r4, sizeof (gulong) * 8);
+#endif
 
 	result = mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */
+#if BROKEN_LINUX
 	uc->uc_mcontext.gregs [ARMREG_PC] = mctx.eip;
 	uc->uc_mcontext.gregs [ARMREG_SP] = mctx.ebp;
 	memcpy (&uc->uc_mcontext.gregs [ARMREG_R4], &mctx.regs, sizeof (gulong) * 8);
 	/* memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);*/
+#else
+	my_uc->sig_ctx.arm_pc = mctx.eip;
+	my_uc->sig_ctx.arm_sp = mctx.ebp;
+	memcpy (&my_uc->sig_ctx.arm_r4, &mctx.regs, sizeof (gulong) * 8);
+#endif
 	return result;
 }
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
+#if BROKEN_LINUX
 	struct ucontext *uc = sigctx;
 	return (gpointer)uc->uc_mcontext.gregs [ARMREG_PC];
+#else
+	my_ucontext *my_uc = sigctx;
+	return (void*)my_uc->sig_ctx.arm_pc;
+#endif
 }
 
 gboolean
