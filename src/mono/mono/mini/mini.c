@@ -2960,6 +2960,11 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	vstore->inst_left = add;
 	vstore->inst_right = val;
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+	if (vstore->opcode == CEE_STIND_R4) {
+		handle_store_float (cfg, bblock, add, val, ip);
+	} else
+#endif
 	if (vstore->opcode == CEE_STOBJ) {
 		handle_stobj (cfg, bblock, add, val, ip, klass, FALSE, FALSE, TRUE);
 	} else
