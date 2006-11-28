@@ -26,18 +26,6 @@ G_BEGIN_DECLS
 
 gboolean ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
 
-gpointer ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved) MONO_INTERNAL;
-
-gboolean ves_icall_System_IO_FSW_CloseDirectory (gpointer handle) MONO_INTERNAL;
-
-gboolean ves_icall_System_IO_FSW_ReadDirectoryChanges (
-						gpointer handle,
-						MonoArray *buffer,
-						gboolean includeSubdirs,
-						gint filters,
-						gpointer overlap,
-						gpointer callback) MONO_INTERNAL;
-
 gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,
 							gint *code,

@@ -116,14 +116,6 @@ mono_class_get_throw (MonoImage *image, guint32 type_token)
 	return NULL;
 }
 
-static void
-ves_icall_System_Double_AssertEndianity (double *value)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	MONO_DOUBLE_ASSERT_ENDIANITY (value);
-}
-
 static MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
 {
@@ -5122,14 +5114,6 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	mono_delegate_ctor (delegate, target, func);
 
 	return delegate;
-}
-
-static void
-ves_icall_System_Delegate_FreeTrampoline (MonoDelegate *this)
-{
-	/*
-	Delegates have a finalizer only when needed, now.
-	mono_delegate_free_ftnptr (this);*/
 }
 
 /*

@@ -628,16 +628,6 @@ ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral (gint lcid, 
 	return TRUE;
 }
 
-void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale)
-{
-	MONO_ARCH_SAVE_REGS;
-	
-	/* Always claim "unknown locale" if we don't have ICU (only
-	 * called for non-invariant locales)
-	 */
-	mono_raise_exception((MonoException *)mono_exception_from_name(mono_get_corlib (), "System", "ArgumentException"));
-}
-
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale)
 {
 	/* Nothing to do here */

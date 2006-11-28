@@ -27,63 +27,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	return 1;
 }
 
-gpointer
-ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved)
-{
-	return NULL;
-	/*
-	gpointer dir;
-	gchar *utf8path;
-
-	MONO_ARCH_SAVE_REGS;
-
-	dir = CreateFile (path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE,
-			  NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-
-	return dir;
-	*/
-}
-
-gboolean
-ves_icall_System_IO_FSW_CloseDirectory (gpointer handle)
-{
-	return FALSE;
-	/*
-	MONO_ARCH_SAVE_REGS;
-
-	return CloseHandle (handle);
-	*/
-}
-
-gboolean
-ves_icall_System_IO_FSW_ReadDirectoryChanges (gpointer handle,
-					      MonoArray *buffer,
-					      gboolean includeSubdirs,
-					      gint filters,
-					      gpointer overlap,
-					      gpointer callback)
-{
-	return FALSE;
-	/*
-	gpointer dest;
-	gint size;
-	MonoObject *delegate = (MonoObject *) callback;
-	MonoMethod *im;
-	LPOVERLAPPED_COMPLETION_ROUTINE func;
-
-	MONO_ARCH_SAVE_REGS;
-
-	size = mono_array_length (buffer);
-	dest = mono_array_addr_with_size (buffer, 1, 0);
-
-	im = mono_get_delegate_invoke (mono_object_get_class (delegate));
-	func = mono_compile_method (im);
-	return FALSE;
-	* return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
-				     NULL, (LPOVERLAPPED) overlap,
-				     func); */
-}
-
 gboolean
 ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 					       MonoString **filename,
@@ -135,29 +78,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 
 	return lib_used;
 #endif
-}
-
-gpointer
-ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved)
-{
-	return NULL;
-}
-
-gboolean
-ves_icall_System_IO_FSW_CloseDirectory (gpointer handle)
-{
-	return FALSE;
-}
-
-gboolean
-ves_icall_System_IO_FSW_ReadDirectoryChanges (gpointer handle,
-					      MonoArray *buffer,
-					      gboolean includeSubdirs,
-					      gint filters,
-					      gpointer overlap,
-					      gpointer callback)
-{
-	return FALSE;
 }
 
 /* Almost copied from fam.h. Weird, I know */

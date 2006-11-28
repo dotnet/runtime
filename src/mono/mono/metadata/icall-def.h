@@ -146,7 +146,6 @@ ICALL(DECIMAL_14, "string2decimal", mono_string2decimal)
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 ICALL(DELEGATE_1, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal)
-ICALL(DELEGATE_2, "FreeTrampoline", ves_icall_System_Delegate_FreeTrampoline)
 
 ICALL_TYPE(TRACEL, "System.Diagnostics.DefaultTraceListener", TRACEL_1)
 ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString)
@@ -172,8 +171,7 @@ ICALL(PROCESS_14, "StartTime_internal(intptr)", ves_icall_System_Diagnostics_Pro
 ICALL(PROCESS_15, "WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal)
 
 ICALL_TYPE(DOUBLE, "System.Double", DOUBLE_1)
-ICALL(DOUBLE_1, "AssertEndianity", ves_icall_System_Double_AssertEndianity)
-ICALL(DOUBLE_2, "ParseImpl",    mono_double_ParseImpl)
+ICALL(DOUBLE_1, "ParseImpl",    mono_double_ParseImpl)
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 ICALL(ENUM_1, "ToObject", ves_icall_System_Enum_ToObject)
@@ -221,10 +219,8 @@ ICALL(COMPINF_4, "internal_compare(string,int,int,string,int,int,System.Globaliz
 ICALL(COMPINF_5, "internal_index(string,int,int,char,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index_char)
 ICALL(COMPINF_6, "internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index)
 
-ICALL_TYPE(CULINF, "System.Globalization.CultureInfo", CULINF_1)
-ICALL(CULINF_1, "construct_compareinfo(object,string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo)
+ICALL_TYPE(CULINF, "System.Globalization.CultureInfo", CULINF_2)
 ICALL(CULINF_2, "construct_datetime_format", ves_icall_System_Globalization_CultureInfo_construct_datetime_format)
-ICALL(CULINF_3, "construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale)
 ICALL(CULINF_4, "construct_internal_locale_from_current_locale", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale)
 ICALL(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid)
 ICALL(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name)
@@ -240,10 +236,7 @@ ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globaliz
 ICALL_TYPE(FAMW, "System.IO.FAMWatcher", FAMW_1)
 ICALL(FAMW_1, "InternalFAMNextEvent", ves_icall_System_IO_FAMW_InternalFAMNextEvent)
 
-ICALL_TYPE(FILEW, "System.IO.FileSystemWatcher", FILEW_1)
-ICALL(FILEW_1, "InternalCloseDirectory", ves_icall_System_IO_FSW_CloseDirectory)
-ICALL(FILEW_2, "InternalOpenDirectory", ves_icall_System_IO_FSW_OpenDirectory)
-ICALL(FILEW_3, "InternalReadDirectoryChanges", ves_icall_System_IO_FSW_ReadDirectoryChanges)
+ICALL_TYPE(FILEW, "System.IO.FileSystemWatcher", FILEW_4)
 ICALL(FILEW_4, "InternalSupportsFSW", ves_icall_System_IO_FSW_SupportsFSW)
 
 ICALL_TYPE(INOW, "System.IO.InotifyWatcher", INOW_1)
