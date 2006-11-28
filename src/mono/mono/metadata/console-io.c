@@ -274,6 +274,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	if (setup_finished)
 		return TRUE;
 
+	signal (SIGINT, sigint_handler);
 	setup_finished = TRUE;
 	if (!atexit_called) {
 		if (teardown != NULL)
