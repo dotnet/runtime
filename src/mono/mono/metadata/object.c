@@ -2787,8 +2787,7 @@ mono_array_clone (MonoArray *array)
  * lower bounds and type.
  */
 MonoArray*
-mono_array_new_full (MonoDomain *domain, MonoClass *array_class, 
-		     guint32 *lengths, guint32 *lower_bounds)
+mono_array_new_full (MonoDomain *domain, MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds)
 {
 	guint32 byte_len, len, bounds_size;
 	MonoObject *o;
