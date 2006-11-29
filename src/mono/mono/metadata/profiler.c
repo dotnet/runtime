@@ -1408,6 +1408,10 @@ mono_profiler_install_simple (const char *desc)
 			}
 		}
 	}
+	if (flags & MONO_PROFILE_ALLOCATIONS)
+		flags |= MONO_PROFILE_ENTER_LEAVE;
+	if (!flags)
+		flags = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_JIT_COMPILATION;
 
 	prof = create_profiler ();
 	ALLOC_PROFILER ();
