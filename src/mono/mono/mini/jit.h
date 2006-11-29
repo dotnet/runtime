@@ -15,6 +15,9 @@ G_BEGIN_DECLS
 MonoDomain * 
 mono_jit_init              (const char *file);
 
+MonoDomain * 
+mono_jit_init_version      (const char *file, const char *runtime_version);
+
 int
 mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 
 			    int argc, char *argv[]);

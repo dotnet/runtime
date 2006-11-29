@@ -11456,7 +11456,7 @@ mini_parse_debug_options (void)
 }
 
 MonoDomain *
-mini_init (const char *filename)
+mini_init (const char *filename, const char *runtime_version)
 {
 	MonoDomain *domain;
 
@@ -11574,7 +11574,10 @@ mini_init (const char *filename)
 		mono_aot_set_make_unreadable (TRUE);
 	}
 
-	domain = mono_init_from_assembly (filename, filename);
+	if (runtime_version)
+		domain = mono_init_version (filename, runtime_version);
+	else
+		domain = mono_init_from_assembly (filename, filename);
 	mono_icall_init ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 

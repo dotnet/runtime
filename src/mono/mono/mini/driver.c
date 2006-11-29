@@ -619,6 +619,7 @@ mini_usage (void)
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
 		"    --version, -V          Show version information\n"
+		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
 		"    --security             Turns on the security manager (unsupported, default is off)\n");
@@ -679,6 +680,7 @@ mono_main (int argc, char* argv[])
 	char *trace_options = NULL;
 	char *profile_options = NULL;
 	char *aot_options = NULL;
+	char *forced_version = NULL;
 
 	setlocale (LC_ALL, "");
 
@@ -791,6 +793,8 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
+		} else if (strncmp (argv [i], "--runtime=", 10) == 0) {
+			forced_version = &argv [i][10];
 		} else if (strcmp (argv [i], "--profile") == 0) {
 			enable_profile = TRUE;
 			profile_options = NULL;
@@ -899,7 +903,7 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
-	domain = mini_init (argv [i]);
+	domain = mini_init (argv [i], forced_version);
 	
 	switch (action) {
 	case DO_REGRESSION:
@@ -958,7 +962,7 @@ mono_main (int argc, char* argv[])
 
 	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {
-		fprintf (stderr, "cannot open assembly %s\n", aname);
+		fprintf (stderr, "Cannot open assembly %s.\n", aname);
 		mini_cleanup (domain);
 		return 2;
 	}
@@ -1138,7 +1142,13 @@ mono_main (int argc, char* argv[])
 MonoDomain * 
 mono_jit_init (const char *file)
 {
-	return mini_init (file);
+	return mini_init (file, NULL);
+}
+
+MonoDomain * 
+mono_jit_init_version (const char *file, const char *runtime_version)
+{
+	return mini_init (file, runtime_version);
 }
 
 void        
