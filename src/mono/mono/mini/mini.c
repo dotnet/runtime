@@ -5163,7 +5163,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #ifdef MONO_ARCH_SOFT_FLOAT
 			if (*ip == CEE_LDIND_R4) {
 				int temp;
-				++sp;
+				--sp;
 				temp = handle_load_float (cfg, bblock, ins->inst_i0, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
 				sp++;
