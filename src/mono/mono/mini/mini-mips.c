@@ -699,16 +699,17 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			else
 			    size = mono_class_value_size (klass, NULL);
 			alignment = mono_class_min_align (klass);
-			DEBUG(printf ("load %d bytes struct\n",
-				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
 #if MIPS_PASS_STRUCTS_BY_VALUE
-			cinfo->args [n].regtype = RegTypeStructByVal;
-#if 1
 			/* Need to do alignment if struct contains long or double */
 			if (cinfo->stack_size & (alignment - 1)) {
 				add_int32_arg (cinfo, &dummy_arg);
 			}
 			g_assert (!(cinfo->stack_size & (alignment - 1)));
+
+#if 0
+			g_printf ("valuetype struct size=%d offset=%d align=%d\n",
+				  mono_class_native_size (sig->params [i]->data.klass, NULL),
+				  cinfo->stack_size, alignment);
 #endif
 			align_size = size;
 			align_size += (sizeof (gpointer) - 1);
@@ -724,6 +725,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				else
 					cinfo->args [n].size += 1;
 			}
+			//g_printf ("\tstack_size=%d vtsize=%d\n", cinfo->args [n].size, cinfo->args[n].vtsize);
+			cinfo->args [n].regtype = RegTypeStructByVal;
 #else
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			cinfo->args [n].regtype = RegTypeStructByAddr;
@@ -952,7 +955,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 #endif
 
-#if 1
+#if EXTRA_STACK_SPACE
 	/* XXX - Saved S-regs seem to be getting clobbered by some calls with struct
 	 * args or return vals.  Extra stack space avoids this in a lot of cases.
 	 */
@@ -969,7 +972,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 	}
 
-#if 1
+#if EXTRA_STACK_SPACE
 	/* XXX - Saved S-regs seem to be getting clobbered by some calls with struct
 	 * args or return vals.  Extra stack space avoids this in a lot of cases.
 	 */
@@ -1161,6 +1164,10 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				ai->vtsize = ainfo->vtsize;
 				ai->offset = ainfo->offset;
 				arg->backend.data = ai;
+#if 0
+				g_printf ("OUTARG_VT reg=%d size=%d vtsize=%d offset=%d\n",
+					  ai->reg, ai->size, ai->vtsize, ai->offset);
+#endif
 			} else if (ainfo->regtype == RegTypeBase) {
 				MonoMIPSArgInfo *ai = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMIPSArgInfo));
 				arg->opcode = OP_OUTARG_MEMBASE;
@@ -1639,9 +1646,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		return;
 	mono_arch_lowering_pass (cfg, bb);
 	mono_local_regalloc (cfg, bb);
-#if 0
-	mono_arch_allocate_vars (cfg);
-#endif
 }
 
 static guchar*
@@ -2449,12 +2453,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_neg (code, ppc_r11, ppc_r11);
 			ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
 #endif
+#if 0
 			if (ins->flags & MONO_INST_INIT) {
 				mips_sw (code, mips_zero, ins->dreg, 0);
 				mips_addiu (code, mips_at, mips_at, -4);
 				mips_bne (code, mips_at, mips_zero, -3);
 				mips_nop (code);
 			}
+#endif
 			mips_addiu (code, ins->dreg, mips_sp, area_offset);
 			break;
 		}
@@ -2466,7 +2472,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			gpointer addr = mono_arch_get_throw_exception();
 			mips_move (code, mips_a0, ins->sreg1);
 			mips_load_const (code, mips_t9, addr);
-			mips_jr (code, mips_t9);
+			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
 			mips_break (code, 0xfc);
 			break;
@@ -2475,7 +2481,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			gpointer addr = mono_arch_get_rethrow_exception();
 			mips_move (code, mips_a0, ins->sreg1);
 			mips_load_const (code, mips_t9, addr);
-			mips_jr (code, mips_t9);
+			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
 			mips_break (code, 0xfb);
 			break;
@@ -3601,16 +3607,10 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		}
 		break;
 	case SAVE_FP:
-		g_assert_not_reached();
-#if 0
-		ppc_stfd (code, ppc_f1, save_offset, cfg->frame_reg);
-		if (enable_arguments) {
-			/* FIXME: what reg?  */
-			ppc_fmr (code, ppc_f3, ppc_f1);
-			ppc_lwz (code, ppc_r4, save_offset, cfg->frame_reg);
-			ppc_lwz (code, ppc_r5, save_offset + 4, cfg->frame_reg);
-		}
-#endif
+		mips_sdc1 (code, mips_f0, cfg->frame_reg, save_offset);
+		mips_ldc1 (code, mips_f12, cfg->frame_reg, save_offset);
+		mips_lw (code, mips_a0, cfg->frame_reg, save_offset);
+		mips_lw (code, mips_a1, cfg->frame_reg, save_offset+4);
 		break;
 	case SAVE_STRUCT:
 	case SAVE_NONE:
@@ -3632,10 +3632,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		mips_lw (code, mips_v0, cfg->frame_reg, save_offset);
 		break;
 	case SAVE_FP:
-		g_assert_not_reached();
-#if 0
-		ppc_lfd (code, ppc_f1, save_offset, cfg->frame_reg);
-#endif
+		mips_ldc1 (code, mips_f0, cfg->frame_reg, save_offset);
 		break;
 	case SAVE_STRUCT:
 	case SAVE_NONE:

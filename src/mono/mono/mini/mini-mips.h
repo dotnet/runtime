@@ -233,7 +233,7 @@ typedef struct {
 /* re-attaches with gdb - sometimes causes executable to hang */
 #undef HAVE_BACKTRACE_SYMBOLS
 
-#define CUSTOM_EXCEPTION_HANDLING
+#undef CUSTOM_EXCEPTION_HANDLING
 
 #define MONO_ZERO_REG		mips_zero
 
