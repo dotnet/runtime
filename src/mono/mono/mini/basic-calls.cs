@@ -265,6 +265,7 @@ class Tests {
 		return 0;
 	}
 
+	// 64-bits, 32-bit aligned
 	struct struct1 {
 		public int	a;
 		public int	b;
@@ -310,6 +311,63 @@ class Tests {
 			return r + 20;
 		if ((r = pass_struct1(3, 4, x)) != 0)
 			return r + 30;
+		return 0;
+	}
+
+	// 64-bits, 64-bit aligned
+	struct struct2 {
+		public long	a;
+	};
+
+	static int check_struct2(struct2 x) {
+		if (x.a != 1)
+			return 1;
+		return 0;
+	}
+
+	static int pass_struct2(int a, int b, int c, struct2 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		if (c != 5)
+			return 5;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(int a, int b, struct2 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(int a, struct2 x) {
+		if (a != 3)
+			return 3;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(struct2 x) {
+		return check_struct2(x);
+	}
+
+	static int test_0_struct2_args () {
+		int r;
+		struct2 x;
+
+		x.a = 1;
+		if ((r = check_struct2(x)) != 0)
+			return r;
+		if ((r = pass_struct2(x)) != 0)
+			return r + 10;
+		if ((r = pass_struct2(3, x)) != 0)
+			return r + 20;
+		if ((r = pass_struct2(3, 4, x)) != 0)
+			return r + 30;
+		if ((r = pass_struct2(3, 4, 5, x)) != 0)
+			return r + 40;
 		return 0;
 	}
 
