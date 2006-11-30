@@ -3104,7 +3104,8 @@ handle_parent:
 				match++;
 		} else {
 			if (bflags & BFLAGS_NonPublic) {
-				if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE || startklass == klass)
+				/* Serialization currently depends on the old behavior.
+				 * if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE || startklass == klass)*/
 					match++;
 			}
 		}
