@@ -953,7 +953,7 @@ output_newobj_profile (GList *proflist)
 	for (tmp = proflist; tmp; tmp = tmp->next) {
 		p = tmp->data;
 		total += p->count;
-		if (p->count < 500)
+		if (p->count < 50000)
 			continue;
 		mp = p->mp;
 		m = method_get_name (mp->method);
@@ -962,7 +962,7 @@ output_newobj_profile (GList *proflist)
 		sorted = sort_alloc_list (mp->alloc_info);
 		for (tmps = sorted; tmps; tmps = tmps->next) {
 			ainfo = tmps->data;
-			if (ainfo->mem < 500)
+			if (ainfo->mem < 50000)
 				continue;
 			klass = ainfo->klass;
 			if (klass->rank) {
