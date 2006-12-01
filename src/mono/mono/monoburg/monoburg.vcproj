@@ -93,6 +93,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat"
 			/>
 		</Configuration>
 		<Configuration
