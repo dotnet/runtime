@@ -1490,6 +1490,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	int count = 0;
 	gboolean found;
 
+	mono_loader_lock ();
 	/*
 	 * According to the spec, custom modifiers should come before the byref
 	 * flag, but the IL produced by ilasm from the following signature:
@@ -1561,6 +1562,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	if (!do_mono_metadata_parse_type (type, m, container, ptr, &ptr)) {
 		if (type != &stype)
 			g_free (type);
+		mono_loader_unlock ();
 		return NULL;
 	}
 
@@ -1590,12 +1592,16 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 			   LOCKING: even though we don't explicitly hold a lock, in the problematic case 'ret' is a field
 			            of a MonoClass which currently holds the loader lock.  'type' is local.
 			*/
-			if (ret->data.klass == type->data.klass)
+			if (ret->data.klass == type->data.klass) {
+				mono_loader_unlock ();
 				return ret;
+			}
 		}
 		/* No need to use locking since nobody is modifying the hash table */
-		if ((cached = g_hash_table_lookup (type_cache, type)))
+		if ((cached = g_hash_table_lookup (type_cache, type))) {
+			mono_loader_unlock ();
 			return cached;
+		}
 	}
 	
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
@@ -1604,6 +1610,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 		type = mono_mempool_alloc (m->mempool, sizeof (MonoType));
 		memcpy (type, &stype, sizeof (MonoType));
 	}
+	mono_loader_unlock ();
 	return type;
 }
 
@@ -1716,9 +1723,11 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 {
 	MonoMethodSignature *sig;
 
+	mono_loader_lock ();
 	sig = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	sig->param_count = nparams;
 	sig->sentinelpos = -1;
+	mono_loader_unlock ();
 
 	return sig;
 }
@@ -2389,6 +2398,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 
+	mono_loader_lock ();
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
 		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader));
@@ -2397,6 +2407,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
+		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
 		mh = mono_mempool_alloc0 (m->mempool, sizeof (MonoMethodHeader));
@@ -2410,6 +2421,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		 */
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
+		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
@@ -2438,6 +2450,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		ptr = code + code_size;
 		break;
 	default:
+		mono_loader_unlock ();
 		return NULL;
 	}
 		       
@@ -2460,6 +2473,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			mh->locals [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
+				mono_loader_unlock ();
 				return NULL;
 			}
 		}
@@ -2472,6 +2486,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	mh->init_locals = init_locals;
 	if (fat_flags & METHOD_HEADER_MORE_SECTS)
 		parse_section_data (m, mh, (const unsigned char*)ptr);
+	mono_loader_unlock ();
 	return mh;
 }
 
@@ -2924,7 +2939,9 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 		++pos;
 	}
 
+	mono_loader_lock ();
 	result = mono_mempool_alloc0 (meta->mempool, sizeof (MonoClass*) * (pos - start));
+	mono_loader_unlock ();
 
 	pos = start;
 	while (pos < tdef->rows) {
