@@ -24,6 +24,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
