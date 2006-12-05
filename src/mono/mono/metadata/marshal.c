@@ -8717,6 +8717,174 @@ mono_marshal_get_stelemref ()
 	return ret;
 }
 
+typedef struct {
+	int rank;
+	int elem_size;
+	MonoMethod *method;
+} ArrayElemAddr;
+
+/* LOCKING: vars accessed under the marshal lock */
+static ArrayElemAddr *elem_addr_cache = NULL;
+static int elem_addr_cache_size = 0;
+static int elem_addr_cache_next = 0;
+
+/**
+ * mono_marshal_get_array_address:
+ * @rank: rank of the array type
+ * @elem_size: size in bytes of an element of an array.
+ *
+ * Returns a MonoMethd that implements the code to get the address
+ * of an element in a multi-dimenasional array of @rank dimensions.
+ * The returned method takes an array as the first argument and then
+ * @rank indexes for the @rank dimensions.
+ */
+MonoMethod*
+mono_marshal_get_array_address (int rank, int elem_size)
+{
+	MonoMethod *ret;
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig;
+	int i, bounds, ind, realidx;
+	int branch_pos, *branch_positions;
+	int cached;
+
+	ret = NULL;
+	mono_marshal_lock ();
+	for (i = 0; i < elem_addr_cache_next; ++i) {
+		if (elem_addr_cache [i].rank == rank && elem_addr_cache [i].elem_size == elem_size) {
+			ret = elem_addr_cache [i].method;
+			break;
+		}
+	}
+	mono_marshal_unlock ();
+	if (ret)
+		return ret;
+
+	branch_positions = g_new0 (int, rank);
+
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1 + rank);
+
+	/* void* address (void* array, int idx0, int idx1, int idx2, ...) */
+	sig->ret = &mono_defaults.int_class->byval_arg;
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	for (i = 0; i < rank; ++i) {
+		sig->params [i + 1] = &mono_defaults.int32_class->byval_arg;
+	}
+
+	mb = mono_mb_new (mono_defaults.object_class, "ElementAddr", MONO_WRAPPER_MANAGED_TO_MANAGED);
+	
+	bounds = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	ind = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	realidx = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+
+	/* bounds = array->bounds; */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, bounds));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, bounds);
+
+	/* ind is the overall element index, realidx is the partial index in a single dimension */
+	/* ind = idx0 - bounds [0].lower_bound */
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldloc (mb, bounds);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_SUB);
+	mono_mb_emit_stloc (mb, ind);
+	/* if (ind >= bounds [0].length) goto exeception; */
+	mono_mb_emit_ldloc (mb, ind);
+	mono_mb_emit_ldloc (mb, bounds);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArrayBounds, length));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	/* note that we use unsigned comparison */
+	branch_pos = mono_mb_emit_branch (mb, CEE_BGE_UN);
+
+ 	/* For large ranks (> 4?) use a loop n IL later to reduce code size.
+	 * We could also decide to ignore the passed elem_size and get it
+	 * from the array object, to reduce the number of methods we generate:
+	 * the additional cost is 3 memory loads and a non-immediate mul.
+	 */
+	for (i = 1; i < rank; ++i) {
+		/* realidx = idxi - bounds [i].lower_bound */
+		mono_mb_emit_ldarg (mb, 1 + i);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		mono_mb_emit_byte (mb, CEE_SUB);
+		mono_mb_emit_stloc (mb, realidx);
+		/* if (realidx >= bounds [i].length) goto exeception; */
+		mono_mb_emit_ldloc (mb, realidx);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		branch_positions [i] = mono_mb_emit_branch (mb, CEE_BGE_UN);
+		/* ind = ind * bounds [i].length + realidx */
+		mono_mb_emit_ldloc (mb, ind);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		mono_mb_emit_byte (mb, CEE_MUL);
+		mono_mb_emit_ldloc (mb, realidx);
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_stloc (mb, ind);
+	}
+
+	/* return array->vector + ind * element_size */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, vector));
+	mono_mb_emit_ldloc (mb, ind);
+	mono_mb_emit_icon (mb, elem_size);
+	mono_mb_emit_byte (mb, CEE_MUL);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* patch the branches to get here and throw */
+	for (i = 1; i < rank; ++i) {
+		mono_mb_patch_branch (mb, branch_positions [i]);
+	}
+	mono_mb_patch_branch (mb, branch_pos);
+	/* throw exception */
+	mono_mb_emit_exception (mb, "IndexOutOfRangeException", NULL);
+
+	g_free (branch_positions);
+	mono_loader_lock ();
+	ret = mono_mb_create_method (mb, sig, 4);
+	mono_loader_unlock ();
+	mono_mb_free (mb);
+
+	/* cache the result */
+	cached = 0;
+	mono_marshal_lock ();
+	for (i = 0; i < elem_addr_cache_next; ++i) {
+		if (elem_addr_cache [i].rank == rank && elem_addr_cache [i].elem_size == elem_size) {
+			/* FIXME: free ret */
+			ret = elem_addr_cache [i].method;
+			cached = TRUE;
+			break;
+		}
+	}
+	if (!cached) {
+		if (elem_addr_cache_next >= elem_addr_cache_size) {
+			int new_size = elem_addr_cache_size + 4;
+			ArrayElemAddr *new_array = g_new0 (ArrayElemAddr, new_size);
+			memcpy (new_array, elem_addr_cache, elem_addr_cache_size * sizeof (ArrayElemAddr));
+			g_free (elem_addr_cache);
+			elem_addr_cache = new_array;
+			elem_addr_cache_size = new_size;
+		}
+		elem_addr_cache [elem_addr_cache_next].rank = rank;
+		elem_addr_cache [elem_addr_cache_next].elem_size = elem_size;
+		elem_addr_cache [elem_addr_cache_next].method = ret;
+	}
+	mono_marshal_unlock ();
+	return ret;
+}
+
 MonoMethod*
 mono_marshal_get_write_barrier (void)
 {
