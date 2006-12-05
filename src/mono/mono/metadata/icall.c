@@ -2007,6 +2007,7 @@ ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 	}
 
 	geninst = mono_reflection_bind_generic_parameters (type, count, types);
+	g_free (types);
 	if (!geninst)
 		return NULL;
 
