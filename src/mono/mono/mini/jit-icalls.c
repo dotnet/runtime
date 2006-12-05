@@ -605,51 +605,6 @@ mono_fload_r4_arg (double val)
 
 #endif
 
-/**
- * ves_array_element_address:
- * @this: a pointer to the array object
- *
- * Returns: the address of an array element.
- */
-gpointer 
-ves_array_element_address (MonoArray *this, ...)
-{
-	MonoClass *class;
-	va_list ap;
-	int i, ind, esize, realidx;
-	gpointer ea;
-
-	MONO_ARCH_SAVE_REGS;
-
-	g_assert (this != NULL);
-
-	va_start(ap, this);
-
-	class = this->obj.vtable->klass;
-
-	g_assert (this->bounds != NULL);
-
-	esize = mono_array_element_size (class);
-	ind = va_arg(ap, int);
-	ind -= (int)this->bounds [0].lower_bound;
-	if ((guint32)ind >= (guint32)this->bounds [0].length)
-		mono_raise_exception (mono_get_exception_index_out_of_range ());
-	for (i = 1; i < class->rank; i++) {
-		realidx = va_arg(ap, int) - (int)this->bounds [i].lower_bound;
-		if ((guint32)realidx >= (guint32)this->bounds [i].length)
-			mono_raise_exception (mono_get_exception_index_out_of_range ());
-		ind *= this->bounds [i].length;
-		ind += realidx;
-	}
-	esize *= ind;
-
-	ea = (gpointer*)(gpointer)((char*)this->vector + esize);
-
-	va_end(ap);
-
-	return ea;
-}
-
 MonoArray *
 mono_array_new_va (MonoMethod *cm, ...)
 {

@@ -49,8 +49,6 @@ guint64 mono_lshr_un (guint64 a, gint32 shamt) MONO_INTERNAL;
 
 gint64 mono_lshr (gint64 a, gint32 shamt) MONO_INTERNAL;
 
-gpointer ves_array_element_address (MonoArray *this, ...) MONO_INTERNAL;
-
 MonoArray *mono_array_new_va (MonoMethod *cm, ...) MONO_INTERNAL;
 
 gpointer mono_class_static_field_address (MonoDomain *domain, MonoClassField *field) MONO_INTERNAL;

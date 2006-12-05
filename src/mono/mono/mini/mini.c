@@ -2627,49 +2627,6 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 }
 
 static MonoMethodSignature *
-mono_get_element_address_signature (int arity)
-{
-	static GHashTable *sighash = NULL;
-	MonoMethodSignature *res;
-	int i;
-
-	mono_jit_lock ();
-	if (!sighash) {
-		sighash = g_hash_table_new (NULL, NULL);
-	}
-	else if ((res = g_hash_table_lookup (sighash, GINT_TO_POINTER (arity)))) {
-		LeaveCriticalSection (&jit_mutex);
-		return res;
-	}
-
-	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
-
-	res->pinvoke = 1;
-#ifdef MONO_ARCH_VARARG_ICALLS
-	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
-	res->call_convention = MONO_CALL_VARARG;
-#endif
-	res->params [0] = &mono_defaults.array_class->byval_arg; 
-
-#ifdef PLATFORM_WIN32
-	/* 
-	 * The default pinvoke calling convention is STDCALL but we need CDECL.
-	 */
-	res->call_convention = MONO_CALL_C;
-#endif
-
-	for (i = 1; i <= arity; i++)
-		res->params [i] = &mono_defaults.int_class->byval_arg;
-
-	res->ret = &mono_defaults.int_class->byval_arg;
-
-	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
-	mono_jit_unlock ();
-
-	return res;
-}
-
-static MonoMethodSignature *
 mono_get_array_new_va_signature (int arity)
 {
 	static GHashTable *sighash = NULL;
@@ -3157,10 +3114,8 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 {
 	int temp, rank;
 	MonoInst *addr;
-	MonoMethodSignature *esig;
-	char icall_name [256];
-	char *name;
-	MonoJitICallInfo *info;
+	MonoMethod *addr_method;
+	int element_size;
 
 	rank = mono_method_signature (cmethod)->param_count - (is_set? 1: 0);
 
@@ -3190,26 +3145,12 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 #endif
 	}
 
-	/* Need to register the icall so it gets an icall wrapper */
-	sprintf (icall_name, "ves_array_element_address_%d", rank);
-
-	mono_jit_lock ();
-	info = mono_find_jit_icall_by_name (icall_name);
-	if (info == NULL) {
-		esig = mono_get_element_address_signature (rank);
-		name = g_strdup (icall_name);
-		info = mono_register_jit_icall (ves_array_element_address, name, esig, FALSE);
-
-		g_hash_table_insert (jit_icall_name_hash, name, name);
-	}
-	mono_jit_unlock ();
-
-	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
-	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE, FALSE);
-	cfg->flags |= MONO_CFG_HAS_VARARGS;
-
+	element_size = mono_class_array_element_size (cmethod->klass->element_class);
+	addr_method = mono_marshal_get_array_address (rank, element_size);
+	temp = mono_emit_method_call_spilled (cfg, bblock, addr_method, addr_method->signature, sp, ip, NULL);
 	NEW_TEMPLOAD (cfg, addr, temp);
 	return addr;
+
 }
 
 static MonoJitICallInfo **emul_opcode_map = NULL;
