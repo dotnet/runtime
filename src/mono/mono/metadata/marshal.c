@@ -708,9 +708,9 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 
 		memcpy (native_arr, as, MIN (strlen (as), elnum));
 		g_free (as);
-	}
-	else
+	} else {
 		g_assert_not_reached ();
+	}
 }
 
 void
@@ -799,9 +799,9 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	tmp = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, res, &error);
 	if (error) {
 		g_error_free (error);
+		mono_marshal_free (res);
 		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
-	}
-	else {
+	} else {
 		memcpy (res, tmp, sb->length + 1);
 		g_free (tmp);
 	}
@@ -870,10 +870,10 @@ mono_string_to_lpstr (MonoString *s)
 		g_error_free (error);
 		mono_raise_exception(exc);
 		return NULL;
-	}
-	else {
+	} else {
 		as = CoTaskMemAlloc (len + 1);
 		memcpy (as, tmp, len + 1);
+		g_free (tmp);
 		return as;
 	}
 #else
@@ -2876,9 +2876,9 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		msg->call_type = CallType_EndInvoke;
 		MONO_OBJECT_SETREF (msg, async_result, ares);
 		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
-	}
-	else
+	} else {
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
+	}
 
 	if (exc) {
 		if (((MonoException*)exc)->stack_trace) {
@@ -9187,8 +9187,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
 		g_assert_not_reached ();
 		return NULL;
-	} else
+	} else {
 		return mono_string_new_len (mono_domain_get (), ptr, len);
+	}
 }
 
 MonoString *
@@ -9220,8 +9221,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *pt
 		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
 		g_assert_not_reached ();
 		return NULL;
-	} else
+	} else {
 		return mono_string_new_utf16 (domain, ptr, len);
+	}
 }
 
 MonoString *
