@@ -5,21 +5,8 @@
 #include <assert.h>
 #include <glib.h>
 
-#ifdef PLATFORM_WIN32
-#include <windows.h>
-#include <io.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-#endif
-
 #include "mono-codeman.h"
-
-#ifdef PLATFORM_WIN32
-#define FORCE_MALLOC
-#endif
+#include "mono-mmap.h"
 
 #define MIN_PAGES 16
 
@@ -37,19 +24,13 @@
 #define MAX_WASTAGE 32
 #define MIN_BSIZE 32
 
-#ifndef MAP_ANONYMOUS
-#ifdef MAP_ANON
-#define MAP_ANONYMOUS MAP_ANON
-#else
-#define FORCE_MALLOC
-#endif
-#endif
-
 #ifdef __x86_64__
-#define ARCH_MAP_FLAGS MAP_32BIT
+#define ARCH_MAP_FLAGS MONO_MMAP_32BIT
 #else
 #define ARCH_MAP_FLAGS 0
 #endif
+
+#define MONO_PROT_RWX (MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC)
 
 typedef struct _CodeChunck CodeChunk;
 
@@ -103,9 +84,7 @@ free_chunklist (CodeChunk *chunk)
 		dead = chunk;
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
-#ifndef FORCE_MALLOC
-			munmap (dead->data, dead->size);
-#endif
+			mono_vfree (dead->data, dead->size);
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
 			free (dead->data);
 		}
@@ -153,18 +132,6 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 	}
 }
 
-static int
-query_pagesize (void)
-{
-#ifdef PLATFORM_WIN32
-	SYSTEM_INFO info;
-	GetSystemInfo (&info);
-	return info.dwAllocationGranularity;
-#else
-	return getpagesize ();
-#endif
-}
-
 /* BIND_ROOM is the divisor for the chunck of code size dedicated
  * to binding branches (branches not reachable with the immediate displacement)
  * bind_size = size/BIND_ROOM;
@@ -180,9 +147,9 @@ query_pagesize (void)
 static CodeChunk*
 new_codechunk (int dynamic, int size)
 {
-	static int pagesize = 0;
 	int minsize, flags = CODE_FLAG_MMAP;
 	int chunk_size, bsize = 0;
+	int pagesize;
 	CodeChunk *chunk;
 	void *ptr;
 
@@ -190,14 +157,12 @@ new_codechunk (int dynamic, int size)
 	flags = CODE_FLAG_MALLOC;
 #endif
 
-	if (!pagesize)
-		pagesize = query_pagesize ();
+	pagesize = mono_pagesize ();
 
 	if (dynamic) {
 		chunk_size = size;
 		flags = CODE_FLAG_MALLOC;
-	}
-	else {
+	} else {
 		minsize = pagesize * MIN_PAGES;
 		if (size < minsize)
 			chunk_size = minsize;
@@ -225,27 +190,10 @@ new_codechunk (int dynamic, int size)
 		ptr = malloc (chunk_size);
 		if (!ptr)
 			return NULL;
-
-	}
-	else {
-#ifndef FORCE_MALLOC
-		ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|ARCH_MAP_FLAGS, -1, 0);
-		if (ptr == (void*)-1) {
-			int fd = open ("/dev/zero", O_RDONLY);
-			if (fd != -1) {
-				ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|ARCH_MAP_FLAGS, fd, 0);
-				close (fd);
-			}
-			if (ptr == (void*)-1) {
-				ptr = malloc (chunk_size);
-				if (!ptr)
-					return NULL;
-				flags = CODE_FLAG_MALLOC;
-			}
-		}
-#else
-		return NULL;
-#endif
+	} else {
+		ptr = mono_valloc (NULL, chunk_size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		if (!ptr)
+			return NULL;
 	}
 
 	if (flags == CODE_FLAG_MALLOC) {
@@ -253,20 +201,12 @@ new_codechunk (int dynamic, int size)
 		 * AMD64 processors maintain icache coherency only for pages which are 
 		 * marked executable.
 		 */
-#ifndef PLATFORM_WIN32
 		{
 			char *page_start = (char *) (((gssize) (ptr)) & ~ (pagesize - 1));
 			int pages = ((char*)ptr + chunk_size - page_start + pagesize - 1) / pagesize;
-			int err = mprotect (page_start, pages * pagesize, PROT_READ | PROT_WRITE | PROT_EXEC);
+			int err = mono_mprotect (page_start, pages * pagesize, MONO_PROT_RWX);
 			assert (!err);
 		}
-#else
-		{
-			DWORD oldp;
-			int err = VirtualProtect (ptr, chunk_size, PAGE_EXECUTE_READWRITE, &oldp);
-			assert (err);
-		}
-#endif
 
 #ifdef BIND_ROOM
 			/* Make sure the thunks area is zeroed */
@@ -278,10 +218,8 @@ new_codechunk (int dynamic, int size)
 	if (!chunk) {
 		if (flags == CODE_FLAG_MALLOC)
 			free (ptr);
-#ifndef FORCE_MALLOC
 		else
-			munmap (ptr, chunk_size);
-#endif
+			mono_vfree (ptr, chunk_size);
 		return NULL;
 	}
 	chunk->next = NULL;
