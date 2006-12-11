@@ -347,7 +347,7 @@ libmono_static_la_LIBADD = $(static_libs)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
-libmonoincludedir = $(includedir)/mono/jit
+libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 libmonoinclude_HEADERS = jit.h
 

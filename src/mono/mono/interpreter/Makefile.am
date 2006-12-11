@@ -32,7 +32,7 @@ libmint_la_SOURCES =	\
 	mintops.c	\
 	transform.c
 
-libmintincludedir = $(includedir)/mono/interpreter
+libmintincludedir = $(includedir)/mono-$(API_VER)/mono/interpreter
 
 libmintinclude_HEADERS = 	\
 	embed.h

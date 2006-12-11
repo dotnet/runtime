@@ -125,7 +125,7 @@ libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 
 libmonoruntime_static_la_LDFLAGS = -static
 
-libmonoruntimeincludedir = $(includedir)/mono/metadata
+libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
 libmonoruntimeinclude_HEADERS = \
 	attrdefs.h	\

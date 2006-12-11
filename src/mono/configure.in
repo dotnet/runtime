@@ -9,6 +9,9 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono,1.2)
 AM_MAINTAINER_MODE
 
+API_VER=1.0
+AC_SUBST(API_VER)
+
 AC_PROG_LN_S
 
 # In case of cygwin, override LN_S, irrespective of what it determines.

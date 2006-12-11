@@ -27,7 +27,7 @@ libmonoutils_la_SOURCES = \
 	mono-path.c	\
 	mono-stdlib.c
 
-libmonoutilsincludedir = $(includedir)/mono/utils
+libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
 libmonoutilsinclude_HEADERS = \
 	monobitset.h	\

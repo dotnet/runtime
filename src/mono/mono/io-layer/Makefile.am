@@ -7,7 +7,7 @@ INCLUDES = \
 	-DMONO_BINDIR=\""$(bindir)"\"	\
 	-I$(top_srcdir)	
 
-libwapiincludedir = $(includedir)/mono/io-layer
+libwapiincludedir = $(includedir)/mono-$(API_VER)/mono/io-layer
 
 OTHER_H = \
 	access.h	\
