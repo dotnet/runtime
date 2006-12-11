@@ -706,6 +706,8 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(kqueue)
 	AC_CHECK_FUNCS(backtrace_symbols)
 	AC_CHECK_FUNCS(mkstemp)
+	AC_CHECK_FUNCS(mmap)
+	AC_CHECK_FUNCS(madvise)
 
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
