@@ -18,6 +18,8 @@ libmonoutils_la_SOURCES = \
 	mono-compiler.h	\
 	monobitset.c	\
 	mono-math.c  \
+	mono-mmap.c  \
+	mono-mmap.h  \
 	strtod.h	\
 	strtod.c	\
 	strenc.h	\
