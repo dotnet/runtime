@@ -547,15 +547,14 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 #endif
 	if (have_cpuid) {
 		/* Have to use the code manager to get around WinXP DEP */
-		MonoCodeManager *codeman = mono_code_manager_new_dynamic ();
-		CpuidFunc func;
-		void *ptr = mono_code_manager_reserve (codeman, sizeof (cpuid_impl));
-		memcpy (ptr, cpuid_impl, sizeof (cpuid_impl));
-
-		func = (CpuidFunc)ptr;
+		static CpuidFunc func = NULL;
+		void *ptr;
+		if (!func) {
+			ptr = mono_global_codeman_reserve (sizeof (cpuid_impl));
+			memcpy (ptr, cpuid_impl, sizeof (cpuid_impl));
+			func = (CpuidFunc)ptr;
+		}
 		func (id, p_eax, p_ebx, p_ecx, p_edx);
-
-		mono_code_manager_destroy (codeman);
 
 		/*
 		 * We use this approach because of issues with gcc and pic code, see:
