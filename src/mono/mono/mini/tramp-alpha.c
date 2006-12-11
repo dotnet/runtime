@@ -685,12 +685,12 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
  * This method is only called when running in the Mono Debugger.
  */
 guint8 *
-mono_debugger_create_notification_function (MonoCodeManager *codeman)
+mono_debugger_create_notification_function (void)
 {
   guint8 *code;
   unsigned int *buf;
 
-  code = mono_code_manager_reserve (codeman, 16);
+  code = mono_global_codeman_reserve (16);
   buf = (unsigned int *)code;
 
   *buf = 0;

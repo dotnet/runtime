@@ -529,11 +529,11 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
  * This method is only called when running in the Mono Debugger.
  */
 gpointer
-mono_debugger_create_notification_function (MonoCodeManager *codeman)
+mono_debugger_create_notification_function (void)
 {
 	guint8 *ptr, *buf;
 
-	codeman = mono_code_manager_reserve (codeman, 16);
+	codeman = mono_global_codeman_reserve (16);
 	ppc_break (buf);
 	ppc_blr (buf);
 	mono_arch_flush_icache (ptr, buf - ptr);
