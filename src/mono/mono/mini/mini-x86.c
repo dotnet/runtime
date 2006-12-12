@@ -113,7 +113,7 @@ typedef struct {
 
 static X86_Reg_No param_regs [] = { 0 };
 
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) || defined(__APPLE__)
 static X86_Reg_No return_regs [] = { X86_EAX, X86_EDX };
 #endif
 
@@ -179,7 +179,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	else 
 		size = mono_type_stack_size (&klass->byval_arg, NULL);
 
-#ifdef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) || defined (__APPLE__)
 	if (sig->pinvoke && is_return) {
 		MonoMarshalType *info;
 
