@@ -82,6 +82,19 @@ This is Mono.
 		./autogen.sh --prefix=/usr/local
 		make
 
+	For people with non-standard installations of the auto* utils and of
+	pkg-config (common on misconfigured OSX and windows boxes), you could get
+	an error like this:
+
+	./configure: line 19176: syntax error near unexpected token `PKG_CHECK_MODULES(BASE_DEPENDENCIES,' ...
+
+	This means that you need to set the ACLOCAL_FLAGS environment var
+	when invoking autogen.sh, like this:
+
+		ACLOCAL_FLAGS="-I $acprefix/share/aclocal" ./autogen.sh --prefix=/usr/loca
+	
+	where $acprefix is the prefix where aclocal has been installed.
+
 	This will automatically go into the mcs/ tree and build the
 	binaries there.
 
