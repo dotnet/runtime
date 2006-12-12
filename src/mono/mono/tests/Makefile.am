@@ -264,9 +264,18 @@ TEST_IL_SRC=			\
 	even-odd.il
 
 TEST_CS2_SRC = interlocked-2.2.cs pinvoke-2.2.cs bug-79684.2.cs \
-	catch-generics.2.cs
+	catch-generics.2.cs	\
+	event-get.2.cs
+
 TEST_IL2_SRC = find-method.2.il
 
+# pre-requisite test sources: files that are not test themselves
+# but that need to be compiled
+PREREQ_IL_SRC=event-il.il
+PREREQ_CS_SRC=
+
+PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe)
+PREREQSI_CS=$(PREREQ_CS_SRC:.cs=.exe)
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTSI_CS2=$(TEST_CS2_SRC:.2.cs=.exe)
@@ -274,7 +283,8 @@ TESTSI_IL2=$(TEST_IL2_SRC:.2.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_SRC) $(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_SRC) \
+	$(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl $(PREREQ_IL_SRC) $(PREREQ_CS_SRC)
 
 %.exe: %.2.il
 	$(ILASM2) -out:$@ $<
@@ -340,7 +350,7 @@ testb: $(TEST_PROG) $(TESTBS)
 
 testjit: testjit-default testjit-net_2_0
 
-testjit-default: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
+testjit-default: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
