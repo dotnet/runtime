@@ -49,6 +49,7 @@ TEST_CS_SRC=			\
 	hash-table.cs		\
 	test-ops.cs		\
 	obj.cs			\
+	test-dup-mp.cs		\
 	string.cs		\
 	stringbuilder.cs	\
 	switch.cs		\
