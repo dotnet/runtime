@@ -3,6 +3,7 @@
 #ifdef PLATFORM_WIN32
 #include <windows.h>
 #include <io.h>
+#include <glib.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
