@@ -915,7 +915,7 @@ gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token
 gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 										   guint8* tramp) MONO_INTERNAL;
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
-guint8           *mono_debugger_create_notification_function (void) MONO_INTERNAL;
+gpointer          mono_debugger_create_notification_function (void) MONO_INTERNAL;
 
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;

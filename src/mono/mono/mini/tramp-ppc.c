@@ -533,7 +533,7 @@ mono_debugger_create_notification_function (void)
 {
 	guint8 *ptr, *buf;
 
-	codeman = mono_global_codeman_reserve (16);
+	ptr = buf = mono_global_codeman_reserve (16);
 	ppc_break (buf);
 	ppc_blr (buf);
 	mono_arch_flush_icache (ptr, buf - ptr);

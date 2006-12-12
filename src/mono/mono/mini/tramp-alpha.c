@@ -684,7 +684,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 /*
  * This method is only called when running in the Mono Debugger.
  */
-guint8 *
+gpointer
 mono_debugger_create_notification_function (void)
 {
   guint8 *code;

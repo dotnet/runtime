@@ -430,7 +430,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	NOT_IMPLEMENTED;
 }
 
-guint8*
+gpointer
 mono_debugger_create_notification_function (void)
 {
 	NOT_IMPLEMENTED;

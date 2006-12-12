@@ -501,7 +501,7 @@ mono_debugger_create_notification_function (void)
 #if 0
 	guint8 *ptr, *buf;
 
-	codeman = mono_global_codeman_reserve (16);
+	ptr = buf = mono_global_codeman_reserve (16);
 	mips_break (buf, 0xd0);
 	mips_jr (buf, mips_ra);
 	mips_nop (buf);
