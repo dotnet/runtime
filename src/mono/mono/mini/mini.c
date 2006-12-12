@@ -1671,16 +1671,12 @@ type_from_stack_type (MonoInst *ins) {
 	case STACK_R8: return &mono_defaults.double_class->byval_arg;
 	case STACK_MP:
 		/* 
-		 * FIXME: This doesn't work because mono_class_from_mono_type ()
-		 * returns the original klass for a byref type, not a 'byref' class,
-		 * causing the JIT to create variables with the wrong type, for
-		 * example.
+		 * this if used to be commented without any specific reason, but
+		 * it breaks #80235 when commented
 		 */
-		/*
 		if (ins->klass)
 			return &ins->klass->this_arg;
 		else
-		*/
 			return &mono_defaults.object_class->this_arg;
 	case STACK_OBJ: return &mono_defaults.object_class->byval_arg;
 	case STACK_VTYPE: return &ins->klass->byval_arg;
