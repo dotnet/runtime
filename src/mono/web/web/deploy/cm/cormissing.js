@@ -336,13 +336,15 @@ function clickHandler (evt)
 
 		if (evt.ctrlKey)
 		{
-			var strRoot = 'http://cvs.hispalinux.es/cgi-bin/cvsweb/mcs/class/';
-			var strExtra = '?cvsroot=mono';
+			var strRoot = 'http://svn.myrealbox.com/viewcvs/trunk/mcs/class/';
+			var strExtra = '';
 
 			if (strAssembly)
 			{
 				if (strAssembly == 'mscorlib')
 					strAssembly = 'corlib';
+				else if (strAssembly == 'System.Xml')
+					strAssembly = 'System.XML';
 
 				strRoot = strRoot + strAssembly + '/';
 				if (strNamespace)
@@ -351,7 +353,7 @@ function clickHandler (evt)
 					if (strClass)
 					{
 						strRoot += strClass + '.cs';
-						strExtra += '&rev=1';
+						strExtra += '?view=markup';
 					}
 				}
 				window.open (strRoot + strExtra, 'CVS');
