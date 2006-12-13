@@ -6871,7 +6871,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 				func = mono_method_get_wrapper_data (method, token);
 				info = mono_find_jit_icall_by_addr (func);
-				g_assert (info);
+				if (info == NULL){
+					g_error ("An attempt has been made to perform an icall to address %p, "
+						 "but the address has not been registered as an icall\n", info);
+					g_assert_not_reached ();
+				}
 
 				CHECK_STACK (info->sig->param_count);
 				sp -= info->sig->param_count;
