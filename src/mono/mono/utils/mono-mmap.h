@@ -1,6 +1,8 @@
 #ifndef __MONO_UTILS_MMAP_H__
 #define __MONO_UTILS_MMAP_H__
 
+#include <glib.h>
+
 enum {
 	/* protection */
 	MONO_MMAP_NONE = 0,
@@ -20,7 +22,7 @@ enum {
 int   mono_pagesize   (void);
 void* mono_valloc     (void *addr, size_t length, int flags);
 int   mono_vfree      (void *addr, size_t length);
-void* mono_file_map   (size_t length, int flags, int fd, off_t offset, void **ret_handle);
+void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
 int   mono_file_unmap (void *addr, void *handle);
 int   mono_mprotect   (void *addr, size_t length, int flags);
 

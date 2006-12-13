@@ -3,7 +3,6 @@
 #ifdef PLATFORM_WIN32
 #include <windows.h>
 #include <io.h>
-#include <glib.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,10 +28,10 @@
 int
 mono_pagesize (void)
 {
+	SYSTEM_INFO info;
 	static int saved_pagesize = 0;
 	if (saved_pagesize)
 		return saved_pagesize;
-	SYSTEM_INFO info;
 	GetSystemInfo (&info);
 	saved_pagesize = info.dwAllocationGranularity;
 	return saved_pagesize;
@@ -76,7 +75,7 @@ mono_vfree (void *addr, size_t length)
 }
 
 void*
-mono_file_map (size_t length, int flags, int fd, off_t offset, void **ret_handle)
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
 	void *ptr;
 	int mflags = 0;
@@ -241,7 +240,7 @@ mono_vfree (void *addr, size_t length)
  *
  */
 void*
-mono_file_map (size_t length, int flags, int fd, off_t offset, void **ret_handle)
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
 	void *ptr;
 	int mflags = 0;
@@ -336,9 +335,9 @@ mono_vfree (void *addr, size_t length)
 }
 
 void*
-mono_file_map (size_t length, int flags, int fd, off_t offset, void **ret_handle)
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
-	off_t cur_offset;
+	guint64 cur_offset;
 	size_t bytes_read;
 	void *ptr = malloc (length);
 	if (!ptr)
