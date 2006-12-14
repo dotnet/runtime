@@ -8682,17 +8682,10 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	MonoClass *klass;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoGenericClass *gclass, *cached;
-	MonoInflatedGenericClass *igclass;
-	MonoDynamicGenericClass *dgclass = NULL;
 	gboolean is_dynamic = FALSE;
 	MonoDomain *domain;
 	MonoType *geninst;
 	int i;
-
-	klass = mono_class_from_mono_type (type->type);
-	if (!klass->generic_container && !klass->generic_class &&
-	    !(klass->nested_in && klass->nested_in->generic_container))
-		return NULL;
 
 	mono_loader_lock ();
 
@@ -8710,20 +8703,32 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		tb = (MonoReflectionTypeBuilder *) rgt;
 
 		is_dynamic = TRUE;
-	} else if (klass->wastypebuilder) {
+	}
+
+	/* FIXME: fix the CreateGenericParameters protocol to avoid the two stage setup of TypeBuilders */
+	if (tb && tb->generic_container)
+		mono_reflection_create_generic_class (tb);
+
+	klass = mono_class_from_mono_type (type->type);
+	if (!klass->generic_container) {
+		mono_loader_unlock ();
+		return NULL;
+	}
+
+	if (klass->wastypebuilder) {
 		tb = (MonoReflectionTypeBuilder *) klass->reflection_info;
 
 		is_dynamic = TRUE;
 	}
 
 	if (is_dynamic) {
-		dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		igclass = &dgclass->generic_class;
+		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		MonoInflatedGenericClass *igclass = &dgclass->generic_class;
 		gclass = &igclass->generic_class;
 		gclass->is_dynamic = TRUE;
 		gclass->is_inflated = TRUE;
 	} else {
-		igclass = g_new0 (MonoInflatedGenericClass, 1);
+		MonoInflatedGenericClass *igclass = g_new0 (MonoInflatedGenericClass, 1);
 		gclass = &igclass->generic_class;
 		gclass->is_inflated = TRUE;
 	}
@@ -8747,50 +8752,6 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 	gclass->container_class = klass;
-
-	if (klass->generic_class) {
-		MonoGenericClass *kgclass = klass->generic_class;
-		MonoGenericClass *ogclass = gclass;
-
-		ogclass->context = g_new0 (MonoGenericContext, 1);
-		ogclass->context->container = gclass->container_class->generic_container;
-		ogclass->context->gclass = gclass;
-
-		if (is_dynamic) {
-			dgclass = g_new0 (MonoDynamicGenericClass, 1);
-			igclass = &dgclass->generic_class;
-			gclass = &igclass->generic_class;
-			gclass->is_dynamic = TRUE;
-			gclass->is_inflated = TRUE;
-		} else {
-			igclass = g_new0 (MonoInflatedGenericClass, 1);
-			gclass = &igclass->generic_class;
-			gclass->is_inflated = TRUE;
-		}
-
-		gclass->inst = g_new0 (MonoGenericInst, 1);
-
-		gclass->inst->type_argc = kgclass->inst->type_argc;
-		gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
-		gclass->inst->is_reference = 1;
-
-		for (i = 0; i < gclass->inst->type_argc; i++) {
-			MonoType *t = kgclass->inst->type_argv [i];
-
-			t = mono_class_inflate_generic_type (t, ogclass->context);
-
-			if (!gclass->inst->is_open)
-				gclass->inst->is_open = mono_class_is_open_constructed_type (t);
-			if (gclass->inst->is_reference)
-				gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
-
-			gclass->inst->type_argv [i] = t;
-		}
-
-		gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
-
-		gclass->container_class = kgclass->container_class;
-	}
 
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
