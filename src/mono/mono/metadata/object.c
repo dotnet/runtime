@@ -810,6 +810,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		if (!mono_class_init (class) || class->exception_type){
 			MonoException *exc;
 			mono_domain_unlock (domain);
+			mono_loader_clear_error ();
 			exc = mono_class_get_exception_for_failure (class);
 			g_assert (exc);
 			mono_raise_exception (exc);
