@@ -6277,6 +6277,74 @@ ves_icall_MonoDebugger_GetMethodToken (MonoReflectionMethod *method)
 	return method->method->token;
 }
 
+/*
+ * We eturn NULL for no modifiers so the corlib code can return Type.EmptyTypes
+ * and avoid useless allocations.
+ */
+static MonoArray*
+type_array_from_modifiers (MonoImage *image, MonoType *type, int optional)
+{
+	MonoArray *res;
+	int i, count = 0;
+	for (i = 0; i < type->num_mods; ++i) {
+		if ((optional && !type->modifiers [i].required) || (!optional && type->modifiers [i].required))
+			count++;
+	}
+	if (!count)
+		return NULL;
+	res = mono_array_new (mono_domain_get (), mono_defaults.systemtype_class, count);
+	count = 0;
+	for (i = 0; i < type->num_mods; ++i) {
+		if ((optional && !type->modifiers [i].required) || (!optional && type->modifiers [i].required)) {
+			MonoClass *klass = mono_class_get (image, type->modifiers [i].token);
+			mono_array_setref (res, count, mono_type_get_object (mono_domain_get (), &klass->byval_arg));
+			count++;
+		}
+	}
+	return res;
+}
+
+static MonoArray*
+param_info_get_type_modifiers (MonoReflectionParameter *param, MonoBoolean optional)
+{
+	MonoType *type = param->ClassImpl->type;
+	MonoReflectionMethod *method = (MonoReflectionMethod*)param->MemberImpl;
+	MonoImage *image = method->method->klass->image;
+	int pos = param->PositionImpl;
+	MonoMethodSignature *sig = mono_method_signature (method->method);
+	if (pos == -1)
+		type = sig->ret;
+	else
+		type = sig->params [pos];
+
+	return type_array_from_modifiers (image, type, optional);
+}
+
+static MonoType*
+get_property_type (MonoProperty *prop)
+{
+	MonoMethodSignature *sig;
+	if (prop->get) {
+		sig = mono_method_signature (prop->get);
+		return sig->ret;
+	} else if (prop->set) {
+		sig = mono_method_signature (prop->set);
+		return sig->params [sig->param_count - 1];
+	}
+	return NULL;
+}
+
+static MonoArray*
+property_info_get_type_modifiers (MonoReflectionProperty *property, MonoBoolean optional)
+{
+	MonoType *type = get_property_type (property->property);
+	MonoImage *image = property->klass->image;
+
+	if (!type)
+		return NULL;
+	return type_array_from_modifiers (image, type, optional);
+}
+
 static MonoBoolean
 custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 {
