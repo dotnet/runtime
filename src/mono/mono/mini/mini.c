@@ -3253,6 +3253,12 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		store->inst_left = args [2];
 		store->inst_right = load;
 		return store;
+	} else if (cmethod->klass->image == mono_defaults.corlib) {
+		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
+				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
+			MONO_INST_NEW (cfg, ins, CEE_BREAK);
+			return ins;
+		}
 	}
 
 	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
