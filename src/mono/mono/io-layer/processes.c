@@ -606,6 +606,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				goto cleanup;
 			}
 		}
+		g_free (unquoted);
 
 		args_after_prog = args;
 	} else {
@@ -951,6 +952,9 @@ cleanup:
 		g_free (cmd);
 	}
 	if (full_prog != NULL) {
+		g_free (full_prog);
+	}
+	if (prog != NULL) {
 		g_free (prog);
 	}
 	if (args != NULL) {
@@ -961,6 +965,9 @@ cleanup:
 	}
 	if(env_strings != NULL) {
 		g_strfreev (env_strings);
+	}
+	if (argv != NULL) {
+		g_strfreev (argv);
 	}
 	
 #ifdef DEBUG
