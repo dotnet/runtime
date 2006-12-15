@@ -2582,6 +2582,17 @@ globalization_classes_to_check [] = {
 	{NULL, NULL}
 };
 
+static const FieldDesc
+safe_handle_fields[] ={
+	{"handle", G_STRUCT_OFFSET (MonoSafeHandle, handle)},
+	{NULL, 0}
+};
+
+static const ClassDesc interop_classes_to_check [] = {
+	{"SafeHandle", safe_handle_fields},
+	{NULL, NULL}
+};
+
 typedef struct {
 	const char *name;
 	const ClassDesc *types;
@@ -2597,6 +2608,7 @@ namespaces_to_check[] = {
 	{"System.Diagnostics", system_diagnostics_classes_to_check},
 	{"System", system_classes_to_check},
 	{"System.Globalization", globalization_classes_to_check},
+	{"System.Runtime.InteropServices", interop_classes_to_check},
 	{NULL, NULL}
 };
 

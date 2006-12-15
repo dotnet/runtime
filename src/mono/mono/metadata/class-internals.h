@@ -561,6 +561,16 @@ typedef struct {
 	gboolean enabled;
 } MonoStats;
 
+/*
+ * The definition of the first field in SafeHandle,
+ * Keep in sync with SafeHandle.cs, this is only used
+ * to access the `handle' parameter.
+ */
+typedef struct {
+	MonoObject  base;
+	void       *handle;
+} MonoSafeHandle;
+
 extern MonoStats mono_stats MONO_INTERNAL;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
@@ -716,6 +726,7 @@ typedef struct {
 	MonoClass *variant_class;
 	MonoClass *com_object_class;
 	MonoClass *com_interop_proxy_class;
+	MonoClass *safehandle_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

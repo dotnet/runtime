@@ -4148,7 +4148,17 @@ mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
 	}
 	g_free (spec);
 }
-	
+
+/**
+ * mono_type_to_unmanaged:
+ *
+ * Returns: A MonoMarshalNative enumeration value (MONO_NATIVE_) value
+ * describing the underlying native reprensetation of the type.
+ * 
+ * In addition the value pointed by
+ * "conv" will contain the kind of marshalling required for this
+ * particular type one of the MONO_MARSHAL_CONV_ enumeration values.
+ */
 guint32
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_field,
 			gboolean unicode, MonoMarshalConv *conv) 
@@ -4293,6 +4303,10 @@ handle_enum:
 					     type->data.klass->parent == mono_defaults.multicastdelegate_class)) {
 			*conv = MONO_MARSHAL_CONV_DEL_FTN;
 			return MONO_NATIVE_FUNC;
+		}
+		if (type->data.klass == mono_defaults.safehandle_class){
+			*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
+			return MONO_NATIVE_INT;
 		}
 		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
 		return MONO_NATIVE_STRUCT;
