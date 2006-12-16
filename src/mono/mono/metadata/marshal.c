@@ -7559,7 +7559,8 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-		if (mono_class_is_subclass_of (t->data.klass,  mono_defaults.safehandle_class, FALSE))
+		if (mono_defaults.safehandle_class != NULL &&
+		    mono_class_is_subclass_of (t->data.klass,  mono_defaults.safehandle_class, FALSE))
 			return emit_marshal_safehandle (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		
 		return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
