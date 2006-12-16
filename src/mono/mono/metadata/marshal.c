@@ -931,9 +931,9 @@ mono_string_from_bstr (gpointer bstr)
 #ifdef PLATFORM_WIN32
 	if (!bstr)
 		return NULL;
-	return mono_string_new_utf16 (mono_domain_get (), SysStringLen (bstr), bstr);
+	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
-	return mono_string_new_utf16 (mono_domain_get (), *(guint32 *) bstr, ((char *)bstr) - 4);
+	return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4));
 #endif
 }
 
