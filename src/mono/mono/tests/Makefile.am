@@ -223,7 +223,7 @@ TEST_CS_SRC=			\
 	main-returns.cs	\
 	subthread-exit.cs	\
 	desweak.cs	\
-	cominterop.cs
+	cominterop.cs	
 
 if X86
 # bug #71274
@@ -263,9 +263,13 @@ TEST_IL_SRC=			\
 	filter-bug.il		\
 	even-odd.il
 
-TEST_CS2_SRC = interlocked-2.2.cs pinvoke-2.2.cs bug-79684.2.cs \
+TEST_CS2_SRC = \
+	interlocked-2.2.cs	\
+	pinvoke-2.2.cs 		\
+	bug-79684.2.cs 		\
 	catch-generics.2.cs	\
-	event-get.2.cs
+	event-get.2.cs		\
+	safehandle.2.cs
 
 TEST_IL2_SRC = find-method.2.il
 
