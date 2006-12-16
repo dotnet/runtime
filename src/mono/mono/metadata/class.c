@@ -3162,16 +3162,11 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 		klass->interfaces [i] = mono_class_from_mono_type (inflated);
 	}
 
-	i = mono_metadata_nesting_typedef (klass->image, gklass->type_token, 1);
-	while (i) {
-		MonoClass* nclass;
-		guint32 cols [MONO_NESTED_CLASS_SIZE];
-		mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-		nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-		klass->nested_classes = g_list_prepend (klass->nested_classes, nclass);
-		
-		i = mono_metadata_nesting_typedef (klass->image, gklass->type_token, i + 1);
-	}
+	/*
+	 * We're not interested in the nested classes of a generic instance.
+	 * We use the generic type definition to look for nested classes.
+	 */
+	klass->nested_classes = NULL;
 
 	if (gklass->parent) {
 		MonoType *inflated = mono_class_inflate_generic_type (
@@ -5070,6 +5065,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
  * @klass: the MonoClass to act on
  *
  * This routine is an iterator routine for retrieving the nested types of a class.
+ * This works only if @klass is non-generic, or a generic type definition.
  *
  * You must pass a gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

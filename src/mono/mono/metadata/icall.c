@@ -3606,7 +3606,7 @@ static MonoReflectionType *
 ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoDomain *domain; 
-	MonoClass *startklass, *klass;
+	MonoClass *klass;
 	MonoClass *nested;
 	GList *tmpn;
 	char *str;
@@ -3616,10 +3616,22 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
 		return NULL;
-	klass = startklass = mono_class_from_mono_type (type->type);
+	klass = mono_class_from_mono_type (type->type);
 	str = mono_string_to_utf8 (name);
 
  handle_parent:
+	/*
+	 * If a nested type is generic, return its generic type definition.
+	 * Note that this means that the return value is essentially a
+	 * nested type of the generic type definition of @klass.
+	 *
+	 * A note in MSDN claims that a generic type definition can have
+	 * nested types that aren't generic.  In any case, the container of that
+	 * nested type would be the generic type definition.
+	 */
+	if (klass->generic_class)
+		klass = klass->generic_class->container_class;
+
 	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
 		int match = 0;
 		nested = tmpn->data;
@@ -3648,7 +3660,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 {
 	MonoDomain *domain; 
 	GList *tmpn;
-	MonoClass *startklass, *klass;
+	MonoClass *klass;
 	MonoArray *res;
 	MonoObject *member;
 	int i, len, match;
@@ -3659,7 +3671,19 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
-	klass = startklass = mono_class_from_mono_type (type->type);
+	klass = mono_class_from_mono_type (type->type);
+
+	/*
+	 * If a nested type is generic, return its generic type definition.
+	 * Note that this means that the return value is essentially the set
+	 * of nested types of the generic type definition of @klass.
+	 *
+	 * A note in MSDN claims that a generic type definition can have
+	 * nested types that aren't generic.  In any case, the container of that
+	 * nested type would be the generic type definition.
+	 */
+	if (klass->generic_class)
+		klass = klass->generic_class->container_class;
 
 	i = 0;
 	len = 1;
