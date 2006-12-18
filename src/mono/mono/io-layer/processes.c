@@ -592,7 +592,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			char *curdir = g_get_current_dir ();
 
 			prog = g_strdup_printf ("%s/%s", curdir, unquoted);
-			g_free (unquoted);
 			g_free (curdir);
 
 			/* And make sure it's executable */
@@ -602,6 +601,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 					   __func__, prog);
 #endif
 				g_free (prog);
+				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto cleanup;
 			}
