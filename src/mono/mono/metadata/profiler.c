@@ -19,6 +19,7 @@
 #include "mono/metadata/gc-internal.h"
 #include "mono/io-layer/io-layer.h"
 #include <string.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <gmodule.h>
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -1228,13 +1229,17 @@ try_addr2line (const char* binary, gpointer ip)
 		const char *addr_argv[] = {"addr2line", "-f", "-e", binary, NULL};
 		int child_pid;
 		int ch_in, ch_out;
-		char *monobin = NULL;
+#ifdef __linux__
+		char monobin [1024];
 		/* non-linux platforms will need different code here */
 		if (strcmp (binary, "mono") == 0) {
-			monobin = g_file_read_link ("/proc/self/exe", NULL);
-			if (monobin)
+			int count = readlink ("/proc/self/exe", monobin, sizeof (monobin));
+			if (count >= 0 && count < sizeof (monobin)) {
+				monobin [count] = 0;
 				addr_argv [3] = monobin;
+			}
 		}
+#endif
 		if (!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
 				&child_pid, &ch_in, &ch_out, NULL, NULL)) {
 			g_free (monobin);
