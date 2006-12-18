@@ -1,4 +1,8 @@
 
+Mon Dec 18 15:28:49 CET 2006 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: detection code for dlopen ().
+
 Mon Dec 11 10:23:18 CET 2006 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, mono.pc.in, */Makefile.am: istall the header
