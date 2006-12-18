@@ -86,7 +86,7 @@ convert_flags (int flags)
 #define LL_SO_CLOSE(handle) 
 #define LL_SO_SYMBOL(handle, name) NULL
 #define LL_SO_TRFLAGS(flags) (flags)
-#define LL_SO_ERROR() g_strdup ("No support for dynamic loader)
+#define LL_SO_ERROR() g_strdup ("No support for dynamic loader")
 
 #endif
 
