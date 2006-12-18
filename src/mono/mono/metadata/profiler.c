@@ -18,10 +18,10 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/io-layer/io-layer.h"
+#include "mono/utils/mono-dl.h"
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <gmodule.h>
 #ifdef HAVE_BACKTRACE_SYMBOLS
 #include <execinfo.h>
 #endif
@@ -1471,11 +1471,13 @@ mono_profiler_load (const char *desc)
 	}
 #endif
 	{
-		GModule *pmodule;
+		MonoDl *pmodule;
 		const char* col = strchr (desc, ':');
 		char* libname;
 		char* path;
 		char *mname;
+		char *err;
+		void *iter;
 		if (col != NULL) {
 			mname = g_memdup (desc, col - desc);
 			mname [col - desc] = 0;
@@ -1483,19 +1485,28 @@ mono_profiler_load (const char *desc)
 			mname = g_strdup (desc);
 		}
 		libname = g_strdup_printf ("mono-profiler-%s", mname);
-		path = g_module_build_path (NULL, libname);
-		pmodule = g_module_open (path, G_MODULE_BIND_LAZY);
-		if (pmodule) {
-			ProfilerInitializer func;
-			if (!g_module_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func)) {
-				g_warning ("Cannot find initializer function %s in profiler module: %s", INITIALIZER_NAME, libname);
-			} else {
-				func (desc);
+		iter = NULL;
+		err = NULL;
+		while ((path = mono_dl_build_path (NULL, libname, &iter))) {
+			g_free (err);
+			pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
+			if (pmodule) {
+				ProfilerInitializer func;
+				if ((err = mono_dl_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func))) {
+					g_warning ("Cannot find initializer function %s in profiler module: %s (%s)", INITIALIZER_NAME, libname, err);
+					g_free (err);
+					err = NULL;
+				} else {
+					func (desc);
+				}
+				break;
 			}
-		} else {
-			g_warning ("Error loading profiler module '%s': %s", libname, g_module_error ());
+			g_free (path);
 		}
-
+		if (!pmodule) {
+			g_warning ("Error loading profiler module '%s': %s", libname, err);
+			g_free (err);
+		}
 		g_free (libname);
 		g_free (mname);
 		g_free (path);
