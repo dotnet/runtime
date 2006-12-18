@@ -193,6 +193,14 @@ case "$host" in
 	*-*-hpux*)
         platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
+		# +ESdbgasm only valid on bundled cc on RISC
+		# silently ignored for ia64
+		if test $GCC != "yes"; then
+			CFLAGS="$CFLAGS +ESdbgasm"
+			# Arrange for run-time dereferencing of null
+			# pointers to produce a SIGSEGV signal.
+			LDFLAGS="$LDFLAGS -z"
+		fi
 		CFLAGS="$CFLAGS +ESdbgasm"
 		LDFLAGS="$LDFLAGS -z"
 		libmono_cflags="-D_REENTRANT"

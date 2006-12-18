@@ -1,4 +1,10 @@
 
+Mon Dec 18 18:19:50 CET 2006 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: fixed compiler/linker options when
+	configuring under hpux/ia64 (patch from warren@warrenandrachel.com
+	(Warren Smith)).
+
 Mon Dec 18 15:28:49 CET 2006 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: detection code for dlopen ().
