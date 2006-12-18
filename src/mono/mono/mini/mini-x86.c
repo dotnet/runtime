@@ -1071,6 +1071,10 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 {
 	guchar *code = p;
 
+#if __APPLE__
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+#endif
+
 	/* if some args are passed in registers, we need to save them here */
 	x86_push_reg (code, X86_EBP);
 
@@ -1084,7 +1088,11 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
 		x86_call_code (code, 0);
 	}
+#if __APPLE__
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
+#else
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
+#endif
 
 	return code;
 }
