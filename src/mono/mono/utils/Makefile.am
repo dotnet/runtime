@@ -16,6 +16,8 @@ libmonoutils_la_SOURCES = \
 	mono-codeman.c	\
 	mono-counters.c	\
 	mono-compiler.h	\
+	mono-dl.c	\
+	mono-dl.h	\
 	monobitset.c	\
 	mono-math.c  \
 	mono-mmap.c  \
