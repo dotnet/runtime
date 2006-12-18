@@ -1242,7 +1242,6 @@ try_addr2line (const char* binary, gpointer ip)
 #endif
 		if (!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
 				&child_pid, &ch_in, &ch_out, NULL, NULL)) {
-			g_free (monobin);
 			return g_strdup (binary);
 		}
 		addr2line = g_new0 (Addr2LineData, 1);
@@ -1252,7 +1251,6 @@ try_addr2line (const char* binary, gpointer ip)
 		addr2line->pipeout = fdopen (ch_out, "r");
 		addr2line->next = addr2line_pipes;
 		addr2line_pipes = addr2line;
-		g_free (monobin);
 	}
 	fprintf (addr2line->pipein, "%p\n", ip);
 	fflush (addr2line->pipein);
