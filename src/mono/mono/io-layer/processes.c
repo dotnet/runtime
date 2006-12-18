@@ -580,7 +580,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, prog);
 #endif
-				g_free (prog);
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto cleanup;
@@ -600,7 +599,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, prog);
 #endif
-				g_free (prog);
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto cleanup;
@@ -696,7 +694,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			
 			/* Executable existing ? */
 			if (access (prog, X_OK) != 0) {
-				g_free (prog);
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, token);
