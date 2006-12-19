@@ -2213,7 +2213,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	}
 
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
-		int dar_release_slot;
+		int dar_release_slot, pos;
 		
 		dar_release_slot = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
 
@@ -2234,6 +2234,11 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc_addr (mb, dar_release_slot);
 		mono_mb_emit_managed_call (mb, sh_dangerous_add_ref, NULL);
 #endif
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
+		mono_mb_patch_branch (mb, pos);
 		
 		/* Pull the handle field from SafeHandle */
 		mono_mb_emit_ldloc (mb, 1);
@@ -6028,7 +6033,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 	switch (action){
 	case MARSHAL_ACTION_CONV_IN: {
 		MonoType *intptr_type;
-		int dar_release_slot;
+		int dar_release_slot, pos;
 
 		intptr_type = &mono_defaults.int_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, intptr_type);
@@ -6037,6 +6042,11 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (!sh_dangerous_add_ref)
 			init_safe_handle ();
 
+		mono_mb_emit_ldarg (mb, argnum);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
+		
+		mono_mb_patch_branch (mb, pos);
 		if (t->byref){
 			/*
 			 * My tests in show that ref SafeHandles are not really

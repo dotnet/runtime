@@ -94,6 +94,17 @@ public class Tests {
 		return 0;
 	}
 
+	public static int test_0_marshal_safehandle_argument_null ()
+	{
+		try {
+			mono_xr (null);
+		} catch (ArgumentNullException){
+			return 0;
+		}
+		return 1;
+	}
+	
+
         [StructLayout (LayoutKind.Sequential)]
 	public struct StringOnStruct {
 		public string a;
@@ -197,6 +208,18 @@ public class Tests {
 		s.a = new SafeFileHandle ((IntPtr)1234, false);
 
 		return mono_safe_handle_struct_simple (s) == 2468 ? 0 : 1;
+	}
+
+	public static int test_0_struct_empty ()
+	{
+		StructTest1 s = new StructTest1 ();
+
+		try {
+			mono_safe_handle_struct_simple (s);
+		} catch (ArgumentNullException){
+			return 0;
+		}
+		return 1;
 	}
 	
 	public static int test_0_sf_dispose ()
