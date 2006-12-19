@@ -9836,8 +9836,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
-
-/* FIXME: on win32 we should probably use GlobalAlloc(). */
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
 {
@@ -9849,7 +9847,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
 		/* This returns a valid pointer for size 0 on MS.NET */
 		size = 4;
 
+#ifdef PLATFORM_WIN32
+	res = GlobalAlloc (GMEM_FIXED, (gulong)size);
+#else
 	res = g_try_malloc ((gulong)size);
+#endif
 	if (!res)
 		mono_gc_out_of_memory ((gulong)size);
 
@@ -9861,7 +9863,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef PLATFORM_WIN32
+	GlobalFree (ptr);
+#else
 	g_free (ptr);
+#endif
 }
 
 void*
