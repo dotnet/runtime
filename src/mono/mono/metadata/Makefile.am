@@ -55,6 +55,8 @@ libmonoruntime_la_SOURCES = \
 	gc-internal.h	\
 	marshal.c	\
 	marshal.h	\
+	mono-mlist.c	\
+	mono-mlist.h	\
 	monitor.c	\
 	monitor.h	\
 	tabledefs.h \
