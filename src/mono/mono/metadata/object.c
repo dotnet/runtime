@@ -561,7 +561,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 		max_size = mono_class_data_size (class) / sizeof (gpointer);
 	else
 		max_size = class->instance_size / sizeof (gpointer);
-	if (max_size > size) {
+	if (max_size >= size) {
 		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
 	}
 
@@ -645,6 +645,148 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 	}
 	return bitmap;
 }
+
+#if 0
+/* 
+ * similar to the above, but sets the bits in the bitmap for any non-ref field
+ * and ignores static fields
+ */
+static gsize*
+compute_class_non_ref_bitmap (MonoClass *class, gsize *bitmap, int size, int offset)
+{
+	MonoClassField *field;
+	MonoClass *p;
+	guint32 pos, pos2;
+	int max_size;
+
+	max_size = class->instance_size / sizeof (gpointer);
+	if (max_size >= size) {
+		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
+	}
+
+	for (p = class; p != NULL; p = p->parent) {
+		gpointer iter = NULL;
+		while ((field = mono_class_get_fields (p, &iter))) {
+			MonoType *type;
+
+			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
+				continue;
+			/* FIXME: should not happen, flag as type load error */
+			if (field->type->byref)
+				break;
+
+			pos = field->offset / sizeof (gpointer);
+			pos += offset;
+
+			type = mono_type_get_underlying_type (field->type);
+			switch (type->type) {
+#if SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_FNPTR:
+#endif
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R8:
+				if ((((field->offset + 7) / sizeof (gpointer)) + offset) != pos) {
+					pos2 = ((field->offset + 7) / sizeof (gpointer)) + offset;
+					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
+				}
+				/* fall through */
+#if SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_FNPTR:
+#endif
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_R4:
+				if ((((field->offset + 3) / sizeof (gpointer)) + offset) != pos) {
+					pos2 = ((field->offset + 3) / sizeof (gpointer)) + offset;
+					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
+				}
+				/* fall through */
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+				if ((((field->offset + 1) / sizeof (gpointer)) + offset) != pos) {
+					pos2 = ((field->offset + 1) / sizeof (gpointer)) + offset;
+					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
+				}
+				/* fall through */
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+				break;
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+				break;
+			case MONO_TYPE_GENERICINST:
+				if (!mono_type_generic_inst_is_valuetype (type)) {
+					break;
+				} else {
+					/* fall through */
+				}
+			case MONO_TYPE_VALUETYPE: {
+				MonoClass *fclass = mono_class_from_mono_type (field->type);
+				/* remove the object header */
+				compute_class_non_ref_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)));
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		}
+	}
+	return bitmap;
+}
+
+/**
+ * mono_class_insecure_overlapping:
+ * check if a class with explicit layout has references and non-references
+ * fields overlapping.
+ *
+ * Returns: TRUE if it is insecure to load the type.
+ */
+gboolean
+mono_class_insecure_overlapping (MonoClass *klass)
+{
+	int max_set = 0;
+	gsize *bitmap;
+	gsize default_bitmap [4] = {0};
+	gsize *nrbitmap;
+	gsize default_nrbitmap [4] = {0};
+	int i, insecure = FALSE;
+		return FALSE;
+
+	bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+	nrbitmap = compute_class_non_ref_bitmap (klass, default_nrbitmap, sizeof (default_nrbitmap) * 8, 0);
+
+	for (i = 0; i <= max_set; i += sizeof (bitmap [0]) * 8) {
+		int idx = i % (sizeof (bitmap [0]) * 8);
+		if (bitmap [idx] & nrbitmap [idx]) {
+			insecure = TRUE;
+			break;
+		}
+	}
+	if (bitmap != default_bitmap)
+		g_free (bitmap);
+	if (nrbitmap != default_nrbitmap)
+		g_free (nrbitmap);
+	if (insecure) {
+		g_print ("class %s.%s in assembly %s has overlapping references\n", klass->name_space, klass->name, klass->image->name);
+		return FALSE;
+	}
+	return insecure;
+}
+#endif
 
 static void
 mono_class_compute_gc_descriptor (MonoClass *class)
