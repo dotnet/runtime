@@ -108,14 +108,21 @@ typedef struct {
 	guint64           wait_event;
 } ASyncCall;
 
+typedef struct {
+	MonoArray *array;
+	int first_elem;
+	int next_elem;
+} TPQueue;
+
 static void async_invoke_thread (gpointer data);
-static void append_job (CRITICAL_SECTION *cs, GList **plist, gpointer ar);
+static void append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar);
 static void start_thread_or_queue (MonoAsyncResult *ares);
 static void mono_async_invoke (MonoAsyncResult *ares);
-static gpointer dequeue_job (CRITICAL_SECTION *cs, GList **plist);
+static MonoObject* dequeue_job (CRITICAL_SECTION *cs, TPQueue *list);
+static void free_queue (TPQueue *list);
 
-static GList *async_call_queue = NULL;
-static GList *async_io_queue = NULL;
+static TPQueue async_call_queue = {NULL, 0, 0};
+static TPQueue async_io_queue = {NULL, 0, 0};
 
 static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
@@ -160,8 +167,7 @@ socket_io_cleanup (SocketIOData *data)
 	data->new_sem = NULL;
 	g_hash_table_destroy (data->sock_to_state);
 	data->sock_to_state = NULL;
-	g_list_free (async_io_queue);
-	async_io_queue = NULL;
+	free_queue (&async_io_queue);
 	release = (gint) InterlockedCompareExchange (&io_worker_threads, 0, -1);
 	if (io_job_added)
 		ReleaseSemaphore (io_job_added, release, NULL);
@@ -315,7 +321,7 @@ start_io_thread_or_queue (MonoSocketAsyncResult *ares)
 		domain = ((ares) ? ((MonoObject *) ares)->vtable->domain : mono_domain_get ());
 		mono_thread_create (mono_get_root_domain (), async_invoke_io_thread, ares);
 	} else {
-		append_job (&io_queue_lock, &async_io_queue, ares);
+		append_job (&io_queue_lock, &async_io_queue, (MonoObject*)ares);
 		ReleaseSemaphore (io_job_added, 1, NULL);
 	}
 }
@@ -1048,7 +1054,7 @@ start_thread_or_queue (MonoAsyncResult *ares)
 		InterlockedIncrement (&busy_worker_threads);
 		mono_thread_create (mono_get_root_domain (), async_invoke_thread, ares);
 	} else {
-		append_job (&mono_delegate_section, &async_call_queue, ares);
+		append_job (&mono_delegate_section, &async_call_queue, (MonoObject*)ares);
 		ReleaseSemaphore (job_added, 1, NULL);
 	}
 }
@@ -1101,8 +1107,7 @@ mono_thread_pool_cleanup (void)
 	gint release;
 
 	EnterCriticalSection (&mono_delegate_section);
-	g_list_free (async_call_queue);
-	async_call_queue = NULL;
+	free_queue (&async_call_queue);
 	release = (gint) InterlockedCompareExchange (&mono_worker_threads, 0, -1);
 	LeaveCriticalSection (&mono_delegate_section);
 	if (job_added)
@@ -1111,53 +1116,69 @@ mono_thread_pool_cleanup (void)
 	socket_io_cleanup (&socket_io_data);
 }
 
-/* FIXME: GC: adds managed objects to the list... */
 static void
-append_job (CRITICAL_SECTION *cs, GList **plist, gpointer ar)
+append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 {
-	GList *tmp, *list;
-
 	EnterCriticalSection (cs);
-	list = *plist;
-	if (list == NULL) {
-		list = g_list_append (list, ar); 
-	} else {
-		for (tmp = list; tmp && tmp->data != NULL; tmp = tmp->next);
-		if (tmp == NULL) {
-			list = g_list_append (list, ar); 
-		} else {
-			tmp->data = ar;
-		}
+	if (list->array && mono_array_length (list->array) < list->next_elem) {
+		mono_array_setref (list->array, list->next_elem, ar);
+		list->next_elem++;
+		LeaveCriticalSection (cs);
+		return;
 	}
-	*plist = list;
+	if (!list->array) {
+		MONO_GC_REGISTER_ROOT (list->array);
+		list->array = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, 16);
+	} else {
+		int count = list->next_elem - list->first_elem;
+		/* slide the array or create a larger one if it's full */
+		if (list->first_elem) {
+			mono_array_memcpy_refs (list->array, 0, list->array, list->first_elem, count);
+		} else {
+			MonoArray *newa = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) * 2);
+			mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
+			list->array = newa;
+		}
+		list->first_elem = 0;
+		list->next_elem = count;
+	}
+	mono_array_setref (list->array, list->next_elem, ar);
+	list->next_elem++;
 	LeaveCriticalSection (cs);
 }
 
-static gpointer
-dequeue_job (CRITICAL_SECTION *cs, GList **plist)
+static MonoObject*
+dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 {
-	gpointer ar = NULL;
-	GList *tmp, *tmp2, *list;
+	MonoObject *ar;
+	int count;
 
 	EnterCriticalSection (cs);
-	list = *plist;
-	tmp = list;
-	if (tmp) {
-		ar = tmp->data;
-		tmp->data = NULL;
-		tmp2 = tmp;
-		for (tmp2 = tmp; tmp2->next != NULL; tmp2 = tmp2->next);
-		if (tmp2 != tmp) {
-			list = tmp->next;
-			tmp->next = NULL;
-			tmp2->next = tmp;
-			tmp->prev = tmp2;
-		}
+	if (!list->array || list->first_elem == list->next_elem) {
+		LeaveCriticalSection (cs);
+		return NULL;
 	}
-	*plist = list;
+	ar = mono_array_get (list->array, MonoObject*, list->first_elem);
+	list->first_elem++;
+	count = list->next_elem - list->first_elem;
+	/* reduce the size of the array if it's mostly empty */
+	if (mono_array_length (list->array) > 16 && count < (mono_array_length (list->array) / 3)) {
+		MonoArray *newa = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) / 2);
+		mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
+		list->array = newa;
+		list->first_elem = 0;
+		list->next_elem = count;
+	}
 	LeaveCriticalSection (cs);
 
 	return ar;
+}
+
+static void
+free_queue (TPQueue *list)
+{
+	list->array = NULL;
+	list->first_elem = list->next_elem = 0;
 }
 
 static void
