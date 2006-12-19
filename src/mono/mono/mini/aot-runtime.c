@@ -31,6 +31,10 @@
 #define PAGESIZE 4096
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
+#endif
+
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
