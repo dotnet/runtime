@@ -6025,18 +6025,28 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoMethodBuilder *mb = m->mb;
 
-	if (t->byref)
-		g_error ("SafeHandle ACTION_PUSH by ref not yet handled\n");
-		
 	switch (action){
 	case MARSHAL_ACTION_CONV_IN: {
-		
 		MonoType *intptr_type;
 		int dar_release_slot;
-		
+
 		intptr_type = &mono_defaults.int_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, intptr_type);
 		*conv_arg_type = intptr_type;
+
+		if (!sh_dangerous_add_ref)
+			init_safe_handle ();
+
+		if (t->byref){
+			/*
+			 * My tests in show that ref SafeHandles are not really
+			 * passed as ref objects.  Instead a NULL is passed as the
+			 * value of the ref
+			 */
+			mono_mb_emit_icon (mb, 0);
+			mono_mb_emit_stloc (mb, conv_arg);
+			break;
+		} 
 
 		/* Create local to hold the ref parameter to DangerousAddRef */
 		dar_release_slot = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
@@ -6044,9 +6054,6 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* set release = false; */
 		mono_mb_emit_icon (mb, 0);
 		mono_mb_emit_stloc (mb, dar_release_slot);
-
-		if (!sh_dangerous_add_ref)
-			init_safe_handle ();
 
 		/* safehandle.DangerousAddRef (ref release) */
 		mono_mb_emit_ldarg (mb, argnum);
@@ -6063,7 +6070,10 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		mono_mb_emit_ldloc (mb, conv_arg);
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else 
+			mono_mb_emit_ldloc (mb, conv_arg);
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT: {
@@ -6073,12 +6083,42 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (!sh_dangerous_release)
 			init_safe_handle ();
-		
-		mono_mb_emit_ldloc (mb, dar_release_slot);
-		label_next = mono_mb_emit_branch (mb, CEE_BRFALSE);
-		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_managed_call (mb, sh_dangerous_release, NULL);
-		mono_mb_patch_addr (mb, label_next, mb->pos - (label_next + 4));
+
+		if (t->byref){
+			MonoMethod *ctor;
+			
+			/*
+			 * My tests indicate that ref SafeHandles parameters are not actually
+			 * passed by ref, but instead a new Handle is created regardless of
+			 * whether a change happens in the unmanaged side.
+			 *
+			 * Also, the Handle is created before calling into unmanaged code,
+			 * but we do not support that mechanism (getting to the original
+			 * handle) and it makes no difference where we create this
+			 */
+			ctor = mono_class_get_method_from_name (t->data.klass, ".ctor", 0);
+			if (ctor == NULL){
+				mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+				break;
+			}
+			/* refval = new SafeHandleDerived ()*/
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+			/* refval.handle = returned_handle */
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoSafeHandle, handle));
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_STIND_I);
+		} else {
+			mono_mb_emit_ldloc (mb, dar_release_slot);
+			label_next = mono_mb_emit_branch (mb, CEE_BRFALSE);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_managed_call (mb, sh_dangerous_release, NULL);
+			mono_mb_patch_addr (mb, label_next, mb->pos - (label_next + 4));
+		}
 		break;
 	}
 		
@@ -6115,15 +6155,15 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 		
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		printf ("Missing MANAGED_CONV_IN\n");
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_IN\n");
 		break;
 		
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
-		printf ("Missing MANAGED_CONV_OUT\n");
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_OUT\n");
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		printf ("Missing MANAGED_CONV_RESULT\n");
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_RESULT\n");
 		break;
 	default:
 		printf ("Unhandled case for MarshalAction: %d\n", action);

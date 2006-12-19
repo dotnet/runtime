@@ -10,6 +10,11 @@ public class Tests {
 		public MyHandle () : base (IntPtr.Zero, true)
 		{
 		}
+
+		public MyHandle (IntPtr x) : base (x, true)
+		{
+		}
+		
 		
 		public override bool IsInvalid {
 			get {
@@ -44,6 +49,40 @@ public class Tests {
 		}
 	}
 	
+	[DllImport ("libtest")]
+	public static extern void mono_safe_handle_ref (ref MyHandle handle);
+
+	[DllImport ("libtest", EntryPoint="mono_safe_handle_ref")]
+	public static extern void mono_safe_handle_ref2 (ref MyHandleNoCtor handle);
+
+	public static int test_0_safehandle_ref_noctor ()
+	{
+		MyHandleNoCtor m = new MyHandleNoCtor ((IntPtr) 0xdead);
+
+		try {
+			mono_safe_handle_ref2 (ref m);
+		} catch (MissingMethodException e){
+			Console.WriteLine ("Good: got exception requried");
+			return 0;
+		}
+
+		return 1;
+	}
+	
+	public static int test_0_safehandle_ref ()
+	{
+		MyHandle m = new MyHandle ((IntPtr) 0xdead);
+
+		mono_safe_handle_ref (ref m);
+		
+		if (m.DangerousGetHandle () != (IntPtr) 0x800d){
+			Console.WriteLine ("test_0_safehandle_ref: fail; Expected 0x800d, got: {0:x}", m.DangerousGetHandle ());
+			return 1;
+		}
+		Console.WriteLine ("test_0_safehandle_ref: pass");
+		return 0;
+	}
+
 	[DllImport ("libtest")]
 	public static extern int mono_xr (SafeHandle sh);
 	

@@ -1956,6 +1956,16 @@ mono_safe_handle_return ()
 	return 0x1000f00d;
 }
 
+void
+mono_safe_handle_ref (void **handle)
+{
+	if (*handle != 0){
+		*handle = (void *) 0xbad;
+		return;
+	}
+
+	*handle = (void *) 0x800d;
+}
 /*
  * COM INTEROP TESTS
  */
@@ -2337,5 +2347,4 @@ mono_test_marshal_com_object_ref_count(MonoComObject *pUnk)
 {
 	return pUnk->m_ref;
 }
-
 #endif //NOT_YET
