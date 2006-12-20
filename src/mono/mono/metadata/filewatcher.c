@@ -15,6 +15,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/marshal.h>
+#include <mono/utils/mono-dl.h>
 #if (defined (PLATFORM_WIN32) && WINVER >= 0x0400)
 
 /*
@@ -46,10 +47,12 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 #if HAVE_KQUEUE
 	return 3;
 #else
-	GModule *fam_module;
+	MonoDl *fam_module;
 	gchar *filename;
 	int lib_used = 4; /* gamin */
 	int inotify_instance;
+	void *iter;
+	char *err;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -59,20 +62,24 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 		return 5; /* inotify */
 	}
 
-	filename = g_module_build_path (NULL, "libgamin-1.so.0");
-	fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
+	iter = NULL;
+	/* the build_path calls here should be avoided, since we provide the full name */
+	filename = mono_dl_build_path (NULL, "libgamin-1.so.0", &iter);
+	fam_module = mono_dl_open (filename, MONO_DL_LAZY, NULL);
 	g_free (filename);
 	if (fam_module == NULL) {
 		lib_used = 2; /* FAM */
-		filename = g_module_build_path (NULL, "libfam.so.0");
-		fam_module = g_module_open (filename, G_MODULE_BIND_LAZY);
+		iter = NULL;
+		filename = mono_dl_build_path (NULL, "libfam.so.0", &iter);
+		fam_module = mono_dl_open (filename, MONO_DL_LAZY, NULL);
 		g_free (filename);
 	}
 
 	if (fam_module == NULL)
 		return 0;
 
-	g_module_symbol (fam_module, "FAMNextEvent", (gpointer *) &FAMNextEvent);
+	err = mono_dl_symbol (fam_module, "FAMNextEvent", (gpointer *) &FAMNextEvent);
+	g_free (err);
 	if (FAMNextEvent == NULL)
 		return 0;
 
