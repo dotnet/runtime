@@ -6192,11 +6192,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass = t->data.klass;
 	int pos, pos2, loc;
 
-	if (mono_class_from_mono_type (t) == mono_defaults.object_class && 
-		(!spec || (spec && spec->native != MONO_NATIVE_STRUCT)) &&
-		(!spec || (spec && (spec->native != MONO_NATIVE_IUNKNOWN &&
-				    spec->native != MONO_NATIVE_IDISPATCH &&
-				    spec->native != MONO_NATIVE_INTERFACE)))) {
+	if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
 		mono_raise_exception (mono_get_exception_not_implemented ("Marshalling of type object is not implemented"));
 	}
 
@@ -6206,98 +6202,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		m->orig_conv_args [argnum] = 0;
-
-		if (spec && spec->native == MONO_NATIVE_STRUCT)
-		{
-			static MonoMethod *get_native_variant_for_object = NULL;
-			int local_variant;
-			if (!get_native_variant_for_object)
-				get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
-
-			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
-
-			local_variant = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
-			conv_arg = local_variant;
-			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
-				mono_mb_emit_byte(mb, CEE_LDIND_REF);
-			mono_mb_emit_ldloc_addr (mb, local_variant);
-			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
-		}
-		else if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
-			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE)) {
-			mono_mb_emit_ptr (mb, 0);
-			mono_mb_emit_stloc (mb, conv_arg);
-
-			if (t->byref) {
-				/* we dont need any conversions for out parameters */
-				if (t->attrs & PARAM_ATTRIBUTE_OUT)
-					break;
-				else {
-					char *msg = g_strdup_printf ("non out object references are no implemented");
-					MonoException *exc = mono_get_exception_not_implemented (msg);
-					g_warning (msg);
-					g_free (msg);
-					mono_raise_exception (exc);
-
-				}
-			} else {
-				char *msg = NULL;
-				guint32 pos_failed = 0, pos_rcw = 0;
-				mono_mb_emit_ldarg (mb, argnum);	
-				// if null just break, conv arg was already inited to 0
-				pos_failed = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
-
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_icall (mb, cominterop_object_is_rcw);
-				pos_rcw = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
-
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
-				mono_mb_emit_byte (mb, CEE_LDIND_REF);
-
-				/* load the RCW from the ComInteropProxy*/
-				mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoComInteropProxy, com_object));
-				mono_mb_emit_byte (mb, CEE_LDIND_REF);
-
-				if (klass && klass != mono_defaults.object_class) {
-					static MonoMethod* GetInterface = NULL;
-					
-					if (!GetInterface)
-						GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
-					mono_mb_emit_ptr (mb, t);
-					mono_mb_emit_icall (mb, type_from_handle);
-					mono_mb_emit_managed_call (mb, GetInterface, NULL);
-				}
-				else if (spec->native == MONO_NATIVE_IUNKNOWN) {
-					static MonoProperty* iunknown = NULL;
-					
-					if (!iunknown)
-						iunknown = mono_class_get_property_from_name (mono_defaults.com_object_class, "IUnknown");
-					mono_mb_emit_managed_call (mb, iunknown->get, NULL);
-				}
-				else if (spec->native == MONO_NATIVE_IDISPATCH) {
-					static MonoProperty* idispatch = NULL;
-					
-					if (!idispatch)
-						idispatch = mono_class_get_property_from_name (mono_defaults.com_object_class, "IDispatch");
-					mono_mb_emit_managed_call (mb, idispatch->get, NULL);
-				}
-				else {
-				}
-				mono_mb_emit_stloc (mb, conv_arg);
-				
-				// if not rcw
-				mono_mb_patch_short_branch (mb, pos_rcw);
-				msg = g_strdup ("Marshalling of COM Callable Wrappers is not yet implemented.");
-				mono_mb_emit_exception_marshal_directive (mb, msg);
-
-				// case if null
-				mono_mb_patch_short_branch (mb, pos_failed);
-			}
-		}
-		else if (klass->delegate) {
+		
+		if (klass->delegate) {
 			g_assert (!t->byref);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
@@ -6386,70 +6292,6 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
-		if (spec && spec->native == MONO_NATIVE_STRUCT)	{
-			static MonoMethod *variant_clear = NULL;
-			static MonoMethod *get_object_for_native_variant = NULL;
-			if (!variant_clear)
-				variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
-			if (!get_object_for_native_variant)
-				get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_ldloc_addr (mb, conv_arg);
-				mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
-				mono_mb_emit_byte (mb, CEE_STIND_REF);
-			}
-
-			mono_mb_emit_ldloc_addr (mb, conv_arg);
-			mono_mb_emit_managed_call (mb, variant_clear, NULL);
-			break;
-		}
-
-		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
-			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE)) {
-			if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
-				static MonoClass* com_interop_proxy_class = NULL;
-				static MonoMethod* com_interop_proxy_get_proxy = NULL;
-				static MonoMethod* get_transparent_proxy = NULL;
-				int real_proxy;
-				guint32 pos_failed = 0;
-
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDNULL);
-				mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-				mono_mb_emit_ldloc (mb, conv_arg);
-				pos_failed = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
-
-				if (!com_interop_proxy_class)
-					com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
-				if (!com_interop_proxy_get_proxy)
-					com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
-				if (!get_transparent_proxy)
-					get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
-
-				real_proxy = mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
-
-				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_ptr (mb, &mono_defaults.com_object_class->byval_arg);
-				mono_mb_emit_icall (mb, type_from_handle);
-				mono_mb_emit_managed_call (mb, com_interop_proxy_get_proxy, NULL);
-				mono_mb_emit_stloc (mb, real_proxy);
-
-				
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_ldloc (mb, real_proxy);
-				mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
-				if (klass && klass != mono_defaults.object_class)
-					mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
-				mono_mb_emit_byte (mb, CEE_STIND_REF);
-
-				// case if null
-				mono_mb_patch_short_branch (mb, pos_failed);
-			}
-				break;
-		}
 		if (klass == mono_defaults.stringbuilder_class) {
 			gboolean need_free;
 			MonoMarshalNative encoding;
@@ -6555,11 +6397,6 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
 			mono_mb_emit_stloc (mb, 3);
-		} else if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
-			spec->native == MONO_NATIVE_IDISPATCH ||
-			spec->native == MONO_NATIVE_INTERFACE)) {
-			char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
-			mono_mb_emit_exception_marshal_directive (mb, msg);
 		} else {
 			/* set src */
 			mono_mb_emit_stloc (mb, 0);
@@ -6752,6 +6589,265 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_patch_branch (mb, pos2);
 		break;
+
+	default:
+		g_assert_not_reached ();
+	}
+
+	return conv_arg;
+}
+
+static int
+emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
+		     MonoMarshalSpec *spec, 
+		     int conv_arg, MonoType **conv_arg_type, 
+		     MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+	MonoClass *klass = t->data.klass;
+
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN: {
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+		m->orig_conv_args [argnum] = 0;
+
+		mono_mb_emit_ptr (mb, 0);
+		mono_mb_emit_stloc (mb, conv_arg);
+
+		if (t->byref) {
+			/* we dont need any conversions for out parameters */
+			if (t->attrs & PARAM_ATTRIBUTE_OUT)
+				break;
+			else {
+				char *msg = g_strdup_printf ("non out object references are no implemented");
+				MonoException *exc = mono_get_exception_not_implemented (msg);
+				g_warning (msg);
+				g_free (msg);
+				mono_raise_exception (exc);
+
+			}
+		} else {
+			char *msg = NULL;
+			guint32 pos_failed = 0, pos_rcw = 0;
+			mono_mb_emit_ldarg (mb, argnum);	
+			// if null just break, conv arg was already inited to 0
+			pos_failed = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_icall (mb, cominterop_object_is_rcw);
+			pos_rcw = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+			/* load the RCW from the ComInteropProxy*/
+			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoComInteropProxy, com_object));
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+
+			if (klass && klass != mono_defaults.object_class) {
+				static MonoMethod* GetInterface = NULL;
+				
+				if (!GetInterface)
+					GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
+				mono_mb_emit_ptr (mb, t);
+				mono_mb_emit_icall (mb, type_from_handle);
+				mono_mb_emit_managed_call (mb, GetInterface, NULL);
+			}
+			else if (spec->native == MONO_NATIVE_IUNKNOWN) {
+				static MonoProperty* iunknown = NULL;
+				
+				if (!iunknown)
+					iunknown = mono_class_get_property_from_name (mono_defaults.com_object_class, "IUnknown");
+				mono_mb_emit_managed_call (mb, iunknown->get, NULL);
+			}
+			else if (spec->native == MONO_NATIVE_IDISPATCH) {
+				static MonoProperty* idispatch = NULL;
+				
+				if (!idispatch)
+					idispatch = mono_class_get_property_from_name (mono_defaults.com_object_class, "IDispatch");
+				mono_mb_emit_managed_call (mb, idispatch->get, NULL);
+			}
+			else {
+			}
+			mono_mb_emit_stloc (mb, conv_arg);
+			
+			// if not rcw
+			mono_mb_patch_short_branch (mb, pos_rcw);
+			msg = g_strdup ("Marshalling of COM Callable Wrappers is not yet implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+
+			// case if null
+			mono_mb_patch_short_branch (mb, pos_failed);
+		}
+		break;
+	}
+	
+	case MARSHAL_ACTION_CONV_OUT: {
+		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+			static MonoClass* com_interop_proxy_class = NULL;
+			static MonoMethod* com_interop_proxy_get_proxy = NULL;
+			static MonoMethod* get_transparent_proxy = NULL;
+			int real_proxy;
+			guint32 pos_failed = 0;
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			pos_failed = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+			if (!com_interop_proxy_class)
+				com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+			if (!com_interop_proxy_get_proxy)
+				com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
+			if (!get_transparent_proxy)
+				get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
+
+			real_proxy = mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
+
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ptr (mb, &mono_defaults.com_object_class->byval_arg);
+			mono_mb_emit_icall (mb, type_from_handle);
+			mono_mb_emit_managed_call (mb, com_interop_proxy_get_proxy, NULL);
+			mono_mb_emit_stloc (mb, real_proxy);
+
+			
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, real_proxy);
+			mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
+			if (klass && klass != mono_defaults.object_class)
+				mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+			// case if null
+			mono_mb_patch_short_branch (mb, pos_failed);
+		}
+		break;
+	}
+
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT: {
+		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
+		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
+		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	default:
+		g_assert_not_reached ();
+	}
+
+	return conv_arg;
+}
+
+static int
+emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
+		     MonoMarshalSpec *spec, 
+		     int conv_arg, MonoType **conv_arg_type, 
+		     MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN: {
+		static MonoMethod *get_native_variant_for_object = NULL;
+
+		if (!get_native_variant_for_object)
+			get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
+		g_assert (get_native_variant_for_object);
+
+		*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+
+		mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref)
+			mono_mb_emit_byte(mb, CEE_LDIND_REF);
+		mono_mb_emit_ldloc_addr (mb, conv_arg);
+		mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
+		break;
+	}
+
+	case MARSHAL_ACTION_CONV_OUT: {
+		static MonoMethod *variant_clear = NULL;
+		static MonoMethod *get_object_for_native_variant = NULL;
+
+		if (!variant_clear)
+			variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+		g_assert (variant_clear);
+
+		if (!get_object_for_native_variant)
+			get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
+		g_assert (get_object_for_native_variant);
+
+		if (t->byref) {
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+			mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+		}
+
+		mono_mb_emit_ldloc_addr (mb, conv_arg);
+		mono_mb_emit_managed_call (mb, variant_clear, NULL);
+		break;
+	}
+
+	case MARSHAL_ACTION_PUSH:
+		if (t->byref)
+			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else
+			mono_mb_emit_ldloc (mb, conv_arg);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT: {
+		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
+		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
+		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
 
 	default:
 		g_assert_not_reached ();
@@ -7609,6 +7705,14 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
+		if (spec && spec->native == MONO_NATIVE_STRUCT)
+			return emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+
+		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
+			spec->native == MONO_NATIVE_IDISPATCH ||
+			spec->native == MONO_NATIVE_INTERFACE))
+			return emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+
 		if (mono_defaults.safehandle_class != NULL &&
 		    mono_class_is_subclass_of (t->data.klass,  mono_defaults.safehandle_class, FALSE))
 			return emit_marshal_safehandle (m, argnum, t, spec, conv_arg, conv_arg_type, action);
