@@ -23,6 +23,31 @@
 	<p>To register an internal call, use this call you use the
 	<tt>mono_add_internal_call</tt> routine.
 
+<h4>Data Marshalling</h4>
+
+	<p>Managed objects are represented as <tt>MonoObject*</tt>
+	types.  Those objects that the runtime consumes directly have
+	more specific C definitions (for example strings are of type
+	<tt>MonoString *</tt>, delegates are of type
+	<tt>MonoDelegate*</tt> but they are still <tt>MonoObject
+	*</tt>s).
+
+	<p>As of Mono 1.2.x types defined in mscorlib.dll do not have
+	their fields reordered in any way.   But other libraries might
+	have their fields reordered.   In these cases, Managed
+	structures and objects have the same layout in the C# code as
+	they do in the unmanaged world.
+
+	<p>Structures defined outside corlib must have a specific
+	StructLayout definition, and have it set as sequential if you
+	plan on accessing these fields directly from C code.
+
+	<p><b>Important</B> Internal calls do not provide support for
+	marshalling structures.  This means that any API calls that
+	take a structure (excluding the system types like int32,
+	int64, etc) must be passed as a pointer, in C# this means
+	passing the value as a "ref" or "out" parameter.
+
 <h4><a name="api:mono_add_internal_call">mono_add_internal_call</a></h4>
 
 <h3>Mono Runtime Configuration</h3>
