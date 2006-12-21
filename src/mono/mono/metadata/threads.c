@@ -84,13 +84,6 @@ typedef struct {
 #define CULTURES_START_IDX 0
 #define UICULTURES_START_IDX NUM_CACHED_CULTURES
 
-/*
- * The "os_handle" field or the "safe_wait_handle" field of the WaitHandle class.
- * the former is used for 1.x profiles, the later for 2.0
- */
-static MonoClassField *wait_handle_os_handle_field = NULL;
-static MonoClassField *wait_handle_safe_handle_field = NULL;
-
 /* Controls access to the 'threads' hash table */
 #define mono_threads_lock() EnterCriticalSection (&threads_mutex)
 #define mono_threads_unlock() LeaveCriticalSection (&threads_mutex)
@@ -858,20 +851,6 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	return(FALSE);
 }
 
-static void
-ensure_wait_handle_fields ()
-{
-	MonoClass *klass;
-
-	if (wait_handle_os_handle_field == 0 && wait_handle_safe_handle_field == 0) {
-		/* Get the field os_handle which will contain the actual handle */
-		klass = mono_class_from_name(mono_defaults.corlib, "System.Threading", "WaitHandle");
-		wait_handle_os_handle_field = mono_class_get_field_from_name(klass, "os_handle");
-		if (wait_handle_os_handle_field == NULL)
-			wait_handle_safe_handle_field = mono_class_get_field_from_name (klass, "safe_wait_handle");
-	}
-}
-
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
@@ -890,18 +869,9 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	numhandles = mono_array_length(mono_handles);
 	handles = g_new0(HANDLE, numhandles);
 
-	ensure_wait_handle_fields ();
-		
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
-		if (wait_handle_os_handle_field != NULL)
-			mono_field_get_value(waitHandle, wait_handle_os_handle_field, &handles[i]);
-		else {
-			MonoSafeHandle *sh;
-			
-			mono_field_get_value(waitHandle, wait_handle_safe_handle_field, &sh);
-			handles [i] = sh->handle;
-		}
+		handles [i] = mono_wait_handle_get_handle ((MonoWaitHandle *) waitHandle);
 	}
 	
 	if(ms== -1) {
@@ -954,18 +924,9 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	numhandles = mono_array_length(mono_handles);
 	handles = g_new0(HANDLE, numhandles);
 
-	ensure_wait_handle_fields ();
-
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
-		if (wait_handle_os_handle_field != NULL)
-			mono_field_get_value(waitHandle, wait_handle_os_handle_field, &handles[i]);
-		else {
-			MonoSafeHandle *sh;
-			
-			mono_field_get_value(waitHandle, wait_handle_safe_handle_field, &sh);
-			handles [i] = sh->handle;
-		}
+		handles [i] = mono_wait_handle_get_handle ((MonoWaitHandle *) waitHandle);
 	}
 	
 	if(ms== -1) {

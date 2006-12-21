@@ -427,6 +427,9 @@ mono_async_result_new	    (MonoDomain *domain, HANDLE handle,
 MonoWaitHandle *
 mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle) MONO_INTERNAL;
 
+HANDLE
+mono_wait_handle_get_handle (MonoWaitHandle *handle) MONO_INTERNAL;
+
 void
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
 			     MonoReflectionMethod *method, MonoArray *out_args) MONO_INTERNAL;

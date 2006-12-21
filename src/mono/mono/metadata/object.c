@@ -3773,12 +3773,41 @@ MonoWaitHandle *
 mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 {
 	MonoWaitHandle *res;
+	gpointer params [1];
+	static MonoMethod *handle_set;
 
 	res = (MonoWaitHandle *)mono_object_new (domain, mono_defaults.waithandle_class);
 
-	res->handle = handle;
+	/* Even though this method is virtual, it's safe to invoke directly, since the object type matches.  */
+	if (!handle_set)
+		handle_set = mono_class_get_property_from_name (mono_defaults.waithandle_class, "Handle")->set;
+
+	params [0] = &handle;
+	mono_runtime_invoke (handle_set, res, params, NULL);
 
 	return res;
+}
+
+HANDLE
+mono_wait_handle_get_handle (MonoWaitHandle *handle)
+{
+	static MonoClassField *f_os_handle;
+	static MonoClassField *f_safe_handle;
+
+	if (!f_os_handle && !f_safe_handle) {
+		f_os_handle = mono_class_get_field_from_name (mono_defaults.waithandle_class, "os_handle");
+		f_safe_handle = mono_class_get_field_from_name (mono_defaults.waithandle_class, "safe_wait_handle");
+	}
+
+	if (f_os_handle) {
+		HANDLE retval;
+		mono_field_get_value (handle, f_os_handle, &retval);
+		return retval;
+	} else {
+		MonoSafeHandle *sh;
+		mono_field_get_value (handle, f_safe_handle, &sh);
+		return sh->handle;
+	}
 }
 
 /**

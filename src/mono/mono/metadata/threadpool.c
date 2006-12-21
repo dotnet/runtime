@@ -970,7 +970,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	/* notify listeners */
 	mono_monitor_enter ((MonoObject *) ares);
 	if (ares->handle != NULL) {
-		ac->wait_event = (gsize)((MonoWaitHandle *) ares->handle)->handle;
+		ac->wait_event = (gsize) mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
 		SetEvent ((gpointer)(gsize)ac->wait_event);
 	}
 	mono_monitor_exit ((MonoObject *) ares);
