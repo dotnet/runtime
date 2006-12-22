@@ -3742,11 +3742,20 @@ assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assemb
 		idx = MONO_IMPLEMENTATION_FILE | (idx << MONO_IMPLEMENTATION_BITS);
 	} else {
 		char sizebuf [4];
-		offset = mono_array_length (rsrc->data);
+		char *data;
+		guint len;
+		if (rsrc->data) {
+			data = mono_array_addr (rsrc->data, char, 0);
+			len = mono_array_length (rsrc->data);
+		} else {
+			data = NULL;
+			len = 0;
+		}
+		offset = len;
 		sizebuf [0] = offset; sizebuf [1] = offset >> 8;
 		sizebuf [2] = offset >> 16; sizebuf [3] = offset >> 24;
 		rsrc->offset = mono_image_add_stream_data (&assembly->resources, sizebuf, 4);
-		mono_image_add_stream_data (&assembly->resources, mono_array_addr (rsrc->data, char, 0), mono_array_length (rsrc->data));
+		mono_image_add_stream_data (&assembly->resources, data, len);
 
 		if (!mb->is_main)
 			/* 
