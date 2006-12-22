@@ -3227,14 +3227,26 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 	/* FIXME: add check that link is not in the heap */
 	hash = mono_aligned_addr_hash (link) % disappearing_link_hash_size;
 	entry = disappearing_link_hash [hash];
+	prev = NULL;
 	for (; entry; entry = entry->next) {
 		/* link already added */
 		if (link == entry->data) {
-			/* FIXME: NULL obj means remove */
-			entry->object = obj; /* we allow the change of object */
+			/* NULL obj means remove */
+			if (obj == NULL) {
+				if (prev)
+					prev->next = entry->next;
+				else
+					disappearing_link_hash [hash] = entry->next;
+				num_disappearing_links--;
+				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d)\n", entry, num_disappearing_links));
+				free_internal_mem (entry);
+			} else {
+				entry->object = obj; /* we allow the change of object */
+			}
 			UNLOCK_GC;
 			return;
 		}
+		prev = entry;
 	}
 	entry = get_internal_mem (sizeof (FinalizeEntry));
 	entry->object = obj;
@@ -3681,6 +3693,12 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			++ptr;
 		}
 		return p + 2;
+	case REMSET_OBJECT:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		if ((ptr >= start_nursery && ptr < end_nursery) || !ptr_in_heap (ptr))
+			return p + 1;
+		scan_object (*ptr, start_nursery, end_nursery);
+		return p + 1;
 	default:
 		g_assert_not_reached ();
 	}
@@ -4020,6 +4038,27 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		return;
 	}
 	DEBUG (1, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
+}
+
+/**
+ * mono_gc_wbarrier_object:
+ *
+ * Write barrier to call when obj is the result of a clone or copy of an object.
+ */
+void
+mono_gc_wbarrier_object (MonoObject* obj)
+{
+	RememberedSet *rs = remembered_set;
+	DEBUG (1, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
+	if (rs->store_next < rs->end_set) {
+		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+		return;
+	}
+	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+	rs->next = remembered_set;
+	remembered_set = rs;
+	thread_info_lookup (pthread_self())->remset = rs;
+	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 }
 
 /*
