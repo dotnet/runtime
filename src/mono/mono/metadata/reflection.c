@@ -4283,6 +4283,10 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 	} else if (strcmp (klass->name, "SignatureHelper") == 0) {
 		MonoReflectionSigHelper *s = (MonoReflectionSigHelper*)obj;
 		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s);
+	} else if (strcmp (klass->name, "EnumBuilder") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType *)obj;
+		token = mono_metadata_token_from_dor (
+			mono_image_typedef_or_ref (assembly, tb->type));
 	} else {
 		g_error ("requested token for %s\n", klass->name);
 	}
