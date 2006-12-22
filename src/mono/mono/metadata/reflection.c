@@ -8048,6 +8048,15 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 
 #if HAVE_SGEN_GC
 static void* reflection_info_desc = NULL;
+#define MOVING_GC_REGISTER(addr) do {	\
+		if (!reflection_info_desc) {	\
+			gsize bmap = 1;		\
+			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
+		}	\
+		mono_gc_register_root ((addr), sizeof (gpointer), reflection_info_desc);	\
+	} while (0)
+#else
+#define MOVING_GC_REGISTER(addr)
 #endif
 
 /*
@@ -8103,13 +8112,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	klass->element_class = klass;
 
-#if HAVE_SGEN_GC
-	if (!reflection_info_desc) {
-		gsize bmap = 1;
-		reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);
-	}
-	mono_gc_register_root (&klass->reflection_info, sizeof (gpointer), reflection_info_desc);
-#endif
+	MOVING_GC_REGISTER (&klass->reflection_info);
 	klass->reflection_info = tb;
 
 	/* Put into cache so mono_class_get () will find it */
@@ -8955,6 +8958,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 	}
 
+	MOVING_GC_REGISTER (&gmethod->reflection_info);
 	gmethod->reflection_info = rmethod;
 
 	context = g_new0 (MonoGenericContext, 1);
@@ -8990,6 +8994,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 		gmethod = g_new0 (MonoGenericMethod, 1);
 		gmethod->generic_class = &gclass->generic_class;
 		gmethod->container = method->generic_container;
+		MOVING_GC_REGISTER (&gmethod->reflection_info);
 		gmethod->reflection_info = obj;
 
 		gmethod->inst = g_new0 (MonoGenericInst, 1);
@@ -9099,6 +9104,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 
 		ifield = g_new0 (MonoInflatedField, 1);
 		ifield->generic_type = field->type;
+		MOVING_GC_REGISTER (&ifield->reflection_info);
 		ifield->reflection_info = obj;
 
 		dgclass->fields [i] = *field;
@@ -9525,6 +9531,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	image = &gparam->tbuilder->module->dynamic_image->image;
 	mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
 
+	MOVING_GC_REGISTER (&param->pklass->reflection_info);
 	param->pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
 
 	gparam->type.type = g_new0 (MonoType, 1);
