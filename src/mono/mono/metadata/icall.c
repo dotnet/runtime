@@ -187,6 +187,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
+	int et, vt;
 
 	guint64 u64 = 0;
 	gint64 i64 = 0;
@@ -275,8 +276,16 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 
 	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
 
+	et = ec->byval_arg.type;
+	if (et == MONO_TYPE_VALUETYPE && ec->byval_arg.data.klass->enumtype)
+		et = ec->byval_arg.data.klass->enum_basetype->type;
+
+	vt = vc->byval_arg.type;
+	if (vt == MONO_TYPE_VALUETYPE && vc->byval_arg.data.klass->enumtype)
+		vt = vc->byval_arg.data.klass->enum_basetype->type;
+
 #define ASSIGN_UNSIGNED(etype) G_STMT_START{\
-	switch (vc->byval_arg.type) { \
+	switch (vt) { \
 	case MONO_TYPE_U1: \
 	case MONO_TYPE_U2: \
 	case MONO_TYPE_U4: \
@@ -298,7 +307,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 }G_STMT_END
 
 #define ASSIGN_SIGNED(etype) G_STMT_START{\
-	switch (vc->byval_arg.type) { \
+	switch (vt) { \
 	case MONO_TYPE_I1: \
 	case MONO_TYPE_I2: \
 	case MONO_TYPE_I4: \
@@ -324,7 +333,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 }G_STMT_END
 
 #define ASSIGN_REAL(etype) G_STMT_START{\
-	switch (vc->byval_arg.type) { \
+	switch (vt) { \
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
 		CHECK_WIDENING_CONVERSION(0); \
@@ -348,7 +357,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	} \
 }G_STMT_END
 
-	switch (vc->byval_arg.type) {
+	switch (vt) {
 	case MONO_TYPE_U1:
 		u64 = *(guint8 *) va;
 		break;
@@ -384,7 +393,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 		break;
 	case MONO_TYPE_BOOLEAN:
 		/* Boolean is only compatible with itself. */
-		switch (ec->byval_arg.type) {
+		switch (et) {
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_U2:
@@ -404,7 +413,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	}
 
 	/* If we can't do a direct copy, let's try a widening conversion. */
-	switch (ec->byval_arg.type) {
+	switch (et) {
 	case MONO_TYPE_CHAR:
 		ASSIGN_UNSIGNED (guint16);
 	case MONO_TYPE_U1:
