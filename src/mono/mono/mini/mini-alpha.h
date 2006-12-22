@@ -64,6 +64,9 @@ struct MonoLMF
   guint64     eip;          // RA ? or caller PC
   guint64     rsp;          // SP ? caller SP
   guint64     rgp;          // GP
+  guint64     r14;
+  guint64     r13;
+  guint64     r12;
 };
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8

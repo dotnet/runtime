@@ -562,7 +562,8 @@ typedef enum {
 #define alpha_cpysn(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x021, Rsrc1, Rsrc2, Rdest )
 #define alpha_cpyse(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x022, Rsrc1, Rsrc2, Rdest )
 
-#define	alpha_trapb(ins)	alpha_encode_op(ins, 0x18, 0, 0, 0, 0);
+#define	alpha_trapb(ins)	alpha_encode_mem_fc( ins, 0x18, 0x0000, 0, 0, 0 )
+#define	alpha_mb(ins)		alpha_encode_mem_fc( ins, 0x18, 0x4000, 0, 0, 0 )
 
 #endif
 

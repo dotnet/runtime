@@ -337,6 +337,9 @@ reg: CEE_LDIND_I2 (OP_REGVAR) {
 #        mono_bblock_add_inst (s->cbb, tree);
 #}
 
+#stmt: CEE_BEQ (OP_LCOMPARE(reg, OP_I8CONST)) {
+#	printf("Found match for CEE_BEQ (OP_LCOMPARE(reg, OP_I8CONST))\n");
+#}
 
 stmt: CEE_BLT_UN (OP_COMPARE (freg, freg)) {
         MONO_EMIT_NEW_BIALU (s, OP_ALPHA_CMPT_UN_SU, (alpha_at+1),
@@ -383,7 +386,8 @@ reg: OP_CEQ (OP_COMPARE (freg, freg)) {
                 state->left->left->reg1, state->left->right->reg1);
         MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
 
-        tree->opcode = OP_FCEQ;
+        tree->dreg = state->reg1;
+	tree->opcode = OP_FCEQ;
         mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -392,6 +396,7 @@ reg: OP_CLT (OP_COMPARE (freg, freg)) {
                 state->left->left->reg1, state->left->right->reg1);
         MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
 
+	tree->dreg = state->reg1;
         tree->opcode = OP_FCLT;
         mono_bblock_add_inst (s->cbb, tree);
 }
@@ -403,6 +408,7 @@ reg: OP_CLT_UN (OP_COMPARE (freg, freg)) {
                 state->left->left->reg1, state->left->right->reg1);
         MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
 
+	tree->dreg = state->reg1;
         tree->opcode = OP_FCLT_UN;
         mono_bblock_add_inst (s->cbb, tree);
 }
@@ -416,6 +422,7 @@ reg: OP_CGT (OP_COMPARE (freg, freg)) {
         MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
 
 //        tree->opcode = OP_FCGT;
+	tree->dreg = state->reg1;
 	tree->opcode = OP_FCLT;
         mono_bblock_add_inst (s->cbb, tree);
 }
@@ -428,6 +435,7 @@ reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {
                 state->left->right->reg1, state->left->left->reg1);
         MONO_EMIT_NEW_UNALU (s, OP_ALPHA_TRAPB, -1, -1);
 
+	tree->dreg = state->reg1;
         tree->opcode = OP_FCLT_UN;
         mono_bblock_add_inst (s->cbb, tree);
 }

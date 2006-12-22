@@ -1554,7 +1554,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	       {
 		 CFG_DEBUG(3) g_print("ALPHA: Saved aggregate arg reg %d at offset: %0lx\n",
 				      ainfo->reg + j, inst->inst_offset + (8*j));
-		 alpha_stq(code, ainfo->reg+j, inst->inst_basereg,
+		 alpha_stq(code, (ainfo->reg+j), inst->inst_basereg,
 			   (inst->inst_offset + (8*j)));
 		 offset += 8;
 	       }
@@ -1675,9 +1675,10 @@ mono_arch_flush_register_windows (void)
 guint32
 mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
+  MonoInst *ins = cfg->varinfo [vmv->idx];
+
    /* FIXME: */
   CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_regalloc_cost");
-  MonoInst *ins = cfg->varinfo [vmv->idx];
 
   if (cfg->method->save_lmf)
     /* The register is already saved */
@@ -1784,11 +1785,11 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
   MonoMethod *method = cfg->method;
-  int quad, offset, i;
+  int offset, i;
   unsigned int *code;
   int max_epilog_size = 128;
   int stack_size = cfg->arch.stack_size;
-  CallInfo *cinfo;
+  //  CallInfo *cinfo;
   gint32 lmf_offset = cfg->arch.lmf_offset;
   
   CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_emit_epilog");
@@ -2365,17 +2366,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            // Shift 32 bit unsigned value right
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_shr_un] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
-	   alpha_zap_(code, ins->sreg1, 0xF0, ins->dreg);
-           alpha_srl(code, ins->dreg, ins->sreg2, ins->dreg);
+	   alpha_zap_(code, ins->sreg1, 0xF0, alpha_at /*ins->dreg*/);
+           alpha_srl(code, alpha_at /*ins->dreg*/, ins->sreg2, ins->dreg);
            break;
 
          case OP_ISHR_UN_IMM:
            // Shift 32 bit unassigned value rigth by constant
            g_assert(alpha_is_imm(ins->inst_imm));
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_shr_un_imm] dreg=%d, sreg1=%d, const=%ld\n",
-                  ins->dreg, ins->sreg1, ins->inst_imm);
-	   alpha_zap_(code, ins->sreg1, 0xF0, ins->dreg);
-           alpha_srl_(code, ins->dreg, ins->inst_imm, ins->dreg);
+				ins->dreg, ins->sreg1, ins->inst_imm);
+	   alpha_zap_(code, ins->sreg1, 0xF0, alpha_at /*ins->dreg*/);
+           alpha_srl_(code, alpha_at /*ins->dreg*/, ins->inst_imm, ins->dreg);
            break;
 
          case OP_LSHR_UN_IMM:
@@ -2872,7 +2873,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // Valid only for storing 0
 	   // storei1_membase_reg will do the rest
 	   
-	   CFG_DEBUG(4) g_printf("ALPHA_CHECK: [storei1_membase_imm(0)] const=%0lx, destbasereg=%d, offset=%0lx\n",
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [storei1_membase_imm(0)] const=%0lx, destbasereg=%d, offset=%0lx\n",
 		  ins->inst_imm, ins->inst_destbasereg, ins->inst_offset);
 	   g_assert(ins->inst_imm == 0);
 
@@ -2912,7 +2913,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // Now work only for storing 0
            // For now storei2_membase_reg will do the work
 	   
-	   CFG_DEBUG(4) g_printf("ALPHA_CHECK: [storei2_membase_imm(0)] const=%0lx, destbasereg=%d, offset=%0lx\n",
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [storei2_membase_imm(0)] const=%0lx, destbasereg=%d, offset=%0lx\n",
 		  ins->inst_imm, ins->inst_destbasereg, ins->inst_offset);
 	   
 	   g_assert(ins->inst_imm == 0);
@@ -3772,7 +3773,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	     // of by call_filter. There should be difference. For now just
 	     // handle - call_handler
 
-	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [start_handler] basereg=%d, offset=%0x\n",
+	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [start_handler] basereg=%d, offset=%0lx\n",
 		ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 
 	     alpha_stq(code, alpha_ra, ins->inst_left->inst_basereg, 
@@ -3783,7 +3784,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case CEE_ENDFINALLY:
 	   {
              // Keep in sync with start_handler
-             CFG_DEBUG(4) g_print("ALPHA_CHECK: [endfinally] basereg=%d, offset=%0x\n",
+             CFG_DEBUG(4) g_print("ALPHA_CHECK: [endfinally] basereg=%d, offset=%0lx\n",
                 ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 
              alpha_ldq(code, alpha_ra, ins->inst_left->inst_basereg,
@@ -3796,7 +3797,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_ENDFILTER:
 	   {
 	     // Keep in sync with start_handler
-	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [endfilter] sreg1=%d, basereg=%d, offset=%0x\n",
+	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [endfilter] sreg1=%d, basereg=%d, offset=%0lx\n",
 		ins->sreg1, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 
 	     alpha_ldq(code, alpha_ra, ins->inst_left->inst_basereg,
@@ -3832,7 +3833,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   break;
 
 	 case CEE_THROW:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [throw] sreg1=%0lx\n",
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [throw] sreg1=%0x\n",
 				ins->sreg1);
 	   alpha_mov1(code, ins->sreg1, alpha_a0);
 	   code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
@@ -3840,7 +3841,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   break;
 
          case OP_RETHROW:
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [rethrow] sreg1=%0lx\n",
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [rethrow] sreg1=%0x\n",
                                 ins->sreg1);
            alpha_mov1(code, ins->sreg1, alpha_a0);
            code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
@@ -3849,13 +3850,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	 case CEE_JMP:
 	   {
-	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [jmp] %p\n", ins->inst_p0);
 	     /*
-	      * Note: this 'frame destruction' logic is useful for tail calls, too.
-	      * Keep in sync with the code in emit_epilog.
+	      * Note: this 'frame destruction' logic is useful for tail calls,
+	      too. Keep in sync with the code in emit_epilog.
 	      */
-	     int pos = 0, i, offset;
+	     int offset;
 	     AlphaGotData ge_data;
+
+	     CFG_DEBUG(4) g_print("ALPHA_CHECK: [jmp] %p\n", ins->inst_p0);
 
 	     /* FIXME: no tracing support... */
 	     if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
@@ -3886,6 +3888,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_AOTCONST:
 	   mono_add_patch_info (cfg, offset,
 				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+	   break;
+
+	 case OP_MEMORY_BARRIER:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [mb]\n");
+	   alpha_mb(code);
 	   break;
 	   
 	 default:
@@ -4074,7 +4081,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 
 	case MONO_PATCH_INFO_GOT_OFFSET:
 	  {
-	    unsigned int *ip2 = ip;
+	    unsigned int *ip2 = (unsigned int *)ip;
 	    unsigned int inst = *ip2;
 	    unsigned int off = patch_info->data.offset & 0xFFFFFFFF;
 
@@ -4089,7 +4096,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 	case MONO_PATCH_INFO_CLASS_INIT: 
 	  {		  
 	    /* Might already been changed to a nop */
-	    unsigned int* ip2 = ip;
+	    unsigned int* ip2 = (unsigned int *)ip;
 	   unsigned long t_addr = (unsigned long)target;
  
 	    if (*ip2 != (t_addr & 0xFFFFFFFF) ||
@@ -5867,14 +5874,15 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 
   // Check for (call_membase):
   // -4: mov     v0,a0        - load this ???
-  // -3: ldq     v0,0(v0)     - load vtable
+  // -3: ldq     v0,0(v0)     - load vtable 
   // -2: ldq     t12,64(v0)   - load method (object->vtable->vtable[method->slot])
-  if ((pc[start_index-1] & 0xFFFFFFFF) == 0xA4000000 &&
+  if ((pc[start_index-1] & 0xFC00FFFF) == 0xA4000000 &&
       (pc[start_index] & 0xFFFF0000) == 0xA7600000
       )
     {
       disp = pc[start_index] & 0xFFFF;
-      reg = 0; // For now
+      reg = (pc[start_index-1] >> AXP_REG1_SHIFT) & AXP_REG_MASK;
+      //reg = 0; // For now
 
       ALPHA_PRINT g_debug("ALPHA_CHECK: [mono_arch_get_vcall_slot_addr callvirt] call_membase");
 
@@ -5886,7 +5894,7 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
   // -4: ldq     v0,0(v0)
   // -3: ldq     v0,-n(v0)
   // -2: ldq     t12,0(v0)
-  if ((pc[start_index-2] & 0xFFFFFFFF) == 0xA4000000 &&
+  if ((pc[start_index-2] & 0xFC00FFFF) == 0xA4000000 &&
       (pc[start_index-1] & 0xFFFF0000) == 0xA4000000 &&
       (pc[start_index] & 0xFFFF0000) == 0xA7600000
       )

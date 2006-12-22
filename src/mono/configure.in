@@ -1623,7 +1623,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		arch_target=alpha;
-		CFLAGS="$CFLAGS -mieee"
+		CFLAGS="$CFLAGS -mieee -O0"
 		case $host_os in
 		  linux*)
 			LIBC="libc.so.6.1"
@@ -1797,7 +1797,7 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 fi
 
 mono_debugger_supported=no
-if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
+if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xALPHA"; then
 	if test x$use_included_gc = xyes; then
 		case "$host" in
 		*-*-*linux*)

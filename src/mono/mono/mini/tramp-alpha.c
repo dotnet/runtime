@@ -508,6 +508,21 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 
   ALPHA_DEBUG("mono_arch_nullify_class_init_trampoline");
 
+  // pcode[-2] ldq     t12,n(gp)
+  // pcode[-1] jsr     ra,(t12),0x20003efcb40
+  if ((pcode[-2] & 0xFFFF0000) == 0xa77d0000 &&
+       pcode[-1] == 0x6b5b4000)
+  {
+      // Put "unop" into call inst
+      pcode--;
+      alpha_nop(pcode);
+      alpha_nop(pcode);
+      alpha_nop(pcode);
+
+      mono_arch_flush_icache ((code-4), 3*4);
+  }
+  else
+      g_assert_not_reached ();
 }
 
 /*
@@ -535,9 +550,9 @@ mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp,
   // -2 - mov     v0,t12
   // -1 - jsr     ra,(t12),0x200041476e4
   //  0 - ldah    gp,0(ra)
-  if (((pcode[-4] & 0xFF000000) == 0xA4000000) &&
-      ((pcode[-3] & 0xFF000000) == 0xA4000000) &&
-      ((pcode[-2] & 0xFF00FF00) == 0x47000400) &&
+  if (((pcode[-4] & 0xFC000000) == 0xA4000000) &&
+      ((pcode[-3] & 0xFC000000) == 0xA4000000) &&
+      ((pcode[-2] & 0xFC000FE0) == 0x44000400) &&
       ((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
     {
       fp_disp = (pcode[-4] & 0xFFFF);
@@ -547,7 +562,6 @@ mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp,
       obj = *pobj;
       reg = 0;
     }
-  else
     // The non-optimized call signature for now is
     // -5 - ldq     v0,24(fp)
     // -4 - mov     v0,v0
@@ -555,21 +569,39 @@ mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp,
     // -2 - mov     v0,t12
     // -1 - jsr     ra,(t12),0x200041476e4
     //  0 - ldah    gp,0(ra)
-    if (((pcode[-5] & 0xFF000000) == 0xA4000000) &&
-	((pcode[-4] & 0xFF00FF00) == 0x47000400) &&
-	((pcode[-3] & 0xFF000000) == 0xA4000000) &&
-	((pcode[-2] & 0xFF00FF00) == 0x47000400) &&
-	((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
-      {
-	fp_disp = (pcode[-5] & 0xFFFF);
-	obj_disp = (pcode[-3] & 0xFFFF);
+  else if (((pcode[-5] & 0xFC000000) == 0xA4000000) &&
+	   ((pcode[-4] & 0xFC000FE0) == 0x44000400) &&
+	   ((pcode[-3] & 0xFC000000) == 0xA4000000) &&
+	   ((pcode[-2] & 0xFC000FE0) == 0x44000400) &&
+	   ((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
+    {
+      fp_disp = (pcode[-5] & 0xFFFF);
+      obj_disp = (pcode[-3] & 0xFFFF);
 
-	pobj = regs[15] + fp_disp;
-	obj = *pobj;
-	reg = 0;
-      }
-    else
-      g_assert_not_reached ();
+      pobj = regs[15] + fp_disp;
+      obj = *pobj;
+      reg = 0;
+    }
+      // Code with linears optimization
+      // -4 - mov     reg,v0
+      // -3 - ldq     v0,40(v0)
+      // -2 - mov     v0,t12
+      // -1 - jsr     ra,(t12)
+      //  0 - ldah    gp,0(ra)
+  else if (((pcode[-4] & 0xFC000FE0) == 0x44000400) &&
+	   ((pcode[-3] & 0xFC000000) == 0xA4000000) &&
+	   ((pcode[-2] & 0xFC000FE0) == 0x44000400) &&
+	   ((pcode[-1] & 0xFFFF0000) == 0x6B5B0000))
+    {
+      fp_disp = (pcode[-4] >> AXP_REG2_SHIFT) & AXP_REG_MASK;
+      obj_disp = (pcode[-3] & 0xFFFF);
+
+      obj = regs[fp_disp];
+      //obj = *pobj;
+      reg = 0;
+    }
+  else
+    g_assert_not_reached ();
 
   *((gpointer*)(obj + obj_disp)) = addr;
 }
