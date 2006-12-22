@@ -330,6 +330,8 @@ debugger_detach (void)
 	debugger_finalize_threads ();
 }
 
+extern MonoDebuggerInfo *MONO_DEBUGGER__debugger_info_ptr;
+
 static void
 debugger_initialize (void)
 {
@@ -407,8 +409,12 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 
 	/*
 	 * Reload symbol tables.
+	 *
+	 * NOTE: We only reference the `MONO_DEBUGGER__debugger_info_ptr' here to prevent the
+	 * linker from removing the .mdb_debug_info section.
 	 */
-	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE,
+					     (guint64) (gssize) MONO_DEBUGGER__debugger_info_ptr, 0);
 	mono_debugger_unlock ();
 
 	/*
