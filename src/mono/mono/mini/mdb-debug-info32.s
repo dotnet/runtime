@@ -2,4 +2,4 @@
 .global		MONO_DEBUGGER__debugger_info
 .global		MONO_DEBUGGER__debugger_info_ptr
 MONO_DEBUGGER__debugger_info_ptr:
-		.uleb128	MONO_DEBUGGER__debugger_info
+		.long	MONO_DEBUGGER__debugger_info

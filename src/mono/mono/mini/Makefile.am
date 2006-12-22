@@ -240,7 +240,12 @@ test_sources = 		\
 test_sources2 = generics.2.cs il2tests.2.il
 
 if MONO_DEBUGGER_SUPPORTED
-mono_debugger_sources = debug-debugger.c debug-debugger.h mdb-debug-info.s
+if AMD64
+mono_debugger_arch_sources = mdb-debug-info64.s
+else
+mono_debugger_arch_sources = mdb-debug-info32.s
+endif
+mono_debugger_sources = debug-debugger.c debug-debugger.h $(mono_debugger_arch_sources)
 else
 mono_debugger_sources =
 endif
