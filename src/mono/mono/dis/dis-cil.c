@@ -18,6 +18,7 @@
 #include "dump.h"
 #include "dis-cil.h"
 #include "mono/metadata/opcodes.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-compiler.h"
 
 #ifndef HAVE_ISINF
@@ -262,7 +263,7 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 		
 		case MonoInlineType: {
 			guint32 token = read32 (ptr);
-			char *s = get_token_type (m, token, context);
+			char *s = get_token_type (m, token, context ? context->container : NULL);
 			fprintf (output, "%s", s);
 			g_free (s);
 			ptr += 4;

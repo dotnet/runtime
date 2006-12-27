@@ -597,7 +597,7 @@ dump_table_method (MonoImage *m)
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
 		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob);
-		sig = dis_stringify_method_signature (m, method, i, (MonoGenericContext *) (method_container ? method_container : type_container), FALSE);
+		sig = dis_stringify_method_signature (m, method, i, method_container ? method_container : type_container, FALSE);
 		fprintf (output, "%d: %s (param: %d)\n", i, sig, cols [MONO_METHOD_PARAMLIST]);
 		g_free (sig);
 		mono_metadata_free_method_signature (method);
