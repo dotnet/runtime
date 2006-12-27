@@ -699,7 +699,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 }
 
 static void
-dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
+dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *container)
 {
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
@@ -710,13 +710,13 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 	if (rva == 0)
 		return;
 
-	override = get_method_override (m, token, context);
+	override = get_method_override (m, token, container);
 	if (override) {
 		fprintf (output, "\t.override %s\n", override);
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh_full (m, context ? context->container : NULL, ptr);
+	mh = mono_metadata_parse_mh_full (m, container, ptr);
 	if ((entry_point = mono_image_get_entry_point (m))){
 		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
@@ -727,7 +727,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	if (mh->num_locals)
 		dis_locals (m, mh, ptr);
-	disassemble_cil (m, mh, context);
+	disassemble_cil (m, mh, container);
 	
 /*
   hex_dump (mh->code, 0, mh->code_size);
@@ -857,7 +857,7 @@ dump_cattrs_for_method_params (MonoImage *m, guint32 midx, MonoMethodSignature *
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 end, MonoGenericContext *context)
+dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 end, MonoGenericContainer *type_container)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_METHOD_SIZE];
@@ -872,7 +872,6 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 	for (i = start; i < end; i++){
 		MonoMethodSignature *ms;
 		MonoGenericContainer *container;
-		MonoGenericContext *method_context = context;
 		char *flags, *impl_flags;
 		const char *sig, *method_name;
 		char *sig_str;
@@ -888,16 +887,14 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 
-		container = mono_metadata_load_generic_params (
-			m, MONO_TOKEN_METHOD_DEF | (i + 1), context ? context->container : NULL);
-		if (container) {
-			mono_metadata_load_generic_param_constraints (
-					m, MONO_TOKEN_METHOD_DEF | (i + 1), container);
-			method_context = (MonoGenericContext *) container;
-		}
+		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1), type_container);
+		if (container)
+			mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | (i + 1), container);
+		else 
+			container = type_container;
 
-		ms = mono_metadata_parse_method_signature_full (m, method_context ? method_context->container : NULL, i + 1, sig, &sig);
-		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context ? method_context->container : NULL, FALSE);
+		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig);
+		sig_str = dis_stringify_method_signature (m, ms, i + 1, container, FALSE);
 		method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 
 		fprintf (output, "    // method line %d\n", i + 1);
@@ -928,7 +925,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
 			fprintf (output, "          // Disassembly of native methods is not supported\n");
 		else
-			dis_code (m, token, cols [MONO_METHOD_RVA], method_context);
+			dis_code (m, token, cols [MONO_METHOD_RVA], container);
 		if (klass_name)
 			fprintf (output, "    } // end of method %s::%s\n\n", klass_name, method_name);
 		else
@@ -1272,7 +1269,7 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	        	last = m->tables [MONO_TABLE_METHOD].rows;
 	
         	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
-	        	dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, (MonoGenericContext *) container);
+	        	dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, container);
 
         	dis_property_list (m, n, container);
 	        dis_event_list (m, n, container);

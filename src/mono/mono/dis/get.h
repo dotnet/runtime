@@ -11,27 +11,27 @@ char *get_typedef_or_ref      (MonoImage *m, guint32 dor_token, MonoGenericConta
 char *dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean p, gboolean d);
 char *get_type_or_methdef     (MonoImage *m, guint32 dor_token);
 char *get_field_signature     (MonoImage *m, guint32 blob_signature, MonoGenericContainer *container);
-char *get_fieldref_signature  (MonoImage *m, int idx, MonoGenericContext *contxt);
+char *get_fieldref_signature  (MonoImage *m, int idx, MonoGenericContainer *container);
 char *decode_literal          (MonoImage *m, guint32 token);
-char *get_field               (MonoImage *m, guint32 token, MonoGenericContext *context);
+char *get_field               (MonoImage *m, guint32 token, MonoGenericContainer *container);
 char *param_flags             (guint32 f);
 char *field_flags             (guint32 f);
 char *get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy);
 char *get_methodspec          (MonoImage *m, int idx, guint32 token, const char *fancy,
-			       MonoGenericContext *context);
+			       MonoGenericContainer *container);
 char *get_constant            (MonoImage *m, MonoTypeEnum t, guint32 blob_index);
 char *get_encoded_user_string_or_bytearray (const unsigned char *ptr, int len);
-char *get_token               (MonoImage *m, guint32 token, MonoGenericContext *context);
+char *get_token               (MonoImage *m, guint32 token, MonoGenericContainer *container);
 char *get_token_type          (MonoImage *m, guint32 token, MonoGenericContainer *container);
 char *get_typespec            (MonoImage *m, guint32 blob_idx, gboolean is_def, MonoGenericContainer *container);
 char *get_methoddef           (MonoImage *m, guint32 idx);
-char *get_method              (MonoImage *m, guint32 token, MonoGenericContext *context);
+char *get_method              (MonoImage *m, guint32 token, MonoGenericContainer *container);
 char *get_method_type_param   (MonoImage *m, guint32 blob_signature, MonoGenericContainer *container);
 char *get_guid                (MonoImage *m, guint32 guid_index);
 char *get_marshal_info        (MonoImage *m, const char *blob);
 char *get_generic_param       (MonoImage *m, MonoGenericContainer *container);
 char *get_escaped_name        (const char *name);
-char *get_method_override     (MonoImage *m, guint32 token, MonoGenericContext *context);
+char *get_method_override     (MonoImage *m, guint32 token, MonoGenericContainer *container);
 
 GList *dis_get_custom_attrs   (MonoImage *m, guint32 token);
 
