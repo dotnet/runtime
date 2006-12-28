@@ -52,6 +52,7 @@ struct _MonoDebuggerInfo {
 	void (*attach) (void);
 	void (*detach) (void);
 	void (*initialize) (void);
+	void * (*get_lmf_addr) (void);
 };
 
 struct _MonoDebuggerMetadataInfo {

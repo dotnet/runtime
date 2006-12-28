@@ -117,7 +117,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_get_current_thread,
 	&debugger_attach,
 	&debugger_detach,
-	&debugger_initialize
+	&debugger_initialize,
+	&mono_get_lmf_addr
 };
 
 static guint64
