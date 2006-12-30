@@ -377,7 +377,6 @@ static guint32
 main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
-	gpointer function;
 	int retval;
 
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_REACHED_MAIN,
@@ -399,14 +398,14 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 {
 	MainThreadArgs main_args;
 	MonoImage *image;
-	MonoMethod *main;
+	MonoMethod *main_method;
 
 	/*
 	 * Get and compile the main function.
 	 */
 
 	image = mono_assembly_get_image (assembly);
-	main = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
 	/*
 	 * Reload symbol tables.
@@ -423,7 +422,7 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	 */
 
 	main_args.domain = domain;
-	main_args.method = main;
+	main_args.method = main_method;
 	main_args.argc = argc;
 	main_args.argv = argv;
 
