@@ -188,9 +188,12 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 	while(components[num_components] != NULL) {
 		num_components++;
 	}
-	g_assert (num_components > 0);
-	
 	g_free (new_pathname);
+	
+	if (num_components == 0){
+		return NULL;
+	}
+	
 
 	new_components = (gchar **)g_new0 (gchar **, num_components + 1);
 
