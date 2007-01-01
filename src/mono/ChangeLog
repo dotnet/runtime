@@ -1,3 +1,14 @@
+2007-01-01  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in (darwin.CPPFLAGS): Temporary workaround for the bug
+	reported in 77324.  When we get a linker script for MacOS we can
+	take this out, but for now lets keep it in here.
+
+	* scripts/mono-service.in (debug): Add --debug, --no-daemonize and
+	make sure that this works with 2.0 (wrong binary was being
+	refereced).
+
+	Fixes: #80309
 
 Mon Dec 18 18:19:50 CET 2006 Paolo Molaro <lupus@ximian.com>
 
