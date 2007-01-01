@@ -310,7 +310,7 @@ else
 if PLATFORM_WIN32
 test:   testjit test-type-load test-inline-call-stack
 else
-test:	testjit testbundle test-type-load test-inline-call-stack
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression
 endif
 endif
 
@@ -440,6 +440,10 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 		echo $$i;	\
 		time $(JITTEST_PROG) $$i;	\
 	done
+
+test-iomap-regression: exists.cs
+	$(MCS) $(srcdir)/exists.cs -out:exists.exe
+	MONO_IOMAP=all $(JITTEST_PROG) exists.exe
 
 stresstest: $(STRESS_TESTS)
 	@failed=0; \
