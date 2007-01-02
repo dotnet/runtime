@@ -966,7 +966,6 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	g_assert (size > 0);
 
 	memset (dst, 0, size);
-	
 	if (!src)
 		return;
 
@@ -975,7 +974,8 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	memcpy (dst, s, len);
 	g_free (s);
 
-	*((char *)dst + size - 1) = 0;
+	if (len >= size)
+		len--;
 }
 
 /**
@@ -984,8 +984,9 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
  * @src: the MonoString to copy.
  * @size: the maximum number of bytes to copy.
  *
- * Copies the MonoString pointed to by @src as a utf16 string
- * into @dst, it copies at most @size bytes into the destination.
+ * Copies the MonoString pointed to by @src as a utf16 string into
+ * @dst, it copies at most @size bytes into the destination (including
+ * a terminating 16-bit zero terminator).
  */
 void
 mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
@@ -1001,9 +1002,10 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 	}
 
 	len = MIN (size, (mono_string_length (src)));
-	memcpy (dst, mono_string_chars (src), len * 2);
-
-	*((gunichar2 *)dst + len - 1) = 0;
+	memcpy (dst, mono_string_chars (src), size * 2);
+	if (size <= mono_string_length (src))
+		len--;
+	*((gunichar2 *) dst + len) = 0;
 }
 
 void
