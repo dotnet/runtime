@@ -6767,6 +6767,8 @@ handle_type:
 		}
 		arr = mono_array_new (mono_domain_get(), tklass, alen);
 		basetype = tklass->byval_arg.type;
+		if (basetype == MONO_TYPE_VALUETYPE && tklass->enumtype)
+			basetype = tklass->enum_basetype->type;
 		switch (basetype)
 		{
 			case MONO_TYPE_U1:
@@ -6813,7 +6815,7 @@ handle_type:
 				}
 				break;
 			default:
-				g_error("Type 0x%02x not handled in custom attr array decoding",t->data.type->type);
+				g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
 		}
 		*end=p;
 		return arr;
@@ -6983,14 +6985,12 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	named += 2;
 	for (j = 0; j < num_named; j++) {
 		gint name_len;
-		gboolean is_boxed = FALSE;
 		char *name, named_type, data_type;
 		named_type = *named++;
 		data_type = *named++; /* type of data */
-		if (data_type == 0x51)
-			is_boxed = TRUE;
-
-		if (data_type == 0x55) {
+		if (data_type == MONO_TYPE_SZARRAY)
+			data_type = *named++;
+		if (data_type == MONO_TYPE_ENUM) {
 			gint type_len;
 			char *type_name;
 			type_len = mono_metadata_decode_blob_size (named, &named);
@@ -7000,10 +7000,6 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			named += type_len;
 			/* FIXME: lookup the type and check type consistency */
 			g_free (type_name);
-		} else if (data_type == MONO_TYPE_SZARRAY && (named_type == 0x54 || named_type == 0x53)) {
-			/* this seems to be the type of the element of the array */
-			/* g_print ("skipping 0x%02x after prop\n", *named); */
-			named++;
 		}
 		name_len = mono_metadata_decode_blob_size (named, &named);
 		name = g_malloc (name_len + 1);
@@ -7098,7 +7094,9 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *dat
 		char *name, named_type, data_type;
 		named_type = *named++;
 		data_type = *named++; /* type of data */
-		if (data_type == 0x55) {
+		if (data_type == MONO_TYPE_SZARRAY)
+			data_type = *named++;
+		if (data_type == MONO_TYPE_ENUM) {
 			gint type_len;
 			char *type_name;
 			type_len = mono_metadata_decode_blob_size (named, &named);
@@ -7108,10 +7106,6 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *dat
 			named += type_len;
 			/* FIXME: lookup the type and check type consistency */
 			g_free (type_name);
-		} else if (data_type == MONO_TYPE_SZARRAY && (named_type == 0x54 || named_type == 0x53)) {
-			/* this seems to be the type of the element of the array */
-			/* g_print ("skipping 0x%02x after prop\n", *named); */
-			named++;
 		}
 		name_len = mono_metadata_decode_blob_size (named, &named);
 		name = g_malloc (name_len + 1);
