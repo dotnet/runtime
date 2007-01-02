@@ -657,6 +657,7 @@ static const char info[] =
 #else
     "\tSIGSEGV:       normal\n"
 #endif
+        "\tArchitecture:  " ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
 	"";
 
