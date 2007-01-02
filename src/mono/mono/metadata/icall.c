@@ -1080,8 +1080,14 @@ ves_icall_type_from_name (MonoString *name,
 	type = type_from_name (str, ignoreCase);
 	g_free (str);
 	if (type == NULL){
+		MonoException *e = NULL;
+		
 		if (throwOnError)
-			mono_raise_exception (mono_get_exception_type_load (name, NULL));
+			e = mono_get_exception_type_load (name, NULL);
+
+		mono_loader_clear_error ();
+		if (e != NULL)
+			mono_raise_exception (e);
 	}
 	
 	return type;
@@ -3792,9 +3798,16 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
 	if (!type) {
+		MonoException *e = NULL;
+		
 		if (throwOnError)
-			mono_raise_exception (mono_get_exception_type_load (name, NULL));
-		/* g_print ("failed find\n"); */
+			e = mono_get_exception_type_load (name, NULL);
+
+		mono_loader_clear_error ();
+
+		if (e != NULL)
+			mono_raise_exception (e);
+
 		return NULL;
 	}
 
@@ -3804,6 +3817,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		if (throwOnError && klass->exception_type) {
 			/* report SecurityException (or others) that occured when loading the assembly */
 			MonoException *exc = mono_class_get_exception_for_failure (klass);
+			mono_loader_clear_error ();
 			mono_raise_exception (exc);
 		} else if (klass->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) {
 			return NULL;
@@ -4736,6 +4750,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		list = NULL;
 
 		exc = mono_get_exception_reflection_type_load (res, exl);
+		mono_loader_clear_error ();
 		mono_raise_exception (exc);
 	}
 		
