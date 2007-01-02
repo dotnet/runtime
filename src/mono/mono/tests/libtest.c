@@ -985,6 +985,40 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	return (ret != 0);
 }
 
+typedef struct {
+	char a[8];
+	int  flag;
+} ByValStrStruct_Unicode;
+
+STDCALL int
+mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
+{
+	if (ref->flag != 0x1234abcd){
+		printf ("overwritten data");
+		return 1;
+	}
+	    
+	if (test == 1 || test == 3){
+		if (ref->a [0] != '1' ||
+		    ref->a [1] != 0   ||
+		    ref->a [2] != '2' ||
+		    ref->a [3] != 0 ||
+		    ref->a [4] != '3' ||
+		    ref->a [5] != 0)
+			return 1;
+		return 0;
+	}
+	if (test == 2){
+		if (ref->a [0] != '1' ||
+		    ref->a [1] != 0   ||
+		    ref->a [2] != '2' ||
+		    ref->a [3] != 0)
+			return 1;
+		return 0;
+	}
+	return 10;
+}
+
 STDCALL int
 NameManglingAnsi (char *data)
 {
