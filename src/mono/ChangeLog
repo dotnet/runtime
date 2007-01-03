@@ -1,3 +1,13 @@
+2007-01-03  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-provides.in:
+	* scripts/mono-find-requires.in: error out if monodis isn't
+	functioning properly.  Otherwise when building rpms, 
+	the provides/requires isn't generated correctly if monodis 
+	isn't present. 
+
+	Fixes: bnc #227362
+
 2007-01-01  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in (darwin.CPPFLAGS): Temporary workaround for the bug
