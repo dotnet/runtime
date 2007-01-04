@@ -382,6 +382,8 @@ struct _BundledConfig {
 
 static BundledConfig *bundled_configs = NULL;
 
+static const char *bundled_machine_config = NULL;
+
 void
 mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
 {
@@ -394,21 +396,32 @@ mono_register_config_for_assembly (const char* assembly_name, const char* config
 	bundled_configs = bconfig;
 }
 
+const char *
+mono_config_string_for_assembly_file (const char *filename)
+{
+	BundledConfig *bconfig;
+	
+	for (bconfig = bundled_configs; bconfig; bconfig = bconfig->next) {
+		if (bconfig->aname && strcmp (bconfig->aname, filename) == 0)
+			return bconfig->config_xml;
+	}
+	return NULL;
+}
+
 void 
 mono_config_for_assembly (MonoImage *assembly)
 {
 	ParseState state = {NULL};
 	int got_it = 0, i;
 	char *aname, *cfg, *cfg_name;
+	const char *bundled_config;
 	const char *home;
-	BundledConfig *bconfig;
 	
 	state.assembly = assembly;
 
-	for (bconfig = bundled_configs; bconfig; bconfig = bconfig->next) {
-		if (bconfig->aname && strcmp (bconfig->aname, assembly->module_name) == 0)
-			mono_config_parse_xml_with_context (&state, bconfig->config_xml, strlen (bconfig->config_xml));
-	}
+	bundled_config = mono_config_string_for_assembly_file (assembly->module_name);
+	if (bundled_config)
+		mono_config_parse_xml_with_context (&state, bundled_config, strlen (bundled_config));
 
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_filename (assembly));
 	mono_config_parse_file_with_context (&state, cfg_name);
@@ -492,6 +505,18 @@ mono_get_config_dir (void)
 		mono_set_dirs (NULL, NULL);
 
 	return mono_cfg_dir;
+}
+
+void
+mono_register_machine_config (const char *config_xml)
+{
+	bundled_machine_config = config_xml;
+}
+
+const char *
+mono_get_machine_config (void)
+{
+	return bundled_machine_config;
 }
 
 static void

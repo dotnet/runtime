@@ -5645,10 +5645,12 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 /*
  * There is no standard way to get at environ.
  */
+#ifndef __MINGW32_VERSION
 #ifndef _MSC_VER
 extern
 #endif
 char **environ;
+#endif
 
 static MonoArray *
 ves_icall_System_Environment_GetEnvironmentVariableNames (void)
@@ -6037,6 +6039,21 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	g_free (path);
 
 	return mcpath;
+}
+
+static MonoString *
+ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (void)
+{
+	const gchar *machine_config;
+
+	MONO_ARCH_SAVE_REGS;
+
+	machine_config = mono_get_machine_config ();
+
+	if (!machine_config)
+		return NULL;
+
+	return mono_string_new (mono_domain_get (), machine_config);
 }
 
 static MonoString *

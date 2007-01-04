@@ -29,6 +29,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/mono-config.h>
 #include <metadata/threads.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
@@ -1391,21 +1392,37 @@ mono_parser = {
 };
 
 static AppConfigInfo *
-app_config_parse (const char *filename)
+app_config_parse (const char *exe_filename)
 {
 	AppConfigInfo *app_config;
 	GMarkupParseContext *context;
 	char *text;
 	gsize len;
-	
 	struct stat buf;
-	if (stat (filename, &buf) != 0)
-		return NULL;
-	
-	app_config = g_new0 (AppConfigInfo, 1);
+	const char *bundled_config;
+	char *config_filename;
 
-	if (!g_file_get_contents (filename, &text, &len, NULL))
-		return NULL;
+	bundled_config = mono_config_string_for_assembly_file (exe_filename);
+
+	if (bundled_config) {
+		text = g_strdup (bundled_config);
+		len = strlen (text);
+	} else {
+		config_filename = g_strconcat (exe_filename, ".config", NULL);
+
+		if (stat (config_filename, &buf) != 0) {
+			g_free (config_filename);
+			return NULL;
+		}
+	
+		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
+			g_free (config_filename);
+			return NULL;
+		}
+		g_free (config_filename);
+	}
+
+	app_config = g_new0 (AppConfigInfo, 1);
 
 	context = g_markup_parse_context_new (&mono_parser, 0, app_config, NULL);
 	if (g_markup_parse_context_parse (context, text, len, NULL)) {
@@ -1450,13 +1467,10 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 {
 	AppConfigInfo* app_config;
 	char *version;
-	char *config_name;
 	const MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
 	
-	config_name = g_strconcat (exe_file, ".config", NULL);
-	app_config = app_config_parse (config_name);
-	g_free (config_name);
+	app_config = app_config_parse (exe_file);
 	
 	if (app_config != NULL) {
 		/* Check supportedRuntime elements, if none is supported, fail.
@@ -1488,7 +1502,11 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 	}
 	
 	/* Look for a runtime with the exact version */
-	image = mono_image_open (exe_file, NULL);
+	image = mono_assembly_open_from_bundle (exe_file, NULL, FALSE);
+
+	if (image == NULL)
+		image = mono_image_open (exe_file, NULL);
+
 	if (image == NULL) {
 		/* The image is wrong or the file was not found. In this case return
 		 * a default runtime and leave to the initialization method the work of

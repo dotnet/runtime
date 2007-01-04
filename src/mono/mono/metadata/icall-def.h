@@ -106,7 +106,8 @@ ICALL_TYPE(CHAR, "System.Char", CHAR_1)
 ICALL(CHAR_1, "GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers)
 
 ICALL_TYPE(DEFAULTC, "System.Configuration.DefaultConfig", DEFAULTC_1)
-ICALL(DEFAULTC_1, "get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
+ICALL(DEFAULTC_1, "get_bundled_machine_config", ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config)
+ICALL(DEFAULTC_2, "get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
 
 ICALL_TYPE(CONSOLE, "System.ConsoleDriver", CONSOLE_1)
 ICALL(CONSOLE_1, "GetTtySize", ves_icall_System_ConsoleDriver_GetTtySize )

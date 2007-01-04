@@ -279,6 +279,10 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname) MONO_INTERN
 void
 mono_assembly_name_free (MonoAssemblyName *aname) MONO_INTERNAL;
 
+MonoImage *mono_assembly_open_from_bundle (const char *filename,
+					   MonoImageOpenStatus *status,
+					   gboolean refonly) MONO_INTERNAL;
+
 void
 mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap);
 

@@ -1222,17 +1222,23 @@ absolute_dir (const gchar *filename)
  * defined bundles, if found, returns the MonoImage for it, if not found
  * returns NULL
  */
-static MonoImage *
+MonoImage *
 mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
 	int i;
-	char *name = g_path_get_basename (filename);
+	char *name;
 	MonoImage *image = NULL;
 
 	/*
 	 * we do a very simple search for bundled assemblies: it's not a general 
 	 * purpose assembly loading mechanism.
 	 */
+
+	if (!bundles)
+		return NULL;
+
+	name = g_path_get_basename (filename);
+
 	mono_assemblies_lock ();
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
