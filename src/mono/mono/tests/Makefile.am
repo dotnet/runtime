@@ -220,10 +220,11 @@ TEST_CS_SRC=			\
 	main-returns-background-resetabort.cs	\
 	main-returns-background.cs	\
 	main-returns-background-change.cs	\
-	main-returns.cs	\
+	main-returns.cs		\
 	subthread-exit.cs	\
-	desweak.cs	\
-	cominterop.cs	
+	desweak.cs		\
+	cominterop.cs		\
+	exists.cs
 
 if X86
 # bug #71274
