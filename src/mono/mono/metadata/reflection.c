@@ -8776,10 +8776,6 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 
 	geninst->data.generic_class = gclass;
 
-	gclass->context = g_new0 (MonoGenericContext, 1);
-	gclass->context->container = gclass->container_class->generic_container;
-	gclass->context->gclass = gclass;
-
 	mono_loader_unlock ();
 
 	return geninst;
@@ -8829,10 +8825,6 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 		MonoGenericClass *kgclass = klass->generic_class;
 		MonoGenericClass *ogclass = gclass;
 
-		gclass->context = g_new0 (MonoGenericContext, 1);
-		gclass->context->container = gclass->container_class->generic_container;
-		gclass->context->gclass = gclass;
-
 		igclass = g_new0 (MonoInflatedGenericClass, 1);
 		gclass = &igclass->generic_class;
 		gclass->is_inflated = TRUE;
@@ -8845,7 +8837,7 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 		for (i = 0; i < gclass->inst->type_argc; i++) {
 			MonoType *t = kgclass->inst->type_argv [i];
 
-			t = mono_class_inflate_generic_type (t, ogclass->context);
+			t = mono_class_inflate_generic_type (t, mono_generic_class_get_context (ogclass));
 
 			if (!gclass->inst->is_open)
 				gclass->inst->is_open = mono_class_is_open_constructed_type (t);
@@ -8872,10 +8864,6 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 	}
 
 	geninst->data.generic_class = gclass;
-
-	gclass->context = g_new0 (MonoGenericContext, 1);
-	gclass->context->container = gclass->container_class->generic_container;
-	gclass->context->gclass = gclass;
 
 	mono_loader_unlock ();
 
@@ -8995,7 +8983,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	gclass = mono_get_inflated_generic_class (type->type.type->data.generic_class);
 	n = mono_method_signature (method)->generic_param_count;
 
-	context = gclass->generic_class.context;
+	context = mono_generic_class_get_context ((MonoGenericClass *) gclass);
 	g_assert (context && context->container);
 	if (n) {
 		gmethod = g_new0 (MonoGenericMethod, 1);
@@ -9118,7 +9106,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].parent = klass;
 		dgclass->fields [i].generic_info = ifield;
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
-			field->type, dgclass->generic_class.generic_class.context);
+			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
 	}
 
 	for (i = 0; i < dgclass->count_properties; i++) {

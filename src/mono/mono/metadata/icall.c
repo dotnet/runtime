@@ -1681,7 +1681,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 
 	/* open generic-instance classes can share their interface_id */
 	if (class->generic_class && class->generic_class->inst->is_open) {
-		context = class->generic_class->context;
+		context = mono_class_get_context (class);
 		class = class->generic_class->container_class;
 	}
 
@@ -2154,7 +2154,7 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 		return NULL;
 
 	inflated = mono_class_inflate_generic_type (
-		parent->type, gclass->generic_class.generic_class.context);
+		parent->type, mono_generic_class_get_context ((MonoGenericClass *) gclass));
 
 	return mono_type_get_object (domain, inflated);
 }
@@ -2205,7 +2205,7 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 			it = &klass->interfaces [i]->byval_arg;
 
 		it = mono_class_inflate_generic_type (
-			it, gclass->generic_class.generic_class.context);
+			it, mono_generic_class_get_context ((MonoGenericClass *) gclass));
 
 		iface = mono_type_get_object (domain, it);
 		mono_array_setref (res, i, iface);

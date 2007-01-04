@@ -393,7 +393,7 @@ struct _MonoGenericInst {
 struct _MonoGenericClass {
 	MonoGenericInst *inst;		/* the instantiation */
 	MonoClass *container_class;	/* the generic type definition */
-	MonoGenericContext *context;	/* current context */
+	MonoGenericContext *cached_context;	/* if present, a "trivial" context that doesn't contain any method instantiation */
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
 	guint is_inflated : 1;		/* We're a MonoInflatedGenericClass */
 };
@@ -661,6 +661,12 @@ mono_install_get_class_from_name (MonoGetClassFromName func) MONO_INTERNAL;
 
 MonoInflatedGenericClass*
 mono_get_inflated_generic_class (MonoGenericClass *gclass) MONO_INTERNAL;
+
+MonoGenericContext *
+mono_class_get_context (MonoClass *class) MONO_INTERNAL;
+
+MonoGenericContext *
+mono_generic_class_get_context (MonoGenericClass *gclass) MONO_INTERNAL;
 
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);

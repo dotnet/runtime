@@ -2024,9 +2024,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	type->data.generic_class = gclass;
 
-	gclass->context = g_new0 (MonoGenericContext, 1);
-	gclass->context->gclass = gclass;
-
 	/*
 	 * Create the klass before parsing the type arguments.
 	 * This is required to support "recursive" definitions.
@@ -2040,7 +2037,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
 	g_assert (gklass->generic_container);
-	gclass->context->container = gklass->generic_container;
 
 	count = mono_metadata_decode_value (ptr, &ptr);
 
