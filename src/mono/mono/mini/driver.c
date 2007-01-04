@@ -385,8 +385,13 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 			fprintf (mini_stats_fd, "],\n");
 		g_timer_stop (timer);
 		elapsed = g_timer_elapsed (timer, NULL);
-		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n", 
-			run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+		if (failed > 0 || cfailed > 0){
+			g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n", 
+				 run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+		} else {
+			g_print ("Results: total tests: %d, all pass \n",  run);
+		}
+		
 		g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed, 
 			 elapsed - comp_time, comp_time, code_size);
 		total += failed + cfailed;
@@ -418,8 +423,14 @@ mini_regression_list (int verbose, int count, char *images [])
 		total += mini_regression (mono_assembly_get_image (ass), verbose, &run);
 		total_run += run;
 	}
-	g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
-		total_run, total, (int)G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
+	if (total > 0){
+		g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
+			 total_run, total, (int)G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
+	} else {
+		g_print ("Overall results: tests: %d, 100%% pass, opt combinations: %d\n", 
+			 total_run, (int)G_N_ELEMENTS (opt_sets));
+	}
+	
 	return total;
 }
 
