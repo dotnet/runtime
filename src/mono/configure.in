@@ -299,6 +299,28 @@ AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h)
 
+AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
+if test x$have_zlib = xyes; then
+   AC_TRY_COMPILE([#include <zlib.h>], [
+   void main () {
+   #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
+   }
+   #else
+   #error No good zlib found
+   #endif
+   ],[
+	AC_MSG_RESULT(Using system zlib)
+	zlib_msg="system zlib"
+   ],[
+	AC_MSG_RESULT(Using embedded zlib)
+	have_zlib=no
+	zlib_msg="bundled zlib"
+   ])
+fi
+
+AM_CONDITIONAL(HAVE_ZLIB, test x$have_zlib = xyes)
+AC_DEFINE(HAVE_ZLIB,1,[Have system zlib])
+
 # for mono/metadata/debug-symfile.c
 AC_CHECK_HEADERS(elf.h)
 
@@ -2077,6 +2099,7 @@ echo "
 	2.0 Alpha:   $PREVIEW
 	JNI support: $jdk_headers_found
 	libgdiplus:  $libgdiplus_msg
+	zlib:        $zlib_msg
 	$disabled
 
 "
