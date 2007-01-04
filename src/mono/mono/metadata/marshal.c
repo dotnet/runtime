@@ -971,11 +971,10 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 
 	s = mono_string_to_utf8 (src);
 	len = MIN (size, strlen (s));
-	memcpy (dst, s, len);
-	g_free (s);
-
 	if (len >= size)
 		len--;
+	memcpy (dst, s, len);
+	g_free (s);
 }
 
 /**
