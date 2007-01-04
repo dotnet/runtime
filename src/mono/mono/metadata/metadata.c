@@ -4602,8 +4602,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
 		container->is_method = 1;
 
-	container->context.container = container;
-
 	return container;
 }
 

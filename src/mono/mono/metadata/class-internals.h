@@ -439,16 +439,9 @@ struct _MonoGenericMethod {
 };
 
 /*
- * The generic context.
+ * The generic context: an instantiation of a set of class and method generic parameters.
  */
 struct _MonoGenericContext {
-	/*
-	 * The container which has been instantiated.
-	 *
-	 * If we're in a generic method, the generic method definition's container.
-	 * Otherwise the generic type's container.
-	 */
-	MonoGenericContainer *container;
 	/* The current generic class */
 	MonoGenericClass *gclass;
 	/* The current generic method */

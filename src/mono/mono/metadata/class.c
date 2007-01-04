@@ -569,14 +569,12 @@ mono_generic_class_get_context (MonoGenericClass *gclass)
 {
        MonoGenericContext *context = gclass->cached_context;
        if (context) {
-	       g_assert (context->container == gclass->container_class->generic_container);
 	       g_assert (context->gclass == gclass);
 	       g_assert (!context->gmethod);
 	       return context;
        }
 	
        context = g_new0 (MonoGenericContext, 1);
-       context->container = gclass->container_class->generic_container;
        context->gclass = gclass;
 
        if (InterlockedCompareExchangePointer ((gpointer *)&gclass->cached_context, context, NULL))
@@ -637,7 +635,7 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 		} else {
 			gmethod = g_new0 (MonoGenericMethod, 1);
 			gmethod->generic_class = gclass;
-			gmethod->container = context->container;
+			gmethod->container = context->gmethod->container;
 			gmethod->inst = ninst;
 		}
 	}
@@ -649,7 +647,6 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 		return mono_generic_class_get_context (gclass);
 
 	res = g_new0 (MonoGenericContext, 1);
-	res->container = gmethod->container;
 	res->gclass = gclass;
 	res->gmethod = gmethod;
 
@@ -732,7 +729,6 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		gmethod->generic_class = result->klass->generic_class;
 
 		context = g_new0 (MonoGenericContext, 1);
-		context->container = method->generic_container;
 		context->gclass = result->klass->generic_class;
 		context->gmethod = gmethod;
 
@@ -2307,7 +2303,6 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 	int i;
 
 	context = g_new0 (MonoGenericContext, 1);
-	context->container = iface->generic_class->container_class->generic_container;
 	context->gmethod = g_new0 (MonoGenericMethod, 1);
 	context->gmethod->generic_class = iface->generic_class;
 	context->gmethod->inst = iface->generic_class->inst;
@@ -2979,7 +2974,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->generic_container->klass = class;
 		context = &class->generic_container->context;
 
-		context->gclass = mono_get_shared_generic_class (context->container, FALSE);
+		context->gclass = mono_get_shared_generic_class (class->generic_container, FALSE);
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS]) {

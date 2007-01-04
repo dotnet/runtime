@@ -8185,8 +8185,6 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 
 	tb->generic_container = g_new0 (MonoGenericContainer, 1);
 	tb->generic_container->klass = klass;
-
-	tb->generic_container->context.container = tb->generic_container;
 }
 
 /*
@@ -8504,7 +8502,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		}
 
 		context = &container->context;
-		context->container = container;
 		if (klass->generic_container) {
 			container->parent = klass->generic_container;
 			context->gclass = klass->generic_container->context.gclass;
@@ -8957,7 +8954,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	gmethod->reflection_info = rmethod;
 
 	context = g_new0 (MonoGenericContext, 1);
-	context->container = container;
 	context->gclass = method->klass->generic_class;
 	context->gmethod = gmethod;
 
@@ -8984,7 +8980,6 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	n = mono_method_signature (method)->generic_param_count;
 
 	context = mono_generic_class_get_context ((MonoGenericClass *) gclass);
-	g_assert (context && context->container);
 	if (n) {
 		gmethod = g_new0 (MonoGenericMethod, 1);
 		gmethod->generic_class = &gclass->generic_class;
@@ -9002,10 +8997,9 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 			gmethod->inst->type_argv [i] = &gparam->pklass->byval_arg;
 		}
 
-		g_assert (gmethod->container->parent == context->container);
+		g_assert (gmethod->container->parent == ((MonoGenericClass *)gclass)->container_class->generic_container);
 
 		context = g_new0 (MonoGenericContext, 1);
-		context->container = gmethod->container;
 		context->gclass = &gclass->generic_class;
 		context->gmethod = gmethod;
 	}

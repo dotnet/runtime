@@ -1854,7 +1854,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 	if (mh) {
 		mh = mono_get_inflated_method (mh);
 		if (mono_method_signature (mh)->is_inflated)
-			container = ((MonoMethodInflated *) mh)->context->container;
+			container = ((MonoMethodInflated *) mh)->declaring->generic_container;
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_type (m, &mh->klass->byval_arg, TRUE);
 		if (show_tokens)

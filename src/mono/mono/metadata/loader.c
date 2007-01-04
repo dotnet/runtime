@@ -627,8 +627,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 
 		ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (ptr, &ptr);
-		sig = mono_metadata_parse_method_signature_full (
-			image, context ? context->container : NULL, 0, ptr, NULL);
+		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
 
 		mono_loader_lock ();
 		prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token));
@@ -874,7 +873,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod->container = container;
 
 	new_context = g_new0 (MonoGenericContext, 1);
-	new_context->container = container;
 	new_context->gmethod = gmethod;
 	if (container->parent)
 		new_context->gclass = container->parent->context.gclass;
@@ -900,7 +898,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	 * ie. instantiate the method as `Foo.Hello<float>.
 	 */
 
-	gmethod->inst = mono_metadata_parse_generic_inst (image, context ? context->container : NULL, param_count, ptr, &ptr);
+	gmethod->inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
 
 	if (context && gmethod->inst->is_open)
 		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);
