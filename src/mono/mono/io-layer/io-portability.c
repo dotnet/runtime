@@ -115,7 +115,7 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 {
 	gchar *new_pathname, **components, **new_components;
 	int num_components = 0, component = 0;
-	DIR *scanning;
+	DIR *scanning = NULL;
 	
 	mono_once (&options_once, options_init);
 
