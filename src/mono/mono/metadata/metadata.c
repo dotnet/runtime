@@ -3411,7 +3411,7 @@ mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
 gboolean
 mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2)
 {
-	return (g1->container == g2->container) && (g1->generic_class == g2->generic_class) &&
+	return (g1->container == g2->container) && (g1->class_inst == g2->class_inst) &&
 		(g1->inst == g2->inst);
 }
 
@@ -4457,7 +4457,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	MonoGenericContext *context = &container->context;
 
 	/* FIXME: !container->klass => this is probably monodis */
-	g_assert (!container->klass || context->gclass || context->gmethod);
+	g_assert (!container->klass || context->class_inst || context->gmethod);
 
 	*constraints = NULL;
 	found = 0;

@@ -869,13 +869,15 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_assert (container);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->generic_class = method->klass->generic_class;
+	if (method->klass->generic_class)
+		gmethod->class_inst = method->klass->generic_class->inst;
 	gmethod->container = container;
 
 	new_context = g_new0 (MonoGenericContext, 1);
 	new_context->gmethod = gmethod;
+	/* FIXME: Is this correct? */
 	if (container->parent)
-		new_context->gclass = container->parent->context.gclass;
+		new_context->class_inst = container->parent->context.class_inst;
 
 	/*
 	 * When parsing the methodspec signature, we're in the old context again:
@@ -1279,7 +1281,7 @@ mono_get_shared_generic_method (MonoGenericContainer *container)
 {
 	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->container = container;
-	gmethod->generic_class = container->context.gclass;
+	gmethod->class_inst = container->context.class_inst;
 	gmethod->inst = mono_get_shared_generic_inst (container);
 
 	return gmethod;
@@ -1341,7 +1343,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (generic_container) {
 		MonoGenericContext *context = &generic_container->context;
 		if (container)
-			context->gclass = container->context.gclass;
+			context->class_inst = container->context.class_inst;
 		context->gmethod = mono_get_shared_generic_method (generic_container);
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
 
