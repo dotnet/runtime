@@ -13,7 +13,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#if !PLATFORM_WIN32
 #include <mono/io-layer/atomic.h>
+#endif
 #include <mono/metadata/image.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/cil-coff.h>
