@@ -3101,8 +3101,8 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 		return;
 	}
 
-	if (!gclass->klass)
-		gclass->klass = g_malloc0 (sizeof (MonoClass));
+	g_assert (!gclass->klass);
+	gclass->klass = g_malloc0 (sizeof (MonoClass));
 	klass = gclass->klass;
 
 	gklass = gclass->generic_class.container_class;

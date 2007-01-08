@@ -2024,13 +2024,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	type->data.generic_class = gclass;
 
-	/*
-	 * Create the klass before parsing the type arguments.
-	 * This is required to support "recursive" definitions.
-	 * See mcs/tests/gen-23.cs for an example.
-	 */
-	igclass->klass = g_new0 (MonoClass, 1);
-
 	gtype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	if (gtype == NULL)
 		return FALSE;
