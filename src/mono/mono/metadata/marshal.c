@@ -4628,7 +4628,7 @@ handle_enum:
 
 			/* fall through */
 		case MONO_TYPE_VALUETYPE:
-			if (t->data.klass->enumtype) {
+			if (type == MONO_TYPE_VALUETYPE && t->data.klass->enumtype) {
 				type = t->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
