@@ -3466,9 +3466,6 @@ mono_get_xdomain_marshal_type (MonoType *t)
 	}
 	}
 
-	if (mono_class_from_mono_type (t) == mono_defaults.stringbuilder_class)
-		return MONO_MARSHAL_COPY;
-	
 	return MONO_MARSHAL_SERIALIZE;
 }
 
