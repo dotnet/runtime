@@ -888,9 +888,11 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
 			   
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
-			if (clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
-			else
+			else if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
+				return ((i + 1) << 8) | MONO_REGION_FAULT | clause->flags;
+			else if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
 				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
 		}
 	}
@@ -3889,7 +3891,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				tblock->flags |= BB_EXCEPTION_DEAD_OBJ;
 
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
-			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER ||
+			    clause->flags == MONO_EXCEPTION_CLAUSE_FAULT) {
 				MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 				MONO_ADD_INS (tblock, ins);
 
@@ -6813,8 +6816,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_ADD_INS (bblock, ins);
 				}
 			}
-
-			/* fixme: call fault handler ? */
 
 			if ((handlers = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
 				GList *tmp;

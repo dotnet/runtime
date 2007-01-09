@@ -796,7 +796,15 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
-						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+						    (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
+							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
+								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
+							call_filter (ctx, ei->handler_start);
+						}
+						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
+						    (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
