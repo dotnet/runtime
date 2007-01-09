@@ -405,7 +405,6 @@ struct _MonoGenericClass {
  */
 struct _MonoInflatedGenericClass {
 	MonoGenericClass generic_class;
-	guint is_initialized   : 1;
 	MonoClass *klass;
 };
 
