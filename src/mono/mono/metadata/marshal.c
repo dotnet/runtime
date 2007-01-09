@@ -2957,6 +2957,12 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
 
+	if (ares->async_delegate != delegate && mono_get_runtime_info ()->framework_version [0] >= '2') {
+		mono_raise_exception (mono_get_exception_invalid_operation (
+			"The IAsyncResult object provided does not match this delegate."));
+		return NULL;
+	}
+
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
 		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
