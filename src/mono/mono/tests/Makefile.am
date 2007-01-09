@@ -271,7 +271,8 @@ TEST_CS2_SRC = \
 	bug-79684.2.cs 		\
 	catch-generics.2.cs	\
 	event-get.2.cs		\
-	safehandle.2.cs
+	safehandle.2.cs		\
+	bug-80392.2.cs
 
 TEST_IL2_SRC = find-method.2.il
 
