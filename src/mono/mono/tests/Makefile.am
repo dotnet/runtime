@@ -252,6 +252,7 @@ TEST_IL_SRC=			\
 	jmpTest.il		\
 	calliTest.il		\
 	ckfiniteTest.il		\
+	fault-handler.il		\
 	locallocTest.il		\
 	initblkTest.il		\
 	qt-instance.il		\
