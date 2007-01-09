@@ -64,7 +64,7 @@ public class Test: MarshalByRefObject
 			
 			StringBuilder sb = new StringBuilder ("un");
 			server.Run9 (sb);
-			Test.CheckValue (sb, new StringBuilder ("un-dos"), 190);
+			Test.CheckValue (sb, new StringBuilder ("un"), 190);
 			
 		}
 		catch (TestException ex)
@@ -100,8 +100,14 @@ public class Test: MarshalByRefObject
 			throw new TestException ("Wrong type (maybe wrong domain?)", ec);
 		
 		if (ob1 is StringBuilder) {
-			if (!((StringBuilder)ob1).Equals ((StringBuilder)ob2))
-				throw new TestException ("Objects are not equal", ec);
+			if (Object.ReferenceEquals (ob1, ob2))
+				throw new TestException ("StringBuilders are ReferenceEquals", ec);
+
+			StringBuilder sb1 = (StringBuilder) ob1;
+			StringBuilder sb2 = (StringBuilder) ob2;
+
+			if (sb1.ToString () != sb2.ToString ())
+				throw new TestException ("Strings are not equal", ec);
 		}
 		else if (!ob1.Equals (ob2))
 			throw new TestException ("Objects are not equal", ec);
