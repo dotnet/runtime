@@ -1713,7 +1713,8 @@ handle_enum:
 		return;
 	}
 	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
+		/* note that 't' and 'type->type' can be different */
+		if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
 			t = type->data.klass->enum_basetype->type;
 			goto handle_enum;
 		} else {
