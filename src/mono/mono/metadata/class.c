@@ -3096,12 +3096,11 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 	int i;
 
 	mono_loader_lock ();
-	if (gclass->is_initialized) {
+	if (gclass->klass) {
 		mono_loader_unlock ();
 		return;
 	}
 
-	g_assert (!gclass->klass);
 	gclass->klass = g_malloc0 (sizeof (MonoClass));
 	klass = gclass->klass;
 
@@ -3173,7 +3172,7 @@ mono_class_create_generic (MonoInflatedGenericClass *gclass)
 
 	if (MONO_CLASS_IS_INTERFACE (klass))
 		setup_interface_offsets (klass, 0);
-	gclass->is_initialized = TRUE;
+
 	mono_loader_unlock ();
 }
 
