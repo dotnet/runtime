@@ -95,6 +95,7 @@ TEST_CS_SRC=			\
 	enumcast.cs		\
 	assignable-tests.cs	\
 	array-cast.cs		\
+	array-subtype-attr.cs	\
 	cattr-compile.cs	\
 	cattr-field.cs		\
 	cattr-object.cs		\
