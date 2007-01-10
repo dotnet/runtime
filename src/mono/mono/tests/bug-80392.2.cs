@@ -36,8 +36,8 @@ class Test {
 			// expected
 		}
 
-		d1.EndInvoke (ar1);
-		d2.EndInvoke (ar2);
+		if (1 != d1.EndInvoke (ar1)) return 3;
+		if (2 != d2.EndInvoke (ar2)) return 4;
 
 		return 0;
 	}
