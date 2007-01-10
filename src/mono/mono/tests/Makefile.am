@@ -255,6 +255,7 @@ TEST_IL_SRC=			\
 	ckfiniteTest.il		\
 	fault-handler.il		\
 	locallocTest.il		\
+	long-shift-regalloc.il		\
 	initblkTest.il		\
 	qt-instance.il		\
 	vararg.il		\
