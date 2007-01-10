@@ -7829,7 +7829,7 @@ handle_type:
 			}
 		} else {
 			for (i = 0; i < len; ++i) {
-				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i), NULL);
+				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &arg_eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i), NULL);
 			}
 		}
 		break;
