@@ -207,9 +207,9 @@ cond_exc_ov: len:6
 cond_exc_no: len:6
 cond_exc_c: len:6
 cond_exc_nc: len:6
-long_shl: dest:L src1:L src2:s clob:1 len:21
-long_shr: dest:L src1:L src2:s clob:1 len:22
-long_shr_un: dest:L src1:L src2:s clob:1 len:22
+long_shl: dest:l src1:l src2:s clob:1 len:21
+long_shr: dest:l src1:l src2:s clob:1 len:22
+long_shr_un: dest:l src1:l src2:s clob:1 len:22
 long_conv_to_ovf_i: dest:i src1:i src2:i len:30
 long_mul_ovf: 
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
