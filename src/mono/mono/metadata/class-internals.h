@@ -651,13 +651,10 @@ mono_install_get_cached_class_info (MonoGetCachedClassInfo func) MONO_INTERNAL;
 void
 mono_install_get_class_from_name (MonoGetClassFromName func) MONO_INTERNAL;
 
-MonoInflatedGenericClass*
-mono_get_inflated_generic_class (MonoGenericClass *gclass) MONO_INTERNAL;
-
-MonoGenericContext *
+MonoGenericContext*
 mono_class_get_context (MonoClass *class) MONO_INTERNAL;
 
-MonoGenericContext *
+MonoGenericContext*
 mono_generic_class_get_context (MonoGenericClass *gclass) MONO_INTERNAL;
 
 MonoMethod*

@@ -5441,8 +5441,7 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 {
 	static MonoClass *System_Reflection_MonoGenericClass;
 	MonoReflectionGenericClass *res;
-	MonoInflatedGenericClass *gclass;
-	MonoClass *gklass;
+	MonoClass *klass, *gklass;
 
 	if (!System_Reflection_MonoGenericClass) {
 		System_Reflection_MonoGenericClass = mono_class_from_name (
@@ -5450,11 +5449,10 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 		g_assert (System_Reflection_MonoGenericClass);
 	}
 
-	gclass = mono_get_inflated_generic_class (geninst->data.generic_class);
-	gklass = gclass->generic_class.container_class;
-	g_assert (gklass->generic_container);
+	klass = mono_class_from_mono_type (geninst);
+	gklass = klass->generic_class->container_class;
 
-	mono_class_init (gclass->klass);
+	mono_class_init (klass);
 
 #ifdef HAVE_SGEN_GC
 	/* FIXME: allow unpinned later */
@@ -8969,19 +8967,18 @@ static MonoMethod *
 inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoObject *obj)
 {
 	MonoGenericMethod *gmethod = NULL;
-	MonoInflatedGenericClass *gclass;
 	MonoGenericContext *context;
 	MonoClass *klass;
 	int i, n;
 
 	klass = mono_class_from_mono_type (type->type.type);
-	gclass = mono_get_inflated_generic_class (type->type.type->data.generic_class);
-	n = mono_method_signature (method)->generic_param_count;
+	g_assert (klass->generic_class);
+	context = mono_class_get_context (klass);
 
-	context = mono_generic_class_get_context ((MonoGenericClass *) gclass);
+	n = mono_method_signature (method)->generic_param_count;
 	if (n) {
 		gmethod = g_new0 (MonoGenericMethod, 1);
-		gmethod->class_inst = gclass->generic_class.inst;
+		gmethod->class_inst = klass->generic_class->inst;
 		gmethod->container = method->generic_container;
 		MOVING_GC_REGISTER (&gmethod->reflection_info);
 		gmethod->reflection_info = obj;
@@ -8996,10 +8993,10 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 			gmethod->inst->type_argv [i] = &gparam->pklass->byval_arg;
 		}
 
-		g_assert (gmethod->container->parent == ((MonoGenericClass *)gclass)->container_class->generic_container);
+		g_assert (gmethod->container->parent == klass->generic_class->container_class->generic_container);
 
 		context = g_new0 (MonoGenericContext, 1);
-		context->class_inst = gclass->generic_class.inst;
+		context->class_inst = klass->generic_class->inst;
 		context->gmethod = gmethod;
 	}
 

@@ -3228,20 +3228,16 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, align);
 	case MONO_TYPE_GENERICINST: {
-		MonoInflatedGenericClass *gclass;
-		MonoClass *container_class;
+		MonoGenericClass *gclass = t->data.generic_class;
+		MonoClass *container_class = gclass->container_class;
 
-		gclass = mono_get_inflated_generic_class (t->data.generic_class);
-		// g_assert (!gclass->generic_class.inst->is_open);
-		// g_assert (!gclass->klass->generic_container);
-
-		container_class = gclass->generic_class.container_class;
+		// g_assert (!gclass->inst->is_open);
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
 				return mono_type_size (container_class->enum_basetype, align);
 			else
-				return mono_class_value_size (gclass->klass, align);
+				return mono_class_value_size (mono_class_from_mono_type (t), align);
 		} else {
 			*align = __alignof__(gpointer);
 			return sizeof (gpointer);
@@ -3331,20 +3327,16 @@ mono_type_stack_size (MonoType *t, int *align)
 		}
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoInflatedGenericClass *gclass;
-		MonoClass *container_class;
+		MonoGenericClass *gclass = t->data.generic_class;
+		MonoClass *container_class = gclass->container_class;
 
-		gclass = mono_get_inflated_generic_class (t->data.generic_class);
-		container_class = gclass->generic_class.container_class;
-
-		g_assert (!gclass->generic_class.inst->is_open);
-		g_assert (!gclass->klass->generic_container);
+		g_assert (!gclass->inst->is_open);
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
 				return mono_type_stack_size (container_class->enum_basetype, align);
 			else {
-				guint32 size = mono_class_value_size (gclass->klass, align);
+				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), align);
 
 				*align = *align + __alignof__(gpointer) - 1;
 				*align &= ~(__alignof__(gpointer) - 1);
