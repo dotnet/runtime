@@ -1,3 +1,8 @@
+2007-01-11  Marek Habersack  <grendello@gmail.com>
+
+	* data/net_2_0/machine.config: Added the DbProviderFactories
+	section, together with the first entry - for SQLite.
+
 2007-01-03  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-provides.in:
