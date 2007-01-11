@@ -495,6 +495,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(arm_sources) inssel-arm.brg cpu-arm.md \
+	$(mips_sources) inssel-mips.brg inssel-long32-mips.brg cpu-mips.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
 	$(s390_sources) inssel-s390.brg cpu-s390.md \
 	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
