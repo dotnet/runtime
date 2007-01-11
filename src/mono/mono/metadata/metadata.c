@@ -2031,6 +2031,11 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	count = mono_metadata_decode_value (ptr, &ptr);
 
 	gclass->inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
+	/* FIXME: this hack is needed to handle the incestuous relationship between metadata parsing and MonoClass. */
+	if (gclass->cached_context) {
+		g_free (gclass->cached_context);
+		gclass->cached_context = NULL;
+	}
 
 	if (rptr)
 		*rptr = ptr;
