@@ -2012,15 +2012,12 @@ static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 				      const char *ptr, const char **rptr)
 {
-	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *gclass, *cached;
 	MonoClass *gklass;
 	MonoType *gtype;
 	int count;
 
-	igclass = g_new0 (MonoInflatedGenericClass, 1);
-	gclass = &igclass->generic_class;
-	gclass->is_inflated = TRUE;
+	gclass = g_new0 (MonoGenericClass, 1);
 
 	type->data.generic_class = gclass;
 
@@ -2058,7 +2055,6 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	cached = g_hash_table_lookup (generic_class_cache, gclass);
 	if (cached) {
-		g_free (igclass->klass);
 		g_free (gclass);
 
 		type->data.generic_class = cached;

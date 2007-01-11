@@ -2163,7 +2163,7 @@ static MonoArray*
 ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 {
 	static MonoClass *System_Reflection_MonoGenericClass;
-	MonoDynamicGenericClass *gclass;
+	MonoGenericClass *gclass;
 	MonoReflectionTypeBuilder *tb = NULL;
 	MonoClass *klass = NULL;
 	MonoDomain *domain;
@@ -2180,14 +2180,14 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 
 	domain = mono_object_domain (type);
 
-	g_assert (type->type.type->data.generic_class->is_dynamic);
-	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
+	gclass = type->type.type->data.generic_class;
+	g_assert (gclass->is_dynamic);
 
 	if (!strcmp (type->generic_type->object.vtable->klass->name, "TypeBuilder")) {
 		tb = (MonoReflectionTypeBuilder *) type->generic_type;
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 	} else {
-		klass = gclass->generic_class.generic_class.container_class;
+		klass = gclass->container_class;
 		mono_class_init (klass);
 		icount = klass->interface_count;
 	}
@@ -2204,8 +2204,7 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 		} else
 			it = &klass->interfaces [i]->byval_arg;
 
-		it = mono_class_inflate_generic_type (
-			it, mono_generic_class_get_context ((MonoGenericClass *) gclass));
+		it = mono_class_inflate_generic_type (it, mono_generic_class_get_context (gclass));
 
 		iface = mono_type_get_object (domain, it);
 		mono_array_setref (res, i, iface);

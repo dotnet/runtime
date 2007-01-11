@@ -454,7 +454,6 @@ mono_class_is_open_constructed_type (MonoType *t)
 static MonoGenericClass *
 inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 {
-	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *ngclass, *cached;
 	MonoGenericInst *ninst;
 
@@ -464,20 +463,14 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 
 	if (ogclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		igclass = &dgclass->generic_class;
-		ngclass = &igclass->generic_class;
-		ngclass->is_inflated = 1;
+		ngclass = &dgclass->generic_class;
 		ngclass->is_dynamic = 1;
 	} else {
-		igclass = g_new0 (MonoInflatedGenericClass, 1);
-		ngclass = &igclass->generic_class;
-		ngclass->is_inflated = 1;
+		ngclass = g_new0 (MonoGenericClass, 1);
 	}
 
 	ngclass->container_class = ogclass->container_class;
 	ngclass->inst = ninst;
-
-	igclass->klass = NULL;
 
 	mono_loader_lock ();
 	cached = mono_metadata_lookup_generic_class (ngclass);
@@ -2870,19 +2863,14 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
-	MonoInflatedGenericClass *igclass;
 	MonoGenericClass *gclass;
 
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		igclass = &dgclass->generic_class;
-		gclass = &igclass->generic_class;
-		gclass->is_inflated = 1;
+		gclass = &dgclass->generic_class;
 		gclass->is_dynamic = 1;
 	} else {
-		igclass = g_new0 (MonoInflatedGenericClass, 1);
-		gclass = &igclass->generic_class;
-		gclass->is_inflated = 1;
+		gclass = g_new0 (MonoGenericClass, 1);
 	}
 
 	gclass->cached_context = &container->context;
@@ -2898,7 +2886,7 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 		}
 	}
 
-	igclass->klass = container->klass;
+	gclass->cached_class = container->klass;
 
 	return gclass;
 }
@@ -3079,21 +3067,17 @@ mono_class_get_nullable_param (MonoClass *klass)
 static MonoClass*
 mono_generic_class_get_class (MonoGenericClass *gclass)
 {
-	MonoInflatedGenericClass *igclass;
 	MonoClass *klass, *gklass;
 	int i;
 
-	g_assert (gclass->is_inflated);
-	igclass = (MonoInflatedGenericClass *) gclass;
-
 	mono_loader_lock ();
-	if (igclass->klass) {
+	if (gclass->cached_class) {
 		mono_loader_unlock ();
-		return igclass->klass;
+		return gclass->cached_class;
 	}
 
-	igclass->klass = g_malloc0 (sizeof (MonoClass));
-	klass = igclass->klass;
+	gclass->cached_class = g_malloc0 (sizeof (MonoClass));
+	klass = gclass->cached_class;
 
 	gklass = gclass->container_class;
 

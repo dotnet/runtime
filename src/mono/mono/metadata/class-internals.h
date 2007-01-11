@@ -395,17 +395,7 @@ struct _MonoGenericClass {
 	MonoClass *container_class;	/* the generic type definition */
 	MonoGenericContext *cached_context;	/* if present, a "trivial" context that doesn't contain any method instantiation */
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
-	guint is_inflated : 1;		/* We're a MonoInflatedGenericClass */
-};
-
-/*
- * Performance optimization:
- * We don't create the `MonoClass' for a `MonoGenericClass' until we really
- * need it.
- */
-struct _MonoInflatedGenericClass {
-	MonoGenericClass generic_class;
-	MonoClass *klass;
+	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 };
 
 /*
@@ -413,7 +403,7 @@ struct _MonoInflatedGenericClass {
  * a TypeBuilder.
  */
 struct _MonoDynamicGenericClass {
-	MonoInflatedGenericClass generic_class;
+	MonoGenericClass generic_class;
 	int count_methods;
 	MonoMethod **methods;
 	int count_ctors;

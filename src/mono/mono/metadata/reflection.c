@@ -8726,14 +8726,10 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		MonoInflatedGenericClass *igclass = &dgclass->generic_class;
-		gclass = &igclass->generic_class;
+		gclass = &dgclass->generic_class;
 		gclass->is_dynamic = TRUE;
-		gclass->is_inflated = TRUE;
 	} else {
-		MonoInflatedGenericClass *igclass = g_new0 (MonoInflatedGenericClass, 1);
-		gclass = &igclass->generic_class;
-		gclass->is_inflated = TRUE;
+		gclass = g_new0 (MonoGenericClass, 1);
 	}
 
 	gclass->inst = g_new0 (MonoGenericInst, 1);
@@ -8779,7 +8775,6 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 {
 	MonoClass *klass;
 	MonoGenericClass *gclass, *cached;
-	MonoInflatedGenericClass *igclass;
 	MonoType *geninst;
 	int i;
 
@@ -8790,9 +8785,7 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 
 	mono_loader_lock ();
 
-	igclass = g_new0 (MonoInflatedGenericClass, 1);
-	gclass = &igclass->generic_class;
-	gclass->is_inflated = TRUE;
+	gclass = g_new0 (MonoGenericClass, 1);
 
 	gclass->inst = g_new0 (MonoGenericInst, 1);
 	gclass->inst->type_argc = type_argc;
@@ -8818,9 +8811,7 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 		MonoGenericClass *kgclass = klass->generic_class;
 		MonoGenericClass *ogclass = gclass;
 
-		igclass = g_new0 (MonoInflatedGenericClass, 1);
-		gclass = &igclass->generic_class;
-		gclass->is_inflated = TRUE;
+		gclass = g_new0 (MonoGenericClass, 1);
 
 		gclass->inst = g_new0 (MonoGenericInst, 1);
 		gclass->inst->type_argc = kgclass->inst->type_argc;
