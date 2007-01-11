@@ -4278,14 +4278,14 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
 		return method;
 
-	sig = signature_no_pinvoke (method);
-	
 	/* we cant remote methods without this pointer */
-	g_assert (sig->hasthis);
+	g_assert (mono_method_signature (method)->hasthis);
 
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)))
 		return res;
 
+	sig = signature_no_pinvoke (method);
+	
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK);
 
 	for (i = 0; i <= sig->param_count; i++)
@@ -4485,8 +4485,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	g_assert (method);
 
-	target_klass = method->klass;
-	
 	mono_marshal_lock ();
 
 	if (method->string_ctor) {
@@ -4521,7 +4519,22 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
-	cache = method->klass->image->runtime_invoke_cache;
+	target_klass = mono_defaults.object_class;
+	/* 
+	 * if types in the signature belong to non-mscorlib, we cache only
+	 * in the method image
+	 */
+	if (mono_class_from_mono_type (callsig->ret)->image != mono_defaults.corlib) {
+		target_klass = method->klass;
+	} else {
+		for (i = 0; i < callsig->param_count; i++) {
+			if (mono_class_from_mono_type (callsig->params [i])->image != mono_defaults.corlib) {
+				target_klass = method->klass;
+				break;
+			}
+		}
+	}
+	cache = target_klass->image->runtime_invoke_cache;
 
 	/* from mono_marshal_find_in_cache */
 	res = g_hash_table_lookup (cache, callsig);
@@ -4537,8 +4550,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		dealy_abort_sig->pinvoke = 0;
 	}
 	
-	target_klass = mono_defaults.object_class;
-
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
 		MONO_GC_REGISTER_ROOT (string_dummy);
