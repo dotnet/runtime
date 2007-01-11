@@ -130,6 +130,27 @@ mono_mempool_stats (MonoMemPool *pool)
 	}
 }
 
+#ifdef TRACE_ALLOCATIONS
+#include <execinfo.h>
+#include "metadata/appdomain.h"
+#include "metadata/metadata-internals.h"
+
+static void
+mono_backtrace (int limit)
+{
+        void *array[limit];
+        char **names;
+        int i;
+        backtrace (array, limit);
+        names = backtrace_symbols (array, limit);
+        for (i = 1; i < limit; ++i) {
+                g_print ("\t%s\n", names [i]);
+        }
+        g_free (names);
+}
+
+#endif
+
 /**
  * mono_mempool_alloc:
  * @pool: the momory pool to destroy
@@ -149,6 +170,12 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 	rval = pool->pos;
 	pool->pos = (guint8*)rval + size;
 
+#ifdef TRACE_ALLOCATIONS
+	if (pool == mono_get_corlib ()->mempool) {
+		g_print ("Allocating %d bytes\n", size);
+		mono_backtrace (7);
+	}
+#endif
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		pool->pos -= size;
 		if (size >= 4096) {
