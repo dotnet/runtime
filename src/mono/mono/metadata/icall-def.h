@@ -579,6 +579,7 @@ ICALL(MARSHAL_19, "PtrToStringUni(intptr,int)", ves_icall_System_Runtime_Interop
 ICALL(MARSHAL_20, "PtrToStructure(intptr,System.Type)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type)
 ICALL(MARSHAL_21, "PtrToStructure(intptr,object)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure)
 ICALL(MARSHAL_22, "QueryInterface", ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface)
+ICALL(MARSHAL_43, "ReAllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem)
 ICALL(MARSHAL_23, "ReAllocHGlobal", mono_marshal_realloc)
 ICALL(MARSHAL_24, "ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte)
 ICALL(MARSHAL_25, "ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16)

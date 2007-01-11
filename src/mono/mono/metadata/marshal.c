@@ -10013,6 +10013,18 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 #endif
 }
 
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef PLATFORM_WIN32
+	return CoTaskMemRealloc (ptr, size);
+#else
+	return g_try_realloc (ptr, (gulong)size);
+#endif
+}
+
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index)
 {

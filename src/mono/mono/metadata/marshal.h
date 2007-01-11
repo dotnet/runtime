@@ -366,6 +366,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size) MONO_
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr) MONO_INTERNAL;
 
+gpointer 
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size) MONO_INTERNAL;
+
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size) MONO_INTERNAL;
 
