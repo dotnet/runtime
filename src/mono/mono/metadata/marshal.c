@@ -6789,17 +6789,24 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
+	static MonoMethod *get_object_for_native_variant = NULL;
+	static MonoMethod *get_native_variant_for_object = NULL;
+	
+	if (!get_object_for_native_variant)
+		get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
+	g_assert (get_object_for_native_variant);
+
+	if (!get_native_variant_for_object)
+		get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
+	g_assert (get_native_variant_for_object);
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		static MonoMethod *get_native_variant_for_object = NULL;
-
-		if (!get_native_variant_for_object)
-			get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
-		g_assert (get_native_variant_for_object);
-
 		*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+
+		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
 		if (t->byref)
@@ -6811,15 +6818,11 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_OUT: {
 		static MonoMethod *variant_clear = NULL;
-		static MonoMethod *get_object_for_native_variant = NULL;
 
 		if (!variant_clear)
 			variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
 		g_assert (variant_clear);
 
-		if (!get_object_for_native_variant)
-			get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
-		g_assert (get_object_for_native_variant);
 
 		if (t->byref) {
 			mono_mb_emit_ldarg (mb, argnum);
@@ -6841,25 +6844,38 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
 		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
+		*conv_arg_type = &mono_defaults.variant_class->this_arg;
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+			break;
+
+		if (t->byref)
+			mono_mb_emit_ldarg (mb, argnum);
+		else
+			mono_mb_emit_ldarg_addr (mb, argnum);
+		mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
+		mono_mb_emit_stloc (mb, conv_arg);
 		break;
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
+		if (t->byref) {
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
+		}
 		break;
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported.");
+		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
 		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
@@ -8276,6 +8292,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			switch (t->type) {
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_OBJECT:
 				emit_marshal (m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			}

@@ -2127,7 +2127,7 @@ mono_test_marshal_variant_in_bstr(VARIANT variant)
 STDCALL int
 mono_test_marshal_variant_in_bool_true (VARIANT variant)
 {
-	if (variant.vt == VT_BOOL && variant.ullVal == VARIANT_TRUE)
+	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_TRUE)
 		return 0;
 	return 1;
 }
@@ -2135,7 +2135,7 @@ mono_test_marshal_variant_in_bool_true (VARIANT variant)
 STDCALL int
 mono_test_marshal_variant_in_bool_false (VARIANT variant)
 {
-	if (variant.vt == VT_BOOL && variant.ullVal == VARIANT_FALSE)
+	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_FALSE)
 		return 0;
 	return 1;
 }
@@ -2243,7 +2243,7 @@ STDCALL int
 mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
-	variant->bstrVal = VARIANT_TRUE;
+	variant->boolVal = VARIANT_TRUE;
 
 	return 0;
 }
@@ -2252,9 +2252,272 @@ STDCALL int
 mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
-	variant->bstrVal = VARIANT_FALSE;
+	variant->boolVal = VARIANT_FALSE;
 
 	return 0;
+}
+
+typedef int (STDCALL *VarFunc) (int vt, VARIANT variant);
+typedef int (STDCALL *VarRefFunc) (int vt, VARIANT* variant);
+
+STDCALL int
+mono_test_marshal_variant_in_sbyte_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_I1;
+	vt.cVal = -100;
+	return func (VT_I1, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_byte_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_UI1;
+	vt.bVal = 100;
+	return func (VT_UI1, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_short_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_I2;
+	vt.iVal = -100;
+	return func (VT_I2, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_ushort_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_UI2;
+	vt.uiVal = 100;
+	return func (VT_UI2, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_int_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_I4;
+	vt.lVal = -100;
+	return func (VT_I4, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_uint_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_UI4;
+	vt.ulVal = 100;
+	return func (VT_UI4, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_long_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_I8;
+	vt.llVal = -100;
+	return func (VT_I8, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_ulong_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_UI8;
+	vt.ullVal = 100;
+	return func (VT_UI8, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_R4;
+	vt.fltVal = 3.14;
+	return func (VT_R4, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_double_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_R8;
+	vt.dblVal = 3.14;
+	return func (VT_R8, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_BSTR;
+	vt.bstrVal = SysAllocString(L"PI");
+	return func (VT_BSTR, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_bool_true_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_BOOL;
+	vt.boolVal = VARIANT_TRUE;
+	return func (VT_BOOL, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_in_bool_false_unmanaged(VarFunc func)
+{
+	VARIANT vt;
+	vt.vt = VT_BOOL;
+	vt.boolVal = VARIANT_FALSE;
+	return func (VT_BOOL, vt);
+}
+
+STDCALL int
+mono_test_marshal_variant_out_sbyte_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_I1, &vt);
+	if (vt.vt == VT_I1 && vt.cVal == -100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_byte_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_UI1, &vt);
+	if (vt.vt == VT_UI1 && vt.bVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_short_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_I2, &vt);
+	if (vt.vt == VT_I2 && vt.iVal == -100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_ushort_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_UI2, &vt);
+	if (vt.vt == VT_UI2 && vt.uiVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_int_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_I4, &vt);
+	if (vt.vt == VT_I4 && vt.lVal == -100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_uint_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_UI4, &vt);
+	if (vt.vt == VT_UI4 && vt.ulVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_long_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_I8, &vt);
+	if (vt.vt == VT_I8 && vt.llVal == -100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_ulong_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_UI8, &vt);
+	if (vt.vt == VT_UI8 && vt.ullVal == 100)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_float_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_R4, &vt);
+	if (vt.vt == VT_R4 && fabs (vt.fltVal - 3.14f) < 1e-10)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_double_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_R8, &vt);
+	if (vt.vt == VT_R8 && fabs (vt.dblVal - 3.14) < 1e-10)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_BSTR, &vt);
+	if (vt.vt == VT_BSTR && !wcscmp(vt.bstrVal, L"PI"))
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_bool_true_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_BOOL, &vt);
+	if (vt.vt == VT_BOOL && vt.boolVal == VARIANT_TRUE)
+		return 0;
+	return 1;
+}
+
+STDCALL int
+mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
+{
+	VARIANT vt;
+	VariantInit (&vt);
+	func (VT_BOOL, &vt);
+	if (vt.vt == VT_BOOL && vt.boolVal == VARIANT_TRUE)
+		return 0;
+	return 1;
 }
 
 #ifdef _MSC_VER
