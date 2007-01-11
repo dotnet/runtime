@@ -1,3 +1,8 @@
+2007-01-11  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h: 
+	* configure.in: Check for IP_DONTFRAGMENT and IP_MTU_DISCOVER.
+
 2007-01-11  Marek Habersack  <grendello@gmail.com>
 
 	* data/net_2_0/machine.config: Added the DbProviderFactories

@@ -289,27 +289,9 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 		ret = connect (fd, serv_addr, addrlen);
 	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if (ret == -1 && errno == EACCES) {
-		/* Try setting SO_BROADCAST and connecting again, but
-		 * keep the original errno
-		 */
-		int true=1;
-		
-		errnum = errno;
-
-		ret = setsockopt (fd, SOL_SOCKET, SO_BROADCAST, &true,
-				  sizeof(true));
-		if (ret == 0) {
-			do {
-				ret = connect (fd, serv_addr, addrlen);
-			} while (ret==-1 && errno==EINTR &&
-				 !_wapi_thread_cur_apc_pending());
-		}
-	} else if (ret == -1) {
-		errnum = errno;
-	}
-	
 	if (ret == -1) {
+		errnum = errno;
+		
 #ifdef DEBUG
 		g_message ("%s: connect error: %s", __func__,
 			   strerror (errnum));
@@ -428,7 +410,7 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	}
 
 	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
-		*((int *) optval)  = tv.tv_sec * 1000 + tv.tv_usec;
+		*((int *) optval)  = tv.tv_sec * 1000 + (tv.tv_usec / 1000);	// milli from micro
 		*optlen = sizeof (int);
 	}
 
@@ -604,9 +586,20 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
 		int ms = *((int *) optval);
 		tv.tv_sec = ms / 1000;
-		tv.tv_usec = ms % 1000;
+		tv.tv_usec = (ms % 1000) * 1000;	// micro from milli
 		tmp_val = &tv;
 		optlen = sizeof (tv);
+#if defined (__linux__)
+	} else if (optname == SO_SNDBUF || optname == SO_RCVBUF) {
+		/* According to socket(7) the Linux kernel doubles the
+		 * buffer sizes "to allow space for bookkeeping
+		 * overhead."
+		 */
+		int bufsize = *((int *) optval);
+
+		bufsize /= 2;
+		tmp_val = &bufsize;
+#endif
 	}
 		
 	ret = setsockopt (fd, level, optname, tmp_val, optlen);
@@ -661,13 +654,19 @@ int _wapi_shutdown(guint32 fd, int how)
 guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		     guint32 unused2, guint32 unused3)
 {
+	struct _WapiHandle_socket socket_handle = {0};
 	gpointer handle;
 	int fd;
+	
+	socket_handle.domain = domain;
+	socket_handle.type = type;
+	socket_handle.protocol = protocol;
 	
 	fd = socket (domain, type, protocol);
 	if (fd == -1 && domain == AF_INET && type == SOCK_RAW &&
 	    protocol == 0) {
 		/* Retry with protocol == 4 (see bug #54565) */
+		socket_handle.protocol = 4;
 		fd = socket (AF_INET, SOCK_RAW, 4);
 	}
 	
@@ -685,7 +684,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	if (fd >= _wapi_fd_reserve) {
 #ifdef DEBUG
 		g_message ("%s: File descriptor is too big (%d >= %d)",
-			   __func__, fd, _wapi_fd_offset_table_size);
+			   __func__, fd, _wapi_fd_reserve);
 #endif
 
 		WSASetLastError (WSASYSCALLFAILURE);
@@ -697,7 +696,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	
 	mono_once (&socket_ops_once, socket_ops_init);
 	
-	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, NULL);
+	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, &socket_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating socket handle", __func__);
 		return(INVALID_SOCKET);
@@ -751,6 +750,119 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 	return(he);
 }
 
+static gboolean socket_disconnect (guint32 fd)
+{
+	struct _WapiHandle_socket *socket_handle;
+	gboolean ok;
+	gpointer handle = GUINT_TO_POINTER (fd);
+	int newsock, ret;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+				  (gpointer *)&socket_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up socket handle %p", __func__,
+			   handle);
+		WSASetLastError (WSAENOTSOCK);
+		return(FALSE);
+	}
+	
+	newsock = socket (socket_handle->domain, socket_handle->type,
+			  socket_handle->protocol);
+	if (newsock == -1) {
+		gint errnum = errno;
+
+#ifdef DEBUG
+		g_message ("%s: socket error: %s", __func__, strerror (errno));
+#endif
+
+		errnum = errno_to_WSA (errnum, __func__);
+		WSASetLastError (errnum);
+		
+		return(FALSE);
+	}
+
+	/* According to Stevens "Advanced Programming in the UNIX
+	 * Environment: UNIX File I/O" dup2() is atomic so there
+	 * should not be a race condition between the old fd being
+	 * closed and the new socket fd being copied over
+	 */
+	do {
+		ret = dup2 (newsock, fd);
+	} while (ret == -1 && errno == EAGAIN);
+	
+	if (ret == -1) {
+		gint errnum = errno;
+		
+#ifdef DEBUG
+		g_message ("%s: dup2 error: %s", __func__, strerror (errno));
+#endif
+
+		errnum = errno_to_WSA (errnum, __func__);
+		WSASetLastError (errnum);
+		
+		return(FALSE);
+	}
+
+	close (newsock);
+	
+	return(TRUE);
+}
+
+static gboolean wapi_disconnectex (guint32 fd, WapiOverlapped *overlapped,
+				   guint32 flags, guint32 reserved)
+{
+#ifdef DEBUG
+	g_message ("%s: called on socket %d!", __func__, fd);
+#endif
+	
+	if (reserved != 0) {
+		WSASetLastError (WSAEINVAL);
+		return(FALSE);
+	}
+
+	/* We could check the socket type here and fail unless its
+	 * SOCK_STREAM, SOCK_SEQPACKET or SOCK_RDM (according to msdn)
+	 * if we really wanted to
+	 */
+
+	return(socket_disconnect (fd));
+}
+
+/* NB only supports NULL file handle, NULL buffers and
+ * TF_DISCONNECT|TF_REUSE_SOCKET flags to disconnect the socket fd.
+ * Shouldn't actually ever need to be called anyway though, because we
+ * have DisconnectEx ().
+ */
+static gboolean wapi_transmitfile (guint32 fd, gpointer file,
+				   guint32 num_write, guint32 num_per_send,
+				   WapiOverlapped *overlapped,
+				   WapiTransmitFileBuffers *buffers,
+				   WapiTransmitFileFlags flags)
+{
+#ifdef DEBUG
+	g_message ("%s: called on socket %d!", __func__, fd);
+#endif
+	
+	g_assert (file == NULL);
+	g_assert (overlapped == NULL);
+	g_assert (buffers == NULL);
+	g_assert (num_write == 0);
+	g_assert (num_per_send == 0);
+	g_assert (flags == (TF_DISCONNECT | TF_REUSE_SOCKET));
+
+	return(socket_disconnect (fd));
+}
+
+static struct 
+{
+	WapiGuid guid;
+	gpointer func;
+} extension_functions[] = {
+	{WSAID_DISCONNECTEX, wapi_disconnectex},
+	{WSAID_TRANSMITFILE, wapi_transmitfile},
+	{{0}, NULL},
+};
+
 int
 WSAIoctl (guint32 fd, gint32 command,
 	  gchar *input, gint i_len,
@@ -769,6 +881,46 @@ WSAIoctl (guint32 fd, gint32 command,
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return SOCKET_ERROR;
+	}
+
+	if (command == SIO_GET_EXTENSION_FUNCTION_POINTER) {
+		int i = 0;
+		WapiGuid *guid = (WapiGuid *)input;
+		
+		if (i_len < sizeof(WapiGuid)) {
+			/* As far as I can tell, windows doesn't
+			 * actually set an error here...
+			 */
+			WSASetLastError (WSAEINVAL);
+			return(SOCKET_ERROR);
+		}
+
+		if (o_len < sizeof(gpointer)) {
+			/* Or here... */
+			WSASetLastError (WSAEINVAL);
+			return(SOCKET_ERROR);
+		}
+
+		if (output == NULL) {
+			/* Or here */
+			WSASetLastError (WSAEINVAL);
+			return(SOCKET_ERROR);
+		}
+		
+		while(extension_functions[i].func != NULL) {
+			if (!memcmp (guid, &extension_functions[i].guid,
+				     sizeof(WapiGuid))) {
+				memcpy (output, &extension_functions[i].func,
+					sizeof(gpointer));
+				*written = sizeof(gpointer);
+				return(0);
+			}
+
+			i++;
+		}
+		
+		WSASetLastError (WSAEINVAL);
+		return(SOCKET_ERROR);
 	}
 
 	if (i_len > 0) {

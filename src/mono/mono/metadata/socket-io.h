@@ -161,6 +161,11 @@ typedef struct _MonoSocketAsyncResult {
 	gint offset;
 	gint size;
 	gint socket_flags;
+	MonoObject *accept_reuse_socket;
+	MonoArray *addresses;
+	gint port;
+	MonoObject *buffers;
+	MonoBoolean reusesocket;
 	MonoObject *acc_socket;
 	gint total;
 	MonoBoolean completed_synch;
@@ -204,6 +209,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *h
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list) MONO_INTERNAL;
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name) MONO_INTERNAL;
 extern MonoBoolean ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode, gint timeout, gint32 *error) MONO_INTERNAL;
+extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock, MonoBoolean reuse, gint32 *error) MONO_INTERNAL;
 
 extern void mono_network_init(void) MONO_INTERNAL;
 extern void mono_network_cleanup(void) MONO_INTERNAL;

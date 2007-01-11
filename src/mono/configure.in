@@ -898,20 +898,48 @@ if test x$platform_win32 = xno; then
 	])
 
 	dnl *****************************
-    dnl *** Checks for IPV6_PKTINFO ***
-    dnl *****************************
-    AC_MSG_CHECKING(for IPV6_PKTINFO)
-    AC_TRY_COMPILE([#include <netdb.h>], [
-        int level = IPV6_PKTINFO;
-    ], [
-        # Yes, we have it...
-        AC_MSG_RESULT(yes)
-        AC_DEFINE(HAVE_IPV6_PKTINFO)
-    ], [
-        AC_MSG_RESULT(no)
-    ])
- 
-	dnl *********************************
+	dnl *** Checks for IPV6_PKTINFO ***
+	dnl *****************************
+	AC_MSG_CHECKING(for IPV6_PKTINFO)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IPV6_PKTINFO;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IPV6_PKTINFO)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Checks for IP_DONTFRAGMENT ***
+	dnl **********************************
+	AC_MSG_CHECKING(for IP_DONTFRAGMENT)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IP_DONTFRAGMENT;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_DONTFRAGMENT)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Checks for IP_MTU_DISCOVER ***
+	dnl **********************************
+	AC_MSG_CHECKING(for IP_MTU_DISCOVER)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = IP_MTU_DISCOVER;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_MTU_DISCOVER)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+ 	dnl *********************************
 	dnl *** Check for struct ip_mreqn ***
 	dnl *********************************
 	AC_MSG_CHECKING(for struct ip_mreqn)

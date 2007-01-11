@@ -22,6 +22,7 @@
 #include <ws2tcpip.h>
 #include <psapi.h>
 #include <shlobj.h>
+#include <mswsock.h>
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"

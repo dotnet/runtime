@@ -440,7 +440,16 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			*system_name = IP_PKTINFO;
 			break;
 #endif /* HAVE_IP_PKTINFO */
+
 		case SocketOptionName_DontFragment:
+#ifdef HAVE_IP_DONTFRAGMENT
+			*system_name = IP_DONTFRAGMENT;
+			break;
+#elif defined HAVE_IP_MTU_DISCOVER
+			/* Not quite the same */
+			*system_name = IP_MTU_DISCOVER;
+			break;
+#endif /* HAVE_IP_DONTFRAGMENT */
 		case SocketOptionName_AddSourceMembership:
 		case SocketOptionName_DropSourceMembership:
 		case SocketOptionName_BlockSource:
@@ -1223,6 +1232,92 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	g_free(sa);
 }
 
+/* These #defines from mswsock.h from wine.  Defining them here allows
+ * us to build this file on a mingw box that doesn't know the magic
+ * numbers, but still run on a newer windows box that does.
+ */
+#ifndef WSAID_DISCONNECTEX
+#define WSAID_DISCONNECTEX {0x7fda2e11,0x8630,0x436f,{0xa0, 0x31, 0xf5, 0x36, 0xa6, 0xee, 0xc1, 0x57}}
+typedef BOOL (WINAPI *LPFN_DISCONNECTEX)(SOCKET, LPOVERLAPPED, DWORD, DWORD);
+#endif
+
+#ifndef WSAID_TRANSMITFILE
+#define WSAID_TRANSMITFILE {0xb5367df0,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}}
+typedef BOOL (WINAPI *LPFN_TRANSMITFILE)(SOCKET, HANDLE, DWORD, DWORD, LPOVERLAPPED, LPTRANSMIT_FILE_BUFFERS, DWORD);
+#endif
+
+extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock, MonoBoolean reuse, gint32 *error)
+{
+	int ret;
+	glong output_bytes = 0;
+	GUID disco_guid = WSAID_DISCONNECTEX;
+	GUID trans_guid = WSAID_TRANSMITFILE;
+	LPFN_DISCONNECTEX _wapi_disconnectex = NULL;
+	LPFN_TRANSMITFILE _wapi_transmitfile = NULL;
+	gboolean bret;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	*error = 0;
+	
+#ifdef DEBUG
+	g_message("%s: disconnecting from socket %p (reuse %d)", __func__,
+		  sock, reuse);
+#endif
+
+	/* I _think_ the extension function pointers need to be looked
+	 * up for each socket.  FIXME: check the best way to store
+	 * pointers to functions in managed objects that still works
+	 * on 64bit platforms.
+	 */
+	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER,
+			(void *)&disco_guid, sizeof(GUID),
+			(void *)&_wapi_disconnectex, sizeof(void *),
+			&output_bytes, NULL, NULL);
+	if (ret != 0) {
+		/* make sure that WSAIoctl didn't put crap in the
+		 * output pointer
+		 */
+		_wapi_disconnectex = NULL;
+
+		/* Look up the TransmitFile extension function pointer
+		 * instead of calling TransmitFile() directly, because
+		 * apparently "Several of the extension functions have
+		 * been available since WinSock 1.1 and are exported
+		 * from MSWsock.dll, however it's not advisable to
+		 * link directly to this dll as this ties you to the
+		 * Microsoft WinSock provider. A provider neutral way
+		 * of accessing these extension functions is to load
+		 * them dynamically via WSAIoctl using the
+		 * SIO_GET_EXTENSION_FUNCTION_POINTER op code. This
+		 * should, theoretically, allow you to access these
+		 * functions from any provider that supports them..." 
+		 * (http://www.codeproject.com/internet/jbsocketserver3.asp)
+		 */
+		ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER,
+				(void *)&trans_guid, sizeof(GUID),
+				(void *)&_wapi_transmitfile, sizeof(void *),
+				&output_bytes, NULL, NULL);
+		if (ret != 0) {
+			_wapi_transmitfile = NULL;
+		}
+	}
+
+	if (_wapi_disconnectex != NULL) {
+		bret = _wapi_disconnectex (sock, NULL, TF_REUSE_SOCKET, 0);
+	} else if (_wapi_transmitfile != NULL) {
+		bret = _wapi_transmitfile (sock, NULL, 0, 0, NULL, NULL,
+					   TF_DISCONNECT | TF_REUSE_SOCKET);
+	} else {
+		*error = ERROR_NOT_SUPPORTED;
+		return;
+	}
+
+	if (bret == FALSE) {
+		*error = WSAGetLastError ();
+	}
+}
+
 gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, gint32 *error)
 {
 	int ret;
@@ -1900,7 +1995,21 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		}
 	} else {
 		/* ReceiveTimeout/SendTimeout get here */
-		ret = _wapi_setsockopt (sock, system_level, system_name, (char *) &int_val, sizeof (int_val));
+		switch(name) {
+		case SocketOptionName_DontFragment:
+#ifdef HAVE_IP_MTU_DISCOVER
+			/* Fiddle with the value slightly if we're
+			 * turning DF on
+			 */
+			if (int_val == 1) {
+				int_val = IP_PMTUDISC_DO;
+			}
+			/* Fall through */
+#endif
+			
+		default:
+			ret = _wapi_setsockopt (sock, system_level, system_name, (char *) &int_val, sizeof (int_val));
+		}
 	}
 
 	if(ret==SOCKET_ERROR) {

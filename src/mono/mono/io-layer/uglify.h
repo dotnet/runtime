@@ -77,6 +77,13 @@ typedef WapiFixedFileInfo VS_FIXEDFILEINFO;
 typedef WapiApcProc PAPCFUNC;
 typedef WapiShellExecuteInfo SHELLEXECUTEINFO;
 typedef WapiShellExecuteInfo *LPSHELLEXECUTEINFO;
+typedef WapiTransmitFileBuffers TRANSMIT_FILE_BUFFERS;
+typedef WapiTransmitFileBuffers *PTRANSMIT_FILE_BUFFERS;
+typedef WapiTransmitFileBuffers *LPTRANSMIT_FILE_BUFFERS;
+typedef WapiDisconnectExFn LPFN_DISCONNECTEX;
+typedef WapiTransmitFileFn LPFN_TRANSMITFILE;
+typedef WapiGuid GUID;
+typedef WapiGuid *LPGUID;
 
 #define CONST const
 #define VOID void

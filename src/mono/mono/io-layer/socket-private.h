@@ -17,7 +17,9 @@ extern struct _WapiHandleOps _wapi_socket_ops;
 
 struct _WapiHandle_socket
 {
-	int dummy;
+	int domain;
+	int type;
+	int protocol;
 };
 
 #endif /* _WAPI_SOCKET_PRIVATE_H_ */
