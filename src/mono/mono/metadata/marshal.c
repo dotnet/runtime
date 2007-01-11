@@ -6802,8 +6802,12 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+		
+		if (t->byref)
+			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+		else
+			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
 		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
@@ -6850,8 +6854,12 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		*conv_arg_type = &mono_defaults.variant_class->this_arg;
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+		if (t->byref)
+			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+		else
+			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
 		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
