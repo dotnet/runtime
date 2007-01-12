@@ -3831,7 +3831,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	mono_jit_stats.cil_code_size += header->code_size;
 
 	if (sig->is_inflated)
-		generic_context = ((MonoMethodInflated *) method)->context;
+		generic_context = mono_method_get_context (method);
 	else if (generic_container)
 		generic_context = &generic_container->context;
 
@@ -4607,7 +4607,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
 				NEW_PCONST (cfg, iargs [1], cmethod);
-				NEW_PCONST (cfg, iargs [2], ((MonoMethodInflated *) cmethod)->context);
+				NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
 				NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
 				temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method, iargs, ip);
 

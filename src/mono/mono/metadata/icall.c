@@ -2562,6 +2562,7 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 static MonoReflectionMethod *
 ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 {
+	MonoGenericContext *context;
 	MonoMethodInflated *imethod;
 
 	MONO_ARCH_SAVE_REGS;
@@ -2574,8 +2575,11 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 	}
 
 	imethod = (MonoMethodInflated *) method->method;
-	if (imethod->context->gmethod && imethod->context->gmethod->reflection_info)
-		return imethod->context->gmethod->reflection_info;
+
+	/* FIXME: should reflection_info be part of imethod? */
+	context = mono_method_get_context (method->method);
+	if (context->gmethod && context->gmethod->reflection_info)
+		return context->gmethod->reflection_info;
 	else
 		return mono_method_get_object (
 			mono_object_domain (method), imethod->declaring, NULL);
@@ -2609,8 +2613,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	domain = mono_object_domain (method);
 
 	if (method->method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *) method->method;
-		MonoGenericMethod *gmethod = imethod->context->gmethod;
+		MonoGenericMethod *gmethod = mono_method_get_context (method->method)->gmethod;
 
 		if (gmethod) {
 			count = gmethod->inst->type_argc;

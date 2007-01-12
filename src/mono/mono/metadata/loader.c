@@ -1452,7 +1452,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if (method->is_inflated && sig->generic_param_count) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		sig = mono_method_signature (imethod->declaring);
-		method_context = imethod->context;
+		method_context = mono_method_get_context (method);
 	}
 
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
@@ -1794,7 +1794,7 @@ mono_method_signature (MonoMethod *m)
 		MonoMethodSignature *signature;
 		/* the lock is recursive */
 		signature = mono_method_signature (imethod->declaring);
-		m->signature = inflate_generic_signature (imethod->declaring->klass->image, signature, imethod->context);
+		m->signature = inflate_generic_signature (imethod->declaring->klass->image, signature, mono_method_get_context (m));
 		mono_loader_unlock ();
 		return m->signature;
 	}
@@ -1935,7 +1935,7 @@ mono_method_get_header (MonoMethod *method)
 		MonoMethodHeader *header;
 		/* the lock is recursive */
 		header = mono_method_get_header (imethod->declaring);
-		mn->header = inflate_generic_header (header, imethod->context);
+		mn->header = inflate_generic_header (header, mono_method_get_context (method));
 		mono_loader_unlock ();
 		return mn->header;
 	}

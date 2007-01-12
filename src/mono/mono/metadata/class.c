@@ -667,9 +667,10 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	/* The `method' has already been instantiated before -> we need to create a new context. */
 	while (method->is_inflated) {
+		MonoGenericContext *method_context = mono_method_get_context (method);
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		context = inflate_generic_context (imethod->context, context);
-		if (context == imethod->context)
+		context = inflate_generic_context (method_context, context);
+		if (context == method_context)
 			return method;
 		method = imethod->declaring;
 	}
@@ -724,15 +725,22 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 /**
  * mono_get_inflated_method:
  *
- * For performance reasons, mono_class_inflate_generic_method() does not actually instantiate the
- * method, it just "prepares" it for that.  If you really need to fully instantiate the method
- * (including its signature and header), call this method.
- * FIXME: Martin? this description looks completely wrong.
+ * Obsolete.  We keep it around since it's mentioned in the public API.
  */
-MonoMethod *
+MonoMethod*
 mono_get_inflated_method (MonoMethod *method)
 {
 	return method;
+}
+
+MonoGenericContext*
+mono_method_get_context (MonoMethod *method)
+{
+	MonoMethodInflated *imethod;
+	if (!method->is_inflated)
+		return NULL;
+	imethod = (MonoMethodInflated *) method;
+	return imethod->context;
 }
 
 /** 

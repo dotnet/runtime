@@ -2465,7 +2465,6 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (method->is_inflated);
-	method = mono_get_inflated_method (method);
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
@@ -2486,7 +2485,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 		g_assert_not_reached ();
 	}
 
-	sig = encode_generic_method_sig (assembly, imethod->context->gmethod);
+	sig = encode_generic_method_sig (assembly, mono_method_get_context (method)->gmethod);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);

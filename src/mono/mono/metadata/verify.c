@@ -1178,7 +1178,7 @@ mono_method_verify (MonoMethod *method, int level)
 	}
 
 	if (signature->is_inflated)
-		generic_context = ((MonoMethodInflated *) method)->context;
+		generic_context = mono_method_get_context (method);
 
 	if (header->num_locals) {
 		local_state = g_new (char, header->num_locals);
