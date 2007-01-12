@@ -120,6 +120,7 @@ libmonoruntime_la_SOURCES = \
 	loader.c	\
 	class.c		\
 	class-internals.h		\
+	wrapper-types.h		\
 	mempool.c	\
 	debug-helpers.c
 

@@ -17,36 +17,49 @@ struct MonoMethodDesc {
 	gboolean include_namespace;
 };
 
-static const char *wrapper_type_names [] = {
-	"none",
-	"delegate-invoke",
-	"delegate-begin-invoke",
-	"delegate-end-invoke",
-	"runtime-invoke",
-	"native-to-managed",
-	"managed-to-native",
-	"managed-to-managed",
-	"remoting-invoke",
-	"remoting-invoke-with-check",
-	"xdomain-invoke",
-	"xdomain-dispatch",
-	"ldfld",
-	"stfld",
-	"ldfld-remote",
-	"stfld-remote",
-	"synchronized",
-	"dynamic-method",
-	"isinst",
-	"cancast",
-	"proxy_isinst",
-	"stelemref",
-	"unbox",
-	"ldflda",
-	"write-barrier",
-	"unknown",
-	"cominterop-invoke",
-	"cominterop"
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define WRAPPER(a,b) char MSGSTRFIELD(__LINE__) [sizeof (b)];
+#include "wrapper-types.h"
+#undef WRAPPER
+} opstr = {
+#define WRAPPER(a,b) b,
+#include "wrapper-types.h"
+#undef WRAPPER
 };
+static const gint16 opidx [] = {
+#define WRAPPER(a,b) [MONO_WRAPPER_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "wrapper-types.h"
+#undef WRAPPER
+};
+
+static const char*
+wrapper_type_to_str (guint32 wrapper_type)
+{
+	g_assert (wrapper_type < MONO_WRAPPER_NUM);
+
+	return (const char*)&opstr + opidx [wrapper_type];
+}
+
+#else
+#define WRAPPER(a,b) b,
+static const char* const
+wrapper_type_names [MONO_WRAPPER_NUM + 1] = {
+#include "wrapper-types.h"
+	NULL
+};
+
+static const char*
+wrapper_type_to_str (guint32 wrapper_type)
+{
+	g_assert (wrapper_type < MONO_WRAPPER_NUM);
+
+	return wrapper_type_names [wrapper_type];
+}
+
+#endif
 
 static void
 append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
@@ -505,14 +518,6 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	result = res->str;
 	g_string_free (res, FALSE);
 	return result;
-}
-
-static const char*
-wrapper_type_to_str (guint32 wrapper_type)
-{
-	g_assert (wrapper_type < sizeof (wrapper_type_names) / sizeof (char*));
-
-	return wrapper_type_names [wrapper_type];
 }
 
 char *
