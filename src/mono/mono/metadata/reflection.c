@@ -8182,7 +8182,7 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 		return;
 
 	tb->generic_container = g_new0 (MonoGenericContainer, 1);
-	tb->generic_container->klass = klass;
+	tb->generic_container->owner.klass = klass;
 }
 
 /*
@@ -8206,7 +8206,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 	if (klass->generic_container || (count == 0))
 		return;
 
-	g_assert (tb->generic_container && (tb->generic_container->klass == klass));
+	g_assert (tb->generic_container && (tb->generic_container->owner.klass == klass));
 
 	klass->generic_container = tb->generic_container;
 
@@ -8489,13 +8489,13 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		m->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
+		container->owner.method = m;
 
 		for (i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
 				mono_array_get (rmb->generic_params, MonoReflectionGenericParam*, i);
 
 			container->type_params [i] = *gp->type.type->data.generic_param;
-			container->type_params [i].method = m;
 		}
 
 		if (klass->generic_container) {
@@ -9489,7 +9489,6 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->owner = gparam->tbuilder->generic_container;
 	}
 
-	param->method = NULL;
 	param->name = mono_string_to_utf8 (gparam->name);
 	param->num = gparam->index;
 

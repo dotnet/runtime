@@ -1867,9 +1867,9 @@ ves_icall_MonoType_get_DeclaringType (MonoReflectionType *type)
 	if (type->type->byref)
 		return NULL;
 	if (type->type->type == MONO_TYPE_VAR)
-		class = type->type->data.generic_param->owner->klass;
+		class = type->type->data.generic_param->owner->owner.klass;
 	else if (type->type->type == MONO_TYPE_MVAR)
-		class = type->type->data.generic_param->method->klass;
+		class = type->type->data.generic_param->owner->owner.method->klass;
 	else
 		class = mono_class_from_mono_type (type->type)->nested_in;
 
@@ -2488,7 +2488,7 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 	if (type->type->byref || type->type->type != MONO_TYPE_MVAR)
 		return NULL;
 
-	method = type->type->data.generic_param->method;
+	method = type->type->data.generic_param->owner->owner.method;
 	g_assert (method);
 	klass = mono_class_from_mono_type (type->type);
 	return mono_method_get_object (mono_object_domain (type), method, klass);

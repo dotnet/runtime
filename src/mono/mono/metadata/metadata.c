@@ -4442,9 +4442,6 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	GList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
 
-	/* FIXME: !container->klass => this is probably monodis */
-	g_assert (!container->klass || context->class_inst || context->gmethod);
-
 	*constraints = NULL;
 	found = 0;
 	for (i = 0; i < tdef->rows; ++i) {
@@ -4571,7 +4568,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
 		params [n - 1].owner = container;
 		params [n - 1].pklass = NULL;
-		params [n - 1].method = NULL;
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
@@ -4587,6 +4583,8 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
 		container->is_method = 1;
+
+	g_assert (container->parent == NULL || container->is_method);
 
 	return container;
 }

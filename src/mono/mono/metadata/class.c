@@ -2865,6 +2865,8 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 {
 	MonoGenericClass *gclass;
 
+	g_assert (!container->is_method);
+
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
 		gclass = &dgclass->generic_class;
@@ -2874,7 +2876,7 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 	}
 
 	gclass->cached_context = &container->context;
-	gclass->container_class = container->klass;
+	gclass->container_class = container->owner.klass;
 	gclass->inst = mono_get_shared_generic_inst (container);
 
 	if (!is_dynamic) {
@@ -2886,7 +2888,7 @@ mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dyna
 		}
 	}
 
-	gclass->cached_class = container->klass;
+	gclass->cached_class = container->owner.klass;
 
 	return gclass;
 }
@@ -2944,7 +2946,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 */
 	class->generic_container = mono_metadata_load_generic_params (image, class->type_token, NULL);
 	if (class->generic_container) {
-		class->generic_container->klass = class;
+		class->generic_container->owner.klass = class;
 		context = &class->generic_container->context;
 
 		context->class_inst = mono_get_shared_generic_inst (class->generic_container);
@@ -3189,14 +3191,20 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	klass->name_space = "";
 
-	if (image)
-		klass->image = image;
-	else if (is_mvar && param->method && param->method->klass)
-		klass->image = param->method->klass->image;
-	else if (param->owner && param->owner->klass)
-		klass->image = param->owner->klass->image;
-	else
-		klass->image = mono_defaults.corlib;
+	if (!image && param->owner) {
+		if (is_mvar) {
+			MonoMethod *method = param->owner->owner.method;
+			image = method->klass ? method->klass->image : NULL;
+		} else {
+			MonoClass *klass = param->owner->owner.klass;
+			image = klass->image;
+		}
+	}
+
+	if (!image)
+		image = mono_defaults.corlib;
+
+	klass->image = image;
 
 	klass->inited = TRUE;
 	klass->cast_class = klass->element_class = klass;

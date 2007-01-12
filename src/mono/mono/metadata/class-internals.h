@@ -422,8 +422,11 @@ struct _MonoGenericContainer {
 	MonoGenericContainer *parent;
 	/* If we're a generic method definition, caches all their instantiations. */
 	GHashTable *method_hash;
-	/* If we're a generic type definition, its `MonoClass'. */
-	MonoClass *klass;
+	/* the generic type definition or the generic method definition corresponding to this container */
+	union {
+		MonoClass *klass;
+		MonoMethod *method;
+	} owner;
 	int type_argc    : 6;
 	/* If true, we're a generic method, otherwise a generic type definition. */
 	/* Invariant: parent != NULL => is_method */
@@ -438,7 +441,6 @@ struct _MonoGenericContainer {
 struct _MonoGenericParam {
 	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
 	MonoClass *pklass;		/* The corresponding `MonoClass'. */
-	MonoMethod *method;		/* If we're a method type parameter, the method. */
 	const char *name;
 	guint16 flags;
 	guint16 num;
