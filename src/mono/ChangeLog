@@ -1,3 +1,7 @@
+2007-01-12  Gert Driesen  <drieseng@users.sourceforge.net>
+
+	* scripts/Makefile.am: Added 'al2'.
+
 2007-01-11  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h: 
