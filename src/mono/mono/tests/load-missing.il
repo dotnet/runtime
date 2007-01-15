@@ -320,6 +320,37 @@
     IL_0011:  ret
   }
 
+  .method public hidebysig static void missing_assembly_in_fieldref () cil managed
+  {
+        .maxstack 8
+        ldc.i4.0
+        stsfld  int32 [t]X::a
+        ret
+  }
+
+  .method public hidebysig static void missing_assembly_in_call () cil managed
+  {
+        .maxstack 8
+        call void class [t]Gtk.Application::Init()
+        ret
+  }
+
+  .method public hidebysig static void missing_assembly_in_newobj () cil managed
+  {
+        .maxstack 8
+	newobj instance void class [mscorlib]System.Dingus::.ctor()
+	pop
+	ret
+  }
+
+  .method public hidebysig static void missing_external_type_reference_on_parameter() cil managed
+  {
+    .maxstack 8
+    ldstr "Hello"
+    call void class [mscorlib]System.String::Trim([mscorlib]MissingType)
+    ret
+  }
+
   .method public hidebysig static void  missing_ldtoken_field() cil managed
   {
    
