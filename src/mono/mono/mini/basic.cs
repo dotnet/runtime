@@ -250,7 +250,7 @@ class Tests {
 		return (int)res;
 	}
 
-	public static int test_0_add_ovf () {
+	public static int test_0_add_ovf1 () {
 		int i, j, k;
 
 		checked {
@@ -261,6 +261,11 @@ class Tests {
 
 		if (k != System.Int32.MinValue)
 			return 1;
+		return 0;
+	}
+
+	public static int test_0_add_ovf2 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MaxValue;
@@ -270,6 +275,11 @@ class Tests {
 
 		if (k != System.Int32.MaxValue)
 			return 2;
+		return 0;
+	}
+
+	public static int test_0_add_ovf3 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MinValue;
@@ -279,6 +289,11 @@ class Tests {
 
 		if (k != -1)
 			return 3;
+		return 0;
+	}
+
+	public static int test_0_add_ovf4 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MaxValue;
@@ -288,6 +303,11 @@ class Tests {
 
 		if (k != -1)
 			return 4;
+		return 0;
+	}
+
+	public static int test_0_add_ovf5 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MinValue + 1234;
@@ -297,6 +317,11 @@ class Tests {
 
 		if (k != System.Int32.MinValue)
 			return 5;
+		return 0;
+	}
+
+	public static int test_0_add_ovf6 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MaxValue - 1234;
@@ -317,7 +342,7 @@ class Tests {
 		return number == n ? 0 : 1;
 	}
 
-	public static int test_0_sub_ovf () {
+	public static int test_0_sub_ovf1 () {
 		int i, j, k;
 
 		checked {
@@ -329,6 +354,12 @@ class Tests {
 		if (k != System.Int32.MinValue)
 			return 1;
 
+		return 0;
+	}
+
+	public static int test_0_sub_ovf2 () {
+		int i, j, k;
+
 		checked {
 			i = System.Int32.MaxValue;
 			j = 0;
@@ -337,6 +368,12 @@ class Tests {
 
 		if (k != System.Int32.MaxValue)
 			return 2;
+
+		return 0;
+	}
+
+	public static int test_0_sub_ovf3 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MinValue;
@@ -347,6 +384,12 @@ class Tests {
 		if (k != -1234)
 			return 3;
 
+		return 0;
+	}
+
+	public static int test_0_sub_ovf4 () {
+		int i, j, k;
+
 		checked {
 			i = System.Int32.MaxValue;
 			j = 1234;
@@ -356,6 +399,12 @@ class Tests {
 		if (k != System.Int32.MaxValue - 1234)
 			return 4;
 
+		return 0;
+	}
+
+	public static int test_0_sub_ovf5 () {
+		int i, j, k;
+
 		checked {
 			i = System.Int32.MaxValue - 1234;
 			j = -1234;
@@ -364,6 +413,12 @@ class Tests {
 
 		if (k != System.Int32.MaxValue)
 			return 5;
+
+		return 0;
+	}
+
+	public static int test_0_sub_ovf6 () {
+		int i, j, k;
 
 		checked {
 			i = System.Int32.MinValue + 1234;

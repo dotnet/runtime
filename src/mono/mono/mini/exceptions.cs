@@ -1821,241 +1821,326 @@ class Tests {
 		return 2;
 	}
 
-	public static int test_0_ovf () {
-		int ocount = 0;
+	public static int test_0_ovf1 () {
+		int exception = 0;
 		
 		checked {
-
-			ocount = 0;
 			try {
 				ulong a =  UInt64.MaxValue - 1;
 				ulong t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 1;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf2 () {
+		int exception = 0;
+
+		checked {
 			try {
 				ulong a =  UInt64.MaxValue;
 				ulong t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 2;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf3 () {
+		int exception = 0;
+
+		long a = Int64.MaxValue - 1;
+		checked {
 			try {
-				long a = Int64.MaxValue - 1;
 				long t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 3;
+		}
+		return exception;
+	}
 
+	public static int test_1_ovf4 () {
+		int exception = 0;
+
+		long a = Int64.MaxValue;
+		checked {
 			try {
-				long a = Int64.MaxValue;
 				long t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 4;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf5 () {
+		int exception = 0;
+
+		ulong a = UInt64.MaxValue - 1;
+		checked {
 			try {
-				ulong a = UInt64.MaxValue - 1;
 				ulong t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 5;
+		}
+		return exception;
+	}
 
+	public static int test_1_ovf6 () {
+		int exception = 0;
+
+		ulong a = UInt64.MaxValue;
+		checked {
 			try {
-				ulong a = UInt64.MaxValue;
 				ulong t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 6;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf7 () {
+		int exception = 0;
+
+		long a = Int64.MinValue + 1;
+		checked {
 			try {
-				long a = Int64.MinValue + 1;
 				long t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 7;
+		}
+		return 0;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf8 () {
+		int exception = 0;
+
+		long a = Int64.MinValue;
+		checked {
 			try {
-				long a = Int64.MinValue;
 				long t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 8;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf9 () {
+		int exception = 0;
+
+		ulong a = UInt64.MinValue + 1;
+		checked {
 			try {
-				ulong a = UInt64.MinValue + 1;
 				ulong t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 9;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf10 () {
+		int exception = 0;
+
+		ulong a = UInt64.MinValue;
+		checked {
 			try {
-				ulong a = UInt64.MinValue;
 				ulong t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 10;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf11 () {
+		int exception = 0;
+
+		int a = Int32.MinValue + 1;
+		checked {
 			try {
-				int a = Int32.MinValue + 1;
 				int t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 11;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf12 () {
+		int exception = 0;
+
+		int a = Int32.MinValue;
+		checked {
 			try {
-				int a = Int32.MinValue;
 				int t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 12;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf13 () {
+		int exception = 0;
+
+		uint a = 1;
+		checked {
 			try {
-				uint a = 1;
 				uint t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 13;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf14 () {
+		int exception = 0;
+
+		uint a = 0;
+		checked {
 			try {
-				uint a = 0;
 				uint t = a--;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 14;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf15 () {
+		int exception = 0;
+
+		sbyte a = 126;
+		checked {
 			try {
-				sbyte a = 126;
 				sbyte t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 15;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf16 () {
+		int exception = 0;
+
+		sbyte a = 127;
+		checked {
 			try {
-				sbyte a = 127;
 				sbyte t = a++;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 16;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf17 () {
+		int exception = 0;
+
+		checked {
 			try {
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 17;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf18 () {
+		int exception = 0;
+
+		int a = 1 << 29;
+		checked {
 			try {
-				int a = 1 << 29;
 				int t = a*2;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 18;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf19 () {
+		int exception = 0;
+
+		int a = 1 << 30;
+		checked {
 			try {
-				int a = 1 << 30;
 				int t = a*2;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 19;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_0_ovf20 () {
+		int exception = 0;
+
+		checked {
 			try {
 				ulong a = 0xffffffffff;
 				ulong t = a*0x0ffffff;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 0)
-				return 20;
+		}
+		return exception;
+	}
 
-			ocount = 0;
+	public static int test_1_ovf21 () {
+		int exception = 0;
+
+		ulong a = 0xffffffffff;
+		checked {
 			try {
-				ulong a = 0xffffffffff;
 				ulong t = a*0x0fffffff;
 			} catch {
-				ocount++;
+				exception = 1;
 			}
-			if (ocount != 1)
-				return 21;
-
-			ocount = 0;
-			try {
-				long a = Int64.MinValue;
-				long b = 10;
-				long v = a * b;
-			} catch {
-				ocount ++;
-			}
-			if (ocount != 1)
-				return 22;
-
-			ocount = 0;
-			try {
-				long a = 10;
-				long b = Int64.MinValue;
-				long v = a * b;
-			} catch {
-				ocount ++;
-			}
-			if (ocount != 1)
-				return 23;
 		}
-		
-		return 0;
+		return exception;
+	}
+
+	public static int test_1_ovf22 () {
+		int exception = 0;
+
+		long a = Int64.MinValue;
+		long b = 10;
+		checked {
+			try {
+				long v = a * b;
+			} catch {
+				exception = 1;
+			}
+		}
+		return exception;
+	}
+
+	public static int test_1_ovf23 () {
+		int exception = 0;
+
+		long a = 10;
+		long b = Int64.MinValue;
+		checked {
+			try {
+				long v = a * b;
+			} catch {
+				exception = 1;
+			}
+		}
+		return exception;
 	}
 
 	class Broken {
