@@ -1849,9 +1849,11 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		/*
 		 * We store it in the code section because it's simpler for now.
 		 */
-		if (fb->rva_data)
+		if (fb->rva_data) {
+			if (mono_array_length (fb->rva_data) >= 10)
+				stream_data_align (&assembly->code);
 			rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
-		else
+		} else
 			rva_idx = mono_image_add_stream_zero (&assembly->code, mono_class_value_size (fb->handle->parent, NULL));
 		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva;
 	}
