@@ -924,6 +924,88 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return(ret);
 }
 
+#elif defined(__mips__)
+#define WAPI_ATOMIC_ASM
+
+static inline gint32 InterlockedIncrement(volatile gint32 *val)
+{
+	gint32 tmp, result = 0;
+
+	__asm__ __volatile__ ("    .set    mips32\n"
+			      "1:  ll      %0, %2\n"
+			      "    addu    %1, %0, 1\n"
+                              "    sc      %1, %2\n"
+			      "    beqz    %1, 1b\n"
+			      "    .set    mips0\n"
+			      : "=&r" (result), "=&r" (tmp), "=m" (*val)
+			      : "m" (*val));
+	return result + 1;
+}
+
+static inline gint32 InterlockedDecrement(volatile gint32 *val)
+{
+	gint32 tmp, result = 0;
+
+	__asm__ __volatile__ ("    .set    mips32\n"
+			      "1:  ll      %0, %2\n"
+			      "    subu    %1, %0, 1\n"
+                              "    sc      %1, %2\n"
+			      "    beqz    %1, 1b\n"
+			      "    .set    mips0\n"
+			      : "=&r" (result), "=&r" (tmp), "=m" (*val)
+			      : "m" (*val));
+	return result - 1;
+}
+
+#define InterlockedCompareExchangePointer(dest,exch,comp) InterlockedCompareExchange((volatile gint32 *)(dest), (gint32)(exch), (gint32)(comp))
+
+static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
+						gint32 exch, gint32 comp) {
+	gint32 old, tmp;
+
+	__asm__ __volatile__ ("    .set    mips32\n"
+			      "1:  ll      %0, %2\n"
+			      "    bne     %0, %5, 2f\n"
+			      "    move    %1, %4\n"
+                              "    sc      %1, %2\n"
+			      "    beqz    %1, 1b\n"
+			      "2:  .set    mips0\n"
+			      : "=&r" (old), "=&r" (tmp), "=m" (*dest)
+			      : "m" (*dest), "r" (exch), "r" (comp));
+	return(old);
+}
+
+static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
+{
+	gint32 result, tmp;
+
+	__asm__ __volatile__ ("    .set    mips32\n"
+			      "1:  ll      %0, %2\n"
+			      "    move    %1, %4\n"
+                              "    sc      %1, %2\n"
+			      "    beqz    %1, 1b\n"
+			      "    .set    mips0\n"
+			      : "=&r" (result), "=&r" (tmp), "=m" (*dest)
+			      : "m" (*dest), "r" (exch));
+	return(result);
+}
+#define InterlockedExchangePointer(dest,exch) InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
+
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
+{
+        gint32 result, tmp;
+
+	__asm__ __volatile__ ("    .set    mips32\n"
+			      "1:  ll      %0, %2\n"
+			      "    addu    %1, %0, %4\n"
+                              "    sc      %1, %2\n"
+			      "    beqz    %1, 1b\n"
+			      "    .set    mips0\n"
+			      : "=&r" (result), "=&r" (tmp), "=m" (*dest)
+			      : "m" (*dest), "r" (add));
+        return result;
+}
+
 #else
 
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
