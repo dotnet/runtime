@@ -952,7 +952,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		if (!mono_class_init (class) || class->exception_type){
 			MonoException *exc;
 			mono_domain_unlock (domain);
-			mono_loader_clear_error ();
 			exc = mono_class_get_exception_for_failure (class);
 			g_assert (exc);
 			mono_raise_exception (exc);
@@ -1742,7 +1741,8 @@ handle_enum:
  * @value: The value to be set
  *
  * Sets the value of the field described by @field in the object instance @obj
- * to the value passed in @value.
+ * to the value passed in @value.   This method should only be used for instance
+ * fields.   For static fields, use mono_field_static_set_value.
  *
  * The value must be on the native format of the field type. 
  */

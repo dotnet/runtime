@@ -286,8 +286,8 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		else
 			msg = g_strdup_printf ("Could not load file or assembly '%s' or one of its dependencies.", error->assembly_name);
 
-		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), error->assembly_name));
 		mono_loader_clear_error ();
+		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), error->assembly_name));
 		g_free (msg);
 		break;
 	}
