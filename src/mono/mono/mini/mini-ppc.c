@@ -1948,10 +1948,10 @@ ppc_patch (guchar *code, guchar *target)
 		return;
 	}
 
-	if (prim == 15 || ins == 0x4e800021) {
+	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
 		guint32 *seq;
-		/* the trampoline code will try to patch the blrl */
-		if (ins == 0x4e800021) {
+		/* the trampoline code will try to patch the blrl, blr, bcctr */
+		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
 			code -= 12;
 		}
 		/* this is the lis/ori/mtlr/blrl sequence */
@@ -1959,7 +1959,7 @@ ppc_patch (guchar *code, guchar *target)
 		g_assert ((seq [0] >> 26) == 15);
 		g_assert ((seq [1] >> 26) == 24);
 		g_assert ((seq [2] >> 26) == 31);
-		g_assert (seq [3] == 0x4e800021);
+		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800420);
 		/* FIXME: make this thread safe */
 		ppc_lis (code, ppc_r0, (guint32)(target) >> 16);
 		ppc_ori (code, ppc_r0, ppc_r0, (guint32)(target) & 0xffff);
@@ -3336,7 +3336,14 @@ register.  Should this case include linux/ppc?
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		ppc_load (code, ppc_r3, cfg->domain);
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-		ppc_bl (code, 0);
+		if (FORCE_INDIR_CALL || cfg->method->dynamic) {
+			ppc_lis (code, ppc_r0, 0);
+			ppc_ori (code, ppc_r0, ppc_r0, 0);
+			ppc_mtlr (code, ppc_r0);
+			ppc_blrl (code);
+		} else {
+			ppc_bl (code, 0);
+		}
 	}
 
 	if (method->save_lmf) {
@@ -3536,7 +3543,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
 			i = exception_id_by_name (patch_info->data.target);
 			if (!exc_throw_found [i]) {
-				max_epilog_size += 12;
+				max_epilog_size += 24;
 				exc_throw_found [i] = TRUE;
 			}
 		} else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
@@ -3545,7 +3552,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			MonoOvfJump *ovfj = patch_info->data.target;
 			i = exception_id_by_name (ovfj->data.exception);
 			if (!exc_throw_found [i]) {
-				max_epilog_size += 12;
+				max_epilog_size += 24;
 				exc_throw_found [i] = TRUE;
 			}
 			max_epilog_size += 8;
@@ -3614,7 +3621,14 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
-			ppc_b (code, 0);
+			if (FORCE_INDIR_CALL || cfg->method->dynamic) {
+				ppc_lis (code, ppc_r0, 0);
+				ppc_ori (code, ppc_r0, ppc_r0, 0);
+				ppc_mtctr (code, ppc_r0);
+				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+			} else {
+				ppc_b (code, 0);
+			}
 			break;
 		}
 		default:
