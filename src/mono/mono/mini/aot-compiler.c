@@ -1934,6 +1934,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (patch_info->data.token->token - MONO_TOKEN_STRING, p, &p);
 		break;
 	}
+	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_DECLSEC:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
@@ -2803,6 +2804,7 @@ alloc_got_slots (MonoAotCompile *acfg)
 				case MONO_PATCH_INFO_DECLSEC:
 				case MONO_PATCH_INFO_LDTOKEN:
 				case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+				case MONO_PATCH_INFO_RVA:
 					get_shared_got_offset (acfg, ji);
 					break;
 				default:
