@@ -735,7 +735,19 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		SWAP (64);
 		break;
 	}
-		 
+#else
+#ifdef ARM_FPU_FPA
+	if (klass->element_class->byval_arg.type == MONO_TYPE_R8) {
+		gint i;
+		double tmp;
+		double *data = (double*)mono_array_addr (array, double, 0);
+
+		for (i = 0; i < size; i++, data++) {
+			readr8 (data, &tmp);
+			*data = tmp;
+		}
+	}
+#endif
 #endif
 }
 
