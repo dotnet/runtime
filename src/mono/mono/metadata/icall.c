@@ -726,10 +726,12 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		break;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
 		SWAP (32);
 		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
 		SWAP (64);
 		break;
 	}
