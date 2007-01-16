@@ -910,7 +910,14 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
-						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+						    (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
+							if (mono_jit_trace_calls != NULL)
+								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							call_filter (ctx, ei->handler_start, NULL);
+						}
+						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
+						    (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls != NULL)
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							call_filter (ctx, ei->handler_start, NULL);
