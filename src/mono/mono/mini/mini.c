@@ -3807,7 +3807,12 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 			size = 2; break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
 			size = 4; break;
+		case MONO_TYPE_R8:
+#ifdef ARM_FPU_FPA
+			return NULL; /* stupid ARM FP swapped format */
+#endif
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			size = 8; break;
