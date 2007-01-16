@@ -193,6 +193,7 @@ common_sources = \
 	jit-icalls.c \
 	trace.c		\
 	trace.h		\
+	patch-info.h	\
 	mini-ops.h	\
 	mini-arch.h	\
 	dominators.c	\

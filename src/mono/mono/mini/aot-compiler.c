@@ -134,40 +134,45 @@ typedef struct MonoAotCompile {
 #endif
 } MonoAotCompile;
 
-/* Keep in synch with MonoJumpInfoType */
-static const char* patch_types [] = {
-	"bb",
-	"abs",
-	"label",
-	"method",
-	"method_jump",
-	"method_rel",
-	"methodconst",
-	"internal_method",
-	"switch",
-	"exc",
-	"exc_name",
-	"class",
-	"image",
-	"field",
-	"vtable",
-	"class_init",
-	"sflda",
-	"ldstr",
-	"ldtoken",
-	"type_from_handle",
-	"r4",
-	"r8",
-	"ip",
-	"iid",
-	"adjusted_iid",
-	"bb_ovf",
-	"exc_ovf",
-	"wrapper",
-	"got_offset",
-	"declsec",
-	"none"
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define PATCH_INFO(a,b) char MSGSTRFIELD(__LINE__) [sizeof (b)];
+#include "patch-info.h"
+#undef PATCH_INFO
+} opstr = {
+#define PATCH_INFO(a,b) b,
+#include "patch-info.h"
+#undef PATCH_INFO
 };
+static const gint16 opidx [] = {
+#define PATCH_INFO(a,b) [MONO_PATCH_INFO_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "patch-info.h"
+#undef PATCH_INFO
+};
+
+static const char*
+get_patch_name (int info)
+{
+	return (const char*)&opstr + opidx [info];
+}
+
+#else
+#define PATCH_INFO(a,b) b,
+static const char* const
+patch_types [MONO_PATCH_INFO_NUM + 1] = {
+#include "patch-info.h"
+	NULL
+};
+
+static const char*
+get_patch_name (int info)
+{
+	return patch_types [info];
+}
+
+#endif
 
 static gboolean 
 is_got_patch (MonoJumpInfoType patch_type)
@@ -2146,7 +2151,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		for (pindex = 0; pindex < patches->len; ++pindex) {
 			patch_info = g_ptr_array_index (patches, pindex);
 			if (patch_info->type != MONO_PATCH_INFO_NONE) {
-				printf ("\t%s", patch_types [patch_info->type]);
+				printf ("\t%s", get_patch_name (patch_info->type));
 				if (patch_info->type == MONO_PATCH_INFO_VTABLE)
 					printf (": %s\n", patch_info->data.klass->name);
 				else
@@ -3314,7 +3319,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	printf ("GOT slot distribution:\n");
 	for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
 		if (acfg->stats.got_slot_types [i])
-			printf ("\t%s: %d\n", patch_types [i], acfg->stats.got_slot_types [i]);
+			printf ("\t%s: %d\n", get_patch_name (i), acfg->stats.got_slot_types [i]);
 
 	return 0;
 }
