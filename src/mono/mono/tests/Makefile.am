@@ -274,13 +274,14 @@ TEST_CS2_SRC = \
 	catch-generics.2.cs	\
 	event-get.2.cs		\
 	safehandle.2.cs		\
+	module-cctor-loader.2.cs	\
 	bug-80392.2.cs
 
 TEST_IL2_SRC = find-method.2.il
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
-PREREQ_IL_SRC=event-il.il
+PREREQ_IL_SRC=event-il.il module-cctor.il
 PREREQ_CS_SRC=
 
 PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe)
