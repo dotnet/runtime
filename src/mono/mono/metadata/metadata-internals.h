@@ -73,17 +73,24 @@ struct _MonoImage {
 	/* if file_descr is NULL the image was loaded from raw data */
 	char *raw_data;
 	guint32 raw_data_len;
-	guint8 raw_data_allocated;
+	guint8 raw_data_allocated : 1;
 
 	/* Whenever this is a dynamically emitted module */
-	guint8 dynamic;
+	guint8 dynamic : 1;
 
 	/* Whenever this is a reflection only image */
-	guint8 ref_only;
+	guint8 ref_only : 1;
 
 	/* Whenever this image contains uncompressed metadata */
-	guint8 uncompressed_metadata;
+	guint8 uncompressed_metadata : 1;
 
+	guint8 checked_module_cctor : 1;
+	guint8 has_module_cctor : 1;
+
+	guint8 idx_string_wide : 1;
+	guint8 idx_guid_wide : 1;
+	guint8 idx_blob_wide : 1;
+			    
 	char *name;
 	const char *assembly_name;
 	const char *module_name;
@@ -94,8 +101,6 @@ struct _MonoImage {
 	MonoMemPool         *mempool;
 
 	char                *raw_metadata;
-			    
-	guint8               idx_string_wide, idx_guid_wide, idx_blob_wide;
 			    
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;
@@ -310,6 +315,9 @@ struct _MonoMethodHeader {
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
+
+void
+mono_image_check_for_module_cctor (MonoImage *image) MONO_INTERNAL;
 
 void
 mono_metadata_cleanup (void);

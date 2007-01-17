@@ -245,6 +245,13 @@ mono_runtime_class_init (MonoVTable *vtable)
 	exc = NULL;
 	klass = vtable->klass;
 
+	if (!klass->image->checked_module_cctor) {
+		mono_image_check_for_module_cctor (klass->image);
+		if (klass->image->has_module_cctor) {
+			MonoClass *module_klass = mono_class_get (klass->image, MONO_TOKEN_TYPE_DEF | 1);
+			mono_runtime_class_init (mono_class_vtable (vtable->domain, module_klass));
+		}
+	}
 	method = mono_class_get_cctor (klass);
 
 	if (method) {
