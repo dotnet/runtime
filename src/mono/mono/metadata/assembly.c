@@ -860,7 +860,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 
 	mono_assembly_get_assemblyref (image, index, &aname);
 
-	if (image->assembly->ref_only) {
+	if (image->assembly && image->assembly->ref_only) {
 		/* We use the loaded corlib */
 		if (!strcmp (aname.name, "mscorlib"))
 			reference = mono_assembly_load_full (&aname, image->assembly->basedir, &status, FALSE);
@@ -873,7 +873,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		if (!reference)
 			reference = REFERENCE_MISSING;
 	} else
-		reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
+		reference = mono_assembly_load (&aname, image->assembly? image->assembly->basedir: NULL, &status);
 
 	if (reference == NULL){
 		char *extra_msg = g_strdup ("");
@@ -907,10 +907,12 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (!image->references [index]) {
 		if (reference != REFERENCE_MISSING){
 			mono_assembly_addref (reference);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d\n",
+			if (image->assembly)
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d\n",
 				    image->assembly->aname.name, image->assembly, reference->aname.name, reference, reference->ref_count);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Failed to load assembly %s %p\n",
+			if (image->assembly)
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Failed to load assembly %s %p\n",
 				    image->assembly->aname.name, image->assembly);
 		}
 		

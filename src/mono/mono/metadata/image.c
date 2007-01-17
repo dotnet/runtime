@@ -501,7 +501,8 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		char *module_ref;
 		const char *name;
 		guint32 cols [MONO_MODULEREF_SIZE];
-		int valid = 0;
+		/* if there is no file table, we try to load the module... */
+		int valid = file_table->rows == 0;
 
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
