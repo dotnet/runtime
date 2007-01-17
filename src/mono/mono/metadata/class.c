@@ -404,12 +404,12 @@ mono_type_get_name (MonoType *type)
  * @type: a type
  *
  * Returns: the MonoType for the underlying interger type if @type
- * is an enum, otherwise the type itself.
+ * is an enum and byref is false, otherwise the type itself.
  */
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)
+	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype && !type->byref)
 		return type->data.klass->enum_basetype;
 	return type;
 }
