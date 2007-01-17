@@ -142,10 +142,10 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:20
-div: dest:i src1:i src2:i len:40
-div.un: dest:i src1:i src2:i len:40
-rem: dest:i src1:i src2:i len:48
-rem.un: dest:i src1:i src2:i len:28
+div: dest:i src1:i src2:i len:72
+div.un: dest:i src1:i src2:i len:72
+rem: dest:i src1:i src2:i len:72
+rem.un: dest:i src1:i src2:i len:72
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
@@ -563,3 +563,31 @@ mips_slt: dest:i src1:i src2:i len:4
 mips_sltiu: dest:i src1:i len:4
 mips_sltu: dest:i src1:i src2:i len:4
 mips_xori: dest:i src1:i len:4
+mips_cond_exc_eq: src1:i src2:i len:40
+mips_cond_exc_ge: src1:i src2:i len:40
+mips_cond_exc_gt: src1:i src2:i len:40
+mips_cond_exc_le: src1:i src2:i len:40
+mips_cond_exc_lt: src1:i src2:i len:40
+mips_cond_exc_ne_un: src1:i src2:i len:40
+mips_cond_exc_ge_un: src1:i src2:i len:40
+mips_cond_exc_gt_un: src1:i src2:i len:40
+mips_cond_exc_le_un: src1:i src2:i len:40
+mips_cond_exc_lt_un: src1:i src2:i len:40
+mips_cond_exc_ov: src1:i src2:i len:40
+mips_cond_exc_no: src1:i src2:i len:40
+mips_cond_exc_c: src1:i src2:i len:40
+mips_cond_exc_nc: src1:i src2:i len:40
+mips_cond_exc_ieq: src1:i src2:i len:40
+mips_cond_exc_ige: src1:i src2:i len:40
+mips_cond_exc_igt: src1:i src2:i len:40
+mips_cond_exc_ile: src1:i src2:i len:40
+mips_cond_exc_ilt: src1:i src2:i len:40
+mips_cond_exc_ine_un: src1:i src2:i len:40
+mips_cond_exc_ige_un: src1:i src2:i len:40
+mips_cond_exc_igt_un: src1:i src2:i len:40
+mips_cond_exc_ile_un: src1:i src2:i len:40
+mips_cond_exc_ilt_un: src1:i src2:i len:40
+mips_cond_exc_iov: src1:i src2:i len:40
+mips_cond_exc_ino: src1:i src2:i len:40
+mips_cond_exc_ic: src1:i src2:i len:40
+mips_cond_exc_inc: src1:i src2:i len:40

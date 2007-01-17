@@ -120,13 +120,12 @@ mono_arch_get_call_filter (void)
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size;
-	int offset = 16;
+	int offset;
 
 	if (inited)
 		return start;
 
 	inited = 1;
-
 	code = start;
 
 	alloc_size = 64;
@@ -136,6 +135,7 @@ mono_arch_get_call_filter (void)
 	mips_sw (code, mips_ra, mips_sp, alloc_size + MIPS_RET_ADDR_OFFSET);
 
 	/* Save global registers on stack (s0 - s7) */
+	offset = 16;
 	mips_sw (code, mips_s0, mips_sp, offset); offset += 4;
 	mips_sw (code, mips_s1, mips_sp, offset); offset += 4;
 	mips_sw (code, mips_s2, mips_sp, offset); offset += 4;
@@ -146,7 +146,7 @@ mono_arch_get_call_filter (void)
 	mips_sw (code, mips_s7, mips_sp, offset); offset += 4;
 	mips_sw (code, mips_fp, mips_sp, offset); offset += 4;
 
-	/* Restore global registers (s0-s7) */
+	/* Restore global registers from MonoContext, including the frame pointer */
 	mips_lw (code, mips_s0, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s0]));
 	mips_lw (code, mips_s1, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s1]));
 	mips_lw (code, mips_s2, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s2]));

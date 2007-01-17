@@ -57,41 +57,12 @@ static int monodomain_key = -1;
  * to cfg->bb_exit as far as the big branch handling is concerned
  */
 
-#define EMIT_SYSTEM_EXCEPTION_NAME_LEN 5
 #define EMIT_SYSTEM_EXCEPTION_NAME(exc_name)            \
         do {                                                        \
-		mono_add_patch_info (cfg, code - cfg->native_code,   \
-				     MONO_PATCH_INFO_EXC, exc_name);	\
-		mips_lui (code, mips_t9, mips_zero, 0);			\
-		mips_addiu (code, mips_t9, mips_t9, 0);			\
-		mips_jalr (code, mips_t9, mips_ra);			\
-		mips_nop (code);					\
+		code = mips_emit_exc_by_name (code, exc_name);	\
 		cfg->bb_exit->max_offset += 16;				\
 	} while (0) 
 
-
-/* XXX - need to actually test the condition - not just bne */
-#define EMIT_COND_SYSTEM_EXCEPTION_FLAGS(b0,b1,exc_name)            \
-        do {                                                        \
-		mips_bne (code, mips_at, mips_zero, 5);			\
-		mips_nop (code);					\
-		EMIT_SYSTEM_EXCEPTION_NAME(exc_name);			\
-		cfg->bb_exit->max_offset += 8;				\
-	} while (0) 
-
-#define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name) \
-        do { \
-		switch (cond) { \
-		case CEE_BEQ: \
-			mips_bne (code, mips_at, mips_zero, 5);	 \
-			break; \
-		default: \
-			g_assert_not_reached();	 \
-		} \
-		mips_nop (code); \
-		EMIT_SYSTEM_EXCEPTION_NAME(exc_name); \
-		cfg->bb_exit->max_offset += 8; \
-	} while (0) 
 
 #define emit_linuxthreads_tls(code,dreg,key) do {\
 		int off1, off2;	\
@@ -168,6 +139,20 @@ mono_arch_flush_register_windows (void)
 {
 }
 #endif
+
+static guint8 *
+mips_emit_exc_by_name(guint8 *code, char *name)
+{
+	guint32 addr;
+
+	mips_load_const (code, mips_a0, name);
+	addr = (guint32) mono_arch_get_throw_exception_by_name ();
+	mips_load_const (code, mips_t9, addr);
+	mips_jalr (code, mips_t9, mips_ra);
+	mips_nop (code);
+
+	return code;
+}
 
 /* XXX - big-endian dependent? */
 void
@@ -1503,8 +1488,8 @@ loop_start:
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
 			break;
-		case OP_SUB_IMM:
 #if 0
+		case OP_SUB_IMM:
 			if (!mips_is_imm16 (-ins->inst_imm)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -1512,12 +1497,12 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
-#endif
 			break;
+#endif
+#if 0
 		case OP_AND_IMM:
 		case OP_OR_IMM:
 		case OP_XOR_IMM:
-#if 0
 			if ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -1525,12 +1510,12 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
-#endif
 			break;
+#endif
+#if 0
 		case OP_SBB_IMM:
 		case OP_SUBCC_IMM:
 		case OP_ADC_IMM:
-#if 0
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
@@ -1538,8 +1523,8 @@ loop_start:
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 #endif
-		case OP_COMPARE_IMM:
 #if 0
+		case OP_COMPARE_IMM:
 			if (compare_opcode_is_unsigned (ins->next->opcode)) {
 				if (!ppc_is_uimm16 (ins->inst_imm)) {
 					NEW_INS (cfg, temp, OP_ICONST);
@@ -1557,10 +1542,10 @@ loop_start:
 					ins->opcode = map_to_reg_reg_op (ins->opcode);
 				}
 			}
-#endif
 			break;
-		case OP_MUL_IMM:
+#endif
 #if 0
+		case OP_MUL_IMM:
 			if (ins->inst_imm == 1) {
 				ins->opcode = OP_MOVE;
 				break;
@@ -1583,8 +1568,9 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
-#endif
 			break;
+#endif
+#if 0
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
@@ -1600,7 +1586,6 @@ loop_start:
 		case OP_STOREI1_MEMBASE_REG:
 		case OP_STORER4_MEMBASE_REG:
 		case OP_STORER8_MEMBASE_REG:
-#if 0
 			/* we can do two things: load the immed in a register
 			 * and use an indexed load, or see if the immed can be
 			 * represented as an ad_imm + a load with a smaller offset
@@ -1613,13 +1598,13 @@ loop_start:
 			temp->dreg = mono_regstate_next_int (cfg->rs);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
-#endif
 			break;
+#endif
+#if 0
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI1_MEMBASE_IMM:
 		case OP_STOREI2_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM:
-#if 0
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
@@ -1627,9 +1612,7 @@ loop_start:
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			last_ins = temp;
 			goto loop_start; /* make it handle the possibly big ins->inst_offset */
-#endif
-#if 1
-			;
+			break;
 #endif
 		}
 		last_ins = ins;
@@ -1924,7 +1907,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					imm = ins->inst_imm & 0xffff;
 				}
 			}
-
 #if 0
 			if (ins->next) {
 				switch (ins->next->opcode) {
@@ -2073,10 +2055,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_and (code, ins->dreg, ins->sreg1, mips_at);
 			}
 			break;
-		case CEE_DIV: {
-			guint32 *divisor_is_zero = (guint32 *)(void *)code;
+		case CEE_DIV:
+		case CEE_REM: {
+			guint32 *divisor_is_m1;
+			guint32 *divisor_is_zero;
+
+			/* */
+			mips_addiu (code, mips_at, mips_zero, 0xffff);
+			divisor_is_m1 = (guint32 *)code;
+			mips_bne (code, ins->sreg2, mips_at, 0);
+			mips_nop (code);
+
+			/* Divide by -1 -- throw exception */
+			EMIT_SYSTEM_EXCEPTION_NAME("ArithmeticException");
+
+			mips_patch (divisor_is_m1, (guint32)code);
 
 			/* Put divide in branch delay slot */
+			divisor_is_zero = (guint32 *)code;
 			mips_bne (code, ins->sreg2, mips_zero, 0);
 			mips_div (code, ins->sreg1, ins->sreg2);
 
@@ -2084,7 +2080,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
 
 			mips_patch (divisor_is_zero, (guint32)code);
-			mips_mflo (code, ins->dreg);
+			if (ins->opcode == CEE_DIV)
+				mips_mflo (code, ins->dreg);
+			else
+				mips_mfhi (code, ins->dreg);
 			break;
 		}
 		case CEE_DIV_UN: {
@@ -2113,40 +2112,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			g_assert_not_reached();
 			break;
-		case CEE_REM: {
-			/* XXX */
-#if 1
-			guint32 *divisor_is_zero = (guint32 *)(void *)code;
-
-			/* Put divide in branch delay slot */
-			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_div (code, ins->sreg1, ins->sreg2);
-
-			/* Divide by zero -- throw exception */
-			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
-
-			mips_patch (divisor_is_zero, (guint32)code);
-			mips_mfhi (code, ins->dreg);
-			break;
-#else
-			guint32 *divisor_is_m1;
-			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
-			divisor_is_m1 = (guint32 *)(void *)code;
-			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
-			ppc_lis (code, ppc_r11, 0x8000);
-			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
-			mips_patch (divisor_is_m1, (guint32)code);
-			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
-			ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			/* FIXME: use OverflowException for 0x80000000/-1 */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
-			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
-			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
-#endif
-			break;
-		}
 		case CEE_REM_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
@@ -2235,20 +2200,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 #endif
 			break;
-		case CEE_MUL_OVF:
-#if 1
-			mips_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
-#else
+		case CEE_MUL_OVF: {
+			guint32 *patch;
 			mips_mult (code, ins->sreg1, ins->sreg2);
 			mips_mflo (code, ins->dreg);
 			mips_mfhi (code, mips_at);
 			mips_nop (code);
 			mips_nop (code);
-#endif
-			/* XXX - Throw exception if we overflowed */
+			mips_sra (code, mips_temp, ins->dreg, 31);
+			patch = (guint32 *)(void *)code;
+			mips_beq (code, mips_temp, mips_at, 0);
+			mips_nop (code);
+			EMIT_SYSTEM_EXCEPTION_NAME("OverflowException");
+			mips_patch (patch, (guint32)code);
 			break;
+		}
 		case CEE_MUL_OVF_UN:
-#if 1
+#if 0
 			mips_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
 #else
 			mips_mult (code, ins->sreg1, ins->sreg2);
@@ -2349,12 +2317,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_add (code, ppc_sp, cfg->frame_reg, ppc_r11);
 			}
 			if (!cfg->method->save_lmf) {
-				/*for (i = 31; i >= 14; --i) {
+#if 0
+				for (i = 31; i >= 14; --i) {
 					if (cfg->used_float_regs & (1 << i)) {
 						pos += sizeof (double);
 						ppc_lfd (code, i, -pos, cfg->frame_reg);
 					}
-				}*/
+				}
+#endif
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += sizeof (gulong);
@@ -2599,72 +2569,109 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 			mips_move (code, ins->dreg, mips_zero);
 			break;
+
 		case OP_COND_EXC_EQ:
-		case OP_COND_EXC_NE_UN:
-		case OP_COND_EXC_LT:
-		case OP_COND_EXC_LT_UN:
-		case OP_COND_EXC_GT:
-		case OP_COND_EXC_GT_UN:
 		case OP_COND_EXC_GE:
-		case OP_COND_EXC_GE_UN:
+		case OP_COND_EXC_GT:
 		case OP_COND_EXC_LE:
+		case OP_COND_EXC_LT:
+		case OP_COND_EXC_NE_UN:
+		case OP_COND_EXC_GE_UN:
+		case OP_COND_EXC_GT_UN:
 		case OP_COND_EXC_LE_UN:
-#if 0 /* Don't raise conditional exceptions at the moment */
-			switch (ins->opcode) {
-			case OP_COND_EXC_EQ:
-				mips_bne (code, mips_at, mips_zero, 5);
-				break;
-			case OP_COND_EXC_NE_UN:
-				mips_beq (code, mips_at, mips_zero, 5);
-				break;
-			case OP_COND_EXC_LT:
-			case OP_COND_EXC_LT_UN:
-				mips_bgez (code, mips_at, 5);
-				break;
-			case OP_COND_EXC_GT:
-			case OP_COND_EXC_GT_UN:
-				mips_blez (code, mips_at, 5);
-				break;
-			case OP_COND_EXC_GE:
-			case OP_COND_EXC_GE_UN:
-				mips_bltz (code, mips_at, 5);
-				break;
-			case OP_COND_EXC_LE:
-			case OP_COND_EXC_LE_UN:
-				mips_bgtz (code, mips_at, 5);
-				break;
-			}
-			mips_nop (code);
-			mono_add_patch_info (cfg, code - cfg->native_code,
-					     MONO_PATCH_INFO_EXC, ins->inst_p1);
-			mips_lui (code, mips_t9, mips_zero, 0);
-			mips_addiu (code, mips_t9, mips_t9, 0);
-			mips_jalr (code, mips_t9, mips_ra);
-			mips_nop (code);
-			cfg->bb_exit->max_offset += 24;
-#endif
-			break;
-		case OP_COND_EXC_C:
-			g_assert_not_reached();
-#if 0
-			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
-			 */
-			ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
-#endif
-			break;
+		case OP_COND_EXC_LT_UN:
+
 		case OP_COND_EXC_OV:
-			g_assert_not_reached();
-#if 0
-			ppc_mcrxr (code, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
-#endif
-			break;
-		case OP_COND_EXC_NC:
 		case OP_COND_EXC_NO:
+		case OP_COND_EXC_C:
+		case OP_COND_EXC_NC:
+
+		case OP_COND_EXC_IEQ:
+		case OP_COND_EXC_IGE:
+		case OP_COND_EXC_IGT:
+		case OP_COND_EXC_ILE:
+		case OP_COND_EXC_ILT:
+		case OP_COND_EXC_INE_UN:
+		case OP_COND_EXC_IGE_UN:
+		case OP_COND_EXC_IGT_UN:
+		case OP_COND_EXC_ILE_UN:
+		case OP_COND_EXC_ILT_UN:
+
+		case OP_COND_EXC_IOV:
+		case OP_COND_EXC_INO:
+		case OP_COND_EXC_IC:
+		case OP_COND_EXC_INC:
+			/* Should be re-mapped to OP_MIPS_B* by *.inssel-mips.brg */
+			g_warning ("unsupported conditional exception %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();
 			break;
+
+		case OP_MIPS_COND_EXC_EQ:
+		case OP_MIPS_COND_EXC_GE:
+		case OP_MIPS_COND_EXC_GT:
+		case OP_MIPS_COND_EXC_LE:
+		case OP_MIPS_COND_EXC_LT:
+		case OP_MIPS_COND_EXC_NE_UN:
+		case OP_MIPS_COND_EXC_GE_UN:
+		case OP_MIPS_COND_EXC_GT_UN:
+		case OP_MIPS_COND_EXC_LE_UN:
+		case OP_MIPS_COND_EXC_LT_UN:
+
+		case OP_MIPS_COND_EXC_OV:
+		case OP_MIPS_COND_EXC_NO:
+		case OP_MIPS_COND_EXC_C:
+		case OP_MIPS_COND_EXC_NC:
+
+		case OP_MIPS_COND_EXC_IEQ:
+		case OP_MIPS_COND_EXC_IGE:
+		case OP_MIPS_COND_EXC_IGT:
+		case OP_MIPS_COND_EXC_ILE:
+		case OP_MIPS_COND_EXC_ILT:
+		case OP_MIPS_COND_EXC_INE_UN:
+		case OP_MIPS_COND_EXC_IGE_UN:
+		case OP_MIPS_COND_EXC_IGT_UN:
+		case OP_MIPS_COND_EXC_ILE_UN:
+		case OP_MIPS_COND_EXC_ILT_UN:
+
+		case OP_MIPS_COND_EXC_IOV:
+		case OP_MIPS_COND_EXC_INO:
+		case OP_MIPS_COND_EXC_IC:
+		case OP_MIPS_COND_EXC_INC: {
+			guint32 *skip;
+			guint32 *throw;
+
+			/* If the condition is true, raise the exception */
+
+			/* need to reverse test to skip around exception raising */
+
+			/* For the moment, branch around a branch to avoid reversing
+			   the tests. */
+
+			/* Remember, an unpatched branch to 0 branches to the delay slot */
+			throw = (guint32 *)(void *)code;
+			switch (ins->opcode) {
+			case OP_MIPS_COND_EXC_EQ:
+				mips_beq (code, ins->sreg1, ins->sreg2, 0);
+				mips_nop (code);
+				break;
+			case OP_MIPS_COND_EXC_NE_UN:
+				mips_bne (code, ins->sreg1, ins->sreg2, 0);
+				mips_nop (code);
+				break;
+			default:
+				/* Not yet implemented */
+				g_warning ("NYI conditional exception %s\n", mono_inst_name (ins->opcode));
+				g_assert_not_reached ();
+			}
+			skip = (guint32 *)(void *)code;
+			mips_beq (code, mips_zero, mips_zero, 0);
+			mips_nop (code);
+			mips_patch (throw, (guint32)code);
+			code = mips_emit_exc_by_name (code, ins->inst_p1);
+			mips_patch (skip, (guint32)code);
+			cfg->bb_exit->max_offset += 24;
+			break;
+		}
 		case CEE_BEQ:
 		case CEE_BNE_UN:
 		case CEE_BLT:
@@ -2676,6 +2683,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BLE:
 		case CEE_BLE_UN:
 			/* Should be re-mapped to OP_MIPS_B* by *.inssel-mips.brg */
+			g_warning ("unsupported conditional set %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();
 			break;
 		case OP_MIPS_BEQ:
@@ -2805,17 +2813,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
 		case CEE_CONV_R_UN: {
-			g_assert_not_reached();
-#if 0
-			static const guint64 adjust_val = 0x4330000000000000ULL;
-			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
-			ppc_stw (code, ppc_r0, -8, ppc_sp);
-			ppc_stw (code, ins->sreg1, -4, ppc_sp);
-			ppc_load (code, ppc_r11, &adjust_val);
-			ppc_lfd (code, ins->dreg, -8, ppc_sp);
-			ppc_lfd (code, ppc_f0, 0, ppc_r11);
-			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
-#endif
+			static const guint64 adjust_val = 0x41F0000000000000ULL;
+
+			/* convert unsigned int to double */
+			mips_mtc1 (code, mips_ftemp, ins->sreg1);
+			mips_bgez (code, ins->sreg1, 5);
+			mips_cvtdw (code, ins->dreg, mips_ftemp);
+
+			mips_load (code, mips_at, (guint32) &adjust_val);
+			mips_ldc1  (code, mips_ftemp, mips_at, 0);
+			mips_faddd (code, ins->dreg, ins->dreg, mips_ftemp);
+			/* target is here */
 			break;
 		}
 		case CEE_CONV_R4:
@@ -2856,37 +2864,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			/* Implemented as helper calls */
 			break;
-		case OP_LCONV_TO_OVF_I: {
-#if 1
-			if (ins->dreg != ins->sreg1)
-				mips_move (code, ins->dreg, ins->sreg1);
-#else
-			guint32 *negative_branch, *msword_positive_branch, *msword_negative_branch, *ovf_ex_target;
-			g_assert_not_reached();
-			// Check if its negative
-			ppc_cmpi (code, 0, 0, ins->sreg1, 0);
-			negative_branch = (guint32 *)(void *)code;
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 0);
-			// Its positive msword == 0
-			ppc_cmpi (code, 0, 0, ins->sreg2, 0);
-			msword_positive_branch = (guint32 *)(void *)code;
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
-
-			ovf_ex_target = (guint32 *)(void *)code;
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_ALWAYS, 0, "OverflowException");
-			// Negative
-			mips_patch (negative_branch, (guint32)code);
-			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
-			msword_negative_branch = (guint32 *)(void *)code;
-			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-			mips_patch (msword_negative_branch, (guint32)ovf_ex_target);
-			
-			mips_patch (msword_positive_branch, (guint32)code);
-			if (ins->dreg != ins->sreg1)
-				ppc_mr (code, ins->dreg, ins->sreg1);
-#endif
+		case OP_LCONV_TO_OVF_I:
+			g_assert_not_reached ();
+			/* split up by brg file */
 			break;
-		}
 		case OP_SQRT:
 			mips_fsqrtd (code, ins->dreg, ins->sreg1);
 			break;
@@ -3133,13 +3114,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			/* from OP_AOTCONST : lui + addiu */
 			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
 			continue;
+#if 0
 		case MONO_PATCH_INFO_EXC_NAME:
 			g_assert_not_reached ();
 			*((gconstpointer *)(void *)(ip + 1)) = patch_info->data.name;
 			continue;
+#endif
 		case MONO_PATCH_INFO_NONE:
-		case MONO_PATCH_INFO_BB_OVF:
-		case MONO_PATCH_INFO_EXC_OVF:
 			/* everything is dealt with at epilog output time */
 			continue;
 		default:
@@ -3763,6 +3744,7 @@ exception_id_by_name (const char *name)
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
+#if 0
 	MonoJumpInfo *patch_info;
 	int i;
 	guint8 *code;
@@ -3777,6 +3759,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	 * 24 is the simulated call to throw_exception_by_name
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+#if 0
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
 			i = exception_id_by_name (patch_info->data.target);
 			g_assert (i < MONO_EXC_INTRINS_NUM);
@@ -3784,18 +3767,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				max_epilog_size += 12;
 				exc_throw_found [i] = TRUE;
 			}
-		} else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
-			max_epilog_size += 12;
-#if 0
-		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF) {
-			MonoOvfJump *ovfj = (MonoOvfJump *)patch_info->data.target;
-			i = exception_id_by_name (ovfj->data.exception);
-			g_assert (i < MONO_EXC_INTRINS_NUM);
-			if (!exc_throw_found [i]) {
-				max_epilog_size += 12;
-				exc_throw_found [i] = TRUE;
-			}
-			max_epilog_size += 8;
 		}
 #endif
 	}
@@ -3811,52 +3782,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
-#if 0
-		case MONO_PATCH_INFO_BB_OVF: {
-			MonoOvfJump *ovfj = (MonoOvfJump *)patch_info->data.target;
-			guint32 *ip = (guint32 *)(void *)(patch_info->ip.i + cfg->native_code);
-			/* patch the initial jump */
-			mips_patch (ip, (guint32)code);
-			mips_bne (code, ovfj->b0_cond, ovfj->b1_cond, 2);
-			mips_nop (code);
-			mips_lui (code, mips_at, mips_zero, 0);
-			mips_addiu (code, mips_at, mips_at, 0);
-			mips_jr (code, mips_at);
-			mips_patch ((guint32 *)(void *)(code - 4), (guint32)(ip + 1)); /* jump back after the initial branch */
-			mips_nop (code);
-			/* jump back to the true target */
-			mips_jump (code, 0);
-			ip = (guint32 *)(void *)(ovfj->data.bb->native_offset + cfg->native_code);
-			mips_patch ((guint32 *)(void *)(code - 4), (guint32)ip);
-			mips_nop (code);
-			break;
-		}
-		case MONO_PATCH_INFO_EXC_OVF: {
-			MonoOvfJump *ovfj = (MonoOvfJump *)patch_info->data.target;
-			MonoJumpInfo *newji;
-			guint32 *ip = (guint32 *)(void *)(patch_info->ip.i + cfg->native_code);
-			unsigned char *bcl = code;
-
-			/* patch the initial jump: we arrived here with a call */
-			mips_patch (ip, (guint32)code);
-			mips_bne (code, ovfj->b0_cond, ovfj->b1_cond, 0);
-			mips_nop (code);
-			mips_jump (code, 0);
-			/* jump back after the initial branch */
-			mips_patch ((guint32 *)(void *)(code - 4), (guint32)(ip + 1));
-			mips_nop (code);
-			/* patch the conditional jump to the right handler */
-			/* make it processed next */
-			newji = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfo));
-			newji->type = MONO_PATCH_INFO_EXC;
-			newji->ip.i = bcl - cfg->native_code;
-			newji->data.target = ovfj->data.exception;
-			newji->next = patch_info->next;
-			patch_info->next = newji;
-			break;
-		}
-#endif
 		case MONO_PATCH_INFO_EXC: {
+#if 0
 			//unsigned char *ip = patch_info->ip.i + cfg->native_code;
 
 			i = exception_id_by_name (patch_info->data.target);
@@ -3877,6 +3804,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			/* Turn into a Relative patch, pointing at code stub */
 			patch_info->type = MONO_PATCH_INFO_METHOD_REL;
 			patch_info->data.offset = exc_throw_pos[i] - cfg->native_code;
+#else
+			g_assert_not_reached();
+#endif
 			break;
 		}
 		default:
@@ -3888,7 +3818,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	cfg->code_len = code - cfg->native_code;
 
 	g_assert (cfg->code_len < cfg->code_size);
-
+#endif
 }
 
 /*

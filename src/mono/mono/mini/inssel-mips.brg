@@ -618,6 +618,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int soffset = vt->inst_offset;
 	int doffset = ai->offset;
 
+	//g_printf ("OP_OUTARG_VT: LDOBJ\n");
 	for (i = 0; i < nregs; ++i) {
 		dreg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, vt->inst_basereg, soffset);
@@ -625,7 +626,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		soffset += sizeof (gpointer);
 		doffset += sizeof (gpointer);
 	}
-	//g_print ("vt size: %d at R%d + %d\n", ai->offset, vt->inst_basereg, vt->inst_offset);
+	//g_printf ("vt size: %d at R%d + %d\n", ai->offset, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0) {
 		mini_emit_memcpy (s, vt->inst_basereg, doffset, vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
 	}
@@ -636,6 +637,8 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 	MonoMIPSArgInfo *ai = tree->backend.data;
 	int start_reg = ai->reg;
 	int nregs = ai->size;
+
+	//g_printf ("OP_OUTARG_VT: ICONST\n");
 	if (nregs) {
 		tree->opcode = OP_SETREGIMM;
 		tree->dreg = mono_regstate_next_int (s->rs);
@@ -652,6 +655,8 @@ stmt: OP_OUTARG_VT (reg) {
 	MonoMIPSArgInfo *ai = tree->backend.data;
 	int start_reg = ai->reg;
 	int nregs = ai->size;
+
+	//g_printf ("OP_OUTARG_VT: reg\n");
 	if (nregs) {
 		tree->opcode = OP_SETREG;
 		tree->dreg = mono_regstate_next_int (s->rs);
@@ -783,19 +788,84 @@ reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {
 }
 
 reg: CEE_ADD_OVF (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+	int tmp1 = mono_regstate_next_int (s->rs);
+	int tmp2 = mono_regstate_next_int (s->rs);
+	int tmp3 = mono_regstate_next_int (s->rs);
+	int tmp4 = mono_regstate_next_int (s->rs);
+	int tmp5 = mono_regstate_next_int (s->rs);
+
+	/* add the operands */
+
+	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
+
+	/* Overflow happens if
+	 *	neg + neg = pos    or
+	 *	pos + pos = neg
+	 *
+	 * (bit31s of operands match) AND (bit31 of operand != bit31 of result)
+	 * XOR of the high bit returns 0 if the signs match
+	 * XOR of that with the high bit of the result return 1 if overflow.
+	 */
+
+	/* tmp1 = 0 if the signs of the two inputs match, 1 otherwise */
+	MONO_EMIT_NEW_BIALU (s, CEE_XOR, tmp1, state->left->reg1, state->right->reg1);
+
+	/* set tmp2 = 0 if bit31 of results matches is different than the operands */
+	MONO_EMIT_NEW_BIALU (s, CEE_XOR, tmp2, state->reg1, state->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, CEE_NOT, tmp3, tmp2);
+
+	/* OR(tmp1, tmp2) = 0 if both conditions are true */
+	MONO_EMIT_NEW_BIALU (s, CEE_OR, tmp4, tmp3, tmp1);
+
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, tmp5, tmp4, 31);
+
+	/* Now, if (tmp4 == 0) then overflow */
+	MONO_EMIT_NEW_COMPARE_EXC (s, EQ, tmp5, mips_zero, "OverflowException");
 }
 
 reg: CEE_ADD_OVF_UN (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+	int tmp1 = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, tmp1, state->reg1, state->left->reg1);
+/*	MONO_EMIT_NEW_COMPARE_EXC (s, NE_UN, tmp1, mips_zero, "OverflowException"); */
 }
 
 reg: CEE_SUB_OVF (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+	int tmp1 = mono_regstate_next_int (s->rs);
+	int tmp2 = mono_regstate_next_int (s->rs);
+	int tmp3 = mono_regstate_next_int (s->rs);
+	int tmp4 = mono_regstate_next_int (s->rs);
+	int tmp5 = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, state->right->reg1);
+
+	/* Overflow happens if
+	 *	neg - pos = pos    or
+	 *	pos - neg = neg
+	 * XOR of bit31 of the lhs & rhs = 1 if the signs are different
+	 *
+	 * tmp1 = (lhs ^ rhs)
+	 * tmp2 = (lhs ^ result)
+	 * if ((tmp1 < 0) & (tmp2 < 0)) then overflow
+	 */
+
+	/* tmp3 = 1 if the signs of the two inputs differ */
+	MONO_EMIT_NEW_BIALU (s, CEE_XOR, tmp1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, CEE_XOR, tmp2, state->left->reg1, state->reg1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_SLTI, tmp3, tmp1, 0);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_SLTI, tmp4, tmp2, 0);
+	MONO_EMIT_NEW_BIALU (s, CEE_AND, tmp5, tmp4, tmp3);
+
+	MONO_EMIT_NEW_COMPARE_EXC (s, NE_UN, tmp5, mips_zero, "OverflowException");
 }
 
 reg: CEE_SUB_OVF_UN (reg, reg) "0" {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+	int tmp1 = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, tmp1, state->left->reg1, state->reg1);
+	MONO_EMIT_NEW_COMPARE_EXC (s, NE_UN, tmp1, mips_zero, "OverflowException");
 }
 
 

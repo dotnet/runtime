@@ -354,17 +354,17 @@ typedef struct {
 	do { \
 		switch (cmp_op) { \
 		case CEE_BEQ: \
-			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK(cfg, OP_MIPS_BEQ, sreg1, sreg2, block); \
+			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK (cfg, OP_MIPS_BEQ, sreg1, sreg2, block); \
 			break; \
 		case CEE_BNE_UN: \
-			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK(cfg, OP_MIPS_BNE, sreg1, sreg2, block); \
+			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK (cfg, OP_MIPS_BNE, sreg1, sreg2, block); \
 			break; \
 		case CEE_BLT_UN: \
 			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, mips_at, sreg1, sreg2); \
-			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK(cfg, OP_MIPS_BNE, mips_at, mips_zero, block); \
+			MONO_EMIT_NEW_BRANCH_BIREG_BLOCK (cfg, OP_MIPS_BNE, mips_at, mips_zero, block); \
 			break; \
 		default: \
-			g_assert_not_reached(); \
+			g_assert_not_reached (); \
 		} \
 	} while (0)
 #endif
@@ -381,6 +381,76 @@ typedef struct {
 			MONO_EMIT_NEW_ICONST (cfg, cmp_reg, (imm)); \
 		} \
 		MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK(cfg, cmp_op, sreg1, cmp_reg, block); \
+	} while (0)
+#endif
+
+#define	MONO_EMIT_NEW_MIPS_COND_EXC(cfg,cond,sr1,sr2,name) do {	\
+                MonoInst *inst; \
+		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		inst->opcode = cond;  \
+                inst->inst_p1 = (char*)name; \
+		inst->sreg1 = sr1; \
+		inst->sreg2 = sr2; \
+	        mono_bblock_add_inst ((cfg)->cbb, inst); \
+	} while (0)
+
+#ifndef MONO_EMIT_NEW_COMPARE_EXC
+#define MONO_EMIT_NEW_COMPARE_EXC(cfg, cmp_op, sreg1, sreg2, exc) do { \
+		switch (OP_MIPS_COND_EXC_##cmp_op) { \
+		case OP_MIPS_COND_EXC_EQ: \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_EQ, sreg1, sreg2, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_NE_UN: \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_NE_UN, sreg1, sreg2, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_GT: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLT, mips_at, sreg2, sreg1); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_NE_UN, mips_at, mips_zero, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_GT_UN: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, mips_at, sreg2, sreg1); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_NE_UN, mips_at, mips_zero, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_LE: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLT, mips_at, sreg2, sreg1); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_EQ, mips_at, mips_zero, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_LE_UN: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, mips_at, sreg2, sreg1); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_EQ, mips_at, mips_zero, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_LT: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLT, mips_at, sreg1, sreg2); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_NE_UN, mips_at, mips_zero, exc); \
+			break; \
+		case OP_MIPS_COND_EXC_LT_UN: \
+			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, mips_at, sreg1, sreg2); \
+			MONO_EMIT_NEW_MIPS_COND_EXC (cfg, OP_MIPS_COND_EXC_NE_UN, mips_at, mips_zero, exc); \
+			break; \
+		default: \
+			g_warning ("unknown comparison %s\n", #cmp_op); \
+			g_assert_not_reached (); \
+		} \
+	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_IMM_EXC
+#define MONO_EMIT_NEW_COMPARE_IMM_EXC(cfg, cmp_op, sreg1, imm, exc) do { \
+		guint32 cmp_reg; \
+		if (!(imm)) { \
+			cmp_reg = mips_zero; \
+		} \
+		else { \
+			cmp_reg = mips_at; \
+			MONO_EMIT_NEW_ICONST (cfg, cmp_reg, (imm)); \
+		} \
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, cmp_op, sreg1, cmp_reg, exc); \
+	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_ICOMPARE_IMM_EXC
+#define MONO_EMIT_NEW_ICOMPARE_IMM_EXC(cfg, cmp_op, sreg1, imm, exc) do { \
+		MONO_EMIT_NEW_COMPARE_IMM_EXC(cfg, cmp_op, sreg1, imm, exc); \
 	} while (0)
 #endif
 
