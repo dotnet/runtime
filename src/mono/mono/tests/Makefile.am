@@ -310,13 +310,13 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	testjit test-type-load test-inline-call-stack
+test:	testjit test-type-load test-inline-call-stack test-bug-80307
 else
 # Can't use mkbundle on win32 since there is no static build there
 if PLATFORM_WIN32
-test:   testjit test-type-load test-inline-call-stack
+test:   testjit test-type-load test-inline-call-stack test-bug-80307
 else
-test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307
 endif
 endif
 
@@ -489,6 +489,12 @@ test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
 test-inline-call-stack: TestDriver.dll test-inline-call-stack-library.dll test-inline-call-stack.exe
 	$(RUNTIME) test-inline-call-stack.exe
+
+EXTRA_DIST += bug-80307.cs
+bug-80307.exe: $(srcdir)/bug-80307.cs
+	$(MCS) -r:System.Web bug-80307.cs
+test-bug-80307: bug-80307.exe
+	$(RUNTIME) bug-80307.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
