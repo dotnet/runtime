@@ -1487,11 +1487,16 @@ disassemble_file (const char *file)
 
 	ass = mono_assembly_open (file, &status);
 	if (ass == NULL){
-		fprintf (stderr, "Error while trying to process %s\n", file);
-		return;
+		img = mono_image_open (file, &status);
+		if (!img) {
+			fprintf (stderr, "Error while trying to process %s\n", file);
+			return;
+		} else {
+			mono_assembly_load_references (img, &status);
+		}
+	} else {
+		img = ass->image;
 	}
-
-	img = ass->image;
 
 	setup_filter (img);
 
