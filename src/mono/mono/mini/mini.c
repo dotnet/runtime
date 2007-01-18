@@ -3704,6 +3704,8 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_
 		/* same compilation unit */
 		return access_klass->image == member_klass->image;
 	case FIELD_ATTRIBUTE_PRIVATE:
+		if (access_klass->generic_class && member_klass->generic_class && member_klass->generic_class->container_class)
+			return member_klass->generic_class->container_class == access_klass->generic_class->container_class;
 		return access_klass == member_klass;
 	case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
 		if (mono_class_has_parent (access_klass, member_klass) &&
