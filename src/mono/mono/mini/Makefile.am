@@ -384,7 +384,6 @@ if CROSS_COMPILING
 cpu-x86.h: cpu-x86.md
 cpu-amd64.h: cpu-amd64.md
 cpu-g4.h: cpu-g4.md
-cpu-arm.h: cpu-arm.md
 cpu-sparc.h: cpu-sparc.md
 cpu-s390.h: cpu-s390.md
 cpu-s390x.h: cpu-s390x.md
@@ -392,10 +391,13 @@ cpu-ia64.h: cpu-ia64.md
 cpu-alpha.h: cpu-alpha.md
 cpu-mips.h: cpu-mips.md
 
+cpu-arm.h: cpu-arm.md
+	perl genmdesc.pl __arm__ $(srcdir) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
+
 ## Gross hack.  Making 'genmdesc' a host binary takes more effort
-$(arch_built):
-	echo "*** please build $(arch_built) on a native build tree and copy it here"
-	exit 1
+#$(arch_built):
+#	echo "*** please build $(arch_built) on a native build tree and copy it here"
+#	exit 1
 
 else !CROSS_COMPILING
 
@@ -489,6 +491,7 @@ endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
+	genmdesc.pl	\
 	$(test_sources) $(test_sources2) \
 	inssel-long.brg inssel-long32.brg \
 	inssel-softfloat.brg	\
