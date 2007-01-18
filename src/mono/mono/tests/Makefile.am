@@ -278,7 +278,8 @@ TEST_CS2_SRC = \
 	module-cctor-loader.2.cs	\
 	bug-80392.2.cs
 
-TEST_IL2_SRC = find-method.2.il
+TEST_IL2_SRC = find-method.2.il	\
+	bug-79956.2.il
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
