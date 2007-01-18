@@ -270,6 +270,7 @@ TEST_IL_SRC=			\
 TEST_CS2_SRC = \
 	interlocked-2.2.cs	\
 	pinvoke-2.2.cs 		\
+	bug-78431.2.cs 		\
 	bug-79684.2.cs 		\
 	catch-generics.2.cs	\
 	event-get.2.cs		\
