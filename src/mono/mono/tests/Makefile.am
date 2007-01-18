@@ -279,6 +279,7 @@ TEST_CS2_SRC = \
 	bug-80392.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
+	bug-79215.2.il	\
 	bug-79956.2.il
 
 # pre-requisite test sources: files that are not test themselves
