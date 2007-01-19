@@ -5,6 +5,8 @@
 
 #include <glib.h>
 
+#define MONO_ARCH_CPU_SPEC sparc_desc
+
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 

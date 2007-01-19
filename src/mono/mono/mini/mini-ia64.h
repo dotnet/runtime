@@ -5,6 +5,8 @@
 
 #include <mono/arch/ia64/ia64-codegen.h>
 
+#define MONO_ARCH_CPU_SPEC ia64_desc
+
 /* FIXME: regset -> 128 bits ! */
 
 #define MONO_MAX_IREGS 128

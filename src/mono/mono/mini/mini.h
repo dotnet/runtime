@@ -734,6 +734,8 @@ extern const guint8 mono_burg_arity [];
 extern guint8 mono_burg_arity [];
 #endif
 
+extern const char * const MONO_ARCH_CPU_SPEC [OP_LAST];
+
 enum {
 	MONO_COMP_DOM = 1,
 	MONO_COMP_IDOM = 2,

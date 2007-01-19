@@ -21,39 +21,7 @@
 
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 2, a;)
 
-#if defined(__x86_64__)
-const char * const amd64_desc [OP_LAST];
-static const char*const * ins_spec = amd64_desc;
-#elif defined(__sparc__) || defined(sparc)
-const char * const sparc_desc [OP_LAST];
-static const char*const * ins_spec = sparc_desc;
-#elif defined(__mips__) || defined(mips)
-const char * const mips_desc [OP_LAST];
-static const char*const * ins_spec = mips_desc;
-#elif defined(__i386__)
-extern const char * const x86_desc [OP_LAST];
-static const char*const * ins_spec = x86_desc;
-#elif defined(__ia64__)
-const char * const ia64_desc [OP_LAST];
-static const char*const * ins_spec = ia64_desc;
-#elif defined(__arm__)
-const char * const arm_cpu_desc [OP_LAST];
-static const char*const * ins_spec = arm_cpu_desc;
-#elif defined(__s390x__)
-const char * const s390x_cpu_desc [OP_LAST];
-static const char*const * ins_spec = s390x_cpu_desc;
-#elif defined(__s390__)
-const char * const s390_cpu_desc [OP_LAST];
-static const char*const * ins_spec = s390_cpu_desc;
-#elif defined(__alpha__)
-const char * const alpha_desc [OP_LAST];
-static const char*const * ins_spec = alpha_desc;
-#elif defined(__ppc__) || defined(__powerpc__)
-extern const char * const ppcg4 [OP_LAST];
-static const char*const * ins_spec = ppcg4;
-#else
-#error "Not implemented"
-#endif
+static const char*const * ins_spec = MONO_ARCH_CPU_SPEC;
 
 #define use_fpstack MONO_ARCH_USE_FPSTACK
 

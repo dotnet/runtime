@@ -4,6 +4,8 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <glib.h>
 
+#define MONO_ARCH_CPU_SPEC ppcg4
+
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 

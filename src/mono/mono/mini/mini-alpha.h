@@ -5,6 +5,8 @@
 
 #include <mono/arch/alpha/alpha-codegen.h>
 
+#define MONO_ARCH_CPU_SPEC alpha_desc
+
 /* Parameters used by the register allocator */
 #define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 

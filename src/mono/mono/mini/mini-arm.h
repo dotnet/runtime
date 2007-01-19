@@ -8,6 +8,8 @@
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
 
+#define MONO_ARCH_CPU_SPEC arm_cpu_desc
+
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define ARM_LSW_REG ARMREG_R0
 #define ARM_MSW_REG ARMREG_R1
