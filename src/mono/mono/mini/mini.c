@@ -2253,9 +2253,11 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		return 0;
 	case MONO_TYPE_GENERICINST:
 		if (mono_type_generic_inst_is_valuetype (simple_type)) {
+			klass = mono_class_from_mono_type (simple_type);
+			if (klass->enumtype)
+				return target_type_is_incompatible (cfg, klass->enum_basetype, arg);
 			if (arg->type != STACK_VTYPE)
 				return 1;
-			klass = mono_class_from_mono_type (simple_type);
 			if (klass != arg->klass)
 				return 1;
 			return 0;
