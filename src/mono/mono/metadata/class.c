@@ -411,6 +411,8 @@ mono_type_get_underlying_type (MonoType *type)
 {
 	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype && !type->byref)
 		return type->data.klass->enum_basetype;
+	if (type->type == MONO_TYPE_GENERICINST && type->data.generic_class->container_class->enumtype && !type->byref)
+		return type->data.generic_class->container_class->enum_basetype;
 	return type;
 }
 
@@ -3153,6 +3155,11 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	if (klass->parent)
 		mono_class_setup_parent (klass, klass->parent);
+
+	if (klass->enumtype) {
+		klass->enum_basetype = gklass->enum_basetype;
+		klass->cast_class = gklass->cast_class;
+	}
 
 	if (MONO_CLASS_IS_INTERFACE (klass))
 		setup_interface_offsets (klass, 0);
