@@ -495,7 +495,7 @@ test-inline-call-stack: TestDriver.dll test-inline-call-stack-library.dll test-i
 
 EXTRA_DIST += bug-80307.cs
 bug-80307.exe: $(srcdir)/bug-80307.cs
-	$(MCS) -r:System.Web bug-80307.cs
+	$(MCS) -r:System.Web -out:$@ $(srcdir)/bug-80307.cs
 test-bug-80307: bug-80307.exe
 	$(RUNTIME) bug-80307.exe
 
