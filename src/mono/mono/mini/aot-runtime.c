@@ -239,9 +239,20 @@ decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	} else {
 		token = MONO_TOKEN_TYPE_DEF + decode_value (buf, &buf);
 		rank = decode_value (buf, &buf);
-		klass = mono_class_get (image, token);
-		g_assert (klass);
-		klass = mono_array_class_get (klass, rank);
+		if (token == MONO_TOKEN_TYPE_DEF) {
+			/* <Type>[][] */
+			token = MONO_TOKEN_TYPE_DEF + decode_value (buf, &buf);
+			klass = mono_class_get (image, token);
+			g_assert (klass);
+			klass = mono_array_class_get (klass, rank);
+
+			rank = decode_value (buf, &buf);
+			klass = mono_array_class_get (klass, rank);
+		} else {
+			klass = mono_class_get (image, token);
+			g_assert (klass);
+			klass = mono_array_class_get (klass, rank);
+		}
 	}
 	g_assert (klass);
 	mono_class_init (klass);

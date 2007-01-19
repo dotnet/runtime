@@ -6458,7 +6458,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->compile_aot) {
 						NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, method->klass->image, GPOINTER_TO_UINT(data_ptr), STACK_PTR, NULL);
 					} else {
-						NEW_PCONST (cfg, iargs [1], data_ptr);
+						NEW_PCONST (cfg, iargs [1], (char*)data_ptr);
 					}
 					mono_emit_method_call_spilled (cfg, bblock, memcpy_method, memcpy_method->signature, iargs, ip, NULL);
 					ip += 11;
@@ -6495,6 +6495,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE) {
 				MonoInst* check;
+
+				/* Needed by the code generated in inssel.brg */
+				mono_get_got_var (cfg);
+
 				MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
 				check->cil_code = ip;
 				check->klass = klass;

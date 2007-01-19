@@ -1587,13 +1587,22 @@ static void
 encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	if (!klass->type_token) {
+		guint32 token;
+
 		/* Array class */
 		g_assert (klass->rank > 0);
-		g_assert (klass->element_class->type_token);
 		encode_value (MONO_TOKEN_TYPE_DEF, buf, &buf);
 		encode_value (get_image_index (cfg, klass->image), buf, &buf);
-		g_assert (mono_metadata_token_code (klass->element_class->type_token) == MONO_TOKEN_TYPE_DEF);
-		encode_value (klass->element_class->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
+		token = klass->element_class->type_token;
+		if (!token) {
+			/* <Type>[][] */
+			g_assert (klass->element_class->rank);
+			encode_value (0, buf, &buf);
+			encode_value (klass->element_class->rank, buf, &buf);
+			token = klass->element_class->element_class->type_token;
+		}
+		g_assert (mono_metadata_token_code (token) == MONO_TOKEN_TYPE_DEF);
+		encode_value (token - MONO_TOKEN_TYPE_DEF, buf, &buf);
 		encode_value (klass->rank, buf, &buf);
 	}
 	else {
@@ -2641,7 +2650,7 @@ compile_method (MonoAotCompile *acfg, int index)
 		case MONO_PATCH_INFO_IID:
 		case MONO_PATCH_INFO_ADJUSTED_IID:
 			if (!patch_info->data.klass->type_token)
-				if (!patch_info->data.klass->element_class->type_token)
+				if (!patch_info->data.klass->element_class->type_token && !(patch_info->data.klass->element_class->rank && patch_info->data.klass->element_class->element_class->type_token))
 					skip = TRUE;
 			break;
 		default:
