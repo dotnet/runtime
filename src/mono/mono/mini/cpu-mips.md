@@ -107,7 +107,7 @@ bge.un.s: len:8
 bgt.un.s: len:8
 ble.un.s: len:8
 blt.un.s: len:8
-br: len:8
+br: len:16
 brfalse: len:8
 brtrue: len:8
 beq: len:8
@@ -142,10 +142,10 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:20
-div: dest:i src1:i src2:i len:72
-div.un: dest:i src1:i src2:i len:72
-rem: dest:i src1:i src2:i len:72
-rem.un: dest:i src1:i src2:i len:72
+div: dest:i src1:i src2:i len:76
+div.un: dest:i src1:i src2:i len:76
+rem: dest:i src1:i src2:i len:76
+rem.un: dest:i src1:i src2:i len:76
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
@@ -540,12 +540,12 @@ br_reg: src1:i len:8
 op_bigmul: len:52 dest:l src1:i src2:i
 op_bigmul_un: len:52 dest:l src1:i src2:i
 tls_get: len:8 dest:i
-mips_beq: src1:i src2:i len:8
-mips_bgez: src1:i len:8
-mips_bgtz: src1:i len:8
-mips_blez: src1:i len:8
-mips_bltz: src1:i len:8
-mips_bne: src1:i src2:i len:8
+mips_beq: src1:i src2:i len:24
+mips_bgez: src1:i len:24
+mips_bgtz: src1:i len:24
+mips_blez: src1:i len:24
+mips_bltz: src1:i len:24
+mips_bne: src1:i src2:i len:24
 mips_cvtsd: dest:f src1:f len:8
 mips_fbeq: src1:f src2:f len:16
 mips_fbge: src1:f src2:f len:16

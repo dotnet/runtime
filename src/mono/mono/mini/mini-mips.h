@@ -227,7 +227,7 @@ typedef struct {
 		MONO_CONTEXT_SET_IP ((ctx),ra);	\
 	} while (0)
 
-#if 1
+#if 0
 #define mono_find_jit_info mono_arch_find_jit_info
 #define CUSTOM_STACK_WALK
 #endif
@@ -235,6 +235,7 @@ typedef struct {
 /* re-attaches with gdb - sometimes causes executable to hang */
 #undef HAVE_BACKTRACE_SYMBOLS
 
+#undef DEBUG_EXCEPTIONS
 #undef CUSTOM_EXCEPTION_HANDLING
 
 #define MONO_ZERO_REG		mips_zero

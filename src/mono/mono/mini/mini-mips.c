@@ -23,10 +23,14 @@
 #include "cpu-mips.h"
 #include "trace.h"
 
-#undef SAVE_FP_REGS
-#define SAVE_LMF
-#define ALWAYS_USE_FP	1
-#define ALWAYS_SAVE_RA	1	/* call-handler & switch currently clobber ra */
+#define SAVE_FP_REGS		0
+#define SAVE_ALL_REGS		1
+#define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
+#define LONG_BRANCH		0
+
+#define SAVE_LMF		1
+#define ALWAYS_USE_FP		1
+#define ALWAYS_SAVE_RA		1	/* call-handler & switch currently clobber ra */
 
 enum {
 	TLS_MODE_DETECT,
@@ -154,6 +158,109 @@ mips_emit_exc_by_name(guint8 *code, char *name)
 	return code;
 }
 
+static guint8 *
+mips_emit_cond_branch (MonoCompile *cfg, guint8 *code, int op, MonoInst *ins)
+{
+	int br_offset = 5;
+
+	g_assert (ins);
+#if LONG_BRANCH
+	/* Invert test and emit branch around jump */
+	switch (op) {
+	case OP_MIPS_BEQ:
+		op = OP_MIPS_BNE;
+		break;
+	case OP_MIPS_BNE:
+		op = OP_MIPS_BEQ;
+		break;
+	case OP_MIPS_BGEZ:
+		op = OP_MIPS_BLTZ;
+		break;
+	case OP_MIPS_BGTZ:
+		op = OP_MIPS_BLEZ;
+		break;
+	case OP_MIPS_BLEZ:
+		op = OP_MIPS_BGTZ;
+		break;
+	case OP_MIPS_BLTZ:
+		op = OP_MIPS_BGEZ;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+	switch (op) {
+	case OP_MIPS_BEQ:
+		mips_beq (code, ins->sreg1, ins->sreg2, br_offset);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BNE:
+		mips_bne (code, ins->sreg1, ins->sreg2, br_offset);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BGEZ:
+		mips_bgez (code, ins->sreg1, br_offset);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BGTZ:
+		mips_bgtz (code, ins->sreg1, br_offset);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BLEZ:
+		mips_blez (code, ins->sreg1, br_offset);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BLTZ:
+		mips_bltz (code, ins->sreg1, br_offset);
+		mips_nop (code);
+		break;
+	}
+	if (ins->flags & MONO_INST_BRLABEL)
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_LABEL, ins->inst_i0);
+	else
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+	mips_lui (code, mips_at, mips_zero, 0);
+	mips_addiu (code, mips_at, mips_at, 0);
+	mips_jr (code, mips_at);
+	mips_nop (code);
+#else
+	if (ins->flags & MONO_INST_BRLABEL)
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_LABEL, ins->inst_i0);
+	else
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+	switch (op) {
+	case OP_MIPS_BEQ:
+		mips_beq (code, ins->sreg1, ins->sreg2, 0);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BNE:
+		mips_bne (code, ins->sreg1, ins->sreg2, 0);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BGEZ:
+		mips_bgez (code, ins->sreg1, 0);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BGTZ:
+		mips_bgtz (code, ins->sreg1, 0);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BLEZ:
+		mips_blez (code, ins->sreg1, 0);
+		mips_nop (code);
+		break;
+	case OP_MIPS_BLTZ:
+		mips_bltz (code, ins->sreg1, 0);
+		mips_nop (code);
+		break;
+	}
+#endif
+	return (code);
+}
+
 /* XXX - big-endian dependent? */
 void
 patch_lui_addiu(guint32 *ip, guint32 val)
@@ -173,6 +280,7 @@ patch_lui_addiu(guint32 *ip, guint32 val)
 	mono_arch_flush_icache ((guint8 *)ip, 8);
 }
 
+guint32 trap_target;
 void
 mips_patch (guint32 *code, guint32 target)
 {
@@ -180,6 +288,7 @@ mips_patch (guint32 *code, guint32 target)
 	guint32 op = ins >> 26;
 	guint32 diff, offset;
 
+	g_assert (trap_target != target);
 	//printf ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	switch (op) {
 	case 0x00: /* jr ra */
@@ -189,6 +298,8 @@ mips_patch (guint32 *code, guint32 target)
 		break;
 	case 0x02: /* j */
 	case 0x03: /* jal */
+		g_assert (!(target & 0x03));
+		g_assert ((target & 0xfc000000) == (((guint32)code) & 0xfc000000));
 		ins = (ins & 0xfc000000) | (((target) >> 2) & 0x03ffffff);
 		*code = ins;
 		mono_arch_flush_icache ((guint8 *)code, 4);
@@ -200,7 +311,10 @@ mips_patch (guint32 *code, guint32 target)
 	case 0x07: /* BGTZ */
 	case 0x11: /* bc1t */
 		diff = target - (guint32)(code + 1);
-		offset = diff >> 2;
+		g_assert (((diff & 0x0003ffff) == diff) || ((diff | 0xfffc0000) == diff));
+		g_assert (!(diff & 0x03));
+		offset = ((gint32)diff) >> 2;
+		g_assert (((int)offset) == ((int)(short)offset));
 		ins = (ins & 0xffff0000) | (offset & 0x0000ffff);
 		*code = ins;
 		mono_arch_flush_icache ((guint8 *)code, 4);
@@ -931,7 +1045,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Space for LMF (if needed) */
-#ifdef SAVE_LMF
+#if SAVE_LMF
 	if (cfg->method->save_lmf) {
 		/* align the offset to 16 bytes */
 		offset = (offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
@@ -948,7 +1062,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 #endif
 	/* Space for saved registers */
 	cfg->arch.iregs_offset = offset;
+#if SAVE_ALL_REGS
+	iregs_to_save = MONO_ARCH_CALLEE_SAVED_REGS;
+#else
 	iregs_to_save = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
+#endif
 	if (iregs_to_save) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
@@ -965,7 +1083,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 #endif
 
 	/* saved float registers */
-#ifdef SAVE_FP_REGS
+#if SAVE_FP_REGS
 	fregs_to_restore = (cfg->used_float_regs & MONO_ARCH_CALLEE_SAVED_FREGS);
 	if (fregs_to_restore) {
 		for (i = MONO_MAX_FREGS-1; i >= 0; --i) {
@@ -2071,15 +2189,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mips_patch (divisor_is_m1, (guint32)code);
 
-			/* Put divide in branch delay slot */
+			/* Put divide in branch delay slot (NOT YET) */
 			divisor_is_zero = (guint32 *)code;
 			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_div (code, ins->sreg1, ins->sreg2);
+			mips_nop (code);
 
 			/* Divide by zero -- throw exception */
 			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
 
 			mips_patch (divisor_is_zero, (guint32)code);
+			mips_div (code, ins->sreg1, ins->sreg2);
 			if (ins->opcode == CEE_DIV)
 				mips_mflo (code, ins->dreg);
 			else
@@ -2089,14 +2208,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_DIV_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
-			/* Put divide in branch delay slot */
+			/* Put divide in branch delay slot (NOT YET) */
 			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_divu (code, ins->sreg1, ins->sreg2);
+			mips_nop (code);
 
 			/* Divide by zero -- throw exception */
 			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
 
 			mips_patch (divisor_is_zero, (guint32)code);
+			mips_divu (code, ins->sreg1, ins->sreg2);
 			mips_mflo (code, ins->dreg);
 			break;
 		}
@@ -2115,14 +2235,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_REM_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
-			/* Put divide in branch delay slot */
+			/* Put divide in branch delay slot (NOT YET) */
 			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_divu (code, ins->sreg1, ins->sreg2);
+			mips_nop (code);
 
 			/* Divide by zero -- throw exception */
 			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
 
 			mips_patch (divisor_is_zero, (guint32)code);
+			mips_divu (code, ins->sreg1, ins->sreg2);
 			mips_mfhi (code, ins->dreg);
 			break;
 		}
@@ -2336,8 +2457,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 #endif
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+#if LONG_BRANCH
+			mips_lui (code, mips_at, mips_zero, 0);
+			mips_addiu (code, mips_at, mips_at, 0);
+			mips_jr (code, mips_at);
+			mips_nop (code);
+#else
 			mips_beq (code, mips_zero, mips_zero, 0);
 			mips_nop (code);
+#endif
 			break;
 		}
 		case OP_CHECK_THIS:
@@ -2504,13 +2632,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BR:
 			if (ins->flags & MONO_INST_BRLABEL) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-				mips_beq (code, mips_zero, mips_zero, 0);
-				mips_nop (code);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-				mips_beq (code, mips_zero, mips_zero, 0);
-				mips_nop (code);
 			}
+#if 0
+			mips_beq (code, mips_zero, mips_zero, 0);
+			mips_nop (code);
+#else
+			mips_lui (code, mips_at, mips_zero, 0);
+			mips_addiu (code, mips_at, mips_at, 0);
+			mips_jr (code, mips_at);
+			mips_nop (code);
+#endif
 			break;
 		case OP_BR_REG:
 			mips_jr (code, ins->sreg1);
@@ -2687,52 +2820,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_MIPS_BEQ:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_beq (code, ins->sreg1, ins->sreg2, 0);
-			mips_nop (code);
-			break;
 		case OP_MIPS_BNE:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_bne (code, ins->sreg1, ins->sreg2, 0);
-			mips_nop (code);
-			break;
 		case OP_MIPS_BGEZ:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_bgez (code, ins->sreg1, 0);
-			mips_nop (code);
-			break;
 		case OP_MIPS_BGTZ:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_bgtz (code, ins->sreg1, 0);
-			mips_nop (code);
-			break;
 		case OP_MIPS_BLEZ:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_blez (code, ins->sreg1, 0);
-			mips_nop (code);
-			break;
 		case OP_MIPS_BLTZ:
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
-			mips_bltz (code, ins->sreg1, 0);
-			mips_nop (code);
+			code = mips_emit_cond_branch (cfg, code, ins->opcode, ins);
 			break;
 
 		/* floating point opcodes */
@@ -3254,8 +3347,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size = cfg->stack_offset;
 	cfg->stack_usage = alloc_size;
 
+#if SAVE_ALL_REGS
+	iregs_to_save = MONO_ARCH_CALLEE_SAVED_REGS;
+#else
 	iregs_to_save = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
-#ifdef SAVE_FP_REGS
+#endif
+#if SAVE_FP_REGS
 #if 0
 	fregs_to_save = (cfg->used_float_regs & MONO_ARCH_CALLEE_SAVED_FREGS);
 #else
@@ -3296,7 +3393,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-#ifdef SAVE_FP_REGS
+#if SAVE_FP_REGS
 	/* Save float registers */
 	if (fregs_to_save) {
 		for (i = MONO_MAX_FREGS-1; i >= 0; --i) {
@@ -3307,8 +3404,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 		}
 	}
-#endif
-#ifdef SAVE_LMF
+#if SAVE_LMF
 	if (method->save_lmf) {
 #if 0
 		ppc_stmw (code, ppc_r13, ppc_r1, ofs);
@@ -3317,6 +3413,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 #endif
 	}
+#endif
 #endif
 	if (cfg->frame_reg != mips_sp)
 		mips_move (code, cfg->frame_reg, mips_sp);
@@ -3446,15 +3543,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		g_assert_not_reached();
+		mips_load_const (code, mips_a0, cfg->domain);
 #if 0
-		ppc_load (code, ppc_r3, cfg->domain);
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-		ppc_bl (code, 0);
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_INTERNAL_METHOD,
+				     (gpointer)"mono_jit_thread_attach");
+		mips_lui (code, mips_t9, mips_zero, 0);
+		mips_addiu (code, mips_t9, mips_t9, 0);
 #endif
+		mips_load_const (code, mips_t9, (gpointer)mono_jit_thread_attach);
+		mips_jalr (code, mips_t9, mips_ra);
+		mips_nop (code);
 	}
 
-#ifdef SAVE_LMF
+#if SAVE_LMF
 	if (method->save_lmf) {
 		if (lmf_pthread_key != -1) {
 			g_assert_not_reached();
@@ -3464,6 +3566,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (G_STRUCT_OFFSET (MonoJitTlsData, lmf))
 				mips_addiu (code, mips_a0, mips_temp, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
 		} else {
+			/* This can/will clobber the a0-a3 registers */
 			mips_load_const (code, mips_t9, (gpointer)mono_get_lmf_addr);
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
@@ -3533,7 +3636,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int offset;
 	MonoMethod *method = cfg->method;
 	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
-	int save_offset = MIPS_STACK_PARAM_OFFSET + cfg->param_area;
+	int save_offset = 16;
 
 	save_offset += 15;
 	save_offset &= ~15;
@@ -3545,7 +3648,6 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 		code = cfg->native_code + offset;
 	}
-	mips_nop (code);
 	mips_nop (code);
 	mips_nop (code);
 	switch (rtype) {
@@ -3572,33 +3674,33 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		break;
 	}
 
+	mips_addiu (code, mips_sp, mips_sp, -32);
 	switch (save_mode) {
 	case SAVE_TWO:
-		mips_sw (code, mips_v0, cfg->frame_reg, save_offset);
-		mips_sw (code, mips_v1, cfg->frame_reg, save_offset + 4);
+		mips_sw (code, mips_v0, mips_sp, save_offset);
+		mips_sw (code, mips_v1, mips_sp, save_offset + 4);
 		if (enable_arguments) {
 			mips_move (code, mips_a1, mips_v0);
 			mips_move (code, mips_a2, mips_v1);
 		}
 		break;
 	case SAVE_ONE:
-		mips_sw (code, mips_v0, cfg->frame_reg, save_offset);
+		mips_sw (code, mips_v0, mips_sp, save_offset);
 		if (enable_arguments) {
 			mips_move (code, mips_a1, mips_v0);
 		}
 		break;
 	case SAVE_FP:
-		mips_sdc1 (code, mips_f0, cfg->frame_reg, save_offset);
-		mips_ldc1 (code, mips_f12, cfg->frame_reg, save_offset);
-		mips_lw (code, mips_a0, cfg->frame_reg, save_offset);
-		mips_lw (code, mips_a1, cfg->frame_reg, save_offset+4);
+		mips_sdc1 (code, mips_f0, mips_sp, save_offset);
+		mips_ldc1 (code, mips_f12, mips_sp, save_offset);
+		mips_lw (code, mips_a0, mips_sp, save_offset);
+		mips_lw (code, mips_a1, mips_sp, save_offset+4);
 		break;
 	case SAVE_STRUCT:
 	case SAVE_NONE:
 	default:
 		break;
 	}
-
 	mips_load_const (code, mips_a0, cfg->method);
 	mips_load_const (code, mips_t9, func);
 	mips_jalr (code, mips_t9, mips_ra);
@@ -3606,21 +3708,21 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		mips_lw (code, mips_v0, cfg->frame_reg, save_offset);
-		mips_lw (code, mips_v1, cfg->frame_reg, save_offset + 4);
+		mips_lw (code, mips_v0, mips_sp, save_offset);
+		mips_lw (code, mips_v1, mips_sp, save_offset + 4);
 		break;
 	case SAVE_ONE:
-		mips_lw (code, mips_v0, cfg->frame_reg, save_offset);
+		mips_lw (code, mips_v0, mips_sp, save_offset);
 		break;
 	case SAVE_FP:
-		mips_ldc1 (code, mips_f0, cfg->frame_reg, save_offset);
+		mips_ldc1 (code, mips_f0, mips_sp, save_offset);
 		break;
 	case SAVE_STRUCT:
 	case SAVE_NONE:
 	default:
 		break;
 	}
-	mips_nop (code);
+	mips_addiu (code, mips_sp, mips_sp, 32);
 	mips_nop (code);
 	mips_nop (code);
 	return code;
@@ -3636,7 +3738,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint32 iregs_to_restore;
 	guint32 fregs_to_restore;
 
-#ifdef SAVE_LMF
+#if SAVE_LMF
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
 #endif
@@ -3662,7 +3764,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 	}
 	pos = cfg->arch.iregs_offset;
+#if SAVE_ALL_REGS
+	iregs_to_restore = MONO_ARCH_CALLEE_SAVED_REGS;
+#else
 	iregs_to_restore = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
+#endif
 	if (iregs_to_restore) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_restore & (1 << i)) {
@@ -3672,7 +3778,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 	}
 
-#ifdef SAVE_FP_REGS
+#if SAVE_FP_REGS
 #if 0
 	fregs_to_restore = (cfg->used_float_regs & MONO_ARCH_CALLEE_SAVED_FREGS);
 #else
@@ -3689,7 +3795,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 	}
 #endif
-#ifdef SAVE_LMF
+#if SAVE_LMF
 	/* Unlink the LMF if necessary */
 	if (method->save_lmf) {
 		int lmf_offset = cfg->arch.lmf_offset;

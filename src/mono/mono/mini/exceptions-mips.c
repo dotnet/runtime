@@ -193,8 +193,8 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
 
-#if 0
-	printf("throw_exception: exc=%p eip=%x esp=%x rethrow=%d\n",
+#ifdef DEBUG_EXCEPTIONS
+	g_print ("throw_exception: exc=%p eip=%x esp=%x rethrow=%d\n",
 	       exc, (unsigned int) eip, (unsigned int) esp, rethrow);
 #endif
 
@@ -206,7 +206,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 
 	setup_context (&ctx);
 
-	/*printf ("stack in throw: %p\n", esp);*/
+	/*g_print  ("stack in throw: %p\n", esp);*/
 	memcpy (&ctx.sc_regs, (void *)(esp + MIPS_STACK_PARAM_OFFSET),
 		sizeof (gulong) * MONO_SAVED_GREGS);
 #if 0
@@ -225,6 +225,9 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	arch_handle_exception (&ctx, exc, FALSE);
 #else
 	mono_handle_exception (&ctx, exc, (void *)eip, FALSE);
+#endif
+#ifdef DEBUG_EXCEPTIONS
+	g_print ("throw_exception: restore to %p\n", (void *) ctx.sc_pc);
 #endif
 	restore_context (&ctx);
 
@@ -248,7 +251,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 
 	code = start;
 
-	//printf("mono_arch_get_throw_exception_generic: code=%p\n", code);
+	//g_print ("mono_arch_get_throw_exception_generic: code=%p\n", code);
 
 	pos = 0;
 	/* XXX - save all the FP regs on the stack ? */
@@ -669,8 +672,8 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	struct ucontext *uc = sigctx;
-	return (gpointer)(guint32)uc->uc_mcontext.pc;
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+	return (gpointer)(guint32)ctx->sc_pc;
 }
 
 /*
@@ -683,6 +686,9 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	gboolean result;
 	
 	mono_arch_sigctx_to_monoctx (ctx, &mctx);
+#ifdef DEBUG_EXCEPTIONS
+	g_print ("mono_arch_handle_exception: pc=%p\n", mctx.sc_pc);
+#endif
 #ifdef CUSTOM_EXCEPTION_HANDLING
 	result = arch_handle_exception (&mctx, obj, test_only);
 #else
@@ -690,6 +696,9 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	result = TRUE;
 #endif
 
+#ifdef DEBUG_EXCEPTIONS
+	g_print ("mono_arch_handle_exception: restore pc=%p\n", mctx.sc_pc);
+#endif
 	/* restore the context so that returning from the signal handler
 	 * will invoke the catch clause 
 	 */
@@ -824,7 +833,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							}
 							if (mono_jit_trace_calls != NULL)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							/*printf ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
+							/*g_print  ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
 							return 0;
