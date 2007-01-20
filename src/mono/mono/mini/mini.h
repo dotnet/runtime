@@ -390,12 +390,14 @@ enum {
 	MONO_INST_DEST,
 	MONO_INST_SRC1,
 	MONO_INST_SRC2,
-	MONO_INST_FLAGS,
+	MONO_INST_LEN,
 	MONO_INST_CLOB,
+	/* Unused, commented out to reduce the size of the mdesc tables
+	MONO_INST_FLAGS,
 	MONO_INST_COST,
 	MONO_INST_DELAY,
 	MONO_INST_RES,
-	MONO_INST_LEN,
+	*/
 	MONO_INST_MAX
 };
 

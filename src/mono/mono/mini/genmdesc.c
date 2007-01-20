@@ -79,11 +79,12 @@ load_file (const char *name) {
 			} else if (strncmp (p, "src2:", 5) == 0) {
 				desc->spec [MONO_INST_SRC2] = p [5];
 				p += 6;
-			} else if (strncmp (p, "cost:", 5) == 0) {
-				desc->spec [MONO_INST_COST] = p [5];
-				p += 6;
 			} else if (strncmp (p, "clob:", 5) == 0) {
 				desc->spec [MONO_INST_CLOB] = p [5];
+				p += 6;
+				/* Currently unused fields
+			} else if (strncmp (p, "cost:", 5) == 0) {
+				desc->spec [MONO_INST_COST] = p [5];
 				p += 6;
 			} else if (strncmp (p, "res:", 4) == 0) {
 				desc->spec [MONO_INST_RES] = p [4];
@@ -94,6 +95,7 @@ load_file (const char *name) {
 			} else if (strncmp (p, "delay:", 6) == 0) {
 				desc->spec [MONO_INST_DELAY] = p [6];
 				p += 7;
+				*/
 			} else if (strncmp (p, "len:", 4) == 0) {
 				p += 4;
 				desc->spec [MONO_INST_LEN] = strtoul (p, &p, 10);
