@@ -317,6 +317,9 @@ typedef struct {
 	MonoArray *LongDatePatterns;
 	MonoArray *ShortTimePatterns;
 	MonoArray *LongTimePatterns;
+	MonoArray *MonthDayPatterns;
+	MonoArray *YearMonthPatterns;
+	MonoArray *shortDayNames;
 } MonoDateTimeFormatInfo;
 
 typedef struct 
