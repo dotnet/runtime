@@ -297,6 +297,12 @@ static gint32 convert_socketflags (gint32 sflags)
 	return (flags ? flags : -1);
 }
 
+/*
+ * Returns:
+ *    0 on success (mapped mono_level and mono_name to system_level and system_name
+ *   -1 on error
+ *   -2 on non-fatal error (ie, must ignore)
+ */
 static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 					     MonoSocketOptionName mono_name,
 					     int *system_level,
@@ -449,6 +455,8 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			/* Not quite the same */
 			*system_name = IP_MTU_DISCOVER;
 			break;
+#else
+			return (-2);
 #endif /* HAVE_IP_DONTFRAGMENT */
 		case SocketOptionName_AddSourceMembership:
 		case SocketOptionName_DropSourceMembership:
@@ -1665,6 +1673,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		*error = WSAENOPROTOOPT;
 		return;
 	}
+	if (ret == -2)
+		return;
 	
 	/* No need to deal with MulticastOption names here, because
 	 * you cant getsockopt AddMembership or DropMembership (the
@@ -1787,6 +1797,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 		*error = WSAENOPROTOOPT;
 		return;
 	}
+	if(ret==-2)
+		return;
 
 	valsize=mono_array_length(*byte_val);
 	buf=mono_array_addr(*byte_val, guchar, 0);
@@ -1880,6 +1892,9 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 					   &system_name);
 	if(ret==-1) {
 		*error = WSAENOPROTOOPT;
+		return;
+	}
+	if(ret==-2){
 		return;
 	}
 
