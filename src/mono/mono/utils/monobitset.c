@@ -4,19 +4,7 @@
 #include "monobitset.h"
 #include "config.h"
 
-#ifdef __GNUC__
-#define MONO_ZERO_LEN_ARRAY 0
-#else
-#define MONO_ZERO_LEN_ARRAY 1
-#endif
-
 #define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
-
-struct MonoBitSet {
-	gsize size;
-	gsize flags;
-	gsize data [MONO_ZERO_LEN_ARRAY];
-};
 
 /*
  * mono_bitset_alloc_size:
@@ -566,11 +554,12 @@ mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest) {
  */
 void
 mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 
-	for (i = 0; i < dest->size / BITS_PER_CHUNK; ++i)
+	size = dest->size / BITS_PER_CHUNK;
+	for (i = 0; i < size; ++i)
 		dest->data [i] |= src->data [i];
 }
 
@@ -583,12 +572,13 @@ mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 
-	for (i = 0; i < dest->size / BITS_PER_CHUNK; ++i)
-		dest->data [i] = dest->data [i] & src->data [i];
+	size = dest->size / BITS_PER_CHUNK;
+	for (i = 0; i < size; ++i)
+		dest->data [i] &= src->data [i];
 }
 
 /*
@@ -601,12 +591,13 @@ mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
  */
 void
 mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2) {
-	int i;
+	int i, size;
 
 	g_assert (src1->size <= dest->size);
 	g_assert (src2->size <= dest->size);
 
-	for (i = 0; i < dest->size / BITS_PER_CHUNK; ++i)
+	size = dest->size / BITS_PER_CHUNK;
+	for (i = 0; i < size; ++i)
 		dest->data [i] = src1->data [i] & src2->data [i];
 }
 
@@ -619,11 +610,12 @@ mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const Mono
  */
 void
 mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
-	int i;
+	int i, size;
 
 	g_assert (src->size <= dest->size);
 
-	for (i = 0; i < src->size / BITS_PER_CHUNK; ++i)
+	size = src->size / BITS_PER_CHUNK;
+	for (i = 0; i < size; ++i)
 		dest->data [i] &= ~src->data [i];
 }
 

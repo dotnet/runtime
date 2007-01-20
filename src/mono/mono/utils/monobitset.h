@@ -3,20 +3,54 @@
 
 #include <glib.h>
 
-typedef struct MonoBitSet MonoBitSet;
+#ifndef MONO_ZERO_LEN_ARRAY
+#ifdef __GNUC__
+#define MONO_ZERO_LEN_ARRAY 0
+#else
+#define MONO_ZERO_LEN_ARRAY 1
+#endif
+#endif
+
+#define MONO_BITSET_BITS_PER_CHUNK (8 * sizeof (gsize))
+
+typedef struct {
+	gsize size;
+	gsize flags;
+	gsize data [MONO_ZERO_LEN_ARRAY];
+} MonoBitSet;
+
 typedef void (*MonoBitSetFunc) (guint idx, gpointer data);
 
 enum {
 	MONO_BITSET_DONT_FREE = 1
 };
 
-#define MONO_BITSET_BITS_PER_CHUNK (8 * sizeof (gsize))
-
 /* Fast access to bits which depends on the implementation of the bitset */
-#define mono_bitset_test_fast(set,n) (((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] & ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)))
-#define mono_bitset_set_fast(set,n) do { ((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] |= ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
-#define mono_bitset_clear_fast(set,n) do { ((gsize*)set)[2+(n)/MONO_BITSET_BITS_PER_CHUNK] &= ~((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
-#define mono_bitset_get_fast(set,n) (((gsize*)set)[2+(n)])
+#define mono_bitset_test_fast(set,n) ((set)->data [(n)/MONO_BITSET_BITS_PER_CHUNK] & ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)))
+#define mono_bitset_test_fast(set,n) ((set)->data [(n)/MONO_BITSET_BITS_PER_CHUNK] & ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)))
+#define mono_bitset_set_fast(set,n) do { (set)->data [(n)/MONO_BITSET_BITS_PER_CHUNK] |= ((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
+#define mono_bitset_clear_fast(set,n) do { (set)->data [(n)/MONO_BITSET_BITS_PER_CHUNK] &= ~((gsize)1 << ((n) % MONO_BITSET_BITS_PER_CHUNK)); } while (0)
+#define mono_bitset_get_fast(set,n) ((set)->data[(n)])
+
+#define mono_bitset_copyto_fast(src,dest) do { memcpy (&(dest)->data, &(src)->data, (dest)->size / 8); } while (0)
+
+#define mono_bitset_union_fast(dest,src) do { \
+    MonoBitSet *tmp_src = (src); \
+    MonoBitSet *tmp_dest = (dest); \
+    int i, size; \
+	size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
+	for (i = 0; i < size; ++i) \
+		tmp_dest->data [i] |= tmp_src->data [i]; \
+} while (0)
+
+#define mono_bitset_sub_fast(dest,src) do { \
+    MonoBitSet *tmp_src = (src); \
+    MonoBitSet *tmp_dest = (dest); \
+    int i, size; \
+	size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
+	for (i = 0; i < size; ++i) \
+		tmp_dest->data [i] &= ~tmp_src->data [i]; \
+} while (0)
 
 /*
  * Interface documentation can be found in the c-file.
