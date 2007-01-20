@@ -126,8 +126,6 @@ typedef struct {
 	ArgInfo args [1];
 } CallInfo;
 
-static const char*const * ins_spec = mips_desc;
-
 void patch_lui_addiu(guint32 *ip, guint32 val);
 
 void
@@ -1817,7 +1815,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code - cfg->native_code;
 
-		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			cfg->code_size *= 2;

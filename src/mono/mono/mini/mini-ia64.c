@@ -30,9 +30,6 @@
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
-const char * const ia64_desc [OP_LAST];
-static const char*const * ins_spec = ia64_desc;
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
@@ -2298,7 +2295,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code.buf - cfg->native_code;
 
-		max_len = ((int)(((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN])) + 128;
+		max_len = ((int)(((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN])) + 128;
 
 		while (offset + max_len + 16 > cfg->code_size) {
 			ia64_codegen_close (code);

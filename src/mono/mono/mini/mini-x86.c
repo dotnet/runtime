@@ -1487,8 +1487,6 @@ branch_cc_table [] = {
 	X86_CC_O, X86_CC_NO, X86_CC_C, X86_CC_NC
 };
 
-static const char*const * ins_spec = x86_desc;
-
 /*#include "cprop.c"*/
 void
 mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -1833,7 +1831,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code - cfg->native_code;
 
-		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			cfg->code_size *= 2;
@@ -3480,7 +3478,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (ins->opcode == OP_LABEL)
 					ins->inst_c1 = max_offset;
 				
-				max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 				ins = ins->next;
 			}
 		}

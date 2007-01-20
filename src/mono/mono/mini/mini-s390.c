@@ -267,8 +267,6 @@ int mono_exc_esp_offset = 0;
 
 static int indent_level = 0;
 
-static const char*const * ins_spec = s390_cpu_desc;
-
 static gboolean tls_offset_inited = FALSE;
 
 static int appdomain_tls_offset = -1,
@@ -2465,7 +2463,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	while (ins) {
 		offset = code - cfg->native_code;
 
-		max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			cfg->code_size *= 2;
@@ -4321,7 +4319,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			max_offset += 6; 
 
 		while (ins) {
-			max_offset += ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			ins = ins->next;
 		}
 	}

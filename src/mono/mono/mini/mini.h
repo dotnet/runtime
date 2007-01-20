@@ -736,7 +736,11 @@ extern const guint8 mono_burg_arity [];
 extern guint8 mono_burg_arity [];
 #endif
 
-extern const char * const MONO_ARCH_CPU_SPEC [OP_LAST];
+extern const char MONO_ARCH_CPU_SPEC [] MONO_INTERNAL;
+#define MONO_ARCH_CPU_SPEC_IDX_COMBINE(a) a ## _idx
+#define MONO_ARCH_CPU_SPEC_IDX(a) MONO_ARCH_CPU_SPEC_IDX_COMBINE(a)
+extern const guint16 MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC) [] MONO_INTERNAL;
+#define ins_get_spec(op) ((const char*)&MONO_ARCH_CPU_SPEC + MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[(op)])
 
 enum {
 	MONO_COMP_DOM = 1,

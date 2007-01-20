@@ -1752,17 +1752,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
-static const char*const * ins_spec = sparc_desc;
-
-static inline const char*
-get_ins_spec (int opcode)
-{
-	if (ins_spec [opcode])
-		return ins_spec [opcode];
-	else
-		return ins_spec [CEE_ADD];
-}
-
 static int
 mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 {
@@ -2309,9 +2298,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		offset = (guint8*)code - cfg->native_code;
 
-		spec = ins_spec [ins->opcode];
-		if (!spec)
-			spec = ins_spec [CEE_ADD];
+		spec = ins_get_spec (ins->opcode);
+		/* I kept this, but this looks a workaround for a bug */
+		if (spec == MONO_ARCH_CPU_SPEC)
+			spec = ins_get_spec (CEE_ADD);
 
 		max_len = ((guint8 *)spec)[MONO_INST_LEN];
 

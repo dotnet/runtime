@@ -21,8 +21,6 @@
 
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 2, a;)
 
-static const char*const * ins_spec = MONO_ARCH_CPU_SPEC;
-
 #define use_fpstack MONO_ARCH_USE_FPSTACK
 
 static inline GSList*
@@ -356,9 +354,9 @@ create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 #define dreg_is_fp(spec)  (spec [MONO_INST_DEST] == 'f')
 #endif
 
-#define sreg1_is_fp_ins(ins) (sreg1_is_fp (ins_spec [(ins)->opcode]))
-#define sreg2_is_fp_ins(ins) (sreg2_is_fp (ins_spec [(ins)->opcode]))
-#define dreg_is_fp_ins(ins)  (dreg_is_fp (ins_spec [(ins)->opcode]))
+#define sreg1_is_fp_ins(ins) (sreg1_is_fp (ins_get_spec ((ins)->opcode)))
+#define sreg2_is_fp_ins(ins) (sreg2_is_fp (ins_get_spec ((ins)->opcode)))
+#define dreg_is_fp_ins(ins)  (dreg_is_fp (ins_get_spec ((ins)->opcode)))
 
 #define regpair_reg2_mask(desc,hreg1) ((MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1) != -1) ? (regmask (MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1))) : MONO_ARCH_CALLEE_REGS)
 
@@ -383,7 +381,7 @@ typedef struct {
 void
 mono_print_ins (int i, MonoInst *ins)
 {
-	const char *spec = ins_spec [ins->opcode];
+	const char *spec = ins_get_spec (ins->opcode);
 	printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
 	if (!spec)
 		g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
@@ -863,8 +861,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	ins_count = 0;
 	for (ins = bb->code; ins; ins = ins->next) {
-		spec = ins_spec [ins->opcode];
-
 		ins_count ++;
 	}
 
@@ -884,9 +880,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	DEBUG (printf ("\nLOCAL REGALLOC: BASIC BLOCK: %d\n", bb->block_num));
 	/* forward pass on the instructions to collect register liveness info */
 	for (ins = bb->code; ins; ins = ins->next) {
-		spec = ins_spec [ins->opcode];
+		spec = ins_get_spec (ins->opcode);
 
-		if (G_UNLIKELY (!spec)) {
+		if (G_UNLIKELY (spec == MONO_ARCH_CPU_SPEC)) {
 			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
 		}
 		
@@ -1062,7 +1058,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		const unsigned char *ip;
 		--i;
 		ins = tmp->data;
-		spec = ins_spec [ins->opcode];
+		spec = ins_get_spec (ins->opcode);
 		prev_dreg = -1;
 		prev_sreg2 = -1;
 		clob_dreg = -1;

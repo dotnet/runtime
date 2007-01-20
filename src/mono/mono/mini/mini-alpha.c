@@ -84,8 +84,6 @@ static int indent_level = 0;
 int mini_alpha_verbose_level = 0;
 static int bwx_supported = 0;
 
-static const char*const * ins_spec = alpha_desc;
-
 static gboolean tls_offset_inited = FALSE;
 
 static int appdomain_tls_offset = -1,
@@ -2261,7 +2259,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
      {
        offset = ((char *)code) - ((char *)cfg->native_code);
 	  
-       max_len = ((guint8 *)ins_spec [ins->opcode])[MONO_INST_LEN];
+       max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 	  
        if (offset > (cfg->code_size - max_len - 16))
 	 {

@@ -77,7 +77,7 @@ local_copy_prop (MonoCompile *cfg, MonoInst *code)
 	//g_print ("starting BB\n");
 
 	while (ins) {
-		spec = ins_spec [ins->opcode];
+		spec = ins_get_spec (ins->opcode);
 		//print_ins (0, ins);
 
 		if (spec [MONO_INST_CLOB] != 's' && spec [MONO_INST_CLOB] != '1' && spec [MONO_INST_CLOB] != 'd' && spec [MONO_INST_CLOB] != 'a' && spec [MONO_INST_CLOB] != 'c') {
