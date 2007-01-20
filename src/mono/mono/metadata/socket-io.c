@@ -456,6 +456,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			*system_name = IP_MTU_DISCOVER;
 			break;
 #else
+			/* If the flag is not available on this system, we can ignore this error */
 			return (-2);
 #endif /* HAVE_IP_DONTFRAGMENT */
 		case SocketOptionName_AddSourceMembership:
