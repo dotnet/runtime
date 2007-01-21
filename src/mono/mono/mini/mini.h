@@ -640,6 +640,7 @@ typedef struct {
 	gulong inlined_methods;
 	gulong basic_blocks;
 	gulong max_basic_blocks;
+	gulong locals_stack_size;
 	gulong cas_declsec_check;
 	gulong cas_linkdemand_icall;
 	gulong cas_linkdemand_pinvoke;

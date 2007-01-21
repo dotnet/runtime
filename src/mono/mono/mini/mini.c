@@ -8144,15 +8144,28 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 typedef struct {
 	MonoClass *vtype;
 	GList *active;
-	GList *slots;
+	GSList *slots;
 } StackSlotInfo;
+
+static inline GSList*
+g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
+						 gpointer  data)
+{
+  GSList *new_list;
+
+  new_list = mono_mempool_alloc (mp, sizeof (GSList));
+  new_list->data = data;
+  new_list->next = list;
+
+  return new_list;
+}
 
 /*
  *  mono_allocate_stack_slots_full:
  *
  *  Allocate stack slots for all non register allocated variables using a
  * linear scan algorithm.
- * Returns: an array of stack offsets which the caller should free.
+ * Returns: an array of stack offsets.
  * STACK_SIZE is set to the amount of stack space needed.
  * STACK_ALIGN is set to the alignment needed by the locals area.
  */
@@ -8169,11 +8182,11 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 	MonoType *t;
 	int nvtypes;
 
-	scalar_stack_slots = g_new0 (StackSlotInfo, MONO_TYPE_PINNED);
-	vtype_stack_slots = g_new0 (StackSlotInfo, 256);
+	scalar_stack_slots = mono_mempool_alloc0 (m->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
+	vtype_stack_slots = NULL;
 	nvtypes = 0;
 
-	offsets = g_new (gint32, m->num_varinfo);
+	offsets = mono_mempool_alloc (m->mempool, sizeof (gint32) * m->num_varinfo);
 	for (i = 0; i < m->num_varinfo; ++i)
 		offsets [i] = -1;
 
@@ -8217,6 +8230,8 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				}
 				/* Fall through */
 			case MONO_TYPE_VALUETYPE:
+				if (!vtype_stack_slots)
+					vtype_stack_slots = mono_mempool_alloc0 (m->mempool, sizeof (StackSlotInfo) * 256);
 				for (i = 0; i < nvtypes; ++i)
 					if (t->data.klass == vtype_stack_slots [i].vtype)
 						break;
@@ -8228,6 +8243,22 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 					slot_info = &vtype_stack_slots [nvtypes];
 					nvtypes ++;
 				}
+				break;
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 4
+			case MONO_TYPE_I4:
+#else
+			case MONO_TYPE_I8:
+#endif
+				/* Share non-float stack slots of the same size */
+				slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
 				break;
 			default:
 				slot_info = &scalar_stack_slots [t->type];
@@ -8248,7 +8279,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				//printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 
 				slot_info->active = g_list_delete_link (slot_info->active, slot_info->active);
-				slot_info->slots = g_list_prepend (slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
+				slot_info->slots = g_slist_prepend_mempool (m->mempool, slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
 			}
 
 			/* 
@@ -8263,7 +8294,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				if (slot_info->slots) {
 					slot = GPOINTER_TO_INT (slot_info->slots->data);
 
-					slot_info->slots = g_list_delete_link (slot_info->slots, slot_info->slots);
+					slot_info->slots = slot_info->slots->next;
 				}
 
 				slot_info->active = mono_varlist_insert_sorted (m, slot_info->active, vmv, TRUE);
@@ -8314,15 +8345,15 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 	}
 	g_list_free (vars);
 	for (i = 0; i < MONO_TYPE_PINNED; ++i) {
-		g_list_free (scalar_stack_slots [i].active);
-		g_list_free (scalar_stack_slots [i].slots);
+		if (scalar_stack_slots [i].active)
+			g_list_free (scalar_stack_slots [i].active);
 	}
 	for (i = 0; i < nvtypes; ++i) {
-		g_list_free (vtype_stack_slots [i].active);
-		g_list_free (vtype_stack_slots [i].slots);
+		if (vtype_stack_slots [i].active)
+			g_list_free (vtype_stack_slots [i].active);
 	}
-	g_free (scalar_stack_slots);
-	g_free (vtype_stack_slots);
+
+	mono_jit_stats.locals_stack_size += offset;
 
 	*stack_size = offset;
 	return offsets;
@@ -11840,7 +11871,8 @@ print_jit_stats (void)
 		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
 		g_print ("Inlineable methods:     %ld\n", mono_jit_stats.inlineable_methods);
 		g_print ("Inlined methods:        %ld\n", mono_jit_stats.inlined_methods);
-		
+		g_print ("Locals stack size:      %ld\n", mono_jit_stats.locals_stack_size);
+
 		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
 		g_print ("Initialized classes:    %ld\n", mono_stats.initialized_class_count);
 		g_print ("Used classes:           %ld\n", mono_stats.used_class_count);

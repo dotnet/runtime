@@ -5658,8 +5658,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
        }
      }
    
-   g_free (offsets);
-
    // TODO check how offsets[i] are calculated
    // it seems they are points to the end on data. Like 8, but it actually - 0
 

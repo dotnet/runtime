@@ -825,7 +825,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
 		}
 	}
-	g_free (offsets);
 	offset += locals_stack_size;
 
 
