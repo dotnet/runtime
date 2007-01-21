@@ -804,7 +804,7 @@ static void
 process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *upper_descendants, int current_depth) {
 	MonoSsapreBBInfo *bb_info;
 	int descendants;
-	GList *dominated_bb;
+	GSList *dominated_bb;
 	MonoInst* current_inst;
 	MonoInst* previous_inst;
 	MonoSsapreFatherExpression** dummy_father_in_tree;
@@ -872,7 +872,7 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 		area->dt_depth = current_depth;
 	}
 	descendants = 0;
-	for (dominated_bb = g_list_first (bb->dominated); dominated_bb != NULL; dominated_bb = g_list_next (dominated_bb)) {
+	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {
 		process_bb (area, (MonoBasicBlock*) (dominated_bb->data), dt_dfn, &descendants, current_depth + 1);
 	}
 	bb_info->dt_descendants = descendants;

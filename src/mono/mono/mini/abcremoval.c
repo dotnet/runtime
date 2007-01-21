@@ -1237,7 +1237,7 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 	int inst_index;
 	MonoInst *current_inst;
 	MonoAdditionalVariableRelationsForBB additional_relations;
-	GList *dominated_bb;
+	GSList *dominated_bb;
 	
 	if (TRACE_ABC_REMOVAL) {
 		printf ("Processing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
@@ -1277,7 +1277,7 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 		printf ("Processing block %d [dfn %d] done.\n", bb->block_num, bb->dfn);
 	}
 	
-	for (dominated_bb = g_list_first (bb->dominated); dominated_bb != NULL; dominated_bb = g_list_next (dominated_bb)) {
+	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {
 		process_block ((MonoBasicBlock*) (dominated_bb->data), area);
 	}
 	

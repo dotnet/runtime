@@ -204,7 +204,7 @@ struct MonoBasicBlock {
 	MonoBitSet *dominators;
 	MonoBitSet *dfrontier;
 	MonoBasicBlock *idom;
-	GList *dominated;
+	GSList *dominated;
 	/* fast dominator algorithm */
 	MonoBasicBlock *df_parent, *ancestor, *child, *label;
 	MonoEdge *bucket;

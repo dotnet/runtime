@@ -195,7 +195,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoIn
 {
 	MonoInst *inst, *new_var;
 	int i, j, idx;
-	GList *tmp;
+	GSList *tmp;
 	MonoInst **new_stack;
 
 #ifdef DEBUG_SSA

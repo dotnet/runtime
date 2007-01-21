@@ -1592,7 +1592,11 @@ stmt: CEE_MKREFANY (OP_GROUP (reg, OP_I8CONST), reg) {
 
 %%
 
+#ifdef MONO_ARCH_NEED_GOT_VAR
+
 static void mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons);
+
+#endif
 
 /* 
  * Emit code which checks whenever the interface id of @klass is smaller than
@@ -1909,6 +1913,8 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 	}
 }
 
+#ifdef MONO_ARCH_NEED_GOT_VAR
+
 /* This is similar to NEW_AOTCONST in mini.c, but generates linear IL */
 static void
 mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons)
@@ -1943,6 +1949,8 @@ mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpo
 	dest->dreg = dreg;
 	mono_bblock_add_inst (cfg->cbb, dest);
 }
+
+#endif
 
 static int
 ldind_to_load_membase (int opcode)

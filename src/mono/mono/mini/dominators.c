@@ -20,6 +20,19 @@
  */
 #define HAS_DFN(bb, entry) ((bb)->dfn || ((bb) == entry))
 
+static inline GSList*
+g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
+						 gpointer  data)
+{
+  GSList *new_list;
+
+  new_list = mono_mempool_alloc (mp, sizeof (GSList));
+  new_list->data = data;
+  new_list->next = list;
+
+  return new_list;
+}
+
 /*
  * Compute dominators and immediate dominators using the algorithm in the
  * paper "A Simple, Fast Dominance Algorithm" by Keith D. Cooper, 
@@ -126,7 +139,7 @@ compute_dominators (MonoCompile *cfg)
 
 			bb->idom = doms [bb->dfn];
 			if (bb->idom)
-				bb->idom->dominated = g_list_prepend (bb->idom->dominated, bb);
+				bb->idom->dominated = g_slist_prepend_mempool (cfg->mempool, bb->idom->dominated, bb);
 		}
 
 		/* The entry bb */
@@ -254,7 +267,7 @@ df_set (MonoCompile *m, MonoBitSet* dest, MonoBitSet *set)
 	int i;
 
 	mono_bitset_foreach_bit (set, i, m->num_bblocks) {
-		mono_bitset_union (dest, m->bblocks [i]->dfrontier);
+		mono_bitset_union_fast (dest, m->bblocks [i]->dfrontier);
 	}
 }
 
@@ -414,7 +427,6 @@ clear_idominators (MonoCompile *cfg)
     
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		if (cfg->bblocks[i]->dominated) {
-			g_list_free (cfg->bblocks[i]->dominated);        
 			cfg->bblocks[i]->dominated = NULL;
 		}
 	}
