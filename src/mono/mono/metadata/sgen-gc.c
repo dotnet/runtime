@@ -4096,13 +4096,6 @@ mono_gc_collection_count (int generation)
 	return num_major_gcs;
 }
 
-int
-mono_gc_get_generation  (MonoObject *object)
-{
-	/* FIXME */
-	return 0;
-}
-
 gint64
 mono_gc_get_used_size (void)
 {
