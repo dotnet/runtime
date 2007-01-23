@@ -272,7 +272,7 @@ typedef struct {
 	char	b2 : 4;
 	int	d2 : 20;
 	char	op2;
-} RXY_Format __attribute__ ((packed));
+} __attribute__ ((packed)) RXY_Format;
 
 typedef struct {
 	char 	op;
@@ -305,7 +305,7 @@ typedef struct {
 	char	b2 : 4;
 	int	d2 : 20;
 	char 	op2;
-} RSY_Format_1 __attribute__ ((packed));
+} __attribute__ ((packed)) RSY_Format_1;
 
 typedef struct {
 	char 	op1;
@@ -314,7 +314,7 @@ typedef struct {
 	char	b2 : 4;
 	int	d2 : 20;
 	char 	op2;
-} RSY_Format_2 __attribute__ ((packed));
+} __attribute__ ((packed)) RSY_Format_2;
 
 typedef struct {
 	char 	op1;
@@ -354,14 +354,14 @@ typedef struct {
 	char	r1 : 4;
 	char	op2 : 4;
 	int	i2;
-} RIL_Format_1 __attribute__ ((packed));
+} __attribute__ ((packed)) RIL_Format_1;
 
 typedef struct {
 	char 	op1;
 	char	m1 : 4;
 	char	op2 : 4;
 	int	i2;
-} RIL_Format_2 __attribute__ ((packed));
+} __attribute__ ((packed)) RIL_Format_2;
 
 typedef struct {
 	char	op;
@@ -376,7 +376,7 @@ typedef struct {
 	char	b1 : 4;
 	int	d1 : 20;
 	char	op2;
-} SIY_Format __attribute__ ((packed));
+} __attribute__ ((packed)) SIY_Format;
 
 typedef struct {
 	short	op;
@@ -429,7 +429,7 @@ typedef struct {
 	short	d1 : 12;
 	char	b2 : 4;
 	short	d2 : 12;
-} SSE_Format __attribute__ ((packed));
+} __attribute__ ((packed)) SSE_Format;
 
 #define s390_emit16(c, x) do 			\
 {						\
