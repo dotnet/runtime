@@ -986,7 +986,7 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 }
 
 typedef struct {
-	char a[8];
+	guint16 a[4];
 	int  flag;
 } ByValStrStruct_Unicode;
 
@@ -1000,19 +1000,14 @@ mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
 	    
 	if (test == 1 || test == 3){
 		if (ref->a [0] != '1' ||
-		    ref->a [1] != 0   ||
-		    ref->a [2] != '2' ||
-		    ref->a [3] != 0 ||
-		    ref->a [4] != '3' ||
-		    ref->a [5] != 0)
+		    ref->a [1] != '2'   ||
+		    ref->a [2] != '3')
 			return 1;
 		return 0;
 	}
 	if (test == 2){
 		if (ref->a [0] != '1' ||
-		    ref->a [1] != 0   ||
-		    ref->a [2] != '2' ||
-		    ref->a [3] != 0)
+		    ref->a [1] != '2')
 			return 1;
 		return 0;
 	}
