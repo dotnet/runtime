@@ -452,7 +452,7 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 
 test-iomap-regression: exists.cs
 	$(MCS) $(srcdir)/exists.cs -out:exists.exe
-	MONO_IOMAP=all $(JITTEST_PROG) exists.exe
+	MONO_IOMAP=all $(RUNTIME) exists.exe
 
 stresstest: $(STRESS_TESTS)
 	@failed=0; \
