@@ -1020,7 +1020,7 @@ mono_class_has_references (MonoClass *klass)
 #ifdef HAVE_SGEN_GC
 #define IS_GC_REFERENCE(t) FALSE
 #else
-#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
+#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
 #endif
 
 /*
@@ -1065,6 +1065,9 @@ mono_class_layout_fields (MonoClass *class)
 		if (class->image != mono_defaults.corlib &&
 			class->byval_arg.type != MONO_TYPE_VALUETYPE)
 			gc_aware_layout = TRUE;
+		/* from System.dll, used in metadata/process.h */
+		if (strcmp (class->name, "ProcessStartInfo") == 0)
+			gc_aware_layout = FALSE;
 	}
 
 	/* Compute klass->has_references */
@@ -1143,15 +1146,9 @@ mono_class_layout_fields (MonoClass *class)
 				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
 
+				ftype = mono_type_get_underlying_type (field->type);
 				if (gc_aware_layout) {
-					/* 
-					 * We process fields with reference type in the first pass,
-					 * and fields with non-reference type in the second pass.
-					 * We use IS_POINTER instead of IS_REFERENCE because in
-					 * some internal structures, we store GC_MALLOCed memory
-					 * in IntPtr fields...
-					 */
-					if (MONO_TYPE_IS_POINTER (field->type)) {
+					if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
 						if (pass == 1)
 							continue;
 					} else {
@@ -1173,8 +1170,7 @@ mono_class_layout_fields (MonoClass *class)
 				/* if the field has managed references, we need to force-align it
 				 * see bug #77788
 				 */
-				ftype = mono_type_get_underlying_type (field->type);
-				if (MONO_TYPE_IS_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+				if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
 					align = sizeof (gpointer);
 
 				class->min_align = MAX (align, class->min_align);
