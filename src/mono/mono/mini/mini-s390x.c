@@ -2604,7 +2604,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_LOADI1_MEMBASE: {
-			S390_LONG (code, lb, lb, ins->dreg, 0, 
+			S390_LONG (code, lgb, lgb, ins->dreg, 0, 
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
@@ -2759,34 +2759,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-//		case OP_ADDCC_IMM: {
-//			if ((ins->next) &&
-//			    (ins->next->opcode == OP_ADC_IMM)) {
-//				s390_basr (code, s390_r13, 0);
-//				s390_j	  (code, 6);
-//				s390_llong(code, ins->inst_imm);
-//				if (ins->dreg != ins->sreg1) {
-//					s390_lgr  (code, ins->dreg, ins->sreg1);
-//				}
-//				s390_alg  (code, ins->dreg, 0, s390_r13, 4);
-//			} else {
-//				if (s390_is_imm16 (ins->inst_imm)) {
-//					if (ins->dreg != ins->sreg1) {
-//						s390_lgr  (code, ins->dreg, ins->sreg1);
-//					}
-//					s390_aghi (code, ins->dreg, ins->inst_imm);
-//				} else {
-//					s390_basr (code, s390_r13, 0);
-//					s390_j	  (code, 6);
-//					s390_llong(code, ins->inst_imm);
-//					if (ins->dreg != ins->sreg1) {
-//						s390_lgr  (code, ins->dreg, ins->sreg1);
-//					}
-//					s390_ag   (code, ins->dreg, 0, s390_r13, 4);
-//				}
-//			}
-//		}
-//			break;
 		case OP_ADC_IMM: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lgr  (code, ins->dreg, ins->sreg1);
@@ -4408,7 +4380,7 @@ emit_load_volatile_registers (guint8 *code, MonoCompile *cfg)
 					g_assert_not_reached();
 				switch (ainfo->size) {
 				case 1:
-					s390_icy  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+					s390_llgc (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 2:
 					s390_lgh  (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
@@ -4432,7 +4404,7 @@ emit_load_volatile_registers (guint8 *code, MonoCompile *cfg)
 				if (ainfo->reg != STK_BASE) {
 					switch (ainfo->size) {
 					case 1:
-						s390_icy (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+						s390_llgc (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 						break;
 					case 2:
 						s390_lgh (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
