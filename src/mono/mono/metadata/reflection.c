@@ -143,6 +143,7 @@ static guint32 type_get_signature_size (MonoType *type);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 static inline MonoType *dup_type (const MonoType *original);
+static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 
 /**
  * mp_g_alloc:
@@ -584,7 +585,9 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, ch
 		mono_metadata_encode_value (MONO_TYPE_VOID, p, endbuf);
 		return;
 	}
-	if (type->type) {
+
+	if (type->type ||
+            ((type = mono_reflection_type_get_underlying_system_type (type)) && type->type)) {
 		encode_type (assembly, type->type, p, endbuf);
 		return;
 	}
@@ -7587,6 +7590,31 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj)
 	return result;
 }
 
+static MonoReflectionType*
+mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
+{
+        MonoMethod *method_get_underlying_system_type;
+
+        method_get_underlying_system_type = mono_object_get_virtual_method ((MonoObject *) t,
+                                                                            mono_class_get_method_from_name (mono_object_class (t),
+                                                                                                             "get_UnderlyingSystemType",
+                                                                                                             0));
+        return (MonoReflectionType *) mono_runtime_invoke (method_get_underlying_system_type, t, NULL, NULL);
+}
+
+static MonoType*
+mono_reflection_type_get_handle (MonoReflectionType* t)
+{
+        if (t->type)
+            return t->type;
+
+        t = mono_reflection_type_get_underlying_system_type (t);
+        if (t)
+            return t->type;
+
+        return NULL;
+}
+
 /**
  * LOCKING: Assumes the loader lock is held.
  */
@@ -7602,7 +7630,7 @@ parameters_to_signature (MonoMemPool *mp, MonoArray *parameters) {
 	sig->sentinelpos = -1; /* FIXME */
 	for (i = 0; i < count; ++i) {
 		MonoReflectionType *pt = mono_array_get (parameters, MonoReflectionType*, i);
-		sig->params [i] = pt->type;
+		sig->params [i] = mono_reflection_type_get_handle (pt);
 	}
 	return sig;
 }
@@ -7771,8 +7799,18 @@ handle_enum:
 		}
 		k = mono_object_class (arg);
 		if (!mono_object_isinst (arg, mono_defaults.monotype_class) &&
-				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
-			g_error ("Only System.Type allowed, not %s.%s", k->name_space, k->name);
+                        (strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit"))) {
+                        MonoReflectionType* rt = mono_reflection_type_get_underlying_system_type ((MonoReflectionType*) arg);
+                        MonoClass *rtc;
+                        
+                        if (rt && (rtc = mono_object_class (rt)) &&
+                                   (mono_object_isinst ((MonoObject *) rt, mono_defaults.monotype_class) ||
+                                    !strcmp (rtc->name, "TypeBuilder") || !strcmp (rtc->name_space, "System.Reflection.Emit"))) {
+                                arg = (MonoObject *) rt;
+                                k = rtc;
+                        } else
+                                g_error ("Only System.Type allowed, not %s.%s", k->name_space, k->name);
+                }
 handle_type:
 		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
 		slen = strlen (str);
