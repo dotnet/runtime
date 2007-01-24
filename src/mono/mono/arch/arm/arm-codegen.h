@@ -737,10 +737,10 @@ typedef struct {
 #define ARM_HXFER_TAG ((ARM_HXFER_ID << 25) | (ARM_HXFER_ID2 << 7) | (ARM_HXFER_ID3 << 4))
 
 #define ARM_DEF_HXFER_IMM_COND(imm, h, s, rd, rn, ls, wb, p, cond) \
-	((imm) & 0xF)               | \
+	((imm) < 0?(-(imm)) & 0xF:(imm) & 0xF)               | \
 	((h) << 5)                  | \
 	((s) << 6)                  | \
-	(((imm) << 4) & (0xF << 8)) | \
+	((imm) < 0?((-(imm)) << 4) & 0xF00:((imm) << 4) & 0xF00) | \
 	((rd) << 12)                | \
 	((rn) << 16)                | \
 	((ls) << 20)                | \
