@@ -50,8 +50,11 @@
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (((desc == 'l') ? sparc_o0 : (desc == 'L' ? (hreg1 + 1) : -1)))
 #endif
 
-
-#define MONO_ARCH_FRAME_ALIGNMENT (sizeof (gpointer) * 2)
+#if SIZEOF_VOID_P == 8
+#define MONO_ARCH_FRAME_ALIGNMENT 16
+#else
+#define MONO_ARCH_FRAME_ALIGNMENT 8
+#endif
 
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
