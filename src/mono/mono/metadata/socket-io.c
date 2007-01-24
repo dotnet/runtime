@@ -1674,8 +1674,10 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		*error = WSAENOPROTOOPT;
 		return;
 	}
-	if (ret == -2)
+	if (ret == -2) {
+		*obj_val = int_to_object (domain, 0);
 		return;
+	}
 	
 	/* No need to deal with MulticastOption names here, because
 	 * you cant getsockopt AddMembership or DropMembership (the
