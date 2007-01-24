@@ -2453,8 +2453,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOCALLOC:
 			/* keep alignment */
-			x86_alu_reg_imm (code, X86_ADD, ins->sreg1, MONO_ARCH_LOCALLOC_ALIGNMEENT - 1);
-			x86_alu_reg_imm (code, X86_AND, ins->sreg1, ~(MONO_ARCH_LOCALLOC_ALIGNMEENT - 1));
+			x86_alu_reg_imm (code, X86_ADD, ins->sreg1, MONO_ARCH_LOCALLOC_ALIGNMENT - 1);
+			x86_alu_reg_imm (code, X86_AND, ins->sreg1, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1));
 			code = mono_emit_stack_alloc (code, ins);
 			x86_mov_reg_reg (code, ins->dreg, X86_ESP, 4);
 			break;

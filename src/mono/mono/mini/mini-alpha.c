@@ -3451,8 +3451,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // top of stack is used for call params
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [localloc] sreg=%d, dreg=%d\n",
 				ins->sreg1, ins->dreg);
-	   alpha_addq_(code, ins->sreg1, (MONO_ARCH_LOCALLOC_ALIGNMEENT - 1), ins->sreg1);
-	   alpha_and_(code, ins->sreg1, ~(MONO_ARCH_LOCALLOC_ALIGNMEENT - 1), ins->sreg1);
+	   alpha_addq_(code, ins->sreg1, (MONO_ARCH_LOCALLOC_ALIGNMENT - 1), ins->sreg1);
+	   alpha_and_(code, ins->sreg1, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1), ins->sreg1);
 	   alpha_subq(code, alpha_sp, ins->sreg1, alpha_sp);
 	   alpha_lda(code, ins->dreg, alpha_zero, (cfg->arch.params_stack_size));
 	   alpha_addq(code, alpha_sp, ins->dreg, ins->dreg);

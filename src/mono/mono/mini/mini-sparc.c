@@ -2883,8 +2883,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 
 			/* Keep alignment */
-			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_LOCALLOC_ALIGNMEENT - 1, ins->dreg);
-			sparc_set (code, ~(MONO_ARCH_LOCALLOC_ALIGNMEENT - 1), sparc_o7);
+			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_LOCALLOC_ALIGNMENT - 1, ins->dreg);
+			sparc_set (code, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1), sparc_o7);
 			sparc_and (code, FALSE, ins->dreg, sparc_o7, ins->dreg);
 
 			if ((ins->flags & MONO_INST_INIT) && (ins->sreg1 == ins->dreg)) {
@@ -2937,7 +2937,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			NOT_IMPLEMENTED;
 #endif
 
-			offset = ALIGN_TO (offset, MONO_ARCH_LOCALLOC_ALIGNMEENT);
+			offset = ALIGN_TO (offset, MONO_ARCH_LOCALLOC_ALIGNMENT);
 			if (sparc_is_imm13 (offset))
 				sparc_sub_imm (code, FALSE, sparc_sp, offset, sparc_sp);
 			else {

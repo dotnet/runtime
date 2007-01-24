@@ -3031,8 +3031,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: Sigaltstack support */
 
 			/* keep alignment */
-			ia64_adds_imm (code, GP_SCRATCH_REG, MONO_ARCH_LOCALLOC_ALIGNMEENT - 1, ins->sreg1);
-			ia64_movl (code, GP_SCRATCH_REG2, ~(MONO_ARCH_LOCALLOC_ALIGNMEENT - 1));
+			ia64_adds_imm (code, GP_SCRATCH_REG, MONO_ARCH_LOCALLOC_ALIGNMENT - 1, ins->sreg1);
+			ia64_movl (code, GP_SCRATCH_REG2, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1));
 			ia64_and (code, GP_SCRATCH_REG, GP_SCRATCH_REG, GP_SCRATCH_REG2);
 
 			ia64_sub (code, IA64_SP, IA64_SP, GP_SCRATCH_REG);
@@ -3040,7 +3040,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov (code, ins->dreg, IA64_SP);
 
 			/* An area at sp is reserved by the ABI for parameter passing */
-			abi_offset = - ALIGN_TO (cfg->param_area + 16, MONO_ARCH_LOCALLOC_ALIGNMEENT);
+			abi_offset = - ALIGN_TO (cfg->param_area + 16, MONO_ARCH_LOCALLOC_ALIGNMENT);
 			if (ia64_is_adds_imm (abi_offset))
 				ia64_adds_imm (code, IA64_SP, abi_offset, IA64_SP);
 			else {
