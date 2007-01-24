@@ -201,12 +201,14 @@ new_codechunk (int dynamic, int size)
 		 * AMD64 processors maintain icache coherency only for pages which are 
 		 * marked executable.
 		 */
+#ifndef PLATFORM_WIN32
 		{
 			char *page_start = (char *) (((gssize) (ptr)) & ~ (pagesize - 1));
 			int pages = ((char*)ptr + chunk_size - page_start + pagesize - 1) / pagesize;
 			int err = mono_mprotect (page_start, pages * pagesize, MONO_PROT_RWX);
 			assert (!err);
 		}
+#endif
 
 #ifdef BIND_ROOM
 			/* Make sure the thunks area is zeroed */
