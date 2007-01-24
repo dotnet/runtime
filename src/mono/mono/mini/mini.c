@@ -92,6 +92,7 @@ static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 op
 static gpointer mono_jit_compile_method (MonoMethod *method);
 static gpointer mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method);
 static gpointer mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method);
+inline static int mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer func, MonoInst **args, const guint8 *ip);
 
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
 			  const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native, gboolean write_barrier);
