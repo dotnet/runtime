@@ -1171,7 +1171,7 @@ mono_class_layout_fields (MonoClass *class)
 				 * see bug #77788
 				 */
 				if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
-					align = sizeof (gpointer);
+					align = MAX (align, sizeof (gpointer));
 
 				class->min_align = MAX (align, class->min_align);
 				field->offset = real_size;
