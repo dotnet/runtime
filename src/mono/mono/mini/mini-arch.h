@@ -27,4 +27,10 @@
 #error add arch specific include file in mini-arch.h
 #endif
 
+#if (MONO_ARCH_FRAME_ALIGNMENT == 4)
+#define MONO_ARCH_LOCALLOC_ALIGNMEENT 8
+#else
+#define MONO_ARCH_LOCALLOC_ALIGNMENT MONO_ARCH_FRAME_ALIGNMENT
+#endif
+
 #endif /* __MONO_MINI_ARCH_H__ */  

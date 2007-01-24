@@ -219,7 +219,7 @@ reg: OP_LOCALLOC (OP_ICONST) {
 		mono_bblock_add_inst (s->cbb, tree);
 	} else {
 		guint32 size = state->left->tree->inst_c0;
-		size = (size + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
+		size = (size + (MONO_ARCH_LOCALLOC_ALIGNMENT - 1)) & ~ (MONO_ARCH_LOCALLOC_ALIGNMENT - 1);
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, size);
 		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, X86_ESP);
 	}
