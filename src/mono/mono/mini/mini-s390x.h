@@ -228,7 +228,7 @@ typedef struct
 
 #define MONO_ARCH_IS_GLOBAL_IREG(reg) 0
 
-#define MONO_ARCH_FRAME_ALIGNMENT (sizeof (glong))
+#define MONO_ARCH_FRAME_ALIGNMENT 8
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 #define MONO_ARCH_BASEREG s390_r15
