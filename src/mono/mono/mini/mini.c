@@ -2710,10 +2710,19 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 			NEW_TEMPLOAD (cfg, (ins), temp);	\
 		}	\
 	} while (0)
+#define STARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
+			int temp;	\
+			NEW_ARGLOADA (cfg, (ins), (idx));	\
+			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
+			MONO_INST_NEW (cfg, (ins), CEE_NOP);	\
+		}	\
+	} while (0)
 #else
 #define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip)
 #define STLOC_SOFT_FLOAT(cfg,ins,idx,ip)
 #define LDARG_SOFT_FLOAT(cfg,ins,idx,ip)
+#define STARG_SOFT_FLOAT(cfg,ins,idx,ip)
 #endif
 
 static MonoMethod*
@@ -3029,6 +3038,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	    MONO_TYPE_ISSTRUCT (signature->ret))
 		return FALSE;
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+	/* this complicates things, fix later */
+	if (signature->ret->type == MONO_TYPE_R4)
+		return FALSE;
+#endif
 	/* its not worth to inline methods with valuetype arguments?? */
 	for (i = 0; i < signature->param_count; i++) {
 		if (MONO_TYPE_ISSTRUCT (signature->params [i])) {
@@ -4318,6 +4332,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [ip [1]], *sp))
 				UNVERIFIED;
+			STARG_SOFT_FLOAT (cfg, ins, ip [1], ip);
 			if (ins->opcode == CEE_STOBJ) {
 				NEW_ARGLOADA (cfg, ins, ip [1]);
 				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
@@ -7296,6 +7311,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->cil_code = ip;
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [n], *sp))
 					UNVERIFIED;
+				STARG_SOFT_FLOAT (cfg, ins, n, ip);
 				if (ins->opcode == CEE_STOBJ) {
 					NEW_ARGLOADA (cfg, ins, n);
 					handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
