@@ -652,6 +652,19 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 	return mono_method_get_signature_full (method, image, token, NULL);
 }
 
+/* this is only for the typespec array methods */
+static MonoMethod*
+search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig)
+{
+	int i;
+	for (i = 0; i < klass->method.count; ++i) {
+		MonoMethod *method = klass->methods [i];
+		if (strcmp (method->name, name) == 0 && sig->param_count == method->signature->param_count)
+			return method;
+	}
+	return NULL;
+}
+
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context)
 {
@@ -746,38 +759,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			break;
 		}
 
-		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
-		result->klass = klass;
-		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
-		result->flags = METHOD_ATTRIBUTE_PUBLIC;
-		result->signature = sig;
-		result->name = mname;
-
-		if (!strcmp (mname, ".ctor")) {
-			/* we special-case this in the runtime. */
+		/* we're an array and we created these methods already in klass in mono_class_init () */
+		result = search_in_array_class (klass, mname, sig);
+		if (result)
 			return result;
-		}
-
-		if (!strcmp (mname, "Set")) {
-			g_assert (sig->hasthis);
-			g_assert (type->data.array->rank + 1 == sig->param_count);
-			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			return result;
-		}
-
-		if (!strcmp (mname, "Get")) {
-			g_assert (sig->hasthis);
-			g_assert (type->data.array->rank == sig->param_count);
-			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			return result;
-		}
-
-		if (!strcmp (mname, "Address")) {
-			g_assert (sig->hasthis);
-			g_assert (type->data.array->rank == sig->param_count);
-			result->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
-			return result;
-		}
 
 		g_assert_not_reached ();
 		break;

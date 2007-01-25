@@ -2323,6 +2323,27 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 	}
 }
 
+static MonoMethod*
+create_array_method (MonoClass *class, const char *name, MonoMethodSignature *sig)
+{
+	MonoMethod *method;
+
+	method = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
+	method->klass = class;
+	method->flags = METHOD_ATTRIBUTE_PUBLIC;
+	method->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+	method->signature = sig;
+	method->name = name;
+	method->slot = -1;
+	/* .ctor */
+	if (name [0] == '.') {
+		method->flags |= METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
+	} else {
+		method->iflags |= METHOD_IMPL_ATTRIBUTE_RUNTIME;
+	}
+	return method;
+}
+
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -2466,11 +2487,12 @@ mono_class_init (MonoClass *class)
 
 	/* initialize method pointers */
 	if (class->rank) {
-		MonoMethod *ctor;
+		MonoMethod *amethod;
 		MonoMethodSignature *sig;
 		int count_generic = 0, first_generic = 0;
+		int method_num = 0;
 
-		class->method.count = (class->rank > 1? 2: 1);
+		class->method.count = 3 + (class->rank > 1? 2: 1);
 
 		if (class->interface_count) {
 			for (i = 0; i < class->parent->method.count; i++) {
@@ -2485,34 +2507,52 @@ mono_class_init (MonoClass *class)
 		sig = mono_metadata_signature_alloc (class->image, class->rank);
 		sig->ret = &mono_defaults.void_class->byval_arg;
 		sig->pinvoke = TRUE;
+		sig->hasthis = TRUE;
 		for (i = 0; i < class->rank; ++i)
 			sig->params [i] = &mono_defaults.int32_class->byval_arg;
 
-		ctor = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
-		ctor->klass = class;
-		ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
-		ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
-		ctor->signature = sig;
-		ctor->name = ".ctor";
-		ctor->slot = -1;
+		amethod = create_array_method (class, ".ctor", sig);
 		class->methods = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
-		class->methods [0] = ctor;
+		class->methods [method_num++] = amethod;
 		if (class->rank > 1) {
 			sig = mono_metadata_signature_alloc (class->image, class->rank * 2);
 			sig->ret = &mono_defaults.void_class->byval_arg;
 			sig->pinvoke = TRUE;
+			sig->hasthis = TRUE;
 			for (i = 0; i < class->rank * 2; ++i)
 				sig->params [i] = &mono_defaults.int32_class->byval_arg;
 
-			ctor = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
-			ctor->klass = class;
-			ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
-			ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
-			ctor->signature = sig;
-			ctor->name = ".ctor";
-			ctor->slot = -1;
-			class->methods [1] = ctor;
+			amethod = create_array_method (class, ".ctor", sig);
+			class->methods [method_num++] = amethod;
 		}
+		/* element Get (idx11, [idx2, ...]) */
+		sig = mono_metadata_signature_alloc (class->image, class->rank);
+		sig->ret = &class->element_class->byval_arg;
+		sig->pinvoke = TRUE;
+		sig->hasthis = TRUE;
+		for (i = 0; i < class->rank; ++i)
+			sig->params [i] = &mono_defaults.int32_class->byval_arg;
+		amethod = create_array_method (class, "Get", sig);
+		class->methods [method_num++] = amethod;
+		/* element& Address (idx11, [idx2, ...]) */
+		sig = mono_metadata_signature_alloc (class->image, class->rank);
+		sig->ret = &class->element_class->this_arg;
+		sig->pinvoke = TRUE;
+		sig->hasthis = TRUE;
+		for (i = 0; i < class->rank; ++i)
+			sig->params [i] = &mono_defaults.int32_class->byval_arg;
+		amethod = create_array_method (class, "Address", sig);
+		class->methods [method_num++] = amethod;
+		/* void Set (idx11, [idx2, ...], element) */
+		sig = mono_metadata_signature_alloc (class->image, class->rank + 1);
+		sig->ret = &mono_defaults.void_class->byval_arg;
+		sig->pinvoke = TRUE;
+		sig->hasthis = TRUE;
+		for (i = 0; i < class->rank; ++i)
+			sig->params [i] = &mono_defaults.int32_class->byval_arg;
+		sig->params [i] = &class->element_class->byval_arg;
+		amethod = create_array_method (class, "Set", sig);
+		class->methods [method_num++] = amethod;
 
 		for (i = 0; i < class->interface_count; i++)
 			setup_generic_array_ifaces (class, class->interfaces [i], first_generic + i * count_generic);
