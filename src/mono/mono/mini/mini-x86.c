@@ -3022,7 +3022,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBGT:
 		case OP_FBGT_UN:
 			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
+				if (ins->opcode == OP_FBGT) {
+					guchar *br1;
+
+					/* skip branch if C1=1 */
+					br1 = code;
+					x86_branch8 (code, X86_CC_P, 0, FALSE);
+					/* branch if (C0 | C3) = 1 */
+					EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
+					x86_patch (br1, code);
+				} else {
+					EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
+				}
 				break;
 			}
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
