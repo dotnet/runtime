@@ -1011,5 +1011,14 @@ ncells ) {
 
 		return 0;
 	}
+
+	static unsafe int test_97_negative_index () {
+		char[] arr = new char[] {'a', 'b'};
+		fixed (char *p = arr) {
+			char *i = p + 2;
+			char a = i[-2];
+			return a;
+		}
+	}
 }
 
