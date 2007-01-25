@@ -3813,11 +3813,11 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 
 	if (f_os_handle) {
 		HANDLE retval;
-		mono_field_get_value (handle, f_os_handle, &retval);
+		mono_field_get_value ((MonoObject*)handle, f_os_handle, &retval);
 		return retval;
 	} else {
 		MonoSafeHandle *sh;
-		mono_field_get_value (handle, f_safe_handle, &sh);
+		mono_field_get_value ((MonoObject*)handle, f_safe_handle, &sh);
 		return sh->handle;
 	}
 }

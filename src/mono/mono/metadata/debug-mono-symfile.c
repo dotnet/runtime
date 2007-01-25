@@ -59,7 +59,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 	guint64 magic;
 	long version;
 
-	ptr = start = symfile->raw_contents;
+	ptr = start = (const char*)symfile->raw_contents;
 	if (!ptr)
 		return FALSE;
 
@@ -113,9 +113,10 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 	symfile = g_new0 (MonoSymbolFile, 1);
 
 	if (raw_contents != NULL) {
+		unsigned char *p;
 		symfile->raw_contents_size = size;
-		symfile->raw_contents = g_malloc (size);
-		memcpy(symfile->raw_contents, raw_contents, size);
+		symfile->raw_contents = p = g_malloc (size);
+		memcpy (p, raw_contents, size);
 		symfile->filename = g_strdup_printf ("LoadedFromMemory");
 	} else {
 		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
@@ -211,7 +212,7 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 	MonoSymbolFileLineNumberEntry *lne;
 	MonoSymbolFile *symfile;
 	gchar *source_file = NULL;
-	const char *ptr;
+	const unsigned char *ptr;
 	int count, i;
 
 	if ((symfile = minfo->handle->symfile) == NULL)
@@ -224,7 +225,7 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 			(read32(&(minfo->entry->_source_index)) - 1) * sizeof (MonoSymbolFileSourceEntry);
 		MonoSymbolFileSourceEntry *se = (MonoSymbolFileSourceEntry *) (symfile->raw_contents + offset);
 
-		source_file = read_string (symfile->raw_contents + read32(&(se->_name_offset)));
+		source_file = read_string ((const char*)symfile->raw_contents + read32(&(se->_name_offset)));
 	}
 
 	ptr = symfile->raw_contents + read32(&(minfo->entry->_line_number_table_offset));

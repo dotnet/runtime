@@ -2957,7 +2957,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
 
-	if (ares->async_delegate != delegate && mono_get_runtime_info ()->framework_version [0] >= '2') {
+	if (ares->async_delegate != (MonoObject*)delegate && mono_get_runtime_info ()->framework_version [0] >= '2') {
 		mono_raise_exception (mono_get_exception_invalid_operation (
 			"The IAsyncResult object provided does not match this delegate."));
 		return NULL;

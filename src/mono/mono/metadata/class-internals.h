@@ -728,6 +728,9 @@ void
 mono_loader_clear_error    (void) MONO_INTERNAL;
 
 void
+mono_reflection_init       (void) MONO_INTERNAL;
+
+void
 mono_icall_init            (void) MONO_INTERNAL;
 
 void

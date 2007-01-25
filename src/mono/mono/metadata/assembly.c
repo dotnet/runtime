@@ -674,16 +674,18 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	aname->revision = cols [MONO_ASSEMBLY_REV_NUMBER];
 	aname->hash_alg = cols [MONO_ASSEMBLY_HASH_ALG];
 	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
-		gchar* token = g_malloc (8);
+		guchar* token = g_malloc (8);
 		gchar* encoded;
+		const gchar* pkey;
 		int len;
 
-		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-		len = mono_metadata_decode_blob_size (aname->public_key, (const char**)&aname->public_key);
+		pkey = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+		len = mono_metadata_decode_blob_size (pkey, &pkey);
+		aname->public_key = (guchar*)pkey;
 
 		mono_digest_get_public_token (token, aname->public_key, len);
 		encoded = encode_public_tok (token, 8);
-		g_strlcpy (aname->public_key_token, encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_strlcpy ((char*)aname->public_key_token, encoded, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 
 		g_free (encoded);
 		g_free (token);
@@ -694,7 +696,7 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	}
 
 	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
-		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
+		aname->public_key = (guchar*)mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
 	}
 	else
 		aname->public_key = 0;
@@ -734,12 +736,12 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
 
 	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
-		gchar token [8];
-		mono_digest_get_public_token (token, public_tok, len);
+		guchar token [8];
+		mono_digest_get_public_token (token, (guchar*)public_tok, len);
 		return encode_public_tok (token, 8);
 	}
 
-	return encode_public_tok (public_tok, len);
+	return encode_public_tok ((guchar*)public_tok, len);
 }
 
 /**
@@ -834,7 +836,7 @@ mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *an
 
 	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
 		gchar *token = assemblyref_public_tok (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname->flags);
-		g_strlcpy (aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (token);
 	} else {
 		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
@@ -894,7 +896,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 				   "     Public Key: %s\n%s",
 				   image->name, aname.name, index,
 				   aname.major, aname.minor, aname.build, aname.revision,
-				   strlen(aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token, extra_msg);
+				   strlen ((char*)aname.public_key_token) == 0 ? "(none)" : (char*)aname.public_key_token, extra_msg);
 		g_free (extra_msg);
 	}
 
@@ -1363,16 +1365,16 @@ load_friend_assemblies (MonoAssembly* ass)
 	for (i = 0; i < attrs->num_attrs; ++i) {
 		MonoCustomAttrEntry *attr = &attrs->attrs [i];
 		MonoAssemblyName *aname;
-		const guchar *data;
+		const gchar *data;
 		guint slen;
 		/* Do some sanity checking */
 		if (!attr->ctor || attr->ctor->klass != mono_defaults.internals_visible_class)
 			continue;
 		if (attr->data_size < 4)
 			continue;
-		data = attr->data;
+		data = (const char*)attr->data;
 		/* 0xFF means null string, see custom attr format */
-		if (data [0] != 1 || data [1] != 0 || data [2] == 0xFF)
+		if (data [0] != 1 || data [1] != 0 || (data [2] & 0xFF) == 0xFF)
 			continue;
 		slen = mono_metadata_decode_value (data + 2, &data);
 		aname = g_new0 (MonoAssemblyName, 1);

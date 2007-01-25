@@ -145,6 +145,16 @@ static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type
 static inline MonoType *dup_type (const MonoType *original);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 
+#define mono_reflection_lock() EnterCriticalSection (&reflection_mutex)
+#define mono_reflection_unlock() LeaveCriticalSection (&reflection_mutex)
+static CRITICAL_SECTION reflection_mutex;
+
+void
+mono_reflection_init (void)
+{
+	InitializeCriticalSection (&reflection_mutex);
+}
+
 /**
  * mp_g_alloc:
  *
@@ -1024,7 +1034,7 @@ fat_header:
 		sheader [1] = num_exception & 0xff;
 		sheader [2] = (num_exception >> 8) & 0xff;
 		sheader [3] = (num_exception >> 16) & 0xff;
-		mono_image_add_stream_data (&assembly->code, sheader, 4);
+		mono_image_add_stream_data (&assembly->code, (char*)sheader, 4);
 		/* fat header, so we are already aligned */
 		/* reverse order */
 		for (i = mono_array_length (mb->ilgen->ex_handlers) - 1; i >= 0; --i) {
@@ -1094,7 +1104,20 @@ find_index_in_table (MonoDynamicImage *assembly, int table_idx, int col, guint32
 	return 0;
 }
 
+/* protected by reflection_mutex: 
+ * maps a mono runtime reflection handle to MonoCustomAttrInfo*
+ */
 static GHashTable *dynamic_custom_attrs = NULL;
+
+static MonoCustomAttrInfo*
+lookup_custom_attr (void *member)
+{
+	MonoCustomAttrInfo *ainfo;
+	mono_reflection_lock ();
+	ainfo = g_hash_table_lookup (dynamic_custom_attrs, member);
+	mono_reflection_unlock ();
+	return ainfo;
+}
 
 static gboolean
 custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
@@ -1138,16 +1161,19 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 	ainfo->image = image;
 	ainfo->num_attrs = count;
 	index = 0;
+	mono_loader_lock ();
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		if (custom_attr_visible (image, cattr)) {
+			unsigned char *saved = mono_mempool_alloc (image->mempool, mono_array_length (cattr->data));
+			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 			ainfo->attrs [index].ctor = cattr->ctor->method;
-			/* FIXME: might want to memdup the data here */
-			ainfo->attrs [index].data = mono_array_addr (cattr->data, char, 0);
+			ainfo->attrs [index].data = saved;
 			ainfo->attrs [index].data_size = mono_array_length (cattr->data);
 			index ++;
 		}
 	}
+	mono_loader_unlock ();
 
 	return ainfo;
 }
@@ -1160,11 +1186,13 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 	if (!ainfo)
 		return;
 
+	mono_reflection_lock ();
 	if (!dynamic_custom_attrs)
 		dynamic_custom_attrs = g_hash_table_new (NULL, NULL);
 
 	g_hash_table_insert (dynamic_custom_attrs, obj, ainfo);
 	ainfo->cached = TRUE;
+	mono_reflection_unlock ();
 }
 
 void
@@ -2162,8 +2190,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	if ((pubkey = mono_image_get_public_key (image, &publen))) {
 		guchar pubtoken [9];
 		pubtoken [0] = 8;
-		mono_digest_get_public_token (pubtoken + 1, pubkey, publen);
-		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, pubtoken, 9);
+		mono_digest_get_public_token (pubtoken + 1, (guchar*)pubkey, publen);
+		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, (char*)pubtoken, 9);
 	} else {
 		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
 	}
@@ -3098,7 +3126,7 @@ mono_image_fill_file_table (MonoDomain *domain, MonoReflectionModule *module, Mo
 	g_free (path);
 	mono_metadata_encode_value (20, b, &b);
 	values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	mono_image_add_stream_data (&assembly->blob, hash, 20);
+	mono_image_add_stream_data (&assembly->blob, (char*)hash, 20);
 	table->next_idx ++;
 }
 
@@ -3420,7 +3448,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	heapt_size &= ~3;
 	meta_size += heapt_size;
 	meta->raw_metadata = g_malloc0 (meta_size);
-	p = meta->raw_metadata;
+	p = (unsigned char*)meta->raw_metadata;
 	/* the metadata signature */
 	*p++ = 'B'; *p++ = 'S'; *p++ = 'J'; *p++ = 'B';
 	/* version numbers and 4 bytes reserved */
@@ -3455,7 +3483,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 		table_offset += GUINT32_FROM_LE (*int32val);
 		table_offset += 3; table_offset &= ~3;
 		p += 8;
-		strcpy (p, stream_desc [i].name);
+		strcpy ((char*)p, stream_desc [i].name);
 		p += strlen (stream_desc [i].name) + 1;
 		align_pointer (meta->raw_metadata, p);
 	}
@@ -3463,7 +3491,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	 * now copy the data, the table stream header and contents goes first.
 	 */
 	g_assert ((p - (unsigned char*)meta->raw_metadata) < assembly->tstream.offset);
-	p = meta->raw_metadata + assembly->tstream.offset;
+	p = (guchar*)meta->raw_metadata + assembly->tstream.offset;
 	int32val = (guint32*)p;
 	*int32val = GUINT32_TO_LE (0); /* reserved */
 	p += 4;
@@ -3528,7 +3556,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 			continue;
 		if (assembly->tables [i].columns != mono_metadata_table_count (bitfield))
 			g_error ("col count mismatch in %d: %d %d", i, assembly->tables [i].columns, mono_metadata_table_count (bitfield));
-		meta->tables [i].base = p;
+		meta->tables [i].base = (char*)p;
 		for (row = 1; row <= meta->tables [i].rows; ++row) {
 			values = assembly->tables [i].values + row * assembly->tables [i].columns;
 			for (col = 0; col < assembly->tables [i].columns; ++col) {
@@ -3586,7 +3614,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 
 	for (i = 0; i < ilgen->num_token_fixups; ++i) {
 		iltoken = (MonoReflectionILTokenInfo *)mono_array_addr_with_size (ilgen->token_fixups, sizeof (MonoReflectionILTokenInfo), i);
-		target = assembly->code.data + code_idx + iltoken->code_pos;
+		target = (guchar*)assembly->code.data + code_idx + iltoken->code_pos;
 		switch (target [3]) {
 		case MONO_TABLE_FIELD:
 			if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
@@ -3739,7 +3767,7 @@ assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assemb
 		mono_sha1_get_digest_from_file (name, hash);
 		mono_metadata_encode_value (20, b, &b);
 		values [MONO_FILE_HASH_VALUE] = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-		mono_image_add_stream_data (&assembly->blob, hash, 20);
+		mono_image_add_stream_data (&assembly->blob, (char*)hash, 20);
 		g_free (name);
 		idx = table->next_idx++;
 		rsrc->offset = 0;
@@ -3817,10 +3845,10 @@ load_public_key (MonoArray *pkey, MonoDynamicImage *assembly) {
 	len = mono_array_length (pkey);
 	mono_metadata_encode_value (len, b, &b);
 	token = mono_image_add_stream_data (&assembly->blob, blob_size, b - blob_size);
-	mono_image_add_stream_data (&assembly->blob, mono_array_addr (pkey, guint8, 0), len);
+	mono_image_add_stream_data (&assembly->blob, mono_array_addr (pkey, char, 0), len);
 
 	/* Special case: check for ECMA key (16 bytes) */
-	if ((len == MONO_ECMA_KEY_LENGTH) && mono_is_ecma_key (mono_array_addr (pkey, guint8, 0), len)) {
+	if ((len == MONO_ECMA_KEY_LENGTH) && mono_is_ecma_key (mono_array_addr (pkey, char, 0), len)) {
 		/* In this case we must reserve 128 bytes (1024 bits) for the signature */
 		assembly->strong_name_size = MONO_DEFAULT_PUBLIC_KEY_LENGTH;
 	} else if (len >= MONO_PUBLIC_KEY_HEADER_LENGTH + MONO_MINIMUM_PUBLIC_KEY_LENGTH) {
@@ -4361,7 +4389,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	mono_image_add_stream_data (&image->us, "", 1);
 	add_to_blob_cached (image, (char*) "", 1, NULL, 0);
 	/* import tables... */
-	mono_image_add_stream_data (&image->code, entrycode, sizeof (entrycode));
+	mono_image_add_stream_data (&image->code, (char*)entrycode, sizeof (entrycode));
 	image->iat_offset = mono_image_add_stream_zero (&image->code, 8); /* two IAT entries */
 	image->idt_offset = mono_image_add_stream_zero (&image->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
 	image->imp_names_offset = mono_image_add_stream_zero (&image->code, 2); /* flags for name entry */
@@ -4783,7 +4811,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	
 	/* The DOS header and stub */
 	g_assert (sizeof (MonoMSDOSHeader) == sizeof (msheader));
-	mono_image_add_stream_data (pefile, msheader, sizeof (msheader));
+	mono_image_add_stream_data (pefile, (char*)msheader, sizeof (msheader));
 
 	/* the dotnet header */
 	header_start = mono_image_add_stream_zero (pefile, sizeof (MonoDotNetHeader));
@@ -4932,7 +4960,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_lookup_table));
 	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->ilt_offset);
 
-	p = (assembly->code.data + assembly->ilt_offset);
+	p = (guchar*)(assembly->code.data + assembly->ilt_offset);
 	value = (assembly->text_rva + assembly->imp_names_offset);
 	*p++ = (value) & 0xff;
 	*p++ = (value >> 8) & (0xff);
@@ -5003,7 +5031,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 		switch (i) {
 		case MONO_SECTION_TEXT:
 			/* patch entry point */
-			p = (assembly->code.data + 2);
+			p = (guchar*)(assembly->code.data + 2);
 			value = (virtual_base + assembly->text_rva + assembly->iat_offset);
 			*p++ = (value) & 0xff;
 			*p++ = (value >> 8) & 0xff;
@@ -5575,7 +5603,6 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	static MonoClass *System_Reflection_MonoCMethod = NULL;
 	static MonoClass *System_Reflection_MonoGenericMethod = NULL;
 	static MonoClass *System_Reflection_MonoGenericCMethod = NULL;
-	const char *cname;
 	MonoClass *klass;
 	MonoReflectionMethod *ret;
 
@@ -6076,7 +6103,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 				len = (p - start + 1);
 				if (len > MONO_PUBLIC_KEY_TOKEN_LENGTH)
 					len = MONO_PUBLIC_KEY_TOKEN_LENGTH;
-				g_strlcpy (assembly->public_key_token, start, len);
+				g_strlcpy ((char*)assembly->public_key_token, start, len);
 			}
 		} else {
 			while (*p && *p != ',')
@@ -7276,7 +7303,7 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, method)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (method)))
 		return cinfo;
 	idx = mono_method_get_index (method);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7290,7 +7317,7 @@ mono_custom_attrs_from_class (MonoClass *klass)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, klass)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (klass)))
 		return cinfo;
 	idx = mono_metadata_token_index (klass->type_token);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7304,7 +7331,7 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, assembly)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (assembly)))
 		return cinfo;
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7318,7 +7345,7 @@ mono_custom_attrs_from_module (MonoImage *image)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, image)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (image)))
 		return cinfo;
 	idx = 1; /* there is only one module */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7332,7 +7359,7 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, property)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (property)))
 		return cinfo;
 	idx = find_property_index (klass, property);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7346,7 +7373,7 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, event)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (event)))
 		return cinfo;
 	idx = find_event_index (klass, event);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7360,7 +7387,7 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, field)))
+	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (field)))
 		return cinfo;
 	idx = find_field_index (klass, field);
 	idx <<= MONO_CUSTOM_ATTR_BITS;

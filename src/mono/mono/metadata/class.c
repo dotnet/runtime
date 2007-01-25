@@ -1136,7 +1136,8 @@ mono_class_layout_fields (MonoClass *class)
 
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
-				guint32 size, align;
+				gint32 align;
+				guint32 size;
 				MonoType *ftype;
 
 				field = &class->fields [i];
@@ -1191,7 +1192,8 @@ mono_class_layout_fields (MonoClass *class)
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 		real_size = 0;
 		for (i = 0; i < top; i++) {
-			guint32 size, align;
+			gint32 align;
+			guint32 size;
 			MonoType *ftype;
 
 			field = &class->fields [i];
@@ -1247,7 +1249,8 @@ mono_class_layout_fields (MonoClass *class)
 	 * Compute static field layout and size
 	 */
 	for (i = 0; i < top; i++){
-		guint32 size, align;
+		gint32 align;
+		guint32 size;
 
 		field = &class->fields [i];
 			

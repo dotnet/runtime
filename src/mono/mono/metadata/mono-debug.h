@@ -102,7 +102,7 @@ typedef enum {
 
 struct _MonoDebugHandle {
 	guint32 index;
-	const char *image_file;
+	char *image_file;
 	MonoImage *image;
 	MonoSymbolFile *symfile;
 	MonoDebugHandlePriv *_priv;

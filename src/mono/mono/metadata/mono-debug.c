@@ -401,7 +401,7 @@ mono_debug_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 {
 	MonoMethodHeader *header;
 	MonoDebugWrapperData *wrapper;
-	char buffer [BUFSIZ];
+	guint8 buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
 	guint32 i, size, total_size, max_size;
 	gint32 last_il_offset = 0, last_native_offset = 0;
@@ -479,7 +479,7 @@ MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
 {
 	MonoDebugMethodAddress *address;
-	char buffer [BUFSIZ];
+	guint8 buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
 	guint32 i, size, total_size, max_size;
 	gint32 last_il_offset = 0, last_native_offset = 0;
@@ -769,7 +769,7 @@ mono_debug_add_type (MonoClass *klass)
 {
 	MonoDebugHandle *handle;
 	MonoDebugClassEntry *entry;
-	char buffer [BUFSIZ];
+	guint8 buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
 	guint32 size, total_size, max_size;
 	int base_offset = 0;

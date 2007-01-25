@@ -100,6 +100,8 @@ mono_gc_is_gc_thread (void)
 #endif
 }
 
+extern int GC_thread_register_foreign (void *base_addr);
+
 gboolean
 mono_gc_register_thread (void *baseptr)
 {

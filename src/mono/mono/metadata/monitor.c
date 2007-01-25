@@ -58,7 +58,7 @@ struct _MonoThreadsSync
 #ifdef HAVE_MOVING_COLLECTOR
 	gint32 hash_code;
 #endif
-	volatile guint32 entry_count;
+	volatile gint32 entry_count;
 	HANDLE entry_sem;
 	GSList *wait_list;
 	void *data;

@@ -538,6 +538,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	for (i = 0; i < info->entries; ++i) {
 		cil_code = info->data [i].cil_code;
 		if (cil_code && cil_code >= start && cil_code < end) {
+			char *fname = NULL;
 			offset = cil_code - start;
 			entry.iloffset = offset;
 			entry.method = method;
@@ -551,13 +552,13 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 				if (location) {
 					entry.line = location->row;
 					entry.col = location->column;
-					entry.filename = g_strdup (location->source_file);
+					entry.filename = fname = g_strdup (location->source_file);
 					mono_debug_free_source_location (location);
 				}
 			}
 
 			func (prof, &entry);
-			g_free (entry.filename);
+			g_free (fname);
 		}
 	}
 }

@@ -300,25 +300,6 @@ construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 	return construct_culture (ci, entry);
 }
 
-static gboolean
-construct_region_from_specific_name (MonoRegionInfo *ri, gchar *name)
-{
-	const RegionInfoEntry *entry;
-	const RegionInfoNameEntry *ne;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ne = bsearch (name, region_name_entries, NUM_REGION_ENTRIES,
-			sizeof (RegionInfoNameEntry), region_name_locator);
-
-	if (ne == NULL)
-		return FALSE;
-
-	entry = &region_entries [ne->region_entry_index];
-
-	return construct_region (ri, entry);
-}
-
 static const CultureInfoEntry*
 culture_info_entry_from_lcid (int lcid)
 {
@@ -936,12 +917,12 @@ void load_normalization_resource (guint8 **argProps,
 				  guint8 **argMapIdxToComposite,
 				  guint8 **argCombiningClass)
 {
-	*argProps = props;
+	*argProps = (guint8*)props;
 	*argMappedChars = (guint8*) mappedChars;
 	*argCharMapIndex = (guint8*) charMapIndex;
 	*argHelperIndex = (guint8*) helperIndex;
 	*argMapIdxToComposite = (guint8*) mapIdxToComposite;
-	*argCombiningClass = combiningClass;
+	*argCombiningClass = (guint8*)combiningClass;
 }
 
 

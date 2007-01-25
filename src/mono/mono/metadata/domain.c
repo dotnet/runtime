@@ -542,6 +542,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_assemblies_init ();
 	mono_classes_init ();
 	mono_loader_init ();
+	mono_reflection_init ();
 
 	/* FIXME: When should we release this memory? */
 	MONO_GC_REGISTER_ROOT (appdomains_list);

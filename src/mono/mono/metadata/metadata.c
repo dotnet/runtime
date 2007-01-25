@@ -921,13 +921,13 @@ mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 	return meta->heap_guid.data + index;
 }
 
-static const char *
-dword_align (const char *ptr)
+static const unsigned char *
+dword_align (const unsigned char *ptr)
 {
 #if SIZEOF_VOID_P == 8
-	return (const char *) (((guint64) (ptr + 3)) & ~3);
+	return (const unsigned char *) (((guint64) (ptr + 3)) & ~3);
 #else
-	return (const char *) (((guint32) (ptr + 3)) & ~3);
+	return (const unsigned char *) (((guint32) (ptr + 3)) & ~3);
 #endif
 }
 
@@ -1032,7 +1032,7 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 		ptr += 4;
 	}
 	if (rptr)
-		*rptr = ptr;
+		*rptr = (char*)ptr;
 	return size;
 }
 
@@ -1067,7 +1067,7 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 		ptr += 4;
 	}
 	if (rptr)
-		*rptr = ptr;
+		*rptr = (char*)ptr;
 	
 	return len;
 }
@@ -2296,7 +2296,6 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 	
 	while (1) {
 		/* align on 32-bit boundary */
-		/* FIXME: not 64-bit clean code */
 		sptr = ptr = dword_align (ptr); 
 		sect_data_flags = *ptr;
 		ptr++;
@@ -2396,7 +2395,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
-		mh->code = ptr;
+		mh->code = (unsigned char*)ptr;
 		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
@@ -2410,7 +2409,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		 * incorrect
 		 */
 		mh->code_size = flags >> 2;
-		mh->code = ptr;
+		mh->code = (unsigned char*)ptr;
 		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_FAT_FORMAT:
@@ -2429,7 +2428,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		else
 			init_locals = 0;
 
-		code = ptr;
+		code = (unsigned char*)ptr;
 
 		if (!(fat_flags & METHOD_HEADER_MORE_SECTS))
 			break;
@@ -2437,7 +2436,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		/*
 		 * There are more sections
 		 */
-		ptr = code + code_size;
+		ptr = (char*)code + code_size;
 		break;
 	default:
 		mono_loader_unlock ();
@@ -3217,7 +3216,7 @@ mono_type_size (MonoType *t, int *align)
 		if (t->data.klass->enumtype)
 			return mono_type_size (t->data.klass->enum_basetype, align);
 		else
-			return mono_class_value_size (t->data.klass, align);
+			return mono_class_value_size (t->data.klass, (guint32*)align);
 	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -3227,7 +3226,7 @@ mono_type_size (MonoType *t, int *align)
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
-		return mono_class_value_size (mono_defaults.typed_reference_class, align);
+		return mono_class_value_size (mono_defaults.typed_reference_class, (guint32*)align);
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *gclass = t->data.generic_class;
 		MonoClass *container_class = gclass->container_class;
@@ -3238,7 +3237,7 @@ mono_type_size (MonoType *t, int *align)
 			if (container_class->enumtype)
 				return mono_type_size (container_class->enum_basetype, align);
 			else
-				return mono_class_value_size (mono_class_from_mono_type (t), align);
+				return mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 		} else {
 			*align = __alignof__(gpointer);
 			return sizeof (gpointer);
@@ -3265,7 +3264,7 @@ mono_type_size (MonoType *t, int *align)
 int
 mono_type_stack_size (MonoType *t, int *align)
 {
-	guint32 tmp;
+	int tmp;
 
 	g_assert (t != NULL);
 
@@ -3316,7 +3315,7 @@ mono_type_stack_size (MonoType *t, int *align)
 		if (t->data.klass->enumtype)
 			return mono_type_stack_size (t->data.klass->enum_basetype, align);
 		else {
-			size = mono_class_value_size (t->data.klass, align);
+			size = mono_class_value_size (t->data.klass, (guint32*)align);
 
 			*align = *align + __alignof__(gpointer) - 1;
 			*align &= ~(__alignof__(gpointer) - 1);
@@ -3337,7 +3336,7 @@ mono_type_stack_size (MonoType *t, int *align)
 			if (container_class->enumtype)
 				return mono_type_stack_size (container_class->enum_basetype, align);
 			else {
-				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), align);
+				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 
 				*align = *align + __alignof__(gpointer) - 1;
 				*align &= ~(__alignof__(gpointer) - 1);
