@@ -378,7 +378,9 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	int ret;
 	struct timeval tv;
 	void *tmp_val;
-
+	struct _WapiHandle_socket *socket_handle;
+	gboolean ok;
+	
 	if (startup_count == 0) {
 		WSASetLastError (WSANOTINITIALISED);
 		return(SOCKET_ERROR);
@@ -415,9 +417,23 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	}
 
 	if (optname == SO_ERROR) {
-		if (*((int *)optval) != 0) {
+		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+					  (gpointer *)&socket_handle);
+		if (ok == FALSE) {
+			g_warning ("%s: error looking up socket handle %p",
+				   __func__, handle);
+
+			/* can't extract the last error */
 			*((int *) optval) = errno_to_WSA (*((int *)optval),
 							  __func__);
+		} else {
+			if (*((int *)optval) != 0) {
+				*((int *) optval) = errno_to_WSA (*((int *)optval),
+								  __func__);
+				socket_handle->saved_error = *((int *)optval);
+			} else {
+				*((int *)optval) = socket_handle->saved_error;
+			}
 		}
 	}
 	

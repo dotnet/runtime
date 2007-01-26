@@ -20,6 +20,7 @@ struct _WapiHandle_socket
 	int domain;
 	int type;
 	int protocol;
+	int saved_error;
 };
 
 #endif /* _WAPI_SOCKET_PRIVATE_H_ */
