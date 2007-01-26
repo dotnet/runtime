@@ -15,7 +15,6 @@ libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
 	$(libgc_libs)
 
@@ -23,7 +22,6 @@ static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
 	$(libgc_static_libs)
 
@@ -41,7 +39,6 @@ ILASM2 = $(RUNTIME2) $(CLASS2)/ilasm.exe
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
 	$(LIBGC_CFLAGS)		\
-	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS)
 
@@ -97,7 +94,7 @@ endif
 mono_LDADD = \
 	$(MONO_LIB)			\
 	$(GLIB_LIBS)		\
-	$(GMODULE_LIBS) -lm
+	-lm
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags)
@@ -117,8 +114,7 @@ genmdesc_SOURCES = \
 # Don't link this against libmonoruntime to speed up rebuilds
 genmdesc_LDADD = \
 	$(monodir)/mono/utils/libmonoutils.la $(monodir)/mono/metadata/opcodes.lo -lm	\
-	$(GLIB_LIBS)		\
-	$(GMODULE_LIBS)
+	$(GLIB_LIBS)
 
 x86_sources = \
 	mini-x86.c		\

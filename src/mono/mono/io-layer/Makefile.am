@@ -2,7 +2,6 @@ noinst_LTLIBRARIES = libwapi.la
 
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
-	$(GMODULE_CFLAGS)	\
 	$(LIBGC_CFLAGS)		\
 	-DMONO_BINDIR=\""$(bindir)"\"	\
 	-I$(top_srcdir)	

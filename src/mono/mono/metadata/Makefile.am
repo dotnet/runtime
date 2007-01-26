@@ -21,7 +21,7 @@ bin_PROGRAMS = pedump monodiet
 #
 noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 #
 # Make sure any prefix changes are updated in the binaries too.
@@ -161,7 +161,7 @@ pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm
 
 monodiet_SOURCES = monodiet.c
 
@@ -171,7 +171,6 @@ monodiet_LDADD = \
 	../utils/libmonoutils.la	\
 	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
 	$(ICU_LIBS)			\
 	-lm
 

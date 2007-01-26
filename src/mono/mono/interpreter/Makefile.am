@@ -1,7 +1,6 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
 	$(LIBGC_CFLAGS)			\
-	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
 if PLATFORM_WIN32
@@ -51,7 +50,6 @@ libmint_la_LIBADD =				\
 	../utils/libmonoutils.la	\
 	$(libgc_libs)			\
 	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
 	$(ICU_LIBS)			\
 	-lm
 

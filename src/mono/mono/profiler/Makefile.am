@@ -2,7 +2,6 @@
 INCLUDES = \
 	-fexceptions -DMONO_USE_EXC_TABLES	\
 	-I$(top_srcdir) 	\
-	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
 if JIT_SUPPORTED

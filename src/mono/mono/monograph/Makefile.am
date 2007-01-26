@@ -13,13 +13,11 @@ bin_PROGRAMS = monograph
 
 INCLUDES = 				\
 	-I$(top_srcdir)			\
-	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
 monograph_LDADD = \
 	$(runtime_lib)			\
 	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
 	-lm
 
 GRAPHS=System.Object System.Enum System.Attribute System.ValueType System.Reflection.MemberInfo
