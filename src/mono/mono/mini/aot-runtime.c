@@ -372,12 +372,12 @@ create_cache_structure (void)
  * - invoking a new mono process is a security risk
  * - recompile the AOT module if one of its dependencies changes
  */
-static GModule*
+static MonoDl*
 load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 {
 	char *fname, *cmd, *tmp2, *aot_options;
 	const char *home;
-	GModule *module;
+	MonoDl *module;
 	gboolean res;
 	gchar *out, *err;
 	gint exit_status;
@@ -397,7 +397,7 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 	g_free (tmp2);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT trying to load from cache: '%s'.", fname);
-	module = g_module_open (fname, G_MODULE_BIND_LAZY);	
+	module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT not found.");
@@ -433,7 +433,7 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 			}
 		}
 
-		module = g_module_open (fname, G_MODULE_BIND_LAZY);	
+		module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
 		g_free (aot_options);
 	}
@@ -469,12 +469,14 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (use_aot_cache)
 		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
 	else {
+		char *err;
 		aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
 
-		assembly->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
+		assembly->aot_module = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
 
 		if (!assembly->aot_module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, g_module_error ());
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, err);
+			g_free (err);
 		}
 	}
 
@@ -483,9 +485,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	g_module_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
-	g_module_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);
-	g_module_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
+	mono_dl_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
+	mono_dl_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);
+	mono_dl_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
@@ -500,16 +502,16 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (!usable) {
 		g_free (aot_name);
-		g_module_close (assembly->aot_module);
+		mono_dl_close (assembly->aot_module);
 		assembly->aot_module = NULL;
 		return;
 	}
 
-	g_module_symbol (assembly->aot_module, "got_addr", (gpointer *)&got_addr);
+	mono_dl_symbol (assembly->aot_module, "got_addr", (gpointer *)&got_addr);
 	g_assert (got_addr);
 	got = (gpointer*)*got_addr;
 	g_assert (got);
-	g_module_symbol (assembly->aot_module, "got_size", (gpointer *)&got_size_ptr);
+	mono_dl_symbol (assembly->aot_module, "got_size", (gpointer *)&got_size_ptr);
 	g_assert (got_size_ptr);
 
 	info = g_new0 (MonoAotModule, 1);
@@ -525,7 +527,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		guint32 table_len, i;
 		char *table = NULL;
 
-		g_module_symbol (assembly->aot_module, "mono_image_table", (gpointer *)&table);
+		mono_dl_symbol (assembly->aot_module, "mono_image_table", (gpointer *)&table);
 		g_assert (table);
 
 		table_len = *(guint32*)table;
@@ -562,34 +564,34 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	/* Read method and method_info tables */
-	g_module_symbol (assembly->aot_module, "method_offsets", (gpointer*)&info->code_offsets);
-	g_module_symbol (assembly->aot_module, "methods", (gpointer*)&info->code);
-	g_module_symbol (assembly->aot_module, "methods_end", (gpointer*)&info->code_end);
-	g_module_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&info->method_info_offsets);
-	g_module_symbol (assembly->aot_module, "method_info", (gpointer*)&info->method_info);
-	g_module_symbol (assembly->aot_module, "ex_info_offsets", (gpointer*)&info->ex_info_offsets);
-	g_module_symbol (assembly->aot_module, "ex_info", (gpointer*)&info->ex_info);
-	g_module_symbol (assembly->aot_module, "method_order", (gpointer*)&info->method_order);
-	g_module_symbol (assembly->aot_module, "method_order_end", (gpointer*)&info->method_order_end);
-	g_module_symbol (assembly->aot_module, "class_info", (gpointer*)&info->class_info);
-	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
-	g_module_symbol (assembly->aot_module, "class_name_table", (gpointer *)&info->class_name_table);
-	g_module_symbol (assembly->aot_module, "got_info", (gpointer*)&info->got_info);
-	g_module_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&info->got_info_offsets);
-	g_module_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
+	mono_dl_symbol (assembly->aot_module, "method_offsets", (gpointer*)&info->code_offsets);
+	mono_dl_symbol (assembly->aot_module, "methods", (gpointer*)&info->code);
+	mono_dl_symbol (assembly->aot_module, "methods_end", (gpointer*)&info->code_end);
+	mono_dl_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&info->method_info_offsets);
+	mono_dl_symbol (assembly->aot_module, "method_info", (gpointer*)&info->method_info);
+	mono_dl_symbol (assembly->aot_module, "ex_info_offsets", (gpointer*)&info->ex_info_offsets);
+	mono_dl_symbol (assembly->aot_module, "ex_info", (gpointer*)&info->ex_info);
+	mono_dl_symbol (assembly->aot_module, "method_order", (gpointer*)&info->method_order);
+	mono_dl_symbol (assembly->aot_module, "method_order_end", (gpointer*)&info->method_order_end);
+	mono_dl_symbol (assembly->aot_module, "class_info", (gpointer*)&info->class_info);
+	mono_dl_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
+	mono_dl_symbol (assembly->aot_module, "class_name_table", (gpointer *)&info->class_name_table);
+	mono_dl_symbol (assembly->aot_module, "got_info", (gpointer*)&info->got_info);
+	mono_dl_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&info->got_info_offsets);
+	mono_dl_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
 
 	info->mem_begin = info->code;
 
-	g_module_symbol (assembly->aot_module, "plt", (gpointer*)&info->plt);
-	g_module_symbol (assembly->aot_module, "plt_end", (gpointer*)&info->plt_end);
-	g_module_symbol (assembly->aot_module, "plt_info", (gpointer*)&info->plt_info);
+	mono_dl_symbol (assembly->aot_module, "plt", (gpointer*)&info->plt);
+	mono_dl_symbol (assembly->aot_module, "plt_end", (gpointer*)&info->plt_end);
+	mono_dl_symbol (assembly->aot_module, "plt_info", (gpointer*)&info->plt_info);
 
-	g_module_symbol (assembly->aot_module, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
+	mono_dl_symbol (assembly->aot_module, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
 	g_assert (plt_jump_table_addr);
 	info->plt_jump_table = (guint8*)*plt_jump_table_addr;
 	g_assert (info->plt_jump_table);
 
-	g_module_symbol (assembly->aot_module, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
+	mono_dl_symbol (assembly->aot_module, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
 	g_assert (plt_jump_table_size);
 	info->plt_jump_table_size = *plt_jump_table_size;
 
@@ -924,7 +926,7 @@ MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
 	MonoAssembly *ass = image->assembly;
-	GModule *module = ass->aot_module;
+	MonoDl *module = ass->aot_module;
 	int pos, left, right, offset, offset1, offset2, last_offset, new_offset, page_index, method_index, table_len;
 	guint32 token;
 	MonoAotModule *aot_module;
@@ -1324,7 +1326,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
 	MonoAssembly *ass = klass->image->assembly;
-	GModule *module = ass->aot_module;
+	MonoDl *module = ass->aot_module;
 	guint32 method_index = mono_metadata_token_index (method->token) - 1;
 	guint8 *code, *info;
 	MonoAotModule *aot_module;
@@ -1529,7 +1531,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	int i, method_index, pindex, got_index, n_patches, used_strings;
 	gboolean keep_patches = TRUE;
 	guint8 *p;
-	GModule *module = ass->aot_module;
+	MonoDl *module = ass->aot_module;
 	guint8 *code = NULL;
 	guint8 *info;
 	MonoAotModule *aot_module;
