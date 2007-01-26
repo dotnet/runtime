@@ -1,3 +1,16 @@
+2007-01-26  Robert Jordan  <robertj@gmx.net>
+
+	* configure.ac: Add PLATFORM_WIN32 conditional.
+	* src/Makefile.ac: Use PLATFORM_WIN32 conditional for psapi, iconv
+	* test/module.c, test/tests.h, test/Makefile.am: New test for gmodule.
+	* src/gmodule.h: Add G_MODULE_{IMPORT|EXPORT} defines.
+	* src/gmodule.c (g_module_symbol): Implement in-proc symbol lookup
+	for Win32.
+	* src/gmodule.c: Add GModule.main_module, consider it in
+	g_module_close ().
+	* src/gpath.c (g_get_home_dir): Add dummy Win32 implementation to
+	fix the build.
+
 2006-11-03  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gpath.c (g_path_get_dirname): If the pathname starts with a

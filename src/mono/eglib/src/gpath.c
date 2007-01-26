@@ -184,6 +184,8 @@ g_get_current_dir (void)
 	return r;
 }
 
+#if defined (G_OS_UNIX)
+
 static pthread_mutex_t home_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *home_dir;
 
@@ -217,6 +219,27 @@ g_get_home_dir (void)
 	}
 	return home_dir;
 }
+
+#elif defined (G_OS_WIN32)
+#include <windows.h>
+
+const gchar *
+g_get_home_dir (void)
+{
+	/* FIXME */
+	return getenv ("HOME");
+}
+
+#else
+
+const gchar *
+g_get_home_dir (void)
+{
+	g_error ("g_get_home_dir not implemented on this platform");
+	return NULL;
+}
+
+#endif
 
 static char *tmp_dir;
 static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;

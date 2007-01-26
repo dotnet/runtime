@@ -34,7 +34,11 @@ libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
 
 INCLUDES = -I$(srcdir)
 
+if PLATFORM_WIN32
+libeglib_la_LIBADD = -lm -liconv -lpsapi
+else
 libeglib_la_LIBADD = -lm
+endif
 
 MAINTAINERCLEANFILES = Makefile.in
 

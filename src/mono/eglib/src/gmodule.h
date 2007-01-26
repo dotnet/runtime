@@ -3,6 +3,13 @@
 
 #include <glib.h>
 
+#define G_MODULE_IMPORT extern
+#ifdef G_OS_WIN32
+#define G_MODULE_EXPORT __declspec(dllexport)
+#else
+#define G_MODULE_EXPORT
+#endif
+
 /*
  * Modules
  */

@@ -4,6 +4,7 @@
  * Author:
  *   Gonzalo Paniagua Javier (gonzalo@novell.com)
  *   Jonathan Chambers (joncham@gmail.com)
+ *   Robert Jordan (robertj@gmx.net)
  *
  * (C) 2006 Novell, Inc.
  * (C) 2006 Jonathan Chambers
@@ -98,12 +99,14 @@ g_module_close (GModule *module)
 
 #elif defined (G_OS_WIN32)
 #include <windows.h>
+#include <psapi.h>
 
 #define LIBSUFFIX ".dll"
-#define LIBPREFIX 
+#define LIBPREFIX ""
 
 struct _GModule {
 	HMODULE handle;
+	int main_module;
 };
 
 GModule *
@@ -114,21 +117,86 @@ g_module_open (const gchar *file, GModuleFlags flags)
 	if (module == NULL)
 		return NULL;
 
-	module->handle = LoadLibrary (file);
+	if (file != NULL) {
+		module->main_module = FALSE;
+		module->handle = LoadLibrary (file);
+		if (!module->handle) {
+			g_free (module);
+			return NULL;
+		}
+			
+	} else {
+		module->main_module = TRUE;
+		module->handle = GetModuleHandle (NULL);
+	}
+
 	return module;
+}
+
+static gpointer
+w32_find_symbol (const gchar *symbol_name)
+{
+	HMODULE *modules;
+	DWORD buffer_size = sizeof (HMODULE) * 1024;
+	DWORD needed, i;
+
+	modules = (HMODULE *) g_malloc (buffer_size);
+
+	if (modules == NULL)
+		return NULL;
+
+	if (!EnumProcessModules (GetCurrentProcess (), modules,
+				 buffer_size, &needed)) {
+		g_free (modules);
+		return NULL;
+	}
+
+	/* check whether the supplied buffer was too small, realloc, retry */
+	if (needed > buffer_size) {
+		g_free (modules);
+
+		buffer_size = needed;
+		modules = (HMODULE *) g_malloc (buffer_size);
+
+		if (modules == NULL)
+			return NULL;
+
+		if (!EnumProcessModules (GetCurrentProcess (), modules,
+					 buffer_size, &needed)) {
+			g_free (modules);
+			return NULL;
+		}
+	}
+
+	for (i = 0; i < needed / sizeof (HANDLE); i++) {
+		gpointer proc = GetProcAddress (modules [i], symbol_name);
+		if (proc != NULL) {
+			g_free (modules);
+			return proc;
+		}
+	}
+
+	g_free (modules);
+	return NULL;
 }
 
 gboolean
 g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 {
-	if (symbol_name == NULL || symbol == NULL)
+	if (module == NULL || symbol_name == NULL || symbol == NULL)
 		return FALSE;
 
-	if (module == NULL || module->handle == NULL)
-		return FALSE;
+	if (module->main_module) {
+		*symbol = GetProcAddress (module->handle, symbol_name);
+		if (*symbol != NULL)
+			return TRUE;
 
-	*symbol = GetProcAddress (module->handle, symbol_name);
-	return (*symbol != NULL);
+		*symbol = w32_find_symbol (symbol_name);
+		return *symbol != NULL;
+	} else {
+		*symbol = GetProcAddress (module->handle, symbol_name);
+		return *symbol != NULL;
+	}
 }
 
 const gchar *
@@ -151,19 +219,22 @@ gboolean
 g_module_close (GModule *module)
 {
 	HMODULE handle;
+	int main_module;
+
 	if (module == NULL || module->handle == NULL)
 		return FALSE;
 
 	handle = module->handle;
+	main_module = module->main_module;
 	module->handle = NULL;
 	g_free (module);
-	return (0 == FreeLibrary (handle));
+	return (main_module ? 1 : (0 == FreeLibrary (handle)));
 }
 
 #else
 
-#define LIBSUFFIX
-#define LIBPREFIX
+#define LIBSUFFIX ""
+#define LIBPREFIX ""
 
 GModule *
 g_module_open (const gchar *file, GModuleFlags flags)
