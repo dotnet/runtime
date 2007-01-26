@@ -219,7 +219,7 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 			const char *us_ptr = mono_metadata_user_string (m, token & 0xffffff);
 			int len = mono_metadata_decode_blob_size (us_ptr, (const char**)&us_ptr);
 
-			char *s = get_encoded_user_string_or_bytearray (us_ptr, len);
+			char *s = get_encoded_user_string_or_bytearray ((const guchar*)us_ptr, len);
 			
 			/*
 			 * See section 23.1.4 on the encoding of the #US heap

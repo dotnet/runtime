@@ -2162,7 +2162,7 @@ get_encoded_user_string_bytearray (const unsigned char* ptr, int len)
 char*
 get_encoded_user_string_or_bytearray (const unsigned char *ptr, int len)
 {
-	unsigned char *res, *eres, *result;
+	char *res, *eres, *result;
 	int i;
 
 	res = g_malloc ((len >> 1) + 1);
@@ -2215,10 +2215,10 @@ stringify_double (double r)
 char *
 get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 {
-	const unsigned char *ptr = mono_metadata_blob_heap (m, blob_index);
+	const char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
 	
-	len = mono_metadata_decode_value (ptr, (const char**)&ptr);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (t){
 	case MONO_TYPE_BOOLEAN:
@@ -2229,7 +2229,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
-		return g_strdup_printf ("int8(0x%02x)", (int) (*ptr));
+		return g_strdup_printf ("int8(0x%02x)", (int) ((*ptr) & 0xFF));
 		break;
 		
 	case MONO_TYPE_U2:
@@ -2291,7 +2291,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		}
 	}
 	case MONO_TYPE_STRING:
-		return get_encoded_user_string_or_bytearray (ptr, len);
+		return get_encoded_user_string_or_bytearray ((const guchar*)ptr, len);
 		
 	case MONO_TYPE_CLASS:
 		return g_strdup ("nullref");
@@ -2409,7 +2409,7 @@ get_guid (MonoImage *m, guint32 guid_index)
 	const unsigned char *guid;
 	char *result;
 
-	guid = mono_metadata_guid_heap (m, guid_index);
+	guid = (const guchar*)mono_metadata_guid_heap (m, guid_index);
 
 	result = g_strdup_printf ("{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}", 
 			guid [3], guid [2], guid [1], guid [0], guid [5], guid [4], guid [7], guid [6],
