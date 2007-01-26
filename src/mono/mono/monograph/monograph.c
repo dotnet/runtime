@@ -179,7 +179,7 @@ method_stats (MonoMethod *method) {
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	const unsigned char *ip, *il_code_end;
-	int i, n;
+	guint32 i, n;
 	int local_branch = 0, local_condbranch = 0, local_throw = 0, local_calls = 0;
 	gint64 l;
 
@@ -553,7 +553,7 @@ print_method (MonoMethod *method, int depth) {
 	GHashTable *hash;
 	static GHashTable *visited = NULL;
 	const unsigned char *ip, *il_code_end;
-	int i;
+	guint32 i;
 
 	if (depth++ > max_depth)
 		return;
@@ -712,7 +712,7 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 {
 	const unsigned char *ip, *end, *start;
 	const MonoOpcode *opcode;
-	int i, block_end = 0;
+	guint32 i, block_end = 0;
 	GPtrArray *result = g_ptr_array_new ();
 	GHashTable *table = g_hash_table_new (g_direct_hash, g_direct_equal);
 	MonoBasicBlock *entry_bb, *end_bb, *bb, *target;
@@ -837,7 +837,7 @@ mono_method_find_bblocks (MonoMethodHeader *header)
 				ip += 4;
 				if (!(target = g_hash_table_lookup (table, itarget))) {
 					target = g_new0 (MonoBasicBlock, 1);
-					target->cil_code = itarget;
+					target->cil_code = (const guchar*)itarget;
 					g_ptr_array_add (result, target);
 					g_hash_table_insert (table, (gpointer) itarget, target);
 				}
