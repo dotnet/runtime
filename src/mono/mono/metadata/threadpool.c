@@ -27,6 +27,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/io-layer/io-layer.h>
@@ -79,7 +80,7 @@ typedef struct {
 	CRITICAL_SECTION io_lock; /* access to sock_to_state */
 	int inited;
 	int pipe [2];
-	GHashTable *sock_to_state;
+	MonoGHashTable *sock_to_state;
 
 	HANDLE new_sem; /* access to newpfd and write side of the pipe */
 	mono_pollfd *newpfd;
@@ -165,7 +166,7 @@ socket_io_cleanup (SocketIOData *data)
 	if (data->new_sem)
 		CloseHandle (data->new_sem);
 	data->new_sem = NULL;
-	g_hash_table_destroy (data->sock_to_state);
+	mono_g_hash_table_destroy (data->sock_to_state);
 	data->sock_to_state = NULL;
 	free_queue (&async_io_queue);
 	release = (gint) InterlockedCompareExchange (&io_worker_threads, 0, -1);
@@ -202,15 +203,14 @@ get_event_from_state (MonoSocketAsyncResult *state)
 }
 
 static int
-get_events_from_list (GSList *list)
+get_events_from_list (MonoMList *list)
 {
 	MonoSocketAsyncResult *state;
 	int events = 0;
 
-	while (list && list->data) {
-		state = (MonoSocketAsyncResult *) list->data;
+	while (list && (state = (MonoSocketAsyncResult *)mono_mlist_get_data (list))) {
 		events |= get_event_from_state (state);
-		list = list->next;
+		list = mono_mlist_next (list);
 	}
 
 	return events;
@@ -326,25 +326,24 @@ start_io_thread_or_queue (MonoSocketAsyncResult *ares)
 	}
 }
 
-static GSList *
-process_io_event (GSList *list, int event)
+static MonoMList *
+process_io_event (MonoMList *list, int event)
 {
 	MonoSocketAsyncResult *state;
-	GSList *oldlist;
+	MonoMList *oldlist;
 
 	oldlist = list;
 	state = NULL;
 	while (list) {
-		state = (MonoSocketAsyncResult *) list->data;
+		state = (MonoSocketAsyncResult *) mono_mlist_get_data (list);
 		if (get_event_from_state (state) == event)
 			break;
 		
-		list = list->next;
+		list = mono_mlist_next (list);
 	}
 
 	if (list != NULL) {
-		oldlist = g_slist_remove_link (oldlist, list);
-		g_slist_free_1 (list);
+		oldlist = mono_mlist_remove_item (oldlist, list);
 #ifdef EPOLL_DEBUG
 		g_print ("Dispatching event %d on socket %d\n", event, state->handle);
 #endif
@@ -405,7 +404,7 @@ socket_io_poll_main (gpointer p)
 		int nsock = 0;
 		mono_pollfd *pfd;
 		char one [1];
-		GSList *list;
+		MonoMList *list;
 
 		do {
 			if (nsock == -1) {
@@ -496,7 +495,7 @@ socket_io_poll_main (gpointer p)
 				continue;
 
 			nsock--;
-			list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (pfd->fd));
+			list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (pfd->fd));
 			if (list != NULL && (pfd->revents & (MONO_POLLIN | POLL_ERRORS)) != 0) {
 				list = process_io_event (list, MONO_POLLIN);
 			}
@@ -506,10 +505,10 @@ socket_io_poll_main (gpointer p)
 			}
 
 			if (list != NULL) {
-				g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (pfd->fd), list);
+				mono_g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (pfd->fd), list);
 				pfd->events = get_events_from_list (list);
 			} else {
-				g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (pfd->fd));
+				mono_g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (pfd->fd));
 				pfd->fd = -1;
 				if (i == maxfd - 1)
 					maxfd--;
@@ -579,13 +578,13 @@ socket_io_epoll_main (gpointer p)
 
 		for (i = 0; i < ready; i++) {
 			int fd;
-			GSList *list;
+			MonoMList *list;
 
 			evt = &events [i];
 			fd = evt->data.fd;
-			list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
+			list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
 #ifdef EPOLL_DEBUG
-			g_print ("Event %d on %d list length: %d\n", evt->events, fd, g_slist_length (list));
+			g_print ("Event %d on %d list length: %d\n", evt->events, fd, mono_mlist_length (list));
 #endif
 			if (list != NULL && (evt->events & (EPOLLIN | EPOLL_ERRORS)) != 0) {
 				list = process_io_event (list, MONO_POLLIN);
@@ -596,7 +595,7 @@ socket_io_epoll_main (gpointer p)
 			}
 
 			if (list != NULL) {
-				g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (fd), list);
+				mono_g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (fd), list);
 				evt->events = get_events_from_list (list);
 #ifdef EPOLL_DEBUG
 				g_print ("MOD %d to %d\n", fd, evt->events);
@@ -611,7 +610,7 @@ socket_io_epoll_main (gpointer p)
 					}
 				}
 			} else {
-				g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
+				mono_g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
 #ifdef EPOLL_DEBUG
 				g_print ("DEL %d\n", fd);
 #endif
@@ -631,27 +630,27 @@ void
 mono_thread_pool_remove_socket (int sock)
 {
 #ifdef HAVE_EPOLL
-	GSList *list, *next;
+	MonoMList *list, *next;
 	MonoSocketAsyncResult *state;
 
 	if (socket_io_data.epoll_disabled == TRUE || socket_io_data.inited == FALSE)
 		return;
 
 	EnterCriticalSection (&socket_io_data.io_lock);
-	list = g_hash_table_lookup (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
+	list = mono_g_hash_table_lookup (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
 	if (list) {
-		g_hash_table_remove (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
+		mono_g_hash_table_remove (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
 	}
 	LeaveCriticalSection (&socket_io_data.io_lock);
 	
 	while (list) {
-		state = (MonoSocketAsyncResult *) list->data;
+		state = (MonoSocketAsyncResult *) mono_mlist_get_data (list);
 		if (state->operation == AIO_OP_RECEIVE)
 			state->operation = AIO_OP_RECV_JUST_CALLBACK;
 		else if (state->operation == AIO_OP_SEND)
 			state->operation = AIO_OP_SEND_JUST_CALLBACK;
 
-		next = g_slist_remove_link (list, list);
+		next = mono_mlist_remove_item (list, list);
 		list = process_io_event (list, MONO_POLLIN);
 		if (list)
 			process_io_event (list, MONO_POLLOUT);
@@ -752,7 +751,7 @@ socket_io_init (SocketIOData *data)
 	if (mono_io_max_worker_threads < 10)
 		mono_io_max_worker_threads = 10;
 
-	data->sock_to_state = g_hash_table_new (g_direct_hash, g_direct_equal);
+	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
 
 	if (data->epoll_disabled) {
 		data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
@@ -778,7 +777,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 {
 	int events;
 	char msg [1];
-	GSList *list;
+	MonoMList *list;
 	SocketIOData *data = &socket_io_data;
 
 #if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD6) || defined(PLATFORM_WIN32)
@@ -796,18 +795,16 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 
 	EnterCriticalSection (&data->io_lock);
 	/* FIXME: 64 bit issue: handle can be a pointer on windows? */
-	list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (state->handle));
-	/* FIXME: GC issue: state is an object stored in a GList */
+	list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (state->handle));
 	if (list == NULL) {
-		list = g_slist_alloc ();
-		list->data = state;
+		list = mono_mlist_alloc ((MonoObject*)state);
 	} else {
-		list = g_slist_append (list, state);
+		list = mono_mlist_append (list, (MonoObject*)state);
 	}
 
 	events = get_events_from_list (list);
 	INIT_POLLFD (data->newpfd, GPOINTER_TO_INT (state->handle), events);
-	g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (state->handle), list);
+	mono_g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (state->handle), list);
 	LeaveCriticalSection (&data->io_lock);
 	*msg = (char) state->operation;
 #ifndef PLATFORM_WIN32
@@ -821,7 +818,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 static gboolean
 socket_io_add_epoll (MonoSocketAsyncResult *state)
 {
-	GSList *list;
+	MonoMList *list;
 	SocketIOData *data = &socket_io_data;
 	struct epoll_event event;
 	int epoll_op, ievt;
@@ -830,14 +827,12 @@ socket_io_add_epoll (MonoSocketAsyncResult *state)
 	memset (&event, 0, sizeof (struct epoll_event));
 	fd = GPOINTER_TO_INT (state->handle);
 	EnterCriticalSection (&data->io_lock);
-	list = g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
-	/* FIXME: GC issue: state is an object stored in a GList */
+	list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
 	if (list == NULL) {
-		list = g_slist_alloc ();
-		list->data = state;
+		list = mono_mlist_alloc ((MonoObject*)state);
 		epoll_op = EPOLL_CTL_ADD;
 	} else {
-		list = g_slist_append (list, state);
+		list = mono_mlist_append (list, (MonoObject*)state);
 		epoll_op = EPOLL_CTL_MOD;
 	}
 
@@ -847,7 +842,7 @@ socket_io_add_epoll (MonoSocketAsyncResult *state)
 	if ((ievt & MONO_POLLOUT) != 0)
 		event.events |= EPOLLOUT;
 
-	g_hash_table_replace (data->sock_to_state, state->handle, list);
+	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
 	event.data.fd = fd;
 #ifdef EPOLL_DEBUG
 	g_print ("%s %d with %d\n", epoll_op == EPOLL_CTL_ADD ? "ADD" : "MOD", fd, event.events);
@@ -990,6 +985,7 @@ mono_thread_pool_init ()
 		return;
 
 	MONO_GC_REGISTER_ROOT (ares_htable);
+	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	InitializeCriticalSection (&ares_lock);
 	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
