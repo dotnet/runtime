@@ -29,28 +29,14 @@ static const char suffixes [][4] = {
 #ifdef PLATFORM_WIN32
 
 #include <windows.h>
+#include <psapi.h>
 
 #define SO_HANDLE_TYPE HMODULE
 #define LL_SO_OPEN(file,flags) (file)? LoadLibrary ((file)): GetModuleHandle (NULL)
 #define LL_SO_CLOSE(module) do { if (!(module)->main_module) FreeLibrary ((module)->handle); } while (0)
-#define LL_SO_SYMBOL(module, name) GetProcAddress ((module)->handle, (name))
+#define LL_SO_SYMBOL(module, name) w32_find_symbol ((module), (name))
 #define LL_SO_TRFLAGS(flags) 0
 #define LL_SO_ERROR() w32_dlerror ()
-
-static char*
-w32_dlerror (void)
-{
-	char* ret;
-	TCHAR* buf = NULL;
-	DWORD code = GetLastError ();
-
-	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
-
-	ret = g_strdup (buf);
-	LocalFree (buf);
-	return ret;
-}
 
 #elif defined (HAVE_DL_LOADER)
 
@@ -80,7 +66,7 @@ convert_flags (int flags)
 }
 
 #else
-/* no duynamic loader supported */
+/* no dynamic loader supported */
 #define SO_HANDLE_TYPE void*
 #define LL_SO_OPEN(file,flags) NULL
 #define LL_SO_CLOSE(module) 
@@ -95,6 +81,81 @@ struct _MonoDl {
 	int main_module;
 };
 
+#ifdef PLATFORM_WIN32
+
+static char*
+w32_dlerror (void)
+{
+	char* ret;
+	TCHAR* buf = NULL;
+	DWORD code = GetLastError ();
+
+	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
+
+	ret = g_strdup (buf);
+	LocalFree (buf);
+	return ret;
+}
+
+static gpointer
+w32_find_symbol (MonoDl *module, const gchar *symbol_name)
+{
+	HMODULE *modules;
+	DWORD buffer_size = sizeof (HMODULE) * 1024;
+	DWORD needed, i;
+	gpointer proc = NULL;
+
+	/* get the symbol directly from the specified module */
+	if (!module->main_module)
+		return GetProcAddress (module->handle, symbol_name);
+
+	/* get the symbol from the main module */
+	proc = GetProcAddress (module->handle, symbol_name);
+	if (proc != NULL)
+		return proc;
+
+	/* get the symbol from the loaded DLLs */
+	modules = (HMODULE *) g_malloc (buffer_size);
+	if (modules == NULL)
+		return NULL;
+
+	if (!EnumProcessModules (GetCurrentProcess (), modules,
+				 buffer_size, &needed)) {
+		g_free (modules);
+		return NULL;
+	}
+
+	/* check whether the supplied buffer was too small, realloc, retry */
+	if (needed > buffer_size) {
+		g_free (modules);
+
+		buffer_size = needed;
+		modules = (HMODULE *) g_malloc (buffer_size);
+
+		if (modules == NULL)
+			return NULL;
+
+		if (!EnumProcessModules (GetCurrentProcess (), modules,
+					 buffer_size, &needed)) {
+			g_free (modules);
+			return NULL;
+		}
+	}
+
+	for (i = 0; i < needed / sizeof (HANDLE); i++) {
+		proc = GetProcAddress (modules [i], symbol_name);
+		if (proc != NULL) {
+			g_free (modules);
+			return proc;
+		}
+	}
+
+	g_free (modules);
+	return NULL;
+}
+
+#endif
 
 /*
  * read a value string from line with any of the following formats:
