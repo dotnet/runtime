@@ -1066,6 +1066,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		dest_dreg = -1;
 		dest_sreg1 = -1;
 		dest_sreg2 = -1;
+		prev_sreg1 = -1;
+		dreg_high = -1;
+		sreg1_high = -1;
 		dreg_mask = dreg_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
 		sreg1_mask = sreg1_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
 		sreg2_mask = sreg2_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;

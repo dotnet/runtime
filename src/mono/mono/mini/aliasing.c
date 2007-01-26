@@ -826,6 +826,7 @@ mono_aliasing_get_affected_variables_for_inst_traversing_code (MonoAliasingInfor
 	}
 }
 
+#if 0
 static MonoLocalVariableList*
 mono_aliasing_get_affected_variables_for_inst_in_bb (MonoAliasingInformation *info, MonoInst *inst, MonoBasicBlock *bb) {
 	MonoAliasUsageInformation *use;
@@ -838,6 +839,7 @@ mono_aliasing_get_affected_variables_for_inst_in_bb (MonoAliasingInformation *in
 	g_assert_not_reached ();
 	return NULL;
 }
+#endif
 
 MonoLocalVariableList*
 mono_aliasing_get_affected_variables_for_inst (MonoAliasingInformation *info, MonoInst *inst) {

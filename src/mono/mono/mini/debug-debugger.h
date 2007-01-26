@@ -33,7 +33,7 @@ struct _MonoDebuggerInfo {
 	guint32 symbol_table_size;
 	guint32 dummy;
 	gpointer notification_function;
-	guint8 ***mono_trampoline_code;
+	guint8 **mono_trampoline_code;
 	MonoSymbolTable **symbol_table;
 	MonoDebuggerMetadataInfo *metadata_info;
 	guint64 (*compile_method) (guint64 method_argument);

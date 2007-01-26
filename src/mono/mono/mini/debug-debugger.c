@@ -118,7 +118,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_attach,
 	&debugger_detach,
 	&debugger_initialize,
-	&mono_get_lmf_addr
+	(void*)&mono_get_lmf_addr
 };
 
 static guint64
@@ -237,7 +237,7 @@ debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument)
 static guint64
 debugger_run_finally (guint64 context_argument, guint64 dummy)
 {
-	mono_debugger_run_finally (GUINT_TO_POINTER (context_argument));
+	mono_debugger_run_finally (GUINT_TO_POINTER ((gsize)context_argument));
 	return 0;
 }
 

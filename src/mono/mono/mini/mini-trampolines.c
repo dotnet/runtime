@@ -50,7 +50,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			mono_arch_patch_plt_entry (plt_entry, addr);
 		} else {
 			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
+				mono_jit_info_table_find (mono_domain_get (), (char*)code);
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
 

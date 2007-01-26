@@ -51,10 +51,6 @@ static FILE *mini_stats_fd = NULL;
 
 static void mini_usage (void);
 
-extern int mini_wapi_hps (int argc, char **argv);
-extern int mini_wapi_semdel (int argc, char **argv);
-extern int mini_wapi_seminfo (int argc, char **argv);
-
 /* This turns off command line globbing under win32 */
 #ifdef PLATFORM_WIN32
 int _CRT_glob = 0;
@@ -725,7 +721,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
-			g_print ("Mono JIT compiler version %s, (C) 2002-2006 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
+			g_print ("Mono JIT compiler version %s\nCopyright (C) 2002-2007 Novell, Inc and Contributors. www.mono-project.com\n", VERSION);
 			g_print (info);
 			if (mini_verbose) {
 				const char *cerror;
