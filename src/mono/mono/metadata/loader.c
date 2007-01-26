@@ -19,7 +19,6 @@
  */
 #include <config.h>
 #include <glib.h>
-#include <gmodule.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +35,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-dl.h>
 #include <mono/metadata/exception.h>
 
 MonoDefaults mono_defaults;
@@ -1006,6 +1006,28 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 	mono_loader_unlock ();
 }
 
+static GHashTable *global_module_map;
+
+static MonoDl*
+cached_module_load (const char *name, int flags, char **err)
+{
+	MonoDl *res;
+	mono_loader_lock ();
+	if (!global_module_map)
+		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
+	res = g_hash_table_lookup (global_module_map, name);
+	if (res) {
+		*err = NULL;
+		mono_loader_unlock ();
+		return res;
+	}
+	res = mono_dl_open (name, flags, err);
+	if (res)
+		g_hash_table_insert (global_module_map, g_strdup (name), res);
+	mono_loader_unlock ();
+	return res;
+}
+
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
@@ -1019,9 +1041,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	const char *import = NULL;
 	const char *orig_scope;
 	const char *new_scope;
+	char *error_msg;
 	char *full_name, *file_name;
 	int i;
-	GModule *gmodule = NULL;
+	MonoDl *module = NULL;
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
@@ -1062,7 +1085,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	/* we allow a special name to dlopen from the running process namespace */
 	if (strcmp (new_scope, "__Internal") == 0)
-		gmodule = g_module_open (NULL, G_MODULE_BIND_LAZY);
+		module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
 
 	/*
 	 * Try loading the module using a variety of names
@@ -1104,53 +1127,64 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 #endif
 		}
 
-		if (!gmodule) {
-			full_name = g_module_build_path (NULL, file_name);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-					"DllImport loading location: '%s'.", full_name);
-			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
-			if (!gmodule) {
+		if (!module) {
+			void *iter = NULL;
+			while ((full_name = mono_dl_build_path (NULL, file_name, &iter))) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-						"DllImport error loading library: '%s'.",
-						g_module_error ());
+						"DllImport loading location: '%s'.", full_name);
+				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+				if (!module) {
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+							"DllImport error loading library: '%s'.",
+							error_msg);
+					g_free (error_msg);
+				}
+				g_free (full_name);
+				if (module)
+					break;
 			}
-			g_free (full_name);
 		}
 
-		if (!gmodule) {
-			full_name = g_module_build_path (".", file_name);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+		if (!module) {
+			void *iter = NULL;
+			while ((full_name = mono_dl_build_path (".", file_name, &iter))) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 					"DllImport loading library: '%s'.", full_name);
-			gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
-			if (!gmodule) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+				if (!module) {
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 						"DllImport error loading library '%s'.",
-						g_module_error ());
+						error_msg);
+					g_free (error_msg);
+				}
+				g_free (full_name);
+				if (module)
+					break;
 			}
-			g_free (full_name);
 		}
 
-		if (!gmodule) {
+		if (!module) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 					"DllImport loading: '%s'.", file_name);
-			gmodule=g_module_open (file_name, G_MODULE_BIND_LAZY);
-			if (!gmodule) {
+			module = cached_module_load (file_name, MONO_DL_LAZY, &error_msg);
+			if (!module) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 						"DllImport error loading library '%s'.",
-						g_module_error ());
+						error_msg);
 			}
 		}
 
 		g_free (file_name);
 
-		if (gmodule)
+		if (module)
 			break;
 	}
 
-	if (!gmodule) {
+	if (!module) {
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
 				"DllImport unable to load library '%s'.",
-				g_module_error ());
+				error_msg);
+		g_free (error_msg);
 
 		if (exc_class) {
 			*exc_class = "DllNotFoundException";
@@ -1163,7 +1197,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 				"Searching for '%s'.", import);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
-		g_module_symbol (gmodule, import, &piinfo->addr); 
+		error_msg = mono_dl_symbol (module, import, &piinfo->addr); 
 	} else {
 		char *mangled_name = NULL, *mangled_name2 = NULL;
 		int mangle_charset;
@@ -1236,7 +1270,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 								"Probing '%s'.", mangled_name2);
 
-					g_module_symbol (gmodule, mangled_name2, &piinfo->addr);
+					error_msg = mono_dl_symbol (module, mangled_name2, &piinfo->addr);
 
 					if (piinfo->addr)
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
@@ -1252,6 +1286,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	}
 
 	if (!piinfo->addr) {
+		g_free (error_msg);
 		if (exc_class) {
 			*exc_class = "EntryPointNotFoundException";
 			*exc_arg = import;

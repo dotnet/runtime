@@ -8,6 +8,7 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/utils/mono-hash.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"
 
 struct _MonoAssembly {
@@ -22,7 +23,7 @@ struct _MonoAssembly {
 	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
-	GModule *aot_module;
+	MonoDl *aot_module;
 	MonoImage *image;
 	GSList *friend_assembly_names;
 	guint8 in_gac;

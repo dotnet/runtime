@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <glib.h>
-#include <gmodule.h>
 
 G_BEGIN_DECLS
 
