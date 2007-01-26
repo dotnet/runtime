@@ -32,8 +32,8 @@ static const char suffixes [][4] = {
 
 #define SO_HANDLE_TYPE HMODULE
 #define LL_SO_OPEN(file,flags) (file)? LoadLibrary ((file)): GetModuleHandle (NULL)
-#define LL_SO_CLOSE(module) do { if ((module)->main_module) FreeLibrary ((module)->handle); } while (0)
-#define LL_SO_SYMBOL(handle, name) GetProcAddress ((handle), (name))
+#define LL_SO_CLOSE(module) do { if (!(module)->main_module) FreeLibrary ((module)->handle); } while (0)
+#define LL_SO_SYMBOL(module, name) GetProcAddress ((module)->handle, (name))
 #define LL_SO_TRFLAGS(flags) 0
 #define LL_SO_ERROR() w32_dlerror ()
 
@@ -62,8 +62,8 @@ w32_dlerror (void)
 
 #define SO_HANDLE_TYPE void*
 #define LL_SO_OPEN(file,flags) dlopen ((file), (flags))
-#define LL_SO_CLOSE(handle) dlclose ((handle))
-#define LL_SO_SYMBOL(handle, name) dlsym ((handle), (name))
+#define LL_SO_CLOSE(module) dlclose ((module)->handle)
+#define LL_SO_SYMBOL(module, name) dlsym ((module)->handle, (name))
 #define LL_SO_TRFLAGS(flags) convert_flags ((flags))
 #define LL_SO_ERROR() g_strdup (dlerror ())
 
@@ -83,8 +83,8 @@ convert_flags (int flags)
 /* no duynamic loader supported */
 #define SO_HANDLE_TYPE void*
 #define LL_SO_OPEN(file,flags) NULL
-#define LL_SO_CLOSE(handle) 
-#define LL_SO_SYMBOL(handle, name) NULL
+#define LL_SO_CLOSE(module) 
+#define LL_SO_SYMBOL(module, name) NULL
 #define LL_SO_TRFLAGS(flags) (flags)
 #define LL_SO_ERROR() g_strdup ("No support for dynamic loader")
 
@@ -262,11 +262,11 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 		char *usname = malloc (strlen (name) + 2);
 		*usname = '_';
 		strcpy (usname + 1, name);
-		sym = LL_SO_SYMBOL (module->handle, usname);
+		sym = LL_SO_SYMBOL (module, usname);
 		free (usname);
 	}
 #else
-	sym = LL_SO_SYMBOL (module->handle, name);
+	sym = LL_SO_SYMBOL (module, name);
 #endif
 	if (sym) {
 		if (symbol)
