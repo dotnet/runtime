@@ -7,15 +7,12 @@
 
 #if defined (G_OS_WIN32)
 #define EXTERNAL_SYMBOL "GetProcAddress"
-#define INTERNAL_SYMBOL "dummy_export"
 #else
 #define EXTERNAL_SYMBOL "system"
-/* FIXME: g_module_symbol () must prepend the "_"  */
-#define INTERNAL_SYMBOL "_dummy_export"
 #endif
 
 void G_MODULE_EXPORT
-dummy_export ()
+dummy_test_export ()
 {
 }
 
@@ -42,7 +39,7 @@ test_module_symbol_null ()
 	if (!proc)
 		return FAILED ("external lookup failed. #4");
 
-	if (!g_module_symbol (m, INTERNAL_SYMBOL, &proc))
+	if (!g_module_symbol (m, "dummy_test_export", &proc))
 		return FAILED ("in-proc lookup failed. #5");
 
 	if (!proc)

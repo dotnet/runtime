@@ -1,3 +1,9 @@
+2007-01-27  Robert Jordan  <robertj@gmx.net>
+
+	* test/Makefile.am: Add linker option to be able to
+	load symbols from the main program.
+	* test/module.c: Clean-ups.
+
 2007-01-26  Robert Jordan  <robertj@gmx.net>
 
 	* configure.ac: Add PLATFORM_WIN32 conditional.
