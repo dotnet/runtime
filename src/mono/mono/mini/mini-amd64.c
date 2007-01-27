@@ -1691,7 +1691,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			}
 			break;
-		case OP_LOADU1_MEMBASE:
 		case OP_LOADI1_MEMBASE:
 			/* 
 			 * Note: if reg1 = reg2 the load op is removed
@@ -1716,7 +1715,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-		case OP_LOADU2_MEMBASE:
 		case OP_LOADI2_MEMBASE:
 			/* 
 			 * Note: if reg1 = reg2 the load op is removed

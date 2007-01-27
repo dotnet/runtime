@@ -1192,4 +1192,31 @@ COND:   ldloc.0
 	IL_0049:  ret 
     } // end of method Tests::test_5_float_branch_nan
 
+    .method private static  hidebysig
+           default void regress_80622_inner (object x)  cil managed
+    {
+		.locals (unsigned int8 i)
+        // Method begins at RVA 0x2050
+        // Code size 14 (0xe)
+        .maxstack 8
+        IL_1000:  ldarg.0
+        IL_1001:  unbox unsigned int8
+        IL_1006:  ldobj unsigned int8
+        IL_000b:  conv.ovf.i4.un
+        IL_000c:  pop
+        IL_000d:  ret
+    }
+
+    // method line 2
+    .method private static  hidebysig
+           default int32 test_0_regress_80622 ()  cil managed
+    {
+        .maxstack 8
+        IL_0000:  ldc.i4 255
+        IL_0005:  box unsigned int8
+        IL_000a:  call void class Tests::regress_80622_inner (object)
+		ldc.i4.0
+        IL_000f:  ret
+    }
+
 }
