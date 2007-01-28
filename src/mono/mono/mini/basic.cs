@@ -1210,4 +1210,69 @@ class Tests {
 
 		return (int)(i % j);
 	}
+
+	public static int test_0_div_opt () {
+		int i;
+
+		// Avoid cfolding this
+		i = 0;
+		for (int j = 0; j < 1234567; ++j)
+			i ++;
+		if ((i / 2) != 617283)
+			return 1;
+		if ((i / 4) != 308641)
+			return 2;
+		if ((i / 8) != 154320)
+			return 3;
+		if ((i / 16) != 77160)
+			return 4;
+
+		// Avoid cfolding this
+		i = 0;
+		for (int j = 0; j < 1234567; ++j)
+			i --;
+		if ((i / 2) != -617283)
+			return 5;
+		if ((i / 4) != -308641)
+			return 6;
+		if ((i / 8) != -154320)
+			return 7;
+		if ((i / 16) != -77160)
+			return 8;
+
+		return 0;
+	}
+
+	public static int test_0_rem_opt () {
+		int i;
+
+		// Avoid cfolding this
+		i = 0;
+		for (int j = 0; j < 29; ++j)
+			i ++;
+		if ((i % 2) != 1)
+			return 1;
+		if ((i % 4) != 1)
+			return 2;
+		if ((i % 8) != 5)
+			return 3;
+		if ((i % 16) != 13)
+			return 4;
+
+		// Avoid cfolding this
+		i = 0;
+		for (int j = 0; j < 29; ++j)
+			i --;
+		if ((i % 2) != -1)
+			return 5;
+		if ((i % 4) != -1)
+			return 6;
+		if ((i % 8) != -5)
+			return 7;
+		if ((i % 16) != -13)
+			return 8;
+
+		return 0;
+	}
+
 }

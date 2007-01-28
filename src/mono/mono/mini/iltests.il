@@ -612,11 +612,98 @@ COND:   ldloc.0
 		ret
 	}		
 
-	.method public static int32 test_1234_conv_u4 () il managed {
+	.method public static int32 test_1234_conv_u4 () cil managed {
 		.maxstack 16
 
 		ldc.i4 1234
 		conv.u4
+		conv.i4
+		ret
+	}
+
+	.method public static int32 test_2_lconv_to_ovf_i4_un () cil managed {
+		.maxstack 16
+		.locals init (int32 res)
+
+		ldc.i4 0x7fffffff
+		conv.u8
+		conv.ovf.i4.un
+		pop
+
+		ldc.i4.2
+		stloc res
+
+        .try {
+			ldc.i8 0x80000000
+			conv.ovf.i4.un
+			pop
+			ldc.i4.0
+			stloc res
+			leave RET
+		} catch [mscorlib]System.OverflowException {
+			pop
+			leave IL_0
+		}
+
+	IL_0:
+
+        .try {
+			ldc.i8 0xffffffff80000000
+			conv.ovf.i4.un
+			pop
+			ldc.i4.1
+			stloc res
+			leave RET
+		} catch [mscorlib]System.OverflowException {
+			pop
+			leave RET
+		}
+
+	RET:
+		ldloc res
+		ret
+	}
+
+    .method public static int32 test_1_lconv_to_ovf_i_un () cil managed {
+		.maxstack 16
+		.locals init (int32 res)
+
+		ldc.i4 0x7fffffff
+		conv.u8
+		conv.ovf.i.un
+		conv.i4
+		pop
+
+		ldc.i4.1
+		ret
+	}
+
+	.method public static int32 test_32_lconv_to_u8 () cil managed
+	{
+		.maxstack 16
+
+		ldc.i4 32
+		conv.i8
+		conv.u8
+		conv.i4
+		ret
+	}				
+
+	.method public static int32 test_32_lconv_to_i8 () cil managed
+	{
+		.maxstack 16
+
+		ldc.i4 32
+		conv.i8
+		conv.i8
+		conv.i4
+		ret
+	}				
+
+	.method public static int32 test_15_lconv_to_u () cil managed
+	{
+     	ldc.i8 0x10000000f
+		conv.u
 		conv.i4
 		ret
 	}
@@ -1023,6 +1110,30 @@ COND:   ldloc.0
 		ret
 	}
 
+	.method public static int32 test_5_different_in_stacks () cil managed {
+		.maxstack 16
+
+			ldc.i4.1
+		 	ldc.i4.1
+		 	beq L_0
+
+		 	ldc.i4.3
+		 	ldc.i4.3
+		 	br L_1
+		 	ldc.i4.3
+		 	ldc.i4.3
+		 	br L_2
+	 L_0: 	ldc.i4.2
+			ldc.i4.3
+			ldc.i4.1
+			ldc.i4.1
+			beq L_2
+	 L_1:	add
+			ret
+	 L_2:	add
+			ret
+	}
+
 	.method public static int32 test_3_larray_get_set () {
 		.locals init (
 			int32[2]	V_0)
@@ -1047,6 +1158,27 @@ COND:   ldloc.0
 			call instance int32 int32[0...]::Get(int32)
 			add
 			ret
+	}
+
+	.method public static int32 test_0_pop_side_effects () {
+		.try {
+			ldc.r8 1
+			ldc.r8 0
+			div
+			ckfinite
+			pop
+			leave FAIL
+		}
+		catch [mscorlib]System.ArithmeticException {
+			pop
+			leave L_0
+		}
+		L_0:
+		ldc.i4.0
+		ret
+		FAIL:
+		ldc.i4.1
+		ret
 	}
 
 	.method public static void regalloc_regress_78314_helper (object o) cil managed
