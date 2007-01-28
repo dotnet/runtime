@@ -1509,10 +1509,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *next, *temp, *temp2, *temp3, *last_ins = NULL;
 	ins = bb->code;
 
-	if (bb->max_ireg > cfg->rs->next_vireg)
-		cfg->rs->next_vireg = bb->max_ireg;
-	if (bb->max_freg > cfg->rs->next_vfreg)
-		cfg->rs->next_vfreg = bb->max_freg;
+	if (bb->max_vreg > cfg->rs->next_vreg)
+		cfg->rs->next_vreg = bb->max_vreg;
 
 	while (ins) {
 		switch (ins->opcode) {
@@ -2040,8 +2038,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 	bb->last_ins = last_ins;
 
-	bb->max_ireg = cfg->rs->next_vireg;
-	bb->max_freg = cfg->rs->next_vfreg;
+	bb->max_vreg = cfg->rs->next_vreg;
 }
 
 void

@@ -254,7 +254,7 @@ struct MonoBasicBlock {
         guint region;
 
 	/* The current symbolic register number, used in local register allocation. */
-	guint32 max_ireg, max_freg;
+	guint32 max_vreg;
 };
 
 /* BBlock flags */

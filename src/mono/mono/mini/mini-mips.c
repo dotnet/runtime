@@ -1066,7 +1066,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	iregs_to_save = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
 #endif
 	if (iregs_to_save) {
-		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
+		for (i = MONO_MAX_VREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
 				offset += sizeof (gulong);
 			}
@@ -1587,8 +1587,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	int imm;
 
 	/* setup the virtual reg allocator */
-	if (bb->max_ireg > cfg->rs->next_vireg)
-		cfg->rs->next_vireg = bb->max_ireg;
+	if (bb->max_vreg > cfg->rs->next_vreg)
+		cfg->rs->next_vreg = bb->max_vreg;
 
 	ins = bb->code;
 	while (ins) {
@@ -1735,7 +1735,7 @@ loop_start:
 		ins = ins->next;
 	}
 	bb->last_ins = last_ins;
-	bb->max_ireg = cfg->rs->next_vireg;
+	bb->max_vreg = cfg->rs->next_vreg;
 }
 
 void
@@ -3382,7 +3382,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (iregs_to_save) {
 		/* save used registers in own stack frame (at pos) */
 		pos = cfg->arch.iregs_offset;
-		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
+		for (i = MONO_MAX_VREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
 				g_assert (pos < cfg->stack_usage - 4);
 				mips_sw (code, i, mips_sp, pos);
@@ -3768,7 +3768,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	iregs_to_restore = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
 #endif
 	if (iregs_to_restore) {
-		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
+		for (i = MONO_MAX_VREGS-1; i >= 0; --i) {
 			if (iregs_to_restore & (1 << i)) {
 				mips_lw (code, i, mips_sp, pos);
 				pos += sizeof (gulong);

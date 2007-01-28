@@ -9988,8 +9988,7 @@ mini_select_instructions (MonoCompile *cfg)
 			}
 			emit_state (cfg, mbstate, MB_NTERM_stmt);
 		}
-		bb->max_ireg = cfg->rs->next_vireg;
-		bb->max_freg = cfg->rs->next_vfreg;
+		bb->max_vreg = cfg->rs->next_vreg;
 
 		if (bb->last_ins)
 			bb->last_ins->next = NULL;

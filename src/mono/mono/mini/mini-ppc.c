@@ -1567,8 +1567,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	int imm;
 
 	/* setup the virtual reg allocator */
-	if (bb->max_ireg > cfg->rs->next_vireg)
-		cfg->rs->next_vireg = bb->max_ireg;
+	if (bb->max_vreg > cfg->rs->next_vreg)
+		cfg->rs->next_vreg = bb->max_vreg;
 
 	ins = bb->code;
 	while (ins) {
@@ -1700,7 +1700,7 @@ loop_start:
 		ins = ins->next;
 	}
 	bb->last_ins = last_ins;
-	bb->max_ireg = cfg->rs->next_vireg;
+	bb->max_vreg = cfg->rs->next_vreg;
 	
 }
 
