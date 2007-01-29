@@ -53,11 +53,11 @@ endif
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
 if NO_VERSION_SCRIPT
-monoldflags=
-monobinldflags=
+monoldflags=$(export_ldflags)
+monobinldflags=$(export_ldflags)
 else
-monoldflags=-Wl,-version-script=$(srcdir)/ldscript
-monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono
+monoldflags=-Wl,-version-script=$(srcdir)/ldscript $(export_ldflags)
+monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags)
 endif
 
 if PLATFORM_WIN32
