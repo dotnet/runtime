@@ -1,3 +1,7 @@
+2007-01-29  Robert Jordan  <robertj@gmx.net>
+
+	* libmono.vcproj, winconfig.h: Reflect recent changes.
+
 2007-01-12  Gert Driesen  <drieseng@users.sourceforge.net>
 
 	* scripts/Makefile.am: Added 'al2'.

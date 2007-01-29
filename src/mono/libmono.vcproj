@@ -1290,6 +1290,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\mono\metadata\mono-mlist.c"
+				>
+			</File>
+			<File
+				RelativePath=".\mono\metadata\mono-mlist.h"
+				>
+			</File>
+			<File
 				RelativePath="mono\metadata\object-internals.h"
 				>
 			</File>

@@ -39,6 +39,9 @@
 /* #undef HAVE_SCANDIR */
 /* #undef HAVE_WORKING_SIGALTSTACK */
 
+/* The architecture this is running on */
+#define ARCHITECTURE "x86"
+
 /* String of disabled features */
 #define DISABLED_FEATURES "none"
 
@@ -433,4 +436,4 @@
 #define USED_GC_NAME "Included Boehm (with typed GC)"
 
 /* Version number of package */
-#define VERSION "1.1.15"
+#define VERSION "1.2"
