@@ -7,6 +7,6 @@ includedir=${prefix}/include/mono-@API_VER@
 Name: Mono Interpreter
 Description: Mono Interpreter Runtime
 Version: @VERSION@
-Requires: glib-2.0 gmodule-2.0 gthread-2.0
-Libs: -L${libdir} -lmint @libmono_ldflags@ -lm
+Requires: glib-2.0 gthread-2.0
+Libs: -L${libdir} @export_ldflags@ -lmint @libmono_ldflags@ -lm
 Cflags: -I${includedir} @libmono_cflags@

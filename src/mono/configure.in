@@ -44,11 +44,12 @@ libmono_cflags=""
 libmono_ldflags=""
 AC_SUBST(libmono_cflags)
 AC_SUBST(libmono_ldflags)
+export_ldflags=`(./libtool --config; echo eval echo \\$export_dynamic_flag_spec) | sh`
+AC_SUBST(export_ldflags)
 
 # Variable to have relocatable .pc files (lib, or lib64)
 reloc_libdir=`basename ${libdir}`
 AC_SUBST(reloc_libdir)
-
 
 dnl if linker handles the version script
 no_version_script=no

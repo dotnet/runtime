@@ -1,3 +1,11 @@
+
+Mon Jan 29 12:04:38 CET 2007 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, mint.pc.in mono-uninstalled.pc.in mono.pc.in:
+	put back the flag to export symbols from the binary which is
+	no more provided by gmodule (thanks to Robert Jordan <robertj@gmx.net>
+	for noticing).
+
 2007-01-29  Robert Jordan  <robertj@gmx.net>
 
 	* libmono.vcproj, winconfig.h: Reflect recent changes.
