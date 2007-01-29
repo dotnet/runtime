@@ -4558,7 +4558,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	
 	sig = mono_method_signature (method);
 
-	csig = mono_metadata_signature_alloc (method->klass->image, 4);
+	csig = mono_metadata_signature_alloc (target_klass->image, 4);
 
 	csig->ret = &mono_defaults.object_class->byval_arg;
 	if (method->klass->valuetype && mono_method_signature (method)->hasthis)
