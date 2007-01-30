@@ -233,22 +233,42 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code = NULL;
 	int i, offset, lmf;
+	int max_code_len = 768;
 
 	/* Now we'll create in 'buf' the MIPS trampoline code. This
 	   is the trampoline code common to all methods  */
 		
-	code = buf = mono_global_codeman_reserve (512);
+	code = buf = mono_global_codeman_reserve (max_code_len);
 		
 	/* Allocate the stack frame, and save the return address */
 	mips_addiu (code, mips_sp, mips_sp, -STACK);
 	mips_sw (code, mips_ra, mips_sp, STACK + MIPS_RET_ADDR_OFFSET);
 
+	/* we build the MonoLMF structure on the stack - see mini-mips.h */
 	/* offset of MonoLMF from sp */
-	lmf = STACK - sizeof (MonoLMF);
+	lmf = STACK - sizeof (MonoLMF) - 8;
+
 	for (i = 0; i < MONO_MAX_IREGS; i++)
 		mips_sw (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
 	for (i = 0; i < MONO_MAX_FREGS; i++)
 		mips_swc1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
+
+	/* Set the magic number */
+	mips_load_const (code, mips_at, MIPS_LMF_MAGIC2);
+	mips_sw (code, mips_at, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, magic));
+
+	/* save method info (it was in t8) */
+	mips_sw (code, mips_t8, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, method));
+
+	/* save frame pointer (caller fp) */
+	mips_sw (code, mips_fp, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, ebp));
+
+	/* save the IP (caller ip) */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		mips_sw (code, mips_zero, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, eip));
+	} else {
+		mips_sw (code, mips_ra, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, eip));
+	}
 
 	/* jump to mono_get_lmf_addr here */
 	mips_load (code, mips_t9, mono_get_lmf_addr);
@@ -257,42 +277,23 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* v0 now points at the (MonoLMF **) for the current thread */
 
-	/* we build the MonoLMF structure on the stack - see mini-mips.h
-	 * The pointer to the struct is put in mips_s0 (new_lmf).
-	 */
-
-	mips_addiu (code, mips_t2, mips_sp, lmf);
-
 	/* new_lmf->lmf_addr = lmf_addr -- useful when unwinding */
-	mips_sw (code, mips_v0, mips_t2, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+	mips_sw (code, mips_v0, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, lmf_addr));
 
 	/* new_lmf->previous_lmf = *lmf_addr */
 	mips_lw (code, mips_at, mips_v0, 0);
-	mips_sw (code, mips_at, mips_t2, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+	mips_sw (code, mips_at, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 
-	/* *(lmf_addr) = t2 */
-	mips_sw (code, mips_t2, mips_v0, 0);
-
-	/* save method info (it was in t8) */
-	mips_lw (code, mips_at, mips_t2, G_STRUCT_OFFSET(MonoLMF, iregs[mips_t8]));
-	mips_sw (code, mips_at, mips_t2, G_STRUCT_OFFSET(MonoLMF, method));
-
-	mips_sw (code, mips_sp, mips_t2, G_STRUCT_OFFSET(MonoLMF, ebp));
-
-	/* save the IP (caller ip) */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-		mips_sw (code, mips_zero, mips_t2, G_STRUCT_OFFSET(MonoLMF, eip));
-	} else {
-		mips_lw (code, mips_at, mips_sp, STACK + MIPS_RET_ADDR_OFFSET);
-		mips_sw (code, mips_at, mips_t2, G_STRUCT_OFFSET(MonoLMF, eip));
-	}
+	/* *(lmf_addr) = new_lmf */
+	mips_addiu (code, mips_at, mips_sp, lmf);
+	mips_sw (code, mips_at, mips_v0, 0);
 
 	/*
 	 * Now we're ready to call mips_magic_trampoline ().
 	 */
 
 	/* Arg 1: MonoMethod *method. */
-	mips_lw (code, mips_a0, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[mips_t8]));
+	mips_lw (code, mips_a0, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, method));
 		
 	/* Arg 2: code (next address to the instruction that called us) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -334,7 +335,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		if ((MONO_ARCH_CALLEE_SAVED_REGS | MONO_ARCH_CALLEE_REGS | MIPS_ARG_REGS) & (1 << i))
 		    mips_lw (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
 	}
-	/* XXX - Restore the float registers */
+	for (i = 0; i < MONO_MAX_FREGS; i++)
+		mips_lwc1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
 
 	/* Non-standard function epilogue. Instead of doing a proper
 	 * return, we just jump to the compiled code.
@@ -350,7 +352,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	mono_arch_flush_icache (buf, code - buf);
 	
 	/* Sanity check */
-	g_assert ((code - buf) <= 512);
+	g_assert ((code - buf) <= max_code_len);
 
 	return buf;
 }

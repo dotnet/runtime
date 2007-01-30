@@ -68,22 +68,20 @@ mono_arch_get_restore_context (void)
 	guint8 *code;
 	static guint8 start [128];
 	static int inited = 0;
+	guint32 iregs_to_restore;
 
 	if (inited)
 		return start;
 	inited = 1;
 	code = start;
 
+	iregs_to_restore = (MONO_ARCH_CALLEE_SAVED_REGS \
+			    | (1 << mips_sp) | (1 << mips_ra));
 	for (i = 0; i < MONO_SAVED_GREGS; ++i) {
-		if (MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) {
+		if (iregs_to_restore & (1 << i)) {
 			mips_lw (code, i, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[i]));
 		}
 	}
-
-	/* restore also the sp, fp and ra */
-	mips_lw (code, mips_sp, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_sp]));
-	mips_lw (code, mips_fp, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_fp]));
-	mips_lw (code, mips_ra, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_ra]));
 
 	/* Get the address to return to */
 	mips_lw (code, mips_t9, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_pc));
@@ -194,8 +192,8 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	MonoContext ctx;
 
 #ifdef DEBUG_EXCEPTIONS
-	g_print ("throw_exception: exc=%p eip=%x esp=%x rethrow=%d\n",
-	       exc, (unsigned int) eip, (unsigned int) esp, rethrow);
+	g_print ("throw_exception: exc=%p eip=%p esp=%p rethrow=%d\n",
+		 exc, (void *)eip, (void *) esp, rethrow);
 #endif
 
 	if (!restore_context)
@@ -227,7 +225,9 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	mono_handle_exception (&ctx, exc, (void *)eip, FALSE);
 #endif
 #ifdef DEBUG_EXCEPTIONS
-	g_print ("throw_exception: restore to %p\n", (void *) ctx.sc_pc);
+	g_print ("throw_exception: restore to pc=%p sp=%p fp=%p ctx=%p\n",
+		 (void *) ctx.sc_pc, (void *) ctx.sc_regs[mips_sp],
+		 (void *) ctx.sc_regs[mips_fp], &ctx);
 #endif
 	restore_context (&ctx);
 
@@ -419,6 +419,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+	gpointer fp = MONO_CONTEXT_GET_BP (ctx);
 	guint32 sp;
 
 	/* Avoid costly table lookup during stack overflow */
@@ -436,13 +437,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (managed)
 		*managed = FALSE;
 
+	*new_ctx = *ctx;
+	setup_context (new_ctx);
+
 	if (ji != NULL) {
 		int i;
 		gint32 address;
 		int offset = 0;
-
-		*new_ctx = *ctx;
-		setup_context (new_ctx);
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -461,40 +462,65 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (trace) {
 			*trace = mono_debug_print_stack_frame (ji->method, offset, domain);
 		}
+
+		/* My stack frame */
+		fp = MONO_CONTEXT_GET_BP (ctx);
+
 		/* Compute the previous stack frame */
-		sp = (guint32)(MONO_CONTEXT_GET_BP (ctx)) - (short)(*(guint32 *)(ji->code_start));
+		sp = (guint32)(fp) - (short)(*(guint32 *)(ji->code_start));
 
 		/* Sanity check the frame */
 		if (!sp || (sp == 0xffffffff)
-		    || (sp & 0x07) || (sp < 64*1024))
+		    || (sp & 0x07) || (sp < 64*1024)) {
+#ifdef DEBUG_EXCEPTIONS
+			g_print ("mono_arch_find_jit_info: bad stack sp=%p\n", (void *) sp);
+#endif
 			return (gpointer)-1;
-		MONO_CONTEXT_SET_BP (new_ctx, sp);
+		}
 
 		if (ji->method->save_lmf && 0) {
-			memcpy (&new_ctx->sc_fpregs, (char*)sp - sizeof (float) * MONO_SAVED_FREGS, sizeof (float) * MONO_SAVED_FREGS);
-			memcpy (&new_ctx->sc_regs, (char*)sp - sizeof (float) * MONO_SAVED_FREGS - sizeof (gulong) * MONO_SAVED_GREGS, sizeof (gulong) * MONO_SAVED_GREGS);
+			/* only enable this when prologue stops emitting
+			 * normal save of s-regs when save_lmf is true.
+			 * Will have to sync with prologue code at that point.
+			 */
+			memcpy (&new_ctx->sc_fpregs,
+				(char*)sp - sizeof (float) * MONO_SAVED_FREGS,
+				sizeof (float) * MONO_SAVED_FREGS);
+			memcpy (&new_ctx->sc_regs,
+				(char*)sp - sizeof (float) * MONO_SAVED_FREGS - sizeof (gulong) * MONO_SAVED_GREGS,
+				sizeof (gulong) * MONO_SAVED_GREGS);
 		} else if (ji->used_regs) {
-			/* keep updated with emit_prolog in mini-mips.c */
-			offset = 0;
-			/* FIXME handle floating point args */
-			for (i = 0; i < MONO_MAX_IREGS; i++) {
-				new_ctx->sc_regs [i] = 0;
+			guint32 *insn;
+			guint32 mask = ji->used_regs;
+
+			/* these all happen before adjustment of fp */
+			/* Look for sw ??, ????(sp) */
+			insn = ((guint32 *)ji->code_start) + 1;
+			while (!*insn || (*insn & 0xffe00000) == 0xafa00000) {
+				int reg = (*insn >> 16) & 0x1f;
+				mask &= ~(1 << reg);
+				new_ctx->sc_regs [reg] = *(guint32 *)(((guint32)fp) + (short)(*insn & 0x0000ffff));
+				insn++;
 			}
-			new_ctx->sc_regs [mips_fp] = sp;
-			new_ctx->sc_regs [mips_sp] = sp;
-			new_ctx->sc_regs [mips_ra] = *(guint32 *)(sp-4);
+			MONO_CONTEXT_SET_SP (new_ctx, sp);
+			MONO_CONTEXT_SET_BP (new_ctx, sp);
+			/* assert that we found all registers we were supposed to */
+			g_assert (!mask);
 		}
 		/* we substract 8, so that the IP points into the call instruction */
 		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_regs[mips_ra] - 8);
 
+		/* Sanity check -- we should have made progress here */
+		g_assert (new_ctx->sc_pc != ctx->sc_pc);
 		return ji;
 	} else if (*lmf) {
-		
-		*new_ctx = *ctx;
-		setup_context (new_ctx);
-
-		if (!(*lmf)->method)
+		if (!(*lmf)->method) {
+#ifdef DEBUG_EXCEPTIONS
+			g_print ("mono_arch_find_jit_info: bad lmf @ %p\n", (void *) *lmf);
+#endif
 			return (gpointer)-1;
+		}
+		g_assert (((*lmf)->magic == MIPS_LMF_MAGIC1) || ((*lmf)->magic == MIPS_LMF_MAGIC2));
 
 		if (trace) {
 			char *fname = mono_method_full_name ((*lmf)->method, TRUE);
@@ -507,13 +533,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
 		}
-
-#if 0
 		memcpy (&new_ctx->sc_regs, (*lmf)->iregs, sizeof (gulong) * MONO_SAVED_GREGS);
 		memcpy (&new_ctx->sc_fpregs, (*lmf)->fregs, sizeof (float) * MONO_SAVED_FREGS);
-#endif
-		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
+		/* ensure that we've made progress */
+		g_assert (new_ctx->sc_pc != ctx->sc_pc);
 		*lmf = (*lmf)->previous_lmf;
 
 		return ji ? ji : res;
@@ -687,7 +711,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	
 	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 #ifdef DEBUG_EXCEPTIONS
-	g_print ("mono_arch_handle_exception: pc=%p\n", mctx.sc_pc);
+	g_print ("mono_arch_handle_exception: pc=%p\n", (void *) mctx.sc_pc);
 #endif
 #ifdef CUSTOM_EXCEPTION_HANDLING
 	result = arch_handle_exception (&mctx, obj, test_only);
@@ -697,7 +721,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 #endif
 
 #ifdef DEBUG_EXCEPTIONS
-	g_print ("mono_arch_handle_exception: restore pc=%p\n", mctx.sc_pc);
+	g_print ("mono_arch_handle_exception: restore pc=%p\n", (void *)mctx.sc_pc);
 #endif
 	/* restore the context so that returning from the signal handler
 	 * will invoke the catch clause 
