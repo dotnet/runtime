@@ -1552,6 +1552,21 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 	return emit_call_body (cfg, code, patch_type, data);
 }
 
+static inline int
+store_membase_imm_to_store_membase_reg (int opcode)
+{
+	switch (opcode) {
+	case OP_STORE_MEMBASE_IMM:
+		return OP_STORE_MEMBASE_REG;
+	case OP_STOREI4_MEMBASE_IMM:
+		return OP_STOREI4_MEMBASE_REG;
+	case OP_STOREI8_MEMBASE_IMM:
+		return OP_STOREI8_MEMBASE_REG;
+	}
+
+	return -1;
+}
+
 /* FIXME: Add more instructions */
 #define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG) || ((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_ICONST) || ((ins)->opcode == OP_I8CONST) || ((ins)->opcode == OP_LOAD_MEMBASE))
 
@@ -1572,6 +1587,33 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = CEE_XOR;
 				ins->sreg1 = ins->dreg;
 				ins->sreg2 = ins->dreg;
+				/* Fall through */
+			}
+			else
+				break;
+		case CEE_XOR:
+			if ((ins->sreg1 == ins->sreg2) && (ins->sreg1 == ins->dreg)) {
+				MonoInst *ins2;
+
+				/* 
+				 * Replace STORE_MEMBASE_IMM 0 with STORE_MEMBASE_REG since 
+				 * the latter has length 2-3 instead of 6 (reverse constant
+				 * propagation). These instruction sequences are very common
+				 * in the initlocals bblock.
+				 */
+				for (ins2 = ins->next; ins2; ins2 = ins2->next) {
+					if (((ins2->opcode == OP_STORE_MEMBASE_IMM) || (ins2->opcode == OP_STOREI4_MEMBASE_IMM) || (ins2->opcode == OP_STOREI8_MEMBASE_IMM) || (ins2->opcode == OP_STORE_MEMBASE_IMM)) && (ins2->inst_imm == 0)) {
+						ins2->opcode = store_membase_imm_to_store_membase_reg (ins2->opcode);
+						ins2->sreg1 = ins->dreg;
+					} else if ((ins2->opcode == OP_STOREI1_MEMBASE_IMM) || (ins2->opcode == OP_STOREI2_MEMBASE_IMM) || (ins2->opcode == OP_STOREI8_MEMBASE_REG) || (ins2->opcode == OP_STORE_MEMBASE_REG)) {
+						/* Continue */
+					} else if (((ins2->opcode == OP_ICONST) || (ins2->opcode == OP_I8CONST)) && (ins2->dreg == ins->dreg) && (ins2->inst_c0 == 0)) {
+						NULLIFY_INS (ins2);
+						/* Continue */
+					} else {
+						break;
+					}
+				}
 			}
 			break;
 		case OP_MUL_IMM: 
@@ -3076,6 +3118,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
+			break;
+		case CEE_NOP:
 			break;
 		case CEE_BR:
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);

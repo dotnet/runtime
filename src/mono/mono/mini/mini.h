@@ -105,6 +105,11 @@ enum {
 		}	\
 	} while (0)
 
+#define NULLIFY_INS(ins) do { \
+        (ins)->opcode = CEE_NOP; \
+        (ins)->dreg = (ins)->sreg1 = (ins)->sreg2 = -1; \
+    } while (0)
+
 typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
 typedef struct MonoCallArgParm MonoCallArgParm;
