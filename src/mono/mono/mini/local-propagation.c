@@ -493,7 +493,11 @@ mono_cprop_copy_values (MonoCompile *cfg, TreeMover *tree_mover, MonoInst *tree,
 				*tree = *cp;
 			}
 		} else {
-			if ((tree->inst_i0->inst_vtype->type == cp->inst_vtype->type) ||
+			//MonoType *inst_i0_underlying_type = mono_type_get_underlying_type (tree->inst_i0->inst_vtype);
+			//MonoType *cp_underlying_type = mono_type_get_underlying_type (cp->inst_vtype);
+			MonoType *inst_i0_underlying_type = (tree->inst_i0->inst_vtype);
+			MonoType *cp_underlying_type = (cp->inst_vtype);
+			if ((inst_i0_underlying_type->type == cp_underlying_type->type) ||
 			    (tree->type == STACK_OBJ) || (tree->type == STACK_MP)) {
 				if (cfg->opt & MONO_OPT_COPYPROP) {
 					//{ static int c = 0; printf ("VCOPY %d\n", ++c); }
