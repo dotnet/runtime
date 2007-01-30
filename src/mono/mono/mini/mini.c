@@ -22,6 +22,10 @@
 #include <pthread.h>
 #endif
 
+#ifdef PLATFORM_WIN32
+#define _WIN32_WINNT 0x0500
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
@@ -11110,6 +11114,8 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+#ifndef PLATFORM_WIN32
+
 static void
 SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 {
@@ -11180,6 +11186,16 @@ SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 }
 
 static void
+SIG_HANDLER_SIGNATURE (sigusr2_signal_handler)
+{
+	gboolean enabled = mono_trace_is_enabled ();
+
+	mono_trace_enable (!enabled);
+}
+
+#endif
+
+static void
 SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 {
 	MonoException *exc;
@@ -11188,14 +11204,6 @@ SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
-}
-
-static void
-SIG_HANDLER_SIGNATURE (sigusr2_signal_handler)
-{
-	gboolean enabled = mono_trace_is_enabled ();
-
-	mono_trace_enable (!enabled);
 }
 
 #ifdef PLATFORM_MACOSX
@@ -11451,6 +11459,21 @@ enable_rtc_timer (gboolean enable)
 }
 #endif
 
+#ifdef PLATFORM_WIN32
+static HANDLE win32_main_thread;
+static MMRESULT win32_timer;
+
+static void CALLBACK
+win32_time_proc (UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
+{
+	CONTEXT context;
+
+	context.ContextFlags = CONTEXT_CONTROL;
+	if (GetThreadContext (win32_main_thread, &context))
+		mono_profiler_stat_hit ((guchar *) context.Eip, &context);
+}
+#endif
+
 static void
 setup_stat_profiler (void)
 {
@@ -11503,6 +11526,27 @@ setup_stat_profiler (void)
 		return;
 	inited = 1;
 	add_signal_handler (SIGPROF, sigprof_signal_handler);
+#elif defined (PLATFORM_WIN32)
+	static int inited = 0;
+	TIMECAPS timecaps;
+
+	if (inited)
+		return;
+
+	inited = 1;
+	if (timeGetDevCaps (&timecaps, sizeof (timecaps)) != TIMERR_NOERROR)
+		return;
+
+	if ((win32_main_thread = OpenThread (READ_CONTROL | THREAD_GET_CONTEXT, FALSE, GetCurrentThreadId ())) == NULL)
+		return;
+
+	if (timeBeginPeriod (1) != TIMERR_NOERROR)
+		return;
+
+	if ((win32_timer = timeSetEvent (1, 0, win32_time_proc, 0, TIME_PERIODIC)) == 0) {
+		timeEndPeriod (1);
+		return;
+	}
 #endif
 }
 
