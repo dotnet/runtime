@@ -582,40 +582,6 @@ mono_arch_break (void)
 {
 }
 
-static gboolean
-is_regsize_var (MonoType *t) {
-	if (t->byref)
-		return TRUE;
-	t = mono_type_get_underlying_type (t);
-	switch (t->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_BOOLEAN:
-		return TRUE;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		return TRUE;
-	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (t))
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return FALSE;
-	}
-	return FALSE;
-}
-
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -658,7 +624,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
-		if (is_regsize_var (ins->inst_vtype)) {
+		if (mono_is_regsize_var (ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
 			vars = g_list_prepend (vars, vmv);

@@ -912,6 +912,7 @@ gint32*           mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean bac
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align) MONO_INTERNAL;
 void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, const char * exname) MONO_INTERNAL;
+gboolean          mono_is_regsize_var (MonoType *t) MONO_INTERNAL;
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void) MONO_INTERNAL;

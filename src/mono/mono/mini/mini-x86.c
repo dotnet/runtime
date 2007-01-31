@@ -662,34 +662,6 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 	return FALSE;
 }
 
-static gboolean
-is_regsize_var (MonoType *t) {
-	if (t->byref)
-		return TRUE;
-	switch (mono_type_get_underlying_type (t)->type) {
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		return TRUE;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		return TRUE;
-	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (t))
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return FALSE;
-	}
-	return FALSE;
-}
-
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -710,9 +682,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
 		/* we dont allocate I1 to registers because there is no simply way to sign extend 
 		 * 8bit quantities in caller saved registers on x86 */
-		if (is_regsize_var (ins->inst_vtype) || (ins->inst_vtype->type == MONO_TYPE_BOOLEAN) || 
-		    (ins->inst_vtype->type == MONO_TYPE_U1) || (ins->inst_vtype->type == MONO_TYPE_U2)||
-		    (ins->inst_vtype->type == MONO_TYPE_I2) || (ins->inst_vtype->type == MONO_TYPE_CHAR)) {
+		if (mono_is_regsize_var (ins->inst_vtype) && (ins->inst_vtype->type != MONO_TYPE_I1)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
 			vars = g_list_prepend (vars, vmv);
