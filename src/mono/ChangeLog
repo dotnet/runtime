@@ -1,3 +1,9 @@
+
+Thu Feb 1 12:29:23 CET 2007 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: include LIBS in libmono_ldflags on all archs.
+	* mint.pc.in, mono-uninstalled.pc.in, mono.pc.in: removed extra -lm.
+
 2007-02-01  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: Naive attempt at getting -ldl in mono.pc
