@@ -1056,8 +1056,8 @@ mono_local_cprop (MonoCompile *cfg) MONO_INTERNAL;
 MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip) MONO_INTERNAL;
 MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip) MONO_INTERNAL;
 
-extern int mini_wapi_hps     (int argc, char **argv) MONO_INTERNAL;
-extern int mini_wapi_semdel  (int argc, char **argv) MONO_INTERNAL;
-extern int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
+int mono_wapi_hps     (int argc, char **argv) MONO_INTERNAL;
+int mono_wapi_semdel  (int argc, char **argv) MONO_INTERNAL;
+int mono_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_H__ */
