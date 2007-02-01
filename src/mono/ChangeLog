@@ -1,4 +1,7 @@
+2007-02-01  Geoff Norton  <gnorton@customerdna.com>
 
+        * configure.in:  Support NetBSD GC.
+		
 Thu Feb 1 12:29:23 CET 2007 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: include LIBS in libmono_ldflags on all archs.

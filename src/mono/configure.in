@@ -83,14 +83,15 @@ case "$host" in
 		;;
 	*-*-*netbsd*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DGC_NETBSD_THREADS -D_GNU_SOURCE"
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
 		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
 		libmono_ldflags="-pthread"
 		need_link_unlink=yes
-		libdl=
-		libgc_threads=no
+		libdl="-ldl"
+		libgc_threads=pthreads
+		with_sigaltstack=no
 		;;
 # these flags will work for all versions of -STABLE
 #
