@@ -1,3 +1,7 @@
+2007-02-01  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Naive attempt at getting -ldl in mono.pc
+
 2007-01-31  Marek Habersack  <grendello@gmail.com>
 
 	* data/net_2_0/machine.config: prepare the configuration for the

@@ -6,7 +6,7 @@ AC_CANONICAL_SYSTEM
 m4_ifdef([_A][M_PROG_TAR],[_A][M_SET_OPTION([tar-ustar])])
 
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono,1.2)
+AM_INIT_AUTOMAKE(mono,1.2.3)
 AM_MAINTAINER_MODE
 
 API_VER=1.0
@@ -238,6 +238,7 @@ case "$host" in
 		libdl="-ldl"
 		;;
 esac
+libmono_ldflags="$libmono_ldflags $libdl"
 AC_MSG_RESULT(ok)
 
 if test x$need_link_unlink = xyes; then
