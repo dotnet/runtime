@@ -27,7 +27,7 @@ stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 lreg: CEE_LDIND_I8 (OP_REGVAR) {
 	/* reg2 contains the most significant word */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg2, state->left->tree->dreg);
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = state->reg1;
 	tree->sreg1 = state->left->tree->dreg + 1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -103,7 +103,7 @@ base: OP_LDADDR (reg) {
 stmt: OP_OUTARG (OP_LDADDR (reg)) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -143,7 +143,7 @@ stmt: OP_SETRET (OP_ICONST) {
 stmt: OP_OUTARG (reg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -154,7 +154,7 @@ stmt: OP_OUTARG (reg) {
 stmt: OP_OUTARG (OP_REGVAR) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -165,7 +165,7 @@ stmt: OP_OUTARG (OP_REGVAR) {
 stmt: OP_OUTARG (OP_ICONST) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREGIMM;
+	tree->opcode = OP_ICONST;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -176,7 +176,7 @@ stmt: OP_OUTARG (OP_ICONST) {
 stmt: OP_OUTARG (OP_I8CONST) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREGIMM;
+	tree->opcode = OP_ICONST;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -216,8 +216,8 @@ stmt: OP_SPARC_OUTARG_REGPAIR (lreg) {
 	int dreg = mono_regstate_next_int (s->rs);
 	int dreg2 = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, state->left->reg2);
-	tree->opcode = OP_SETREG;
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, dreg, state->left->reg2);
+	tree->opcode = OP_MOVE;
 	tree->dreg = dreg2;
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -288,7 +288,7 @@ stmt: OP_SPARC_OUTARG_SPLIT_REG_STACK (lreg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
 	int dreg = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, state->left->reg2);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, dreg, state->left->reg2);
 	tree->opcode = OP_STOREI4_MEMBASE_REG;
 	tree->inst_destbasereg = tree->inst_right->inst_basereg;
 	tree->inst_offset = tree->inst_right->inst_imm + 4;
@@ -361,7 +361,7 @@ reg: OP_OUTARG_VT (base) {
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
@@ -382,7 +382,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGOFFSET)) {
 stmt: OP_OUTARG_VT (OP_ICONST) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREGIMM;
+	tree->opcode = OP_ICONST;
 	tree->dreg = mono_regstate_next_int (s->rs); 
 	tree->inst_imm = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -593,14 +593,14 @@ stmt: OP_SETRET (CEE_LDIND_U4(base)) {
 }
 
 stmt: OP_SETRET (CEE_LDIND_I4(OP_REGVAR)) {
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = sparc_i0;
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_SETRET (CEE_LDIND_I(OP_REGVAR)) {
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = sparc_i0;
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -610,7 +610,7 @@ stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)),
 stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);

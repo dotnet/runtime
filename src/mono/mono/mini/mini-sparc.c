@@ -2717,7 +2717,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_GENERAL (ins, sparc_bne, "OverflowException", TRUE, sparc_icc_short);
 			break;
 		case OP_ICONST:
-		case OP_SETREGIMM:
 			sparc_set (code, ins->inst_c0, ins->dreg);
 			break;
 		case OP_I8CONST:
@@ -2730,7 +2729,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			if (ins->sreg1 != ins->dreg)
 				sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
@@ -4234,7 +4232,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *call, int this_re
 	if (vt_reg != -1) {
 #ifdef SPARCV9
 		MonoInst *ins;
-		MONO_INST_NEW (cfg, ins, OP_SETREG);
+		MONO_INST_NEW (cfg, ins, OP_MOVE);
 		ins->sreg1 = vt_reg;
 		ins->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, ins);
@@ -4251,7 +4249,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *call, int this_re
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_SETREG);
+		MONO_INST_NEW (cfg, this, OP_MOVE);
 		this->type = this_type;
 		this->sreg1 = this_reg;
 		this->dreg = mono_regstate_next_int (cfg->rs);
