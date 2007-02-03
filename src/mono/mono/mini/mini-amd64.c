@@ -3914,6 +3914,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * hack to overcome limits in x86 reg allocator 
 			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
 			 */
+			/* The pushes invalidate rsp */
+			if ((breg == AMD64_RAX) || (breg == AMD64_RSP)) {
+				amd64_mov_reg_reg (code, AMD64_R11, breg, 8);
+				breg = AMD64_R11;
+			}
+
 			if (ins->dreg != AMD64_RAX)
 				amd64_push_reg (code, AMD64_RAX);
 			
@@ -3922,11 +3928,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_push_reg (code, AMD64_RDX);
 				amd64_mov_reg_reg (code, AMD64_RDX, AMD64_RAX, size);
 				sreg2 = AMD64_RDX;
-			}
-
-			if (breg == AMD64_RAX) {
-				amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-				breg = AMD64_R11;
 			}
 
 			amd64_mov_reg_membase (code, AMD64_RAX, breg, ins->inst_offset, size);
