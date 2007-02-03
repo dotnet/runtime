@@ -17,32 +17,32 @@ public class InterlockTest
 		it.test = 0;
 		int c = Interlocked.Exchange (ref it.test, 1);
 		if (c != 0)
-			return -1;
+			return 1;
 
 		if (it.test != 1)
-			return -2;
+			return 2;
 
 		a = 1;
 		b = Interlocked.Increment (ref a);
 		if (a != 2)
-			return -3;
+			return 3;
 		if (b != 2)
-			return -4;
+			return 4;
 
 		a = 2;
 		b = Interlocked.Decrement (ref a);
 		if (b != 1)
-			return -3;
+			return 3;
 		if (a != 1)
-			return -4;
+			return 4;
 
 		string s = IncTest ();
 		if (s != "A1")
-			return -5;
+			return 5;
 
 		s = IncTest ();
 		if (s != "A2")
-			return -6;
+			return 6;
 
 		Thread.MemoryBarrier ();
 
