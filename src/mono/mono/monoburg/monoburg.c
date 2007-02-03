@@ -276,6 +276,7 @@ emit_header ()
 	output ("#ifndef MBTREE_LEFT\n#define MBTREE_LEFT(t) ((t)->left)\n#endif\n");
 	output ("#ifndef MBTREE_RIGHT\n#define MBTREE_RIGHT(t) ((t)->right)\n#endif\n");
 	output ("#ifndef MBTREE_STATE\n#define MBTREE_STATE(t) ((t)->state)\n#endif\n");
+	output ("#ifndef MBREG_TYPE\n#define MBREG_TYPE gint32\n#endif\n");
 	output ("#ifndef MBCGEN_TYPE\n#define MBCGEN_TYPE int\n#endif\n");
 	output ("#ifndef MBALLOC_STATE\n#define MBALLOC_STATE g_new (MBState, 1)\n#endif\n");
 	output ("#ifndef MBCOST_DATA\n#define MBCOST_DATA gpointer\n#endif\n");
@@ -334,7 +335,7 @@ emit_state ()
 
 	if (dag_mode) {
 		output ("\tMBTREE_TYPE\t *tree;\n");
-		output ("\tgint32 reg1, reg2;\n");
+		output ("\tMBREG_TYPE\t reg1, reg2;\n");
 	}
 	
 	output ("\tMBState\t\t*left, *right;\n");
