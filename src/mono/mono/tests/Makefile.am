@@ -202,6 +202,7 @@ TEST_CS_SRC=			\
 	bug-46781.cs		\
 	bug-48015.cs		\
 	bug-42136.cs		\
+	bug-59286.cs		\
 	bug-70561.cs		\
 	bug-78311.cs		\
 	bug-78653.cs		\
