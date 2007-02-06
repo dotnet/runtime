@@ -266,7 +266,7 @@ mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start
 
 	ctx = *start_ctx;
 
-	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
+	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		/* 
 		 * FIXME: mono_find_jit_info () will need to be able to return a different
 		 * MonoDomain when apddomain transitions are found on the stack.
@@ -309,7 +309,7 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboole
 #endif
 	}
 
-	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
+	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
@@ -375,7 +375,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 		ctx = new_ctx;
 		
-		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
+		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_SP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
 		/* skip all wrappers ??*/
@@ -723,7 +723,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				has_dynamic_methods = TRUE;
 
 			if (stack_overflow)
-				free_stack = (guint8*)(MONO_CONTEXT_GET_BP (ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
+				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
 			else
 				free_stack = 0xffffff;
 
