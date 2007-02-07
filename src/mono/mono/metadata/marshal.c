@@ -82,7 +82,12 @@ static MonoDisHelper marshal_dh = {
 };
 #endif 
 
-/* This mutex protects the various marshalling related caches in MonoImage */
+/* 
+ * This mutex protects the various marshalling related caches in MonoImage
+ * and a few other data structures static to this file.
+ * Note that when this lock is held it is not possible to take other runtime
+ * locks like the loader lock.
+ */
 #define mono_marshal_lock() EnterCriticalSection (&marshal_mutex)
 #define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
 static CRITICAL_SECTION marshal_mutex;
@@ -579,12 +584,14 @@ delegate_hash_table_remove (MonoDelegate *d)
 static void
 delegate_hash_table_add (MonoDelegate *d) 
 {
+#ifdef HAVE_MOVING_COLLECTOR
+	guint32 gchandle = mono_gchandle_new_weakref ((MonoObject*)d, FALSE);
+#endif
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 #ifdef HAVE_MOVING_COLLECTOR
-	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline,
-		GUINT_TO_POINTER (mono_gchandle_new_weakref ((MonoObject*)d, FALSE)));
+	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
 #else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
 #endif
@@ -605,6 +612,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 
 #ifdef HAVE_MOVING_COLLECTOR
 	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, ftn));
+	mono_marshal_unlock ();
 	if (gchandle)
 		d = (MonoDelegate*)mono_gchandle_get_target (gchandle);
 	else
@@ -1094,7 +1102,7 @@ mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
  * Create a MonoMethod from this method builder.
  * Returns: the newly created method.
  *
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Takes the loader lock.
  */
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
@@ -2829,17 +2837,24 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 {
 	MonoMethod *res;
 
-	mono_loader_lock ();
 	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, key);
-	if (!res) {
-		/* This does not acquire any locks */
-		res = mono_mb_create_method (mb, sig, max_stack);
-		g_hash_table_insert (cache, key, res);
-		g_hash_table_insert (wrapper_hash, res, key);
-	}
 	mono_marshal_unlock ();
-	mono_loader_unlock ();
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, max_stack);
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, key);
+		if (!res) {
+			res = newm;
+			g_hash_table_insert (cache, key, res);
+			g_hash_table_insert (wrapper_hash, res, key);
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 
 	return res;
 }		
@@ -2862,7 +2877,11 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 		case MONO_WRAPPER_XDOMAIN_DISPATCH: res = wrps->xdomain_dispatch; break;
 		}
 	}
-
+	
+	/* it is important to do the unlock after the load from wrps, since in
+	 * mono_remoting_mb_create_and_cache () we drop the marshal lock to be able
+	 * to take the loader lock and some other thread may set the fields.
+	 */
 	mono_marshal_unlock ();
 	return res;
 }
@@ -2876,7 +2895,6 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	MonoRemotingMethods *wrps;
 	GHashTable *cache = key->klass->image->remoting_invoke_cache;
 
-	mono_loader_lock ();
 	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (cache, key);
 	if (!wrps) {
@@ -2891,15 +2909,22 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 	case MONO_WRAPPER_XDOMAIN_DISPATCH: res = &wrps->xdomain_dispatch; break;
 	default: g_assert_not_reached (); break;
 	}
-	
-	if (*res == NULL) {
-		/* This does not acquire any locks */
-		*res = mono_mb_create_method (mb, sig, max_stack);
-		g_hash_table_insert (wrapper_hash, *res, key);
-	}
-
 	mono_marshal_unlock ();
-	mono_loader_unlock ();
+
+	if (*res == NULL) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, max_stack);
+
+		mono_marshal_lock ();
+		if (!*res) {
+			*res = newm;
+			g_hash_table_insert (wrapper_hash, *res, key);
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 
 	return *res;
 }		
@@ -3215,11 +3240,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 
 	mono_marshal_emit_native_wrapper(mono_defaults.corlib, mb_native, sig_native, piinfo, mspecs, piinfo->addr);
 
-	mono_loader_lock ();
-	mono_marshal_lock ();
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
-	mono_marshal_unlock ();
-	mono_loader_unlock ();
 
 	mono_mb_free (mb_native);
 
@@ -4485,11 +4506,53 @@ signature_dup_add_this (MonoMethodSignature *sig, MonoClass *klass)
 }
 
 typedef struct {
-	MonoMethod *ctor;
+	MonoMethodSignature *ctor_sig;
 	MonoMethodSignature *sig;
 } CtorSigPair;
 
+/* protected by the marshal lock, contains CtorSigPair pointers */
+static GSList *strsig_list = NULL;
 
+static MonoMethodSignature *
+lookup_string_ctor_signature (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *callsig;
+	CtorSigPair *cs;
+	GSList *item;
+
+	mono_marshal_lock ();
+	callsig = NULL;
+	for (item = strsig_list; item; item = item->next) {
+		cs = item->data;
+		/* mono_metadata_signature_equal () is safe to call with the marshal lock
+		 * because it is lock-free.
+		 */
+		if (mono_metadata_signature_equal (sig, cs->ctor_sig)) {
+			callsig = cs->sig;
+			break;
+		}
+	}
+	mono_marshal_unlock ();
+	return callsig;
+}
+
+static MonoMethodSignature *
+add_string_ctor_signature (MonoMethod *method)
+{
+	MonoMethodSignature *callsig;
+	CtorSigPair *cs;
+
+	callsig = signature_dup (method->klass->image, mono_method_signature (method));
+	callsig->ret = &mono_defaults.string_class->byval_arg;
+	cs = g_new (CtorSigPair, 1);
+	cs->sig = callsig;
+	cs->ctor_sig = mono_method_signature (method);
+
+	mono_marshal_lock ();
+	strsig_list = g_slist_prepend (strsig_list, cs);
+	mono_marshal_unlock ();
+	return callsig;
+}
 
 /*
  * generates IL code for the runtime invoke function 
@@ -4507,7 +4570,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	GHashTable *cache = NULL;
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
-	GSList *item;
 	static MonoString *string_dummy = NULL;
 	static MonoMethodSignature *dealy_abort_sig = NULL;
 	int i, pos, posna;
@@ -4515,28 +4577,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	g_assert (method);
 
-	mono_marshal_lock ();
-
 	if (method->string_ctor) {
-		static GSList *strsig_list = NULL;
-		CtorSigPair *cs;
-
-		callsig = NULL;
-		for (item = strsig_list; item; item = item->next) {
-			cs = item->data;
-			if (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cs->ctor))) {
-				callsig = cs->sig;
-				break;
-			}
-		}
-		if (!callsig) {
-			callsig = signature_dup (method->klass->image, mono_method_signature (method));
-			callsig->ret = &mono_defaults.string_class->byval_arg;
-			cs = g_new (CtorSigPair, 1);
-			cs->sig = callsig;
-			cs->ctor = method;
-			strsig_list = g_slist_prepend (strsig_list, cs);
-		}
+		callsig = lookup_string_ctor_signature (mono_method_signature (method));
+		if (!callsig)
+			callsig = add_string_ctor_signature (method);
 	} else {
 		if (method->klass->valuetype && mono_method_signature (method)->hasthis) {
 			/* 
@@ -4567,6 +4611,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	cache = target_klass->image->runtime_invoke_cache;
 
 	/* from mono_marshal_find_in_cache */
+	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, callsig);
 	mono_marshal_unlock ();
 
@@ -4791,19 +4836,27 @@ handle_enum:
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* taken from mono_mb_create_and_cache */
-	mono_loader_lock ();
 	mono_marshal_lock ();
-
 	res = g_hash_table_lookup (cache, callsig);
+	mono_marshal_unlock ();
+
 	/* Somebody may have created it before us */
 	if (!res) {
-		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
-		g_hash_table_insert (cache, callsig, res);
-		g_hash_table_insert (wrapper_hash, res, callsig);
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, csig, sig->param_count + 16);
+
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, callsig);
+		if (!res) {
+			res = newm;
+			g_hash_table_insert (cache, callsig, res);
+			g_hash_table_insert (wrapper_hash, res, callsig);
+		} else {
+			mono_free_method (newm);
+		}
+		mono_marshal_unlock ();
 	}
 
-	mono_marshal_unlock ();
-	mono_loader_unlock ();
 	/* end mono_mb_create_and_cache */
 
 	mono_mb_free (mb);
@@ -9300,9 +9353,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	mono_mb_emit_exception (mb, "IndexOutOfRangeException", NULL);
 
 	g_free (branch_positions);
-	mono_loader_lock ();
 	ret = mono_mb_create_method (mb, sig, 4);
-	mono_loader_unlock ();
 	mono_mb_free (mb);
 
 	/* cache the result */
