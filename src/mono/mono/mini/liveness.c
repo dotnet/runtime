@@ -223,8 +223,8 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 	}
 }
 
-static void
-handle_exception_clauses (MonoCompile *cfg)
+void
+mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
 	GSList *visited = NULL;
@@ -474,15 +474,6 @@ mono_analyze_liveness (MonoCompile *cfg)
 			}
 		}
 	}
-
-	/* todo: remove code when we have verified that the liveness for try/catch blocks
-	 * works perfectly 
-	 */
-	/* 
-	 * Currently, this can't be commented out since exception blocks are not
-	 * processed during liveness analysis.
-	 */
-	handle_exception_clauses (cfg);
 
 	/*
 	 * Arguments need to have their live ranges extended to the beginning of

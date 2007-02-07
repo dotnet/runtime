@@ -10510,6 +10510,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		g_list_free (regs);
 	}
 
+	/* todo: remove code when we have verified that the liveness for try/catch blocks
+	 * works perfectly 
+	 */
+	/* 
+	 * Currently, this can't be commented out since exception blocks are not
+	 * processed during liveness analysis.
+	 */
+	mono_liveness_handle_exception_clauses (cfg);
+
 	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs;
 		
