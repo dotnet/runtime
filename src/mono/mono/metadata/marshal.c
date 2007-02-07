@@ -545,6 +545,11 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	return delegate->delegate_trampoline;
 }
 
+/* 
+ * this hash table maps from a delegate trampoline object to a weak reference
+ * of the delegate. As an optimizations with a non-moving GC we store the
+ * object pointer itself, otherwise we use a GC handle.
+ */
 static GHashTable *delegate_hash_table;
 
 static GHashTable *
@@ -555,34 +560,59 @@ delegate_hash_table_new (void) {
 static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
+#ifdef HAVE_MOVING_COLLECTOR
+	guint32 gchandle;
+#endif
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
+#ifdef HAVE_MOVING_COLLECTOR
+	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
+#endif
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
 	mono_marshal_unlock ();
+#ifdef HAVE_MOVING_COLLECTOR
+	mono_gchandle_free (gchandle);
+#endif
 }
 
-void
+static void
 delegate_hash_table_add (MonoDelegate *d) 
 {
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
+#ifdef HAVE_MOVING_COLLECTOR
+	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline,
+		GUINT_TO_POINTER (mono_gchandle_new_weakref ((MonoObject*)d, FALSE)));
+#else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
+#endif
 	mono_marshal_unlock ();
 }
 
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
+#ifdef HAVE_MOVING_COLLECTOR
+	guint32 gchandle;
+#endif
 	MonoDelegate *d;
 
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 
+#ifdef HAVE_MOVING_COLLECTOR
+	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, ftn));
+	if (gchandle)
+		d = (MonoDelegate*)mono_gchandle_get_target (gchandle);
+	else
+		d = NULL;
+#else
 	d = g_hash_table_lookup (delegate_hash_table, ftn);
 	mono_marshal_unlock ();
+#endif
 	if (d == NULL) {
 		/* This is a native function, so construct a delegate for it */
 		static MonoClass *UnmanagedFunctionPointerAttribute;
