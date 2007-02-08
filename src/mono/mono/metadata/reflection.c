@@ -34,6 +34,12 @@
 #include "mono-endian.h"
 #include <mono/os/gc_wrapper.h>
 
+typedef struct {
+	char *p;
+	char *buf;
+	char *end;
+} SigBuffer;
+
 #define TEXT_OFFSET 512
 #define CLI_H_SIZE 136
 #define FILE_ALIGN 512
@@ -138,8 +144,7 @@ static guint32 encode_constant (MonoDynamicImage *assembly, MonoObject *val, gui
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class);
-static void    encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf);
-static guint32 type_get_signature_size (MonoType *type);
+static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 static inline MonoType *dup_type (const MonoType *original);
@@ -153,6 +158,56 @@ void
 mono_reflection_init (void)
 {
 	InitializeCriticalSection (&reflection_mutex);
+}
+
+static void
+sigbuffer_init (SigBuffer *buf, int size)
+{
+	buf->buf = g_malloc (size);
+	buf->p = buf->buf;
+	buf->end = buf->buf + size;
+}
+
+static void
+sigbuffer_make_room (SigBuffer *buf, int size)
+{
+	if (buf->end - buf->p < size) {
+		int new_size = buf->end - buf->buf + size + 32;
+		char *p = g_realloc (buf->buf, new_size);
+		size = buf->p - buf->buf;
+		buf->buf = p;
+		buf->p = p + size;
+		buf->end = buf->buf + new_size;
+	}
+}
+
+static void
+sigbuffer_add_value (SigBuffer *buf, guint32 val)
+{
+	sigbuffer_make_room (buf, 6);
+	mono_metadata_encode_value (val, buf->p, &buf->p);
+}
+
+static void
+sigbuffer_add_byte (SigBuffer *buf, guint8 val)
+{
+	sigbuffer_make_room (buf, 1);
+	buf->p [0] = val;
+	buf->p++;
+}
+
+static void
+sigbuffer_add_mem (SigBuffer *buf, char *p, guint32 size)
+{
+	sigbuffer_make_room (buf, size);
+	memcpy (buf->p, p, size);
+	buf->p += size;
+}
+
+static void
+sigbuffer_free (SigBuffer *buf)
+{
+	g_free (buf->buf);
 }
 
 /**
@@ -359,6 +414,18 @@ add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int 
 	return idx;
 }
 
+static guint32
+sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
+{
+	char blob_size [8];
+	char *b = blob_size;
+	guint32 size = buf->p - buf->buf;
+	/* store length */
+	g_assert (size <= (buf->end - buf->buf));
+	mono_metadata_encode_value (size, b, &b);
+	return add_to_blob_cached (assembly, blob_size, b-blob_size, buf->buf, size);
+}
+
 /*
  * Copy len * nelem bytes from val to dest, swapping bytes to LE if necessary.
  * dest may be misaligned.
@@ -494,7 +561,7 @@ default_class_from_mono_type (MonoType *type)
 }
 
 static void
-encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, char *p, char **endbuf)
+encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigBuffer *buf)
 {
 	int i;
 
@@ -503,17 +570,16 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, char
 		return;
 	}
 
-	mono_metadata_encode_value (MONO_TYPE_GENERICINST, p, &p);
-	encode_type (assembly, &gclass->container_class->byval_arg, p, &p);
-	mono_metadata_encode_value (gclass->inst->type_argc, p, &p);
+	sigbuffer_add_value (buf, MONO_TYPE_GENERICINST);
+	encode_type (assembly, &gclass->container_class->byval_arg, buf);
+	sigbuffer_add_value (buf, gclass->inst->type_argc);
 	for (i = 0; i < gclass->inst->type_argc; ++i)
-		encode_type (assembly, gclass->inst->type_argv [i], p, &p);
+		encode_type (assembly, gclass->inst->type_argv [i], buf);
 
-	*endbuf = p;
 }
 
 static void
-encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
+encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 {
 	if (!type) {
 		g_assert_not_reached ();
@@ -521,7 +587,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 	}
 		
 	if (type->byref)
-		mono_metadata_encode_value (MONO_TYPE_BYREF, p, &p);
+		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
 	switch (type->type){
 	case MONO_TYPE_VOID:
@@ -542,15 +608,15 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_TYPEDBYREF:
-		mono_metadata_encode_value (type->type, p, &p);
+		sigbuffer_add_value (buf, type->type);
 		break;
 	case MONO_TYPE_PTR:
-		mono_metadata_encode_value (type->type, p, &p);
-		encode_type (assembly, type->data.type, p, &p);
+		sigbuffer_add_value (buf, type->type);
+		encode_type (assembly, type->data.type, buf);
 		break;
 	case MONO_TYPE_SZARRAY:
-		mono_metadata_encode_value (type->type, p, &p);
-		encode_type (assembly, &type->data.klass->byval_arg, p, &p);
+		sigbuffer_add_value (buf, type->type);
+		encode_type (assembly, &type->data.klass->byval_arg, buf);
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
@@ -558,47 +624,46 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, char *p, char **endbuf)
 		/*
 		 * Make sure we use the correct type.
 		 */
-		mono_metadata_encode_value (k->byval_arg.type, p, &p);
+		sigbuffer_add_value (buf, k->byval_arg.type);
 		/*
 		 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
 		 * otherwise two typerefs could point to the same type, leading to
 		 * verification errors.
 		 */
-		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, &k->byval_arg), p, &p);
+		sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, &k->byval_arg));
 		break;
 	}
 	case MONO_TYPE_ARRAY:
-		mono_metadata_encode_value (type->type, p, &p);
-		encode_type (assembly, &type->data.array->eklass->byval_arg, p, &p);
-		mono_metadata_encode_value (type->data.array->rank, p, &p);
-		mono_metadata_encode_value (0, p, &p); /* FIXME: set to 0 for now */
-		mono_metadata_encode_value (0, p, &p);
+		sigbuffer_add_value (buf, type->type);
+		encode_type (assembly, &type->data.array->eklass->byval_arg, buf);
+		sigbuffer_add_value (buf, type->data.array->rank);
+		sigbuffer_add_value (buf, 0); /* FIXME: set to 0 for now */
+		sigbuffer_add_value (buf, 0);
 		break;
 	case MONO_TYPE_GENERICINST:
-		encode_generic_class (assembly, type->data.generic_class, p, &p);
+		encode_generic_class (assembly, type->data.generic_class, buf);
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		mono_metadata_encode_value (type->type, p, &p);
-		mono_metadata_encode_value (type->data.generic_param->num, p, &p);
+		sigbuffer_add_value (buf, type->type);
+		sigbuffer_add_value (buf, type->data.generic_param->num);
 		break;
 	default:
 		g_error ("need to encode type %x", type->type);
 	}
-	*endbuf = p;
 }
 
 static void
-encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, char *p, char **endbuf)
+encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, SigBuffer *buf)
 {
 	if (!type) {
-		mono_metadata_encode_value (MONO_TYPE_VOID, p, endbuf);
+		sigbuffer_add_value (buf, MONO_TYPE_VOID);
 		return;
 	}
 
 	if (type->type ||
             ((type = mono_reflection_type_get_underlying_system_type (type)) && type->type)) {
-		encode_type (assembly, type->type, p, endbuf);
+		encode_type (assembly, type->type, buf);
 		return;
 	}
 
@@ -607,156 +672,58 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionType *type, ch
 }
 
 static void
-encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArray *modopt, char *p, char **endbuf)
+encode_custom_modifiers (MonoDynamicImage *assembly, MonoArray *modreq, MonoArray *modopt, SigBuffer *buf)
 {
 	int i;
 
 	if (modreq) {
 		for (i = 0; i < mono_array_length (modreq); ++i) {
 			MonoReflectionType *mod = mono_array_get (modreq, MonoReflectionType*, i);
-			*p = MONO_TYPE_CMOD_REQD;
-			p++;
-			mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, mod->type), p, &p);
+			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_REQD);
+			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod->type));
 		}
 	}
 	if (modopt) {
 		for (i = 0; i < mono_array_length (modopt); ++i) {
 			MonoReflectionType *mod = mono_array_get (modopt, MonoReflectionType*, i);
-			*p = MONO_TYPE_CMOD_OPT;
-			p++;
-			mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, mod->type), p, &p);
+			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_OPT);
+			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod->type));
 		}
 	}
-	*endbuf = p;
-}
-
-static guint32
-generic_class_get_signature_size (MonoGenericClass *gclass)
-{
-	guint32 size = 0;
-	int i;
-
-	if (!gclass) {
-		g_assert_not_reached ();
-	}
-
-	size += 1 + type_get_signature_size (&gclass->container_class->byval_arg);
-	size += 4;
-	for (i = 0; i < gclass->inst->type_argc; ++i)
-		size += type_get_signature_size (gclass->inst->type_argv [i]);
-
-	return size;
-}
-
-static guint32
-type_get_signature_size (MonoType *type)
-{
-	guint32 size = 0;
-
-	if (!type) {
-		g_assert_not_reached ();
-	}
-		
-	if (type->byref)
-		size++;
-
-	switch (type->type){
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_TYPEDBYREF:
-		return size + 1;
-	case MONO_TYPE_PTR:
-		return size + 1 + type_get_signature_size (type->data.type);
-	case MONO_TYPE_SZARRAY:
-		return size + 1 + type_get_signature_size (&type->data.klass->byval_arg);
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_CLASS:
-		return size + 5;
-	case MONO_TYPE_ARRAY:
-		return size + 7 + type_get_signature_size (&type->data.array->eklass->byval_arg);
-	case MONO_TYPE_GENERICINST:
-		return size + generic_class_get_signature_size (type->data.generic_class);
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		return size + 5;
-	default:
-		g_error ("need to encode type %x", type->type);
-		return size;
-	}
-}
-
-static guint32
-method_get_signature_size (MonoMethodSignature *sig)
-{
-	guint32 size;
-	int i;
-
-	size = type_get_signature_size (sig->ret);
-	for (i = 0; i < sig->param_count; i++)
-		size += type_get_signature_size (sig->params [i]);
-
-	if (sig->generic_param_count)
-		size += 4;
-	if (sig->sentinelpos >= 0)
-		size++;
-
-	return size;	
 }
 
 static guint32
 method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 {
-	char *buf;
-	char *p;
+	SigBuffer buf;
 	int i;
 	guint32 nparams =  sig->param_count;
-	guint32 size = 11 + method_get_signature_size (sig);
 	guint32 idx;
-	char blob_size [6];
-	char *b = blob_size;
 
 	if (!assembly->save)
 		return 0;
 
-	p = buf = g_malloc (size);
+	sigbuffer_init (&buf, 32);
 	/*
 	 * FIXME: vararg, explicit_this, differenc call_conv values...
 	 */
-	*p = sig->call_convention;
+	idx = sig->call_convention;
 	if (sig->hasthis)
-		*p |= 0x20; /* hasthis */
+		idx |= 0x20; /* hasthis */
 	if (sig->generic_param_count)
-		*p |= 0x10; /* generic */
-	p++;
+		idx |= 0x10; /* generic */
+	sigbuffer_add_byte (&buf, idx);
 	if (sig->generic_param_count)
-		mono_metadata_encode_value (sig->generic_param_count, p, &p);
-	mono_metadata_encode_value (nparams, p, &p);
-	encode_type (assembly, sig->ret, p, &p);
+		sigbuffer_add_value (&buf, sig->generic_param_count);
+	sigbuffer_add_value (&buf, nparams);
+	encode_type (assembly, sig->ret, &buf);
 	for (i = 0; i < nparams; ++i) {
 		if (i == sig->sentinelpos)
-			*p++ = MONO_TYPE_SENTINEL;
-		encode_type (assembly, sig->params [i], p, &p);
+			sigbuffer_add_byte (&buf, MONO_TYPE_SENTINEL);
+		encode_type (assembly, sig->params [i], &buf);
 	}
-	/* store length */
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -766,32 +733,28 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	/*
 	 * FIXME: reuse code from method_encode_signature().
 	 */
-	char *buf;
-	char *p;
+	SigBuffer buf;
 	int i;
 	guint32 nparams =  mb->parameters ? mono_array_length (mb->parameters): 0;
 	guint32 ngparams = mb->generic_params ? mono_array_length (mb->generic_params): 0;
 	guint32 notypes = mb->opt_types ? mono_array_length (mb->opt_types): 0;
-	guint32 size = 41 + nparams * 40 + notypes * 40;
 	guint32 idx;
-	char blob_size [6];
-	char *b = blob_size;
 
-	p = buf = g_malloc (size);
+	sigbuffer_init (&buf, 32);
 	/* LAMESPEC: all the call conv spec is foobared */
-	*p = mb->call_conv & 0x60; /* has-this, explicit-this */
+	idx = mb->call_conv & 0x60; /* has-this, explicit-this */
 	if (mb->call_conv & 2)
-		*p |= 0x5; /* vararg */
+		idx |= 0x5; /* vararg */
 	if (!(mb->attrs & METHOD_ATTRIBUTE_STATIC))
-		*p |= 0x20; /* hasthis */
+		idx |= 0x20; /* hasthis */
 	if (ngparams)
-		*p |= 0x10; /* generic */
-	p++;
+		idx |= 0x10; /* generic */
+	sigbuffer_add_byte (&buf, idx);
 	if (ngparams)
-		mono_metadata_encode_value (ngparams, p, &p);
-	mono_metadata_encode_value (nparams + notypes, p, &p);
-	encode_custom_modifiers (assembly, mb->return_modreq, mb->return_modopt, p, &p);
-	encode_reflection_type (assembly, mb->rtype, p, &p);
+		sigbuffer_add_value (&buf, ngparams);
+	sigbuffer_add_value (&buf, nparams + notypes);
+	encode_custom_modifiers (assembly, mb->return_modreq, mb->return_modopt, &buf);
+	encode_reflection_type (assembly, mb->rtype, &buf);
 	for (i = 0; i < nparams; ++i) {
 		MonoArray *modreq = NULL;
 		MonoArray *modopt = NULL;
@@ -801,24 +764,21 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 			modreq = mono_array_get (mb->param_modreq, MonoArray*, i);
 		if (mb->param_modopt && (i < mono_array_length (mb->param_modopt)))
 			modopt = mono_array_get (mb->param_modopt, MonoArray*, i);
-		encode_custom_modifiers (assembly, modreq, modopt, p, &p);
+		encode_custom_modifiers (assembly, modreq, modopt, &buf);
 		pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
-		encode_reflection_type (assembly, pt, p, &p);
+		encode_reflection_type (assembly, pt, &buf);
 	}
 	if (notypes)
-		*p++ = MONO_TYPE_SENTINEL;
+		sigbuffer_add_byte (&buf, MONO_TYPE_SENTINEL);
 	for (i = 0; i < notypes; ++i) {
 		MonoReflectionType *pt;
 
 		pt = mono_array_get (mb->opt_types, MonoReflectionType*, i);
-		encode_reflection_type (assembly, pt, p, &p);
+		encode_reflection_type (assembly, pt, &buf);
 	}
 
-	/* store length */
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -827,36 +787,30 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	char *p;
-	guint32 idx, sig_idx, size;
+	guint32 idx, sig_idx;
 	guint nl = mono_array_length (ilgen->locals);
-	char *buf;
-	char blob_size [6];
-	char *b = blob_size;
+	SigBuffer buf;
 	int i;
 
-	size = 50 + nl * 30;
-	p = buf = g_malloc (size);
+	sigbuffer_init (&buf, 32);
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
 	table->rows ++;
 	alloc_table (table, table->rows);
 	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
 
-	mono_metadata_encode_value (0x07, p, &p);
-	mono_metadata_encode_value (nl, p, &p);
+	sigbuffer_add_value (&buf, 0x07);
+	sigbuffer_add_value (&buf, nl);
 	for (i = 0; i < nl; ++i) {
 		MonoReflectionLocalBuilder *lb = mono_array_get (ilgen->locals, MonoReflectionLocalBuilder*, i);
 		
 		if (lb->is_pinned)
-			mono_metadata_encode_value (MONO_TYPE_PINNED, p, &p);
+			sigbuffer_add_value (&buf, MONO_TYPE_PINNED);
 		
-		encode_reflection_type (assembly, lb->type, p, &p);
+		encode_reflection_type (assembly, lb->type, &buf);
 	}
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	sig_idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	sig_idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 
 	values [MONO_STAND_ALONE_SIGNATURE] = sig_idx;
 
@@ -1591,46 +1545,36 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 static guint32
 fieldref_encode_signature (MonoDynamicImage *assembly, MonoType *type)
 {
-	char blob_size [64];
-	char *b = blob_size;
-	char *p;
-	char* buf;
+	SigBuffer buf;
 	guint32 idx;
 
 	if (!assembly->save)
 		return 0;
 
-	p = buf = g_malloc (256);
+	sigbuffer_init (&buf, 32);
 	
-	mono_metadata_encode_value (0x06, p, &p);
+	sigbuffer_add_value (&buf, 0x06);
 	/* encode custom attributes before the type */
-	encode_type (assembly, type, p, &p);
-	g_assert (p-buf < 256);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	encode_type (assembly, type, &buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
 static guint32
 field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb)
 {
-	char blob_size [64];
-	char *b = blob_size;
-	char *p;
-	char* buf;
+	SigBuffer buf;
 	guint32 idx;
+
+	sigbuffer_init (&buf, 32);
 	
-	p = buf = g_malloc (256);
-	
-	mono_metadata_encode_value (0x06, p, &p);
-	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, p, &p);
+	sigbuffer_add_value (&buf, 0x06);
+	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, &buf);
 	/* encode custom attributes before the type */
-	encode_reflection_type (assembly, fb->type, p, &p);
-	g_assert (p-buf < 256);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	encode_reflection_type (assembly, fb->type, &buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -1738,38 +1682,28 @@ handle_enum:
 
 static guint32
 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
-	char blob_size [64];
-	char *b = blob_size;
-	char *p, *buf, *str;
-	guint32 idx, len, bufsize = 256;
-	
-	p = buf = g_malloc (bufsize);
+	char *str;
+	SigBuffer buf;
+	guint32 idx, len;
 
-	mono_metadata_encode_value (minfo->type, p, &p);
+	sigbuffer_init (&buf, 32);
+
+	sigbuffer_add_value (&buf, minfo->type);
 
 	switch (minfo->type) {
 	case MONO_NATIVE_BYVALTSTR:
 	case MONO_NATIVE_BYVALARRAY:
-		mono_metadata_encode_value (minfo->count, p, &p);
+		sigbuffer_add_value (&buf, minfo->count);
 		break;
 	case MONO_NATIVE_LPARRAY:
 		if (minfo->eltype || minfo->has_size) {
-			mono_metadata_encode_value (minfo->eltype, p, &p);
+			sigbuffer_add_value (&buf, minfo->eltype);
 			if (minfo->has_size) {
-				if (minfo->param_num != -1)
-					mono_metadata_encode_value (minfo->param_num, p, &p);
-				else
-					mono_metadata_encode_value (0, p, &p);
-				if (minfo->count != -1)
-					mono_metadata_encode_value (minfo->count, p, &p);
-				else
-					mono_metadata_encode_value (0, p, &p);
+				sigbuffer_add_value (&buf, minfo->param_num != -1? minfo->param_num: 0);
+				sigbuffer_add_value (&buf, minfo->count != -1? minfo->count: 0);
 
 				/* LAMESPEC: ElemMult is undocumented */
-				if (minfo->param_num != -1)
-					mono_metadata_encode_value (1, p, &p);
-				else
-					mono_metadata_encode_value (0, p, &p);
+				sigbuffer_add_value (&buf, minfo->param_num != -1? 1: 0);
 			}
 		}
 		break;
@@ -1777,15 +1711,14 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		if (minfo->guid) {
 			str = mono_string_to_utf8 (minfo->guid);
 			len = strlen (str);
-			mono_metadata_encode_value (len, p, &p);
-			memcpy (p, str, len);
-			p += len;
+			sigbuffer_add_value (&buf, len);
+			sigbuffer_add_mem (&buf, str, len);
 			g_free (str);
 		} else {
-			mono_metadata_encode_value (0, p, &p);
+			sigbuffer_add_value (&buf, 0);
 		}
 		/* native type name */
-		mono_metadata_encode_value (0, p, &p);
+		sigbuffer_add_value (&buf, 0);
 		/* custom marshaler type name */
 		if (minfo->marshaltype || minfo->marshaltyperef) {
 			if (minfo->marshaltyperef)
@@ -1793,44 +1726,28 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 			else
 				str = mono_string_to_utf8 (minfo->marshaltype);
 			len = strlen (str);
-			mono_metadata_encode_value (len, p, &p);
-			if (p + len >= buf + bufsize) {
-				idx = p - buf;
-				bufsize *= 2;
-				buf = g_realloc (buf, bufsize);
-				p = buf + idx;
-			}
-			memcpy (p, str, len);
-			p += len;
+			sigbuffer_add_value (&buf, len);
+			sigbuffer_add_mem (&buf, str, len);
 			g_free (str);
 		} else {
 			/* FIXME: Actually a bug, since this field is required.  Punting for now ... */
-			mono_metadata_encode_value (0, p, &p);
+			sigbuffer_add_value (&buf, 0);
 		}
 		if (minfo->mcookie) {
 			str = mono_string_to_utf8 (minfo->mcookie);
 			len = strlen (str);
-			mono_metadata_encode_value (len, p, &p);
-			if (p + len >= buf + bufsize) {
-				idx = p - buf;
-				bufsize *= 2;
-				buf = g_realloc (buf, bufsize);
-				p = buf + idx;
-			}
-			memcpy (p, str, len);
-			p += len;
+			sigbuffer_add_value (&buf, len);
+			sigbuffer_add_mem (&buf, str, len);
 			g_free (str);
 		} else {
-			mono_metadata_encode_value (0, p, &p);
+			sigbuffer_add_value (&buf, 0);
 		}
 		break;
 	default:
 		break;
 	}
-	len = p-buf;
-	mono_metadata_encode_value (len, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, len);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -1901,46 +1818,38 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 static guint32
 property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb)
 {
-	char *buf, *p;
-	char blob_size [6];
-	char *b = blob_size;
+	SigBuffer buf;
 	guint32 nparams = 0;
 	MonoReflectionMethodBuilder *mb = fb->get_method;
 	MonoReflectionMethodBuilder *smb = fb->set_method;
-	guint32 idx, i, size;
+	guint32 idx, i;
 
 	if (mb && mb->parameters)
 		nparams = mono_array_length (mb->parameters);
 	if (!mb && smb && smb->parameters)
 		nparams = mono_array_length (smb->parameters) - 1;
-	size = 24 + nparams * 10;
-	buf = p = g_malloc (size);
-	*p = 0x08;
-	p++;
-	mono_metadata_encode_value (nparams, p, &p);
+	sigbuffer_init (&buf, 32);
+	sigbuffer_add_byte (&buf, 0x08);
+	sigbuffer_add_value (&buf, nparams);
 	if (mb) {
-		encode_reflection_type (assembly, mb->rtype, p, &p);
+		encode_reflection_type (assembly, mb->rtype, &buf);
 		for (i = 0; i < nparams; ++i) {
 			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
-			encode_reflection_type (assembly, pt, p, &p);
+			encode_reflection_type (assembly, pt, &buf);
 		}
 	} else if (smb && smb->parameters) {
 		/* the property type is the last param */
-		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), p, &p);
+		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), &buf);
 		for (i = 0; i < nparams; ++i) {
 			MonoReflectionType *pt = mono_array_get (smb->parameters, MonoReflectionType*, i);
-			encode_reflection_type (assembly, pt, p, &p);
+			encode_reflection_type (assembly, pt, &buf);
 		}
-	}
-	else {
-		encode_reflection_type (assembly, fb->type, p, &p);
+	} else {
+		encode_reflection_type (assembly, fb->type, &buf);
 	}
 
-	/* store length */
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -2207,11 +2116,9 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token;
-	char sig [128];
-	char *p = sig;
-	char blob_size [6];
-	char *b = blob_size;
+	SigBuffer buf;
 
+	sigbuffer_init (&buf, 32);
 	switch (type->type) {
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_PTR:
@@ -2220,29 +2127,31 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	case MONO_TYPE_GENERICINST:
-		encode_type (assembly, type, p, &p);
+		encode_type (assembly, type, &buf);
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *k = mono_class_from_mono_type (type);
-		if (!k || !k->generic_class)
+		if (!k || !k->generic_class) {
+			sigbuffer_free (&buf);
 			return 0;
-		encode_generic_class (assembly, k->generic_class, p, &p);
+		}
+		encode_generic_class (assembly, k->generic_class, &buf);
 		break;
 	}
 	default:
+		sigbuffer_free (&buf);
 		return 0;
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
 	if (assembly->save) {
-		g_assert (p-sig < 128);
-		mono_metadata_encode_value (p-sig, b, &b);
-		token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
+		token = sigbuffer_add_to_blob_cached (assembly, &buf);
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
 		values [MONO_TYPESPEC_SIGNATURE] = token;
 	}
+	sigbuffer_free (&buf);
 
 	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
@@ -2456,33 +2365,26 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 static guint32
 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericMethod *gmethod)
 {
-	char *buf;
-	char *p;
+	SigBuffer buf;
 	int i;
 	guint32 nparams =  gmethod->inst->type_argc;
-	guint32 size = 10 + nparams * 30;
 	guint32 idx;
-	char blob_size [6];
-	char *b = blob_size;
 
 	if (!assembly->save)
 		return 0;
 
-	p = buf = g_malloc (size);
+	sigbuffer_init (&buf, 32);
 	/*
 	 * FIXME: vararg, explicit_this, differenc call_conv values...
 	 */
-	mono_metadata_encode_value (0xa, p, &p); /* FIXME FIXME FIXME */
-	mono_metadata_encode_value (nparams, p, &p);
+	sigbuffer_add_value (&buf, 0xa); /* FIXME FIXME FIXME */
+	sigbuffer_add_value (&buf, nparams);
 
 	for (i = 0; i < nparams; i++)
-		encode_type (assembly, gmethod->inst->type_argv [i], p, &p);
+		encode_type (assembly, gmethod->inst->type_argv [i], &buf);
 
-	/* store length */
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 	return idx;
 }
 
@@ -2583,10 +2485,7 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	MonoClass *klass;
 	guint32 *values;
 	guint32 token;
-	char sig [128];
-	char *p = sig;
-	char blob_size [6];
-	char *b = blob_size;
+	SigBuffer buf;
 	int count, i;
 
 	/*
@@ -2599,32 +2498,33 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	if (token)
 		return token;
 
+	sigbuffer_init (&buf, 32);
+
 	g_assert (tb->generic_params);
 	klass = mono_class_from_mono_type (tb->type.type);
 
-	mono_metadata_encode_value (MONO_TYPE_GENERICINST, p, &p);
-	encode_type (assembly, &klass->byval_arg, p, &p);
+	sigbuffer_add_value (&buf, MONO_TYPE_GENERICINST);
+	encode_type (assembly, &klass->byval_arg, &buf);
 
 	count = mono_array_length (tb->generic_params);
-	mono_metadata_encode_value (count, p, &p);
+	sigbuffer_add_value (&buf, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam;
 
 		gparam = mono_array_get (tb->generic_params, MonoReflectionGenericParam *, i);
 
-		encode_type (assembly, gparam->type.type, p, &p);
+		encode_type (assembly, gparam->type.type, &buf);
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
-	g_assert (p-sig < 128);
 
 	if (assembly->save) {
-		mono_metadata_encode_value (p-sig, b, &b);
-		token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
+		token = sigbuffer_add_to_blob_cached (assembly, &buf);
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
 		values [MONO_TYPESPEC_SIGNATURE] = token;
 	}
+	sigbuffer_free (&buf);
 
 	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
 	g_hash_table_insert (assembly->typespec, tb->type.type, GUINT_TO_POINTER(token));
@@ -2675,13 +2575,10 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 static guint32
 mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper)
 {
-	char *buf;
-	char *p;
+	SigBuffer buf;
 	guint32 nargs;
 	guint32 size;
 	guint32 i, idx;
-	char blob_size [6];
-	char *b = blob_size;
 
 	if (!assembly->save)
 		return 0;
@@ -2696,7 +2593,7 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 
 	size = 10 + (nargs * 10);
 	
-	p = buf = g_malloc (size);
+	sigbuffer_init (&buf, 32);
 
 	/* Encode calling convention */
 	/* Change Any to Standard */
@@ -2707,26 +2604,23 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 		helper->call_conv &= 0x20;
 
 	if (helper->call_conv == 0) { /* Unmanaged */
-		*p = helper->unmanaged_call_conv - 1;
+		idx = helper->unmanaged_call_conv - 1;
 	} else {
 		/* Managed */
-		*p = helper->call_conv & 0x60; /* has_this + explicit_this */
+		idx = helper->call_conv & 0x60; /* has_this + explicit_this */
 		if (helper->call_conv & 0x02) /* varargs */
-			*p += 0x05;
+			idx += 0x05;
 	}
 
-	p++;
-	mono_metadata_encode_value (nargs, p, &p);
-	encode_reflection_type (assembly, helper->return_type, p, &p);
+	sigbuffer_add_byte (&buf, idx);
+	sigbuffer_add_value (&buf, nargs);
+	encode_reflection_type (assembly, helper->return_type, &buf);
 	for (i = 0; i < nargs; ++i) {
 		MonoReflectionType *pt = mono_array_get (helper->arguments, MonoReflectionType*, i);
-		encode_reflection_type (assembly, pt, p, &p);
+		encode_reflection_type (assembly, pt, &buf);
 	}
-	/* store length */
-	g_assert (p - buf < size);
-	mono_metadata_encode_value (p-buf, b, &b);
-	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
-	g_free (buf);
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
 
 	return idx;
 }
@@ -9575,27 +9469,23 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 {
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = mono_array_length (sig->arguments);
-	guint32 buflen, i, size;
+	guint32 buflen, i;
 	MonoArray *result;
-	char *buf, *p;
+	SigBuffer buf;
 
-	MONO_ARCH_SAVE_REGS;
+	sigbuffer_init (&buf, 32);
 
-	p = buf = g_malloc (size = 50 + na * 50);
-
-	mono_metadata_encode_value (0x07, p, &p);
-	mono_metadata_encode_value (na, p, &p);
+	sigbuffer_add_value (&buf, 0x07);
+	sigbuffer_add_value (&buf, na);
 	for (i = 0; i < na; ++i) {
 		MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType *, i);
-		encode_reflection_type (assembly, type, p, &p);
+		encode_reflection_type (assembly, type, &buf);
 	}
 
-	buflen = p - buf;
-	g_assert (buflen < size);
+	buflen = buf.p - buf.buf;
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
-	p = mono_array_addr (result, char, 0);
-	memcpy (p, buf, buflen);
-	g_free (buf);
+	memcpy (mono_array_addr (result, char, 0), buf.buf, buflen);
+	sigbuffer_free (&buf);
 
 	return result;
 }
@@ -9605,26 +9495,22 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 {
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = mono_array_length (sig->arguments);
-	guint32 buflen, i, size;
+	guint32 buflen, i;
 	MonoArray *result;
-	char *buf, *p;
+	SigBuffer buf;
 
-	MONO_ARCH_SAVE_REGS;
+	sigbuffer_init (&buf, 32);
 
-	p = buf = g_malloc (size = 10 + na * 10);
-
-	mono_metadata_encode_value (0x06, p, &p);
+	sigbuffer_add_value (&buf, 0x06);
 	for (i = 0; i < na; ++i) {
 		MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType *, i);
-		encode_reflection_type (assembly, type, p, &p);
+		encode_reflection_type (assembly, type, &buf);
 	}
 
-	buflen = p - buf;
-	g_assert (buflen < size);
+	buflen = buf.p - buf.buf;
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
-	p = mono_array_addr (result, char, 0);
-	memcpy (p, buf, buflen);
-	g_free (buf);
+	memcpy (mono_array_addr (result, char, 0), buf.buf, buflen);
+	sigbuffer_free (&buf);
 
 	return result;
 }
