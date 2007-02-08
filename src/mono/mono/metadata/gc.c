@@ -61,6 +61,7 @@ run_finalize (void *obj, void *data)
 {
 	MonoObject *exc = NULL;
 	MonoObject *o, *o2;
+	MonoMethod* finalizer = NULL;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 #ifndef HAVE_SGEN_GC
@@ -100,7 +101,18 @@ run_finalize (void *obj, void *data)
 		return;
 	}
 
-	mono_runtime_invoke (mono_class_get_finalizer (o->vtable->klass), o, NULL, &exc);
+	finalizer = mono_class_get_finalizer (o->vtable->klass);
+
+	/* If object has a CCW but has no finalizer, it was only
+	 * registered for finalization in order to free the CCW.
+	 * Else it needs the regular finalizer run.
+	 * FIXME: what to do about ressurection and suppression
+	 * of finalizer on object with CCW.
+	 */
+	if (mono_marshal_free_ccw (o) && !finalizer)
+		return;
+
+	mono_runtime_invoke (finalizer, o, NULL, &exc);
 
 	if (exc) {
 		/* fixme: do something useful */
@@ -291,6 +303,10 @@ ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 	 */
 	if (obj->vtable->klass->delegate)
 		return;
+
+	/* FIXME: Need to handle case where obj has COM Callable Wrapper
+	 * generated for it that needs cleaned up, but user wants to suppress
+	 * their derived object finalizer. */
 
 	object_register_finalizer (obj, NULL);
 }

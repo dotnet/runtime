@@ -812,17 +812,15 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.internals_visible_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute");
 
-	mono_defaults.variant_class = mono_class_from_name (
-	        mono_defaults.corlib, "System", "Variant");
-
-	mono_defaults.com_object_class = mono_class_from_name (
-	        mono_defaults.corlib, "System", "__ComObject");
-
-	mono_defaults.com_interop_proxy_class = mono_class_from_name (
-	        mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
-
 	mono_defaults.safehandle_class = mono_class_from_name (
 		mono_defaults.corlib, "System.Runtime.InteropServices", "SafeHandle");
+
+	/* these are initialized lazily when COM features are used */
+	mono_defaults.variant_class = NULL;
+	mono_defaults.com_object_class = NULL;
+	mono_defaults.com_interop_proxy_class = NULL;
+	mono_defaults.iunknown_class = NULL;
+	mono_defaults.idispatch_class = NULL;
 
 	/*
 	 * Note that mono_defaults.generic_*_class is only non-NULL if we're
@@ -887,6 +885,46 @@ MonoDomain *
 mono_init_version (const char *domain_name, const char *version)
 {
 	return mono_init_internal (domain_name, NULL, version);
+}
+
+/**
+ * mono_init_com_types:
+ *
+ * Initializes all types needed for COM Interop in mono_defaults structure. 
+ */
+void 
+mono_init_com_types (void)
+{
+	static gboolean initialized = FALSE;
+
+	if (initialized)
+		return;
+	
+	/* FIXME: do I need some threading protection here */
+
+	g_assert (mono_defaults.corlib);
+
+	mono_defaults.variant_class = mono_class_from_name (
+	        mono_defaults.corlib, "System", "Variant");
+	g_assert (mono_defaults.variant_class != 0);
+
+	mono_defaults.com_object_class = mono_class_from_name (
+	        mono_defaults.corlib, "System", "__ComObject");
+	g_assert (mono_defaults.com_object_class != 0);
+
+	mono_defaults.com_interop_proxy_class = mono_class_from_name (
+	        mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
+	g_assert (mono_defaults.com_interop_proxy_class != 0);
+
+	mono_defaults.iunknown_class = mono_class_from_name (
+	        mono_defaults.corlib, "Mono.Interop", "IUnknown");
+	g_assert (mono_defaults.iunknown_class != 0);
+
+	mono_defaults.idispatch_class = mono_class_from_name (
+	        mono_defaults.corlib, "Mono.Interop", "IDispatch");
+	g_assert (mono_defaults.idispatch_class != 0);
+
+	initialized = TRUE;
 }
 
 /**

@@ -184,15 +184,29 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_variant_out_bool_false_unmanaged (VarRefFunc func);
 
-
     [DllImport ("libtest")]
-    public static extern int mono_test_marshal_com_object_create (out IntPtr pUnk);
+	public static extern int mono_test_marshal_com_object_create (out IntPtr pUnk);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_com_object_same (out IntPtr pUnk);
 
     [DllImport ("libtest")]
     public static extern int mono_test_marshal_com_object_destroy (IntPtr pUnk);
 
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_com_object_ref_count (IntPtr pUnk);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_ccw_identity ([MarshalAs (UnmanagedType.Interface)]ITest itest);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_ccw_reflexive ([MarshalAs (UnmanagedType.Interface)]ITest itest);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_ccw_transitive ([MarshalAs (UnmanagedType.Interface)]ITest itest);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITest itest);
 
 	public static int Main() {
 
@@ -315,123 +329,219 @@ public class Tests
 
 			#endregion // VARIANT Tests
 
-			#region Marshal COM Interop Tests
+			#region Runtime Callable Wrapper Tests
 
 			IntPtr pUnk;
 			if (mono_test_marshal_com_object_create (out pUnk) != 0)
-				return 65;
+				return 145;
 
 			if (mono_test_marshal_com_object_ref_count (pUnk) != 1)
-				return 46;
+				return 146;
 
 			if (Marshal.AddRef (pUnk) != 2)
-				return 47;
+				return 147;
 
 			if (mono_test_marshal_com_object_ref_count (pUnk) != 2)
-				return 48;
+				return 148;
 
 			if (Marshal.Release (pUnk) != 1)
-				return 49;
+				return 149;
 
 			if (mono_test_marshal_com_object_ref_count (pUnk) != 1)
-				return 50;
+				return 150;
 
 			object com_obj = Marshal.GetObjectForIUnknown (pUnk);
 
 			if (com_obj == null)
-				return 51;
+				return 151;
 
-			IMath imath = com_obj as IMath;
+			ITest itest = com_obj as ITest;
 
-			if (imath == null)
-				return 52;
+			if (itest == null)
+				return 152;
 
-			if (imath.Add (20, 10) != 30)
-				return 53;
+			IntPtr pUnk2;
+			if (mono_test_marshal_com_object_same (out pUnk2) != 0)
+				return 153;
 
-			if (imath.Subtract (20, 10) != 10)
-				return 54;
+			object com_obj2 = Marshal.GetObjectForIUnknown (pUnk2);
+			
+			if (com_obj != com_obj2)
+				return 154;
 
-			IMath same1, same2;
-			imath.Same (out same1);
-			imath.Same (out same2);
-			if (same1 != same2)
-				return 55;
+			if (!com_obj.Equals (com_obj2))
+				return 155;
 
-			if (!same1.Equals (same2))
-				return 56;
+			IntPtr pUnk3;
+			if (mono_test_marshal_com_object_create (out pUnk3) != 0)
+				return 156;
 
-			IMath diff1, diff2;
-			imath.Different (out diff1);
-			imath.Different (out diff2);
-			if (diff1 == diff2)
-				return 57;
+			object com_obj3 = Marshal.GetObjectForIUnknown (pUnk3);
+			if (com_obj == com_obj3)
+				return 157;
 
-			if (diff1.Equals (diff2))
-				return 58;
+			if (com_obj.Equals (com_obj3))
+				return 158;
 
-			// same1 & same2 share a RCW
-			if (Marshal.ReleaseComObject (same1) != 1)
-				return 59;
+			// com_obj & com_obj2 share a RCW
+			if (Marshal.ReleaseComObject (com_obj2) != 1)
+				return 159;
 
-			if (Marshal.ReleaseComObject (same2) != 0)
-				return 60;
+			// com_obj3 should only have one RCW
+			if (Marshal.ReleaseComObject (com_obj3) != 0)
+				return 160;
 
+			IntPtr iunknown = Marshal.GetIUnknownForObject (com_obj);
+			if (iunknown == IntPtr.Zero)
+				return 170;
 
-			if (Marshal.ReleaseComObject (diff1) != 0 ||
-				Marshal.ReleaseComObject (diff2) != 0)
-				return 61;
+			if (pUnk != iunknown)
+				return 171;
 
-			IntPtr pUnk2 = Marshal.GetIUnknownForObject (imath);
-			if (pUnk2 == IntPtr.Zero)
-				return 70;
+			#endregion // Runtime Callable Wrapper Tests
 
-			if (pUnk != pUnk2)
-				return 71;
+			#region COM Callable Wrapper Tests
 
-			IntPtr pDisp = Marshal.GetIDispatchForObject (imath);
-			if (pDisp == IntPtr.Zero)
-				return 72;
+			ManagedTest test = new ManagedTest ();
 
-			if (pUnk != pDisp)
-				return 73;
+			mono_test_marshal_ccw_itest (test);
 
+			if (test.Status != 0)
+				return 200;
 
-			//if (mono_test_marshal_com_object_destroy (pUnk) != 0)
-			//    return 71;
-			#endregion // Marshal COM Interop Tests
+			#endregion // COM Callable Wrapper Tests
 		}
 
         return 0;
 	}
 
-    [ComImport()]
-    [Guid ("00000000-0000-0000-0000-000000000001")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IMath
-    {
-        [MethodImplAttribute (MethodImplOptions.InternalCall,MethodCodeType=MethodCodeType.Runtime)]
-        int Add (int a, int b);
-        [MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		int Subtract (int a, int b);
-		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		int Same ([MarshalAs(UnmanagedType.Interface)] out IMath imath);
-		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		int Different ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
-    }
 
 	[ComImport ()]
-	[Guid ("00000000-0000-0000-0000-000000000002")]
-	public class Foo : IMath
+	[Guid ("00000000-0000-0000-0000-000000000001")]
+	[InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+	public interface ITest
 	{
+		// properties need to go first since mcs puts them there
+		ITest Test
+		{
+			[return: MarshalAs (UnmanagedType.Interface)]
+			[MethodImpl (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId (5242884)]
+			get;
+		}
+
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		public extern int Add (int a, int b);
+		void SByteIn (sbyte val);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		public extern int Subtract (int a, int b);
+		void ByteIn (byte val);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		public extern int Same ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
+		void ShortIn (short val);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-		public extern int Different ([MarshalAs (UnmanagedType.Interface)] out IMath imath);
+		void UShortIn (ushort val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void IntIn (int val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void UIntIn (uint val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void LongIn (long val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void ULongIn (ulong val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void FloatIn (float val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void DoubleIn (double val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void ITestIn ([MarshalAs (UnmanagedType.Interface)]ITest val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		void ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITest val);
+	}
+
+	public class ManagedTest : ITest
+	{
+		private int status = 0;
+		public int Status
+		{
+			get { return status; }
+		}
+		public void SByteIn (sbyte val)
+		{
+			if (val != -100)
+				status = 1;
+		}
+
+		public void ByteIn (byte val)
+		{
+			if (val != 100)
+				status = 2;
+		}
+
+		public void ShortIn (short val)
+		{
+			if (val != -100)
+				status = 3;
+		}
+
+		public void UShortIn (ushort val)
+		{
+			if (val != 100)
+				status = 4;
+		}
+
+		public void IntIn (int val)
+		{
+			if (val != -100)
+				status = 5;
+		}
+
+		public void UIntIn (uint val)
+		{
+			if (val != 100)
+				status = 6;
+		}
+
+		public void LongIn (long val)
+		{
+			if (val != -100)
+				status = 7;
+		}
+
+		public void ULongIn (ulong val)
+		{
+			if (val != 100)
+				status = 8;
+		}
+
+		public void FloatIn (float val)
+		{
+			if (Math.Abs (val - 3.14f) > .000001)
+				status = 9;
+		}
+
+		public void DoubleIn (double val)
+		{
+			if (Math.Abs (val - 3.14) > .000001)
+				status = 10;
+		}
+
+		public void ITestIn (ITest val)
+		{
+			if (val == null)
+				status = 11;
+			if (null == val as ManagedTest)
+				status = 12;
+		}
+
+		public void ITestOut (out ITest val)
+		{
+			val = new ManagedTest ();
+		}
+
+		public ITest Test
+		{
+			get
+			{
+				return new ManagedTest ();
+			}
+		}
 	}
 
 	public static int mono_test_marshal_variant_in_callback (VarEnum vt, object obj)
@@ -513,7 +623,6 @@ public class Tests
 		}
 		return 0;
 	}
-
 
 	public static int mono_test_marshal_variant_out_callback (VarEnum vt, ref object obj)
 	{

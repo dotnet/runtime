@@ -2515,23 +2515,26 @@ mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-#ifdef _MSC_VER
-#define COM_STDCALL __stdcall
-#else
-#define COM_STDCALL __attribute__((stdcall))
-#endif
-
 typedef struct MonoComObject MonoComObject;
 
 typedef struct
 {
-	int (COM_STDCALL *QueryInterface)(MonoComObject* pUnk, gpointer riid, gpointer* ppv);
-	int (COM_STDCALL *AddRef)(MonoComObject* pUnk);
-	int (COM_STDCALL *Release)(MonoComObject* pUnk);
-	int (COM_STDCALL *Add)(MonoComObject* pUnk, int a, int b, int* c);
-	int (COM_STDCALL *Subtract)(MonoComObject* pUnk, int a, int b, int* c);
-	int (COM_STDCALL *Same)(MonoComObject* pUnk, MonoComObject* *pOut);
-	int (COM_STDCALL *Different)(MonoComObject* pUnk, MonoComObject* *pOut);
+	int (STDCALL *QueryInterface)(MonoComObject* pUnk, gpointer riid, gpointer* ppv);
+	int (STDCALL *AddRef)(MonoComObject* pUnk);
+	int (STDCALL *Release)(MonoComObject* pUnk);
+	int (STDCALL *get_ITest)(MonoComObject* pUnk, MonoComObject* *ppUnk);
+	int (STDCALL *SByteIn)(MonoComObject* pUnk, char a);
+	int (STDCALL *ByteIn)(MonoComObject* pUnk, unsigned char a);
+	int (STDCALL *ShortIn)(MonoComObject* pUnk, short a);
+	int (STDCALL *UShortIn)(MonoComObject* pUnk, unsigned short a);
+	int (STDCALL *IntIn)(MonoComObject* pUnk, int a);
+	int (STDCALL *UIntIn)(MonoComObject* pUnk, unsigned int a);
+	int (STDCALL *LongIn)(MonoComObject* pUnk, LONGLONG a);
+	int (STDCALL *ULongIn)(MonoComObject* pUnk, ULONGLONG a);
+	int (STDCALL *FloatIn)(MonoComObject* pUnk, float a);
+	int (STDCALL *DoubleIn)(MonoComObject* pUnk, double a);
+	int (STDCALL *ITestIn)(MonoComObject* pUnk, MonoComObject* pUnk2);
+	int (STDCALL *ITestOut)(MonoComObject* pUnk, MonoComObject* *ppUnk);
 } MonoIUnknown;
 
 struct MonoComObject
@@ -2540,18 +2543,18 @@ struct MonoComObject
 	int m_ref;
 };
 
-DEFINE_GUID(IID_IMath, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+DEFINE_GUID(IID_ITest, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
 DEFINE_GUID(IID_IMonoUnknown, 0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 DEFINE_GUID(IID_IMonoDispatch, 0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-int COM_STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
+int STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 {
 	*ppv = NULL;
 	if (!memcmp(riid, &IID_IMonoUnknown, sizeof(GUID))) {
 		*ppv = pUnk;
 		return S_OK;
 	}
-	else if (!memcmp(riid, &IID_IMath, sizeof(GUID))) {
+	else if (!memcmp(riid, &IID_ITest, sizeof(GUID))) {
 		*ppv = pUnk;
 		return S_OK;
 	}
@@ -2562,43 +2565,79 @@ int COM_STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer*
 	return E_NOINTERFACE;
 }
 
-int COM_STDCALL MonoAddRef(MonoComObject* pUnk)
+int STDCALL MonoAddRef(MonoComObject* pUnk)
 {
 	return ++(pUnk->m_ref);
 }
 
-int COM_STDCALL MonoRelease(MonoComObject* pUnk)
+int STDCALL MonoRelease(MonoComObject* pUnk)
 {
 	return --(pUnk->m_ref);
 }
 
-int COM_STDCALL Add(MonoComObject* pUnk, int a, int b, int* c)
+int STDCALL SByteIn(MonoComObject* pUnk, char a)
 {
-	*c = a + b;
-	return 0;
+	return S_OK;
 }
 
-int COM_STDCALL Subtract(MonoComObject* pUnk, int a, int b, int* c)
+int STDCALL ByteIn(MonoComObject* pUnk, unsigned char a)
 {
-	*c = a - b;
-	return 0;
+	return S_OK;
 }
 
-static void create_com_object (MonoComObject** pOut);
-static MonoComObject* same_com_object = NULL;
-
-int COM_STDCALL Same(MonoComObject* pUnk, MonoComObject** pOut)
+int STDCALL ShortIn(MonoComObject* pUnk, short a)
 {
-	if (!same_com_object)
-		create_com_object (&same_com_object);
-	*pOut = same_com_object;
-	return 0;
+	return S_OK;
 }
 
-int COM_STDCALL Different(MonoComObject* pUnk, MonoComObject** pOut)
+int STDCALL UShortIn(MonoComObject* pUnk, unsigned short a)
 {
-	create_com_object (pOut);
-	return 0;
+	return S_OK;
+}
+
+int STDCALL IntIn(MonoComObject* pUnk, int a)
+{
+	return S_OK;
+}
+
+int STDCALL UIntIn(MonoComObject* pUnk, unsigned int a)
+{
+	return S_OK;
+}
+
+int STDCALL LongIn(MonoComObject* pUnk, LONGLONG a)
+{
+	return S_OK;
+}
+
+int STDCALL ULongIn(MonoComObject* pUnk, ULONGLONG a)
+{
+	return S_OK;
+}
+
+int STDCALL FloatIn(MonoComObject* pUnk, float a)
+{
+	return S_OK;
+}
+
+int STDCALL DoubleIn(MonoComObject* pUnk, double a)
+{
+	return S_OK;
+}
+
+int STDCALL ITestIn(MonoComObject* pUnk, MonoComObject *pUnk2)
+{
+	return S_OK;
+}
+
+int STDCALL ITestOut(MonoComObject* pUnk, MonoComObject* *ppUnk)
+{
+	return S_OK;
+}
+
+int STDCALL get_ITest(MonoComObject* pUnk, MonoComObject* *ppUnk)
+{
+	return S_OK;
 }
 
 static void create_com_object (MonoComObject** pOut)
@@ -2610,16 +2649,38 @@ static void create_com_object (MonoComObject** pOut)
 	(*pOut)->vtbl->QueryInterface = MonoQueryInterface;
 	(*pOut)->vtbl->AddRef = MonoAddRef;
 	(*pOut)->vtbl->Release = MonoRelease;
-	(*pOut)->vtbl->Add = Add;
-	(*pOut)->vtbl->Subtract = Subtract;
-	(*pOut)->vtbl->Same = Same;
-	(*pOut)->vtbl->Different = Different;
+	(*pOut)->vtbl->SByteIn = SByteIn;
+	(*pOut)->vtbl->ByteIn = ByteIn;
+	(*pOut)->vtbl->ShortIn = ShortIn;
+	(*pOut)->vtbl->UShortIn = UShortIn;
+	(*pOut)->vtbl->IntIn = IntIn;
+	(*pOut)->vtbl->UIntIn = UIntIn;
+	(*pOut)->vtbl->LongIn = LongIn;
+	(*pOut)->vtbl->ULongIn = ULongIn;
+	(*pOut)->vtbl->FloatIn = FloatIn;
+	(*pOut)->vtbl->DoubleIn = DoubleIn;
+	(*pOut)->vtbl->ITestIn = ITestIn;
+	(*pOut)->vtbl->ITestOut = ITestOut;
+	(*pOut)->vtbl->get_ITest = get_ITest;
 }
+
+static MonoComObject* same_object = NULL;
 
 STDCALL int
 mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 {
 	create_com_object (pUnk);
+
+	if (!same_object)
+		same_object = *pUnk;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_com_object_same(MonoComObject* *pUnk)
+{
+	*pUnk = same_object;
 
 	return 0;
 }
@@ -2639,4 +2700,38 @@ mono_test_marshal_com_object_ref_count(MonoComObject *pUnk)
 {
 	return pUnk->m_ref;
 }
+
+STDCALL int
+mono_test_marshal_ccw_itest (MonoComObject *pUnk)
+{
+	int hr = 0;
+	MonoComObject* pTest;
+	MonoComObject* pTest2;
+
+	if (!pUnk)
+		return 1;
+
+	hr = pUnk->vtbl->SByteIn (pUnk, -100);
+	hr = pUnk->vtbl->ByteIn (pUnk, 100);
+	hr = pUnk->vtbl->ShortIn (pUnk, -100);
+	hr = pUnk->vtbl->UShortIn (pUnk, 100);
+	hr = pUnk->vtbl->IntIn (pUnk, -100);
+	hr = pUnk->vtbl->UIntIn (pUnk, 100);
+	hr = pUnk->vtbl->LongIn (pUnk, -100);
+	hr = pUnk->vtbl->ULongIn (pUnk, 100);
+	hr = pUnk->vtbl->FloatIn (pUnk, 3.14f);
+	hr = pUnk->vtbl->DoubleIn (pUnk, 3.14);
+	hr = pUnk->vtbl->ITestIn (pUnk, pUnk);
+
+	hr = pUnk->vtbl->ITestOut (pUnk, &pTest);
+
+	//hr = pUnk->vtbl->get_ITest (pUnk, &pTest2);
+
+	if (hr != 0)
+		return 2;
+
+	return 0;
+}
+
+
 #endif //NOT_YET

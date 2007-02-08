@@ -689,6 +689,8 @@ typedef struct {
 	MonoClass *variant_class;
 	MonoClass *com_object_class;
 	MonoClass *com_interop_proxy_class;
+	MonoClass *iunknown_class;
+	MonoClass *idispatch_class;
 	MonoClass *safehandle_class;
 } MonoDefaults;
 

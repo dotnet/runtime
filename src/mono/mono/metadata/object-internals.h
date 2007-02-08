@@ -193,14 +193,16 @@ typedef struct {
 } MonoRealProxy;
 
 typedef struct {
-	MonoRealProxy real_proxy;
-	MonoObject *com_object;
-} MonoComInteropProxy;
-
-typedef struct {
 	MonoMarshalByRefObject object;
+	gpointer iunknown;
 	GHashTable* itf_hash;
 } MonoComObject;
+
+typedef struct {
+	MonoRealProxy real_proxy;
+	MonoComObject *com_object;
+	gint32 ref_count;
+} MonoComInteropProxy;
 
 typedef struct {
 	MonoObject	 object;
@@ -987,6 +989,11 @@ typedef struct {
 	MonoBoolean best_fit_mapping;
 	MonoBoolean throw_on_unmappable;
 } MonoReflectionUnmanagedFunctionPointerAttribute;
+
+typedef struct {
+	MonoObject object;
+	MonoString *guid;
+} MonoReflectionGuidAttribute;
 
 typedef struct {
 	MonoObject object;

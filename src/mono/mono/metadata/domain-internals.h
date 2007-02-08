@@ -161,6 +161,9 @@ typedef struct  {
 #define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
 
 void 
+mono_init_com_types (void) MONO_INTERNAL;
+
+void 
 mono_cleanup (void) MONO_INTERNAL;
 
 void

@@ -274,6 +274,9 @@ mono_marshal_free_array (gpointer *ptr, int size) MONO_INTERNAL;
 void * 
 mono_marshal_realloc (gpointer ptr, gpointer size) MONO_INTERNAL;
 
+gboolean 
+mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
+
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
 								    gpointer dest, gint32 length) MONO_INTERNAL;
@@ -385,32 +388,49 @@ MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type) MONO_INTERNAL;
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_AddRef (gpointer pUnk) MONO_INTERNAL;
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk) MONO_INTERNAL;
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterface (gpointer pUnk, gpointer riid, gpointer* ppv) MONO_INTERNAL;
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gpointer riid, gpointer* ppv) MONO_INTERNAL;
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_Release (gpointer pUnk) MONO_INTERNAL;
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk) MONO_INTERNAL;
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObject* object) MONO_INTERNAL;
+
+MonoObject*
+ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk) MONO_INTERNAL;
+
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObject* object) MONO_INTERNAL;
+
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObject* object, MonoReflectionType* type) MONO_INTERNAL;
+
+MonoBoolean
+ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObject* object) MONO_INTERNAL;
+
+gint32
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObject* object) MONO_INTERNAL;
 
 MonoObject *
 ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type) MONO_INTERNAL;
 
 void
-ves_icall_System_ComObject_Finalizer(MonoComObject* obj) MONO_INTERNAL;
+ves_icall_System_ComObject_ReleaseInterfaces(MonoComObject* obj) MONO_INTERNAL;
 
 gpointer
 ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType* type) MONO_INTERNAL;
 
 void
-ves_icall_System_ComObject_CacheInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf) MONO_INTERNAL;
-
-gpointer
-ves_icall_System_ComObject_GetIUnknown (MonoComObject* obj) MONO_INTERNAL;
+ves_icall_System_ComObject_AddInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf) MONO_INTERNAL;
 
 void
-ves_icall_System_ComObject_SetIUnknown (MonoComObject* obj, gpointer pUnk);
+ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy* proxy) MONO_INTERNAL;
+
+MonoComInteropProxy*
+ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk) MONO_INTERNAL;
 
 G_END_DECLS
 
