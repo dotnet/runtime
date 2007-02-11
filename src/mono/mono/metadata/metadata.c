@@ -4225,9 +4225,10 @@ handle_enum:
 			t = type->data.klass->enum_basetype->type;
 			goto handle_enum;
 		}
-		if (type->data.klass == mono_defaults.handleref_class)
+		if (type->data.klass == mono_defaults.handleref_class){
 			*conv = MONO_MARSHAL_CONV_HANDLEREF;
 			return MONO_NATIVE_INT;
+		}
 		return MONO_NATIVE_STRUCT;
 	case MONO_TYPE_SZARRAY: 
 	case MONO_TYPE_ARRAY: 
