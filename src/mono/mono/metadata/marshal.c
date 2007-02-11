@@ -408,7 +408,6 @@ cominterop_get_com_slot_begin (MonoClass* klass)
 static int
 cominterop_get_com_slot_for_method (MonoMethod* method)
 {
-	guint32 offset = 7; 
 	guint32 slot = method->slot;
 	GPtrArray *ifaces;
 	MonoClass *ic = NULL;
@@ -6960,7 +6959,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		guint32 pos_null = 0, pos_rcw = 0, pos_end = 0;
+		guint32 pos_null = 0;
 
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -7113,8 +7112,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
 		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
 			static MonoMethod* AddRef = NULL;
-			char *msg = NULL;
-			guint32 pos_null = 0, pos_rcw = 0, pos_end = 0;
+			guint32 pos_null = 0;
 
 			if (!AddRef)
 				AddRef = mono_class_get_method_from_name (mono_defaults.marshal_class, "AddRef", 1);
@@ -10114,8 +10112,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (M
 	if (cominterop_object_is_rcw (object)) {
 		MonoClass *klass = NULL;
 		MonoRealProxy* real_proxy = NULL;
-		MonoComInteropProxy* com_interop_proxy = NULL; 
-		MonoComObject* com_object = NULL; 
 		if (!object)
 			return NULL;
 		klass = mono_object_class (object);
@@ -10598,6 +10594,7 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObject* obj)
 		}
 
 		g_hash_table_foreach_remove (obj->itf_hash, cominterop_finalizer, NULL);
+		ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (obj->iunknown);
 		obj->itf_hash = obj->iunknown = NULL;
 		mono_cominterop_unlock ();
 	}
