@@ -528,6 +528,14 @@ typedef struct {
 	void       *handle;
 } MonoSafeHandle;
 
+/*
+ * Keep in sync with HandleRef.cs
+ */
+typedef struct {
+	MonoObject *wrapper;
+	void       *handle;
+} MonoHandleRef;
+
 extern MonoStats mono_stats MONO_INTERNAL;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
@@ -692,6 +700,7 @@ typedef struct {
 	MonoClass *iunknown_class;
 	MonoClass *idispatch_class;
 	MonoClass *safehandle_class;
+	MonoClass *handleref_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

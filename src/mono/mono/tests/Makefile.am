@@ -226,7 +226,8 @@ TEST_CS_SRC=			\
 	subthread-exit.cs	\
 	desweak.cs		\
 	cominterop.cs		\
-	exists.cs
+	exists.cs		\
+	handleref.cs
 
 if X86
 # bug #71274

@@ -2025,6 +2025,14 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 		
+	case MONO_MARSHAL_CONV_HANDLEREF: {
+		/*
+		 * Passing HandleRefs in a struct that is ref()ed does not 
+		 * copy the values back to the HandleRef
+		 */
+		break;
+	}
+		
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR:
@@ -2415,6 +2423,16 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
+
+	case MONO_MARSHAL_CONV_HANDLEREF: {
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		break;
+	}
+		
 	default: {
 		char *msg = g_strdup_printf ("marshalling conversion %d not implemented", conv);
 		MonoException *exc = mono_get_exception_not_implemented (msg);
@@ -6442,6 +6460,66 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static int
+emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t, 
+			MonoMarshalSpec *spec, int conv_arg, 
+			MonoType **conv_arg_type, MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action){
+	case MARSHAL_ACTION_CONV_IN: {
+		MonoType *intptr_type;
+
+		intptr_type = &mono_defaults.int_class->byval_arg;
+		conv_arg = mono_mb_add_local (mb, intptr_type);
+		*conv_arg_type = intptr_type;
+
+		if (t->byref){
+			mono_mb_emit_exception_marshal_directive (mb,
+				"HandleRefs can not be returned from unmanaged code (or passed by ref)");
+			break;
+		} 
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_stloc (mb, conv_arg);
+		break;
+	}
+
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_ldloc (mb, conv_arg);
+		break;
+
+	case MARSHAL_ACTION_CONV_OUT: {
+		/* no resource release required */
+		break;
+	}
+		
+	case MARSHAL_ACTION_CONV_RESULT: {
+		mono_mb_emit_exception_marshal_directive (mb,
+			"HandleRefs can not be returned from unmanaged code (or passed by ref)");
+		break;
+	}
+		
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_IN\n");
+		break;
+		
+	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_OUT\n");
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_RESULT\n");
+		break;
+	default:
+		fprintf (stderr, "Unhandled case for MarshalAction: %d\n", action);
+	}
+
+	return conv_arg;
+}
+
+static int
 emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec, 
 		     int conv_arg, MonoType **conv_arg_type, 
@@ -7879,9 +7957,9 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
-					  MonoMarshalSpec *spec, 
-					  int conv_arg, MonoType **conv_arg_type, 
-					  MarshalAction action)
+		      MonoMarshalSpec *spec, 
+		      int conv_arg, MonoType **conv_arg_type, 
+		      MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -7949,8 +8027,8 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t, 
-				  MonoMarshalSpec *spec, int conv_arg, 
-				  MonoType **conv_arg_type, MarshalAction action)
+		  MonoMarshalSpec *spec, int conv_arg, 
+		  MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -7980,8 +8058,8 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t, 
-				   MonoMarshalSpec *spec, int conv_arg, 
-				   MonoType **conv_arg_type, MarshalAction action)
+		   MonoMarshalSpec *spec, int conv_arg, 
+		   MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -8007,8 +8085,8 @@ emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t, 
-					 MonoMarshalSpec *spec, int conv_arg, 
-					 MonoType **conv_arg_type, MarshalAction action)
+		     MonoMarshalSpec *spec, int conv_arg, 
+		     MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
 
@@ -8031,8 +8109,8 @@ emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t,
 
 static int
 emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
-			  MonoMarshalSpec *spec, int conv_arg, 
-			  MonoType **conv_arg_type, MarshalAction action)
+	      MonoMarshalSpec *spec, int conv_arg, 
+	      MonoType **conv_arg_type, MarshalAction action)
 {
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type (t));
@@ -8045,6 +8123,9 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
+		if (t->data.klass == mono_defaults.handleref_class)
+			return emit_marshal_handleref (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		
 		return emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_STRING:
 		return emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);

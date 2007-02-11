@@ -815,6 +815,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.safehandle_class = mono_class_from_name (
 		mono_defaults.corlib, "System.Runtime.InteropServices", "SafeHandle");
 
+	mono_defaults.handleref_class = mono_class_from_name (
+		mono_defaults.corlib, "System.Runtime.InteropServices", "HandleRef");
+	
 	/* these are initialized lazily when COM features are used */
 	mono_defaults.variant_class = NULL;
 	mono_defaults.com_object_class = NULL;
