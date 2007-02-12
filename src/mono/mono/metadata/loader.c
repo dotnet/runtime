@@ -329,6 +329,19 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	/* we may want to check the signature here... */
 
 	switch (class) {
+	case MONO_MEMBERREF_PARENT_TYPEDEF:
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | nindex);
+		if (!klass) {
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
+			g_warning ("Missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			g_free (name);
+			return NULL;
+		}
+		mono_class_init (klass);
+		if (retklass)
+			*retklass = klass;
+		field = mono_class_get_field_from_name (klass, fname);
+		break;
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
