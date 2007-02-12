@@ -9765,14 +9765,6 @@ mono_marshal_free_array (gpointer *ptr, int size)
 }
 
 void *
-mono_marshal_realloc (gpointer ptr, gpointer size) 
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return g_try_realloc (ptr, (gulong)size);
-}
-
-void *
 mono_marshal_string_to_utf16 (MonoString *s)
 {
 	return s ? mono_string_chars (s) : NULL;
@@ -10483,6 +10475,27 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
 	res = GlobalAlloc (GMEM_FIXED, (gulong)size);
 #else
 	res = g_try_malloc ((gulong)size);
+#endif
+	if (!res)
+		mono_gc_out_of_memory ((gulong)size);
+
+	return res;
+}
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, int size)
+{
+	gpointer res;
+
+	if (ptr == NULL) {
+		mono_gc_out_of_memory ((gulong)size);
+		return NULL;
+	}
+
+#ifdef PLATFORM_WIN32
+	res = GlobalReAlloc (ptr, (gulong)size, 0);
+#else
+	res = g_try_realloc (ptr, (gulong)size);
 #endif
 	if (!res)
 		mono_gc_out_of_memory ((gulong)size);

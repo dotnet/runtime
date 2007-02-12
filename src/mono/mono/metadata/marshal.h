@@ -271,9 +271,6 @@ mono_marshal_free (gpointer ptr) MONO_INTERNAL;
 void
 mono_marshal_free_array (gpointer *ptr, int size) MONO_INTERNAL;
 
-void * 
-mono_marshal_realloc (gpointer ptr, gpointer size) MONO_INTERNAL;
-
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
 
@@ -374,6 +371,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size) MONO_INTERNAL;
+
+gpointer 
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, int size) MONO_INTERNAL;
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr) MONO_INTERNAL;
