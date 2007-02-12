@@ -257,89 +257,82 @@ regtests2=generics.exe il2tests.exe
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
 if X86
-arch_sources = \
-	$(x86_sources) $(mono_debugger_sources)
+arch_sources = $(x86_sources) $(mono_debugger_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
 arch_built=cpu-x86.h
+arch_define=__i386__
 endif
 
 if AMD64
-arch_sources = \
-	$(amd64_sources) $(mono_debugger_sources)
+arch_sources = $(amd64_sources) $(mono_debugger_sources)
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-amd64.brg
 arch_built=cpu-amd64.h
+arch_define=__x86_64__
 endif
 
 if POWERPC
-arch_sources = \
-	$(ppc_sources)
+arch_sources = $(ppc_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-g4.h
+arch_define=__ppc__
 endif
 
 if MIPS
 arch_sources = $(mips_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32-mips.brg $(srcdir)/inssel-mips.brg
 arch_built=cpu-mips.h
+arch_define=__mips__
 endif
 
 if ARM
-
 # pick up arm_dpimacros.h and arm_fpamacros.h
 ARCH_CFLAGS = -I../arch/arm
-
 arch_sources = $(arm_sources)
-
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg $(srcdir)/inssel-softfloat.brg
 arch_built=cpu-arm.h
+arch_define=__arm__
 endif
 
 if SPARC
-arch_sources = \
-	$(sparc_sources)
-
+arch_sources = $(sparc_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
+arch_define=__sparc__
 endif
 
 if SPARC64
-arch_sources = \
-	$(sparc_sources)
-
+arch_sources = $(sparc_sources)
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
+arch_define=__sparc__
 endif
 
 if S390
-arch_sources = \
-	$(s390_sources)
-
+arch_sources = $(s390_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-s390.brg
 arch_built=cpu-s390.h
+arch_define=__s390__
 endif
 
 if S390x
-arch_sources = \
-	$(s390x_sources)
-
+arch_sources = $(s390x_sources)
 arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-s390x.brg
 arch_built=cpu-s390x.h
+arch_define=__s390__
 endif
 
 if IA64
-arch_sources = \
-    $(ia64_sources)
-
+arch_sources = $(ia64_sources)
 arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-ia64.brg
 arch_built = cpu-ia64.h
+arch_define=__ia64__
 endif
 
 if ALPHA
-arch_sources = \
-	$(alpha_sources) $(mono_debugger_sources)
-
+arch_sources = $(alpha_sources) $(mono_debugger_sources)
 arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-alpha.brg
 arch_built = cpu-alpha.h
+arch_define=__alpha__
 endif
 
 libmono_la_SOURCES = $(common_sources) $(arch_sources)
@@ -375,59 +368,45 @@ libmono_la_LIBADD = \
 TestDriver.dll: $(srcdir)/TestDriver.cs
 	$(MCS) -out:$@ -target:library $<
 
+# we don't always use the perl impl because it's an additional
+# build dependency for the poor windows users
+# $(arch_define) is the preprocessor symbol that enables all the opcodes
+# for the specific platform in mini-ops.h
 if CROSS_COMPILING
-
-cpu-x86.h: cpu-x86.md
-cpu-amd64.h: cpu-amd64.md
-cpu-g4.h: cpu-g4.md
-cpu-sparc.h: cpu-sparc.md
-cpu-s390.h: cpu-s390.md
-cpu-s390x.h: cpu-s390x.md
-cpu-ia64.h: cpu-ia64.md
-cpu-alpha.h: cpu-alpha.md
-cpu-mips.h: cpu-mips.md
-
-cpu-arm.h: cpu-arm.md
-	perl genmdesc.pl __arm__ $(srcdir) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
-
-## Gross hack.  Making 'genmdesc' a host binary takes more effort
-#$(arch_built):
-#	echo "*** please build $(arch_built) on a native build tree and copy it here"
-#	exit 1
-
+GENMDESC_PRG=perl genmdesc.pl $(arch_define) $(srcdir)
 else !CROSS_COMPILING
+GENMDESC_PRG=./genmdesc
+endif !CROSS_COMPILING
 
 cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-x86.md cpu-x86.h x86_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-x86.md cpu-x86.h x86_desc
 
 cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
 
 cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
+	$(GENMDESC_PRG) $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
 
 cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
 
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
 
 cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-s390.md cpu-s390.h s390_cpu_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-s390.md cpu-s390.h s390_cpu_desc
 
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-s390x.md cpu-s390x.h s390x_cpu_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-s390x.md cpu-s390x.h s390x_cpu_desc
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc
 
 cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-alpha.md cpu-alpha.h alpha_desc
+	$(GENMDESC_PRG) $(srcdir)/cpu-alpha.md cpu-alpha.h alpha_desc
 
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
-
-endif !CROSS_COMPILING
+	$(GENMDESC_PRG) $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
