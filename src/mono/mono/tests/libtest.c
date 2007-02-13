@@ -1917,7 +1917,7 @@ mono_test_marshal_return_fnptr (void)
 	return &add_delegate;
 }
 
-int mono_xr (int code)
+STDCALL int mono_xr (int code)
 {
 	printf ("codigo %x\n", code);
 	return code + 1234;
@@ -1930,7 +1930,7 @@ typedef struct {
 	int   b;
 } HandleStructs;
 
-int
+STDCALL int
 mono_safe_handle_struct_ref (HandleStructs *x)
 {
 	printf ("Dingus Ref! \n");
@@ -1949,7 +1949,7 @@ mono_safe_handle_struct_ref (HandleStructs *x)
 	return 0xf00d;
 }
 
-int
+STDCALL int
 mono_safe_handle_struct (HandleStructs x)
 {
 	printf ("Dingus Standard! \n");
@@ -1972,20 +1972,20 @@ typedef struct {
 	void *a;
 } TrivialHandle;
 
-int
+STDCALL int
 mono_safe_handle_struct_simple (TrivialHandle x)
 {
 	printf ("The value is %d\n", x.a);
 	return ((int)x.a) * 2;
 }
 
-int
+STDCALL int
 mono_safe_handle_return ()
 {
 	return 0x1000f00d;
 }
 
-void
+STDCALL void
 mono_safe_handle_ref (void **handle)
 {
 	if (*handle != 0){
