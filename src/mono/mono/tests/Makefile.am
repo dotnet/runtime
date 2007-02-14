@@ -277,6 +277,7 @@ TEST_CS2_SRC = \
 	catch-generics.2.cs	\
 	event-get.2.cs		\
 	safehandle.2.cs		\
+	stackframes-async.2.cs		\
 	module-cctor-loader.2.cs	\
 	bug-80392.2.cs
 
