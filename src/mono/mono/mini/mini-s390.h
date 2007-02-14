@@ -258,6 +258,7 @@ typedef struct
 		MonoS390StackFrame *sframe;				\
 		__asm__ volatile("lr    %0,15" : "=r" (sframe));	\
 		MONO_CONTEXT_SET_BP ((ctx), sframe->prev);		\
+		MONO_CONTEXT_SET_SP ((ctx), sframe->prev);		\
 		sframe = (MonoS390StackFrame*)sframe->prev;		\
 		MONO_CONTEXT_SET_IP ((ctx), sframe->return_address);	\
 	} while (0)

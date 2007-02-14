@@ -123,6 +123,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
+		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 		MONO_CONTEXT_SET_IP ((ctx), (func));	\
 	} while (0)
 

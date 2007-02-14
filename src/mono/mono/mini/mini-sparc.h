@@ -99,6 +99,7 @@ typedef struct MonoCompileArch {
 		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
+		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
 
 #ifndef __linux__

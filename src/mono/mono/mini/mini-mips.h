@@ -228,6 +228,7 @@ typedef struct {
 		MONO_CONTEXT_SET_BP ((ctx), sp + (-imm));	\
 		ra = *(guint32 *)(sp + (-imm) + MIPS_RET_ADDR_OFFSET);	\
 		MONO_CONTEXT_SET_IP ((ctx),ra);	\
+		MONO_CONTEXT_SET_SP ((ctx), MONO_CONTEXT_GET_BP (ctx));	\
 	} while (0)
 
 #if 0
