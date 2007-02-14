@@ -103,8 +103,8 @@ conv.i1: dest:i src1:i len:12
 conv.i2: dest:i src1:i len:12
 conv.i4: dest:i src1:i len:4
 conv.i8: dest:i src1:i len:4
-conv.r4: dest:f src1:i len:20
-conv.r8: dest:f src1:i len:20
+conv.r4: dest:f src1:i len:24
+conv.r8: dest:f src1:i len:24
 conv.u4: dest:i src1:i len:4
 conv.u8: dest:i src1:i len:4
 conv.r.un: dest:f src1:i len:8
@@ -126,7 +126,7 @@ cgt: dest:c len:8
 cgt.un: dest:c len:8
 clt: dest:c len:8
 clt.un: dest:c len:8
-localloc: dest:i src1:i len:20
+localloc: dest:i src1:i src2:i len:40 clob:1
 compare: src1:i src2:i len:4
 lcompare: src1:i src2:i len:4
 icompare: src1:i src2:i len:4
@@ -247,8 +247,8 @@ long_rem_un: dest:d src1:a src2:i len:16 clob:a
 long_shl: dest:i src1:i src2:i len:4
 long_shr: dest:i src1:i src2:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
-long_conv_to_r4: dest:f src1:i len:20
-long_conv_to_r8: dest:f src1:i len:20
+long_conv_to_r4: dest:f src1:i len:24
+long_conv_to_r8: dest:f src1:i len:24
 long_conv_to_ovf_i: dest:i src1:i src2:i len:40
 long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
 long_mul_ovf_un: dest:i src1:i src2:i len:22
@@ -266,11 +266,11 @@ float_bge: len:4
 float_bge_un: len:12
 float_ble: len:4
 float_ble_un: len:12
-float_add: dest:f src1:f src2:f len:4
-float_sub: dest:f src1:f src2:f len:4
+float_add: dest:f src1:f src2:f len:8
+float_sub: dest:f src1:f src2:f len:8
 float_mul: dest:f src1:f src2:f len:5
-float_div: dest:f src1:f src2:f len:5
-float_div_un: dest:f src1:f src2:f len:5
+float_div: dest:f src1:f src2:f len:8
+float_div_un: dest:f src1:f src2:f len:8
 float_rem: dest:f src1:f src2:f len:19
 float_rem_un: dest:f src1:f src2:f len:19
 float_neg: dest:f src1:f len:23
@@ -378,7 +378,7 @@ int_rem_un: dest:d src1:a src2:i clob:a len:64
 int_and: dest:i src1:i src2:i len:4
 int_or: dest:i src1:i src2:i len:4
 int_xor: dest:i src1:i src2:i len:4
-int_shl: dest:i src1:i src2:i len:4
+int_shl: dest:i src1:i src2:i len:8
 int_shr: dest:i src1:i src2:i len:8
 int_shr_un: dest:i src1:i src2:i len:8
 int_adc: dest:i src1:i src2:i clob:1 len:64
@@ -397,7 +397,7 @@ int_rem_un_imm: dest:d src1:i clob:a len:64
 int_and_imm: dest:i src1:i len:4
 int_or_imm: dest:i src1:i len:4
 int_xor_imm: dest:i src1:i len:4
-int_shl_imm: dest:i src1:i len:4
+int_shl_imm: dest:i src1:i len:8
 int_shr_imm: dest:i src1:i len:8
 int_shr_un_imm: dest:i src1:i len:8
 int_neg: dest:i src1:i len:4

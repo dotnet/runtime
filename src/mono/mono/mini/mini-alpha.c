@@ -199,11 +199,11 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
                gboolean is_return,
                guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
-  guint32 size, i;
+  guint32 size;
   MonoClass *klass;
   MonoMarshalType *info;
-  gboolean is_hfa = TRUE;
-  guint32 hfa_type = 0;
+  //gboolean is_hfa = TRUE;
+  //guint32 hfa_type = 0;
 
   klass = mono_class_from_mono_type (type);
   if (type->type == MONO_TYPE_TYPEDBYREF)
@@ -1487,7 +1487,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
    /* Save (global) regs */
    offset = cfg->arch.reg_save_area_offset;
 
-   for (i = 0; i < MONO_MAX_VREGS; ++i)
+   for (i = 0; i < MONO_MAX_IREGS; ++i)
      if (ALPHA_IS_CALLEE_SAVED_REG (i) &&
          (cfg->used_int_regs & (1 << i)) &&
          !( ALPHA_ARGS_REGS & (1 << i)) )
@@ -1818,7 +1818,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
   // Restore saved regs
   offset = cfg->arch.reg_save_area_offset;
    
-  for (i = 0; i < MONO_MAX_VREGS; ++i)
+  for (i = 0; i < MONO_MAX_IREGS; ++i)
     if (ALPHA_IS_CALLEE_SAVED_REG (i) &&
 	(cfg->used_int_regs & (1 << i)) &&
 	!( ALPHA_ARGS_REGS & (1 << i)) )
@@ -2300,6 +2300,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_shl] dreg=%d, sreg1=%d, sreg2=%d\n",
                   ins->dreg, ins->sreg1, ins->sreg2);
            alpha_sll(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_addl_(code, ins->dreg, 0, ins->dreg);
            break;
 
 	 case OP_ISHL_IMM:
@@ -2308,6 +2309,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [int_shl_imm] dreg=%d, sreg1=%d, const=%ld\n",
                   ins->dreg, ins->sreg1, ins->inst_imm);
            alpha_sll_(code, ins->sreg1, ins->inst_imm, ins->dreg);
+	   alpha_addl_(code, ins->dreg, 0, ins->dreg);
            break;
 
 	 case OP_SHL_IMM:
@@ -2999,14 +3001,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // Later check different rounding and exc modes
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [float_add] sreg1=%d, sreg2=%d, dreg=%d\n",
 		  ins->sreg1, ins->sreg2, ins->dreg);
-	   alpha_addt(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_addt_su(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_trapb(code);
 	   break;
 
 	 case OP_FSUB:
 	   // Later check different rounding and exc modes
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [float_sub] sreg1=%d, sreg2=%d, dreg=%d\n",
 				 ins->sreg1, ins->sreg2, ins->dreg);
-	   alpha_subt(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_subt_su(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_trapb(code);
            break;
 
 	 case OP_FMUL:
@@ -3144,7 +3148,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            break;
 
          case OP_ALPHA_CMP_IMM_ULE:
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_ule] sreg1=%d, const=%0lX, dreg=%\d\n",
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_ule] sreg1=%d, const=%0lX, dreg=%d\n",
                   ins->sreg1, ins->inst_imm, ins->dreg);
            alpha_cmpule_(code, ins->sreg1, ins->inst_imm, alpha_at);
            break;
@@ -3175,7 +3179,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 
          case OP_ALPHA_CMP_IMM_LE:
-           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_le] sreg1=%d, const=%0lX, dreg=%\d\n",
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [alpha_cmp_imm_le] sreg1=%d, const=%0lX, dreg=%d\n",
                   ins->sreg1, ins->inst_imm, ins->dreg);
            alpha_cmple_(code, ins->sreg1, ins->inst_imm, alpha_at);
            break;
@@ -3421,6 +3425,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_ldt(code, ins->dreg, alpha_sp, 0);
 	   alpha_lda(code, alpha_sp, alpha_sp, 8);
 	   alpha_cvtqs(code, ins->dreg, ins->dreg);
+	   alpha_trapb(code);
 	   break;
 
          case CEE_CONV_R8:
@@ -3433,13 +3438,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            alpha_ldt(code, ins->dreg, alpha_sp, 0);
            alpha_lda(code, alpha_sp, alpha_sp, 8);
            alpha_cvtqt(code, ins->dreg, ins->dreg);
+	   alpha_trapb(code);
            break;
 
 	 case OP_FCONV_TO_R4:
 	   // Convert 64 bit float to 32 bit float (T -> S)
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fconv_r4] sreg=%d, dreg=%d\n",
 				 ins->sreg1, ins->dreg);
-	   alpha_cvtts(code, ins->sreg1, ins->dreg);
+	   alpha_cvtts_su(code, ins->sreg1, ins->dreg);
+	   alpha_trapb(code);
 	   break;
 
 	 case OP_LOCALLOC:
@@ -3448,11 +3455,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   // top of stack is used for call params
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [localloc] sreg=%d, dreg=%d\n",
 				ins->sreg1, ins->dreg);
+
 	   alpha_addq_(code, ins->sreg1, (MONO_ARCH_LOCALLOC_ALIGNMENT - 1), ins->sreg1);
-	   alpha_and_(code, ins->sreg1, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1), ins->sreg1);
+	   alpha_bic_(code, ins->sreg1, (MONO_ARCH_LOCALLOC_ALIGNMENT - 1), ins->sreg1);
+	   if (ins->flags & MONO_INST_INIT)
+	       alpha_mov1(code, ins->sreg1, ins->sreg2);
+
 	   alpha_subq(code, alpha_sp, ins->sreg1, alpha_sp);
-	   alpha_lda(code, ins->dreg, alpha_zero, (cfg->arch.params_stack_size));
-	   alpha_addq(code, alpha_sp, ins->dreg, ins->dreg);
+	   if (cfg->arch.params_stack_size > 0)
+	   {
+	       alpha_lda(code, ins->dreg, alpha_zero,
+			(cfg->arch.params_stack_size));
+	       alpha_addq(code, alpha_sp, ins->dreg, ins->dreg);
+	   }
+	   else
+	       alpha_mov1(code, alpha_sp, ins->dreg);
+
+	   if (ins->flags & MONO_INST_INIT)
+	   {
+		// TODO: Optimize it later
+		alpha_lda(code, ins->sreg2, ins->sreg2,
+			-(MONO_ARCH_LOCALLOC_ALIGNMENT));
+		alpha_blt(code, ins->sreg2, 3);
+		alpha_addq(code, ins->sreg2, ins->dreg, alpha_at);
+		alpha_stq(code, alpha_zero, alpha_at, 0);
+		alpha_br(code, alpha_zero, -5);
+	   }
+
 	   break;
 
 	 case OP_MOVE:
@@ -3564,10 +3593,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
            break;
 
+	 case OP_FBGE:
+	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbge] [");
+	   alpha_fbne(code, (alpha_at+1), 1);
+	   EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
+           break;
+
          case OP_FBLE_UN:
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [fble_un] [");
            alpha_fbeq(code, (alpha_at+1), 1);
            alpha_cpys(code, (alpha_at+1), (alpha_at+1), alpha_at);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
+           break;
+
+         case OP_FBLE:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fble] [");
+           alpha_fbne(code, (alpha_at+1), 1);
            EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
            break;
 
@@ -3578,10 +3619,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
            EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
            break;
 
+         case OP_FBLT:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fblt] [");
+           alpha_fbne(code, (alpha_at+1), 1);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbne);
+           break;
+
          case OP_FBGT_UN:
            CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbgt_un] [");
            alpha_fbeq(code, (alpha_at+1), 1);
            alpha_cpys(code, alpha_zero, alpha_zero, alpha_at);
+           EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
+           break;
+
+         case OP_FBGT:
+           CFG_DEBUG(4) g_print("ALPHA_CHECK: [fbgt] [");
+           alpha_fbne(code, (alpha_at+1), 1);
            EMIT_ALPHA_BRANCH(ins, alpha_at, fbeq);
            break;
 
@@ -3889,7 +3942,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [mb]\n");
 	   alpha_mb(code);
 	   break;
-	   
+	  
+	 case CEE_CKFINITE:
+	   // Float register contains a value which we need to check
+	   CFG_DEBUG(4) g_print("ALPHA_TODO: [chfinite] sreg1=%d\n", ins->sreg1);
+ 	   alpha_cmptun_su(code, ins->sreg1, ins->sreg1, alpha_at);
+	   alpha_trapb(code);
+	   EMIT_COND_EXC_BRANCH(fbeq, alpha_at, "ArithmeticException");
+
+	   break;
+	 case OP_FDIV:
+	   CFG_DEBUG(4) g_print("ALPHA_TODO: [fdiv] dest=%d, sreg1=%d, sreg2=%d\n",
+		ins->dreg, ins->sreg1, ins->sreg2);
+	   alpha_divt_su(code, ins->sreg1, ins->sreg2, ins->dreg);
+	   alpha_trapb(code);
+
+	   break;
 	 default:
 	   g_warning ("unknown opcode %s in %s()\n",
 		      mono_inst_name (ins->opcode), __FUNCTION__);
@@ -4763,7 +4831,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	 if ((i >= sig->hasthis) &&
 	     (MONO_TYPE_ISSTRUCT(arg_type)))
 	   {
-	     gint align;
+	     guint align;
 	     guint32 size;
 	     
 	     if (arg_type->type == MONO_TYPE_TYPEDBYREF) {
@@ -5038,42 +5106,6 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 /*========================= End of Function ========================*/
 
-static gboolean
-is_regsize_var (MonoType *t)
-{
-  if (t->byref)
-    return TRUE;
-
-  t = mono_type_get_underlying_type (t);
-  switch (t->type) {
-  case MONO_TYPE_I1:
-  case MONO_TYPE_U1:
-  case MONO_TYPE_I2:
-  case MONO_TYPE_U2:
-  case MONO_TYPE_I4:
-  case MONO_TYPE_U4:
-  case MONO_TYPE_I:
-  case MONO_TYPE_U:
-  case MONO_TYPE_PTR:
-  case MONO_TYPE_FNPTR:
-  case MONO_TYPE_BOOLEAN:
-    return TRUE;
-  case MONO_TYPE_OBJECT:
-  case MONO_TYPE_STRING:
-  case MONO_TYPE_CLASS:
-  case MONO_TYPE_SZARRAY:
-  case MONO_TYPE_ARRAY:
-    return TRUE;
-  case MONO_TYPE_VALUETYPE:
-    return FALSE;
-  }
-
-  return FALSE;
-}
-
-
-
-
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name         - mono_arch_get_allocatable_int_vars                */
@@ -5130,7 +5162,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	   (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 	 continue;
 
-       if (is_regsize_var (ins->inst_vtype))
+       if (mono_is_regsize_var (ins->inst_vtype))
 	 {
 	   g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 	   g_assert (i == vmv->idx);
@@ -5672,7 +5704,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
    CFG_DEBUG(3) g_print ("ALPHA: reg_save_area_offset at %d(%x)\n", offset, offset);
    
    // Reserve space for caller saved registers 
-   for (i = 0; i < MONO_MAX_VREGS; ++i)
+   for (i = 0; i < MONO_MAX_IREGS; ++i)
      if ((ALPHA_IS_CALLEE_SAVED_REG (i)) &&
 	 (cfg->used_int_regs & (1 << i)))
        {
@@ -5862,7 +5894,7 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	  pc, regs);
 
   // Check if we have parameters on stack
-  if (pc[-2] & 0xFFFF0000 == 0x23DE0000)     // lda     sp,-n(sp)
+  if ((pc[-2] & 0xFFFF0000) == 0x23DE0000)     // lda     sp,-n(sp)
     start_index = -3;
 
   // Check for (call_membase):

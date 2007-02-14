@@ -300,7 +300,7 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
 #define MONO_ARCH_EMULATE_CONV_R8_UN     1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8    1
+//#define MONO_ARCH_EMULATE_LCONV_TO_R8    1
 #define MONO_ARCH_EMULATE_FREM           1
 #define MONO_ARCH_EMULATE_MUL_DIV        1
 #define MONO_ARCH_EMULATE_LONG_MUL_OPTS  1
