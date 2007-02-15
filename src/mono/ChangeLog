@@ -1,3 +1,7 @@
+2007-02-15  Marek Habersack  <grendello@gmail.com>
+
+	* data/net_2_0/machine.config: add default provider factories.
+
 2007-02-01  Geoff Norton  <gnorton@customerdna.com>
 
         * configure.in:  Support NetBSD GC.
