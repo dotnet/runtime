@@ -1116,7 +1116,7 @@ static void
 append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 {
 	EnterCriticalSection (cs);
-	if (list->array && mono_array_length (list->array) < list->next_elem) {
+	if (list->array && (list->next_elem < mono_array_length (list->array))) {
 		mono_array_setref (list->array, list->next_elem, ar);
 		list->next_elem++;
 		LeaveCriticalSection (cs);
