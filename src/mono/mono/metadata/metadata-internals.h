@@ -62,6 +62,8 @@ struct _MonoTableInfo {
 
 #define REFERENCE_MISSING ((gpointer) -1)
 
+typedef struct _MonoDllMap MonoDllMap;
+
 struct _MonoImage {
 	/*
 	 * The number of assemblies which reference this MonoImage though their 'image'
@@ -202,7 +204,7 @@ struct _MonoImage {
 	void *user_info;
 
 	/* dll map entries */
-	GHashTable *dll_map;
+	MonoDllMap *dll_map;
 
 	/* interfaces IDs from this image */
 	MonoBitSet *interface_bitset;
