@@ -107,6 +107,7 @@ TEST_CS_SRC=			\
 	vtype.cs		\
 	isvaluetype.cs		\
 	iface6.cs		\
+	iface7.cs		\
 	ipaddress.cs		\
 	array-vt.cs		\
 	interface1.cs		\
