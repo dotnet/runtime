@@ -310,9 +310,6 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		printf (") ip: %p\n", __builtin_return_address (1));
 		return;
 	}	
-	if ((GPOINTER_TO_INT (ebp) & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
-		g_error ("unaligned stack detected (%p)", ebp);
-	}
 
 	sig = mono_method_signature (method);
 
