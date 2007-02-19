@@ -1945,44 +1945,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				if (io >= k->vtable_size)
 					continue;
 			}
-				
-			for (l = 0; l < ic->method.count; l++) {
-				MonoMethod *im = ic->methods [l];						
-				MonoClass *k1;
 
-				g_assert (io + l <= max_vtsize);
-
- 				if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
-					continue;
-					
-				for (k1 = class; k1; k1 = k1->parent) {
-					for (j = 0; j < k1->method.count; ++j) {
-						MonoMethod *cm = k1->methods [j];
-
-						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-						    !(cm->flags & METHOD_ATTRIBUTE_PUBLIC))
-							continue;
-						
-						if (!strcmp(cm->name, im->name) && 
-						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
-
-							/* CAS - SecurityAction.InheritanceDemand on interface */
-							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
-								mono_secman_inheritancedemand_method (cm, im);
-							}
-
-							g_assert (io + l <= max_vtsize);
-							vtable [io + l] = cm;
-							break;
-						}
-						
-					}
-					g_assert (io + l <= max_vtsize);
-					if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
-						break;
-				}
-			}
-
+			// Override methods with the same fully qualified name
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
 				char *qname, *fqname, *cname, *the_cname;
@@ -2031,7 +1995,44 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				g_free (fqname);
 			}
 
-			
+			// Override methods with the same name
+			for (l = 0; l < ic->method.count; l++) {
+				MonoMethod *im = ic->methods [l];						
+				MonoClass *k1;
+
+				g_assert (io + l <= max_vtsize);
+
+ 				if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
+					continue;
+					
+				for (k1 = class; k1; k1 = k1->parent) {
+					for (j = 0; j < k1->method.count; ++j) {
+						MonoMethod *cm = k1->methods [j];
+
+						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
+						    !(cm->flags & METHOD_ATTRIBUTE_PUBLIC))
+							continue;
+						
+						if (!strcmp(cm->name, im->name) && 
+						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
+
+							/* CAS - SecurityAction.InheritanceDemand on interface */
+							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
+								mono_secman_inheritancedemand_method (cm, im);
+							}
+
+							g_assert (io + l <= max_vtsize);
+							vtable [io + l] = cm;
+							break;
+						}
+						
+					}
+					g_assert (io + l <= max_vtsize);
+					if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
+						break;
+				}
+			}
+
 			if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
 				for (l = 0; l < ic->method.count; l++) {
 					char *msig;
