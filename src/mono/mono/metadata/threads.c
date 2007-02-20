@@ -1418,8 +1418,8 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 void
 ves_icall_System_Threading_Thread_MemoryBarrier (void)
 {
-	/* Should be implemented as a JIT intrinsic */
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	mono_threads_lock ();
+	mono_threads_unlock ();
 }
 
 void
