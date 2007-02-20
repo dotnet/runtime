@@ -1506,7 +1506,7 @@ void mono_thread_current_check_pending_interrupt ()
 int  
 mono_thread_get_abort_signal (void)
 {
-#if defined (__MINGW32__) || defined (_MSC_VER)
+#ifdef PLATFORM_WIN32
 	return -1;
 #else
 #ifndef	SIGRTMIN
@@ -1528,16 +1528,16 @@ mono_thread_get_abort_signal (void)
 	/* fallback to the old way */
 	return SIGRTMIN;
 #endif
-#endif /*defined (__MINGW32__) || defined (_MSC_VER) */
+#endif /* PLATFORM_WIN32 */
 }
 
-#if defined (__MINGW32__) || defined (_MSC_VER)
+#ifdef PLATFORM_WIN32
 static void CALLBACK interruption_request_apc (ULONG_PTR param)
 {
 	MonoException* exc = mono_thread_request_interruption (FALSE);
 	if (exc) mono_raise_exception (exc);
 }
-#endif /* defined (__MINGW32__) || defined (_MSC_VER) */
+#endif /* PLATFORM_WIN32 */
 
 /*
  * signal_thread_state_change
@@ -1554,7 +1554,7 @@ static void signal_thread_state_change (MonoThread *thread)
 			mono_raise_exception (exc);
 	}
 
-#if defined (__MINGW32__) || defined (_MSC_VER)
+#ifdef PLATFORM_WIN32
 	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
 #else
 	/* fixme: store the state somewhere */
@@ -1563,7 +1563,7 @@ static void signal_thread_state_change (MonoThread *thread)
 #else
 	pthread_kill (thread->tid, mono_thread_get_abort_signal ());
 #endif
-#endif /* defined (__MINGW32__) || defined (__MSC_VER) */
+#endif /* PLATFORM_WIN32 */
 }
 
 void
@@ -2706,8 +2706,8 @@ mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
 	}
 }
 
-#ifdef __MINGW32__
-static CALLBACK void dummy_apc (ULONG_PTR param)
+#ifdef PLATFORM_WIN32
+static void CALLBACK dummy_apc (ULONG_PTR param)
 {
 }
 #else
