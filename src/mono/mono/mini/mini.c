@@ -3282,6 +3282,15 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			MONO_INST_NEW (cfg, ins, CEE_BREAK);
 			return ins;
 		}
+		if (cmethod->name [0] == 'g' && strcmp (cmethod->name, "get_IsRunningOnWindows") == 0
+				&& strcmp (cmethod->klass->name, "Environment") == 0) {
+#ifdef PLATFORM_WIN32
+	                NEW_ICONST (cfg, ins, 1);
+#else
+	                NEW_ICONST (cfg, ins, 0);
+#endif
+			return ins;
+		}
 	}
 
 	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
