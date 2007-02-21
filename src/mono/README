@@ -208,6 +208,10 @@ This is Mono.
 
 	--with-sigaltstack=yes,no
 
+		Experimental: Use at your own risk, it is known to
+		cause problems with garbage collection and is hard to
+	 	reproduce those bugs.
+
 		This controls whether Mono will install a special
 	  	signal handler to handle stack overflows.   If set to
 	  	"yes", it will turn stack overflows into the
