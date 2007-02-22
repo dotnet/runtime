@@ -1415,8 +1415,12 @@ type_from_op (MonoInst *ins) {
 		ins->type = STACK_PTR;
 		switch (ins->inst_i0->type) {
 		case STACK_I4:
+			break;
 		case STACK_PTR:
 		case STACK_MP:
+#if SIZEOF_VOID_P == 8
+			ins->opcode = OP_LCONV_TO_U;
+#endif
 			break;
 		case STACK_I8:
 			ins->opcode = OP_LCONV_TO_U;

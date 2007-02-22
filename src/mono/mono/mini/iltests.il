@@ -1351,4 +1351,22 @@ COND:   ldloc.0
         IL_000f:  ret
     }
 
+	.method private static default int32 test_0_regresss_80190 () cil managed
+	{
+	    .maxstack  2
+	    .locals init (int32 V_0,
+	             int32* V_1)
+	    IL_0000:  nop
+	    IL_0001:  nop
+	    IL_0002:  ldloca.s   V_0
+	    IL_0004:  conv.u
+	    IL_0005:  stloc.1
+	    IL_0006:  ldloc.1
+	    IL_0007:  ldc.i4.3
+	    IL_0008:  stind.i4
+	    IL_0009:  nop
+				  ldc.i4.0
+				  ret
+	}
+
 }
