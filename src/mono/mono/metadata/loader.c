@@ -952,8 +952,12 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	 * later entries win.
 	 */
 	for (; dll_map; dll_map = dll_map->next) {
-		if (strcmp (dll_map->dll, dll))
+		if (dll_map->dll [0] == 'i' && dll_map->dll [1] == ':') {
+			if (g_ascii_strcasecmp (dll_map->dll + 2, dll))
+				continue;
+		} else if (strcmp (dll_map->dll, dll)) {
 			continue;
+		}
 		if (!found && dll_map->target) {
 			*rdll = dll_map->target;
 			found = 1;
