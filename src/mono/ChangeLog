@@ -1,3 +1,7 @@
+2007-02-24  Raja R Harinath  <rharinath@novell.com>
+
+	* data/config.in (odbc32.dll) [os=osx]: Fix misplaced ".
+
 2007-02-20  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/Makefile.am: Add api-info and api-diff wrappers
