@@ -2841,7 +2841,11 @@ mono_object_clone (MonoObject *obj)
 	o = mono_object_allocate (size, obj->vtable);
 	/* do not copy the sync state */
 	memcpy ((char*)o + sizeof (MonoObject), (char*)obj + sizeof (MonoObject), size - sizeof (MonoObject));
-	
+
+#ifdef HAVE_SGEN_GC
+	if (obj->vtable->klass->has_references)
+		mono_gc_wbarrier_object (o);
+#endif
 	mono_profiler_allocation (o, obj->vtable->klass);
 
 	if (obj->vtable->klass->has_finalize)
@@ -2869,7 +2873,18 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	size = mono_array_length (src);
 	g_assert (size == mono_array_length (dest));
 	size *= mono_array_element_size (klass);
+#ifdef HAVE_SGEN_GC
+	if (klass->valuetype) {
+		if (klass->has_references)
+			mono_value_copy_array (dest, 0, src, mono_array_length (src));
+		else
+			memcpy (&dest->vector, &src->vector, size);
+	} else {
+		mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length (src));
+	}
+#else
 	memcpy (&dest->vector, &src->vector, size);
+#endif
 }
 
 /**
@@ -2895,7 +2910,18 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		o = mono_array_new_full (domain, klass, &size, NULL);
 
 		size *= mono_array_element_size (klass);
+#ifdef HAVE_SGEN_GC
+		if (klass->valuetype) {
+			if (klass->has_references)
+				mono_value_copy_array (o, 0, array, mono_array_length (array));
+			else
+				memcpy (&o->vector, &array->vector, size);
+		} else {
+			mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
+		}
+#else
 		memcpy (&o->vector, &array->vector, size);
+#endif
 		return o;
 	}
 	
@@ -2907,7 +2933,18 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
 	o = mono_array_new_full (domain, klass, sizes, sizes + klass->rank);
+#ifdef HAVE_SGEN_GC
+	if (klass->valuetype) {
+		if (klass->has_references)
+			mono_value_copy_array (o, 0, array, mono_array_length (array));
+		else
+			memcpy (&o->vector, &array->vector, size);
+	} else {
+		mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
+	}
+#else
 	memcpy (&o->vector, &array->vector, size);
+#endif
 
 	return o;
 }
@@ -3240,6 +3277,10 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
+
+#ifdef HAVE_SGEN_GC
+	mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, class);
+#endif
 
 #if NO_UNALIGNED_ACCESS
 	memcpy ((char *)res + sizeof (MonoObject), value, size);

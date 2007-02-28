@@ -149,5 +149,10 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 {
 }
 
+void
+mono_gc_wbarrier_object (MonoObject* obj)
+{
+}
+
 #endif
 
