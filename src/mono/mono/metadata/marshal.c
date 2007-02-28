@@ -10079,7 +10079,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
 	return (*(MonoIUnknown**)pUnk)->Release(pUnk);
 }
 
-void*
+static void*
 cominterop_get_idispatch_for_object (MonoObject* object)
 {
 	if (!object)
@@ -11326,7 +11326,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 			ccw_list->data = ccw;
 		}
 		else
-			g_list_append (ccw_list, ccw);
+			ccw_list = g_list_append (ccw_list, ccw);
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		/* register for finalization to clean up ccw */
 		mono_object_register_finalizer (object);
@@ -11612,7 +11612,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
  * Converts the standard string representation of a GUID 
  * to a 16 byte Microsoft GUID.
  */
-void
+static void
 cominterop_mono_string_to_guid (const MonoString* string, guint8 *guid) {
 	gunichar2 * chars = mono_string_chars (string);
 	int i = 0;
@@ -11673,7 +11673,7 @@ cominterop_ccw_addref (MonoCCWInterface* ccwe)
 	g_assert (ccw);
 	g_assert (ccw->gc_handle);
 	g_assert (ccw->ref_count >= 0);
-	ref_count = InterlockedIncrement (&ccw->ref_count);
+	ref_count = InterlockedIncrement ((gint32*)&ccw->ref_count);
 	if (ref_count == 1) {
 		guint32 oldhandle = ccw->gc_handle;
 		g_assert (oldhandle);
@@ -11691,7 +11691,7 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 	MonoCCW* ccw = ccwe->ccw;
 	g_assert (ccw);
 	g_assert (ccw->ref_count > 0);
-	ref_count = InterlockedDecrement (&ccw->ref_count);
+	ref_count = InterlockedDecrement ((gint32*)&ccw->ref_count);
 	if (ref_count == 0) {
 		/* allow gc of object */
 		guint32 oldhandle = ccw->gc_handle;
