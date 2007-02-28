@@ -2426,7 +2426,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_HANDLEREF: {
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
@@ -6478,8 +6479,9 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 				"HandleRefs can not be returned from unmanaged code (or passed by ref)");
 			break;
 		} 
-		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_ldarg_addr (mb, argnum);
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, conv_arg);
 		break;
