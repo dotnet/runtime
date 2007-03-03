@@ -13,6 +13,9 @@
 #include <glib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -796,41 +799,153 @@ set_domain_search_path (MonoDomain *domain)
 	g_strfreev (pvt_split);
 }
 
+static gboolean
+shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *target, gint targetlen, gint tail_len)
+{
+	guint16 *orig, *dest;
+	gboolean copy_result;
+	
+	strcpy (src + srclen - tail_len, extension);
+	if (!g_file_test (src, G_FILE_TEST_IS_REGULAR))
+		return TRUE;
+	orig = g_utf8_to_utf16 (src, strlen (src), NULL, NULL, NULL);
+
+	strcpy (target + targetlen - tail_len, extension);
+	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
+	
+	copy_result = CopyFile (orig, dest, FALSE);
+	g_free (orig);
+	g_free (dest);
+	
+	return copy_result;
+}
+
+static gint32 
+get_cstring_hash (const char *str)
+{
+	int len, i;
+	const char *p;
+	gint32 h = 0;
+	
+	if (!str || !str [0])
+		return 0;
+		
+	len = strlen (str);
+	p = str;
+	for (i = 0; i < len; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+	
+	return h;
+}
+
+static char *
+get_shadow_assembly_location (const char *filename)
+{
+	gint32 hash = 0, hash2 = 0;
+	char name_hash [9];
+	char path_hash [19];
+	char *bname = g_path_get_basename (filename);
+	MonoDomain *domain = mono_domain_get ();
+	
+	hash = get_cstring_hash (bname);
+	hash2 = get_cstring_hash (g_path_get_dirname (filename));
+	snprintf (name_hash, sizeof (name_hash), "%08x", hash);
+	snprintf (path_hash, sizeof (path_hash), "%08x_%08x", hash ^ hash2, hash2);
+	return g_build_filename (mono_string_to_utf8 (domain->setup->dynamic_base), 
+				 "assembly", 
+				 "shadow", 
+				 name_hash,
+				 path_hash,
+				 bname, 
+				 NULL);
+}
+
+static gboolean
+ensure_directory_exists (const char *filename)
+{
+	char *p;
+	gchar *dir = g_path_get_dirname (filename);
+	int retval;
+	
+	if (!dir || !dir [0])
+		return FALSE;
+
+	p = dir;
+	while (*p == '/')
+		p++;
+
+	while (1) {
+		p = strchr (p, '/');
+		if (p)
+			*p = '\0';
+#ifdef PLATFORM_WIN32
+		retval = mkdir (dir);
+#else
+		retval = mkdir (dir, 0777);
+#endif
+		if (retval != 0 && errno != EEXIST) {
+			g_free (dir);
+			return FALSE;
+		}
+		if (!p)
+			break;
+		*p++ = '/';
+	}
+	
+	g_free (dir);
+	return TRUE;
+}
+
 static char *
 make_shadow_copy (const char *filename)
 {
-	gchar *tmp;
+	gchar *sibling_source, *sibling_target;
+	gint sibling_source_len, sibling_target_len;
 	guint16 *orig, *dest;
-	MonoDomain *domain = mono_domain_get ();
-	char *db;
-	int fd;
+	char *shadow;
 	gboolean copy_result;
 	MonoException *exc;
-
-	db = mono_string_to_utf8 (domain->setup->dynamic_base);
-	tmp = g_build_filename (db, "shadow-XXXXXX", NULL);
-	fd = mono_mkstemp (tmp);
-	if (fd == -1) {
-		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (mkstemp).");
-		g_free (tmp);
-		g_free (db);
+	
+	shadow = get_shadow_assembly_location (filename);
+	if (ensure_directory_exists (shadow) == FALSE) {
+		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (ensure directory exists).");
 		mono_raise_exception (exc);
-	}
-	close (fd);
-	remove (tmp);
+	}	
+
 	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
-	dest = g_utf8_to_utf16 (tmp, strlen (tmp), NULL, NULL, NULL);
-	copy_result = CopyFile (orig, dest, TRUE);
+	dest = g_utf8_to_utf16 (shadow, strlen (shadow), NULL, NULL, NULL);
+	copy_result = CopyFile (orig, dest, FALSE);
 	g_free (dest);
 	g_free (orig);
-	g_free (db);
 
 	if (copy_result == FALSE) {
-		g_free (tmp);
+		g_free (shadow);
 		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (CopyFile).");
 		mono_raise_exception (exc);
 	}
-	return tmp;
+
+	/* attempt to copy .mdb, .config if they exist */
+	sibling_source = g_strconcat (filename, ".config", NULL);
+	sibling_source_len = strlen (sibling_source);
+	sibling_target = g_strconcat (shadow, ".config", NULL);
+	sibling_target_len = strlen (sibling_target);
+	
+	copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".mdb", sibling_target, sibling_target_len, 7);
+	if (copy_result == TRUE)
+		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".config", sibling_target, sibling_target_len, 7);
+	
+	g_free (sibling_source);
+	g_free (sibling_target);
+	
+	if (copy_result == FALSE)  {
+		g_free (shadow);
+		exc = mono_get_exception_execution_engine ("Failed to create shadow copy of sibling data (CopyFile).");
+		mono_raise_exception (exc);
+	}
+	
+	return shadow;
 }
 
 static gboolean
