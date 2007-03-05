@@ -1734,7 +1734,7 @@ gboolean DeleteFile(const gunichar2 *name)
 gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 {
 	gchar *utf8_name, *utf8_dest_name;
-	int result;
+	int result, errno_copy;
 	struct stat stat_src, stat_dest;
 	gboolean ret = FALSE;
 	
@@ -1793,11 +1793,16 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	}
 
 	result = _wapi_rename (utf8_name, utf8_dest_name);
-
+	errno_copy = errno;
+	
 	if (result == -1) {
-		switch(errno) {
+		switch(errno_copy) {
 		case EEXIST:
 			SetLastError (ERROR_ALREADY_EXISTS);
+			break;
+
+		case EXDEV:
+			/* Ignore here, it is dealt with below */
 			break;
 			
 		default:
@@ -1808,7 +1813,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	g_free (utf8_name);
 	g_free (utf8_dest_name);
 
-	if (result != 0 && errno == EXDEV) {
+	if (result != 0 && errno_copy == EXDEV) {
 		/* Try a copy to the new location, and delete the source */
 		if (CopyFile (name, dest_name, TRUE)==FALSE) {
 			/* CopyFile will set the error */
