@@ -1471,11 +1471,11 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		/* avoid loading the same assembly twice for now... */
 		ass2 = search_loaded (&ass->aname, refonly);
 		if (ass2) {
+			mono_assemblies_unlock ();
 			g_free (ass);
 			g_free (base_dir);
 			mono_image_close (image);
 			*status = MONO_IMAGE_OK;
-			mono_assemblies_unlock ();
 			return ass2;
 		}
 	}
