@@ -301,7 +301,7 @@ InterlockedCompareExchange(volatile gint32 *dest,
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
 			      "\tLR\t%1,%3\n"
 			      "\tCS\t%1,%2,0(1)\n"
-			      : "+m" (*dest), "=r" (old)
+			      : "+m" (*dest), "=&r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
 	return(old);
@@ -317,7 +317,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
 			      "\tLR\t%1,%3\n"
 			      "\tCS\t%1,%2,0(1)\n"
-			      : "+m" (*dest), "=r" (old)
+			      : "+m" (*dest), "=&r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
 	return(old);
@@ -333,7 +333,7 @@ InterlockedCompareExchangePointer(volatile gpointer *dest,
 	__asm__ __volatile__ ("\tLA\t1,%0\n"
 			      "\tLGR\t%1,%3\n"
 			      "\tCSG\t%1,%2,0(1)\n"
-			      : "+m" (*dest), "=r" (old)
+			      : "+m" (*dest), "=&r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");
 
@@ -426,7 +426,7 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "=r" (ret)
+			      : "+m" (*val), "=&r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
@@ -443,7 +443,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "=r" (ret)
+			      : "+m" (*val), "=&r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
@@ -459,7 +459,7 @@ InterlockedExchangePointer(volatile gpointer *val, gpointer new_val)
 			      "0:\tLG\t%1,%0\n"
 			      "\tCSG\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "=r" (ret)
+			      : "+m" (*val), "=&r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
@@ -479,7 +479,7 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 			      "\tAR\t1,%2\n"
 			      "\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
-			      : "=r" (ret), "+m" (*val)
+			      : "=&r" (ret), "+m" (*val)
 			      : "r" (add) 
 			      : "1", "2", "cc");
 	
@@ -497,7 +497,7 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 			      "\tAGR\t1,%2\n"
 			      "\tCS\t%0,1,0(2)\n"
 			      "\tJNZ\t0b"
-			      : "=r" (ret), "+m" (*val)
+			      : "=&r" (ret), "+m" (*val)
 			      : "r" (add) 
 			      : "1", "2", "cc");
 	
