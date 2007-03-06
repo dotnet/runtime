@@ -721,6 +721,9 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 		if (options & FileOptions_RandomAccess)
 			attributes |= FILE_FLAG_RANDOM_ACCESS;
 
+		if (options & FileOptions_Temporary)
+			attributes |= FILE_ATTRIBUTE_TEMPORARY;
+		
 		/* Not sure if we should set FILE_FLAG_OVERLAPPED, how does this mix with the "Async" bool here? */
 		if (options & FileOptions_Asynchronous)
 			attributes |= FILE_FLAG_OVERLAPPED;

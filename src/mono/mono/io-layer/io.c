@@ -1522,6 +1522,9 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	
 	mono_once (&io_ops_once, io_ops_init);
 
+	if (attrs & FILE_ATTRIBUTE_TEMPORARY)
+		perms = 0600;
+	
 	if (attrs & FILE_ATTRIBUTE_ENCRYPTED){
 		SetLastError (ERROR_ENCRYPTION_FAILED);
 		return INVALID_HANDLE_VALUE;

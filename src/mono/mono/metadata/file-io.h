@@ -48,6 +48,7 @@ typedef enum {
 /* This is a copy of System.IO.FileOptions */
 typedef enum {
 	FileOptions_None = 0,
+	FileOptions_Temporary = 1,		// Internal.   See note in System.IO.FileOptions
 	FileOptions_Encrypted = 0x4000,
 	FileOptions_DeleteOnClose = 0x4000000,
 	FileOptions_SequentialScan = 0x8000000,
