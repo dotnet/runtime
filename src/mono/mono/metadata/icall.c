@@ -1115,7 +1115,7 @@ ves_icall_type_from_handle (MonoType *handle)
 }
 
 static MonoBoolean
-ves_icall_System_Type_EqualsInternal (MonoReflectionType *type, MonoReflectionType *c)
+ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 {
 	MONO_ARCH_SAVE_REGS;
 
