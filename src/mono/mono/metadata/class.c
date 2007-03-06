@@ -2893,6 +2893,7 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 	nginst = g_new0 (MonoGenericInst, 1);
 	nginst->type_argc = container->type_argc;
 	nginst->type_argv = g_new0 (MonoType *, nginst->type_argc);
+	nginst->is_reference = 1;
 	nginst->is_open = 1;
 
 	for (i = 0; i < nginst->type_argc; i++) {

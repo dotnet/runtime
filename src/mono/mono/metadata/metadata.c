@@ -1390,7 +1390,7 @@ mono_generic_inst_equal (gconstpointer ka, gconstpointer kb)
 	const MonoGenericInst *b = (const MonoGenericInst *) kb;
 	int i;
 
-	if ((a->is_open != b->is_open) || (a->type_argc != b->type_argc))
+	if ((a->is_open != b->is_open) || (a->type_argc != b->type_argc) || (a->is_reference != b->is_reference))
 		return FALSE;
 	for (i = 0; i < a->type_argc; ++i) {
 		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], FALSE))
@@ -1959,12 +1959,15 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 	nginst = g_new0 (MonoGenericInst, 1);
 	nginst->type_argc = ginst->type_argc;
 	nginst->type_argv = g_new0 (MonoType*, nginst->type_argc);
+	nginst->is_reference = 1;
 
 	for (i = 0; i < nginst->type_argc; i++) {
 		MonoType *t = mono_class_inflate_generic_type (ginst->type_argv [i], context);
 
 		if (!nginst->is_open)
 			nginst->is_open = mono_class_is_open_constructed_type (t);
+		if (nginst->is_reference)
+			nginst->is_reference = MONO_TYPE_IS_REFERENCE (t);
 
 		nginst->type_argv [i] = t;
 	}
@@ -1982,6 +1985,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->type_argc = count;
 	ginst->type_argv = g_new0 (MonoType*, count);
+	ginst->is_reference = 1;
 
 	for (i = 0; i < ginst->type_argc; i++) {
 		MonoType *t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
@@ -1994,6 +1998,8 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 		ginst->type_argv [i] = t;
 		if (!ginst->is_open)
 			ginst->is_open = mono_class_is_open_constructed_type (t);
+		if (ginst->is_reference)
+			ginst->is_reference = MONO_TYPE_IS_REFERENCE (t);
 	}
 
 	if (rptr)
@@ -3369,7 +3375,8 @@ _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGeneri
 {
 	int i;
 
-	if ((g1->inst->type_argc != g2->inst->type_argc) || (g1->is_dynamic != g2->is_dynamic))
+	if ((g1->inst->type_argc != g2->inst->type_argc) || (g1->is_dynamic != g2->is_dynamic) ||
+	    (g1->inst->is_reference != g2->inst->is_reference))
 		return FALSE;
 	if (!mono_metadata_class_equal (g1->container_class, g2->container_class, signature_only))
 		return FALSE;
