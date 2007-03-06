@@ -811,7 +811,7 @@ ICALL(WAITH_2, "WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny
 ICALL(WAITH_3, "WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal)
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
-ICALL(TYPE_1, "Equals", ves_icall_type_Equals)
+ICALL(TYPE_1, "EqualsInternal", ves_icall_System_Type_EqualsInternal)
 ICALL(TYPE_2, "GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes)
 ICALL(TYPE_3, "GetGenericParameterConstraints_impl", ves_icall_Type_GetGenericParameterConstraints)
 ICALL(TYPE_4, "GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition)
