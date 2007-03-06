@@ -1024,8 +1024,6 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 #ifndef PLATFORM_WIN32
 	struct sigaction sa;
 #endif
-	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
-
 	if (handling_sigsegv)
 		return;
 
@@ -1046,6 +1044,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	int i, size;
 	gchar *out, *err;
 	gint exit_status;
+	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
 	fprintf (stderr, "\nNative stacktrace:\n\n");
 
