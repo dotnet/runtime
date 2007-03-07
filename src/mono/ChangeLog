@@ -1,5 +1,7 @@
 2007-03-07  Zoltan Varga  <vargaz@gmail.com>
 
+	* docs/aot-compiler.txt: Add into about the PLT.
+	
 	* docs/aot-compiler.txt: Update a bit to reflect recent changes.
 
 2007-02-24  Raja R Harinath  <rharinath@novell.com>
