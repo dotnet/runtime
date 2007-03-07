@@ -69,6 +69,7 @@ typedef struct MonoAotModule {
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	guint32 got_size;
+	GHashTable *name_cache;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoImage **image_table;
@@ -798,6 +799,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	const char *name2, *name_space2;
 	MonoTableInfo  *t;
 	guint32 cols [MONO_TYPEDEF_SIZE];
+	GHashTable *nspace_table;
 
 	if (!aot_modules)
 		return FALSE;
@@ -811,6 +813,18 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	}
 
 	*klass = NULL;
+
+	/* First look in the cache */
+	if (!aot_module->name_cache)
+		aot_module->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	nspace_table = g_hash_table_lookup (aot_module->name_cache, name_space);
+	if (nspace_table) {
+		*klass = g_hash_table_lookup (nspace_table, name);
+		if (*klass) {
+			mono_aot_unlock ();
+			return TRUE;
+		}
+	}
 
 	table_size = aot_module->class_name_table [0];
 	table = aot_module->class_name_table + 1;
@@ -849,6 +863,18 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
 				mono_aot_unlock ();
 				*klass = mono_class_get (image, token);
+
+				/* Add to cache */
+				if (*klass) {
+					mono_aot_lock ();
+					nspace_table = g_hash_table_lookup (aot_module->name_cache, name_space);
+					if (!nspace_table) {
+						nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+						g_hash_table_insert (aot_module->name_cache, (char*)name_space2, nspace_table);
+					}
+					g_hash_table_insert (nspace_table, (char*)name2, *klass);
+					mono_aot_unlock ();
+				}
 				return TRUE;
 			}
 
