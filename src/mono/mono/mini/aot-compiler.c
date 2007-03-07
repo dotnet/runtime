@@ -1935,10 +1935,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		guint32 image_index = get_image_index (acfg, patch_info->data.token->image);
 		guint32 token = patch_info->data.token->token;
 		g_assert (mono_metadata_token_code (token) == MONO_TOKEN_STRING);
-		/* 
-		 * An optimization would be to emit shared code for ldstr 
-		 * statements followed by a throw.
-		 */
 		encode_value (image_index, p, &p);
 		encode_value (patch_info->data.token->token - MONO_TOKEN_STRING, p, &p);
 		break;
