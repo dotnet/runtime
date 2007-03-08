@@ -1636,7 +1636,8 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	MONO_INIT_VARINFO (cfg->vars [num], num);
 
 	cfg->num_varinfo++;
-	//g_print ("created temp %d of type %s\n", num, mono_type_get_name (type));
+	if (cfg->verbose_level > 2)
+		g_print ("created temp %d of type %s\n", num, mono_type_get_name (type));
 	return inst;
 }
 
@@ -1689,7 +1690,14 @@ type_from_stack_type (MonoInst *ins) {
 			return &ins->klass->this_arg;
 		else
 			return &mono_defaults.object_class->this_arg;
-	case STACK_OBJ: return &mono_defaults.object_class->byval_arg;
+	case STACK_OBJ:
+		/* ins->klass may not be set for ldnull.
+		 * Also, if we have a boxed valuetype, we want an object lass,
+		 * not the valuetype class
+		 */
+		if (ins->klass && !ins->klass->valuetype)
+			return &ins->klass->byval_arg;
+		return &mono_defaults.object_class->byval_arg;
 	case STACK_VTYPE: return &ins->klass->byval_arg;
 	default:
 		g_error ("stack type %d to montype not handled\n", ins->type);
@@ -1703,7 +1711,7 @@ mono_type_from_stack_type (MonoInst *ins) {
 }
 
 static MonoClass*
-array_access_to_klass (int opcode)
+array_access_to_klass (int opcode, MonoInst *array_obj)
 {
 	switch (opcode) {
 	case CEE_LDELEM_U1:
@@ -1734,8 +1742,13 @@ array_access_to_klass (int opcode)
 	case CEE_STELEM_R8:
 		return mono_defaults.double_class;
 	case CEE_LDELEM_REF:
-	case CEE_STELEM_REF:
+	case CEE_STELEM_REF: {
+		MonoClass *klass = array_obj->klass;
+		/* FIXME: add assert */
+		if (klass && klass->rank)
+			return klass->element_class;
 		return mono_defaults.object_class;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1995,11 +2008,16 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 				 * in the inlined methods do not inherit their in_stack from
 				 * the bblock they are inlined to. See bug #58863 for an
 				 * example.
+				 * This hack is disabled since it also prevents proper tracking of types.
 				 */
+#if 1
+				bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
+#else
 				if (cfg->inlined_method)
 					bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
 				else
 					bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
+#endif
 			}
 		}
 	}
@@ -2227,9 +2245,20 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
 			return 1;
 		return 0;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
+		if (arg->type != STACK_OBJ)
+			return 1;
+		return 0;
+	case MONO_TYPE_STRING:
+		if (arg->type != STACK_OBJ)
+			return 1;
+		/* ldnull has arg->klass unset */
+		/*if (arg->klass && arg->klass != mono_defaults.string_class) {
+			G_BREAKPOINT ();
+			return 1;
+		}*/
+		return 0;
+	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
 		if (arg->type != STACK_OBJ)
@@ -5517,6 +5546,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			n = read32 (ip + 1);
 
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				/* FIXME: moving GC */
 				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, n));
 				ins->cil_code = ip;
 				ins->type = STACK_OBJ;
@@ -6456,7 +6486,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->inst_newa_class = klass;
 			ins->inst_newa_len = *sp;
 			ins->type = STACK_OBJ;
-			ins->klass = klass;
+			ins->klass = mono_array_class_get (klass, 1);
 			ip += 5;
 			*sp++ = ins;
 			/* 
@@ -6592,7 +6622,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
-			klass = array_access_to_klass (*ip);
+			klass = array_access_to_klass (*ip, sp [0]);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -6631,7 +6661,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 3;
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
-			klass = array_access_to_klass (*ip);
+			klass = array_access_to_klass (*ip, sp [0]);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
 #ifdef MONO_ARCH_SOFT_FLOAT
