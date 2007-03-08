@@ -214,6 +214,8 @@ try_again:
 	return(fd);
 }
 
+static gboolean wapi_shm_disabled = 0;
+
 /*
  * _wapi_shm_attach:
  * @success: Was it a success
@@ -237,8 +239,19 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	case WAPI_SHM_FILESHARE:
 		size = sizeof(struct _WapiFileShareLayout);
 		break;
+	default:
+		g_error ("Invalid type in _wapi_shm_attach ()");
+		return NULL;
 	}
-	
+
+	if (g_getenv ("MONO_DISABLE_SHM")) {
+		const char* val = g_getenv ("MONO_DISABLE_SHM");
+		if (*val == '1' || *val == 'y' || *val == 'Y') {
+			wapi_shm_disabled = TRUE;
+			return g_malloc0 (size);
+		}
+	}
+
 	fd = _wapi_shm_file_open (filename, size);
 	if (fd == -1) {
 		g_critical ("%s: shared file [%s] open error", __func__,
@@ -419,7 +432,10 @@ again:
 	
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 
-	munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
+	if (wapi_shm_disabled)
+		g_free (tmp_shared);
+	else
+		munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
 }
 
 void _wapi_shm_semaphores_remove (void)
