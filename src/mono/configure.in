@@ -70,7 +70,7 @@ case "$host" in
 			export CC
 		fi
 		HOST_CC="gcc"
-		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS -DFD_SETSIZE=1024"
+		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS -DFD_SETSIZE=1024 -DUNICODE -D_UNICODE"
 		libmono_cflags="-mno-cygwin"
 		libmono_ldflags="-mno-cygwin"
 		libdl=

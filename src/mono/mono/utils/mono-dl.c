@@ -32,7 +32,7 @@ static const char suffixes [][4] = {
 #include <psapi.h>
 
 #define SO_HANDLE_TYPE HMODULE
-#define LL_SO_OPEN(file,flags) (file)? LoadLibrary ((file)): GetModuleHandle (NULL)
+#define LL_SO_OPEN(file,flags) w32_load_module ((file), (flags))
 #define LL_SO_CLOSE(module) do { if (!(module)->main_module) FreeLibrary ((module)->handle); } while (0)
 #define LL_SO_SYMBOL(module, name) w32_find_symbol ((module), (name))
 #define LL_SO_TRFLAGS(flags) 0
@@ -86,15 +86,16 @@ struct _MonoDl {
 static char*
 w32_dlerror (void)
 {
-	char* ret;
-	TCHAR* buf = NULL;
+	char* ret = NULL;
+	wchar_t* buf = NULL;
 	DWORD code = GetLastError ();
 
-	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
-
-	ret = g_strdup (buf);
-	LocalFree (buf);
+	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL))
+	{
+		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
+		LocalFree (buf);
+	}
 	return ret;
 }
 
@@ -155,6 +156,23 @@ w32_find_symbol (MonoDl *module, const gchar *symbol_name)
 	return NULL;
 }
 
+
+static gpointer
+w32_load_module (const char* file, int flags)
+{
+	gpointer hModule = NULL;
+	if (file)
+	{
+		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
+		hModule = LoadLibrary (file_utf16);
+		g_free (file_utf16);
+	}
+	else
+	{
+		hModule = GetModuleHandle (NULL);
+	}
+	return hModule;
+}
 #endif
 
 /*

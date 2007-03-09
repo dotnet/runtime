@@ -37,6 +37,9 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-stdlib.h>
+#ifdef PLATFORM_WIN32
+#include <direct.h>
+#endif
 
 #define MONO_CORLIB_VERSION 54
 
@@ -851,8 +854,8 @@ get_shadow_assembly_location (const char *filename)
 	
 	hash = get_cstring_hash (bname);
 	hash2 = get_cstring_hash (g_path_get_dirname (filename));
-	snprintf (name_hash, sizeof (name_hash), "%08x", hash);
-	snprintf (path_hash, sizeof (path_hash), "%08x_%08x", hash ^ hash2, hash2);
+	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
+	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x", hash ^ hash2, hash2);
 	return g_build_filename (mono_string_to_utf8 (domain->setup->dynamic_base), 
 				 "assembly", 
 				 "shadow", 
@@ -865,6 +868,56 @@ get_shadow_assembly_location (const char *filename)
 static gboolean
 ensure_directory_exists (const char *filename)
 {
+#ifdef PLATFORM_WIN32
+	gchar *dir_utf8 = g_path_get_dirname (filename);
+	gunichar2 *p;
+	gunichar2 *dir_utf16 = NULL;
+	int retval;
+	
+	if (!dir_utf8 || !dir_utf8 [0])
+		return FALSE;
+
+	dir_utf16 = g_utf8_to_utf16 (dir_utf8, strlen (dir_utf8), NULL, NULL, NULL);
+	g_free (dir_utf8);
+
+	if (!dir_utf16)
+		return FALSE;
+
+	p = dir_utf16;
+
+	/* make life easy and only use one directory seperator */
+	while (*p != '\0')
+	{
+		if (*p == '/')
+			*p = '\\';
+		p++;
+	}
+
+	p = dir_utf16;
+
+	/* get past C:\ )*/
+	while (*p++ != '\\')	
+	{
+	}
+
+	while (1) {
+		BOOL bRet = FALSE;
+		p = wcschr (p, '\\');
+		if (p)
+			*p = '\0';
+		retval = _wmkdir (dir_utf16);
+		if (retval != 0 && errno != EEXIST) {
+			g_free (dir_utf16);
+			return FALSE;
+		}
+		if (!p)
+			break;
+		*p++ = '\\';
+	}
+	
+	g_free (dir_utf16);
+	return TRUE;
+#else
 	char *p;
 	gchar *dir = g_path_get_dirname (filename);
 	int retval;
@@ -880,11 +933,7 @@ ensure_directory_exists (const char *filename)
 		p = strchr (p, '/');
 		if (p)
 			*p = '\0';
-#ifdef PLATFORM_WIN32
-		retval = mkdir (dir);
-#else
 		retval = mkdir (dir, 0777);
-#endif
 		if (retval != 0 && errno != EEXIST) {
 			g_free (dir);
 			return FALSE;
@@ -896,6 +945,7 @@ ensure_directory_exists (const char *filename)
 	
 	g_free (dir);
 	return TRUE;
+#endif
 }
 
 static char *

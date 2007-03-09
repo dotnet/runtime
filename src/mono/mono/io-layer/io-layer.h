@@ -13,8 +13,6 @@
 
 #if defined(__WIN32__)
 /* Native win32 */
-#define UNICODE
-#define _UNICODE
 #define __USE_W32_SOCKETS
 #include <winsock2.h>
 #include <windows.h>
