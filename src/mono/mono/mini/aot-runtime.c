@@ -456,6 +456,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gpointer *got_addr = NULL;
 	gpointer *got = NULL;
 	guint32 *got_size_ptr = NULL;
+	int i;
 
 	if (mono_compile_aot)
 		return;
@@ -623,7 +624,19 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	mono_jit_info_add_aot_module (assembly->image, info->code, info->code_end);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
+	/*
+	 * Since we store methoddef and classdef tokens when referring to methods/classes in
+	 * referenced assemblies, we depend on the exact versions of the referenced assemblies.
+	 * MS calls this 'hard binding'. This means we have to load all referenced assemblies
+	 * non-lazily, since we can't handle out-of-date errors later.
+	 */
+	for (i = 0; i < info->image_table_len; ++i)
+		load_image (info, i);
+
+	if (info->out_of_date)
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
+	else
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
 }
 
 void
