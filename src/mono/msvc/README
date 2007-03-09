@@ -1,0 +1,8 @@
+README					Last updated: 2007-03-09
+
+
+INTRODUCTION
+
+This directory (msvc) serves as a central location for 
+all things needed to build the mono runtime using 
+Microsoft Visual Studio.
