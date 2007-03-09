@@ -2067,6 +2067,7 @@ data/config
 tools/Makefile
 tools/locale-builder/Makefile
 runtime/Makefile
+msvc/Makefile
 ])
 
 if test x$platform_win32 = xyes; then

@@ -1,3 +1,11 @@
+
+Fri Mar 9 18:57:47 CET 2007 Paolo Molaro <lupus@ximian.com>
+
+	* Makefile.am, configure.in, msvc: add msvc directory to the
+	distribution.
+	* msvc/create-windef.pl, msvc/mono.def: added def file for exported
+	functions.
+
 2007-03-09  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/aot-compiler.txt: Update 'future work'.

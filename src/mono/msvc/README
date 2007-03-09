@@ -6,3 +6,11 @@ INTRODUCTION
 This directory (msvc) serves as a central location for 
 all things needed to build the mono runtime using 
 Microsoft Visual Studio.
+
+When new exported API calls are added to the runtime, issue the
+command:
+	make update-def
+in this directory and commit the resulting mono.def file.
+This must happen on a Linux system, because we get the list
+of the exported symbols from the generated shared library.
+
