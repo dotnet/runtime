@@ -1,3 +1,7 @@
+2007-03-09  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/aot-compiler.txt: Update 'future work'.
+
 2007-03-07  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/aot-compiler.txt: Add into about the PLT.
