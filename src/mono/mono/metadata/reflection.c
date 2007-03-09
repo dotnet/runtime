@@ -1662,6 +1662,9 @@ handle_enum:
 		g_free (buf);
 		return idx;
 	}
+	case MONO_TYPE_GENERICINST:
+		*ret_type = val->vtable->klass->generic_class->container_class->byval_arg.type;
+		goto handle_enum;
 	default:
 		g_error ("we don't encode constant type 0x%02x yet", *ret_type);
 	}
