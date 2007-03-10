@@ -131,7 +131,6 @@ typedef struct {
 		MonoPPCStackFrame *sframe;	\
 		__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));	\
 		MONO_CONTEXT_SET_BP ((ctx), sframe->sp);	\
-		MONO_CONTEXT_SET_SP ((ctx), sframe->sp);	\
 		sframe = (MonoPPCStackFrame*)sframe->sp;	\
 		MONO_CONTEXT_SET_IP ((ctx), sframe->lr);	\
 	} while (0)
