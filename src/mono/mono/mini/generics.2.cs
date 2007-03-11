@@ -156,6 +156,32 @@ class Tests {
 			return 0;
     }
 
+	public static int test_0_box_brtrue_opt_regress_81102 () {
+		if (new Foo<int>(5).ToString () == "null")
+			return 0;
+		else
+			return 1;
+	}
+
+	public class Foo<T1>
+	{
+		public Foo(T1 t1)
+		{
+			m_t1 = t1;
+		}
+		
+		public override string ToString()
+		{
+			return Bar(m_t1 == null ? "null" : "null");
+		}
+
+		public String Bar (String s) {
+			return s;
+		}
+		
+		readonly T1 m_t1;
+	}
+
 	public interface IMyHandler {
 		object Bar<T>();
 	}

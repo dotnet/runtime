@@ -6449,6 +6449,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, bblock, tblock);
 				CHECK_BBLOCK (target, ip, tblock);
 				ins->inst_target_bb = tblock;
+				GET_BBLOCK (cfg, bbhash, tblock, ip);
+				link_bblock (cfg, bblock, tblock);
 				if (sp != stack_start) {
 					handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 					sp = stack_start;
