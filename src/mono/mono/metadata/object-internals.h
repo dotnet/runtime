@@ -1009,6 +1009,7 @@ typedef struct {
 	MonoReflectionILGen *ilgen;
 	gint32 nrefs;
 	MonoArray *refs;
+	GSList *referenced_by;
 } MonoReflectionDynamicMethod;	
 
 typedef struct {
