@@ -9523,6 +9523,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
+	GSList *l;
 	int i;
 
 	sig = dynamic_method_to_signature (mb);
@@ -9540,19 +9541,57 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
 	for (i = 0; i < mb->nrefs; i += 2) {
 		MonoClass *handle_class;
-		gpointer ref = resolve_object (mb->module->image, 
-					       mono_array_get (mb->refs, MonoObject*, i), &handle_class);
-		if (!ref) {
-			g_free (rmb.refs);
-			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
-			return;
+		gpointer ref;
+		MonoObject *obj = mono_array_get (mb->refs, MonoObject*, i);
+
+		if (strcmp (obj->vtable->klass->name, "DynamicMethod") == 0) {
+			MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)obj;
+			/*
+			 * The referenced DynamicMethod should already be created by the managed
+			 * code, except in the case of circular references. In that case, we store
+			 * NULL in the refs array, and fix it up later when the referenced 
+			 * DynamicMethod is created.
+			 */
+			if (method->mhandle) {
+				ref = method->mhandle;
+			} else {
+				ref = NULL;
+
+				/* FIXME: GC object stored in unmanaged memory */
+				method->referenced_by = g_slist_append (method->referenced_by, mb);
+			}
+			handle_class = mono_defaults.methodhandle_class;
+		} else {
+			ref = resolve_object (mb->module->image, obj, &handle_class);
+			if (!ref) {
+				g_free (rmb.refs);
+				mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
+				return;
+			}
 		}
+
 		rmb.refs [i] = ref; /* FIXME: GC object stored in unmanaged memory (change also resolve_object() signature) */
 		rmb.refs [i + 1] = handle_class;
 	}		
 
 	/* FIXME: class */
 	mb->mhandle = reflection_methodbuilder_to_mono_method (mono_defaults.object_class, &rmb, sig);
+
+	/* Fix up refs entries pointing at us */
+	for (l = mb->referenced_by; l; l = l->next) {
+		MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)l->data;
+		MonoMethodWrapper *wrapper = (MonoMethodWrapper*)method->mhandle;
+		gpointer *data;
+		
+		g_assert (method->mhandle);
+
+		data = (gpointer*)wrapper->method_data;
+		for (i = 0; i < GPOINTER_TO_UINT (data [0]); i += 2) {
+			if ((data [i + 1] == NULL) && (data [i + 1 + 1] == mono_defaults.methodhandle_class))
+				data [i + 1] = mb->mhandle;
+		}
+	}
+	g_slist_free (mb->referenced_by);
 
 	g_free (rmb.refs);
 
