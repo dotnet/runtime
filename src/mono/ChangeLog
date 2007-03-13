@@ -1,4 +1,11 @@
+2007-03-13  Jonathan Chambers  <joncham@gmail.com>
 
+	* libmono.vcproj, mono.vcproj, genmdesc.vcproj, mono/monodiet.vcproj,
+	mono/pedump.vcproj: Fix	Release build target, add define to remove CRT warnings, 
+	structure output folders a bit better, begin WIN64 port, and change 
+	libmono to build a DLL instead	of a static library.
+	* mono.sln: Begin x64 target support.
+	
 Fri Mar 9 18:57:47 CET 2007 Paolo Molaro <lupus@ximian.com>
 
 	* Makefile.am, configure.in, msvc: add msvc directory to the

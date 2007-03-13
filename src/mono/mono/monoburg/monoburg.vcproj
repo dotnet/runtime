@@ -11,14 +11,17 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../../VSDependancies/temp/monoburg/Debug"
-			IntermediateDirectory="../../VSDependancies/temp/monoburg/Debug"
+			OutputDirectory="../../msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="../../msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -42,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -51,6 +54,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
+				CompileAs="1"
 				DisableSpecificWarnings="4996"
 			/>
 			<Tool
@@ -64,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib "
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
 				GenerateDebugInformation="true"
@@ -94,18 +98,19 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat"
+				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -122,13 +127,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -141,7 +148,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -171,6 +180,174 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="copy wparser.c parser.c"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				BufferSecurityCheck="false"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="1"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="copy wparser.c parser.c"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 	</Configurations>
