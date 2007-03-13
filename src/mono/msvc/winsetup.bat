@@ -1,4 +1,5 @@
 @echo off
+cd ..
 if not exist VSDependancies\lib goto error
 copy winconfig.h config.h
 goto end

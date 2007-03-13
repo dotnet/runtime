@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;;.\mono\;.\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -76,7 +76,7 @@
 				OutputFile="$(OutDir)/genmdesc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -106,104 +106,13 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="mono\mini\runmdesc.bat $(TargetPath)"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-				CommandLine="winsetup.bat"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/genmdesc.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;;.\mono\;.\mono\jit"
-				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				SuppressStartupBanner="true"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
-				OutputFile="$(OutDir)/genmdesc.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\VSDependancies\lib"
-				ProgramDatabaseFile=".\Release/genmdesc.pdb"
-				SubSystem="1"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/genmdesc.bsc"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="mono\mini\runmdesc.bat $(TargetPath)"
+				CommandLine="runmdesc.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -231,7 +140,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;;.\mono\;.\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -260,7 +169,7 @@
 				OutputFile="$(OutDir)/genmdesc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -290,13 +199,104 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="mono\mini\runmdesc.bat $(TargetPath)"
+				CommandLine="runmdesc.bat $(TargetPath)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="winsetup.bat"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/genmdesc.tlb"
+				HeaderFileName=""
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
+				OutputFile="$(OutDir)/genmdesc.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
+				ProgramDatabaseFile=".\Release/genmdesc.pdb"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Release/genmdesc.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="runmdesc.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -325,7 +325,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".\libgc\include;.\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;;.\mono\;.\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -352,7 +352,7 @@
 				OutputFile="$(OutDir)/genmdesc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
 				SubSystem="1"
 				TargetMachine="17"
@@ -382,7 +382,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="mono\mini\runmdesc.bat $(TargetPath)"
+				CommandLine="runmdesc.bat $(TargetPath)"
 			/>
 		</Configuration>
 	</Configurations>
@@ -394,10 +394,21 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="mono\mini\genmdesc.c"
+				RelativePath="..\mono\mini\genmdesc.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -415,17 +426,6 @@
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -440,10 +440,21 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\helpers.c"
+				RelativePath="..\mono\mini\helpers.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -461,17 +472,6 @@
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -486,10 +486,21 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\monobitset.c"
+				RelativePath="..\mono\utils\monobitset.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -507,17 +518,6 @@
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -532,10 +532,21 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\opcodes.c"
+				RelativePath="..\mono\metadata\opcodes.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+						BrowseInformation="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -553,17 +564,6 @@
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration

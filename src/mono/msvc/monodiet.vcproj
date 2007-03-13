@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="monoburg"
-	ProjectGUID="{5DCFA645-3358-4A20-9630-AEAAC5EED2D5}"
-	RootNamespace="monoburg"
+	Name="monodiet"
+	ProjectGUID="{8F90007F-8019-4191-8808-891E4762D958}"
+	RootNamespace="monodiet"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -20,14 +20,13 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../../msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="../../msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="../VSDependancies/temp/monodiet/Debug"
+			IntermediateDirectory="../VSDependancies/temp/monodiet/Debug"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -44,16 +43,19 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				BufferSecurityCheck="false"
+				RuntimeLibrary="1"
+				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
+				ObjectFile="$(IntDir)/monodiet/"
+				ProgramDataBaseFileName="$(IntDir)/monodiet/vc80.pdb"
+				XMLDocumentationFileName="$(IntDir)/monodiet/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				CompileAs="1"
 				DisableSpecificWarnings="4996"
 			/>
@@ -68,9 +70,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
+				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -98,19 +100,17 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -127,15 +127,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
-				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -148,9 +146,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -180,7 +176,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
@@ -192,7 +187,6 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -210,13 +204,16 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				BufferSecurityCheck="false"
+				RuntimeLibrary="1"
+				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
+				ObjectFile="$(IntDir)/monodiet/"
+				ProgramDataBaseFileName="$(IntDir)/monodiet/vc80.pdb"
+				XMLDocumentationFileName="$(IntDir)/monodiet/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -234,9 +231,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
+				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -264,7 +261,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
@@ -276,7 +272,6 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -294,15 +289,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="&quot;..\..\VSDependancies\include\glib-2.0&quot;;&quot;.\..\VSDependancies\include\glib-2.0\glib&quot;;&quot;..\..\VSDependancies\lib\glib-2.0\include&quot;;..\..\VSDependancies\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
-				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -315,9 +308,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -347,37 +338,16 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
-		<Filter
-			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+		<File
+			RelativePath="..\mono\metadata\monodiet.c"
 			>
-			<File
-				RelativePath=".\monoburg.c"
-				>
-			</File>
-			<File
-				RelativePath=".\parser.c"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-			<File
-				RelativePath=".\monoburg.h"
-				>
-			</File>
-		</Filter>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

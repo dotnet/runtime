@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="pedump"
-	ProjectGUID="{84C7DB50-D6F8-4C47-B22C-6BB203AEB4D3}"
-	RootNamespace="pedump"
+	Name="monoburg"
+	ProjectGUID="{5DCFA645-3358-4A20-9630-AEAAC5EED2D5}"
+	RootNamespace="monoburg"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -20,13 +20,14 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../VSDependancies/temp/pedump/Debug"
-			IntermediateDirectory="../VSDependancies/temp/pedump/Debug"
+			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -43,21 +44,18 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="true"
+				RuntimeLibrary="3"
+				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
-				ObjectFile="$(IntDir)/pedump/"
-				ProgramDataBaseFileName="$(IntDir)/pedump/vc80.pdb"
-				XMLDocumentationFileName="$(IntDir)/pedump/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 				CompileAs="1"
-				DisableSpecificWarnings="4018;4996"
+				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -70,9 +68,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -100,93 +98,19 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="1"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -204,21 +128,18 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="true"
+				RuntimeLibrary="3"
+				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
-				ObjectFile="$(IntDir)/pedump/"
-				ProgramDataBaseFileName="$(IntDir)/pedump/vc80.pdb"
-				XMLDocumentationFileName="$(IntDir)/pedump/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4018;4996"
+				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -231,9 +152,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -261,17 +182,101 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			Name="Release|Win32"
+			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -289,13 +294,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -308,7 +315,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -338,16 +347,37 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="runburg.bat $(TargetPath)"
 			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
-		<File
-			RelativePath=".\metadata\pedump.c"
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-		</File>
+			<File
+				RelativePath="..\mono\monoburg\monoburg.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\monoburg\parser.c"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
+			<File
+				RelativePath="..\mono\monoburg\monoburg.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

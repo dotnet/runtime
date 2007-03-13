@@ -46,7 +46,7 @@
 				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -71,8 +71,94 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories=".;.\VSDependancies\lib;./msvc/lib/libgc/$(PlatformName)/$(ConfigurationName)"
-				ModuleDefinitionFile="./msvc/mono.def"
+				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				ModuleDefinitionFile="mono.def"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+				SuppressStartupBanner="true"
+				OutputFile=".\Release/libmono.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\Release/libmono.pch"
+				ProgramDataBaseFileName="$(OutDir)\$(TargetName).pdb"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				OutputFile="$(OutDir)\mono.dll"
+				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				ModuleDefinitionFile="mono.def"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -130,7 +216,7 @@
 				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -158,8 +244,8 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories=".;.\VSDependancies\lib;./msvc/lib/libgc/$(PlatformName)/$(ConfigurationName)"
-				ModuleDefinitionFile="./msvc/mono.def"
+				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -175,92 +261,6 @@
 				Name="VCBscMakeTool"
 				SuppressStartupBanner="true"
 				OutputFile=".\./VSDependancies/temp/libmono___Win32_Debug/libmono.bsc"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
-				Optimization="2"
-				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile=".\Release/libmono.pch"
-				ProgramDataBaseFileName="$(OutDir)\$(TargetName).pdb"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
-				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories=".;.\VSDependancies\lib;./msvc/lib/libgc/$(PlatformName)/$(ConfigurationName)"
-				ModuleDefinitionFile="./msvc/mono.def"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/libmono.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -305,7 +305,7 @@
 				AdditionalOptions="/D /NODEFAULTLIB:LIBCD&quot; &quot;"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories=".\;.\mono\;.\libgc\include;.\VSDependancies\include\;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="WIN64;_WIN64;_DEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -333,8 +333,8 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories=".;.\VSDependancies\lib;./msvc/lib/libgc/$(PlatformName)/$(ConfigurationName)"
-				ModuleDefinitionFile="./msvc/mono.def"
+				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -374,11 +374,11 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath=".\config.h"
+				RelativePath="..\config.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\io-layer\io-layer.h"
+				RelativePath="..\mono\io-layer\io-layer.h"
 				>
 			</File>
 		</Filter>
@@ -386,10 +386,20 @@
 			Name="utils"
 			>
 			<File
-				RelativePath="mono\utils\mono-codeman.c"
+				RelativePath="..\mono\utils\mono-codeman.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -410,16 +420,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -432,18 +432,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-codeman.h"
+				RelativePath="..\mono\utils\mono-codeman.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-compiler.h"
+				RelativePath="..\mono\utils\mono-compiler.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-counters.c"
+				RelativePath="..\mono\utils\mono-counters.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -464,16 +474,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -486,18 +486,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-counters.h"
+				RelativePath="..\mono\utils\mono-counters.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-digest.h"
+				RelativePath="..\mono\utils\mono-digest.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-dl.c"
+				RelativePath="..\mono\utils\mono-dl.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -518,16 +528,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -540,14 +540,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-dl.h"
+				RelativePath="..\mono\utils\mono-dl.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-hash.c"
+				RelativePath="..\mono\utils\mono-hash.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -568,16 +578,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -590,14 +590,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-hash.h"
+				RelativePath="..\mono\utils\mono-hash.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-logger.c"
+				RelativePath="..\mono\utils\mono-logger.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -618,16 +628,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -640,14 +640,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-logger.h"
+				RelativePath="..\mono\utils\mono-logger.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-math.c"
+				RelativePath="..\mono\utils\mono-math.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -668,16 +678,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -690,14 +690,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-math.h"
+				RelativePath="..\mono\utils\mono-math.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-md5.c"
+				RelativePath="..\mono\utils\mono-md5.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -718,16 +728,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -740,10 +740,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-mmap.c"
+				RelativePath="..\mono\utils\mono-mmap.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -764,16 +774,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -786,30 +786,40 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-mmap.h"
+				RelativePath="..\mono\utils\mono-mmap.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-path.c"
+				RelativePath="..\mono\utils\mono-path.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-path.h"
+				RelativePath="..\mono\utils\mono-path.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-poll.c"
+				RelativePath="..\mono\utils\mono-poll.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-poll.h"
+				RelativePath="..\mono\utils\mono-poll.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-sha1.c"
+				RelativePath="..\mono\utils\mono-sha1.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -830,16 +840,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -852,18 +852,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-stdlib.c"
+				RelativePath="..\mono\utils\mono-stdlib.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\utils\mono-stdlib.h"
+				RelativePath="..\mono\utils\mono-stdlib.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-uri.c"
+				RelativePath="..\mono\utils\mono-uri.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -884,16 +894,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -906,14 +906,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\mono-uri.h"
+				RelativePath="..\mono\utils\mono-uri.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\monobitset.c"
+				RelativePath="..\mono\utils\monobitset.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -934,16 +944,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -956,14 +956,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\monobitset.h"
+				RelativePath="..\mono\utils\monobitset.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\strenc.c"
+				RelativePath="..\mono\utils\strenc.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -984,16 +994,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -1006,14 +1006,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\strenc.h"
+				RelativePath="..\mono\utils\strenc.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\utils\strtod.c"
+				RelativePath="..\mono\utils\strtod.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1034,16 +1044,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -1056,7 +1056,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\utils\strtod.h"
+				RelativePath="..\mono\utils\strtod.h"
 				>
 			</File>
 		</Filter>
@@ -1064,10 +1064,20 @@
 			Name="metadata"
 			>
 			<File
-				RelativePath="mono\metadata\appdomain.c"
+				RelativePath="..\mono\metadata\appdomain.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1085,16 +1095,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1110,14 +1110,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\appdomain.h"
+				RelativePath="..\mono\metadata\appdomain.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\assembly.c"
+				RelativePath="..\mono\metadata\assembly.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1135,16 +1145,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1160,26 +1160,36 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\boehm-gc.c"
+				RelativePath="..\mono\metadata\boehm-gc.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\char-conversions.h"
+				RelativePath="..\mono\metadata\char-conversions.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\cil-coff.h"
+				RelativePath="..\mono\metadata\cil-coff.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\class-internals.h"
+				RelativePath="..\mono\metadata\class-internals.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\class.c"
+				RelativePath="..\mono\metadata\class.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1197,16 +1207,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1222,26 +1222,36 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\console-io.c"
+				RelativePath="..\mono\metadata\console-io.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\console-io.h"
+				RelativePath="..\mono\metadata\console-io.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\culture-info-tables.h"
+				RelativePath="..\mono\metadata\culture-info-tables.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\culture-info.h"
+				RelativePath="..\mono\metadata\culture-info.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\debug-helpers.c"
+				RelativePath="..\mono\metadata\debug-helpers.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1259,16 +1269,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1284,10 +1284,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\debug-mono-symfile.c"
+				RelativePath="..\mono\metadata\debug-mono-symfile.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1305,16 +1315,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1330,14 +1330,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\debug-mono-symfile.h"
+				RelativePath="..\mono\metadata\debug-mono-symfile.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\decimal.c"
+				RelativePath="..\mono\metadata\decimal.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1355,16 +1365,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1380,18 +1380,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\decimal.h"
+				RelativePath="..\mono\metadata\decimal.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\domain-internals.h"
+				RelativePath="..\mono\metadata\domain-internals.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\domain.c"
+				RelativePath="..\mono\metadata\domain.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1409,16 +1419,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1434,10 +1434,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\environment.c"
+				RelativePath="..\mono\metadata\environment.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1455,16 +1465,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1480,14 +1480,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\environment.h"
+				RelativePath="..\mono\metadata\environment.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\exception.c"
+				RelativePath="..\mono\metadata\exception.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1505,16 +1515,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1530,14 +1530,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\exception.h"
+				RelativePath="..\mono\metadata\exception.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\file-io.c"
+				RelativePath="..\mono\metadata\file-io.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1555,16 +1565,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1580,14 +1580,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\file-io.h"
+				RelativePath="..\mono\metadata\file-io.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\filewatcher.c"
+				RelativePath="..\mono\metadata\filewatcher.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1605,16 +1615,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1630,18 +1630,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\filewatcher.h"
+				RelativePath="..\mono\metadata\filewatcher.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\gc-internal.h"
+				RelativePath="..\mono\metadata\gc-internal.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\gc.c"
+				RelativePath="..\mono\metadata\gc.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1659,16 +1669,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1684,10 +1684,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\icall.c"
+				RelativePath="..\mono\metadata\icall.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1705,16 +1715,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1730,10 +1730,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\image.c"
+				RelativePath="..\mono\metadata\image.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1751,16 +1761,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1776,10 +1776,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\loader.c"
+				RelativePath="..\mono\metadata\loader.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1797,16 +1807,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1822,10 +1822,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\locales.c"
+				RelativePath="..\mono\metadata\locales.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1843,16 +1853,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1868,14 +1868,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\locales.h"
+				RelativePath="..\mono\metadata\locales.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\marshal.c"
+				RelativePath="..\mono\metadata\marshal.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1893,16 +1903,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1918,14 +1918,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\marshal.h"
+				RelativePath="..\mono\metadata\marshal.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\mempool.c"
+				RelativePath="..\mono\metadata\mempool.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1943,16 +1953,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1968,14 +1968,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\metadata-internals.h"
+				RelativePath="..\mono\metadata\metadata-internals.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\metadata.c"
+				RelativePath="..\mono\metadata\metadata.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -1993,16 +2003,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2018,10 +2018,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\monitor.c"
+				RelativePath="..\mono\metadata\monitor.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2039,16 +2049,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2064,14 +2064,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\monitor.h"
+				RelativePath="..\mono\metadata\monitor.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-config.c"
+				RelativePath="..\mono\metadata\mono-config.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2089,16 +2099,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2114,10 +2114,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-debug-debugger.c"
+				RelativePath="..\mono\metadata\mono-debug-debugger.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2135,16 +2145,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2160,14 +2160,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-debug-debugger.h"
+				RelativePath="..\mono\metadata\mono-debug-debugger.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-debug.c"
+				RelativePath="..\mono\metadata\mono-debug.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2185,16 +2195,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2210,14 +2210,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-debug.h"
+				RelativePath="..\mono\metadata\mono-debug.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\mono-endian.c"
+				RelativePath="..\mono\metadata\mono-endian.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2235,16 +2245,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2260,22 +2260,32 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\mono-mlist.c"
+				RelativePath="..\mono\metadata\mono-mlist.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\mono-mlist.h"
+				RelativePath="..\mono\metadata\mono-mlist.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\object-internals.h"
+				RelativePath="..\mono\metadata\object-internals.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\object.c"
+				RelativePath="..\mono\metadata\object.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2293,16 +2303,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2318,10 +2318,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\opcodes.c"
+				RelativePath="..\mono\metadata\opcodes.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2339,16 +2349,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2364,10 +2364,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\process.c"
+				RelativePath="..\mono\metadata\process.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2385,16 +2395,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2410,18 +2410,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\process.h"
+				RelativePath="..\mono\metadata\process.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\profiler-private.h"
+				RelativePath="..\mono\metadata\profiler-private.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\profiler.c"
+				RelativePath="..\mono\metadata\profiler.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2439,16 +2449,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2464,10 +2464,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\rand.c"
+				RelativePath="..\mono\metadata\rand.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2485,16 +2495,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2510,14 +2510,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\rand.h"
+				RelativePath="..\mono\metadata\rand.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\rawbuffer.c"
+				RelativePath="..\mono\metadata\rawbuffer.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2535,16 +2545,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2560,10 +2560,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\reflection.c"
+				RelativePath="..\mono\metadata\reflection.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2581,16 +2591,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2606,18 +2606,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\security-manager.c"
+				RelativePath="..\mono\metadata\security-manager.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\metadata\security-manager.h"
+				RelativePath="..\mono\metadata\security-manager.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\security.c"
+				RelativePath="..\mono\metadata\security.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2635,16 +2645,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2660,14 +2660,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\security.h"
+				RelativePath="..\mono\metadata\security.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\socket-io.c"
+				RelativePath="..\mono\metadata\socket-io.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2685,16 +2695,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2710,14 +2710,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\socket-io.h"
+				RelativePath="..\mono\metadata\socket-io.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\string-icalls.c"
+				RelativePath="..\mono\metadata\string-icalls.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2735,16 +2745,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2760,14 +2760,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\string-icalls.h"
+				RelativePath="..\mono\metadata\string-icalls.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\sysmath.c"
+				RelativePath="..\mono\metadata\sysmath.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2785,16 +2795,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2810,18 +2810,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\sysmath.h"
+				RelativePath="..\mono\metadata\sysmath.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\tabledefs.h"
+				RelativePath="..\mono\metadata\tabledefs.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\threadpool.c"
+				RelativePath="..\mono\metadata\threadpool.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2839,16 +2849,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2864,18 +2864,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\threadpool.h"
+				RelativePath="..\mono\metadata\threadpool.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\threads-types.h"
+				RelativePath="..\mono\metadata\threads-types.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\metadata\threads.c"
+				RelativePath="..\mono\metadata\threads.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2893,16 +2903,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2918,10 +2918,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\metadata\verify.c"
+				RelativePath="..\mono\metadata\verify.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -2939,16 +2949,6 @@
 						PreprocessorDefinitions=""
 						UsePrecompiledHeader="0"
 						BrowseInformation="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -2968,7 +2968,7 @@
 			Name="os"
 			>
 			<File
-				RelativePath="mono\os\gc_wrapper.h"
+				RelativePath="..\mono\os\gc_wrapper.h"
 				>
 			</File>
 		</Filter>
@@ -2976,10 +2976,20 @@
 			Name="mini"
 			>
 			<File
-				RelativePath="mono\mini\abcremoval.c"
+				RelativePath="..\mono\mini\abcremoval.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3000,16 +3010,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3022,18 +3022,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\abcremoval.h"
+				RelativePath="..\mono\mini\abcremoval.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\mini\aliasing.c"
+				RelativePath="..\mono\mini\aliasing.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\aot-compiler.c"
+				RelativePath="..\mono\mini\aot-compiler.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3054,16 +3064,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3076,10 +3076,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\aot-runtime.c"
+				RelativePath="..\mono\mini\aot-runtime.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3100,16 +3110,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3122,14 +3122,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\mini\branch-opts.c"
+				RelativePath="..\mono\mini\branch-opts.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\cfold.c"
+				RelativePath="..\mono\mini\cfold.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3150,16 +3160,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3172,14 +3172,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\cpu-pentium.h"
+				RelativePath="..\mono\mini\cpu-pentium.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\debug-mini.c"
+				RelativePath="..\mono\mini\debug-mini.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3200,16 +3210,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3222,18 +3222,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\mini\declsec.c"
+				RelativePath="..\mono\mini\declsec.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\mini\declsec.h"
+				RelativePath="..\mono\mini\declsec.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\dominators.c"
+				RelativePath="..\mono\mini\dominators.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3254,16 +3264,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3276,10 +3276,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\driver.c"
+				RelativePath="..\mono\mini\driver.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3300,16 +3310,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3322,10 +3322,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\exceptions-x86.c"
+				RelativePath="..\mono\mini\exceptions-x86.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3346,16 +3356,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3368,10 +3368,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\graph.c"
+				RelativePath="..\mono\mini\graph.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3392,16 +3402,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3414,10 +3414,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\helpers.c"
+				RelativePath="..\mono\mini\helpers.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3438,16 +3448,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3460,10 +3460,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\inssel.c"
+				RelativePath="..\mono\mini\inssel.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3484,16 +3494,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3506,14 +3506,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\inssel.h"
+				RelativePath="..\mono\mini\inssel.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\jit-icalls.c"
+				RelativePath="..\mono\mini\jit-icalls.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3534,16 +3544,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3556,14 +3556,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\jit-icalls.h"
+				RelativePath="..\mono\mini\jit-icalls.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\linear-scan.c"
+				RelativePath="..\mono\mini\linear-scan.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3584,16 +3594,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3606,10 +3606,20 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\liveness.c"
+				RelativePath="..\mono\mini\liveness.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3630,16 +3640,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3652,22 +3652,32 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\mini\local-propagation.c"
+				RelativePath="..\mono\mini\local-propagation.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-arch.h"
+				RelativePath="..\mono\mini\mini-arch.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-codegen.c"
+				RelativePath="..\mono\mini\mini-codegen.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-exceptions.c"
+				RelativePath="..\mono\mini\mini-exceptions.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3688,16 +3698,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3710,18 +3710,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-ops.h"
+				RelativePath="..\mono\mini\mini-ops.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-trampolines.c"
+				RelativePath="..\mono\mini\mini-trampolines.c"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-x86.c"
+				RelativePath="..\mono\mini\mini-x86.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3742,16 +3752,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3764,14 +3764,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\mini-x86.h"
+				RelativePath="..\mono\mini\mini-x86.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\mini.c"
+				RelativePath="..\mono\mini\mini.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3792,16 +3802,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3814,14 +3814,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\mini.h"
+				RelativePath="..\mono\mini\mini.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\regalloc.c"
+				RelativePath="..\mono\mini\regalloc.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3842,16 +3852,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3864,14 +3864,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\regalloc.h"
+				RelativePath="..\mono\mini\regalloc.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\ssa.c"
+				RelativePath="..\mono\mini\ssa.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3892,16 +3902,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3914,26 +3914,36 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\mini\ssapre-cee-ops.h"
+				RelativePath="..\mono\mini\ssapre-cee-ops.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\mini\ssapre-mini-ops.h"
+				RelativePath="..\mono\mini\ssapre-mini-ops.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\mini\ssapre.c"
+				RelativePath="..\mono\mini\ssapre.c"
 				>
 			</File>
 			<File
-				RelativePath=".\mono\mini\ssapre.h"
+				RelativePath="..\mono\mini\ssapre.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\trace.c"
+				RelativePath="..\mono\mini\trace.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -3954,16 +3964,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -3976,14 +3976,24 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="mono\mini\trace.h"
+				RelativePath="..\mono\mini\trace.h"
 				>
 			</File>
 			<File
-				RelativePath="mono\mini\tramp-x86.c"
+				RelativePath="..\mono\mini\tramp-x86.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -4004,16 +4014,6 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|x64"
 					>
 					<Tool
@@ -4026,7 +4026,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mono\mini\wapihandles.c"
+				RelativePath="..\mono\mini\wapihandles.c"
 				>
 			</File>
 		</Filter>

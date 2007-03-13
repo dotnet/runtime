@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="monodiet"
-	ProjectGUID="{8F90007F-8019-4191-8808-891E4762D958}"
-	RootNamespace="monodiet"
+	Name="monograph"
+	ProjectGUID="{CA2A69D6-3B9D-45A5-8BF7-4E242E683122}"
+	RootNamespace="monograph"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -20,8 +20,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../VSDependancies/temp/monodiet/Debug"
-			IntermediateDirectory="../VSDependancies/temp/monodiet/Debug"
+			OutputDirectory="../../VSDependancies/temp/monograph/Debug"
+			IntermediateDirectory="../../VSDependancies/temp/monograph/Debug"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -43,16 +43,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				AdditionalIncludeDirectories="..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				ObjectFile="$(IntDir)/monodiet/"
-				ProgramDataBaseFileName="$(IntDir)/monodiet/vc80.pdb"
-				XMLDocumentationFileName="$(IntDir)/monodiet/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -72,85 +69,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="1"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -204,16 +125,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				AdditionalIncludeDirectories="..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				ObjectFile="$(IntDir)/monodiet/"
-				ProgramDataBaseFileName="$(IntDir)/monodiet/vc80.pdb"
-				XMLDocumentationFileName="$(IntDir)/monodiet/"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -233,10 +151,88 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\;..\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				AdditionalIncludeDirectories="..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -289,6 +285,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
+				AdditionalIncludeDirectories="..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
@@ -309,6 +306,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\VSDependancies\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -345,7 +343,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\metadata\monodiet.c"
+			RelativePath="..\mono\monograph\monograph.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\opcodes.c"
 			>
 		</File>
 	</Files>

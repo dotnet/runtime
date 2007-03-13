@@ -10,14 +10,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmono", "libmono.vcproj",
 		{EB56000B-C80B-4E8B-908D-D84D31B517D3} = {EB56000B-C80B-4E8B-908D-D84D31B517D3}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-invoke", "samples\embed\test-invoke.vcproj", "{C5639B3F-288A-4A4B-A4A5-C0D85834221D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-invoke", "test-invoke.vcproj", "{C5639B3F-288A-4A4B-A4A5-C0D85834221D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Embedded Samples", "Embedded Samples", "{5FE09AA5-C3C9-45EA-A323-36A11B653CEC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "teste", "samples\embed\teste.vcproj", "{6FDE4E5E-57D0-432F-A987-6C226A7827E4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "teste", "teste.vcproj", "{6FDE4E5E-57D0-432F-A987-6C226A7827E4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
@@ -29,33 +29,33 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mono", "mono.vcproj", "{A0E
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgc", "libgc\libgc.vcproj", "{EB56000B-C80B-4E8B-908D-D84D31B517D3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgc", "libgc.vcproj", "{EB56000B-C80B-4E8B-908D-D84D31B517D3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monodis", "mono\dis\monodis.vcproj", "{37F50E5A-4818-46CF-81FE-4BB06DE5D42E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monodis", "monodis.vcproj", "{37F50E5A-4818-46CF-81FE-4BB06DE5D42E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pedump", "mono\pedump.vcproj", "{84C7DB50-D6F8-4C47-B22C-6BB203AEB4D3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pedump", "pedump.vcproj", "{84C7DB50-D6F8-4C47-B22C-6BB203AEB4D3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monodiet", "mono\monodiet.vcproj", "{8F90007F-8019-4191-8808-891E4762D958}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monodiet", "monodiet.vcproj", "{8F90007F-8019-4191-8808-891E4762D958}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monoburg", "mono\monoburg\monoburg.vcproj", "{5DCFA645-3358-4A20-9630-AEAAC5EED2D5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monoburg", "monoburg.vcproj", "{5DCFA645-3358-4A20-9630-AEAAC5EED2D5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monograph", "mono\monograph\monograph.vcproj", "{CA2A69D6-3B9D-45A5-8BF7-4E242E683122}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monograph", "monograph.vcproj", "{CA2A69D6-3B9D-45A5-8BF7-4E242E683122}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{0EBA83B7-0EB4-4C83-A900-77300A97E8B1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-metadata", "samples\embed\test-metadata.vcproj", "{C2EB666E-9146-4B7A-85F6-25F9EA313770}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test-metadata", "test-metadata.vcproj", "{C2EB666E-9146-4B7A-85F6-25F9EA313770}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB0D9E92-293C-439C-9AC7-C5F59B6E0771} = {CB0D9E92-293C-439C-9AC7-C5F59B6E0771}
 	EndProjectSection

@@ -1,5 +1,10 @@
 2007-03-13  Jonathan Chambers  <joncham@gmail.com>
 
+	* mono.sln, libmono.vcproj, mono.vcproj, genmdesc.vcproj, winsetup.bat,
+	mono/monodiet.vcproj, mono/pedump.vcproj: Move to msvc directory.
+	
+2007-03-13  Jonathan Chambers  <joncham@gmail.com>
+
 	* libmono.vcproj, mono.vcproj, genmdesc.vcproj, mono/monodiet.vcproj,
 	mono/pedump.vcproj: Fix	Release build target, add define to remove CRT warnings, 
 	structure output folders a bit better, begin WIN64 port, and change 

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="monodis"
-	ProjectGUID="{37F50E5A-4818-46CF-81FE-4BB06DE5D42E}"
-	RootNamespace="dis"
+	Name="libgc"
+	ProjectGUID="{EB56000B-C80B-4E8B-908D-D84D31B517D3}"
+	RootNamespace="libgc"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -20,10 +20,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../../VSDependancies/temp/monodis/Debug"
-			IntermediateDirectory="../../VSDependancies/temp/monodis/Debug"
-			ConfigurationType="1"
-			CharacterSet="2"
+			OutputDirectory="../msvc/lib/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="../msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -43,18 +43,17 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\;..\..\libgc\include;&quot;..\..\VSDependancies\include\glib-2.0\glib&quot;;..\..\VSDependancies\include;..\..\mono\;..\..\mono\jit"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
+				AdditionalIncludeDirectories="..\libgc\include"
+				PreprocessorDefinitions="GC_THREADS;WIN32_THREADS;GC_INSIDE_DLL;GC_GCJ_SUPPORT;WIN32;_DEBUG;_LIB;_WINDOWS;__WIN32__;__i386__;PLATFORM_WIN32;SILENT;ALL_INTERIOR_POINTERS;__STDC__;GC_BUILD;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				ProgramDataBaseFileName="$(OutDir)\vc80.pdb"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996;4018;4244"
+				DisableSpecificWarnings="4311;4312;4996;4005"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -66,19 +65,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\;..\..\VSDependancies\lib"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				TargetMachine="1"
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\libgc.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -88,88 +79,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="1"
-			CharacterSet="2"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="true"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -179,8 +88,8 @@
 			Name="Debug|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
+			ConfigurationType="4"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -201,18 +110,17 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\;..\..\libgc\include;&quot;..\..\VSDependancies\include\glib-2.0\glib&quot;;..\..\VSDependancies\include;..\..\mono\;..\..\mono\jit"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
+				AdditionalIncludeDirectories="..\libgc\include"
+				PreprocessorDefinitions="WIN64;_WIN64;GC_THREADS;WIN32_THREADS;GC_INSIDE_DLL;GC_GCJ_SUPPORT;WIN32;_DEBUG;_LIB;_WINDOWS;__WIN32__;__i386__;PLATFORM_WIN32;SILENT;ALL_INTERIOR_POINTERS;__STDC__;GC_BUILD;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				ProgramDataBaseFileName="$(OutDir)\vc80.pdb"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996;4018;4244"
+				DisableSpecificWarnings="4311;4312;4996;4005"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -224,19 +132,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\;..\..\VSDependancies\lib"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				TargetMachine="17"
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\libgc.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -248,10 +148,67 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="../msvc/lib/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="../msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				AdditionalIncludeDirectories="..\libgc\include"
+				PreprocessorDefinitions="GC_THREADS;WIN32_THREADS;GC_INSIDE_DLL;GC_GCJ_SUPPORT;WIN32;NDEBUG;_LIB;_WINDOWS;__WIN32__;__i386__;PLATFORM_WIN32;SILENT;ALL_INTERIOR_POINTERS;__STDC__;GC_BUILD;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="true"
+				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(OutDir)\vc80.pdb"
+				DebugInformationFormat="3"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\libgc.lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -261,8 +218,8 @@
 			Name="Release|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="2"
+			ConfigurationType="4"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -283,13 +240,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\libgc\include"
+				PreprocessorDefinitions="GC_THREADS;WIN32_THREADS;GC_INSIDE_DLL;GC_GCJ_SUPPORT;WIN32;NDEBUG;_LIB;_WINDOWS;__WIN32__;__i386__;PLATFORM_WIN32;SILENT;ALL_INTERIOR_POINTERS;__STDC__;GC_BUILD;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				ProgramDataBaseFileName="$(OutDir)\vc80.pdb"
 				DebugInformationFormat="3"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -301,19 +259,11 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="17"
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\libgc.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -323,12 +273,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -344,27 +288,91 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\declsec.c"
+				RelativePath="..\libgc\allchblk.c"
 				>
 			</File>
 			<File
-				RelativePath=".\dis-cil.c"
+				RelativePath="..\libgc\alloc.c"
 				>
 			</File>
 			<File
-				RelativePath=".\dump.c"
+				RelativePath="..\libgc\blacklst.c"
 				>
 			</File>
 			<File
-				RelativePath=".\get.c"
+				RelativePath="..\libgc\dbg_mlc.c"
 				>
 			</File>
 			<File
-				RelativePath=".\main.c"
+				RelativePath="..\libgc\dyn_load.c"
 				>
 			</File>
 			<File
-				RelativePath=".\util.c"
+				RelativePath="..\libgc\finalize.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\gcj_mlc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\headers.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\mach_dep.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\malloc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\mallocx.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\mark.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\mark_rts.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\misc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\new_hblk.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\obj_map.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\os_dep.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\ptr_chck.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\reclaim.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\stubborn.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\typd_mlc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libgc\win32_threads.c"
 				>
 			</File>
 		</Filter>
@@ -374,31 +382,31 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\declsec.h"
+				RelativePath="..\libgc\include\gc.h"
 				>
 			</File>
 			<File
-				RelativePath=".\dis-cil.h"
+				RelativePath="..\libgc\include\private\gc_hdrs.h"
 				>
 			</File>
 			<File
-				RelativePath=".\dump.h"
+				RelativePath="..\libgc\include\private\gc_locks.h"
 				>
 			</File>
 			<File
-				RelativePath=".\get.h"
+				RelativePath="..\libgc\include\gc_mark.h"
 				>
 			</File>
 			<File
-				RelativePath=".\meta.h"
+				RelativePath="..\libgc\include\private\gc_pmark.h"
 				>
 			</File>
 			<File
-				RelativePath=".\push-pop.h"
+				RelativePath="..\libgc\include\private\gc_priv.h"
 				>
 			</File>
 			<File
-				RelativePath=".\util.h"
+				RelativePath="..\libgc\include\private\gcconfig.h"
 				>
 			</File>
 		</Filter>

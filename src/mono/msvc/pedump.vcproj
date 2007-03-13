@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="mono"
-	ProjectGUID="{A0EDDCD9-940F-432C-A28F-7EF322437D79}"
-	RootNamespace="mono"
+	Name="pedump"
+	ProjectGUID="{84C7DB50-D6F8-4C47-B22C-6BB203AEB4D3}"
+	RootNamespace="pedump"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -20,10 +20,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="../VSDependancies/temp/pedump/Debug"
+			IntermediateDirectory="../VSDependancies/temp/pedump/Debug"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -43,17 +43,21 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(OutDir)\mono.exe.pdb"
+				ObjectFile="$(IntDir)/pedump/"
+				ProgramDataBaseFileName="$(IntDir)/pedump/vc80.pdb"
+				XMLDocumentationFileName="$(IntDir)/pedump/"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996"
+				DisableSpecificWarnings="4018;4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -66,89 +70,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="./VSDependancies/lib;./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
+				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="./msvc/bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__;_CRT_SECURE_NO_DEPRECATE"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="true"
-				UsePrecompiledHeader="0"
-				DebugInformationFormat="3"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="./VSDependancies/lib;./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -181,7 +107,7 @@
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -202,17 +128,21 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(OutDir)\mono.exe.pdb"
+				ObjectFile="$(IntDir)/pedump/"
+				ProgramDataBaseFileName="$(IntDir)/pedump/vc80.pdb"
+				XMLDocumentationFileName="$(IntDir)/pedump/"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996"
+				DisableSpecificWarnings="4018;4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -225,12 +155,90 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="./VSDependancies/lib;./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
+				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -262,7 +270,7 @@
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -283,13 +291,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories=".;.\libgc\include;.\mono;&quot;.\VSDependancies\include\glib-2.0&quot;;&quot;.\VSDependancies\include\glib-2.0\glib&quot;;.\VSDependancies\include;&quot;.\VSDependancies\lib\glib-2.0\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
-				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -302,9 +310,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="./VSDependancies/lib;./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
+				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -341,7 +349,7 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\mono\mini\main.c"
+			RelativePath="..\mono\metadata\pedump.c"
 			>
 		</File>
 	</Files>
