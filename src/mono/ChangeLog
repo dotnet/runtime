@@ -1,3 +1,9 @@
+2007-03-13  Wade Berrier  <wberrier@novell.com>
+
+	* Makefile.am:
+	* msvc/Makefile.am:
+	Update EXTRA_DIST to take into account .vcproj file moves
+
 2007-03-13  Jonathan Chambers  <joncham@gmail.com>
 
 	* mono.sln, libmono.vcproj, mono.vcproj, genmdesc.vcproj, winsetup.bat,
