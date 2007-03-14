@@ -121,7 +121,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 		g_string_append_c (res, '*');
 		break;
 	case MONO_TYPE_ARRAY:
-		append_class_name (res, type->data.array->eklass, include_namespace);
+		mono_type_get_desc (res, &type->data.array->eklass->byval_arg, include_namespace);
 		g_string_sprintfa (res, "[%d]", type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
