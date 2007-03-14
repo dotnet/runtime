@@ -98,15 +98,32 @@ static guint32 unicode_bytes (const gunichar2 *str)
 	} while(1);
 }
 
+static gunichar2*
+unicode_get (const gunichar2 *str)
+{
+	gunichar2 *swapped;
+	int i, len;
+
+	len = unicode_bytes (str);
+	swapped = g_malloc0 (len);
+	i = 0;
+	while (str [i]) {
+		swapped [i] = GUINT16_FROM_LE (str [i]);
+		i ++;
+	}
+
+	return swapped;
+}
+
 /* 
- * compare a null-terminated utf16 string and a normal string.
+ * compare a little-endian null-terminated utf16 string and a normal string.
  * Can be used only for ascii or latin1 chars.
  */
 static gboolean
 unicode_string_equals (const gunichar2 *str1, const gchar *str2)
 {
 	while (*str1 && *str2) {
-		if (*str1 != *str2)
+		if (GUINT16_TO_LE (*str1) != *str2)
 			return FALSE;
 		++str1;
 		++str2;
@@ -212,13 +229,13 @@ typedef struct {
 static gpointer process_get_versioninfo_block (gpointer data,
 					       version_data *block)
 {
-	block->data_len=*((guint16 *)data);
+	block->data_len=GUINT16_TO_LE (*((guint16 *)data));
 	data = (char *)data + sizeof(guint16);
-	block->value_len=*((guint16 *)data);
+	block->value_len=GUINT16_TO_LE (*((guint16 *)data));
 	data = (char *)data + sizeof(guint16);
 
 	/* No idea what the type is supposed to indicate */
-	block->type=*((guint16 *)data);
+	block->type=GUINT16_TO_LE (*((guint16 *)data));
 	data = (char *)data + sizeof(guint16);
 	block->key=((gunichar2 *)data);
 
@@ -288,7 +305,7 @@ static gpointer process_read_string_block (MonoObject *filever,
 		}
 		
 		string_len=string_len+block.data_len;
-		value=(gunichar2 *)data_ptr;
+		value=unicode_get ((gunichar2 *)data_ptr);
 		/* Skip over the value */
 		data_ptr=((gunichar2 *)data_ptr)+block.value_len;
 
@@ -323,6 +340,7 @@ static gpointer process_read_string_block (MonoObject *filever,
 				 */
 			}
 		}
+		g_free (value);
 	}
 	
 	return(data_ptr);
@@ -338,6 +356,7 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 						guint16 data_len)
 {
 	version_data block;
+	gunichar2 *value;
 	gchar *language;
 	guint16 string_len=36;	/* length of the StringFileInfo block */
 
@@ -365,7 +384,8 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 		}
 		string_len=string_len+block.data_len;
 
-		language = g_utf16_to_utf8 (block.key, unicode_bytes (block.key), NULL, NULL, NULL);
+		value = unicode_get (block.key);
+		language = g_utf16_to_utf8 (value, unicode_bytes (block.key), NULL, NULL, NULL);
 		g_strdown (language);
 
 		/* Kludge: treat en_US as neutral too */
@@ -388,7 +408,8 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 							    FALSE);
 		}
 		g_free (language);
-
+		g_free (value);
+		
 		if(data_ptr==NULL) {
 			/* Child block hit padding */
 #ifdef DEBUG
