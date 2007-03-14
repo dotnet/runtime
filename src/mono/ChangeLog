@@ -1,3 +1,7 @@
+2007-03-14  Marek Habersack  <mhabersack@novell.com>
+
+	* data/net_2_0/machine.config: add two missing section handlers.
+
 2007-03-13  Wade Berrier  <wberrier@novell.com>
 
 	* Makefile.am:
