@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="./bin/mono/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -103,8 +103,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/mono/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -189,8 +189,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="./msvc/bin/mono/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./msvc/obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory="./bin/mono/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -277,8 +277,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/mono/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -4029,6 +4029,14 @@
 				RelativePath="..\mono\mini\wapihandles.c"
 				>
 			</File>
+			<Filter
+				Name="x86"
+				>
+			</Filter>
+			<Filter
+				Name="x64"
+				>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>
