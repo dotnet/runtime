@@ -1248,7 +1248,8 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 			       MonoPEResourceDirEntry *entry,
 			       MonoPEResourceDir *root, guint32 level)
 {
-	gboolean is_string=entry->name_is_string;
+	gboolean is_string, is_dir;
+	guint32 name_offset, dir_offset;
 
 	/* Level 0 holds a directory entry for each type of resource
 	 * (identified by ID or name).
@@ -1260,22 +1261,32 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 	 * Level 2 holds a directory entry for each language pointing to
 	 * the actual data.
 	 */
+	name_offset = GUINT32_FROM_LE (entry->name_offset) & 0x7fffffff;
+	dir_offset = GUINT32_FROM_LE (entry->dir_offset) & 0x7fffffff;
+
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	is_string = (GUINT32_FROM_LE (entry->name_offset) & 0x80000000) != 0;
+	is_dir = (GUINT32_FROM_LE (entry->dir_offset) & 0x80000000) != 0;
+#else
+	is_string = entry->name_is_string;
+	is_dir = entry->is_dir;
+#endif
 
 	if(level==0) {
-		if((is_string==FALSE && entry->name_offset!=res_id) ||
+		if((is_string==FALSE && name_offset!=res_id) ||
 		   (is_string==TRUE)) {
 			return(NULL);
 		}
 	} else if (level==1) {
 #if 0
 		if(name!=NULL &&
-		   is_string==TRUE && name!=lookup (entry->name_offset)) {
+		   is_string==TRUE && name!=lookup (name_offset)) {
 			return(NULL);
 		}
 #endif
 	} else if (level==2) {
 		if ((is_string == FALSE &&
-		    entry->name_offset != lang_id &&
+		    name_offset != lang_id &&
 		    lang_id != 0) ||
 		   (is_string == TRUE)) {
 			return(NULL);
@@ -1284,12 +1295,12 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 		g_assert_not_reached ();
 	}
 
-	if(entry->is_dir==TRUE) {
-		MonoPEResourceDir *res_dir=(MonoPEResourceDir *)(((char *)root)+entry->dir_offset);
+	if(is_dir==TRUE) {
+		MonoPEResourceDir *res_dir=(MonoPEResourceDir *)(((char *)root)+dir_offset);
 		MonoPEResourceDirEntry *sub_entries=(MonoPEResourceDirEntry *)(res_dir+1);
 		guint32 entries, i;
-		
-		entries=res_dir->res_named_entries + res_dir->res_id_entries;
+
+		entries = GUINT16_FROM_LE (res_dir->res_named_entries) + GUINT16_FROM_LE (res_dir->res_id_entries);
 
 		for(i=0; i<entries; i++) {
 			MonoPEResourceDirEntry *sub_entry=&sub_entries[i];
@@ -1306,9 +1317,17 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 
 		return(NULL);
 	} else {
-		MonoPEResourceDataEntry *data_entry=(MonoPEResourceDataEntry *)((char *)(root)+entry->dir_offset);
-		
-		return(data_entry);
+		MonoPEResourceDataEntry *data_entry=(MonoPEResourceDataEntry *)((char *)(root)+dir_offset);
+		MonoPEResourceDataEntry *res;
+
+		res = g_new0 (MonoPEResourceDataEntry, 1);
+
+		res->rde_data_offset = GUINT32_TO_LE (data_entry->rde_data_offset);
+		res->rde_size = GUINT32_TO_LE (data_entry->rde_size);
+		res->rde_codepage = GUINT32_TO_LE (data_entry->rde_codepage);
+		res->rde_reserved = GUINT32_TO_LE (data_entry->rde_reserved);
+
+		return (res);
 	}
 }
 
@@ -1320,7 +1339,8 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
  * @name: the resource name to lookup.
  *
  * Returns: NULL if not found, otherwise a pointer to the in-memory representation
- * of the given resource.
+ * of the given resource. The caller should free it using g_free () when no longer
+ * needed.
  */
 gpointer
 mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, gunichar2 *name)
@@ -1361,8 +1381,8 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 	if(resource_dir==NULL) {
 		return(NULL);
 	}
-	
-	entries=resource_dir->res_named_entries + resource_dir->res_id_entries;
+
+	entries = GUINT16_FROM_LE (resource_dir->res_named_entries) + GUINT16_FROM_LE (resource_dir->res_id_entries);
 	res_entries=(MonoPEResourceDirEntry *)(resource_dir+1);
 	
 	for(i=0; i<entries; i++) {

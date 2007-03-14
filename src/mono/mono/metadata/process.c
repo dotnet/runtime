@@ -461,6 +461,7 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 	
 	data=mono_image_rva_map (image,
 			       version_info->rde_data_offset);
+	g_free (version_info);
 	if(data==NULL) {
 		return;
 	}
