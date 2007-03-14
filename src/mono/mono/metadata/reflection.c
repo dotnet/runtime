@@ -9549,13 +9549,14 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			/*
 			 * The referenced DynamicMethod should already be created by the managed
 			 * code, except in the case of circular references. In that case, we store
-			 * NULL in the refs array, and fix it up later when the referenced 
+			 * method in the refs array, and fix it up later when the referenced 
 			 * DynamicMethod is created.
 			 */
 			if (method->mhandle) {
 				ref = method->mhandle;
 			} else {
-				ref = NULL;
+				/* FIXME: GC object stored in unmanaged memory */
+				ref = method;
 
 				/* FIXME: GC object stored in unmanaged memory */
 				method->referenced_by = g_slist_append (method->referenced_by, mb);
@@ -9587,7 +9588,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 
 		data = (gpointer*)wrapper->method_data;
 		for (i = 0; i < GPOINTER_TO_UINT (data [0]); i += 2) {
-			if ((data [i + 1] == NULL) && (data [i + 1 + 1] == mono_defaults.methodhandle_class))
+			if ((data [i + 1] == mb) && (data [i + 1 + 1] == mono_defaults.methodhandle_class))
 				data [i + 1] = mb->mhandle;
 		}
 	}
