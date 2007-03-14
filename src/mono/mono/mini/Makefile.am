@@ -231,7 +231,7 @@ test_sources = 		\
 	basic-math.cs	\
 	basic.cs		\
 	exceptions.cs	\
-	iltests.il		\
+	iltests.il.in		\
 	test.cs
 
 test_sources2 = generics.2.cs il2tests.2.il
@@ -361,6 +361,10 @@ libmono_la_LIBADD = \
 
 %.exe: %.2.il
 	$(ILASM2) -output=$@ $<
+
+iltests.il: iltests.il.in
+	echo '// DO NOT EDIT: This file has been generated from iltests.il.in' > iltests.il
+	cpp -Darch=$(arch_define) < $(srcdir)/iltests.il.in >> iltests.il
 
 %.exe: %.il
 	$(ILASM) -output=$@ $<

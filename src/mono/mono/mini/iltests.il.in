@@ -486,6 +486,10 @@ COND:   ldloc.0
 		ret
 	}
 
+#if arch != __ppc__
+	//
+	// Tail calls are not supported on PowerPC.
+	// 
 	.method static public int32 test_0_tail_calls () il managed {
 		.maxstack 16
 		.locals init (
@@ -556,6 +560,7 @@ COND:   ldloc.0
 		call int32 Tests::tail4 (int32, int32)
 		ret
 	}
+#endif
 
 	.method public static int32 test_5_jmp () cil managed {
 		jmp int32 Tests::jmp2 ()
