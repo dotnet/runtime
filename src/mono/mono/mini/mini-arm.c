@@ -1173,15 +1173,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && (last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
-				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
-					continue;
-				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
-					ins->opcode = OP_MOVE;
-					ins->sreg1 = last_ins->sreg1;
-				}
+				ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? CEE_CONV_I1 : CEE_CONV_U1;
+				ins->sreg1 = last_ins->sreg1;				
 			}
 			break;
 		case OP_LOADU2_MEMBASE:
@@ -1189,15 +1182,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
-				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
-					continue;
-				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
-					ins->opcode = OP_MOVE;
-					ins->sreg1 = last_ins->sreg1;
-				}
+				ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? CEE_CONV_I2 : CEE_CONV_U2;
+				ins->sreg1 = last_ins->sreg1;				
 			}
 			break;
 		case CEE_CONV_I4:
