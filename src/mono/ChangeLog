@@ -1,3 +1,11 @@
+2007-03-15  Marek Habersack  <grendello@gmail.com>
+
+	* runtime/Makefile.am: add browscap.ini to symlinks
+
+	* configure.in: make sure browscap.ini is symlinked to from
+	runtime/etc/ so that no web tests that depend on the file's
+	presence fail.
+
 2007-03-15  Jonathan Chambers  <joncham@gmail.com>
 
 	* winconfig.h: Don't use MONO_XEN_OPT on windows.
