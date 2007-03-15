@@ -381,7 +381,7 @@ loadu2_membase: dest:i src1:b len:26
 loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:26
 local:
-localloc: dest:i src1:i len:84
+localloc: dest:i src1:i len:106
 long_add:
 long_add_imm:
 long_add_ovf: len:14 dest:i src1:i src2:i
