@@ -394,7 +394,7 @@
 /* #undef MONO_DEBUGGER_SUPPORTED */
 
 /* Xen-specific behaviour */
-/* #undef MONO_XEN_OPT */
+#define MONO_XEN_OPT 1
 
 /* Define if Unix sockets cannot be created in an anonymous namespace */
 /* #undef NEED_LINK_UNLINK */
