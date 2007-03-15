@@ -362,9 +362,9 @@ libmono_la_LIBADD = \
 %.exe: %.2.il
 	$(ILASM2) -output=$@ $<
 
-iltests.il: iltests.il.in
+iltests.il: iltests.il.in Makefile.am
 	echo '// DO NOT EDIT: This file has been generated from iltests.il.in' > iltests.il
-	cpp -Darch=$(arch_define) < $(srcdir)/iltests.il.in >> iltests.il
+	cpp -Darch=$(arch_define) < $(srcdir)/iltests.il.in | sed 's/^#.*//' >> iltests.il
 
 %.exe: %.il
 	$(ILASM) -output=$@ $<
