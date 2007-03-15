@@ -95,6 +95,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	ctx->Edi = sctx->edi;
 	ctx->Eip = sctx->eip;
 
+	g_free (sctx);
+
 	return res;
 }
 
