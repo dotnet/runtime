@@ -11,7 +11,9 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+#ifndef PLATFORM_WIN32
 #include <sys/ucontext.h>
+#endif
 
 #include <mono/arch/amd64/amd64-codegen.h>
 #include <mono/metadata/appdomain.h>
@@ -55,15 +57,19 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	sctx = g_malloc(sizeof(MonoContext));
 
 	/* Copy Win32 context to UNIX style context */
-	sctx->eax = ctx->Eax;
-	sctx->ebx = ctx->Ebx;
-	sctx->ecx = ctx->Ecx;
-	sctx->edx = ctx->Edx;
-	sctx->ebp = ctx->Ebp;
-	sctx->esp = ctx->Esp;
-	sctx->esi = ctx->Esi;
-	sctx->edi = ctx->Edi;
-	sctx->eip = ctx->Eip;
+	sctx->rax = ctx->Rax;
+	sctx->rbx = ctx->Rbx;
+	sctx->rcx = ctx->Rcx;
+	sctx->rdx = ctx->Rdx;
+	sctx->rbp = ctx->Rbp;
+	sctx->rsp = ctx->Rsp;
+	sctx->rsi = ctx->Rsi;
+	sctx->rdi = ctx->Rdi;
+	sctx->rip = ctx->Rip;
+	sctx->r12 = ctx->R12;
+	sctx->r13 = ctx->R13;
+	sctx->r14 = ctx->R14;
+	sctx->r15 = ctx->R15;
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_ACCESS_VIOLATION:
@@ -85,15 +91,15 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	}
 
 	/* Copy context back */
-	ctx->Eax = sctx->eax;
-	ctx->Ebx = sctx->ebx;
-	ctx->Ecx = sctx->ecx;
-	ctx->Edx = sctx->edx;
-	ctx->Ebp = sctx->ebp;
-	ctx->Esp = sctx->esp;
-	ctx->Esi = sctx->esi;
-	ctx->Edi = sctx->edi;
-	ctx->Eip = sctx->eip;
+	ctx->Rax = sctx->rax;
+	ctx->Rbx = sctx->rbx;
+	ctx->Rcx = sctx->rcx;
+	ctx->Rdx = sctx->rdx;
+	ctx->Rbp = sctx->rbp;
+	ctx->Rsp = sctx->rsp;
+	ctx->Rsi = sctx->rsi;
+	ctx->Rdi = sctx->rdi;
+	ctx->Rip = sctx->rip;
 
 	g_free (sctx);
 
@@ -633,6 +639,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	return TRUE;
 }
 
+#ifdef MONO_ARCH_USE_SIGACTION
 static inline guint64*
 gregs_from_ucontext (ucontext_t *ctx)
 {
@@ -644,10 +651,11 @@ gregs_from_ucontext (ucontext_t *ctx)
 
 	return gregs;
 }
-
+#endif
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
+#ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
@@ -665,11 +673,29 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->r13 = gregs [REG_R13];
 	mctx->r14 = gregs [REG_R14];
 	mctx->r15 = gregs [REG_R15];
+#else
+	MonoContext *ctx = (MonoContext *)sigctx;
+
+	mctx->rax = ctx->rax;
+	mctx->rbx = ctx->rbx;
+	mctx->rcx = ctx->rcx;
+	mctx->rdx = ctx->rdx;
+	mctx->rbp = ctx->rbp;
+	mctx->rsp = ctx->rsp;
+	mctx->rsi = ctx->rsi;
+	mctx->rdi = ctx->rdi;
+	mctx->rip = ctx->rip;
+	mctx->r12 = ctx->r12;
+	mctx->r13 = ctx->r13;
+	mctx->r14 = ctx->r14;
+	mctx->r15 = ctx->r15;
+#endif
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
+#ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
@@ -687,15 +713,39 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	gregs [REG_R13] = mctx->r13;
 	gregs [REG_R14] = mctx->r14;
 	gregs [REG_R15] = mctx->r15;
+#else
+	MonoContext *ctx = (MonoContext *)sigctx;
+
+	ctx->rax = mctx->rax;
+	ctx->rbx = mctx->rbx;
+	ctx->rcx = mctx->rcx;
+	ctx->rdx = mctx->rdx;
+	ctx->rbp = mctx->rbp;
+	ctx->rsp = mctx->rsp;
+	ctx->rsi = mctx->rsi;
+	ctx->rdi = mctx->rdi;
+	ctx->rip = mctx->rip;
+	ctx->r12 = mctx->r12;
+	ctx->r13 = mctx->r13;
+	ctx->r14 = mctx->r14;
+	ctx->r15 = mctx->r15;
+#endif
 }
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
+	
+#ifdef MONO_ARCH_USE_SIGACTION
+
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
 
 	return (gpointer)gregs [REG_RIP];
+#else
+	MonoContext *ctx = sigctx;
+	return (gpointer)ctx->rip;
+#endif	
 }
 

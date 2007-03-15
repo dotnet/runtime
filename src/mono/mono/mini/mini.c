@@ -11524,8 +11524,13 @@ win32_time_proc (UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
 	CONTEXT context;
 
 	context.ContextFlags = CONTEXT_CONTROL;
-	if (GetThreadContext (win32_main_thread, &context))
+	if (GetThreadContext (win32_main_thread, &context)) {
+#ifdef _WIN64
+		mono_profiler_stat_hit ((guchar *) context.Rip, &context);
+#else
 		mono_profiler_stat_hit ((guchar *) context.Eip, &context);
+#endif
+	}
 }
 #endif
 

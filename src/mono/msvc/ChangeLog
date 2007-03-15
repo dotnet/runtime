@@ -2,4 +2,5 @@
 
 	* *.vcproj: Begin Win64 port. Run bat files with $(Platform) argument.
 	* *.bat: Begin Win64 port. Run bat files with $(Platform) argument.
+	Contributed under MIT/X11 license.
 	

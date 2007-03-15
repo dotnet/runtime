@@ -1,7 +1,8 @@
 2007-03-15  Jonathan Chambers  <joncham@gmail.com>
 
 	* winconfig.h: Don't use MONO_XEN_OPT on windows.
-	
+	Contributed under MIT/X11 license.
+
 2007-03-14  Marek Habersack  <mhabersack@novell.com>
 
 	* data/net_2_0/machine.config: add two missing section handlers.
