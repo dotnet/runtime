@@ -717,6 +717,7 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 void
 mono_arch_cpu_init (void)
 {
+#ifndef _MSC_VER
 	guint16 fpcw;
 
 	/* spec compliance requires running with double precision */
@@ -725,6 +726,9 @@ mono_arch_cpu_init (void)
 	fpcw |= X86_FPCW_PREC_DOUBLE;
 	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
+#else
+	_control87 (_PC_53, MCW_PC);
+#endif
 }
 
 /*

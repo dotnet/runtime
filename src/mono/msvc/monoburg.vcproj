@@ -27,7 +27,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -98,7 +98,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
+				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -110,7 +110,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -182,7 +182,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
+				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -194,7 +194,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -264,7 +264,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
+				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -276,7 +276,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c"
+				CommandLine="cd ..\mono\monoburg&#x0D;&#x0A;copy wparser.c parser.c&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -347,7 +347,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath)"
+				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
 			/>
 		</Configuration>
 	</Configurations>

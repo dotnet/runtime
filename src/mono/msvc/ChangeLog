@@ -1,0 +1,5 @@
+2007-03-15  Jonathan Chambers  <joncham@gmail.com>
+
+	* *.vcproj: Begin Win64 port. Run bat files with $(Platform) argument.
+	* *.bat: Begin Win64 port. Run bat files with $(Platform) argument.
+	
