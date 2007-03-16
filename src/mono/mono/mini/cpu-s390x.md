@@ -90,7 +90,7 @@ box:
 br.s:
 br: len:6
 br_reg: src1:i len:8
-break: len:4
+break: len:22
 brfalse.s:
 brfalse:
 brtrue.s:
