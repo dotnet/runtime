@@ -3892,32 +3892,52 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lhi   (code, ins->dreg, 0);
 		}
 			break;
-		case OP_FBEQ:
-			EMIT_COND_BRANCH (ins, S390_CC_EQ|S390_CC_OV);
+		case OP_FBEQ: {
+			short *o;
+			s390_jo	(code, 0); CODEPTR(code, o);
+			EMIT_COND_BRANCH (ins, S390_CC_EQ);
+			PTRSLOT(code, o);
+		}
 			break;
 		case OP_FBNE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_NE|S390_CC_OV);
 			break;
-		case OP_FBLT:
+		case OP_FBLT: {
+			short *o;
+			s390_jo	(code, 0); CODEPTR(code, o);
 			EMIT_COND_BRANCH (ins, S390_CC_LT);
+			PTRSLOT(code, o);
+		}
 			break;
 		case OP_FBLT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LT|S390_CC_OV);
 			break;
-		case OP_FBGT:
+		case OP_FBGT: {
+			short *o;
+			s390_jo	(code, 0); CODEPTR(code, o);
 			EMIT_COND_BRANCH (ins, S390_CC_GT);
+			PTRSLOT(code, o);
+		}
 			break;
 		case OP_FBGT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GT|S390_CC_OV);
 			break;
-		case OP_FBGE:
+		case OP_FBGE: {
+			short *o;
+			s390_jo	(code, 0); CODEPTR(code, o);
 			EMIT_COND_BRANCH (ins, S390_CC_GE);
+			PTRSLOT(code, o);
+		}
 			break;
 		case OP_FBGE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GE|S390_CC_OV);
 			break;
-		case OP_FBLE:
+		case OP_FBLE: {
+			short *o;
+			s390_jo	(code, 0); CODEPTR(code, o);
 			EMIT_COND_BRANCH (ins, S390_CC_LE);
+			PTRSLOT(code, o);
+		}
 			break;
 		case OP_FBLE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LE|S390_CC_OV);
