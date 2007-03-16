@@ -1,3 +1,8 @@
+2007-03-16  Marek Habersack  <mhabersack@novell.com>
+
+	* data/net_2_0/machine.config: added default profile provider
+	configuration.
+
 2007-03-15  Marek Habersack  <grendello@gmail.com>
 
 	* runtime/Makefile.am: add browscap.ini to symlinks
