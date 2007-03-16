@@ -175,13 +175,13 @@ fcompare: src1:f src2:f len:14
 float_add: dest:f src1:f src2:f len:6
 float_add_ovf:
 float_add_ovf_un:
-float_beq: len:8
-float_bge: len:8
+float_beq: len:10
+float_bge: len:10
 float_bge_un: len:8
-float_bgt: len:8
-float_ble: len:8
+float_bgt: len:10
+float_ble: len:10
 float_ble_un: len:8
-float_blt: len:8
+float_blt: len:10
 float_blt_un: len:8
 float_bne_un: len:8
 float_btg_un: len:8
