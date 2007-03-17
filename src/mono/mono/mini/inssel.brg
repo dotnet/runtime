@@ -785,8 +785,8 @@ stmt: CEE_SWITCH (reg) "2" {
 	
 	MONO_NEW_LABEL (s, label);
 
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, n);
-	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_many_bb [n]);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ICOMPARE_IMM, -1, state->left->reg1, n);
+	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_IBGE_UN, tree->inst_many_bb [n]);
 	if (sizeof (gpointer) == 8)
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 3);
 	else
