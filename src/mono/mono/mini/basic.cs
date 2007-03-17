@@ -1274,24 +1274,4 @@ class Tests {
 
 		return 0;
 	}
-
-
-	public enum RegistryHive
-	{
-		ClassesRoot = -2147483648,
-		Users = -2147483645
-	}
-
-	public static int test_0_regress_switch_minint_80738 () {
-		RegistryHive h = RegistryHive.ClassesRoot;
-
-		switch (h) {
-		case RegistryHive.ClassesRoot:
-			return 0;
-		case RegistryHive.Users:
-			break;
-		}
-
-		return 1;
-	}
 }
