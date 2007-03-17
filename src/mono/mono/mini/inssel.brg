@@ -787,10 +787,13 @@ stmt: CEE_SWITCH (reg) "2" {
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ICOMPARE_IMM, -1, state->left->reg1, n);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_IBGE_UN, tree->inst_many_bb [n]);
-	if (sizeof (gpointer) == 8)
+	if (sizeof (gpointer) == 8) {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 3);
-	else
+		/* The upper word might not be zero, and we add it to a 64 bit address later */
+		MONO_EMIT_NEW_UNALU (s, CEE_CONV_U8, offset_reg, offset_reg);
+	} else {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
+	}
 	mono_bblock_add_inst (s->cbb, label);
 	if (s->compile_aot) {
 		int table_reg = mono_regstate_next_int (s->rs);
