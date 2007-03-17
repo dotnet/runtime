@@ -4012,9 +4012,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			switch (ainfo->storage) {
 			case ArgInIReg:
 			case ArgInFloatReg:
-				/* FIXME: big offsets */
 				g_assert (inst->opcode == OP_REGOFFSET);
-				ia64_adds_imm (code, GP_SCRATCH_REG, inst->inst_offset, inst->inst_basereg);
+				if (ia64_is_adds_imm (inst->inst_offset))
+					ia64_adds_imm (code, GP_SCRATCH_REG, inst->inst_offset, inst->inst_basereg);
+				else {
+					ia64_movl (code, GP_SCRATCH_REG2, inst->inst_offset);
+					ia64_add (code, GP_SCRATCH_REG, GP_SCRATCH_REG, GP_SCRATCH_REG2);
+				}
 				if (arg_type->byref)
 					ia64_st8_hint (code, GP_SCRATCH_REG, cfg->arch.reg_in0 + ainfo->reg, 0);
 				else {
