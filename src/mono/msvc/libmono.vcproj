@@ -85,8 +85,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/libmono.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -171,8 +169,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/libmono.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -259,8 +255,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\./VSDependancies/temp/libmono___Win32_Debug/libmono.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -349,8 +343,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\./VSDependancies/temp/libmono___Win32_Debug/libmono.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

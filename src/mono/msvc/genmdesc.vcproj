@@ -92,8 +92,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\./VSDependancies/temp/genmdesc___Win32_Debug/genmdesc.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -185,8 +183,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\./VSDependancies/temp/genmdesc___Win32_Debug/genmdesc.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -276,8 +272,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/genmdesc.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -368,8 +362,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Release/genmdesc.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
