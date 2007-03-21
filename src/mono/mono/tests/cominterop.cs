@@ -208,6 +208,9 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITest itest);
 
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITestPresSig itest);
+
 	public static int Main() {
 
         bool isWindows = !(((int)Environment.OSVersion.Platform == 4) || 
@@ -398,6 +401,12 @@ public class Tests
 			if (pUnk != iunknown)
 				return 171;
 
+			if (TestITest (itest) != 0)
+				return 172;
+
+			if (TestITestPresSig (itest as ITestPresSig) != 0)
+				return 173;
+
 			#endregion // Runtime Callable Wrapper Tests
 
 			#region COM Callable Wrapper Tests
@@ -408,6 +417,10 @@ public class Tests
 
 			if (test.Status != 0)
 				return 200;
+
+			ManagedTestPresSig test_pres_sig = new ManagedTestPresSig ();
+
+			mono_test_marshal_ccw_itest (test_pres_sig);
 
 			#endregion // COM Callable Wrapper Tests
 		}
@@ -453,6 +466,153 @@ public class Tests
 		void ITestIn ([MarshalAs (UnmanagedType.Interface)]ITest val);
 		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
 		void ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITest val);
+	}
+
+	[ComImport ()]
+	[Guid ("00000000-0000-0000-0000-000000000001")]
+	[InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]
+	public interface ITestPresSig
+	{
+		// properties need to go first since mcs puts them there
+		ITestPresSig Test
+		{
+			[return: MarshalAs (UnmanagedType.Interface)]
+			[MethodImpl (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId (5242884)]
+			get;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int SByteIn (sbyte val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int ByteIn (byte val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int ShortIn (short val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int UShortIn (ushort val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int IntIn (int val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int UIntIn (uint val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int LongIn (long val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int ULongIn (ulong val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int FloatIn (float val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int DoubleIn (double val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int ITestIn ([MarshalAs (UnmanagedType.Interface)]ITestPresSig val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		[PreserveSig ()]
+		int ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITestPresSig val);
+	}
+
+	public class ManagedTestPresSig : ITestPresSig
+	{		// properties need to go first since mcs puts them there
+		public ITestPresSig Test
+		{
+			get
+			{
+				return new ManagedTestPresSig ();
+			}
+		}
+
+		public int SByteIn (sbyte val)
+		{
+			if (val != -100)
+				return 1;
+			return 0;
+		}
+
+		public int ByteIn (byte val)
+		{
+			if (val != 100)
+				return 2;
+			return 0;
+		}
+
+		public int ShortIn (short val)
+		{
+			if (val != -100)
+				return 3;
+			return 0;
+		}
+
+		public int UShortIn (ushort val)
+		{
+			if (val != 100)
+				return 4;
+			return 0;
+		}
+
+		public int IntIn (int val)
+		{
+			if (val != -100)
+				return 5;
+			return 0;
+		}
+
+		public int UIntIn (uint val)
+		{
+			if (val != 100)
+				return 6;
+			return 0;
+		}
+
+		public int LongIn (long val)
+		{
+			if (val != -100)
+				return 7;
+			return 0;
+		}
+
+		public int ULongIn (ulong val)
+		{
+			if (val != 100)
+				return 8;
+			return 0;
+		}
+
+		public int FloatIn (float val)
+		{
+			if (Math.Abs (val - 3.14f) > .000001)
+				return 9;
+			return 0;
+		}
+
+		public int DoubleIn (double val)
+		{
+			if (Math.Abs (val - 3.14f) > .000001)
+				return 10;
+			return 0;
+		}
+
+		public int ITestIn ([MarshalAs (UnmanagedType.Interface)]ITestPresSig val)
+		{
+			if (val == null)
+				return 11;
+			if (null == val as ManagedTestPresSig)
+				return 12;
+			return 0;
+		}
+
+		public int ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITestPresSig val)
+		{
+			val = new ManagedTestPresSig ();
+			return 0;
+		}
 	}
 
 	public class ManagedTest : ITest
@@ -664,6 +824,59 @@ public class Tests
 			obj = true;
 			break;
 		}
+		return 0;
+	}
+
+	public static int TestITest (ITest itest)
+	{
+		try {
+			ITest itest2;
+			itest.SByteIn (-100);
+			itest.ByteIn (100);
+			itest.ShortIn (-100);
+			itest.UShortIn (100);
+			itest.IntIn (-100);
+			itest.UIntIn (100);
+			itest.LongIn (-100);
+			itest.ULongIn (100);
+			itest.FloatIn (3.14f);
+			itest.DoubleIn (3.14);
+			itest.ITestIn (itest);
+			itest.ITestOut (out itest2);
+		}
+		catch (Exception ex) {
+			return 1;
+		}
+		return 0;
+	}
+
+	public static int TestITestPresSig (ITestPresSig itest)
+	{
+		ITestPresSig itest2;
+		if (itest.SByteIn (-100) != 0)
+			return 1000;
+		if (itest.ByteIn (100) != 0)
+			return 1001;
+		if (itest.ShortIn (-100) != 0)
+			return 1002;
+		if (itest.UShortIn (100) != 0)
+			return 1003;
+		if (itest.IntIn (-100) != 0)
+			return 1004;
+		if (itest.UIntIn (100) != 0)
+			return 1005;
+		if (itest.LongIn (-100) != 0)
+			return 1006;
+		if (itest.ULongIn (100) != 0)
+			return 1007;
+		if (itest.FloatIn (3.14f) != 0)
+			return 1008;
+		if (itest.DoubleIn (3.14) != 0)
+			return 1009;
+		if (itest.ITestIn (itest) != 0)
+			return 1010;
+		if (itest.ITestOut (out itest2) != 0)
+			return 1011;
 		return 0;
 	}
 }

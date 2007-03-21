@@ -2706,29 +2706,46 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 {
 	int hr = 0;
 	MonoComObject* pTest;
-	MonoComObject* pTest2;
 
 	if (!pUnk)
 		return 1;
 
 	hr = pUnk->vtbl->SByteIn (pUnk, -100);
-	hr = pUnk->vtbl->ByteIn (pUnk, 100);
-	hr = pUnk->vtbl->ShortIn (pUnk, -100);
-	hr = pUnk->vtbl->UShortIn (pUnk, 100);
-	hr = pUnk->vtbl->IntIn (pUnk, -100);
-	hr = pUnk->vtbl->UIntIn (pUnk, 100);
-	hr = pUnk->vtbl->LongIn (pUnk, -100);
-	hr = pUnk->vtbl->ULongIn (pUnk, 100);
-	hr = pUnk->vtbl->FloatIn (pUnk, 3.14f);
-	hr = pUnk->vtbl->DoubleIn (pUnk, 3.14);
-	hr = pUnk->vtbl->ITestIn (pUnk, pUnk);
-
-	hr = pUnk->vtbl->ITestOut (pUnk, &pTest);
-
-	//hr = pUnk->vtbl->get_ITest (pUnk, &pTest2);
-
 	if (hr != 0)
 		return 2;
+	hr = pUnk->vtbl->ByteIn (pUnk, 100);
+	if (hr != 0)
+		return 3;
+	hr = pUnk->vtbl->ShortIn (pUnk, -100);
+	if (hr != 0)
+		return 4;
+	hr = pUnk->vtbl->UShortIn (pUnk, 100);
+	if (hr != 0)
+		return 5;
+	hr = pUnk->vtbl->IntIn (pUnk, -100);
+	if (hr != 0)
+		return 6;
+	hr = pUnk->vtbl->UIntIn (pUnk, 100);
+	if (hr != 0)
+		return 7;
+	hr = pUnk->vtbl->LongIn (pUnk, -100);
+	if (hr != 0)
+		return 8;
+	hr = pUnk->vtbl->ULongIn (pUnk, 100);
+	if (hr != 0)
+		return 9;
+	hr = pUnk->vtbl->FloatIn (pUnk, 3.14f);
+	if (hr != 0)
+		return 10;
+	hr = pUnk->vtbl->DoubleIn (pUnk, 3.14);
+	if (hr != 0)
+		return 11;
+	hr = pUnk->vtbl->ITestIn (pUnk, pUnk);
+	if (hr != 0)
+		return 12;
+	hr = pUnk->vtbl->ITestOut (pUnk, &pTest);
+	if (hr != 0)
+		return 13;
 
 	return 0;
 }
