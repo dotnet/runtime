@@ -164,7 +164,7 @@ do_rehash (GHashTable *hash)
 static void
 rehash (GHashTable *hash)
 {
-	int diff = ABS (hash->last_rehash, hash->in_use);
+	int diff = ABS (hash->last_rehash - hash->in_use);
 
 	/* These are the factors to play with to change the rehashing strategy */
 	/* I played with them with a large range, and could not really get */

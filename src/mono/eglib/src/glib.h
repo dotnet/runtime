@@ -62,7 +62,7 @@ typedef uint16_t       gunichar2;
 
 #define G_USEC_PER_SEC  1000000
 
-#define ABS(a,b)        (((a)>(b)) ? ((a)-(b)) : ((b)-(a)))
+#define ABS(a)         ((a) > 0 ? (a) : -(a))
 
 #define G_STRUCT_OFFSET(p_type,field) offsetof(p_type,field)
 
