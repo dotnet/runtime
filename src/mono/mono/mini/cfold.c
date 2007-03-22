@@ -29,7 +29,7 @@ mono_is_power_of_two (guint32 val)
 			return;	\
 		if (inst->inst_i1->opcode == OP_ICONST) {	\
 			inst->opcode = OP_ICONST;	\
-			inst->inst_c0 = inst->inst_i0->inst_c0 op inst->inst_i1->inst_c0;	\
+			inst->inst_c0 = (gint32)(inst->inst_i0->inst_c0 op inst->inst_i1->inst_c0);	\
 		} \
                 return;
 
@@ -43,7 +43,7 @@ mono_is_power_of_two (guint32 val)
 		if (inst->inst_i0->opcode == OP_ICONST)	{\
 			if (inst->inst_i1->opcode == OP_ICONST) {	\
 				inst->opcode = OP_ICONST;	\
-				inst->inst_c0 = inst->inst_i0->inst_c0 op inst->inst_i1->inst_c0;	\
+				inst->inst_c0 = (gint32)(inst->inst_i0->inst_c0 op inst->inst_i1->inst_c0);	\
                                 return; \
 			} else { \
 				MonoInst *tmp = inst->inst_i0;	\

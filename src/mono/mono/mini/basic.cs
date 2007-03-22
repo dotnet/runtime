@@ -1274,4 +1274,12 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int test_0_regress_cprop_80738 () {
+		int hours = Int32.MinValue;
+		int hrssec = (hours * 3600); // break point at (Int32.MaxValue - 596523)
+		long t = ((long)(hrssec) * 1000L);
+
+		return t == 0 ? 0 : 1;
+	}
 }
