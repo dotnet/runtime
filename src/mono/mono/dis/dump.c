@@ -1210,6 +1210,38 @@ dump_stream_blob (MonoImage *m)
 }
 
 void
+dump_stream_strings (MonoImage *m)
+{
+	guint32 i;
+
+	fprintf (output, "Strings heap contents\n");
+
+	for (i = 0; i < m->heap_strings.size; ) {
+		const char *str = mono_metadata_string_heap (m, i);
+		fprintf (output, "%02x: \"%s\"\n", i, str);
+		i += strlen (str) + 1;
+	}
+}
+
+void
+dump_stream_us (MonoImage *m)
+{
+	guint32 i;
+
+	fprintf (output, "User Strings heap contents\n");
+
+	for (i = 0; i < m->heap_us.size; ) {
+		const char *us_ptr = mono_metadata_user_string (m, i);
+		int len = mono_metadata_decode_blob_size (us_ptr, (const char**)&us_ptr);
+
+		char *str = get_encoded_user_string_or_bytearray ((const guchar*)us_ptr, len);
+		fprintf (output, "%02x: %s\n", i, str);
+		g_free (str);
+		i += len + 1;
+	}
+}
+
+void
 dump_table_standalonesig (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
