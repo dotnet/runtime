@@ -47,6 +47,8 @@ monodis \- CIL image content dumper and disassembler.
 [\-\-typeref]
 [\-\-typespec]
 [\-\-blob]
+[\-\-strings]
+[\-\-userstrings]
 [FILES...]
 .SH DESCRIPTION
 The \fImonodis\fP program is used to dump the contents a CIL image
@@ -172,6 +174,12 @@ Dumps the contents of the TypeRef table.
 .TP
 .I "--blob"
 Dumps the entire contents of the blob stream as hex.
+.TP
+.I "--strings"
+Dumps the contents of the Strings heap.
+.TP
+.I "--userstrings"
+Dumps the contents of the User-Strings heap
 .PP
 If no flags are specified the program dumps the content of the image
 in a format that can be used to rountrip the code.
