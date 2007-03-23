@@ -1000,8 +1000,17 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				if (arg->type == STACK_I8)
 					call->used_iregs |= 1 << (ainfo->reg + 1);
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
-				arg->backend.reg3 = ainfo->reg;
-				call->used_iregs |= 1 << ainfo->reg;
+				if (ainfo->offset) {
+					MonoPPCArgInfo *ai = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoPPCArgInfo));
+					arg->opcode = OP_OUTARG_MEMBASE;
+					ai->reg = ainfo->reg;
+					ai->size = sizeof (gpointer);
+					ai->offset = ainfo->offset;
+					arg->backend.data = ai;
+				} else {
+					arg->backend.reg3 = ainfo->reg;
+					call->used_iregs |= 1 << ainfo->reg;
+				}
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int cur_reg;
 				MonoPPCArgInfo *ai = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoPPCArgInfo));
