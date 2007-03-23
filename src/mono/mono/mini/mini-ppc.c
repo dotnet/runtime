@@ -2351,7 +2351,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!(ins->inst_imm & 0xffff0000)) {
 				ppc_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			} else if (!(ins->inst_imm & 0xffff)) {
-				ppc_oris (code, ins->sreg1, ins->dreg, ((guint32)(ins->inst_imm) >> 16));
+				ppc_oris (code, ins->dreg, ins->sreg1, ((guint32)(ins->inst_imm) >> 16));
 			} else {
 				g_assert_not_reached ();
 			}
