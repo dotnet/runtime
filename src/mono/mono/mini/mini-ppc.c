@@ -2884,7 +2884,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_FCOMPARE:
-			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
+			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCEQ:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
@@ -2925,6 +2925,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, CEE_BNE_UN - CEE_BEQ);
 			break;
 		case OP_FBLT:
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 2);
 			EMIT_COND_BRANCH (ins, CEE_BLT - CEE_BEQ);
 			break;
 		case OP_FBLT_UN:
@@ -2932,6 +2933,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, CEE_BLT_UN - CEE_BEQ);
 			break;
 		case OP_FBGT:
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 2);
 			EMIT_COND_BRANCH (ins, CEE_BGT - CEE_BEQ);
 			break;
 		case OP_FBGT_UN:
@@ -2939,12 +2941,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, CEE_BGT_UN - CEE_BEQ);
 			break;
 		case OP_FBGE:
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 2);
 			EMIT_COND_BRANCH (ins, CEE_BGE - CEE_BEQ);
 			break;
 		case OP_FBGE_UN:
 			EMIT_COND_BRANCH (ins, CEE_BGE_UN - CEE_BEQ);
 			break;
 		case OP_FBLE:
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 2);
 			EMIT_COND_BRANCH (ins, CEE_BLE - CEE_BEQ);
 			break;
 		case OP_FBLE_UN:
