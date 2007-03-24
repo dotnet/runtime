@@ -1,3 +1,8 @@
+2007-03-22  Marek Habersack  <mhabersack@novell.com>
+
+	* data/net_2_0/machine.config: added a few missing sections, added
+	missing allowDefinition and allowLocation attributes.
+
 2007-03-16  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: version bump -> 1.2.3.50 (RaceToLinux special release)
