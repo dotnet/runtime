@@ -67,9 +67,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
+				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\VSDependancies\lib"
+				AdditionalLibraryDirectories="..\VSDependancies\lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"

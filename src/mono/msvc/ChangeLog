@@ -1,3 +1,8 @@
+2007-03-25  Marek Safar  <marek.safar@gmail.com>
+
+	* monodiet.vcproj, monodis.vcproj, monograph.vcproj, pedump.vsproj:
+	Fixed build.
+
 2007-03-19  Jonathan Chambers  <joncham@gmail.com>
 
 	* libmono.vcproj, genmdesc.vcproj: Reset browse information

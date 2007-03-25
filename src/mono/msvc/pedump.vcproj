@@ -44,10 +44,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\;..\libgc\include;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;..\mono\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;PLATFORM_WIN32;__i386__;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="0"
 				ObjectFile="$(IntDir)/pedump/"
@@ -70,9 +70,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
+				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libgc.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName)"
+				AdditionalLibraryDirectories="../VSDependancies/lib;bin/mono/$(PlatformName)/$(ConfigurationName);.\lib\libgc\$(PlatformName)\$(ConfigurationName)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -348,8 +348,148 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="utils"
+			>
+			<File
+				RelativePath="..\mono\utils\strtod.c"
+				>
+			</File>
+		</Filter>
+		<File
+			RelativePath="..\mono\metadata\appdomain.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\assembly.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\boehm-gc.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\class.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\console-io.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\decimal.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\domain.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\environment.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\file-io.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\filewatcher.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\gc.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\icall.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\image.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\loader.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\locales.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\marshal.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\metadata.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\monitor.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\mono-config.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\utils\mono-dl.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\object.c"
+			>
+		</File>
 		<File
 			RelativePath="..\mono\metadata\pedump.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\process.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\profiler.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\rand.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\rawbuffer.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\reflection.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\security-manager.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\security.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\socket-io.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\string-icalls.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\sysmath.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\threadpool.c"
+			>
+		</File>
+		<File
+			RelativePath="..\mono\metadata\threads.c"
 			>
 		</File>
 	</Files>
