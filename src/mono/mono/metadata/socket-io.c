@@ -1822,10 +1822,9 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 
 	/* No idea why .net uses a 64bit type to hold a 32bit value...
 	 *
-	 * Internal value of IPAddess is in Network Order, there is no need
-	 * to call htonl here.
+	 * Internal value of IPAddess is in little-endian order
 	 */
-	inaddr.s_addr=(guint32)*(guint64 *)(((char *)ipaddr)+field->offset);
+	inaddr.s_addr=GUINT_FROM_LE ((guint32)*(guint64 *)(((char *)ipaddr)+field->offset));
 	
 	return(inaddr);
 }
