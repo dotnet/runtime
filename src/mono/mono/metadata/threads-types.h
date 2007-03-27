@@ -51,7 +51,7 @@ extern MonoArray* ves_icall_System_Threading_Thread_GetSerializedCurrentUICultur
 extern void ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this_obj, MonoObject *culture) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *this_obj, MonoArray *arr) MONO_INTERNAL;
 extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name, MonoBoolean *created) MONO_INTERNAL;
-extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) MONO_INTERNAL;
+extern MonoBoolean ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) MONO_INTERNAL;
 extern HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 rights, gint32 *error) MONO_INTERNAL;
 extern HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, MonoBoolean *created) MONO_INTERNAL;
 extern gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE handle, gint32 releaseCount, MonoBoolean *fail) MONO_INTERNAL;

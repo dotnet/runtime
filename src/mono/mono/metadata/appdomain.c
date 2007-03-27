@@ -41,7 +41,7 @@
 #include <direct.h>
 #endif
 
-#define MONO_CORLIB_VERSION 54
+#define MONO_CORLIB_VERSION 55
 
 CRITICAL_SECTION mono_delegate_section;
 

@@ -1024,10 +1024,10 @@ HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,
 	return(mutex);
 }                                                                   
 
-void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
+MonoBoolean ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
 	MONO_ARCH_SAVE_REGS;
 
-	ReleaseMutex(handle);
+	return(ReleaseMutex (handle));
 }
 
 HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name,
