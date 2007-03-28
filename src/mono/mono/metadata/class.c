@@ -254,7 +254,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			type->data.type, str, FALSE, nested_format);
 		g_string_append_c (str, '*');
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (type->data.type->data.klass, str);
+			_mono_type_get_assembly_name (mono_class_from_mono_type (type->data.type), str);
 		break;
 	}
 	case MONO_TYPE_VAR:
