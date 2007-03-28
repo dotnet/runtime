@@ -58,7 +58,7 @@ ves_icall_System_Environment_GetOSVersionString (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (uname (&name) == 0) {
+	if (uname (&name) >= 0) {
 		return mono_string_new (mono_domain_get (), name.release);
 	}
 #endif
