@@ -5,8 +5,9 @@
 	* runtime/Makefile.am (mcs-do-run-test-profiles): Don't set PATH.
 	(all-local, install-local): Depend on TEST_SUPPORT_FILES too.
 	(test-support-files): Move creation of _tmpinst/bin directory ...
-	(test-support-file, $(tmpinst)/bin/mono): ... here.
+	($(tmpinst)/bin/mono): ... here.
 	($(tmpinst)/bin/mbas, $(tmpinst)/bin/pedump): Remove.
+	(test-support-file): Depend on $(tmpinst)/bin/mono.
 
 2007-03-22  Marek Habersack  <mhabersack@novell.com>
 
