@@ -501,10 +501,10 @@ EXTRA_DIST += bug-80307.cs
 bug-80307.exe: $(srcdir)/bug-80307.cs
 	$(MCS) -r:System.Web -out:$@ $(srcdir)/bug-80307.cs
 
-# use helper 'mcs' and 'gmcs' from $(top_builddir)/runtime/_tmpinst
+# We use 'test-support-files' to handle an ordering issue between the 'mono/' and 'runtime/' directories
 test-bug-80307: bug-80307.exe
 	cd $(top_builddir)/runtime && $(MAKE) test-support-files
-	PATH="$(mono_build_root)/runtime/_tmpinst/bin:$$PATH" $(RUNTIME) bug-80307.exe
+	$(RUNTIME) bug-80307.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
