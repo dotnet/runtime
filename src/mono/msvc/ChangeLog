@@ -1,3 +1,10 @@
+2007-03-30  Jonathan Chambers  <joncham@gmail.com>
+
+	* libmono.vcproj, mono.vcproj: Reset browse information
+	settings to default.
+	
+	Contributed under MIT/X11 license.
+	
 2007-03-25  Marek Safar  <marek.safar@gmail.com>
 
 	* monodiet.vcproj, monodis.vcproj, monograph.vcproj, pedump.vsproj:
