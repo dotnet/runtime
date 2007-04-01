@@ -2348,15 +2348,14 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoDomain *domain = data->domain;
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
-		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
-		if (handle == NULL)
-			return;
-
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
 
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
+			HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+			if (handle == NULL)
+				return;
 			data->wait.handles [data->wait.num] = handle;
 			data->wait.threads [data->wait.num] = thread;
 			data->wait.num++;
