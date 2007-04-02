@@ -11517,10 +11517,10 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig, *sig_native;
-	MonoExceptionClause *main_clause;
+	MonoExceptionClause *main_clause = NULL;
 	MonoMethodHeader *header;
 	int pos_leave;
-	int hr;
+	int hr = 0;
 	int i;
 	gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 
