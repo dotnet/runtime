@@ -298,13 +298,50 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 	return TRUE;
 }
 
+static const char *
+my_strrchr (const char *str, char ch, int *len)
+{
+	int pos;
+
+	for (pos = (*len)-1; pos >= 0; pos--) {
+		if (str [pos] != ch)
+			continue;
+
+		*len = pos;
+		return str + pos;
+	}
+
+	return NULL;
+}
+
+static gboolean
+match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
+{
+	const char *p;
+
+	p = my_strrchr (desc->klass, '/', &pos);
+	if (!p) {
+		if (strncmp (desc->klass, klass->name, pos))
+			return FALSE;
+		if (desc->namespace && strcmp (desc->namespace, klass->name_space))
+			return FALSE;
+		return TRUE;
+	}
+
+	if (strcmp (p+1, klass->name))
+		return FALSE;
+	if (!klass->nested_in)
+		return FALSE;
+
+	return match_class (desc, pos, klass->nested_in);
+}
+
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 {
-	if (strcmp (desc->klass, method->klass->name))
+	if (!match_class (desc, strlen (desc->klass), method->klass))
 		return FALSE;
-	if (desc->namespace && strcmp (desc->namespace, method->klass->name_space))
-		return FALSE;
+
 	return mono_method_desc_match (desc, method);
 }
 
