@@ -2018,7 +2018,7 @@ mono_aot_init (void)
 {
 }
 
-MonoJitInfo*
+gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	return NULL;
