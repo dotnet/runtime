@@ -98,6 +98,8 @@ OTHER_SRC = \
 	versioninfo.h		\
 	wait.c			\
 	wait.h			\
+	wapi_glob.h		\
+	wapi_glob.c		\
 	wapi.h			\
 	wapi-private.h
 

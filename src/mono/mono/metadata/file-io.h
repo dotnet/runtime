@@ -119,8 +119,10 @@ extern MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error) MONO_INTERNAL;
 
 MonoArray *
-ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *_pattern,
-					gint mask, gint attrs, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
+						 MonoString *path_with_pattern,
+						 gint mask, gint attrs,
+						 gint32 *error) MONO_INTERNAL;
 
 extern MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error) MONO_INTERNAL;

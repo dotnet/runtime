@@ -239,272 +239,81 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 	return(ret);
 }
 
-static gint
-get_error_from_g_file_error (gint error)
-{
-	switch (error) {
-	case G_FILE_ERROR_ACCES:
-		error = ERROR_ACCESS_DENIED;
-		break;
-	case G_FILE_ERROR_NAMETOOLONG:
-		error = ERROR_FILENAME_EXCED_RANGE;
-		break;
-	case G_FILE_ERROR_NOENT:
-		error = ERROR_FILE_NOT_FOUND;
-		break;
-	case G_FILE_ERROR_NOTDIR:
-		error = ERROR_FILE_NOT_FOUND;
-		break;
-	case G_FILE_ERROR_ROFS:
-		error = ERROR_ACCESS_DENIED;
-		break;
-	case G_FILE_ERROR_TXTBSY:
-		error = ERROR_SHARING_VIOLATION;
-		break;
-	case G_FILE_ERROR_NOSPC:
-		error = ERROR_HANDLE_DISK_FULL;
-		break;
-	case G_FILE_ERROR_NFILE:
-	case G_FILE_ERROR_MFILE:
-		error = ERROR_TOO_MANY_OPEN_FILES;
-		break;
-	case G_FILE_ERROR_BADF:
-		error = ERROR_INVALID_HANDLE;
-		break;
-	case G_FILE_ERROR_INVAL:
-		error = ERROR_INVALID_PARAMETER;
-		break;
-	case G_FILE_ERROR_AGAIN:
-		error = ERROR_SHARING_VIOLATION;
-		break;
-	case G_FILE_ERROR_INTR:
-		error = ERROR_IO_PENDING;
-		break;
-	case G_FILE_ERROR_PERM:
-		error = ERROR_ACCESS_DENIED;
-		break;
-	case G_FILE_ERROR_FAILED:
-		error = ERROR_INVALID_PARAMETER;
-		break;
-	case G_FILE_ERROR_NXIO:
-	case G_FILE_ERROR_NOMEM:
-	case G_FILE_ERROR_NODEV:
-	case G_FILE_ERROR_FAULT:
-	case G_FILE_ERROR_LOOP:
-	case G_FILE_ERROR_PIPE:
-	case G_FILE_ERROR_IO:
-	default:
-		error = ERROR_GEN_FAILURE;
-		break;
-
-	}
-
-	return error;
-}
-
-static gint
-file_compare (gconstpointer a, gconstpointer b)
-{
-	gchar *astr = *(gchar **) a;
-	gchar *bstr = *(gchar **) b;
-
-	return strcmp (astr, bstr);
-}
-
-static gint
-get_file_attributes (const char *filename)
-{
-#ifdef PLATFORM_WIN32
-	gunichar2 *full16;
-	gint result;
-
-	full16 = g_utf8_to_utf16 (filename, -1, NULL, NULL, NULL);
-	if (full16 == NULL) {
-		g_message ("Bad encoding for '%s'\n", filename);
-		return FALSE;
-	}
-
-	result = GetFileAttributes (full16);
-	g_free (full16);
-	return result;
-#else
-	struct stat buf;
-	struct stat linkbuf;
-	int result;
-	int file_attrs;
-	gboolean issymlink = FALSE;
-	
-	result = lstat (filename, &buf);
-	if (result == -1)
-		return FALSE;
-
-	if (S_ISLNK (buf.st_mode)) {
-		issymlink = TRUE;
-		result = stat (filename, &linkbuf);
-		if (result != -1) {
-			buf = linkbuf;
-		}
-	}
-
-	/* Sockets (0140000) != Directory (040000) + Regular file (0100000) */
-	if (S_ISSOCK (buf.st_mode))
-		buf.st_mode &= ~S_IFSOCK; /* don't consider socket protection */
-
-	file_attrs = 0;
-	if (S_ISDIR (buf.st_mode))
-		file_attrs |= FILE_ATTRIBUTE_DIRECTORY;
-	else
-		file_attrs |= FILE_ATTRIBUTE_ARCHIVE;
-
-	if ((buf.st_mode & S_IWUSR) == 0)
-		file_attrs |= FILE_ATTRIBUTE_READONLY;
-
-	if (*filename == '.')
-		file_attrs |= FILE_ATTRIBUTE_HIDDEN;
-
-	if (issymlink) {
-		file_attrs |= FILE_ATTRIBUTE_REPARSE_POINT;
-	}
-	
-	return file_attrs;
-#endif
-}
-
-static gboolean
-test_file (const char *filename, int attrs, int mask)
-{
-	int file_attr;
-
-	file_attr = get_file_attributes (filename);
-	if (file_attr == FALSE)
-		return FALSE;
-
-	return ((file_attr & mask) == attrs);
-}
-
-/* scandir using glib */
-static gint
-mono_io_scandir (const gchar *dirname, const gchar *pattern, int attrs,
-		int mask, gchar ***namelist)
-{
-	GError *error = NULL;
-	GDir *dir;
-	GPtrArray *names;
-	const gchar *name;
-	gint result;
-	GPatternSpec *patspec;
-	gchar *full_name;
-
-	mask = convert_attrs (mask);
-	*namelist = NULL;
-	dir = g_dir_open (dirname, 0, &error);
-	if (dir == NULL) {
-		/* g_dir_open returns ENOENT on directories on which we don't
-		 * have read/x permission */
-		gint errnum = get_error_from_g_file_error (error->code);
-		g_error_free (error);
-		if (errnum == ERROR_FILE_NOT_FOUND && g_file_test (dirname, G_FILE_TEST_IS_DIR))
-			errnum = ERROR_ACCESS_DENIED;
-
-		SetLastError (errnum);
-		return -1;
-	}
-
-	patspec = g_pattern_spec_new (pattern);
-	names = g_ptr_array_new ();
-	while ((name = g_dir_read_name (dir)) != NULL) {
-		if (!g_pattern_match_string (patspec, name))
-			continue;
-
-		full_name = g_build_filename (dirname, name, NULL);
-		if (FALSE == test_file (full_name, attrs, mask)) {
-			g_free (full_name);
-			continue;
-		}
-
-		g_ptr_array_add (names, full_name);
-	}
-	
-	g_pattern_spec_free (patspec);
-	g_dir_close (dir);
-	result = names->len;
-	if (result > 0) {
-		g_ptr_array_sort (names, file_compare);
-		g_ptr_array_set_size (names, result + 1);
-
-		*namelist = (gchar **) g_ptr_array_free (names, FALSE);
-	} else {
-		g_ptr_array_free (names, TRUE);
-	}
-
-	return result;
-}
-
 MonoArray *
-ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *_path, MonoString *_pattern,
-					gint attrs, gint mask, gint32 *error)
+ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
+						 MonoString *path_with_pattern,
+						 gint attrs, gint mask,
+						 gint32 *error)
 {
 	MonoDomain *domain;
 	MonoArray *result;
-	gchar **namelist;
-	gchar *path;
-	gchar *pattern;
-	int i, nnames;
-	int removed;
-	MonoString *str_name;
-#ifndef PLATFORM_WIN32
-	gunichar2 *utf16;
-	gsize nbytes;
-#endif
-
+	int i;
+	WIN32_FIND_DATA data;
+	HANDLE find_handle;
+	GPtrArray *names;
+	gchar *utf8_path, *utf8_result, *full_name;
+	
 	MONO_ARCH_SAVE_REGS;
 
 	*error = ERROR_SUCCESS;
 
-	path = mono_string_to_utf8 (_path);
-	pattern = mono_string_to_utf8 (_pattern);
-	nnames = mono_io_scandir (path, pattern, attrs, mask, &namelist);
-	if (nnames < 0) {
-		*error = GetLastError ();
-		g_free (pattern);
-		g_free (path);
-		return NULL;
+	domain = mono_domain_get ();
+	mask = convert_attrs (mask);
+	
+	find_handle = FindFirstFile (mono_string_chars (path_with_pattern),
+				     &data);
+	if (find_handle == INVALID_HANDLE_VALUE) {
+		gint32 find_error = GetLastError ();
+		
+		if (find_error == ERROR_FILE_NOT_FOUND) {
+			/* No files, so just return an empty array */
+			result = mono_array_new (domain,
+						 mono_defaults.string_class,
+						 0);
+
+			return(result);
+		}
+		
+		*error = find_error;
+		return(NULL);
 	}
 
-	domain = mono_domain_get ();
-	result = mono_array_new (domain, mono_defaults.string_class, nnames);
-	removed = 0;
-	for (i = 0; i < nnames; i++) {
-#if PLATFORM_WIN32
-		str_name = mono_string_new (domain, namelist [i]);
-#else
-		utf16 = mono_unicode_from_external (namelist [i], &nbytes);
-		if (utf16 == NULL) {
-			g_message ("Bad encoding for '%s'\nConsider using MONO_EXTERNAL_ENCODINGS\n",
-				namelist [i]);
-			removed++;
+	names = g_ptr_array_new ();
+	utf8_path = mono_string_to_utf8 (path);
+
+	do {
+		if ((data.cFileName[0] == '.' && data.cFileName[1] == 0) ||
+		    (data.cFileName[0] == '.' && data.cFileName[1] == '.' && data.cFileName[2] == 0)) {
 			continue;
 		}
-		str_name = mono_string_from_utf16 (utf16);
-		g_free (utf16);
-#endif
-		mono_array_setref (result, i - removed, str_name);
-	}
-
-	if (removed > 0) {
-		MonoArray *shrinked;
-		shrinked = mono_array_new (domain, mono_defaults.string_class, nnames - removed);
-		for (i = 0; i < (nnames - removed); i++) {
-			MonoString *str;
-			str = mono_array_get (result, MonoString *, i);
-			mono_array_setref (shrinked, i, str);
+		
+		if ((data.dwFileAttributes & mask) == attrs) {
+			utf8_result = g_utf16_to_utf8 (data.cFileName, -1, NULL, NULL, NULL);
+			full_name = g_build_filename (utf8_path, utf8_result, NULL);
+			
+			g_ptr_array_add (names, mono_string_new (domain,
+								 full_name));
+			g_free (full_name);
+			g_free (utf8_result);
 		}
-		result = shrinked;
+	} while(FindNextFile (find_handle, &data));
+
+	if (FindClose (find_handle) == FALSE) {
+		*error = GetLastError ();
+		g_ptr_array_free (names, TRUE);
+		g_free (utf8_path);
+		return(NULL);
 	}
 
-	g_strfreev (namelist);
-	g_free (pattern);
-	g_free (path);
+	result = mono_array_new (domain, mono_defaults.string_class,
+				 names->len);
+	for (i = 0; i < names->len; i++) {
+		mono_array_setref (result, i, g_ptr_array_index (names, i));
+	}
+
+	g_ptr_array_free (names, TRUE);
+	g_free (utf8_path);
+	
 	return result;
 }
 
