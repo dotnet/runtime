@@ -1,3 +1,8 @@
+2007-04-06  Marek Habersack  <mhabersack@novell.com>
+
+	* data/net_2_0/web.config: siteMap must be enabled by
+	default. Fixes bug #80611
+
 2007-04-05  Marek Habersack  <mhabersack@novell.com>
 
 	* data/browscap.ini: updated to the latest version.
