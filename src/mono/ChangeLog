@@ -1,3 +1,7 @@
+2007-04-05  Marek Habersack  <mhabersack@novell.com>
+
+	* data/browscap.ini: updated to the latest version.
+
 2007-03-28  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/mono-wrapper.in (PATH): Include _tmpinst/bin.  Ensure
