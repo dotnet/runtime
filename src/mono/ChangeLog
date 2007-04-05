@@ -1,6 +1,7 @@
 2007-04-05  Marek Habersack  <mhabersack@novell.com>
 
 	* data/browscap.ini: updated to the latest version.
+	Applied Mono-specific changes.
 
 2007-03-28  Raja R Harinath  <rharinath@novell.com>
 
