@@ -1,5 +1,8 @@
 2007-04-06  Marek Habersack  <mhabersack@novell.com>
 
+	* data/net_2_0/machine.config: corrected the xhtmlConformance
+	entry to reference correct type.
+
 	* data/net_2_0/web.config: siteMap must be enabled by
 	default. Fixes bug #80611
 
