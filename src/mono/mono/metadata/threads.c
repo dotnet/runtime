@@ -262,10 +262,14 @@ static guint32 WINAPI start_wrapper(void *data)
 	tid=thread->tid;
 
 	SET_CURRENT_OBJECT (thread);
+
+	/* Every thread references the appdomain which created it */
+	mono_thread_push_appdomain_ref (start_info->domain);
 	
 	if (!mono_domain_set (start_info->domain, FALSE)) {
 		/* No point in raising an appdomain_unloaded exception here */
 		/* FIXME: Cleanup here */
+		mono_thread_pop_appdomain_ref ();
 		return 0;
 	}
 
@@ -293,9 +297,6 @@ static guint32 WINAPI start_wrapper(void *data)
 	}
 	
 	g_free (start_info);
-
-	/* Every thread references the appdomain which created it */
-	mono_thread_push_appdomain_ref (mono_domain_get ());
 
 	thread_adjust_static_data (thread);
 #ifdef DEBUG
