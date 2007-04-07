@@ -39,7 +39,6 @@
 #define	_WAPI_GLOB_H_
 
 #include <glib.h>
-#include <sys/cdefs.h>
 
 struct stat;
 typedef struct {
@@ -60,9 +59,9 @@ typedef struct {
 #define WAPI_GLOB_IGNORECASE 0x4000	/* Ignore case when matching */
 #define WAPI_GLOB_ABEND	WAPI_GLOB_ABORTED /* backward compatibility */
 
-__BEGIN_DECLS
+G_BEGIN_DECLS
 int	_wapi_glob(GDir *dir, const char *, int, wapi_glob_t *);
 void	_wapi_globfree(wapi_glob_t *);
-__END_DECLS
+G_END_DECLS
 
 #endif /* !_WAPI_GLOB_H_ */

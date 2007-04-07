@@ -51,7 +51,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/cdefs.h>
 
 #include "wapi_glob.h"
 
