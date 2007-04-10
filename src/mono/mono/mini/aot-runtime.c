@@ -1888,7 +1888,7 @@ mono_aot_handle_pagefault (void *ptr)
 }
 
 /*
- * aot_dyn_resolve:
+ * mono_aot_plt_resolve:
  *
  *   This function is called by the entries in the PLT to resolve the actual method that
  * needs to be called. It returns a trampoline to the method and patches the PLT entry.
@@ -2084,6 +2084,12 @@ mono_aot_handle_pagefault (void *ptr)
 
 guint8*
 mono_aot_get_plt_entry (guint8 *code)
+{
+	return NULL;
+}
+
+gpointer
+mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code)
 {
 	return NULL;
 }
