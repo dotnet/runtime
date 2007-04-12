@@ -1609,6 +1609,10 @@ case "$host" in
 		  solaris*)
 			LIBC="libc.so"
 			INTL="libintl.so"
+			if test "x$ac_cv_sizeof_void_p" = "x8"; then
+				TARGET=AMD64
+				arch_target=amd64
+			fi
 
 			# On solaris 10 x86, gcc prints a warning saying 'visibility attribute not supported on this configuration; ignored', but linking fails. A test case:
 			# int astruct __attribute__ ((visibility ("hidden")));
