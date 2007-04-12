@@ -151,6 +151,7 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
+		case MONO_TYPE_PTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING:
