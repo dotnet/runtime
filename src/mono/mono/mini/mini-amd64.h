@@ -47,6 +47,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #ifdef sun    // Solaris x86
 #  undef SIGSEGV_ON_ALTSTACK
+#  define MONO_ARCH_NOMAP32BIT
 
 struct sigcontext {
         unsigned short gs, __gsh;
