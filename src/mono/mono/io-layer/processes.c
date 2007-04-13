@@ -868,15 +868,19 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	} else if (pid == 0) {
 		/* Child */
 		
-		/* Wait for the parent to finish setting up the
-		 * handle.  The semaphore lock is safe because the
-		 * sem_undo structures of a semaphore aren't inherited
-		 * across a fork ()
-		 */
-		thr_ret = _wapi_handle_lock_shared_handles ();
-		g_assert (thr_ret == 0);
+		if (_wapi_shm_disabled == FALSE) {
+			/* Wait for the parent to finish setting up
+			 * the handle.  The semaphore lock is safe
+			 * because the sem_undo structures of a
+			 * semaphore aren't inherited across a fork
+			 * (), but we can't do this if we're not using
+			 * the shared memory
+			 */
+			thr_ret = _wapi_handle_lock_shared_handles ();
+			g_assert (thr_ret == 0);
 	
-		_wapi_handle_unlock_shared_handles ();
+			_wapi_handle_unlock_shared_handles ();
+		}
 		
 		/* should we detach from the process group? */
 

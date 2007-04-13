@@ -29,6 +29,12 @@
 
 #undef DEBUG
 
+#ifdef DISABLE_SHARED_HANDLES
+gboolean _wapi_shm_disabled = TRUE;
+#else
+gboolean _wapi_shm_disabled = FALSE;
+#endif
+
 static gchar *_wapi_shm_file (_wapi_shm_t type)
 {
 	static gchar file[_POSIX_PATH_MAX];
@@ -214,8 +220,6 @@ try_again:
 	return(fd);
 }
 
-static gboolean wapi_shm_disabled = 0;
-
 /*
  * _wapi_shm_attach:
  * @success: Was it a success
@@ -244,10 +248,10 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 		return NULL;
 	}
 
-	if (g_getenv ("MONO_DISABLE_SHM")) {
+	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
 		const char* val = g_getenv ("MONO_DISABLE_SHM");
-		if (*val == '1' || *val == 'y' || *val == 'Y') {
-			wapi_shm_disabled = TRUE;
+		if (val == NULL || *val == '1' || *val == 'y' || *val == 'Y') {
+			_wapi_shm_disabled = TRUE;
 			return g_malloc0 (size);
 		}
 	}
@@ -282,7 +286,7 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	return(shm_seg);
 }
 
-void _wapi_shm_semaphores_init ()
+static void shm_semaphores_init (void)
 {
 	key_t key;
 	key_t oldkey;
@@ -432,13 +436,20 @@ again:
 	
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 
-	if (wapi_shm_disabled)
+	if (_wapi_shm_disabled)
 		g_free (tmp_shared);
 	else
 		munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
 }
 
-void _wapi_shm_semaphores_remove (void)
+static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT] = {MONO_MUTEX_INITIALIZER};
+
+static void noshm_semaphores_init (void)
+{
+	/* No need to do anything */
+}
+
+static void shm_semaphores_remove (void)
 {
 	int thr_ret;
 	int proc_count;
@@ -475,7 +486,12 @@ void _wapi_shm_semaphores_remove (void)
 	}
 }
 
-int _wapi_shm_sem_lock (int sem)
+static void noshm_semaphores_remove (void)
+{
+	/* No need to do anything */
+}
+
+static int shm_sem_lock (int sem)
 {
 	struct sembuf ops;
 	int ret;
@@ -521,7 +537,20 @@ int _wapi_shm_sem_lock (int sem)
 	return(ret);
 }
 
-int _wapi_shm_sem_trylock (int sem)
+static int noshm_sem_lock (int sem)
+{
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: locking nosem %d", __func__, sem);
+#endif
+	
+	ret = mono_mutex_lock (&noshm_sems[sem]);
+	
+	return(ret);
+}
+
+static int shm_sem_trylock (int sem)
 {
 	struct sembuf ops;
 	int ret;
@@ -572,7 +601,20 @@ int _wapi_shm_sem_trylock (int sem)
 	return(ret);
 }
 
-int _wapi_shm_sem_unlock (int sem)
+static int noshm_sem_trylock (int sem)
+{
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: trying to lock nosem %d", __func__, sem);
+#endif
+	
+	ret = mono_mutex_trylock (&noshm_sems[sem]);
+	
+	return(ret);
+}
+
+static int shm_sem_unlock (int sem)
 {
 	struct sembuf ops;
 	int ret;
@@ -619,3 +661,60 @@ int _wapi_shm_sem_unlock (int sem)
 	return(ret);
 }
 
+static int noshm_sem_unlock (int sem)
+{
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: unlocking nosem %d", __func__, sem);
+#endif
+	
+	ret = mono_mutex_unlock (&noshm_sems[sem]);
+	
+	return(ret);
+}
+
+void _wapi_shm_semaphores_init (void)
+{
+	if (_wapi_shm_disabled) {
+		noshm_semaphores_init ();
+	} else {
+		shm_semaphores_init ();
+	}
+}
+
+void _wapi_shm_semaphores_remove (void)
+{
+	if (_wapi_shm_disabled) {
+		noshm_semaphores_remove ();
+	} else {
+		shm_semaphores_remove ();
+	}
+}
+
+int _wapi_shm_sem_lock (int sem)
+{
+	if (_wapi_shm_disabled) {
+		return(noshm_sem_lock (sem));
+	} else {
+		return(shm_sem_lock (sem));
+	}
+}
+
+int _wapi_shm_sem_trylock (int sem)
+{
+	if (_wapi_shm_disabled) {
+		return(noshm_sem_trylock (sem));
+	} else {
+		return(shm_sem_trylock (sem));
+	}
+}
+
+int _wapi_shm_sem_unlock (int sem)
+{
+	if (_wapi_shm_disabled) {
+		return(noshm_sem_unlock (sem));
+	} else {
+		return(shm_sem_unlock (sem));
+	}
+}
