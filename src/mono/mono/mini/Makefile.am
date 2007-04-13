@@ -184,6 +184,7 @@ alpha_sources = \
 common_sources = \
 	mini.c		\
 	mini.h		\
+	version.h	\
 	optflags-def.h		\
 	jit-icalls.h \
 	jit-icalls.c \
@@ -484,3 +485,14 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
 	$(ia64_sources) inssel-ia64.brg cpu-ia64.md \
 	$(alpha_sources) inssel-alpha.brg cpu-alpha.md
+
+version.h: $(srcdir)/Makefile
+	if test -d $(srcdir)/.svn; then \
+		(cd $(srcdir); 	\
+			branch=`svn info | grep URL | sed -e 's/.*source//' -e 's,mono/mono/mini,,'`; \
+			version=`svn info | grep Revision | sed 's/.*: //'`; \
+			echo "#define FULL_VERSION \"$$branch r$$version\""; \
+		); \
+	else \
+		echo "#define FULL_VERSION \"tarball\""; \
+	fi > version.h
