@@ -465,8 +465,10 @@ clean-local:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
+BUILT_SOURCES = version.h
+
 if JIT_SUPPORTED
-BUILT_SOURCES= inssel.c inssel.h $(arch_built)
+BUILT_SOURCES += inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
@@ -486,7 +488,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(ia64_sources) inssel-ia64.brg cpu-ia64.md \
 	$(alpha_sources) inssel-alpha.brg cpu-alpha.md
 
-version.h: $(srcdir)/Makefile
+version.h: Makefile
 	if test -d $(srcdir)/.svn; then \
 		(cd $(srcdir); 	\
 			branch=`svn info | grep URL | sed -e 's/.*source//' -e 's,mono/mono/mini,,'`; \
