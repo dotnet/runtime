@@ -67,7 +67,7 @@ static int is_filenamechar (char p)
 		return TRUE;
 	if (p >= '0' && p <= '9')
 		return TRUE;
-	if (p == '.' || p == ':' || p == '_')
+	if (p == '.' || p == ':' || p == '_' || p == '-')
 		return TRUE;
 	return FALSE;
 }
