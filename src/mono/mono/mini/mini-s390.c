@@ -650,7 +650,6 @@ static void
 enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 {
 	int i, oParm = 0, iParm = 0;
-	MonoClass *class;
 	MonoObject *obj;
 	MonoMethodSignature *sig;
 	char *fname;
@@ -660,12 +659,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	size_data sz;
 	void *curParm;
 
-
-lc++;
-if (lc > 5000000) {
-fseek(stdout, 0L, SEEK_SET);
-lc = 0;
-}
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
 	printf ("ENTER: %s(", fname);
@@ -1331,8 +1324,8 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
+			if (klass->enumtype) {
+				simpletype = klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
 			if (sig->pinvoke)
@@ -1358,7 +1351,7 @@ enum_retvalue:
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+			g_error ("mini-s390: cannot handle as return value 0x%x (0x%x)", sig->ret->type,simpletype);
 	}
 
 	if (sig->hasthis) {
@@ -1816,7 +1809,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	MonoMethodSignature *sig;
 	int i, n, lParamArea;
 	CallInfo *cinfo;
-	ArgInfo *ainfo;
+	ArgInfo *ainfo = NULL;
 	size_data sz;
 	int stackSize;
 
@@ -2826,7 +2819,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_LADD: {
-			short int *o[1];
 			s390_alr  (code, s390_r0, ins->sreg1);
 			s390_jnc  (code, 4);
 			s390_ahi  (code, s390_r1, 1);
@@ -4610,8 +4602,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			iExc;
 	guint32		code_size;
 	MonoClass	*exc_classes [MAX_EXC];
-	guint8		*exc_throw_start [MAX_EXC], 
-			*exc_throw_end [MAX_EXC];
+	guint8		*exc_throw_start [MAX_EXC];
 
 	for (patch_info = cfg->patch_info; 
 	     patch_info; 
@@ -4905,9 +4896,9 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 			done = 1;
 			break;
 		case OP_S390_SETF4RET:
-			printf ("[f%ld,f%ld]", 
-				mono_arch_regname (tree->dreg),
-				mono_arch_regname (tree->sreg1));
+			printf ("[%s,%s]", 
+				mono_arch_fregname (tree->dreg),
+				mono_arch_fregname (tree->sreg1));
 			done = 1;
 			break;
 		case OP_TLS_GET:

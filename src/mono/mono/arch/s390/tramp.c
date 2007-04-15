@@ -153,6 +153,7 @@ enum_retvalue:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_PTR:
 		case MONO_TYPE_STRING:
 			sz->code_size += 4;
 			break;
@@ -192,7 +193,7 @@ enum_retvalue:
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+			g_error ("tramp: cannot handle as return value 0x%x", sig->ret->type);
 		}
 	}
 
