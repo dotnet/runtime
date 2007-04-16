@@ -33,8 +33,6 @@ extern int _wapi_chdir (const char *path);
 extern gchar *_wapi_basename (const gchar *filename);
 extern gchar *_wapi_dirname (const gchar *filename);
 extern GDir *_wapi_g_dir_open (const gchar *path, guint flags, GError **error);
-extern gint _wapi_io_scandir (const gchar *dirname, const gchar *pattern,
-			      gchar ***namelist);
 
 G_END_DECLS
 
