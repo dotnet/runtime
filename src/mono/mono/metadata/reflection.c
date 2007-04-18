@@ -6592,11 +6592,16 @@ handle_enum:
 	case MONO_TYPE_U: /* error out instead? this should probably not happen */
 	case MONO_TYPE_I:
 #endif
-	case MONO_TYPE_R8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
 		guint64 *val = g_malloc (sizeof (guint64));
 		*val = read64 (p);
+		*end = p + 8;
+		return val;
+	}
+	case MONO_TYPE_R8: {
+		double *val = g_malloc (sizeof (double));
+		readr8 (p, val);
 		*end = p + 8;
 		return val;
 	}
@@ -6724,6 +6729,13 @@ handle_type:
 				}
 				break;
 			case MONO_TYPE_R8:
+				for (i = 0; i < alen; i++) {
+					double val;
+					readr8 (p, &val);
+					mono_array_set (arr, double, i, val);
+					p += 8;
+				}
+				break;
 			case MONO_TYPE_U8:
 			case MONO_TYPE_I8:
 				for (i = 0; i < alen; i++) {
@@ -7676,9 +7688,23 @@ handle_enum:
 		swap_with_size (p, argval, 4, 1);
 		p += 4;
 		break;
+	case MONO_TYPE_R8:
+#if defined(ARM_FPU_FPA) && G_BYTE_ORDER == G_LITTLE_ENDIAN
+		p [0] = argval [4];
+		p [1] = argval [5];
+		p [2] = argval [6];
+		p [3] = argval [7];
+		p [4] = argval [0];
+		p [5] = argval [1];
+		p [6] = argval [2];
+		p [7] = argval [3];
+#else
+		swap_with_size (p, argval, 8, 1);
+#endif
+		p += 8;
+		break;
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
-	case MONO_TYPE_R8:
 		swap_with_size (p, argval, 8, 1);
 		p += 8;
 		break;
