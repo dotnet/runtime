@@ -422,8 +422,8 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 #ifndef sun
 		pthread_attr_getstack (&attr, (void**)staddr, stsize);
-		g_assert (*staddr);
-		g_assert ((current > *staddr) && (current < *staddr + *stsize));
+		if (*staddr)
+			g_assert ((current > *staddr) && (current < *staddr + *stsize));
 #endif
 }	
 
