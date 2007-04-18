@@ -392,6 +392,41 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	ResumeThread (thread_handle);
 }
 
+/*
+ * mono_thread_get_stack_bounds:
+ *
+ *   Return the address and size of the current threads stack. Return NULL as the stack
+ * address if the stack address cannot be determined.
+ */
+static void
+mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
+{
+	pthread_attr_t attr;
+	guint8 *current = (guint8*)&attr;
+
+	pthread_attr_init (&attr);
+#ifdef HAVE_PTHREAD_GETATTR_NP
+		pthread_getattr_np (pthread_self(), &attr);
+#else
+#ifdef HAVE_PTHREAD_ATTR_GET_NP
+		pthread_attr_get_np (pthread_self(), &attr);
+#elif defined(sun)
+		*staddr = NULL;
+		pthread_attr_getstacksize (&attr, &stsize);
+#else
+		*staddr = NULL;
+		*stsize = 0;
+		return;
+#endif
+#endif
+
+#ifndef sun
+		pthread_attr_getstack (&attr, (void**)staddr, stsize);
+		g_assert (*staddr);
+		g_assert ((current > *staddr) && (current < *staddr + *stsize));
+#endif
+}	
+
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
@@ -442,7 +477,15 @@ mono_thread_attach (MonoDomain *domain)
 	thread_adjust_static_data (thread);
 
 	if (mono_thread_attach_cb) {
-		mono_thread_attach_cb (tid, &tid);
+		guint8 *staddr;
+		size_t stsize;
+
+		mono_thread_get_stack_bounds (&staddr, &stsize);
+
+		if (staddr == NULL)
+			mono_thread_attach_cb (tid, &tid);
+		else
+			mono_thread_attach_cb (tid, staddr + stsize);
 	}
 
 	return(thread);
