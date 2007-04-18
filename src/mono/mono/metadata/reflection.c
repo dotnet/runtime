@@ -4604,7 +4604,7 @@ assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssembly
 
 	resource_tree_encode (tree, p, p, &p);
 
-	g_assert (p - buf < size);
+	g_assert (p - buf <= size);
 
 	assembly->win32_res = g_malloc (p - buf);
 	assembly->win32_res_size = p - buf;
