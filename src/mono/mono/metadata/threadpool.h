@@ -33,4 +33,8 @@ MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, 
 								gint completionPortThreads) MONO_INTERNAL;
 
+MonoBoolean
+ves_icall_System_Threading_ThreadPool_SetMaxThreads (gint workerThreads, 
+								gint completionPortThreads) MONO_INTERNAL;
+
 #endif

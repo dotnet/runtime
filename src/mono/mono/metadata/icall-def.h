@@ -803,6 +803,7 @@ ICALL_TYPE(THREADP, "System.Threading.ThreadPool", THREADP_1)
 ICALL(THREADP_1, "GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads)
 ICALL(THREADP_2, "GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads)
 ICALL(THREADP_3, "GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinThreads)
+ICALL(THREADP_35, "SetMaxThreads", ves_icall_System_Threading_ThreadPool_SetMaxThreads)
 ICALL(THREADP_4, "SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads)
 
 ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
