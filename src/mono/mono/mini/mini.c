@@ -2480,7 +2480,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	{
 		int i;
 		for (i = 0; i < sig->param_count; ++i) {
-			if (sig->params [i]->type == MONO_TYPE_R4) {
+			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_R4) {
 				MonoInst *iargs [1];
 				int temp;
 				iargs [0] = args [i + sig->hasthis];
@@ -3088,7 +3088,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		}
 #ifdef MONO_ARCH_SOFT_FLOAT
 		/* this complicates things, fix later */
-		if (signature->params [i]->type == MONO_TYPE_R4)
+		if (!signature->params [i]->byref && signature->params [i]->type == MONO_TYPE_R4)
 			return FALSE;
 #endif
 	}
@@ -3862,6 +3862,8 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		if (newarr->inst_newa_len->opcode != OP_ICONST)
 			return NULL;
 		cmethod = mini_get_method (method, token, NULL, NULL);
+		if (!cmethod)
+			return NULL;
 		if (strcmp (cmethod->name, "InitializeArray") || strcmp (cmethod->klass->name, "RuntimeHelpers") || cmethod->klass->image != mono_defaults.corlib)
 			return NULL;
 		switch (mono_type_get_underlying_type (&klass->byval_arg)->type) {
@@ -5574,6 +5576,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoInst* domain_var;
 					
 					if (cfg->compile_aot) {
+						/* FIXME: bug when inlining methods from different assemblies (n is a token valid just in one). */
 						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, GINT_TO_POINTER (n));
 					}
 					/* avoid depending on undefined C behavior in sequence points */
