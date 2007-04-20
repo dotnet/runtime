@@ -1,3 +1,7 @@
+2007-04-19  Wade Berrier  <wberrier@novell.com>
+
+	* configure.in: version bump -> 1.2.4
+
 2007-04-15  Marek Habersack  <mhabersack@novell.com>
 
 	* data/net_2_0/web.config: add the default build providers
