@@ -465,10 +465,10 @@ clean-local:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
-BUILT_SOURCES = version.h
-
 if JIT_SUPPORTED
-BUILT_SOURCES += inssel.c inssel.h $(arch_built)
+BUILT_SOURCES = version.h inssel.c inssel.h $(arch_built)
+else
+BUILT_SOURCES = version.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
