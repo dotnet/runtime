@@ -128,7 +128,7 @@ add_types_from_method (MonoMethod *method) {
 
 	locals = mono_method_header_get_locals (header, &n, NULL);
 	for (i = 0; i < n; ++i) {
-		klass = mono_class_from_mono_type (locals);
+		klass = mono_class_from_mono_type (locals [i]);
 		add_type (klass);
 	}
 	for (exc_iter = NULL; mono_method_header_get_clauses (header, method, &exc_iter, &clause);) {
