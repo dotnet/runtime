@@ -8676,7 +8676,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	MonoGenericClass *gclass, *cached;
 	gboolean is_dynamic = FALSE;
 	MonoDomain *domain;
-	MonoType *geninst;
+	MonoClass *geninst;
 	int i;
 
 	mono_loader_lock ();
@@ -8741,22 +8741,17 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 
 	gclass->container_class = klass;
 
-	geninst = g_new0 (MonoType, 1);
-	geninst->type = MONO_TYPE_GENERICINST;
-
 	cached = mono_metadata_lookup_generic_class (gclass);
 	if (cached) {
 		g_free (gclass);
-		mono_loader_unlock ();
-		geninst->data.generic_class = cached;
-		return geninst;
+		gclass = cached;
 	}
-
-	geninst->data.generic_class = gclass;
 
 	mono_loader_unlock ();
 
-	return geninst;
+	geninst = mono_generic_class_get_class (gclass);
+
+	return &geninst->byval_arg;
 }
 
 MonoType*

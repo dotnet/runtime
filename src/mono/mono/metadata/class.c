@@ -3117,7 +3117,7 @@ mono_class_get_nullable_param (MonoClass *klass)
  * Create the `MonoClass' for an instantiation of a generic type.
  * We only do this if we actually need it.
  */
-static MonoClass*
+MonoClass*
 mono_generic_class_get_class (MonoGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;

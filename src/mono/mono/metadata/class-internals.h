@@ -628,10 +628,13 @@ MonoGenericContext*
 mono_class_get_context (MonoClass *class) MONO_INTERNAL;
 
 MonoGenericContext*
-mono_generic_class_get_context (MonoGenericClass *gclass) MONO_INTERNAL;
+mono_method_get_context (MonoMethod *method) MONO_INTERNAL;
 
 MonoGenericContext*
-mono_method_get_context (MonoMethod *method) MONO_INTERNAL;
+mono_generic_class_get_context (MonoGenericClass *gclass) MONO_INTERNAL;
+
+MonoClass*
+mono_generic_class_get_class (MonoGenericClass *gclass) MONO_INTERNAL;
 
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
