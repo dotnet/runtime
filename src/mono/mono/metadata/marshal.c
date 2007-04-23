@@ -11252,7 +11252,13 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 	/* FIXME: which to use? */
 	csig = signature_dup (method->klass->image, sig);
 	/* csig = mono_metadata_signature_dup (sig); */
+	
+	/* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
+#ifdef PLATFORM_WIN32
 	csig->call_convention = MONO_CALL_STDCALL;
+#else
+	csig->call_convention = MONO_CALL_C;
+#endif
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
