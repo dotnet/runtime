@@ -547,6 +547,10 @@ typedef enum {
 #define alpha_cmptlt(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A6, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmptle(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0A7, Rsrc1, Rsrc2, Rdest )
 
+#define alpha_addt_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A0, Rsrc1, Rsrc2, Rdest )
+#define alpha_subt_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A1, Rsrc1, Rsrc2, Rdest )
+
+
 #define alpha_cmptun_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A4, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmpteq_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A5, Rsrc1, Rsrc2, Rdest )
 #define alpha_cmptlt_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A6, Rsrc1, Rsrc2, Rdest )
@@ -557,6 +561,9 @@ typedef enum {
 #define alpha_cvtqs(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0BC, alpha_fzero, Rsrc2, Rdest )
 #define alpha_cvtqt(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x0BE, alpha_fzero, Rsrc2, Rdest )
 
+#define alpha_divt_su(ins, Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5A3, Rsrc1, Rsrc2, Rdest )
+
+#define alpha_cvtts_su(ins, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x16, 0x5AC, alpha_fzero, Rsrc2, Rdest )
 
 #define alpha_cpys(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x020, Rsrc1, Rsrc2, Rdest )
 #define alpha_cpysn(ins,  Rsrc1, Rsrc2, Rdest) alpha_encode_fpop( ins, 0x17, 0x021, Rsrc1, Rsrc2, Rdest )
