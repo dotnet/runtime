@@ -113,7 +113,7 @@ op_rethrow: src1:i len:20
 conv.ovf.i4.un: dest:i src1:i len:16
 conv.ovf.u4.un: 
 conv.ovf.u4: dest:i src1:i len:15
-ckfinite: dest:f src1:f len:43
+ckfinite: dest:f src1:f len:44
 conv.u2: dest:i src1:i len:4
 conv.u1: dest:i src1:i len:4
 conv.i: dest:i src1:i len:4

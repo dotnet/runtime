@@ -3945,11 +3945,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	  
 	 case CEE_CKFINITE:
 	   // Float register contains a value which we need to check
-	   CFG_DEBUG(4) g_print("ALPHA_TODO: [chfinite] sreg1=%d\n", ins->sreg1);
- 	   alpha_cmptun_su(code, ins->sreg1, ins->sreg1, alpha_at);
-	   alpha_trapb(code);
-	   EMIT_COND_EXC_BRANCH(fbeq, alpha_at, "ArithmeticException");
+	   {
+		double	ni = -1.0 / 0.0;
+		double	pi = 1.0 / 0.0;
+		AlphaGotData	ge_data;
 
+	   	CFG_DEBUG(4) g_print("ALPHA_TODO: [chfinite] sreg1=%d\n", ins->sreg1);
+ 	   	alpha_cmptun_su(code, ins->sreg1, ins->sreg1, alpha_at);
+	   	alpha_trapb(code);
+	   	EMIT_COND_EXC_BRANCH(fbne, alpha_at, "ArithmeticException");
+
+		// Negative infinity
+		ge_data.data.d = ni;
+             	add_got_entry(cfg, GT_DOUBLE, ge_data,
+                           (char *)code - (char *)cfg->native_code,
+                           MONO_PATCH_INFO_NONE, 0);
+             	alpha_ldt(code, alpha_at, alpha_gp, 0);
+
+		alpha_cmpteq_su(code, ins->sreg1, alpha_at, alpha_at);
+		alpha_trapb(code);
+
+		EMIT_COND_EXC_BRANCH(fbne, alpha_at, "ArithmeticException");
+
+                // Positive infinity
+                ge_data.data.d = pi;
+                add_got_entry(cfg, GT_DOUBLE, ge_data,
+                           (char *)code - (char *)cfg->native_code,
+                           MONO_PATCH_INFO_NONE, 0);
+                alpha_ldt(code, alpha_at, alpha_gp, 0);
+
+                alpha_cmpteq_su(code, ins->sreg1, alpha_at, alpha_at);
+                alpha_trapb(code);
+
+                EMIT_COND_EXC_BRANCH(fbne, alpha_at, "ArithmeticException");
+	   }
 	   break;
 	 case OP_FDIV:
 	   CFG_DEBUG(4) g_print("ALPHA_TODO: [fdiv] dest=%d, sreg1=%d, sreg2=%d\n",
