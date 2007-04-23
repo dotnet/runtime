@@ -679,7 +679,8 @@ search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *
 }
 
 static MonoMethod *
-method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context)
+method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typespec_context,
+		       gboolean *used_context)
 {
 	MonoClass *klass = NULL;
 	MonoMethod *method = NULL;
@@ -697,6 +698,14 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
 
 	mname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+
+	/*
+	 * Whether we actually used the `typespec_context' or not.
+	 * This is used to tell our caller whether or not it's safe to insert the returned
+	 * method into a cache.
+	 */
+	if (used_context)
+		*used_context = class == MONO_MEMBERREF_PARENT_TYPESPEC;
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
@@ -859,7 +868,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
 	else
-		method = method_from_memberref (image, nindex, context);
+		method = method_from_memberref (image, nindex, context, NULL);
 
 	method = mono_get_inflated_method (method);
 
@@ -1318,7 +1327,7 @@ mono_get_shared_generic_method (MonoGenericContainer *container)
 
 static MonoMethod *
 mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
-			    MonoGenericContext *context)
+			    MonoGenericContext *context, gboolean *used_context)
 {
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
@@ -1333,15 +1342,17 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
-		if (table == MONO_TABLE_METHODSPEC)
+		if (table == MONO_TABLE_METHODSPEC) {
+			if (used_context) *used_context = TRUE;
 			return method_from_methodspec (image, context, idx);
+		}
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		result = method_from_memberref (image, idx, context);
-
-		return result;
+		return method_from_memberref (image, idx, context, used_context);
 	}
+
+	if (used_context) *used_context = FALSE;
 
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
 
@@ -1386,6 +1397,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		container = generic_container;
 	}
 
+
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
@@ -1426,6 +1438,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
 {
 	MonoMethod *result;
+	gboolean used_context = FALSE;
 
 	/* We do everything inside the lock to prevent creation races */
 
@@ -1436,11 +1449,21 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		return result;
 	}
 
-	result = mono_get_method_from_token (image, token, klass, context);
+	result = mono_get_method_from_token (image, token, klass, context, &used_context);
 
 	//printf ("GET: %s\n", mono_method_full_name (result, TRUE));
 
-	if (!(result && result->is_inflated))
+#if 0
+	g_message (G_STRLOC ": %s - %d - %d", mono_method_full_name (result, TRUE),
+		   result->is_inflated, used_context);
+#endif
+
+	/*
+	 * `used_context' specifies whether or not mono_get_method_from_token() actually
+	 * used the `context' to get the method.  See bug #80969.
+	 */
+
+	if (!used_context && !(result && result->is_inflated))
 		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
 
 	mono_loader_unlock ();
@@ -1468,7 +1491,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 
 	mono_loader_lock ();
 
-	*cil_method = mono_get_method_from_token (image, token, NULL, context);
+	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL);
 	if (!*cil_method) {
 		mono_loader_unlock ();
 		return NULL;
