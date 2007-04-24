@@ -21,6 +21,9 @@
 #define BITS_PER_CHUNK 32
 #endif
 
+static void
+optimize_initlocals (MonoCompile *cfg);
+
 /* mono_bitset_mp_new:
  * 
  * allocates a MonoBitSet inside a memory pool
@@ -497,4 +500,65 @@ mono_analyze_liveness (MonoCompile *cfg)
 		mono_bitset_print (bb->live_out_set); 
 	}
 #endif
+
+	optimize_initlocals (cfg);
+}
+
+static void
+update_used (MonoCompile *cfg, MonoInst *inst, MonoBitSet *used)
+{
+	int arity = mono_burg_arity [inst->opcode];
+
+	if (arity)
+		update_used (cfg, inst->inst_i0, used);
+
+	if (arity > 1)
+		update_used (cfg, inst->inst_i1, used);
+
+	if (inst->ssa_op & MONO_SSA_LOAD_STORE) {
+		if (inst->ssa_op == MONO_SSA_LOAD) {
+			int idx = inst->inst_i0->inst_c0;
+
+			mono_bitset_set_fast (used, idx);
+		}
+	}
+} 
+
+/**
+ * optimize_initlocals:
+ *
+ * Try to optimize away some of the redundant initialization code inserted because of
+ * 'locals init' using the liveness information.
+ */
+static void
+optimize_initlocals (MonoCompile *cfg)
+{
+	MonoBitSet *used;
+	MonoInst *ins;
+	MonoBasicBlock *initlocals_bb;
+
+	used = mono_bitset_new (cfg->num_varinfo, 0);
+
+	mono_bitset_clear_all (used);
+	initlocals_bb = cfg->bb_entry->next_bb;
+	for (ins = initlocals_bb->code; ins; ins = ins->next) {
+		update_used (cfg, ins, used);
+	}
+
+	for (ins = initlocals_bb->code; ins; ins = ins->next) {
+		if (ins->ssa_op == MONO_SSA_STORE) {
+			int idx = ins->inst_i0->inst_c0;
+			MonoInst *var = cfg->varinfo [idx];
+
+			if (var && !mono_bitset_test_fast (used, idx) && !mono_bitset_test_fast (initlocals_bb->live_out_set, var->inst_c0) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
+				if (ins->inst_i1 && ((ins->inst_i1->opcode == OP_ICONST) || (ins->inst_i1->opcode == OP_I8CONST))) {
+					NULLIFY_INS (ins);
+					ins->ssa_op = MONO_SSA_NOP;
+					MONO_VARINFO (cfg, var->inst_c0)->spill_costs -= 1;					
+				}
+			}
+		}
+	}
+
+	g_free (used);
 }
