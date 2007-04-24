@@ -5031,10 +5031,10 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 	new_modules = g_new0 (MonoImage *, module_count + 1);
 	new_modules_loaded = g_new0 (gboolean, module_count + 1);
 
-	if (image->assembly->image->modules) {
+	if (image->assembly->image->modules)
 		memcpy (new_modules, image->assembly->image->modules, module_count * sizeof (MonoImage *));
+	if (image->assembly->image->modules_loaded)
 		memcpy (new_modules_loaded, image->assembly->image->modules_loaded, module_count * sizeof (gboolean));
-	}
 	new_modules [module_count] = image;
 	new_modules_loaded [module_count] = TRUE;
 	mono_image_addref (image);
