@@ -72,6 +72,11 @@ static void socket_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 		return;
 	}
 
+	/* Shutdown the socket for reading, to interrupt any potential
+	 * receives that may be blocking for data.  See bug 75705.
+	 */
+	shutdown (GPOINTER_TO_UINT (handle), SHUT_RD);
+	
 	do {
 		ret = close (GPOINTER_TO_UINT(handle));
 	} while (ret == -1 && errno == EINTR &&
@@ -555,6 +560,19 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
 
+	if (ret == 0) {
+		/* According to the Linux man page, recvfrom only
+		 * returns 0 when the socket has been shut down
+		 * cleanly.  Turn this into an EINTR to simulate win32
+		 * behaviour of returning EINTR when a socket is
+		 * closed while the recvfrom is blocking (we use a
+		 * shutdown() in socket_close() to trigger this.) See
+		 * bug 75705.
+		 */
+		ret = -1;
+		errno = EINTR;
+	}
+	
 	if (ret == -1) {
 		gint errnum = errno;
 #ifdef DEBUG
