@@ -65,7 +65,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	guint32 idx;
 	const char *name, *nspace;
 	MonoClass *res;
-	MonoAssembly **references;
+	MonoImage *module;
 	
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
@@ -80,8 +80,9 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		/* a typedef in disguise */
 		return mono_class_from_name (image, nspace, name);
 	case MONO_RESOLTION_SCOPE_MODULEREF:
-		if (image->modules [idx-1])
-			return mono_class_from_name (image->modules [idx - 1], nspace, name);
+		module = mono_image_load_module (image, idx);
+		if (module)
+			return mono_class_from_name (module, nspace, name);
 		else {
 			char *msg = g_strdup_printf ("%s%s%s", nspace, nspace [0] ? "." : "", name);
 			char *human_name;
@@ -125,15 +126,12 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		break;
 	}
 
-	references = image->references;
-	if (!references [idx - 1])
+	if (!image->references || !image->references [idx - 1])
 		mono_assembly_load_reference (image, idx - 1);
-	/* If this assert fails, it probably means that you haven't installed an assembly load/search hook */
-	g_assert (references == image->references);
-	g_assert (references [idx - 1]);
+	g_assert (image->references [idx - 1]);
 
 	/* If the assembly did not load, register this as a type load exception */
-	if (references [idx - 1] == REFERENCE_MISSING){
+	if (image->references [idx - 1] == REFERENCE_MISSING){
 		MonoAssemblyName aname;
 		char *human_name;
 		
@@ -145,7 +143,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		return NULL;
 	}
 
-	return mono_class_from_name (references [idx - 1]->image, nspace, name);
+	return mono_class_from_name (image->references [idx - 1]->image, nspace, name);
 }
 
 static inline MonoType*

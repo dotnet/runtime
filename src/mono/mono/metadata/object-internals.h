@@ -1051,7 +1051,7 @@ typedef enum {
 
 void          mono_image_create_pefile (MonoReflectionModuleBuilder *module, HANDLE file) MONO_INTERNAL;
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly) MONO_INTERNAL;
-MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name) MONO_INTERNAL;
+MonoReflectionModule * mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name) MONO_INTERNAL;
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str) MONO_INTERNAL;
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec) MONO_INTERNAL;
 guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types) MONO_INTERNAL;

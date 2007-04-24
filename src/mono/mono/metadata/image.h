@@ -63,6 +63,8 @@ guint32       mono_image_get_entry_point    (MonoImage *image);
 const char   *mono_image_get_resource       (MonoImage *image, guint32 offset, guint32 *size);
 MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
 
+MonoImage*    mono_image_load_module (MonoImage *image, int idx);
+
 const char*   mono_image_get_name       (MonoImage *image);
 const char*   mono_image_get_filename   (MonoImage *image);
 const char *  mono_image_get_guid       (MonoImage *image);

@@ -423,7 +423,7 @@ ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
 ICALL(ASSEMN_1, "ParseName", ves_icall_System_Reflection_AssemblyName_ParseName)
 
 ICALL_TYPE(ASSEMB, "System.Reflection.Emit.AssemblyBuilder", ASSEMB_1)
-ICALL(ASSEMB_1, "InternalAddModule", mono_image_load_module)
+ICALL(ASSEMB_1, "InternalAddModule", mono_image_load_module_dynamic)
 ICALL(ASSEMB_2, "basic_init", mono_image_basic_init)
 
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)

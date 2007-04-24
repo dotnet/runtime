@@ -472,7 +472,27 @@ mono_image_check_for_module_cctor (MonoImage *image)
 }
 
 static void
-load_modules (MonoImage *image, MonoImageOpenStatus *status)
+load_modules (MonoImage *image)
+{
+	MonoTableInfo *t;
+
+	if (image->modules)
+		return;
+
+	t = &image->tables [MONO_TABLE_MODULEREF];
+	image->modules = g_new0 (MonoImage *, t->rows);
+	image->modules_loaded = g_new0 (gboolean, t->rows);
+	image->module_count = t->rows;
+}
+
+/**
+ * mono_image_load_module:
+ *
+ *   Load the module with the one-based index IDX from IMAGE and return it. Return NULL if
+ * it cannot be loaded.
+ */
+MonoImage*
+mono_image_load_module (MonoImage *image, int idx)
 {
 	MonoTableInfo *t;
 	MonoTableInfo *file_table;
@@ -480,9 +500,11 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	char *base_dir;
 	gboolean refonly = image->ref_only;
 	GList *list_iter, *valid_modules = NULL;
+	MonoImageOpenStatus status;
 
-	if (image->modules)
-		return;
+	g_assert (idx <= image->module_count);
+	if (image->modules_loaded [idx - 1])
+		return image->modules [idx - 1];
 
 	file_table = &image->tables [MONO_TABLE_FILE];
 	for (i = 0; i < file_table->rows; i++) {
@@ -494,17 +516,16 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	}
 
 	t = &image->tables [MONO_TABLE_MODULEREF];
-	image->modules = g_new0 (MonoImage *, t->rows);
-	image->module_count = t->rows;
 	base_dir = g_path_get_dirname (image->name);
-	for (i = 0; i < t->rows; i++){
+
+	{
 		char *module_ref;
 		const char *name;
 		guint32 cols [MONO_MODULEREF_SIZE];
 		/* if there is no file table, we try to load the module... */
 		int valid = file_table->rows == 0;
 
-		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
+		mono_metadata_decode_row (t, idx - 1, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		for (list_iter = valid_modules; list_iter; list_iter = list_iter->next) {
 			/* be safe with string dups, but we could just compare string indexes  */
@@ -513,24 +534,24 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 				break;
 			}
 		}
-		if (!valid)
-			continue;
-		module_ref = g_build_filename (base_dir, name, NULL);
-		image->modules [i] = mono_image_open_full (module_ref, status, refonly);
-		if (image->modules [i]) {
-			mono_image_addref (image->modules [i]);
-			/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
+		if (valid) {
+			module_ref = g_build_filename (base_dir, name, NULL);
+			image->modules [idx - 1] = mono_image_open_full (module_ref, &status, refonly);
+			if (image->modules [idx - 1]) {
+				mono_image_addref (image->modules [idx - 1]);
+				image->modules [idx - 1]->assembly = image->assembly;
+				/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
+			}
+			g_free (module_ref);
 		}
-		/* 
-		 * FIXME: We should probably do lazy-loading of modules.
-		 */
-		if (status)
-			*status = MONO_IMAGE_OK;
-		g_free (module_ref);
 	}
+
+	image->modules_loaded [idx - 1] = TRUE;
 
 	g_free (base_dir);
 	g_list_free (valid_modules);
+
+	return image->modules [idx - 1];
 }
 
 static void
@@ -745,7 +766,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));
 
-	load_modules (image, status);
+	load_modules (image);
 
 done:
 	if (status)
