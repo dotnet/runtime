@@ -1,3 +1,7 @@
+2007-04-24  Jonathan Chambers  <joncham@gmail.com>
+
+	* eglib.vcproj: Added.
+
 2007-03-30  Jonathan Chambers  <joncham@gmail.com>
 
 	* libmono.vcproj, mono.vcproj: Reset browse information
@@ -22,4 +26,5 @@
 	* *.vcproj: Begin Win64 port. Run bat files with $(Platform) argument.
 	* *.bat: Begin Win64 port. Run bat files with $(Platform) argument.
 	Contributed under MIT/X11 license.
-	
+
+
