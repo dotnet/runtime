@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <glib.h>
 
-#define set_error(msg...) do { if (error != NULL) *error = g_error_new (GINT_TO_POINTER (1), 1, msg); } while (0);
+#define set_error(msg, ...) do { if (error != NULL) *error = g_error_new (GINT_TO_POINTER (1), 1, msg, __VA_ARGS__); } while (0);
 
 typedef enum {
 	START,
@@ -114,7 +114,7 @@ parse_value (const char *p, const char *end, char **value, GError **error)
 	int l;
 	
 	if (*p != '"'){
-		set_error ("Expected the attribute value to start with a quote");
+		set_error ("%s", "Expected the attribute value to start with a quote");
 		return end;
 	}
 	start = ++p;
@@ -258,7 +258,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 					context->state = START_ELEMENT;
 				continue;
 			}
-			set_error ("Expected < to start the document");
+			set_error ("%s", "Expected < to start the document");
 			goto fail;
 
 		case SKIP_XML_DECLARATION:
@@ -271,7 +271,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			for (; p < end && isspace (*p); p++)
 				;
 			if (p == end){
-				set_error ("Unfinished element");
+				set_error ("%s", "Unfinished element");
 				goto fail;
 			}
 
@@ -282,14 +282,14 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			}
 			
 			if (!(isascii (*p) && isalpha (*p))){
-				set_error ("Expected an element name");
+				set_error ("%s", "Expected an element name");
 				goto fail;
 			}
 			
 			for (++p; p < end && (isalnum (*p) || (*p == '.')); p++)
 				;
 			if (p == end){
-				set_error ("Expected an element");
+				set_error ("%s", "Expected an element");
 				goto fail;
 			}
 			element_end = p;
@@ -297,7 +297,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			for (; p < end && isspace (*p); p++)
 				;
 			if (p == end){
-				set_error ("Unfinished element");
+				set_error ("%s", "Unfinished element");
 				goto fail;
 			}
 			p = parse_attributes (p, end, &names, &values, error, &full_stop, context->state);
@@ -308,7 +308,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				}
 				/* Only set the error if parse_attributes did not */
 				if (error != NULL && *error == NULL)
-					set_error ("Unfinished sequence");
+					set_error ("%s", "Unfinished sequence");
 				goto fail;
 			}
 			l = element_end - element_start;
@@ -396,7 +396,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			char *text;
 
 			if (context->level == NULL){
-				set_error ("Too many closing tags, not enough open tags");
+				set_error ("%s", "Too many closing tags, not enough open tags");
 				goto fail;
 			}
 			

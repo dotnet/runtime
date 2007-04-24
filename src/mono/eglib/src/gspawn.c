@@ -28,17 +28,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <unistd.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/wait.h>
-#include <sys/types.h>
+#endif
 #include <glib.h>
 
-#define set_error(msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0)
-#define set_error_cond(cond,msg...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg); } while (0)
-#define set_error_status(status,msg...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, status, msg); } while (0)
+#define set_error(msg, ...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
+#define set_error_cond(cond,msg, ...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
+#define set_error_status(status,msg, ...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, status, msg, __VA_ARGS__); } while (0)
 #define NO_INTR(var,cmd) do { (var) = (cmd); } while ((var) == -1 && errno == EINTR)
 #define CLOSE_PIPE(p) do { close (p [0]); close (p [1]); } while (0)
 
@@ -48,7 +51,7 @@ safe_read (int fd, gchar *buffer, gint count, GError **error)
 	int res;
 
 	NO_INTR (res, read (fd, buffer, count));
-	set_error_cond (res == -1, "Error reading from pipe.");
+	set_error_cond (res == -1, "%s", "Error reading from pipe.");
 	return res;
 }
 
@@ -134,7 +137,7 @@ static gboolean
 create_pipe (int *fds, GError **error)
 {
 	if (pipe (fds) == -1) {
-		set_error ("Error creating pipe.");
+		set_error ("%s", "Error creating pipe.");
 		return FALSE;
 	}
 	return TRUE;
@@ -277,7 +280,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		CLOSE_PIPE (out_pipe);
 		CLOSE_PIPE (err_pipe);
 		CLOSE_PIPE (in_pipe);
-		set_error ("Error in fork ()");
+		set_error ("%s", "Error in fork ()");
 		return FALSE;
 	}
 

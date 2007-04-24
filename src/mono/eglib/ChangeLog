@@ -1,3 +1,22 @@
+2007-04-24  Jonathan Chambers <joncham@gmail.com>
+	
+	Patch from Michael Jerris <mike@jerris.com>
+	* src/gspawn.c: Start msvc build.
+	* src/gpath.c: Start msvc build.
+	* src/gmarkup.c: Start msvc build.
+	* src/gshell.c: Start msvc build.
+	* src/gstr.c: Start msvc build.
+	* src/glist.c: Start msvc build.
+	* src/glib.h: Start msvc build.
+	* src/gdate.c: Start msvc build.
+	* src/gpattern.c: Start msvc build.
+	* src/gdir.c: Start msvc build.
+	* src/gfile.c: Start msvc build.
+	* src/gtimer.c: Start msvc build.
+	* src/gmodule.c: Start msvc build.
+	* src/gunicode.c: Start msvc build.
+
+
 2007-01-27  Robert Jordan  <robertj@gmx.net>
 
 	* test/Makefile.am: Add linker option to be able to

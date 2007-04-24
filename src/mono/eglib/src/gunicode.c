@@ -35,9 +35,15 @@
  */
 #include <stdio.h>
 #include <glib.h>
+#include <errno.h>
+#ifdef _MSC_VER
+/* FIXME */
+#define CODESET 1
+typedef int iconv_t;
+#else
 #include <langinfo.h>
 #include <iconv.h>
-#include <errno.h>
+#endif
 
 static char *my_charset;
 static gboolean is_utf8;
@@ -45,14 +51,14 @@ static gboolean is_utf8;
 GUnicodeType 
 g_unichar_type (gunichar c)
 {
-	g_error ("g_unichar_type is not implemented");
+	g_error ("%s", "g_unichar_type is not implemented");
 	return 0;
 }
 
 gunichar
 g_unichar_tolower (gunichar c)
 {
-	g_error ("g_unichar_type is not implemented");
+	g_error ("%s", "g_unichar_type is not implemented");
 	return 0;
 }
 

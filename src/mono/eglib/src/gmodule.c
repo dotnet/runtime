@@ -239,28 +239,28 @@ g_module_close (GModule *module)
 GModule *
 g_module_open (const gchar *file, GModuleFlags flags)
 {
-	g_error ("g_module_open not implemented on this platform");
+	g_error ("%s", "g_module_open not implemented on this platform");
 	return NULL;
 }
 
 gboolean
 g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 {
-	g_error ("g_module_open not implemented on this platform");
+	g_error ("%s", "g_module_open not implemented on this platform");
 	return FALSE;
 }
 
 const gchar *
 g_module_error (void)
 {
-	g_error ("g_module_open not implemented on this platform");
+	g_error ("%s", "g_module_open not implemented on this platform");
 	return NULL;
 }
 
 gboolean
 g_module_close (GModule *module)
 {
-	g_error ("g_module_open not implemented on this platform");
+	g_error ("%s", "g_module_open not implemented on this platform");
 	return FALSE;
 }
 #endif

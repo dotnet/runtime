@@ -28,11 +28,16 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef _MSC_VER
+#include <io.h>
+#define open _open
+#else
+#include <unistd.h>
+#endif
 
 GFileError
 g_file_error_from_errno (gint err_no)

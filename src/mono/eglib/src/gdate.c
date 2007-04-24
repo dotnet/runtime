@@ -27,7 +27,12 @@
  */
 #include <stdio.h>
 #include <glib.h>
+
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
 #include <sys/time.h>
+#endif
 
 void
 g_get_current_time (GTimeVal *result)

@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stddef.h>
 #include <ctype.h>
+#ifndef _MSC_VER
+#include <stdint.h>
 #include <eglib-config.h>
+#endif
 
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
@@ -30,6 +32,64 @@ typedef const void *   gconstpointer;
 typedef char           gchar;
 typedef unsigned char  guchar;
 
+#ifdef _MSC_VER
+typedef __int8				gint8;
+typedef unsigned __int8		guint8;
+typedef __int16				gint16;
+typedef unsigned __int16	guint16;
+typedef __int32				gint32;
+typedef unsigned __int32	guint32;
+typedef __int64				gint64;
+typedef unsigned __int64	guint64;
+typedef float				gfloat;
+typedef double				gdouble;
+typedef unsigned __int16	gunichar2;
+/*
+ * System-dependent settings
+ */
+/*
+#define G_GNUC_PRETTY_FUNCTION   @GNUC_PRETTY@
+#define G_GNUC_UNUSED            @GNUC_UNUSED@
+#define G_BYTE_ORDER             @ORDER@
+#define G_GNUC_NORETURN          @GNUC_NORETURN@
+#define G_BREAKPOINT()           @BREAKPOINT@
+#define G_OS_@OS@
+#define GPOINTER_TO_INT(ptr)   @GPOINTER_TO_INT@
+#define GPOINTER_TO_UINT(ptr)  @GPOINTER_TO_UINT@
+#define GINT_TO_POINTER(v)     @GINT_TO_POINTER@
+#define GUINT_TO_POINTER(v)    @GUINT_TO_POINTER@
+*/
+typedef uintptr_t gsize;
+typedef intptr_t gssize;
+typedef int pid_t;
+
+#define G_DIR_SEPARATOR          '\\'
+#define G_DIR_SEPARATOR_S        "\\"
+#define G_SEARCHPATH_SEPARATOR_S ";"
+#define G_SEARCHPATH_SEPARATOR   ';'
+#define G_GSIZE_FORMAT   "d"
+#define G_GUINT64_FORMAT "d"
+
+#define INT32_MAX 2147483647
+#define INT32_MIN (~ INT32_MAX)
+#define INT64_MAX 9223372036854775807i64
+#define INT64_MIN (~INT64_MAX)
+
+#define STDOUT_FILENO stdout
+#define STDERR_FILENO stderr
+
+/* FIXME: what should this be ?*/
+#define X_OK 1
+#define WNOHANG 1
+#define F_SETFD 1
+#define FD_CLOEXEC 1
+
+#undef inline
+#define inline __inline
+
+#define G_OS_WIN32 1
+
+#else
 /* Types defined in terms of the stdint.h */
 typedef int8_t         gint8;
 typedef uint8_t        guint8;
@@ -42,6 +102,7 @@ typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
 typedef uint16_t       gunichar2;
+#endif
 /*
  * Macros
  */
@@ -439,14 +500,14 @@ GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags f
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 
-#define g_error(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format)
-#define g_critical(format...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format)
-#define g_warning(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format)
-#define g_message(format...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format)
-#define g_debug(format...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format)
+#define g_error(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__)
+#define g_critical(format, ...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
+#define g_warning(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format, __VA_ARGS__)
+#define g_message(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
+#define g_debug(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
 
 #define g_log_set_handler(a,b,c,d)
-#define g_printerr(format...) fprintf (stderr, format)
+#define g_printerr(format, ...) fprintf (stderr, format, __VA_ARGS__)
 /*
  * Conversions
  */
@@ -502,7 +563,7 @@ gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, 
  * Path
  */
 gchar  *g_build_path           (const gchar *separator, const gchar *first_element, ...);
-#define g_build_filename(x...) g_build_path(G_DIR_SEPARATOR_S, x)
+#define g_build_filename(x, ...) g_build_path(G_DIR_SEPARATOR_S, x, __VA_ARGS__)
 gchar  *g_path_get_dirname     (const gchar *filename);
 gchar  *g_path_get_basename    (const char *filename);
 gchar  *g_find_program_in_path (const gchar *program);

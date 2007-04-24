@@ -28,8 +28,10 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 typedef enum {
 	MATCH_LITERAL,

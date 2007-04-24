@@ -28,14 +28,18 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _MSC_VER
+#include <unistd.h>
 #include <dirent.h>
+#endif
 
 struct _GDir {
 #ifdef G_OS_WIN32
+	/* FIXME */
+	int dir;
 #else
 	DIR *dir;
 #endif

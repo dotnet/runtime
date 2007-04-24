@@ -27,11 +27,14 @@
  */
 #include <stdio.h>
 #include <glib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <pwd.h>
+
+#ifndef _MSC_VER
 #include <pthread.h>
+#include <unistd.h>
+#include <pwd.h>
+#endif
 
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
@@ -235,20 +238,28 @@ g_get_home_dir (void)
 const gchar *
 g_get_home_dir (void)
 {
-	g_error ("g_get_home_dir not implemented on this platform");
+	g_error ("%s", "g_get_home_dir not implemented on this platform");
 	return NULL;
 }
 
 #endif
 
 static char *tmp_dir;
+#ifdef _MSC_VER
+/* FIXME */
+#else
 static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 const gchar *
 g_get_tmp_dir (void)
 {
 	if (tmp_dir == NULL){
+#ifdef _MSC_VER
+/* FIXME */
+#else
 		pthread_mutex_lock (&tmp_lock);
+#endif
 		if (tmp_dir == NULL){
 			tmp_dir = getenv ("TMPDIR");
 			if (tmp_dir == NULL){
@@ -260,7 +271,11 @@ g_get_tmp_dir (void)
 				}
 			}
 		}
+#ifdef _MSC_VER
+/* FIXME */
+#else
 		pthread_mutex_unlock (&tmp_lock);
+#endif
 	}
 	return tmp_dir;
 }

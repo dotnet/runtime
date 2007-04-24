@@ -205,7 +205,8 @@ g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 {
 	GList *prev = NULL;
 	GList *current;
-	
+	GList *node;
+
 	if (!func)
 		return list;
 
@@ -216,7 +217,7 @@ g_list_insert_sorted (GList *list, gpointer data, GCompareFunc func)
 		prev = current;
 	}
 
-	GList *node = new_node (prev, data, current);
+	node = new_node (prev, data, current);
 	return list == current ? node : list;
 }
 

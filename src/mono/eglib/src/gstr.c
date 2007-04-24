@@ -132,10 +132,10 @@ g_strerror (gint errnum)
 gchar *
 g_strconcat (const gchar *first, ...)
 {
-	g_return_val_if_fail (first != NULL, NULL);
 	va_list args;
 	int total = 0;
 	char *s, *ret;
+	g_return_val_if_fail (first != NULL, NULL);
 
 	total += strlen (first);
 	va_start (args, first);
@@ -426,7 +426,7 @@ g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
 	g_return_val_if_fail (filename != NULL, NULL);
 
 	if (hostname != NULL)
-		g_warning ("eglib: g_filename_to_uri: hostname not handled");
+		g_warning ("%s", "eglib: g_filename_to_uri: hostname not handled");
 
 	if (*filename != '/'){
 		if (error != NULL)
@@ -479,7 +479,7 @@ g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error)
 	g_return_val_if_fail (uri != NULL, NULL);
 
 	if (hostname != NULL)
-		g_warning ("eglib: g_filename_from_uri: hostname not handled");
+		g_warning ("%s", "eglib: g_filename_from_uri: hostname not handled");
 
 	if (strncmp (uri, "file:///", 8) != 0){
 		if (error != NULL)
