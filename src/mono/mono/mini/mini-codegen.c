@@ -452,7 +452,7 @@ struct InstList {
 static inline InstList*
 inst_list_prepend (guint8 *mem, InstList *list, MonoInst *data)
 {
-	InstList *item = (InstList*)mem;
+	InstList *item = (InstList*)(gpointer)mem;
 	item->data = data;
 	item->prev = NULL;
 	item->next = list;
@@ -1845,7 +1845,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 		return CMP_TYPE_L;
 	else if ((opcode >= OP_CEQ) && (opcode <= OP_CLT_UN))
 		return CMP_TYPE_L;
-	else if ((opcode >= OP_IBEQ) && (opcode <= OP_IBLT_UN))
+	else if ((opcode >= OP_IBEQ) && (opcode <= OP_IBLE_UN))
 		return CMP_TYPE_I;
 	else if ((opcode >= OP_ICEQ) && (opcode <= OP_ICLT_UN))
 		return CMP_TYPE_I;
@@ -1853,7 +1853,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 		return CMP_TYPE_L;
 	else if ((opcode >= OP_LCEQ) && (opcode <= OP_LCLT_UN))
 		return CMP_TYPE_L;
-	else if ((opcode >= OP_FBEQ) && (opcode <= OP_FBLT_UN))
+	else if ((opcode >= OP_FBEQ) && (opcode <= OP_FBLE_UN))
 		return CMP_TYPE_F;
 	else if ((opcode >= OP_FCEQ) && (opcode <= OP_FCLT_UN))
 		return CMP_TYPE_F;
