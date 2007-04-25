@@ -2177,8 +2177,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	mono_arch_lowering_pass (cfg, bb);
 
+	/*
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass_1 (cfg, bb);
+	*/
 
 	mono_local_regalloc (cfg, bb);
 }
@@ -3303,6 +3305,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Restore stack alignment */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
 			break;
+
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
