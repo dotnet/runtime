@@ -633,9 +633,10 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 
 	if (ass->image->references) {
 		for (i = 0; ass->image->references [i] != NULL; i++) {
-			if (!g_hash_table_lookup (ht, ass->image->references [i])) {
-				add_assemblies_to_domain (domain, ass->image->references [i], ht);
-			}
+			if (ass->image->references [i] != REFERENCE_MISSING)
+				if (!g_hash_table_lookup (ht, ass->image->references [i])) {
+					add_assemblies_to_domain (domain, ass->image->references [i], ht);
+				}
 		}
 	}
 	if (destroy_ht)
