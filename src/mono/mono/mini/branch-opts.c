@@ -43,7 +43,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 				 * Flag is set during method_to_ir due to 
 				 * pop-op is optmized away in codegen (burg).
 				 */
-				tbb = g_hash_table_lookup (cfg->bb_hash, header->code + clause->handler_offset);
+				tbb = cfg->cil_offset_to_bb [clause->handler_offset];
 				if (tbb && tbb->flags & BB_EXCEPTION_DEAD_OBJ && !(tbb->flags & BB_EXCEPTION_UNSAFE)) {
 					MonoBasicBlock *targetbb = tbb;
 					gboolean unsafe = FALSE;

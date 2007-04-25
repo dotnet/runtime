@@ -858,7 +858,7 @@ mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb
 				acp [tree->inst_i0->inst_c0] = i1;
 				tree_can_be_moved = FALSE;
 				if (MONO_DEBUG_LOCAL_PROP) {
-					printf ("  Consequently, ACP[%d] becomes constant ", tree->inst_i0->inst_c0);
+					printf ("  Consequently, ACP[%ld] becomes constant ", (long)tree->inst_i0->inst_c0);
 					mono_print_tree (i1);
 					printf ("\n");
 				}
