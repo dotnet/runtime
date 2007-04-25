@@ -2610,181 +2610,6 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	return(TRUE);
 }
 
-static gint
-file_compare (gconstpointer a, gconstpointer b)
-{
-	gchar *astr = *(gchar **) a;
-	gchar *bstr = *(gchar **) b;
-
-	return strcmp (astr, bstr);
-}
-
-static gint
-get_errno_from_g_file_error (gint error)
-{
-	switch (error) {
-#ifdef EACCESS
-	case G_FILE_ERROR_ACCES:
-		error = EACCES;
-		break;
-#endif
-#ifdef ENAMETOOLONG
-	case G_FILE_ERROR_NAMETOOLONG:
-		error = ENAMETOOLONG;
-		break;
-#endif
-#ifdef ENOENT
-	case G_FILE_ERROR_NOENT:
-		error = ENOENT;
-		break;
-#endif
-#ifdef ENOTDIR
-	case G_FILE_ERROR_NOTDIR:
-		error = ENOTDIR;
-		break;
-#endif
-#ifdef ENXIO
-	case G_FILE_ERROR_NXIO:
-		error = ENXIO;
-		break;
-#endif
-#ifdef ENODEV
-	case G_FILE_ERROR_NODEV:
-		error = ENODEV;
-		break;
-#endif
-#ifdef EROFS
-	case G_FILE_ERROR_ROFS:
-		error = EROFS;
-		break;
-#endif
-#ifdef ETXTBSY
-	case G_FILE_ERROR_TXTBSY:
-		error = ETXTBSY;
-		break;
-#endif
-#ifdef EFAULT
-	case G_FILE_ERROR_FAULT:
-		error = EFAULT;
-		break;
-#endif
-#ifdef ELOOP
-	case G_FILE_ERROR_LOOP:
-		error = ELOOP;
-		break;
-#endif
-#ifdef ENOSPC
-	case G_FILE_ERROR_NOSPC:
-		error = ENOSPC;
-		break;
-#endif
-#ifdef ENOMEM
-	case G_FILE_ERROR_NOMEM:
-		error = ENOMEM;
-		break;
-#endif
-#ifdef EMFILE
-	case G_FILE_ERROR_MFILE:
-		error = EMFILE;
-		break;
-#endif
-#ifdef ENFILE
-	case G_FILE_ERROR_NFILE:
-		error = ENFILE;
-		break;
-#endif
-#ifdef EBADF
-	case G_FILE_ERROR_BADF:
-		error = EBADF;
-		break;
-#endif
-#ifdef EINVAL
-	case G_FILE_ERROR_INVAL:
-		error = EINVAL;
-		break;
-#endif
-#ifdef EPIPE
-	case G_FILE_ERROR_PIPE:
-		error = EPIPE;
-		break;
-#endif
-#ifdef EAGAIN
-	case G_FILE_ERROR_AGAIN:
-		error = EAGAIN;
-		break;
-#endif
-#ifdef EINTR
-	case G_FILE_ERROR_INTR:
-		error = EINTR;
-		break;
-#endif
-#ifdef EWIO
-	case G_FILE_ERROR_IO:
-		error = EIO;
-		break;
-#endif
-#ifdef EPERM
-	case G_FILE_ERROR_PERM:
-		error = EPERM;
-		break;
-#endif
-	case G_FILE_ERROR_FAILED:
-		error = ERROR_INVALID_PARAMETER;
-		break;
-	}
-
-	return error;
-}
-
-/* scandir using glib */
-static gint
-mono_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
-{
-	GError *error = NULL;
-	GDir *dir;
-	GPtrArray *names;
-	const gchar *name;
-	gint result;
-	GPatternSpec *patspec;
-
-	dir = _wapi_g_dir_open (dirname, 0, &error);
-	if (dir == NULL) {
-		/* g_dir_open returns ENOENT on directories on which we don't
-		 * have read/x permission */
-		gint errnum = get_errno_from_g_file_error (error->code);
-		g_error_free (error);
-		if (errnum == ENOENT &&
-		    !_wapi_access (dirname, F_OK) &&
-		    _wapi_access (dirname, R_OK|X_OK)) {
-			errnum = EACCES;
-		}
-
-		errno = errnum;
-		return -1;
-	}
-
-	patspec = g_pattern_spec_new (pattern);
-	names = g_ptr_array_new ();
-	while ((name = g_dir_read_name (dir)) != NULL) {
-		if (g_pattern_match_string (patspec, name))
-			g_ptr_array_add (names, g_strdup (name));
-	}
-	
-	g_pattern_spec_free (patspec);
-	g_dir_close (dir);
-	result = names->len;
-	if (result > 0) {
-		g_ptr_array_sort (names, file_compare);
-		g_ptr_array_set_size (names, result + 1);
-
-		*namelist = (gchar **) g_ptr_array_free (names, FALSE);
-	} else {
-		g_ptr_array_free (names, TRUE);
-	}
-
-	return result;
-}
-
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
 	struct _WapiHandle_find find_handle = {0};
@@ -2854,7 +2679,8 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	 */
 
 	find_handle.namelist = NULL;
-	result = mono_io_scandir (dir_part, entry_part, &find_handle.namelist);
+	result = _wapi_io_scandir (dir_part, entry_part,
+				   &find_handle.namelist);
 	
 	if (result == 0) {
 		/* No files, which windows seems to call
@@ -2965,6 +2791,8 @@ retry:
 		 * encoding of the name wasn't convertible), so just
 		 * ignore it.
 		 */
+		g_warning ("%s: Bad encoding for '%s'\nConsider using MONO_EXTERNAL_ENCODINGS\n", __func__, filename);
+		
 		g_free (filename);
 		goto retry;
 	}
