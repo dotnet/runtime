@@ -1281,127 +1281,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
-typedef enum {
-	CMP_EQ,
-	CMP_NE,
-	CMP_LE,
-	CMP_GE,
-	CMP_LT,
-	CMP_GT,
-	CMP_LE_UN,
-	CMP_GE_UN,
-	CMP_LT_UN,
-	CMP_GT_UN
-} CompRelation;
-
-typedef enum {
-	CMP_TYPE_L,
-	CMP_TYPE_I,
-	CMP_TYPE_F
-} CompType;
-
-static CompRelation
-opcode_to_cond (int opcode)
-{
-	switch (opcode) {
-	case CEE_BEQ:
-	case OP_CEQ:
-	case OP_IBEQ:
-	case OP_ICEQ:
-	case OP_FBEQ:
-	case OP_FCEQ:
-	case OP_COND_EXC_EQ:
-		return CMP_EQ;
-	case CEE_BNE_UN:
-	case OP_COND_EXC_NE_UN:
-	case OP_IBNE_UN:
-	case OP_FBNE_UN:
-		return CMP_NE;
-	case CEE_BLE:
-	case OP_IBLE:
-	case OP_FBLE:
-		return CMP_LE;
-	case CEE_BGE:
-	case OP_IBGE:
-	case OP_FBGE:
-		return CMP_GE;
-	case CEE_BLT:
-	case OP_COND_EXC_LT:
-	case OP_CLT:
-	case OP_IBLT:
-	case OP_ICLT:
-	case OP_FBLT:
-	case OP_FCLT:
-		return CMP_LT;
-	case CEE_BGT:
-	case OP_COND_EXC_GT:
-	case OP_CGT:
-	case OP_IBGT:
-	case OP_ICGT:
-	case OP_FBGT:
-	case OP_FCGT:
-		return CMP_GT;
-
-	case CEE_BLE_UN:
-	case OP_COND_EXC_LE_UN:
-	case OP_IBLE_UN:
-	case OP_FBLE_UN:
-		return CMP_LE_UN;
-	case CEE_BGE_UN:
-	case OP_IBGE_UN:
-	case OP_FBGE_UN:
-		return CMP_GE_UN;
-	case CEE_BLT_UN:
-	case OP_CLT_UN:
-	case OP_IBLT_UN:
-	case OP_ICLT_UN:
-	case OP_FBLT_UN:
-	case OP_FCLT_UN:
-	case OP_COND_EXC_LT_UN:
-		return CMP_LT_UN;
-	case CEE_BGT_UN:
-	case OP_COND_EXC_GT_UN:
-	case OP_CGT_UN:
-	case OP_IBGT_UN:
-	case OP_ICGT_UN:
-	case OP_FCGT_UN:
-	case OP_FBGT_UN:
-		return CMP_GT_UN;
-	default:
-		printf ("%s\n", mono_inst_name (opcode));
-		NOT_IMPLEMENTED;
-	}
-}
-
-static CompType
-opcode_to_type (int opcode, int cmp_opcode)
-{
-	if ((opcode >= CEE_BEQ) && (opcode <= CEE_BLT_UN))
-		return CMP_TYPE_L;
-	else if ((opcode >= OP_CEQ) && (opcode <= OP_CLT_UN))
-		return CMP_TYPE_L;
-	else if ((opcode >= OP_IBEQ) && (opcode <= OP_IBLE_UN))
-		return CMP_TYPE_I;
-	else if ((opcode >= OP_ICEQ) && (opcode <= OP_ICLT_UN))
-		return CMP_TYPE_I;
-	else if ((opcode >= OP_FBEQ) && (opcode <= OP_FBLE_UN))
-		return CMP_TYPE_F;
-	else if ((opcode >= OP_FCEQ) && (opcode <= OP_FCLT_UN))
-		return CMP_TYPE_F;
-	else if ((opcode >= OP_COND_EXC_EQ) && (opcode <= OP_COND_EXC_LT_UN)) {
-		switch (cmp_opcode) {
-		case OP_ICOMPARE:
-		case OP_ICOMPARE_IMM:
-			return CMP_TYPE_I;
-		default:
-			return CMP_TYPE_L;
-		}
-	} else {
-		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
-		return 0;
-	}
-}
-
 int cond_to_ia64_cmp [][3] = {
 	{OP_IA64_CMP_EQ, OP_IA64_CMP4_EQ, OP_IA64_FCMP_EQ},
 	{OP_IA64_CMP_NE, OP_IA64_CMP4_NE, OP_IA64_FCMP_NE},
@@ -1418,7 +1297,7 @@ int cond_to_ia64_cmp [][3] = {
 static int
 opcode_to_ia64_cmp (int opcode, int cmp_opcode)
 {
-	return cond_to_ia64_cmp [opcode_to_cond (opcode)][opcode_to_type (opcode, cmp_opcode)];
+	return cond_to_ia64_cmp [mono_opcode_to_cond (opcode)][mono_opcode_to_type (opcode, cmp_opcode)];
 }
 
 int cond_to_ia64_cmp_imm [][3] = {
@@ -1438,7 +1317,7 @@ static int
 opcode_to_ia64_cmp_imm (int opcode, int cmp_opcode)
 {
 	/* The condition needs to be reversed */
-	return cond_to_ia64_cmp_imm [opcode_to_cond (opcode)][opcode_to_type (opcode, cmp_opcode)];
+	return cond_to_ia64_cmp_imm [mono_opcode_to_cond (opcode)][mono_opcode_to_type (opcode, cmp_opcode)];
 }
 
 static void

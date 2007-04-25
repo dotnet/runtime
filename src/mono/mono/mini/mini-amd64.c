@@ -1898,40 +1898,18 @@ branch_cc_table [] = {
 	X86_CC_O, X86_CC_NO, X86_CC_C, X86_CC_NC
 };
 
-static int
-opcode_to_x86_cond (int opcode)
-{
-	switch (opcode) {
-	case OP_IBEQ:
-		return X86_CC_EQ;
-	case OP_IBNE_UN:
-		return X86_CC_NE;
-	case OP_IBLT:
-		return X86_CC_LT;
-	case OP_IBLT_UN:
-		return X86_CC_LT;
-	case OP_IBGT:
-		return X86_CC_GT;
-	case OP_IBGT_UN:
-		return X86_CC_GT;
-	case OP_IBGE:
-		return X86_CC_GE;
-	case OP_IBGE_UN:
-		return X86_CC_GE;
-	case OP_IBLE:
-		return X86_CC_LE;
-	case OP_IBLE_UN:
-		return X86_CC_LE;
-	case OP_COND_EXC_IOV:
-		return X86_CC_O;
-	case OP_COND_EXC_IC:
-		return X86_CC_C;
-	default:
-		g_assert_not_reached ();
-	}
+/* Maps CMP_... constants to X86_CC_... constants */
+static const int
+cc_table [] = {
+	X86_CC_EQ, X86_CC_NE, X86_CC_LE, X86_CC_GE, X86_CC_LT, X86_CC_GT,
+	X86_CC_LE, X86_CC_GE, X86_CC_LT, X86_CC_GT
+};
 
-	return -1;
-}
+static const int
+cc_signed_table [] = {
+	TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
+	FALSE, FALSE, FALSE, FALSE
+};
 
 /*#include "cprop.c"*/
 
@@ -2800,22 +2778,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IBGT:
 		case OP_IBGE:
 		case OP_IBLE:
-			EMIT_COND_BRANCH (ins, opcode_to_x86_cond (ins->opcode), TRUE);
-			break;
 		case OP_IBNE_UN:
 		case OP_IBLT_UN:
 		case OP_IBGT_UN:
 		case OP_IBGE_UN:
 		case OP_IBLE_UN:
-			EMIT_COND_BRANCH (ins, opcode_to_x86_cond (ins->opcode), FALSE);
-			break;
-		case OP_COND_EXC_IOV:
-			EMIT_COND_SYSTEM_EXCEPTION (opcode_to_x86_cond (ins->opcode),
-										TRUE, ins->inst_p1);
-			break;
-		case OP_COND_EXC_IC:
-			EMIT_COND_SYSTEM_EXCEPTION (opcode_to_x86_cond (ins->opcode),
-										FALSE, ins->inst_p1);
+			EMIT_COND_BRANCH (ins, cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			break;
 		case CEE_NOT:
 			amd64_not_reg (code, ins->sreg1);
@@ -3121,27 +3089,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CEQ:
 		case OP_ICEQ:
-			amd64_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CLT:
 		case OP_ICLT:
-			amd64_set_reg (code, X86_CC_LT, ins->dreg, TRUE);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
-		case OP_CLT_UN:
-		case OP_ICLT_UN:
-			amd64_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CGT:
 		case OP_ICGT:
-			amd64_set_reg (code, X86_CC_GT, ins->dreg, TRUE);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
+		case OP_CLT_UN:
+		case OP_ICLT_UN:
 		case OP_CGT_UN:
 		case OP_ICGT_UN:
-			amd64_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
+			amd64_set_reg (code, cc_table [mono_opcode_to_cond (ins->opcode)], ins->dreg, cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
 			break;
 		case OP_COND_EXC_EQ:
@@ -3154,12 +3110,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_LE_UN:
+			EMIT_COND_SYSTEM_EXCEPTION (cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)], ins->inst_p1);
+			break;
 		case OP_COND_EXC_OV:
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
 		case OP_COND_EXC_NC:
 			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], 
 						    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
+			break;
+		case OP_COND_EXC_IOV:
+		case OP_COND_EXC_IC:
+			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_IEQ], 
+						    (ins->opcode < OP_COND_EXC_INE_UN), ins->inst_p1);
 			break;
 		case CEE_BEQ:
 		case CEE_BNE_UN:
@@ -3171,7 +3134,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BGE_UN:
 		case CEE_BLE:
 		case CEE_BLE_UN:
-			EMIT_COND_BRANCH (ins, branch_cc_table [ins->opcode - CEE_BEQ], (ins->opcode < CEE_BNE_UN));
+			EMIT_COND_BRANCH (ins, cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			break;
 
 		/* floating point opcodes */

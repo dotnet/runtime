@@ -789,6 +789,25 @@ enum {
 	BRANCH_UNDEF
 };
 
+typedef enum {
+	CMP_EQ,
+	CMP_NE,
+	CMP_LE,
+	CMP_GE,
+	CMP_LT,
+	CMP_GT,
+	CMP_LE_UN,
+	CMP_GE_UN,
+	CMP_LT_UN,
+	CMP_GT_UN
+} CompRelation;
+
+typedef enum {
+	CMP_TYPE_L,
+	CMP_TYPE_I,
+	CMP_TYPE_F
+} CompType;
+
 /* Implicit exceptions */
 enum {
 	MONO_EXC_INDEX_OUT_OF_RANGE,
@@ -916,6 +935,8 @@ gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_si
 void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, const char * exname) MONO_INTERNAL;
 gboolean          mono_is_regsize_var (MonoType *t) MONO_INTERNAL;
+CompRelation      mono_opcode_to_cond (int opcode) MONO_INTERNAL;
+CompType          mono_opcode_to_type (int opcode, int cmp_opcode) MONO_INTERNAL;
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void) MONO_INTERNAL;
