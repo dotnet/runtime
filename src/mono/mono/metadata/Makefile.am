@@ -5,10 +5,10 @@ if PLATFORM_WIN32
 assembliesdir = `cygpath -m "${libdir}"`
 confdir = `cygpath -m "${sysconfdir}"`
 export HOST_CC
-else
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
+else
 assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
