@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="eglib"
-	ProjectGUID="{158073ED-99AE-4196-9EDC-DDB2344F8466}"
-	RootNamespace="eglib"
+	Name="test_eglib"
+	ProjectGUID="{80A0620A-3478-4E1A-AA7C-0D2387B892AB}"
+	RootNamespace="test_eglib"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -22,7 +22,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../eglib/src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="../eglib/src;../eglib/test;../msvc"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_FORTIFY_SOURCE=2"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -64,10 +64,18 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib Psapi.lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="1"
+				EnableCOMDATFolding="1"
+				OptimizeForWindows98="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -79,6 +87,12 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -86,7 +100,7 @@
 			Name="Release|Win32"
 			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -107,8 +121,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../eglib/src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="../eglib/src;../eglib/test;../msvc"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_FORTIFY_SOURCE=2"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -126,10 +140,14 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib Psapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -141,6 +159,12 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -148,7 +172,7 @@
 			Name="Debug|x64"
 			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -170,8 +194,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../eglib/src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="../eglib/src;../eglib/test;../msvc"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_FORTIFY_SOURCE=2"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -191,10 +215,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib Psapi.lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="1"
+				EnableCOMDATFolding="1"
+				OptimizeForWindows98="1"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -206,6 +239,12 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -213,7 +252,7 @@
 			Name="Release|x64"
 			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -235,8 +274,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../eglib/src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="../eglib/src;../eglib/test;../msvc"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_FORTIFY_SOURCE=2"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -254,10 +293,15 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="Ws2_32.lib Psapi.lib"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -267,6 +311,12 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -282,19 +332,35 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\eglib\src\garray.c"
+				RelativePath="..\eglib\test\array.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gdate.c"
+				RelativePath="..\eglib\test\dir.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gdir.c"
+				RelativePath="..\eglib\test\driver.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gerror.c"
+				RelativePath="..\eglib\test\endian.c"
+				>
+			</File>
+			<File
+				RelativePath="..\eglib\test\fake.c"
+				>
+			</File>
+			<File
+				RelativePath="..\eglib\test\file.c"
+				>
+			</File>
+			<File
+				RelativePath=".\getopt.c"
+				>
+			</File>
+			<File
+				RelativePath=".\getopt_long.c"
 				>
 			</File>
 			<File
@@ -302,91 +368,71 @@
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gfile.c"
+				RelativePath="..\eglib\test\hashtable.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\ghashtable.c"
+				RelativePath="..\eglib\test\list.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\glist.c"
+				RelativePath="..\eglib\test\markup.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmarkup.c"
+				RelativePath="..\eglib\test\module.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmem.c"
+				RelativePath="..\eglib\test\path.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmisc.c"
+				RelativePath="..\eglib\test\pattern.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmodule.c"
+				RelativePath="..\eglib\test\ptrarray.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\goutput.c"
+				RelativePath="..\eglib\test\queue.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gpath.c"
+				RelativePath="..\eglib\test\shell.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gpattern.c"
+				RelativePath="..\eglib\test\sizes.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gptrarray.c"
+				RelativePath="..\eglib\test\slist.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gqueue.c"
+				RelativePath="..\eglib\test\spawn.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gshell.c"
+				RelativePath="..\eglib\test\string-util.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gslist.c"
+				RelativePath="..\eglib\test\string.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gspawn.c"
+				RelativePath="..\eglib\test\test.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gstr.c"
+				RelativePath="..\eglib\test\timer.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gstring.c"
-				>
-			</File>
-			<File
-				RelativePath="..\eglib\src\gtimer.c"
-				>
-			</File>
-			<File
-				RelativePath="..\eglib\src\gunicode.c"
-				>
-			</File>
-			<File
-				RelativePath="..\eglib\src\gutf8.c"
-				>
-			</File>
-			<File
-				RelativePath="..\eglib\src\mkstemp.c"
-				>
-			</File>
-			<File
-				RelativePath="..\eglib\src\vasprintf.c"
+				RelativePath="..\eglib\test\utf8.c"
 				>
 			</File>
 		</Filter>
@@ -396,15 +442,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\getopt.h"
+				>
+			</File>
+			<File
+				RelativePath=".\getopt_long.h"
+				>
+			</File>
+			<File
 				RelativePath="..\eglib\src\glib.h"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmodule.h"
+				RelativePath="..\eglib\test\test.h"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\sort.frag.h"
+				RelativePath="..\eglib\test\tests.h"
 				>
 			</File>
 		</Filter>

@@ -1,3 +1,10 @@
+2007-04-25  Jonathan Chambers  <joncham@gmail.com>
+
+	* mono.sln: Added eglib projects.
+	* test_eglib.vcproj: Added.
+	* pedump.vcproj: Change output directories for uniformity.
+	* monodiet.vcproj: Change output directories for uniformity.
+
 2007-04-24  Jonathan Chambers  <joncham@gmail.com>
 
 	* eglib.vcproj: Added.

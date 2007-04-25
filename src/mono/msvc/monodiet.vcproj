@@ -20,8 +20,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../VSDependancies/temp/monodiet/Debug"
-			IntermediateDirectory="../VSDependancies/temp/monodiet/Debug"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -104,8 +104,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -189,8 +189,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -265,8 +265,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
