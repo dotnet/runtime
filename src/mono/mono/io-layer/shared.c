@@ -220,6 +220,18 @@ try_again:
 	return(fd);
 }
 
+static gboolean check_disabled (void)
+{
+	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
+		const char* val = g_getenv ("MONO_DISABLE_SHM");
+		if (val == NULL || *val == '1' || *val == 'y' || *val == 'Y') {
+			_wapi_shm_disabled = TRUE;
+		}
+	}
+
+	return(_wapi_shm_disabled);
+}
+
 /*
  * _wapi_shm_attach:
  * @success: Was it a success
@@ -248,12 +260,8 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 		return NULL;
 	}
 
-	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
-		const char* val = g_getenv ("MONO_DISABLE_SHM");
-		if (val == NULL || *val == '1' || *val == 'y' || *val == 'Y') {
-			_wapi_shm_disabled = TRUE;
-			return g_malloc0 (size);
-		}
+	if (check_disabled ()) {
+		return g_malloc0 (size);
 	}
 
 	fd = _wapi_shm_file_open (filename, size);
@@ -676,7 +684,7 @@ static int noshm_sem_unlock (int sem)
 
 void _wapi_shm_semaphores_init (void)
 {
-	if (_wapi_shm_disabled) {
+	if (check_disabled ()) {
 		noshm_semaphores_init ();
 	} else {
 		shm_semaphores_init ();
