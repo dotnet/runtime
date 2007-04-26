@@ -280,15 +280,18 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 	
 	case MONO_LOADER_ERROR_ASSEMBLY: {
 		char *msg;
+		char *filename;
 
 		if (error->ref_only)
 			msg = g_strdup_printf ("Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", error->assembly_name);
 		else
 			msg = g_strdup_printf ("Could not load file or assembly '%s' or one of its dependencies.", error->assembly_name);
-
-		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), error->assembly_name));
+		filename = g_strdup (error->assembly_name);
+		/* Has to call this before calling anything which might call mono_class_init () */
 		mono_loader_clear_error ();
+		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), filename));
 		g_free (msg);
+		g_free (filename);
 		break;
 	}
 	
