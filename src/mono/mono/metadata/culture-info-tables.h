@@ -513,9 +513,9 @@ static const CultureInfoNameEntry culture_name_entries [] = {
 	{19003, 49},
 	{25189, 101},
 	{17987, 17},
+	{25195, 69},
 	{19096, 52},
-	{25195, 104},
-	{25202, 69},
+	{25201, 104},
 	{18569, 36},
 	{25208, 88},
 	{18540, 35},
@@ -3589,8 +3589,8 @@ static const char locale_strings [] = {
 	"it-it\0"
 	"ja-jp\0"
 	"kn-in\0"
-	"kok-in\0"
 	"ko-kr\0"
+	"kok-in\0"
 	"lt-lt\0"
 	"lv-lv\0"
 	"mk-mk\0"
