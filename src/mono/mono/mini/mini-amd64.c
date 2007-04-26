@@ -1556,10 +1556,11 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
 		case OP_LADD_IMM:
-			if ((ins->sreg1 < MONO_MAX_IREGS) && (ins->dreg >= MONO_MAX_IREGS)) {
+			if ((ins->sreg1 < MONO_MAX_IREGS) && (ins->dreg >= MONO_MAX_IREGS) && (ins->inst_imm > 0)) {
 				/* 
 				 * X86_LEA is like ADD, but doesn't have the
-				 * sreg1==dreg restriction.
+				 * sreg1==dreg restriction. inst_imm > 0 is needed since LEA sign-extends 
+				 * its operand to 64 bit.
 				 */
 				ins->opcode = OP_X86_LEA_MEMBASE;
 				ins->inst_basereg = ins->sreg1;
@@ -1590,15 +1591,6 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 						break;
 					}
 				}
-			}
-			break;
-		case OP_SUB_IMM:
-		case OP_ISUB_IMM:
-		case OP_LSUB_IMM:
-			if ((ins->sreg1 < MONO_MAX_IREGS) && (ins->dreg >= MONO_MAX_IREGS)) {
-				ins->opcode = OP_X86_LEA_MEMBASE;
-				ins->inst_basereg = ins->sreg1;
-				ins->inst_imm = -ins->inst_imm;
 			}
 			break;
 		case OP_COMPARE_IMM:
@@ -2177,10 +2169,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	mono_arch_lowering_pass (cfg, bb);
 
-	/*
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass_1 (cfg, bb);
-	*/
 
 	mono_local_regalloc (cfg, bb);
 }
