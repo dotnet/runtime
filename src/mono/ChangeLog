@@ -1,3 +1,8 @@
+2007-04-27  Marek Habersack  <mhabersack@novell.com>
+
+	* data/net_2_0/web.config: use fully qualified assembly names in
+	<compilation><assemblies>.
+
 2007-04-19  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: version bump -> 1.2.4
