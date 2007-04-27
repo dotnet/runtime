@@ -1,5 +1,9 @@
 2007-04-27  Jonathan Chambers <joncham@gmail.com>
 	
+	* src/gstr.c: Fix off by one error for NULL terminator.
+
+2007-04-27  Jonathan Chambers <joncham@gmail.com>
+	
 	Combined patch from Michael Jerris <mike@jerris.com> and me.
 	* winconfig.h: Config file for msvc builds.
 	* configure.ac: Add AC_CHECK_HEADERS for getopt.h,  sys/time.h,
