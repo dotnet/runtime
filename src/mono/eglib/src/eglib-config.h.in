@@ -1,3 +1,6 @@
+#ifndef __EGLIB_CONFIG_H
+#define __EGLIB_CONFIG_H
+
 /*
  * System-dependent settings
  */
@@ -21,3 +24,5 @@ typedef signed   @GSIZE@ gssize;
 
 #define G_GSIZE_FORMAT   @GSIZE_FORMAT@
 #define G_GUINT64_FORMAT @G_GUINT64_FORMAT@
+
+#endif

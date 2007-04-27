@@ -1,9 +1,17 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include "test.h"
+
+#ifdef G_OS_WIN32
+#include <io.h>
+#define close _close
+#endif
 
 RESULT
 test_file_get_contents ()
@@ -12,6 +20,11 @@ test_file_get_contents ()
 	gchar *content;
 	gboolean ret;
 	gsize length;
+#ifdef G_OS_WIN32
+	const gchar *filename = "c:\\Windows\\system.ini";
+#else
+	const gchar *filename = "/etc/hosts";
+#endif
 
 	/*
 	filename != NULL
@@ -33,7 +46,7 @@ test_file_get_contents ()
 
 	g_error_free (error);
 	error = NULL;
-	ret = g_file_get_contents ("/etc/hosts", &content, &length, &error);
+	ret = g_file_get_contents (filename, &content, &length, &error);
 	if (!ret)
 		return FAILED ("The error is %d %s\n", error->code, error->message);
 	if (error != NULL)
@@ -98,8 +111,12 @@ test_file ()
 {
 	gboolean res;
 	const gchar *tmp;
-	gchar *path, *sympath;
+	gchar *path;
+
+#ifndef G_OS_WIN32 /* FIXME */
+	gchar *sympath;
 	gint ignored;
+#endif
 
 	res = g_file_test (NULL, 0);
 	if (res)
@@ -156,6 +173,7 @@ test_file ()
 	if (res)
 		return FAILED ("3 %s should not be a symlink", path);
 
+#ifndef G_OS_WIN32 /* FIXME */
 	sympath = g_strconcat (path, "-link", NULL);
 	ignored = symlink (path, sympath);
 	res = g_file_test (sympath, G_FILE_TEST_EXISTS);
@@ -192,8 +210,9 @@ test_file ()
 	if (!res)
 		return FAILED ("5 %s should be a symlink", sympath);
 	unlink (sympath);
-	g_free (path);
 	g_free (sympath);
+#endif
+	g_free (path);
 	return OK;
 }
 
@@ -205,4 +224,5 @@ static Test file_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(file_tests_init, file_tests)
+
 

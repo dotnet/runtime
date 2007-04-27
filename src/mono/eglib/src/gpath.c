@@ -25,23 +25,36 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
 #include <sys/types.h>
 
-#ifndef _MSC_VER
+#ifdef G_OS_UNIX
 #include <pthread.h>
-#include <unistd.h>
+#endif
+
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef G_OS_WIN32
+#include <direct.h>
+#include <io.h>
+#endif
+
 
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
 {
 	GString *result;
 	const char *s, *p, *next;
-	int slen;
+	size_t slen;
 	va_list args;
 	
 	g_return_val_if_fail (separator != NULL, NULL);
@@ -80,7 +93,7 @@ gchar *
 g_path_get_dirname (const gchar *filename)
 {
 	char *p, *r;
-	int count;
+	size_t count;
 	g_return_val_if_fail (filename != NULL, NULL);
 
 	p = strrchr (filename, G_DIR_SEPARATOR);
@@ -139,7 +152,7 @@ g_path_is_absolute (const char *filename)
 gchar *
 g_find_program_in_path (const gchar *program)
 {
-	char *p = g_strdup (getenv ("PATH"));
+	char *p = g_strdup (g_getenv ("PATH"));
 	char *x = p, *l;
 	gchar *curdir = NULL;
 	char *save;
@@ -156,7 +169,7 @@ g_find_program_in_path (const gchar *program)
 		
 		x = NULL;
 		probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program, NULL);
-		if (access (probe_path, X_OK) == 0){
+		if (access (probe_path, X_OK) == 0){ /* FIXME: on windows this is just a read permissions test */
 			g_free (curdir);
 			g_free (p);
 			return probe_path;
@@ -177,7 +190,7 @@ g_get_current_dir (void)
 	
 	do {
 		buffer = g_realloc (buffer, s);
-		r = getcwd  (buffer, s);
+		r = getcwd (buffer, s);
 		fail = (r == NULL && errno == ERANGE);
 		if (fail) {
 			s <<= 1;
@@ -190,7 +203,7 @@ g_get_current_dir (void)
 #if defined (G_OS_UNIX)
 
 static pthread_mutex_t home_lock = PTHREAD_MUTEX_INITIALIZER;
-static char *home_dir;
+static const gchar *home_dir;
 
 /* Give preference to /etc/passwd than HOME */
 const gchar *
@@ -216,7 +229,7 @@ g_get_home_dir (void)
 			}
 			endpwent ();
 			if (home_dir == NULL)
-				home_dir = getenv ("HOME");
+				home_dir = g_getenv ("HOME");
 			pthread_mutex_unlock (&home_lock);
 		}
 	}
@@ -230,7 +243,18 @@ const gchar *
 g_get_home_dir (void)
 {
 	/* FIXME */
-	return getenv ("HOME");
+	const gchar *drive = g_getenv ("HOMEDRIVE");
+	const gchar *path = g_getenv ("HOMEPATH");
+	gchar *home_dir = NULL;
+	
+	if (drive && path) {
+		home_dir = malloc(strlen(drive) + strlen(path) +1);
+		if (home_dir) {
+			sprintf(home_dir, "%s%s", drive, path);
+		}
+	}
+
+	return home_dir;
 }
 
 #else
@@ -244,10 +268,9 @@ g_get_home_dir (void)
 
 #endif
 
-static char *tmp_dir;
-#ifdef _MSC_VER
-/* FIXME */
-#else
+static const char *tmp_dir;
+
+#ifdef G_OS_UNIX
 static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -255,25 +278,25 @@ const gchar *
 g_get_tmp_dir (void)
 {
 	if (tmp_dir == NULL){
-#ifdef _MSC_VER
-/* FIXME */
-#else
+#ifdef G_OS_UNIX
 		pthread_mutex_lock (&tmp_lock);
 #endif
 		if (tmp_dir == NULL){
-			tmp_dir = getenv ("TMPDIR");
+			tmp_dir = g_getenv ("TMPDIR");
 			if (tmp_dir == NULL){
-				tmp_dir = getenv ("TMP");
+				tmp_dir = g_getenv ("TMP");
 				if (tmp_dir == NULL){
-					tmp_dir = getenv ("TEMP");
+					tmp_dir = g_getenv ("TEMP");
 					if (tmp_dir == NULL)
+#if defined (G_OS_WIN32)
+						tmp_dir = "C:\\temp";
+#else
 						tmp_dir = "/tmp";
+#endif
 				}
 			}
 		}
-#ifdef _MSC_VER
-/* FIXME */
-#else
+#ifdef G_OS_UNIX
 		pthread_mutex_unlock (&tmp_lock);
 #endif
 	}
@@ -283,7 +306,7 @@ g_get_tmp_dir (void)
 const char *
 g_get_user_name (void)
 {
-	return getenv ("USER");
+	return g_getenv ("USER");
 }
 
 static char *name;

@@ -254,6 +254,7 @@ RESULT
 test_ascii_xdigit_value ()
 {
 	int i;
+	gchar j;
 
 	i = g_ascii_xdigit_value ('9' + 1);
 	if (i != -1)
@@ -274,20 +275,20 @@ test_ascii_xdigit_value ()
 	if (i != -1)
 		return FAILED ("'F' + 1");
 
-	for (i = '0'; i < '9'; i++) {
-		int c = g_ascii_xdigit_value (i);
-		if (c  != (i - '0'))
-			return FAILED ("Digits %c -> %d", i, c);
+	for (j = '0'; j < '9'; j++) {
+		int c = g_ascii_xdigit_value (j);
+		if (c  != (j - '0'))
+			return FAILED ("Digits %c -> %d", j, c);
 	}
-	for (i = 'a'; i < 'f'; i++) {
-		int c = g_ascii_xdigit_value (i);
-		if (c  != (i - 'a' + 10))
-			return FAILED ("Lower %c -> %d", i, c);
+	for (j = 'a'; j < 'f'; j++) {
+		int c = g_ascii_xdigit_value (j);
+		if (c  != (j - 'a' + 10))
+			return FAILED ("Lower %c -> %d", j, c);
 	}
-	for (i = 'A'; i < 'F'; i++) {
-		int c = g_ascii_xdigit_value (i);
-		if (c  != (i - 'A' + 10))
-			return FAILED ("Upper %c -> %d", i, c);
+	for (j = 'A'; j < 'F'; j++) {
+		int c = g_ascii_xdigit_value (j);
+		if (c  != (j - 'A' + 10))
+			return FAILED ("Upper %c -> %d", j, c);
 	}
 	return OK;
 }
@@ -310,18 +311,18 @@ test_strdelimit ()
 	return OK;
 }
 
-#define TEXT "0123456789"
+#define NUMBERS "0123456789"
 
 RESULT
 test_strlcpy ()
 {
 	const gchar *src = "onetwothree";
 	gchar *dest;
-	int i;
+	gsize i;
 
 	dest = g_malloc (strlen (src) + 1);
 	memset (dest, 0, strlen (src) + 1);
-	i = g_strlcpy (dest, src, -1);
+	i = g_strlcpy (dest, src, (gsize)-1);
 	if (i != strlen (src))
 		return FAILED ("Test1 got %d", i);
 
@@ -348,9 +349,9 @@ test_strlcpy ()
 	g_free (dest);
 
 	/* This is a test for g_filename_from_utf8, even if it does not look like it */
-	dest = g_filename_from_utf8 (TEXT, strlen (TEXT), NULL, NULL, NULL);
-	if (0 != strcmp (dest, TEXT))
-		return FAILED ("problem [%s] and [%s]", dest, TEXT);
+	dest = g_filename_from_utf8 (NUMBERS, strlen (NUMBERS), NULL, NULL, NULL);
+	if (0 != strcmp (dest, NUMBERS))
+		return FAILED ("problem [%s] and [%s]", dest, NUMBERS);
 	g_free (dest);
 	
 	return OK;
@@ -419,4 +420,5 @@ static Test strutil_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(strutil_tests_init, strutil_tests)
+
 

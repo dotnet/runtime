@@ -26,6 +26,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -35,7 +36,18 @@
 gchar *
 g_strndup (const gchar *str, gsize n)
 {
+#ifdef HAVE_STRNDUP
 	return strndup (str, n);
+#else
+	if (str) {
+		char *retval = malloc(n);
+		if (retval) {
+			strncpy(retval, str, n)[n] = 0;
+		}
+		return retval;
+	}
+	return NULL;
+#endif
 }
 
 void
@@ -63,8 +75,8 @@ g_strv_length(gchar **str_array)
 gboolean
 g_str_has_suffix(const gchar *str, const gchar *suffix)
 {
-	gint str_length;
-	gint suffix_length;
+	size_t str_length;
+	size_t suffix_length;
 	
 	g_return_val_if_fail(str != NULL, FALSE);
 	g_return_val_if_fail(suffix != NULL, FALSE);
@@ -80,8 +92,8 @@ g_str_has_suffix(const gchar *str, const gchar *suffix)
 gboolean
 g_str_has_prefix(const gchar *str, const gchar *prefix)
 {
-	gint str_length;
-	gint prefix_length;
+	size_t str_length;
+	size_t prefix_length;
 	
 	g_return_val_if_fail(str != NULL, FALSE);
 	g_return_val_if_fail(prefix != NULL, FALSE);
@@ -133,7 +145,7 @@ gchar *
 g_strconcat (const gchar *first, ...)
 {
 	va_list args;
-	int total = 0;
+	size_t total = 0;
 	char *s, *ret;
 	g_return_val_if_fail (first != NULL, NULL);
 
@@ -166,7 +178,7 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	gchar *strtok_save, **vector;
 	gchar *token, *token_c;
 	gint size = 1;
-	gint token_length;
+	size_t token_length;
 
 	g_return_val_if_fail(string != NULL, NULL);
 	g_return_val_if_fail(delimiter != NULL, NULL);
@@ -227,8 +239,8 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 gchar *
 g_strreverse (gchar *str)
 {
-	guint len, half;
-	gint i;
+	size_t len, half;
+	size_t i;
 	gchar c;
 
 	if (str == NULL)
@@ -250,7 +262,7 @@ g_strjoin (const gchar *separator, ...)
 {
 	va_list args;
 	char *res, *s;
-	int len, slen;
+	size_t len, slen;
 
 	if (separator != NULL)
 		slen = strlen (separator);
@@ -288,7 +300,7 @@ gchar *
 g_strjoinv (const gchar *separator, gchar **str_array)
 {
 	char *res;
-	int slen, len, i;
+	size_t slen, len, i;
 	
 	if (separator != NULL)
 		slen = strlen (separator);
@@ -318,7 +330,7 @@ g_strjoinv (const gchar *separator, gchar **str_array)
 gchar *
 g_strchug (gchar *str)
 {
-	gint len;
+	size_t len;
 	gchar *tmp;
 
 	if (str == NULL)
@@ -399,7 +411,7 @@ g_snprintf(gchar *string, gulong n, gchar const *format, ...)
 	return ret;
 }
 
-static const char const hx [] = { '0', '1', '2', '3', '4', '5', '6', '7',
+static const char hx [] = { '0', '1', '2', '3', '4', '5', '6', '7',
 				  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 static gboolean
@@ -419,7 +431,7 @@ char_needs_encoding (char c)
 gchar *
 g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
 {
-	int n;
+	size_t n;
 	char *ret, *rp;
 	const char *p;
 	
@@ -507,7 +519,7 @@ g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error)
 
 	for (p = uri + 8, r = result + 1; *p; p++){
 		if (*p == '%'){
-			*r++ = (decode (p [1]) << 4) | decode (p [2]);
+			*r++ = (char)((decode (p [1]) << 4) | decode (p [2]));
 			p += 2;
 		} else
 			*r++ = *p;
@@ -522,7 +534,7 @@ g_strdown (gchar *string)
 	g_return_if_fail (string != NULL);
 
 	while (*string){
-		*string = tolower (*string);
+		*string = (gchar)tolower (*string);
 		string++;
 	}
 }
@@ -553,7 +565,7 @@ g_ascii_strdown (const gchar *str, gssize len)
 gint
 g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
 {
-	int i;
+	gsize i;
 	
 	g_return_val_if_fail (s1 != NULL, 0);
 	g_return_val_if_fail (s2 != NULL, 0);
@@ -592,10 +604,12 @@ g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)
 	return string;
 }
 
-#ifndef HAVE_STRLCPY
 gsize 
 g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 {
+#ifdef HAVE_STRLCPY
+	return strlcpy (dest, src, dest_size);
+#else
 	gchar *d;
 	const gchar *s;
 	gchar c;
@@ -622,8 +636,8 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 	/* we need to return the length of src here */
 	while (*s++) ; /* instead of a plain strlen, we use 's' */
 	return s - src - 1;
-}
 #endif
+}
 
 static const gchar escaped_dflt [256] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
@@ -650,7 +664,7 @@ g_strescape (const gchar *source, const gchar *exceptions)
 	gchar escaped [256];
 	const gchar *ptr;
 	gchar c;
-	int op;
+	gchar op;
 	gchar *result;
 	gchar *res_ptr;
 
@@ -700,5 +714,6 @@ g_ascii_xdigit_value (gchar c)
 		 ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) :
 		  (c - 'A' + 10))));
 }
+
 
 

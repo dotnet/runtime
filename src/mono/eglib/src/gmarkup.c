@@ -122,7 +122,7 @@ parse_value (const char *p, const char *end, char **value, GError **error)
 		;
 	if (p == end)
 		return end;
-	l = p - start;
+	l = (int)(p - start);
 	p++;
 	*value = malloc (l + 1);
 	if (*value == NULL)
@@ -143,7 +143,7 @@ parse_name (const char *p, const char *end, char **value)
 	if (p == end)
 		return end;
 
-	l = p - start;
+	l = (int)(p - start);
 	*value = malloc (l + 1);
 	if (*value == NULL)
 		return end;
@@ -311,7 +311,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 					set_error ("%s", "Unfinished sequence");
 				goto fail;
 			}
-			l = element_end - element_start;
+			l = (int)(element_end - element_start);
 			ename = malloc (l + 1);
 			if (ename == NULL)
 				goto fail;

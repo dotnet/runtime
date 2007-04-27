@@ -183,7 +183,7 @@ test_utf8_seq ()
 	gunichar2 *dst;
 
 	printf ("got: %s\n", src);
-	dst = g_utf8_to_utf16 (src, strlen (src), &in_read, &out_read, &error);
+	dst = g_utf8_to_utf16 (src, (glong)strlen (src), &in_read, &out_read, &error);
 	if (error != NULL){
 		return error->message;
 	}
@@ -229,6 +229,9 @@ test_convert ()
 	char *s = g_convert ("\242\241\243\242\241\243\242\241\243\242\241\243", -1, "UTF-8", "ISO-8859-1", NULL, &n, NULL);
 	guchar *u = (guchar *) s;
 	
+	if (!s)
+		return FAILED ("Expected 24 bytes, got: NULL");
+
 	if (strlen (s) != 24)
 		return FAILED ("Expected 24 bytes, got: %d", strlen (s));
 
@@ -255,4 +258,5 @@ static Test utf8_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(utf8_tests_init, utf8_tests)
+
 

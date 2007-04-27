@@ -1,9 +1,18 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <math.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef G_OS_WIN32
+#include <windows.h>
+#define sleep(t)                 Sleep((t) * 1000)
+#endif
+
 #include "test.h"
 
 RESULT
@@ -42,4 +51,5 @@ static Test timer_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(timer_tests_init, timer_tests)
+
 

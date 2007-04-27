@@ -27,14 +27,19 @@
  */
 #include <glib.h>
 #ifdef _MSC_VER
-#include <winsock2.h>
+#include <windows.h>
 #else
 #include <sys/time.h>
 #endif
 
 struct _GTimer {
+#ifdef _MSC_VER
+	guint64 start;
+	guint64 stop;
+#else
 	struct timeval start;
 	struct timeval stop;
+#endif
 };
 
 GTimer *g_timer_new (void)
@@ -57,23 +62,51 @@ void
 g_timer_start (GTimer *timer)
 {
 	g_return_if_fail (timer != NULL);
+#ifdef _MSC_VER
+	QueryPerformanceCounter ((LARGE_INTEGER*)&timer->start);
+#else
 	gettimeofday (&timer->start, NULL);
 	memset (&timer->stop, 0, sizeof (struct timeval));
+#endif
+
 }
 
 void
 g_timer_stop (GTimer *timer)
 {
 	g_return_if_fail (timer != NULL);
+#ifdef _MSC_VER
+	QueryPerformanceCounter ((LARGE_INTEGER*)&timer->stop);
+#else
 	gettimeofday (&timer->stop, NULL);
+#endif
 }
 
 gdouble
 g_timer_elapsed (GTimer *timer, gulong *microseconds)
 {
+#ifdef _MSC_VER
+	guint64 stop;
+	guint64 freq;
+	gdouble seconds;
+	if (timer->stop == 0) {
+		QueryPerformanceCounter ((LARGE_INTEGER*)&stop);
+	}
+	else {
+		stop = timer->stop;
+	}
+
+	QueryPerformanceFrequency ((LARGE_INTEGER*)&freq);
+	seconds = 1.0 * (stop - timer->start) / freq;
+
+	if (microseconds) {
+		*microseconds = (gulong)(1000000.0 * (stop - timer->start) / freq);
+	}
+	return seconds;
+#else
 	struct timeval tv;
 	gulong seconds;
-	gulong usec;
+	long usec;
 	gdouble result;
 
 	g_return_val_if_fail (timer != NULL, 0.0);
@@ -84,7 +117,7 @@ g_timer_elapsed (GTimer *timer, gulong *microseconds)
 		tv = timer->stop;
 	}
 
-	usec = tv.tv_usec - timer->start.tv_usec;
+	usec = (tv.tv_usec) - (timer->start.tv_usec);
 	seconds = tv.tv_sec - timer->start.tv_sec;
 	if (microseconds) {
 		if (usec < 0) {
@@ -95,5 +128,7 @@ g_timer_elapsed (GTimer *timer, gulong *microseconds)
 	}
 	result = seconds * 1000000 + usec;
 	return (result / 1000000);
+#endif
 }
+
 

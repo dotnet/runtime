@@ -51,7 +51,7 @@ struct _GHashTable {
 	GDestroyNotify value_destroy_func, key_destroy_func;
 };
 
-static const int prime_tbl[] = {
+static const guint prime_tbl[] = {
 	11, 19, 37, 73, 109, 163, 251, 367, 557, 823, 1237,
 	1861, 2777, 4177, 6247, 9371, 14057, 21089, 31627,
 	47431, 71143, 106721, 160073, 240101, 360163,

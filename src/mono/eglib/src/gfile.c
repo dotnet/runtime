@@ -25,6 +25,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,10 +33,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef _MSC_VER
+
+#ifdef G_OS_WIN32
 #include <io.h>
 #define open _open
-#else
+#define S_ISREG(x) ((x &  _S_IFMT) == _S_IFREG)
+#define S_ISDIR(x) ((x &  _S_IFMT) == _S_IFDIR)
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -158,13 +164,35 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 	return TRUE;
 }
 
+#ifdef _MSC_VER
+int mkstemp (char *tmp_template)
+{
+	int fd;
+	gunichar2* utf16_template;
+
+	utf16_template  = u8to16 (tmp_template);
+
+	fd = -1;
+	utf16_template = _wmktemp( utf16_template);
+	if (utf16_template && *utf16_template) {
+		/* FIXME: _O_TEMPORARY causes file to disappear on close causing a test to fail */
+		fd = _wopen( utf16_template, _O_BINARY | _O_CREAT /*| _O_TEMPORARY*/ | _O_EXCL, _S_IREAD | _S_IWRITE);
+	}
+
+	sprintf (tmp_template + strlen (tmp_template) - 6, "%S", utf16_template + wcslen (utf16_template) - 6);
+
+	g_free (utf16_template);
+	return fd;
+}
+#endif
+
 gint
 g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
 {
 	const static gchar *default_tmpl = ".XXXXXX";
 	gchar *t;
 	gint fd;
-	gint len;
+	size_t len;
 
 	g_return_val_if_fail (error == NULL || *error == NULL, -1);
 
@@ -187,7 +215,9 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
 	}
 
 	t = g_build_filename (g_get_tmp_dir (), tmpl, NULL);
+
 	fd = mkstemp (t);
+
 	if (fd == -1) {
 		if (error) {
 			int err = errno;
@@ -205,9 +235,55 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
 	return fd;
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4701)
+#endif
+
 gboolean
 g_file_test (const gchar *filename, GFileTest test)
 {
+#ifdef G_OS_WIN32
+	struct _stat64 stat;
+	int ret = 0;
+	gunichar2* utf16_filename = NULL;
+
+	if (filename == NULL || test == 0)
+		return FALSE;
+
+	utf16_filename = u8to16 (filename);
+	ret = _wstati64 (utf16_filename, &stat);
+	g_free (utf16_filename);
+
+	if ((test & G_FILE_TEST_EXISTS) != 0) {
+		if (ret == 0)
+			return TRUE;
+	}
+
+	if (ret != 0)
+		return FALSE;
+
+	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
+		if (stat.st_mode & _S_IEXEC)
+			return TRUE;
+	}
+
+	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
+		if (stat.st_mode & _S_IFREG)
+			return TRUE;
+	}
+
+	if ((test & G_FILE_TEST_IS_DIR) != 0) {
+		if (stat.st_mode & _S_IFDIR)
+			return TRUE;
+	}
+
+	/* make this last in case it is OR'd with something else */
+	if ((test & G_FILE_TEST_IS_SYMLINK) != 0) {
+		return FALSE;
+	}
+
+	return FALSE;
+#else
 	struct stat st;
 	gboolean have_stat;
 
@@ -215,8 +291,7 @@ g_file_test (const gchar *filename, GFileTest test)
 		return FALSE;
 
 	have_stat = FALSE;
-#ifdef G_OS_WIN32
-#else
+
 	if ((test & G_FILE_TEST_EXISTS) != 0) {
 		if (access (filename, F_OK) == 0)
 			return TRUE;
@@ -231,7 +306,6 @@ g_file_test (const gchar *filename, GFileTest test)
 		if (have_stat && S_ISLNK (st.st_mode))
 			return TRUE;
 	}
-#endif
 
 	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
 		if (!have_stat)
@@ -246,5 +320,7 @@ g_file_test (const gchar *filename, GFileTest test)
 			return TRUE;
 	}
 	return FALSE;
+#endif
 }
+
 

@@ -86,12 +86,12 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 				if (--mb_remain == 0) {
 					/* multi byte character is fully consumed now. */
 					if (codepoint < 0x10000) {
-						ret [out_pos++] = codepoint % 0x10000;
+						ret [out_pos++] = (gunichar2)(codepoint % 0x10000);
 					} else if (codepoint < 0x110000) {
 						/* surrogate pair */
 						codepoint -= 0x10000;
-						ret [out_pos++] = (codepoint >> 10) + 0xD800;
-						ret [out_pos++] = (codepoint & 0x3FF) + 0xDC00;
+						ret [out_pos++] = (gunichar2)((codepoint >> 10) + 0xD800);
+						ret [out_pos++] = (gunichar2)((codepoint & 0x3FF) + 0xDC00);
 					} else {
 						/* invalid utf-8 sequence (excess) */
 						codepoint = 0;
@@ -247,7 +247,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	gchar *ret;
 	glong in_pos, out_pos;
 	gunichar2 ch;
-	guint32 codepoint;
+	guint32 codepoint = 0;
 	gboolean surrogate;
 
 	in_pos = 0;
@@ -279,7 +279,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 			if (ch < 0x80) {
 				for (; len < 0 ? str [in_pos] : in_pos < len; in_pos++) {
 					if (str [in_pos] < 0x80)
-						ret [out_pos++] = str [in_pos];
+						ret [out_pos++] = (gchar)(str [in_pos]);
 					else
 						break;
 				}

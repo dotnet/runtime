@@ -29,8 +29,17 @@
 #ifndef _TEST_H
 #define _TEST_H
 
+#include <config.h>
 #include <stdarg.h>
 #include <glib.h>
+
+#ifdef _MSC_VER
+/* disable the following warnings 
+ * C4100: The formal parameter is not referenced in the body of the function. The unreferenced parameter is ignored. 
+ * C4127: conditional expression is constant (test macros produce a lot of these)
+*/
+#pragma warning(disable:4100 4127)
+#endif
 
 typedef gchar * RESULT;
 
@@ -52,6 +61,7 @@ struct _Group {
 
 gboolean run_group(Group *group, gint iterations, gboolean quiet, 
 	gboolean time, gchar *tests);
+#undef FAILED
 RESULT FAILED(const gchar *format, ...);
 gdouble get_timestamp();
 gchar ** eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens);
@@ -66,4 +76,5 @@ void eg_strfreev (gchar **str_array);
 	Test * (name)();
 
 #endif /* _TEST_H */
+
 

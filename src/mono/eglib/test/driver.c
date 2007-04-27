@@ -25,13 +25,21 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
-#include <stdio.h>
-#include <glib.h>
-#include <getopt.h>
 
+#include <config.h>
 #include "test.h"
 #include "tests.h"
+
+#include <stdio.h>
+#include <getopt.h>
+
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+
+#ifndef DRIVER_NAME
+#define DRIVER_NAME "EGlib"
+#endif
 
 typedef struct _StringArray {
 	gchar **strings;
@@ -56,6 +64,8 @@ string_array_append(StringArray *array, gchar *string)
 
 	return array;
 }
+
+gint global_passed = 0, global_tests = 0;
 
 static void
 string_array_free(StringArray *array)
@@ -155,8 +165,8 @@ gint main(gint argc, gchar **argv)
 			for(k = 0; k < tests_to_run->length; k++) {	
 				gchar *user = tests_to_run->strings[k];
 				const gchar *table = test_groups[j].name;
-				gint user_len = strlen(user);
-				gint table_len = strlen(table);
+				size_t user_len = strlen(user);
+				size_t table_len = strlen(table);
 				
 				if(strncmp(user, table, table_len) == 0) {
 					if(user_len > table_len && user[table_len] != ':') {
@@ -171,6 +181,7 @@ gint main(gint argc, gchar **argv)
 		}
 	
 		if(run) {
+			gboolean passed;
 			gchar **split = NULL;
 			
 			if(debug && test_groups[j].handler != fake_tests_init) {
@@ -195,7 +206,7 @@ gint main(gint argc, gchar **argv)
 				}
 			}
 			
-			gboolean passed = run_group(&(test_groups[j]), 
+			passed = run_group(&(test_groups[j]), 
 				iterations, quiet, report_time, tests);
 
 			if(tests != NULL) {
@@ -209,8 +220,9 @@ gint main(gint argc, gchar **argv)
 	}
 	
 	if(!quiet) {
+		gdouble pass_percentage = ((gdouble)global_passed / (gdouble)global_tests) * 100.0;
 		printf("=============================\n");
-		printf("Overall result: %s\n", global_failure ? "FAILED" : "OK");
+		printf("Overall result: %s : %d / %d (%g%%)\n", global_failure ? "FAILED" : "OK", global_passed, global_tests, pass_percentage);
 	}
 	
 	if(report_time) {
@@ -228,4 +240,5 @@ gint main(gint argc, gchar **argv)
 
 	return 0;
 }
+
 

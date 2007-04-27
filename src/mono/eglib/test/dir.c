@@ -1,8 +1,13 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef G_OS_UNIX
 #include <pthread.h>
+#endif
 #include "test.h"
 
 /* This test is just to be used with valgrind */
@@ -57,4 +62,5 @@ static Test dir_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(dir_tests_init, dir_tests)
+
 

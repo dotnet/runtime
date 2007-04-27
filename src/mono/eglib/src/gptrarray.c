@@ -38,7 +38,7 @@ typedef struct _GPtrArrayPriv {
 static void 
 g_ptr_array_grow(GPtrArrayPriv *array, guint length)
 {
-	gint new_length = array->len + length;
+	guint new_length = array->len + length;
 
 	g_return_if_fail(array != NULL);
 
@@ -101,7 +101,7 @@ g_ptr_array_set_size(GPtrArray *array, gint length)
 {
 	g_return_if_fail(array != NULL);
 
-	if(length > array->len) {
+	if((size_t)length > array->len) {
 		g_ptr_array_grow((GPtrArrayPriv *)array, length);
 		memset(array->pdata + array->len, 0, (length - array->len) 
 			* sizeof(gpointer));
@@ -159,7 +159,7 @@ g_ptr_array_remove(GPtrArray *array, gpointer data)
 void 
 g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 {
-	gint i;
+	guint i;
 
 	for(i = 0; i < array->len; i++) {
 		func(g_ptr_array_index(array, i), user_data);
@@ -178,5 +178,6 @@ g_ptr_array_sort_with_data(GPtrArray *array, GCompareDataFunc compare_func,
 	gpointer user_data)
 {
 }
+
 
 

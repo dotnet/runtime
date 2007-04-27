@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <glib.h>
 
-#ifdef _MSC_VER
+#ifdef G_OS_WIN32
 #include <winsock2.h>
 #else
 #include <sys/time.h>
@@ -37,11 +37,19 @@
 void
 g_get_current_time (GTimeVal *result)
 {
+#ifdef G_OS_WIN32
+	long int l = GetTickCount();
+
+	g_return_if_fail (result != NULL);
+
+	result->tv_sec = l / 1000;
+	result->tv_usec = (l % 1000) * 1000;
+#else
 	struct timeval tv;
 
 	g_return_if_fail (result != NULL);
 	gettimeofday (&tv, NULL);
 	result->tv_sec = tv.tv_sec;
 	result->tv_usec = tv.tv_usec;
+#endif
 }
-

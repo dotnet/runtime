@@ -17,7 +17,7 @@ static const char *items [] = {
 	NULL
 };
 
-static GPtrArray *ptrarray_alloc_and_fill(gint *item_count)
+static GPtrArray *ptrarray_alloc_and_fill(guint *item_count)
 {
 	GPtrArray *array = g_ptr_array_new();
 	gint i;
@@ -33,9 +33,9 @@ static GPtrArray *ptrarray_alloc_and_fill(gint *item_count)
 	return array;
 }
 
-static gint guess_size(gint length)
+static guint guess_size(guint length)
 {
-	gint size = 1;
+	guint size = 1;
 
 	while(size < length) {
 		size <<= 1;
@@ -47,7 +47,7 @@ static gint guess_size(gint length)
 RESULT ptrarray_alloc()
 {
 	GPtrArrayPriv *array;
-	gint i;
+	guint i;
 	
 	array = (GPtrArrayPriv *)ptrarray_alloc_and_fill(&i);
 	
@@ -68,7 +68,7 @@ RESULT ptrarray_alloc()
 RESULT ptrarray_for_iterate()
 {
 	GPtrArray *array = ptrarray_alloc_and_fill(NULL);
-	gint i;
+	guint i;
 
 	for(i = 0; i < array->len; i++) {
 		char *item = (char *)g_ptr_array_index(array, i);
@@ -120,7 +120,7 @@ RESULT ptrarray_foreach_iterate()
 RESULT ptrarray_set_size()
 {
 	GPtrArray *array = g_ptr_array_new();
-	gint i, grow_length = 50;
+	guint i, grow_length = 50;
 	
 	g_ptr_array_add(array, (gpointer)items[0]);
 	g_ptr_array_add(array, (gpointer)items[1]);
@@ -148,7 +148,7 @@ RESULT ptrarray_set_size()
 RESULT ptrarray_remove_index()
 {
 	GPtrArray *array;
-	gint i;
+	guint i;
 	
 	array = ptrarray_alloc_and_fill(&i);
 	
@@ -173,7 +173,7 @@ RESULT ptrarray_remove_index()
 RESULT ptrarray_remove()
 {
 	GPtrArray *array;
-	gint i;
+	guint i;
 	
 	array = ptrarray_alloc_and_fill(&i);
 
@@ -206,7 +206,7 @@ static gint ptrarray_sort_compare(gconstpointer a, gconstpointer b)
 RESULT ptrarray_sort()
 {
 	GPtrArray *array = g_ptr_array_new();
-	gint i;
+	guint i;
 	gchar *letters [] = { "A", "B", "C", "D", "E" };
 	
 	g_ptr_array_add(array, letters[0]);
@@ -241,4 +241,5 @@ static Test ptrarray_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(ptrarray_tests_init, ptrarray_tests)
+
 

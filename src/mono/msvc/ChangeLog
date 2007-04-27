@@ -1,3 +1,13 @@
+2007-04-27  Jonathan Chambers <joncham@gmail.com>
+	
+	Combined patch from Michael Jerris <mike@jerris.com> and me.
+	* getopt.c: Added public domain implementation for Windows.
+	* getopt.h: Added public domain implementation for Windows.
+	* getopt_long.c: Added public domain implementation for Windows.
+	* test_eglib.vcproj: Update project.
+	* eglib.vcproj: Update project. Add pre-build step to copy
+	winconfig.h to config.h for msvc build.
+	
 2007-04-25  Jonathan Chambers  <joncham@gmail.com>
 
 	* mono.sln: Added eglib projects.

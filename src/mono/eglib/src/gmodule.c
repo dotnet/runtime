@@ -118,8 +118,11 @@ g_module_open (const gchar *file, GModuleFlags flags)
 		return NULL;
 
 	if (file != NULL) {
+		gunichar2 *file16;
+		file16 = u8to16(file); 
 		module->main_module = FALSE;
-		module->handle = LoadLibrary (file);
+		module->handle = LoadLibrary (file16);
+		g_free(file16);
 		if (!module->handle) {
 			g_free (module);
 			return NULL;
@@ -169,7 +172,7 @@ w32_find_symbol (const gchar *symbol_name)
 	}
 
 	for (i = 0; i < needed / sizeof (HANDLE); i++) {
-		gpointer proc = GetProcAddress (modules [i], symbol_name);
+		gpointer proc = (gpointer)(intptr_t)GetProcAddress (modules [i], symbol_name);
 		if (proc != NULL) {
 			g_free (modules);
 			return proc;
@@ -187,14 +190,14 @@ g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 		return FALSE;
 
 	if (module->main_module) {
-		*symbol = GetProcAddress (module->handle, symbol_name);
+		*symbol = (gpointer)(intptr_t)GetProcAddress (module->handle, symbol_name);
 		if (*symbol != NULL)
 			return TRUE;
 
 		*symbol = w32_find_symbol (symbol_name);
 		return *symbol != NULL;
 	} else {
-		*symbol = GetProcAddress (module->handle, symbol_name);
+		*symbol = (gpointer)(intptr_t)GetProcAddress (module->handle, symbol_name);
 		return *symbol != NULL;
 	}
 }
@@ -209,7 +212,7 @@ g_module_error (void)
 	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, 
 		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
 
-	ret = g_strdup (buf);
+	ret = u16to8 (buf);
 	LocalFree(buf);
 
 	return ret;

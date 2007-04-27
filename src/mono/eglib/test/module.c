@@ -1,8 +1,11 @@
+#include <config.h>
 #include <glib.h>
 #include <gmodule.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include "test.h"
 
 #if defined (G_OS_WIN32)
@@ -57,4 +60,5 @@ static Test module_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(module_tests_init, module_tests)
+
 

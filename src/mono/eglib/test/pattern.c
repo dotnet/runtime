@@ -1,7 +1,10 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include "test.h"
 
@@ -54,4 +57,5 @@ static Test pattern_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(pattern_tests_init, pattern_tests)
+
 

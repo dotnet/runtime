@@ -7,16 +7,21 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <ctype.h>
-#ifndef _MSC_VER
+
+#ifdef _MSC_VER
+#pragma include_alias(<eglib-config.h>, <eglib-config.hw>)
+#else
 #include <stdint.h>
-#include <eglib-config.h>
 #endif
+
+#include <eglib-config.h>
 
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
 #endif
 
 #define __EGLIB_X11 1
+
 /*
  * Basic data types
  */
@@ -44,51 +49,6 @@ typedef unsigned __int64	guint64;
 typedef float				gfloat;
 typedef double				gdouble;
 typedef unsigned __int16	gunichar2;
-/*
- * System-dependent settings
- */
-/*
-#define G_GNUC_PRETTY_FUNCTION   @GNUC_PRETTY@
-#define G_GNUC_UNUSED            @GNUC_UNUSED@
-#define G_BYTE_ORDER             @ORDER@
-#define G_GNUC_NORETURN          @GNUC_NORETURN@
-#define G_BREAKPOINT()           @BREAKPOINT@
-#define G_OS_@OS@
-#define GPOINTER_TO_INT(ptr)   @GPOINTER_TO_INT@
-#define GPOINTER_TO_UINT(ptr)  @GPOINTER_TO_UINT@
-#define GINT_TO_POINTER(v)     @GINT_TO_POINTER@
-#define GUINT_TO_POINTER(v)    @GUINT_TO_POINTER@
-*/
-typedef uintptr_t gsize;
-typedef intptr_t gssize;
-typedef int pid_t;
-
-#define G_DIR_SEPARATOR          '\\'
-#define G_DIR_SEPARATOR_S        "\\"
-#define G_SEARCHPATH_SEPARATOR_S ";"
-#define G_SEARCHPATH_SEPARATOR   ';'
-#define G_GSIZE_FORMAT   "d"
-#define G_GUINT64_FORMAT "d"
-
-#define INT32_MAX 2147483647
-#define INT32_MIN (~ INT32_MAX)
-#define INT64_MAX 9223372036854775807i64
-#define INT64_MIN (~INT64_MAX)
-
-#define STDOUT_FILENO stdout
-#define STDERR_FILENO stderr
-
-/* FIXME: what should this be ?*/
-#define X_OK 1
-#define WNOHANG 1
-#define F_SETFD 1
-#define FD_CLOEXEC 1
-
-#undef inline
-#define inline __inline
-
-#define G_OS_WIN32 1
-
 #else
 /* Types defined in terms of the stdint.h */
 typedef int8_t         gint8;
@@ -103,6 +63,7 @@ typedef float          gfloat;
 typedef double         gdouble;
 typedef uint16_t       gunichar2;
 #endif
+
 /*
  * Macros
  */
@@ -273,11 +234,7 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_vsnprintf vsnprintf
 #define g_vasprintf vasprintf
 
-#ifdef HAVE_STRLCPY
-#define g_strlcpy	strlcpy
-#else
 gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
-#endif
 
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
@@ -288,10 +245,18 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
+#ifdef _MSC_VER
+#define g_strcasecmp stricmp
+#define g_ascii_strcasecmp stricmp
+#define g_strncasecmp strnicmp
+#define g_strstrip(a) g_strchug (g_strchomp (a))
+#else
 #define g_strcasecmp strcasecmp
 #define g_ascii_strcasecmp strcasecmp
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
+#endif
+
 
 #define	G_STR_DELIMITERS "_-|> <."
 
@@ -559,6 +524,14 @@ typedef enum {
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong     *items_written, GError **error);
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong     *items_written, GError **error);
 
+#define u8to16(str) g_utf8_to_utf16(str, (glong)strlen(str), NULL, NULL, NULL)
+
+#ifdef G_OS_WIN32
+#define u16to8(str) g_utf16_to_utf8(str, (glong)wcslen(str), NULL, NULL, NULL)
+#else
+#define u16to8(str) g_utf16_to_utf8(str, (glong)strlen(str), NULL, NULL, NULL)
+#endif
+
 /*
  * Path
  */
@@ -796,4 +769,5 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
  
 #endif
+
 

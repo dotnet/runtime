@@ -95,8 +95,8 @@ test_gstring ()
 	ret = g_string_free (s, FALSE);
 	g_free (ret);
 
- 	s = g_string_new_len ("H\000H", 3);
-	g_string_append_len (s, "1\0002", 3);
+ 	s = g_string_new_len ("H" "\000" "H", 3);
+	g_string_append_len (s, "1" "\000" "2", 3);
 	sfail ('H', 0);
 	sfail ( 0, 1);
 	sfail ('H', 2);
@@ -137,7 +137,7 @@ test_truncate ()
 	s = g_string_truncate (s, 10);
 	if (strlen (s->str) != 1)
 		return FAILED ("The size is not 1");
-	g_string_truncate (s, -1);
+	g_string_truncate (s, (gsize)-1);
 	if (strlen (s->str) != 1)
 		return FAILED ("The size is not 1");
 	g_string_truncate (s, 0);
@@ -205,7 +205,7 @@ RESULT
 test_macros ()
 {
 	char *s = g_strdup (G_STRLOC);
-	char *p = strchr (s, ':');
+	char *p = strchr (s + 2, ':');
 	int n;
 	
 	if (p == NULL)
@@ -215,7 +215,7 @@ test_macros ()
 		return FAILED ("did not find a valid line number");
 
 	*p = 0;
-	if (strcmp (s, "string.c") != 0)
+	if (strcmp (s + strlen(s) - 8 , "string.c") != 0)
 		return FAILED ("This did not store the filename on G_STRLOC");
 	
 	g_free (s);

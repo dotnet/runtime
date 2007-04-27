@@ -4,7 +4,9 @@
  * These depend on -Werror, -Wall being set to catch the build error.
  */
 #include <stdio.h>
+#ifndef _MSC_VER
 #include <stdint.h>
+#endif
 #include <string.h>
 #include <glib.h>
 #include "test.h"

@@ -53,7 +53,7 @@ static GSList *
 compile_pattern (const gchar *pattern)
 {
 	GSList *list;
-	gint i, len;
+	size_t i, len;
 	PData *data;
 	gchar c;
 	MatchType last = -1;
@@ -157,9 +157,9 @@ g_pattern_spec_free (GPatternSpec *pspec)
 }
 
 static gboolean
-match_string (GSList *list, const gchar *str, gint idx, gint max)
+match_string (GSList *list, const gchar *str, size_t idx, size_t max)
 {
-	gint len;
+	size_t len;
 
 	while (list && idx < max) {
 		PData *data = (PData *) list->data;
@@ -208,4 +208,5 @@ g_pattern_match_string (GPatternSpec *pspec, const gchar *string)
 		return FALSE;
 	return match_string (pspec->pattern, string, 0, strlen (string));
 }
+
 

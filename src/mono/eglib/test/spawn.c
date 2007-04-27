@@ -1,8 +1,17 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include "test.h"
+
+#ifdef G_OS_WIN32
+#include <io.h>
+#define read _read
+#define close _close
+#endif
 
 RESULT
 test_spawn_sync ()
@@ -69,4 +78,5 @@ static Test spawn_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(spawn_tests_init, spawn_tests)
+
 

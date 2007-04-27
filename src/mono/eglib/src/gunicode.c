@@ -67,11 +67,14 @@ g_convert (const gchar *str, gssize len,
 	   const gchar *to_codeset, const gchar *from_codeset,
 	   gsize *bytes_read, gsize *bytes_written, GError **error)
 {
+	char *result = NULL;
+#ifdef G_OS_WIN32
+#else
 	iconv_t convertor;
-	char *buffer, *result, *output;
+	char *buffer, *output;
 	const char *strptr = (const char *) str;
-	int str_len = len == -1 ? strlen (str) : len;
-	int buffer_size;
+	size_t str_len = len == -1 ? strlen (str) : len;
+	size_t buffer_size;
 	size_t left, out_left;
 	
 	convertor = iconv_open (to_codeset, from_codeset);
@@ -91,8 +94,8 @@ g_convert (const gchar *str, gssize len,
 		if (res == (size_t) -1){
 			if (errno == E2BIG){
 				char *n;
-				int extra_space = 8 + left;
-				int output_used = output - buffer;
+				size_t extra_space = 8 + left;
+				size_t output_used = output - buffer;
 				
 				buffer_size += extra_space;
 				
@@ -131,6 +134,7 @@ g_convert (const gchar *str, gssize len,
 	result = buffer;
  leave:
 	iconv_close (convertor);
+#endif
 	return result;
 }
 
@@ -153,6 +157,8 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 gboolean
 g_get_charset (G_CONST_RETURN char **charset)
 {
+#ifdef G_OS_WIN32
+#else
 	if (my_charset == NULL){
 		my_charset = g_strdup (nl_langinfo (CODESET));
 		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
@@ -161,6 +167,7 @@ g_get_charset (G_CONST_RETURN char **charset)
 	if (charset != NULL)
 		*charset = my_charset;
 
+#endif
 	return is_utf8;
 }
 

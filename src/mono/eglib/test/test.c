@@ -26,14 +26,22 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <sys/time.h>
 #include <glib.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef G_OS_WIN32
+#include <winsock2.h>
+#endif
 
 #include "test.h"
+
+extern gint global_passed, global_tests;
 
 static gchar *last_result = NULL;
 
@@ -75,7 +83,7 @@ run_group(Group *group, gint iterations, gboolean quiet,
 	start_time_group = get_timestamp();
 
 	for(i = 0; tests[i].name != NULL; i++) {
-		gchar *result;
+		gchar *result = "";
 		gboolean iter_pass, run;
 	
 		iter_pass = FALSE;
@@ -132,6 +140,9 @@ run_group(Group *group, gint iterations, gboolean quiet,
 		}
 	}
 
+	global_passed += passed;
+	global_tests += total;
+
 	if(!quiet) {
 		gdouble pass_percentage = ((gdouble)passed / (gdouble)total) * 100.0;
 		if(time) {
@@ -172,9 +183,15 @@ FAILED(const gchar *format, ...)
 gdouble
 get_timestamp()
 {
+	/* FIXME: We should use g_get_current_time here */
+#ifdef G_OS_WIN32
+	long int l = GetTickCount();
+	return (gdouble)(l / 1000) + (1.e-6) * ((l % 1000) * 1000);
+#else
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
 	return (gdouble)tp.tv_sec + (1.e-6) * tp.tv_usec;
+#endif
 }
 
 /* 
@@ -189,7 +206,7 @@ eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 	gchar *strtok_save, **vector;
 	gchar *token, *token_c;
 	gint size = 1;
-	gint token_length;
+	size_t token_length;
 
 	g_return_val_if_fail(string != NULL, NULL);
 	g_return_val_if_fail(delimiter != NULL, NULL);
@@ -249,5 +266,6 @@ eg_strfreev (gchar **str_array)
 	}
 	g_free (orig);
 }
+
 
 

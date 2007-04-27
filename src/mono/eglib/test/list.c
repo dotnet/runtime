@@ -315,10 +315,12 @@ static int intcompare (gconstpointer p1, gconstpointer p2)
 
 static gboolean verify_sort (GList *list, int len)
 {
+	int prev;
+
 	if (list->prev)
 		return FALSE;
 
-	int prev = GPOINTER_TO_INT (list->data);
+	prev = GPOINTER_TO_INT (list->data);
 	len--;
 	for (list = list->next; list; list = list->next) {
 		int curr = GPOINTER_TO_INT (list->data);

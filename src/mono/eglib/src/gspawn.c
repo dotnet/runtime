@@ -25,19 +25,37 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#ifdef _MSC_VER
-#include <winsock2.h>
-#else
+
+#include <glib.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
-#include <glib.h>
+
+#ifdef G_OS_WIN32
+#include <io.h>
+#include <winsock2.h>
+#define open _open
+#define close _close
+#define read _read
+#define write _write
+/* windows pipe api details: http://msdn2.microsoft.com/en-us/library/edze9h7e(VS.80).aspx */
+#define pipe(x) _pipe(x, 256, 0)
+#endif
 
 #define set_error(msg, ...) do { if (error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
 #define set_error_cond(cond,msg, ...) do { if ((cond) && error != NULL) *error = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
@@ -83,11 +101,20 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **err
 		if (out_closed && err_closed)
 			break;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4389)
+#endif
+
 		FD_ZERO (&rfds);
 		if (!out_closed && outfd >= 0)
 			FD_SET (outfd, &rfds);
 		if (!err_closed && errfd >= 0)
 			FD_SET (errfd, &rfds);
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 		res = select (MAX (outfd, errfd) + 1, &rfds, NULL, NULL, NULL);
 		if (res > 0) {
@@ -150,6 +177,8 @@ g_spawn_command_line_sync (const gchar *command_line,
 				gint *exit_status,
 				GError **error)
 {
+#ifdef G_OS_WIN32
+#else
 	pid_t pid;
 	gchar **argv;
 	gint argc;
@@ -223,7 +252,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 	if (WIFEXITED (status) && exit_status) {
 		*exit_status = WEXITSTATUS (status);
 	}
-
+#endif
 	return TRUE;
 }
 
@@ -244,6 +273,8 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			gint *standard_error,
 			GError **error)
 {
+#ifdef G_OS_WIN32
+#else
 	pid_t pid;
 	int info_pipe [2];
 	int in_pipe [2] = { -1, -1 };
@@ -411,7 +442,8 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		*standard_output = out_pipe [0];
 	if (standard_error)
 		*standard_error = err_pipe [0];
-
+#endif
 	return TRUE;
 }
+
 

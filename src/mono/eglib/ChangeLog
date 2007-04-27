@@ -1,3 +1,46 @@
+2007-04-27  Jonathan Chambers <joncham@gmail.com>
+	
+	Combined patch from Michael Jerris <mike@jerris.com> and me.
+	* winconfig.h: Config file for msvc builds.
+	* configure.ac: Add AC_CHECK_HEADERS for getopt.h,  sys/time.h,
+	sys/wait.h, and pwd.h.
+	
+	* src/gspawn.c: Include config.h and use HAVE_* macros.
+	* src/eglib-config.h.in: Add inclusion guards.
+	* src/ghashtable.c: Fix warnings.
+	* src/gmisc.c: Windows implementation of g_getenv, g_setenv,
+	and g_unsetenv.
+	* src/gpath.c: Include config.h and use HAVE_* macros.
+	* src/gmarkup.c: Fix warnings.
+	* src/gptrarray.c: Fix warnings.
+	* src/gstr.c: Fix warnings and use HAVE_* macros.
+	* src/glib.h: Move macros to eglib-config.h and include it.
+	* src/gdate.c: Implement g_get_current_time on windows.
+	* src/gpattern.c: Fix warnings.
+	* src/gdir.c: Implement g_dir on windows.
+	* src/gfile.c: Implement mkstemp and g_file_test on windows.
+	* src/gtimer.c: Implement g_timer on windows.
+	* src/gmodule.c: Fix warnings.
+	* src/gunicode.c: Fix warnings.
+	* src/gutf8.c: Fix warnings.
+	
+	* test/ptrarray.c: Fix warnings.
+	* test/string.c: Fix warnings.
+	* test/list.c: Fix warnings.
+	* test/pattern.c: Use HAVE_* macros.
+	* test/dir.c: Use HAVE_* macros.
+	* test/file.c: Use HAVE_* macros and use system specific files for tests.
+	* test/test.c: Fix warnings and use HAVE_* macros.
+	* test/timer.c: Use HAVE_* macros.
+	* test/string-util.c: Fix warnings.
+	* test/test.h: Supress warnings on msvc.
+	* test/module.c: Use HAVE_* macros.
+	* test/utf8.c: Fix warnings.
+	* test/spawn.c: Use HAVE_* macros.
+	* test/driver.c: Fix warnings and use HAVE_* macros.
+	* test/path.c: Use HAVE_* macros and use system specific files for tests.
+	* test/sizes.c: Fix warnings.
+
 2007-04-24  Jonathan Chambers <joncham@gmail.com>
 	
 	Patch from Michael Jerris <mike@jerris.com>
@@ -15,7 +58,6 @@
 	* src/gtimer.c: Start msvc build.
 	* src/gmodule.c: Start msvc build.
 	* src/gunicode.c: Start msvc build.
-
 
 2007-01-27  Robert Jordan  <robertj@gmx.net>
 

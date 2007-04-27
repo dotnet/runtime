@@ -1,9 +1,19 @@
+#include <config.h>
 #include <glib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef G_OS_UNIX
 #include <pthread.h>
+#endif
 #include "test.h"
+
+#ifdef G_OS_WIN32
+#include <direct.h>
+#define chdir _chdir
+#endif
 
 /* This test is just to be used with valgrind */
 RESULT
@@ -82,7 +92,6 @@ test_buildpath ()
 	if (strcmp (s, "/a/c/") != 0)
 		return FAILED ("14 Got wrong result, got: %s", s);
 	g_free (s);
-        return OK;
 	
 	return OK;
 }
@@ -93,7 +102,11 @@ test_buildfname ()
 	char *s;
 	
 	s = g_build_filename ("a", "b", "c", "d", NULL);
+#ifdef G_OS_WIN32
+	if (strcmp (s, "a\\b\\c\\d") != 0)
+#else
 	if (strcmp (s, "a/b/c/d") != 0)
+#endif
 		return FAILED ("1 Got wrong result, got: %s", s);
 	g_free (s);
 	
@@ -105,6 +118,26 @@ test_dirname ()
 {
 	char *s;
 
+#ifdef G_OS_WIN32
+	s = g_path_get_dirname ("c:\\home\\miguel");
+	if (strcmp (s, "c:\\home") != 0)
+		return FAILED ("Expected c:\\home, got %s", s);
+	g_free (s);
+
+	s = g_path_get_dirname ("c:\\home\\dingus\\");
+	if (strcmp (s, "c:\\home\\dingus") != 0)
+		return FAILED ("Expected c:\\home\\dingus, got %s", s);
+	g_free (s);
+
+	s = g_path_get_dirname ("dir.c");
+	if (strcmp (s, ".") != 0)
+		return FAILED ("Expected `.', got %s", s);
+	g_free (s);
+
+	s = g_path_get_dirname ("c:\\index.html");
+	if (strcmp (s, "c:") != 0)
+		return FAILED ("Expected [c:], got [%s]", s);
+#else
 	s = g_path_get_dirname ("/home/miguel");
 	if (strcmp (s, "/home") != 0)
 		return FAILED ("Expected /home, got %s", s);
@@ -123,7 +156,7 @@ test_dirname ()
 	s = g_path_get_dirname ("/index.html");
 	if (strcmp (s, "/") != 0)
 		return FAILED ("Expected [/], got [%s]", s);
-	
+#endif	
 	return OK;
 }
 
@@ -132,6 +165,22 @@ test_basename ()
 {
 	char *s;
 
+#ifdef G_OS_WIN32
+	s = g_path_get_basename ("");
+	if (strcmp (s, ".") != 0)
+		return FAILED ("Expected `.', got %s", s);
+	g_free (s);
+
+	s = g_path_get_basename ("c:\\home\\dingus\\");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("1 Expected dingus, got %s", s);
+	g_free (s);
+
+	s = g_path_get_basename ("c:\\home\\dingus");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("2 Expected dingus, got %s", s);
+	g_free (s);
+#else
 	s = g_path_get_basename ("");
 	if (strcmp (s, ".") != 0)
 		return FAILED ("Expected `.', got %s", s);
@@ -146,7 +195,7 @@ test_basename ()
 	if (strcmp (s, "dingus") != 0)
 		return FAILED ("2 Expected dingus, got %s", s);
 	g_free (s);
-
+#endif
 	return OK;
 }
 
@@ -154,10 +203,14 @@ gchar *
 test_ppath ()
 {
 	char *s;
-	
-	s = g_find_program_in_path ("ls");
+#ifdef G_OS_WIN32
+	const gchar *searchfor = "explorer.exe";
+#else
+	const gchar *searchfor = "ls";
+#endif
+	s = g_find_program_in_path (searchfor);
 	if (s == NULL)
-		return FAILED ("No shell on this system (This assumes Unix)?");
+		return FAILED ("No %s on this system?", searchfor);
 	g_free (s);
 	return OK;
 }
@@ -167,6 +220,11 @@ test_ppath2 ()
 {
 	char *s;
 	const char *path = g_getenv ("PATH");
+#ifdef G_OS_WIN32
+	const gchar *searchfor = "test_eglib.exe";
+#else
+	const gchar *searchfor = "test-glib";
+#endif
 	
 	g_setenv ("PATH", "", TRUE);
 	s = g_find_program_in_path ("ls");
@@ -175,10 +233,10 @@ test_ppath2 ()
 		return FAILED ("Found something interesting here: %s", s);
 	}
 	g_free (s);
-	s = g_find_program_in_path ("test-glib");
+	s = g_find_program_in_path (searchfor);
 	if (s == NULL) {
 		g_setenv ("PATH", path, TRUE);
-		return FAILED ("It should find 'test-glib' in the current directory.");
+		return FAILED ("It should find '%s' in the current directory.", searchfor);
 	}
 	g_free (s);
 	g_setenv ("PATH", path, TRUE);
@@ -189,17 +247,22 @@ gchar *
 test_cwd ()
 {
 	char *dir = g_get_current_dir ();
+#ifdef G_OS_WIN32
+	const gchar *newdir = "C:\\Windows";
+#else
+	const gchar *newdir = "/bin";
+#endif
 
 	if (dir == NULL)
 		return FAILED ("No current directory?");
 	g_free (dir);
 	
-	if (chdir ("/bin") == -1)
-		return FAILED ("No /bin?");
+	if (chdir (newdir) == -1)
+		return FAILED ("No %s?", newdir);
 	
 	dir = g_get_current_dir ();
-	if (strcmp (dir, "/bin") != 0)
-		return FAILED("Did not go to /bin?");
+	if (strcmp (dir, newdir) != 0)
+		return FAILED("Did not go to %s?", newdir);
 	g_free (dir);
 	
 	return OK;
@@ -233,4 +296,5 @@ static Test path_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(path_tests_init, path_tests)
+
 
