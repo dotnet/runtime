@@ -2034,13 +2034,11 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		MonoThread *thread=(MonoThread *)value;
 
 		/* Ignore background threads, we abort them later */
-		mono_monitor_enter (thread->synch_lock);
+		/* Do not lock here since it is not needed and the caller holds threads_lock */
 		if (thread->state & ThreadState_Background) {
 			THREAD_DEBUG (g_message ("%s: ignoring background thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
-			mono_monitor_exit (thread->synch_lock);
 			return; /* just leave, ignore */
 		}
-		mono_monitor_exit (thread->synch_lock);
 		
 		if (mono_gc_is_finalizer_thread (thread)) {
 			THREAD_DEBUG (g_message ("%s: ignoring finalizer thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
