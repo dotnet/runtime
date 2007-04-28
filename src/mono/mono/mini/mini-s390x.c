@@ -1375,8 +1375,8 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
+			if (klass->enumtype) {
+				simpletype = klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
 			if (sig->pinvoke)
