@@ -460,6 +460,9 @@ handle_load:
 		summarize_array_value (area, value->inst_left, result, TRUE);
 		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
 		break;
+	case OP_LCONV_TO_I4:
+		value_kind = summarize_integer_value (area, value->inst_left, result, result_value_kind);
+		break;
 	case OP_PHI:
 		result->type = MONO_PHI_SUMMARIZED_VALUE;
 		result->value.phi.number_of_alternatives = *(value->inst_phi_args);
