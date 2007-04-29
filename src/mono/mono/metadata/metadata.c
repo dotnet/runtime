@@ -1560,8 +1560,6 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	type->pinned = pinned ? 1 : 0;
 
 	if (!do_mono_metadata_parse_type (type, m, container, ptr, &ptr)) {
-		if (type != &stype)
-			g_free (type);
 		mono_loader_unlock ();
 		return NULL;
 	}
