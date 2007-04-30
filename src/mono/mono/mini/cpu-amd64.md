@@ -54,7 +54,7 @@
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
 break: len:2
-jmp: len:42
+jmp: len:128
 br: len:6
 beq: len:8
 bge: len:8
