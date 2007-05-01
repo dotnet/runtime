@@ -7158,6 +7158,11 @@ mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
 	return result;
 }
 
+/**
+ * mono_custom_attrs_from_index:
+ *
+ * Returns: NULL if no attributes are found or if a loading error occurs.
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 {
@@ -7201,8 +7206,12 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 			break;
 		}
 		ainfo->attrs [i].ctor = mono_get_method (image, mtoken, NULL);
-		if (!ainfo->attrs [i].ctor)
-			g_error ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
+		if (!ainfo->attrs [i].ctor) {
+			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
+			g_list_free (list);
+			g_free (ainfo);
+			return NULL;
+		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
 		ainfo->attrs [i].data_size = mono_metadata_decode_value (data, &data);
 		ainfo->attrs [i].data = (guchar*)data;
@@ -7466,7 +7475,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
  *
  * Return an array with all the custom attributes defined of the
  * reflection handle @obj. If @attr_klass is non-NULL, only custom attributes 
- * of that type are returned. The objects are fully build.
+ * of that type are returned. The objects are fully build. Return NULL if a loading error
+ * occurs.
  */
 MonoArray*
 mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass)
@@ -7485,6 +7495,8 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 	} else {
 		MonoClass *klass;
 		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
+		if (mono_loader_get_last_error ())
+			return NULL;
 		result = mono_array_new (mono_domain_get (), klass, 0);
 	}
 
@@ -7496,7 +7508,8 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
  * @obj: a reflection object handle
  *
  * Return an array with all the custom attributes defined of the
- * reflection handle @obj. The objects are fully build.
+ * reflection handle @obj. The objects are fully build. Return NULL if a loading error
+ * occurs.
  */
 MonoArray*
 mono_reflection_get_custom_attrs (MonoObject *obj)
