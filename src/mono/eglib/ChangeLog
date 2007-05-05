@@ -1,3 +1,11 @@
+2007-05-05  Aaron Bockover  <abockover@novell.com>
+
+	* src/gstr.c:
+	* src/glib.h: Added g_ascii_tolower implementation; make g_ascii_strdown
+	use it to do the transformation
+
+	* test/string-util.c: Added a test for g_ascii_strdown
+
 2007-04-27  Jonathan Chambers <joncham@gmail.com>
 	
 	* src/gstr.c: Fix off by one error in g_strdup allocation.

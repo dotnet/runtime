@@ -539,6 +539,12 @@ g_strdown (gchar *string)
 	}
 }
 
+gchar
+g_ascii_tolower (gchar c)
+{
+	return c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c;
+}
+
 gchar *
 g_ascii_strdown (const gchar *str, gssize len)
 {
@@ -551,12 +557,8 @@ g_ascii_strdown (const gchar *str, gssize len)
 		len = strlen (str);
 	
 	ret = g_malloc (len + 1);
-	for (i = 0; i < len; i++){
-		guchar c = (guchar) str [i];
-		if (c >= 'A' && c <= 'Z')
-			c += 'a' - 'A';
-		ret [i] = c;
-	}
+	for (i = 0; i < len; i++)
+		ret [i] = (guchar) g_ascii_tolower (str [i]);
 	ret [i] = 0;
 	
 	return ret;

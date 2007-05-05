@@ -400,6 +400,27 @@ test_ascii_strncasecmp ()
 	return OK;
 }
 
+RESULT
+test_ascii_strdown ()
+{
+	const gchar *a = "~09+AaBcDeFzZ$0909EmPAbCdEEEEEZZZZAAA";
+	const gchar *b = "~09+aabcdefzz$0909empabcdeeeeezzzzaaa";
+	gchar *c;
+	gint n, l;
+
+	l = strlen (b);
+	c = g_ascii_strdown (a, l);
+	n = g_ascii_strncasecmp (b, c, l);
+
+	if (n != 0) {
+		g_free (c);
+		return FAILED ("Should have been 0, got %d", n);
+	}
+
+	g_free (c);
+	return OK;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -416,6 +437,7 @@ static Test strutil_tests [] = {
 	{"g_strlcpy", test_strlcpy},
 	{"g_strescape", test_strescape},
 	{"g_ascii_strncasecmp", test_ascii_strncasecmp },
+	{"g_ascii_strdown", test_ascii_strdown },
 	{NULL, NULL}
 };
 

@@ -236,6 +236,7 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 
 gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
 
+gchar   g_ascii_tolower      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
 gint    g_ascii_xdigit_value (gchar c);
