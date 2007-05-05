@@ -1,3 +1,12 @@
+2007-05-05  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-provides.in: don't use 'which' anymore (never solved
+	anything since it broke symlinks)
+	* scripts/mono-find-requires.in: also don't use 'which'
+	Parse .config files to look for native libs.  Honor 'os' attributes for
+	dllmaps.  Query rpm db for package that provides this lib.  Support 64bit
+	rpm configurations, as well as 32bit running on 64bit.
+
 2007-04-27  Marek Habersack  <mhabersack@novell.com>
 
 	* data/net_2_0/web.config: use fully qualified assembly names in
