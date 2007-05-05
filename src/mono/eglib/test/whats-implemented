@@ -20,8 +20,14 @@ if [ "x$1" = "x--help" ]; then
 	exit 1
 fi
 
+IGNORE_FUNCTIONS="g_hash_table_lookup_node g_hash_table_foreach_remove_or_steal  g_hash_table_resize"
+
 if [ -z $MONO_CHECKOUT ]; then
-	MONO_CHECKOUT=~/cvs/mono/mono
+	if [ -e ../../mono.pc.in ]; then
+		MONO_CHECKOUT=../..
+	else
+		MONO_CHECKOUT=~/cvs/mono/mono
+	fi
 fi
 
 if [ ! -d $MONO_CHECKOUT ]; then 
@@ -48,6 +54,13 @@ if [ ! "x$1" = "x--show-only-mono" ]; then
 		matched="no"
 		for implemented_function in $IMPLEMENTED_FUNCTIONS; do
 			if [ "x$mono_function" = "x$implemented_function" ]; then
+				matched="yes"
+				break
+			fi
+		done
+
+		for ignore_function in $IGNORE_FUNCTIONS; do
+			if [ "x$ignore_function" = "x$mono_function" ]; then
 				matched="yes"
 				break
 			fi
