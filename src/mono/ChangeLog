@@ -1,3 +1,8 @@
+2007-05-07  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: don't use length() on arrays;
+	doesn't work on older gawk versions.  Calculate size manually instead.
+
 2007-05-07  Raja R Harinath  <rharinath@novell.com>
 
 	Fix parallel make.
