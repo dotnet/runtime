@@ -1,3 +1,9 @@
+2007-05-07  Raja R Harinath  <rharinath@novell.com>
+
+	Fix parallel make.
+	* runtime/Makefile.am (test-support-file): Remove.  Move rules ...
+	(_tmpinst/bin/mcs, _tmpinst/bin/gmcs, _tmpinst/bin/ilasm): ... here.
+
 2007-05-05  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-provides.in: don't use 'which' anymore (never solved
