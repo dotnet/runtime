@@ -3,6 +3,7 @@
 	Fix parallel make.
 	* runtime/Makefile.am (test-support-file): Remove.  Move rules ...
 	(_tmpinst/bin/mcs, _tmpinst/bin/gmcs, _tmpinst/bin/ilasm): ... here.
+	Reported by "Stephen A. Jazdzewski" <steve@jazd.com>
 
 2007-05-05  Wade Berrier  <wberrier@novell.com>
 
