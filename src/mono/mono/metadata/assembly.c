@@ -1755,7 +1755,13 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			tmp++;
 			continue;
 		}
-		
+
+		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
+			/* this is ignored for now, until we can change MonoAssemblyName */
+			tmp++;
+			continue;
+		}
+
 		g_strfreev (parts);
 		return FALSE;
 	}
