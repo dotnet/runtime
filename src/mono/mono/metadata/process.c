@@ -802,12 +802,17 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	gboolean free_shell_path = TRUE;
 	gchar *spath = NULL;
 	MonoString *cmd = proc_start_info->arguments;
+	guint32 creation_flags;
 	
 	startinfo.cb=sizeof(STARTUPINFO);
 	startinfo.dwFlags=STARTF_USESTDHANDLES;
 	startinfo.hStdInput=stdin_handle;
 	startinfo.hStdOutput=stdout_handle;
 	startinfo.hStdError=stderr_handle;
+
+	creation_flags = CREATE_UNICODE_ENVIRONMENT;
+	if (proc_start_info->create_no_window)
+		creation_flags |= CREATE_NO_WINDOW;
 	
 	shell_path = mono_string_chars (proc_start_info->filename);
 	complete_path (shell_path, &spath);
@@ -885,8 +890,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	} else {
 		dir=mono_string_chars (proc_start_info->working_directory);
 	}
-	
-	ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, env_vars, dir, &startinfo, &procinfo);
+
+	ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
 
 	g_free (env_vars);
 	if (free_shell_path)
