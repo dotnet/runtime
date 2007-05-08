@@ -1319,6 +1319,20 @@ ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal (MonoReflectionField *
 }
 
 static MonoReflectionField*
+ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField *handle, MonoClass *klass)
+{
+	g_assert (handle);
+
+	if (!klass)
+		klass = handle->parent;
+
+	/* FIXME: check that handle is a field of klass or of a parent: return null
+	 * and throw the exception in managed code.
+	 */
+	return mono_field_get_object (mono_domain_get (), klass, handle);
+}
+
+static MonoReflectionField*
 ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -4360,6 +4374,15 @@ ves_icall_GetCurrentMethod (void)
 	MONO_ARCH_SAVE_REGS;
 
 	return mono_method_get_object (mono_domain_get (), m, NULL);
+}
+
+static MonoReflectionMethod*
+ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMethod *method, MonoClass *klass)
+{
+	/* FIXME check that method belongs to klass or a parent */
+	if (!klass)
+		klass = method->klass;
+	return mono_method_get_object (mono_domain_get (), method, klass);
 }
 
 static MonoReflectionMethod*
