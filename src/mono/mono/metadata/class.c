@@ -1677,10 +1677,65 @@ cache_interface_offsets (int max_iid, int *data)
 	return cached;
 }
 
+static int
+compare_interface_ids (const void *p_key, const void *p_element) {
+	const MonoClass *key = p_key;
+	const MonoClass *element = *(MonoClass**) p_element;
+	
+	return (key->interface_id - element->interface_id);
+}
 
 int
 mono_class_interface_offset (MonoClass *klass, MonoClass *interface) {
-	return ((interface->interface_id <= klass->max_interface_id) ? (klass->interface_offsets [interface->interface_id]) : -1);
+	MonoClass **result = bsearch (
+			interface,
+			klass->interfaces_packed,
+			klass->interface_offsets_count,
+			sizeof (MonoClass *),
+			compare_interface_ids);
+	if (result) {
+		return klass->interface_offsets_packed [result - (klass->interfaces_packed)];
+	} else {
+		return -1;
+	}
+}
+
+static void
+print_implemented_interfaces (MonoClass *klass) {
+	GPtrArray *ifaces = NULL;
+	int i;
+	int ancestor_level = 0;
+	
+	printf ("Packed interface table for class %s has size %d\n", klass->name, klass->interface_offsets_count);
+	for (i = 0; i < klass->interface_offsets_count; i++)
+		printf ("  [%d][UUID %d][SLOT %d] interface %s\n", i,
+				klass->interfaces_packed [i]->interface_id,
+				klass->interface_offsets_packed [i],
+				klass->interfaces_packed [i]->name );
+	printf ("Interface flags: ");
+	for (i = 0; i <= klass->max_interface_id; i++)
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
+			printf ("(%d,T)", i);
+		else
+			printf ("(%d,F)", i);
+	printf ("\n");
+	printf ("Dump interface flags:");
+	for (i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
+		printf (" %02X", klass->interface_bitmap [i]);
+	printf ("\n");
+	while (klass != NULL) {
+		printf ("[LEVEL %d] Implemented interfaces by class %s:\n", ancestor_level, klass->name);
+		ifaces = mono_class_get_implemented_interfaces (klass);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; i++) {
+				MonoClass *ic = g_ptr_array_index (ifaces, i);
+				printf ("  [UIID %d] interface %s\n", ic->interface_id, ic->name);
+			}
+			g_ptr_array_free (ifaces, TRUE);
+		}
+		ancestor_level ++;
+		klass = klass->parent;
+	}
 }
 
 /*
@@ -1691,8 +1746,10 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 {
 	MonoClass *k, *ic;
 	int i, max_iid;
-	int *cached_data;
+	MonoClass **interfaces_full;
+	int *interface_offsets_full;
 	GPtrArray *ifaces;
+	int interface_offsets_count;
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -1723,16 +1780,20 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 	class->max_interface_id = max_iid;
 	/* compute vtable offset for interfaces */
-	class->interface_offsets = g_malloc (sizeof (int) * (max_iid + 1));
+	interfaces_full = g_malloc (sizeof (MonoClass*) * (max_iid + 1));
+	interface_offsets_full = g_malloc (sizeof (int) * (max_iid + 1));
 
-	for (i = 0; i <= max_iid; i++)
-		class->interface_offsets [i] = -1;
+	for (i = 0; i <= max_iid; i++) {
+		interfaces_full [i] = NULL;
+		interface_offsets_full [i] = -1;
+	}
 
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
 			ic = g_ptr_array_index (ifaces, i);
-			class->interface_offsets [ic->interface_id] = cur_slot;
+			interfaces_full [ic->interface_id] = ic;
+			interface_offsets_full [ic->interface_id] = cur_slot;
 			cur_slot += ic->method.count;
 		}
 		g_ptr_array_free (ifaces, TRUE);
@@ -1744,26 +1805,49 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			for (i = 0; i < ifaces->len; ++i) {
 				ic = g_ptr_array_index (ifaces, i);
 
-				if (class->interface_offsets [ic->interface_id] == -1) {
-					int io = k->interface_offsets [ic->interface_id];
+				if (interface_offsets_full [ic->interface_id] == -1) {
+					int io = mono_class_interface_offset (k, ic);
 
 					g_assert (io >= 0);
 
-					class->interface_offsets [ic->interface_id] = io;
+					interfaces_full [ic->interface_id] = ic;
+					interface_offsets_full [ic->interface_id] = io;
 				}
 			}
 			g_ptr_array_free (ifaces, TRUE);
 		}
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (class))
-		class->interface_offsets [class->interface_id] = cur_slot;
+	if (MONO_CLASS_IS_INTERFACE (class)) {
+		interfaces_full [class->interface_id] = class;
+		interface_offsets_full [class->interface_id] = cur_slot;
+	}
 
-	cached_data = cache_interface_offsets (max_iid + 1, class->interface_offsets);
-	g_free (class->interface_offsets);
-	class->interface_offsets = cached_data;
-
-	return cur_slot;
+	for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
+		if (interface_offsets_full [i] != -1) {
+			interface_offsets_count ++;
+		}
+	}
+	class->interface_offsets_count = interface_offsets_count;
+	class->interfaces_packed = g_malloc (sizeof (MonoClass*) * interface_offsets_count);
+	class->interface_offsets_packed = g_malloc (sizeof (int) * interface_offsets_count);
+	class->interface_bitmap = g_malloc0 ((sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
+	for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
+		if (interface_offsets_full [i] != -1) {
+			class->interface_bitmap [i >> 3] |= (1 << (i & 7));
+			class->interfaces_packed [interface_offsets_count] = interfaces_full [i];
+			class->interface_offsets_packed [interface_offsets_count] = interface_offsets_full [i];
+			interface_offsets_count ++;
+		}
+	}
+	
+	g_free (interfaces_full);
+	g_free (interface_offsets_full);
+	
+	//printf ("JUST DONE: ");
+	//print_implemented_interfaces (class);
+ 
+ 	return cur_slot;
 }
 
 /*
@@ -2211,6 +2295,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	if (mono_print_vtable) {
 		int icount = 0;
 
+		print_implemented_interfaces (class);
+		
 		for (i = 0; i <= max_iid; i++)
 			if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, i))
 				icount++;
@@ -4376,7 +4462,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return FALSE;
 
 		/* interface_offsets might not be set for dynamic classes */
-		if (oklass->reflection_info && !oklass->interface_offsets)
+		if (oklass->reflection_info && !oklass->interface_bitmap)
 			/* 
 			 * oklass might be a generic type parameter but they have 
 			 * interface_offsets set.

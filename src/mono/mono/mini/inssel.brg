@@ -1602,23 +1602,36 @@ mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, Mo
 	}
 }
 
-/* Emit code which loads <klass_reg>->interface_offsets [klass->interface_id] */
+/* 
+ * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoKlass
+ * stored in "klass_reg" implements the interface "klass".
+ */
 static void
-mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, MonoClass *klass)
+mini_emit_load_intf_bit_reg_class (MonoCompile *s, int intf_bit_reg, int klass_reg, MonoClass *klass)
 {
-	int ioffset_reg = mono_regstate_next_int (s->rs);
+	int ibitmap_reg = mono_regstate_next_int (s->rs);
+	int ibitmap_byte_reg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, ibitmap_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_bitmap));
 
 	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
 		int shifted_iid_reg = mono_regstate_next_int (s->rs);
+		int ibitmap_byte_address_reg = mono_regstate_next_int (s->rs);
+		int masked_iid_reg = mono_regstate_next_int (s->rs);
+		int iid_one_bit_reg = mono_regstate_next_int (s->rs);
+		int iid_bit_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, shifted_iid_reg, iid_reg, 2);
-		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, shifted_iid_reg);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, 0);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, shifted_iid_reg, iid_reg, 3);
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ibitmap_byte_address_reg, ibitmap_reg, shifted_iid_reg);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, ibitmap_byte_reg, ibitmap_byte_address_reg, 0);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_AND_IMM, masked_iid_reg, iid_reg, 7);
+		MONO_EMIT_NEW_ICONST (s, iid_one_bit_reg, 1);
+		MONO_EMIT_NEW_BIALU (s, CEE_SHL, iid_bit_reg, iid_one_bit_reg, masked_iid_reg);
+		MONO_EMIT_NEW_BIALU (s, CEE_AND, intf_bit_reg, ibitmap_byte_reg, iid_bit_reg);
 	} else {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, klass->interface_id * sizeof (int));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, ibitmap_byte_reg, ibitmap_reg, klass->interface_id >> 3);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_AND_IMM, intf_bit_reg, ibitmap_byte_reg, 1 << (klass->interface_id & 7));
 	}
 }
 
@@ -1713,12 +1726,12 @@ mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, 
 static void
 mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
-	int intf_reg = mono_regstate_next_int (s->rs);
+	int intf_bit_reg = mono_regstate_next_int (s->rs);
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, false_target);
-	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
+	mini_emit_load_intf_bit_reg_class (s, intf_bit_reg, klass_reg, klass);
 	/* the object_is_null target simply copies the input register to the output */
-	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BGE, intf_reg, -1, true_target);
+	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_bit_reg, 0, true_target);
 }
 
 static void
@@ -1738,11 +1751,11 @@ mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 static void
 mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
-	int intf_reg = mono_regstate_next_int (s->rs);
+	int intf_bit_reg = mono_regstate_next_int (s->rs);
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, NULL);
-	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
-	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_reg, -1, "InvalidCastException");
+	mini_emit_load_intf_bit_reg_class (s, intf_bit_reg, klass_reg, klass);
+	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_bit_reg, 0, "InvalidCastException");
 }
 
 static void
