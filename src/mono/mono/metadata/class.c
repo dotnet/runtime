@@ -1677,6 +1677,12 @@ cache_interface_offsets (int max_iid, int *data)
 	return cached;
 }
 
+
+int
+mono_class_interface_offset (MonoClass *klass, MonoClass *interface) {
+	return ((interface->interface_id <= klass->max_interface_id) ? (klass->interface_offsets [interface->interface_id]) : -1);
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1876,7 +1882,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			int dslot;
 			mono_class_setup_methods (decl->klass);
 			g_assert (decl->slot != -1);
-			dslot = decl->slot + class->interface_offsets [decl->klass->interface_id];
+			dslot = decl->slot + mono_class_interface_offset (class, decl->klass);
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
 			if (!override_map)
@@ -1906,7 +1912,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			if (pifaces)
 				pic = g_ptr_array_index (pifaces, i);
 			g_assert (ic->interface_id <= k->max_interface_id);
-			io = k->interface_offsets [ic->interface_id];
+			io = mono_class_interface_offset (k, ic);
 
 			g_assert (io >= 0);
 			g_assert (io <= max_vtsize);
@@ -2047,10 +2053,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						MonoClass *parent = class->parent;
 						
 						for (; parent; parent = parent->parent) {
-							if ((ic->interface_id <= parent->max_interface_id) && 
-									(parent->interface_offsets [ic->interface_id] != -1) &&
+							if (MONO_CLASS_IMPLEMENTS_INTERFACE (parent, ic->interface_id) &&
 									parent->vtable) {
-								vtable [io + l] = parent->vtable [parent->interface_offsets [ic->interface_id] + l];
+								vtable [io + l] = parent->vtable [mono_class_interface_offset (parent, ic) + l];
 							}
 						}
 					}
@@ -2207,7 +2212,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		int icount = 0;
 
 		for (i = 0; i <= max_iid; i++)
-			if (class->interface_offsets [i] != -1)
+			if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, i))
 				icount++;
 
 		printf ("VTable %s (vtable entries = %d, interfaces = %d)\n", mono_type_full_name (&class->byval_arg), 
@@ -2231,7 +2236,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			for (i = 0; i < class->interface_count; i++) {
 				ic = class->interfaces [i];
 				printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",  
-					class->interface_offsets [ic->interface_id],
+					mono_class_interface_offset (class, ic),
 					ic->method.count, ic->interface_id, mono_type_full_name (&ic->byval_arg));
 			}
 
@@ -2239,7 +2244,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				for (i = 0; i < k->interface_count; i++) {
 					ic = k->interfaces [i]; 
 					printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",  
-						class->interface_offsets [ic->interface_id],
+						mono_class_interface_offset (class, ic),
 						ic->method.count, ic->interface_id, mono_type_full_name (&ic->byval_arg));
 				}
 			}
@@ -2625,7 +2630,7 @@ mono_class_init (MonoClass *class)
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
 		/* 
-		 * class->interface_offsets is needed for the castclass/isinst code, so
+		 * knowledge of interface offsets is needed for the castclass/isinst code, so
 		 * we have to setup them for interfaces, too.
 		 */
 		setup_interface_offsets (class, 0);
@@ -4332,8 +4337,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 {
 	g_assert (klassc->idepth > 0);
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
-		if ((klassc->interface_id <= klass->max_interface_id) &&
-			(klass->interface_offsets [klassc->interface_id] >= 0))
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, klassc->interface_id))
 			return TRUE;
 	} else if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && MONO_CLASS_IS_INTERFACE (klass)) {
 		int i;
@@ -4379,8 +4383,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			 */
  			return mono_reflection_call_is_assignable_to (oklass, klass);
 
-		if ((klass->interface_id <= oklass->max_interface_id) &&
-		    (oklass->interface_offsets [klass->interface_id] != -1))
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
 	} else if (klass->rank) {
 		MonoClass *eclass, *eoclass;

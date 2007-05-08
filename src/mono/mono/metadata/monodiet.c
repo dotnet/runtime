@@ -336,9 +336,8 @@ check_vmethods (MonoClass *klass, MonoMethod *method)
 	if (!vtable)
 		return;
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		if (method->klass->interface_id <= klass->max_interface_id &&
-				(klass->interface_offsets [method->klass->interface_id] >= 0)) {
-			int iface_offset = klass->interface_offsets [method->klass->interface_id];
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, method->klass->interface_id)) {
+			int iface_offset = mono_class_interface_offset (klass, method->klass);
 			g_assert (method->slot != -1);
 			if (vtable [iface_offset + method->slot])
 				add_types_from_method (vtable [iface_offset + method->slot]);

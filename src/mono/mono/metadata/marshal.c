@@ -425,7 +425,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 		int offset;
 		for (i = 0; i < ifaces->len; ++i) {
 			ic = g_ptr_array_index (ifaces, i);
-			offset = method->klass->interface_offsets[ic->interface_id];
+			offset = mono_class_interface_offset (method->klass, ic);
 			if (method->slot >= offset && method->slot < offset + ic->method.count) {
 				slot -= offset;
 				break;
@@ -463,7 +463,7 @@ cominterop_get_method_interface (MonoMethod* method)
 		int offset;
 		for (i = 0; i < ifaces->len; ++i) {
 			ic = g_ptr_array_index (ifaces, i);
-			offset = method->klass->interface_offsets[ic->interface_id];
+			offset = mono_class_interface_offset (method->klass, ic);
 			if (method->slot >= offset && method->slot < offset + ic->method.count)
 				break;
 			ic = NULL;

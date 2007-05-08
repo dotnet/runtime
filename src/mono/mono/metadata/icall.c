@@ -1763,11 +1763,11 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	mono_class_setup_vtable (class);
 
 	/* type doesn't implement iface: the exception is thrown in managed code */
-	if ((iclass->interface_id > class->max_interface_id) || !class->interface_offsets [iclass->interface_id])
+	if (! MONO_CLASS_IMPLEMENTS_INTERFACE (class, iclass->interface_id))
 			return;
 
 	len = mono_class_num_methods (iclass);
-	ioffset = class->interface_offsets [iclass->interface_id];
+	ioffset = mono_class_interface_offset (class, iclass);
 	domain = mono_object_domain (type);
 	*targets = mono_array_new (domain, mono_defaults.method_info_class, len);
 	*methods = mono_array_new (domain, mono_defaults.method_info_class, len);
