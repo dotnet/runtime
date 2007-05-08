@@ -2688,7 +2688,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_AMD64_ICOMPARE_REG_MEMBASE:
 			amd64_alu_reg_membase_size (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
-		case CEE_BREAK:
+		case OP_BREAK:
 			amd64_breakpoint (code);
 			break;
 		case OP_ADDCC:
@@ -3083,7 +3083,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case CEE_JMP: {
+		case OP_JMP: {
 			/*
 			 * Note: this 'frame destruction' logic is useful for tail calls, too.
 			 * Keep in sync with the code in emit_epilog.
@@ -3275,7 +3275,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_RET:
 			amd64_ret (code);
 			break;
-		case CEE_THROW: {
+		case OP_THROW: {
 			amd64_mov_reg_reg (code, AMD64_RDI, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
@@ -3299,9 +3299,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
-		case CEE_NOP:
+		case OP_NOP:
 			break;
-		case CEE_BR:
+		case OP_BR:
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 			//break;
@@ -4593,7 +4593,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
-	/* the code restoring the registers must be kept in sync with CEE_JMP */
+	/* the code restoring the registers must be kept in sync with OP_JMP */
 	pos = 0;
 	
 	if (method->save_lmf) {

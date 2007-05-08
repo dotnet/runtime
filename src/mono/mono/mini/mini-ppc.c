@@ -2153,7 +2153,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-		case CEE_BREAK:
+		case OP_BREAK:
 			ppc_break (code);
 			break;
 		case OP_ADDCC:
@@ -2455,7 +2455,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
-		case CEE_JMP: {
+		case OP_JMP: {
 			int i, pos = 0;
 			
 			/*
@@ -2585,7 +2585,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_RET:
 			ppc_blr (code);
 			break;
-		case CEE_THROW: {
+		case OP_THROW: {
 			//ppc_break (code);
 			ppc_mr (code, ppc_r3, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -2636,7 +2636,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mtlr (code, ppc_r0);
 			ppc_blr (code);
 			break;
-		case CEE_ENDFINALLY:
+		case OP_ENDFINALLY:
 			ppc_lwz (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
 			ppc_mtlr (code, ppc_r0);
 			ppc_blr (code);
@@ -2648,7 +2648,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
-		case CEE_BR:
+		case OP_BR:
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 			//break;
@@ -3429,7 +3429,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/*
-	 * Keep in sync with CEE_JMP
+	 * Keep in sync with OP_JMP
 	 */
 	code = cfg->native_code + cfg->code_len;
 

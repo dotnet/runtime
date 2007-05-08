@@ -17,7 +17,7 @@ stmt: OP_START_HANDLER {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_ENDFINALLY {
+stmt: OP_ENDFINALLY {
 	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
 	tree->inst_left = spvar;
 	mono_bblock_add_inst (s->cbb, tree);

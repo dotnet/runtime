@@ -448,7 +448,7 @@ mono_ssa_replace_copies (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, c
 	if (inst->ssa_op == MONO_SSA_STORE && inst->inst_i1->ssa_op == MONO_SSA_LOAD &&
 	    inst->inst_i0->inst_c0 == inst->inst_i1->inst_i0->inst_c0) {
 		inst->ssa_op = MONO_SSA_NOP;
-		inst->opcode = CEE_NOP;
+		inst->opcode = OP_NOP;
 	}
 
 }
@@ -493,7 +493,7 @@ mono_ssa_remove (MonoCompile *cfg)
 				}
 
 				/* remove the phi functions */
-				inst->opcode = CEE_NOP;
+				inst->opcode = OP_NOP;
 				inst->ssa_op = MONO_SSA_NOP;
 			} 
 		}
@@ -696,7 +696,7 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 														
 						//mono_print_tree (u); printf ("\n");
 							
-						inst->opcode = CEE_NOP;
+						inst->opcode = OP_NOP;
 						inst->ssa_op = MONO_SSA_NOP;
 					}
 				}
@@ -711,7 +711,7 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 					i2->def = inst;
 					i1->def = NULL;
 					i1->uses = NULL;
-					next->opcode = CEE_NOP;
+					next->opcode = OP_NOP;
 					next->ssa_op = MONO_SSA_NOP;
 				}
 			}
@@ -933,14 +933,14 @@ fold_tree (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **carr
 		if (target) {
 			bb->out_bb [0] = target;
 			bb->out_count = 1;
-			inst->opcode = CEE_BR;
+			inst->opcode = OP_BR;
 			inst->inst_target_bb = target;
 		}
 	} else if (inst->opcode == CEE_SWITCH && (evaluate_const_tree (cfg, inst->inst_left, &a, carray) == 1) && (a >= 0) && (a < GPOINTER_TO_INT (inst->klass))) {
 		bb->out_bb [0] = inst->inst_many_bb [a];
 		bb->out_count = 1;
 		inst->inst_target_bb = bb->out_bb [0];
-		inst->opcode = CEE_BR;
+		inst->opcode = OP_BR;
 	}
 
 }
@@ -1226,7 +1226,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 			}
 			//if (i1->opcode != OP_PHI) printf ("SSA DEADCE DEAD LOCAL\n");
 
-			info->def->opcode = CEE_NOP;
+			info->def->opcode = OP_NOP;
 			info->def->ssa_op = MONO_SSA_NOP;
 		}
 

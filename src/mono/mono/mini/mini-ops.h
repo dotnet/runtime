@@ -61,6 +61,7 @@ MINI_OP(OP_REGOFFSET,	"regoffset")
 MINI_OP(OP_LABEL,	"label")
 MINI_OP(OP_CHECK_ARRAY_TYPE,	"check_array_type")
 MINI_OP(OP_ARRAY_RANK,	"array_rank")
+MINI_OP(OP_THROW,	"throw")
 MINI_OP(OP_THROW_OR_NULL,	"throw_or_null")
 MINI_OP(OP_RETHROW,	"op_rethrow")
 MINI_OP(OP_REFANYTYPE,	"refanytype")
@@ -126,6 +127,11 @@ MINI_OP(OP_XOR_IMM,    "xor_imm")
 MINI_OP(OP_SHL_IMM,    "shl_imm")
 MINI_OP(OP_SHR_IMM,    "shr_imm")
 MINI_OP(OP_SHR_UN_IMM, "shr_un_imm")
+
+MINI_OP(OP_NOP,        "nop")
+MINI_OP(OP_BR,         "br")
+MINI_OP(OP_JMP,        "jmp")
+MINI_OP(OP_BREAK,      "break")
 
 /* exceptions: must be in the same order as the matching CEE_ branch opcodes */
 MINI_OP(OP_COND_EXC_EQ, "cond_exc_eq")
@@ -439,6 +445,7 @@ MINI_OP(OP_UNBOXCAST  , "unboxcast")
 MINI_OP(OP_CALL_HANDLER  , "call_handler")
 MINI_OP(OP_START_HANDLER  , "start_handler")
 MINI_OP(OP_ENDFILTER,  "op_endfilter")
+MINI_OP(OP_ENDFINALLY,  "endfinally")
 
 /* inline (long)int * (long)int */
 MINI_OP(OP_BIGMUL, "op_bigmul")

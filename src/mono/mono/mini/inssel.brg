@@ -765,10 +765,10 @@ stmt: OP_LABEL {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_NOP "0" {
+stmt: OP_NOP "0" {
 }
 
-stmt: CEE_BREAK "0" {
+stmt: OP_BREAK "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -821,7 +821,7 @@ stmt: CEE_SWITCH (reg) "2" {
 	MONO_EMIT_UNALU (s, tree, OP_BR_REG, -1, target_reg);
 }
 
-stmt: CEE_BR "0" {
+stmt: OP_BR "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -946,14 +946,14 @@ stmt: CEE_POP (CEE_LDIND_U4 (OP_REGVAR))
 stmt: CEE_POP (CEE_LDIND_I (OP_REGVAR))
 stmt: CEE_POP (CEE_LDIND_REF (OP_REGVAR))
 
-stmt: CEE_JMP "0" {
+stmt: OP_JMP "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 # exception handling
 
-stmt: CEE_THROW (reg) {
-	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
+stmt: OP_THROW (reg) {
+	MONO_EMIT_UNALU (s, tree, OP_THROW, -1, state->left->reg1);
 }
 
 stmt: OP_RETHROW (reg) {
@@ -971,12 +971,12 @@ stmt: OP_THROW_OR_NULL (reg, reg) {
 	 * the abort exception is more important than getting the sematics right.
 	 */
 	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, state->left->reg1, 0, dont_throw);
-	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->reg1);
+	MONO_EMIT_UNALU (s, tree, OP_THROW, -1, state->left->reg1);
 	mono_bblock_add_inst (s->cbb, dont_throw);
 }
 
-stmt: CEE_THROW (CEE_LDIND_REF (OP_REGVAR)) {
-	MONO_EMIT_UNALU (s, tree, CEE_THROW, -1, state->left->left->tree->dreg);
+stmt: OP_THROW (CEE_LDIND_REF (OP_REGVAR)) {
+	MONO_EMIT_UNALU (s, tree, OP_THROW, -1, state->left->left->tree->dreg);
 }
 
 stmt: OP_CALL_HANDLER {
@@ -987,7 +987,7 @@ stmt: OP_START_HANDLER "2" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_ENDFINALLY "2" {
+stmt: OP_ENDFINALLY "2" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -1052,7 +1052,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
 						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
+				MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
 				int const_reg = -1;
 				
@@ -1071,7 +1071,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
 						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
+				MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class) {
 				if (s->compile_aot) {
 					int const_reg = mono_regstate_next_int (s->rs);
@@ -1081,7 +1081,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, eclass_reg,
 						mono_defaults.enum_class, object_is_null);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
+				MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false_label);
 			} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				mini_emit_isninst_iface_class_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			} else {
@@ -1109,7 +1109,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 					MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, klass_reg, klass, false_label);
 				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, object_is_null);
+				MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, object_is_null);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 				/* the object_is_null target simply copies the input register to the output */
@@ -1120,7 +1120,7 @@ reg: CEE_ISINST (reg) {
 
 	mono_bblock_add_inst (s->cbb, false_label);
 	MONO_EMIT_NEW_ICONST (s, state->reg1, 0);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
 	mono_bblock_add_inst (s->cbb, object_is_null);
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
 	mono_bblock_add_inst (s->cbb, end_label);
@@ -1187,7 +1187,7 @@ reg: OP_CISINST (reg) {
 		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
 		
 		mini_emit_isninst_cast (s, klass_reg, klass, false2_label, true_label);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false2_label);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false2_label);
 		
 		mono_bblock_add_inst (s->cbb, no_proxy_label);
 		mini_emit_isninst_cast (s, klass_reg, klass, false_label, true_label);
@@ -1195,10 +1195,10 @@ reg: OP_CISINST (reg) {
 
 	mono_bblock_add_inst (s->cbb, false_label);
 	MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
 	mono_bblock_add_inst (s->cbb, false2_label);
 	MONO_EMIT_NEW_ICONST (s, state->reg1, 2);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
 	mono_bblock_add_inst (s->cbb, true_label);
 	MONO_EMIT_NEW_ICONST (s, state->reg1, 0);
 	mono_bblock_add_inst (s->cbb, end_label);
@@ -1316,7 +1316,7 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, tmp_reg, 0, "InvalidCastException");
 		
 		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
 		
 	} else {
 
@@ -1344,7 +1344,7 @@ reg: OP_CCASTCLASS (reg) {
 		mini_emit_isninst_cast (s, klass_reg, klass, fail_label, ok_result_label);
 		mono_bblock_add_inst (s->cbb, fail_label);
 		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
-		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
 		
 		mono_bblock_add_inst (s->cbb, no_proxy_label);
 		/* Again, use ok_result_label as "object_is_null" */

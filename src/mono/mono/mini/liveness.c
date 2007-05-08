@@ -148,7 +148,7 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 				affected_variable = affected_variable->next;
 			}
 		}
-	} else if (inst->opcode == CEE_JMP) {
+	} else if (inst->opcode == OP_JMP) {
 		/* Keep arguments live! */
 		int i;
 		for (i = 0; i < cfg->num_varinfo; i++) {

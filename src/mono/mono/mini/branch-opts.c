@@ -68,7 +68,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 						/* Create dummy inst to allow easier integration in
 						 * arch dependent code (opcode ignored)
 						 */
-						MONO_INST_NEW (cfg, jump, CEE_BR);
+						MONO_INST_NEW (cfg, jump, OP_BR);
 
 						/* Allocate memory for our branch target */
 						jump->inst_i1 = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));

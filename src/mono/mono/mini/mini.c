@@ -86,7 +86,7 @@
 #define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
-#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == CEE_SWITCH))
+#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == OP_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == CEE_SWITCH))
 
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
@@ -1764,7 +1764,7 @@ mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 	case CEE_BGT_UN:
 	case CEE_BLE_UN:
 	case CEE_BLT_UN:
-	case CEE_BR:
+	case OP_BR:
 	case CEE_SWITCH:
 		prev = bb->code;
 		while (prev->next && prev->next != bb->last_ins)
@@ -2727,7 +2727,7 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 			int temp;	\
 			NEW_LOCLOADA (cfg, (ins), (idx));	\
 			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
-			MONO_INST_NEW (cfg, (ins), CEE_NOP);	\
+			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
 		}	\
 	} while (0)
 #define LDARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
@@ -2743,7 +2743,7 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 			int temp;	\
 			NEW_ARGLOADA (cfg, (ins), (idx));	\
 			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
-			MONO_INST_NEW (cfg, (ins), CEE_NOP);	\
+			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
 		}	\
 	} while (0)
 #else
@@ -3251,7 +3251,7 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			return ins;
 #endif
 		} else if (strcmp (cmethod->name, ".ctor") == 0) {
- 			MONO_INST_NEW (cfg, ins, CEE_NOP);
+ 			MONO_INST_NEW (cfg, ins, OP_NOP);
 			return ins;
 		} else
 			return NULL;
@@ -3302,7 +3302,7 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
 		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
 				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
-			MONO_INST_NEW (cfg, ins, CEE_BREAK);
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			return ins;
 		}
 		if (cmethod->name [0] == 'g' && strcmp (cmethod->name, "get_IsRunningOnWindows") == 0
@@ -3484,7 +3484,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		mono_jit_stats.inlined_methods++;
 
 		/* always add some code to avoid block split failures */
-		MONO_INST_NEW (cfg, ins, CEE_NOP);
+		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (bblock, ins);
 		ins->cil_code = ip;
 
@@ -4097,7 +4097,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->method == method) {
 		breakpoint_id = mono_debugger_method_has_breakpoint (method);
 		if (breakpoint_id && (mono_debug_format != MONO_DEBUG_FORMAT_DEBUGGER)) {
-			MONO_INST_NEW (cfg, ins, CEE_BREAK);
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			MONO_ADD_INS (bblock, ins);
 		}
 	}
@@ -4304,8 +4304,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		switch (*ip) {
 		case CEE_NOP:
+			MONO_INST_NEW (cfg, ins, OP_NOP);
+			ins->cil_code = ip++;
+			MONO_ADD_INS (bblock, ins);
+			break;
 		case CEE_BREAK:
-			MONO_INST_NEW (cfg, ins, *ip);
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
 			break;
@@ -4576,7 +4580,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			if (stack_start != sp)
 				UNVERIFIED;
-			MONO_INST_NEW (cfg, ins, CEE_JMP);
+			MONO_INST_NEW (cfg, ins, OP_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
 			cmethod = mini_get_method (method, token, NULL, generic_context);
@@ -4772,7 +4776,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
 				/*
 				 * We implement tail calls by storing the actual arguments into the 
-				 * argument variables, then emitting a CEE_JMP. Since the actual arguments
+				 * argument variables, then emitting a OP_JMP. Since the actual arguments
 				 * can refer to the arg variables, we have to spill them.
 				 */
 				handle_loaded_temps (cfg, bblock, sp, sp + n);
@@ -4798,7 +4802,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						MONO_ADD_INS (bblock, ins);
 				}
-				MONO_INST_NEW (cfg, ins, CEE_JMP);
+				MONO_INST_NEW (cfg, ins, OP_JMP);
 				ins->cil_code = ip;
 				ins->inst_p0 = cmethod;
 				ins->inst_p1 = arg_array [0];
@@ -4886,7 +4890,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins->cil_code = ip;
 						MONO_ADD_INS (bblock, ins);
 					}
-					MONO_INST_NEW (cfg, ins, CEE_BR);
+					MONO_INST_NEW (cfg, ins, OP_BR);
 					ins->cil_code = ip;
 					MONO_ADD_INS (bblock, ins);
 					tblock = start_bblock->out_bb [0];
@@ -5012,7 +5016,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (!return_var);
 					CHECK_STACK (1);
 					--sp;
-					MONO_INST_NEW (cfg, ins, CEE_NOP);
+					MONO_INST_NEW (cfg, ins, OP_NOP);
 					ins->opcode = mono_type_to_stind (mono_method_signature (method)->ret);
 					if (ins->opcode == CEE_STOBJ) {
 						NEW_RETLOADA (cfg, ins);
@@ -5029,7 +5033,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			if (sp != stack_start)
 				UNVERIFIED;
-			MONO_INST_NEW (cfg, ins, CEE_BR);
+			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->cil_code = ip++;
 			ins->inst_target_bb = end_bblock;
 			MONO_ADD_INS (bblock, ins);
@@ -5038,7 +5042,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BR_S:
 			CHECK_OPSIZE (2);
-			MONO_INST_NEW (cfg, ins, CEE_BR);
+			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
 			target = ip + 1 + (signed char)(*ip);
@@ -5114,7 +5118,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BR:
 			CHECK_OPSIZE (5);
-			MONO_INST_NEW (cfg, ins, CEE_BR);
+			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
 			target = ip + 4 + (gint32)read32(ip);
@@ -5984,7 +5988,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_THROW:
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
+			MONO_INST_NEW (cfg, ins, OP_THROW);
 			--sp;
 			ins->inst_left = *sp;
 			ins->cil_code = ip++;
@@ -6437,7 +6441,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->cil_code = ip;
 				ins->inst_i0 = *sp;
 				ip += 5;
-				MONO_INST_NEW (cfg, ins, CEE_BR);
+				MONO_INST_NEW (cfg, ins, OP_BR);
 				ins->cil_code = ip;
 				MONO_ADD_INS (bblock, ins);
 				if (*ip == CEE_BRTRUE_S) {
@@ -6924,7 +6928,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip++;
 			break;
 		case CEE_ENDFINALLY:
-			MONO_INST_NEW (cfg, ins, *ip);
+			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (bblock, ins);
 			ins->cil_code = ip++;
 			start_new_bblock = 1;
@@ -7006,7 +7010,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_list_free (handlers);
 			} 
 
-			MONO_INST_NEW (cfg, ins, CEE_BR);
+			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->cil_code = ip;
 			MONO_ADD_INS (bblock, ins);
 			GET_BBLOCK (cfg, tblock, target);
@@ -7150,7 +7154,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (sp != stack_start)
 					UNVERIFIED;
 				
-				MONO_INST_NEW (cfg, ins, CEE_BR);
+				MONO_INST_NEW (cfg, ins, OP_BR);
 				ins->cil_code = ip;
 				ins->inst_target_bb = end_bblock;
 				MONO_ADD_INS (bblock, ins);
@@ -7842,9 +7846,9 @@ mono_print_tree (MonoInst *tree) {
 	}
 	case OP_RENAME:
 	case OP_RETARG:
-	case CEE_NOP:
-	case CEE_JMP:
-	case CEE_BREAK:
+	case OP_NOP:
+	case OP_JMP:
+	case OP_BREAK:
 		break;
 	case OP_LOAD_MEMBASE:
 	case OP_LOADI4_MEMBASE:
@@ -7855,7 +7859,7 @@ mono_print_tree (MonoInst *tree) {
 	case OP_LOADI2_MEMBASE:
 		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), (int)tree->inst_offset);
 		break;
-	case CEE_BR:
+	case OP_BR:
 	case OP_CALL_HANDLER:
 		printf ("[B%d]", tree->inst_target_bb->block_num);
 		break;
@@ -9280,7 +9284,7 @@ replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBl
 	}
 	if (bb->last_ins != NULL) {
 		switch (bb->last_ins->opcode) {
-		case CEE_BR:
+		case OP_BR:
 			if (bb->last_ins->inst_target_bb == orig) {
 				bb->last_ins->inst_target_bb = repl;
 			}
@@ -9353,9 +9357,9 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	
 	for (inst = bb->code; inst != NULL; inst = inst->next) {
 		switch (inst->opcode) {
-		case CEE_NOP:
+		case OP_NOP:
 			break;
-		case CEE_BR:
+		case OP_BR:
 			target_bb = inst->inst_target_bb;
 			break;
 		default:
@@ -9412,13 +9416,13 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		if ((previous_bb != cfg->bb_entry) &&
 				(previous_bb->region == bb->region) &&
 				((previous_bb->last_ins == NULL) ||
-				((previous_bb->last_ins->opcode != CEE_BR) &&
+				((previous_bb->last_ins->opcode != OP_BR) &&
 				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
 				(previous_bb->last_ins->opcode != CEE_SWITCH)))) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
-					MONO_INST_NEW (cfg, jump, CEE_BR);
+					MONO_INST_NEW (cfg, jump, OP_BR);
 					MONO_ADD_INS (previous_bb, jump);
 					jump->cil_code = previous_bb->cil_code;
 					jump->inst_target_bb = target_bb;
@@ -9446,7 +9450,7 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 
 	/* Nullify branch at the end of bb */
 	if (bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) {
-		bb->last_ins->opcode = CEE_NOP;
+		bb->last_ins->opcode = OP_NOP;
 	}		
 
 	if (bb->last_ins) {
@@ -9486,7 +9490,7 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (next && (!bb->last_ins || (bb->last_ins->opcode != OP_NOT_REACHED))) {
 		MonoInst *ins;
 
-		MONO_INST_NEW (cfg, ins, CEE_BR);
+		MONO_INST_NEW (cfg, ins, OP_BR);
 		MONO_ADD_INS (bb, ins);
 		link_bblock (cfg, bb, next);
 		ins->inst_target_bb = next;
@@ -9587,7 +9591,7 @@ try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
 			return FALSE;
 		condb->opcode = get_unsigned_condbranch (condb->opcode);
 		/* change the original condbranch to just point to the new unsigned check */
-		bb->last_ins->opcode = CEE_BR;
+		bb->last_ins->opcode = OP_BR;
 		bb->last_ins->inst_target_bb = falset;
 		replace_out_block (bb, truet, NULL);
 		replace_in_block (truet, bb, NULL);
@@ -9650,7 +9654,7 @@ optimize_branches (MonoCompile *cfg)
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
-				/* conditional branches where true and false targets are the same can be also replaced with CEE_BR */
+				/* conditional branches where true and false targets are the same can be also replaced with OP_BR */
 				if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
 					MonoInst *pop;
 					MONO_INST_NEW (cfg, pop, CEE_POP);
@@ -9659,7 +9663,7 @@ optimize_branches (MonoCompile *cfg)
 					MONO_INST_NEW (cfg, pop, CEE_POP);
 					pop->inst_left = bb->last_ins->inst_left->inst_right;
 					mono_add_ins_to_end (bb, pop);
-					bb->last_ins->opcode = CEE_BR;
+					bb->last_ins->opcode = OP_BR;
 					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
 					if (cfg->verbose_level > 2)
@@ -9670,8 +9674,8 @@ optimize_branches (MonoCompile *cfg)
 					/* the block are in sequence anyway ... */
 
 					/* branches to the following block can be removed */
-					if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
-						bb->last_ins->opcode = CEE_NOP;
+					if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
+						bb->last_ins->opcode = OP_NOP;
 						changed = TRUE;
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);
@@ -9708,9 +9712,9 @@ optimize_branches (MonoCompile *cfg)
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
-				if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
+				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
 					bbn = bb->last_ins->inst_target_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
 						
 						if (cfg->verbose_level > 2)
@@ -9740,14 +9744,14 @@ optimize_branches (MonoCompile *cfg)
 						/* if mono_eval_cond_branch () is ever taken to handle 
 						 * non-constant values to compare, issue a pop here.
 						 */
-						bb->last_ins->opcode = CEE_BR;
+						bb->last_ins->opcode = OP_BR;
 						bb->last_ins->inst_target_bb = taken_branch_target;
 						mono_unlink_bblock (cfg, bb, untaken_branch_target);
 						changed = TRUE;
 						continue;
 					}
 					bbn = bb->last_ins->inst_true_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)		
 							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
@@ -9772,7 +9776,7 @@ optimize_branches (MonoCompile *cfg)
 					}
 
 					bbn = bb->last_ins->inst_false_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
@@ -9980,7 +9984,7 @@ mini_select_instructions (MonoCompile *cfg)
 				bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
 			} else {			
 				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
-				inst->opcode = CEE_BR;
+				inst->opcode = OP_BR;
 				inst->inst_target_bb = bb->last_ins->inst_false_bb;
 				mono_bblock_add_inst (bb, inst);
 			}
@@ -10250,9 +10254,9 @@ remove_critical_edges (MonoCompile *cfg) {
 					if (previous_bb->region == bb->region) {
 						if (previous_bb != cfg->bb_entry) {
 							/* If previous_bb "followed through" to bb, */
-							/* keep it linked with a CEE_BR */
+							/* keep it linked with a OP_BR */
 							if ((previous_bb->last_ins == NULL) ||
-									((previous_bb->last_ins->opcode != CEE_BR) &&
+									((previous_bb->last_ins->opcode != OP_BR) &&
 									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
 									(previous_bb->last_ins->opcode != CEE_SWITCH))) {
 								int i;
@@ -10260,7 +10264,7 @@ remove_critical_edges (MonoCompile *cfg) {
 								for (i = 0; i < previous_bb->out_count; i++) {
 									if (previous_bb->out_bb [i] == bb) {
 										MonoInst *jump;
-										MONO_INST_NEW (cfg, jump, CEE_BR);
+										MONO_INST_NEW (cfg, jump, OP_BR);
 										MONO_ADD_INS (previous_bb, jump);
 										jump->cil_code = previous_bb->cil_code;
 										jump->inst_target_bb = bb;
@@ -10270,14 +10274,14 @@ remove_critical_edges (MonoCompile *cfg) {
 							}
 						} else {
 							/* We cannot add any inst to the entry BB, so we must */
-							/* put a new BB in the middle to hold the CEE_BR */
+							/* put a new BB in the middle to hold the OP_BR */
 							MonoInst *jump;
 							MonoBasicBlock *new_bb_after_entry = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 							new_bb_after_entry->block_num = cfg->num_bblocks++;
 //							new_bb_after_entry->real_offset = bb->real_offset;
 							new_bb_after_entry->region = bb->region;
 							
-							MONO_INST_NEW (cfg, jump, CEE_BR);
+							MONO_INST_NEW (cfg, jump, OP_BR);
 							MONO_ADD_INS (new_bb_after_entry, jump);
 							jump->cil_code = bb->cil_code;
 							jump->inst_target_bb = bb;

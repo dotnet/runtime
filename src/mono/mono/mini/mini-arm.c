@@ -1978,7 +1978,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (imm8 >= 0);
 			ARM_CMP_REG_IMM (code, ins->sreg1, imm8, rot_amount);
 			break;
-		case CEE_BREAK:
+		case OP_BREAK:
 			*(int*)code = 0xe7f001f0;
 			*(int*)code = 0xef9f0001;
 			code += 4;
@@ -2193,7 +2193,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_CVTS (code, ins->dreg, ins->dreg);
 #endif
 			break;
-		case CEE_JMP:
+		case OP_JMP:
 			/*
 			 * Keep in sync with mono_arch_emit_epilog
 			 */
@@ -2290,7 +2290,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
 			break;
-		case CEE_THROW: {
+		case OP_THROW: {
 			if (ins->sreg1 != ARMREG_R0)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -2342,7 +2342,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 			break;
-		case CEE_ENDFINALLY:
+		case OP_ENDFINALLY:
 			if (arm_is_imm12 (ins->inst_left->inst_offset)) {
 				ARM_LDR_IMM (code, ARMREG_IP, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 			} else {
@@ -2359,7 +2359,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
-		case CEE_BR:
+		case OP_BR:
 			if (ins->flags & MONO_INST_BRLABEL) {
 				/*if (ins->inst_i0->inst_c0) {
 					ARM_B (code, 0);
@@ -3209,7 +3209,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/*
-	 * Keep in sync with CEE_JMP
+	 * Keep in sync with OP_JMP
 	 */
 	code = cfg->native_code + cfg->code_len;
 

@@ -199,7 +199,7 @@ print_tree_node (MonoInst *tree) {
 	case OP_LOADI2_MEMBASE:
 		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), (int)tree->inst_offset);
 		break;
-	case CEE_BR:
+	case OP_BR:
 	case OP_CALL_HANDLER:
 		printf ("[B%d]", tree->inst_target_bb->block_num);
 		break;
@@ -944,7 +944,7 @@ mono_aliasing_deadce_on_inst (MonoAliasingInformation *info, MonoInst **possibly
 						printf ("KILLING slot %d at inst ", affected_variable->variable_index);
 						mono_print_tree_nl (inst);
 					}
-					possibly_dead_assignments [affected_variable->variable_index]->opcode = CEE_NOP;
+					possibly_dead_assignments [affected_variable->variable_index]->opcode = OP_NOP;
 					possibly_dead_assignments [affected_variable->variable_index]->ssa_op = MONO_SSA_NOP;
 					possibly_dead_assignments [affected_variable->variable_index] = NULL;
 				}
@@ -1007,7 +1007,7 @@ mono_aliasing_deadce (MonoAliasingInformation *info) {
 		
 		for (inst = bb->code; inst != NULL; inst = inst->next) {
 			mono_aliasing_deadce_on_inst (info, possibly_dead_assignments, inst);
-			if (inst->opcode == CEE_JMP) {
+			if (inst->opcode == OP_JMP) {
 				/* Keep arguments live! */
 				for (variable_index = 0; variable_index < cfg->num_varinfo; variable_index++) {
 					if (cfg->varinfo [variable_index]->opcode == OP_ARG) {
@@ -1030,7 +1030,7 @@ mono_aliasing_deadce (MonoAliasingInformation *info) {
 				
 				//printf ("FAST DEADCE DEAD LOCAL\n");
 				
-				possibly_dead_assignments [variable_index]->opcode = CEE_NOP;
+				possibly_dead_assignments [variable_index]->opcode = OP_NOP;
 				possibly_dead_assignments [variable_index]->ssa_op = MONO_SSA_NOP;
 			}
 		}

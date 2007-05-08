@@ -1943,7 +1943,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE:
 			g_assert_not_reached ();
 			break;
-		case CEE_BREAK:
+		case OP_BREAK:
 			mips_break (code, 0xfd);
 			break;
 		case OP_ADDCC:
@@ -2278,7 +2278,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_cvtsd (code, ins->dreg, ins->sreg1);
 			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
-		case CEE_JMP:
+		case OP_JMP:
 			/*
 			 * Pop our stack, then jump to specified method (tail-call)
 			 * Keep in sync with mono_arch_emit_epilog
@@ -2384,7 +2384,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_jr (code, mips_ra);
 			mips_nop (code);
 			break;
-		case CEE_THROW: {
+		case OP_THROW: {
 			gpointer addr = mono_arch_get_throw_exception();
 			mips_move (code, mips_a0, ins->sreg1);
 			mips_load_const (code, mips_t9, addr);
@@ -2432,7 +2432,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_jr (code, mips_ra);
 			mips_nop (code);
 			break;
-		case CEE_ENDFINALLY:
+		case OP_ENDFINALLY:
 			mips_lw (code, mips_t9, ins->inst_left->inst_basereg, ins->inst_left->inst_offset);
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
@@ -2447,7 +2447,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
-		case CEE_BR:
+		case OP_BR:
 			if (ins->flags & MONO_INST_BRLABEL) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
 			} else {
@@ -3584,7 +3584,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 	}
 
 	/*
-	 * Keep in sync with CEE_JMP
+	 * Keep in sync with OP_JMP
 	 */
 	if (code)
 		code = cfg->native_code + pos;

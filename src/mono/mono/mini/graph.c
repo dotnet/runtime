@@ -219,11 +219,11 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 	}
 	case OP_RENAME:
 	case OP_RETARG:
-	case CEE_NOP:
-	case CEE_JMP:
-	case CEE_BREAK:
+	case OP_NOP:
+	case OP_JMP:
+	case OP_BREAK:
 		break;
-	case CEE_BR:
+	case OP_BR:
 		fprintf (fp, "[B%d]", tree->inst_target_bb->block_num);
 		break;
 	case CEE_SWITCH:

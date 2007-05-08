@@ -115,7 +115,7 @@ local_copy_prop (MonoCompile *cfg, MonoInst *code)
 		if (spec [MONO_INST_CLOB] == 'c') {
 			/* this is a call, invalidate all the pairs */
 			acp = NULL;
-		} else if ((ins->opcode) == CEE_BR || (ins->opcode >= CEE_BEQ && ins->opcode <= CEE_BLT) ||
+		} else if ((ins->opcode) == OP_BR || (ins->opcode >= CEE_BEQ && ins->opcode <= CEE_BLT) ||
 				(ins->opcode >= CEE_BNE_UN && ins->opcode <= CEE_BLT_UN)) {
 			acp = NULL; /* invalidate all pairs */
 			/* it's not enough to invalidate the pairs, because we don't always

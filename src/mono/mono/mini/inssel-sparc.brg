@@ -460,7 +460,7 @@ stmt: OP_START_HANDLER {
      mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_ENDFINALLY {
+stmt: OP_ENDFINALLY {
 	//MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
 	//MONO_EMIT_NEW_LOAD_MEMBASE (s, sparc_o7, spvar->inst_basereg, spvar->inst_offset); 
 	mono_bblock_add_inst (s->cbb, tree);
@@ -476,7 +476,7 @@ stmt: OP_ENDFILTER (reg) {
 stmt: OP_START_HANDLER {
 }
 
-stmt: CEE_ENDFINALLY {
+stmt: OP_ENDFINALLY {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 

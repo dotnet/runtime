@@ -2689,7 +2689,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-		case CEE_BREAK: {
+		case OP_BREAK: {
 			s390_basr  (code, s390_r13, 0);
 			s390_j	   (code, 6);
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, 
@@ -3509,7 +3509,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
-		case CEE_JMP: {
+		case OP_JMP: {
 			if (cfg->method->save_lmf)
 				restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
@@ -3670,7 +3670,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_br  (code, s390_r14);
 		}
 			break;
-		case CEE_THROW: {
+		case OP_THROW: {
 			s390_lgr  (code, s390_r2, ins->sreg1);
 			s390_basr (code, s390_r13, 0);
 			s390_j    (code, 6);
@@ -3707,7 +3707,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_br  (code, s390_r14);
 		}
 			break;
-		case CEE_ENDFINALLY: {
+		case OP_ENDFINALLY: {
 			S390_LONG (code, lg, lg, s390_r14, 0, 
 				   ins->inst_left->inst_basereg, 
 				   ins->inst_left->inst_offset);
@@ -3724,7 +3724,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 		}
 			break;
-		case CEE_BR: 
+		case OP_BR: 
 			EMIT_UNCOND_BRANCH(ins);
 			break;
 		case OP_BR_REG: {

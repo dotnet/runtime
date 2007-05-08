@@ -267,7 +267,7 @@ stmt: OP_START_HANDLER {
      mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_ENDFINALLY {
+stmt: OP_ENDFINALLY {
      mono_bblock_add_inst (s->cbb, tree);
 }
 

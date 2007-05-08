@@ -3663,7 +3663,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   ins->inst_c0 = (char *)code - (char *)cfg->native_code;
 	   break;
 	   
-	 case CEE_BR:
+	 case OP_BR:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [br] target: %p, next: %p, curr: %p, last: %p [",
 		  ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 	   
@@ -3829,7 +3829,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   }
 	   break;
 
-	 case CEE_ENDFINALLY:
+	 case OP_ENDFINALLY:
 	   {
              // Keep in sync with start_handler
              CFG_DEBUG(4) g_print("ALPHA_CHECK: [endfinally] basereg=%d, offset=%0lx\n",
@@ -3880,7 +3880,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_ret(code, alpha_ra, 1);
 	   break;
 
-	 case CEE_THROW:
+	 case OP_THROW:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [throw] sreg1=%0x\n",
 				ins->sreg1);
 	   alpha_mov1(code, ins->sreg1, alpha_a0);
@@ -3896,7 +3896,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
                              (gpointer)"mono_arch_rethrow_exception");
            break;
 
-	 case CEE_JMP:
+	 case OP_JMP:
 	   {
 	     /*
 	      * Note: this 'frame destruction' logic is useful for tail calls,

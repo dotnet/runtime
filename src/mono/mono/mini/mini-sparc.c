@@ -2435,7 +2435,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_cmp (code, ins->sreg1, sparc_o7);
 			}
 			break;
-		case CEE_BREAK:
+		case OP_BREAK:
 			/*
 			 * gdb does not like encountering 'ta 1' in the debugged code. So 
 			 * instead of emitting a trap, we emit a call a C function and place a 
@@ -2741,7 +2741,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Only used on V9 */
 			sparc_fdtos (code, ins->sreg1, ins->dreg);
 			break;
-		case CEE_JMP:
+		case OP_JMP:
 			if (cfg->method->save_lmf)
 				NOT_IMPLEMENTED;
 
@@ -2947,7 +2947,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* The return is done in the epilog */
 			g_assert_not_reached ();
 			break;
-		case CEE_THROW:
+		case OP_THROW:
 			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
 			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
@@ -2990,7 +2990,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
 			break;
 		}
-		case CEE_ENDFINALLY: {
+		case OP_ENDFINALLY: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			if (!sparc_is_imm13 (spvar->inst_offset)) {
 				sparc_set (code, spvar->inst_offset, GP_SCRATCH_REG);
@@ -3011,7 +3011,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = (guint8*)code - cfg->native_code;
 			break;
-		case CEE_BR:
+		case OP_BR:
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 			if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 				break;
