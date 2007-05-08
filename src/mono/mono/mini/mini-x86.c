@@ -3073,7 +3073,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			x86_push_reg (code, X86_EAX);
 			x86_fxam (code);
 			x86_fnstsw (code);

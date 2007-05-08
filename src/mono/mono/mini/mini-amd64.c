@@ -4039,7 +4039,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, X86_FP_C0);
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			if (use_sse2) {
 				/* Transfer value to the fp stack */
 				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 16);

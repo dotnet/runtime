@@ -3474,7 +3474,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_FLOAT_COND_BRANCH (ins, sparc_fble, 1, 1);
 			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu, 1, 1);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			gint32 offset = mono_spillvar_offset_float (cfg, 0);
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);

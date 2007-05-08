@@ -132,6 +132,7 @@ MINI_OP(OP_NOP,        "nop")
 MINI_OP(OP_BR,         "br")
 MINI_OP(OP_JMP,        "jmp")
 MINI_OP(OP_BREAK,      "break")
+MINI_OP(OP_CKFINITE, "ckfinite")
 
 /* exceptions: must be in the same order as the matching CEE_ branch opcodes */
 MINI_OP(OP_COND_EXC_EQ, "cond_exc_eq")

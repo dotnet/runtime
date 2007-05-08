@@ -2730,7 +2730,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FNEG:
 			ia64_fmerge_ns (code, ins->dreg, ins->sreg1, ins->sreg1);
 			break;
-		case CEE_CKFINITE:
+		case OP_CKFINITE:
 			/* Quiet NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
 			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);

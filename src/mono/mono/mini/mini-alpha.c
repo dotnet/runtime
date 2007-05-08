@@ -3943,7 +3943,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   alpha_mb(code);
 	   break;
 	  
-	 case CEE_CKFINITE:
+	 case OP_CKFINITE:
 	   // Float register contains a value which we need to check
 	   {
 		double	ni = -1.0 / 0.0;

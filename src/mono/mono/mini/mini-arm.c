@@ -2796,7 +2796,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE); /* swapped */
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			/*ppc_stfd (code, ins->sreg1, -8, ppc_sp);
 			ppc_lwz (code, ppc_r11, -8, ppc_sp);
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);

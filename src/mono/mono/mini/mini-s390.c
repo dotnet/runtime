@@ -3934,7 +3934,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBLE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LE|S390_CC_OV);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			short *o;
 			s390_lhi  (code, s390_r13, 0x7f);
 			s390_tcdb (code, ins->sreg1, 0, s390_r13, 0);

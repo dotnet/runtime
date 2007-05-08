@@ -2954,7 +2954,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBLE_UN:
 			EMIT_COND_BRANCH (ins, CEE_BLE_UN - CEE_BEQ);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			ppc_stfd (code, ins->sreg1, -8, ppc_sp);
 			ppc_lwz (code, ppc_r11, -8, ppc_sp);
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);

@@ -2938,7 +2938,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
-		case CEE_CKFINITE: {
+		case OP_CKFINITE: {
 			g_assert_not_reached();
 #if 0
 			ppc_stfd (code, ins->sreg1, -8, ppc_sp);

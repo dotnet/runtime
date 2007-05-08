@@ -1440,7 +1440,7 @@ type_from_op (MonoInst *ins) {
 		ins->type = STACK_R8;
 		ins->opcode += unops_op_map [ins->inst_i0->type];
 		return;
-	case CEE_CKFINITE:
+	case OP_CKFINITE:
 		ins->type = STACK_R8;		
 		return;
 	case CEE_CONV_U2:
@@ -1804,39 +1804,6 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
 		inst->cil_code = NULL;
 		mono_add_ins_to_end (bb, inst);
 	}
-}
-
-/*
- * We try to share variables when possible
- */
-static MonoInst *
-mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
-{
-	MonoInst *res;
-	int pos, vnum;
-
-	/* inlining can result in deeper stacks */ 
-	if (slot >= mono_method_get_header (cfg->method)->max_stack)
-		return mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-
-	pos = ins->type - 1 + slot * STACK_MAX;
-
-	switch (ins->type) {
-	case STACK_I4:
-	case STACK_I8:
-	case STACK_R8:
-	case STACK_PTR:
-	case STACK_MP:
-	case STACK_OBJ:
-		if ((vnum = cfg->intvars [pos]))
-			return cfg->varinfo [vnum];
-		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-		cfg->intvars [pos] = res->inst_c0;
-		break;
-	default:
-		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-	}
-	return res;
 }
 
 /*
@@ -6782,7 +6749,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * this check */
 
 			
-			MONO_INST_NEW (cfg, ins, CEE_CKFINITE);
+			MONO_INST_NEW (cfg, ins, OP_CKFINITE);
 			ins->cil_code = ip;
 			ins->inst_left = sp [-1];
 			temp = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_LOCAL);

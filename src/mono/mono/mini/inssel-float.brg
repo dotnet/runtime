@@ -119,7 +119,7 @@ freg: OP_FNEG (freg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
-freg: CEE_CKFINITE (freg) {
+freg: OP_CKFINITE (freg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
@@ -250,10 +250,5 @@ fpcflags: OP_COMPARE (freg, freg) {
 stmt: CEE_POP (freg) {
 	/* do nothing */
 }     
-
-
-freg: CEE_CKFINITE (freg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
 
 %%
