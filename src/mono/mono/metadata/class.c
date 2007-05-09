@@ -1686,9 +1686,9 @@ compare_interface_ids (const void *p_key, const void *p_element) {
 }
 
 int
-mono_class_interface_offset (MonoClass *klass, MonoClass *interface) {
+mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	MonoClass **result = bsearch (
-			interface,
+			itf,
 			klass->interfaces_packed,
 			klass->interface_offsets_count,
 			sizeof (MonoClass *),

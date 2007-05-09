@@ -328,7 +328,7 @@ struct _MonoClass {
 };
 
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
-int mono_class_interface_offset (MonoClass *klass, MonoClass *interface);
+int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
