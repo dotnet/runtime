@@ -38,7 +38,7 @@ get-monolite-latest:
 	-rm -fr $(mcslib)/monolite-*
 	test ! -d $(monolite) || test ! -d $(monolite).old || rm -fr $(monolite).old
 	test ! -d $(monolite) || mv -f $(monolite) $(monolite).old
-	cd $(mcslib) && { wget -O- http://www.go-mono.com/daily/monolite-latest.tar.gz | gzip -d | tar xf - ; }
+	cd $(mcslib) && { wget -O- http://www.go-mono.com/daily/monolite-latest.tar.gz || curl http://mono.ximian.com/daily/monolite-latest.tar.gz | gzip -d | tar xf - ; }
 	cd $(mcslib) && mv -f monolite-* monolite
 
 compiler-tests: mcs-do-clean
