@@ -898,7 +898,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	curinst = 0;
 	if (sig->hasthis) {
-		inst = m->varinfo [curinst];
+		inst = m->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -913,7 +913,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	}
 
 	for (i = 0; i < sig->param_count; ++i) {
-		inst = m->varinfo [curinst];
+		inst = m->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -3185,7 +3185,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->varinfo [pos];
+		inst = cfg->args [pos];
 		
 		if (cfg->verbose_level > 2)
 			g_print ("Saving argument %d (type: %d)\n", i, ainfo->regtype);

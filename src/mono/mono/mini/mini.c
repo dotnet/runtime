@@ -9812,11 +9812,13 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("creating vars\n");
 
+	cfg->args = mono_mempool_alloc0 (cfg->mempool, (sig->param_count + sig->hasthis) * sizeof (MonoInst*));
+
 	if (sig->hasthis)
-		mono_compile_create_var (cfg, &cfg->method->klass->this_arg, OP_ARG);
+		cfg->args [0] = mono_compile_create_var (cfg, &cfg->method->klass->this_arg, OP_ARG);
 
 	for (i = 0; i < sig->param_count; ++i) {
-		mono_compile_create_var (cfg, sig->params [i], OP_ARG);
+		cfg->args [i + sig->hasthis] = mono_compile_create_var (cfg, sig->params [i], OP_ARG);
 		if (sig->params [i]->byref) {
 			cfg->disable_ssa = TRUE;
 		}

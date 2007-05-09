@@ -562,6 +562,7 @@ typedef struct {
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
+	MonoInst        **args;
 	
 	struct MonoAliasingInformation *aliasing_info;
 

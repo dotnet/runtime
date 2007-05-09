@@ -874,7 +874,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		inst = m->varinfo [i];
+		inst = m->args [i];
 		if (inst->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
@@ -2029,7 +2029,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 		ArgInfo *ainfo = cinfo->args + i;
 		gint32 stack_offset;
 		MonoType *arg_type;
-		inst = cfg->varinfo [i];
+		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
 			arg_type = &mono_defaults.object_class->byval_arg;
@@ -3808,7 +3808,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ArgInfo *ainfo = cinfo->args + i;
 		gint32 stack_offset;
 		MonoType *arg_type;
-		inst = cfg->varinfo [i];
+		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
 			arg_type = &mono_defaults.object_class->byval_arg;

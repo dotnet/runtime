@@ -1089,7 +1089,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		inst = cfg->varinfo [i];
+		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
 			MonoType *arg_type;
 		 
@@ -3281,7 +3281,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->varinfo [pos];
+		inst = cfg->args [pos];
 		
 		if (cfg->verbose_level > 2)
 			g_print ("Saving argument %d (type: %d)\n", i, ainfo->regtype);

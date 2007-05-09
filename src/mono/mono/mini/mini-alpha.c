@@ -1355,7 +1355,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, unsigned int *code)
   for (i = 0; i < sig->param_count + sig->hasthis; ++i)
     {
       ArgInfo *ainfo = &cinfo->args [i];
-      MonoInst *inst = cfg->varinfo [i];
+      MonoInst *inst = cfg->args [i];
 
       switch(ainfo->storage)
 	{
@@ -1517,7 +1517,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
    for (i = 0; i < sig->param_count + sig->hasthis; ++i)
      {
        ArgInfo *ainfo = &cinfo->args [i];
-       MonoInst *inst = cfg->varinfo [i];
+       MonoInst *inst = cfg->args [i];
        int j;
 
        switch(ainfo->storage)
@@ -5162,7 +5162,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
    for (i = 0; i < sig->param_count + sig->hasthis; ++i)
      {
-       MonoInst *ins = cfg->varinfo [i];
+       MonoInst *ins = cfg->args [i];
 
        ArgInfo *ainfo = &cinfo->args [i];
 
@@ -5352,7 +5352,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
       
       for (i = 0; i < n; ++i)
 	{
-	  inst = cfg->varinfo [i];
+	  inst = cfg->args [i];
 
 	  if (inst->opcode == OP_REGVAR)
 	    {
@@ -5770,7 +5770,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
    // Reserve space for method params
    for (i = 0; i < sig->param_count + sig->hasthis; ++i)
      {
-       inst = cfg->varinfo [i];
+       inst = cfg->args [i];
 
        if (inst->opcode != OP_REGVAR)
 	 {

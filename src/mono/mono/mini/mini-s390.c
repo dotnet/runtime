@@ -1665,7 +1665,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	if (sig->hasthis) {
-		inst = cfg->varinfo [0];
+		inst = cfg->args [0];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode 	   = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -1684,7 +1684,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->sig_cookie += S390_MINIMAL_STACK_SIZE;
 
 	for (iParm = sArg; iParm < eArg; ++iParm) {
-		inst = cfg->varinfo [curinst];
+		inst = cfg->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			switch (cinfo->args[iParm].regtype) {
 				case RegTypeStructByAddr :
@@ -4174,7 +4174,7 @@ emit_load_volatile_registers(guint8 * code, MonoCompile *cfg)
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->varinfo [pos];
+		inst = cfg->args [pos];
 		
 		if (inst->opcode == OP_REGVAR) {
 			if (ainfo->regtype == RegTypeGeneral)
@@ -4338,7 +4338,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->varinfo [pos];
+		inst = cfg->args [pos];
 		
 		if (inst->opcode == OP_REGVAR) {
 			if (ainfo->regtype == RegTypeGeneral)
