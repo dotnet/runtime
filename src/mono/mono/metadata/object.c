@@ -2390,6 +2390,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	MonoDomain *domain;
 	gpointer pa [1];
 	int rval;
+	MonoCustomAttrInfo* cinfo;
 
 	g_assert (args);
 
@@ -2407,6 +2408,21 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		str = g_strconcat (assembly->image->name, ".config", NULL);
 		MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, str));
 		g_free (str);
+	}
+
+	cinfo = mono_custom_attrs_from_method (method);
+	if (cinfo) {
+		static MonoClass *stathread_attribute = NULL;
+		MonoThread* thread = mono_thread_current ();
+		gboolean has_stathread_attribute;
+		if (!stathread_attribute)
+			stathread_attribute = mono_class_from_name (mono_defaults.corlib, "System", "STAThreadAttribute");
+		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, stathread_attribute);
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+
+		thread->apartment_state = has_stathread_attribute ? ThreadApartmentState_STA : ThreadApartmentState_MTA;
+		mono_thread_init_apartment_state ();
 	}
 
 	/* FIXME: check signature of method */

@@ -29,7 +29,14 @@ typedef enum {
 	ThreadState_Suspended = 0x00000040,
 	ThreadState_AbortRequested = 0x00000080,
 	ThreadState_Aborted = 0x00000100
-} MonoThreadState;
+} MonoThreadState; 
+
+/* This is a copy of System.Threading.ApartmentState */
+typedef enum {
+	ThreadApartmentState_STA = 0x00000000,
+	ThreadApartmentState_MTA = 0x00000001,
+	ThreadApartmentState_Unknown = 0x00000002
+} MonoThreadApartmentState;
 
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
@@ -121,5 +128,8 @@ extern void ves_icall_System_Threading_Thread_SpinWait_internal (gint32) MONO_IN
 
 void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
 extern void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;
+
+extern void mono_thread_init_apartment_state (void) MONO_INTERNAL;
+extern void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

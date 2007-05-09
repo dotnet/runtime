@@ -274,7 +274,7 @@ struct _MonoThread {
 	MonoBoolean thread_dump_requested;
 	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
-	gpointer unused4;
+	guint8	apartment_state;
 	gpointer unused5;
 	gpointer unused6;
 	gpointer unused7;

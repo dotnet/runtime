@@ -289,6 +289,8 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	mono_profiler_thread_start (tid);
 
+	mono_thread_init_apartment_state ();
+
 	if(thread->start_notify!=NULL) {
 		/* Let the thread that called Start() know we're
 		 * ready
@@ -323,6 +325,13 @@ static guint32 WINAPI start_wrapper(void *data)
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, GetCurrentThreadId ()));
 
 	thread_cleanup (thread);
+
+	/* Do any cleanup needed for apartment state. This
+	 * cannot be done in thread_cleanup since thread_cleanup could be 
+	 * called for a thread other than the current thread.
+	 * mono_thread_cleanup_apartment_state cleans up apartment
+	 * for the current thead */
+	mono_thread_cleanup_apartment_state ();
 
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
@@ -384,6 +393,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
+	thread->apartment_state=ThreadApartmentState_Unknown;
 
 	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 						  
@@ -464,6 +474,7 @@ mono_thread_attach (MonoDomain *domain)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
+	thread->apartment_state=ThreadApartmentState_Unknown;
 	thread->stack_ptr = &tid;
 	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 
@@ -2920,4 +2931,42 @@ void mono_thread_force_interruption_checkpoint ()
 gint32* mono_thread_interruption_request_flag ()
 {
 	return &thread_interruption_requested;
+}
+
+void 
+mono_thread_init_apartment_state (void)
+{
+	MonoThread* thread;
+	thread = mono_thread_current ();
+
+	/* Set explicitly since state might have been Unknown */
+	if (thread->apartment_state != ThreadApartmentState_STA)
+		thread->apartment_state = ThreadApartmentState_MTA;
+
+#ifdef PLATFORM_WIN32
+	/* Positive return value indicates success, either
+	 * S_OK if this is first CoInitialize call, or
+	 * S_FALSE if CoInitialize already called, but with same
+	 * threading model. A negative value indicates failure,
+	 * probably due to trying to change the threading model.
+	 */
+	if (CoInitializeEx(NULL, (thread->apartment_state == ThreadApartmentState_STA) 
+			? COINIT_APARTMENTTHREADED 
+			: COINIT_MULTITHREADED) < 0) {
+		thread->apartment_state = ThreadApartmentState_Unknown;
+	}
+#endif
+}
+
+void 
+mono_thread_cleanup_apartment_state (void)
+{
+#ifdef PLATFORM_WIN32
+	MonoThread* thread;
+	thread = mono_thread_current ();
+
+	if (thread->apartment_state != ThreadApartmentState_Unknown) {
+		CoUninitialize ();
+	}
+#endif
 }
