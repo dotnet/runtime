@@ -2587,7 +2587,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	}
 
 	/* 
-	 * We can't currently handle instantinated generic types/method
+	 * We can't currently handle instantinated generic types/methods
 	 * since we save typedef/methoddef tokens, instead of typespec/methodref/methodspec 
 	 * tokens.
 	 */
