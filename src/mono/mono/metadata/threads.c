@@ -2965,7 +2965,7 @@ mono_thread_cleanup_apartment_state (void)
 	MonoThread* thread;
 	thread = mono_thread_current ();
 
-	if (thread->apartment_state != ThreadApartmentState_Unknown) {
+	if (thread && thread->apartment_state != ThreadApartmentState_Unknown) {
 		CoUninitialize ();
 	}
 #endif
