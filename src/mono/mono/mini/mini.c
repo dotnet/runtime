@@ -4715,8 +4715,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				this_arg_temp = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 				this_arg_temp->cil_code = ip;
 
+				/* Because of the PCONST below */
+				cfg->disable_aot = TRUE;
 				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
-				NEW_PCONST (cfg, iargs [1], cmethod);
+				NEW_METHODCONST (cfg, iargs [1], cmethod);
 				NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
 				NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
 				temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method, iargs, ip);
