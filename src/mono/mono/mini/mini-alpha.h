@@ -8,7 +8,6 @@
 #define MONO_ARCH_CPU_SPEC alpha_desc
 
 /* Parameters used by the register allocator */
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
 /* Max number of integer registers (all int regs). Required definition */
 #define MONO_MAX_IREGS 31

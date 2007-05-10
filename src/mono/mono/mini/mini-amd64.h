@@ -82,8 +82,6 @@ struct sigcontext {
 
 #define MONO_MAX_FREGS AMD64_XMM_NREG
 
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
-
 /* xmm15 is reserved for use by some opcodes */
 #define MONO_ARCH_CALLEE_FREGS 0xef
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0

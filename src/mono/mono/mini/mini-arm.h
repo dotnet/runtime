@@ -28,7 +28,6 @@
 #define MONO_ARM_REGSAVE_MASK 0x5ff0
 
 /* Parameters used by the register allocator */
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
 #define MONO_ARCH_CALLEE_REGS ((1<<ARMREG_R0) | (1<<ARMREG_R1) | (1<<ARMREG_R2) | (1<<ARMREG_R3) | (1<<ARMREG_IP))
 #define MONO_ARCH_CALLEE_SAVED_REGS ((1<<ARMREG_V1) | (1<<ARMREG_V2) | (1<<ARMREG_V3) | (1<<ARMREG_V4) | (1<<ARMREG_V5) | (1<<ARMREG_V6) | (1<<ARMREG_V7))

@@ -12,7 +12,6 @@
 /*-------------------------------------------*/
 /* Parameters used by the register allocator */
 /*-------------------------------------------*/
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC 1
 
 #define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
                 MonoInst *inst; 						\

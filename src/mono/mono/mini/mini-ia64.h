@@ -14,8 +14,6 @@
 
 /* Parameters used by the register allocator */
 
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
-
 /* r8..r11, r14..r29 */
 #define MONO_ARCH_CALLEE_REGS ((regmask_t)(0x700UL) | (regmask_t)(0x3fffc000UL))
 

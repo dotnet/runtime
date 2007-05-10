@@ -67,8 +67,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_MAX_FREGS 6
 
 /* Parameters used by the register allocator */
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
-
 #define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS X86_CALLER_REGS
 

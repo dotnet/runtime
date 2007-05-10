@@ -80,7 +80,6 @@
 #define MONO_ARCH_FPSTACK_SIZE 0
 
 /* Parameters used by the register allocator */
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 
 /* On Mips, for regpairs, the lower-numbered reg is most significant
  * This is true in both big and little endian

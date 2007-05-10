@@ -12,8 +12,6 @@
 
 /* Parameters used by the register allocator */
 
-#define MONO_ARCH_HAS_XP_LOCAL_REGALLOC
-
 /* 
  * Use %o0..%o5 as local registers, plus %l7 since we need an extra register for
  * holding the sreg1 in call instructions.

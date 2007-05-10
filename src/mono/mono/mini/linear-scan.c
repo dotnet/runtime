@@ -211,7 +211,6 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 				 * basic blocks screw up the allocator' problem.
 				 */
 #if 0
-				//#ifdef MONO_ARCH_HAS_XP_LOCAL_REGALLOC
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
 				cfg->varinfo [vmv->idx]->dreg = mono_regstate_next_int (cfg->rs);
 #endif
