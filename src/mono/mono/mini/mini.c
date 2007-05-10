@@ -2115,6 +2115,17 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 	cfg->patch_info = ji;
 }
 
+static void
+mono_save_token_info (MonoCompile *cfg, MonoImage *image, guint32 token, gpointer key)
+{
+	if (cfg->compile_aot) {
+		MonoJumpInfoToken *jump_info_token = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoToken));
+		jump_info_token->image = image;
+		jump_info_token->token = token;
+		g_hash_table_insert (cfg->token_info_hash, key, jump_info_token);
+	}
+}
+
 /*
  * When we add a tree of instructions, we need to ensure the instructions currently
  * on the stack are executed before (like, if we load a value from a local).
@@ -4625,6 +4636,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
 				}
 
+				mono_save_token_info (cfg, image, token, cmethod);
+
 				n = fsig->param_count + fsig->hasthis;
 
 				if (mono_use_security_manager) {
@@ -5608,6 +5621,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
+
+			mono_save_token_info (cfg, image, token, cmethod);
 
 			if (!mono_class_init (cmethod->klass))
 				goto load_error;
@@ -8650,6 +8665,7 @@ mono_destroy_compile (MonoCompile *cfg)
 		g_hash_table_destroy (cfg->exvars);
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
+	g_hash_table_destroy (cfg->token_info_hash);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -10349,6 +10365,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->skip_visibility = method->skip_visibility;
+	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);

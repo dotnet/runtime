@@ -109,6 +109,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *shared_patches;
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
+	GHashTable *token_info_hash;
 	GPtrArray *image_table;
 	GList *method_order;
 	guint32 got_offset, plt_offset;
@@ -1583,16 +1584,40 @@ get_image_index (MonoAotCompile *cfg, MonoImage *image)
 	}
 }
 
-static void
-encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
+static guint32
+find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 {
-	if (!klass->type_token) {
+	int i;
+	MonoClass *k = NULL;
+
+	/* FIXME: Search referenced images as well */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
+		/* Since we don't compile generic methods, the context is empty */
+		k = mono_class_get_full (acfg->image, MONO_TOKEN_TYPE_SPEC | (i + 1), NULL);
+		if (k == klass)
+			break;
+	}
+
+	g_assert (k);
+
+	return MONO_TOKEN_TYPE_SPEC | (i + 1);
+}
+
+static void
+encode_klass_info (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
+{
+	if (klass->generic_class) {
+		g_assert (klass->type_token);
+
+		encode_value (find_typespec_for_class (acfg, klass), buf, &buf);
+		encode_value (get_image_index (acfg, acfg->image), buf, &buf);
+	} else if (!klass->type_token) {
 		guint32 token;
 
 		/* Array class */
 		g_assert (klass->rank > 0);
 		encode_value (MONO_TOKEN_TYPE_DEF, buf, &buf);
-		encode_value (get_image_index (cfg, klass->image), buf, &buf);
+		encode_value (get_image_index (acfg, klass->image), buf, &buf);
 		token = klass->element_class->type_token;
 		if (!token) {
 			/* <Type>[][] */
@@ -1608,7 +1633,7 @@ encode_klass_info (MonoAotCompile *cfg, MonoClass *klass, guint8 *buf, guint8 **
 	else {
 		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
 		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
-		encode_value (get_image_index (cfg, klass->image), buf, &buf);
+		encode_value (get_image_index (acfg, klass->image), buf, &buf);
 	}
 	*endbuf = buf;
 }
@@ -1624,15 +1649,60 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guin
 	*endbuf = buf;
 }
 
+#if 0
+static guint32
+find_methodspec_for_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	int i;
+	MonoMethod *m = NULL;
+
+	/* FIXME: Search referenced images as well */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
+		/* Since we don't compile generic methods, the context is empty */
+		m = mono_get_method_full (acfg->image, MONO_TOKEN_METHOD_SPEC | (i + 1), NULL, NULL);
+		if (m == method)
+			break;
+	}
+
+	g_assert (m);
+
+	return MONO_TOKEN_METHOD_SPEC | (i + 1);
+}
+#endif
+
 static void
 encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index = get_image_index (acfg, method->klass->image);
 	guint32 token = method->token;
-	g_assert (image_index < 256);
-	g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+	MonoJumpInfoToken *ji;
 
-	encode_value ((image_index << 24) + (mono_metadata_token_index (token)), buf, &buf);
+	g_assert (image_index < 255);
+
+	if (method->klass->generic_class || mono_method_signature (method)->is_inflated) {
+		/* 
+		 * This is a generic method, find the original token which referenced it and
+		 * encode that.
+		 */
+		/* This doesn't work for some reason */
+		/*
+		image_index = get_image_index (acfg, acfg->image);
+		g_assert (image_index < 255);
+		token = find_methodspec_for_method (acfg, method);
+		*/
+		/* Obtain the token from information recorded by the JIT */
+		ji = g_hash_table_lookup (acfg->token_info_hash, method);
+		image_index = get_image_index (acfg, ji->image);
+		g_assert (image_index < 255);
+		token = ji->token;
+
+		encode_value ((255 << 24), buf, &buf);
+		encode_value (image_index, buf, &buf);
+		encode_value (token, buf, &buf);
+	} else {
+		g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+		encode_value ((image_index << 24) | mono_metadata_token_index (token), buf, &buf);
+	}
 	*endbuf = buf;
 }
 
@@ -2509,6 +2579,19 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 }
 
 static void
+add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoMethod *method = (MonoMethod*)key;
+	MonoJumpInfoToken *ji = (MonoJumpInfoToken*)value;
+	MonoJumpInfoToken *new_ji = g_new0 (MonoJumpInfoToken, 1);
+	MonoAotCompile *acfg = user_data;
+
+	new_ji->image = ji->image;
+	new_ji->token = ji->token;
+	g_hash_table_insert (acfg->token_info_hash, method, new_ji);
+}
+
+static void
 compile_method (MonoAotCompile *acfg, int index)
 {
 	MonoCompile *cfg;
@@ -2567,6 +2650,9 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
+	/* Collect method->token associations from the cfg */
+	g_hash_table_foreach (cfg->token_info_hash, add_token_info_hash, acfg);
+
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -2582,42 +2668,6 @@ compile_method (MonoAotCompile *acfg, int index)
 
 	if (skip) {
 		acfg->stats.abscount++;
-		mono_destroy_compile (cfg);
-		return;
-	}
-
-	/* 
-	 * We can't currently handle instantinated generic types/methods
-	 * since we save typedef/methoddef tokens, instead of typespec/methodref/methodspec 
-	 * tokens.
-	 */
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_METHODCONST:
-			/* Methods of instantinated generic types */
-			if (patch_info->data.method->klass->generic_class)
-				skip = TRUE;
-			/* Instantinated generic methods */
-			if (mono_method_signature (patch_info->data.method)->is_inflated)
-				skip = TRUE;
-			break;
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IID:
-		case MONO_PATCH_INFO_ADJUSTED_IID:
-		case MONO_PATCH_INFO_CLASS_INIT:
-			if (patch_info->data.klass->generic_class)
-				skip = TRUE;
-			break;
-			/* FIXME: Add more types of patches */
-		default:
-			break;
-		}
-	}
-
-	if (skip) {
-		acfg->stats.genericcount++;
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -3294,6 +3344,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->shared_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
+	acfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
 	acfg->image = image;
@@ -3364,6 +3415,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_writeout (acfg);
 
 	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100);
+	printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods contain wrapper references (%d%%)\n", acfg->stats.wrappercount, acfg->stats.mcount ? (acfg->stats.wrappercount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);

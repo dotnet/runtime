@@ -50,7 +50,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "31"
+#define MONO_AOT_FILE_VERSION "32"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -603,6 +603,7 @@ typedef struct {
 	guint32          lmf_offset;
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
+	GHashTable       *token_info_hash;
 	MonoCompileArch  arch;
 	guint32          exception_type;	/* MONO_EXCEPTION_* */
 	guint32          exception_data;
