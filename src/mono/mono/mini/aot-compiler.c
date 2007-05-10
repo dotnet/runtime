@@ -1598,7 +1598,7 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 			break;
 	}
 
-	g_assert (k);
+	g_assert (i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows);
 
 	return MONO_TOKEN_TYPE_SPEC | (i + 1);
 }
@@ -1664,7 +1664,7 @@ find_methodspec_for_method (MonoAotCompile *acfg, MonoMethod *method)
 			break;
 	}
 
-	g_assert (m);
+	g_assert (i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows);
 
 	return MONO_TOKEN_METHOD_SPEC | (i + 1);
 }
