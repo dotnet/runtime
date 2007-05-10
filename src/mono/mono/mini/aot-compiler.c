@@ -69,7 +69,7 @@ typedef struct MonoAotOptions {
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
-	int ccount, mcount, lmfcount, abscount, wrappercount, gcount, ocount;
+	int ccount, mcount, lmfcount, abscount, wrappercount, gcount, ocount, genericcount;
 	int code_size, info_size, ex_info_size, got_size, class_info_size, got_info_size, got_info_offsets_size;
 	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
@@ -2275,7 +2275,9 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	no_special_static = !mono_class_has_special_static_fields (klass);
 
-	if (1) {
+	if (klass->generic_container) {
+		encode_value (-1, p, &p);
+	} else {
 		encode_value (klass->vtable_size, p, &p);
 		encode_value ((no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | (klass->nested_classes ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
@@ -2541,6 +2543,11 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
+	if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
+		acfg->stats.genericcount ++;
+		return;
+	}
+
 	/*
 	 * Since these methods are the only ones which are compiled with
 	 * AOT support, and they are not used by runtime startup/shutdown code,
@@ -2562,16 +2569,55 @@ compile_method (MonoAotCompile *acfg, int index)
 
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_ABS) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_ABS:
 			/* unable to handle this */
 			//printf ("Skip (abs addr):   %s %d\n", mono_method_full_name (method, TRUE), patch_info->type);
 			skip = TRUE;	
+			break;
+		default:
 			break;
 		}
 	}
 
 	if (skip) {
 		acfg->stats.abscount++;
+		mono_destroy_compile (cfg);
+		return;
+	}
+
+	/* 
+	 * We can't currently handle instantinated generic types/method
+	 * since we save typedef/methoddef tokens, instead of typespec/methodref/methodspec 
+	 * tokens.
+	 */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_METHOD:
+		case MONO_PATCH_INFO_METHODCONST:
+			/* Methods of instantinated generic types */
+			if (patch_info->data.method->klass->generic_class)
+				skip = TRUE;
+			/* Instantinated generic methods */
+			if (mono_method_signature (patch_info->data.method)->is_inflated)
+				skip = TRUE;
+			break;
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_CLASS:
+		case MONO_PATCH_INFO_IID:
+		case MONO_PATCH_INFO_ADJUSTED_IID:
+		case MONO_PATCH_INFO_CLASS_INIT:
+			if (patch_info->data.klass->generic_class)
+				skip = TRUE;
+			break;
+			/* FIXME: Add more types of patches */
+		default:
+			break;
+		}
+	}
+
+	if (skip) {
+		acfg->stats.genericcount++;
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -3258,6 +3304,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	load_profile_files (acfg);
 
+#if 0
 	if (mono_defaults.generic_nullable_class) {
 		/* 
 		 * FIXME: Its hard to skip generic methods or methods which use generics.
@@ -3265,6 +3312,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		printf ("Error: Can't AOT Net 2.0 assemblies.\n");
 		return 1;
 	}
+#endif
 
 	emit_start (acfg);
 

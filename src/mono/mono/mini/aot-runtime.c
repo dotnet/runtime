@@ -659,6 +659,9 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	guint32 flags;
 
 	info->vtable_size = decode_value (buf, &buf);
+	if (info->vtable_size == -1)
+		/* Generic type */
+		return FALSE;
 	flags = decode_value (buf, &buf);
 	info->ghcimpl = (flags >> 0) & 0x1;
 	info->has_finalize = (flags >> 1) & 0x1;
