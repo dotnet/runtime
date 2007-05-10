@@ -189,6 +189,9 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	gpointer new_handle;
+	struct _WapiHandle_socket *socket_handle;
+	struct _WapiHandle_socket new_socket_handle = {0};
+	gboolean ok;
 	int new_fd;
 	
 	if (startup_count == 0) {
@@ -197,6 +200,15 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	}
 	
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+		WSASetLastError (WSAENOTSOCK);
+		return(INVALID_SOCKET);
+	}
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+				  (gpointer *)&socket_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up socket handle %p",
+			   __func__, handle);
 		WSASetLastError (WSAENOTSOCK);
 		return(INVALID_SOCKET);
 	}
@@ -230,7 +242,13 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 
-	new_handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, new_fd, NULL);
+	new_socket_handle.domain = socket_handle->domain;
+	new_socket_handle.type = socket_handle->type;
+	new_socket_handle.protocol = socket_handle->protocol;
+	new_socket_handle.still_readable = 1;
+
+	new_handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, new_fd,
+					  &new_socket_handle);
 	if(new_handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating socket handle", __func__);
 		WSASetLastError (ERROR_GEN_FAILURE);
@@ -543,6 +561,8 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		   struct sockaddr *from, socklen_t *fromlen)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
+	struct _WapiHandle_socket *socket_handle;
+	gboolean ok;
 	int ret;
 	
 	if (startup_count == 0) {
@@ -560,7 +580,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	} while (ret == -1 && errno == EINTR &&
 		 !_wapi_thread_cur_apc_pending ());
 
-	if (ret == 0) {
+	if (ret == 0 && len > 0) {
 		/* According to the Linux man page, recvfrom only
 		 * returns 0 when the socket has been shut down
 		 * cleanly.  Turn this into an EINTR to simulate win32
@@ -569,8 +589,22 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		 * shutdown() in socket_close() to trigger this.) See
 		 * bug 75705.
 		 */
-		ret = -1;
-		errno = EINTR;
+		/* Distinguish between the socket being shut down at
+		 * the local or remote ends, and reads that request 0
+		 * bytes to be read
+		 */
+
+		/* If this returns FALSE, it means the socket has been
+		 * closed locally.  If it returns TRUE, but
+		 * still_readable != 1 then shutdown
+		 * (SHUT_RD|SHUT_RDWR) has been called locally.
+		 */
+		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+					  (gpointer *)&socket_handle);
+		if (ok == FALSE || socket_handle->still_readable != 1) {
+			ret = -1;
+			errno = EINTR;
+		}
 	}
 	
 	if (ret == -1) {
@@ -713,6 +747,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 
 int _wapi_shutdown(guint32 fd, int how)
 {
+	struct _WapiHandle_socket *socket_handle;
+	gboolean ok;
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
@@ -724,6 +760,20 @@ int _wapi_shutdown(guint32 fd, int how)
 	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
+	}
+
+	if (how == SHUT_RD ||
+	    how == SHUT_RDWR) {
+		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+					  (gpointer *)&socket_handle);
+		if (ok == FALSE) {
+			g_warning ("%s: error looking up socket handle %p",
+				   __func__, handle);
+			WSASetLastError (WSAENOTSOCK);
+			return(SOCKET_ERROR);
+		}
+		
+		socket_handle->still_readable = 0;
 	}
 	
 	ret = shutdown (fd, how);
@@ -753,6 +803,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	socket_handle.domain = domain;
 	socket_handle.type = type;
 	socket_handle.protocol = protocol;
+	socket_handle.still_readable = 1;
 	
 	fd = socket (domain, type, protocol);
 	if (fd == -1 && domain == AF_INET && type == SOCK_RAW &&
