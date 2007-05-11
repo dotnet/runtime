@@ -1876,6 +1876,16 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;		
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
+		mono_mb_emit_ldloc (mb, 1);
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+#ifdef PLATFORM_WIN32
+		mono_mb_emit_icall (mb, mono_string_from_utf16);
+#else
+		mono_mb_emit_icall (mb, mono_string_new_wrapper);
+#endif
+		mono_mb_emit_byte (mb, CEE_STIND_REF);	
+		break;
 	case MONO_MARSHAL_CONV_STR_LPSTR:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
@@ -2060,6 +2070,11 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		return mono_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
+#ifdef PLATFORM_WIN32
+		return mono_marshal_string_to_utf16;
+#else
+		return mono_string_to_lpstr;
+#endif
 	case MONO_MARSHAL_CONV_STR_LPSTR:
 		return mono_string_to_lpstr;
 	case MONO_MARSHAL_CONV_STR_BSTR:
@@ -2070,8 +2085,13 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		return mono_string_to_ansibstr;
 	case MONO_MARSHAL_CONV_SB_LPSTR:
-	case MONO_MARSHAL_CONV_SB_LPTSTR:
 		return mono_string_builder_to_utf8;
+	case MONO_MARSHAL_CONV_SB_LPTSTR:
+#ifdef PLATFORM_WIN32
+		return mono_string_builder_to_utf16;
+#else
+		return mono_string_builder_to_utf8;
+#endif
 	case MONO_MARSHAL_CONV_SB_LPWSTR:
 		return mono_string_builder_to_utf16;
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
@@ -2083,8 +2103,13 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_FTN_DEL:
 		return mono_ftnptr_to_delegate;
 	case MONO_MARSHAL_CONV_LPSTR_SB:
-	case MONO_MARSHAL_CONV_LPTSTR_SB:
 		return mono_string_utf8_to_builder;
+	case MONO_MARSHAL_CONV_LPTSTR_SB:
+#ifdef PLATFORM_WIN32
+		return mono_string_utf16_to_builder;
+#else
+		return mono_string_utf8_to_builder;
+#endif
 	case MONO_MARSHAL_CONV_LPWSTR_SB:
 		return mono_string_utf16_to_builder;
 	case MONO_MARSHAL_FREE_ARRAY:
@@ -10439,8 +10464,13 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		case MONO_MARSHAL_CONV_STR_LPWSTR:
 			/* We assume this field points inside a MonoString */
 			break;
-		case MONO_MARSHAL_CONV_STR_LPSTR:
 		case MONO_MARSHAL_CONV_STR_LPTSTR:
+#ifdef PLATFORM_WIN32
+			/* We assume this field points inside a MonoString 
+			 * on Win32 */
+			break;
+#endif
+		case MONO_MARSHAL_CONV_STR_LPSTR:
 		case MONO_MARSHAL_CONV_STR_BSTR:
 		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		case MONO_MARSHAL_CONV_STR_TBSTR:

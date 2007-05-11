@@ -4215,8 +4215,14 @@ handle_enum:
 				g_error ("Can not marshal string to native type '%02x': Invalid managed/unmanaged type combination (String fields must be paired with LPStr, LPWStr, BStr or ByValTStr).", mspec->native);
 			}
 		} 	
-		*conv = MONO_MARSHAL_CONV_STR_LPTSTR;
-		return MONO_NATIVE_LPTSTR; 
+		if (unicode) {
+			*conv = MONO_MARSHAL_CONV_STR_LPWSTR;
+			return MONO_NATIVE_LPWSTR; 
+		}
+		else {
+			*conv = MONO_MARSHAL_CONV_STR_LPSTR;
+			return MONO_NATIVE_LPSTR; 
+		}
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
 		if (type->data.klass->enumtype) {
