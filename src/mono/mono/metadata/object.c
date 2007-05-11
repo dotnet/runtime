@@ -2422,8 +2422,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			mono_custom_attrs_free (cinfo);
 
 		thread->apartment_state = has_stathread_attribute ? ThreadApartmentState_STA : ThreadApartmentState_MTA;
-		mono_thread_init_apartment_state ();
 	}
+	mono_thread_init_apartment_state ();
 
 	/* FIXME: check signature of method */
 	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
