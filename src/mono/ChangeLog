@@ -1,3 +1,7 @@
+2007-05-11  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (get-monolite-latest): Redirect wget output too.
+
 2007-05-07  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: don't use length() on arrays;
