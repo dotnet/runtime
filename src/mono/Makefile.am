@@ -34,11 +34,12 @@ DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc dotnet.pc mono-cairo.pc
 # building with monolite
 mcslib = $(mcs_topdir)/class/lib
 monolite = $(mcslib)/monolite
+monolite_url = http://www.go-mono.com/daily/monolite-latest.tar.gz
 get-monolite-latest:
 	-rm -fr $(mcslib)/monolite-*
 	test ! -d $(monolite) || test ! -d $(monolite).old || rm -fr $(monolite).old
 	test ! -d $(monolite) || mv -f $(monolite) $(monolite).old
-	url=http://www.go-mono.com/daily/monolite-latest.tar.gz; cd $(mcslib) && { (wget -O- $$url  || curl $$url) | gzip -d | tar xf - ; }
+	cd $(mcslib) && { (wget -O- $(monolite_url) || curl $(monolite_url)) | gzip -d | tar xf - ; }
 	cd $(mcslib) && mv -f monolite-* monolite
 
 compiler-tests: mcs-do-clean
