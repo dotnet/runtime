@@ -3709,7 +3709,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 					exc_throw_start [nthrows] = code;
 				}
 
-				x86_push_imm (code, exc_class->type_token);
+				x86_push_imm (code, exc_class->type_token - MONO_TOKEN_TYPE_DEF);
 				patch_info->data.name = "mono_arch_throw_corlib_exception";
 				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 				patch_info->ip.i = code - cfg->native_code;

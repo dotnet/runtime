@@ -531,7 +531,9 @@ mono_arch_get_throw_corlib_exception (void)
 	inited = 1;
 	code = start = mono_global_codeman_reserve (64);
 
-	x86_push_membase (code, X86_ESP, 4); /* token */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4); /* token */
+	x86_alu_reg_imm (code, X86_ADD, X86_EAX, MONO_TOKEN_TYPE_DEF);
+	x86_push_reg (code, X86_EAX);
 	x86_push_imm (code, mono_defaults.exception_class->image);
 	x86_call_code (code, mono_exception_from_token);
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
