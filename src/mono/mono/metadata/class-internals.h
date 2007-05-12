@@ -435,7 +435,7 @@ struct _MonoGenericContainer {
 		MonoClass *klass;
 		MonoMethod *method;
 	} owner;
-	int type_argc    : 6;
+	int type_argc    : 31;
 	/* If true, we're a generic method, otherwise a generic type definition. */
 	/* Invariant: parent != NULL => is_method */
 	int is_method    : 1;
