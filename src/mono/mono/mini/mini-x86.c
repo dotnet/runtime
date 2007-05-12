@@ -1453,7 +1453,19 @@ branch_cc_table [] = {
 	X86_CC_O, X86_CC_NO, X86_CC_C, X86_CC_NC
 };
 
-/*#include "cprop.c"*/
+/* Maps CMP_... constants to X86_CC_... constants */
+static const int
+cc_table [] = {
+	X86_CC_EQ, X86_CC_NE, X86_CC_LE, X86_CC_GE, X86_CC_LT, X86_CC_GT,
+	X86_CC_LE, X86_CC_GE, X86_CC_LT, X86_CC_GT
+};
+
+static const int
+cc_signed_table [] = {
+	TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
+	FALSE, FALSE, FALSE, FALSE
+};
+
 void
 mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -2483,27 +2495,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_jump_reg (code, ins->sreg1);
 			break;
 		case OP_CEQ:
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CLT:
-			x86_set_reg (code, X86_CC_LT, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CLT_UN:
-			x86_set_reg (code, X86_CC_LT, ins->dreg, FALSE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CGT:
-			x86_set_reg (code, X86_CC_GT, ins->dreg, TRUE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CGT_UN:
-			x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
-			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-			break;
 		case OP_CNE:
-			x86_set_reg (code, X86_CC_NE, ins->dreg, TRUE);
+			x86_set_reg (code, cc_table [mono_opcode_to_cond (ins->opcode)], ins->dreg, cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
 			break;
 		case OP_COND_EXC_EQ:
@@ -2516,6 +2513,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_LE_UN:
+			EMIT_COND_SYSTEM_EXCEPTION (cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)], ins->inst_p1);
+			break;
 		case OP_COND_EXC_OV:
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
@@ -2532,7 +2531,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BGE_UN:
 		case CEE_BLE:
 		case CEE_BLE_UN:
-			EMIT_COND_BRANCH (ins, branch_cc_table [ins->opcode - CEE_BEQ], (ins->opcode < CEE_BNE_UN));
+			EMIT_COND_BRANCH (ins, cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			break;
 
 		/* floating point opcodes */
