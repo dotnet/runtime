@@ -110,6 +110,9 @@ conv.u4: dest:i src1:i
 conv.u2: dest:i src1:i len:3
 conv.u1: dest:i src1:y len:3
 conv.i: dest:i src1:i len:3
+
+int_xor: dest:i src1:i src2:i len:2 clob:1
+
 throw: src1:i len:13
 op_rethrow: src1:i len:13
 ckfinite: dest:f src1:f len:22
