@@ -232,7 +232,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
@@ -240,7 +240,10 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
 
-	cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	if (mp)
+		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	else
+		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
 	gr = 0;
 	fr = 0;
@@ -439,7 +442,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	int offset = 8;
 	CallInfo *cinfo;
 
-	cinfo = get_call_info (csig, FALSE);
+	cinfo = get_call_info (NULL, csig, FALSE);
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
 		frame_size += sizeof (gpointer);
@@ -745,7 +748,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = mono_method_get_header (cfg->method);
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->mempool, sig, FALSE);
 
 	cfg->frame_reg = MONO_ARCH_BASEREG;
 	offset = 0;
@@ -841,8 +844,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	cfg->stack_offset = offset;
-
-	g_free (cinfo);
 }
 
 void
@@ -853,12 +854,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->mempool, sig, FALSE);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
-
-	g_free (cinfo);
 }
 
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
@@ -914,7 +913,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->mempool, sig, FALSE);
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		sentinelpos = sig->sentinelpos + (is_virtual ? 1 : 0);
@@ -1027,8 +1026,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		call->out_args = arg;
         }
 #endif 
-
-	g_free (cinfo);
 
 	return call;
 }
@@ -1619,7 +1616,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/* Pop the destination address from the stack */
 			x86_pop_reg (code, X86_ECX);
@@ -1637,7 +1634,6 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 				}
 			}
 		}
-		g_free (cinfo);
 	default:
 		break;
 	}
@@ -1702,7 +1698,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->mempool, sig, FALSE);
 	
 	/* This is the opposite of the code in emit_prolog */
 
@@ -1726,8 +1722,6 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			x86_mov_membase_reg (code, X86_EBP, inst->inst_offset, inst->dreg, 4);
 		}
 	}
-
-	g_free (cinfo);
 
 	return code;
 }
@@ -3594,7 +3588,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->mempool, sig, FALSE);
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
@@ -3630,8 +3624,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		x86_ret_imm (code, stack_to_pop);
 	else
 		x86_ret (code);
-
-	g_free (cinfo);
 
 	cfg->code_len = code - cfg->native_code;
 
@@ -3806,7 +3798,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo *cinfo = get_call_info (inst->signature, FALSE);
+	CallInfo *cinfo = get_call_info (cfg->mempool, inst->signature, FALSE);
 
 	/* add the this argument */
 	if (this_reg != -1) {
@@ -3860,8 +3852,6 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 			mono_bblock_add_inst (cfg->cbb, vtarg);
 		}
 	}
-
-	g_free (cinfo);
 }
 
 MonoInst*
