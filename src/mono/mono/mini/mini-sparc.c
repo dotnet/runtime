@@ -1719,29 +1719,19 @@ static int
 mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 {
 	MonoSpillInfo **si, *info;
-	int i = 0;
+
+	g_assert (spillvar == 0);
 
 	si = &cfg->spill_info_float; 
-	
-	while (i <= spillvar) {
 
-		if (!*si) {
-			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
-			info->next = NULL;
-			cfg->stack_offset += sizeof (double);
-			cfg->stack_offset = ALIGN_TO (cfg->stack_offset, 8);
-			info->offset = - cfg->stack_offset;
-		}
-
-		if (i == spillvar)
-			return MONO_SPARC_STACK_BIAS + (*si)->offset;
-
-		i++;
-		si = &(*si)->next;
+	if (!*si) {
+		*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+		cfg->stack_offset += sizeof (double);
+		cfg->stack_offset = ALIGN_TO (cfg->stack_offset, 8);
+		info->offset = - cfg->stack_offset;
 	}
 
-	g_assert_not_reached ();
-	return 0;
+	return MONO_SPARC_STACK_BIAS + (*si)->offset;
 }
 
 /* FIXME: Strange loads from the stack in basic-float.cs:test_2_rem */
