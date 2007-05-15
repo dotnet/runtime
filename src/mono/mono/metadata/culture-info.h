@@ -102,6 +102,7 @@ typedef struct {
 	const stridx_t win3lang;
 	const stridx_t iso3lang;
 	const stridx_t iso2lang;
+	const stridx_t territory;
 
 	gint calendar_data [NUM_OPT_CALS];
 
@@ -117,9 +118,9 @@ typedef struct {
 } CultureInfoNameEntry;
 
 typedef struct {
-	gint16 region_id;
+	gint16 lcid;
+	gint16 region_id; /* it also works as geoId in 2.0 */
 	/* gint8 measurement_system; // 0:metric 1:US 2:UK */
-	/* gint16 geo_id; */
 	const stridx_t iso2name;
 	const stridx_t iso3name;
 	const stridx_t win3name;

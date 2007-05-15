@@ -387,6 +387,7 @@ typedef struct {
 	MonoString *iso2lang;
 	MonoString *icu_name;
 	MonoString *win3lang;
+	MonoString *territory;
 	MonoCompareInfo *compareinfo;
 	const gint32 *calendar_data;
 	const void* text_info_data;

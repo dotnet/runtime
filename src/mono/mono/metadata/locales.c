@@ -250,6 +250,7 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	MONO_OBJECT_SETREF (this, win3lang, mono_string_new (domain, idx2string (ci->win3lang)));
 	MONO_OBJECT_SETREF (this, iso3lang, mono_string_new (domain, idx2string (ci->iso3lang)));
 	MONO_OBJECT_SETREF (this, iso2lang, mono_string_new (domain, idx2string (ci->iso2lang)));
+	MONO_OBJECT_SETREF (this, territory, mono_string_new (domain, idx2string (ci->territory)));
 	this->parent_lcid = ci->parent_lcid;
 	this->specific_lcid = ci->specific_lcid;
 	this->datetime_index = ci->datetime_format_index;
