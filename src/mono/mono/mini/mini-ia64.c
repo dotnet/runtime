@@ -2633,8 +2633,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CONV_I8:
 		case CEE_CONV_I:
-			/* FIXME: Sign extend ? */
-			ia64_mov (code, ins->dreg, ins->sreg1);
+			ia64_sxt4 (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_CONV_U8:
 		case CEE_CONV_U:
