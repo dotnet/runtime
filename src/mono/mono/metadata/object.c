@@ -1077,6 +1077,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	vt->max_interface_id = class->max_interface_id;
+	vt->interface_bitmap = class->interface_bitmap;
 	
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
 	//		class->name, class->interface_offsets_count);
@@ -1261,6 +1262,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	pvt->max_interface_id = max_interface_id;
+	pvt->interface_bitmap = class->interface_bitmap;
 
 	/* initialize interface offsets */
 	for (i = 0; i < class->interface_offsets_count; ++i) {

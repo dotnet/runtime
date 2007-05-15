@@ -341,6 +341,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
         gpointer    data; /* to store static class data */
         gpointer    type; /* System.Type type for klass */
+	guint8     *interface_bitmap;
 	guint16     max_interface_id;
 	guint8      rank;
 	guint remote          : 1; /* class is remotely activated */
