@@ -1274,14 +1274,4 @@ class Tests {
 
 		return 0;
 	}
-
-	/* This still doesn't work on ia64
-	public static int test_0_regress_cprop_80738 () {
-		int hours = Int32.MinValue;
-		int hrssec = (hours * 3600);
-		long t = ((long)(hrssec) * 1000L);
-
-		return t == 0 ? 0 : 1;
-	}
-	*/
 }
