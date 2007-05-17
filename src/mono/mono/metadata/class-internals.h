@@ -713,6 +713,8 @@ typedef struct {
 	MonoClass *idispatch_class;
 	MonoClass *safehandle_class;
 	MonoClass *handleref_class;
+	MonoClass *attribute_class;
+	MonoClass *customattribute_data_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

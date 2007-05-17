@@ -5565,11 +5565,12 @@ MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
 	MonoReflectionField *res;
-	MonoClass *oklass;
+	static MonoClass *monofield_klass;
 
 	CHECK_OBJECT (MonoReflectionField *, field, klass);
-	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
-	res = (MonoReflectionField *)mono_object_new (domain, oklass);
+	if (!monofield_klass)
+		monofield_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
+	res = (MonoReflectionField *)mono_object_new (domain, monofield_klass);
 	res->klass = klass;
 	res->field = field;
 	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, field->name));
@@ -5594,11 +5595,12 @@ MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
 	MonoReflectionProperty *res;
-	MonoClass *oklass;
+	static MonoClass *monoproperty_klass;
 
 	CHECK_OBJECT (MonoReflectionProperty *, property, klass);
-	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
-	res = (MonoReflectionProperty *)mono_object_new (domain, oklass);
+	if (!monoproperty_klass)
+		monoproperty_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
+	res = (MonoReflectionProperty *)mono_object_new (domain, monoproperty_klass);
 	res->klass = klass;
 	res->property = property;
 	CACHE_OBJECT (MonoReflectionProperty *, property, res, klass);
@@ -5617,11 +5619,12 @@ MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
 	MonoReflectionEvent *res;
-	MonoClass *oklass;
+	static MonoClass *monoevent_klass;
 
 	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
-	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
-	res = (MonoReflectionEvent *)mono_object_new (domain, oklass);
+	if (!monoevent_klass)
+		monoevent_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
+	res = (MonoReflectionEvent *)mono_object_new (domain, monoevent_klass);
 	res->klass = klass;
 	res->event = event;
 	CACHE_OBJECT (MonoReflectionEvent *, event, res, klass);
@@ -5833,13 +5836,13 @@ MonoObject *
 mono_get_dbnull_object (MonoDomain *domain)
 {
 	MonoObject *obj;
-	MonoClass *klass;
 	static MonoClassField *dbnull_value_field = NULL;
 	
 	if (!dbnull_value_field) {
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "DBNull");
-		mono_class_init (klass);
-		dbnull_value_field = mono_class_get_field_from_name (klass, "Value");
+		MonoClass *dbnull_klass;
+		dbnull_klass = mono_class_from_name (mono_defaults.corlib, "System", "DBNull");
+		mono_class_init (dbnull_klass);
+		dbnull_value_field = mono_class_get_field_from_name (dbnull_klass, "Value");
 		g_assert (dbnull_value_field);
 	}
 	obj = mono_field_get_value_object (domain, dbnull_value_field, NULL); 
@@ -6981,7 +6984,6 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *dat
 {
 	MonoArray *typedargs, *namedargs;
 	MonoClass *attrklass;
-	static MonoClass *klass;
 	static MonoMethod *ctor;
 	MonoDomain *domain;
 	MonoObject *attr;
@@ -6991,16 +6993,14 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *dat
 	void *params [3];
 
 	mono_class_init (method->klass);
-	
-	if (!klass)
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
+
 	if (!ctor)
-		ctor = mono_class_get_method_from_name (klass, ".ctor", 3);
-	
+		ctor = mono_class_get_method_from_name (mono_defaults.customattribute_data_class, ".ctor", 3);
+
 	domain = mono_domain_get ();
 	if (len == 0) {
 		/* This is for Attributes with no parameters */
-		attr = mono_object_new (domain, klass);
+		attr = mono_object_new (domain, mono_defaults.customattribute_data_class);
 		params [0] = mono_method_get_object (domain, method, NULL);
 		params [1] = params [2] = NULL;
 		mono_runtime_invoke (method, attr, params, NULL);
@@ -7087,7 +7087,7 @@ create_custom_attr_data (MonoImage *image, MonoMethod *method, const guchar *dat
 		}
 		g_free (name);
 	}
-	attr = mono_object_new (domain, klass);
+	attr = mono_object_new (domain, mono_defaults.customattribute_data_class);
 	params [0] = mono_method_get_object (domain, method, NULL);
 	params [1] = typedargs;
 	params [2] = namedargs;
@@ -7099,12 +7099,10 @@ MonoArray*
 mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 {
 	MonoArray *result;
-	MonoClass *klass;
 	MonoObject *attr;
 	int i;
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
-	result = mono_array_new (mono_domain_get (), klass, cinfo->num_attrs);
+	result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, cinfo->num_attrs);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
 		mono_array_setref (result, i, attr);
@@ -7117,7 +7115,6 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 {
 	MonoArray *result;
 	MonoObject *attr;
-	MonoClass *klass;
 	int i, n;
 
 	n = 0;
@@ -7126,8 +7123,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 			n ++;
 	}
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
-	result = mono_array_new (mono_domain_get (), klass, n);
+	result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, n);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
@@ -7143,14 +7139,10 @@ static MonoArray*
 mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
 {
 	MonoArray *result;
-	static MonoClass *klass;
 	MonoObject *attr;
 	int i;
-
-	if (!klass)
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
 	
-	result = mono_array_new (mono_domain_get (), klass, cinfo->num_attrs);
+	result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, cinfo->num_attrs);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		attr = create_custom_attr_data (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
 		mono_array_setref (result, i, attr);
@@ -7493,11 +7485,9 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
-		MonoClass *klass;
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
 		if (mono_loader_get_last_error ())
 			return NULL;
-		result = mono_array_new (mono_domain_get (), klass, 0);
+		result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 
 	return result;
@@ -7536,11 +7526,8 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj)
 		result = mono_custom_attrs_data_construct (cinfo);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-	} else {
-		MonoClass *klass;
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
-		result = mono_array_new (mono_domain_get (), klass, 0);
-	}
+	} else
+		result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, 0);
 
 	return result;
 }
