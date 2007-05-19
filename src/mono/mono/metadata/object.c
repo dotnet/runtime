@@ -2393,6 +2393,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	gpointer pa [1];
 	int rval;
 	MonoCustomAttrInfo* cinfo;
+	gboolean has_stathread_attribute;
+	MonoThread* thread = mono_thread_current ();
 
 	g_assert (args);
 
@@ -2415,15 +2417,20 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	cinfo = mono_custom_attrs_from_method (method);
 	if (cinfo) {
 		static MonoClass *stathread_attribute = NULL;
-		MonoThread* thread = mono_thread_current ();
-		gboolean has_stathread_attribute;
 		if (!stathread_attribute)
 			stathread_attribute = mono_class_from_name (mono_defaults.corlib, "System", "STAThreadAttribute");
 		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, stathread_attribute);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-
-		thread->apartment_state = has_stathread_attribute ? ThreadApartmentState_STA : ThreadApartmentState_MTA;
+	} else {
+		has_stathread_attribute = FALSE;
+ 	}
+	if (has_stathread_attribute) {
+		thread->apartment_state = ThreadApartmentState_STA;
+	} else if (mono_get_runtime_info ()->framework_version [0] == '1') {
+		thread->apartment_state = ThreadApartmentState_Unknown;
+	} else {
+		thread->apartment_state = ThreadApartmentState_MTA;
 	}
 	mono_thread_init_apartment_state ();
 

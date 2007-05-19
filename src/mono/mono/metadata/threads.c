@@ -289,6 +289,13 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	mono_profiler_thread_start (tid);
 
+	/* On 2.0 profile (and higher), set explicitly since state might have been
+	   Unknown */
+	if (mono_get_runtime_info ()->framework_version [0] != '1') {
+		if (thread->apartment_state == ThreadApartmentState_Unknown)
+			thread->apartment_state = ThreadApartmentState_MTA;
+	}
+
 	mono_thread_init_apartment_state ();
 
 	if(thread->start_notify!=NULL) {
@@ -2938,10 +2945,6 @@ mono_thread_init_apartment_state (void)
 {
 	MonoThread* thread;
 	thread = mono_thread_current ();
-
-	/* Set explicitly since state might have been Unknown */
-	if (thread->apartment_state != ThreadApartmentState_STA)
-		thread->apartment_state = ThreadApartmentState_MTA;
 
 #ifdef PLATFORM_WIN32
 	/* Positive return value indicates success, either
