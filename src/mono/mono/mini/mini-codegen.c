@@ -1138,8 +1138,18 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					insert_before_ins (ins, tmp, copy);
 				}
 				else {
-					DEBUG (printf ("\tshortcut assignment of R%d to %s\n", ins->sreg2, mono_arch_regname (dest_sreg2)));
-					assign_ireg (cfg, rs, ins->sreg2, dest_sreg2);
+					val = rs->vassign [ins->sreg2];
+					if (val == -1) {
+						DEBUG (printf ("\tshortcut assignment of R%d to %s\n", ins->sreg2, mono_arch_regname (dest_sreg2)));
+						assign_reg (cfg, rs, ins->sreg2, dest_sreg2, FALSE);
+					} else if (val < -1) {
+						/* FIXME: */
+						g_assert_not_reached ();
+					} else {
+						/* Argument already in hard reg, need to copy */
+						MonoInst *copy = create_copy_ins (cfg, dest_sreg2, val, NULL, ip, FALSE);
+						insert_before_ins (ins, tmp, copy);
+					}
 				}
 			} else {
 				int need_spill = TRUE;
