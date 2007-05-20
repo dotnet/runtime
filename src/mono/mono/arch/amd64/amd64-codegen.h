@@ -341,7 +341,7 @@ typedef union {
 
 #define amd64_call_reg(inst,reg)	\
 	do {	\
-		amd64_emit_rex(inst, 8, 0, 0, (reg)); \
+		amd64_emit_rex(inst, 0, 0, 0, (reg)); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_reg_emit ((inst), 2, ((reg) & 0x7));	\
 	} while (0)
@@ -499,6 +499,8 @@ typedef union {
 #define amd64_sse_comisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2f)
 
 #define amd64_sse_comisd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0x66, 0x0f, 0x2f)
+
+#define amd64_sse_ucomisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2e)
 
 #define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 8)
 
