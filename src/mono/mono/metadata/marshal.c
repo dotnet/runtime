@@ -4583,7 +4583,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int pos0, pos1;
+	int pos0;
 	char *name;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
@@ -4660,7 +4660,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_LDIND_I );
 	mono_mb_emit_op (mb, CEE_CALLI, sig);
 
-	pos1 = mono_mb_emit_branch (mb, CEE_BR);
+	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* else [target == null] call this->method_ptr static */
 	mono_mb_patch_branch (mb, pos0);
@@ -4672,8 +4672,6 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_LDIND_I );
 	mono_mb_emit_op (mb, CEE_CALLI, static_sig);
 
-	/* return */
-	mono_mb_patch_branch (mb, pos1);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_and_cache (cache, sig,
