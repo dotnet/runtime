@@ -669,7 +669,7 @@ GDir *_wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 	     (*error)->code == G_FILE_ERROR_NAMETOOLONG) &&
 	    portability_helpers > 0) {
 		gchar *located_filename = find_file (path, TRUE);
-		GError *tmp_error;
+		GError *tmp_error = NULL;
 		
 		if (located_filename == NULL) {
 			return(NULL);
@@ -677,8 +677,8 @@ GDir *_wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 		
 		ret = g_dir_open (located_filename, flags, &tmp_error);
 		g_free (located_filename);
-		if (tmp_error != NULL) {
-			g_propagate_error (error, tmp_error);
+		if (tmp_error == NULL) {
+			g_clear_error (error);
 		}
 	}
 	
