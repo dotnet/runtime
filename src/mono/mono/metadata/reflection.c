@@ -6667,6 +6667,9 @@ handle_type:
 			int etype = *p;
 			p ++;
 
+			if (etype == 0x51)
+				/* See Partition II, Appendix B3 */
+				etype = MONO_TYPE_OBJECT;
 			type = MONO_TYPE_SZARRAY;
 			simple_type.type = etype;
 			tklass = mono_class_from_mono_type (&simple_type);
@@ -7857,7 +7860,11 @@ handle_type:
 			goto handle_enum;
 		} else if (klass->rank == 1) {
 			*p++ = 0x1D;
-			*p++ = klass->element_class->byval_arg.type;
+			if (klass->element_class->byval_arg.type == MONO_TYPE_OBJECT)
+				/* See Partition II, Appendix B3 */
+				*p++ = 0x51;
+			else
+				*p++ = klass->element_class->byval_arg.type;
 			encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &klass->byval_arg, arg, NULL);
 			break;
 		} else if (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8) {
