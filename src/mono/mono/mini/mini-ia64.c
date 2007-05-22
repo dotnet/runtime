@@ -1606,30 +1606,20 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ICOMPARE_IMM: {
 			/* Instead of compare+b<cond>, ia64 has compare<cond>+br */
 			gboolean imm;
+			CompRelation cond;
 
 			/* 
 			 * The compare_imm instructions have switched up arguments, and 
 			 * some of them take an imm between -127 and 128.
 			 */
 			next = ins->next;
-			switch (next->opcode) {
-			case CEE_BGE:
-			case CEE_BLT:
-			case OP_COND_EXC_LT:
-			case OP_IBGE:
-			case OP_IBLT:
+			cond = mono_opcode_to_cond (next->opcode);
+			if ((cond == CMP_LT) || (cond == CMP_GE))
 				imm = ia64_is_imm8 (ins->inst_imm - 1);
-				break;
-			case OP_IBGE_UN:
-			case OP_IBLT_UN:
-			case CEE_BGE_UN:
-			case CEE_BLT_UN:
+			else if ((cond == CMP_LT_UN) || (cond == CMP_GE_UN))
 				imm = ia64_is_imm8 (ins->inst_imm - 1) && (ins->inst_imm > 0);
-				break;
-			default:
+			else
 				imm = ia64_is_imm8 (ins->inst_imm);
-				break;
-			}
 
 			if (imm) {
 				ins->opcode = opcode_to_ia64_cmp_imm (next->opcode, ins->opcode);
