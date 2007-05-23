@@ -416,6 +416,8 @@ mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
 {
 	gboolean res = (ss->a == a && ss->b == b && ss->c == c && strcmp (ss->d, d) == 0);
 
+	marshal_free (ss->d);
+
 	ss->a = !ss->a;
 	ss->b = !ss->b;
 	ss->c = !ss->c;
@@ -1372,7 +1374,32 @@ typedef struct
 } AsAnyStruct;
 
 STDCALL int
+mono_test_marshal_asany_in (void* ptr)
+{
+	AsAnyStruct* asAny = ptr;
+	int res = asAny->i + asAny->j + asAny->k;
+
+	return res;
+}
+
+STDCALL int
 mono_test_marshal_asany_inout (void* ptr)
+{
+	AsAnyStruct* asAny = ptr;
+	int res = asAny->i + asAny->j + asAny->k;
+
+	marshal_free (asAny->s);
+
+	asAny->i = 10;
+	asAny->j = 20;
+	asAny->k = 30;
+	asAny->s = 0;
+
+	return res;
+}
+
+STDCALL int
+mono_test_marshal_asany_out (void* ptr)
 {
 	AsAnyStruct* asAny = ptr;
 	int res = asAny->i + asAny->j + asAny->k;

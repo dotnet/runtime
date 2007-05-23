@@ -249,10 +249,10 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_asany", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_asany_unicode ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
 
-	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
+	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_in")]
 	static extern void mono_test_asany_in ([MarshalAs(UnmanagedType.AsAny)][In] object obj); 
 
-	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
+	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_out")]
 	static extern void mono_test_asany_out ([MarshalAs(UnmanagedType.AsAny)][Out] object obj); 
 	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
 	static extern void mono_test_asany_inout ([MarshalAs(UnmanagedType.AsAny)][In, Out] object obj); 
