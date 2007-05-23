@@ -138,5 +138,19 @@ class Tests {
 		return (int)l (55);
 	}
 
+	static int count = 0;
+
+	public static void inc_count () {
+		count ++;
+	}
+
+	public static int test_0_multicast () {
+		SimpleDelegate d = new SimpleDelegate (inc_count);
+
+		d += inc_count;
+
+		d ();
+		return count == 2 ? 0 : 1;
+	}
 }
 }
