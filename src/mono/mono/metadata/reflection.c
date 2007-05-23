@@ -7324,10 +7324,19 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	MonoReflectionMethodAux *aux;
 
 	if (method->klass->image->dynamic) {
+		MonoCustomAttrInfo *res, *ainfo;
+		int size;
+
 		aux = g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (!aux || !aux->param_cattr)
 			return NULL;
-		return aux->param_cattr [param];
+
+		/* Need to copy since it will be freed later */
+		ainfo = aux->param_cattr [param];
+		size = sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (ainfo->num_attrs - MONO_ZERO_LEN_ARRAY);
+		res = g_malloc0 (size);
+		memcpy (res, ainfo, size);
+		return res;
 	}
 
 	image = method->klass->image;
