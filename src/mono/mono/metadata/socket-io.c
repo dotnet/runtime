@@ -14,7 +14,9 @@
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 
 #include <mono/metadata/object.h>
@@ -31,7 +33,9 @@
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/domain-internals.h>
 
-#include <sys/time.h> 
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif

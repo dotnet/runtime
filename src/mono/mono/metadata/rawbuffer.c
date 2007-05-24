@@ -11,7 +11,9 @@
 #define USE_WIN32_API		1
 #endif
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #ifdef USE_WIN32_API
 #include <winsock2.h>

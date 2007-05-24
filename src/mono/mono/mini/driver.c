@@ -11,7 +11,9 @@
 
 #include <config.h>
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>

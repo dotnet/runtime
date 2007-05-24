@@ -1403,6 +1403,12 @@ if test x$platform_win32 = xno; then
 		AC_CHECK_LIB(attr, lsetxattr, XATTR_LIB="-lattr",)
 	)
 	AC_SUBST(XATTR_LIB)
+	
+	dnl *********************************
+	dnl *** Checks for Windows compilation ***
+	dnl *********************************
+	AC_CHECK_HEADERS(sys/time.h)
+	AC_CHECK_HEADERS(sys/param.h)
 
 	dnl *********************************
 	dnl *** Check for Console 2.0 I/O ***

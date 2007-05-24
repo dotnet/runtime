@@ -13,9 +13,13 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 /* This is only needed for the mono_path_canonicalize code, MAXSYMLINKS, could be moved */
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 
 #include "mono-path.h"
 

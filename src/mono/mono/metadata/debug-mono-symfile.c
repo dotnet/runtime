@@ -4,7 +4,9 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <sys/stat.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
@@ -21,7 +23,9 @@
 #include <mono/metadata/class-internals.h>
 
 #include <fcntl.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #define RANGE_TABLE_CHUNK_SIZE		256
 #define CLASS_TABLE_CHUNK_SIZE		256

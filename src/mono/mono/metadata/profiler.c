@@ -20,8 +20,12 @@
 #include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-dl.h"
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #ifdef HAVE_BACKTRACE_SYMBOLS
 #include <execinfo.h>
 #endif

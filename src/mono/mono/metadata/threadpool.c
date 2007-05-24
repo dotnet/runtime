@@ -33,10 +33,14 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/os/gc_wrapper.h>
 #include <errno.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #include <sys/types.h>
 #include <fcntl.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 
 #include <mono/utils/mono-poll.h>
