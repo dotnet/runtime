@@ -2542,7 +2542,7 @@ mono_class_init (MonoClass *class)
 
 	has_cached_info = mono_class_get_cached_class_info (class, &cached_info);
 
-	if (!class->generic_class && (!has_cached_info || (has_cached_info && cached_info.has_nested_classes))) {
+	if (!class->generic_class && !class->image->dynamic && (!has_cached_info || (has_cached_info && cached_info.has_nested_classes))) {
 		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
 		while (i) {
 			MonoClass* nclass;

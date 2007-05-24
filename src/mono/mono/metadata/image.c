@@ -446,6 +446,11 @@ mono_image_check_for_module_cctor (MonoImage *image)
 		image->checked_module_cctor = TRUE;
 		return;
 	}
+	if (image->dynamic) {
+		/* FIXME: */
+		image->checked_module_cctor = TRUE;
+		return;
+	}
 	if (t->rows >= 1) {
 		guint32 nameidx = mono_metadata_decode_row_col (t, 0, MONO_TYPEDEF_NAME);
 		const char *name = mono_metadata_string_heap (image, nameidx);

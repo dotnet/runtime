@@ -1066,11 +1066,21 @@ static GHashTable *dynamic_custom_attrs = NULL;
 static MonoCustomAttrInfo*
 lookup_custom_attr (void *member)
 {
-	MonoCustomAttrInfo *ainfo;
+	MonoCustomAttrInfo *ainfo, *res;
+	int size;
+
 	mono_reflection_lock ();
 	ainfo = g_hash_table_lookup (dynamic_custom_attrs, member);
 	mono_reflection_unlock ();
-	return ainfo;
+
+	if (ainfo) {
+		/* Need to copy since it will be freed later */
+		size = sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (ainfo->num_attrs - MONO_ZERO_LEN_ARRAY);
+		res = g_malloc0 (size);
+		memcpy (res, ainfo, size);
+		return res;
+	}
+	return NULL;
 }
 
 static gboolean
