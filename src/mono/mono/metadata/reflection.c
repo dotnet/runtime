@@ -1131,6 +1131,7 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 		if (custom_attr_visible (image, cattr)) {
 			unsigned char *saved = mono_mempool_alloc (image->mempool, mono_array_length (cattr->data));
 			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
+			g_assert (cattr->ctor->method);
 			ainfo->attrs [index].ctor = cattr->ctor->method;
 			ainfo->attrs [index].data = saved;
 			ainfo->attrs [index].data_size = mono_array_length (cattr->data);
