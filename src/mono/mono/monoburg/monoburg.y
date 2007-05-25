@@ -8,10 +8,13 @@
  * (C) 2001 Ximian, Inc.
  */
 
+#include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <ctype.h>
 #include <assert.h>
 #include <stdarg.h>
