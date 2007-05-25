@@ -416,27 +416,27 @@ static int
 cominterop_get_com_slot_for_method (MonoMethod* method)
 {
 	guint32 slot = method->slot;
-	GPtrArray *ifaces;
-	MonoClass *ic = NULL;
-	int i;
+ 	MonoClass *ic = method->klass;
 
-	ifaces = mono_class_get_implemented_interfaces (method->klass);
-	if (ifaces) {
-		int offset;
-		for (i = 0; i < ifaces->len; ++i) {
-			ic = g_ptr_array_index (ifaces, i);
-			offset = mono_class_interface_offset (method->klass, ic);
-			if (method->slot >= offset && method->slot < offset + ic->method.count) {
-				slot -= offset;
-				break;
+	/* if method is on a class, we need to look up interface method exists on */
+	if (!MONO_CLASS_IS_INTERFACE(method->klass)) {
+		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass);
+		if (ifaces) {
+			int i;
+			for (i = 0; i < ifaces->len; ++i) {
+				int offset;
+				ic = g_ptr_array_index (ifaces, i);
+				offset = mono_class_interface_offset (method->klass, ic);
+				if (method->slot >= offset && method->slot < offset + ic->method.count) {
+					slot -= offset;
+					break;
+				}
+				ic = NULL;
 			}
+			g_ptr_array_free (ifaces, TRUE);
 		}
-		g_ptr_array_free (ifaces, TRUE);
 	}
 
-	if (!ic)
-		ic = method->klass;
-	
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
 
@@ -452,27 +452,26 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 static MonoReflectionType*
 cominterop_get_method_interface (MonoMethod* method)
 {
-	GPtrArray *ifaces;
 	MonoType* t = NULL;
-	MonoClass *ic = NULL;
-	int i;
 	MonoReflectionType* rt = NULL;
+	MonoClass *ic = method->klass;
 
-	ifaces = mono_class_get_implemented_interfaces (method->klass);
-	if (ifaces) {
-		int offset;
-		for (i = 0; i < ifaces->len; ++i) {
-			ic = g_ptr_array_index (ifaces, i);
-			offset = mono_class_interface_offset (method->klass, ic);
-			if (method->slot >= offset && method->slot < offset + ic->method.count)
-				break;
-			ic = NULL;
+	/* if method is on a class, we need to look up interface method exists on */
+	if (!MONO_CLASS_IS_INTERFACE(method->klass)) {
+		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass);
+		if (ifaces) {
+			int i;
+			for (i = 0; i < ifaces->len; ++i) {
+				int offset;
+				ic = g_ptr_array_index (ifaces, i);
+				offset = mono_class_interface_offset (method->klass, ic);
+				if (method->slot >= offset && method->slot < offset + ic->method.count)
+					break;
+				ic = NULL;
+			}
+			g_ptr_array_free (ifaces, TRUE);
 		}
-		g_ptr_array_free (ifaces, TRUE);
 	}
-
-	if (!ic)
-		ic = method->klass;
 
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
