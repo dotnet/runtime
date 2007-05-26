@@ -152,5 +152,62 @@ class Tests {
 		d ();
 		return count == 2 ? 0 : 1;
 	}
+
+	public delegate int Delegate0 ();
+
+	public delegate int Delegate1 (int i);
+
+	public delegate int Delegate2 (int i, int j);
+
+	public int int_field;
+
+	public int adder0 () {
+		return int_field;
+	}
+
+	public static int adder0_static () {
+		return 1;
+	}
+
+	public int adder1 (int i) {
+		return int_field + i;
+	}
+
+	public static int adder1_static (int i) {
+		return i;
+	}
+
+	public int adder2 (int i, int j) {
+		return int_field + i + j;
+	}
+
+	public static int adder2_static (int i, int j) {
+		return i + j;
+	}
+
+	public static int test_0_delegate_opt () {
+		Tests d = new Tests ();
+		d.int_field = 1;
+
+		if (new Delegate0 (d.adder0) () != 1)
+			return 1;
+
+		if (new Delegate1 (d.adder1) (2) != 3)
+			return 2;
+
+		if (new Delegate2 (d.adder2) (2, 3) != 6)
+			return 3;
+
+		if (new Delegate0 (adder0_static) () != 1)
+			return 4;
+
+		if (new Delegate1 (adder1_static) (2) != 2)
+			return 5;
+
+		if (new Delegate2 (adder2_static) (2, 3) != 5)
+			return 6;
+
+		return 0;
+	}
 }
 }
