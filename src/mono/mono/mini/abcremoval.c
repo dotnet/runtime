@@ -1320,11 +1320,11 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	
 	area.cfg = cfg;
 	area.relations = (MonoSummarizedValueRelation *)
-		alloca (sizeof (MonoSummarizedValueRelation) * (cfg->num_varinfo) * 2);
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation) * (cfg->num_varinfo) * 2);
 	area.contexts = (MonoRelationsEvaluationContext *)
-		alloca (sizeof (MonoRelationsEvaluationContext) * (cfg->num_varinfo));
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->num_varinfo));
 	area.variable_value_kind = (MonoIntegerValueKind *)
-		alloca (sizeof (MonoIntegerValueKind) * (cfg->num_varinfo));
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->num_varinfo));
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
@@ -1389,7 +1389,7 @@ handle_integer_value:
 					apply_value_kind_to_range (&range, effective_value_kind);
 					
 					if (range.upper < INT_MAX) {
-						type_relation = (MonoSummarizedValueRelation *) alloca (sizeof (MonoSummarizedValueRelation));
+						type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
 						type_relation->relation = MONO_LE_RELATION;
 						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
 						type_relation->related_value.value.constant.value = range.upper;
@@ -1401,7 +1401,7 @@ handle_integer_value:
 						}
 					}
 					if (range.lower > INT_MIN) {
-						type_relation = (MonoSummarizedValueRelation *) alloca (sizeof (MonoSummarizedValueRelation));
+						type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
 						type_relation->relation = MONO_GE_RELATION;
 						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
 						type_relation->related_value.value.constant.value = range.lower;
