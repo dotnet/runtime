@@ -1,6 +1,6 @@
 CC=$(CC_FOR_BUILD)
 
-am_CFLAGS = $(BUILD_GLIB_CFLAGS) -I$(srcdir) -I$(top_srcdir) $(CFLAGS_FOR_BUILD)
+am_CFLAGS = $(BUILD_GLIB_CFLAGS) -I$(srcdir) -I$(top_builddir) $(CFLAGS_FOR_BUILD)
 
 #noinst_PROGRAMS = sample
 
