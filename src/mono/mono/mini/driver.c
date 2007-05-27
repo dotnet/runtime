@@ -695,6 +695,9 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
+	if (!g_thread_supported ())
+		g_thread_init (NULL);
+
 	if (mono_running_on_valgrind () && getenv ("MONO_VALGRIND_LEAK_CHECK")) {
 		GMemVTable mem_vtable;
 
