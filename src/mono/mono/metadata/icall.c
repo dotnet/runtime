@@ -1357,6 +1357,10 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 		method = mono_get_inflated_method (method);
 
 	sig = mono_method_signature (method);
+	if (!sig) {
+		g_assert (mono_loader_get_last_error ());
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+	}
 	
 	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
 	info->ret = mono_type_get_object (domain, sig->ret);
