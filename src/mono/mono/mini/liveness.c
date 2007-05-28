@@ -110,13 +110,6 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 				int idx = affected_variable->variable_index;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 				g_assert (idx < max_vars);
-				if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
-					/*
-					 * Variables used in exception regions can't be allocated to 
-					 * registers.
-					 */
-					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
-				}
 				update_live_range (cfg, idx, bb->dfn, inst_num); 
 				if (!mono_bitset_test_fast (bb->kill_set, idx))
 					mono_bitset_set_fast (bb->gen_set, idx);
@@ -133,13 +126,6 @@ update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int i
 				g_assert (idx < max_vars);
 				//if (arity > 0)
 					//g_assert (inst->inst_i1->opcode != OP_PHI);
-				if ((bb->region != -1) && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
-					/*
-					 * Variables used in exception regions can't be allocated to 
-					 * registers.
-					 */
-					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
-				}
 				update_live_range (cfg, idx, bb->dfn, inst_num); 
 				mono_bitset_set_fast (bb->kill_set, idx);
 				if (inst->ssa_op == MONO_SSA_STORE)
