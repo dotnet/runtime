@@ -1,3 +1,7 @@
+2007-05-29  Robert Jordan  <robertj@gmx.net>
+
+	* data/config.in: add mono_win32_compat entries.
+
 2007-05-11  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (get-monolite-latest): Redirect wget output too.
