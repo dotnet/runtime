@@ -232,6 +232,7 @@ test_sources = 		\
 	basic-math.cs	\
 	basic.cs		\
 	exceptions.cs	\
+	devirtualization.cs	\
 	iltests.il.in		\
 	test.cs
 
@@ -252,7 +253,7 @@ else
 mono_debugger_sources =
 endif
 
-regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
+regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe devirtualization.exe
 regtests2=generics.exe il2tests.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg

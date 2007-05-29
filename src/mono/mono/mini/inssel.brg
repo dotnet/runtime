@@ -1698,6 +1698,22 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		mono_bblock_add_inst (cfg->cbb, tree);
 		return;
 	}
+	
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
+		((method->flags &  METHOD_ATTRIBUTE_FINAL) ||
+			(method->klass && method->klass->flags & TYPE_ATTRIBUTE_SEALED))) {
+		/*
+		 * the method is virtual, but we can statically dispatch since either
+		 * it's class or the method itself are sealed.
+		 * But first we need to ensure it's not a null reference.
+		 */
+		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, this_reg);
+
+		tree->dreg = state->reg1;
+		tree->opcode = novirtop;
+		mono_bblock_add_inst (cfg->cbb, tree);
+		return;
+	}
 
 	/* Initialize method->slot */
 	mono_class_setup_vtable (method->klass);
