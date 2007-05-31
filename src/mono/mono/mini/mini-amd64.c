@@ -5199,26 +5199,62 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	return (gpointer)(((guint64)(regs [reg])) + disp);
 }
 
-gpointer*
-mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	guint32 reg;
-	guint32 disp;
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return (gpointer)regs [AMD64_RSI];
+	else
+		return (gpointer)regs [AMD64_RDI];
+}
 
-	code -= 10;
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	guint8 *code, *start;
+	MonoDomain *domain = mono_domain_get ();
+	int i;
 
-	if (IS_REX (code [0]) && (code [1] == 0x8b) && (code [3] == 0x48) && (code [4] == 0x8b) && (code [5] == 0x40) && (code [7] == 0x48) && (code [8] == 0xff) && (code [9] == 0xd0)) {
-		/* mov REG, %rax; mov <OFFSET>(%rax), %rax; call *%rax */
-		reg = amd64_rex_b (code [0]) + amd64_modrm_rm (code [2]);
-		disp = code [6];
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
 
-		if (reg == AMD64_RAX)
+	if (has_target) {
+		mono_domain_lock (domain);
+		start = code = mono_code_manager_reserve (domain->code_mp, 64);
+		mono_domain_unlock (domain);
+
+		/* Replace the this argument with the target */
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RDI, 8);
+		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, target), 8);
+		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+
+		g_assert ((code - start) < 64);
+	} else {
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
+		if (sig->param_count > 4)
 			return NULL;
-		else
-			return (gpointer*)(((guint64)(regs [reg])) + disp);
+
+		mono_domain_lock (domain);
+		start = code = mono_code_manager_reserve (domain->code_mp, 64);
+		mono_domain_unlock (domain);
+
+		if (sig->param_count == 0) {
+			amd64_jump_membase (code, AMD64_RDI, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		} else {
+			/* We have to shift the arguments left */
+			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RDI, 8);
+			for (i = 0; i < sig->param_count; ++i)
+				amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
+
+			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		}
+		g_assert ((code - start) < 64);
 	}
 
-	return NULL;
+	return start;
 }
 
 /*

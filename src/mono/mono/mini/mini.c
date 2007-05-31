@@ -8124,43 +8124,32 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 #endif
 
 static gpointer
-mono_create_delegate_trampoline (MonoMethod *method, gpointer addr)
+mono_create_delegate_trampoline (MonoClass *klass)
 {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	MonoDomain *domain = mono_domain_get ();
 	gpointer code, ptr;
 	guint32 code_size;
-	MonoDomain *domain = mono_domain_get ();
-
-#ifndef __ia64__
-	code = mono_jit_find_compiled_method (domain, method);
-	if (code)
-		return code;
-#else
-	/* 
-	 * FIXME: We should return a function descriptor here but it is not stored
-	 * anywhere so it would be leaked.
-	 */
-#endif
 
 	mono_domain_lock (domain);
-	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, method);
+	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, klass);
 	mono_domain_unlock (domain);
 	if (ptr)
 		return ptr;
 
-	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_DELEGATE, domain, &code_size);
+    code = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
 
 	ptr = mono_create_ftnptr (domain, code);
 
 	/* store trampoline address */
 	mono_domain_lock (domain);
 	g_hash_table_insert (domain->delegate_trampoline_hash,
-							  method, ptr);
+							  klass, ptr);
 	mono_domain_unlock (domain);
 
 	return ptr;
 #else
-	return addr;
+	return NULL;
 #endif
 }
 

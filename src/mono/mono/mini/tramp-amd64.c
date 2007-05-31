@@ -160,38 +160,6 @@ mono_arch_nullify_plt_entry (guint8 *code)
 	mono_arch_patch_plt_entry (code, nullified_class_init_trampoline);
 }
 
-void
-mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp, gssize *regs, guint8 *addr)
-{
-	guint8 rex = 0;
-	guint32 reg;
-	guint32 disp;
-
-	if ((code [-3] == 0xff) && (amd64_modrm_reg (code [-2]) == 0x2) && (amd64_modrm_mod (code [-2]) == 0x1)) {
-		/* call *[reg+disp8] */
-		if (IS_REX (code [-4]))
-			rex = code [-4];
-		reg = amd64_modrm_rm (code [-2]);
-		disp = *(guint8*)(code - 1);
-		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
-	}
-	else {
-		int i;
-
-		for (i = -16; i < 0; ++i)
-			printf ("%d ", code [i]);
-		printf ("\n");
-		g_assert_not_reached ();
-	}
-
-	reg += amd64_rex_b (rex);
-
-	/* R11 is clobbered by the trampoline code */
-	g_assert (reg != AMD64_R11);
-
-	*(gpointer*)(((guint64)(regs [reg])) + disp) = addr;
-}
-
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {

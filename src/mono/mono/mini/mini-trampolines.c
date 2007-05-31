@@ -178,20 +178,75 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 /**
  * mono_delegate_trampoline:
  *
- *   This trampoline handles calls made from the delegate invoke wrapper. It patches
- * the function address inside the delegate.
+ *   This trampoline handles calls made to Delegate:Invoke ().
  */
 gpointer
-mono_delegate_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* tramp)
 {
-	gpointer addr;
+	MonoDomain *domain = mono_domain_get ();
+	MonoDelegate *delegate;
+	MonoJitInfo *ji;
+	gpointer iter;
+	MonoMethod *invoke;
+	gboolean multicast;
 
-	addr = mono_compile_method (m);
-	g_assert (addr);
+	/* Find the Invoke method */
+	iter = NULL;
+	while ((invoke = mono_class_get_methods (klass, &iter))) {
+		if (!strcmp (invoke->name, "Invoke"))
+			break;
+	}
+	g_assert (invoke);
 
-	mono_arch_patch_delegate_trampoline (code, tramp, regs, addr);
+	/* Obtain the delegate object according to the calling convention */
 
-	return addr;
+	delegate = mono_arch_get_this_arg_from_call (mono_method_signature (invoke), regs, code);
+
+	/* 
+	 * If the called address is a trampoline, replace it with the compiled method so
+	 * further calls don't have to go through the trampoline.
+	 */
+	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
+	if (ji)
+		delegate->method_ptr = mono_compile_method (ji->method);
+
+	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
+	if (!multicast) {
+		guint8* code;
+		GHashTable *cache;
+
+		mono_domain_lock (domain);
+		if (delegate->target != NULL) {
+			if (!domain->delegate_invoke_impl_with_target_hash)
+				domain->delegate_invoke_impl_with_target_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+			cache = domain->delegate_invoke_impl_with_target_hash;
+		} else {
+			if (!domain->delegate_invoke_impl_no_target_hash)
+				domain->delegate_invoke_impl_no_target_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+			cache = domain->delegate_invoke_impl_no_target_hash;
+		}
+		code = g_hash_table_lookup (cache, mono_method_signature (invoke));
+		mono_domain_unlock (domain);
+		if (code) {
+			delegate->invoke_impl = code;
+			return code;
+		}
+
+		code = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), delegate->target != NULL);
+
+		if (code) {
+			mono_domain_lock (domain);
+			g_hash_table_insert (cache, mono_method_signature (invoke), code);
+			mono_domain_unlock (domain);
+
+			delegate->invoke_impl = code;
+			return code;
+		}
+	}
+
+	/* The general, unoptimized case */
+	delegate->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke));
+	return delegate->invoke_impl;
 }
 
 #endif
