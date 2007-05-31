@@ -169,31 +169,6 @@ mono_arch_nullify_plt_entry (guint8 *code)
 	}
 }
 
-void
-mono_arch_patch_delegate_trampoline (guint8 *code, guint8 *tramp, gssize *regs, guint8 *addr)
-{
-	guint32 reg;
-	guint32 disp;
-
-	if ((code [-3] == 0xff) && (x86_modrm_reg (code [-2]) == 0x2) && (x86_modrm_mod (code [-2]) == 0x1)) {
-		/* call *[reg+disp8] */
-		reg = x86_modrm_rm (code [-2]);
-		disp = *(guint8*)(code - 1);
-		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
-	}
-	else {
-		int i;
-
-		for (i = -16; i < 0; ++i)
-			printf ("%d ", code [i]);
-		printf ("\n");
-		disp = reg = 0;
-		g_assert_not_reached ();
-	}
-
-	*(gpointer*)(((guint32)(regs [reg])) + disp) = addr;
-}
-
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {

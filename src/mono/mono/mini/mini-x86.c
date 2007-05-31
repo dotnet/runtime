@@ -4274,22 +4274,63 @@ mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
 	return (gpointer*)(((gint32)(regs [reg])) + disp);
 }
 
-gpointer* 
-mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	guint8 reg = 0;
-	gint32 disp = 0;
+	guint32 esp = regs [X86_ESP];
+	CallInfo *cinfo;
+	gpointer res;
 
-	code -= 7;
-	if ((code [0] == 0x8b) && (x86_modrm_mod (code [1]) == 3) && (x86_modrm_reg (code [1]) == X86_EAX) && (code [2] == 0x8b) && (code [3] == 0x40) && (code [5] == 0xff) && (code [6] == 0xd0)) {
-		reg = x86_modrm_rm (code [1]);
-		disp = code [4];
+	cinfo = get_call_info (NULL, sig, FALSE);
 
-		if (reg == X86_EAX)
-			return NULL;
-		else
-			return (gpointer*)(((gint32)(regs [reg])) + disp);
+	/*
+	 * The stack looks like:
+	 * <other args>
+	 * <this=delegate>
+	 * <possible vtype return address>
+	 * <return addr>
+	 * <4 pointers pushed by mono_arch_create_trampoline_code ()>
+	 */
+	res = (((MonoObject**)esp) [5 + (cinfo->args [0].offset / 4)]);
+	g_free (cinfo);
+	return res;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	guint8 *code, *start;
+	MonoDomain *domain = mono_domain_get ();
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
+	/*
+	 * The stack contains:
+	 * <delegate>
+	 * <return addr>
+	 */
+
+	if (has_target) {
+		mono_domain_lock (domain);
+		start = code = mono_code_manager_reserve (domain->code_mp, 64);
+		mono_domain_unlock (domain);
+
+		/* Replace the this argument with the target */
+		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, target), 4);
+		x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
+		x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+
+		g_assert ((code - start) < 64);
+	} else {
+		/* 
+		 * We would need to shift arguments on the stack which isn't much faster than
+		 * the generic invoke implementation.
+		 */
+		start = NULL;
 	}
 
-	return NULL;
+	return start;
 }
