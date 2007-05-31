@@ -520,10 +520,11 @@ struct _MonoReflectionGenericMethod {
 
 struct _MonoDelegate {
 	MonoObject object;
-	MonoObject *target_type;
-	MonoObject *target;
-	MonoString *method_name;
 	gpointer method_ptr;
+	gpointer invoke_impl;
+	MonoObject *target;
+	MonoObject *target_type;
+	MonoString *method_name;
 	gpointer delegate_trampoline;
 	MonoReflectionMethod *method_info;
 };

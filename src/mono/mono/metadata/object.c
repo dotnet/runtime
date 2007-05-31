@@ -434,7 +434,7 @@ default_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 }
 
 static gpointer
-default_delegate_trampoline (MonoMethod *method, gpointer addr)
+default_delegate_trampoline (MonoClass *klass)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -4140,17 +4140,11 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 		delegate->method_ptr = mono_compile_method (method);
 		MONO_OBJECT_SETREF (delegate, target, target);
 	} else {
-		if (method) {
-			/* 
-			 * Replace the original trampoline with a delegate trampoline
-			 * which will patch delegate->method_ptr with the address of the
-			 * compiled method.
-			 */
-			addr = arch_create_delegate_trampoline (method, addr);
-		}
 		delegate->method_ptr = addr;
 		MONO_OBJECT_SETREF (delegate, target, target);
 	}
+
+	delegate->invoke_impl = arch_create_delegate_trampoline (delegate->object.vtable->klass);
 }
 
 /**

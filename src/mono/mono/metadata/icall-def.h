@@ -151,6 +151,7 @@ ICALL(DECIMAL_14, "string2decimal", mono_string2decimal)
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 ICALL(DELEGATE_1, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal)
+ICALL(DELEGATE_2, "SetMulticastInvoke", ves_icall_System_Delegate_SetMulticastInvoke)
 
 ICALL_TYPE(TRACEL, "System.Diagnostics.DefaultTraceListener", TRACEL_1)
 ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString)
