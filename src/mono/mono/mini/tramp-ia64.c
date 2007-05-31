@@ -321,8 +321,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		tramp = (guint8*)mono_class_init_trampoline;
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
 		tramp = (guint8*)mono_aot_trampoline;
+	/*
 	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
 		tramp = (guint8*)mono_delegate_trampoline;
+	*/
 	else
 		tramp = (guint8*)mono_magic_trampoline;
 
