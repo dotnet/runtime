@@ -4326,6 +4326,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) < 64);
 	} else {
+		/* Disabled for now as int causes regressions in System.Data unit tests */
+		return NULL;
+
 		for (i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
