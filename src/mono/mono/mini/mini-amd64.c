@@ -2802,23 +2802,52 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case CEE_DIV:
 		case OP_LDIV:
-			amd64_cdq (code);
-			amd64_div_reg (code, ins->sreg2, TRUE);
+		case CEE_REM:
+		case OP_LREM:
+			/* Regalloc magic makes the div/rem cases the same */
+			if (ins->sreg2 == AMD64_RDX) {
+				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
+				amd64_cdq (code);
+				amd64_div_membase (code, AMD64_RSP, -8, TRUE);
+			} else {
+				amd64_cdq (code);
+				amd64_div_reg (code, ins->sreg2, TRUE);
+			}
 			break;
 		case CEE_DIV_UN:
 		case OP_LDIV_UN:
-			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg (code, ins->sreg2, FALSE);
-			break;
-		case CEE_REM:
-		case OP_LREM:
-			amd64_cdq (code);
-			amd64_div_reg (code, ins->sreg2, TRUE);
-			break;
 		case CEE_REM_UN:
 		case OP_LREM_UN:
-			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg (code, ins->sreg2, FALSE);
+			if (ins->sreg2 == AMD64_RDX) {
+				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
+				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
+				amd64_div_membase (code, AMD64_RSP, -8, FALSE);
+			} else {
+				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
+				amd64_div_reg (code, ins->sreg2, FALSE);
+			}
+			break;
+		case OP_IDIV:
+		case OP_IREM:
+			if (ins->sreg2 == AMD64_RDX) {
+				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
+				amd64_cdq_size (code, 4);
+				amd64_div_membase_size (code, AMD64_RSP, -8, TRUE, 4);
+			} else {
+				amd64_cdq_size (code, 4);
+				amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
+			}
+			break;
+		case OP_IDIV_UN:
+		case OP_IREM_UN:
+			if (ins->sreg2 == AMD64_RDX) {
+				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDX, 8);
+				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
+				amd64_div_membase_size (code, AMD64_RSP, -8, FALSE, 4);
+			} else {
+				amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
+				amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
+			}
 			break;
 		case OP_LMUL_OVF:
 			amd64_imul_reg_reg (code, ins->sreg1, ins->sreg2);
@@ -2999,22 +3028,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
 			break;
 		}
-		case OP_IDIV:
-			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
-			break;
-		case OP_IDIV_UN:
-			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
-			break;
-		case OP_IREM:
-			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
-			break;
-		case OP_IREM_UN:
-			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
-			break;
 		case OP_ICOMPARE:
 			amd64_alu_reg_reg_size (code, X86_CMP, ins->sreg1, ins->sreg2, 4);
 			break;
