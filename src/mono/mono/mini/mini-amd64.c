@@ -44,6 +44,8 @@ static gboolean use_sse2 = !MONO_ARCH_USE_FPSTACK;
 
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
+#define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
+
 #ifdef PLATFORM_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
 #define CALLCONV_IS_STDCALL(call_conv) (((call_conv) == MONO_CALL_STDCALL) || ((call_conv) == MONO_CALL_DEFAULT))
@@ -1749,6 +1751,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
+		case OP_FMOVE:
 			/*
 			 * Removes:
 			 *
@@ -1995,6 +1998,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
+		case OP_FMOVE:
 			/*
 			 * Removes:
 			 *
@@ -4821,10 +4825,15 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			pos = cfg->native_code + patch_info->ip.i;
 
-			if (use_sse2)
-				*(guint32*)(pos + 4) = (guint8*)code - pos - 8;
-			else
+
+			if (use_sse2) {
+				if (IS_REX (pos [1]))
+					*(guint32*)(pos + 5) = (guint8*)code - pos - 9;
+				else
+					*(guint32*)(pos + 4) = (guint8*)code - pos - 8;
+			} else {
 				*(guint32*)(pos + 3) = (guint8*)code - pos - 7;
+			}
 
 			if (patch_info->type == MONO_PATCH_INFO_R8) {
 				*(double*)code = *(double*)patch_info->data.target;
@@ -5031,8 +5040,6 @@ mono_arch_is_inst_imm (gint64 imm)
 {
 	return amd64_is_imm32 (imm);
 }
-
-#define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
 /*
  * Determine whenever the trap whose info is in SIGINFO is caused by
