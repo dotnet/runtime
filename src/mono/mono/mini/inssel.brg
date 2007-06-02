@@ -1699,6 +1699,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		return;
 	}
 
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 	if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
 		/* Make a call to delegate->invoke_impl */
 		tree->dreg = state->reg1;
@@ -1708,6 +1709,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		mono_bblock_add_inst (cfg->cbb, tree);
 		return;
 	}
+#endif
 	
 	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
 		((method->flags &  METHOD_ATTRIBUTE_FINAL) ||
