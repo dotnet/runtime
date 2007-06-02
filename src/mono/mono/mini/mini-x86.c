@@ -4301,7 +4301,6 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 {
 	guint8 *code, *start;
 	MonoDomain *domain = mono_domain_get ();
-	int i;
 
 	/* FIXME: Support more cases */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -4326,29 +4325,42 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) < 64);
 	} else {
-		/* Disabled for now as int causes regressions in System.Data unit tests */
-		return NULL;
+		if (sig->param_count == 0) {
+			mono_domain_lock (domain);
+			start = code = mono_code_manager_reserve (domain->code_mp, 32 + (sig->param_count * 8));
+			mono_domain_unlock (domain);
+		
+			x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+			x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		} else {
+			/* 
+			 * The code below does not work in the presence of exceptions, since it 
+			 * creates a new frame.
+			 */
+			start = NULL;
+#if 0
+			for (i = 0; i < sig->param_count; ++i)
+				if (!mono_is_regsize_var (sig->params [i]))
+					return NULL;
 
-		for (i = 0; i < sig->param_count; ++i)
-			if (!mono_is_regsize_var (sig->params [i]))
-				return NULL;
+			mono_domain_lock (domain);
+			start = code = mono_code_manager_reserve (domain->code_mp, 32 + (sig->param_count * 8));
+			mono_domain_unlock (domain);
 
-		mono_domain_lock (domain);
-		start = code = mono_code_manager_reserve (domain->code_mp, 32 + (sig->param_count * 8));
-		mono_domain_unlock (domain);
+			/* Load this == delegate */
+			x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
-		/* Load this == delegate */
-		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+			/* Push arguments in opposite order, taking changes in ESP into account */
+			for (i = 0; i < sig->param_count; ++i)
+				x86_push_membase (code, X86_ESP, 4 + (sig->param_count * 4));
 
-		/* Push arguments in opposite order, taking changes in ESP into account */
-		for (i = 0; i < sig->param_count; ++i)
-			x86_push_membase (code, X86_ESP, 4 + (sig->param_count * 4));
-
-		/* Call the delegate */
-		x86_call_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		if (sig->param_count > 0)
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, sig->param_count * 4);
-		x86_ret (code);
+			/* Call the delegate */
+			x86_call_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			if (sig->param_count > 0)
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, sig->param_count * 4);
+			x86_ret (code);
+#endif
+		}
 	}
 
 	return start;
