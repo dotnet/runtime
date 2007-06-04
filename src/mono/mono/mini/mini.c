@@ -3197,7 +3197,7 @@ is_signed_regsize_type (MonoType *type)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_I4:
 #if SIZEOF_VOID_P == 8
-	case MONO_TYPE_I8:
+	/*case MONO_TYPE_I8: this requires different opcodes in inssel.brg */
 #endif
 		return TRUE;
 	default:
