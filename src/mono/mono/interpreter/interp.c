@@ -263,7 +263,7 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	RuntimeMethod *rtm;
 
 	EnterCriticalSection (&runtime_method_lookup_section);
-	if ((rtm = g_hash_table_lookup (domain->jit_code_hash, method))) {
+	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
 		LeaveCriticalSection (&runtime_method_lookup_section);
 		return rtm;
 	}
@@ -273,7 +273,7 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	rtm->param_count = mono_method_signature (method)->param_count;
 	rtm->hasthis = mono_method_signature (method)->hasthis;
 	rtm->valuetype = method->klass->valuetype;
-	g_hash_table_insert (domain->jit_code_hash, method, rtm);
+	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
 	LeaveCriticalSection (&runtime_method_lookup_section);
 
 	return rtm;

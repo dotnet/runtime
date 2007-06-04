@@ -55,8 +55,14 @@ typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stack
  * Structure representing a method transformed for the interpreter 
  * This is domain specific
  */
-typedef struct 
+typedef struct _RuntimeMethod
 {
+	/* NOTE: These first two elements (method and
+	   next_jit_code_hash) must be in the same order and at the
+	   same offset as in MonoJitInfo, because of the jit_code_hash
+	   internal hash table in MonoDomain. */
+	MonoMethod *method;
+	struct _RuntimeMethod *next_jit_code_hash;
 	guint32 locals_size;
 	guint32 args_size;
 	guint32 stack_size;
@@ -64,7 +70,6 @@ typedef struct
 	guint32 alloca_size;
 	unsigned short *code;
 	unsigned short *new_body_start; /* after all STINARG instrs */
-	MonoMethod *method;
 	MonoPIFunc func;
 	int num_clauses;
 	MonoExceptionClause *clauses;

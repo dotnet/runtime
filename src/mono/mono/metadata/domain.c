@@ -339,6 +339,31 @@ mono_jit_info_get_method (MonoJitInfo* ji)
 	return ji->method;
 }
 
+static gpointer
+jit_info_key_extract (gpointer value)
+{
+	MonoJitInfo *info = (MonoJitInfo*)value;
+
+	return info->method;
+}
+
+static gpointer*
+jit_info_next_value (gpointer value)
+{
+	MonoJitInfo *info = (MonoJitInfo*)value;
+
+	return (gpointer*)&info->next_jit_code_hash;
+}
+
+void
+mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash)
+{
+	mono_internal_hash_table_init (jit_code_hash,
+				       mono_aligned_addr_hash,
+				       jit_info_key_extract,
+				       jit_info_next_value);
+}
+
 /**
  * mono_string_equal:
  * @s1: First string to compare
@@ -486,7 +511,7 @@ mono_domain_create (void)
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	domain->static_data_array = NULL;
-	domain->jit_code_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
 	domain->class_init_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1109,8 +1134,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		mono_gc_free_fixed (domain->static_data_array);
 		domain->static_data_array = NULL;
 	}
-	g_hash_table_destroy (domain->jit_code_hash);
-	domain->jit_code_hash = NULL;
+	mono_internal_hash_table_destroy (&domain->jit_code_hash);
 	if (domain->dynamic_code_hash) {
 		g_hash_table_foreach (domain->dynamic_code_hash, dynamic_method_info_free, NULL);
 		g_hash_table_destroy (domain->dynamic_code_hash);
