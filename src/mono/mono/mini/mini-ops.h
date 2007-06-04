@@ -451,6 +451,8 @@ MINI_OP(OP_ENDFINALLY,  "endfinally")
 /* inline (long)int * (long)int */
 MINI_OP(OP_BIGMUL, "op_bigmul")
 MINI_OP(OP_BIGMUL_UN, "op_bigmul_un")
+MINI_OP(OP_MIN, "op_min")
+MINI_OP(OP_MAX, "op_max")
 
 /* opcodes most architecture have */
 MINI_OP(OP_ADC,     "adc")

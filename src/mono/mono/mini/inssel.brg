@@ -1534,6 +1534,28 @@ stmt: CEE_MKREFANY (OP_GROUP (reg, OP_I8CONST), reg) {
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREP_MEMBASE_REG, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, value), state->left->left->reg1);
 }
 
+reg: OP_MIN (reg, reg) "2" {
+	/* min (x,y) = y + (((x-y)>>31)&(x-y)); */
+	int diff = mono_regstate_next_int (s->rs);
+	int shifted = mono_regstate_next_int (s->rs);
+	int anded = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, diff, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, shifted, diff, (sizeof(void*)*8-1));
+	MONO_EMIT_NEW_BIALU (s, CEE_AND, anded, shifted, diff);
+	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, anded, state->right->reg1);
+}
+
+reg: OP_MAX (reg, reg) "2" {
+	/* max (x,y) = x - (((x-y)>>31)&(x-y)); */
+	int diff = mono_regstate_next_int (s->rs);
+	int shifted = mono_regstate_next_int (s->rs);
+	int anded = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, diff, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, shifted, diff, (sizeof(void*)*8-1));
+	MONO_EMIT_NEW_BIALU (s, CEE_AND, anded, shifted, diff);
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, anded);
+}
+
 %%
 
 #ifdef MONO_ARCH_NEED_GOT_VAR

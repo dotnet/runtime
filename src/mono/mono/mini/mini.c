@@ -3189,6 +3189,22 @@ mono_find_jit_opcode_emulation (int opcode)
 		return NULL;
 }
 
+static int
+is_signed_regsize_type (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_I4:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I8:
+#endif
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static MonoInst*
 mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -3281,6 +3297,22 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		store->inst_left = args [2];
 		store->inst_right = load;
 		return store;
+	} else if (cmethod->klass == mono_defaults.math_class) {
+		if (strcmp (cmethod->name, "Min") == 0) {
+			if (is_signed_regsize_type (fsig->params [0])) {
+				MONO_INST_NEW (cfg, ins, OP_MIN);
+				ins->inst_i0 = args [0];
+				ins->inst_i1 = args [1];
+				return ins;
+			}
+		} else if (strcmp (cmethod->name, "Max") == 0) {
+			if (is_signed_regsize_type (fsig->params [0])) {
+				MONO_INST_NEW (cfg, ins, OP_MAX);
+				ins->inst_i0 = args [0];
+				ins->inst_i1 = args [1];
+				return ins;
+			}
+		}
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
 		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
 				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
