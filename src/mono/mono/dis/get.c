@@ -795,6 +795,12 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 
 		if (i > 0)
 			g_string_append (result, ",");
+		
+		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK;
+		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_COVARIANT)
+			g_string_append (result, "+ ");
+		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT)
+			g_string_append (result, "- ");
 
 		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
