@@ -6730,15 +6730,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
-				MonoMethod* helper = mono_marshal_get_stelemref ();
-				MonoInst *iargs [3];
-				handle_loaded_temps (cfg, bblock, stack_start, sp);
+				/* storing a NULL doesn't need any of the complex checks in stelemref */
+				if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
+					MonoInst *load;
+					NEW_LDELEMA (cfg, load, sp, mono_defaults.object_class);
+					load->cil_code = ip;
+					MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
+					ins->cil_code = ip;
+					ins->inst_left = load;
+					ins->inst_right = sp [2];
+					MONO_ADD_INS (bblock, ins);
+				} else {
+					MonoMethod* helper = mono_marshal_get_stelemref ();
+					MonoInst *iargs [3];
+					handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-				iargs [2] = sp [2];
-				iargs [1] = sp [1];
-				iargs [0] = sp [0];
-				
-				mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+					iargs [2] = sp [2];
+					iargs [1] = sp [1];
+					iargs [0] = sp [0];
+
+					mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+				}
 			} else {
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
@@ -6772,24 +6784,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-			iargs [2] = sp [2];
-			iargs [1] = sp [1];
-			iargs [0] = sp [0];
+			/* storing a NULL doesn't need any of the complex checks in stelemref */
+			if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
+				MonoInst *load;
+				NEW_LDELEMA (cfg, load, sp, mono_defaults.object_class);
+				load->cil_code = ip;
+				MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
+				ins->cil_code = ip;
+				ins->inst_left = load;
+				ins->inst_right = sp [2];
+				MONO_ADD_INS (bblock, ins);
+			} else {
+				iargs [2] = sp [2];
+				iargs [1] = sp [1];
+				iargs [0] = sp [0];
 			
-			mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
-
-			/*
-			MonoInst *group;
-			NEW_GROUP (cfg, group, sp [0], sp [1]);
-			MONO_INST_NEW (cfg, ins, CEE_STELEM_REF);
-			ins->cil_code = ip;
-			ins->inst_left = group;
-			ins->inst_right = sp [2];
-			MONO_ADD_INS (bblock, ins);
-			*/
+				mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+				inline_costs += 1;
+			}
 
 			++ip;
-			inline_costs += 1;
 			break;
 		}
 		case CEE_CKFINITE: {
