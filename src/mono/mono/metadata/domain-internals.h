@@ -8,7 +8,6 @@
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-hash.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-internal-hash.h>
 #include <mono/io-layer/io-layer.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
@@ -48,12 +47,7 @@ typedef struct {
 } MonoJitExceptionInfo;
 
 struct _MonoJitInfo {
-	/* NOTE: These first two elements (method and
-	   next_jit_code_hash) must be in the same order and at the
-	   same offset as in RuntimeMethod, because of the jit_code_hash
-	   internal hash table in MonoDomain. */
 	MonoMethod *method;
-	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
 	guint32     used_regs;
 	int         code_size;
@@ -87,8 +81,6 @@ typedef enum {
 	MONO_APPDOMAIN_UNLOADING,
 	MONO_APPDOMAIN_UNLOADED
 } MonoAppDomainState;
-
-typedef struct _MonoJitCodeHash MonoJitCodeHash;
 
 struct _MonoDomain {
 	CRITICAL_SECTION    lock;
@@ -127,7 +119,7 @@ struct _MonoDomain {
 	GHashTable         *class_vtable_hash;
 	/* maps remote class key -> MonoRemoteClass */
 	GHashTable         *proxy_vtable_hash;
-	MonoInternalHashTable jit_code_hash;
+	GHashTable         *jit_code_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable         *dynamic_code_hash;
 	MonoJitInfoTable   *jit_info_table;
@@ -191,9 +183,6 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end) MO
  */
 typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoDomain *domain, MonoImage *image, gpointer addr);
 void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func) MONO_INTERNAL;
-
-void
-mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash) MONO_INTERNAL;
 
 MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain            (void) MONO_INTERNAL;
