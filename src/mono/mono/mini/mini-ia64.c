@@ -1490,6 +1490,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IXOR_IMM:
 		case OP_AND_IMM:
 		case OP_SHL_IMM:
+		case OP_SHR_IMM:
 		case OP_ISHL_IMM:
 		case OP_LSHL_IMM:
 		case OP_ISHR_IMM:
@@ -1527,6 +1528,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				switched = TRUE;
 				break;
 			case OP_SHL_IMM:
+			case OP_SHR_IMM:
 			case OP_ISHL_IMM:
 			case OP_LSHL_IMM:
 			case OP_ISHR_IMM:
@@ -1578,6 +1580,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_SHL_IMM:
 				ins->opcode = OP_LSHL;
+				break;
+			case OP_SHR_IMM:
+				ins->opcode = OP_LSHR;
 				break;
 			case OP_LSHL_IMM:
 				ins->opcode = OP_LSHL;
