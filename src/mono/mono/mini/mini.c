@@ -10732,11 +10732,8 @@ static gpointer
 mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt)
 {
 	MonoCompile *cfg;
-	GHashTable *jit_code_hash;
 	gpointer code = NULL;
 	MonoJitInfo *info;
-
-	jit_code_hash = target_domain->jit_code_hash;
 
 	method = mono_get_inflated_method (method);
 
@@ -10863,7 +10860,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	/* Check if some other thread already did the job. In this case, we can
        discard the code this thread generated. */
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
 			code = info->code_start;
@@ -10872,7 +10869,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 	
 	if (code == NULL) {
-		g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
+		mono_internal_hash_table_insert (&target_domain->jit_code_hash, method, cfg->jit_info);
 		code = cfg->native_code;
 	}
 
@@ -10931,7 +10928,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 
 	mono_domain_lock (target_domain);
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);
@@ -10992,7 +10989,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		return;
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain->dynamic_code_hash, method);
-	g_hash_table_remove (domain->jit_code_hash, method);
+	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_hash_table_remove (domain->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
 
@@ -11037,7 +11034,7 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 
 	mono_domain_lock (target_domain);
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);

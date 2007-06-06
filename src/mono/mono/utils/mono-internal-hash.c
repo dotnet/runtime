@@ -93,7 +93,8 @@ mono_internal_hash_table_insert (MonoInternalHashTable *table,
 {
 	gint hash = HASH (key, table->hash_func, table->size);
 
-	g_assert(table->key_extract(value) == key);
+	g_assert (table->key_extract(value) == key);
+	g_assert (*(table->next_value (value)) == NULL);
 	g_assert (mono_internal_hash_table_lookup (table, key) == NULL);
 
 	*(table->next_value (value)) = table->table[hash];
@@ -115,9 +116,11 @@ mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key)
 	     value = table->next_value (*value)) {
 		if (table->key_extract (*value) == key)
 		{
-			*value = table->next_value (*value);
+			*value = *(table->next_value (*value));
 			--table->num_entries;
 			return;
 		}
 	}
+
+	g_assert (0);
 }
