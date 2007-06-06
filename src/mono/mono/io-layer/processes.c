@@ -464,7 +464,7 @@ static gboolean
 is_managed_binary (const gchar *filename)
 {
 	int original_errno = errno;
-#ifdef HAVE_LARGE_FILE_SUPPORT
+#if defined(HAVE_LARGE_FILE_SUPPORT) && defined(O_LARGEFILE)
 	int file = open (filename, O_RDONLY | O_LARGEFILE);
 #else
 	int file = open (filename, O_RDONLY);
