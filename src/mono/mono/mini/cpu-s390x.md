@@ -521,7 +521,7 @@ shl: dest:i src1:i src2:i clob:s len:6
 shl_imm: dest:i src1:i len:8
 shr.un: dest:i src1:i src2:i clob:s len:6
 shr: dest:i src1:i src2:i clob:s len:6
-shr_imm: dest:i src1:i len:8
+shr_imm: dest:i src1:i len:10
 shr_un_imm: dest:i src1:i len:8
 sizeof:
 sqrt: dest:f src1:f len:4
