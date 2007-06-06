@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -459,6 +460,114 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 	return (ret);
 }
 
+static gboolean
+is_managed_binary (const gchar *filename)
+{
+	int original_errno = errno;
+#ifdef HAVE_LARGE_FILE_SUPPORT
+	int file = open (filename, O_RDONLY | O_LARGEFILE);
+#else
+	int file = open (filename, O_RDONLY);
+#endif
+	off_t new_offset;
+	unsigned char buffer[8];
+	off_t file_size, optional_header_offset;
+	off_t pe_header_offset;
+	gboolean managed = FALSE;
+	int num_read;
+	guint32 first_word, second_word;
+	
+	/* If we are unable to open the file, then we definitely
+	 * can't say that it is managed. The child mono process
+	 * probably wouldn't be able to open it anyway.
+	 */
+	if (file < 0) {
+		errno = original_errno;
+		return FALSE;
+	}
+
+	/* Retrieve the length of the file for future sanity checks. */
+	file_size = lseek (file, 0, SEEK_END);
+	lseek (file, 0, SEEK_SET);
+
+	/* We know we need to read a header field at offset 60. */
+	if (file_size < 64)
+		goto leave;
+
+	num_read = read (file, buffer, 2);
+
+	if ((num_read != 2) || (buffer[0] != 'M') || (buffer[1] != 'Z'))
+		goto leave;
+
+	new_offset = lseek (file, 60, SEEK_SET);
+
+	if (new_offset != 60)
+		goto leave;
+	
+	num_read = read (file, buffer, 4);
+
+	if (num_read != 4)
+		goto leave;
+	pe_header_offset =  buffer[0]
+		| (buffer[1] <<  8)
+		| (buffer[2] << 16)
+		| (buffer[3] << 24);
+	
+	if (pe_header_offset + 24 > file_size)
+		goto leave;
+
+	new_offset = lseek (file, pe_header_offset, SEEK_SET);
+
+	if (new_offset != pe_header_offset)
+		goto leave;
+
+	num_read = read (file, buffer, 4);
+
+	if ((num_read != 4) || (buffer[0] != 'P') || (buffer[1] != 'E') || (buffer[2] != 0) || (buffer[3] != 0))
+		goto leave;
+
+	/*
+	 * Verify that the header we want in the optional header data
+	 * is present in this binary.
+	 */
+	new_offset = lseek (file, pe_header_offset + 20, SEEK_SET);
+
+	if (new_offset != pe_header_offset + 20)
+		goto leave;
+
+	num_read = read (file, buffer, 2);
+
+	if ((num_read != 2) || ((buffer[0] | (buffer[1] << 8)) < 216))
+		goto leave;
+
+	/* Read the CLR header address and size fields. These will be
+	 * zero if the binary is not managed.
+	 */
+	optional_header_offset = pe_header_offset + 24;
+	new_offset = lseek (file, optional_header_offset + 208, SEEK_SET);
+
+	if (new_offset != optional_header_offset + 208)
+		goto leave;
+
+	num_read = read (file, buffer, 8);
+	
+	/* We are not concerned with endianness, only with
+	 * whether it is zero or not.
+	 */
+	first_word = *(guint32 *)&buffer[0];
+	second_word = *(guint32 *)&buffer[4];
+	
+	if ((num_read != 8) || (first_word == 0) || (second_word == 0))
+		goto leave;
+	
+	managed = TRUE;
+
+leave:
+	close (file);
+	errno = original_errno;
+	return managed;
+}
+
 gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,
@@ -741,6 +850,32 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		   args_after_prog);
 #endif
 	
+	/* Check for CLR binaries; if found, we will try to invoke
+	 * them using the same mono binary that started us.
+	 */
+	if (is_managed_binary (prog) && (appname == NULL)) {
+		gsize bytes_ignored;
+
+		appname = mono_unicode_from_external ("mono", &bytes_ignored);
+
+		if (appname != NULL) {
+			cmdline = utf16_concat (appname, utf16_space, cmdline, NULL);
+			
+			g_free ((gunichar2 *)appname);
+			
+			if (cmdline != NULL) {
+				gboolean return_value = CreateProcess (
+					NULL, cmdline, process_attrs,
+					thread_attrs, inherit_handles, create_flags, new_environ,
+					cwd, startup, process_info);
+				
+				g_free ((gunichar2 *)cmdline);
+				
+				return return_value;
+			}
+		}
+	}
+
 	if (args_after_prog != NULL && *args_after_prog) {
 		gchar *qprog;
 
