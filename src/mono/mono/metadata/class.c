@@ -3058,7 +3058,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	mono_loader_lock ();
 
-	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token)))) {
+	if ((class = mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
 		return class;
 	}
@@ -3079,7 +3079,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->type_token = type_token;
 	class->flags = cols [MONO_TYPEDEF_FLAGS];
 
-	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
+	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), class);
 
 	/*
 	 * Check whether we're a generic type definition.
@@ -3096,7 +3096,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		parent = mono_class_get_full (
 			image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]), context);
 		if (parent == NULL){
-			g_hash_table_remove (image->class_cache, GUINT_TO_POINTER (type_token));
+			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
 			mono_loader_unlock ();
 			return NULL;
 		}

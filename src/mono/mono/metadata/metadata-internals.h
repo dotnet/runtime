@@ -139,7 +139,7 @@ struct _MonoImage {
 	 * Indexed by method tokens and typedef tokens.
 	 */
 	GHashTable *method_cache;
-	GHashTable *class_cache;
+	MonoInternalHashTable class_cache;
 	/*
 	 * Indexed by fielddef and memberref tokens
 	 */
