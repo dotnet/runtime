@@ -534,7 +534,7 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 	return result - 1;
 }
 
-#define InterlockedCompareExchangePointer(dest,exch,comp) InterlockedCompareExchange((volatile gint32 *)(dest), (gint32)(exch), (gint32)(comp))
+#define InterlockedCompareExchangePointer(dest,exch,comp) (gpointer)InterlockedCompareExchange((volatile gint32 *)(dest), (gint32)(exch), (gint32)(comp))
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 						gint32 exch, gint32 comp) {
@@ -563,7 +563,7 @@ static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 			      : "=r" (tmp) : "0" (tmp), "b" (dest), "r" (exch): "cc", "memory");
 	return(tmp);
 }
-#define InterlockedExchangePointer(dest,exch) InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
+#define InterlockedExchangePointer(dest,exch) (gpointer)InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
 
 static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
