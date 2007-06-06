@@ -49,28 +49,17 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 	.field private int32 v
 }
 
-.method public static int32 f(TYPE1 arg)
+
+.method public static void Main(TYPE1 arg, TYPE2 arg2) cil managed
 {
 	.maxstack 2
+	.entrypoint
 	.locals init (
 	    TYPE1 V_0,
 	    TYPE2 V_1
 	)
 	ldloc.1
 	OPCODE // VALIDITY, TYPE2& cannot be stored in TYPE1.
-	ldc.i4.0
-	ret
-}
-
-.method public static int32 Main() cil managed
-{
-	.entrypoint
-	.maxstack 2
-	.locals init (
-	    TYPE1 V_0
-	)
-	ldloc.0
-	call int32 f(TYPE1)
 	ret
 }
 //EOF

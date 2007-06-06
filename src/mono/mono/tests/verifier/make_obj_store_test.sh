@@ -55,7 +55,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 
     .method public void Method(TYPE1) cil managed
     {
-	nop
+	ret
     }
 }
 
