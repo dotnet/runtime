@@ -1797,8 +1797,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_I8CONST:
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
-			if (ins->inst_c0 == 0 && (ins->next && INST_IGNORES_CFLAGS (ins->next->opcode))) {
-				ins->opcode = CEE_XOR;
+			if (ins->inst_c0 == 0 && (!ins->next || (ins->next && INST_IGNORES_CFLAGS (ins->next->opcode)))) {
+				ins->opcode = OP_LXOR;
 				ins->sreg1 = ins->dreg;
 				ins->sreg2 = ins->dreg;
 				/* Fall through */
@@ -1806,6 +1806,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				break;
 		case CEE_XOR:
+		case OP_LXOR:
 			if ((ins->sreg1 == ins->sreg2) && (ins->sreg1 == ins->dreg)) {
 				MonoInst *ins2;
 
@@ -1829,6 +1830,14 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				}
 			}
+			break;
+		case OP_IADD_IMM:
+			if ((ins->inst_imm == 1) && (ins->dreg == ins->sreg1))
+				ins->opcode = OP_X86_INC_REG;
+			break;
+		case OP_ISUB_IMM:
+			if ((ins->inst_imm == 1) && (ins->dreg == ins->sreg1))
+				ins->opcode = OP_X86_DEC_REG;
 			break;
 		case OP_MUL_IMM: 
 			/* remove unnecessary multiplication with 1 */
@@ -2861,6 +2870,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_OR, ins->sreg1, ins->inst_imm);
 			break;
 		case CEE_XOR:
+		case OP_LXOR:
 			amd64_alu_reg_reg (code, X86_XOR, ins->sreg1, ins->sreg2);
 			break;
 		case OP_XOR_IMM:
