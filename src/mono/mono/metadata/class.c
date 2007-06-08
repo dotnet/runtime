@@ -3342,7 +3342,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 			image = method->klass ? method->klass->image : NULL;
 		} else {
 			MonoClass *klass = param->owner->owner.klass;
-			image = klass->image;
+			// FIXME: 'klass' should not be null
+			// 	  But, monodis creates GenericContainers without associating a owner to it
+			image = klass ? klass->image : NULL;
 		}
 	}
 
