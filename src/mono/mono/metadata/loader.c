@@ -1537,17 +1537,11 @@ mono_free_method  (MonoMethod *method)
 		g_free ((char*)method->name);
 		if (mw->method.header)
 			g_free ((char*)mw->method.header->code);
+		g_free (mw->method.header);
 		g_free (mw->method_data);
-	}
-
-	if (method->dynamic && !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
-		/* FIXME: Ditto */
-		/* mono_metadata_free_mh (((MonoMethodNormal *)method)->header); */
-		g_free (((MonoMethodNormal*)method)->header);
-	}
-
-	if (method->dynamic)
+		g_free (method->signature);
 		g_free (method);
+	}
 }
 
 void

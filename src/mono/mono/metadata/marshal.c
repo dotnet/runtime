@@ -8787,7 +8787,11 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 
 	/* we copy the signature, so that we can modify it */
-	csig = signature_dup (method->klass->image, sig);
+	if (this)
+		/* Need to free this later */
+		csig = mono_metadata_signature_dup (sig);
+	else
+		csig = signature_dup (method->klass->image, sig);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
