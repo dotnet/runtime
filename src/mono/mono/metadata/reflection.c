@@ -8829,27 +8829,8 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 
 		gclass = g_new0 (MonoGenericClass, 1);
 
-		gclass->inst = g_new0 (MonoGenericInst, 1);
-		gclass->inst->type_argc = kgclass->inst->type_argc;
-		gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
-		gclass->inst->is_reference = 1;
-
-		for (i = 0; i < gclass->inst->type_argc; i++) {
-			MonoType *t = kgclass->inst->type_argv [i];
-
-			t = mono_class_inflate_generic_type (t, mono_generic_class_get_context (ogclass));
-
-			if (!gclass->inst->is_open)
-				gclass->inst->is_open = mono_class_is_open_constructed_type (t);
-			if (gclass->inst->is_reference)
-				gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
-
-			gclass->inst->type_argv [i] = t;
-		}
-
-		gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
-
 		gclass->container_class = kgclass->container_class;
+		gclass->inst = mono_metadata_inflate_generic_inst (kgclass->inst, mono_generic_class_get_context (ogclass));
 	}
 
 	geninst = g_new0 (MonoType, 1);
