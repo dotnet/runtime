@@ -226,6 +226,7 @@ static void thread_cleanup (MonoThread *thread)
 		return;
 
 	thread->state |= ThreadState_Stopped;
+	thread->state &= ~ThreadState_Background;
 	mono_monitor_exit (thread->synch_lock);
 
 	mono_profiler_thread_end (thread->tid);
