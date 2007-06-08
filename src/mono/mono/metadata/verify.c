@@ -1610,12 +1610,14 @@ handle_enum:
 	}
 
 	case MONO_TYPE_ARRAY: {
+		MonoArrayType * left;
+		MonoArrayType * right;
+		int i;
 		if (candidate->type != MONO_TYPE_ARRAY)
 			return FALSE;
 			
-		MonoArrayType * left = target->data.array;
-		MonoArrayType * right = candidate->data.array;
-		int i;
+		left = target->data.array;
+		right = candidate->data.array;
 		
 		if ((left->rank != right->rank) ||
 			(left->numsizes != right->numsizes) ||
@@ -1648,10 +1650,12 @@ static gboolean mono_is_generic_instance_compatible (MonoGenericClass * target, 
 	
 	printf("candidate container %d\n", candidate->container_class->generic_container);
 	if (target->container_class != candidate->container_class) {
+		MonoType * bla1;
+		MonoClass * cand_class;
 		printf("DIFERENT GENERIC CLASS\n");
-		MonoType * bla1 = candidate->inst->type_argv[0];
+		bla1 = candidate->inst->type_argv[0];
 		printf("param 0 %d\n", bla1->type);
-		MonoClass * cand_class = candidate->container_class;
+		cand_class = candidate->container_class;
 		
 		//devemos percorrer super-tipos
 		if (MONO_CLASS_IS_INTERFACE (target->container_class)) {
@@ -1736,9 +1740,9 @@ static gboolean mono_is_generic_instance_compatible (MonoGenericClass * target, 
 			printf("NO VARIANCE, VERIFY EXACT TYPE %d %d \n",target_type->type, candidate_type->type);
 			if (candidate_type->type == MONO_TYPE_VAR) {
 				MonoGenericParam * var_param = candidate_type->data.generic_param;
+				MonoType * bubles  =var_param->owner->context.class_inst->type_argv[var_param->num];
 				printf("VAR container %d named %s\n", var_param->owner, var_param->name);
 				
-				MonoType * bubles  =var_param->owner->context.class_inst->type_argv[var_param->num];
 				printf("resolving the var param: %d\n", bubles->type);
 			}
 			
@@ -1821,14 +1825,17 @@ handle_enum:
 		/* check the underlying type */
 		return verify_stack_type_compatibility (ctx, from->data.type, target->data.type, TRUE);
 
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericClass * left;
+		MonoGenericClass * right;
 		if (from->type != MONO_TYPE_GENERICINST)
 			return FALSE;
-		MonoGenericClass * left = target->data.generic_class;
-		MonoGenericClass * right = from->data.generic_class;
+		left = target->data.generic_class;
+		right = from->data.generic_class;
 
 		printf("HERE I VERIFY IF THE GENERIC TYPES ARE COMPATIBLE\n");
 		return mono_is_generic_instance_compatible (left, right, right);
+	}
 
 	case MONO_TYPE_STRING:
 		return (from->type == MONO_TYPE_STRING);
@@ -1842,21 +1849,25 @@ handle_enum:
 		return MONO_TYPE_IS_REFERENCE(from);
 
 	case MONO_TYPE_SZARRAY: {
+		MonoClass *left;
+		MonoClass *right;
 		if (from->type != MONO_TYPE_SZARRAY)
 			return FALSE;
 
-		MonoClass *left = target->data.klass;
-		MonoClass *right = from->data.klass;
+		left = target->data.klass;
+		right = from->data.klass;
 		return mono_class_is_assignable_from(left, right);
 	}
 
 	case MONO_TYPE_ARRAY: {
+		MonoArrayType * left;
+		MonoArrayType * right;
+		int i;
 		if (from->type != MONO_TYPE_ARRAY)
 			return FALSE;
 			
-		MonoArrayType * left = target->data.array;
-		MonoArrayType * right = from->data.array;
-		int i;
+		left = target->data.array;
+		right = from->data.array;
 		
 		if ((left->rank != right->rank) ||
 			(left->numsizes != right->numsizes) ||
@@ -1903,8 +1914,8 @@ handle_enum:
 	TODO MONO_TYPE_FNPTR:
 */
 static int verify_type_compat (VerifyContext *ctx, ILStackDesc * stack, MonoType * type) {
-	printf("before stack load\n");
 	int stack_type = stack->stype;
+	printf("before stack load\n");
 	printf ("check compat %d %d %d\n", ctx, stack, type);
 	if (type->byref) {
 		if (stack_type == NATIVE_INT_TYPE) {
@@ -1948,17 +1959,20 @@ handle_enum:
 		}
 		return verify_stack_type_compatibility (ctx, stack->type, type->data.type, TRUE);
 
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericClass * left;
+		MonoGenericClass * right;
 		if (stack_type != COMPLEX_TYPE)
 			return FALSE;
 		g_assert (stack->type);
 		if (stack->type->type != MONO_TYPE_GENERICINST)
 			return FALSE;
-		MonoGenericClass * left = type->data.generic_class;
-		MonoGenericClass * right = stack->type->data.generic_class;
+		left = type->data.generic_class;
+		right = stack->type->data.generic_class;
 
 		printf("HERE I VERIFY IF THE GENERIC TYPES ARE COMPATIBLE\n");
 		return mono_is_generic_instance_compatible (left, right, right);
+	}
 
 	case MONO_TYPE_STRING:
 		if (stack_type != COMPLEX_TYPE)
@@ -1982,6 +1996,8 @@ handle_enum:
 		return MONO_TYPE_IS_REFERENCE(stack->type);
 
 	case MONO_TYPE_SZARRAY: {
+		MonoClass *left;
+		MonoClass *right;
 		if (stack_type != COMPLEX_TYPE)
 			return FALSE;
 
@@ -1989,12 +2005,15 @@ handle_enum:
 
 		if (stack->type->type != type->type)
 			return FALSE;
-		MonoClass *left = type->data.klass ;
-		MonoClass *right = stack->type->data.klass;
+		left = type->data.klass ;
+		right = stack->type->data.klass;
 		return mono_class_is_assignable_from(left, right);
 	}
 
 	case MONO_TYPE_ARRAY: {
+		int i;
+		MonoArrayType * left;
+		MonoArrayType * right;
 		if (stack_type != COMPLEX_TYPE)
 			return FALSE;
 
@@ -2003,9 +2022,8 @@ handle_enum:
 		if (stack->type->type != type->type)
 			return FALSE;
 			
-		MonoArrayType * left = type->data.array;
-		MonoArrayType * right = stack->type->data.array;
-		int i;
+		left = type->data.array;
+		right = stack->type->data.array;
 		
 		if ((left->rank != right->rank) ||
 			(left->numsizes != right->numsizes) ||
@@ -2266,12 +2284,13 @@ static void do_ret (VerifyContext *ctx)
 {
 	printf("checking ret\n");
 	if (ctx->signature->ret->type != MONO_TYPE_VOID) {
+		ILStackDesc * top;
 		printf ("underflow\n");
 		if(!check_underflow (ctx, 1))
 			return;
 		
 		printf ("pop\n");
-		ILStackDesc * top = stack_pop(ctx);
+		top = stack_pop(ctx);
 		
 		printf ("check compat %d \n", ctx->signature->ret);
 		if(!verify_type_compat(ctx, top, ctx->signature->ret)) {
