@@ -3064,8 +3064,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (class->generic_container) {
 		class->generic_container->owner.klass = class;
 		context = &class->generic_container->context;
-
-		context->class_inst = mono_get_shared_generic_inst (class->generic_container);
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS]) {

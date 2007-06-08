@@ -4593,6 +4593,14 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 
 	g_assert (container->parent == NULL || container->is_method);
 
+	MonoGenericContext *context = &container->context;
+	if (container->is_method) {
+		context->class_inst = container->parent ? container->parent->context.class_inst : NULL;
+		context->gmethod = mono_get_shared_generic_method (container);
+	} else {
+		context->class_inst = mono_get_shared_generic_inst (container);
+	}
+
 	return container;
 }
 

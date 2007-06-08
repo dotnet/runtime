@@ -1373,13 +1373,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	container = klass->generic_container;
 	generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
-		MonoGenericContext *context;
-
 		generic_container->owner.method = result;
-		context = &generic_container->context;
-		if (container)
-			context->class_inst = container->context.class_inst;
-		context->gmethod = mono_get_shared_generic_method (generic_container);
 
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
 
