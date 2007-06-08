@@ -1317,17 +1317,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	return piinfo->addr;
 }
 
-MonoGenericMethod *
-mono_get_shared_generic_method (MonoGenericContainer *container)
-{
-	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->container = container;
-	gmethod->class_inst = container->context.class_inst;
-	gmethod->inst = mono_get_shared_generic_inst (container);
-
-	return gmethod;
-}
-
 static MonoMethod *
 mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			    MonoGenericContext *context, gboolean *used_context)

@@ -483,6 +483,42 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 	return ngclass;
 }
 
+/*
+ * In preparation for implementing shared code.
+ */
+static MonoGenericClass *
+get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
+{
+	MonoGenericClass *gclass;
+
+	g_assert (!container->is_method);
+
+	if (is_dynamic) {
+		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		gclass = &dgclass->generic_class;
+		gclass->is_dynamic = 1;
+	} else {
+		gclass = g_new0 (MonoGenericClass, 1);
+	}
+
+	gclass->cached_context = &container->context;
+	gclass->container_class = container->owner.klass;
+	gclass->inst = mono_get_shared_generic_inst (container);
+
+	if (!is_dynamic) {
+		MonoGenericClass *cached = mono_metadata_lookup_generic_class (gclass);
+
+		if (cached) {
+			g_free (gclass);
+			return cached;
+		}
+	}
+
+	gclass->cached_class = container->owner.klass;
+
+	return gclass;
+}
+
 static MonoType*
 inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
@@ -544,7 +580,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		if (!klass->generic_container)
 			return NULL;
-		gclass = inflate_generic_class (mono_get_shared_generic_class (klass->generic_container, klass->image->dynamic), context);
+		gclass = inflate_generic_class (get_shared_generic_class (klass->generic_container, klass->image->dynamic), context);
 		if (gclass->inst == klass->generic_container->context.class_inst)
 			return NULL;
 		nt = dup_type (type, type);
@@ -2971,66 +3007,6 @@ mono_class_setup_supertypes (MonoClass *class)
 	} else {
 		class->supertypes [0] = class;
 	}
-}	
-
-MonoGenericInst *
-mono_get_shared_generic_inst (MonoGenericContainer *container)
-{
-	MonoGenericInst *nginst;
-	int i;
-
-	nginst = g_new0 (MonoGenericInst, 1);
-	nginst->type_argc = container->type_argc;
-	nginst->type_argv = g_new0 (MonoType *, nginst->type_argc);
-	nginst->is_reference = 1;
-	nginst->is_open = 1;
-
-	for (i = 0; i < nginst->type_argc; i++) {
-		MonoType *t = g_new0 (MonoType, 1);
-
-		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-		t->data.generic_param = &container->type_params [i];
-
-		nginst->type_argv [i] = t;
-	}
-
-	return mono_metadata_lookup_generic_inst (nginst);
-}
-
-/*
- * In preparation for implementing shared code.
- */
-MonoGenericClass *
-mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
-{
-	MonoGenericClass *gclass;
-
-	g_assert (!container->is_method);
-
-	if (is_dynamic) {
-		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		gclass = &dgclass->generic_class;
-		gclass->is_dynamic = 1;
-	} else {
-		gclass = g_new0 (MonoGenericClass, 1);
-	}
-
-	gclass->cached_context = &container->context;
-	gclass->container_class = container->owner.klass;
-	gclass->inst = mono_get_shared_generic_inst (container);
-
-	if (!is_dynamic) {
-		MonoGenericClass *cached = mono_metadata_lookup_generic_class (gclass);
-
-		if (cached) {
-			g_free (gclass);
-			return cached;
-		}
-	}
-
-	gclass->cached_class = container->owner.klass;
-
-	return gclass;
 }
 
 /**

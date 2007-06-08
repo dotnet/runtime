@@ -796,15 +796,6 @@ mono_find_jit_icall_by_name (const char *name) MONO_INTERNAL;
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr) MONO_INTERNAL;
 
-MonoGenericInst *
-mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
-
-MonoGenericClass *
-mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic) MONO_INTERNAL;
-
-MonoGenericMethod *
-mono_get_shared_generic_method (MonoGenericContainer *container) MONO_INTERNAL;
-
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data) MONO_INTERNAL;
 

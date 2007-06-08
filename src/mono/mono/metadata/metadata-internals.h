@@ -411,5 +411,11 @@ void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
 
 MonoType *mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original) MONO_INTERNAL;
 
+MonoGenericInst *
+mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
+
+MonoGenericMethod *
+mono_get_shared_generic_method (MonoGenericContainer *container) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

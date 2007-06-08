@@ -4596,6 +4596,41 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	return container;
 }
 
+MonoGenericInst *
+mono_get_shared_generic_inst (MonoGenericContainer *container)
+{
+	MonoGenericInst *nginst;
+	int i;
+
+	nginst = g_new0 (MonoGenericInst, 1);
+	nginst->type_argc = container->type_argc;
+	nginst->type_argv = g_new0 (MonoType *, nginst->type_argc);
+	nginst->is_reference = 1;
+	nginst->is_open = 1;
+
+	for (i = 0; i < nginst->type_argc; i++) {
+		MonoType *t = g_new0 (MonoType, 1);
+
+		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+		t->data.generic_param = &container->type_params [i];
+
+		nginst->type_argv [i] = t;
+	}
+
+	return mono_metadata_lookup_generic_inst (nginst);
+}
+
+MonoGenericMethod *
+mono_get_shared_generic_method (MonoGenericContainer *container)
+{
+	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->container = container;
+	gmethod->class_inst = container->context.class_inst;
+	gmethod->inst = mono_get_shared_generic_inst (container);
+
+	return gmethod;
+}
+
 gboolean
 mono_type_is_byref (MonoType *type)
 {
