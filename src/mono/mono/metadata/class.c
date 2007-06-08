@@ -489,7 +489,7 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 static MonoGenericClass *
 get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
-	MonoGenericClass *gclass;
+	MonoGenericClass *gclass, *cached;
 
 	g_assert (!container->is_method);
 
@@ -503,15 +503,12 @@ get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 
 	gclass->cached_context = &container->context;
 	gclass->container_class = container->owner.klass;
-	gclass->inst = mono_get_shared_generic_inst (container);
+	gclass->inst = container->context.class_inst;
 
-	if (!is_dynamic) {
-		MonoGenericClass *cached = mono_metadata_lookup_generic_class (gclass);
-
-		if (cached) {
-			g_free (gclass);
-			return cached;
-		}
+	cached = mono_metadata_lookup_generic_class (gclass);
+	if (cached) {
+		g_free (gclass);
+		return cached;
 	}
 
 	gclass->cached_class = container->owner.klass;
