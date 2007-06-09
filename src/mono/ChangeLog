@@ -1,3 +1,8 @@
+2007-06-09  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: use lib name instead of package name 
+	for deps found in .config files. suse's rpmlint prefers it that way.
+
 2007-05-29  Robert Jordan  <robertj@gmx.net>
 
 	* data/config.in: add mono_win32_compat entries.
