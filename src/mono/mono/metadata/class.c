@@ -451,51 +451,6 @@ mono_class_is_open_constructed_type (MonoType *t)
 	}
 }
 
-static MonoGenericClass *
-inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
-{
-	MonoGenericClass *gclass;
-	MonoGenericInst *ninst;
-
-	mono_loader_lock ();
-
-	ninst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
-	if (ninst == ogclass->inst)
-		gclass = ogclass;
-	else
-		gclass = mono_metadata_lookup_generic_class (ogclass->container_class, ninst, ogclass->is_dynamic);
-
-	mono_loader_unlock ();
-
-	return gclass;
-}
-
-/*
- * In preparation for implementing shared code.
- */
-static MonoGenericClass *
-get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
-{
-	MonoGenericClass *gclass;
-	MonoClass *klass;
-	MonoGenericContext *context = &container->context;
-
-	g_assert (!container->is_method);
-
-	klass = container->owner.klass;
-	gclass = mono_metadata_lookup_generic_class (klass, context->class_inst, is_dynamic);
-
-	if (!gclass->cached_context)
-		gclass->cached_context = context;
-	if (!gclass->cached_class)
-		gclass->cached_class = klass;
-
-	g_assert (gclass->cached_context == context);
-	g_assert (gclass->cached_class == klass);
-
-	return gclass;
-}
-
 static MonoType*
 inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
@@ -539,12 +494,20 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	}
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *gclass = type->data.generic_class;
+		MonoGenericInst *inst;
 		MonoType *nt;
 		if (!gclass->inst->is_open)
 			return NULL;
-		gclass = inflate_generic_class (gclass, context);
+
+		mono_loader_lock ();
+		inst = mono_metadata_inflate_generic_inst (gclass->inst, context);
+		if (inst != gclass->inst)
+			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
+		mono_loader_unlock ();
+
 		if (gclass == type->data.generic_class)
 			return NULL;
+
 		nt = dup_type (type, type);
 		nt->data.generic_class = gclass;
 		return nt;
@@ -552,14 +515,24 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = type->data.klass;
-		MonoGenericClass *gclass;
+		MonoGenericContainer *container = klass->generic_container;
+		MonoGenericInst *inst;
+		MonoGenericClass *gclass = NULL;
 		MonoType *nt;
 
-		if (!klass->generic_container)
+		if (!container)
 			return NULL;
-		gclass = inflate_generic_class (get_shared_generic_class (klass->generic_container, klass->image->dynamic), context);
-		if (gclass->inst == klass->generic_container->context.class_inst)
+
+		mono_loader_lock ();
+		/* We can't use context->class_inst directly, since it can have more elements */
+		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
+		if (inst != container->context.class_inst)
+			gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
+		mono_loader_unlock ();
+
+		if (!gclass)
 			return NULL;
+
 		nt = dup_type (type, type);
 		nt->type = MONO_TYPE_GENERICINST;
 		nt->data.generic_class = gclass;

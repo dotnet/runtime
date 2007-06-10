@@ -1934,6 +1934,11 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	helper.cached_class = NULL;
 
 	gclass = g_hash_table_lookup (generic_class_cache, &helper);
+
+	/* A couple of tripwires, just to keep us honest */
+	g_assert (!helper.cached_context);
+	g_assert (!helper.cached_class);
+
 	if (gclass)
 		return gclass;
 
@@ -1947,6 +1952,11 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	gclass->container_class = container_class;
 	gclass->inst = inst;
+
+	if (inst == container_class->generic_container->context.class_inst) {
+		gclass->cached_class = container_class;
+		gclass->cached_context = &container_class->generic_container->context;
+	}
 
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
 	return gclass;
