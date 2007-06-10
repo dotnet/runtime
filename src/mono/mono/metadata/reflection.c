@@ -8795,8 +8795,7 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 	int i;
 
 	klass = mono_class_from_mono_type (type);
-	if (!klass->generic_container && !klass->generic_class &&
-	    !(klass->nested_in && klass->nested_in->generic_container))
+	if (!klass->generic_container)
 		return NULL;
 
 	mono_loader_lock ();
@@ -8822,16 +8821,6 @@ mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **ty
 	gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
 
 	gclass->container_class = klass;
-
-	if (klass->generic_class) {
-		MonoGenericClass *kgclass = klass->generic_class;
-		MonoGenericClass *ogclass = gclass;
-
-		gclass = g_new0 (MonoGenericClass, 1);
-
-		gclass->container_class = kgclass->container_class;
-		gclass->inst = mono_metadata_inflate_generic_inst (kgclass->inst, mono_generic_class_get_context (ogclass));
-	}
 
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
