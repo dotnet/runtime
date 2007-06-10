@@ -1075,8 +1075,8 @@ void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m) MONO
 
 void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam) MONO_INTERNAL;
 
-MonoType*
-mono_class_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types) MONO_INTERNAL;
+MonoClass*
+mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic) MONO_INTERNAL;
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types) MONO_INTERNAL;
 MonoReflectionMethod*

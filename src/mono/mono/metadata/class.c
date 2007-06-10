@@ -3624,7 +3624,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		class->interfaces = g_new0 (MonoClass *, class->interface_count);
 
 		for (i = 0; i < class->interface_count; i++) {
-			MonoType *inflated, **args;
+			MonoType **args;
 			MonoClass *iface;
 
 			if (eclass->valuetype)
@@ -3646,10 +3646,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 			args = g_new0 (MonoType *, 1);
 			args [0] = &iface->byval_arg;
 
-			inflated = mono_class_bind_generic_parameters (
-				&mono_defaults.generic_ilist_class->byval_arg, 1, args);
-
-			class->interfaces [i] = mono_class_from_mono_type (inflated);
+			class->interfaces [i] = mono_class_bind_generic_parameters (
+				mono_defaults.generic_ilist_class, 1, args, FALSE);
 		}
 	}
 
