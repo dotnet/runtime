@@ -387,7 +387,9 @@ MonoGenericInst *
 mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst) MONO_INTERNAL;
 
 MonoGenericClass *
-mono_metadata_lookup_generic_class          (MonoGenericClass      *gclass) MONO_INTERNAL;
+mono_metadata_lookup_generic_class          (MonoClass		   *gclass,
+					     MonoGenericInst	   *inst,
+					     gboolean		    is_dynamic) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,

@@ -8753,47 +8753,32 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic)
 {
-	MonoGenericClass *gclass, *cached;
-	MonoType *geninst;
+	MonoGenericClass *gclass;
+	MonoGenericInst *inst;
 	int i;
 
 	g_assert (klass->generic_container);
 
-	mono_loader_lock ();
+	inst = g_new0 (MonoGenericInst, 1);
+	inst->type_argc = type_argc;
+	inst->type_argv = g_new0 (MonoType *, inst->type_argc);
+	inst->is_reference = 1;
 
-	if (is_dynamic) {
-		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		gclass = &dgclass->generic_class;
-		gclass->is_dynamic = TRUE;
-	} else {
-		gclass = g_new0 (MonoGenericClass, 1);
-	}
-
-	gclass->inst = g_new0 (MonoGenericInst, 1);
-	gclass->inst->type_argc = type_argc;
-	gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
-	gclass->inst->is_reference = 1;
-
-	for (i = 0; i < gclass->inst->type_argc; ++i) {
+	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = dup_type (types [i]);
 
-		if (!gclass->inst->is_open)
-			gclass->inst->is_open = mono_class_is_open_constructed_type (t);
-		if (gclass->inst->is_reference)
-			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
+		if (!inst->is_open)
+			inst->is_open = mono_class_is_open_constructed_type (t);
+		if (inst->is_reference)
+			inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
 
-		gclass->inst->type_argv [i] = t;
+		inst->type_argv [i] = t;
 	}
 
-	gclass->inst = mono_metadata_lookup_generic_inst (gclass->inst);
+	mono_loader_lock ();
 
-	gclass->container_class = klass;
-
-	cached = mono_metadata_lookup_generic_class (gclass);
-	if (cached) {
-		g_free (gclass);
-		gclass = cached;
-	}
+	inst = mono_metadata_lookup_generic_inst (inst);
+	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);
 
 	mono_loader_unlock ();
 

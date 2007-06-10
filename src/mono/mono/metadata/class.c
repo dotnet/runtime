@@ -454,33 +454,20 @@ mono_class_is_open_constructed_type (MonoType *t)
 static MonoGenericClass *
 inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 {
-	MonoGenericClass *ngclass, *cached;
+	MonoGenericClass *gclass;
 	MonoGenericInst *ninst;
+
+	mono_loader_lock ();
 
 	ninst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
 	if (ninst == ogclass->inst)
-		return ogclass;
+		gclass = ogclass;
+	else
+		gclass = mono_metadata_lookup_generic_class (ogclass->container_class, ninst, ogclass->is_dynamic);
 
-	if (ogclass->is_dynamic) {
-		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		ngclass = &dgclass->generic_class;
-		ngclass->is_dynamic = 1;
-	} else {
-		ngclass = g_new0 (MonoGenericClass, 1);
-	}
-
-	ngclass->container_class = ogclass->container_class;
-	ngclass->inst = ninst;
-
-	mono_loader_lock ();
-	cached = mono_metadata_lookup_generic_class (ngclass);
 	mono_loader_unlock ();
-	if (cached) {
-		g_free (ngclass);
-		return cached;
-	}
 
-	return ngclass;
+	return gclass;
 }
 
 /*
@@ -489,29 +476,22 @@ inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
 static MonoGenericClass *
 get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic)
 {
-	MonoGenericClass *gclass, *cached;
+	MonoGenericClass *gclass;
+	MonoClass *klass;
+	MonoGenericContext *context = &container->context;
 
 	g_assert (!container->is_method);
 
-	if (is_dynamic) {
-		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-		gclass = &dgclass->generic_class;
-		gclass->is_dynamic = 1;
-	} else {
-		gclass = g_new0 (MonoGenericClass, 1);
-	}
+	klass = container->owner.klass;
+	gclass = mono_metadata_lookup_generic_class (klass, context->class_inst, is_dynamic);
 
-	gclass->cached_context = &container->context;
-	gclass->container_class = container->owner.klass;
-	gclass->inst = container->context.class_inst;
+	if (!gclass->cached_context)
+		gclass->cached_context = context;
+	if (!gclass->cached_class)
+		gclass->cached_class = klass;
 
-	cached = mono_metadata_lookup_generic_class (gclass);
-	if (cached) {
-		g_free (gclass);
-		return cached;
-	}
-
-	gclass->cached_class = container->owner.klass;
+	g_assert (gclass->cached_context == context);
+	g_assert (gclass->cached_class == klass);
 
 	return gclass;
 }

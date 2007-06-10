@@ -1918,25 +1918,38 @@ mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
 /*
  * mono_metadata_lookup_generic_class:
  *
- * Check whether the newly created generic class @gclass already exists
- * in the cache and return the cached value in this case.  Otherwise insert
- * it into the cache and return NULL.
- *
- * Returns: the previosly cached generic class or NULL if it has been newly
- *          inserted into the cache.
+ * Returns a MonoGenericClass with the given properties.
  *
  */
 MonoGenericClass *
-mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
+mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst *inst, gboolean is_dynamic)
 {
-	MonoGenericClass *cached;
+	MonoGenericClass *gclass;
 
-	cached = g_hash_table_lookup (generic_class_cache, gclass);
-	if (cached)
-		return cached;
+	MonoGenericClass helper;
+	helper.container_class = container_class;
+	helper.inst = inst;
+	helper.is_dynamic = is_dynamic; /* We use this in a hash lookup, which does not attempt to downcast the pointer */
+	helper.cached_context = NULL;
+	helper.cached_class = NULL;
+
+	gclass = g_hash_table_lookup (generic_class_cache, &helper);
+	if (gclass)
+		return gclass;
+
+	if (is_dynamic) {
+		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		gclass = &dgclass->generic_class;
+		gclass->is_dynamic = 1;
+	} else {
+		gclass = g_new0 (MonoGenericClass, 1);
+	}
+
+	gclass->container_class = container_class;
+	gclass->inst = inst;
 
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
-	return NULL;
+	return gclass;
 }
 
 /*
