@@ -28,6 +28,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/profiler.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -814,6 +815,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					}
 				}
 			}
+			if (!test_only)
+				if (mono_profiler_get_events () && MONO_PROFILE_ENTER_LEAVE)
+					mono_profiler_method_leave (ji->method);
 		}
 
 		*ctx = new_ctx;
