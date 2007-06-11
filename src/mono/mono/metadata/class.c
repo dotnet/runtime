@@ -3263,7 +3263,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	if (!image && param->owner) {
 		if (is_mvar) {
 			MonoMethod *method = param->owner->owner.method;
-			image = method->klass ? method->klass->image : NULL;
+			image = (method && method->klass) ? method->klass->image : NULL;
 		} else {
 			MonoClass *klass = param->owner->owner.klass;
 			// FIXME: 'klass' should not be null
