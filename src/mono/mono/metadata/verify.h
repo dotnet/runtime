@@ -8,12 +8,13 @@
 G_BEGIN_DECLS
 
 typedef enum {
-	MONO_VERIFY_OK =0,
-	MONO_VERIFY_ERROR=1,
-	MONO_VERIFY_WARNING=2,
-	MONO_VERIFY_VERIFIABLE=4,
-	MONO_VERIFY_CLS = 8,
-	MONO_VERIFY_ALL = 15
+	MONO_VERIFY_OK,
+	MONO_VERIFY_ERROR,
+	MONO_VERIFY_WARNING,
+	MONO_VERIFY_CLS = 4,
+	MONO_VERIFY_ALL = 7,
+	/* Status signaling code that is not verifiable.*/
+	MONO_VERIFY_NOT_VERIFIABLE = 0x10
 } MonoVerifyStatus;
 
 typedef struct {

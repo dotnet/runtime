@@ -323,11 +323,11 @@ static int
 dump_verify_info (MonoImage *image, int flags)
 {
 	GSList *errors, *tmp;
-	int count = 0, verifiable=0;
+	int count = 0, verifiable = 0;
 	const char* desc [] = {
 		"Ok", "Error", "Warning", NULL, "CLS"
 	};
-	
+
 	errors = mono_image_verify_tables (image, flags);
 
 	for (tmp = errors; tmp; tmp = tmp->next) {
@@ -341,7 +341,7 @@ dump_verify_info (MonoImage *image, int flags)
 	if (flags & (MONO_VERIFY_ALL + 1)) { /* verify code */
 		int i;
 		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
-		
+
 		for (i = 0; i < m->rows; ++i) {
 			MonoMethod *method;
 			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL);
@@ -361,8 +361,8 @@ dump_verify_info (MonoImage *image, int flags)
 					count++;
 					verifiable = 3;
 				}
-				if(info->status == MONO_VERIFY_VERIFIABLE) {
-					if(verifiable < 2)
+				if(info->status == MONO_VERIFY_NOT_VERIFIABLE) {
+					if (verifiable < 2)
 						verifiable = 2;	
 				}
 			}
