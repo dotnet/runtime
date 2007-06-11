@@ -8806,6 +8806,7 @@ MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoArray *types)
 {
 	MonoMethod *method, *inflated;
+	MonoMethodInflated *imethod;
 	MonoReflectionMethodBuilder *mb = NULL;
 	MonoGenericContainer *container;
 	MonoGenericMethod *gmethod;
@@ -8869,9 +8870,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 	}
 
-	MOVING_GC_REGISTER (&gmethod->reflection_info);
-	gmethod->reflection_info = rmethod;
-
 	context = g_new0 (MonoGenericContext, 1);
 	context->class_inst = gmethod->class_inst;
 	context->gmethod = gmethod;
@@ -8880,6 +8878,11 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		method = ((MonoMethodInflated *) method)->declaring;
 
 	inflated = mono_class_inflate_generic_method (method, context);
+	imethod = (MonoMethodInflated *) inflated;
+
+	MOVING_GC_REGISTER (&imethod->reflection_info);
+	imethod->reflection_info = rmethod;
+
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
@@ -8888,6 +8891,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 static MonoMethod *
 inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoObject *obj)
 {
+	MonoMethodInflated *imethod;
 	MonoGenericMethod *gmethod = NULL;
 	MonoGenericContext *context;
 	MonoClass *klass;
@@ -8902,8 +8906,6 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 		gmethod = g_new0 (MonoGenericMethod, 1);
 		gmethod->class_inst = klass->generic_class->inst;
 		gmethod->container = method->generic_container;
-		MOVING_GC_REGISTER (&gmethod->reflection_info);
-		gmethod->reflection_info = obj;
 		gmethod->inst = method->generic_container->context.gmethod->inst;
 
 		context = g_new0 (MonoGenericContext, 1);
@@ -8911,7 +8913,12 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 		context->gmethod = gmethod;
 	}
 
-	return mono_class_inflate_generic_method_full (method, klass, context);
+	imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
+	if (method->generic_container) {
+		MOVING_GC_REGISTER (&imethod->reflection_info);
+		imethod->reflection_info = obj;
+	}
+	return (MonoMethod *) imethod;
 }
 
 static MonoMethod *

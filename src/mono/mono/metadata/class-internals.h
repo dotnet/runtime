@@ -89,6 +89,7 @@ struct _MonoMethodInflated {
 	} method;
 	MonoGenericContext *context;	/* The current context. */
 	MonoMethod *declaring;		/* the generic method definition. */
+	gpointer reflection_info;
 };
 
 typedef struct {
@@ -409,7 +410,6 @@ struct _MonoGenericMethod {
 	MonoGenericInst *inst;			/* the instantiation */
 	MonoGenericInst *class_inst;		/* if we're in a generic type, the instantiation of that type */
 	MonoGenericContainer *container;	/* type parameters */
-	gpointer reflection_info;
 };
 
 /*
