@@ -823,6 +823,7 @@ static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx)
 {
 	MonoMethod *method, *inflated;
+	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext *new_context = NULL;
 	MonoGenericMethod *gmethod;
@@ -875,19 +876,27 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	method = mono_get_inflated_method (method);
 
+	klass = method->klass;
+
+	/* FIXME: Is this invalid metadata?  Should we throw an exception instead?  */
+	g_assert (!klass->generic_container);
+
+	if (klass->generic_class) {
+		g_assert (method->is_inflated);
+		method = ((MonoMethodInflated *) method)->declaring;
+	}
+
 	container = method->generic_container;
 	g_assert (container);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	if (method->klass->generic_class)
-		gmethod->class_inst = method->klass->generic_class->inst;
+	if (klass->generic_class)
+		gmethod->class_inst = klass->generic_class->inst;
 	gmethod->container = container;
 
 	new_context = g_new0 (MonoGenericContext, 1);
 	new_context->gmethod = gmethod;
-	/* FIXME: Is this correct? */
-	if (container->parent)
-		new_context->class_inst = container->parent->context.class_inst;
+	new_context->class_inst = gmethod->class_inst;
 
 	/*
 	 * When parsing the methodspec signature, we're in the old context again:
@@ -926,12 +935,10 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		return inflated;
 	}
 
-	context = new_context;
-
 	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method_full (method, method->klass, new_context);
+	inflated = mono_class_inflate_generic_method_full (method, klass, new_context);
 	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	return inflated;
