@@ -444,7 +444,12 @@ main (int argc, char *argv [])
 		}
 		mono_init (file);
 		assembly = mono_assembly_open (file, NULL);
-		
+
+		if (!assembly) {
+			g_print ("Could not open assembly %s\n", file);
+			return 4;
+		}
+
 		return dump_verify_info (assembly->image, f);
 	} else
 		mono_image_close (image);
