@@ -582,6 +582,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-internal-hash.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-internal-hash.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-logger.c"
 				>
 				<FileConfiguration
