@@ -10,7 +10,7 @@ TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
 TEST_TYPE2=`echo $TEST_TYPE2 | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
+sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" > $TEST_FILE <<//EOF
 
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.

@@ -1036,7 +1036,32 @@ do
 	./make_load_test.sh ${OP}3_stack_overflow invalid "${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n" "${ARGS_4}" "${LOCALS_4}"
 done
 
+#Test if the values used for brtrue and brfalse are valid
+I=1
+for OP in brfalse brtrue 'brfalse.s' 'brtrue.s'
+do
+./make_bool_branch_test.sh boolean_branch_${I}_1 valid ${OP} int8
+./make_bool_branch_test.sh boolean_branch_${I}_2 valid ${OP} int16
+./make_bool_branch_test.sh boolean_branch_${I}_3 valid ${OP} int32
+./make_bool_branch_test.sh boolean_branch_${I}_4 valid ${OP} int64
+./make_bool_branch_test.sh boolean_branch_${I}_5 valid ${OP} 'native int'
+./make_bool_branch_test.sh boolean_branch_${I}_6 valid ${OP} 'int32*'
+./make_bool_branch_test.sh boolean_branch_${I}_7 valid ${OP} 'int32&'
+./make_bool_branch_test.sh boolean_branch_${I}_8 valid ${OP} 'method int32 *(int32)'
+./make_bool_branch_test.sh boolean_branch_${I}_9 valid ${OP} object
+./make_bool_branch_test.sh boolean_branch_${I}_10 valid ${OP} string
+./make_bool_branch_test.sh boolean_branch_${I}_11 valid ${OP} 'ClassA'
+./make_bool_branch_test.sh boolean_branch_${I}_12 valid ${OP} 'int32[]'
+./make_bool_branch_test.sh boolean_branch_${I}_13 valid ${OP} 'int32[,,]'
+./make_bool_branch_test.sh boolean_branch_${I}_14 valid ${OP} 'class Template`1<object>'
+./make_bool_branch_test.sh boolean_branch_${I}_15 valid ${OP} 'class Template`1<object>[]'
+./make_bool_branch_test.sh boolean_branch_${I}_16 valid ${OP} 'class Template`1<object>[,,]'
 
+./make_bool_branch_test.sh boolean_branch_${I}_17 invalid ${OP} float32
+./make_bool_branch_test.sh boolean_branch_${I}_18 invalid ${OP} float64
+./make_bool_branch_test.sh boolean_branch_${I}_19 invalid ${OP} 'class MyValueType'
+./make_bool_branch_test.sh boolean_branch_${I}_20 invalid ${OP} 'class ValueTypeTemplate`1<object>'
 
-
+  I=`expr $I + 1`
+done
 
