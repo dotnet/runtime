@@ -444,6 +444,8 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		if (*staddr)
 			g_assert ((current > *staddr) && (current < *staddr + *stsize));
 #endif
+
+		pthread_attr_destroy (&attr); 
 #endif
 }	
 
