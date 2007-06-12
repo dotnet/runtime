@@ -1540,11 +1540,16 @@ mono_free_method  (MonoMethod *method)
 	
 	if (method->dynamic) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
-		
+		int i;
+
 		g_free ((char*)method->name);
-		if (mw->method.header)
+		if (mw->method.header) {
 			g_free ((char*)mw->method.header->code);
-		g_free (mw->method.header);
+			for (i = 0; i < mw->method.header->num_locals; ++i)
+				g_free (mw->method.header->locals [i]);
+			g_free (mw->method.header->clauses);
+			g_free (mw->method.header);
+		}
 		g_free (mw->method_data);
 		g_free (method->signature);
 		g_free (method);
