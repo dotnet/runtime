@@ -97,7 +97,7 @@ enum {
 	/* Method pointer, value types and classes */
 	TYPE_COMPLEX = 6,
 	/* Number of types, used to define the size of the tables*/
-	TYPE_MAX = 6,
+	TYPE_MAX = 8, 		/* FIXME: This should probably be 7, but would require all the tables to be updated */
 	
 	/* Used by tables to signal that a result is not verifiable*/
 	NON_VERIFIABLE_RESULT = 0x80,
@@ -119,6 +119,7 @@ type_names [TYPE_MAX] = {
 	"Int64",
 	"Native Int",
 	"Float64",
+	"TYPE_PTR",		/* FIXME: Give an appropriate name */
 	"Complex"	
 };
 
