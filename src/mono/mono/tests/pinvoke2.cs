@@ -5,12 +5,19 @@ using System.Runtime.CompilerServices;
 
 public class Tests {
 
+	public int int_field;
+
 	public static int delegate_test (int a)
 	{
 		if (a == 2)
 			return 0;
 
 		return 1;
+	}
+
+	public int delegate_test_instance (int a)
+	{
+		return int_field + a;
 	}
 	
 	[StructLayout (LayoutKind.Sequential)]
@@ -496,6 +503,14 @@ public class Tests {
 
 	public static int test_0_marshal_delegate () {
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
+
+		return mono_test_marshal_delegate (d);
+	}
+
+	public static int test_34_marshal_instance_delegate () {
+		Tests t = new Tests ();
+		t.int_field = 32;
+		SimpleDelegate d = new SimpleDelegate (t.delegate_test_instance);
 
 		return mono_test_marshal_delegate (d);
 	}
