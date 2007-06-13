@@ -786,6 +786,8 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGen
 	MonoMethod *vmethod, *inflated;
 	gpointer addr;
 
+	mono_jit_stats.generic_virtual_invocations++;
+
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_null_reference ());
 	vmethod = mono_object_get_virtual_method (obj, method);

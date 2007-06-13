@@ -652,6 +652,7 @@ typedef struct {
 	gulong cas_linkdemand_aptc;
 	gulong cas_linkdemand;
 	gulong cas_demand_generation;
+	gulong generic_virtual_invocations;
 	MonoMethod *max_ratio_method;
 	MonoMethod *biggest_method;
 	gboolean enabled;

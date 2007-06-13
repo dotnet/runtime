@@ -12032,6 +12032,7 @@ print_jit_stats (void)
 			 mono_stats.inflated_method_count);
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
 		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
+		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Dynamic code allocs:    %ld\n", mono_stats.dynamic_code_alloc_count);
 		g_print ("Dynamic code bytes:     %ld\n", mono_stats.dynamic_code_bytes_count);
