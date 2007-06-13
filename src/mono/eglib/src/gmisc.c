@@ -91,4 +91,17 @@ g_unsetenv(const gchar *variable)
 #endif
 }
 
+gchar*
+g_win32_getlocale(void)
+{
+#ifdef G_OS_WIN32
+	/* FIXME: Use GetThreadLocale
+	 * and convert LCID to standard 
+	 * string form, "en_US" */
+	return strdup ("en_US");
+#else
+	return NULL;
+#endif
+}
+
 

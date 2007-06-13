@@ -135,6 +135,8 @@ const gchar *    g_getenv(const gchar *variable);
 gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
 void             g_unsetenv(const gchar *variable);
 
+gchar*           g_win32_getlocale(void);
+
 /*
  * Precondition macros
  */
@@ -153,6 +155,7 @@ typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_
 typedef void     (*GDestroyNotify) (gpointer data);
 typedef guint    (*GHashFunc)      (gconstpointer key);
 typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
+typedef void     (*GFreeFunc)      (gpointer       data);
 
 GHashTable     *g_hash_table_new             (GHashFunc hash_func, GEqualFunc key_equal_func);
 GHashTable     *g_hash_table_new_full        (GHashFunc hash_func, GEqualFunc key_equal_func,
@@ -494,6 +497,8 @@ typedef enum {
 
 gunichar       g_unichar_tolower (gunichar c);
 GUnicodeType   g_unichar_type    (gunichar c);
+gboolean       g_unichar_isxdigit (gunichar c);
+gint           g_unichar_xdigit_value (gunichar c);
 
 #ifndef MAX
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
@@ -501,6 +506,10 @@ GUnicodeType   g_unichar_type    (gunichar c);
 
 #ifndef MIN
 #define MIN(a,b) (((a)<(b)) ? (a) : (b))
+#endif
+
+#ifndef CLAMP
+#define CLAMP(a,low,high) (((a) < (low)) ? (low) : (((a) > (high)) ? (high) : (a)))
 #endif
 
 /* FIXME: Implement these two for gcc */
@@ -737,6 +746,13 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define g_thread_supported()   TRUE
 #define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } } G_STMT_END
 
+#define G_LOCK_DEFINE(name)
+#define G_LOCK_DEFINE_STATIC(name)
+#define G_LOCK_EXTERN(name)
+#define G_LOCK(name)
+#define G_TRYLOCK(name)
+#define G_UNLOCK(name)
+
 #define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))
 #define GUINT32_SWAP_LE_BE(x) ((guint32) \
 			       ( (((guint32) (x)) << 24)| \
@@ -753,15 +769,18 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #   define GUINT32_TO_LE(x) (x)
 #   define GUINT64_TO_LE(x) (x)
 #   define GUINT16_TO_LE(x) (x)
+#   define GUINT_TO_LE(x)   (x)
 #else
 #   define GUINT32_TO_LE(x) GUINT32_SWAP_LE_BE(x)
 #   define GUINT64_TO_LE(x) GUINT64_SWAP_LE_BE(x)
 #   define GUINT16_TO_LE(x) GUINT16_SWAP_LE_BE(x)
+#   define GUINT_TO_LE(x)   GUINT32_SWAP_LE_BE(x)
 #endif
 
 #define GUINT32_FROM_LE(x)  (GUINT32_TO_LE (x))
 #define GUINT64_FROM_LE(x)  (GUINT64_TO_LE (x))
 #define GUINT16_FROM_LE(x)  (GUINT16_TO_LE (x))
+#define GUINT_FROM_LE(x)    (GUINT_TO_LE (x))
 
 #define _EGLIB_MAJOR  2
 #define _EGLIB_MIDDLE 4

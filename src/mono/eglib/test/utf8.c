@@ -245,6 +245,30 @@ test_convert ()
 	return OK;
 }
 
+
+RESULT
+test_xdigit ()
+{
+	static char test_chars[] = {
+		'0', '1', '2', '3', '4', 
+		'5', '6', '7', '8', '9', 
+		'a', 'b', 'c', 'd', 'e', 'f', 'g',
+		'A', 'B', 'C', 'D', 'E', 'F', 'G'};
+	static gint32 test_values[] = {
+		0, 1, 2, 3, 4, 
+		5, 6, 7, 8, 9, 
+		10, 11, 12, 13, 14, 15, -1,
+		10, 11, 12, 13, 14, 15, -1};
+
+		int i =0;
+
+		for (i = 0; i < sizeof(test_chars); i++)
+			if (g_unichar_xdigit_value ((gunichar)test_chars[i]) != test_values[i])
+				return FAILED("Incorrect value %d at index %d", test_values[i], i);
+
+		return OK;
+}
+
 /*
  * test initialization
  */
@@ -254,6 +278,7 @@ static Test utf8_tests [] = {
 	{"g_utf8_to_utf16", test_utf8_to_utf16},
 	{"g_utf8_seq", test_utf8_seq},
 	{"g_convert", test_convert },
+	{"g_unichar_xdigit_value", test_xdigit },
 	{NULL, NULL}
 };
 

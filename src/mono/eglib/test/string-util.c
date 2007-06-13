@@ -408,7 +408,7 @@ test_ascii_strdown ()
 	gchar *c;
 	gint n, l;
 
-	l = strlen (b);
+	l = (gint)strlen (b);
 	c = g_ascii_strdown (a, l);
 	n = g_ascii_strncasecmp (b, c, l);
 

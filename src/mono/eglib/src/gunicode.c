@@ -62,6 +62,25 @@ g_unichar_tolower (gunichar c)
 	return 0;
 }
 
+gboolean
+g_unichar_isxdigit (gunichar c)
+{
+	return (g_unichar_xdigit_value (c) != -1);
+
+}
+
+gint
+g_unichar_xdigit_value (gunichar c)
+{
+	if (c >= 0x30 && c <= 0x39) /*0-9*/
+		return (c - 0x30);
+	if (c >= 0x41 && c <= 0x46) /*A-F*/
+		return (c - 0x37);
+	if (c >= 0x61 && c <= 0x66) /*a-f*/
+		return (c - 0x57);
+	return -1;
+}
+
 gchar *
 g_convert (const gchar *str, gssize len,
 	   const gchar *to_codeset, const gchar *from_codeset,

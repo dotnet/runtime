@@ -1,3 +1,16 @@
+2007-06-13  Jonathan Chambers <joncham@gmail.com>
+	
+	* src/gunicode.c: Add g_unichar_isxdigit and g_unichar_xdigit_value.
+	* src/gmisc.c: Add g_win32_getlocale stub.
+	* src/glib.h: Add declarations of above functions,
+	GFreeFunc typedef, and CLAMP, GUINT_TO_LE, and threading
+	macros.
+	
+	* test/string-util.c: Fix warning.
+	* test/utf8.c: Add test for g_unichar_xdigit_value.
+	
+	Contribution is licensed as MIT/X11.
+
 2007-05-05  Aaron Bockover  <abockover@novell.com>
 
 	* src/gstr.c:
