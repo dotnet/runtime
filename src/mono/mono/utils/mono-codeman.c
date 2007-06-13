@@ -10,6 +10,7 @@
 
 #include "mono-codeman.h"
 #include "mono-mmap.h"
+#include <mono/metadata/class-internals.h>
 
 #define MIN_PAGES 16
 
@@ -246,6 +247,11 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 	
 	size += MIN_ALIGN;
 	size &= ~ (MIN_ALIGN - 1);
+
+	if (cman->dynamic) {
+		++mono_stats.dynamic_code_alloc_count;
+		mono_stats.dynamic_code_bytes_count += size;
+	}
 
 	if (!cman->current) {
 		cman->current = new_codechunk (cman->dynamic, size);

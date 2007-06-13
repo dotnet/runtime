@@ -12033,6 +12033,10 @@ print_jit_stats (void)
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
 		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
 
+		g_print ("Dynamic code allocs:    %ld\n", mono_stats.dynamic_code_alloc_count);
+		g_print ("Dynamic code bytes:     %ld\n", mono_stats.dynamic_code_bytes_count);
+		g_print ("Dynamic code frees:     %ld\n", mono_stats.dynamic_code_frees_count);
+
 		if (mono_use_security_manager) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);

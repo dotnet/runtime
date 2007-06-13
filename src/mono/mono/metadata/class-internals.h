@@ -527,6 +527,9 @@ typedef struct {
 	gulong inflated_method_count_2;
 	gulong inflated_type_count;
 	gulong generics_metadata_size;
+	gulong dynamic_code_alloc_count;
+	gulong dynamic_code_bytes_count;
+	gulong dynamic_code_frees_count;
 	gboolean enabled;
 } MonoStats;
 
