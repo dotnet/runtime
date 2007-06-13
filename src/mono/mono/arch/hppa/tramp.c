@@ -24,6 +24,8 @@
     Trampoline generation for HPPA - currently (Oct 9th 2003) only
     supports 64 bits - and the HP compiler.
 */
+#ifndef __linux__
+
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/tabledefs.h"
@@ -776,3 +778,4 @@ generate:
 
 	return ji->code_start;
 }
+#endif
