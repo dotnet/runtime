@@ -1016,7 +1016,7 @@ extern gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 
-#if defined(__hpux) && !defined(__GNUC__)
+#if defined(__hppa__)
 #define WAPI_ATOMIC_ASM
 #endif
 

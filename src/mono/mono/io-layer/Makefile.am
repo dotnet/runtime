@@ -111,7 +111,7 @@ WINDOWS_SRC = \
 	io-layer-dummy.c
 
 HPPA_SRC = \
-	hppa_atomic.s
+	hppa_atomic.S
 
 if PLATFORM_WIN32
 libwapi_la_SOURCES = $(WINDOWS_SRC)
