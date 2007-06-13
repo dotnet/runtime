@@ -1437,14 +1437,14 @@ is_array_type_compatible (MonoType *target, MonoType *candidate)
 static int
 get_stack_type (MonoType *type)
 {
-	int t = type->type;
 	int mask = 0;
+	int type_kind = type->type;
 	if (type->byref)
 		mask = POINTER_MASK;
 	/*TODO handle CMMP_MASK */
 
 handle_enum:
-	switch (t) {
+	switch (type_kind) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -1460,11 +1460,14 @@ handle_enum:
 		return TYPE_NATIVE_INT | mask;
 
 	case MONO_TYPE_PTR:
-		mask = POINTER_MASK;
-		type = type->type;
-		t = type->type; 
+		/*FIXME: We should flag this as an unmanaged pointer. should we mark the method as unverifiable right now? */
+		mask = POINTER_MASK; 
+		type = type->data.type;
+		type_kind = type->type;
 		goto handle_enum;
 
+	/* FIXME: the spec says that you cannot have a pointer to method pointer, do we need to check this here? */ 
+	case MONO_TYPE_FNPTR: 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
@@ -1472,8 +1475,6 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_TYPEDBYREF:
 
-	/* TODO verify if this case is correct */
-	case MONO_TYPE_FNPTR:
 
 	case MONO_TYPE_GENERICINST:
 		return TYPE_COMPLEX | mask;
@@ -1488,13 +1489,14 @@ handle_enum:
 
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
+			type_kind = type->type;
 			goto handle_enum;
 		} else 
 			return TYPE_COMPLEX | mask;
 
 	default:
-		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type", type->type); );
+		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type\n", type->type); );
 		g_assert_not_reached ();
 		return 0;
 	}
@@ -1504,17 +1506,17 @@ handle_enum:
 static void
 set_stack_value (ILStackDesc *stack, MonoType *type, int take_addr)
 {
-	int t = type->type;
 	int mask = 0;
-
-	stack->type = type;
+	int type_kind = type->type;
 
 	if (type->byref || take_addr)
 		mask = POINTER_MASK;
 	/* TODO handle CMMP_MASK */
 
 handle_enum:
-	switch (t) {
+	stack->type = type;
+
+	switch (type_kind) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -1531,10 +1533,10 @@ handle_enum:
 		return;
 
 	case MONO_TYPE_PTR:
-		mask = POINTER_MASK;
-		/* We should use the underlying pointer type */
-		stack->type = type = type->type;
-		t = type->type; 
+		/*FIXME: We should flag this as an unmanaged pointer. should we mark the method as unverifiable right now? */
+		mask = POINTER_MASK; 
+		type = type->data.type;
+		type_kind = type->type;
 		goto handle_enum;
 
 	case MONO_TYPE_CLASS:
@@ -1544,9 +1546,8 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_TYPEDBYREF:
 
-	//TODO verify if this case is correct
+	/*FIXME: Do we need to check if it's a pointer to the method pointer? The spec says it' illegal to have that.*/
 	case MONO_TYPE_FNPTR:
-
 	case MONO_TYPE_GENERICINST:
 		stack->stype = TYPE_COMPLEX | mask;
 		return;
@@ -1560,14 +1561,15 @@ handle_enum:
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
+			type_kind = type->type;
 			goto handle_enum;
 		} else {
 			stack->stype = TYPE_COMPLEX | mask;
 			return;
 		}
 	default:
-		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type", type->type); );
+		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type\n", type->type); );
 		g_assert_not_reached ();
 	}
 	return;
@@ -1591,7 +1593,7 @@ handle_enum:
 		if (candidate->type != MONO_TYPE_CLASS)
 			return FALSE;
 
-		VERIFIER_DEBUG ( printf ("verifying type class%d %d\n", target->data.klass, candidate->data.klass); );
+		VERIFIER_DEBUG ( printf ("verifying type class %p %p\n", target->data.klass, candidate->data.klass); );
 		return mono_class_is_assignable_from (target->data.klass, candidate->data.klass);
 
 	case MONO_TYPE_OBJECT:
@@ -1605,7 +1607,7 @@ handle_enum:
 
 	case MONO_TYPE_VALUETYPE:
 		if (target->data.klass->enumtype) {
-			target = target->data.klass->enum_basetype->type;
+			target = target->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
 			if (candidate->type != MONO_TYPE_VALUETYPE)
@@ -1632,7 +1634,7 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 	MonoGenericContainer *container;
 	int i;
 
-	VERIFIER_DEBUG ( printf ("candidate container %d\n", candidate->container_class->generic_container); );
+	VERIFIER_DEBUG ( printf ("candidate container %p\n", candidate->container_class->generic_container); );
 	if (target->container_class != candidate->container_class) {
 		MonoType *param_class;
 		MonoClass *cand_class;
@@ -1719,14 +1721,16 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 			if (!mono_metadata_type_equal (target_type, candidate_type))
 				return FALSE;
 		} else {
-			VERIFIER_DEBUG ( printf ("generic type has variance flag, need to perform hierarquical check\n"); );
+			VERIFIER_DEBUG ( printf ("generic type has variance flag, need to perform deeper check\n"); );
 			/* first we check if they are the same kind */
 			/* byref generic params are forbiden, but better safe than sorry.*/
 
-			if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_COVARIANT)
-				return mono_is_generic_type_compatible (target_type, candidate_type);
-			else /* the attribute must be contravariant */
-				return mono_is_generic_type_compatible (candidate_type, target_type);
+			if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) {
+				if (!mono_is_generic_type_compatible (target_type, candidate_type))
+					return FALSE;
+			/* the attribute must be contravariant */
+			} else if (!mono_is_generic_type_compatible (candidate_type, target_type))
+				return FALSE;
 		}
 	}
 	return TRUE;
@@ -1740,7 +1744,7 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
  */
 static gboolean
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candidate, gboolean strict) {
-	VERIFIER_DEBUG ( printf ("checking type compatibility %d %d %d\n", ctx, target, candidate); );
+	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p %p\n", ctx, target, candidate); );
 
 	if (candidate->byref) {
 		if (get_stack_type (target)  == TYPE_NATIVE_INT) {
@@ -1832,7 +1836,7 @@ handle_enum:
 
 	case MONO_TYPE_VALUETYPE:
 		if (target->data.klass->enumtype) {
-			target = target->data.klass->enum_basetype->type;
+			target = target->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
 			if (candidate->type != MONO_TYPE_VALUETYPE)
@@ -1855,7 +1859,7 @@ handle_enum:
 static int
 verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 	int stack_type = stack->stype;
-	VERIFIER_DEBUG ( printf ("checking compatibility %d %d %d\n", ctx, stack, type); );
+	VERIFIER_DEBUG ( printf ("checking compatibility %p %p %p\n", ctx, stack, type); );
 	if (type->byref) {
 		if (stack_type == TYPE_NATIVE_INT) {
 			ctx->verifiable = 0;
@@ -1967,7 +1971,7 @@ handle_enum:
 
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype->type;
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
 			if (stack_type != TYPE_COMPLEX)
@@ -2190,7 +2194,7 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
  		ctx->verifiable = 0;
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
- 	stack_push_val (&ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
+ 	stack_push_val (ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
 }
 
 static void
@@ -2585,7 +2589,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BNE_UN_S:
 			do_branch_op (&ctx, (signed char)ip [1] + 2, cmp_br_eq_op);
 			ip += 2;
-			need_merge =1;
+			need_merge = 1;
 			break;
 
 		case CEE_BGE_S:
@@ -2598,14 +2602,14 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BLT_UN_S:
 			do_branch_op (&ctx, (signed char)ip [1] + 2, cmp_br_op);
 			ip += 2;
-			need_merge =1;
+			need_merge = 1;
 			break;
 
 		case CEE_BEQ:
 		case CEE_BNE_UN:
 			do_branch_op (&ctx, (gint32)read32 (ip + 1) + 5, cmp_br_eq_op);
 			ip += 5;
-			need_merge =1;
+			need_merge = 1;
 			break;
 
 		case CEE_BGE:
@@ -2618,7 +2622,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BLT_UN:
 			do_branch_op (&ctx, (gint32)read32 (ip + 1) + 5, cmp_br_op);
 			ip += 5;
-			need_merge =1;
+			need_merge = 1;
 			break;
 
 		case CEE_LDLOC_S:
