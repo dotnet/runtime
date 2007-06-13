@@ -59,6 +59,7 @@ struct _WapiHandle_thread
 	guint32 (*start_routine)(gpointer arg);
 	gpointer start_arg;
 	GSList *apc_queue;
+	gpointer waiting_on;
 };
 
 typedef struct

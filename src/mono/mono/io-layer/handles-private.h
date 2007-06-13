@@ -35,6 +35,7 @@ extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
 extern struct _WapiFileShareLayout *_wapi_fileshare_layout;
 
 extern guint32 _wapi_fd_reserve;
+extern mono_mutex_t _wapi_alertable_mutex;
 extern mono_mutex_t _wapi_global_signal_mutex;
 extern pthread_cond_t _wapi_global_signal_cond;
 extern int _wapi_sem_id;
@@ -77,8 +78,9 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      guint32 *lowest);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
-extern int _wapi_handle_wait_signal (void);
-extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
+extern int _wapi_handle_wait_signal (gboolean shared);
+extern int _wapi_handle_timedwait_signal (struct timespec *timeout,
+					  gboolean shared);
 extern int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 						 struct timespec *timeout, gboolean alertable);
@@ -167,6 +169,97 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	} else {
 		handle_data->signalled=state;
 	}
+}
+
+static inline void _wapi_handle_current_thread_set_waiting_on (gpointer waiting_on)
+{
+	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	struct _WapiHandle_thread *thread;
+	gboolean ok;
+	int thr_ret;
+	
+	if (current_thread == NULL) {
+		return;
+	}
+
+	if (_WAPI_SHARED_HANDLE(_wapi_handle_type (waiting_on))) {
+		/* We can't signal shared handles with pthreads, so
+		 * just ignore it here so the problem won't arise
+		 */
+		return;
+	}
+	
+	ok = _wapi_lookup_handle (current_thread, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread);
+	if (ok == FALSE) {
+		return;
+	}
+	
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&_wapi_alertable_mutex);
+	thr_ret = mono_mutex_lock (&_wapi_alertable_mutex);
+	g_assert (thr_ret == 0);
+
+	thread->waiting_on = waiting_on;
+	
+	thr_ret = mono_mutex_unlock (&_wapi_alertable_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+}
+
+static inline void _wapi_handle_trip_signal (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	struct _WapiHandleUnshared *handle_data;
+	int thr_ret;
+
+	if (handle == INVALID_HANDLE_VALUE) {
+		/* Tell everyone blocking on multiple handles that
+		 * something was signalled
+		 */
+		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&_wapi_global_signal_mutex);
+		thr_ret = mono_mutex_lock (&_wapi_global_signal_mutex);
+		g_assert (thr_ret == 0);
+			
+		thr_ret = pthread_cond_broadcast (&_wapi_global_signal_cond);
+		g_assert (thr_ret == 0);
+			
+		thr_ret = mono_mutex_unlock (&_wapi_global_signal_mutex);
+		g_assert (thr_ret == 0);
+		pthread_cleanup_pop (0);
+
+		return;
+	}
+	
+	/* handle must be a valid private handle then */
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return;
+	}
+	
+	g_assert (!_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
+	
+	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
+	
+#ifdef DEBUG
+	g_message ("%s: tripping condition of %p", __func__, handle);
+#endif
+
+	/* Tell everyone blocking on a single handle */
+
+	/* This function _must_ be called with handle->signal_mutex
+	 * unlocked
+	 */
+
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&handle_data->signal_mutex);
+	thr_ret = mono_mutex_lock (&handle_data->signal_mutex);
+	g_assert (thr_ret == 0);
+		
+	thr_ret = pthread_cond_broadcast (&handle_data->signal_cond);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = mono_mutex_unlock (&handle_data->signal_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 }
 
 static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
