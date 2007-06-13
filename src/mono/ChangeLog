@@ -1,3 +1,9 @@
+
+2007-06-13  Randolph Chung  <tausq@debian.org>
+
+	* configure.in: Add AM_PROG_AS, needed for handling assembly file
+	targets.
+
 2007-06-09  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: use lib name instead of package name 
