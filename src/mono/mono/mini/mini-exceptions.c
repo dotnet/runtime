@@ -668,6 +668,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ())
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
+		mono_profiler_exception_thrown (obj);
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
@@ -791,6 +792,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							}
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*(mono_get_lmf_addr ()) = lmf;
@@ -804,6 +806,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						    (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							call_filter (ctx, ei->handler_start);
 						}
@@ -812,6 +815,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						    (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							call_filter (ctx, ei->handler_start);
 						}
@@ -820,8 +824,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				}
 			}
 			if (!test_only)
-				if (mono_profiler_get_events () && MONO_PROFILE_ENTER_LEAVE)
-					mono_profiler_method_leave (ji->method);
+				mono_profiler_exception_method_leave (ji->method);
 		}
 
 		*ctx = new_ctx;
