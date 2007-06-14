@@ -8860,7 +8860,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	if (method->klass->generic_class)
 		gmethod->class_inst = method->klass->generic_class->inst;
-	gmethod->container = container;
 	gmethod->inst = ginst;
 
 	inflated = g_hash_table_lookup (container->method_hash, gmethod);
@@ -8905,7 +8904,6 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 
 		gmethod = g_new0 (MonoGenericMethod, 1);
 		gmethod->class_inst = klass->generic_class->inst;
-		gmethod->container = method->generic_container;
 		gmethod->inst = method->generic_container->context.gmethod->inst;
 
 		context = g_new0 (MonoGenericContext, 1);

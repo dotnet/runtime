@@ -409,7 +409,6 @@ struct _MonoDynamicGenericClass {
 struct _MonoGenericMethod {
 	MonoGenericInst *inst;			/* the instantiation */
 	MonoGenericInst *class_inst;		/* if we're in a generic type, the instantiation of that type */
-	MonoGenericContainer *container;	/* type parameters */
 };
 
 /*

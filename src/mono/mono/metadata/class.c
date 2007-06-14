@@ -607,7 +607,6 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 		} else {
 			gmethod = g_new0 (MonoGenericMethod, 1);
 			gmethod->class_inst = class_inst;
-			gmethod->container = context->gmethod->container;
 			gmethod->inst = ninst;
 		}
 	}

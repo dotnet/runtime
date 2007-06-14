@@ -3417,8 +3417,7 @@ mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
 gboolean
 mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2)
 {
-	return (g1->container == g2->container) && (g1->class_inst == g2->class_inst) &&
-		(g1->inst == g2->inst);
+	return g1->class_inst == g2->class_inst && g1->inst == g2->inst;
 }
 
 
@@ -4656,7 +4655,6 @@ MonoGenericMethod *
 mono_get_shared_generic_method (MonoGenericContainer *container)
 {
 	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->container = container;
 	gmethod->class_inst = container->context.class_inst;
 	gmethod->inst = mono_get_shared_generic_inst (container);
 

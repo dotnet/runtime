@@ -892,7 +892,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	if (klass->generic_class)
 		gmethod->class_inst = klass->generic_class->inst;
-	gmethod->container = container;
 
 	new_context = g_new0 (MonoGenericContext, 1);
 	new_context->gmethod = gmethod;
