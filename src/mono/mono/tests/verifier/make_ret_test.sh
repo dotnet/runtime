@@ -72,17 +72,8 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 {
 }
 
-.class public Covariant\`1<+T>
-  	extends [mscorlib]System.Object
-{
-}
 
-.class public Contravariant\`1<-T>
-  	extends [mscorlib]System.Object
-{
-}
-
-.class public Bivariant\`2<+T,-U>
+.class interface Bivariant\`2<+T,-U>
   	extends [mscorlib]System.Object
 {
 }
@@ -117,15 +108,6 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 {
 }
 
-.class public SubCovariant\`1<K>
-	extends class Covariant\`1<!0>
-{
-}
-
-.class public SubContravariant\`1<H>
-	extends class Contravariant\`1<!0>
-{
-}
 
 .class interface public ICovariant\`1<+T>
 {
@@ -146,11 +128,18 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 }
 
 
-.method public static TYPE1 Main(TYPE2 V_0) cil managed
+.method public static TYPE1 Foo(TYPE2 V_0) cil managed
+{
+	.maxstack 2
+	ldarg.0
+	ret // VALIDITY.
+}
+
+.method public static int32 Foo() cil managed
 {
 	.entrypoint
 	.maxstack 2
-	ldarg.0
+	ldc.i4.0
 	ret // VALIDITY.
 }
 //EOF

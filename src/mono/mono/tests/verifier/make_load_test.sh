@@ -22,15 +22,24 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/PARAMS/${TEST_PARAMS}/g" -e "s/LOCA
   .ver  0:0:0:0
 }
 
-.method public static int32 Main(PARAMS) cil managed
+.method public static void foo(PARAMS) cil managed
 {
 	.maxstack 2
-	.entrypoint
 	.locals init (
         LOCALS
     )
 
 	OPCODE // VALIDITY.
+	pop
+	ret
+
+}
+
+.method public static int32 Main() cil managed
+{
+	.maxstack 2
+	.entrypoint
+	ldc.i4.0
 	ret
 }
 //EOF

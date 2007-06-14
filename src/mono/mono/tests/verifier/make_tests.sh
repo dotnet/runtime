@@ -887,21 +887,22 @@ done
 
 
 #mix variance with inheritance
+#only interfaces or delegates can have covariance
 
-./make_ret_test.sh ret_generics_inheritante_16 valid 'class Covariant`1<object>' 'class SubCovariant`1<string>'
-./make_ret_test.sh ret_generics_inheritante_17 valid 'class Covariant`1<string>' 'class SubCovariant`1<string>'
+./make_ret_test.sh ret_generics_inheritante_16 invalid 'class Covariant`1<object>' 'class SubCovariant`1<string>'
+./make_ret_test.sh ret_generics_inheritante_17 invalid 'class Covariant`1<string>' 'class SubCovariant`1<string>'
 ./make_ret_test.sh ret_generics_inheritante_18 invalid 'class Covariant`1<string>' 'class SubCovariant`1<object>'
 
-./make_ret_test.sh ret_generics_inheritante_19 valid 'class Contravariant`1<string>' 'class SubContravariant`1<object>'
-./make_ret_test.sh ret_generics_inheritante_20 valid 'class Contravariant`1<string>' 'class SubContravariant`1<string>'
+./make_ret_test.sh ret_generics_inheritante_19 invalid 'class Contravariant`1<string>' 'class SubContravariant`1<object>'
+./make_ret_test.sh ret_generics_inheritante_20 invalid 'class Contravariant`1<string>' 'class SubContravariant`1<string>'
 ./make_ret_test.sh ret_generics_inheritante_21 invalid 'class Contravariant`1<object>' 'class SubContravariant`1<string>'
 
-./make_ret_test.sh ret_generics_inheritante_22 valid 'class Covariant`1<ClassA>' 'class SubCovariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_23 valid 'class Covariant`1<ClassSubA>' 'class SubCovariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_inheritante_22 invalid 'class Covariant`1<ClassA>' 'class SubCovariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_inheritante_23 invalid 'class Covariant`1<ClassSubA>' 'class SubCovariant`1<ClassSubA>'
 ./make_ret_test.sh ret_generics_inheritante_24 invalid 'class Covariant`1<ClassSubA>' 'class SubCovariant`1<ClassA>'
 
-./make_ret_test.sh ret_generics_inheritante_25 valid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassA>'
-./make_ret_test.sh ret_generics_inheritante_26 valid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_inheritante_25 invalid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassA>'
+./make_ret_test.sh ret_generics_inheritante_26 invalid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassSubA>'
 ./make_ret_test.sh ret_generics_inheritante_27 invalid 'class Contravariant`1<ClassA>' 'class SubContravariant`1<ClassSubA>'
 
 
@@ -926,61 +927,82 @@ done
 
 #mix variance with arrays
 
-./make_ret_test.sh ret_generics_arrays_1 valid 'class Covariant`1<object>' 'class Covariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_2 valid 'class Covariant`1<object>' 'class Covariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_3 valid 'class Covariant`1<object>' 'class Covariant`1<int32[,]>'
-./make_ret_test.sh ret_generics_arrays_4 valid 'class Covariant`1<object>' 'class Covariant`1<string[]>'
-./make_ret_test.sh ret_generics_arrays_5 valid 'class Covariant`1<object[]>' 'class Covariant`1<string[]>'
-./make_ret_test.sh ret_generics_arrays_6 valid 'class Covariant`1<object[]>' 'class Covariant`1<ClassA[]>'
-./make_ret_test.sh ret_generics_arrays_7 valid 'class Covariant`1<ClassA[]>' 'class Covariant`1<ClassSubA[]>'
-./make_ret_test.sh ret_generics_arrays_8 valid 'class Covariant`1<InterfaceA[]>' 'class Covariant`1<ImplA[]>'
-./make_ret_test.sh ret_generics_arrays_9 valid 'class Covariant`1<object[,]>' 'class Covariant`1<string[,]>'
-./make_ret_test.sh ret_generics_arrays_10 valid 'class Covariant`1<ClassA[,]>' 'class Covariant`1<ClassSubA[,]>'
+./make_ret_test.sh ret_generics_arrays_1 valid 'class ICovariant`1<object>' 'class ICovariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_2 valid 'class ICovariant`1<object>' 'class ICovariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_3 valid 'class ICovariant`1<object>' 'class ICovariant`1<int32[,]>'
+./make_ret_test.sh ret_generics_arrays_4 valid 'class ICovariant`1<object>' 'class ICovariant`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_5 valid 'class ICovariant`1<object[]>' 'class ICovariant`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_6 valid 'class ICovariant`1<object[]>' 'class ICovariant`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_7 valid 'class ICovariant`1<ClassA[]>' 'class ICovariant`1<ClassSubA[]>'
+./make_ret_test.sh ret_generics_arrays_8 valid 'class ICovariant`1<InterfaceA[]>' 'class ICovariant`1<ImplA[]>'
+./make_ret_test.sh ret_generics_arrays_9 valid 'class ICovariant`1<object[,]>' 'class ICovariant`1<string[,]>'
+./make_ret_test.sh ret_generics_arrays_10 valid 'class ICovariant`1<ClassA[,]>' 'class ICovariant`1<ClassSubA[,]>'
 
-./make_ret_test.sh ret_generics_arrays_11 valid 'class Contravariant`1<object[]>' 'class Contravariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_12 valid 'class Contravariant`1<int32[]>' 'class Contravariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_13 valid 'class Contravariant`1<int32[,]>' 'class Contravariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_14 valid 'class Contravariant`1<string[]>' 'class Contravariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_15 valid 'class Contravariant`1<string[]>' 'class Contravariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_16 valid 'class Contravariant`1<ClassA[]>' 'class Contravariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_17 valid 'class Contravariant`1<ClassSubA[]>' 'class Contravariant`1<ClassA[]>'
-./make_ret_test.sh ret_generics_arrays_18 valid 'class Contravariant`1<ImplA[]>' 'class Contravariant`1<InterfaceA[]>'
-./make_ret_test.sh ret_generics_arrays_19 valid 'class Contravariant`1<string[,]>' 'class Contravariant`1<object[,]>'
-./make_ret_test.sh ret_generics_arrays_20 valid 'class Contravariant`1<ClassSubA[,]>' 'class Contravariant`1<ClassA[,]>'
+./make_ret_test.sh ret_generics_arrays_1_b valid 'class ICovariant`1<object>' 'class CovariantImpl`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_2_b valid 'class ICovariant`1<object>' 'class CovariantImpl`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_3_b valid 'class ICovariant`1<object>' 'class CovariantImpl`1<int32[,]>'
+./make_ret_test.sh ret_generics_arrays_4_b valid 'class ICovariant`1<object>' 'class ICovariant`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_5_b valid 'class ICovariant`1<object[]>' 'class CovariantImpl`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_6_b valid 'class ICovariant`1<object[]>' 'class CovariantImpl`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_7_b valid 'class ICovariant`1<ClassA[]>' 'class CovariantImpl`1<ClassSubA[]>'
+./make_ret_test.sh ret_generics_arrays_8_b valid 'class ICovariant`1<InterfaceA[]>' 'class CovariantImpl`1<ImplA[]>'
+./make_ret_test.sh ret_generics_arrays_9_b valid 'class ICovariant`1<object[,]>' 'class CovariantImpl`1<string[,]>'
+./make_ret_test.sh ret_generics_arrays_10_b valid 'class ICovariant`1<ClassA[,]>' 'class CovariantImpl`1<ClassSubA[,]>'
 
-./make_ret_test.sh ret_generics_arrays_21 invalid 'class Covariant`1<int32[]>' 'class Covariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_22 invalid 'class Covariant`1<int32[]>' 'class Covariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_23 invalid 'class Covariant`1<string[]>' 'class Covariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_24 invalid 'class Covariant`1<ClassSubA[]>' 'class Covariant`1<ClassA[]>'
-./make_ret_test.sh ret_generics_arrays_25 invalid 'class Covariant`1<int32[]>' 'class Covariant`1<int32[,]>'
-./make_ret_test.sh ret_generics_arrays_26 invalid 'class Covariant`1<ImplA[]>' 'class Covariant`1<InterfaceA[]>'
+./make_ret_test.sh ret_generics_arrays_11 valid 'class IContravariant`1<object[]>' 'class IContravariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_12 valid 'class IContravariant`1<int32[]>' 'class IContravariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_13 valid 'class IContravariant`1<int32[,]>' 'class IContravariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_14 valid 'class IContravariant`1<string[]>' 'class IContravariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_15 valid 'class IContravariant`1<string[]>' 'class IContravariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_16 valid 'class IContravariant`1<ClassA[]>' 'class IContravariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_17 valid 'class IContravariant`1<ClassSubA[]>' 'class IContravariant`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_18 valid 'class IContravariant`1<ImplA[]>' 'class IContravariant`1<InterfaceA[]>'
+./make_ret_test.sh ret_generics_arrays_19 valid 'class IContravariant`1<string[,]>' 'class IContravariant`1<object[,]>'
+./make_ret_test.sh ret_generics_arrays_20 valid 'class IContravariant`1<ClassSubA[,]>' 'class IContravariant`1<ClassA[,]>'
 
-./make_ret_test.sh ret_generics_arrays_27 invalid 'class Contravariant`1<object>' 'class Contravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_28 invalid 'class Contravariant`1<object[]>' 'class Contravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_29 invalid 'class Contravariant`1<object[]>' 'class Contravariant`1<string[]>'
-./make_ret_test.sh ret_generics_arrays_30 invalid 'class Contravariant`1<ClassA[]>' 'class Contravariant`1<ClassSubA[]>'
-./make_ret_test.sh ret_generics_arrays_31 invalid 'class Contravariant`1<int32[,]>' 'class Contravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_32 invalid 'class Contravariant`1<InterfaceA[]>' 'class Contravariant`1<ImplA[]>'
+./make_ret_test.sh ret_generics_arrays_11_b valid 'class IContravariant`1<object[]>' 'class ContravariantImpl`1<object>'
+./make_ret_test.sh ret_generics_arrays_12_b valid 'class IContravariant`1<int32[]>' 'class ContravariantImpl`1<object>'
+./make_ret_test.sh ret_generics_arrays_13_b valid 'class IContravariant`1<int32[,]>' 'class ContravariantImpl`1<object>'
+./make_ret_test.sh ret_generics_arrays_14_b valid 'class IContravariant`1<string[]>' 'class ContravariantImpl`1<object>'
+./make_ret_test.sh ret_generics_arrays_15_b valid 'class IContravariant`1<string[]>' 'class ContravariantImpl`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_16_b valid 'class IContravariant`1<ClassA[]>' 'class ContravariantImpl`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_17_b valid 'class IContravariant`1<ClassSubA[]>' 'class ContravariantImpl`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_18_b valid 'class IContravariant`1<ImplA[]>' 'class ContravariantImpl`1<InterfaceA[]>'
+./make_ret_test.sh ret_generics_arrays_19_b valid 'class IContravariant`1<string[,]>' 'class ContravariantImpl`1<object[,]>'
+./make_ret_test.sh ret_generics_arrays_20_b valid 'class IContravariant`1<ClassSubA[,]>' 'class ContravariantImpl`1<ClassA[,]>'
+
+./make_ret_test.sh ret_generics_arrays_21 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_22 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_23 invalid 'class ICovariant`1<string[]>' 'class ICovariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_24 invalid 'class ICovariant`1<ClassSubA[]>' 'class ICovariant`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_25 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<int32[,]>'
+./make_ret_test.sh ret_generics_arrays_26 invalid 'class ICovariant`1<ImplA[]>' 'class ICovariant`1<InterfaceA[]>'
+
+./make_ret_test.sh ret_generics_arrays_27 invalid 'class IContravariant`1<object>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_28 invalid 'class IContravariant`1<object[]>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_29 invalid 'class IContravariant`1<object[]>' 'class IContravariant`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_30 invalid 'class IContravariant`1<ClassA[]>' 'class IContravariant`1<ClassSubA[]>'
+./make_ret_test.sh ret_generics_arrays_31 invalid 'class IContravariant`1<int32[,]>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_32 invalid 'class IContravariant`1<InterfaceA[]>' 'class IContravariant`1<ImplA[]>'
 
 
 #generic with value types
 
 ./make_ret_test.sh ret_generics_vt_1 valid 'class Template`1<MyValueType>' 'class Template`1<MyValueType>'
 ./make_ret_test.sh ret_generics_vt_2 invalid 'class Template`1<MyValueType>' 'class Template`1<MyValueType2>'
-./make_ret_test.sh ret_generics_vt_3 invalid 'class Covariant`1<MyValueType>' 'class Covariant`1<MyValueType2>'
-./make_ret_test.sh ret_generics_vt_4 invalid 'class Covariant`1<object>' 'class Covariant`1<MyValueType2>'
+./make_ret_test.sh ret_generics_vt_3 invalid 'class ICovariant`1<MyValueType>' 'class ICovariant`1<MyValueType2>'
+./make_ret_test.sh ret_generics_vt_4 invalid 'class ICovariant`1<object>' 'class ICovariant`1<MyValueType2>'
 
 
 #mix variance and generic compatibility with all kinds of types valid for a generic parameter (hellish task - huge task)
 #test with composite generics ( Foo<Bar<int>> )
 
-
+#test variance with delegates
 #generic methods
 #generic atributes
 #generic delegates
 #generic code
-
-#the verifier must check if the generic instantiation is valid?
+#the verifier must check if the generic instantiation is valid
 
 for OP in ldarg ldloc
 do
@@ -996,6 +1018,8 @@ do
 	ARGS_4='int32 V, int32 V1, int32 V1, int32 V1'
 	LOCALS_4=''
 	
+	POPS="pop\npop\npop\npop\npop\npop\npop\npop\n"
+	
 	if [ "$OP" == "ldloc" ]; then
 		LOCALS_1=$ARGS_1
 		ARGS_1=''
@@ -1008,7 +1032,6 @@ do
 
 		LOCALS_4=$ARGS_4
 		ARGS_4=''
-
 	fi;
 	
 	./make_load_test.sh ${OP}0_max_params invalid "${OP}.0" '' ''
@@ -1030,38 +1053,40 @@ do
 	./make_load_test.sh ${OP}2_max_params valid "${OP}.2" "${ARGS_3}" "${LOCALS_3}"
 	./make_load_test.sh ${OP}3_max_params valid "${OP}.3" "${ARGS_4}" "${LOCALS_4}"
 	
-	./make_load_test.sh ${OP}0_stack_overflow invalid "${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}1_stack_overflow invalid "${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}2_stack_overflow invalid "${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}3_stack_overflow invalid "${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}0_stack_overflow invalid "${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}1_stack_overflow invalid "${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}2_stack_overflow invalid "${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}3_stack_overflow invalid "${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
 done
 
 #Test if the values used for brtrue and brfalse are valid
 I=1
 for OP in brfalse brtrue 'brfalse.s' 'brtrue.s'
 do
-./make_bool_branch_test.sh boolean_branch_${I}_1 valid ${OP} int8
-./make_bool_branch_test.sh boolean_branch_${I}_2 valid ${OP} int16
-./make_bool_branch_test.sh boolean_branch_${I}_3 valid ${OP} int32
-./make_bool_branch_test.sh boolean_branch_${I}_4 valid ${OP} int64
-./make_bool_branch_test.sh boolean_branch_${I}_5 valid ${OP} 'native int'
-./make_bool_branch_test.sh boolean_branch_${I}_6 valid ${OP} 'int32*'
-./make_bool_branch_test.sh boolean_branch_${I}_7 valid ${OP} 'int32&'
-./make_bool_branch_test.sh boolean_branch_${I}_8 valid ${OP} 'method int32 *(int32)'
-./make_bool_branch_test.sh boolean_branch_${I}_9 valid ${OP} object
-./make_bool_branch_test.sh boolean_branch_${I}_10 valid ${OP} string
-./make_bool_branch_test.sh boolean_branch_${I}_11 valid ${OP} 'ClassA'
-./make_bool_branch_test.sh boolean_branch_${I}_12 valid ${OP} 'int32[]'
-./make_bool_branch_test.sh boolean_branch_${I}_13 valid ${OP} 'int32[,,]'
-./make_bool_branch_test.sh boolean_branch_${I}_14 valid ${OP} 'class Template`1<object>'
-./make_bool_branch_test.sh boolean_branch_${I}_15 valid ${OP} 'class Template`1<object>[]'
-./make_bool_branch_test.sh boolean_branch_${I}_16 valid ${OP} 'class Template`1<object>[,,]'
+	./make_bool_branch_test.sh boolean_branch_${I}_1 valid ${OP} int8
+	./make_bool_branch_test.sh boolean_branch_${I}_2 valid ${OP} int16
+	./make_bool_branch_test.sh boolean_branch_${I}_3 valid ${OP} int32
+	./make_bool_branch_test.sh boolean_branch_${I}_4 valid ${OP} int64
+	./make_bool_branch_test.sh boolean_branch_${I}_5 valid ${OP} 'native int'
+	
+	#unmanaged pointers are not veriable types, all ops on unmanaged pointers are unverifiable
+	./make_bool_branch_test.sh boolean_branch_${I}_6 unverifiable ${OP} 'int32*'
+	./make_bool_branch_test.sh boolean_branch_${I}_8 unverifiable ${OP} 'method int32 *(int32)'
 
-./make_bool_branch_test.sh boolean_branch_${I}_17 invalid ${OP} float32
-./make_bool_branch_test.sh boolean_branch_${I}_18 invalid ${OP} float64
-./make_bool_branch_test.sh boolean_branch_${I}_19 invalid ${OP} 'class MyValueType'
-./make_bool_branch_test.sh boolean_branch_${I}_20 invalid ${OP} 'class ValueTypeTemplate`1<object>'
-
-  I=`expr $I + 1`
+	./make_bool_branch_test.sh boolean_branch_${I}_7 valid ${OP} 'int32&'
+	./make_bool_branch_test.sh boolean_branch_${I}_9 valid ${OP} object
+	./make_bool_branch_test.sh boolean_branch_${I}_10 valid ${OP} string
+	./make_bool_branch_test.sh boolean_branch_${I}_11 valid ${OP} 'ClassA'
+	./make_bool_branch_test.sh boolean_branch_${I}_12 valid ${OP} 'int32[]'
+	./make_bool_branch_test.sh boolean_branch_${I}_13 valid ${OP} 'int32[,,]'
+	./make_bool_branch_test.sh boolean_branch_${I}_14 valid ${OP} 'class Template`1<object>'
+	./make_bool_branch_test.sh boolean_branch_${I}_15 valid ${OP} 'class Template`1<object>[]'
+	./make_bool_branch_test.sh boolean_branch_${I}_16 valid ${OP} 'class Template`1<object>[,,]'
+	
+	./make_bool_branch_test.sh boolean_branch_${I}_17 invalid ${OP} float32
+	./make_bool_branch_test.sh boolean_branch_${I}_18 invalid ${OP} float64
+	./make_bool_branch_test.sh boolean_branch_${I}_19 invalid ${OP} 'class MyValueType'
+	./make_bool_branch_test.sh boolean_branch_${I}_20 invalid ${OP} 'class ValueTypeTemplate`1<object>'
+	I=`expr $I + 1`
 done
 
