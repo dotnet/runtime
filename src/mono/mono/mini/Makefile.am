@@ -181,6 +181,13 @@ alpha_sources = \
 	tramp-alpha.c	\
 	mini-trampolines.c
 
+hppa_sources = \
+	mini-hppa.c	\
+	mini-hppa.h	\
+	exceptions-hppa.c	\
+	tramp-hppa.c	\
+	mini-trampolines.c
+
 common_sources = \
 	mini.c		\
 	mini.h		\
@@ -337,6 +344,14 @@ arch_built = cpu-alpha.h
 arch_define=__alpha__
 endif
 
+if HPPA
+# Only support 32-bit targets for now
+arch_sources = $(hppa_sources)
+arch_BURGSRC = $(srcdir)/inssel-long32.brg $(srcdir)/inssel-hppa.brg
+arch_built = cpu-hppa.h
+arch_define=__hppa__
+endif
+
 libmono_la_SOURCES = $(common_sources) $(arch_sources)
 
 nodist_libmono_la_SOURCES = inssel.c inssel.h
@@ -410,6 +425,9 @@ cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 
 cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-alpha.md cpu-alpha.h alpha_desc
+
+cpu-hppa.h: cpu-hppa.md genmdesc$(EXEEXT)
+	$(GENMDESC_PRG) $(srcdir)/cpu-hppa.md cpu-hppa.h hppa_desc
 
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
@@ -487,7 +505,8 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(s390_sources) inssel-s390.brg cpu-s390.md \
 	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
 	$(ia64_sources) inssel-ia64.brg cpu-ia64.md \
-	$(alpha_sources) inssel-alpha.brg cpu-alpha.md
+	$(alpha_sources) inssel-alpha.brg cpu-alpha.md \
+	$(hppa_sources) inssel-hppa.brg cpu-hppa.md
 
 version.h: Makefile
 	if test -d $(srcdir)/.svn; then \
