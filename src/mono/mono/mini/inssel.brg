@@ -319,12 +319,26 @@
 	} while (0)
 #endif
 
+#ifndef MONO_EMIT_NEW_COMPARE_BRANCH_LABEL_CHAINED
+#define MONO_EMIT_NEW_COMPARE_BRANCH_LABEL_CHAINED(cfg, cmp_op, sreg1, sreg2, label) \
+        do { \
+                MONO_EMIT_NEW_BRANCH_LABEL (s, (cmp_op), (label)); \
+} while (0)
+#endif
+
 #ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL
 #define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL(cfg, cmp_op, sreg1, imm, label) \
 	do { \
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, (sreg1), (imm)); \
 		MONO_EMIT_NEW_BRANCH_LABEL (s, (cmp_op), (label)); \
 	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL_CHAINED
+#define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL_CHAINED(cfg, cmp_op, sreg1, imm, label) \
+        do { \
+                MONO_EMIT_NEW_BRANCH_LABEL (s, (cmp_op), (label)); \
+} while (0)
 #endif
 
 #ifndef MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK
@@ -335,12 +349,26 @@
 	} while (0)
 #endif
 
+#ifndef MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK_CHAINED
+#define MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK_CHAINED(cfg, cmp_op, sreg1, sreg2, block) \
+        do { \
+                MONO_EMIT_NEW_BRANCH_BLOCK (s, (cmp_op), (block)); \
+} while (0)
+#endif
+
 #ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK
 #define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK(cfg, cmp_op, sreg1, imm, block) \
 	do { \
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, (sreg1), (imm)); \
 		MONO_EMIT_NEW_BRANCH_BLOCK (s, (cmp_op), (block)); \
 	} while (0)
+#endif
+
+#ifndef MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK_CHAINED
+#define MONO_EMIT_NEW_COMPARE_IMM_BRANCH_BLOCK_CHAINED(cfg, cmp_op, sreg1, imm, block) \
+        do { \
+                MONO_EMIT_NEW_BRANCH_BLOCK (s, (cmp_op), (block)); \
+} while (0)
 #endif
 
 %%
@@ -752,7 +780,7 @@ reg: OP_CEQ (cflags),
 reg: OP_CLT (cflags),
 reg: OP_CLT_UN (cflags),
 reg: OP_CGT (cflags),
-reg: OP_CGT_UN (cflags) {	
+reg: OP_CGT_UN (cflags) "2" {	
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
