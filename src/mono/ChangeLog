@@ -1,6 +1,11 @@
 
 2007-06-13  Randolph Chung  <tausq@debian.org>
 
+	* configure.in: Add hppa-linux target.
+	Contributed under the X11 license (http://bugzilla.ximian.com/show_bug.cgi?id=81866).
+
+2007-06-13  Randolph Chung  <tausq@debian.org>
+
 	* configure.in: Add AM_PROG_AS, needed for handling assembly file
 	targets.
 

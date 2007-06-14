@@ -1704,10 +1704,11 @@ case "$host" in
 		;;
 	hppa*linux*)
 		TARGET=HPPA;
+		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=hppa; 
 		ACCESS_UNALIGNED="no"
-		INTERP_SUPPORTED=yes
-		interp_wanted=true
+		JIT_SUPPORTED=yes
+		jit_wanted=true
 		;;
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin*)
