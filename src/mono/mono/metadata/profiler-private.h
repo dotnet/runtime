@@ -35,6 +35,10 @@ void mono_profiler_stat_hit        (guchar *ip, void *context) MONO_INTERNAL;
 void mono_profiler_thread_start    (gsize tid) MONO_INTERNAL;
 void mono_profiler_thread_end      (gsize tid) MONO_INTERNAL;
 
+void mono_profiler_exception_thrown         (MonoObject *exception) MONO_INTERNAL;
+void mono_profiler_exception_method_leave   (MonoMethod *method) MONO_INTERNAL;
+void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num) MONO_INTERNAL;
+
 void mono_profiler_assembly_event  (MonoAssembly *assembly, int code) MONO_INTERNAL;
 void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result) MONO_INTERNAL;
 

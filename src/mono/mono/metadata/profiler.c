@@ -61,6 +61,10 @@ static MonoProfileStatFunc     statistical_cb;
 static MonoProfileMethodFunc   method_enter;
 static MonoProfileMethodFunc   method_leave;
 
+static MonoProfileExceptionFunc	exception_throw_cb;
+static MonoProfileMethodFunc exception_method_leave_cb;
+static MonoProfileExceptionClauseFunc exception_clause_cb;
+
 static MonoProfileThreadFunc   thread_start;
 static MonoProfileThreadFunc   thread_end;
 
@@ -192,6 +196,13 @@ mono_profiler_install_statistical (MonoProfileStatFunc callback)
 	statistical_cb = callback;
 }
 
+void mono_profiler_install_exception (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback)
+{
+	exception_throw_cb = throw_callback;
+	exception_method_leave_cb = exc_method_leave;
+	exception_clause_cb = clause_callback;
+}
+
 void 
 mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback)
 {
@@ -290,6 +301,27 @@ mono_profiler_stat_hit (guchar *ip, void *context)
 {
 	if ((mono_profiler_events & MONO_PROFILE_STATISTICAL) && statistical_cb)
 		statistical_cb (current_profiler, ip, context);
+}
+
+void
+mono_profiler_exception_thrown (MonoObject *exception)
+{
+	if ((mono_profiler_events & MONO_PROFILE_EXCEPTIONS) && exception_throw_cb)
+		exception_throw_cb (current_profiler, exception);
+}
+
+void
+mono_profiler_exception_method_leave (MonoMethod *method)
+{
+	if ((mono_profiler_events & MONO_PROFILE_EXCEPTIONS) && exception_method_leave_cb)
+		exception_method_leave_cb (current_profiler, method);
+}
+
+void
+mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num)
+{
+	if ((mono_profiler_events & MONO_PROFILE_EXCEPTIONS) && exception_clause_cb)
+		exception_clause_cb (current_profiler, method, clause_type, clause_num);
 }
 
 void
@@ -1409,7 +1441,7 @@ mono_profiler_install_simple (const char *desc)
 			const char *arg = *ptr;
 
 			if (!strcmp (arg, "time"))
-				flags |= MONO_PROFILE_ENTER_LEAVE;
+				flags |= MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_EXCEPTIONS;
 			else if (!strcmp (arg, "alloc"))
 				flags |= MONO_PROFILE_ALLOCATIONS;
 			else if (!strcmp (arg, "stat"))
@@ -1429,9 +1461,9 @@ mono_profiler_install_simple (const char *desc)
 		}
 	}
 	if (flags & MONO_PROFILE_ALLOCATIONS)
-		flags |= MONO_PROFILE_ENTER_LEAVE;
+		flags |= MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_EXCEPTIONS;
 	if (!flags)
-		flags = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_JIT_COMPILATION;
+		flags = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_EXCEPTIONS;
 
 	prof = create_profiler ();
 	ALLOC_PROFILER ();
@@ -1443,6 +1475,7 @@ mono_profiler_install_simple (const char *desc)
 
 	mono_profiler_install (prof, simple_shutdown);
 	mono_profiler_install_enter_leave (simple_method_enter, simple_method_leave);
+	mono_profiler_install_exception (NULL, simple_method_leave, NULL);
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
 	mono_profiler_install_allocation (simple_allocation);
 	mono_profiler_install_appdomain (NULL, NULL, simple_appdomain_unload, NULL);
