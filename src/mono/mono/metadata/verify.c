@@ -1102,15 +1102,34 @@ can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
 	return 1;
 }
 
-static int
+static gboolean
 is_valid_bool_arg (ILStackDesc *arg)
 {
+	if (arg->stype & POINTER_MASK)
+		return TRUE;
 	switch (arg->stype) {
 	case TYPE_I4:
 	case TYPE_I8:
-	case TYPE_PTR:
-	case TYPE_COMPLEX:
+	case TYPE_NATIVE_INT:
 		return TRUE;
+	case TYPE_COMPLEX:
+		g_assert (arg->type);
+		switch (arg->type->type) {
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_FNPTR:
+		case MONO_TYPE_PTR:
+			return TRUE;
+		case MONO_TYPE_GENERICINST:
+			/*We need to check if the container class
+			 * of the generic type is a valuetype, iow:
+			 * is it a "class Foo<T>" or a "struct Foo<T>"?
+			 */
+			return !arg->type->data.generic_class->container_class->valuetype;
+		}
 	default:
 		return FALSE;
 	}
@@ -1597,7 +1616,6 @@ handle_enum:
 		return mono_class_is_assignable_from (target->data.klass, candidate->data.klass);
 
 	case MONO_TYPE_OBJECT:
-		printf("verifying object type\n");
 		return MONO_TYPE_IS_REFERENCE (candidate);
 
 	case MONO_TYPE_SZARRAY:
@@ -2106,6 +2124,33 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
  	
 	ctx->eval.size--;
 }
+
+
+static void
+do_boolean_branch_op (VerifyContext *ctx, int delta)
+{
+	int target = ctx->ip_offset + delta;
+	VERIFIER_DEBUG ( printf ("boolean branch offset %d delta %d target %d\n", ctx->ip_offset, delta, target); );
+ 
+	if (target < 0 || target >= ctx->code_size) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Boolean branch target out of code at 0x%04x", ctx->ip_offset));
+		return;
+	}
+	
+	if (!in_same_block (ctx->header, ctx->ip_offset, target)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
+		return;
+	}
+	
+	ctx->target = target;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	if (!is_valid_bool_arg (stack_pop (ctx)))
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [stack_get (ctx, -1)->stype & TYPE_MASK], ctx->ip_offset));
+}
+
 
 static void
 do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [TYPE_MAX][TYPE_MAX])
@@ -2678,20 +2723,14 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 2;
 			start = 1;
 			break;
+
 		case CEE_BRFALSE_S:
 		case CEE_BRTRUE_S:
-			target = ip + (signed char)ip [1] + 2;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!in_same_block (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (!is_valid_bool_arg (stack_pop (&ctx)))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
+			do_boolean_branch_op (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			need_merge = 1;
 			break;
+
 		case CEE_BR:
 			target = ip + (gint32)read32 (ip + 1) + 5;
 			if (target >= end || target < ctx.header->code)
@@ -2701,20 +2740,14 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			start = 1;
 			break;
+
 		case CEE_BRFALSE:
 		case CEE_BRTRUE:
-			target = ip + (gint32)read32 (ip + 1) + 5;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!in_same_block (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (!is_valid_bool_arg (stack_pop (&ctx)))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
+			do_boolean_branch_op (&ctx, (gint32)read32 (ip + 1) + 5);
 			ip += 5;
 			need_merge = 1;
 			break;
+
 		case CEE_SWITCH:
 			n = read32 (ip + 1);
 			target = ip + sizeof (guint32) * n;
