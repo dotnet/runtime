@@ -2640,14 +2640,14 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	domain = mono_object_domain (method);
 
 	if (method->method->is_inflated) {
-		MonoGenericMethod *gmethod = mono_method_get_context (method->method)->gmethod;
+		MonoGenericInst *inst = mono_method_get_context (method->method)->method_inst;
 
-		if (gmethod) {
-			count = gmethod->inst->type_argc;
+		if (inst) {
+			count = inst->type_argc;
 			res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 			for (i = 0; i < count; i++)
-				mono_array_setref (res, i, mono_type_get_object (domain, gmethod->inst->type_argv [i]));
+				mono_array_setref (res, i, mono_type_get_object (domain, inst->type_argv [i]));
 
 			return res;
 		}

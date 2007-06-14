@@ -457,7 +457,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
 		int num = type->data.generic_param->num;
-		MonoGenericInst *inst = context->gmethod ? context->gmethod->inst : NULL;
+		MonoGenericInst *inst = context->method_inst;
 		if (!inst || !inst->type_argv)
 			return NULL;
 		if (num >= inst->type_argc)
@@ -550,7 +550,7 @@ mono_generic_class_get_context (MonoGenericClass *gclass)
        MonoGenericContext *context = gclass->cached_context;
        if (context) {
 	       g_assert (context->class_inst == gclass->inst);
-	       g_assert (!context->gmethod);
+	       g_assert (!context->method_inst);
 	       return context;
        }
 	
@@ -594,29 +594,21 @@ static MonoGenericContext *
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
 {
 	MonoGenericInst *class_inst = NULL;
-	MonoGenericMethod *gmethod = NULL;
+	MonoGenericInst *method_inst = NULL;
 	MonoGenericContext *res;
 
 	if (context->class_inst)
 		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with);
 
-	if (context->gmethod) {
-		MonoGenericInst *ninst = mono_metadata_inflate_generic_inst (context->gmethod->inst, inflate_with);
-		if (class_inst == context->class_inst && ninst == context->gmethod->inst) {
-			gmethod = context->gmethod;
-		} else {
-			gmethod = g_new0 (MonoGenericMethod, 1);
-			gmethod->class_inst = class_inst;
-			gmethod->inst = ninst;
-		}
-	}
+	if (context->method_inst)
+		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with);
 
-	if (class_inst == context->class_inst && gmethod == context->gmethod)
+	if (class_inst == context->class_inst && method_inst == context->method_inst)
 		return context;
 
 	res = g_new0 (MonoGenericContext, 1);
 	res->class_inst = class_inst;
-	res->gmethod = gmethod;
+	res->method_inst = method_inst;
 
 	return res;
 }
@@ -693,14 +685,11 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
 	}
 
-	if (method->generic_container && !context->gmethod) {
-		MonoGenericMethod *gmethod = g_memdup (method->generic_container->context.gmethod, sizeof (*gmethod));
-		if (result->klass->generic_class)
-			gmethod->class_inst = result->klass->generic_class->inst;
-
+	if (method->generic_container && !context->method_inst) {
 		context = g_new0 (MonoGenericContext, 1);
-		context->gmethod = gmethod;
-		context->class_inst = gmethod->class_inst;
+		if (result->klass->generic_class)
+			context->class_inst = result->klass->generic_class->inst;
+		context->method_inst = method->generic_container->context.method_inst;
 		iresult->context = context;
 	}
 
@@ -2370,8 +2359,7 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 	int i;
 
 	context = g_new0 (MonoGenericContext, 1);
-	context->gmethod = g_new0 (MonoGenericMethod, 1);
-	context->gmethod->inst = iface->generic_class->inst;
+	context->method_inst = iface->generic_class->inst;
 
 	for (i = 0; i < class->parent->method.count; i++) {
 		MonoMethod *m = class->parent->methods [i];
@@ -3460,7 +3448,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGeneri
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
 	if (!t)
 		return NULL;
-	if (context && (context->class_inst || context->gmethod)) {
+	if (context && (context->class_inst || context->method_inst)) {
 		MonoType *inflated = inflate_generic_type (t, context);
 		if (inflated)
 			t = inflated;

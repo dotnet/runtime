@@ -370,11 +370,11 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 int* mono_metadata_get_param_attrs          (MonoImage *m, int def);
 
 guint
-mono_metadata_generic_method_hash           (MonoGenericMethod     *gmethod) MONO_INTERNAL;
+mono_metadata_generic_context_hash          (MonoGenericContext    *context) MONO_INTERNAL;
 
 gboolean
-mono_metadata_generic_method_equal          (MonoGenericMethod     *g1,
-					     MonoGenericMethod     *g2) MONO_INTERNAL;
+mono_metadata_generic_context_equal         (MonoGenericContext    *g1,
+					     MonoGenericContext    *g2) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst            (MonoImage             *image,
@@ -415,9 +415,6 @@ MonoType *mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original)
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
-
-MonoGenericMethod *
-mono_get_shared_generic_method (MonoGenericContainer *container) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

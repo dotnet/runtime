@@ -826,7 +826,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext *new_context = NULL;
-	MonoGenericMethod *gmethod;
+	MonoGenericInst *inst;
 	MonoGenericContainer *container = NULL;
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
@@ -889,13 +889,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	container = method->generic_container;
 	g_assert (container);
 
-	gmethod = g_new0 (MonoGenericMethod, 1);
-	if (klass->generic_class)
-		gmethod->class_inst = klass->generic_class->inst;
-
 	new_context = g_new0 (MonoGenericContext, 1);
-	new_context->gmethod = gmethod;
-	new_context->class_inst = gmethod->class_inst;
+	if (klass->generic_class)
+		new_context->class_inst = klass->generic_class->inst;
 
 	/*
 	 * When parsing the methodspec signature, we're in the old context again:
@@ -918,27 +914,27 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	 * ie. instantiate the method as `Foo.Hello<float>.
 	 */
 
-	gmethod->inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
+	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
 
-	if (context && gmethod->inst->is_open)
-		gmethod->inst = mono_metadata_inflate_generic_inst (gmethod->inst, context);
+	if (context && inst->is_open)
+		inst = mono_metadata_inflate_generic_inst (inst, context);
+
+	new_context->method_inst = inst;
 
 	if (!container->method_hash)
 		container->method_hash = g_hash_table_new (
-			(GHashFunc)mono_metadata_generic_method_hash, (GEqualFunc)mono_metadata_generic_method_equal);
+			(GHashFunc)mono_metadata_generic_context_hash, (GEqualFunc)mono_metadata_generic_context_equal);
 
-	inflated = g_hash_table_lookup (container->method_hash, gmethod);
+	inflated = g_hash_table_lookup (container->method_hash, new_context);
 	if (inflated) {
-		g_free (gmethod);
 		g_free (new_context);
 		return inflated;
 	}
 
-	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
-		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
+	mono_stats.generics_metadata_size += sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
 	inflated = mono_class_inflate_generic_method_full (method, klass, new_context);
-	g_hash_table_insert (container->method_hash, gmethod, inflated);
+	g_hash_table_insert (container->method_hash, new_context, inflated);
 
 	return inflated;
 }

@@ -296,12 +296,14 @@ typedef struct _MonoType MonoType;
 typedef struct _MonoGenericInst MonoGenericInst;
 typedef struct _MonoGenericClass MonoGenericClass;
 typedef struct _MonoDynamicGenericClass MonoDynamicGenericClass;
-typedef struct _MonoGenericMethod MonoGenericMethod;
 typedef struct _MonoGenericContext MonoGenericContext;
 typedef struct _MonoGenericContainer MonoGenericContainer;
 typedef struct _MonoGenericParam MonoGenericParam;
 typedef struct _MonoArrayType MonoArrayType;
 typedef struct _MonoMethodSignature MonoMethodSignature;
+
+/* FIXME: Keeping this name alive for now, since it is part of the exposed API, even though no entrypoint uses it.  */
+typedef struct invalid_name MonoGenericMethod;
 
 typedef struct {
 	unsigned int required : 1;

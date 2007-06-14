@@ -404,21 +404,13 @@ struct _MonoDynamicGenericClass {
 };
 
 /*
- * A particular instantiation of a generic method.
- */
-struct _MonoGenericMethod {
-	MonoGenericInst *inst;			/* the instantiation */
-	MonoGenericInst *class_inst;		/* if we're in a generic type, the instantiation of that type */
-};
-
-/*
  * The generic context: an instantiation of a set of class and method generic parameters.
  */
 struct _MonoGenericContext {
 	/* The instantiation corresponding to the class generic parameters */
 	MonoGenericInst *class_inst;
-	/* The current generic method */
-	MonoGenericMethod *gmethod;
+	/* The instantiation corresponding to the method generic parameters */
+	MonoGenericInst *method_inst;
 };
 
 /*

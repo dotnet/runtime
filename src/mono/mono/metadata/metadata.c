@@ -3409,17 +3409,22 @@ _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGeneri
 }
 
 guint
-mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
+mono_metadata_generic_context_hash (MonoGenericContext *context)
 {
-	return gmethod->inst->id;
+	/* FIXME: check if this seed is good enough */
+	guint hash = 0xc01dfee7;
+	if (context->class_inst)
+		hash = ((hash << 5) - hash) ^ context->class_inst->id;
+	if (context->method_inst)
+		hash = ((hash << 5) - hash) ^ context->method_inst->id;
+	return hash;
 }
 
 gboolean
-mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2)
+mono_metadata_generic_context_equal (MonoGenericContext *g1, MonoGenericContext *g2)
 {
-	return g1->class_inst == g2->class_inst && g1->inst == g2->inst;
+	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
 }
-
 
 /*
  * mono_metadata_type_hash:
@@ -4619,7 +4624,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	context = &container->context;
 	if (container->is_method) {
 		context->class_inst = container->parent ? container->parent->context.class_inst : NULL;
-		context->gmethod = mono_get_shared_generic_method (container);
+		context->method_inst = mono_get_shared_generic_inst (container);
 	} else {
 		context->class_inst = mono_get_shared_generic_inst (container);
 	}
@@ -4649,16 +4654,6 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 	}
 
 	return mono_metadata_lookup_generic_inst (nginst);
-}
-
-MonoGenericMethod *
-mono_get_shared_generic_method (MonoGenericContainer *container)
-{
-	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->class_inst = container->context.class_inst;
-	gmethod->inst = mono_get_shared_generic_inst (container);
-
-	return gmethod;
 }
 
 gboolean
