@@ -825,7 +825,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	MonoMethod *method, *inflated;
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
-	MonoGenericContext *new_context = NULL;
+	MonoGenericContext new_context;
 	MonoGenericInst *inst;
 	MonoGenericContainer *container = NULL;
 	const char *ptr;
@@ -889,9 +889,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	container = method->generic_container;
 	g_assert (container);
 
-	new_context = g_new0 (MonoGenericContext, 1);
-	if (klass->generic_class)
-		new_context->class_inst = klass->generic_class->context.class_inst;
+	new_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 
 	/*
 	 * When parsing the methodspec signature, we're in the old context again:
@@ -919,22 +917,20 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	if (context && inst->is_open)
 		inst = mono_metadata_inflate_generic_inst (inst, context);
 
-	new_context->method_inst = inst;
+	new_context.method_inst = inst;
 
 	if (!container->method_hash)
 		container->method_hash = g_hash_table_new (
 			(GHashFunc)mono_metadata_generic_context_hash, (GEqualFunc)mono_metadata_generic_context_equal);
 
-	inflated = g_hash_table_lookup (container->method_hash, new_context);
-	if (inflated) {
-		g_free (new_context);
+	inflated = g_hash_table_lookup (container->method_hash, &new_context);
+	if (inflated)
 		return inflated;
-	}
 
-	mono_stats.generics_metadata_size += sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
+	mono_stats.generics_metadata_size += param_count * sizeof (MonoType);
 
-	inflated = mono_class_inflate_generic_method_full (method, klass, new_context);
-	g_hash_table_insert (container->method_hash, new_context, inflated);
+	inflated = mono_class_inflate_generic_method_full (method, klass, &new_context);
+	g_hash_table_insert (container->method_hash, mono_method_get_context (inflated), inflated);
 
 	return inflated;
 }

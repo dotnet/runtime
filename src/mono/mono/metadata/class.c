@@ -578,12 +578,12 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	return inflated;
 }
 
-static MonoGenericContext *
+static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
 {
 	MonoGenericInst *class_inst = NULL;
 	MonoGenericInst *method_inst = NULL;
-	MonoGenericContext *res;
+	MonoGenericContext res;
 
 	if (context->class_inst)
 		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with);
@@ -591,12 +591,8 @@ inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflat
 	if (context->method_inst)
 		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with);
 
-	if (class_inst == context->class_inst && method_inst == context->method_inst)
-		return context;
-
-	res = g_new0 (MonoGenericContext, 1);
-	res->class_inst = class_inst;
-	res->method_inst = method_inst;
+	res.class_inst = class_inst;
+	res.method_inst = method_inst;
 
 	return res;
 }
@@ -629,14 +625,19 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	MonoMethod *result;
 	MonoMethodInflated *iresult;
 	MonoMethodSignature *sig;
+	MonoGenericContext tmp_context;
 
-	/* The `method' has already been instantiated before -> we need to create a new context. */
+	/* The `method' has already been instantiated before => we need to peel out the instantiation and create a new context */
 	while (method->is_inflated) {
 		MonoGenericContext *method_context = mono_method_get_context (method);
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		context = inflate_generic_context (method_context, context);
-		if (context == method_context)
+
+		tmp_context = inflate_generic_context (method_context, context);
+		context = &tmp_context;
+
+		if (mono_metadata_generic_context_equal (method_context, context))
 			return method;
+
 		method = imethod->declaring;
 	}
 
@@ -657,7 +658,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	result = (MonoMethod *) iresult;
 	result->is_inflated = 1;
 	result->signature = NULL;
-	iresult->context = context;
+	iresult->context = *context;
 	iresult->declaring = method;
 
 	if (!klass_hint || !klass_hint->generic_class ||
@@ -673,13 +674,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
 	}
 
-	if (method->generic_container && !context->method_inst) {
-		context = g_new0 (MonoGenericContext, 1);
-		if (result->klass->generic_class)
-			context->class_inst = result->klass->generic_class->context.class_inst;
-		context->method_inst = method->generic_container->context.method_inst;
-		iresult->context = context;
-	}
+	if (method->generic_container && !context->method_inst)
+		iresult->context.method_inst = method->generic_container->context.method_inst;
 
 	return result;
 }
@@ -702,7 +698,7 @@ mono_method_get_context (MonoMethod *method)
 	if (!method->is_inflated)
 		return NULL;
 	imethod = (MonoMethodInflated *) method;
-	return imethod->context;
+	return &imethod->context;
 }
 
 /** 
@@ -2343,11 +2339,11 @@ g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
 static void
 setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 {
-	MonoGenericContext *context;
+	MonoGenericContext tmp_context;
 	int i;
 
-	context = g_new0 (MonoGenericContext, 1);
-	context->method_inst = iface->generic_class->context.class_inst;
+	tmp_context.class_inst = NULL;
+	tmp_context.method_inst = iface->generic_class->context.class_inst;
 
 	for (i = 0; i < class->parent->method.count; i++) {
 		MonoMethod *m = class->parent->methods [i];
@@ -2372,7 +2368,7 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
 
-		inflated = mono_class_inflate_generic_method (m, context);
+		inflated = mono_class_inflate_generic_method (m, &tmp_context);
 		class->methods [pos++] = mono_marshal_get_generic_array_helper (class, iface, name, inflated);
 	}
 }

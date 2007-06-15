@@ -8812,7 +8812,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoMethodInflated *imethod;
 	MonoReflectionMethodBuilder *mb = NULL;
 	MonoGenericContainer *container;
-	MonoGenericContext *context;
+	MonoGenericContext tmp_context;
 	MonoGenericInst *ginst;
 	int count, i;
 
@@ -8859,28 +8859,23 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	}
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
-	context = g_new0 (MonoGenericContext, 1);
-	if (method->klass->generic_class)
-		context->class_inst = method->klass->generic_class->context.class_inst;
-	context->method_inst = ginst;
+	tmp_context.class_inst = method->klass->generic_class ? method->klass->generic_class->context.class_inst : NULL;
+	tmp_context.method_inst = ginst;
 
-	inflated = g_hash_table_lookup (container->method_hash, context);
-	if (inflated) {
-		g_free (context);
-
+	inflated = g_hash_table_lookup (container->method_hash, &tmp_context);
+	if (inflated)
 		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
-	}
 
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	inflated = mono_class_inflate_generic_method (method, context);
+	inflated = mono_class_inflate_generic_method (method, &tmp_context);
 	imethod = (MonoMethodInflated *) inflated;
 
 	MOVING_GC_REGISTER (&imethod->reflection_info);
 	imethod->reflection_info = rmethod;
 
-	g_hash_table_insert (container->method_hash, context, inflated);
+	g_hash_table_insert (container->method_hash, mono_method_get_context (inflated), inflated);
 
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }
@@ -8889,6 +8884,7 @@ static MonoMethod *
 inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoObject *obj)
 {
 	MonoMethodInflated *imethod;
+	MonoGenericContext tmp_context;
 	MonoGenericContext *context;
 	MonoClass *klass;
 
@@ -8899,9 +8895,9 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	if (method->generic_container) {
 		g_assert (method->klass == klass->generic_class->container_class);
 
-		context = g_new0 (MonoGenericContext, 1);
-		context->class_inst = klass->generic_class->context.class_inst;
-		context->method_inst = method->generic_container->context.method_inst;
+		tmp_context.class_inst = klass->generic_class->context.class_inst;
+		tmp_context.method_inst = method->generic_container->context.method_inst;
+		context = &tmp_context;
 	}
 
 	imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);

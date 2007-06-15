@@ -78,20 +78,6 @@ struct _MonoMethodPInvoke {
 	guint16 implmap_idx;  /* index into IMPLMAP */
 };
 
-/*
- * Inflated generic method.
- */
-struct _MonoMethodInflated {
-	union {
-		MonoMethod method;
-		MonoMethodNormal normal;
-		MonoMethodPInvoke pinvoke;
-	} method;
-	MonoGenericContext *context;	/* The current context. */
-	MonoMethod *declaring;		/* the generic method definition. */
-	gpointer reflection_info;
-};
-
 typedef struct {
 	MonoType *generic_type;
 	gpointer reflection_info;
@@ -375,12 +361,30 @@ struct _MonoGenericInst {
 
 /*
  * The generic context: an instantiation of a set of class and method generic parameters.
+ *
+ * NOTE: Never allocate this directly on the heap.  It have to be either allocated on the stack,
+ *	 or embedded within other objects.  Don't store pointers to this, because it may be on the stack.
+ *	 If you really have to, ensure you store a pointer to the embedding object along with it.
  */
 struct _MonoGenericContext {
 	/* The instantiation corresponding to the class generic parameters */
 	MonoGenericInst *class_inst;
 	/* The instantiation corresponding to the method generic parameters */
 	MonoGenericInst *method_inst;
+};
+
+/*
+ * Inflated generic method.
+ */
+struct _MonoMethodInflated {
+	union {
+		MonoMethod method;
+		MonoMethodNormal normal;
+		MonoMethodPInvoke pinvoke;
+	} method;
+	MonoMethod *declaring;		/* the generic method definition. */
+	MonoGenericContext context;	/* The current instantiation */
+	gpointer reflection_info;
 };
 
 /*
