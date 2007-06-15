@@ -50,16 +50,22 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 }
 
 
-.method public static void Main(TYPE1 arg, TYPE2 arg2) cil managed
+.method public static void Foo(TYPE1 arg, TYPE2 arg2) cil managed
 {
 	.maxstack 2
-	.entrypoint
 	.locals init (
 	    TYPE1 V_0,
 	    TYPE2 V_1
 	)
 	ldloc.1
-	OPCODE // VALIDITY, TYPE2& cannot be stored in TYPE1.
+	OPCODE // VALIDITY, TYPE2 cannot be stored in TYPE1.
+	ret
+}
+
+.method public static void Main() cil managed
+{
+	.maxstack 2
+	.entrypoint
 	ret
 }
 //EOF

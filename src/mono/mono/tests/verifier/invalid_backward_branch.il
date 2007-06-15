@@ -2,6 +2,14 @@
 // constraints". This CIL should be rejected by a conforming CLI verifier 
 // or runtime without being run.
 
+.assembly 'test_generated'
+{
+  .hash algorithm 0x00008004
+  .ver  0:0:0:0
+}
+
+
+
 .method public static int32 Main() cil managed
 {
 	.entrypoint

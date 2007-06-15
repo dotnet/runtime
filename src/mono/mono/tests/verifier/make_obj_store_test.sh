@@ -52,6 +52,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 .class Class extends [mscorlib]System.Object
 {
     .field public TYPE1 fld
+    .field public static TYPE1 sfld
 
     .method public void Method(TYPE1) cil managed
     {

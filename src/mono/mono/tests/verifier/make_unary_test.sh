@@ -13,6 +13,12 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.
 
+.assembly '${TEST_NAME}_generated'
+{
+  .hash algorithm 0x00008004
+  .ver  0:0:0:0
+}
+
 .class Class extends [mscorlib]System.Object
 {
     .field public int32 valid

@@ -261,114 +261,116 @@ do
   I=`expr $I + 1`
 done
 
-# 1.6 Implicit argument coercion (Table 9: Signature Matching)
+#local and argument store with invalid values lead to unverifiable code
 I=1
 for OP in stloc.0 "stloc.s 0" "starg 0" "starg.s 0"
 do
-  ./make_store_test.sh coercion_1_${I} invalid "$OP" int8 int64
-  ./make_store_test.sh coercion_2_${I} invalid "$OP" int8 float64
-  ./make_store_test.sh coercion_3_${I} invalid "$OP" int8 'int8&'
-  ./make_store_test.sh coercion_4_${I} invalid "$OP" int8 object
+  ./make_store_test.sh coercion_1_${I} unverifiable "$OP" int8 int64
+  ./make_store_test.sh coercion_2_${I} unverifiable "$OP" int8 float64
+  ./make_store_test.sh coercion_3_${I} unverifiable "$OP" int8 'int8&'
+  ./make_store_test.sh coercion_4_${I} unverifiable "$OP" int8 object
 
-  ./make_store_test.sh coercion_5_${I} invalid "$OP" 'unsigned int8' int64
-  ./make_store_test.sh coercion_6_${I} invalid "$OP" 'unsigned int8' float64
-  ./make_store_test.sh coercion_7_${I} invalid "$OP" 'unsigned int8' 'unsigned int8&'
-  ./make_store_test.sh coercion_8_${I} invalid "$OP" 'unsigned int8' object
+  ./make_store_test.sh coercion_5_${I} unverifiable "$OP" 'unsigned int8' int64
+  ./make_store_test.sh coercion_6_${I} unverifiable "$OP" 'unsigned int8' float64
+  ./make_store_test.sh coercion_7_${I} unverifiable "$OP" 'unsigned int8' 'unsigned int8&'
+  ./make_store_test.sh coercion_8_${I} unverifiable "$OP" 'unsigned int8' object
 
-  ./make_store_test.sh coercion_9_${I} invalid "$OP" bool int64
-  ./make_store_test.sh coercion_10_${I} invalid "$OP" bool float64
-  ./make_store_test.sh coercion_11_${I} invalid "$OP" bool 'bool&'
-  ./make_store_test.sh coercion_12_${I} invalid "$OP" bool object
+  ./make_store_test.sh coercion_9_${I} unverifiable "$OP" bool int64
+  ./make_store_test.sh coercion_10_${I} unverifiable "$OP" bool float64
+  ./make_store_test.sh coercion_11_${I} unverifiable "$OP" bool 'bool&'
+  ./make_store_test.sh coercion_12_${I} unverifiable "$OP" bool object
 
-  ./make_store_test.sh coercion_13_${I} invalid "$OP" int16 int64
-  ./make_store_test.sh coercion_14_${I} invalid "$OP" int16 float64
-  ./make_store_test.sh coercion_15_${I} invalid "$OP" int16 'int16&'
-  ./make_store_test.sh coercion_16_${I} invalid "$OP" int16 object
+  ./make_store_test.sh coercion_13_${I} unverifiable "$OP" int16 int64
+  ./make_store_test.sh coercion_14_${I} unverifiable "$OP" int16 float64
+  ./make_store_test.sh coercion_15_${I} unverifiable "$OP" int16 'int16&'
+  ./make_store_test.sh coercion_16_${I} unverifiable "$OP" int16 object
   
-  ./make_store_test.sh coercion_17_${I} invalid "$OP" 'unsigned int16' int64
-  ./make_store_test.sh coercion_18_${I} invalid "$OP" 'unsigned int16' float64
-  ./make_store_test.sh coercion_19_${I} invalid "$OP" 'unsigned int16' 'unsigned int16&'
-  ./make_store_test.sh coercion_20_${I} invalid "$OP" 'unsigned int16' object
+  ./make_store_test.sh coercion_17_${I} unverifiable "$OP" 'unsigned int16' int64
+  ./make_store_test.sh coercion_18_${I} unverifiable "$OP" 'unsigned int16' float64
+  ./make_store_test.sh coercion_19_${I} unverifiable "$OP" 'unsigned int16' 'unsigned int16&'
+  ./make_store_test.sh coercion_20_${I} unverifiable "$OP" 'unsigned int16' object
   
-  ./make_store_test.sh coercion_21_${I} invalid "$OP" char int64
-  ./make_store_test.sh coercion_22_${I} invalid "$OP" char float64
-  ./make_store_test.sh coercion_23_${I} invalid "$OP" char 'char&'
-  ./make_store_test.sh coercion_24_${I} invalid "$OP" char object
+  ./make_store_test.sh coercion_21_${I} unverifiable "$OP" char int64
+  ./make_store_test.sh coercion_22_${I} unverifiable "$OP" char float64
+  ./make_store_test.sh coercion_23_${I} unverifiable "$OP" char 'char&'
+  ./make_store_test.sh coercion_24_${I} unverifiable "$OP" char object
   
-  ./make_store_test.sh coercion_25_${I} invalid "$OP" int32 int64
-  ./make_store_test.sh coercion_26_${I} invalid "$OP" int32 float64
-  ./make_store_test.sh coercion_27_${I} invalid "$OP" int32 'int32&'
-  ./make_store_test.sh coercion_28_${I} invalid "$OP" int32 object
+  ./make_store_test.sh coercion_25_${I} unverifiable "$OP" int32 int64
+  ./make_store_test.sh coercion_26_${I} unverifiable "$OP" int32 float64
+  ./make_store_test.sh coercion_27_${I} unverifiable "$OP" int32 'int32&'
+  ./make_store_test.sh coercion_28_${I} unverifiable "$OP" int32 object
   
-  ./make_store_test.sh coercion_29_${I} invalid "$OP" 'unsigned int32' int64
-  ./make_store_test.sh coercion_30_${I} invalid "$OP" 'unsigned int32' float64
-  ./make_store_test.sh coercion_31_${I} invalid "$OP" 'unsigned int32' 'unsigned int32&'
-  ./make_store_test.sh coercion_32_${I} invalid "$OP" 'unsigned int32' object
+  ./make_store_test.sh coercion_29_${I} unverifiable "$OP" 'unsigned int32' int64
+  ./make_store_test.sh coercion_30_${I} unverifiable "$OP" 'unsigned int32' float64
+  ./make_store_test.sh coercion_31_${I} unverifiable "$OP" 'unsigned int32' 'unsigned int32&'
+  ./make_store_test.sh coercion_32_${I} unverifiable "$OP" 'unsigned int32' object
  
-  ./make_store_test.sh coercion_33_${I} invalid "$OP" int64 int32
-  ./make_store_test.sh coercion_34_${I} invalid "$OP" int64 'native int'
-  ./make_store_test.sh coercion_35_${I} invalid "$OP" int64 float64
-  ./make_store_test.sh coercion_36_${I} invalid "$OP" int64 'int64&'
-  ./make_store_test.sh coercion_37_${I} invalid "$OP" int64 object
+  ./make_store_test.sh coercion_33_${I} unverifiable "$OP" int64 int32
+  ./make_store_test.sh coercion_34_${I} unverifiable "$OP" int64 'native int'
+  ./make_store_test.sh coercion_35_${I} unverifiable "$OP" int64 float64
+  ./make_store_test.sh coercion_36_${I} unverifiable "$OP" int64 'int64&'
+  ./make_store_test.sh coercion_37_${I} unverifiable "$OP" int64 object
   
-  ./make_store_test.sh coercion_38_${I} invalid "$OP" 'unsigned int64' int32
-  ./make_store_test.sh coercion_39_${I} invalid "$OP" 'unsigned int64' 'native int'
-  ./make_store_test.sh coercion_40_${I} invalid "$OP" 'unsigned int64' float64
-  ./make_store_test.sh coercion_41_${I} invalid "$OP" 'unsigned int64' 'unsigned int64&'
-  ./make_store_test.sh coercion_42_${I} invalid "$OP" 'unsigned int64' object
+  ./make_store_test.sh coercion_38_${I} unverifiable "$OP" 'unsigned int64' int32
+  ./make_store_test.sh coercion_39_${I} unverifiable "$OP" 'unsigned int64' 'native int'
+  ./make_store_test.sh coercion_40_${I} unverifiable "$OP" 'unsigned int64' float64
+  ./make_store_test.sh coercion_41_${I} unverifiable "$OP" 'unsigned int64' 'unsigned int64&'
+  ./make_store_test.sh coercion_42_${I} unverifiable "$OP" 'unsigned int64' object
   
-  ./make_store_test.sh coercion_43_${I} invalid "$OP" 'native int' int64
-  ./make_store_test.sh coercion_44_${I} invalid "$OP" 'native int' float64
-  ./make_store_test.sh coercion_45_${I} invalid "$OP" 'native int' 'native int&'
-  ./make_store_test.sh coercion_46_${I} invalid "$OP" 'native int' object
+  ./make_store_test.sh coercion_43_${I} unverifiable "$OP" 'native int' int64
+  ./make_store_test.sh coercion_44_${I} unverifiable "$OP" 'native int' float64
+  ./make_store_test.sh coercion_45_${I} unverifiable "$OP" 'native int' 'native int&'
+  ./make_store_test.sh coercion_46_${I} unverifiable "$OP" 'native int' object
   
-  ./make_store_test.sh coercion_47_${I} invalid "$OP" 'native unsigned int' int64
-  ./make_store_test.sh coercion_48_${I} invalid "$OP" 'native unsigned int' float64
-  ./make_store_test.sh coercion_49_${I} invalid "$OP" 'native unsigned int' 'native unsigned int&'
-  ./make_store_test.sh coercion_50_${I} invalid "$OP" 'native unsigned int' object
+  ./make_store_test.sh coercion_47_${I} unverifiable "$OP" 'native unsigned int' int64
+  ./make_store_test.sh coercion_48_${I} unverifiable "$OP" 'native unsigned int' float64
+  ./make_store_test.sh coercion_49_${I} unverifiable "$OP" 'native unsigned int' 'native unsigned int&'
+  ./make_store_test.sh coercion_50_${I} unverifiable "$OP" 'native unsigned int' object
   
-  ./make_store_test.sh coercion_51_${I} invalid "$OP" float32 int32
-  ./make_store_test.sh coercion_52_${I} invalid "$OP" float32 'native int'
-  ./make_store_test.sh coercion_53_${I} invalid "$OP" float32 int64
-  ./make_store_test.sh coercion_54_${I} invalid "$OP" float32 'float32&'
-  ./make_store_test.sh coercion_55_${I} invalid "$OP" float32 object
+  ./make_store_test.sh coercion_51_${I} unverifiable "$OP" float32 int32
+  ./make_store_test.sh coercion_52_${I} unverifiable "$OP" float32 'native int'
+  ./make_store_test.sh coercion_53_${I} unverifiable "$OP" float32 int64
+  ./make_store_test.sh coercion_54_${I} unverifiable "$OP" float32 'float32&'
+  ./make_store_test.sh coercion_55_${I} unverifiable "$OP" float32 object
   
-  ./make_store_test.sh coercion_56_${I} invalid "$OP" float64 int32
-  ./make_store_test.sh coercion_57_${I} invalid "$OP" float64 'native int'
-  ./make_store_test.sh coercion_58_${I} invalid "$OP" float64 int64
-  ./make_store_test.sh coercion_59_${I} invalid "$OP" float64 'float64&'
-  ./make_store_test.sh coercion_60_${I} invalid "$OP" float64 object
+  ./make_store_test.sh coercion_56_${I} unverifiable "$OP" float64 int32
+  ./make_store_test.sh coercion_57_${I} unverifiable "$OP" float64 'native int'
+  ./make_store_test.sh coercion_58_${I} unverifiable "$OP" float64 int64
+  ./make_store_test.sh coercion_59_${I} unverifiable "$OP" float64 'float64&'
+  ./make_store_test.sh coercion_60_${I} unverifiable "$OP" float64 object
 
-  ./make_store_test.sh coercion_61_${I} invalid "$OP" object int32
-  ./make_store_test.sh coercion_62_${I} invalid "$OP" object 'native int'
-  ./make_store_test.sh coercion_63_${I} invalid "$OP" object int64
-  ./make_store_test.sh coercion_64_${I} invalid "$OP" object float64
-  ./make_store_test.sh coercion_65_${I} invalid "$OP" object 'object&'
+  ./make_store_test.sh coercion_61_${I} unverifiable "$OP" object int32
+  ./make_store_test.sh coercion_62_${I} unverifiable "$OP" object 'native int'
+  ./make_store_test.sh coercion_63_${I} unverifiable "$OP" object int64
+  ./make_store_test.sh coercion_64_${I} unverifiable "$OP" object float64
+  ./make_store_test.sh coercion_65_${I} unverifiable "$OP" object 'object&'
   
-  ./make_store_test.sh coercion_66_${I} invalid "$OP" 'class ValueType' int32
-  ./make_store_test.sh coercion_67_${I} invalid "$OP" 'class ValueType' 'native int'
-  ./make_store_test.sh coercion_68_${I} invalid "$OP" 'class ValueType' int64
-  ./make_store_test.sh coercion_69_${I} invalid "$OP" 'class ValueType' float64
-  ./make_store_test.sh coercion_70_${I} invalid "$OP" 'class ValueType' 'class ValueType&'
-  ./make_store_test.sh coercion_71_${I} invalid "$OP" 'class ValueType' object
+  ./make_store_test.sh coercion_66_${I} unverifiable "$OP" 'class ValueType' int32
+  ./make_store_test.sh coercion_67_${I} unverifiable "$OP" 'class ValueType' 'native int'
+  ./make_store_test.sh coercion_68_${I} unverifiable "$OP" 'class ValueType' int64
+  ./make_store_test.sh coercion_69_${I} unverifiable "$OP" 'class ValueType' float64
+  ./make_store_test.sh coercion_70_${I} unverifiable "$OP" 'class ValueType' 'class ValueType&'
+  ./make_store_test.sh coercion_71_${I} unverifiable "$OP" 'class ValueType' object
   
-  ./make_store_test.sh coercion_72_${I} invalid "$OP" 'int32&' int32
+  ./make_store_test.sh coercion_72_${I} unverifiable "$OP" 'int32&' int32
   ./make_store_test.sh coercion_73_${I} unverifiable "$OP" 'int32&' 'native int'
-  ./make_store_test.sh coercion_74_${I} invalid "$OP" 'int32&' int64
-  ./make_store_test.sh coercion_75_${I} invalid "$OP" 'int32&' float64
-  ./make_store_test.sh coercion_76_${I} invalid "$OP" 'int32&' object
+  ./make_store_test.sh coercion_74_${I} unverifiable "$OP" 'int32&' int64
+  ./make_store_test.sh coercion_75_${I} unverifiable "$OP" 'int32&' float64
+  ./make_store_test.sh coercion_76_${I} unverifiable "$OP" 'int32&' object
   
-  ./make_store_test.sh coercion_77_${I} invalid "$OP" typedref int32
-  ./make_store_test.sh coercion_78_${I} invalid "$OP" typedref 'native int'
-  ./make_store_test.sh coercion_89_${I} invalid "$OP" typedref int64
-  ./make_store_test.sh coercion_80_${I} invalid "$OP" typedref float64
-  ./make_store_test.sh coercion_81_${I} invalid "$OP" typedref 'typedref&'
-  ./make_store_test.sh coercion_82_${I} invalid "$OP" typedref object
+  ./make_store_test.sh coercion_77_${I} unverifiable "$OP" typedref int32
+  ./make_store_test.sh coercion_78_${I} unverifiable "$OP" typedref 'native int'
+  ./make_store_test.sh coercion_89_${I} unverifiable "$OP" typedref int64
+  ./make_store_test.sh coercion_80_${I} unverifiable "$OP" typedref float64
+  ./make_store_test.sh coercion_81_${I} unverifiable "$OP" typedref 'typedref&'
+  ./make_store_test.sh coercion_82_${I} unverifiable "$OP" typedref object
   I=`expr $I + 1`
 done
 
+#Field store parameter compatibility leads to invalid code
+#Calling method with diferent verification types on stack lead to invalid code
 I=1
-for OP in "stfld TYPE1 Class::fld" "call void Class::Method(TYPE1)"
+for OP in "stfld TYPE1 Class::fld" "stsfld TYPE1 Class::sfld\n\tpop"  "call void Class::Method(TYPE1)"
 do
   ./make_obj_store_test.sh obj_coercion_1_${I} invalid "$OP" int8 int64
   ./make_obj_store_test.sh obj_coercion_2_${I} invalid "$OP" int8 float64
@@ -457,11 +459,14 @@ do
   ./make_obj_store_test.sh obj_coercion_70_${I} invalid "$OP" 'class ValueType' 'class ValueType&'
   ./make_obj_store_test.sh obj_coercion_71_${I} invalid "$OP" 'class ValueType' object
   
-  ./make_obj_store_test.sh obj_coercion_72_${I} invalid "$OP" 'int32&' int32
-  ./make_obj_store_test.sh obj_coercion_73_${I} unverifiable "$OP" 'int32&' 'native int'
-  ./make_obj_store_test.sh obj_coercion_74_${I} invalid "$OP" 'int32&' int64
-  ./make_obj_store_test.sh obj_coercion_75_${I} invalid "$OP" 'int32&' float64
-  ./make_obj_store_test.sh obj_coercion_76_${I} invalid "$OP" 'int32&' object
+  
+  #These tests don't test store error since one cannot have an 'int32&' field
+  #They should exist in the structural tests session
+  #./make_obj_store_test.sh obj_coercion_72_${I} invalid "$OP" 'int32&' int32
+  #./make_obj_store_test.sh obj_coercion_73_${I} invalid "$OP" 'int32&' 'native int'
+  #./make_obj_store_test.sh obj_coercion_74_${I} invalid "$OP" 'int32&' int64
+  #./make_obj_store_test.sh obj_coercion_75_${I} invalid "$OP" 'int32&' float64
+  #./make_obj_store_test.sh obj_coercion_76_${I} invalid "$OP" 'int32&' object
   
   ./make_obj_store_test.sh obj_coercion_77_${I} invalid "$OP" typedref int32
   ./make_obj_store_test.sh obj_coercion_78_${I} invalid "$OP" typedref 'native int'
@@ -477,10 +482,11 @@ I=1
 for OP in stloc.0 "stloc.s 0" "starg.s 0"
 do
   # ClassB not subtype of ClassA.
-  ./make_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'classB'
+  ./make_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'class ClassB'
 
   # ClassA not interface type.
-  ./make_store_test.sh assign_compat_3_${I} unverifiable "$OP" object 'class ClassA'
+  # FIXME: what was the purpoise of this test? on it's current for it is valid and not unverfiable
+  ./make_store_test.sh assign_compat_3_${I} valid "$OP" object 'class ClassA'
   
   # Implementation of InterfaceB does not require the implementation of InterfaceA
   ./make_store_test.sh assign_compat_4_${I} unverifiable "$OP" 'class InterfaceA' 'class InterfaceB'
@@ -505,34 +511,35 @@ do
   I=`expr $I + 1`
 done
 
-for OP in "stfld TYPE1 Class::fld" "call void Class::Method(TYPE1)"
+for OP in "stfld TYPE1 Class::fld" "stsfld TYPE1 Class::sfld\n\tpop"  "call void Class::Method(TYPE1)"
 do
   # ClassB not subtype of ClassA.
-  ./make_obj_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'classB'
+  ./make_obj_store_test.sh assign_compat_1_${I} invalid "$OP" 'class ClassA' 'class ClassB'
 
   # ClassA not interface type.
-  ./make_obj_store_test.sh assign_compat_3_${I} unverifiable "$OP" object 'class ClassA'
+  #FIXME: this test is valid, you can store type ClassA in a object field
+  ./make_obj_store_test.sh assign_compat_3_${I} valid "$OP" object 'class ClassA'
   
   # Implementation of InterfaceB does not require the implementation of InterfaceA
-  ./make_obj_store_test.sh assign_compat_4_${I} unverifiable "$OP" 'class InterfaceA' 'class InterfaceB'
+  ./make_obj_store_test.sh assign_compat_4_${I} invalid "$OP" 'class InterfaceA' 'class InterfaceB'
 
   # Array/vector.
-  ./make_obj_store_test.sh assign_compat_5_${I} unverifiable "$OP" 'string []' 'string[,]'
+  ./make_obj_store_test.sh assign_compat_5_${I} invalid "$OP" 'string []' 'string[,]'
 
   # Vector/array.
-  ./make_obj_store_test.sh assign_compat_6_${I} unverifiable "$OP" 'string [,]' 'string[]'
+  ./make_obj_store_test.sh assign_compat_6_${I} invalid "$OP" 'string [,]' 'string[]'
 
   # Arrays with different rank.
-  ./make_obj_store_test.sh assign_compat_7_${I} unverifiable "$OP" 'string [,]' 'string[,,]'
+  ./make_obj_store_test.sh assign_compat_7_${I} invalid "$OP" 'string [,]' 'string[,,]'
 
   # Method pointers with different return types.
-  ./make_obj_store_test.sh assign_compat_8_${I} unverifiable "$OP" 'method int32 *(int32)' 'method float32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_8_${I} invalid "$OP" 'method int32 *(int32)' 'method float32 *(int32)'
 
   # Method pointers with different parameters.
-  ./make_obj_store_test.sh assign_compat_9_${I} unverifiable "$OP" 'method int32 *(float64)' 'method int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_9_${I} invalid "$OP" 'method int32 *(float64)' 'method int32 *(int32)'
 
   # Method pointers with different calling conventions.
-  ./make_obj_store_test.sh assign_compat_10_${I} unverifiable "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_10_${I} invalid "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
   I=`expr $I + 1`
 done
 
@@ -542,10 +549,16 @@ for TYPE1 in int32 int64 'native int' float64 'valuetype ValueType' 'class Class
 do
   for TYPE2 in int32 int64 'native int' float64 'valuetype ValueType' 'class Class' 'int8&' 'int16&' 'int32&' 'int64&' 'native int&' 'float32&' 'float64&' 'valuetype ValueType&' 'class Class&' 'method int32 *(int32)' 'method int32 *(int32)' 'method float32 *(int32)' 'method int32 *(float64)' 'method vararg int32 *(int32)'
   do
-    if [ "$TYPE1" != "$TYPE2" ]; then
-	./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
-	I=`expr $I + 1`
+    if [ "$TYPE1" == "$TYPE2" ]; then
+		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
+	elif [ "$TYPE1" == "int32" ] && [ "$TYPE2" == "native int" ]; then
+		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
+	elif [ "$TYPE1" == "native int" ] && [ "$TYPE2" == "int32" ]; then
+		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
+	else
+		./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
     fi
+	I=`expr $I + 1`
   done
 done
 
@@ -641,117 +654,120 @@ done
 ./make_unary_test.sh box_not_compat unverifiable "box [mscorlib]System.Int32\n\tpop" float32
 
 # Box byref type.
-./make_unary_test.sh box_byref unverifiable "box [mscorlib]System.Int32&\n\tpop" 'int32&'
+./make_unary_test.sh box_byref unverifiable "box [mscorlib]System.Int32\&\n\tpop" 'int32&'
 
 # Box byref-like type.
 ./make_unary_test.sh box_byref_like unverifiable "box [mscorlib]System.TypedRefrence\n\tpop" typedref
 
+#This is is illegal since you cannot have a Void local variable, it should go into the structural tests part
 # Box void type.
-./make_unary_test.sh box_void unverifiable "box [mscorlib]System.Void\n\tpop" "class [mscorlib]System.Void"
+#./make_unary_test.sh box_void unverifiable "box [mscorlib]System.Void\n\tpop" "class [mscorlib]System.Void"
 
 
 
 
 
-./make_ret_test.sh ret_coercion_1 invalid int8 int64
-./make_ret_test.sh ret_coercion_2 invalid int8 float64
-./make_ret_test.sh ret_coercion_3 invalid int8 'int8&'
-./make_ret_test.sh ret_coercion_4 invalid int8 object
+./make_ret_test.sh ret_coercion_1 unverfiable int8 int64
+./make_ret_test.sh ret_coercion_2 unverfiable int8 float64
+./make_ret_test.sh ret_coercion_3 unverfiable int8 'int8&'
+./make_ret_test.sh ret_coercion_4 unverfiable int8 object
 
-./make_ret_test.sh ret_coercion_5 invalid 'unsigned int8' int64
-./make_ret_test.sh ret_coercion_6 invalid 'unsigned int8' float64
-./make_ret_test.sh ret_coercion_7 invalid 'unsigned int8' 'unsigned int8&'
-./make_ret_test.sh ret_coercion_8 invalid 'unsigned int8' object
+./make_ret_test.sh ret_coercion_5 unverfiable 'unsigned int8' int64
+./make_ret_test.sh ret_coercion_6 unverfiable 'unsigned int8' float64
+./make_ret_test.sh ret_coercion_6 unverfiable 'unsigned int8' float64
+./make_ret_test.sh ret_coercion_6 unverfiable 'unsigned int8' float64
+./make_ret_test.sh ret_coercion_7 unverfiable 'unsigned int8' 'unsigned int8&'
+./make_ret_test.sh ret_coercion_8 unverfiable 'unsigned int8' object
 
-./make_ret_test.sh ret_coercion_9 invalid bool int64
-./make_ret_test.sh ret_coercion_10 invalid bool float64
-./make_ret_test.sh ret_coercion_11 invalid bool 'bool&'
-./make_ret_test.sh ret_coercion_12 invalid bool object
+./make_ret_test.sh ret_coercion_9 unverfiable bool int64
+./make_ret_test.sh ret_coercion_10 unverfiable bool float64
+./make_ret_test.sh ret_coercion_11 unverfiable bool 'bool&'
+./make_ret_test.sh ret_coercion_12 unverfiable bool object
 
-./make_ret_test.sh ret_coercion_13 invalid int16 int64
-./make_ret_test.sh ret_coercion_14 invalid int16 float64
-./make_ret_test.sh ret_coercion_15 invalid int16 'int16&'
-./make_ret_test.sh ret_coercion_16 invalid int16 object
+./make_ret_test.sh ret_coercion_13 unverfiable int16 int64
+./make_ret_test.sh ret_coercion_14 unverfiable int16 float64
+./make_ret_test.sh ret_coercion_15 unverfiable int16 'int16&'
+./make_ret_test.sh ret_coercion_16 unverfiable int16 object
   
-./make_ret_test.sh ret_coercion_17 invalid 'unsigned int16' int64
-./make_ret_test.sh ret_coercion_18 invalid 'unsigned int16' float64
-./make_ret_test.sh ret_coercion_19 invalid 'unsigned int16' 'unsigned int16&'
-./make_ret_test.sh ret_coercion_20 invalid 'unsigned int16' object
+./make_ret_test.sh ret_coercion_17 unverfiable 'unsigned int16' int64
+./make_ret_test.sh ret_coercion_18 unverfiable 'unsigned int16' float64
+./make_ret_test.sh ret_coercion_19 unverfiable 'unsigned int16' 'unsigned int16&'
+./make_ret_test.sh ret_coercion_20 unverfiable 'unsigned int16' object
   
-./make_ret_test.sh ret_coercion_21 invalid char int64
-./make_ret_test.sh ret_coercion_22 invalid char float64
-./make_ret_test.sh ret_coercion_23 invalid char 'char&'
-./make_ret_test.sh ret_coercion_24 invalid char object
+./make_ret_test.sh ret_coercion_21 unverfiable char int64
+./make_ret_test.sh ret_coercion_22 unverfiable char float64
+./make_ret_test.sh ret_coercion_23 unverfiable char 'char&'
+./make_ret_test.sh ret_coercion_24 unverfiable char object
   
-./make_ret_test.sh ret_coercion_25 invalid int32 int64
-./make_ret_test.sh ret_coercion_26 invalid int32 float64
-./make_ret_test.sh ret_coercion_27 invalid int32 'int32&'
-./make_ret_test.sh ret_coercion_28 invalid int32 object
+./make_ret_test.sh ret_coercion_25 unverfiable int32 int64
+./make_ret_test.sh ret_coercion_26 unverfiable int32 float64
+./make_ret_test.sh ret_coercion_27 unverfiable int32 'int32&'
+./make_ret_test.sh ret_coercion_28 unverfiable int32 object
   
-./make_ret_test.sh ret_coercion_29 invalid 'unsigned int32' int64
-./make_ret_test.sh ret_coercion_30 invalid 'unsigned int32' float64
-./make_ret_test.sh ret_coercion_31 invalid 'unsigned int32' 'unsigned int32&'
-./make_ret_test.sh ret_coercion_32 invalid 'unsigned int32' object
+./make_ret_test.sh ret_coercion_29 unverfiable 'unsigned int32' int64
+./make_ret_test.sh ret_coercion_30 unverfiable 'unsigned int32' float64
+./make_ret_test.sh ret_coercion_31 unverfiable 'unsigned int32' 'unsigned int32&'
+./make_ret_test.sh ret_coercion_32 unverfiable 'unsigned int32' object
  
-./make_ret_test.sh ret_coercion_33 invalid int64 int32
-./make_ret_test.sh ret_coercion_34 invalid int64 'native int'
-./make_ret_test.sh ret_coercion_35 invalid int64 float64
-./make_ret_test.sh ret_coercion_36 invalid int64 'int64&'
-./make_ret_test.sh ret_coercion_37 invalid int64 object
+./make_ret_test.sh ret_coercion_33 unverfiable int64 int32
+./make_ret_test.sh ret_coercion_34 unverfiable int64 'native int'
+./make_ret_test.sh ret_coercion_35 unverfiable int64 float64
+./make_ret_test.sh ret_coercion_36 unverfiable int64 'int64&'
+./make_ret_test.sh ret_coercion_37 unverfiable int64 object
   
-./make_ret_test.sh ret_coercion_38 invalid 'unsigned int64' int32
-./make_ret_test.sh ret_coercion_39 invalid 'unsigned int64' 'native int'
-./make_ret_test.sh ret_coercion_40 invalid 'unsigned int64' float64
-./make_ret_test.sh ret_coercion_41 invalid 'unsigned int64' 'unsigned int64&'
-./make_ret_test.sh ret_coercion_42 invalid 'unsigned int64' object
+./make_ret_test.sh ret_coercion_38 unverfiable 'unsigned int64' int32
+./make_ret_test.sh ret_coercion_39 unverfiable 'unsigned int64' 'native int'
+./make_ret_test.sh ret_coercion_40 unverfiable 'unsigned int64' float64
+./make_ret_test.sh ret_coercion_41 unverfiable 'unsigned int64' 'unsigned int64&'
+./make_ret_test.sh ret_coercion_42 unverfiable 'unsigned int64' object
   
-./make_ret_test.sh ret_coercion_43 invalid 'native int' int64
-./make_ret_test.sh ret_coercion_44 invalid 'native int' float64
-./make_ret_test.sh ret_coercion_45 invalid 'native int' 'native int&'
-./make_ret_test.sh ret_coercion_46 invalid 'native int' object
+./make_ret_test.sh ret_coercion_43 unverfiable 'native int' int64
+./make_ret_test.sh ret_coercion_44 unverfiable 'native int' float64
+./make_ret_test.sh ret_coercion_45 unverfiable 'native int' 'native int&'
+./make_ret_test.sh ret_coercion_46 unverfiable 'native int' object
   
-./make_ret_test.sh ret_coercion_47 invalid 'native unsigned int' int64
-./make_ret_test.sh ret_coercion_48 invalid 'native unsigned int' float64
-./make_ret_test.sh ret_coercion_49 invalid 'native unsigned int' 'native unsigned int&'
-./make_ret_test.sh ret_coercion_50 invalid 'native unsigned int' object
+./make_ret_test.sh ret_coercion_47 unverfiable 'native unsigned int' int64
+./make_ret_test.sh ret_coercion_48 unverfiable 'native unsigned int' float64
+./make_ret_test.sh ret_coercion_49 unverfiable 'native unsigned int' 'native unsigned int&'
+./make_ret_test.sh ret_coercion_50 unverfiable 'native unsigned int' object
   
-./make_ret_test.sh ret_coercion_51 invalid float32 int32
-./make_ret_test.sh ret_coercion_52 invalid float32 'native int'
-./make_ret_test.sh ret_coercion_53 invalid float32 int64
-./make_ret_test.sh ret_coercion_54 invalid float32 'float32&'
-./make_ret_test.sh ret_coercion_55 invalid float32 object
+./make_ret_test.sh ret_coercion_51 unverfiable float32 int32
+./make_ret_test.sh ret_coercion_52 unverfiable float32 'native int'
+./make_ret_test.sh ret_coercion_53 unverfiable float32 int64
+./make_ret_test.sh ret_coercion_54 unverfiable float32 'float32&'
+./make_ret_test.sh ret_coercion_55 unverfiable float32 object
   
-./make_ret_test.sh ret_coercion_56 invalid float64 int32
-./make_ret_test.sh ret_coercion_57 invalid float64 'native int'
-./make_ret_test.sh ret_coercion_58 invalid float64 int64
-./make_ret_test.sh ret_coercion_59 invalid float64 'float64&'
-./make_ret_test.sh ret_coercion_60 invalid float64 object
+./make_ret_test.sh ret_coercion_56 unverfiable float64 int32
+./make_ret_test.sh ret_coercion_57 unverfiable float64 'native int'
+./make_ret_test.sh ret_coercion_58 unverfiable float64 int64
+./make_ret_test.sh ret_coercion_59 unverfiable float64 'float64&'
+./make_ret_test.sh ret_coercion_60 unverfiable float64 object
 
-./make_ret_test.sh ret_coercion_61 invalid object int32
-./make_ret_test.sh ret_coercion_62 invalid object 'native int'
-./make_ret_test.sh ret_coercion_63 invalid object int64
-./make_ret_test.sh ret_coercion_64 invalid object float64
-./make_ret_test.sh ret_coercion_65 invalid object 'object&'
+./make_ret_test.sh ret_coercion_61 unverfiable object int32
+./make_ret_test.sh ret_coercion_62 unverfiable object 'native int'
+./make_ret_test.sh ret_coercion_63 unverfiable object int64
+./make_ret_test.sh ret_coercion_64 unverfiable object float64
+./make_ret_test.sh ret_coercion_65 unverfiable object 'object&'
   
-./make_ret_test.sh ret_coercion_66 invalid 'class MyValueType' int32
-./make_ret_test.sh ret_coercion_67 invalid 'class MyValueType' 'native int'
-./make_ret_test.sh ret_coercion_68 invalid 'class MyValueType' int64
-./make_ret_test.sh ret_coercion_69 invalid 'class MyValueType' float64
-./make_ret_test.sh ret_coercion_70 invalid 'class MyValueType' 'class MyValueType&'
-./make_ret_test.sh ret_coercion_71 invalid 'class MyValueType' object
+./make_ret_test.sh ret_coercion_66 unverfiable 'class MyValueType' int32
+./make_ret_test.sh ret_coercion_67 unverfiable 'class MyValueType' 'native int'
+./make_ret_test.sh ret_coercion_68 unverfiable 'class MyValueType' int64
+./make_ret_test.sh ret_coercion_69 unverfiable 'class MyValueType' float64
+./make_ret_test.sh ret_coercion_70 unverfiable 'class MyValueType' 'class MyValueType&'
+./make_ret_test.sh ret_coercion_71 unverfiable 'class MyValueType' object
   
-./make_ret_test.sh ret_coercion_72 invalid 'int32&' int32
+./make_ret_test.sh ret_coercion_72 unverfiable 'int32&' int32
 ./make_ret_test.sh ret_coercion_73 unverifiable 'int32&' 'native int'
-./make_ret_test.sh ret_coercion_74 invalid 'int32&' int64
-./make_ret_test.sh ret_coercion_75 invalid 'int32&' float64
-./make_ret_test.sh ret_coercion_76 invalid 'int32&' object
+./make_ret_test.sh ret_coercion_74 unverfiable 'int32&' int64
+./make_ret_test.sh ret_coercion_75 unverfiable 'int32&' float64
+./make_ret_test.sh ret_coercion_76 unverfiable 'int32&' object
   
-./make_ret_test.sh ret_coercion_77 invalid typedref int32
-./make_ret_test.sh ret_coercion_78 invalid typedref 'native int'
-./make_ret_test.sh ret_coercion_79 invalid typedref int64
-./make_ret_test.sh ret_coercion_80 invalid typedref float64
-./make_ret_test.sh ret_coercion_81 invalid typedref 'typedref&'
-./make_ret_test.sh ret_coercion_82 invalid typedref object
+./make_ret_test.sh ret_coercion_77 unverfiable typedref int32
+./make_ret_test.sh ret_coercion_78 unverfiable typedref 'native int'
+./make_ret_test.sh ret_coercion_79 unverfiable typedref int64
+./make_ret_test.sh ret_coercion_80 unverfiable typedref float64
+./make_ret_test.sh ret_coercion_81 unverfiable typedref 'typedref&'
+./make_ret_test.sh ret_coercion_82 unverfiable typedref object
 
 
 ./make_ret_test.sh ret_sub_type valid ClassA ClassSubA
@@ -763,12 +779,12 @@ done
 ./make_ret_test.sh ret_obj_vector valid object 'int32[]'
 ./make_ret_test.sh ret_obj_array valid object 'int32[,]'
 ./make_ret_test.sh ret_obj_generic valid object 'class Template`1<object>'
-./make_ret_test.sh ret_obj_value_type invalid object 'MyValueType'
-./make_ret_test.sh ret_string_value_type invalid string 'MyValueType'
-./make_ret_test.sh ret_class_value_type invalid ClassA 'MyValueType'
+./make_ret_test.sh ret_obj_value_type unverfiable object 'MyValueType'
+./make_ret_test.sh ret_string_value_type unverfiable string 'MyValueType'
+./make_ret_test.sh ret_class_value_type unverfiable ClassA 'MyValueType'
 
-./make_ret_test.sh ret_string_string invalid string object
-./make_ret_test.sh ret_string_string invalid 'int32[]' object
+./make_ret_test.sh ret_string_string unverfiable string object
+./make_ret_test.sh ret_string_string unverfiable 'int32[]' object
 
 ./make_ret_test.sh ret_iface_imple valid InterfaceA ImplA
 ./make_ret_test.sh ret_arrays_same_vector valid 'int32[]' 'int32[]'
@@ -779,26 +795,26 @@ done
 ./make_ret_test.sh ret_obj_iface_array_covariant valid 'object[]' 'InterfaceA[]'
 ./make_ret_test.sh ret_iface_imple_array_covariant valid 'InterfaceA[]' 'ImplA[]'
 
-./make_ret_test.sh ret_diff_types invalid ClassA ClassB
-./make_ret_test.sh ret_class_vale_type invalid ClassA MyValueType
-./make_ret_test.sh ret_diff_vale_type invalid MyValueType2 MyValueType
-./make_ret_test.sh ret_value_type_class invalid MyValueType ClassA
-./make_ret_test.sh ret_super_type invalid ClassSubA ClassB
-./make_ret_test.sh ret_interfaces invalid InterfaceA InterfaceB
-./make_ret_test.sh ret_interface_class invalid ClassA InterfaceB
+./make_ret_test.sh ret_diff_types unverfiable ClassA ClassB
+./make_ret_test.sh ret_class_vale_type unverfiable ClassA MyValueType
+./make_ret_test.sh ret_diff_vale_type unverfiable MyValueType2 MyValueType
+./make_ret_test.sh ret_value_type_class unverfiable MyValueType ClassA
+./make_ret_test.sh ret_super_type unverfiable ClassSubA ClassB
+./make_ret_test.sh ret_interfaces unverfiable InterfaceA InterfaceB
+./make_ret_test.sh ret_interface_class unverfiable ClassA InterfaceB
 
 ./make_ret_test.sh ret_object_type valid object ClassA
-./make_ret_test.sh ret_type_object invalid ClassA object
+./make_ret_test.sh ret_type_object unverfiable ClassA object
 
 
-./make_ret_test.sh ret_array_diff_rank invalid 'int32[]' 'int32[,]'
-./make_ret_test.sh ret_array_diff_rank2 invalid 'int32[,]' 'int32[]'
-./make_ret_test.sh ret_array_diff_rank3 invalid 'int32[,,]' 'int32[,]'
-./make_ret_test.sh ret_array_not_covar invalid 'ClassA[]' 'ClassB[]'
-./make_ret_test.sh ret_array_not_covar2 invalid 'ClassSubA[]' 'ClassA[]'
-./make_ret_test.sh ret_array_not_covar3 invalid 'ClassA[]' 'InterfaceA[]'
-./make_ret_test.sh ret_array_not_covar4 invalid 'ImplA[]' 'InterfaceA[]'
-./make_ret_test.sh ret_array_not_covar5 invalid 'InterfaceA[]' 'object[]'
+./make_ret_test.sh ret_array_diff_rank unverfiable 'int32[]' 'int32[,]'
+./make_ret_test.sh ret_array_diff_rank2 unverfiable 'int32[,]' 'int32[]'
+./make_ret_test.sh ret_array_diff_rank3 unverfiable 'int32[,,]' 'int32[,]'
+./make_ret_test.sh ret_array_not_covar unverfiable 'ClassA[]' 'ClassB[]'
+./make_ret_test.sh ret_array_not_covar2 unverfiable 'ClassSubA[]' 'ClassA[]'
+./make_ret_test.sh ret_array_not_covar3 unverfiable 'ClassA[]' 'InterfaceA[]'
+./make_ret_test.sh ret_array_not_covar4 unverfiable 'ImplA[]' 'InterfaceA[]'
+./make_ret_test.sh ret_array_not_covar5 unverfiable 'InterfaceA[]' 'object[]'
 
 
 #generics tests
@@ -806,123 +822,106 @@ done
 ./make_ret_test.sh ret_generics_2 valid 'class Template`1<int32>' 'class Template`1<int32>'
 ./make_ret_test.sh ret_generics_3 valid 'class Template`2<int32,object>' 'class Template`2<int32,object>'
 
-./make_ret_test.sh ret_generics_4 invalid 'class Template' 'class Template`1<object>'
-./make_ret_test.sh ret_generics_5 invalid 'class Template`1<object>' 'class Template'
-./make_ret_test.sh ret_generics_6 invalid 'class Template`1<object>' 'class Template`1<string>'
-./make_ret_test.sh ret_generics_7 invalid 'class Template`1<string>' 'class Template`1<object>'
-./make_ret_test.sh ret_generics_8 invalid 'class Template`1<object>' 'class Template`2<object, object>'
-./make_ret_test.sh ret_generics_9 invalid 'class Template`2<object, object>' 'class Template`1<object>'
+./make_ret_test.sh ret_generics_4 unverfiable 'class Template' 'class Template`1<object>'
+./make_ret_test.sh ret_generics_5 unverfiable 'class Template`1<object>' 'class Template'
+./make_ret_test.sh ret_generics_6 unverfiable 'class Template`1<object>' 'class Template`1<string>'
+./make_ret_test.sh ret_generics_7 unverfiable 'class Template`1<string>' 'class Template`1<object>'
+./make_ret_test.sh ret_generics_8 unverfiable 'class Template`1<object>' 'class Template`2<object, object>'
+./make_ret_test.sh ret_generics_9 unverfiable 'class Template`2<object, object>' 'class Template`1<object>'
 
-./make_ret_test.sh ret_generics_10 invalid 'class Template`1<int32>' 'class Template`1<int16>'
-./make_ret_test.sh ret_generics_11 invalid 'class Template`1<int16>' 'class Template`1<int32>'
-./make_ret_test.sh ret_generics_12 invalid 'class Template`1<unsigned int32>' 'class Template`1<int32>'
-./make_ret_test.sh ret_generics_13 invalid 'class Template`1<float32>' 'class Template`1<float64>'
-./make_ret_test.sh ret_generics_14 invalid 'class Template`1<float64>' 'class Template`1<float32>'
+./make_ret_test.sh ret_generics_10 unverfiable 'class Template`1<int32>' 'class Template`1<int16>'
+./make_ret_test.sh ret_generics_11 unverfiable 'class Template`1<int16>' 'class Template`1<int32>'
+./make_ret_test.sh ret_generics_12 unverfiable 'class Template`1<unsigned int32>' 'class Template`1<int32>'
+./make_ret_test.sh ret_generics_13 unverfiable 'class Template`1<float32>' 'class Template`1<float64>'
+./make_ret_test.sh ret_generics_14 unverfiable 'class Template`1<float64>' 'class Template`1<float32>'
 
 #variance tests
-./make_ret_test.sh ret_generics_15 valid 'class Covariant`1<object>' 'class Covariant`1<string>'
-./make_ret_test.sh ret_generics_16 valid 'class Covariant`1<string>' 'class Covariant`1<string>'
-./make_ret_test.sh ret_generics_17 invalid 'class Covariant`1<string>' 'class Covariant`1<object>'
+./make_ret_test.sh ret_generics_15 valid 'class ICovariant`1<object>' 'class ICovariant`1<string>'
+./make_ret_test.sh ret_generics_16 valid 'class ICovariant`1<string>' 'class ICovariant`1<string>'
+./make_ret_test.sh ret_generics_17 unverfiable 'class ICovariant`1<string>' 'class ICovariant`1<object>'
 
-./make_ret_test.sh ret_generics_18 valid 'class Contravariant`1<string>' 'class Contravariant`1<object>'
-./make_ret_test.sh ret_generics_19 valid 'class Contravariant`1<string>' 'class Contravariant`1<string>'
-./make_ret_test.sh ret_generics_20 invalid 'class Contravariant`1<object>' 'class Contravariant`1<string>'
+./make_ret_test.sh ret_generics_18 valid 'class IContravariant`1<string>' 'class IContravariant`1<object>'
+./make_ret_test.sh ret_generics_19 valid 'class IContravariant`1<string>' 'class IContravariant`1<string>'
+./make_ret_test.sh ret_generics_20 unverfiable 'class IContravariant`1<object>' 'class IContravariant`1<string>'
 
-./make_ret_test.sh ret_generics_21 valid 'class Covariant`1<ClassA>' 'class Covariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_22 valid 'class Covariant`1<ClassSubA>' 'class Covariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_23 invalid 'class Covariant`1<ClassSubA>' 'class Covariant`1<ClassA>'
+./make_ret_test.sh ret_generics_21 valid 'class ICovariant`1<ClassA>' 'class ICovariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_22 valid 'class ICovariant`1<ClassSubA>' 'class ICovariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_23 unverfiable 'class ICovariant`1<ClassSubA>' 'class ICovariant`1<ClassA>'
 
-./make_ret_test.sh ret_generics_24 valid 'class Contravariant`1<ClassSubA>' 'class Contravariant`1<ClassA>'
-./make_ret_test.sh ret_generics_25 valid 'class Contravariant`1<ClassSubA>' 'class Contravariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_26 invalid 'class Contravariant`1<ClassA>' 'class Contravariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_24 valid 'class IContravariant`1<ClassSubA>' 'class IContravariant`1<ClassA>'
+./make_ret_test.sh ret_generics_25 valid 'class IContravariant`1<ClassSubA>' 'class IContravariant`1<ClassSubA>'
+./make_ret_test.sh ret_generics_26 unverfiable 'class IContravariant`1<ClassA>' 'class IContravariant`1<ClassSubA>'
 
 
 ./make_ret_test.sh ret_generics_27 valid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<ClassA, ClassB>'
 ./make_ret_test.sh ret_generics_28 valid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<ClassA, object>'
 ./make_ret_test.sh ret_generics_29 valid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<ClassSubA, ClassB>'
 ./make_ret_test.sh ret_generics_30 valid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<ClassSubA, object>'
-./make_ret_test.sh ret_generics_31 invalid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<object, ClassB>'
-./make_ret_test.sh ret_generics_32 invalid 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<object, object>'
-./make_ret_test.sh ret_generics_33 invalid 'class Bivariant`2<ClassA, object>' 'class Bivariant`2<object, ClassB>'
-./make_ret_test.sh ret_generics_34 invalid 'class Bivariant`2<ClassA, object>' 'class Bivariant`2<ClassA, ClassB>'
+./make_ret_test.sh ret_generics_31 unverfiable 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<object, ClassB>'
+./make_ret_test.sh ret_generics_32 unverfiable 'class Bivariant`2<ClassA, ClassB>' 'class Bivariant`2<object, object>'
+./make_ret_test.sh ret_generics_33 unverfiable 'class Bivariant`2<ClassA, object>' 'class Bivariant`2<object, ClassB>'
+./make_ret_test.sh ret_generics_34 unverfiable 'class Bivariant`2<ClassA, object>' 'class Bivariant`2<ClassA, ClassB>'
 
 #mix parameter types
-./make_ret_test.sh ret_generics_types_1 invalid 'class Template`1<int8>' 'class Template`1<unsigned int8>'
-./make_ret_test.sh ret_generics_types_2 invalid 'class Template`1<int8>' 'class Template`1<int16>'
-./make_ret_test.sh ret_generics_types_3 invalid 'class Template`1<int8>' 'class Template`1<unsigned int16>'
-./make_ret_test.sh ret_generics_types_4 invalid 'class Template`1<int8>' 'class Template`1<int32>'
-./make_ret_test.sh ret_generics_types_5 invalid 'class Template`1<int8>' 'class Template`1<unsigned int32>'
-./make_ret_test.sh ret_generics_types_6 invalid 'class Template`1<int8>' 'class Template`1<int64>'
-./make_ret_test.sh ret_generics_types_7 invalid 'class Template`1<int8>' 'class Template`1<unsigned int64>'
-./make_ret_test.sh ret_generics_types_8 invalid 'class Template`1<int8>' 'class Template`1<float32>'
-./make_ret_test.sh ret_generics_types_9 invalid 'class Template`1<int8>' 'class Template`1<float64>'
-./make_ret_test.sh ret_generics_types_10 invalid 'class Template`1<int8>' 'class Template`1<bool>'
+./make_ret_test.sh ret_generics_types_1 unverfiable 'class Template`1<int8>' 'class Template`1<unsigned int8>'
+./make_ret_test.sh ret_generics_types_2 unverfiable 'class Template`1<int8>' 'class Template`1<int16>'
+./make_ret_test.sh ret_generics_types_3 unverfiable 'class Template`1<int8>' 'class Template`1<unsigned int16>'
+./make_ret_test.sh ret_generics_types_4 unverfiable 'class Template`1<int8>' 'class Template`1<int32>'
+./make_ret_test.sh ret_generics_types_5 unverfiable 'class Template`1<int8>' 'class Template`1<unsigned int32>'
+./make_ret_test.sh ret_generics_types_6 unverfiable 'class Template`1<int8>' 'class Template`1<int64>'
+./make_ret_test.sh ret_generics_types_7 unverfiable 'class Template`1<int8>' 'class Template`1<unsigned int64>'
+./make_ret_test.sh ret_generics_types_8 unverfiable 'class Template`1<int8>' 'class Template`1<float32>'
+./make_ret_test.sh ret_generics_types_9 unverfiable 'class Template`1<int8>' 'class Template`1<float64>'
+./make_ret_test.sh ret_generics_types_10 unverfiable 'class Template`1<int8>' 'class Template`1<bool>'
 
-./make_ret_test.sh ret_generics_types_11 invalid 'class Template`1<int8>' 'class Template`1<native int>'
-./make_ret_test.sh ret_generics_types_12 invalid 'class Template`1<int8>' 'class Template`1<native unsigned int>'
-./make_ret_test.sh ret_generics_types_13 invalid 'class Template`1<int8>' 'class Template`1<int32 *>'
+./make_ret_test.sh ret_generics_types_11 unverfiable 'class Template`1<int8>' 'class Template`1<native int>'
+./make_ret_test.sh ret_generics_types_12 unverfiable 'class Template`1<int8>' 'class Template`1<native unsigned int>'
+./make_ret_test.sh ret_generics_types_13 unverfiable 'class Template`1<int8>' 'class Template`1<int32 *>'
 
 
 #inheritance tests
 ./make_ret_test.sh ret_generics_inheritante_1 valid 'class Base`1<int32>' 'class SubClass1`1<int32>'
 ./make_ret_test.sh ret_generics_inheritante_2 valid 'class SubClass1`1<int32>' 'class SubClass1`1<int32>'
-./make_ret_test.sh ret_generics_inheritante_3 invalid 'class SubClass1`1<int32>' 'class Base`1<int32>'
-./make_ret_test.sh ret_generics_inheritante_4 invalid 'class Base`1<int32>' 'class SubClass1`1<float32>'
+./make_ret_test.sh ret_generics_inheritante_3 unverfiable 'class SubClass1`1<int32>' 'class Base`1<int32>'
+./make_ret_test.sh ret_generics_inheritante_4 unverfiable 'class Base`1<int32>' 'class SubClass1`1<float32>'
 ./make_ret_test.sh ret_generics_inheritante_5 valid 'class Base`1<object>' 'class SubClass1`1<object>'
 
 ./make_ret_test.sh ret_generics_inheritante_6 valid 'class BaseBase`2<int32, object>' 'class SubClass1`1<object>'
 ./make_ret_test.sh ret_generics_inheritante_7 valid 'class BaseBase`2<int32, object>' 'class Base`1<object>'
 
-./make_ret_test.sh ret_generics_inheritante_8 invalid 'class BaseBase`2<int64, object>' 'class Base`1<object>'
-./make_ret_test.sh ret_generics_inheritante_9 invalid 'class BaseBase`2<int64, object>' 'class SubClass1`1<object>'
-./make_ret_test.sh ret_generics_inheritante_10 invalid 'class BaseBase`2<int32, object>' 'class SubClass1`1<string>'
+./make_ret_test.sh ret_generics_inheritante_8 unverfiable 'class BaseBase`2<int64, object>' 'class Base`1<object>'
+./make_ret_test.sh ret_generics_inheritante_9 unverfiable 'class BaseBase`2<int64, object>' 'class SubClass1`1<object>'
+./make_ret_test.sh ret_generics_inheritante_10 unverfiable 'class BaseBase`2<int32, object>' 'class SubClass1`1<string>'
 
 #interface tests
 
 ./make_ret_test.sh ret_generics_inheritante_12 valid 'class Interface`1<int32>' 'class InterfaceImpl`1<int32>'
 ./make_ret_test.sh ret_generics_inheritante_13 valid 'class InterfaceImpl`1<int32>' 'class InterfaceImpl`1<int32>'
-./make_ret_test.sh ret_generics_inheritante_14 invalid 'class InterfaceImpl`1<int32>' 'class Interface`1<int32>'
-./make_ret_test.sh ret_generics_inheritante_15 invalid 'class Interface`1<int32>' 'class InterfaceImpl`1<float32>'
+./make_ret_test.sh ret_generics_inheritante_14 unverfiable 'class InterfaceImpl`1<int32>' 'class Interface`1<int32>'
+./make_ret_test.sh ret_generics_inheritante_15 unverfiable 'class Interface`1<int32>' 'class InterfaceImpl`1<float32>'
 ./make_ret_test.sh ret_generics_inheritante_16 valid 'class Interface`1<object>' 'class InterfaceImpl`1<object>'
 
 
 #mix variance with inheritance
 #only interfaces or delegates can have covariance
 
-./make_ret_test.sh ret_generics_inheritante_16 invalid 'class Covariant`1<object>' 'class SubCovariant`1<string>'
-./make_ret_test.sh ret_generics_inheritante_17 invalid 'class Covariant`1<string>' 'class SubCovariant`1<string>'
-./make_ret_test.sh ret_generics_inheritante_18 invalid 'class Covariant`1<string>' 'class SubCovariant`1<object>'
-
-./make_ret_test.sh ret_generics_inheritante_19 invalid 'class Contravariant`1<string>' 'class SubContravariant`1<object>'
-./make_ret_test.sh ret_generics_inheritante_20 invalid 'class Contravariant`1<string>' 'class SubContravariant`1<string>'
-./make_ret_test.sh ret_generics_inheritante_21 invalid 'class Contravariant`1<object>' 'class SubContravariant`1<string>'
-
-./make_ret_test.sh ret_generics_inheritante_22 invalid 'class Covariant`1<ClassA>' 'class SubCovariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_23 invalid 'class Covariant`1<ClassSubA>' 'class SubCovariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_24 invalid 'class Covariant`1<ClassSubA>' 'class SubCovariant`1<ClassA>'
-
-./make_ret_test.sh ret_generics_inheritante_25 invalid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassA>'
-./make_ret_test.sh ret_generics_inheritante_26 invalid 'class Contravariant`1<ClassSubA>' 'class SubContravariant`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_27 invalid 'class Contravariant`1<ClassA>' 'class SubContravariant`1<ClassSubA>'
-
-
 #mix variance with interfaces
 
 ./make_ret_test.sh ret_generics_inheritante_28 valid 'class ICovariant`1<object>' 'class CovariantImpl`1<string>'
 ./make_ret_test.sh ret_generics_inheritante_29 valid 'class ICovariant`1<string>' 'class CovariantImpl`1<string>'
-./make_ret_test.sh ret_generics_inheritante_30 invalid 'class ICovariant`1<string>' 'class CovariantImpl`1<object>'
+./make_ret_test.sh ret_generics_inheritante_30 unverfiable 'class ICovariant`1<string>' 'class CovariantImpl`1<object>'
 
 ./make_ret_test.sh ret_generics_inheritante_31 valid 'class IContravariant`1<string>' 'class ContravariantImpl`1<object>'
 ./make_ret_test.sh ret_generics_inheritante_32 valid 'class IContravariant`1<string>' 'class ContravariantImpl`1<string>'
-./make_ret_test.sh ret_generics_inheritante_33 invalid 'class IContravariant`1<object>' 'class ContravariantImpl`1<string>'
+./make_ret_test.sh ret_generics_inheritante_33 unverfiable 'class IContravariant`1<object>' 'class ContravariantImpl`1<string>'
 
 ./make_ret_test.sh ret_generics_inheritante_34 valid 'class ICovariant`1<ClassA>' 'class CovariantImpl`1<ClassSubA>'
 ./make_ret_test.sh ret_generics_inheritante_35 valid 'class ICovariant`1<ClassSubA>' 'class CovariantImpl`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_36 invalid 'class ICovariant`1<ClassSubA>' 'class CovariantImpl`1<ClassA>'
+./make_ret_test.sh ret_generics_inheritante_36 unverfiable 'class ICovariant`1<ClassSubA>' 'class CovariantImpl`1<ClassA>'
 
 ./make_ret_test.sh ret_generics_inheritante_37 valid 'class IContravariant`1<ClassSubA>' 'class ContravariantImpl`1<ClassA>'
 ./make_ret_test.sh ret_generics_inheritante_38 valid 'class IContravariant`1<ClassSubA>' 'class ContravariantImpl`1<ClassSubA>'
-./make_ret_test.sh ret_generics_inheritante_39 invalid 'class IContravariant`1<ClassA>' 'class ContravariantImpl`1<ClassSubA>'
+./make_ret_test.sh ret_generics_inheritante_39 unverfiable 'class IContravariant`1<ClassA>' 'class ContravariantImpl`1<ClassSubA>'
 
 
 #mix variance with arrays
@@ -971,27 +970,27 @@ done
 ./make_ret_test.sh ret_generics_arrays_19_b valid 'class IContravariant`1<string[,]>' 'class ContravariantImpl`1<object[,]>'
 ./make_ret_test.sh ret_generics_arrays_20_b valid 'class IContravariant`1<ClassSubA[,]>' 'class ContravariantImpl`1<ClassA[,]>'
 
-./make_ret_test.sh ret_generics_arrays_21 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<object>'
-./make_ret_test.sh ret_generics_arrays_22 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_23 invalid 'class ICovariant`1<string[]>' 'class ICovariant`1<object[]>'
-./make_ret_test.sh ret_generics_arrays_24 invalid 'class ICovariant`1<ClassSubA[]>' 'class ICovariant`1<ClassA[]>'
-./make_ret_test.sh ret_generics_arrays_25 invalid 'class ICovariant`1<int32[]>' 'class ICovariant`1<int32[,]>'
-./make_ret_test.sh ret_generics_arrays_26 invalid 'class ICovariant`1<ImplA[]>' 'class ICovariant`1<InterfaceA[]>'
+./make_ret_test.sh ret_generics_arrays_21 unverfiable 'class ICovariant`1<int32[]>' 'class ICovariant`1<object>'
+./make_ret_test.sh ret_generics_arrays_22 unverfiable 'class ICovariant`1<int32[]>' 'class ICovariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_23 unverfiable 'class ICovariant`1<string[]>' 'class ICovariant`1<object[]>'
+./make_ret_test.sh ret_generics_arrays_24 unverfiable 'class ICovariant`1<ClassSubA[]>' 'class ICovariant`1<ClassA[]>'
+./make_ret_test.sh ret_generics_arrays_25 unverfiable 'class ICovariant`1<int32[]>' 'class ICovariant`1<int32[,]>'
+./make_ret_test.sh ret_generics_arrays_26 unverfiable 'class ICovariant`1<ImplA[]>' 'class ICovariant`1<InterfaceA[]>'
 
-./make_ret_test.sh ret_generics_arrays_27 invalid 'class IContravariant`1<object>' 'class IContravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_28 invalid 'class IContravariant`1<object[]>' 'class IContravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_29 invalid 'class IContravariant`1<object[]>' 'class IContravariant`1<string[]>'
-./make_ret_test.sh ret_generics_arrays_30 invalid 'class IContravariant`1<ClassA[]>' 'class IContravariant`1<ClassSubA[]>'
-./make_ret_test.sh ret_generics_arrays_31 invalid 'class IContravariant`1<int32[,]>' 'class IContravariant`1<int32[]>'
-./make_ret_test.sh ret_generics_arrays_32 invalid 'class IContravariant`1<InterfaceA[]>' 'class IContravariant`1<ImplA[]>'
+./make_ret_test.sh ret_generics_arrays_27 unverfiable 'class IContravariant`1<object>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_28 unverfiable 'class IContravariant`1<object[]>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_29 unverfiable 'class IContravariant`1<object[]>' 'class IContravariant`1<string[]>'
+./make_ret_test.sh ret_generics_arrays_30 unverfiable 'class IContravariant`1<ClassA[]>' 'class IContravariant`1<ClassSubA[]>'
+./make_ret_test.sh ret_generics_arrays_31 unverfiable 'class IContravariant`1<int32[,]>' 'class IContravariant`1<int32[]>'
+./make_ret_test.sh ret_generics_arrays_32 unverfiable 'class IContravariant`1<InterfaceA[]>' 'class IContravariant`1<ImplA[]>'
 
 
 #generic with value types
 
 ./make_ret_test.sh ret_generics_vt_1 valid 'class Template`1<MyValueType>' 'class Template`1<MyValueType>'
-./make_ret_test.sh ret_generics_vt_2 invalid 'class Template`1<MyValueType>' 'class Template`1<MyValueType2>'
-./make_ret_test.sh ret_generics_vt_3 invalid 'class ICovariant`1<MyValueType>' 'class ICovariant`1<MyValueType2>'
-./make_ret_test.sh ret_generics_vt_4 invalid 'class ICovariant`1<object>' 'class ICovariant`1<MyValueType2>'
+./make_ret_test.sh ret_generics_vt_2 unverfiable 'class Template`1<MyValueType>' 'class Template`1<MyValueType2>'
+./make_ret_test.sh ret_generics_vt_3 unverfiable 'class ICovariant`1<MyValueType>' 'class ICovariant`1<MyValueType2>'
+./make_ret_test.sh ret_generics_vt_4 unverfiable 'class ICovariant`1<object>' 'class ICovariant`1<MyValueType2>'
 
 
 #mix variance and generic compatibility with all kinds of types valid for a generic parameter (hellish task - huge task)
