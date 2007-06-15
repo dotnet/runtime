@@ -891,7 +891,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	new_context = g_new0 (MonoGenericContext, 1);
 	if (klass->generic_class)
-		new_context->class_inst = klass->generic_class->inst;
+		new_context->class_inst = klass->generic_class->context.class_inst;
 
 	/*
 	 * When parsing the methodspec signature, we're in the old context again:

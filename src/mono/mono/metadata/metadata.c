@@ -1406,7 +1406,7 @@ mono_generic_class_hash (gconstpointer data)
 	guint hash = mono_metadata_type_hash (&gclass->container_class->byval_arg);
 
 	hash *= 13;
-	hash += mono_generic_inst_hash (gclass->inst);
+	hash += mono_metadata_generic_context_hash (&gclass->context);
 
 	return hash;
 }
@@ -1928,15 +1928,14 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	MonoGenericClass helper;
 	helper.container_class = container_class;
-	helper.inst = inst;
+	helper.context.class_inst = inst;
+	helper.context.method_inst = NULL;
 	helper.is_dynamic = is_dynamic; /* We use this in a hash lookup, which does not attempt to downcast the pointer */
-	helper.cached_context = NULL;
 	helper.cached_class = NULL;
 
 	gclass = g_hash_table_lookup (generic_class_cache, &helper);
 
-	/* A couple of tripwires, just to keep us honest */
-	g_assert (!helper.cached_context);
+	/* A tripwire just to keep us honest */
 	g_assert (!helper.cached_class);
 
 	if (gclass)
@@ -1951,12 +1950,11 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	}
 
 	gclass->container_class = container_class;
-	gclass->inst = inst;
+	gclass->context.class_inst = inst;
+	gclass->context.method_inst = NULL;
 
-	if (inst == container_class->generic_container->context.class_inst) {
+	if (inst == container_class->generic_container->context.class_inst)
 		gclass->cached_class = container_class;
-		gclass->cached_context = &container_class->generic_container->context;
-	}
 
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
 	return gclass;
@@ -2051,18 +2049,14 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 	count = mono_metadata_decode_value (ptr, &ptr);
 
-	gclass->inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
-	/* FIXME: this hack is needed to handle the incestuous relationship between metadata parsing and MonoClass. */
-	if (gclass->cached_context) {
-		g_free (gclass->cached_context);
-		gclass->cached_context = NULL;
-	}
+	gclass->context.class_inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
+	gclass->context.method_inst = NULL;
 
 	if (rptr)
 		*rptr = ptr;
 
 	/* If we failed to parse, return, the error has been flagged. */
-	if (gclass->inst == NULL)
+	if (gclass->context.class_inst == NULL)
 		return FALSE;
 	
 	/*
@@ -2090,8 +2084,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
-			sizeof (MonoGenericContext) +
-			gclass->inst->type_argc * sizeof (MonoType);
+			gclass->context.class_inst->type_argc * sizeof (MonoType);
 	}
 	return TRUE;
 }
@@ -3351,7 +3344,7 @@ mono_type_stack_size (MonoType *t, int *align)
 		MonoGenericClass *gclass = t->data.generic_class;
 		MonoClass *container_class = gclass->container_class;
 
-		g_assert (!gclass->inst->is_open);
+		g_assert (!gclass->context.class_inst->is_open);
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
@@ -3395,21 +3388,22 @@ static gboolean
 _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2, gboolean signature_only)
 {
 	int i;
+	MonoGenericInst *i1 = g1->context.class_inst;
+	MonoGenericInst *i2 = g2->context.class_inst;
 
-	if ((g1->inst->type_argc != g2->inst->type_argc) || (g1->is_dynamic != g2->is_dynamic) ||
-	    (g1->inst->is_reference != g2->inst->is_reference))
+	if (i1->type_argc != i2->type_argc || g1->is_dynamic != g2->is_dynamic || i1->is_reference != i2->is_reference)
 		return FALSE;
 	if (!mono_metadata_class_equal (g1->container_class, g2->container_class, signature_only))
 		return FALSE;
-	for (i = 0; i < g1->inst->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (g1->inst->type_argv [i], g2->inst->type_argv [i], signature_only))
+	for (i = 0; i < i1->type_argc; ++i) {
+		if (!do_mono_metadata_type_equal (i1->type_argv [i], i2->type_argv [i], signature_only))
 			return FALSE;
 	}
 	return TRUE;
 }
 
 guint
-mono_metadata_generic_context_hash (MonoGenericContext *context)
+mono_metadata_generic_context_hash (const MonoGenericContext *context)
 {
 	/* FIXME: check if this seed is good enough */
 	guint hash = 0xc01dfee7;
@@ -3421,7 +3415,7 @@ mono_metadata_generic_context_hash (MonoGenericContext *context)
 }
 
 gboolean
-mono_metadata_generic_context_equal (MonoGenericContext *g1, MonoGenericContext *g2)
+mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGenericContext *g2)
 {
 	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
 }

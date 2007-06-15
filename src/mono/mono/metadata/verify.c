@@ -1657,7 +1657,7 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 		MonoType *param_class;
 		MonoClass *cand_class;
 		VERIFIER_DEBUG ( printf ("generic class != target\n"); );
-		param_class = candidate->inst->type_argv[0];
+		param_class = candidate->context.class_inst->type_argv [0];
 		VERIFIER_DEBUG ( printf ("param 0 %d\n", param_class->type); );
 		cand_class = candidate->container_class;
 
@@ -1708,12 +1708,12 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 	}
 
 	/* now we verify if the instantiations are compatible*/	
-	if (target->inst == candidate->inst) {
+	if (target->context.class_inst == candidate->context.class_inst) {
 		VERIFIER_DEBUG ( printf ("generic types are compatible, both have the same instantiation\n"); );
 		return TRUE;
 	}
 
-	if (target->inst->type_argc != candidate->inst->type_argc) {
+	if (target->context.class_inst->type_argc != candidate->context.class_inst->type_argc) {
 		VERIFIER_DEBUG ( printf ("generic instantiations with diferent arg counts\n"); );
 		return FALSE;
 	}
@@ -1724,13 +1724,13 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 
 	for (i = 0; i < container->type_argc; ++i) {
 		MonoGenericParam *param = container->type_params + i;
-		MonoType *target_type = target->inst->type_argv [i];
-		MonoType *candidate_type = candidate->inst->type_argv [i];
+		MonoType *target_type = target->context.class_inst->type_argv [i];
+		MonoType *candidate_type = candidate->context.class_inst->type_argv [i];
 		/* We resolve TYPE_VAR types before proceeding */
 
 		if (candidate_type->type == MONO_TYPE_VAR) {
 			MonoGenericParam *var_param = candidate_type->data.generic_param;
-			candidate_type = root_candidate->inst->type_argv[var_param->num];
+			candidate_type = root_candidate->context.class_inst->type_argv [var_param->num];
 		}
 
 		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK) == 0) {

@@ -284,6 +284,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			break;
 		if (klass->generic_class) {
 			MonoGenericClass *gclass = klass->generic_class;
+			MonoGenericInst *inst = gclass->context.class_inst;
 			MonoTypeNameFormat nested_format;
 			int i;
 
@@ -294,16 +295,15 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				g_string_append_c (str, '<');
 			else
 				g_string_append_c (str, '[');
-			for (i = 0; i < gclass->inst->type_argc; i++) {
-				MonoType *t = gclass->inst->type_argv [i];
+			for (i = 0; i < inst->type_argc; i++) {
+				MonoType *t = inst->type_argv [i];
 
 				if (i)
 					g_string_append_c (str, ',');
 				if ((nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
 				    (t->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 					g_string_append_c (str, '[');
-				mono_type_get_name_recurse (
-					gclass->inst->type_argv [i], str, FALSE, nested_format);
+				mono_type_get_name_recurse (inst->type_argv [i], str, FALSE, nested_format);
 				if ((nested_format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
 				    (t->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 					g_string_append_c (str, ']');
@@ -437,12 +437,13 @@ mono_class_is_open_constructed_type (MonoType *t)
 		return mono_class_is_open_constructed_type (t->data.type);
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *gclass = t->data.generic_class;
+		MonoGenericInst *inst = gclass->context.class_inst;
 		int i;
 
 		if (mono_class_is_open_constructed_type (&gclass->container_class->byval_arg))
 			return TRUE;
-		for (i = 0; i < gclass->inst->type_argc; i++)
-			if (mono_class_is_open_constructed_type (gclass->inst->type_argv [i]))
+		for (i = 0; i < inst->type_argc; i++)
+			if (mono_class_is_open_constructed_type (inst->type_argv [i]))
 				return TRUE;
 		return FALSE;
 	}
@@ -496,12 +497,12 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericInst *inst;
 		MonoType *nt;
-		if (!gclass->inst->is_open)
+		if (!gclass->context.class_inst->is_open)
 			return NULL;
 
 		mono_loader_lock ();
-		inst = mono_metadata_inflate_generic_inst (gclass->inst, context);
-		if (inst != gclass->inst)
+		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context);
+		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
 		mono_loader_unlock ();
 
@@ -547,20 +548,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 MonoGenericContext *
 mono_generic_class_get_context (MonoGenericClass *gclass)
 {
-       MonoGenericContext *context = gclass->cached_context;
-       if (context) {
-	       g_assert (context->class_inst == gclass->inst);
-	       g_assert (!context->method_inst);
-	       return context;
-       }
-	
-       context = g_new0 (MonoGenericContext, 1);
-       context->class_inst = gclass->inst;
-
-       if (InterlockedCompareExchangePointer ((gpointer *)&gclass->cached_context, context, NULL))
-	       g_free (context);
-
-       return gclass->cached_context;
+	return &gclass->context;
 }
 
 MonoGenericContext *
@@ -674,7 +662,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	if (!klass_hint || !klass_hint->generic_class ||
 	    klass_hint->generic_class->container_class != method->klass ||
-	    klass_hint->generic_class->inst != context->class_inst)
+	    klass_hint->generic_class->context.class_inst != context->class_inst)
 		klass_hint = NULL;
 
 	if (method->klass->generic_container)
@@ -688,7 +676,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	if (method->generic_container && !context->method_inst) {
 		context = g_new0 (MonoGenericContext, 1);
 		if (result->klass->generic_class)
-			context->class_inst = result->klass->generic_class->inst;
+			context->class_inst = result->klass->generic_class->context.class_inst;
 		context->method_inst = method->generic_container->context.method_inst;
 		iresult->context = context;
 	}
@@ -1020,7 +1008,7 @@ mono_class_layout_fields (MonoClass *class)
 	MonoClassField *field;
 
 	if (class->generic_container ||
-	    (class->generic_class && class->generic_class->inst->is_open))
+	    (class->generic_class && class->generic_class->context.class_inst->is_open))
 		return;
 
 	/*
@@ -1543,8 +1531,8 @@ mono_get_unique_iid (MonoClass *class)
 	if (mono_print_vtable) {
 		int generic_id;
 		char *type_name = mono_type_full_name (&class->byval_arg);
-		if (class->generic_class && !class->generic_class->inst->is_open) {
-			generic_id = class->generic_class->inst->id;
+		if (class->generic_class && !class->generic_class->context.class_inst->is_open) {
+			generic_id = class->generic_class->context.class_inst->id;
 			g_assert (generic_id != 0);
 		} else {
 			generic_id = 0;
@@ -2359,7 +2347,7 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 	int i;
 
 	context = g_new0 (MonoGenericContext, 1);
-	context->method_inst = iface->generic_class->inst;
+	context->method_inst = iface->generic_class->context.class_inst;
 
 	for (i = 0; i < class->parent->method.count; i++) {
 		MonoMethod *m = class->parent->methods [i];
@@ -3110,7 +3098,7 @@ MonoClass*
 mono_class_get_nullable_param (MonoClass *klass)
 {
        g_assert (mono_class_is_nullable (klass));
-       return mono_class_from_mono_type (klass->generic_class->inst->type_argv [0]);
+       return mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
 }
 
 /*

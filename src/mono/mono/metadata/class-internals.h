@@ -374,12 +374,21 @@ struct _MonoGenericInst {
 };
 
 /*
+ * The generic context: an instantiation of a set of class and method generic parameters.
+ */
+struct _MonoGenericContext {
+	/* The instantiation corresponding to the class generic parameters */
+	MonoGenericInst *class_inst;
+	/* The instantiation corresponding to the method generic parameters */
+	MonoGenericInst *method_inst;
+};
+
+/*
  * A particular instantiation of a generic type.
  */
 struct _MonoGenericClass {
-	MonoGenericInst *inst;		/* the instantiation */
 	MonoClass *container_class;	/* the generic type definition */
-	MonoGenericContext *cached_context;	/* if present, a "trivial" context that doesn't contain any method instantiation */
+	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 };
@@ -401,16 +410,6 @@ struct _MonoDynamicGenericClass {
 	int count_events;
 	MonoEvent *events;
 	guint initialized;
-};
-
-/*
- * The generic context: an instantiation of a set of class and method generic parameters.
- */
-struct _MonoGenericContext {
-	/* The instantiation corresponding to the class generic parameters */
-	MonoGenericInst *class_inst;
-	/* The instantiation corresponding to the method generic parameters */
-	MonoGenericInst *method_inst;
 };
 
 /*

@@ -564,17 +564,17 @@ static void
 encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigBuffer *buf)
 {
 	int i;
+	MonoGenericInst *class_inst;
 
-	if (!gclass) {
-		g_assert_not_reached ();
-		return;
-	}
+	g_assert (gclass);
+
+	class_inst = gclass->context.class_inst;
 
 	sigbuffer_add_value (buf, MONO_TYPE_GENERICINST);
 	encode_type (assembly, &gclass->container_class->byval_arg, buf);
-	sigbuffer_add_value (buf, gclass->inst->type_argc);
-	for (i = 0; i < gclass->inst->type_argc; ++i)
-		encode_type (assembly, gclass->inst->type_argv [i], buf);
+	sigbuffer_add_value (buf, class_inst->type_argc);
+	for (i = 0; i < class_inst->type_argc; ++i)
+		encode_type (assembly, class_inst->type_argv [i], buf);
 
 }
 
@@ -5328,13 +5328,16 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		return t1->data.array->eklass == t2->data.array->eklass;
 	case MONO_TYPE_GENERICINST: {
 		int i;
-		if (t1->data.generic_class->inst->type_argc != t2->data.generic_class->inst->type_argc)
+		MonoGenericInst *i1 = t1->data.generic_class->context.class_inst;
+		MonoGenericInst *i2 = t2->data.generic_class->context.class_inst;
+		if (i1->type_argc != i2->type_argc)
 			return FALSE;
 		if (!mono_metadata_type_equal (&t1->data.generic_class->container_class->byval_arg,
 					       &t2->data.generic_class->container_class->byval_arg))
 			return FALSE;
-		for (i = 0; i < t1->data.generic_class->inst->type_argc; ++i) {
-			if (!mono_metadata_type_equal (t1->data.generic_class->inst->type_argv [i], t2->data.generic_class->inst->type_argv [i]))
+		/* FIXME: we should probably just compare the instance pointers directly.  */
+		for (i = 0; i < i1->type_argc; ++i) {
+			if (!mono_metadata_type_equal (i1->type_argv [i], i2->type_argv [i]))
 				return FALSE;
 		}
 		return TRUE;
@@ -5368,7 +5371,7 @@ mymono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ mymono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_GENERICINST: {
 		int i;
-		MonoGenericInst *inst = t1->data.generic_class->inst;
+		MonoGenericInst *inst = t1->data.generic_class->context.class_inst;
 		hash += g_str_hash (t1->data.generic_class->container_class->name);
 		hash *= 13;
 		for (i = 0; i < inst->type_argc; ++i) {
@@ -8858,7 +8861,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	context = g_new0 (MonoGenericContext, 1);
 	if (method->klass->generic_class)
-		context->class_inst = method->klass->generic_class->inst;
+		context->class_inst = method->klass->generic_class->context.class_inst;
 	context->method_inst = ginst;
 
 	inflated = g_hash_table_lookup (container->method_hash, context);
@@ -8897,7 +8900,7 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 		g_assert (method->klass == klass->generic_class->container_class);
 
 		context = g_new0 (MonoGenericContext, 1);
-		context->class_inst = klass->generic_class->inst;
+		context->class_inst = klass->generic_class->context.class_inst;
 		context->method_inst = method->generic_container->context.method_inst;
 	}
 
