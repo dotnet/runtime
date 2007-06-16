@@ -1,3 +1,9 @@
+2007-06-15  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: revert back to using package names
+	for .config file dep scanning.  This is because noarch packages can be
+	built on either 32 or 64 bit arches, depending on either a 32bit or 64bit
+	library, which is wrong.
 
 2007-06-13  Randolph Chung  <tausq@debian.org>
 
