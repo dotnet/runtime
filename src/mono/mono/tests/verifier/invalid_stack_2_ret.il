@@ -12,11 +12,17 @@
     .field public int32 fld
 }
 
-.method public static int32 Main(int32 x) cil managed
+.method public static int32 Foo(int32 x) cil managed
 {
-	.entrypoint
 	.maxstack 2
 	ldarg.0
 	ldarg.0
 	ret // invalid, stack with two elements.
+}
+
+.method public static void Main() cil managed
+{
+	.entrypoint
+	.maxstack 2
+	ret
 }

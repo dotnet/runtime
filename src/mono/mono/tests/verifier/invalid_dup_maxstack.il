@@ -13,7 +13,23 @@
 	.entrypoint
 	.maxstack 1
 	ldc.i4.0
+	dup
+	dup
+	dup
+	dup
+	dup
+	dup
+	dup
+	dup
 	dup // Invalid, stack larger than maxstack.
+	pop
+	pop
+	pop
+	pop
+	pop
+	pop
+	pop
+	pop
 	pop
 	ret
 }

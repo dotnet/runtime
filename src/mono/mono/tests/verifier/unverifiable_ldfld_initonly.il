@@ -1,6 +1,13 @@
 // Invalid CIL which breaks the ECMA-335,III,4.10 rules. 
 // This CIL should fail verification by a conforming CLI verifier.
 
+.assembly '${TEST_NAME}_generated'
+{
+  .hash algorithm 0x00008004
+  .ver  0:0:0:0
+}
+
+
 .class public auto ansi beforefieldinit c
   	extends [mscorlib]System.Object
 {
