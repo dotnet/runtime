@@ -41,7 +41,19 @@ enum {
 		(__ctx)->list = g_slist_prepend ((__ctx)->list, vinfo);	\
 	} while (0)
 
-#define ADD_VERIFY_ERROR(__ctx, __msg)	ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR)
+#define ADD_VERIFY_ERROR(__ctx, __msg)	\
+	do {	\
+		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR); \
+		(__ctx)->valid = 0; \
+	} while (0)
+
+#define CODE_NOT_VERIFIABLE(__ctx, __msg) \
+	do {	\
+		if ((__ctx)->verifiable) { \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE); \
+			(__ctx)->verifiable = 0; \
+		} \
+	} while (0)
 
 enum {
 	IL_CODE_FLAG_NOT_PROCESSED  = 0,
@@ -64,6 +76,7 @@ typedef struct {
 	int max_args;
 	int max_stack;
 	int verifiable;
+	int valid;
 
 	int code_size;
 	ILCodeDesc *code;
@@ -1764,9 +1777,11 @@ static gboolean
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candidate, gboolean strict) {
 	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p %p\n", ctx, target, candidate); );
 
-	if (candidate->byref) {
-		if (get_stack_type (target)  == TYPE_NATIVE_INT) {
-			ctx->verifiable = 0;
+ 	/*only one is byref */
+	if (candidate->byref ^ target->byref) {
+		/* converting from native int to byref*/
+		if (get_stack_type (candidate) == TYPE_NATIVE_INT && target->byref) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("using byref native int at 0x%04x", ctx->ip_offset));
 			return TRUE;
 		}
 		return FALSE;
@@ -1880,7 +1895,7 @@ verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 	VERIFIER_DEBUG ( printf ("checking compatibility %p %p %p\n", ctx, stack, type); );
 	if (type->byref) {
 		if (stack_type == TYPE_NATIVE_INT) {
-			ctx->verifiable = 0;
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("using byref native int at 0x%04x", ctx->ip_offset));
 			return TRUE;
 		}
 		return FALSE;
@@ -2042,7 +2057,7 @@ store_arg (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop (ctx);
 		if (!verify_type_compat (ctx, ctx->params [arg], value)) {
-			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));
 		}
 	}
 }
@@ -2060,7 +2075,7 @@ store_local (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop(ctx);
 		if (!verify_type_compat (ctx, ctx->locals [arg], value)) {
-			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
 		}
 	}
 }
@@ -2104,7 +2119,9 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 	}
 
  	if (res & NON_VERIFIABLE_RESULT) {
- 		ctx->verifiable = 0;
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction is not verifiable (%s x %s)", 
+			type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK]));
+
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
 
@@ -2136,12 +2153,12 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Boolean branch target out of code at 0x%04x", ctx->ip_offset));
 		return;
 	}
-	
+
 	if (!in_same_block (ctx->header, ctx->ip_offset, target)) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
 		return;
 	}
-	
+
 	ctx->target = target;
 
 	if (!check_underflow (ctx, 1))
@@ -2200,7 +2217,8 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 			g_strdup_printf ("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x",
 				type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
- 		ctx->verifiable = 0;
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare and Branch instruction is not verifiable (%s x %s) at 0x%04x",
+				type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
 }
@@ -2233,10 +2251,11 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	printf("idxa %d idxb %d\n", idxa, idxb);
 
 	if(res == TYPE_INV) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset));
 		return;
 	} else if (res & NON_VERIFIABLE_RESULT) {
- 		ctx->verifiable = 0;
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x",
+			type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
  	stack_push_val (ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
@@ -2254,7 +2273,7 @@ do_ret (VerifyContext *ctx)
 		top = stack_pop(ctx);
 
 		if (!verify_type_compat (ctx, ctx->signature->ret, top)) {
-			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible return value on stack with method signature ret at 0x%04x", ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible return value on stack with method signature ret at 0x%04x", ctx->ip_offset));
 			return;
 		}
 	}
@@ -2339,7 +2358,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 
 	if (from->size != to->size) {
 		VERIFIER_DEBUG ( printf ("diferent stack sizes %d x %d\n", from->size, to->size); );
-		ctx->verifiable = 0;
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent sizes (%d x %d)", from->size, to->size)); 
 		goto end_verify;
 	}
 
@@ -2351,16 +2370,18 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 
 		if (from_stype != to_stype) {
 			VERIFIER_DEBUG ( printf ("diferent stack types %d x %d\n", from_stype, to_stype); );
-			ctx->verifiable = 0;
-			continue;
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent verification types (%s x %s)",
+				type_names [from_stype & TYPE_MASK], type_names [to_stype & TYPE_MASK])); 
+			goto end_verify;
 		}
 
 		if (from_stype & POINTER_MASK) {
 			from_stype &= ~POINTER_MASK;
 			to_stype &= ~POINTER_MASK;
 
-			if (from_slot->type && ! verify_stack_type_compatibility (ctx, to_slot->type, from_slot->type, TRUE)) {
-				ctx->verifiable = 0;
+			if (from_slot->type && !verify_stack_type_compatibility (ctx, to_slot->type, from_slot->type, TRUE)) {
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, pointer types not compatible")); 
+				goto end_verify;
 			} else 
 				copy_stack_value (to_slot, from_slot);
 			continue;
@@ -2371,7 +2392,8 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 				ctx->verifiable = 0;
 				g_assert (0);
 			} else if (!verify_type_compat (ctx, to_slot->type, from_slot)) {
-				ctx->verifiable = 0;
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible")); 
+				goto end_verify;
 			} else { 
 				/*TODO we need to choose the base class for merging */
 				copy_stack_value (to_slot, from_slot);
@@ -2424,7 +2446,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	ctx.max_args = ctx.signature->param_count + ctx.signature->hasthis;
 	ctx.max_stack = ctx.header->max_stack;
-	ctx.verifiable = 1;
+	ctx.verifiable = ctx.valid = 1;
 
 	ctx.code = g_new0 (ILCodeDesc, ctx.header->code_size);
 	ctx.code_size = ctx.header->code_size;
@@ -2460,7 +2482,7 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 	}*/
 
-	while (ip < end && ctx.list == NULL) {
+	while (ip < end && ctx.valid) {
 		ctx.ip_offset = ip_offset = ip - ctx.header->code;
 
 		/*TODO id stack merge fails, we break, should't we - or only on errors??
@@ -3247,7 +3269,6 @@ mono_method_verify (MonoMethod *method, int level)
 
 			case CEE_STARG:
 				store_arg (&ctx, read16 (ip + 1) );
-				--ctx.eval.size;
 				ip += 3;
 				break;
 
@@ -3379,8 +3400,6 @@ mono_method_verify (MonoMethod *method, int level)
 	}
 
 invalid_cil:
-	if (!ctx.verifiable)
-		ADD_VERIFY_INFO (&ctx, g_strdup_printf("Method code is not verifiable"), MONO_VERIFY_NOT_VERIFIABLE);
 
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {

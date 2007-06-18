@@ -325,7 +325,7 @@ dump_verify_info (MonoImage *image, int flags)
 	GSList *errors, *tmp;
 	int count = 0, verifiable = 0;
 	const char* desc [] = {
-		"Ok", "Error", "Warning", NULL, "CLS"
+		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
 	};
 
 	errors = mono_image_verify_tables (image, flags);
