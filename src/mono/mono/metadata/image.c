@@ -1101,7 +1101,9 @@ mono_image_close (MonoImage *image)
 		return;
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
-	
+
+	mono_metadata_clean_for_image (image);
+
 	mono_images_lock ();
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
 	loaded_images_guid = image->ref_only ? loaded_images_refonly_guid_hash : loaded_images_guid_hash;

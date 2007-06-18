@@ -324,6 +324,9 @@ void
 mono_image_check_for_module_cctor (MonoImage *image) MONO_INTERNAL;
 
 void
+mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
+
+void
 mono_metadata_cleanup (void);
 
 const char *   mono_meta_table_name              (int table) MONO_INTERNAL;

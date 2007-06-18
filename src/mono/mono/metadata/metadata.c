@@ -1451,6 +1451,9 @@ mono_metadata_cleanup (void)
 	g_hash_table_destroy (type_cache);
 	g_hash_table_destroy (generic_inst_cache);
 	g_hash_table_destroy (generic_class_cache);
+	type_cache = NULL;
+	generic_inst_cache = NULL;
+	generic_class_cache = NULL;
 }
 
 /**
@@ -1882,6 +1885,63 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	}
 }
 
+/*static void
+dump_ginst (MonoGenericInst *ginst)
+{
+	int i;
+	char *name;
+
+	g_print ("Ginst: <");
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (i != 0)
+			g_print (", ");
+		name = mono_type_get_name (ginst->type_argv [i]);
+		g_print ("%s", name);
+		g_free (name);
+	}
+	g_print (">");
+}*/
+
+static gboolean
+ginst_in_image (gpointer key, gpointer value, gpointer data)
+{
+	MonoImage *image = data;
+	MonoGenericInst *ginst = key;
+	MonoClass *klass;
+	int i;
+	for (i = 0; i < ginst->type_argc; ++i) {
+		klass = mono_class_from_mono_type (ginst->type_argv [i]);
+		if (klass->image == image) {
+			/*dump_ginst (ginst);
+			g_print (" removed\n");*/
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean
+gclass_in_image (gpointer key, gpointer value, gpointer data)
+{
+	MonoImage *image = data;
+	MonoGenericClass *gclass = key;
+
+	if (ginst_in_image (gclass->context.class_inst, NULL, image))
+		return TRUE;
+	if (gclass->container_class->image == image)
+		return TRUE;
+	return FALSE;
+}
+
+void
+mono_metadata_clean_for_image (MonoImage *image)
+{
+	mono_loader_lock ();
+	g_hash_table_foreach_remove (generic_inst_cache, ginst_in_image, image);
+	g_hash_table_foreach_remove (generic_class_cache, gclass_in_image, image);
+	mono_loader_unlock ();
+}
+
 /*
  * mono_metadata_lookup_generic_inst:
  *
@@ -1900,18 +1960,24 @@ mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
 	MonoGenericInst *cached;
 	int i;
 
+	/*dump_ginst (ginst);*/
+	mono_loader_lock ();
 	cached = g_hash_table_lookup (generic_inst_cache, ginst);
 	if (cached) {
 		for (i = 0; i < ginst->type_argc; i++)
 			mono_metadata_free_type (ginst->type_argv [i]);
 		g_free (ginst->type_argv);
 		g_free (ginst);
+		mono_loader_unlock ();
+		/*g_print (" found cached\n");*/
 		return cached;
 	}
 
 	ginst->id = ++next_generic_inst_id;
 	g_hash_table_insert (generic_inst_cache, ginst, ginst);
 
+	mono_loader_unlock ();
+	/*g_print (" inserted\n");*/
 	return ginst;
 }
 
