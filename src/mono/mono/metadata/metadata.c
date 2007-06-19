@@ -1902,6 +1902,8 @@ dump_ginst (MonoGenericInst *ginst)
 	g_print (">");
 }*/
 
+static gboolean gclass_in_image (gpointer key, gpointer value, gpointer data);
+
 static gboolean
 ginst_in_image (gpointer key, gpointer value, gpointer data)
 {
@@ -1910,10 +1912,19 @@ ginst_in_image (gpointer key, gpointer value, gpointer data)
 	MonoClass *klass;
 	int i;
 	for (i = 0; i < ginst->type_argc; ++i) {
+		MonoType *type = ginst->type_argv [i];
+
+		/* FIXME: Avoid a possible mono_class_inst inside mono_class_from_mono_type */
+		if (type->type == MONO_TYPE_GENERICINST) {
+			if (gclass_in_image (type->data.generic_class, NULL, image))
+				return TRUE;
+			continue;
+		}
+
 		klass = mono_class_from_mono_type (ginst->type_argv [i]);
 		if (klass->image == image) {
 			/*dump_ginst (ginst);
-			g_print (" removed\n");*/
+			  g_print (" removed\n");*/
 			return TRUE;
 		}
 	}
