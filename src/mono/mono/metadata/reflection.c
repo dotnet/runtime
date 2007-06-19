@@ -8778,12 +8778,8 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 		inst->type_argv [i] = t;
 	}
 
-	mono_loader_lock ();
-
 	inst = mono_metadata_lookup_generic_inst (inst);
 	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);
-
-	mono_loader_unlock ();
 
 	return mono_generic_class_get_class (gclass);
 }

@@ -2010,13 +2010,17 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	helper.is_dynamic = is_dynamic; /* We use this in a hash lookup, which does not attempt to downcast the pointer */
 	helper.cached_class = NULL;
 
+	mono_loader_lock ();
+
 	gclass = g_hash_table_lookup (generic_class_cache, &helper);
 
 	/* A tripwire just to keep us honest */
 	g_assert (!helper.cached_class);
 
-	if (gclass)
+	if (gclass) {
+		mono_loader_unlock ();
 		return gclass;
+	}
 
 	if (is_dynamic) {
 		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
@@ -2034,6 +2038,9 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 		gclass->cached_class = container_class;
 
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
+
+	mono_loader_unlock ();
+
 	return gclass;
 }
 

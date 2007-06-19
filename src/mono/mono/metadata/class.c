@@ -500,11 +500,9 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		if (!gclass->context.class_inst->is_open)
 			return NULL;
 
-		mono_loader_lock ();
 		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context);
 		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
-		mono_loader_unlock ();
 
 		if (gclass == type->data.generic_class)
 			return NULL;
@@ -524,12 +522,10 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		if (!container)
 			return NULL;
 
-		mono_loader_lock ();
 		/* We can't use context->class_inst directly, since it can have more elements */
 		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
 		if (inst != container->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
-		mono_loader_unlock ();
 
 		if (!gclass)
 			return NULL;
