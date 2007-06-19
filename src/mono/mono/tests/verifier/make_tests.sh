@@ -1096,3 +1096,39 @@ do
 	I=`expr $I + 1`
 done
 
+#tests for field loading
+I=1
+for OP in 'ldfld' 'ldflda'
+do
+	./make_field_store_test.sh field_store_${I}_1 invalid "${OP} int32 ClassA::fld" int32 int32
+	./make_field_store_test.sh field_store_${I}_2 invalid "${OP} int32 ClassA::fld" int32 'class ClassB'
+	./make_field_store_test.sh field_store_${I}_3 invalid "${OP} int32 ClassA::fld" int32 object
+	./make_field_store_test.sh field_store_${I}_4 invalid "${OP} int32 ClassA::fld" int32 'class MyValueType'
+	./make_field_store_test.sh field_store_${I}_5 valid "${OP} int32 ClassA::fld" int32 'class ClassA'
+	./make_field_store_test.sh field_store_${I}_6 valid "${OP} int32 ClassA::fld" int32 'class SubClass'
+	./make_field_store_test.sh field_store_${I}_7 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType'
+	./make_field_store_test.sh field_store_${I}_8 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType \&'
+	./make_field_store_test.sh field_store_${I}_9 unverifiable "${OP} int32 MyValueType::fld" int32 'native int'
+	./make_field_store_test.sh field_store_${I}_10 unverifiable "${OP} int32 MyValueType::fld" int32 'class MyValueType *'
+	./make_field_store_test.sh field_store_${I}_11 unverifiable "${OP} int32 ClassA::fld" int32 'class ClassA *'
+	./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped'
+	./make_field_store_test.sh field_store_${I}_15 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class SubOverlapped'
+	./make_field_store_test.sh field_store_${I}_16 valid "${OP} int32 SubOverlapped::field6" int32 'class SubOverlapped'
+	./make_field_store_test.sh field_store_${I}_17 unverifiable "${OP} ClassA SubOverlapped::field6" 'class ClassA' 'class SubOverlapped'
+	./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_19 valid "${OP} int32 Overlapped::field11" int32 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_20 valid "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_21 valid "${OP} int32 Overlapped::field11" 'class ClassA' 'class Overlapped'
+
+	./make_field_store_test.sh field_store_${I}_22 invalid "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh field_store_${I}_23 invalid "${OP} int32 ClassA::const_field" int32 'int32 \&'
+
+
+	./make_field_store_test.sh field_store_${I}_24 valid "${OP} int32 ClassA::sfld" int32 'class ClassA'
+	I=`expr $I + 1`
+done
+
+./make_field_store_test.sh field_store_2_25 unverifiable 'ldflda int32 ClassA::const_field' int32 'class ClassA'
+
