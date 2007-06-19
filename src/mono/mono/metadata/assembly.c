@@ -2344,9 +2344,9 @@ mono_assembly_close (MonoAssembly *assembly)
 		assembly->image->references = NULL;
 	}
 
-	mono_image_close (assembly->image);
-
 	assembly->image->assembly = NULL;
+
+	mono_image_close (assembly->image);
 
 	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *fname = tmp->data;
