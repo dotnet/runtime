@@ -4381,10 +4381,13 @@ ves_icall_GetCurrentMethod (void)
 }
 
 static MonoReflectionMethod*
-ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMethod *method, MonoClass *klass)
+ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMethod *method, MonoType *type)
 {
 	/* FIXME check that method belongs to klass or a parent */
-	if (!klass)
+	MonoClass *klass;
+	if (type)
+		klass = mono_class_from_mono_type (type);
+	else
 		klass = method->klass;
 	return mono_method_get_object (mono_domain_get (), method, klass);
 }
