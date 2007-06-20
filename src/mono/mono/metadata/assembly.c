@@ -72,7 +72,6 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"Mono.Cairo", 0},
 	{"Mono.CompilerServices.SymbolWriter", 0},
 	{"Mono.Data", 0},
-	{"Mono.Data.SqliteClient", 0},
 	{"Mono.Data.SybaseClient", 0},
 	{"Mono.Data.Tds", 0},
 	{"Mono.Data.TdsClient", 0},
