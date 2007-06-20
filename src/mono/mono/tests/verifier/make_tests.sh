@@ -508,6 +508,12 @@ do
 
   # Method pointers with different calling conventions.
   ./make_store_test.sh assign_compat_10_${I} unverifiable "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
+
+  # Method pointers with different calling conventions. (2)
+  ./make_store_test.sh assign_compat_11_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method int32 *(int32)'
+
+  # Method pointers with different calling conventions. (3)
+  ./make_store_test.sh assign_compat_12_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method unmanaged stdcall int32 *(int32)'
   I=`expr $I + 1`
 done
 
@@ -540,6 +546,13 @@ do
 
   # Method pointers with different calling conventions.
   ./make_obj_store_test.sh assign_compat_10_${I} invalid "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
+  
+    # Method pointers with different calling conventions. (2)
+  ./make_obj_store_test.sh assign_compat_11_${I} invalid "$OP" 'method unmanaged fastcall int32 *(int32)' 'method int32 *(int32)'
+  
+    # Method pointers with different calling conventions. (3)
+  ./make_obj_store_test.sh assign_compat_12_${I} invalid "$OP" 'method unmanaged fastcall int32 *(int32)' 'method unmanaged stdcall int32 *(int32)'
+  
   I=`expr $I + 1`
 done
 
@@ -1131,4 +1144,20 @@ do
 done
 
 ./make_field_store_test.sh field_store_2_25 unverifiable 'ldflda int32 ClassA::const_field' int32 'class ClassA'
+
+#tests form static field loading
+I=1
+for OP in 'ldsfld' 'ldsflda'
+do
+	#unknown field
+	./make_field_store_test.sh static_field_store_${I}_1 invalid "${OP} int32 ClassA::unknown_field\n\tpop" 'class ClassA' 'class ClassA'
+	#non static field
+	./make_field_store_test.sh static_field_store_${I}_2 invalid "${OP} int32 ClassA::fld\n\tpop" 'class ClassA' 'class ClassA'
+	#valid
+	./make_field_store_test.sh static_field_store_${I}_3 valid "${OP} int32 ClassA::sfld\n\tpop" 'class ClassA' 'class ClassA'
+	I=`expr $I + 1`
+done
+
+./make_field_store_test.sh static_field_store_2_25 unverifiable 'ldsflda int32 ClassA::st_const_field\n\tpop' int32 'class ClassA'
+
 
