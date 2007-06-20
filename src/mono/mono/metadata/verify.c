@@ -1940,14 +1940,15 @@ handle_enum:
 		return stack_type == TYPE_NATIVE_INT;
 
 	case MONO_TYPE_PTR:
-		if ((stack_type & POINTER_MASK) == 0)
+		if (stack_type != TYPE_PTR || stack->type->type != MONO_TYPE_PTR)
 			return FALSE;
-		stack_type &= ~POINTER_MASK;
-		if (stack_type != TYPE_COMPLEX) {
-			type = type->data.type;
-			goto handle_enum;
-		}
-		return verify_stack_type_compatibility (ctx, type->data.type, stack->type, TRUE);
+		return verify_stack_type_compatibility (ctx, type->data.type, stack->type->data.type, TRUE);
+
+	case MONO_TYPE_FNPTR: 
+		if (stack_type != TYPE_PTR || stack->type->type != MONO_TYPE_FNPTR)
+			return FALSE;
+
+		return mono_metadata_signature_equal (mono_type_get_signature (type), mono_type_get_signature (stack->type));
 
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *left;
@@ -2391,6 +2392,13 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 		int from_stype = from_slot->stype;
 		int to_stype = to_slot->stype;
 
+		/* This is the only case of merging between verification types*/
+		if ((from_stype == TYPE_I4 && to_stype == TYPE_NATIVE_INT) ||
+			(from_stype == TYPE_NATIVE_INT && to_stype == TYPE_I4)) {
+			to_slot->stype = TYPE_NATIVE_INT;
+			continue;	 	
+		} 
+
 		if (from_stype != to_stype) {
 			VERIFIER_DEBUG ( printf ("diferent stack types %d x %d\n", from_stype, to_stype); );
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent verification types (%s x %s)",
@@ -2403,9 +2411,9 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 			to_stype &= ~POINTER_MASK;
 
 			if (from_slot->type && !verify_stack_type_compatibility (ctx, to_slot->type, from_slot->type, TRUE)) {
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, pointer types not compatible")); 
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, managed pointer types not compatible")); 
 				goto end_verify;
-			} else 
+			} else
 				copy_stack_value (to_slot, from_slot);
 			continue;
 		}
@@ -2726,14 +2734,17 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break; 
 
-		case CEE_DUP:
+		case CEE_DUP: {
+			ILStackDesc * top;
 			if (!check_underflow (&ctx, 1))
 				break;
 			if (!check_overflow (&ctx))
 				break;
-			copy_stack_value (stack_push (&ctx), stack_get (&ctx, 1)); 
+			top = stack_push (&ctx);
+			copy_stack_value (top, stack_get (&ctx, 1)); 
 			++ip;
 			break;
+		}
 
 		case CEE_JMP:
 			if (ctx.eval.size)
