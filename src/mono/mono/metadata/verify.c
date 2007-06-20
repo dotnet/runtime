@@ -55,6 +55,8 @@ enum {
 		} \
 	} while (0)
 
+#define UNMASK_TYPE(type) ((type) & TYPE_MASK)
+
 enum {
 	IL_CODE_FLAG_NOT_PROCESSED  = 0,
 	IL_CODE_FLAG_SEEN = 1
@@ -108,7 +110,7 @@ enum {
 	TYPE_I8  = 2,
 	TYPE_NATIVE_INT = 3,
 	TYPE_R8  = 4,
-	/* Only used by operator tables*/
+	/* Used by operator tables to resolve pointer types (managed & unmanaged) and by unmanaged pointer types*/
 	TYPE_PTR  = 5,
 	/* Method pointer, value types and classes */
 	TYPE_COMPLEX = 6,
@@ -121,9 +123,9 @@ enum {
 	/*Mask used to extract just the type, excluding flags */
 	TYPE_MASK = 0x0F,
 
-
-	/* The stack type is a pointer, unmask the value to res */
+	/* The stack type is a managed pointer, unmask the value to res */
 	POINTER_MASK = 0x100,
+
 	/* Controlled Mutability Manager Pointer */
 	CMMP_MASK = 0x200,
 };
@@ -1273,6 +1275,27 @@ check_overflow (VerifyContext *ctx)
 	return 1;
 }
 
+static gboolean
+check_unmanaged_pointer (VerifyContext *ctx, ILStackDesc *value)
+{
+	if (value->stype == TYPE_PTR) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unmanaged pointer is not a verifiable type at 0x%04x", ctx->ip_offset));
+		return 0;
+	}
+	return 1;
+}
+
+static gboolean
+check_unmanaged_pointer_type (VerifyContext *ctx, MonoType *type)
+{
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unmanaged pointer is not a verifiable type at 0x%04x", ctx->ip_offset));
+		return 0;
+	}
+	return 1;
+}
+
+
 static ILStackDesc *
 stack_push (VerifyContext *ctx)
 {
@@ -1382,7 +1405,7 @@ dump_stack_value (ILStackDesc *value)
 		printf ("Controled Mutability MP: ");
 
 	if (value->stype & POINTER_MASK)
-		printf ("Managed Pointer: ");
+		printf ("Managed Pointer to: ");
 
 	switch (value->stype & TYPE_MASK) {
 		case TYPE_INV:
@@ -1401,7 +1424,7 @@ dump_stack_value (ILStackDesc *value)
 			printf ("float64]"); 
 			return;
 		case TYPE_PTR:
-			printf ("pointer]"); 
+			printf ("unmanaged pointer]"); 
 			return;
 		case TYPE_COMPLEX:
 			printf ("complex]"); 
@@ -1491,23 +1514,17 @@ handle_enum:
 	case MONO_TYPE_U:
 		return TYPE_NATIVE_INT | mask;
 
-	case MONO_TYPE_PTR:
-		/*FIXME: We should flag this as an unmanaged pointer. should we mark the method as unverifiable right now? */
-		mask = POINTER_MASK; 
-		type = type->data.type;
-		type_kind = type->type;
-		goto handle_enum;
-
 	/* FIXME: the spec says that you cannot have a pointer to method pointer, do we need to check this here? */ 
-	case MONO_TYPE_FNPTR: 
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_PTR:
+		return TYPE_PTR | mask;
+
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_TYPEDBYREF:
-
-
 	case MONO_TYPE_GENERICINST:
 		return TYPE_COMPLEX | mask;
 
@@ -1564,12 +1581,11 @@ handle_enum:
 		stack->stype = TYPE_NATIVE_INT | mask;
 		return;
 
+	/*FIXME: Do we need to check if it's a pointer to the method pointer? The spec says it' illegal to have that.*/
+	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_PTR:
-		/*FIXME: We should flag this as an unmanaged pointer. should we mark the method as unverifiable right now? */
-		mask = POINTER_MASK; 
-		type = type->data.type;
-		type_kind = type->type;
-		goto handle_enum;
+		stack->stype = TYPE_PTR | mask;
+		return;
 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
@@ -1578,8 +1594,6 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_TYPEDBYREF:
 
-	/*FIXME: Do we need to check if it's a pointer to the method pointer? The spec says it' illegal to have that.*/
-	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_GENERICINST:
 		stack->stype = TYPE_COMPLEX | mask;
 		return;
@@ -2030,6 +2044,8 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 	if (arg >= ctx->max_args) {
 		ADD_VERIFY_ERROR(ctx, g_strdup_printf ("Method doesn't have argument %d", arg + 1));
 	} else if (check_overflow (ctx)) {
+		/*We must let the value be pushed, otherwise we would get an underflow error*/
+		check_unmanaged_pointer_type (ctx, ctx->params [arg]);
 		set_stack_value (stack_push (ctx), ctx->params [arg], FALSE);
 	} 
 }
@@ -2040,6 +2056,8 @@ push_local (VerifyContext *ctx, guint32 arg, int take_addr)
 	if (arg >= ctx->num_locals) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method doesn't have local %d", arg + 1));
 	} else if (check_overflow (ctx)) {
+		/*We must let the value be pushed, otherwise we would get an underflow error*/
+		check_unmanaged_pointer_type (ctx, ctx->locals [arg]);
 		set_stack_value (stack_push (ctx), ctx->locals [arg], take_addr);
 	} 
 }
@@ -2147,6 +2165,8 @@ static void
 do_boolean_branch_op (VerifyContext *ctx, int delta)
 {
 	int target = ctx->ip_offset + delta;
+	ILStackDesc *top;
+
 	VERIFIER_DEBUG ( printf ("boolean branch offset %d delta %d target %d\n", ctx->ip_offset, delta, target); );
  
 	if (target < 0 || target >= ctx->code_size) {
@@ -2164,8 +2184,11 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 	if (!check_underflow (ctx, 1))
 		return;
 
-	if (!is_valid_bool_arg (stack_pop (ctx)))
+	top = stack_pop (ctx);
+	if (!is_valid_bool_arg (top))
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [stack_get (ctx, -1)->stype & TYPE_MASK], ctx->ip_offset));
+
+	check_unmanaged_pointer (ctx, top);
 }
 
 
@@ -2278,7 +2301,6 @@ do_ret (VerifyContext *ctx)
 		}
 	}
 
-
 	if (ctx->eval.size > 0) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", ctx->eval.size, ctx->ip_offset));
 	} else if (in_any_block (ctx->header, ctx->ip_offset))
@@ -2288,6 +2310,7 @@ do_ret (VerifyContext *ctx)
 /* FIXME: we could just load the signature instead of the whole MonoMethod
  * TODO handle vararg calls
  * TODO handle non virt calls to non-final virtual calls (from the verifiability clause in page 52 of partition 3)
+ * TODO handle abstract calls
  */
 static void
 do_invoke_method (VerifyContext *ctx, int method_token)
