@@ -240,6 +240,21 @@ mp_g_malloc0 (MonoMemPool *mp, guint size)
 		return g_malloc0 (size);
 }
 
+/**
+ * mp_string_to_utf8:
+ *
+ * Allocate memory from the mempool MP if it is non-NULL. Otherwise, allocate
+ * memory from the C heap.
+ */
+static char *
+mp_string_to_utf8 (MonoMemPool *mp, MonoString *s)
+{
+	if (mp)
+		return mono_string_to_utf8_mp (mp, s);
+	else
+		return mono_string_to_utf8 (s);
+}
+
 #define mp_g_new(mp,struct_type, n_structs)		\
     ((struct_type *) mp_g_malloc (mp, ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
@@ -8420,10 +8435,11 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	pm = (MonoMethodNormal*)m;
 
+	m->dynamic = dynamic;
 	m->slot = -1;
 	m->flags = rmb->attrs;
 	m->iflags = rmb->iattrs;
-	m->name = dynamic ? mono_string_to_utf8 (rmb->name) : mono_string_to_utf8_mp (mp, rmb->name);
+	m->name = mp_string_to_utf8 (mp, rmb->name);
 	m->klass = klass;
 	m->signature = sig;
 	m->skip_visibility = rmb->skip_visibility;
@@ -8582,7 +8598,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				}
 
 				if (pb->name)
-					method_aux->param_names [i] = dynamic ? mono_string_to_utf8 (pb->name) : mono_string_to_utf8_mp (mp, pb->name);
+					method_aux->param_names [i] = mp_string_to_utf8 (mp, pb->name);
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
 						method_aux->param_cattr = mp_g_new0 (mp, MonoCustomAttrInfo*, m->signature->param_count + 1);
@@ -9557,6 +9573,16 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 
 	/* ilgen is no longer needed */
 	mb->ilgen = NULL;
+}
+
+void
+mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
+{
+	g_assert (mb);
+
+	if (mb->mhandle)
+		mono_runtime_free_method (
+			mono_object_get_domain ((MonoObject*)mb), mb->mhandle);
 }
 
 /**
