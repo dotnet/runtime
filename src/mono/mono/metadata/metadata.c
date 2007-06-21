@@ -2034,9 +2034,6 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	gclass->context.class_inst = inst;
 	gclass->context.method_inst = NULL;
 
-	if (inst == container_class->generic_container->context.class_inst)
-		gclass->cached_class = container_class;
-
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
 
 	mono_loader_unlock ();

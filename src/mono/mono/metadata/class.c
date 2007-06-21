@@ -653,6 +653,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	result = (MonoMethod *) iresult;
 	result->is_inflated = 1;
+	/* result->generic_container = NULL; */
 	result->signature = NULL;
 	iresult->context = *context;
 	iresult->declaring = method;
@@ -3106,6 +3107,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	mono_loader_lock ();
 	if (gclass->cached_class) {
 		mono_loader_unlock ();
+		g_assert (!gclass->cached_class->generic_container);
 		return gclass->cached_class;
 	}
 
