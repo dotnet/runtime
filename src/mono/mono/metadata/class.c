@@ -524,11 +524,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		/* We can't use context->class_inst directly, since it can have more elements */
 		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
-		if (inst != container->context.class_inst)
-			gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
-
-		if (!gclass)
-			return NULL;
+		gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
 
 		nt = dup_type (type, type);
 		nt->type = MONO_TYPE_GENERICINST;

@@ -2413,6 +2413,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (method->is_inflated);
+	g_assert (!method->klass->generic_container);
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
