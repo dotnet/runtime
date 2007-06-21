@@ -42,7 +42,8 @@ typedef enum {
 	FileShare_None=0x0,
 	FileShare_Read=0x01,
 	FileShare_Write=0x02,
-	FileShare_ReadWrite=FileShare_Read|FileShare_Write
+	FileShare_ReadWrite=FileShare_Read|FileShare_Write,
+	FileShare_Delete=0x04
 } MonoFileShare;
 
 /* This is a copy of System.IO.FileOptions */

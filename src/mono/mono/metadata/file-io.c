@@ -110,6 +110,9 @@ static guint32 convert_share(MonoFileShare mono_share)
 	case FileShare_ReadWrite:
 		share=FILE_SHARE_READ|FILE_SHARE_WRITE;
 		break;
+	case FileShare_Delete:
+		share=FILE_SHARE_DELETE;
+		break;
 	default:
 		g_warning("System.IO.FileShare has unknown value 0x%x",
 			  mono_share);
