@@ -11,6 +11,7 @@
 
 #include <config.h>
 #include <signal.h>
+#include <sched.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -695,6 +696,14 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
+#if HAVE_SCHED_SETAFFINITY
+	if (getenv ("MONO_NO_SMP")) {
+		cpu_set_t proc_mask;
+		CPU_ZERO (&proc_mask);
+		CPU_SET (0, &proc_mask);
+		sched_setaffinity (getpid(), sizeof (cpu_set_t), &proc_mask);
+	}
+#endif
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
