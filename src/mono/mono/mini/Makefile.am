@@ -218,6 +218,7 @@ common_sources = \
 	simple-mini-ops.h \
 	driver.c	\
 	debug-mini.c	\
+	debug-mini.h	\
 	linear-scan.c	\
 	aot-compiler.c		\
 	aot-runtime.c		\

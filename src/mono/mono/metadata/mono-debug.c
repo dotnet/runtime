@@ -812,7 +812,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (max_size > BUFSIZ)
 		g_free (oldptr);
 
-	mono_debugger_start_add_type (handle, klass);
+	mono_debugger_add_type (handle, klass);
 }
 
 static MonoDebugMethodJitInfo *

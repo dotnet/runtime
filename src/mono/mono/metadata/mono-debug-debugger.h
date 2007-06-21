@@ -13,8 +13,6 @@
 #include <mono/utils/mono-codeman.h>
 #include <mono/io-layer/io-layer.h>
 
-typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
-
 typedef enum {
 	MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE	= 1,
 	MONO_DEBUGGER_EVENT_ADD_MODULE,
@@ -36,32 +34,23 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE
 } MonoDebuggerEvent;
 
-struct _MonoDebuggerBreakpointInfo {
-	guint32 index;
-	MonoMethodDesc *desc;
-};
-
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_initialize                  (gboolean use_debugger);
-void            mono_debugger_cleanup                     (void);
+void            mono_debugger_initialize                    (gboolean use_debugger);
+void            mono_debugger_cleanup                       (void);
 
-void            mono_debugger_lock                        (void);
-void            mono_debugger_unlock                      (void);
-void            mono_debugger_event                       (MonoDebuggerEvent event, guint64 data, guint64 arg);
+void            mono_debugger_lock                          (void);
+void            mono_debugger_unlock                        (void);
+void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_add_symbol_file             (MonoDebugHandle *handle);
-void            mono_debugger_start_add_type              (MonoDebugHandle *symfile, MonoClass *klass);
+void            mono_debugger_add_symbol_file               (MonoDebugHandle *handle);
+void            mono_debugger_add_type                      (MonoDebugHandle *symfile, MonoClass *klass);
 
-int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
-int             mono_debugger_remove_breakpoint           (int breakpoint_id);
-void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
+MonoObject     *mono_debugger_runtime_invoke                (MonoMethod *method, void *obj,
+							     void **params, MonoObject **exc);
 
-MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
-							   void **params, MonoObject **exc);
-
-gboolean        mono_debugger_lookup_type                 (const gchar *type_name);
-gint32          mono_debugger_lookup_assembly             (const gchar *name);
+gboolean        mono_debugger_lookup_type                   (const gchar *type_name);
+gint32          mono_debugger_lookup_assembly               (const gchar *name);
 
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
