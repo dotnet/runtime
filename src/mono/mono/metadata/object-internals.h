@@ -527,6 +527,7 @@ struct _MonoDelegate {
 	MonoString *method_name;
 	gpointer delegate_trampoline;
 	MonoReflectionMethod *method_info;
+	MonoReflectionMethod *original_method_info;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
