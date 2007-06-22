@@ -4798,6 +4798,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
+	/* See bug #80743 */
+	target_klass = method->klass;
+#if 0
 	target_klass = mono_defaults.object_class;
 	/* 
 	 * if types in the signature belong to non-mscorlib, we cache only
@@ -4813,6 +4816,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			}
 		}
 	}
+#endif
 	cache = target_klass->image->runtime_invoke_cache;
 
 	/* from mono_marshal_find_in_cache */
