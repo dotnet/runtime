@@ -450,11 +450,15 @@ again:
 		munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
 }
 
-static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT] = {MONO_MUTEX_INITIALIZER};
+static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
 static void noshm_semaphores_init (void)
 {
-	/* No need to do anything */
+	int i;
+
+	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
+		mono_mutex_init (&noshm_sems[i], NULL);
+	}
 }
 
 static void shm_semaphores_remove (void)
