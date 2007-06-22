@@ -407,53 +407,15 @@ cominterop_get_com_slot_begin (MonoClass* klass)
 }
 
 /**
- * cominterop_get_com_slot_for_method:
- * @method: a method
- *
- * Returns: the method's slot in the COM interface vtable
- */
-static int
-cominterop_get_com_slot_for_method (MonoMethod* method)
-{
-	guint32 slot = method->slot;
- 	MonoClass *ic = method->klass;
-
-	/* if method is on a class, we need to look up interface method exists on */
-	if (!MONO_CLASS_IS_INTERFACE(method->klass)) {
-		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass);
-		if (ifaces) {
-			int i;
-			for (i = 0; i < ifaces->len; ++i) {
-				int offset;
-				ic = g_ptr_array_index (ifaces, i);
-				offset = mono_class_interface_offset (method->klass, ic);
-				if (method->slot >= offset && method->slot < offset + ic->method.count) {
-					slot -= offset;
-					break;
-				}
-				ic = NULL;
-			}
-			g_ptr_array_free (ifaces, TRUE);
-		}
-	}
-
-	g_assert (ic);
-	g_assert (MONO_CLASS_IS_INTERFACE (ic));
-
-	return slot + cominterop_get_com_slot_begin (ic);
-}
-
-/**
  * cominterop_get_method_interface:
  * @method: method being called
  *
- * Returns: the Type on which the method is defined on
+ * Returns: the MonoClass* representing the interface on which
+ * the method is defined.
  */
-static MonoReflectionType*
+static MonoClass*
 cominterop_get_method_interface (MonoMethod* method)
 {
-	MonoType* t = NULL;
-	MonoReflectionType* rt = NULL;
 	MonoClass *ic = method->klass;
 
 	/* if method is on a class, we need to look up interface method exists on */
@@ -476,10 +438,114 @@ cominterop_get_method_interface (MonoMethod* method)
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
 
-	t = mono_class_get_type (ic);
-	rt = mono_type_get_object (mono_domain_get(), t);
+	return ic;
+}
 
-	return rt;
+/**
+ * cominterop_get_com_slot_for_method:
+ * @method: a method
+ *
+ * Returns: the method's slot in the COM interface vtable
+ */
+static int
+cominterop_get_com_slot_for_method (MonoMethod* method)
+{
+	guint32 slot = method->slot;
+ 	MonoClass *ic = method->klass;
+
+	/* if method is on a class, we need to look up interface method exists on */
+	if (!MONO_CLASS_IS_INTERFACE(ic)) {
+		int offset = 0;
+		ic = cominterop_get_method_interface (method);
+		offset = mono_class_interface_offset (method->klass, ic);
+		g_assert(offset >= 0);
+		slot -= offset;
+	}
+
+	g_assert (ic);
+	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+
+	return slot + cominterop_get_com_slot_begin (ic);
+}
+
+
+static void
+cominterop_mono_string_to_guid (const MonoString* string, guint8 *guid);
+
+static gboolean
+cominterop_class_guid (MonoClass* klass, guint8* guid)
+{
+	static MonoClass *GuidAttribute = NULL;
+	MonoCustomAttrInfo *cinfo;
+
+	/* Handle the GuidAttribute */
+	if (!GuidAttribute)
+		GuidAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "GuidAttribute");
+
+	cinfo = mono_custom_attrs_from_class (klass);	
+	if (cinfo) {
+		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr (cinfo, GuidAttribute);
+
+		if (!attr)
+			return FALSE;
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+
+		cominterop_mono_string_to_guid (attr->guid, guid);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/**
+ * cominterop_get_interface:
+ * @obj: managed wrapper object containing COM object
+ * @ic: interface type to retrieve for COM object
+ *
+ * Returns: the COM interface requested
+ */
+static gpointer
+cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exception)
+{
+	gpointer itf = NULL;
+
+	g_assert (ic);
+	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+
+	mono_cominterop_lock ();
+	if (obj->itf_hash)
+		itf = g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER ((guint)ic->interface_id));
+	mono_cominterop_unlock ();
+
+	if (!itf) {
+		guint8 iid [16];
+		int found = cominterop_class_guid (ic, iid);
+		int hr;
+		g_assert(found);
+		hr = ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (obj->iunknown, iid, &itf);
+		if (hr < 0 && throw_exception) {
+			static MonoMethod* throw_exception_for_hr = NULL;
+			MonoException* ex;
+			void* params[1] = {&hr};
+			if (!throw_exception_for_hr)
+				throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
+			ex = (MonoException*)mono_runtime_invoke (throw_exception_for_hr, NULL, params, NULL);
+			mono_raise_exception (ex);
+		}
+
+		if (hr >= 0 && itf) {
+			mono_cominterop_lock ();
+			if (!obj->itf_hash)
+				obj->itf_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+			g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER ((guint)ic->interface_id), itf);
+			mono_cominterop_unlock ();
+		}
+
+	}
+	if (throw_exception)
+		g_assert (itf);
+
+	return itf;
 }
 
 static int
@@ -547,12 +613,13 @@ mono_marshal_init (void)
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_store, "wb_generic", "void ptr object", FALSE);
-		register_icall (cominterop_get_method_interface, "cominterop_get_method_interface", "object ptr", FALSE);
+		register_icall (cominterop_get_method_interface, "cominterop_get_method_interface", "ptr ptr", FALSE);
 		register_icall (cominterop_get_function_pointer, "cominterop_get_function_pointer", "ptr ptr int32", FALSE);
 		register_icall (cominterop_object_is_rcw, "cominterop_object_is_rcw", "int32 object", FALSE);
 		register_icall (cominterop_get_ccw, "cominterop_get_ccw", "ptr object ptr", FALSE);
 		register_icall (cominterop_get_ccw_object, "cominterop_get_ccw_object", "object ptr int32", FALSE);
 		register_icall (cominterop_get_hresult_for_exception, "cominterop_get_hresult_for_exception", "int32 object", FALSE);
+		register_icall (cominterop_get_interface, "cominterop_get_interface", "ptr object ptr int32", FALSE);
 	}
 }
 
@@ -2372,13 +2439,10 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (conv == MONO_MARSHAL_CONV_OBJECT_INTERFACE) {
-			static MonoMethod* GetInterface = NULL;
-			
-			if (!GetInterface)
-				GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
-			mono_mb_emit_ptr (mb, type);
-			mono_mb_emit_icall (mb, type_from_handle);
-			mono_mb_emit_managed_call (mb, GetInterface, NULL);
+			mono_mb_emit_ptr (mb, mono_type_get_class (type));
+			mono_mb_emit_icon (mb, TRUE);
+			mono_mb_emit_icall (mb, cominterop_get_interface);
+
 		}
 		else if (conv == MONO_MARSHAL_CONV_OBJECT_IUNKNOWN) {
 			static MonoProperty* iunknown = NULL;
@@ -3483,14 +3547,11 @@ cominterop_get_native_wrapper (MonoMethod *method)
 		}
 		else {
 			static MonoMethod * ThrowExceptionForHR = NULL;
-			static MonoMethod * GetInterface = NULL;
 			MonoMethod *adjusted_method;
 			int retval = 0;
 			int ptr_this;
 			int i;
 			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
-			if (!GetInterface)
-				GetInterface = mono_class_get_method_from_name (mono_defaults.com_object_class, "GetInterface", 1);
 
 			// add local variables
 			ptr_this = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -3502,7 +3563,8 @@ cominterop_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_ptr (mb, method);
 			mono_mb_emit_icall (mb, cominterop_get_method_interface);
-			mono_mb_emit_managed_call (mb, GetInterface, NULL);
+			mono_mb_emit_icon (mb, TRUE);
+			mono_mb_emit_icall (mb, cominterop_get_interface);
 			mono_mb_emit_stloc (mb, ptr_this);
 
 			// arg 1 is unmanaged this pointer
@@ -10665,43 +10727,9 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObject* obj)
 }
 
 gpointer
-ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType* type)
+ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)
 {
-	MonoClass* klass;
-	gpointer itf = NULL;
-	g_assert(obj);
-	g_assert(type);
-	if (!obj->itf_hash)
-		return NULL;
-
-	klass = mono_object_class (obj);
-	klass = mono_class_from_mono_type (type->type);
-
-	mono_cominterop_lock ();
-	itf = g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER ((guint)klass->interface_id));
-	mono_cominterop_unlock ();
-
-	return itf;
-}
-
-void
-ves_icall_System_ComObject_AddInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf)
-{
-	MonoClass* klass;
-	g_assert(obj);
-	g_assert(type);
-	if (!obj->itf_hash) {
-		mono_cominterop_lock ();
-		obj->itf_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_cominterop_unlock ();
-	}
-
-	klass = mono_object_class (obj);
-	klass = mono_class_from_mono_type (type->type);
-
-	mono_cominterop_lock ();
-	g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER ((guint)klass->interface_id), pItf);
-	mono_cominterop_unlock ();
+	return cominterop_get_interface (obj, mono_type_get_class (type->type), (gboolean)throw_exception);
 }
 
 void
@@ -11724,48 +11752,14 @@ cominterop_mono_string_to_guid (const MonoString* string, guint8 *guid) {
 
 	for (i = 0; i < sizeof(indexes); i++)
 		guid [i] = g_unichar_xdigit_value (chars [indexes [i]]) + (g_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
-
-	//guid [0] = g_unichar_xdigit_value (chars [7]) + (g_unichar_xdigit_value (chars [6]) << 4);
-	//guid [1] = g_unichar_xdigit_value (chars [5]) + (g_unichar_xdigit_value (chars [4]) << 4);
-	//guid [2] = g_unichar_xdigit_value (chars [3]) + (g_unichar_xdigit_value (chars [2]) << 4);
-	//guid [3] = g_unichar_xdigit_value (chars [1]) + (g_unichar_xdigit_value (chars [0]) << 4);
-	//guid [4] = g_unichar_xdigit_value (chars [12]) + (g_unichar_xdigit_value (chars [11]) << 4);
-	//guid [5] = g_unichar_xdigit_value (chars [10]) + (g_unichar_xdigit_value (chars [9]) << 4);
-	//guid [6] = g_unichar_xdigit_value (chars [17]) + (g_unichar_xdigit_value (chars [16]) << 4);
-	//guid [7] = g_unichar_xdigit_value (chars [15]) + (g_unichar_xdigit_value (chars [14]) << 4);
-	//guid [8] = g_unichar_xdigit_value (chars [20]) + (g_unichar_xdigit_value (chars [19]) << 4);
-	//guid [9] = g_unichar_xdigit_value (chars [22]) + (g_unichar_xdigit_value (chars [21]) << 4);
-	//guid [10] = g_unichar_xdigit_value (chars [25]) + (g_unichar_xdigit_value (chars [24]) << 4);
-	//guid [11] = g_unichar_xdigit_value (chars [27]) + (g_unichar_xdigit_value (chars [26]) << 4);
-	//guid [12] = g_unichar_xdigit_value (chars [29]) + (g_unichar_xdigit_value (chars [28]) << 4);
-	//guid [13] = g_unichar_xdigit_value (chars [31]) + (g_unichar_xdigit_value (chars [30]) << 4);
-	//guid [14] = g_unichar_xdigit_value (chars [33]) + (g_unichar_xdigit_value (chars [32]) << 4);
-	//guid [15] = g_unichar_xdigit_value (chars [35]) + (g_unichar_xdigit_value (chars [34]) << 4);
 }
 
 static gboolean
 cominterop_class_guid_equal (guint8* guid, MonoClass* klass)
 {
-	static MonoClass *GuidAttribute = NULL;
-	MonoCustomAttrInfo *cinfo;
-
-	/* Handle the GuidAttribute */
-	if (!GuidAttribute)
-		GuidAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "GuidAttribute");
-
-	cinfo = mono_custom_attrs_from_class (klass);	
-	if (cinfo) {
-		guint8 klass_guid [16];
-		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr (cinfo, GuidAttribute);
-
-		if (!attr)
-			return FALSE;
-		if (!cinfo->cached)
-			mono_custom_attrs_free (cinfo);
-
-		cominterop_mono_string_to_guid (attr->guid, klass_guid);
+	guint8 klass_guid [16];
+	if (cominterop_class_guid (klass, klass_guid))
 		return !memcmp (guid, klass_guid, sizeof (klass_guid));
-	}
 	return FALSE;
 }
 

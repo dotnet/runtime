@@ -852,8 +852,7 @@ ICALL(WEBIC_1, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultCon
 ICALL(WEBIC_2, "GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir)
 
 ICALL_TYPE(COMOBJ, "System.__ComObject", COMOBJ_1)
-ICALL(COMOBJ_1, "AddInterface", ves_icall_System_ComObject_AddInterface)
-ICALL(COMOBJ_2, "CreateRCW", ves_icall_System_ComObject_CreateRCW)
-ICALL(COMOBJ_4, "FindInterface", ves_icall_System_ComObject_FindInterface)
+ICALL(COMOBJ_1, "CreateRCW", ves_icall_System_ComObject_CreateRCW)
+ICALL(COMOBJ_2, "GetInterfaceInternal", ves_icall_System_ComObject_GetInterfaceInternal)
 ICALL(COMOBJ_3, "ReleaseInterfaces", ves_icall_System_ComObject_ReleaseInterfaces)
 

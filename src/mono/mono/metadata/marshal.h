@@ -421,10 +421,7 @@ void
 ves_icall_System_ComObject_ReleaseInterfaces(MonoComObject* obj) MONO_INTERNAL;
 
 gpointer
-ves_icall_System_ComObject_FindInterface (MonoComObject* obj, MonoReflectionType* type) MONO_INTERNAL;
-
-void
-ves_icall_System_ComObject_AddInterface (MonoComObject* obj, MonoReflectionType* type, gpointer pItf) MONO_INTERNAL;
+ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception) MONO_INTERNAL;
 
 void
 ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy* proxy) MONO_INTERNAL;
