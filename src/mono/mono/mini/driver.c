@@ -700,10 +700,8 @@ mono_main (int argc, char* argv[])
 
 #if HAVE_SCHED_SETAFFINITY
 	if (getenv ("MONO_NO_SMP")) {
-		cpu_set_t proc_mask;
-		CPU_ZERO (&proc_mask);
-		CPU_SET (0, &proc_mask);
-		sched_setaffinity (getpid(), sizeof (cpu_set_t), &proc_mask);
+		unsigned long proc_mask = 1;
+		sched_setaffinity (getpid(), sizeof (unsigned long), &proc_mask);
 	}
 #endif
 	if (!g_thread_supported ())
