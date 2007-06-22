@@ -11,7 +11,9 @@
 
 #include <config.h>
 #include <signal.h>
+#if HAVE_SCHED_SETAFFINITY
 #include <sched.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
