@@ -667,7 +667,9 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
 	}
 
-	if (method->generic_container && !context->method_inst)
+	if (context->method_inst)
+		result->generic_container = NULL;
+	else if (method->generic_container)
 		iresult->context.method_inst = method->generic_container->context.method_inst;
 
 	return result;

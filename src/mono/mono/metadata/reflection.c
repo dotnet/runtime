@@ -8821,6 +8821,7 @@ dup_type (const MonoType *original)
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoArray *types)
 {
+	MonoClass *klass;
 	MonoMethod *method, *inflated;
 	MonoMethodInflated *imethod;
 	MonoReflectionMethodBuilder *mb = NULL;
@@ -8843,7 +8844,10 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		method = rmethod->method;
 	}
 
-	method = mono_get_inflated_method (method);
+	klass = method->klass;
+
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 
 	count = mono_method_signature (method)->generic_param_count;
 	if (count != mono_array_length (types))
@@ -8872,15 +8876,12 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	}
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
-	tmp_context.class_inst = method->klass->generic_class ? method->klass->generic_class->context.class_inst : NULL;
+	tmp_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 	tmp_context.method_inst = ginst;
 
 	inflated = g_hash_table_lookup (container->method_hash, &tmp_context);
 	if (inflated)
 		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
-
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
 
 	inflated = mono_class_inflate_generic_method (method, &tmp_context);
 	imethod = (MonoMethodInflated *) inflated;

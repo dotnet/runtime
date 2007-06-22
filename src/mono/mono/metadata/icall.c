@@ -2624,7 +2624,7 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return !method->method->is_inflated &&
+	return method->method->generic_container &&
 		(mono_method_signature (method->method)->generic_param_count != 0);
 }
 
