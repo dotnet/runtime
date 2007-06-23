@@ -1760,6 +1760,8 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg == ins->sreg1) {
 				if (last_ins)
 					last_ins->next = ins->next;				
+				else
+					bb->code = ins->next;
 				ins = ins->next;
 				continue;
 			}
@@ -2015,7 +2017,9 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			if (ins->dreg == ins->sreg1) {
 				if (last_ins)
-					last_ins->next = ins->next;				
+					last_ins->next = ins->next;
+				else
+					bb->code = ins->next;
 				ins = ins->next;
 				continue;
 			}
