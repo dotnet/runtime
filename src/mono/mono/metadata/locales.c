@@ -153,6 +153,7 @@ ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultur
 
 	domain = mono_domain_get ();
 
+	datetime->readOnly = this->is_read_only;
 	MONO_OBJECT_SETREF (datetime, AbbreviatedDayNames, create_names_array_idx (dfe->abbreviated_day_names,
 			NUM_DAYS));
 	MONO_OBJECT_SETREF (datetime, AbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_names,
@@ -199,6 +200,7 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 
 	domain = mono_domain_get ();
 
+	number->readOnly = this->is_read_only;
 	number->currencyDecimalDigits = nfe->currency_decimal_digits;
 	MONO_OBJECT_SETREF (number, currencyDecimalSeparator, mono_string_new (domain,
 			idx2string (nfe->currency_decimal_separator)));
@@ -437,6 +439,8 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_curren
 
 	ret = construct_culture_from_specific_name (ci, locale);
 	g_free (locale);
+	ci->is_read_only = TRUE;
+	ci->use_user_override = TRUE;
 
 	return ret;
 }
@@ -581,6 +585,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			culture = (MonoCultureInfo *) mono_object_new (domain, class);
 			mono_runtime_object_init ((MonoObject *) culture);
 			construct_culture (culture, ci);
+			culture->use_user_override = TRUE;
 			mono_array_setref (ret, len++, culture);
 		}
 	}
