@@ -39,20 +39,30 @@ struct _MonoDebuggerInfo {
 	guint64 (*compile_method) (guint64 method_argument);
 	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
 	guint64 (*get_boxed_object_method) (guint64 klass_argument, guint64 val_argument);
-	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
-	guint64 (*remove_breakpoint) (guint64 breakpoint);
+	guint64 (*old_insert_breakpoint) (guint64 method_arg, const gchar *string_arg);
+	guint64 (*old_remove_breakpoint) (guint64 breakpoint);
 	MonoInvokeFunc runtime_invoke;
-	guint64 (*create_string) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*old_create_string) (G_GNUC_UNUSED guint64 dummy, const gchar *string_arg);
 	guint64 (*class_get_static_field_data) (guint64 klass);
-	guint64 (*lookup_class) (guint64 image_argument, guint64 token_arg);
-	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
-	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*old_lookup_class) (guint64 image_argument, guint64 token_arg);
+	guint64 obsolete_dummy1;  /* `lookup_type' was already unused in 0.50 "Dublin". */
+	guint64 (*old_lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
 	guint64 (*get_current_thread) (void);
 	void (*attach) (void);
 	void (*detach) (void);
 	void (*initialize) (void);
 	void * (*get_lmf_addr) (void);
+
+	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
+				  const gchar *string_argument);
+	gint64 (*lookup_class) (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
+				gchar *full_name);
+	guint64 (*lookup_assembly) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
+				    const gchar *string_argument);
+	gint64 (*get_method_addr_or_bpt) (guint64 method_argument, guint64 index);
+	void (*remove_method_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
+	void (*runtime_class_init) (guint64 klass_arg);
 };
 
 struct _MonoDebuggerMetadataInfo {
