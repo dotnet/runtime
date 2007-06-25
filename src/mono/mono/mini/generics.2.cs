@@ -156,6 +156,14 @@ class Tests {
 			return 0;
     }
 
+	public static int test_0_box_brtrue_opt () {
+		Foo<int> f = new Foo<int> (5);
+
+		f [123] = 5;
+
+		return 0;
+	}
+
 	public static int test_0_box_brtrue_opt_regress_81102 () {
 		if (new Foo<int>(5).ToString () == "null")
 			return 0;
@@ -177,6 +185,13 @@ class Tests {
 
 		public String Bar (String s) {
 			return s;
+		}
+
+		public int this [T1 key] {
+			set {
+				if (key == null)
+					throw new ArgumentNullException ("key");
+			}
 		}
 		
 		readonly T1 m_t1;

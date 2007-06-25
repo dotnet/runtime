@@ -992,6 +992,13 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 				}
 			}
 		}
+	} else if (inst->opcode == OP_BR) {
+		MonoBasicBlock *target = inst->inst_target_bb;
+
+		if (!(target->flags &  BB_REACHABLE)) {
+			target->flags |= BB_REACHABLE;
+			*bblist = g_list_prepend (*bblist, target);
+		}
 	} else if ((inst->opcode >= CEE_BEQ && inst->opcode <= CEE_BLT_UN) &&
 	    ((inst->inst_i0->opcode == OP_COMPARE) || (inst->inst_i0->opcode == OP_LCOMPARE))) {
 		int a, b, r1, r2;
