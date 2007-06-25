@@ -45,7 +45,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*old_create_string) (G_GNUC_UNUSED guint64 dummy, const gchar *string_arg);
 	guint64 (*class_get_static_field_data) (guint64 klass);
 	guint64 (*old_lookup_class) (guint64 image_argument, guint64 token_arg);
-	guint64 obsolete_dummy1;  /* `lookup_type' was already unused in 0.50 "Dublin". */
+	void (*obsolete_dummy1) (void);  /* `lookup_type' was already unused in 0.50 "Dublin". */
 	guint64 (*old_lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
 	guint64 (*get_current_thread) (void);
