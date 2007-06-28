@@ -33,6 +33,7 @@
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
+guint32 mono_debug_debugger_version = -1;
 
 static gboolean in_the_mono_debugger = FALSE;
 static gboolean mono_debug_initialized = FALSE;

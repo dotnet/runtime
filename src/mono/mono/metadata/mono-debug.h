@@ -192,6 +192,7 @@ struct _MonoDebugVarInfo {
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
+extern guint32 mono_debug_debugger_version;
 
 void mono_debug_init (MonoDebugFormat format);
 void mono_debug_init_1 (MonoDomain *domain);
