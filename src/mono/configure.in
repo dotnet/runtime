@@ -1396,6 +1396,9 @@ if test x$platform_win32 = xno; then
 		 #include <utime.h>])
 	AC_CHECK_TYPES([struct timezone], [AC_DEFINE(HAVE_STRUCT_TIMEZONE)], ,
 		[#include <sys/time.h>])
+	AC_CHECK_TYPES([struct utimbuf], [AC_DEFINE(HAVE_STRUCT_UTIMBUF)], ,
+		[#include <sys/types.h>
+		 #include <utime.h>])
 	AC_CHECK_MEMBERS(
 		[struct dirent.d_off, struct dirent.d_reclen, struct dirent.d_type],,, 
 		[#include <sys/types.h>

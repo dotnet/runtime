@@ -1,3 +1,7 @@
+2007-06-28  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add a check for `struct utimbuf'; needed by MonoPosixHelper.
+
 2007-06-15  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: revert back to using package names
