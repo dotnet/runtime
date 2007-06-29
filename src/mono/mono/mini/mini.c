@@ -140,6 +140,8 @@ static GHashTable *jit_icall_name_hash = NULL;
 
 static MonoDebugOptions debug_options;
 
+static int valgrind_register = 0;
+
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -150,9 +152,12 @@ gboolean
 mono_running_on_valgrind (void)
 {
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-		if (RUNNING_ON_VALGRIND)
+		if (RUNNING_ON_VALGRIND){
+#ifdef VALGRIND_JIT_REGISTER_MAP
+			valgrind_register = TRUE;
+#endif
 			return TRUE;
-		else
+		} else
 			return FALSE;
 #else
 		return FALSE;
@@ -10210,7 +10215,15 @@ mono_codegen (MonoCompile *cfg)
 			break;
 		}
 	}
-       
+
+#ifdef VALGRIND_JIT_REGISTER_MAP
+if (valgrind_register){
+		char* nm = mono_method_full_name (cfg->method, TRUE);
+		VALGRIND_JIT_REGISTER_MAP (nm, cfg->native_code, cfg->native_code + cfg->code_len);
+		g_free (nm);
+	}
+#endif
+ 
 	if (cfg->verbose_level > 0) {
 		char* nm = mono_method_full_name (cfg->method, TRUE);
 		g_print ("Method %s emitted at %p to %p (code length %d) [%s]\n", 
