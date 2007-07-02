@@ -6391,7 +6391,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;	
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_STR_LPSTR));
+		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
