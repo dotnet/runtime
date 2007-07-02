@@ -98,6 +98,7 @@ typedef struct {
 
 	MonoGenericContext *generic_context;
 	MonoImage *image;
+	MonoMethod *method;
 } VerifyContext;
 
 //////////////////////////////////////////////////////////////////
@@ -112,7 +113,7 @@ enum {
 	TYPE_R8  = 4,
 	/* Used by operator tables to resolve pointer types (managed & unmanaged) and by unmanaged pointer types*/
 	TYPE_PTR  = 5,
-	/* Method pointer, value types and classes */
+	/* value types and classes */
 	TYPE_COMPLEX = 6,
 	/* Number of types, used to define the size of the tables*/
 	TYPE_MAX = 8, 		/* FIXME: This should probably be 7, but would require all the tables to be updated */
@@ -1126,6 +1127,7 @@ is_valid_bool_arg (ILStackDesc *arg)
 	case TYPE_I4:
 	case TYPE_I8:
 	case TYPE_NATIVE_INT:
+	case TYPE_PTR:
 		return TRUE;
 	case TYPE_COMPLEX:
 		g_assert (arg->type);
@@ -1553,12 +1555,12 @@ handle_enum:
 
 /* convert MonoType to ILStackDesc format (stype) */
 static void
-set_stack_value (ILStackDesc *stack, MonoType *type, int take_addr)
+set_stack_value (ILStackDesc *stack, MonoType *type, int take_addr, int override_byref)
 {
 	int mask = 0;
 	int type_kind = type->type;
 
-	if (type->byref || take_addr)
+	if ((type->byref && !override_byref) || take_addr)
 		mask = POINTER_MASK;
 	/* TODO handle CMMP_MASK */
 
@@ -1789,7 +1791,7 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
  */
 static gboolean
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candidate, gboolean strict) {
-	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p %p\n", ctx, target, candidate); );
+	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p[%d][%d] %p[%d][%d]\n", ctx, target, target->type, target->byref, candidate, candidate->type, candidate->byref); );
 
  	/*only one is byref */
 	if (candidate->byref ^ target->byref) {
@@ -1899,10 +1901,6 @@ handle_enum:
 	return 1;
 }
 
-/*
-	TODO MONO_TYPE_PTR:
-	TODO MONO_TYPE_FNPTR:
-*/
 static int
 verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 	int stack_type = stack->stype;
@@ -1944,11 +1942,15 @@ handle_enum:
 			return FALSE;
 		return verify_stack_type_compatibility (ctx, type->data.type, stack->type->data.type, TRUE);
 
-	case MONO_TYPE_FNPTR: 
+	case MONO_TYPE_FNPTR: {
+		MonoMethodSignature *left, *right;
 		if (stack_type != TYPE_PTR || stack->type->type != MONO_TYPE_FNPTR)
 			return FALSE;
 
-		return mono_metadata_signature_equal (mono_type_get_signature (type), mono_type_get_signature (stack->type));
+		left = mono_type_get_signature (type);
+		right = mono_type_get_signature (stack->type);
+		return mono_metadata_signature_equal (left, right) && left->call_convention == right->call_convention;
+	}
 
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *left;
@@ -2045,9 +2047,14 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 	if (arg >= ctx->max_args) {
 		ADD_VERIFY_ERROR(ctx, g_strdup_printf ("Method doesn't have argument %d", arg + 1));
 	} else if (check_overflow (ctx)) {
+		gboolean override_byref;
 		/*We must let the value be pushed, otherwise we would get an underflow error*/
 		check_unmanaged_pointer_type (ctx, ctx->params [arg]);
-		set_stack_value (stack_push (ctx), ctx->params [arg], FALSE);
+
+		/*the 'this' argument is byref, which is not right for reference types,
+		 We override the byref only here, since it's the only point that push ctx->params values*/
+		override_byref = arg == 0 && ctx->method->klass && !(ctx->method->flags & METHOD_ATTRIBUTE_STATIC) && !ctx->method->klass->valuetype;	
+		set_stack_value (stack_push (ctx), ctx->params [arg], FALSE, override_byref);
 	} 
 }
 
@@ -2059,7 +2066,7 @@ push_local (VerifyContext *ctx, guint32 arg, int take_addr)
 	} else if (check_overflow (ctx)) {
 		/*We must let the value be pushed, otherwise we would get an underflow error*/
 		check_unmanaged_pointer_type (ctx, ctx->locals [arg]);
-		set_stack_value (stack_push (ctx), ctx->locals [arg], take_addr);
+		set_stack_value (stack_push (ctx), ctx->locals [arg], take_addr, FALSE);
 	} 
 }
 
@@ -2355,8 +2362,144 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (check_overflow (ctx))
-			set_stack_value (stack_push (ctx), sig->ret, FALSE);
+			set_stack_value (stack_push (ctx), sig->ret, FALSE, FALSE);
 	}
+}
+
+static void
+do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
+{
+	MonoClassField *field;
+	MonoClass *klass;
+
+	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
+	if (!field) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) { 
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot load non static field at 0x%04x", ctx->ip_offset));
+		return;
+	}
+	/*taking the address of initonly field only works from the static constructor */
+	if (take_addr && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY) &&
+		!(field->parent == ctx->method->klass && (ctx->method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_STATIC)) && !strcmp (".cctor", ctx->method->name)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
+
+	set_stack_value (stack_push (ctx), field->type, take_addr, FALSE);
+}
+
+static void
+do_store_static_field (VerifyContext *ctx, int token) {
+	MonoClassField *field;
+	MonoClass *klass;
+	ILStackDesc *value;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+
+	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
+	if (!field) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot store field from token 0x%08x at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) { 
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot store non static field at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (!verify_type_compat (ctx, field->type, value))
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
+}
+
+static gboolean
+check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *obj, MonoClassField **ret_field)
+{
+	MonoClassField *field;
+	MonoClass *klass;
+
+	/*must be one of: object type, managed pointer, unmanaged pointer (native int) or an instance of a value type */
+	if (!((obj->stype == TYPE_COMPLEX)
+		/* the managed reference must be to an object or value type */
+		|| ((obj->stype & POINTER_MASK) && (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX))
+		|| (obj->stype == TYPE_NATIVE_INT)
+		|| (obj->stype == TYPE_PTR)
+		|| (obj->stype == TYPE_COMPLEX))) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", type_names [UNMASK_TYPE (obj->stype)], ctx->ip_offset));
+		return FALSE;
+	}
+
+	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
+	if (!field) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ctx->ip_offset));
+		return FALSE;
+	}
+
+	*ret_field = field;
+
+	g_assert (obj->type);
+
+	/*The value on the stack must be a subclass of the defining type of the field*/ 
+	/* we need to check if we can load the field from the stack value*/
+	if (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX) {
+		MonoType *type = obj->type->byref ? &field->parent->this_arg : &field->parent->byval_arg;
+
+		if (!verify_stack_type_compatibility (ctx, type, obj->type, FALSE)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
+			return FALSE;
+		}
+	}
+
+	/*TODO: implement acess checks */
+
+	if (obj->stype == TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Native int is not a verifiable type to reference a field at 0x%04x", ctx->ip_offset));
+
+	check_unmanaged_pointer (ctx, obj);
+	return TRUE;
+}
+
+static void
+do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
+{
+	ILStackDesc *obj;
+	MonoClassField *field;
+
+	if (!check_underflow (ctx, 1))
+		return;
+	obj = stack_pop (ctx);
+
+	if (!check_is_valid_type_for_field_ops (ctx, token, obj, &field))
+		return;
+
+	if (take_addr && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY) &&
+		!(field->parent == ctx->method->klass && (ctx->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && !strcmp (".ctor", ctx->method->name)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
+
+	set_stack_value (stack_push (ctx), field->type, take_addr, FALSE);
+}
+
+static void
+do_store_field (VerifyContext *ctx, int token)
+{
+	ILStackDesc *value, *obj;
+	MonoClassField *field;
+
+	if (!check_underflow (ctx, 2))
+		return;
+
+	value = stack_pop (ctx);
+	obj = stack_pop (ctx);
+
+	if (!check_is_valid_type_for_field_ops (ctx, token, obj, &field))
+		return;
+
+	if (!verify_type_compat (ctx, field->type, value))
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -2456,7 +2599,6 @@ mono_method_verify (MonoMethod *method, int level)
 	guint token, ip_offset = 0, prefix = 0;
 	MonoClass *klass;
 	MonoMethod *cmethod;
-	MonoClassField *field;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
@@ -2470,6 +2612,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	ctx.signature = mono_method_signature (method);
 	ctx.header = mono_method_get_header (method);
+	ctx.method = method;
 	ip = ctx.header->code;
 	end = ip + ctx.header->code_size;
 	ctx.image = image = method->klass->image;
@@ -2948,74 +3091,26 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			start = 1;
 			break;
+
 		case CEE_LDFLD:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX && stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument %s to ldfld at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			type_to_eval_stack_type (field->type, stack_top (&ctx), FALSE);
-			ip += 5;
-			break;
 		case CEE_LDFLDA:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX && stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldflda at 0x%04x", ip_offset));
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			type_to_eval_stack_type (field->type, stack_top (&ctx), TRUE);
+			do_push_field (&ctx, read32 (ip + 1), *ip == CEE_LDFLDA);
 			ip += 5;
 			break;
-		case CEE_STFLD:
-			if (!check_underflow (&ctx, 2))
-				break;
-			ctx.eval.size -= 2;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX && stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to stfld at 0x%04x", ip_offset));
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			/* can_store */
-			ip += 5;
-			break;
+
 		case CEE_LDSFLD:
-			if (!check_overflow (&ctx))
-				break;
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			type_to_eval_stack_type (field->type, stack_top (&ctx), FALSE);
-			++ctx.eval.size;
-			ip += 5;
-			break;
 		case CEE_LDSFLDA:
-			if (!check_overflow (&ctx))
-				break;
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			type_to_eval_stack_type (field->type, stack_top (&ctx), TRUE);
-			++ctx.eval.size;
+			do_push_static_field (&ctx, read32 (ip + 1), *ip == CEE_LDSFLDA);
 			ip += 5;
 			break;
+
+		case CEE_STFLD:
+			do_store_field (&ctx, read32 (ip + 1));
+			ip += 5;
+			break;
+
 		case CEE_STSFLD:
-			if (!check_underflow (&ctx, 1))
-				break;
-			stack_pop (&ctx);
-			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
-			/* can store */
+			do_store_static_field (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 		case CEE_STOBJ:
