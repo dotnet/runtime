@@ -38,7 +38,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 
 .class sealed MyValueType extends [mscorlib]System.ValueType
 {
-	.field private int32 fld
+	.field public int32 fld
 }
 
 .class ClassB extends [mscorlib]System.Object
@@ -55,25 +55,24 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
     .field public static initonly TYPE1 st_const_field
 }
 
-.class SubClass extends ClassA
+.class public SubClass extends ClassA
 {
     .field public TYPE1 subfld
     .field public static TYPE1 subsfld
 }
 
-.class explicit Overlapped extends [mscorlib]System.Object
+.class public explicit Overlapped extends [mscorlib]System.Object
 {
     .field[0] public TYPE1 field1
     .field[0] public TYPE1 field2
     .field[8] public TYPE1 field3
     .field[8] public TYPE1 field4
     .field[16] public TYPE1 field5
-    
     .field[20] public TYPE1 field10
-    .field[20] public static TYPE1 field11
+    .field[24] public TYPE2 field_ok
 }
 
-.class explicit SubOverlapped extends Overlapped
+.class public explicit SubOverlapped extends Overlapped
 {
     .field[16] public TYPE1 field6
 }
