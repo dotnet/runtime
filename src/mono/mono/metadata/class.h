@@ -258,6 +258,12 @@ mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_c
 char *
 mono_class_name_from_token (MonoImage *image, guint32 type_token);
 
+gboolean
+mono_method_can_access_field (MonoMethod *method, MonoClassField *field);
+
+gboolean
+mono_method_can_access_method (MonoMethod *method, MonoMethod *called);
+
 G_END_DECLS
 
 #endif /* _MONO_CLI_CLASS_H_ */
