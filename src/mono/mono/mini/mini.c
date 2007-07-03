@@ -3210,6 +3210,22 @@ is_signed_regsize_type (MonoType *type)
 	}
 }
 
+static int
+is_unsigned_regsize_type (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_U4:
+#if SIZEOF_VOID_P == 8
+	/*case MONO_TYPE_U8: this requires different opcodes in inssel.brg */
+#endif
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static MonoInst*
 mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -3304,14 +3320,14 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		return store;
 	} else if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Min") == 0) {
-			if (is_signed_regsize_type (fsig->params [0])) {
+			if (is_unsigned_regsize_type (fsig->params [0])) {
 				MONO_INST_NEW (cfg, ins, OP_MIN);
 				ins->inst_i0 = args [0];
 				ins->inst_i1 = args [1];
 				return ins;
 			}
 		} else if (strcmp (cmethod->name, "Max") == 0) {
-			if (is_signed_regsize_type (fsig->params [0])) {
+			if (is_unsigned_regsize_type (fsig->params [0])) {
 				MONO_INST_NEW (cfg, ins, OP_MAX);
 				ins->inst_i0 = args [0];
 				ins->inst_i1 = args [1];
