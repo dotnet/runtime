@@ -2546,11 +2546,11 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 						/* FIXME: */
 						g_assert_not_reached ();
 					/* The runtime invoke wrapper needs the original boxed vtype */
-					pa [i] = (char *)(((gpointer *)params->vector)[i]);
+					pa [i] = mono_array_get (params, MonoObject*, i);
 				} else {
 					/* MS seems to create the objects if a null is passed in */
-					if (!((gpointer *)params->vector)[i])
-						((gpointer*)params->vector)[i] = mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->params [i]));
+					if (!mono_array_get (params, MonoObject*, i))
+						mono_array_setref (params, i, mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->params [i])));
 
 					if (t->byref) {
 						/*
@@ -2565,7 +2565,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 						mono_array_setref (params, i, copy);
 					}
 						
-					pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
+					pa [i] = mono_object_unbox (mono_array_get (params, MonoObject*, i));
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -2574,12 +2574,15 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 				if (t->byref)
-					pa [i] = &(((gpointer *)params->vector)[i]);
+					pa [i] = mono_array_addr (params, MonoObject*, i);
 				else
-					pa [i] = (char *)(((gpointer *)params->vector)[i]);
+					pa [i] = mono_array_get (params, MonoObject*, i);
 				break;
 			case MONO_TYPE_GENERICINST:
-				t = &t->data.generic_class->container_class->byval_arg;
+				if (t->byref)
+					t = &t->data.generic_class->container_class->this_arg;
+				else
+					t = &t->data.generic_class->container_class->byval_arg;
 				goto again;
 			default:
 				g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
@@ -2609,9 +2612,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				o = mono_object_unbox (obj);
 			else
 				o = obj;
-		}
-		else if (method->klass->valuetype)
+		} else if (method->klass->valuetype) {
 			obj = mono_value_box (mono_domain_get (), method->klass, obj);
+		}
 
 		mono_runtime_invoke (method, o, pa, exc);
 		return obj;
