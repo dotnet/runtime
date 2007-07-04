@@ -29,6 +29,19 @@ typedef enum {
 	X86_EDI = 7,
 	X86_NREG
 } X86_Reg_No;
+
+typedef enum {
+	X86_XMM0,
+	X86_XMM1,
+	X86_XMM2,
+	X86_XMM3,
+	X86_XMM4,
+	X86_XMM5,
+	X86_XMM6,
+	X86_XMM7,
+	X86_XMM_NREG
+} X86_XMM_Reg_No;
+
 /*
 // opcodes for alu instructions
 */
@@ -1692,6 +1705,23 @@ typedef union {
 		}	\
 		x86_leave ((inst));	\
 		x86_ret ((inst));	\
+	} while (0)
+
+/* minimal SSE* support */
+#define x86_movsd_reg_membase(inst,dreg,basereg,disp)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xf2;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x10;	\
+		x86_membase_emit ((inst), (dreg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_cvttsd2si(inst,dreg,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xf2;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x2c;	\
+		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
 
 #endif // X86_H
