@@ -140,7 +140,9 @@ static GHashTable *jit_icall_name_hash = NULL;
 
 static MonoDebugOptions debug_options;
 
+#ifdef VALGRIND_JIT_REGISTER_MAP
 static int valgrind_register = 0;
+#endif
 
 /*
  * Address of the trampoline code.  This is used by the debugger to check
@@ -3192,22 +3194,6 @@ mono_find_jit_opcode_emulation (int opcode)
 		return emul_opcode_map [opcode];
 	else
 		return NULL;
-}
-
-static int
-is_signed_regsize_type (MonoType *type)
-{
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_I4:
-#if SIZEOF_VOID_P == 8
-	/*case MONO_TYPE_I8: this requires different opcodes in inssel.brg */
-#endif
-		return TRUE;
-	default:
-		return FALSE;
-	}
 }
 
 static int
