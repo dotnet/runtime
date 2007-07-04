@@ -614,6 +614,10 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 				*exclude_mask |= MONO_OPT_FCMOV;
 		} else
 			*exclude_mask |= MONO_OPT_CMOV;
+		if (edx & (1 << 26))
+			opts |= MONO_OPT_SSE2;
+		else
+			*exclude_mask |= MONO_OPT_SSE2;
 	}
 	return opts;
 }
@@ -1706,6 +1710,21 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
 {
+#define XMM_TEMP_REG 0
+	if (cfg->opt & MONO_OPT_SSE2 && size < 8) {
+		/* optimize by assigning a local var for this use so we avoid
+		 * the stack manipulations */
+		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+		x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
+		x86_movsd_reg_membase (code, XMM_TEMP_REG, X86_ESP, 0);
+		x86_cvttsd2si (code, dreg, XMM_TEMP_REG);
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
+		if (size == 1)
+			x86_widen_reg (code, dreg, dreg, is_signed, FALSE);
+		else if (size == 2)
+			x86_widen_reg (code, dreg, dreg, is_signed, TRUE);
+		return code;
+	}
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 	x86_fnstcw_membase(code, X86_ESP, 0);
 	x86_mov_reg_membase (code, dreg, X86_ESP, 0, 2);
