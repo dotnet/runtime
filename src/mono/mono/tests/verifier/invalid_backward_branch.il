@@ -13,12 +13,18 @@
 .method public static int32 Main() cil managed
 {
 	.entrypoint
-	.maxstack 1
+	.maxstack 2
 	br end
 	branch_target: // Follows unconditional branch, stack empty.
 	ldc.i4.0
 	br branch_target // Stack not empty, invalid.
 	end:
+	ldc.i4.0
+	pop
+	#the verifier can do DCE before performing stack merging
+	newobj instance void object::.ctor()
+	callvirt instance int32 object::GetHashCode()
+	beq.s branch_target
 	ldc.i4.0
 	ret
 }

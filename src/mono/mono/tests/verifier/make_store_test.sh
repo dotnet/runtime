@@ -64,8 +64,16 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 
 .method public static void Main() cil managed
 {
-	.maxstack 2
 	.entrypoint
+	.maxstack 4
+	.locals init (
+	    TYPE1 V_0,
+	    TYPE2 V_1
+	)
+	ldloc.0
+	ldloc.1
+	call void Foo(TYPE1, TYPE2)
+
 	ret
 }
 //EOF

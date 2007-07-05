@@ -1,9 +1,14 @@
 #! /bin/sh
 
 # Stack Size Tests
-for OP in 'starg.s 0' 'stloc.0' 'stloc.s 0' 'stfld int32 Class::fld' pop ret
+for OP in 'starg.s 0'
 do
-  ./make_stack_0_test.sh "$OP"
+  ./make_stack_0_test.sh invalid "$OP"
+done
+
+for OP in 'stloc.0' 'stloc.s 0' 'stfld int32 Class::fld' pop ret
+do
+  ./make_stack_0_test.sh invalid "$OP"
 done
 
 for OP in add and 'box [mscorlib]System.Int32' 'brfalse branch_target' ceq cgt clt conv.i4 conv.r8 div dup 'ldfld int32 Class::fld' 'ldflda int32 Class::fld' mul not or rem shl shr sub xor
@@ -20,54 +25,60 @@ done
 I=1
 for OP in add div mul rem sub
 do
-  ./make_bin_test.sh bin_num_op_32_${I} valid $OP int32 int32
-  ./make_bin_test.sh bin_num_op_33_${I} valid $OP int32 'native int'
-  ./make_bin_test.sh bin_num_op_34_${I} valid $OP int64 int64
-  ./make_bin_test.sh bin_num_op_35_${I} valid $OP 'native int' int32
-  ./make_bin_test.sh bin_num_op_36_${I} valid $OP 'native int' 'native int'
-  ./make_bin_test.sh bin_num_op_37_${I} valid $OP float64 float64
-  ./make_bin_test.sh bin_num_op_38_${I} valid $OP float32 float64
-  ./make_bin_test.sh bin_num_op_39_${I} valid $OP float64 float32
-  ./make_bin_test.sh bin_num_op_40_${I} valid $OP float32 float32
+  if [ "$OP" == "div" ] || [ "$OP" == "rem" ]; then
+  	INIT="yes";
+  else
+  	INIT="no";
+  fi
+	
+  ./make_bin_test.sh bin_num_op_32_${I} valid $OP int32 int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_33_${I} valid $OP int32 'native int' "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_34_${I} valid $OP int64 int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_35_${I} valid $OP 'native int' int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_36_${I} valid $OP 'native int' 'native int' "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_37_${I} valid $OP float64 float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_38_${I} valid $OP float32 float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_39_${I} valid $OP float64 float32 "ldc.r4 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_40_${I} valid $OP float32 float32 "ldc.r4 0" "${INIT}"
   
-  ./make_bin_test.sh bin_num_op_1_${I} invalid $OP int32 int64
-  ./make_bin_test.sh bin_num_op_2_${I} invalid $OP int32 float64
-  ./make_bin_test.sh bin_num_op_3_${I} invalid $OP int32 object
+  ./make_bin_test.sh bin_num_op_1_${I} unverifiable $OP int32 int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_2_${I} unverifiable $OP int32 float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_3_${I} unverifiable $OP int32 object "ldnull" "${INIT}"
 
-  ./make_bin_test.sh bin_num_op_4_${I} invalid $OP int64 int32
-  ./make_bin_test.sh bin_num_op_5_${I} invalid $OP int64 'native int'
-  ./make_bin_test.sh bin_num_op_6_${I} invalid $OP int64 float64
-  ./make_bin_test.sh bin_num_op_7_${I} invalid $OP int64 'int64&'
-  ./make_bin_test.sh bin_num_op_8_${I} invalid $OP int64 object
+  ./make_bin_test.sh bin_num_op_4_${I} unverifiable $OP int64 int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_5_${I} unverifiable $OP int64 'native int' "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_6_${I} unverifiable $OP int64 float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_7_${I} unverifiable $OP int64 'int64&' "ldnull" "${INIT}"
+  ./make_bin_test.sh bin_num_op_8_${I} unverifiable $OP int64 object "ldnull" "${INIT}"
 
-  ./make_bin_test.sh bin_num_op_9_${I} invalid $OP 'native int' int64
-  ./make_bin_test.sh bin_num_op_10_${I} invalid $OP 'native int' float64
-  ./make_bin_test.sh bin_num_op_11_${I} invalid $OP 'native int' object
+  ./make_bin_test.sh bin_num_op_9_${I} unverifiable $OP 'native int' int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_10_${I} unverifiable $OP 'native int' float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_11_${I} unverifiable $OP 'native int' object "ldnull" "${INIT}"
 
-  ./make_bin_test.sh bin_num_op_12_${I} invalid $OP float64 int32
-  ./make_bin_test.sh bin_num_op_13_${I} invalid $OP float64 int64
-  ./make_bin_test.sh bin_num_op_14_${I} invalid $OP float64 'native int'
-  ./make_bin_test.sh bin_num_op_15_${I} invalid $OP float64 'float64&'
-  ./make_bin_test.sh bin_num_op_16_${I} invalid $OP float64 object
+  ./make_bin_test.sh bin_num_op_12_${I} unverifiable $OP float64 int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_13_${I} unverifiable $OP float64 int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_14_${I} unverifiable $OP float64 'native int' "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_15_${I} unverifiable $OP float64 'float64&' "ldnull" "${INIT}"
+  ./make_bin_test.sh bin_num_op_16_${I} unverifiable $OP float64 object "ldnull" "${INIT}"
 
-  ./make_bin_test.sh bin_num_op_17_${I} invalid $OP 'int64&' int64
-  ./make_bin_test.sh bin_num_op_18_${I} invalid $OP 'float64&' float64
-  ./make_bin_test.sh bin_num_op_19_${I} invalid $OP 'object&' object
+  ./make_bin_test.sh bin_num_op_17_${I} unverifiable $OP 'int64&' int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_18_${I} unverifiable $OP 'float64&' float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_19_${I} unverifiable $OP 'object&' object "ldnull" "${INIT}"
 
-  ./make_bin_test.sh bin_num_op_20_${I} invalid $OP object int32
-  ./make_bin_test.sh bin_num_op_21_${I} invalid $OP object int64
-  ./make_bin_test.sh bin_num_op_22_${I} invalid $OP object 'native int'
-  ./make_bin_test.sh bin_num_op_23_${I} invalid $OP object float64
-  ./make_bin_test.sh bin_num_op_24_${I} invalid $OP object 'object&'
-  ./make_bin_test.sh bin_num_op_25_${I} invalid $OP object object
+  ./make_bin_test.sh bin_num_op_20_${I} unverifiable $OP object int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_21_${I} unverifiable $OP object int64 "ldc.i8 1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_22_${I} unverifiable $OP object 'native int' "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_23_${I} unverifiable $OP object float64 "ldc.r8 0" "${INIT}"
+  ./make_bin_test.sh bin_num_op_24_${I} unverifiable $OP object 'object&' "ldnull" "${INIT}"
+  ./make_bin_test.sh bin_num_op_25_${I} unverifiable $OP object object "ldnull" "${INIT}"
   I=`expr $I + 1`
 done
 
 I=1
 for OP in div mul rem sub
 do
-  ./make_bin_test.sh bin_num_op_26_${I} invalid $OP int32 'int32&'
-  ./make_bin_test.sh bin_num_op_27_${I} invalid $OP 'native int' 'native int&'
+  ./make_bin_test.sh bin_num_op_26_${I} unverifiable $OP int32 'int32&'
+  ./make_bin_test.sh bin_num_op_27_${I} unverifiable $OP 'native int' 'native int&'
   I=`expr $I + 1`
 done
 
@@ -81,8 +92,13 @@ done
 I=1
 for OP in div mul rem
 do
-  ./make_bin_test.sh bin_num_op_28_${I} invalid $OP 'int32&' int32
-  ./make_bin_test.sh bin_num_op_29_${I} invalid $OP 'native int&' 'native int'
+  if [ "$OP" == "div" ] || [ "$OP" == "div" ]; then
+  	INIT="yes";
+  else
+  	INIT="no";
+  fi
+  ./make_bin_test.sh bin_num_op_28_${I} unverifiable $OP 'int32&' int32 "ldc.i4.1" "${INIT}"
+  ./make_bin_test.sh bin_num_op_29_${I} unverifiable $OP 'native int&' 'native int' "ldc.i4.1" "${INIT}"
   I=`expr $I + 1`
 done
 
@@ -96,7 +112,12 @@ done
 I=1
 for OP in div mul rem add
 do
-  ./make_bin_test.sh bin_num_op_30_${I} invalid $OP 'int32&' 'int32&'
+  if [ "$OP" == "div" ] || [ "$OP" == "div" ]; then
+  	INIT="yes";
+  else
+  	INIT="no";
+  fi
+  ./make_bin_test.sh bin_num_op_30_${I} unverifiable $OP 'int32&' 'int32&' "ldnull" "${INIT}"
   I=`expr $I + 1`
 done
 
@@ -110,46 +131,46 @@ done
 I=1
 for OP in ceq cgt clt
 do
-  ./make_bin_test.sh bin_comp_op_1_${I} invalid $OP int32 int64
-  ./make_bin_test.sh bin_comp_op_2_${I} invalid $OP int32 float64
-  ./make_bin_test.sh bin_comp_op_3_${I} invalid $OP int32 'int32&'
-  ./make_bin_test.sh bin_comp_op_4_${I} invalid $OP int32 object
+  ./make_bin_test.sh bin_comp_op_1_${I} unverifiable $OP int32 int64
+  ./make_bin_test.sh bin_comp_op_2_${I} unverifiable $OP int32 float64
+  ./make_bin_test.sh bin_comp_op_3_${I} unverifiable $OP int32 'int32&'
+  ./make_bin_test.sh bin_comp_op_4_${I} unverifiable $OP int32 object
 
-  ./make_bin_test.sh bin_comp_op_5_${I} invalid $OP int64 int32
-  ./make_bin_test.sh bin_comp_op_6_${I} invalid $OP int64 'native int'
-  ./make_bin_test.sh bin_comp_op_7_${I} invalid $OP int64 float64
-  ./make_bin_test.sh bin_comp_op_8_${I} invalid $OP int64 'int64&'
-  ./make_bin_test.sh bin_comp_op_9_${I} invalid $OP int64 object
+  ./make_bin_test.sh bin_comp_op_5_${I} unverifiable $OP int64 int32
+  ./make_bin_test.sh bin_comp_op_6_${I} unverifiable $OP int64 'native int'
+  ./make_bin_test.sh bin_comp_op_7_${I} unverifiable $OP int64 float64
+  ./make_bin_test.sh bin_comp_op_8_${I} unverifiable $OP int64 'int64&'
+  ./make_bin_test.sh bin_comp_op_9_${I} unverifiable $OP int64 object
 
-  ./make_bin_test.sh bin_comp_op_10_${I} invalid $OP 'native int' int64
-  ./make_bin_test.sh bin_comp_op_11_${I} invalid $OP 'native int' float64
-  ./make_bin_test.sh bin_comp_op_12_${I} invalid $OP 'native int' object
+  ./make_bin_test.sh bin_comp_op_10_${I} unverifiable $OP 'native int' int64
+  ./make_bin_test.sh bin_comp_op_11_${I} unverifiable $OP 'native int' float64
+  ./make_bin_test.sh bin_comp_op_12_${I} unverifiable $OP 'native int' object
 
-  ./make_bin_test.sh bin_comp_op_13_${I} invalid $OP float64 int32
-  ./make_bin_test.sh bin_comp_op_14_${I} invalid $OP float64 int64
-  ./make_bin_test.sh bin_comp_op_15_${I} invalid $OP float64 'native int'
-  ./make_bin_test.sh bin_comp_op_16_${I} invalid $OP float64 'float64&'
-  ./make_bin_test.sh bin_comp_op_17_${I} invalid $OP float64 object
+  ./make_bin_test.sh bin_comp_op_13_${I} unverifiable $OP float64 int32
+  ./make_bin_test.sh bin_comp_op_14_${I} unverifiable $OP float64 int64
+  ./make_bin_test.sh bin_comp_op_15_${I} unverifiable $OP float64 'native int'
+  ./make_bin_test.sh bin_comp_op_16_${I} unverifiable $OP float64 'float64&'
+  ./make_bin_test.sh bin_comp_op_17_${I} unverifiable $OP float64 object
 
-  ./make_bin_test.sh bin_comp_op_18_${I} invalid $OP 'int32&' int32
-  ./make_bin_test.sh bin_comp_op_19_${I} invalid $OP 'int64&' int64
-  ./make_bin_test.sh bin_comp_op_20_${I} invalid $OP 'float64&' float64
-  ./make_bin_test.sh bin_comp_op_21_${I} invalid $OP 'object&' object
+  ./make_bin_test.sh bin_comp_op_18_${I} unverifiable $OP 'int32&' int32
+  ./make_bin_test.sh bin_comp_op_19_${I} unverifiable $OP 'int64&' int64
+  ./make_bin_test.sh bin_comp_op_20_${I} unverifiable $OP 'float64&' float64
+  ./make_bin_test.sh bin_comp_op_21_${I} unverifiable $OP 'object&' object
 
-  ./make_bin_test.sh bin_comp_op_22_${I} invalid $OP object int32
-  ./make_bin_test.sh bin_comp_op_23_${I} invalid $OP object int64
-  ./make_bin_test.sh bin_comp_op_24_${I} invalid $OP object 'native int'
-  ./make_bin_test.sh bin_comp_op_25_${I} invalid $OP object float64
-  ./make_bin_test.sh bin_comp_op_26_${I} invalid $OP object 'object&'
+  ./make_bin_test.sh bin_comp_op_22_${I} unverifiable $OP object int32
+  ./make_bin_test.sh bin_comp_op_23_${I} unverifiable $OP object int64
+  ./make_bin_test.sh bin_comp_op_24_${I} unverifiable $OP object 'native int'
+  ./make_bin_test.sh bin_comp_op_25_${I} unverifiable $OP object float64
+  ./make_bin_test.sh bin_comp_op_26_${I} unverifiable $OP object 'object&'
   I=`expr $I + 1`
 done
 
 I=1
 for OP in cgt clt
 do
-  ./make_bin_test.sh bin_comp_op_27_${I} invalid $OP 'native int' 'native int&'
-  ./make_bin_test.sh bin_comp_op_28_${I} invalid $OP 'native int&' 'native int'
-  ./make_bin_test.sh bin_comp_op_29_${I} invalid $OP object object
+  ./make_bin_test.sh bin_comp_op_27_${I} unverifiable $OP 'native int' 'native int&'
+  ./make_bin_test.sh bin_comp_op_28_${I} unverifiable $OP 'native int&' 'native int'
+  ./make_bin_test.sh bin_comp_op_29_${I} unverifiable $OP object object
   I=`expr $I + 1`
 done
 
@@ -164,91 +185,91 @@ done
 I=1
 for OP in and or xor
 do
-  ./make_bin_test.sh bin_int_op_1_${I} invalid "$OP" int32 int64
-  ./make_bin_test.sh bin_int_op_2_${I} invalid "$OP" int32 float64
-  ./make_bin_test.sh bin_int_op_3_${I} invalid "$OP" int32 'int32&'
-  ./make_bin_test.sh bin_int_op_4_${I} invalid "$OP" int32 object
+  ./make_bin_test.sh bin_int_op_1_${I} unverifiable "$OP" int32 int64
+  ./make_bin_test.sh bin_int_op_2_${I} unverifiable "$OP" int32 float64
+  ./make_bin_test.sh bin_int_op_3_${I} unverifiable "$OP" int32 'int32&'
+  ./make_bin_test.sh bin_int_op_4_${I} unverifiable "$OP" int32 object
 
-  ./make_bin_test.sh bin_int_op_5_${I} invalid "$OP" int64 int32
-  ./make_bin_test.sh bin_int_op_6_${I} invalid "$OP" int64 'native int'
-  ./make_bin_test.sh bin_int_op_7_${I} invalid "$OP" int64 float64
-  ./make_bin_test.sh bin_int_op_8_${I} invalid "$OP" int64 'int64&'
-  ./make_bin_test.sh bin_int_op_9_${I} invalid "$OP" int64 object
+  ./make_bin_test.sh bin_int_op_5_${I} unverifiable "$OP" int64 int32
+  ./make_bin_test.sh bin_int_op_6_${I} unverifiable "$OP" int64 'native int'
+  ./make_bin_test.sh bin_int_op_7_${I} unverifiable "$OP" int64 float64
+  ./make_bin_test.sh bin_int_op_8_${I} unverifiable "$OP" int64 'int64&'
+  ./make_bin_test.sh bin_int_op_9_${I} unverifiable "$OP" int64 object
 
-  ./make_bin_test.sh bin_int_op_10_${I} invalid "$OP" 'native int' int64
-  ./make_bin_test.sh bin_int_op_11_${I} invalid "$OP" 'native int' float64
-  ./make_bin_test.sh bin_int_op_12_${I} invalid "$OP" 'native int' 'native int&'
-  ./make_bin_test.sh bin_int_op_13_${I} invalid "$OP" 'native int' object
+  ./make_bin_test.sh bin_int_op_10_${I} unverifiable "$OP" 'native int' int64
+  ./make_bin_test.sh bin_int_op_11_${I} unverifiable "$OP" 'native int' float64
+  ./make_bin_test.sh bin_int_op_12_${I} unverifiable "$OP" 'native int' 'native int&'
+  ./make_bin_test.sh bin_int_op_13_${I} unverifiable "$OP" 'native int' object
 
-  ./make_bin_test.sh bin_int_op_14_${I} invalid "$OP" float64 int32
-  ./make_bin_test.sh bin_int_op_15_${I} invalid "$OP" float64 int64
-  ./make_bin_test.sh bin_int_op_16_${I} invalid "$OP" float64 'native int'
-  ./make_bin_test.sh bin_int_op_17_${I} invalid "$OP" float64 float64
-  ./make_bin_test.sh bin_int_op_18_${I} invalid "$OP" float64 'int32&'
-  ./make_bin_test.sh bin_int_op_19_${I} invalid "$OP" float64 object
+  ./make_bin_test.sh bin_int_op_14_${I} unverifiable "$OP" float64 int32
+  ./make_bin_test.sh bin_int_op_15_${I} unverifiable "$OP" float64 int64
+  ./make_bin_test.sh bin_int_op_16_${I} unverifiable "$OP" float64 'native int'
+  ./make_bin_test.sh bin_int_op_17_${I} unverifiable "$OP" float64 float64
+  ./make_bin_test.sh bin_int_op_18_${I} unverifiable "$OP" float64 'int32&'
+  ./make_bin_test.sh bin_int_op_19_${I} unverifiable "$OP" float64 object
 
-  ./make_bin_test.sh bin_int_op_20_${I} invalid "$OP" 'int32&' int32
-  ./make_bin_test.sh bin_int_op_21_${I} invalid "$OP" 'int64&' int64
-  ./make_bin_test.sh bin_int_op_22_${I} invalid "$OP" 'native int&' 'native int'
-  ./make_bin_test.sh bin_int_op_23_${I} invalid "$OP" 'float64&' float64
-  ./make_bin_test.sh bin_int_op_24_${I} invalid "$OP" 'int32&' 'int32&'
-  ./make_bin_test.sh bin_int_op_25_${I} invalid "$OP" 'float64&' object
+  ./make_bin_test.sh bin_int_op_20_${I} unverifiable "$OP" 'int32&' int32
+  ./make_bin_test.sh bin_int_op_21_${I} unverifiable "$OP" 'int64&' int64
+  ./make_bin_test.sh bin_int_op_22_${I} unverifiable "$OP" 'native int&' 'native int'
+  ./make_bin_test.sh bin_int_op_23_${I} unverifiable "$OP" 'float64&' float64
+  ./make_bin_test.sh bin_int_op_24_${I} unverifiable "$OP" 'int32&' 'int32&'
+  ./make_bin_test.sh bin_int_op_25_${I} unverifiable "$OP" 'float64&' object
 
-  ./make_bin_test.sh bin_int_op_26_${I} invalid "$OP" object int32
-  ./make_bin_test.sh bin_int_op_27_${I} invalid "$OP" object int64
-  ./make_bin_test.sh bin_int_op_28_${I} invalid "$OP" object 'native int'
-  ./make_bin_test.sh bin_int_op_29_${I} invalid "$OP" object float64
-  ./make_bin_test.sh bin_int_op_30_${I} invalid "$OP" object 'int32&'
-  ./make_bin_test.sh bin_int_op_31_${I} invalid "$OP" object object
+  ./make_bin_test.sh bin_int_op_26_${I} unverifiable "$OP" object int32
+  ./make_bin_test.sh bin_int_op_27_${I} unverifiable "$OP" object int64
+  ./make_bin_test.sh bin_int_op_28_${I} unverifiable "$OP" object 'native int'
+  ./make_bin_test.sh bin_int_op_29_${I} unverifiable "$OP" object float64
+  ./make_bin_test.sh bin_int_op_30_${I} unverifiable "$OP" object 'int32&'
+  ./make_bin_test.sh bin_int_op_31_${I} unverifiable "$OP" object object
   I=`expr $I + 1`
 done
 
 for OP in "not\n\tpop"
 do
-  ./make_unary_test.sh not_1 invalid "$OP" float64
-  ./make_unary_test.sh not_2 invalid "$OP" 'int32&'
-  ./make_unary_test.sh not_3 invalid "$OP" object
+  ./make_unary_test.sh not_1 unverifiable "$OP" float64
+  ./make_unary_test.sh not_2 unverifiable "$OP" 'int32&'
+  ./make_unary_test.sh not_3 unverifiable "$OP" object
 done
 
 # Table 6: Shift Operators
 I=1
 for OP in shl shr
 do
-  ./make_bin_test.sh shift_op_1_${I} invalid $OP int32 int64
-  ./make_bin_test.sh shift_op_2_${I} invalid $OP int32 float64
-  ./make_bin_test.sh shift_op_3_${I} invalid $OP int32 'int32&'
-  ./make_bin_test.sh shift_op_4_${I} invalid $OP int32 object
+  ./make_bin_test.sh shift_op_1_${I} unverifiable $OP int32 int64
+  ./make_bin_test.sh shift_op_2_${I} unverifiable $OP int32 float64
+  ./make_bin_test.sh shift_op_3_${I} unverifiable $OP int32 'int32&'
+  ./make_bin_test.sh shift_op_4_${I} unverifiable $OP int32 object
 
-  ./make_bin_test.sh shift_op_5_${I} invalid $OP int64 int64
-  ./make_bin_test.sh shift_op_6_${I} invalid $OP int64 float64
-  ./make_bin_test.sh shift_op_7_${I} invalid $OP int64 'int32&'
-  ./make_bin_test.sh shift_op_8_${I} invalid $OP int64 object
+  ./make_bin_test.sh shift_op_5_${I} unverifiable $OP int64 int64
+  ./make_bin_test.sh shift_op_6_${I} unverifiable $OP int64 float64
+  ./make_bin_test.sh shift_op_7_${I} unverifiable $OP int64 'int32&'
+  ./make_bin_test.sh shift_op_8_${I} unverifiable $OP int64 object
 
-  ./make_bin_test.sh shift_op_9_${I} invalid $OP 'native int' int64
-  ./make_bin_test.sh shift_op_10_${I} invalid $OP 'native int' float64
-  ./make_bin_test.sh shift_op_11_${I} invalid $OP 'native int' 'native int&'
-  ./make_bin_test.sh shift_op_12_${I} invalid $OP 'native int' object
+  ./make_bin_test.sh shift_op_9_${I} unverifiable $OP 'native int' int64
+  ./make_bin_test.sh shift_op_10_${I} unverifiable $OP 'native int' float64
+  ./make_bin_test.sh shift_op_11_${I} unverifiable $OP 'native int' 'native int&'
+  ./make_bin_test.sh shift_op_12_${I} unverifiable $OP 'native int' object
 
-  ./make_bin_test.sh shift_op_13_${I} invalid $OP float64 int32
-  ./make_bin_test.sh shift_op_14_${I} invalid $OP float64 int64
-  ./make_bin_test.sh shift_op_15_${I} invalid $OP float64 'native int'
-  ./make_bin_test.sh shift_op_16_${I} invalid $OP float64 float64
-  ./make_bin_test.sh shift_op_17_${I} invalid $OP float64 'int32&'
-  ./make_bin_test.sh shift_op_18_${I} invalid $OP float64 object
+  ./make_bin_test.sh shift_op_13_${I} unverifiable $OP float64 int32
+  ./make_bin_test.sh shift_op_14_${I} unverifiable $OP float64 int64
+  ./make_bin_test.sh shift_op_15_${I} unverifiable $OP float64 'native int'
+  ./make_bin_test.sh shift_op_16_${I} unverifiable $OP float64 float64
+  ./make_bin_test.sh shift_op_17_${I} unverifiable $OP float64 'int32&'
+  ./make_bin_test.sh shift_op_18_${I} unverifiable $OP float64 object
 
-  ./make_bin_test.sh shift_op_19_${I} invalid $OP 'int32&' int32
-  ./make_bin_test.sh shift_op_20_${I} invalid $OP 'int64&' int64
-  ./make_bin_test.sh shift_op_21_${I} invalid $OP 'native int&' 'native int'
-  ./make_bin_test.sh shift_op_22_${I} invalid $OP 'float64&' float64
-  ./make_bin_test.sh shift_op_23_${I} invalid $OP 'int32&' 'int32&'
-  ./make_bin_test.sh shift_op_24_${I} invalid $OP 'float64&' object
+  ./make_bin_test.sh shift_op_19_${I} unverifiable $OP 'int32&' int32
+  ./make_bin_test.sh shift_op_20_${I} unverifiable $OP 'int64&' int64
+  ./make_bin_test.sh shift_op_21_${I} unverifiable $OP 'native int&' 'native int'
+  ./make_bin_test.sh shift_op_22_${I} unverifiable $OP 'float64&' float64
+  ./make_bin_test.sh shift_op_23_${I} unverifiable $OP 'int32&' 'int32&'
+  ./make_bin_test.sh shift_op_24_${I} unverifiable $OP 'float64&' object
 
-  ./make_bin_test.sh shift_op_25_${I} invalid $OP object int32
-  ./make_bin_test.sh shift_op_26_${I} invalid $OP object int64
-  ./make_bin_test.sh shift_op_27_${I} invalid $OP object 'native int'
-  ./make_bin_test.sh shift_op_28_${I} invalid $OP object float64
-  ./make_bin_test.sh shift_op_29_${I} invalid $OP object 'int32&'
-  ./make_bin_test.sh shift_op_30_${I} invalid $OP object object
+  ./make_bin_test.sh shift_op_25_${I} unverifiable $OP object int32
+  ./make_bin_test.sh shift_op_26_${I} unverifiable $OP object int64
+  ./make_bin_test.sh shift_op_27_${I} unverifiable $OP object 'native int'
+  ./make_bin_test.sh shift_op_28_${I} unverifiable $OP object float64
+  ./make_bin_test.sh shift_op_29_${I} unverifiable $OP object 'int32&'
+  ./make_bin_test.sh shift_op_30_${I} unverifiable $OP object object
   I=`expr $I + 1`
 done
 
@@ -256,8 +277,8 @@ done
 I=1
 for OP in "conv.i4\n\tpop" "conv.r8\n\tpop"
 do
-  ./make_unary_test.sh conv_op_1_${I} invalid $OP 'int32&'
-  ./make_unary_test.sh conv_op_2_${I} invalid $OP object
+  ./make_unary_test.sh conv_op_1_${I} unverifiable $OP 'int32&'
+  ./make_unary_test.sh conv_op_2_${I} unverifiable $OP object
   I=`expr $I + 1`
 done
 
@@ -372,92 +393,92 @@ done
 I=1
 for OP in "stfld TYPE1 Class::fld" "stsfld TYPE1 Class::sfld\n\tpop"  "call void Class::Method(TYPE1)"
 do
-  ./make_obj_store_test.sh obj_coercion_1_${I} invalid "$OP" int8 int64
-  ./make_obj_store_test.sh obj_coercion_2_${I} invalid "$OP" int8 float64
-  ./make_obj_store_test.sh obj_coercion_3_${I} invalid "$OP" int8 'int8&'
-  ./make_obj_store_test.sh obj_coercion_4_${I} invalid "$OP" int8 object
+  ./make_obj_store_test.sh obj_coercion_1_${I} unverifiable "$OP" int8 int64
+  ./make_obj_store_test.sh obj_coercion_2_${I} unverifiable "$OP" int8 float64
+  ./make_obj_store_test.sh obj_coercion_3_${I} unverifiable "$OP" int8 'int8&'
+  ./make_obj_store_test.sh obj_coercion_4_${I} unverifiable "$OP" int8 object
 
-  ./make_obj_store_test.sh obj_coercion_5_${I} invalid "$OP" 'unsigned int8' int64
-  ./make_obj_store_test.sh obj_coercion_6_${I} invalid "$OP" 'unsigned int8' float64
-  ./make_obj_store_test.sh obj_coercion_7_${I} invalid "$OP" 'unsigned int8' 'unsigned int8&'
-  ./make_obj_store_test.sh obj_coercion_8_${I} invalid "$OP" 'unsigned int8' object
+  ./make_obj_store_test.sh obj_coercion_5_${I} unverifiable "$OP" 'unsigned int8' int64
+  ./make_obj_store_test.sh obj_coercion_6_${I} unverifiable "$OP" 'unsigned int8' float64
+  ./make_obj_store_test.sh obj_coercion_7_${I} unverifiable "$OP" 'unsigned int8' 'unsigned int8&'
+  ./make_obj_store_test.sh obj_coercion_8_${I} unverifiable "$OP" 'unsigned int8' object
 
-  ./make_obj_store_test.sh obj_coercion_9_${I} invalid "$OP" bool int64
-  ./make_obj_store_test.sh obj_coercion_10_${I} invalid "$OP" bool float64
-  ./make_obj_store_test.sh obj_coercion_11_${I} invalid "$OP" bool 'bool&'
-  ./make_obj_store_test.sh obj_coercion_12_${I} invalid "$OP" bool object
+  ./make_obj_store_test.sh obj_coercion_9_${I} unverifiable "$OP" bool int64
+  ./make_obj_store_test.sh obj_coercion_10_${I} unverifiable "$OP" bool float64
+  ./make_obj_store_test.sh obj_coercion_11_${I} unverifiable "$OP" bool 'bool&'
+  ./make_obj_store_test.sh obj_coercion_12_${I} unverifiable "$OP" bool object
 
-  ./make_obj_store_test.sh obj_coercion_13_${I} invalid "$OP" int16 int64
-  ./make_obj_store_test.sh obj_coercion_14_${I} invalid "$OP" int16 float64
-  ./make_obj_store_test.sh obj_coercion_15_${I} invalid "$OP" int16 'int16&'
-  ./make_obj_store_test.sh obj_coercion_16_${I} invalid "$OP" int16 object
+  ./make_obj_store_test.sh obj_coercion_13_${I} unverifiable "$OP" int16 int64
+  ./make_obj_store_test.sh obj_coercion_14_${I} unverifiable "$OP" int16 float64
+  ./make_obj_store_test.sh obj_coercion_15_${I} unverifiable "$OP" int16 'int16&'
+  ./make_obj_store_test.sh obj_coercion_16_${I} unverifiable "$OP" int16 object
   
-  ./make_obj_store_test.sh obj_coercion_17_${I} invalid "$OP" 'unsigned int16' int64
-  ./make_obj_store_test.sh obj_coercion_18_${I} invalid "$OP" 'unsigned int16' float64
-  ./make_obj_store_test.sh obj_coercion_19_${I} invalid "$OP" 'unsigned int16' 'unsigned int16&'
-  ./make_obj_store_test.sh obj_coercion_20_${I} invalid "$OP" 'unsigned int16' object
+  ./make_obj_store_test.sh obj_coercion_17_${I} unverifiable "$OP" 'unsigned int16' int64
+  ./make_obj_store_test.sh obj_coercion_18_${I} unverifiable "$OP" 'unsigned int16' float64
+  ./make_obj_store_test.sh obj_coercion_19_${I} unverifiable "$OP" 'unsigned int16' 'unsigned int16&'
+  ./make_obj_store_test.sh obj_coercion_20_${I} unverifiable "$OP" 'unsigned int16' object
   
-  ./make_obj_store_test.sh obj_coercion_21_${I} invalid "$OP" char int64
-  ./make_obj_store_test.sh obj_coercion_22_${I} invalid "$OP" char float64
-  ./make_obj_store_test.sh obj_coercion_23_${I} invalid "$OP" char 'char&'
-  ./make_obj_store_test.sh obj_coercion_24_${I} invalid "$OP" char object
+  ./make_obj_store_test.sh obj_coercion_21_${I} unverifiable "$OP" char int64
+  ./make_obj_store_test.sh obj_coercion_22_${I} unverifiable "$OP" char float64
+  ./make_obj_store_test.sh obj_coercion_23_${I} unverifiable "$OP" char 'char&'
+  ./make_obj_store_test.sh obj_coercion_24_${I} unverifiable "$OP" char object
   
-  ./make_obj_store_test.sh obj_coercion_25_${I} invalid "$OP" int32 int64
-  ./make_obj_store_test.sh obj_coercion_26_${I} invalid "$OP" int32 float64
-  ./make_obj_store_test.sh obj_coercion_27_${I} invalid "$OP" int32 'int32&'
-  ./make_obj_store_test.sh obj_coercion_28_${I} invalid "$OP" int32 object
+  ./make_obj_store_test.sh obj_coercion_25_${I} unverifiable "$OP" int32 int64
+  ./make_obj_store_test.sh obj_coercion_26_${I} unverifiable "$OP" int32 float64
+  ./make_obj_store_test.sh obj_coercion_27_${I} unverifiable "$OP" int32 'int32&'
+  ./make_obj_store_test.sh obj_coercion_28_${I} unverifiable "$OP" int32 object
   
-  ./make_obj_store_test.sh obj_coercion_29_${I} invalid "$OP" 'unsigned int32' int64
-  ./make_obj_store_test.sh obj_coercion_30_${I} invalid "$OP" 'unsigned int32' float64
-  ./make_obj_store_test.sh obj_coercion_31_${I} invalid "$OP" 'unsigned int32' 'unsigned int32&'
-  ./make_obj_store_test.sh obj_coercion_32_${I} invalid "$OP" 'unsigned int32' object
+  ./make_obj_store_test.sh obj_coercion_29_${I} unverifiable "$OP" 'unsigned int32' int64
+  ./make_obj_store_test.sh obj_coercion_30_${I} unverifiable "$OP" 'unsigned int32' float64
+  ./make_obj_store_test.sh obj_coercion_31_${I} unverifiable "$OP" 'unsigned int32' 'unsigned int32&'
+  ./make_obj_store_test.sh obj_coercion_32_${I} unverifiable "$OP" 'unsigned int32' object
  
-  ./make_obj_store_test.sh obj_coercion_33_${I} invalid "$OP" int64 int32
-  ./make_obj_store_test.sh obj_coercion_34_${I} invalid "$OP" int64 'native int'
-  ./make_obj_store_test.sh obj_coercion_35_${I} invalid "$OP" int64 float64
-  ./make_obj_store_test.sh obj_coercion_36_${I} invalid "$OP" int64 'int64&'
-  ./make_obj_store_test.sh obj_coercion_37_${I} invalid "$OP" int64 object
+  ./make_obj_store_test.sh obj_coercion_33_${I} unverifiable "$OP" int64 int32
+  ./make_obj_store_test.sh obj_coercion_34_${I} unverifiable "$OP" int64 'native int'
+  ./make_obj_store_test.sh obj_coercion_35_${I} unverifiable "$OP" int64 float64
+  ./make_obj_store_test.sh obj_coercion_36_${I} unverifiable "$OP" int64 'int64&'
+  ./make_obj_store_test.sh obj_coercion_37_${I} unverifiable "$OP" int64 object
   
-  ./make_obj_store_test.sh obj_coercion_38_${I} invalid "$OP" 'unsigned int64' int32
-  ./make_obj_store_test.sh obj_coercion_39_${I} invalid "$OP" 'unsigned int64' 'native int'
-  ./make_obj_store_test.sh obj_coercion_40_${I} invalid "$OP" 'unsigned int64' float64
-  ./make_obj_store_test.sh obj_coercion_41_${I} invalid "$OP" 'unsigned int64' 'unsigned int64&'
-  ./make_obj_store_test.sh obj_coercion_42_${I} invalid "$OP" 'unsigned int64' object
+  ./make_obj_store_test.sh obj_coercion_38_${I} unverifiable "$OP" 'unsigned int64' int32
+  ./make_obj_store_test.sh obj_coercion_39_${I} unverifiable "$OP" 'unsigned int64' 'native int'
+  ./make_obj_store_test.sh obj_coercion_40_${I} unverifiable "$OP" 'unsigned int64' float64
+  ./make_obj_store_test.sh obj_coercion_41_${I} unverifiable "$OP" 'unsigned int64' 'unsigned int64&'
+  ./make_obj_store_test.sh obj_coercion_42_${I} unverifiable "$OP" 'unsigned int64' object
   
-  ./make_obj_store_test.sh obj_coercion_43_${I} invalid "$OP" 'native int' int64
-  ./make_obj_store_test.sh obj_coercion_44_${I} invalid "$OP" 'native int' float64
-  ./make_obj_store_test.sh obj_coercion_45_${I} invalid "$OP" 'native int' 'native int&'
-  ./make_obj_store_test.sh obj_coercion_46_${I} invalid "$OP" 'native int' object
+  ./make_obj_store_test.sh obj_coercion_43_${I} unverifiable "$OP" 'native int' int64
+  ./make_obj_store_test.sh obj_coercion_44_${I} unverifiable "$OP" 'native int' float64
+  ./make_obj_store_test.sh obj_coercion_45_${I} unverifiable "$OP" 'native int' 'native int&'
+  ./make_obj_store_test.sh obj_coercion_46_${I} unverifiable "$OP" 'native int' object
   
-  ./make_obj_store_test.sh obj_coercion_47_${I} invalid "$OP" 'native unsigned int' int64
-  ./make_obj_store_test.sh obj_coercion_48_${I} invalid "$OP" 'native unsigned int' float64
-  ./make_obj_store_test.sh obj_coercion_49_${I} invalid "$OP" 'native unsigned int' 'native unsigned int&'
-  ./make_obj_store_test.sh obj_coercion_50_${I} invalid "$OP" 'native unsigned int' object
+  ./make_obj_store_test.sh obj_coercion_47_${I} unverifiable "$OP" 'native unsigned int' int64
+  ./make_obj_store_test.sh obj_coercion_48_${I} unverifiable "$OP" 'native unsigned int' float64
+  ./make_obj_store_test.sh obj_coercion_49_${I} unverifiable "$OP" 'native unsigned int' 'native unsigned int&'
+  ./make_obj_store_test.sh obj_coercion_50_${I} unverifiable "$OP" 'native unsigned int' object
   
-  ./make_obj_store_test.sh obj_coercion_51_${I} invalid "$OP" float32 int32
-  ./make_obj_store_test.sh obj_coercion_52_${I} invalid "$OP" float32 'native int'
-  ./make_obj_store_test.sh obj_coercion_53_${I} invalid "$OP" float32 int64
-  ./make_obj_store_test.sh obj_coercion_54_${I} invalid "$OP" float32 'float32&'
-  ./make_obj_store_test.sh obj_coercion_55_${I} invalid "$OP" float32 object
+  ./make_obj_store_test.sh obj_coercion_51_${I} unverifiable "$OP" float32 int32
+  ./make_obj_store_test.sh obj_coercion_52_${I} unverifiable "$OP" float32 'native int'
+  ./make_obj_store_test.sh obj_coercion_53_${I} unverifiable "$OP" float32 int64
+  ./make_obj_store_test.sh obj_coercion_54_${I} unverifiable "$OP" float32 'float32&'
+  ./make_obj_store_test.sh obj_coercion_55_${I} unverifiable "$OP" float32 object
   
-  ./make_obj_store_test.sh obj_coercion_56_${I} invalid "$OP" float64 int32
-  ./make_obj_store_test.sh obj_coercion_57_${I} invalid "$OP" float64 'native int'
-  ./make_obj_store_test.sh obj_coercion_58_${I} invalid "$OP" float64 int64
-  ./make_obj_store_test.sh obj_coercion_59_${I} invalid "$OP" float64 'float64&'
-  ./make_obj_store_test.sh obj_coercion_60_${I} invalid "$OP" float64 object
+  ./make_obj_store_test.sh obj_coercion_56_${I} unverifiable "$OP" float64 int32
+  ./make_obj_store_test.sh obj_coercion_57_${I} unverifiable "$OP" float64 'native int'
+  ./make_obj_store_test.sh obj_coercion_58_${I} unverifiable "$OP" float64 int64
+  ./make_obj_store_test.sh obj_coercion_59_${I} unverifiable "$OP" float64 'float64&'
+  ./make_obj_store_test.sh obj_coercion_60_${I} unverifiable "$OP" float64 object
 
-  ./make_obj_store_test.sh obj_coercion_61_${I} invalid "$OP" object int32
-  ./make_obj_store_test.sh obj_coercion_62_${I} invalid "$OP" object 'native int'
-  ./make_obj_store_test.sh obj_coercion_63_${I} invalid "$OP" object int64
-  ./make_obj_store_test.sh obj_coercion_64_${I} invalid "$OP" object float64
-  ./make_obj_store_test.sh obj_coercion_65_${I} invalid "$OP" object 'object&'
+  ./make_obj_store_test.sh obj_coercion_61_${I} unverifiable "$OP" object int32
+  ./make_obj_store_test.sh obj_coercion_62_${I} unverifiable "$OP" object 'native int'
+  ./make_obj_store_test.sh obj_coercion_63_${I} unverifiable "$OP" object int64
+  ./make_obj_store_test.sh obj_coercion_64_${I} unverifiable "$OP" object float64
+  ./make_obj_store_test.sh obj_coercion_65_${I} unverifiable "$OP" object 'object&'
   
-  ./make_obj_store_test.sh obj_coercion_66_${I} invalid "$OP" 'class ValueType' int32
-  ./make_obj_store_test.sh obj_coercion_67_${I} invalid "$OP" 'class ValueType' 'native int'
-  ./make_obj_store_test.sh obj_coercion_68_${I} invalid "$OP" 'class ValueType' int64
-  ./make_obj_store_test.sh obj_coercion_69_${I} invalid "$OP" 'class ValueType' float64
-  ./make_obj_store_test.sh obj_coercion_70_${I} invalid "$OP" 'class ValueType' 'class ValueType&'
-  ./make_obj_store_test.sh obj_coercion_71_${I} invalid "$OP" 'class ValueType' object
+  ./make_obj_store_test.sh obj_coercion_66_${I} unverifiable "$OP" 'class ValueType' int32
+  ./make_obj_store_test.sh obj_coercion_67_${I} unverifiable "$OP" 'class ValueType' 'native int'
+  ./make_obj_store_test.sh obj_coercion_68_${I} unverifiable "$OP" 'class ValueType' int64
+  ./make_obj_store_test.sh obj_coercion_69_${I} unverifiable "$OP" 'class ValueType' float64
+  ./make_obj_store_test.sh obj_coercion_70_${I} unverifiable "$OP" 'class ValueType' 'class ValueType&'
+  ./make_obj_store_test.sh obj_coercion_71_${I} unverifiable "$OP" 'class ValueType' object
   
   
   #These tests don't test store error since one cannot have an 'int32&' field
@@ -520,38 +541,41 @@ done
 for OP in "stfld TYPE1 Class::fld" "stsfld TYPE1 Class::sfld\n\tpop"  "call void Class::Method(TYPE1)"
 do
   # ClassB not subtype of ClassA.
-  ./make_obj_store_test.sh assign_compat_1_${I} invalid "$OP" 'class ClassA' 'class ClassB'
+  ./make_obj_store_test.sh assign_compat_1_${I} unverifiable "$OP" 'class ClassA' 'class ClassB'
+
+  # object not subtype of ClassA.
+  ./make_obj_store_test.sh assign_compat_2_${I} unverifiable "$OP" 'class ClassA' 'object'
 
   # ClassA not interface type.
   #FIXME: this test is valid, you can store type ClassA in a object field
   ./make_obj_store_test.sh assign_compat_3_${I} valid "$OP" object 'class ClassA'
   
   # Implementation of InterfaceB does not require the implementation of InterfaceA
-  ./make_obj_store_test.sh assign_compat_4_${I} invalid "$OP" 'class InterfaceA' 'class InterfaceB'
+  ./make_obj_store_test.sh assign_compat_4_${I} unverifiable "$OP" 'class InterfaceA' 'class InterfaceB'
 
   # Array/vector.
-  ./make_obj_store_test.sh assign_compat_5_${I} invalid "$OP" 'string []' 'string[,]'
+  ./make_obj_store_test.sh assign_compat_5_${I} unverifiable "$OP" 'string []' 'string[,]'
 
   # Vector/array.
-  ./make_obj_store_test.sh assign_compat_6_${I} invalid "$OP" 'string [,]' 'string[]'
+  ./make_obj_store_test.sh assign_compat_6_${I} unverifiable "$OP" 'string [,]' 'string[]'
 
   # Arrays with different rank.
-  ./make_obj_store_test.sh assign_compat_7_${I} invalid "$OP" 'string [,]' 'string[,,]'
+  ./make_obj_store_test.sh assign_compat_7_${I} unverifiable "$OP" 'string [,]' 'string[,,]'
 
   # Method pointers with different return types.
-  ./make_obj_store_test.sh assign_compat_8_${I} invalid "$OP" 'method int32 *(int32)' 'method float32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_8_${I} unverifiable "$OP" 'method int32 *(int32)' 'method float32 *(int32)'
 
   # Method pointers with different parameters.
-  ./make_obj_store_test.sh assign_compat_9_${I} invalid "$OP" 'method int32 *(float64)' 'method int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_9_${I} unverifiable "$OP" 'method int32 *(float64)' 'method int32 *(int32)'
 
   # Method pointers with different calling conventions.
-  ./make_obj_store_test.sh assign_compat_10_${I} invalid "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_10_${I} unverifiable "$OP" 'method vararg int32 *(int32)' 'method int32 *(int32)'
   
     # Method pointers with different calling conventions. (2)
-  ./make_obj_store_test.sh assign_compat_11_${I} invalid "$OP" 'method unmanaged fastcall int32 *(int32)' 'method int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_11_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method int32 *(int32)'
   
     # Method pointers with different calling conventions. (3)
-  ./make_obj_store_test.sh assign_compat_12_${I} invalid "$OP" 'method unmanaged fastcall int32 *(int32)' 'method unmanaged stdcall int32 *(int32)'
+  ./make_obj_store_test.sh assign_compat_12_${I} unverifiable "$OP" 'method unmanaged fastcall int32 *(int32)' 'method unmanaged stdcall int32 *(int32)'
   
   I=`expr $I + 1`
 done
@@ -574,6 +598,10 @@ do
 	elif [ "$TYPE1" == "int32" ] && [ "$TYPE2" == "native int" ]; then
 		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
 	elif [ "$TYPE1" == "native int" ] && [ "$TYPE2" == "int32" ]; then
+		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
+	elif [ "$TYPE1" == "int32&" ] && [ "$TYPE2" == "native int&" ]; then
+		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
+	elif [ "$TYPE1" == "native int&" ] && [ "$TYPE2" == "int32&" ]; then
 		./make_stack_merge_test.sh stack_merge_${I} valid "$TYPE1" "$TYPE2"
 	else
 		./make_stack_merge_test.sh stack_merge_${I} unverifiable "$TYPE1" "$TYPE2"
@@ -620,13 +648,25 @@ done
 
 for OP in brfalse
 do
-  ./make_unary_test.sh un_branch_op invalid "$OP branch_target" float64
+  ./make_unary_test.sh un_branch_op unverifiable "$OP branch_target" float64
 done
 
 # Ldloc.0 and Ldarg tests (see 3.38)
 
 I=1
-for OP in "ldarg.s 0" "ldarg.0" "ldarga.s 0" "ldloc.s 1" "ldloca.s 1"
+for OP in "ldarg.s 0" "ldarg.0"
+do
+  ./make_unary_test.sh ld_no_slot_${I} unverifiable "pop\n\t$OP\n\tpop" int32
+  I=`expr $I + 1`
+done
+
+for OP in "ldloc.s 1" "ldloc.1" "ldloc 1"
+do
+  ./make_unary_test.sh ld_no_slot_${I} invalid "pop\n\t$OP\n\tpop" int32
+  I=`expr $I + 1`
+done
+
+for OP in "ldarga.s 0" "ldloca.s 1"
 do
   ./make_unary_test.sh ld_no_slot_${I} invalid "pop\n\t$OP\n\tpop" int32
   I=`expr $I + 1`
@@ -635,7 +675,13 @@ done
 # Starg and Stloc tests (see 3.61)
 
 I=1
-for OP in "starg.s 0" "stloc.s 1"
+for OP in "starg.s 0"
+do
+  ./make_unary_test.sh st_no_slot_${I} unverifiable "$OP" int32
+  I=`expr $I + 1`
+done
+
+for OP in "stloc.s 1"
 do
   ./make_unary_test.sh st_no_slot_${I} invalid "$OP" int32
   I=`expr $I + 1`
@@ -645,11 +691,11 @@ done
 
 for OP in ldfld ldflda
 do
-  ./make_unary_test.sh ${OP}_no_fld invalid "$OP int32 Class::invalid\n\tpop" "class Class"
-  ./make_unary_test.sh ${OP}_bad_obj invalid "$OP int32 Class::valid\n\tpop" object
-  ./make_unary_test.sh ${OP}_obj_int32 invalid "$OP int32 Class::valid\n\tpop" int32
-  ./make_unary_test.sh ${OP}_obj_int64 invalid "$OP int32 Class::valid\n\tpop" int64
-  ./make_unary_test.sh ${OP}_obj_float64 invalid "$OP int32 Class::valid\n\tpop" float64
+  ./make_unary_test.sh ${OP}_no_fld unverifiable "$OP int32 Class::invalid\n\tpop" "class Class"
+  ./make_unary_test.sh ${OP}_bad_obj unverifiable "$OP int32 Class::valid\n\tpop" object
+  ./make_unary_test.sh ${OP}_obj_int32 unverifiable "$OP int32 Class::valid\n\tpop" int32
+  ./make_unary_test.sh ${OP}_obj_int64 unverifiable "$OP int32 Class::valid\n\tpop" int64
+  ./make_unary_test.sh ${OP}_obj_float64 unverifiable "$OP int32 Class::valid\n\tpop" float64
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Class::valid\n\tpop" 'native int'
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
@@ -657,11 +703,11 @@ done
 
 # Stfld tests (see 4.28)
 
-./make_unary_test.sh stfld_no_fld invalid "ldc.i4.0\n\tstfld int32 Class::invalid" "class Class"
-./make_unary_test.sh stfld_bad_obj invalid "ldc.i4.0\n\tstfld int32 Class::valid" object
-./make_unary_test.sh stfld_obj_int32 invalid "ldc.i4.0\n\tstfld int32 Class::valid" int32
-./make_unary_test.sh stfld_obj_int64 invalid "ldc.i4.0\n\tstfld int32 Class::valid" int64
-./make_unary_test.sh stfld_obj_float64 invalid "ldc.i4.0\n\tstfld int32 Class::valid" float64
+./make_unary_test.sh stfld_no_fld unverifiable "ldc.i4.0\n\tstfld int32 Class::invalid" "class Class"
+./make_unary_test.sh stfld_bad_obj unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" object
+./make_unary_test.sh stfld_obj_int32 unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" int32
+./make_unary_test.sh stfld_obj_int64 unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" int64
+./make_unary_test.sh stfld_obj_float64 unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" float64
 ./make_unary_test.sh stfld_no_int invalid "stfld int32 Class::valid" "class Class"
 ./make_unary_test.sh stfld_obj_native_int unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" 'native int'
 
@@ -674,10 +720,10 @@ done
 ./make_unary_test.sh box_not_compat unverifiable "box [mscorlib]System.Int32\n\tpop" float32
 
 # Box byref type.
-./make_unary_test.sh box_byref unverifiable "box [mscorlib]System.Int32\&\n\tpop" 'int32&'
+./make_unary_test.sh box_byref invalid "box [mscorlib]System.Int32\&\n\tpop" 'int32&'
 
 # Box byref-like type.
-./make_unary_test.sh box_byref_like unverifiable "box [mscorlib]System.TypedRefrence\n\tpop" typedref
+./make_unary_test.sh box_byref_like unverifiable "box [mscorlib]System.TypedReference\n\tpop" typedref
 
 #This is is illegal since you cannot have a Void local variable, it should go into the structural tests part
 # Box void type.
@@ -1027,55 +1073,73 @@ for OP in ldarg ldloc
 do
 	ARGS_1='int32 V'
 	LOCALS_1=''
+	CALL_1='ldc.i4.0'
+	SIG_1='int32'
 	
 	ARGS_2='int32 V, int32 V1'
 	LOCALS_2=''
+	CALL_2='ldc.i4.0\n\tldc.i4.0'
+	SIG_2='int32, int32'
 	
 	ARGS_3='int32 V, int32 V1, int32 V1'
 	LOCALS_3=''
+	CALL_3='ldc.i4.0\n\tldc.i4.0\n\tldc.i4.0'
+	SIG_3='int32, int32, int32'
 	
 	ARGS_4='int32 V, int32 V1, int32 V1, int32 V1'
 	LOCALS_4=''
-	
+	CALL_4='ldc.i4.0\n\tldc.i4.0\n\tldc.i4.0\n\tldc.i4.0'
+	SIG_4='int32, int32, int32, int32'
+	MAX_PARAM_RESULT="unverifiable"
 	POPS="pop\npop\npop\npop\npop\npop\npop\npop\n"
 	
 	if [ "$OP" == "ldloc" ]; then
+		MAX_PARAM_RESULT="invalid"
+
 		LOCALS_1=$ARGS_1
 		ARGS_1=''
+		CALL_1=''
+		SIG_1=''
 
 		LOCALS_2=$ARGS_2
 		ARGS_2=''
+		CALL_2=''
+		SIG_2=''
 
 		LOCALS_3=$ARGS_3
 		ARGS_3=''
+		CALL_3=''
+		SIG_3=''
 
 		LOCALS_4=$ARGS_4
 		ARGS_4=''
+		CALL_4=''
+		SIG_4=''
 	fi;
 	
-	./make_load_test.sh ${OP}0_max_params invalid "${OP}.0" '' ''
-	./make_load_test.sh ${OP}1_max_params invalid "${OP}.1" '' ''
-	./make_load_test.sh ${OP}2_max_params invalid "${OP}.2" '' ''
-	./make_load_test.sh ${OP}3_max_params invalid "${OP}.3" '' ''
+	./make_load_test.sh ${OP}0_max_params "${MAX_PARAM_RESULT}" "${OP}.0" '' '' '' ''
+	./make_load_test.sh ${OP}1_max_params "${MAX_PARAM_RESULT}" "${OP}.1" '' '' '' ''
+	./make_load_test.sh ${OP}2_max_params "${MAX_PARAM_RESULT}" "${OP}.2" '' '' '' ''
+	./make_load_test.sh ${OP}3_max_params "${MAX_PARAM_RESULT}" "${OP}.3" '' '' '' ''
 	
-	./make_load_test.sh ${OP}1_1_max_params invalid "${OP}.1" "${ARGS_1}" "${LOCALS_1}"
-	./make_load_test.sh ${OP}2_1_max_params invalid "${OP}.2" "${ARGS_1}" "${LOCALS_1}"
-	./make_load_test.sh ${OP}3_1_max_params invalid "${OP}.3" "${ARGS_1}" "${LOCALS_1}"
+	./make_load_test.sh ${OP}1_1_max_params "${MAX_PARAM_RESULT}" "${OP}.1" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
+	./make_load_test.sh ${OP}2_1_max_params "${MAX_PARAM_RESULT}" "${OP}.2" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
+	./make_load_test.sh ${OP}3_1_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
 	
-	./make_load_test.sh ${OP}2_2_max_params invalid "${OP}.2" "${ARGS_2}" "${LOCALS_2}"
-	./make_load_test.sh ${OP}3_2_max_params invalid "${OP}.3" "${ARGS_2}" "${LOCALS_2}"
+	./make_load_test.sh ${OP}2_2_max_params "${MAX_PARAM_RESULT}" "${OP}.2" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
+	./make_load_test.sh ${OP}3_2_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
 	
-	./make_load_test.sh ${OP}3_3_max_params invalid "${OP}.3" "${ARGS_3}" "${LOCALS_3}"
+	./make_load_test.sh ${OP}3_3_max_params "${MAX_PARAM_RESULT}" "${OP}.3" "${ARGS_3}" "${LOCALS_3}" "${CALL_3}" "${SIG_3}"
 	
-	./make_load_test.sh ${OP}0_max_params valid "${OP}.0" "${ARGS_1}" "${LOCALS_1}"
-	./make_load_test.sh ${OP}1_max_params valid "${OP}.1" "${ARGS_2}" "${LOCALS_2}"
-	./make_load_test.sh ${OP}2_max_params valid "${OP}.2" "${ARGS_3}" "${LOCALS_3}"
-	./make_load_test.sh ${OP}3_max_params valid "${OP}.3" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}0_max_params valid "${OP}.0" "${ARGS_1}" "${LOCALS_1}" "${CALL_1}" "${SIG_1}"
+	./make_load_test.sh ${OP}1_max_params valid "${OP}.1" "${ARGS_2}" "${LOCALS_2}" "${CALL_2}" "${SIG_2}"
+	./make_load_test.sh ${OP}2_max_params valid "${OP}.2" "${ARGS_3}" "${LOCALS_3}" "${CALL_3}" "${SIG_3}"
+	./make_load_test.sh ${OP}3_max_params valid "${OP}.3" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
 	
-	./make_load_test.sh ${OP}0_stack_overflow invalid "${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}1_stack_overflow invalid "${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}2_stack_overflow invalid "${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
-	./make_load_test.sh ${OP}3_stack_overflow invalid "${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${POPS}" "${ARGS_4}" "${LOCALS_4}"
+	./make_load_test.sh ${OP}0_stack_overflow invalid "${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${OP}.0\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
+	./make_load_test.sh ${OP}1_stack_overflow invalid "${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${OP}.1\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
+	./make_load_test.sh ${OP}2_stack_overflow invalid "${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${OP}.2\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
+	./make_load_test.sh ${OP}3_stack_overflow invalid "${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${OP}.3\n${POPS}" "${ARGS_4}" "${LOCALS_4}" "${CALL_4}" "${SIG_4}"
 done
 
 #Test if the values used for brtrue and brfalse are valid
@@ -1102,10 +1166,10 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_15 valid ${OP} 'class Template`1<object>[]'
 	./make_bool_branch_test.sh boolean_branch_${I}_16 valid ${OP} 'class Template`1<object>[,,]'
 	
-	./make_bool_branch_test.sh boolean_branch_${I}_17 invalid ${OP} float32
-	./make_bool_branch_test.sh boolean_branch_${I}_18 invalid ${OP} float64
-	./make_bool_branch_test.sh boolean_branch_${I}_19 invalid ${OP} 'class MyValueType'
-	./make_bool_branch_test.sh boolean_branch_${I}_20 invalid ${OP} 'class ValueTypeTemplate`1<object>'
+	./make_bool_branch_test.sh boolean_branch_${I}_17 unverifiable ${OP} float32
+	./make_bool_branch_test.sh boolean_branch_${I}_18 unverifiable ${OP} float64
+	./make_bool_branch_test.sh boolean_branch_${I}_19 unverifiable ${OP} 'class MyValueType'
+	./make_bool_branch_test.sh boolean_branch_${I}_20 unverifiable ${OP} 'class ValueTypeTemplate`1<object>'
 	I=`expr $I + 1`
 done
 
@@ -1113,30 +1177,32 @@ done
 I=1
 for OP in 'ldfld' 'ldflda'
 do
-	./make_field_store_test.sh field_store_${I}_1 invalid "${OP} int32 ClassA::fld" int32 int32
-	./make_field_store_test.sh field_store_${I}_2 invalid "${OP} int32 ClassA::fld" int32 'class ClassB'
-	./make_field_store_test.sh field_store_${I}_3 invalid "${OP} int32 ClassA::fld" int32 object
-	./make_field_store_test.sh field_store_${I}_4 invalid "${OP} int32 ClassA::fld" int32 'class MyValueType'
-	./make_field_store_test.sh field_store_${I}_5 valid "${OP} int32 ClassA::fld" int32 'class ClassA'
-	./make_field_store_test.sh field_store_${I}_6 valid "${OP} int32 ClassA::fld" int32 'class SubClass'
-	./make_field_store_test.sh field_store_${I}_7 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType'
-	./make_field_store_test.sh field_store_${I}_8 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType \&'
+	./make_field_store_test.sh field_store_${I}_1 unverifiable "${OP} int32 ClassA::fld" int32 int32
+	./make_field_store_test.sh field_store_${I}_2 unverifiable "${OP} int32 ClassA::fld" int32 'class ClassB' yes
+	./make_field_store_test.sh field_store_${I}_3 unverifiable "${OP} int32 ClassA::fld" int32 object yes
+	./make_field_store_test.sh field_store_${I}_4 unverifiable "${OP} int32 ClassA::fld" int32 'class MyValueType'
+	./make_field_store_test.sh field_store_${I}_5 valid "${OP} int32 ClassA::fld" int32 'class ClassA' yes
+	./make_field_store_test.sh field_store_${I}_6 valid "${OP} int32 ClassA::fld" int32 'class SubClass' yes
+	#ldfld and ldflda works diferent with value objects, you cannot take the address of a value-object on the stack
+	#./make_field_store_test.sh field_store_${I}_7 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType'
+	#Not usefull as it throws NRE
+	#./make_field_store_test.sh field_store_${I}_8 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType \&'
 	./make_field_store_test.sh field_store_${I}_9 unverifiable "${OP} int32 MyValueType::fld" int32 'native int'
 	./make_field_store_test.sh field_store_${I}_10 unverifiable "${OP} int32 MyValueType::fld" int32 'class MyValueType *'
 	./make_field_store_test.sh field_store_${I}_11 unverifiable "${OP} int32 ClassA::fld" int32 'class ClassA *'
-	./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped'
-	./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped'
-	./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped'
-	./make_field_store_test.sh field_store_${I}_15 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class SubOverlapped'
-	./make_field_store_test.sh field_store_${I}_16 valid "${OP} int32 SubOverlapped::field6" int32 'class SubOverlapped'
-	./make_field_store_test.sh field_store_${I}_17 unverifiable "${OP} ClassA SubOverlapped::field6" 'class ClassA' 'class SubOverlapped'
-	./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped'
-	./make_field_store_test.sh field_store_${I}_20 unverifiable "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped'
+	./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped' yes
+	./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped' yes
+	./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped' yes
+	./make_field_store_test.sh field_store_${I}_15 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class SubOverlapped' yes
+	./make_field_store_test.sh field_store_${I}_16 valid "${OP} int32 SubOverlapped::field6" int32 'class SubOverlapped' yes
+	./make_field_store_test.sh field_store_${I}_17 unverifiable "${OP} ClassA SubOverlapped::field6" 'class ClassA' 'class SubOverlapped' yes
+	./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped' yes
+	./make_field_store_test.sh field_store_${I}_20 unverifiable "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped' yes
 
-	./make_field_store_test.sh field_store_${I}_22 invalid "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA'
-	./make_field_store_test.sh field_store_${I}_23 invalid "${OP} int32 ClassA::const_field" int32 'int32 \&'
+	./make_field_store_test.sh field_store_${I}_22 unverifiable "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA' yes
+	./make_field_store_test.sh field_store_${I}_23 unverifiable "${OP} int32 ClassA::const_field" int32 'int32 \&'
 
-	./make_field_store_test.sh field_store_${I}_24 valid "${OP} int32 ClassA::sfld" int32 'class ClassA'
+	./make_field_store_test.sh field_store_${I}_24 valid "${OP} int32 ClassA::sfld" int32 'class ClassA' yes
 	I=`expr $I + 1`
 done
 
@@ -1147,15 +1213,27 @@ I=1
 for OP in 'ldsfld' 'ldsflda'
 do
 	#unknown field
-	./make_field_store_test.sh static_field_store_${I}_1 invalid "${OP} int32 ClassA::unknown_field\n\tpop" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh static_field_store_${I}_1 unverifiable "${OP} int32 ClassA::unknown_field\n\tpop" 'class ClassA' 'class ClassA'
 	#non static field
-	./make_field_store_test.sh static_field_store_${I}_2 invalid "${OP} int32 ClassA::fld\n\tpop" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh static_field_store_${I}_2 unverifiable "${OP} int32 ClassA::fld\n\tpop" 'class ClassA' 'class ClassA'
 	#valid
-	./make_field_store_test.sh static_field_store_${I}_3 valid "${OP} int32 ClassA::sfld\n\tpop" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh static_field_store_${I}_3 valid "${OP} ClassA ClassA::sfld\n\tpop" 'class ClassA' 'class ClassA'
 	I=`expr $I + 1`
 done
 
 ./make_field_store_test.sh static_field_store_2_25 unverifiable 'ldsflda int32 ClassA::st_const_field\n\tpop' int32 'class ClassA'
+
+./make_field_valuetype_test.sh value_type_field_load_1 valid 'ldfld int32 MyValueType::fld' 'ldloc.0'
+./make_field_valuetype_test.sh value_type_field_load_2 unverifiable 'ldflda int32 MyValueType::fld' 'ldloc.0'
+./make_field_valuetype_test.sh value_type_field_load_3 valid 'ldfld int32 MyValueType::fld' 'ldloca.s 0'
+./make_field_valuetype_test.sh value_type_field_load_4 valid 'ldflda int32 MyValueType::fld' 'ldloca.s 0'
+
+./make_field_valuetype_test.sh value_type_field_load_1 valid 'ldfld int32 MyValueType::fld' 'ldloc.1'
+./make_field_valuetype_test.sh value_type_field_load_2 valid 'ldflda int32 MyValueType::fld' 'ldloc.1'
+./make_field_valuetype_test.sh value_type_field_load_3 unverifiable 'ldfld int32 MyValueType::fld' 'ldloca.s 1'
+./make_field_valuetype_test.sh value_type_field_load_4 unverifiable 'ldflda int32 MyValueType::fld' 'ldloca.s 1'
+
+
 
 #Tests for access checks
 #TODO tests with static calls

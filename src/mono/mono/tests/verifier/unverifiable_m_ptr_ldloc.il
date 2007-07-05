@@ -21,7 +21,8 @@
 		method int32 *(float64) L0
 	)
 	ldloc.0
-	pop
+	//The verifier performs DSE before looking at unverifiable types
+	stloc.0
 	ret
 }
 
@@ -29,5 +30,6 @@
 {
 	.maxstack 2
 	.entrypoint
+	call void Foo()
 	ret
 }

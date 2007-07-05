@@ -37,6 +37,13 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRUC
 
 .class Owner extends [mscorlib]System.Object
 {
+	.method public static Owner/Nested Create ()
+	{
+		.maxstack 8
+		newobj instance void class Owner/Nested::.ctor()
+		ret
+	}
+
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
@@ -49,6 +56,14 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRUC
 	{
 		.field MEMBER_ACCESS int32 fld
 		.field MEMBER_ACCESS static int32 sfld
+
+		.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+		{
+			.maxstack 8
+			ldarg.0 
+			call instance void object::.ctor()
+			ret
+		}
 
 		.method MEMBER_ACCESS int32 Target ()
 		{
@@ -64,9 +79,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRUC
 	.method public void Method ()
 	{
 		.maxstack 8
-		.locals init (
-			class Owner/Nested)
-		ldloc.0
+		call class Owner/Nested Owner::Create ()
 		OPCODE // VALIDITY.
 		pop
 		ret

@@ -61,7 +61,9 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 		TYPE2 V_1)
 	ldloc.0
 	ldc.i4.0
-	ldc.i4.0
+	/*we need a 'random' source of values so the conditional cannot be DCE and the stack merger ignored*/
+	newobj instance void object::.ctor()
+	callvirt instance int32 object::GetHashCode()
 	beq.s branch_target
 	pop
 	ldloc.1

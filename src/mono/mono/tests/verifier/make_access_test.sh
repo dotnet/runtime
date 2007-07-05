@@ -10,8 +10,10 @@ TEST_USE_SUB_CLASS=$7
 
 if [ "$TEST_EXTENDS" == "yes" ]; then
 	TEST_EXTENDS="extends Class"
+	TEST_SUPER_TYPE="Class"
 else
 	TEST_EXTENDS="extends [mscorlib]System.Object"
+	TEST_SUPER_TYPE="object"
 fi
 
 if [ "$TEST_USE_SUB_CLASS" == "yes" ]; then
@@ -23,7 +25,7 @@ fi
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/VAR_TYPE/${TEST_VAR_TYPE}/g" -e "s/MEMBER_ACCESS/${TEST_MEMBER_ACCESS}/g" -e "s/EXTENDS/${TEST_EXTENDS}/g" > $TEST_FILE <<//EOF
+sed -e "s/SUPER_TYPE/${TEST_SUPER_TYPE}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CLASS_ACCESS/${TEST_CLASS_ACCESS}/g" -e "s/VAR_TYPE/${TEST_VAR_TYPE}/g" -e "s/MEMBER_ACCESS/${TEST_MEMBER_ACCESS}/g" -e "s/EXTENDS/${TEST_EXTENDS}/g" > $TEST_FILE <<//EOF
 
 .assembly '${TEST_NAME}_generated'
 {
@@ -45,6 +47,14 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CLASS_AC
     .field MEMBER_ACCESS static int32 sfld
     .field MEMBER_ACCESS int32 fld
 
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
+
     .method MEMBER_ACCESS int32 Method() {
     	ldc.i4.0
     	ret
@@ -53,14 +63,19 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CLASS_AC
 
 .class ExampleClass EXTENDS
 {
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void SUPER_TYPE::.ctor()
+		ret
+	}
+
 	.method public static int32 Main() cil managed
 	{
 		.entrypoint
-		.maxstack 2
-		.locals init (
-			VAR_TYPE V0
-		)
-		ldloc.0
+		.maxstack 4
+		newobj instance void class VAR_TYPE::.ctor()
 		OPCODE // VALIDITY.
 		pop
 		ldc.i4.0

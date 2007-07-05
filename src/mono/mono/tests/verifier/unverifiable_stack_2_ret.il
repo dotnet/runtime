@@ -24,5 +24,8 @@
 {
 	.entrypoint
 	.maxstack 2
+	ldarg.0
+	call int32 Foo(int32)
+	pop
 	ret
 }

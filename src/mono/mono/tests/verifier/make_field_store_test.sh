@@ -5,13 +5,19 @@ TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
 TEST_TYPE2=$5
+TEST_EMIT_CSTOR=$6
+if [ "${TEST_EMIT_CSTOR}" == "yes" ]; then
+	TEST_CSTOR="newobj instance void ${TEST_TYPE2}::.ctor()";
+else
+	TEST_CSTOR="ldloc.0";
+fi
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 #TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
 #TEST_TYPE2=`echo $TEST_TYPE2 | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" > $TEST_FILE <<//EOF
+sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" > $TEST_FILE <<//EOF
 
 .assembly '${TEST_NAME}_generated'
 {
@@ -45,6 +51,14 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 {
     .field public TYPE1 fld
     .field public static TYPE1 sfld
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
 }
 
 .class ClassA extends [mscorlib]System.Object
@@ -53,12 +67,28 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
     .field public static TYPE1 sfld
     .field public initonly TYPE1 const_field
     .field public static initonly TYPE1 st_const_field
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
 }
 
 .class public SubClass extends ClassA
 {
     .field public TYPE1 subfld
     .field public static TYPE1 subsfld
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void ClassA::.ctor()
+		ret
+	}
 }
 
 .class public explicit Overlapped extends [mscorlib]System.Object
@@ -70,11 +100,27 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
     .field[16] public TYPE1 field5
     .field[20] public TYPE1 field10
     .field[24] public TYPE2 field_ok
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
 }
 
 .class public explicit SubOverlapped extends Overlapped
 {
     .field[16] public TYPE1 field6
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void Overlapped::.ctor()
+		ret
+	}
 }
 
 .method public static int32 Main() cil managed
@@ -84,7 +130,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 	.locals init (
 		TYPE2 V_1
 	)
-	ldloc.0
+	CSTOR
 	OPCODE // VALIDITY.
 	pop
 	ldc.i4.0

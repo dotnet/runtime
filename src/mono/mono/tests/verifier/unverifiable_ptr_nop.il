@@ -27,5 +27,8 @@
 {
 	.maxstack 2
 	.entrypoint
+	ldnull
+	ldnull
+	call void Foo(method int32 *(float64) arg, method int32 *(int32) arg2)
 	ret
 }

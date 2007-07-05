@@ -31,12 +31,21 @@
 	ret 
 }
 
+.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+{
+	.maxstack 8
+	ldarg.0 
+	call instance void object::.ctor()
+	ret
+}
 }
 
 .method public static void Main() cil managed
 {
 	.maxstack 2
 	.entrypoint
+	newobj instance void GoodClass::.ctor()
+	call instance void GoodClass::ordinaryMethod()
 	ret
 }
 

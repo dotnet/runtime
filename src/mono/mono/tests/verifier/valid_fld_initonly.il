@@ -12,16 +12,21 @@
   	extends [mscorlib]System.Object
 {
 	.field public initonly int32 valid
+
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
 }
 
 .method public static int32 Main() cil managed
 {
 	.entrypoint
-	.maxstack 1
-	.locals init (
-		class c
-	)
-	ldloc.0
+	.maxstack 2
+	newobj instance void c::.ctor()
 	ldfld int32 c::valid // Unverifiable, valid initonly.
 	pop
 	ldc.i4.0

@@ -21,7 +21,7 @@
 	     int32 * V_0
 	)
 	ldloc.0
-	pop
+	stloc.0
 	ret
 }
 
@@ -29,5 +29,6 @@
 {
 	.maxstack 2
 	.entrypoint
+	call void Foo()
 	ret
 }

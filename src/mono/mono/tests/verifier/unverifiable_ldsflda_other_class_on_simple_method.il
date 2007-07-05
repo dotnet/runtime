@@ -27,7 +27,7 @@
 .class public BadClass
 {
 
-.method void ordinaryName ()
+.method public static void OrdinaryName ()
 {
     .maxstack 8
 	ldsflda valuetype MyValueType GoodClass::x
@@ -41,6 +41,7 @@
 {
 	.maxstack 2
 	.entrypoint
+	call void BadClass::OrdinaryName()
 	ret
 }
 

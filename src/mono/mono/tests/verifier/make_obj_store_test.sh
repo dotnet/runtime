@@ -54,6 +54,14 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
     .field public TYPE1 fld
     .field public static TYPE1 sfld
 
+	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+	{
+		.maxstack 8
+		ldarg.0 
+		call instance void object::.ctor()
+		ret
+	}
+
     .method public void Method(TYPE1) cil managed
     {
 	ret
@@ -68,7 +76,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 		class Class V_0,
 		TYPE2 V_1
 	)
-	ldloc.0
+	newobj instance void class Class::.ctor()
 	ldloc.1
 	OPCODE // VALIDITY, TYPE2 cannot be stored in TYPE1.
 	ldc.i4.0

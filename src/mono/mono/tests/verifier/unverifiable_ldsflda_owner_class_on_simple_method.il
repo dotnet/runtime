@@ -38,6 +38,7 @@
 {
 	.maxstack 2
 	.entrypoint
+	call void GoodClass::ordinaryMethod()
 	ret
 }
 

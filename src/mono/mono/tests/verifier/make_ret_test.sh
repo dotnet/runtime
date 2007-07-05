@@ -139,6 +139,11 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/
 {
 	.entrypoint
 	.maxstack 2
+	.locals init (
+		TYPE2 V)
+	ldloc.0
+	call TYPE1 Foo(TYPE2)
+	pop
 	ldc.i4.0
 	ret // VALIDITY.
 }
