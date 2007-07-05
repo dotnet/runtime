@@ -691,16 +691,17 @@ done
 
 for OP in ldfld ldflda
 do
-  ./make_unary_test.sh ${OP}_no_fld unverifiable "$OP int32 Class::invalid\n\tpop" "class Class"
+  ./make_unary_test.sh ${OP}_no_fld invalid "$OP int32 Class::invalid\n\tpop" "class Class"
   ./make_unary_test.sh ${OP}_bad_obj unverifiable "$OP int32 Class::valid\n\tpop" object
   ./make_unary_test.sh ${OP}_obj_int32 unverifiable "$OP int32 Class::valid\n\tpop" int32
   ./make_unary_test.sh ${OP}_obj_int64 unverifiable "$OP int32 Class::valid\n\tpop" int64
   ./make_unary_test.sh ${OP}_obj_float64 unverifiable "$OP int32 Class::valid\n\tpop" float64
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Class::valid\n\tpop" 'native int'
-  ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
-  ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
+  ./make_unary_test.sh ${OP}_obj_ref_overlapped unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
+  ./make_unary_test.sh ${OP}_obj_oerlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
 done
 
+#TODO: these tests are bogus, they need to be fixed
 # Stfld tests (see 4.28)
 
 ./make_unary_test.sh stfld_no_fld unverifiable "ldc.i4.0\n\tstfld int32 Class::invalid" "class Class"
@@ -1199,7 +1200,7 @@ do
 	./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped' yes
 	./make_field_store_test.sh field_store_${I}_20 unverifiable "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped' yes
 
-	./make_field_store_test.sh field_store_${I}_22 unverifiable "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA' yes
+	./make_field_store_test.sh field_store_${I}_22 invalid "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA' yes
 	./make_field_store_test.sh field_store_${I}_23 unverifiable "${OP} int32 ClassA::const_field" int32 'int32 \&'
 
 	./make_field_store_test.sh field_store_${I}_24 valid "${OP} int32 ClassA::sfld" int32 'class ClassA' yes
@@ -1213,9 +1214,9 @@ I=1
 for OP in 'ldsfld' 'ldsflda'
 do
 	#unknown field
-	./make_field_store_test.sh static_field_store_${I}_1 unverifiable "${OP} int32 ClassA::unknown_field\n\tpop" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh static_field_store_${I}_1 invalid "${OP} int32 ClassA::unknown_field\n\tpop" 'class ClassA' 'class ClassA'
 	#non static field
-	./make_field_store_test.sh static_field_store_${I}_2 unverifiable "${OP} int32 ClassA::fld\n\tpop" 'class ClassA' 'class ClassA'
+	./make_field_store_test.sh static_field_store_${I}_2 invalid "${OP} int32 ClassA::fld\n\tpop" 'class ClassA' 'class ClassA'
 	#valid
 	./make_field_store_test.sh static_field_store_${I}_3 valid "${OP} ClassA ClassA::sfld\n\tpop" 'class ClassA' 'class ClassA'
 	I=`expr $I + 1`

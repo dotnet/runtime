@@ -111,12 +111,15 @@ namespace AssemblyRunner {
 				if (!op.Equals ("invalid"))
 					Console.WriteLine ("Test returned invalid: "+assembly);
 			} catch (VerificationException ve) {
-				DoubleVerifyUnverifiableResult (path, assembly, op);
+				RecheckUnverifiableResult (path, assembly, op);
 			} catch (TypeInitializationException ve) {
 				if (ve.InnerException is VerificationException)
-					RerheckUnverifiableResult (path, assembly, op);
+					RecheckUnverifiableResult (path, assembly, op);
 				else
 					Console.WriteLine ("Warning: test thrown exception: "+assembly);
+			} catch (MissingMemberException ve) {
+				if (!op.Equals ("invalid"))
+					Console.WriteLine ("Test returned invalid: "+assembly);
 			} catch (MemberAccessException ve) {
 				if (!op.Equals ("unverifiable"))
 					Console.WriteLine ("Test returned unverifiable: "+assembly);
@@ -133,7 +136,7 @@ namespace AssemblyRunner {
 		/*
 		This method exists because sometimes a VerificationException is throw for invalid code, so we try to run it as standard-alone a check again.
 		*/
-		static void RerheckUnverifiableResult (String path, String assembly, String op) {
+		static void RecheckUnverifiableResult (String path, String assembly, String op) {
 			String stderr = ExecuteAndFetchStderr (path);
 			bool invalid = stderr.IndexOf ("InvalidProgramException") >= 0 || stderr.IndexOf ("FileLoadException") >= 0;
 
