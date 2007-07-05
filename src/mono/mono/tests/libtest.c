@@ -1887,6 +1887,22 @@ mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 		return 0;
 }
 
+typedef gunichar2* (STDCALL *UnicodeStringDelegate) (gunichar2 *message);
+
+STDCALL int
+mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
+{
+	const char m[] = "abcdef";
+	gunichar2 *s2, *res;
+	glong len;
+
+	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
+
+	res = del (s2);
+
+	marshal_free (res);
+}
+
 STDCALL int
 mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate del)
 {

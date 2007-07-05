@@ -874,6 +874,23 @@ public class Tests {
 	}
 
 	/*
+	 * Returning unicode strings
+	 */
+	[return: MarshalAs(UnmanagedType.LPWStr)]
+	public delegate string ReturnUnicodeStringDelegate([MarshalAs(UnmanagedType.LPWStr)] string message);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_unicode_string_delegate")]
+	public static extern int mono_test_marshal_return_unicode_string_delegate (ReturnUnicodeStringDelegate d);
+
+	public static String return_unicode_string_delegate (string message) {
+		return message;
+	}
+
+	public static int test_0_marshal_return_unicode_string_delegate () {	
+		return mono_test_marshal_return_unicode_string_delegate (new ReturnUnicodeStringDelegate (return_unicode_string_delegate));
+	}
+
+	/*
 	 * Returning string arrays
 	 */
 	public delegate string[] ReturnArrayDelegate (int i);
