@@ -1520,7 +1520,7 @@ mono_profiler_load (const char *desc)
 		char *err;
 		void *iter;
 		if (col != NULL) {
-			mname = g_memdup (desc, col - desc);
+			mname = g_memdup (desc, col - desc + 1);
 			mname [col - desc] = 0;
 		} else {
 			mname = g_strdup (desc);
