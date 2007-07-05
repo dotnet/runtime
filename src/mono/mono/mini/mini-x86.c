@@ -3535,6 +3535,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint8 *code;
 
 	cfg->code_size =  MAX (mono_method_get_header (method)->code_size * 4, 256);
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		cfg->code_size += 512;
+
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	x86_push_reg (code, X86_EBP);
@@ -3743,9 +3747,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;

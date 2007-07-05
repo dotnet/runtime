@@ -4290,6 +4290,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	gint32 lmf_offset = cfg->arch.lmf_offset;
 
 	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		cfg->code_size += 512;
+
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	/* Amount of stack space allocated by register saving code */

@@ -10014,6 +10014,7 @@ mono_codegen (MonoCompile *cfg)
 				code = cfg->native_code + cfg->code_len;
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 				cfg->code_len = code - cfg->native_code;
+				g_assert (cfg->code_len < cfg->code_size);
 			}
 
 			mono_arch_emit_epilog (cfg);
