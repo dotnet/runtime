@@ -1,3 +1,9 @@
+2007-07-05  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: add special 64bit case for ia64.
+	(rpm used to provide libname as well as libname()(64bit) on ia64, but 
+	now it only provides the first.)
+
 2007-06-28  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* configure.in: Add a check for `struct utimbuf'; needed by MonoPosixHelper.
