@@ -1922,15 +1922,23 @@ if test ${ACCESS_UNALIGNED} = no; then
 fi
 
 PREVIEW=yes
-AC_ARG_WITH(preview, [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
+AC_ARG_WITH(preview,  [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
 	if test x$with_preview = xno; then
 	      PREVIEW=no
+	fi
+])
+
+MOONLIGHT=no
+AC_ARG_WITH(moonlight,[ --with-moonligh=yes,no    If you want to build the Moonlight 2.1 assemblies],[
+	if test x$with_moonlight = xyes; then
+	      MOONLIGHT=yes
 	fi
 ])
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
 AM_CONDITIONAL(INSTALL_2_0, test x$PREVIEW = xyes)
+AM_CONDITIONAL(INSTALL_2_1, test x$MOONLIGHT = xyes)
 
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
@@ -2159,7 +2167,8 @@ echo "
 	TLS:         $with_tls
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status
-	2.0 Alpha:   $PREVIEW
+	2.0 Beta:    $PREVIEW
+	2.1 Alpha:   $MOONLIGHT
 	JNI support: $jdk_headers_found
 	libgdiplus:  $libgdiplus_msg
 	zlib:        $zlib_msg
