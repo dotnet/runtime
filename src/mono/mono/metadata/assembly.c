@@ -1805,7 +1805,8 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 	while ((direntry = g_dir_read_name (dirhandle))) {
 		gboolean match = TRUE;
 		
-		parse_assembly_directory_name (aname->name, direntry, &gac_aname);
+		if(!parse_assembly_directory_name (aname->name, direntry, &gac_aname))
+			continue;
 		
 		if (aname->culture != NULL && strcmp (aname->culture, gac_aname.culture) != 0)
 			match = FALSE;
