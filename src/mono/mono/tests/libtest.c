@@ -1901,6 +1901,8 @@ mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
 	res = del (s2);
 
 	marshal_free (res);
+
+	return 0;
 }
 
 STDCALL int
