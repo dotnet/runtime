@@ -10714,19 +10714,27 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_MISSING_METHOD: {
 		/* Throw a type load exception if needed */
 		MonoLoaderError *error = mono_loader_get_last_error ();
+		MonoException *ex;
 
 		if (error) {
-			MonoException *ex = mono_loader_error_prepare_exception (error);
-			mono_destroy_compile (cfg);
-			mono_raise_exception (ex);
+			ex = mono_loader_error_prepare_exception (error);
 		} else {
 			if (cfg->exception_ptr) {
-				MonoException *ex = mono_class_get_exception_for_failure (cfg->exception_ptr);
-				mono_destroy_compile (cfg);
-				mono_raise_exception (ex);
+				ex = mono_class_get_exception_for_failure (cfg->exception_ptr);
+			} else {
+				if (cfg->exception_type == MONO_EXCEPTION_MISSING_FIELD)
+					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", cfg->exception_message);
+				else if (cfg->exception_type == MONO_EXCEPTION_MISSING_METHOD)
+					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", cfg->exception_message);
+				else if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
+					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", cfg->exception_message);
+				else
+					g_assert_not_reached ();
 			}
-			g_assert_not_reached ();
 		}
+		mono_destroy_compile (cfg);
+		mono_raise_exception (ex);
+		break;
 	}
 	case MONO_EXCEPTION_INVALID_PROGRAM: {
 		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", cfg->exception_message);
