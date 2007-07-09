@@ -3446,6 +3446,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	unsigned char* prev_cil_start;
 	guint32 prev_cil_offset_to_bb_len;
 
+	g_assert (cfg->exception_type == MONO_EXCEPTION_NONE);
+
 #if (MONO_INLINE_CALLED_LIMITED_METHODS)
 	if ((! inline_allways) && ! check_inline_called_method_name_limit (cmethod))
 		return 0;
@@ -3521,6 +3523,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	} else {
 		if (cfg->verbose_level > 2)
 			g_print ("INLINE ABORTED %s\n", mono_method_full_name (cmethod, TRUE));
+		cfg->exception_type = MONO_EXCEPTION_NONE;
 	}
 	return 0;
 }
