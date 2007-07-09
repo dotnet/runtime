@@ -2422,7 +2422,7 @@ mono_class_init (MonoClass *class)
 	g_assert (class);
 
 	if (class->inited)
-		return TRUE;
+		return class->exception_type == MONO_EXCEPTION_NONE;
 
 	/*g_print ("Init class %s\n", class->name);*/
 
