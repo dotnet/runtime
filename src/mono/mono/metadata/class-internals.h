@@ -341,6 +341,8 @@ struct MonoVTable {
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
+#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && ((vt)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
+
 /*
  * Generic instantiation data type encoding.
  */

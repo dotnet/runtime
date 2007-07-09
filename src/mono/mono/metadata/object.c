@@ -3474,11 +3474,8 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 	vt = obj->vtable;
 	
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		if (klass->interface_id <= vt->max_interface_id) {
-			/* the interface_offsets array is stored before the vtable */
-			gpointer *interface_offsets = (gpointer*)vt;
-			if (interface_offsets [- (klass->interface_id + 1)] != NULL)
-				return obj;
+		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id)) {
+			return obj;
 		}
 	} else {
 		MonoClass *oklass = vt->klass;
