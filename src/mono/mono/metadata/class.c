@@ -2098,6 +2098,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					}
 
 					if (!(vtable [io + l])) {
+						char *human_name;
+
 						for (j = 0; j < onum; ++j) {
 							g_print (" at slot %d: %s (%d) overrides %s (%d)\n", io+l, overrides [j*2+1]->name, 
 								 overrides [j*2+1]->slot, overrides [j*2]->name, overrides [j*2]->slot);
@@ -2113,7 +2115,15 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							printf ("METHOD %s(%s)\n", cm->name, msig);
 							g_free (msig);
 						}
-						g_assert_not_reached ();
+
+						mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+
+						if (ifaces)
+							g_ptr_array_free (ifaces, TRUE);
+						if (override_map)
+							g_hash_table_destroy (override_map);
+
+						return;
 					}
 				}
 			}
