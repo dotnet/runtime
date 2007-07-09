@@ -9892,7 +9892,7 @@ mono_marshal_string_to_utf16_copy (MonoString *s)
 	if (s == NULL) {
 		return NULL;
 	} else {
-		gunichar2 *res = mono_marshal_alloc ((mono_string_length (s) * 2) + 1);
+		gunichar2 *res = mono_marshal_alloc ((mono_string_length (s) * 2) + 2);
 		memcpy (res, mono_string_chars (s), mono_string_length (s) * 2);
 		res [mono_string_length (s)] = 0;
 		return res;
