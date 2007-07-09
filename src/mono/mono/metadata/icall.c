@@ -4869,13 +4869,8 @@ ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind,
 }
 
 static gint32
-ves_icall_System_Reflection_Module_get_MDStreamVersion (MonoReflectionModule *module)
+ves_icall_System_Reflection_Module_GetMDStreamVersion (MonoImage *image)
 {
-	MonoImage *image = module->image;
-
-	if (!image)
-		mono_raise_exception (mono_get_exception_not_supported (""));
-	
 	return (image->md_version_major << 16) | (image->md_version_minor);
 }
 
