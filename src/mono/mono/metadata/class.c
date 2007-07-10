@@ -3068,6 +3068,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (class->enumtype) {
 		class->enum_basetype = mono_class_find_enum_basetype (class);
+		if (!class->enum_basetype) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_loader_unlock ();
+			return NULL;
+		}
 		class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 	}
 
