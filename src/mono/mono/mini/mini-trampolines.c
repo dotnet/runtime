@@ -13,6 +13,49 @@
 
 #include "mini.h"
 
+#ifdef MONO_ARCH_HAVE_IMT
+
+static gpointer*
+mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, MonoMethod *method) {
+	MonoObject *this_argument = mono_arch_find_this_argument (regs, method);
+	MonoVTable *vt = this_argument->vtable;
+	int displacement = slot - ((gpointer*)vt);
+	
+	if (displacement > 0) {
+		/* slot is in the vtable, not in the IMT */
+#if DEBUG_IMT
+		printf ("mono_convert_imt_slot_to_vtable_slot: slot %p is in the vtable, not in the IMT\n", slot);
+#endif
+		return slot;
+	} else {
+		MonoMethod *imt_method = mono_arch_find_imt_method (regs);
+		int interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
+		int imt_slot = MONO_IMT_SIZE + displacement;
+
+#if DEBUG_IMT
+		printf ("mono_convert_imt_slot_to_vtable_slot: method = %s.%s.%s, imt_method = %s.%s.%s\n",
+				method->klass->name_space, method->klass->name, method->name, 
+				imt_method->klass->name_space, imt_method->klass->name, imt_method->name);
+#endif
+		g_assert (imt_slot < MONO_IMT_SIZE);
+		if (vt->imt_collisions_bitmap & (1 << imt_slot)) {
+			int vtable_offset = interface_offset + imt_method->slot;
+			gpointer *vtable_slot = & (vt->vtable [vtable_offset]);
+#if DEBUG_IMT
+			printf ("mono_convert_imt_slot_to_vtable_slot: slot %p[%d] is in the IMT, and colliding becomes %p[%d] (interface_offset = %d, method->slot = %d)\n", slot, imt_slot, vtable_slot, vtable_offset, interface_offset, imt_method->slot);
+#endif
+			g_assert (vtable_offset >= 0);
+			return vtable_slot;
+		} else {
+#if DEBUG_IMT
+			printf ("mono_convert_imt_slot_to_vtable_slot: slot %p[%d] is in the IMT, but not colliding\n", slot, imt_slot);
+#endif
+			return slot;
+		}
+	}
+}
+#endif
+
 /**
  * mono_magic_trampoline:
  *
@@ -39,8 +82,12 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		g_assert (*vtable_slot);
 
-		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
+#ifdef MONO_ARCH_HAVE_IMT
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, m);
+#endif
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
+		}
 	}
 	else {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
@@ -250,3 +297,5 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 }
 
 #endif
+
+

@@ -11721,6 +11721,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
+#ifdef MONO_ARCH_HAVE_IMT
+	mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
+#endif
 	if (debug_options.collect_pagefault_stats) {
 		mono_raw_buffer_set_make_unreadable (TRUE);
 		mono_aot_set_make_unreadable (TRUE);
@@ -11956,6 +11959,15 @@ print_jit_stats (void)
 		g_print ("Dynamic code allocs:    %ld\n", mono_stats.dynamic_code_alloc_count);
 		g_print ("Dynamic code bytes:     %ld\n", mono_stats.dynamic_code_bytes_count);
 		g_print ("Dynamic code frees:     %ld\n", mono_stats.dynamic_code_frees_count);
+
+		g_print ("IMT tables size:        %ld\n", mono_stats.imt_tables_size);
+		g_print ("IMT number of tables:   %ld\n", mono_stats.imt_number_of_tables);
+		g_print ("IMT number of methods:  %ld\n", mono_stats.imt_number_of_methods);
+		g_print ("IMT used slots:         %ld\n", mono_stats.imt_used_slots);
+		g_print ("IMT colliding slots:    %ld\n", mono_stats.imt_slots_with_collisions);
+		g_print ("IMT max collisions:     %ld\n", mono_stats.imt_max_collisions_in_slot);
+		g_print ("IMT methods at max col: %ld\n", mono_stats.imt_method_count_when_max_collisions);
+		g_print ("IMT thunks size:        %ld\n", mono_stats.imt_thunks_size);
 
 		if (mono_use_security_manager) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);

@@ -1719,6 +1719,23 @@ mini_emit_load_intf_bit_reg_vtable (MonoCompile *s, int intf_bit_reg, int vtable
 	}
 }
 
+#ifdef MONO_ARCH_HAVE_IMT
+static void
+emit_imt_argument (MonoCompile *cfg, MonoCallInst *call) {
+#ifdef MONO_ARCH_IMT_REG
+	MonoInst *inst;
+	MONO_INST_NEW (cfg, inst, OP_PCONST);
+	inst->inst_p0 = call->method;
+	inst->dreg = mono_regstate_next_int (cfg->rs);
+	mono_bblock_add_inst (cfg->cbb, inst);
+
+	mono_call_inst_add_outarg_reg (cfg, call, inst->dreg, MONO_ARCH_IMT_REG, FALSE);
+#else
+	mono_arch_emit_imt_argument (cfg, call);
+#endif
+}
+#endif
+
 static void 
 mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
 {
@@ -1783,9 +1800,16 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	vtable_reg = mono_regstate_next_int (cfg->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+#ifdef MONO_ARCH_HAVE_IMT
+		guint32 imt_slot = mono_method_get_imt_slot (method);
+		emit_imt_argument (cfg, (MonoCallInst*)tree);
+		slot_reg = vtable_reg;
+		tree->inst_offset = (imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+#else
 		slot_reg = mono_regstate_next_int (cfg->rs);
 		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
 		tree->inst_offset = method->slot * SIZEOF_VOID_P;
+#endif
 	} else {
 		slot_reg = vtable_reg;
 		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (method->slot * SIZEOF_VOID_P);
