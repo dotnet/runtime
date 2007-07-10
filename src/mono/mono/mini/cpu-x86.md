@@ -306,8 +306,8 @@ atan: dest:f src1:f len:8
 sqrt: dest:f src1:f len:2
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
-sext_i1: dest:i src1:i len:3
-sext_i2: dest:i src1:i len:3
+sext_i1: dest:i src1:y len:3
+sext_i2: dest:i src1:y len:3
 tls_get: dest:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
 atomic_add_new_i4: src1:b src2:i dest:i len:16

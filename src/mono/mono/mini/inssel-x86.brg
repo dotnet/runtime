@@ -75,6 +75,12 @@ stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EDX, state->right->reg2);
 }
 
+reg: CEE_LDIND_I1 (OP_REGVAR) {
+	MONO_EMIT_UNALU (s, tree, OP_SEXT_I1, state->reg1, state->left->tree->dreg);}
+
+reg: CEE_LDIND_I2 (OP_REGVAR) {
+	MONO_EMIT_UNALU (s, tree, OP_SEXT_I2, state->reg1, state->left->tree->dreg);}
+
 lreg: OP_LNEG (lreg) "3" {
 	int tmpr = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_UNALU (s, CEE_NEG, state->reg1, state->left->reg1);
