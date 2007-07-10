@@ -443,6 +443,11 @@ default_delegate_trampoline (MonoClass *klass)
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
+static MonoImtThunkBuilder imt_thunk_builder = NULL;
+#define ARCH_USE_IMT (imt_thunk_builder != NULL)
+#if (MONO_IMT_SIZE > 32)
+#error "MONO_IMT_SIZE cannot be larger than 32"
+#endif
 
 void
 mono_install_trampoline (MonoTrampoline func) 
@@ -460,6 +465,11 @@ void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func) 
 {
 	arch_create_delegate_trampoline = func? func: default_delegate_trampoline;
+}
+
+void
+mono_install_imt_thunk_builder (MonoImtThunkBuilder func) {
+	imt_thunk_builder = func;
 }
 
 static MonoCompileFunc default_mono_compile_method = NULL;
@@ -914,6 +924,275 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 	return SPECIAL_STATIC_NONE;
 }
 
+#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
+#define mix(a,b,c) { \
+	a -= c;  a ^= rot(c, 4);  c += b; \
+	b -= a;  b ^= rot(a, 6);  a += c; \
+	c -= b;  c ^= rot(b, 8);  b += a; \
+	a -= c;  a ^= rot(c,16);  c += b; \
+	b -= a;  b ^= rot(a,19);  a += c; \
+	c -= b;  c ^= rot(b, 4);  b += a; \
+}
+#define final(a,b,c) { \
+	c ^= b; c -= rot(b,14); \
+	a ^= c; a -= rot(c,11); \
+	b ^= a; b -= rot(a,25); \
+	c ^= b; c -= rot(b,16); \
+	a ^= c; a -= rot(c,4);  \
+	b ^= a; b -= rot(a,14); \
+	c ^= b; c -= rot(b,24); \
+}
+
+guint32
+mono_method_get_imt_slot (MonoMethod *method) {
+	MonoMethodSignature *sig = mono_method_signature (method);
+	int hashes_count = sig->param_count + 4;
+	guint32 *hashes_start = malloc (hashes_count * sizeof (guint32));
+	guint32 *hashes = hashes_start;
+	guint32 a, b, c;
+	int i;
+	
+	if (! MONO_CLASS_IS_INTERFACE (method->klass)) {
+		printf ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod\n",
+				method->klass->name_space, method->klass->name, method->name);
+		g_assert_not_reached ();
+	}
+	
+	/* Initialize hashes */
+	hashes [0] = g_str_hash (method->klass->name);
+	hashes [1] = g_str_hash (method->klass->name_space);
+	hashes [2] = g_str_hash (method->name);
+	hashes [3] = mono_metadata_type_hash (sig->ret);
+	for (i = 0; i < sig->param_count; i++) {
+		hashes [4 + i] = mono_metadata_type_hash (sig->params [i]);
+	}
+	
+	/* Setup internal state */
+	a = b = c = 0xdeadbeef + (((guint32)hashes_count)<<2);
+
+	/* Handle most of the hashes */
+	while (hashes_count > 3) {
+		a += hashes [0];
+		b += hashes [1];
+		c += hashes [2];
+		mix (a,b,c);
+		hashes_count -= 3;
+		hashes += 3;
+	}
+
+	/* Handle the last 3 hashes (all the case statements fall through) */
+	switch (hashes_count) { 
+	case 3 : c += hashes [2];
+	case 2 : b += hashes [1];
+	case 1 : a += hashes [0];
+		final (a,b,c);
+	case 0: /* nothing left to add */
+		break;
+	}
+	
+	free (hashes_start);
+	/* Report the result */
+	return c % MONO_IMT_SIZE;
+}
+#undef rot
+#undef mix
+#undef final
+
+#define DEBUG_IMT 0
+
+static void
+add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, guint32 *imt_collisions_bitmap, int vtable_slot) {
+	guint32 imt_slot = mono_method_get_imt_slot (method);
+	MonoImtBuilderEntry *entry = malloc (sizeof (MonoImtBuilderEntry));
+	
+	entry->method = method;
+	entry->vtable_slot = vtable_slot;
+	entry->next = imt_builder [imt_slot];
+	if (imt_builder [imt_slot] != NULL) {
+		entry->children = imt_builder [imt_slot]->children + 1;
+		if (entry->children == 1) {
+			mono_stats.imt_slots_with_collisions++;
+			*imt_collisions_bitmap |= (1 << imt_slot);
+		}
+	} else {
+		entry->children = 0;
+		mono_stats.imt_used_slots++;
+	}
+	imt_builder [imt_slot] = entry;
+#if DEBUG_IMT
+	printf ("Added IMT slot for method %s.%s.%s: imt_slot = %d, vtable_slot = %d, colliding with other %d entries\n",
+			method->klass->name_space, method->klass->name,
+			method->name, imt_slot, vtable_slot, entry->children);
+#endif
+}
+
+#if DEBUG_IMT
+static void
+print_imt_entry (const char* message, MonoImtBuilderEntry *e) {
+	if (e != NULL) {
+		printf ("  * %s: (%p) '%s.%s.%s'\n",
+				message,
+				e->method,
+				e->method->klass->name_space,
+				e->method->klass->name,
+				e->method->name);
+	} else {
+		printf ("  * %s: NULL\n", message);
+	}
+}
+#endif
+
+static int
+compare_imt_builder_entries (const void *p1, const void *p2) {
+	MonoImtBuilderEntry *e1 = *(MonoImtBuilderEntry**) p1;
+	MonoImtBuilderEntry *e2 = *(MonoImtBuilderEntry**) p2;
+	
+	return (e1->method < e2->method) ? -1 : ((e1->method > e2->method) ? 1 : 0);
+}
+
+static int
+imt_emit_ir (MonoImtBuilderEntry **sorted_array, int start, int end, GPtrArray *out_array)
+{
+	int count = end - start;
+	int chunk_start = out_array->len;
+	if (count < 4) {
+		int i;
+		for (i = start; i < end; ++i) {
+			MonoIMTCheckItem *item = g_new0 (MonoIMTCheckItem, 1);
+			item->method = sorted_array [i]->method;
+			item->vtable_slot = sorted_array [i]->vtable_slot;
+			item->is_equals = TRUE;
+			if (i < end - 1)
+				item->check_target_idx = out_array->len + 1;
+			else
+				item->check_target_idx = 0;
+			g_ptr_array_add (out_array, item);
+		}
+	} else {
+		int middle = start + count / 2;
+		MonoIMTCheckItem *item = g_new0 (MonoIMTCheckItem, 1);
+
+		item->method = sorted_array [middle]->method;
+		item->is_equals = FALSE;
+		g_ptr_array_add (out_array, item);
+		imt_emit_ir (sorted_array, start, middle, out_array);
+		item->check_target_idx = imt_emit_ir (sorted_array, middle, end, out_array);
+	}
+	return chunk_start;
+}
+
+static GPtrArray*
+imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
+	int number_of_entries = entries->children + 1;
+	MonoImtBuilderEntry **sorted_array = malloc (sizeof (MonoImtBuilderEntry*) * number_of_entries);
+	GPtrArray *result = g_ptr_array_new ();
+	MonoImtBuilderEntry *current_entry;
+	int i;
+	
+	for (current_entry = entries, i = 0; current_entry != NULL; current_entry = current_entry->next, i++) {
+		sorted_array [i] = current_entry;
+	}
+	qsort (sorted_array, number_of_entries, sizeof (MonoImtBuilderEntry*), compare_imt_builder_entries);
+
+	/*for (i = 0; i < number_of_entries; i++) {
+		print_imt_entry (" sorted array:", sorted_array [i]);
+	}*/
+
+	imt_emit_ir (sorted_array, 0, number_of_entries, result);
+
+	free (sorted_array);
+	return result;
+}
+
+static gpointer
+initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry *imt_builder_entry) {
+	if (imt_builder_entry != NULL) {
+		if (imt_builder_entry->children == 0) {
+			/* No collision, return the vtable slot contents */
+			return vtable->vtable [imt_builder_entry->vtable_slot];
+		} else {
+			/* Collision, build the thunk */
+			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
+			gpointer result;
+			int i;
+			result = imt_thunk_builder (vtable, domain, (MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len);
+			for (i = 0; i < imt_ir->len; ++i)
+				g_free (g_ptr_array_index (imt_ir, i));
+			g_ptr_array_free (imt_ir, TRUE);
+			return result;
+		}
+	} else {
+		/* Empty slot */
+		return NULL;
+	}
+}
+
+static void
+build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
+	int i;
+	GSList *list_item;
+	guint32 imt_collisions_bitmap = 0;
+	MonoImtBuilderEntry **imt_builder = calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
+	int method_count = 0;
+	gboolean record_method_count_for_max_collisions = FALSE;
+
+#if DEBUG_IMT
+	printf ("Building IMT for class %s.%s\n", klass->name_space, klass->name);
+#endif
+	for (i = 0; i < klass->interface_offsets_count; ++i) {
+		MonoClass *iface = klass->interfaces_packed [i];
+		int interface_offset = klass->interface_offsets_packed [i];
+		int method_slot_in_interface;
+		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
+			MonoMethod *method = iface->methods [method_slot_in_interface];
+			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface);
+		}
+	}
+	if (extra_interfaces) {
+		int interface_offset = klass->vtable_size;
+
+		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
+			MonoClass* iface = list_item->data;
+			int method_slot_in_interface;
+			for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
+				MonoMethod *method = iface->methods [method_slot_in_interface];
+				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface);
+			}
+			interface_offset += iface->method.count;
+		}
+	}
+	for (i = 0; i < MONO_IMT_SIZE; ++i) {
+		imt [i] = initialize_imt_slot (vt, domain, imt_builder [i]);
+#if DEBUG_IMT
+		printf ("initialize_imt_slot[%d]: %p\n", i, imt [i]);
+#endif
+		if (imt_builder [i] != NULL) {
+			int methods_in_slot = imt_builder [i]->children + 1;
+			if (methods_in_slot > mono_stats.imt_max_collisions_in_slot) {
+				mono_stats.imt_max_collisions_in_slot = methods_in_slot;
+				record_method_count_for_max_collisions = TRUE;
+			}
+			method_count += methods_in_slot;
+		}
+	}
+	
+	mono_stats.imt_number_of_methods += method_count;
+	if (record_method_count_for_max_collisions) {
+		mono_stats.imt_method_count_when_max_collisions = method_count;
+	}
+	
+	for (i = 0; i < MONO_IMT_SIZE; i++) {
+		MonoImtBuilderEntry* entry = imt_builder [i];
+		while (entry != NULL) {
+			MonoImtBuilderEntry* next = entry->next;
+			free (entry);
+			entry = next;
+		}
+	}
+	free (imt_builder);
+	vt->imt_collisions_bitmap = imt_collisions_bitmap;
+}
+
 static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class);
 
 /**
@@ -946,6 +1225,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	MonoClassField *field;
 	char *t;
 	int i;
+	int imt_table_bytes = 0;
 	gboolean inited = FALSE;
 	guint32 vtable_size, class_size;
 	guint32 cindex;
@@ -975,14 +1255,27 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->image->dynamic)
 		mono_class_setup_vtable (class);
 
-	vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
-		sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	if (ARCH_USE_IMT) {
+		vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+		if (class->interface_offsets_count) {
+			imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
+			vtable_size += sizeof (gpointer) * (MONO_IMT_SIZE);
+			mono_stats.imt_number_of_tables++;
+			mono_stats.imt_tables_size += (sizeof (gpointer) * MONO_IMT_SIZE);
+		}
+	} else {
+		vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
+			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	}
 
 	mono_stats.used_class_count++;
 	mono_stats.class_vtable_size += vtable_size;
 	interface_offsets = mono_mempool_alloc0 (domain->mp,  vtable_size);
 
-	vt = (MonoVTable*) (interface_offsets + class->max_interface_id + 1);
+	if (ARCH_USE_IMT)
+		vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
+	else
+		vt = (MonoVTable*) (interface_offsets + class->max_interface_id + 1);
 	vt->klass = class;
 	vt->rank = class->rank;
 	vt->domain = domain;
@@ -1082,11 +1375,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
 	//		class->name, class->interface_offsets_count);
 	
-	/* initialize interface offsets */
-	for (i = 0; i < class->interface_offsets_count; ++i) {
-		int interface_id = class->interfaces_packed [i]->interface_id;
-		int slot = class->interface_offsets_packed [i];
-		interface_offsets [class->max_interface_id - interface_id] = &(vt->vtable [slot]);
+	if (! ARCH_USE_IMT) {
+		/* initialize interface offsets */
+		for (i = 0; i < class->interface_offsets_count; ++i) {
+			int interface_id = class->interfaces_packed [i]->interface_id;
+			int slot = class->interface_offsets_packed [i];
+			interface_offsets [class->max_interface_id - interface_id] = &(vt->vtable [slot]);
+		}
 	}
 
 	/* 
@@ -1148,6 +1443,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 					vt->vtable [i] = arch_create_jit_trampoline (cm);
 			}
 		}
+	}
+
+	if (ARCH_USE_IMT && imt_table_bytes) {
+		/* Now that the vtable is full, we can actually fill up the IMT */
+		build_imt (class, vt, domain, interface_offsets, NULL);
 	}
 
 	mono_domain_unlock (domain);
@@ -1228,13 +1528,23 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		if (iclass->max_interface_id > max_interface_id) max_interface_id = iclass->max_interface_id;
 	}
 
-	vtsize = sizeof (gpointer) * (max_interface_id + 1) +
-		sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	if (ARCH_USE_IMT) {
+		mono_stats.imt_number_of_tables++;
+		mono_stats.imt_tables_size += (sizeof (gpointer) * MONO_IMT_SIZE);
+		vtsize = sizeof (gpointer) * (MONO_IMT_SIZE) +
+			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	} else {
+		vtsize = sizeof (gpointer) * (class->max_interface_id + 1) +
+			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	}
 
 	mono_stats.class_vtable_size += vtsize + extra_interface_vtsize;
 
 	interface_offsets = mono_mempool_alloc0 (domain->mp, vtsize + extra_interface_vtsize);
-	pvt = (MonoVTable*)(interface_offsets + max_interface_id + 1);
+	if (ARCH_USE_IMT)
+		pvt = (MonoVTable*) (interface_offsets + MONO_IMT_SIZE);
+	else
+		pvt = (MonoVTable*) (interface_offsets + max_interface_id + 1);
 	memcpy (pvt, vt, sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
@@ -1264,11 +1574,13 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	pvt->max_interface_id = max_interface_id;
 	pvt->interface_bitmap = class->interface_bitmap;
 
-	/* initialize interface offsets */
-	for (i = 0; i < class->interface_offsets_count; ++i) {
-		int interface_id = class->interfaces_packed [i]->interface_id;
-		int slot = class->interface_offsets_packed [i];
-		interface_offsets [class->max_interface_id - interface_id] = &(pvt->vtable [slot]);
+	if (! ARCH_USE_IMT) {
+		/* initialize interface offsets */
+		for (i = 0; i < class->interface_offsets_count; ++i) {
+			int interface_id = class->interfaces_packed [i]->interface_id;
+			int slot = class->interface_offsets_packed [i];
+			interface_offsets [class->max_interface_id - interface_id] = &(pvt->vtable [slot]);
+		}
 	}
 
 	if (extra_interfaces) {
@@ -1281,7 +1593,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		/* Create trampolines for the methods of the interfaces */
 		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
 			interf = list_item->data;
-			interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
+			
+			if (! ARCH_USE_IMT) {
+				interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
+			}
 
 			iter = NULL;
 			j = 0;
@@ -1290,7 +1605,17 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			
 			slot += mono_class_num_methods (interf);
 		}
-		g_slist_free (extra_interfaces);
+		if (! ARCH_USE_IMT) {
+			g_slist_free (extra_interfaces);
+		}
+	}
+
+	if (ARCH_USE_IMT) {
+		/* Now that the vtable is full, we can actually fill up the IMT */
+		build_imt (class, pvt, domain, interface_offsets, extra_interfaces);
+		if (extra_interfaces) {
+			g_slist_free (extra_interfaces);
+		}
 	}
 
 	return pvt;

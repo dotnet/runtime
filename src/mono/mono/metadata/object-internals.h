@@ -1133,5 +1133,33 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass) MONO_INTER
 MonoObject*
 mono_nullable_box (guint8 *buf, MonoClass *klass) MONO_INTERNAL;
 
+#define MONO_IMT_SIZE 19
+
+typedef struct _MonoImtBuilderEntry {
+	MonoMethod *method;
+	struct _MonoImtBuilderEntry *next;
+	int vtable_slot;
+	int children;
+} MonoImtBuilderEntry;
+
+typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
+
+struct _MonoIMTCheckItem {
+	MonoMethod       *method;
+	int               check_target_idx;
+	int               vtable_slot;
+	guint8           *jmp_code;
+	guint8           *code_target;
+	gboolean          is_equals;
+};
+
+typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count);
+
+void
+mono_install_imt_thunk_builder (MonoImtThunkBuilder func) MONO_INTERNAL;
+
+guint32
+mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

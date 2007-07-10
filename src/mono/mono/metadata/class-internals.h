@@ -337,6 +337,7 @@ struct MonoVTable {
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
 	guint init_failed     : 1; /* cctor execution failed */
+	guint32     imt_collisions_bitmap;
 	/* do not add any fields after vtable, the structure is dynamically extended */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
@@ -526,6 +527,14 @@ typedef struct {
 	gulong dynamic_code_alloc_count;
 	gulong dynamic_code_bytes_count;
 	gulong dynamic_code_frees_count;
+	gulong imt_tables_size;
+	gulong imt_number_of_tables;
+	gulong imt_number_of_methods;
+	gulong imt_used_slots;
+	gulong imt_slots_with_collisions;
+	gulong imt_max_collisions_in_slot;
+	gulong imt_method_count_when_max_collisions;
+	gulong imt_thunks_size;
 	gboolean enabled;
 } MonoStats;
 
