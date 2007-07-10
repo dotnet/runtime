@@ -4105,6 +4105,90 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	}
 }
 
+#ifdef MONO_ARCH_HAVE_IMT
+
+// Linear handler, the bsearch head compare is shorter
+//[2 + 4] x86_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
+//[1 + 1] x86_branch8(inst,cond,imm,is_signed)
+//        x86_patch(ins,target)
+//[1 + 5] x86_jump_mem(inst,mem)
+#define IMT_THUNK_LINEAR_SLOT_HANDLER_LENGTH 14
+
+/*
+ * LOCKING: called with the domain lock held
+ */
+gpointer
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+{
+	int i;
+	int size = count * IMT_THUNK_LINEAR_SLOT_HANDLER_LENGTH;
+	guint8 *code = mono_code_manager_reserve (domain->code_mp, size);
+	guint8 *start = code;
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		item->code_target = code;
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+				item->jmp_code = code;
+				x86_branch8 (code, X86_CC_NE, 0, FALSE);
+				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
+			} else {
+				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
+			}
+		} else {
+			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+			item->jmp_code = code;
+			if (size - (code - start) < 128)
+				x86_branch8 (code, X86_CC_GE, 0, FALSE);
+			else
+				x86_branch32 (code, X86_CC_GE, 0, FALSE);
+		}
+	}
+	/* patch the branches to get to the target items */
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->jmp_code) {
+			if (item->check_target_idx) {
+				x86_patch (item->jmp_code, imt_entries [item->check_target_idx]->code_target);
+			}
+		}
+	}
+	/*x86_breakpoint (code);*/
+		
+	mono_stats.imt_thunks_size += code - start;
+	g_assert (code - start < size);
+	return start;
+}
+
+MonoMethod*
+mono_arch_find_imt_method (gpointer *regs) {
+	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method) {
+	MonoMethodSignature *sig = mono_method_signature (method);
+	CallInfo *cinfo = get_call_info (NULL, sig, FALSE);
+	int this_argument_offset;
+	MonoObject *this_argument;
+
+	/* 
+	 * this is the offset of the this arg from esp as saved at the start of 
+	 * mono_arch_create_trampoline_code () in tramp-x86.c.
+	 */
+	this_argument_offset = 5;
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && (cinfo->ret.storage == ArgOnStack))
+		this_argument_offset++;
+
+	this_argument = * (MonoObject**) (((guint8*) regs [X86_ESP]) + this_argument_offset * sizeof (gpointer));
+
+	g_free (cinfo);
+	return this_argument;
+}
+#endif
+
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
