@@ -268,7 +268,8 @@ TEST_IL_SRC=			\
 	reload-at-bb-end.il	\
 	test-enum-indstoreil.il	\
 	filter-bug.il		\
-	even-odd.il
+	even-odd.il		\
+	bug-82022.il
 
 TEST_CS2_SRC = \
 	interlocked-2.2.cs	\
