@@ -1112,7 +1112,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_METHOD_JUMP: {
 		guint32 token;
 
-		image = decode_method_ref (aot_module, &token, buf, &buf);
+		image = decode_method_ref (aot_module, &token, p, &p);
 		if (!image)
 			goto cleanup;
 
