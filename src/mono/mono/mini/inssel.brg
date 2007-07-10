@@ -1723,13 +1723,19 @@ mini_emit_load_intf_bit_reg_vtable (MonoCompile *s, int intf_bit_reg, int vtable
 static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call) {
 #ifdef MONO_ARCH_IMT_REG
-	MonoInst *inst;
-	MONO_INST_NEW (cfg, inst, OP_PCONST);
-	inst->inst_p0 = call->method;
-	inst->dreg = mono_regstate_next_int (cfg->rs);
-	mono_bblock_add_inst (cfg->cbb, inst);
+	int method_reg = mono_regstate_next_int (cfg->rs);
 
-	mono_call_inst_add_outarg_reg (cfg, call, inst->dreg, MONO_ARCH_IMT_REG, FALSE);
+	if (cfg->compile_aot) {
+		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
+	} else {
+		MonoInst *inst;
+		MONO_INST_NEW (cfg, inst, OP_PCONST);
+		inst->inst_p0 = call->method;
+		inst->dreg = method_reg;
+		mono_bblock_add_inst (cfg->cbb, inst);
+	}
+
+	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 #else
 	mono_arch_emit_imt_argument (cfg, call);
 #endif
