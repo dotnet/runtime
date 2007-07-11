@@ -173,8 +173,14 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 	 * is AppDomain:InvokeInDomain, so this is the same check as in 
 	 * mono_method_same_domain () but without loading the metadata for the method.
 	 */
-	if ((is_got_entry && (mono_domain_get () == mono_get_root_domain ())) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+	if ((is_got_entry && (mono_domain_get () == mono_get_root_domain ())) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
+#ifdef MONO_ARCH_HAVE_IMT
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, method);
+#endif
 		*vtable_slot = addr;
+	}
 
 	return addr;
 }
