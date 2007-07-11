@@ -255,6 +255,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_CREATE_VARS 1
+/* #define MONO_ARCH_HAVE_IMT 1 */
+#define MONO_ARCH_IMT_REG AMD64_R11
 
 gboolean
 mono_amd64_is_sse2 (void);

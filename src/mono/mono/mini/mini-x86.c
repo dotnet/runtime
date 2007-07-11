@@ -4203,12 +4203,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (gpointer *regs) {
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+{
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method) {
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
 	MonoMethodSignature *sig = mono_method_signature (method);
 	CallInfo *cinfo = get_call_info (NULL, sig, FALSE);
 	int this_argument_offset;
