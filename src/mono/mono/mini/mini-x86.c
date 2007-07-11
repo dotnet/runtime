@@ -4393,6 +4393,15 @@ mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
 		 */
 		reg = x86_modrm_rm (code [5]);
 		disp = 0;
+#ifdef MONO_ARCH_HAVE_IMT
+	} else if ((code [-1] == 0xba) && (code [4] == 0xff) && (x86_modrm_mod (code [5]) == 1) && (x86_modrm_reg (code [5]) == 2) && ((signed char)code [6] < 0)) {
+		/* IMT-based interface calls: with MONO_ARCH_IMT_REG == edx
+		 * ba 14 f8 28 08          mov    $0x828f814,%edx
+		 * ff 50 fc                call   *0xfffffffc(%eax)
+		 */
+		reg = code [5] & 0x07;
+		disp = (signed char)code [6];
+#endif
 	} else if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
 		reg = code [4] & 0x07;
 		disp = (signed char)code [5];
