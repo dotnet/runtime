@@ -5604,3 +5604,73 @@ mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 		return TRUE;
 	return can;
 }
+
+/**
+ * mono_type_is_valid_enum_basetype:
+ * @type: The MonoType to check
+ *
+ * Returns: TRUE if the type can be used as the basetype of an enum
+ */
+gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/**
+ * mono_class_is_valid_enum:
+ * @klass: An enum class to be validated
+ *
+ * This method verify the required properties an enum should have.
+ *  
+ * Returns: TRUE if the informed enum class is valid 
+ *
+ * FIXME: TypeBuilder enums are allowed to implement interfaces, but since they cannot have methods, only empty interfaces are possible
+ * FIXME: enum types are not allowed to have a cctor, but mono_reflection_create_runtime_class sets has_cctor to 1 for all types
+ * FIXME: TypeBuilder enums can have any kind of static fields, but the spec is very explicit about that (P II 14.3)
+ */
+gboolean mono_class_is_valid_enum (MonoClass *klass) {
+	MonoClassField * field;
+	gpointer iter = NULL;
+	gboolean found_base_field = FALSE;
+
+	g_assert (klass->enumtype);
+	/* we cannot test against mono_defaults.enum_class, or mcs won't be able to compile the System namespace*/
+	if (!klass->parent || strcmp (klass->parent->name, "Enum") || strcmp (klass->parent->name_space, "System") ) {
+		return FALSE;
+	}
+
+	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)
+		return FALSE;
+
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			if (found_base_field)
+				return FALSE;
+			found_base_field = TRUE;
+			if (!mono_type_is_valid_enum_basetype (field->type))
+				return FALSE;
+		}
+	}
+
+	if (!found_base_field)
+		return FALSE;
+
+	if (klass->method.count > 0) 
+		return FALSE;
+
+	return TRUE;
+}

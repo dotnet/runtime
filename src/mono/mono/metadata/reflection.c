@@ -8287,6 +8287,11 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 		fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, 0);
 
+		if (!mono_type_is_valid_enum_basetype (fb->type->type)) {
+			mono_loader_unlock ();
+			return;
+		}
+
 		klass->enum_basetype = fb->type->type;
 		klass->element_class = my_mono_class_from_mono_type (klass->enum_basetype);
 		if (!klass->element_class)
@@ -9398,10 +9403,15 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	typebuilder_setup_properties (klass);
 
 	typebuilder_setup_events (klass);
-
+	
 	klass->wastypebuilder = TRUE;
 	mono_loader_unlock ();
 	mono_domain_unlock (domain);
+
+	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		mono_raise_exception (mono_get_exception_type_load (tb->name, NULL));
+	}
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	g_assert (res != (MonoReflectionType*)tb);

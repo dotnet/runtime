@@ -831,5 +831,12 @@ void mono_object_describe_fields (MonoObject *obj);
 void mono_value_describe_fields  (MonoClass* klass, const char* addr);
 void mono_class_describe_statics (MonoClass* klass);
 
+/*Enum validation related functions*/
+gboolean
+mono_type_is_valid_enum_basetype (MonoType * type);
+
+gboolean
+mono_class_is_valid_enum (MonoClass *klass);
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 
