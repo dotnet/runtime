@@ -1028,10 +1028,11 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 
 #if DEBUG_IMT
 static void
-print_imt_entry (const char* message, MonoImtBuilderEntry *e) {
+print_imt_entry (const char* message, MonoImtBuilderEntry *e, int num) {
 	if (e != NULL) {
-		printf ("  * %s: (%p) '%s.%s.%s'\n",
+		printf ("  * %s [%d]: (%p) '%s.%s.%s'\n",
 				message,
+				num,
 				e->method,
 				e->method->klass->name_space,
 				e->method->klass->name,
@@ -1095,7 +1096,7 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 	qsort (sorted_array, number_of_entries, sizeof (MonoImtBuilderEntry*), compare_imt_builder_entries);
 
 	/*for (i = 0; i < number_of_entries; i++) {
-		print_imt_entry (" sorted array:", sorted_array [i]);
+		print_imt_entry (" sorted array:", sorted_array [i], i);
 	}*/
 
 	imt_emit_ir (sorted_array, 0, number_of_entries, result);
@@ -1155,6 +1156,7 @@ build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, 
 		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
 			MonoClass* iface = list_item->data;
 			int method_slot_in_interface;
+			mono_class_setup_methods (iface);
 			for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 				MonoMethod *method = iface->methods [method_slot_in_interface];
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface);

@@ -1150,7 +1150,10 @@ struct _MonoIMTCheckItem {
 	int               vtable_slot;
 	guint8           *jmp_code;
 	guint8           *code_target;
-	gboolean          is_equals;
+	guint8            is_equals;
+	guint8            compare_done;
+	guint8            chunk_size;
+	guint8            short_branch;
 };
 
 typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count);
