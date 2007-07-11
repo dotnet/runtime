@@ -1,6 +1,6 @@
 2007-07-11  Jb Evain  <jbevain@novell.com>
 
-	* scripts/slmcs.in, scripts/Makefile.am: new slmcs script.
+	* scripts/smcs.in, scripts/Makefile.am: new smcs script.
 
 2007-07-05  Wade Berrier  <wberrier@novell.com>
 
