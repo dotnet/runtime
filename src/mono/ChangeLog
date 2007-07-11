@@ -1,3 +1,7 @@
+2007-07-11  Jb Evain  <jbevain@novell.com>
+
+	* scripts/slmcs.in, scripts/Makefile.am: new slmcs script.
+
 2007-07-05  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: add special 64bit case for ia64.
