@@ -30,6 +30,8 @@ CLASS2=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = MONO_PATH=$(CLASS1) $(top_builddir)/runtime/mono-wrapper
 RUNTIME2 = MONO_PATH=$(CLASS2) $(top_builddir)/runtime/mono-wrapper
+RUNTIME_AOTCHECK = MONO_PATH=$(CLASS1):. $(top_builddir)/runtime/mono-wrapper
+RUNTIME_AOTCHECK2 = MONO_PATH=$(CLASS2):. $(top_builddir)/runtime/mono-wrapper
 
 MCS = $(RUNTIME) $(CLASS1)/mcs.exe -unsafe -nowarn:0162
 GMCS = $(RUNTIME2) $(CLASS2)/gmcs.exe -unsafe -nowarn:0162
@@ -451,10 +453,10 @@ rcheck: mono $(regtests) $(regtests2)
 	$(RUNTIME2) --regression $(regtests2)
 
 aotcheck: mono $(regtests)
-	for i in $(regtests); do $(RUNTIME) --aot $$i; done
-#	for i in $(regtests2); do $(RUNTIME2) --aot $$i; done
-	$(RUNTIME) --regression $(regtests)
-#	$(RUNTIME2) --verbose --regression $(regtests2)
+	for i in $(regtests); do $(RUNTIME) --aot $$i || exit 1; done
+	for i in $(regtests2); do $(RUNTIME2) --aot $$i || exit 1; done
+	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
+	for i in $(regtests2); do $(RUNTIME_AOTCHECK2) --regression $$i || exit 1; done
 	rm -f *.exe.so
 
 bench: mono test.exe
