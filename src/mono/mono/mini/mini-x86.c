@@ -4112,7 +4112,20 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 //[1 + 1] x86_branch8(inst,cond,imm,is_signed)
 //        x86_patch(ins,target)
 //[1 + 5] x86_jump_mem(inst,mem)
-#define IMT_THUNK_LINEAR_SLOT_HANDLER_LENGTH 14
+
+#define CMP_SIZE 6
+#define BR_SMALL_SIZE 2
+#define BR_LARGE_SIZE 5
+#define JUMP_IMM_SIZE 6
+
+static int
+imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
+{
+	int i, distance = 0;
+	for (i = start; i < target; ++i)
+		distance += imt_entries [i]->chunk_size;
+	return distance;
+}
 
 /*
  * LOCKING: called with the domain lock held
@@ -4121,26 +4134,54 @@ gpointer
 mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
 {
 	int i;
-	int size = count * IMT_THUNK_LINEAR_SLOT_HANDLER_LENGTH;
-	guint8 *code = mono_code_manager_reserve (domain->code_mp, size);
-	guint8 *start = code;
+	int size = 0;
+	guint8 *code, *start;
 
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done)
+					item->chunk_size += CMP_SIZE;
+				item->chunk_size += BR_SMALL_SIZE + JUMP_IMM_SIZE;
+			} else {
+				item->chunk_size += JUMP_IMM_SIZE;
+				/* with assert below:
+				 * item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
+				 */
+			}
+		} else {
+			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
+			imt_entries [item->check_target_idx]->compare_done = TRUE;
+		}
+		size += item->chunk_size;
+	}
+	code = mono_code_manager_reserve (domain->code_mp, size);
+	start = code;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+				if (!item->compare_done)
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
 				item->jmp_code = code;
 				x86_branch8 (code, X86_CC_NE, 0, FALSE);
 				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
 			} else {
+				/* enable the commented code to assert on wrong method */
+				/*x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+				item->jmp_code = code;
+				x86_branch8 (code, X86_CC_NE, 0, FALSE);*/
 				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
+				/*x86_patch (item->jmp_code, code);
+				x86_breakpoint (code);
+				item->jmp_code = NULL;*/
 			}
 		} else {
 			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
 			item->jmp_code = code;
-			if (size - (code - start) < 128)
+			if (x86_is_imm8 (imt_branch_distance (imt_entries, i, item->check_target_idx)))
 				x86_branch8 (code, X86_CC_GE, 0, FALSE);
 			else
 				x86_branch32 (code, X86_CC_GE, 0, FALSE);
@@ -4155,10 +4196,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 		}
 	}
-	/*x86_breakpoint (code);*/
 		
 	mono_stats.imt_thunks_size += code - start;
-	g_assert (code - start < size);
+	g_assert (code - start <= size);
 	return start;
 }
 
