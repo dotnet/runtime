@@ -511,7 +511,7 @@ test-bug-80307: bug-80307.exe
 EXTRA_DIST += bug-81673.cs bug-81673-interface.cs
 bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-81673-interface.cs
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
-	$(MCS) -r:bug-81673-interface.dll bug-81673.cs
+	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 
 test-bug-81673 : bug-81673.exe bug-81673-interface.dll
