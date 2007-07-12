@@ -3524,7 +3524,17 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		(eclass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
-	class->sizes.element_size = mono_class_array_element_size (eclass);
+
+	if (eclass->enumtype && !eclass->enum_basetype) {
+		if (!eclass->reflection_info || eclass->wastypebuilder) {
+			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
+			g_assert (eclass->reflection_info && !eclass->wastypebuilder);
+		}
+		/* element_size -1 is ok as this is not an instantitable type*/
+		class->sizes.element_size = -1;
+	} else
+		class->sizes.element_size = mono_class_array_element_size (eclass);
+
 	mono_class_setup_supertypes (class);
 
 	if (mono_defaults.generic_ilist_class) {
