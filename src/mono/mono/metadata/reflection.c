@@ -8787,15 +8787,12 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 	inst = g_new0 (MonoGenericInst, 1);
 	inst->type_argc = type_argc;
 	inst->type_argv = g_new0 (MonoType *, inst->type_argc);
-	inst->is_reference = 1;
 
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = dup_type (types [i]);
 
 		if (!inst->is_open)
 			inst->is_open = mono_class_is_open_constructed_type (t);
-		if (inst->is_reference)
-			inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
 
 		inst->type_argv [i] = t;
 	}
@@ -8869,15 +8866,12 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	ginst = g_new0 (MonoGenericInst,1 );
 	ginst->type_argc = count;
 	ginst->type_argv = g_new0 (MonoType *, count);
-	ginst->is_reference = 1;
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
 		ginst->type_argv [i] = dup_type (garg->type);
 
 		if (!ginst->is_open)
 			ginst->is_open = mono_class_is_open_constructed_type (ginst->type_argv [i]);
-		if (ginst->is_reference)
-			ginst->is_reference = MONO_TYPE_IS_REFERENCE (ginst->type_argv [i]);
 	}
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
