@@ -82,6 +82,10 @@
 		if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE))\
 			goto inline_failure;\
 	} while (0)
+#define CHECK_CFG_EXCEPTION do {\
+		if (cfg->exception_type != MONO_EXCEPTION_NONE)\
+			goto exception_exit;\
+	} while (0)
 
 /* 
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
@@ -3747,6 +3751,7 @@ gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *cal
 		 /* don't hide previous results */
 		cfg->exception_type = MONO_EXCEPTION_SECURITY_LINKDEMAND;
 		cfg->exception_data = result;
+		return TRUE;
 	}
 	
 	return FALSE;
@@ -4507,6 +4512,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_use_security_manager) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
+				CHECK_CFG_EXCEPTION;
 			}
 
 			ins->inst_p0 = cmethod;
@@ -4581,6 +4587,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mono_use_security_manager) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
+					CHECK_CFG_EXCEPTION;
 				}
 
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
@@ -5568,6 +5575,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_use_security_manager) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
+				CHECK_CFG_EXCEPTION;
 			}
 
 			n = fsig->param_count;
@@ -7230,6 +7238,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mono_use_security_manager) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
+					CHECK_CFG_EXCEPTION;
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -7261,6 +7270,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mono_use_security_manager) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
+					CHECK_CFG_EXCEPTION;
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -7687,6 +7697,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	return inline_costs;
+
+ exception_exit:
+	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
+	g_slist_free (class_inits);
+	dont_inline = g_list_remove (dont_inline, method);
+	return -1;
 
  inline_failure:
 	g_slist_free (class_inits);
