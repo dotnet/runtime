@@ -5175,7 +5175,20 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
 	 */
-	if ((code [-1] == 0x8b) && (amd64_modrm_mod (code [0]) == 0x2) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
+#ifdef MONO_ARCH_HAVE_IMT
+	if ((code [-2] == 0x41) && (code [-1] == 0xbb) && (code [4] == 0xff) && (x86_modrm_mod (code [5]) == 1) && (x86_modrm_reg (code [5]) == 2) && ((signed char)code [6] < 0)) {
+		/* IMT-based interface calls: with MONO_ARCH_IMT_REG == r11
+		 * 41 bb 14 f8 28 08       mov    $0x828f814,%r11d
+		 * ff 50 fc                call   *0xfffffffc(%rax)
+		 */
+		reg = amd64_modrm_rm (code [5]);
+		disp = (signed char)code [6];
+	}
+#else
+	if (0) {
+	}
+#endif
+	else if ((code [-1] == 0x8b) && (amd64_modrm_mod (code [0]) == 0x2) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
 			/*
 			 * This is a interface call
 			 * 48 8b 80 f0 e8 ff ff   mov    0xffffffffffffe8f0(%rax),%rax
@@ -5185,8 +5198,7 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 			rex = code [4];
 		reg = amd64_modrm_rm (code [6]);
 		disp = 0;
-	}
-	else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+	} else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
 		disp = *(guint32*)(code + 3);
 		return (gpointer*)(code + disp + 7);
@@ -5387,7 +5399,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 	}
-	//code = mono_code_manager_reserve (domain->code_mp, size);
 	size = count * IMT_THUNK_SIZE;
 	code = g_malloc (size);
 	start = code;
@@ -5452,8 +5463,8 @@ MonoMethod*
 mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 {
 	/* 
-	 * R11 is clobbered by the trampoline code, so we have to retrieve the method from the
-	 * code.
+	 * R11 is clobbered by the trampoline code, so we have to retrieve the method 
+	 * from the code.
 	 * 41 bb c0 f7 89 00     mov    $0x89f7c0,%r11d
 	 * ff 90 68 ff ff ff     callq  *0xffffffffffffff68(%rax)
 	 */
@@ -5461,7 +5472,13 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 
 	/* Find the start of the call instruction */
 	code -= 7;
-	if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
+	if ((code [-2] == 0x41) && (code [-1] == 0xbb) && (code [4] == 0xff) && (x86_modrm_mod (code [5]) == 1) && (x86_modrm_reg (code [5]) == 2) && ((signed char)code [6] < 0)) {
+		/* IMT-based interface calls
+		 * 41 bb 14 f8 28 08       mov    $0x828f814,%r11
+		 * ff 50 fc                call   *0xfffffffc(%rax)
+		 */
+		code += 4;
+	} else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
 		/* call *[reg+disp32] */
 		code += 1;
 	} else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
