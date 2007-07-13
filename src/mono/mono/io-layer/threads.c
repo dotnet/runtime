@@ -1059,23 +1059,6 @@ static void _wapi_thread_queue_apc (struct _WapiHandle_thread *thread,
 	thr_ret = mono_mutex_unlock (&apc_mutex);
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
-
-	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
-			      (void *)&_wapi_alertable_mutex);
-	thr_ret = mono_mutex_lock (&_wapi_alertable_mutex);
-	g_assert (thr_ret == 0);
-
-	if (thread->waiting_on != NULL) {
-		/* this thread is in an alertable wait, so trip the
-		 * pthread_cond_t of the object the thread is waiting
-		 * on so wait will be interrupted
-		 */
-		_wapi_handle_trip_signal (thread->waiting_on);
-	}
-	
-	thr_ret = mono_mutex_unlock (&_wapi_alertable_mutex);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 }
 
 gboolean _wapi_thread_apc_pending (gpointer handle)
