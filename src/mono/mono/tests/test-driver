@@ -19,7 +19,27 @@ foreach $disabled (split (/ /, $disabled_tests)) {
 	}
 }
 
-my $res = system("$interpreter @ARGV $test 2>$stderr 1>$stdout");
+my $res;
+my $cpid = fork ();
+if (!defined ($cpid)) {
+	$res = system("$interpreter @ARGV $test 2>$stderr 1>$stdout");
+} elsif ($cpid == 0) {
+	exec ("$interpreter @ARGV $test 2>$stderr 1>$stdout") || die "Cannot exec: $!";
+} else {
+	# in the parent, setup the alarm
+	# test must complete in 2 minutes or it is considered buggy
+	my $timeout = 2*60;
+	alarm ($timeout);
+	$SIG{ALRM} = sub {
+		print "failed after $timeout seconds timeout.\n";
+		# process group kill
+		kill (-9, $cpid);
+		exit (3);
+	};
+	$res = wait ();
+	$SIG{ALRM} = sub {};
+	$res = $? >> 8;
+}
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
