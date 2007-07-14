@@ -5381,7 +5381,21 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 #ifdef MONO_ARCH_HAVE_IMT
 
-#define IMT_THUNK_SIZE 32
+#define CMP_SIZE (6 + 1)
+#define BR_SMALL_SIZE 2
+#define BR_LARGE_SIZE 6
+#define MOV_REG_IMM_SIZE 10
+#define MOV_REG_IMM_32BIT_SIZE 6
+#define JUMP_REG_SIZE (2 + 1)
+
+static int
+imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
+{
+	int i, distance = 0;
+	for (i = start; i < target; ++i)
+		distance += imt_entries [i]->chunk_size;
+	return distance;
+}
 
 /*
  * LOCKING: called with the domain lock held
@@ -5391,20 +5405,42 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 {
 	int i;
 	int size = 0;
-	guint8 *code, *start, *mempool_start;
+	guint8 *code, *start;
+	gboolean vtable_is_32bit = ((long)(vtable) == (long)(int)(long)(vtable));
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		if (!item->is_equals) {
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done)
+					item->chunk_size += CMP_SIZE;
+				if (vtable_is_32bit)
+					item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
+				else
+					item->chunk_size += MOV_REG_IMM_SIZE;
+				item->chunk_size += BR_SMALL_SIZE + JUMP_REG_SIZE;
+			} else {
+				if (vtable_is_32bit)
+					item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
+				else
+					item->chunk_size += MOV_REG_IMM_SIZE;
+				item->chunk_size += JUMP_REG_SIZE;
+				/* with assert below:
+				 * item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
+				 */
+			}
+		} else {
+			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
+		size += item->chunk_size;
 	}
-	size = count * IMT_THUNK_SIZE;
-	code = g_malloc (size);
+	code = mono_code_manager_reserve (domain->code_mp, size);
 	start = code;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
+		/* FIXME: Hard to support since we have no register to synthesize the immediate */
 		g_assert (amd64_is_imm32 (item->method));
 		if (item->is_equals) {
 			if (item->check_target_idx) {
@@ -5433,12 +5469,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		} else {
 			amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
 			item->jmp_code = code;
-			if (x86_is_imm8 ((item->check_target_idx - i) * IMT_THUNK_SIZE))
-				amd64_branch8 (code, X86_CC_GE, 0, FALSE);
+			if (x86_is_imm8 (imt_branch_distance (imt_entries, i, item->check_target_idx)))
+				x86_branch8 (code, X86_CC_GE, 0, FALSE);
 			else
-				amd64_branch32 (code, X86_CC_GE, 0, FALSE);
+				x86_branch32 (code, X86_CC_GE, 0, FALSE);
 		}
-		item->chunk_size = code - item->code_target;
+		g_assert (code - item->code_target <= item->chunk_size);
 	}
 	/* patch the branches to get to the target items */
 	for (i = 0; i < count; ++i) {
@@ -5453,10 +5489,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
 
-	mempool_start = mono_code_manager_reserve (domain->code_mp, code - start);
-	memcpy (mempool_start, start, code - start);
-
-	return mempool_start;
+	return start;
 }
 
 MonoMethod*
