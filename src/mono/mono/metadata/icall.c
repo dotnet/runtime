@@ -4896,6 +4896,36 @@ mono_metadata_memberref_is_method (MonoImage *image, guint32 token)
 	return (*sig != 0x6);
 }
 
+static void
+init_generic_context_from_args (MonoGenericContext *context, MonoArray *type_args, MonoArray *method_args)
+{
+	MonoGenericInst *class_inst, *method_inst;
+
+	class_inst = g_new0 (MonoGenericInst, 1);
+	method_inst = g_new0 (MonoGenericInst, 1);
+	context->class_inst = class_inst;
+	context->method_inst = method_inst;
+	if (type_args) {
+		class_inst->type_argc = mono_array_length (type_args);
+		class_inst->type_argv = g_malloc (sizeof (MonoType*) * class_inst->type_argc);
+		memcpy (class_inst->type_argv, mono_array_addr (type_args, MonoType*, 0), class_inst->type_argc * sizeof (MonoType*));
+	}
+	if (method_args) {
+		method_inst->type_argc = mono_array_length (method_args);
+		method_inst->type_argv = g_malloc (sizeof (MonoType*) * method_inst->type_argc);
+		memcpy (method_inst->type_argv, mono_array_addr (method_args, MonoType*, 0), method_inst->type_argc * sizeof (MonoType*));
+	}
+}
+
+static void
+free_generic_context (MonoGenericContext *context)
+{
+	g_free (context->class_inst->type_argv);
+	g_free (context->class_inst);
+	g_free (context->method_inst->type_argv);
+	g_free (context->method_inst);
+}
+
 static MonoType*
 ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
 {
@@ -4903,7 +4933,6 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 	MonoGenericContext context;
-	MonoGenericInst class_inst, method_inst;
 
 	*error = ResolveTokenError_Other;
 
@@ -4925,26 +4954,9 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 		return NULL;
 	}
 
-	context.class_inst = &class_inst;
-	context.method_inst = &method_inst;
-	if (type_args) {
-		class_inst.type_argc = mono_array_length (type_args);
-		class_inst.type_argv = g_malloc (sizeof (MonoType*) * class_inst.type_argc);
-		memcpy (class_inst.type_argv, mono_array_addr (type_args, MonoType*, 0), class_inst.type_argc * sizeof (MonoType*));
-	} else {
-		memset (&class_inst, 0, sizeof (class_inst));
-	}
-	if (method_args) {
-		method_inst.type_argc = mono_array_length (method_args);
-		method_inst.type_argv = g_malloc (sizeof (MonoType*) * method_inst.type_argc);
-		memcpy (method_inst.type_argv, mono_array_addr (method_args, MonoType*, 0), method_inst.type_argc * sizeof (MonoType*));
-	} else {
-		memset (&method_inst, 0, sizeof (method_inst));
-	}
-
+	init_generic_context_from_args (&context, type_args, method_args);
 	klass = mono_class_get_full (image, token, &context);
-	g_free (class_inst.type_argv);
-	g_free (method_inst.type_argv);
+	free_generic_context (&context);
 
 	if (klass)
 		return &klass->byval_arg;
@@ -4957,6 +4969,8 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 {
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
+	MonoGenericContext context;
+	MonoMethod *method;
 
 	*error = ResolveTokenError_Other;
 
@@ -4983,10 +4997,11 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		return NULL;
 	}
 
-	if (type_args || method_args)
-		mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	init_generic_context_from_args (&context, type_args, method_args);
+	method = mono_get_method_full (image, token, NULL, &context);
+	free_generic_context (&context);
 
-	return mono_get_method (image, token, NULL);
+	return method;
 }
 
 static MonoString*
@@ -5021,6 +5036,8 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
+	MonoGenericContext context;
+	MonoClassField *field;
 
 	*error = ResolveTokenError_Other;
 
@@ -5046,10 +5063,11 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		return NULL;
 	}
 
-	if (type_args || method_args)
-		mono_raise_exception (mono_get_exception_not_implemented (NULL));
-
-	return mono_field_from_token (image, token, &klass, NULL);
+	init_generic_context_from_args (&context, type_args, method_args);
+	field = mono_field_from_token (image, token, &klass, &context);
+	free_generic_context (&context);
+	
+	return field;
 }
 
 
