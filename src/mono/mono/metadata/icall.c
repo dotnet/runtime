@@ -4897,11 +4897,13 @@ mono_metadata_memberref_is_method (MonoImage *image, guint32 token)
 }
 
 static MonoType*
-ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
 {
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
+	MonoGenericContext context;
+	MonoGenericInst class_inst, method_inst;
 
 	*error = ResolveTokenError_Other;
 
@@ -4912,15 +4914,38 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 		return NULL;
 	}
 
-	if (image->dynamic)
+	if (image->dynamic) {
+		if (type_args || method_args)
+			mono_raise_exception (mono_get_exception_not_implemented (NULL));
 		return mono_lookup_dynamic_token (image, token);
+	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
 		*error = ResolveTokenError_OutOfRange;
 		return NULL;
 	}
 
-	klass = mono_class_get (image, token);
+	context.class_inst = &class_inst;
+	context.method_inst = &method_inst;
+	if (type_args) {
+		class_inst.type_argc = mono_array_length (type_args);
+		class_inst.type_argv = g_malloc (sizeof (MonoType*) * class_inst.type_argc);
+		memcpy (class_inst.type_argv, mono_array_addr (type_args, MonoType*, 0), class_inst.type_argc * sizeof (MonoType*));
+	} else {
+		memset (&class_inst, 0, sizeof (class_inst));
+	}
+	if (method_args) {
+		method_inst.type_argc = mono_array_length (method_args);
+		method_inst.type_argv = g_malloc (sizeof (MonoType*) * method_inst.type_argc);
+		memcpy (method_inst.type_argv, mono_array_addr (method_args, MonoType*, 0), method_inst.type_argc * sizeof (MonoType*));
+	} else {
+		memset (&method_inst, 0, sizeof (method_inst));
+	}
+
+	klass = mono_class_get_full (image, token, &context);
+	g_free (class_inst.type_argv);
+	g_free (method_inst.type_argv);
+
 	if (klass)
 		return &klass->byval_arg;
 	else
@@ -4928,7 +4953,7 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 }
 
 static MonoMethod*
-ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
 {
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
@@ -4942,9 +4967,12 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		return NULL;
 	}
 
-	if (image->dynamic)
+	if (image->dynamic) {
+		if (type_args || method_args)
+			mono_raise_exception (mono_get_exception_not_implemented (NULL));
 		/* FIXME: validate memberref token type */
 		return mono_lookup_dynamic_token (image, token);
+	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
 		*error = ResolveTokenError_OutOfRange;
@@ -4954,6 +4982,9 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		*error = ResolveTokenError_BadTable;
 		return NULL;
 	}
+
+	if (type_args || method_args)
+		mono_raise_exception (mono_get_exception_not_implemented (NULL));
 
 	return mono_get_method (image, token, NULL);
 }
@@ -4985,7 +5016,7 @@ ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32
 }
 
 static MonoClassField*
-ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
 {
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
@@ -4999,9 +5030,12 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		return NULL;
 	}
 
-	if (image->dynamic)
+	if (image->dynamic) {
+		if (type_args || method_args)
+			mono_raise_exception (mono_get_exception_not_implemented (NULL));
 		/* FIXME: validate memberref token type */
 		return mono_lookup_dynamic_token (image, token);
+	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
 		*error = ResolveTokenError_OutOfRange;
@@ -5012,12 +5046,15 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		return NULL;
 	}
 
+	if (type_args || method_args)
+		mono_raise_exception (mono_get_exception_not_implemented (NULL));
+
 	return mono_field_from_token (image, token, &klass, NULL);
 }
 
 
 static MonoObject*
-ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
 {
 	int table = mono_metadata_token_table (token);
 
@@ -5027,7 +5064,7 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 	case MONO_TABLE_TYPEDEF:
 	case MONO_TABLE_TYPEREF:
 	case MONO_TABLE_TYPESPEC: {
-		MonoType *t = ves_icall_System_Reflection_Module_ResolveTypeToken (image, token, error);
+		MonoType *t = ves_icall_System_Reflection_Module_ResolveTypeToken (image, token, type_args, method_args, error);
 		if (t)
 			return (MonoObject*)mono_type_get_object (mono_domain_get (), t);
 		else
@@ -5035,14 +5072,14 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 	}
 	case MONO_TABLE_METHOD:
 	case MONO_TABLE_METHODSPEC: {
-		MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, error);
+		MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, type_args, method_args, error);
 		if (m)
 			return (MonoObject*)mono_method_get_object (mono_domain_get (), m, m->klass);
 		else
 			return NULL;
 	}		
 	case MONO_TABLE_FIELD: {
-		MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, error);
+		MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, type_args, method_args, error);
 		if (f)
 			return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
 		else
@@ -5050,14 +5087,14 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 	}
 	case MONO_TABLE_MEMBERREF:
 		if (mono_metadata_memberref_is_method (image, token)) {
-			MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, error);
+			MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, type_args, method_args, error);
 			if (m)
 				return (MonoObject*)mono_method_get_object (mono_domain_get (), m, m->klass);
 			else
 				return NULL;
 		}
 		else {
-			MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, error);
+			MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, type_args, method_args, error);
 			if (f)
 				return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
 			else
