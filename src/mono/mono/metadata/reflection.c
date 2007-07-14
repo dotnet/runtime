@@ -569,7 +569,7 @@ default_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_STRING:
 		return mono_defaults.string_class;
 	default:
-		g_warning ("implement me 0x%02x\n", type->type);
+		g_warning ("default_class_from_mono_type: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
 	}
 	

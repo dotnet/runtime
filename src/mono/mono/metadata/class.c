@@ -3415,7 +3415,7 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_MVAR:
 		return mono_class_from_generic_parameter (type->data.generic_param, NULL, TRUE);
 	default:
-		g_warning ("implement me 0x%02x\n", type->type);
+		g_warning ("mono_class_from_mono_type: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
 	}
 	
