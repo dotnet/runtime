@@ -310,7 +310,7 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboole
 #endif
 	}
 
-	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
+	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
