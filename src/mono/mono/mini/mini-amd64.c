@@ -5183,6 +5183,8 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 		 */
 		reg = amd64_modrm_rm (code [5]);
 		disp = (signed char)code [6];
+		/* R10 is clobbered by the IMT thunk code */
+		g_assert (reg != AMD64_R10);
 	}
 #else
 	if (0) {
@@ -5198,6 +5200,8 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 			rex = code [4];
 		reg = amd64_modrm_rm (code [6]);
 		disp = 0;
+		/* R10 is clobbered by the IMT thunk code */
+		g_assert (reg != AMD64_R10);
 	} else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
 		disp = *(guint32*)(code + 3);
@@ -5209,7 +5213,8 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 			rex = code [0];
 		reg = amd64_modrm_rm (code [2]);
 		disp = *(gint32*)(code + 3);
-		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
+		/* R10 is clobbered by the IMT thunk code */
+		g_assert (reg != AMD64_R10);
 	}
 	else if (code [2] == 0xe8) {
 		/* call <ADDR> */
@@ -5382,6 +5387,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 #ifdef MONO_ARCH_HAVE_IMT
 
 #define CMP_SIZE (6 + 1)
+#define CMP_REG_REG_SIZE (4 + 1)
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 6
 #define MOV_REG_IMM_SIZE 10
@@ -5412,8 +5418,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				if (!item->compare_done)
-					item->chunk_size += CMP_SIZE;
+				if (!item->compare_done) {
+					if (amd64_is_imm32 (item->method))
+						item->chunk_size += CMP_SIZE;
+					else
+						item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
+				}
 				if (vtable_is_32bit)
 					item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
 				else
@@ -5430,7 +5440,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				 */
 			}
 		} else {
-			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
+			if (amd64_is_imm32 (item->method))
+				item->chunk_size += CMP_SIZE;
+			else
+				item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
+			item->chunk_size += BR_LARGE_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 		size += item->chunk_size;
@@ -5444,8 +5458,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		g_assert (amd64_is_imm32 (item->method));
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				if (!item->compare_done)
-					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+				if (!item->compare_done) {
+					if (amd64_is_imm32 (item->method))
+						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+					else {
+						amd64_mov_reg_imm (code, AMD64_R10, item->method);
+						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
+					}
+				}
 				item->jmp_code = code;
 				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
 				amd64_mov_reg_imm (code, AMD64_R11, & (vtable->vtable [item->vtable_slot]));
@@ -5453,7 +5473,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			} else {
 				/* enable the commented code to assert on wrong method */
 #if 0
-				amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+				if (amd64_is_imm32 (item->method))
+					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+				else {
+					amd64_mov_reg_imm (code, AMD64_R10, item->method);
+					amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
+				}
 				item->jmp_code = code;
 				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
 				amd64_mov_reg_imm (code, AMD64_R11, & (vtable->vtable [item->vtable_slot]));
@@ -5467,7 +5492,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 		} else {
-			amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+			if (amd64_is_imm32 (item->method))
+				amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+			else {
+				amd64_mov_reg_imm (code, AMD64_R10, item->method);
+				amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
+			}
 			item->jmp_code = code;
 			if (x86_is_imm8 (imt_branch_distance (imt_entries, i, item->check_target_idx)))
 				x86_branch8 (code, X86_CC_GE, 0, FALSE);
