@@ -70,6 +70,8 @@
 
 static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
+static MonoArray*
+type_array_from_modifiers (MonoImage *image, MonoType *type, int optional);
 
 static inline MonoBoolean
 is_generic_parameter (MonoType *type)
@@ -1344,6 +1346,14 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *hand
 	g_assert (handle);
 
 	return mono_field_get_object (mono_domain_get (), handle->parent, handle);
+}
+
+static MonoArray*
+ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
+{
+	MonoType *type = field->field->type;
+
+	return type_array_from_modifiers (field->field->parent->image, type, optional);
 }
 
 static void
@@ -6482,7 +6492,7 @@ ves_icall_MonoDebugger_GetMethodToken (MonoReflectionMethod *method)
 }
 
 /*
- * We eturn NULL for no modifiers so the corlib code can return Type.EmptyTypes
+ * We return NULL for no modifiers so the corlib code can return Type.EmptyTypes
  * and avoid useless allocations.
  */
 static MonoArray*
