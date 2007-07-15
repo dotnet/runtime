@@ -5454,8 +5454,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
-		/* FIXME: Hard to support since we have no register to synthesize the immediate */
-		g_assert (amd64_is_imm32 (item->method));
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
