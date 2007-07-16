@@ -1860,7 +1860,6 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 
 	mh = mono_get_method_full (m, token, NULL, (MonoGenericContext *) container);
 	if (mh) {
-		mh = mono_get_inflated_method (mh);
 		if (mono_method_signature (mh)->is_inflated)
 			container = ((MonoMethodInflated *) mh)->declaring->generic_container;
 		esname = get_escaped_name (mh->name);
@@ -3044,7 +3043,6 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 		if (token == impl) {
 			MonoMethod *mh = NULL;
 			mh = mono_get_method_full (m, decl, NULL, (MonoGenericContext *) container);
-			mh = mono_get_inflated_method (mh);
 
 			if (mh && (mh->klass && (mh->klass->generic_class || mh->klass->generic_container))) {
 				char *meth_str;
