@@ -68,7 +68,7 @@
     <Compile Include="Mono.Linker\TypePreserve.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\lib\Mono.Cecil.csproj">
+    <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
       <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
