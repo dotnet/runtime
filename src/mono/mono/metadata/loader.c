@@ -874,8 +874,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	else
 		method = method_from_memberref (image, nindex, context, NULL);
 
-	method = mono_get_inflated_method (method);
-
 	klass = method->klass;
 
 	/* FIXME: Is this invalid metadata?  Should we throw an exception instead?  */
@@ -1482,7 +1480,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	}
 
 	mono_class_init (constrained_class);
-	method = mono_get_inflated_method (*cil_method);
+	method = *cil_method;
 	sig = mono_method_signature (method);
 
 	if (method->is_inflated && sig->generic_param_count) {

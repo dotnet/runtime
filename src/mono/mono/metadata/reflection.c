@@ -2469,7 +2469,6 @@ static guint32
 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 {
 	MonoMethodInflated *imethod;
-	MonoMethod *inflated;
 	guint32 token;
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
@@ -2477,16 +2476,15 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 		return token;
 
 	g_assert (method->is_inflated);
-	inflated = mono_get_inflated_method (method);
-	imethod = (MonoMethodInflated *) inflated;
+	imethod = (MonoMethodInflated *) method;
 
 	if (mono_method_signature (imethod->declaring)->generic_param_count) {
-		token = method_encode_methodspec (assembly, inflated);
+		token = method_encode_methodspec (assembly, method);
 	} else {
 		guint32 sig = method_encode_signature (
 			assembly, mono_method_signature (imethod->declaring));
 		token = mono_image_get_memberref_token (
-			assembly, &inflated->klass->byval_arg, inflated->name, sig);
+			assembly, &method->klass->byval_arg, method->name, sig);
 	}
 
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
@@ -2498,8 +2496,6 @@ mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m)
 {
 	MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 	guint32 sig, token;
-
-	m = mono_get_inflated_method (m);
 
 	sig = method_encode_signature (assembly, mono_method_signature (imethod->declaring));
 	token = mono_image_get_memberref_token (
@@ -5542,7 +5538,6 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	if (method->is_inflated) {
 		MonoReflectionGenericMethod *gret;
 
-		method = mono_get_inflated_method (method);
 		refclass = method->klass;
 		CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
 		if ((*method->name == '.') && (!strcmp (method->name, ".ctor") || !strcmp (method->name, ".cctor"))) {
@@ -7478,8 +7473,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
 		cinfo = mono_custom_attrs_from_method (rmethod->method);
 	} else if ((strcmp ("MonoGenericMethod", klass->name) == 0) || (strcmp ("MonoGenericCMethod", klass->name) == 0)) {
-		MonoMethod *method = mono_get_inflated_method (((MonoReflectionMethod*)obj)->method);
-		cinfo = mono_custom_attrs_from_method (method);
+		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
+		cinfo = mono_custom_attrs_from_method (rmethod->method);
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;

@@ -599,7 +599,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
  *
  * Instantiate method @method with the generic context @context.
  * BEWARE: All non-trivial fields are invalid, including klass, signature, and header.
- *         Use mono_get_inflated_method (), mono_method_signature () and mono_method_get_header () to get the correct values.
+ *         Use mono_method_signature () and mono_method_get_header () to get the correct values.
  */
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context)
@@ -2462,10 +2462,8 @@ mono_class_init (MonoClass *class)
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 
 		for (i = 0; i < class->method.count; i++) {
-			MonoMethod *inflated = mono_class_inflate_generic_method_full (
+			class->methods [i] = mono_class_inflate_generic_method_full (
 				gklass->methods [i], class, mono_class_get_context (class));
-
-			class->methods [i] = mono_get_inflated_method (inflated);
 		}
 
 		class->property = gklass->property;

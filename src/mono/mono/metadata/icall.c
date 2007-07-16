@@ -1363,9 +1363,6 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 	MonoMethodSignature* sig;
 	MONO_ARCH_SAVE_REGS;
 
-	if (method->is_inflated)
-		method = mono_get_inflated_method (method);
-
 	sig = mono_method_signature (method);
 	if (!sig) {
 		g_assert (mono_loader_get_last_error ());
@@ -1392,11 +1389,6 @@ ves_icall_get_parameter_info (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get (); 
 
-	MONO_ARCH_SAVE_REGS;
-
-	if (method->is_inflated)
-		method = mono_get_inflated_method (method);
-
 	return mono_param_get_objects (domain, method);
 }
 
@@ -1407,11 +1399,6 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 	MonoReflectionMarshal* res = NULL;
 	MonoMarshalSpec **mspecs;
 	int i;
-
-	MONO_ARCH_SAVE_REGS;
-
-	if (method->is_inflated)
-		method = mono_get_inflated_method (method);
 
 	mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
@@ -1632,7 +1619,7 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 static MonoReflectionType*
 ves_icall_MonoGenericMethod_get_ReflectedType (MonoReflectionGenericMethod *rmethod)
 {
-	MonoMethod *method = mono_get_inflated_method (rmethod->method.method);
+	MonoMethod *method = rmethod->method.method;
 
 	return mono_type_get_object (mono_object_domain (rmethod), &method->klass->byval_arg);
 }
@@ -2684,7 +2671,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 * is stupid), mono_runtime_invoke_*() calls the provided method, allowing
 	 * greater flexibility.
 	 */
-	MonoMethod *m = mono_get_inflated_method (method->method);
+	MonoMethod *m = method->method;
 	int pcount;
 	void *obj = this;
 
