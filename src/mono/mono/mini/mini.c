@@ -3698,9 +3698,6 @@ mini_get_method (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericCont
 
 	method = mono_get_method_full (m->klass->image, token, klass, context);
 
-	if (method && method->is_inflated)
-		method = mono_get_inflated_method (method);
-
 	return method;
 }
 
@@ -4550,7 +4547,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cil_method = cmethod;
 				} else if (constrained_call) {
 					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
-					cmethod = mono_get_inflated_method (cmethod);
 					cil_method = cmethod;
 				} else {
 					cmethod = mini_get_method (method, token, NULL, generic_context);
@@ -10662,8 +10658,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	gpointer code = NULL;
 	MonoJitInfo *info;
 
-	method = mono_get_inflated_method (method);
-
 #ifdef MONO_USE_AOT_COMPILER
 	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
 		MonoDomain *domain = mono_domain_get ();
@@ -11002,7 +10996,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		return NULL;
 	}
 
-	method = mono_get_inflated_method (method);
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_jit_compile_method (invoke);
 	
