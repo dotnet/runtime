@@ -1,0 +1,10 @@
+<linker>
+	<assembly fullname="Library">
+		<type fullname="Foo">
+			<field signature="System.Int32 _baz" />
+			<method signature="System.Void .ctor()" />
+			<method signature="System.Int32 Baz()" />
+		</type>
+		<type fullname="Bar" />
+	</assembly>
+</linker>

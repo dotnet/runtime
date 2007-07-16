@@ -1,0 +1,96 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Mono.Linker</RootNamespace>
+    <AssemblyName>monolinker</AssemblyName>
+    <StartupObject>
+    </StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Mono.Linker.Steps\AdjustVisibilityStep.cs" />
+    <Compile Include="Mono.Linker.Steps\BaseStep.cs" />
+    <Compile Include="Mono.Linker.Steps\BlacklistStep.cs" />
+    <Compile Include="Mono.Linker.Steps\CleanStep.cs" />
+    <Compile Include="Mono.Linker.Steps\LoadI18nAssemblies.cs" />
+    <Compile Include="Mono.Linker\I18nAssemblies.cs" />
+    <Compile Include="Mono.Linker.Steps\IStep.cs" />
+    <Compile Include="Mono.Linker.Steps\LoadReferencesStep.cs" />
+    <Compile Include="Mono.Linker.Steps\MarkStep.cs" />
+    <Compile Include="Mono.Linker.Steps\OutputStep.cs" />
+    <Compile Include="Mono.Linker.Steps\ResolveFromApiInfoStep.cs" />
+    <Compile Include="Mono.Linker.Steps\ResolveFromAssemblyStep.cs" />
+    <Compile Include="Mono.Linker.Steps\ResolveFromXmlStep.cs" />
+    <Compile Include="Mono.Linker.Steps\ResolveStep.cs" />
+    <Compile Include="Mono.Linker.Steps\SweepStep.cs" />
+    <Compile Include="Mono.Linker\Annotations.cs" />
+    <Compile Include="Mono.Linker\AssemblyAction.cs" />
+    <Compile Include="Mono.Linker\AssemblyInfo.cs" />
+    <Compile Include="Mono.Linker\AssemblyResolver.cs" />
+    <Compile Include="Mono.Linker\Driver.cs" />
+    <Compile Include="Mono.Linker\LinkContext.cs" />
+    <Compile Include="Mono.Linker\MethodAction.cs" />
+    <Compile Include="Mono.Linker\Pipeline.cs" />
+    <Compile Include="Mono.Linker\TypePreserve.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lib\Mono.Cecil.csproj">
+      <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
+      <Name>Mono.Cecil</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Descriptors\mscorlib.xml">
+      <LogicalName>mscorlib.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Descriptors\System.Web.xml">
+      <LogicalName>System.web.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Descriptors\System.xml">
+      <LogicalName>System.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Descriptors\Mono.Posix.xml">
+      <LogicalName>Mono.Posix.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Descriptors\System.Drawing.xml">
+      <LogicalName>System.Drawing.xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>

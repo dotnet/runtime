@@ -1,0 +1,323 @@
+2007-07-05  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs
+	  Mono.Linker/Pipeline.cs:
+		Add a way to install steps in the pipeline
+		from the outside.
+
+2007-07-03  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs:
+		Add support for @files
+
+	* Mono.Linker/Driver.cs:
+		Add a way to add search directories to the resolver.
+
+2007-06-18  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/MarkStep.cs:
+		Mark generic parameter constraints.
+
+	* Mono.Linker.Steps/MarkStep.cs:
+		Mark modifiers of modtype.
+
+2007-06-15  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs,
+	  Mono.Linker/I18nAssemblies.cs,
+	  Mono.Linker.Steps/LoadI18nAssemblies.cs:
+		Copy the i18n assemblies when running Mono.
+
+	* Mono.Linker/CustomResolver.cs => AssemblyResolver.cs,
+	  Mono.Linker/Annotations.cs,
+	  Mono.Linker/LinkContext.cs,
+	  Mono.Linker.Steps/ResolveFromXmlStep.cs:
+		Clean up the assembly reference system.
+		Fixes bug where the linker have multiple
+		time the same assembly in its cache.
+
+2007-06-13  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/OutputStep.cs:
+		Copy .config files alongs with assemblies.
+
+	* Mono.Linker.Steps/CleanStep.cs:
+		Clean memberref that are not used anymore.
+
+2007-06-12  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/AdjustVisibilityStep.cs,
+	  Mono.Linker.Steps/ResolveFromApiInfoStep.cs,
+	  Mono.Linker/Drivers.cs:
+		Adjust the visibility depending on the data
+		gathered in the api-info.
+
+	* Mono.Linker.Steps/ResolveFromApiInfoStep.cs:
+	  Mono.Linker/Driver.cs:
+		Started working on linking from api-info.
+
+2007-06-08  Jb Evain  <jbevain@novell.com>
+
+	* Descriptors/System.Drawing.xml,
+	  Mono.Linker.Steps/BlackListStep.cs:
+		Add preserve infos for System.Drawing.
+
+	* Mono.Linker.Steps/MarkStep.cs:
+	  Tests/TestsCases/Linker/Generics/*:
+		Also walk through generic instances to
+		mark arguments.
+
+2007-06-07  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/MarkStep.cs:
+		Mark types used in some marshal specs.
+
+	* Mono.Linker.Tests/MarkStep.cs
+	  Tests/Mono.Linker.Tests/XmlLinkingTestFixture.cs
+	  Tests/TestCases/Linker/ReferenceInAttributes/*:
+		Mark fields and setters used in custom attribute
+		instantiation. Mark also types used in custom attribute
+		instantiation.
+
+	* profiler/Makefile,
+	  profiler/link.c:
+		Add a small profiler that outputs the xml format
+		that the linker can resolve.
+
+		By running an application with the profiler, one
+		can help the linker gather data. Especially for dynamic
+		cases like assembly loading an dynamic type resolving.
+
+2007-06-06  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/MarkStep.cs:
+	  Mono.Linker/CustomResolvercs:
+		Try to find types in custom attributes to mark them.
+
+	* Mono.Linker.Steps/MarkStep.cs:
+		Mark default constructor for serializable types.
+		Mark the special serialization constructor as well.
+
+	* Mono.Linker/LinkContext.cs:
+	  Mono.Linker.Steps/LoadReferences.cs:
+		Use the name of the assembly as a key
+		instead of the fullname.
+
+	* Mono.Linker/CustomResolver.cs:
+		When a method is not found, go down
+		the class hierarchy to find it.
+
+2007-06-05  Jb Evain  <jbevain@novell.com>
+
+	* Tests/Mono.Linker.Tests/IntegrationTestFixture.cs:
+	  Tests/TestCases/Integration/*
+	  Tests/Makefile:
+		Start the integration tests.
+
+2007-06-04  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/MarkStep.cs
+		Mark the custom attributes on the assemblies
+		on initialize.
+
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs
+	  Descriptors/corlib.xml:
+		Preserve the whole S.S.Crypto namespace.
+
+	* rename back from mink to monolinker.
+
+2007-06-01  Jb Evain  <jbevain@novell.com>
+
+	* configure, config.make, mink.in: added
+
+	* AUTHORS, MIT.X11, man/mink.1: added
+
+2007-05-31  Jb Evain  <jbevain@novell.com>
+
+	* README: added
+	  monolinker.exe.sources: moved to mink.exe.sources
+	  Makefile, Mono.Linker.csproj: emit a mink.exe
+
+	* Mono.Linker/LinkContext.cs:
+		A resolved assembly is not always the one requested,
+		cache the good name.
+
+	* Tests/Mono.Linker.Tests/AbstractLinkingTestFixture.cs
+	  Mono.Linker.Steps/OutputStep.cs
+	  Mono.Linker.Steps/LoadReferencesStep.cs
+	  Mono.Linker.Steps/CleanStep.cs
+	  Mono.Linker.Steps/ResolveFromAssemblyStep.cs
+	  Mono.Linker.Steps/SweepStep.cs
+	  Mono.Linker.Steps/BlacklistStep.cs
+	  Mono.Linker.Steps/MarkStep.cs
+	  Mono.Linker.Steps/BaseStep.cs
+	  Mono.Linker.csproj
+	  Mono.Linker/Driver.cs:
+		Add a new abstract BaseStep to be extends by most
+		of the steps.
+		Add a new LoadReferences step to force all referenced
+		assemblies to be resolved before the mark step.
+
+	* Mono.Linker/CustomResolver.cs
+	  Mono.Linker/LinkContext.cs:
+		Register entry assembly.
+
+2007-05-30  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/MarkStep.cs:
+		Fix regression: do not mark GenericParameters that are
+		part of a typespec, like T[] or T*.
+
+2007-05-28  Jb Evain  <jbevain@novell.com>
+
+	* Big refactoring. Get rid of the markers, use the annotations
+		of Cecil instead.
+
+	* Mono.Linker/Marker.cs
+	  Mono.Linker/MarkStep.cs
+	  Mono.Linker/SweepStep.cs:
+		Use annotations to mark wether or not we should
+		sweep an item.
+
+2007-05-23  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Limker/CleanStep.cs:
+		Stop doing hackish stupid things because
+		Cecil suddenly handles MemberRef much better.
+
+2007-05-19  Jb Evain  <jb@nurv.fr>
+
+	* Mono.Linker/ResolveFromXmlStep.cs
+	  Mono.Linker/AssemblyMarker.cs
+	  Mono.Linker/MarkStep.cs
+	  Mono.Linker/ResolveFromAssemblyStep.cs:
+		Process correctly the marker selected in the resolve phases.
+
+2007-05-17  Jb Evain  <jb@nurv.fr>
+
+	* Mono.Linker/CleanStep.cs
+	  Mono.Linker/SweepStep.cs
+	  Mono.Linker/MarkStep.cs:
+		Link only when necessary.
+
+	* Tests/Mono.Linker.Tests/AbstractLinkingTestFixture.cs
+	  Tests/Mono.Linker.Tests/AbstractTestFixture.cs
+	  Mono.Linker.csproj
+	  Mono.Linker/ResolveFromXmlStep.cs
+	  Mono.Linker/AssemblyMarker.cs
+	  Mono.Linker/Marker.cs
+	  Mono.Linker/MarkStep.cs
+	  Mono.Linker/TypePreserve.cs
+	  Mono.Linker/Pipeline.cs:
+		Deal with preserve and required infos, make last test pass.
+
+	* Tests/Mono.Linker.Tests/XmlLinkingTestFixture.cs
+	  Tests/Mono.Linker.Tests/AbstractLinkingTestFixture.cs
+	  Tests/TestCases/Linker/PreserveFieldsRequired
+	  Tests/TestCases/Linker/PreserveFieldsRequired/Library.cs
+	  Tests/TestCases/Linker/PreserveFieldsRequired/desc.xml
+	  Tests/TestCases/Linker/PreserveFieldsRequired/Makefile
+	  Tests/TestCases/Linker/PreserveFieldsRequired/Library.dll:
+		Add a new (failing for now) test case for preserve and required.
+
+2007-05-16  Jb Evain  <jb@nurv.fr>
+
+	* Tests/Mono.Linker.Tests/AbstractTestFixture.cs
+	  Mono.Linker.csproj
+	  Mono.Linker/CoreAction.cs
+	  Mono.Linker/Driver.cs
+	  Mono.Linker/LinkContext.cs:
+		Simplify the command line options.
+
+	* Tests/Mono.Linker.Tests/AbstractTestFixture.cs
+	  Mono.Linker.csproj
+	  Mono.Linker/CleanStep.cs
+	  Mono.Linker/ResolveFromXmlStep.cs
+	  Mono.Linker/Driver.cs
+	  Mono.Linker/OutputStep.cs
+	  Mono.Linker/ResolveFromAssemblyStep.cs
+	  Mono.Linker/LinkContext.cs
+	  Mono.Linker/BlacklistStep.cs
+	  Mono.Linker/Pipeline.cs:
+		Working on black list support.
+
+	* Descriptors/corlib.xml
+	  Descriptors/system.xml
+	  Descriptors/system.web.xml:
+		First audit of the core.
+
+2007-04-23  Jb Evain  <jb@nurv.fr>
+
+	* Mono.Linker/CleanStep.cs:
+		Clean some special cases of MemberRef.
+
+2007-03-19  Jb Evain  <jbevain@gmail.com>
+
+	* Fix a bug when an assembly references two
+	versions of an assembly with the same name.
+	* do some refactorings
+
+2007-03-16  Jb Evain  <jbevain@gmail.com>
+
+	* rename linker.exe to monolinker.exe
+
+2006-11-08  Jb Evain  <jbevain@gmail.com>
+
+	* Mono.Linker/AssemblyMarker.cs:
+		Fix a bug in method resolution.
+	* Mono.Linker/Driver.cs:
+		Fix a bug in assembly action processing.
+
+2006-11-02  Jb Evain  <jbevain@gmail.com>
+
+	* check-in patches adapted from contributions by:
+		Alex Prudkiy <prudkiy@mail.ru>
+
+2006-08-21  Jb Evain  <jbevain@gmail.com>
+
+	* mark types used within the runtime
+
+2006-08-20  Jb Evain  <jbevain@gmail.com>
+
+	* mark the custom attributes from the assemblies, modules and
+		generic parameters
+
+	* mark the methods used by an event
+
+	* mark the custom attributes on the properties and the events
+		which are used.
+
+	* preserve the fields of the value types
+
+	* clean also nested types in a proper way.
+
+	* clean events as well
+
+2006-08-17  Jb Evain  <jbevain@gmail.com>
+
+	* provide a Makefile
+
+2006-08-16  Jb Evain  <jbevain@gmail.com>
+
+	* work on generics assemblies linking
+
+	* use the resolver from Cecil.
+
+	* when marking a type, also mark its virtual methods
+
+2006-08-15  Jb Evain  <jbevain@gmail.com>
+
+	* clean properties
+
+	* mark interfaces as well
+
+	* work in progress + unit tests.
+
+2006-07-27  Jb Evain  <jbevain@gmail.com>
+
+	* begin work on the sweep step.
+
+2006-07-20  Jb Evain  <jbevain@gmail.com>
+
+	* very first commit.
+	  draft implementation of the mark phase of the linker.
