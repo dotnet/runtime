@@ -1,3 +1,7 @@
+2007-07-17  Jb Evain  <jbevain@novell.com>
+
+	* scripts/Makefile.am: new monolinker script.
+
 2007-07-11  Jb Evain  <jbevain@novell.com>
 
 	* scripts/smcs.in, scripts/Makefile.am: new smcs script.
