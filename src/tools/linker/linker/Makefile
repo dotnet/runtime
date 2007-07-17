@@ -15,4 +15,6 @@ PROGRAM = monolinker.exe
 
 LOCAL_MCS_FLAGS = /r:Mono.Cecil.dll /r:System.Xml.dll -keyfile:$(PROGRAM_SNK) $(RESOURCES:%=-resource:%)
 
+EXTRA_DISTFILES = $(RESOURCES)
+
 include ../../build/executable.make
