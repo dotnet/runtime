@@ -5550,7 +5550,15 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 
 	/* Find the start of the mov instruction */
 	code -= 6;
-	g_assert (code [0] == 0x41 && code [1] == 0xbb);
+	if (!(code [0] == 0x41 && code [1] == 0xbb)) {
+		int i;
+
+		printf ("Unknown call sequence: ");
+		for (i = -10; i < 20; ++i)
+			printf ("%x ", code [i]);
+		g_assert_not_reached ();
+	}
+
 	return (MonoMethod*)(gssize)*(guint32*)(code + 2);
 }
 
