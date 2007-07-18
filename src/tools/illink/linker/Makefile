@@ -11,7 +11,7 @@ RESOURCES = \
 	Descriptors/System.Web.xml		\
 	Descriptors/Mono.Posix.xml		\
 
-PROGRAM = $(topdir)/class/lib/$(PROFILE)/monolinker.exe
+PROGRAM = monolinker.exe
 
 LOCAL_MCS_FLAGS = /r:Mono.Cecil.dll /r:System.Xml.dll -keyfile:$(PROGRAM_SNK) $(RESOURCES:%=-resource:%)
 
