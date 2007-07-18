@@ -1,5 +1,10 @@
 2007-07-18  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Linker/ResolutionException.cs:
+	  Mono.Linker.Steps/MarkStep.cs:
+		Throw a resolution exception when a metadata item
+		can not be resolved in external assemblies.
+
 	* Mono.Linker/AssemblyResolver.cs:
 		Use the assembly name only as a key for the
 		assembly cache.
