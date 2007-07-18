@@ -48,7 +48,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	return 3;
 #else
 	MonoDl *fam_module;
-	gchar *filename;
 	int lib_used = 4; /* gamin */
 	int inotify_instance;
 	void *iter;
@@ -64,12 +63,10 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 
 	iter = NULL;
 	fam_module = mono_dl_open ("libgamin-1.so", MONO_DL_LAZY, NULL);
-	g_free (filename);
 	if (fam_module == NULL) {
 		lib_used = 2; /* FAM */
 		iter = NULL;
 		fam_module = mono_dl_open ("libfam.so", MONO_DL_LAZY, NULL);
-		g_free (filename);
 	}
 
 	if (fam_module == NULL)
