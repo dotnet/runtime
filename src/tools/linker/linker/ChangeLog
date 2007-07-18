@@ -1,3 +1,9 @@
+2007-07-18  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/AssemblyResolver.cs:
+		Use the assembly name only as a key for the
+		assembly cache.
+
 2007-07-05  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Driver.cs

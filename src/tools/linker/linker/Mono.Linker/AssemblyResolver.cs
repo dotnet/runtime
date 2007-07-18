@@ -48,11 +48,11 @@ namespace Mono.Linker {
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name)
 		{
-			AssemblyDefinition asm = (AssemblyDefinition) _assemblies [name.FullName];
+			AssemblyDefinition asm = (AssemblyDefinition) _assemblies [name.Name];
 			if (asm == null) {
 				asm = base.Resolve (name);
 				asm.Resolver = this;
-				_assemblies [name.FullName] = asm;
+				_assemblies [name.Name] = asm;
 			}
 
 			return asm;
