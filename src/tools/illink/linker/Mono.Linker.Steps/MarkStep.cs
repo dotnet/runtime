@@ -230,6 +230,9 @@ namespace Mono.Linker.Steps {
 
 			FieldDefinition field = ResolveFieldDefinition (reference);
 
+			if (field == null)
+				throw new ResolutionException (reference);
+
 			if (CheckProcessed (field))
 				return;
 
@@ -270,6 +273,9 @@ namespace Mono.Linker.Steps {
 				return;
 
 			TypeDefinition type = ResolveTypeDefinition (reference);
+
+			if (type == null)
+				throw new ResolutionException (reference);
 
 			if (CheckProcessed (type))
 				return;
@@ -455,6 +461,9 @@ namespace Mono.Linker.Steps {
 				return;
 
 			MethodDefinition method = ResolveMethodDefinition (reference);
+
+			if (method == null)
+				throw new ResolutionException (reference);
 
 			Annotations.SetAction (method, MethodAction.Parse);
 
