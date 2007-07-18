@@ -15,13 +15,17 @@ LINKER_SOURCES = $(LINKER_PLUGINS:.dll=.cs)
 
 DISTFILES = $(LINKER_PLUGINS)
 
-ifeq (net_2_1, $(PROFILE))
-all-local: tune
-else
+ifneq (net_2_1, $(PROFILE))
 all-local: $(LINKER_PLUGINS)
+else
+all-local:
 endif
 
+ifeq (net_2_1, $(PROFILE))
+install-local: tune
+else
 install-local:
+endif
 
 clean-local:
 	rm -f Mono.Tuner/*.dll
@@ -38,6 +42,7 @@ masterinfos/silverlight.infos:
 MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/mscorlib.info	\
 	masterinfos/silverlight/System.info		\
+	masterinfos/silverlight/System.Core.info	\
 	masterinfos/silverlight/System.Xml.Core.info	\
 
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link
