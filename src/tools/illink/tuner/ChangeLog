@@ -1,0 +1,4 @@
+2007-07-18  Jb Evain  <jbevain@novell.com>
+
+	* tuner: new tool to tune the Mono assemblies from a full 2.1
+	profile to a stripped down silverlight compatible assembly set.
