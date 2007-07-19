@@ -2420,11 +2420,10 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 		VERIFIER_DEBUG ( printf ("verifying this argument\n"); );
 		value = stack_pop (ctx);
 		if (!verify_type_compat (ctx, type, value)) {
-			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible return value on stack with method signature ret at 0x%04x", ctx->ip_offset));
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature ret at 0x%04x", ctx->ip_offset));
 			return;
 		}
 	}
-
 	if (!mono_method_can_access_method (ctx->method, method))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset));
 	
