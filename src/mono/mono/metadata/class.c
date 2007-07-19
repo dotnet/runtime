@@ -2397,7 +2397,7 @@ concat_two_strings_with_zero (MonoMemPool *pool, const char *s1, const char *s2)
 	int result;
 
 	result = g_snprintf (s, len, "%s%c%s", s1, '\0', s2);
-	g_assert (result == len);
+	g_assert (result == len - 1);
 
 	return s;
 }
