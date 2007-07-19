@@ -1122,7 +1122,7 @@ can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
 static gboolean
 is_valid_bool_arg (ILStackDesc *arg)
 {
-	if (arg->stype & POINTER_MASK)
+	if (IS_MANAGED_POINTER (arg->stype))
 		return TRUE;
 	switch (arg->stype) {
 	case TYPE_I4:
@@ -1411,10 +1411,10 @@ dump_stack_value (ILStackDesc *value)
 	if (value->stype & CMMP_MASK)
 		printf ("Controled Mutability MP: ");
 
-	if (value->stype & POINTER_MASK)
+	if (IS_MANAGED_POINTER (value->stype))
 		printf ("Managed Pointer to: ");
 
-	switch (value->stype & TYPE_MASK) {
+	switch (UNMASK_TYPE (value->stype)) {
 		case TYPE_INV:
 			printf ("invalid type]"); 
 			return;
@@ -1434,10 +1434,36 @@ dump_stack_value (ILStackDesc *value)
 			printf ("unmanaged pointer]"); 
 			return;
 		case TYPE_COMPLEX:
-			printf ("complex]"); 
-			return;
+			switch (value->type->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_VALUETYPE:
+				printf ("complex] (%s)", value->type->data.klass->name);
+				return;
+			case MONO_TYPE_STRING:
+				printf ("complex] (string)");
+				return;
+			case MONO_TYPE_OBJECT:
+				printf ("complex] (string)");
+				return;
+			case MONO_TYPE_SZARRAY:
+				printf ("complex] (%s [])", value->type->data.klass->name);
+				return;
+			case MONO_TYPE_ARRAY:
+				printf ("complex] (%s [%d %d %d])",
+					value->type->data.array->eklass->name,
+					value->type->data.array->rank,
+					value->type->data.array->numsizes,
+					value->type->data.array->numlobounds);
+				return;
+			case MONO_TYPE_GENERICINST:
+				printf ("complex] (inst of %s )", value->type->data.generic_class->container_class->name);
+				return;
+			default:
+				printf ("unknown complex %d type]\n", value->type->type);
+				g_assert_not_reached ();
+			}
 		default:
-			printf ("unknown %d type]", value->stype);
+			printf ("unknown stack %d type]\n", value->stype);
 			g_assert_not_reached ();
 	}
 }
@@ -2120,7 +2146,7 @@ store_arg (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop (ctx);
 		if (!verify_type_compat (ctx, ctx->params [arg], value)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
 		}
 	}
 }
@@ -2138,7 +2164,7 @@ store_local (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop(ctx);
 		if (!verify_type_compat (ctx, ctx->locals [arg], value)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
 		}
 	}
 }
@@ -2156,13 +2182,13 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 	b = stack_top (ctx);
 
 	idxa = a->stype;
-	if (idxa & POINTER_MASK) {
+	if (IS_MANAGED_POINTER (idxa)) {
 		idxa = TYPE_PTR;
 		complexMerge = 1;
 	}
 
 	idxb = b->stype;
-	if (idxb & POINTER_MASK) {
+	if (IS_MANAGED_POINTER (idxb)) {
 		idxb = TYPE_PTR;
 		complexMerge = 2;
 	}
@@ -2178,13 +2204,13 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 	if (res == TYPE_INV) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf (
 			"Binary instruction applyed to ill formed stack (%s x %s)", 
-			type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK]));
+			type_names [UNMASK_TYPE (idxa &)], type_names [UNMASK_TYPE (idxb)]));
 		return;
 	}
 
  	if (res & NON_VERIFIABLE_RESULT) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction is not verifiable (%s x %s)", 
-			type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK]));
+			type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)]));
 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
@@ -2231,7 +2257,7 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 
 	top = stack_pop (ctx);
 	if (!is_valid_bool_arg (top))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [stack_get (ctx, -1)->stype & TYPE_MASK], ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [UNMASK_TYPE (stack_get (ctx, -1)->stype)], ctx->ip_offset));
 
 	check_unmanaged_pointer (ctx, top);
 }
@@ -2266,11 +2292,11 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	a = stack_pop (ctx);
 
 	idxa = a->stype;
-	if (idxa & POINTER_MASK)
+	if (IS_MANAGED_POINTER (idxa))
 		idxa = TYPE_PTR;
 
 	idxb = b->stype;
-	if (idxb & POINTER_MASK)
+	if (IS_MANAGED_POINTER (idxb))
 		idxb = TYPE_PTR;
 
 	--idxa;
@@ -2283,10 +2309,10 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	if (res == TYPE_INV) {
 		ADD_VERIFY_ERROR (ctx,
 			g_strdup_printf ("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x",
-				type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset));
+				type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare and Branch instruction is not verifiable (%s x %s) at 0x%04x",
-				type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset)); 
+				type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
 }
@@ -2304,11 +2330,11 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	a = stack_pop (ctx);
 
 	idxa = a->stype;
-	if (idxa & POINTER_MASK)
+	if (IS_MANAGED_POINTER (idxa)
 		idxa = TYPE_PTR;
 
 	idxb = b->stype;
-	if (idxb & POINTER_MASK)
+	if (IS_MANAGED_POINTER (idxb)
 		idxb = TYPE_PTR;
 
 	--idxa;
@@ -2319,10 +2345,10 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	printf("idxa %d idxb %d\n", idxa, idxb);
 
 	if(res == TYPE_INV) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x",
-			type_names [idxa & TYPE_MASK], type_names [idxb & TYPE_MASK], ctx->ip_offset)); 
+			type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
  	stack_push_val (ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
@@ -2469,7 +2495,7 @@ do_store_static_field (VerifyContext *ctx, int token) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 
 	if (!verify_type_compat (ctx, field->type, value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
 }
 
 static gboolean
@@ -2481,7 +2507,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 	/*must be one of: object type, managed pointer, unmanaged pointer (native int) or an instance of a value type */
 	if (!((obj->stype == TYPE_COMPLEX)
 		/* the managed reference must be to an object or value type */
-		|| ((obj->stype & POINTER_MASK) && (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX))
+		|| (( IS_MANAGED_POINTER (obj->stype)) && (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX))
 		|| (obj->stype == TYPE_NATIVE_INT)
 		|| (obj->stype == TYPE_PTR)
 		|| (obj->stype == TYPE_COMPLEX))) {
@@ -2511,6 +2537,9 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (!verify_stack_type_compatibility (ctx, type, obj->type, FALSE)) {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 		}
+
+		if (!mono_method_can_access_field2 (ctx->method, obj->type->data.klass, field))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 	}
 
 	if (!mono_method_can_access_field (ctx->method, field))
@@ -2562,7 +2591,7 @@ do_store_field (VerifyContext *ctx, int token)
 		return;
 
 	if (!verify_type_compat (ctx, field->type, value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", type_names [value->stype & TYPE_MASK], ctx->ip_offset));	
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -2615,7 +2644,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 		if (from_stype != to_stype) {
 			VERIFIER_DEBUG ( printf ("diferent stack types %d x %d\n", from_stype, to_stype); );
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent verification types (%s x %s)",
-				type_names [from_stype & TYPE_MASK], type_names [to_stype & TYPE_MASK])); 
+				type_names [UNMASK_TYPE (from_stype)], type_names [UNMASK_TYPE (to_stype)])); 
 			goto end_verify;
 		}
 
@@ -3213,7 +3242,7 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			if ( stack_top (&ctx)->stype == TYPE_COMPLEX)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument %s to box at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
-			stack_top (&ctx)->stype = TYPE_COMPLEX;
+			//stack_top (&ctx)->stype = TYPE_COMPLEX;
 			ip += 5;
 			break;
 		case CEE_NEWARR:
