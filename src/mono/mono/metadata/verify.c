@@ -2535,7 +2535,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 		}
 
-		if (!mono_method_can_access_field2 (ctx->method, obj->type->data.klass, field))
+		if (!mono_method_can_access_field (ctx->method, field))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 	}
 
