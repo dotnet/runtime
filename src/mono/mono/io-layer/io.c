@@ -1790,6 +1790,8 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	    !_wapi_stat (utf8_name, &stat_src)) {
 		if (stat_dest.st_dev != stat_src.st_dev ||
 		    stat_dest.st_ino != stat_src.st_ino) {
+			g_free (utf8_name);
+			g_free (utf8_dest_name);
 			SetLastError (ERROR_ALREADY_EXISTS);
 			return FALSE;
 		}	
