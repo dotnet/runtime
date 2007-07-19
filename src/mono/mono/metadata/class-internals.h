@@ -171,7 +171,8 @@ enum {
 	MONO_EXCEPTION_UNVERIFIABLE_IL = 4,
 	MONO_EXCEPTION_MISSING_METHOD = 5,
 	MONO_EXCEPTION_MISSING_FIELD = 6,
-	MONO_EXCEPTION_TYPE_LOAD = 7
+	MONO_EXCEPTION_TYPE_LOAD = 7,
+	MONO_EXCEPTION_FILE_NOT_FOUND = 8
 	/* add other exception type */
 };
 
@@ -488,18 +489,8 @@ typedef struct {
 	MonoMethodSignature *sig;
 } MonoJitICallInfo;
 
-/*
- * Information about a type load error encountered by the loader.
- */
-typedef enum {
-	MONO_LOADER_ERROR_TYPE,
-	MONO_LOADER_ERROR_METHOD,
-	MONO_LOADER_ERROR_FIELD,
-	MONO_LOADER_ERROR_ASSEMBLY
-} MonoLoaderErrorKind;
-
 typedef struct {
-	MonoLoaderErrorKind kind;
+	guint8 exception_type;
 	char *class_name; /* If kind == TYPE */
 	char *assembly_name; /* If kind == TYPE or ASSEMBLY */
 	MonoClass *klass; /* If kind != TYPE */

@@ -3070,9 +3070,15 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 	compare_func = (bflags & BFLAGS_IgnoreCase) ? g_strcasecmp : strcmp;
 
 handle_parent:
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
 		match = 0;
+
+		if (field->type == NULL)
+			continue;
 		if (mono_field_is_deleted (field))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
@@ -3136,6 +3142,9 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	len = 2;
 	res = mono_array_new (domain, mono_defaults.field_info_class, len);
 handle_parent:	
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
 		match = 0;
@@ -3231,6 +3240,9 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	res = mono_array_new (domain, mono_defaults.method_info_class, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
@@ -3319,6 +3331,9 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 		return mono_array_new (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
+
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	if (!System_Reflection_ConstructorInfo)
 		System_Reflection_ConstructorInfo = mono_class_from_name (
@@ -3423,6 +3438,14 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		if (method_slots != method_slots_default)
+			g_free (method_slots);
+		if (name != NULL)
+			g_free (propname);
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+	}
+
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
 		match = 0;
@@ -3519,6 +3542,9 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	domain = mono_object_domain (type);
 
 handle_parent:	
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
 		if (strcmp (event->name, event_name))
@@ -3580,6 +3606,9 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	len = 2;
 	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 handle_parent:	
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
 		match = 0;
@@ -3660,6 +3689,9 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	str = mono_string_to_utf8 (name);
 
  handle_parent:
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	/*
 	 * If a nested type is generic, return its generic type definition.
 	 * Note that this means that the return value is essentially a
@@ -3712,6 +3744,8 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	if (type->type->byref)
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	klass = mono_class_from_mono_type (type->type);
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	/*
 	 * If a nested type is generic, return its generic type definition.

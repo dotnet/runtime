@@ -2389,6 +2389,66 @@ create_array_method (MonoClass *class, const char *name, MonoMethodSignature *si
 	return method;
 }
 
+static char*
+concat_two_strings_with_zero (MonoMemPool *pool, const char *s1, const char *s2)
+{
+	int len = strlen (s1) + strlen (s2) + 2;
+	char *s = mono_mempool_alloc (pool, len);
+	int result;
+
+	result = g_snprintf (s, len, "%s%c%s", s1, '\0', s2);
+	g_assert (result == len);
+
+	return s;
+}
+
+static void
+set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
+{
+	class->exception_type = error->exception_type;
+
+	switch (error->exception_type) {
+	case MONO_EXCEPTION_TYPE_LOAD:
+		class->exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->assembly_name);
+		break;
+
+	case MONO_EXCEPTION_MISSING_METHOD:
+		class->exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->member_name);
+		break;
+
+	case MONO_EXCEPTION_MISSING_FIELD: {
+		const char *name_space = error->klass->name_space ? error->klass->name_space : NULL;
+		const char *class_name;
+
+		if (name_space)
+			class_name = g_strdup_printf ("%s.%s", name_space, error->klass->name);
+		else
+			class_name = error->klass->name;
+
+		class->exception_data = concat_two_strings_with_zero (class->image->mempool, class_name, error->member_name);
+		
+		if (name_space)
+			g_free ((void*)class_name);
+		break;
+	}
+
+	case MONO_EXCEPTION_FILE_NOT_FOUND: {
+		const char *msg;
+
+		if (error->ref_only)
+			msg = "Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.";
+		else
+			msg = "Could not load file or assembly '%s' or one of its dependencies.";
+
+		class->exception_data = concat_two_strings_with_zero (class->image->mempool, msg, error->assembly_name);
+		break;
+	}
+
+	default :
+		g_assert_not_reached ();
+	}
+}
+
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -2422,7 +2482,7 @@ mono_class_init (MonoClass *class)
 	if (class->inited) {
 		mono_loader_unlock ();
 		/* Somebody might have gotten in before us */
-		return TRUE;
+		return class->exception_type == MONO_EXCEPTION_NONE;
 	}
 
 	if (class->init_pending) {
@@ -2675,6 +2735,13 @@ mono_class_init (MonoClass *class)
  leave:
 	class->inited = 1;
 	class->init_pending = 0;
+
+	if (mono_loader_get_last_error ()) {
+		if (class->exception_type == MONO_EXCEPTION_NONE)
+			set_failure_from_loader_error (class, mono_loader_get_last_error ());
+
+		mono_loader_clear_error ();
+	}
 
 	mono_loader_unlock ();
 
@@ -5477,6 +5544,30 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		g_free (str);
 		ex = mono_get_exception_type_load (name, astr);
 		g_free (astr);
+		return ex;
+	}
+	case MONO_EXCEPTION_MISSING_METHOD: {
+		char *class_name = klass->exception_data;
+		char *assembly_name = class_name + strlen (class_name) + 1;
+
+		return mono_get_exception_missing_method (class_name, assembly_name);
+	}
+	case MONO_EXCEPTION_MISSING_FIELD: {
+		char *class_name = klass->exception_data;
+		char *member_name = class_name + strlen (class_name) + 1;
+
+		return mono_get_exception_missing_field (class_name, member_name);
+	}
+	case MONO_EXCEPTION_FILE_NOT_FOUND: {
+		char *msg_format = klass->exception_data;
+		char *assembly_name = msg_format + strlen (msg_format) + 1;
+		char *msg = g_strdup_printf (msg_format, assembly_name);
+		MonoException *ex;
+
+		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), assembly_name));
+
+		g_free (msg);
+
 		return ex;
 	}
 	default: {

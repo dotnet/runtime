@@ -100,7 +100,7 @@ mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_onl
 		return;
 
 	error = g_new0 (MonoLoaderError, 1);
-	error->kind = MONO_LOADER_ERROR_ASSEMBLY;
+	error->exception_type = MONO_EXCEPTION_FILE_NOT_FOUND;
 	error->assembly_name = g_strdup (assembly_name);
 	error->ref_only = ref_only;
 
@@ -131,7 +131,7 @@ mono_loader_set_error_type_load (const char *class_name, const char *assembly_na
 		return;
 
 	error = g_new0 (MonoLoaderError, 1);
-	error->kind = MONO_LOADER_ERROR_TYPE;
+	error->exception_type = MONO_EXCEPTION_TYPE_LOAD;
 	error->class_name = g_strdup (class_name);
 	error->assembly_name = g_strdup (assembly_name);
 
@@ -161,7 +161,7 @@ mono_loader_set_error_method_load (const char *class_name, const char *member_na
 		return;
 
 	error = g_new0 (MonoLoaderError, 1);
-	error->kind = MONO_LOADER_ERROR_METHOD;
+	error->exception_type = MONO_EXCEPTION_MISSING_METHOD;
 	error->class_name = g_strdup (class_name);
 	error->member_name = member_name;
 
@@ -184,7 +184,7 @@ mono_loader_set_error_field_load (MonoClass *klass, const char *member_name)
 		return;
 
 	error = g_new0 (MonoLoaderError, 1);
-	error->kind = MONO_LOADER_ERROR_FIELD;
+	error->exception_type = MONO_EXCEPTION_MISSING_FIELD;
 	error->klass = klass;
 	error->member_name = member_name;
 
@@ -235,8 +235,8 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 {
 	MonoException *ex = NULL;
 
-	switch (error->kind) {
-	case MONO_LOADER_ERROR_TYPE: {
+	switch (error->exception_type) {
+	case MONO_EXCEPTION_TYPE_LOAD: {
 		char *cname = g_strdup (error->class_name);
 		char *aname = g_strdup (error->assembly_name);
 		MonoString *class_name;
@@ -250,7 +250,7 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		g_free (aname);
                 break;
         }
-	case MONO_LOADER_ERROR_METHOD: {
+	case MONO_EXCEPTION_MISSING_METHOD: {
 		char *cname = g_strdup (error->class_name);
 		char *aname = g_strdup (error->member_name);
 		
@@ -261,7 +261,7 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 		break;
 	}
 		
-	case MONO_LOADER_ERROR_FIELD: {
+	case MONO_EXCEPTION_MISSING_FIELD: {
 		char *cnspace = g_strdup (*error->klass->name_space ? error->klass->name_space : "");
 		char *cname = g_strdup (error->klass->name);
 		char *cmembername = g_strdup (error->member_name);
@@ -278,7 +278,7 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
                 break;
         }
 	
-	case MONO_LOADER_ERROR_ASSEMBLY: {
+	case MONO_EXCEPTION_FILE_NOT_FOUND: {
 		char *msg;
 		char *filename;
 
