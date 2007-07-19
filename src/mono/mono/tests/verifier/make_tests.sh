@@ -388,6 +388,83 @@ do
   I=`expr $I + 1`
 done
 
+function fix () {
+	if [ "$3" != "" ]; then
+		A=$3;
+	elif [ "$2" != "" ]; then
+		A=$2;
+	else
+		A=$1;
+	fi
+
+	if [ "$A" == "bool&" ]; then
+		A="int8&";
+	elif [ "$A" == "char&" ]; then
+		A="int16&";
+	fi
+
+	echo "$A";
+}
+
+#Tests related to storing reference types on other reference types
+I=1
+for OP in stloc.0 "stloc.s 0" "starg 0" "starg.s 0"
+do
+	for TYPE1 in 'native int&' 'native unsigned int&'
+	do
+		for TYPE2 in 'int8&' 'unsigned int8&' 'bool&' 'int16&' 'unsigned int16&' 'char&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&' 'native int&' 'native unsigned int&'
+		do
+			TA="$(fix $TYPE1)"
+			TB="$(fix $TYPE2)"
+			if [ "$TA" == "$TB" ]; then
+				./make_store_test.sh ref_coercion_${I} valid "$OP" "$TYPE1" "$TYPE2"
+			elif [ "$TA" == "int32&" ] && [ "$TB" == "int&" ]; then
+				./make_store_test.sh ref_coercion_${I} valid "$OP" "$TYPE1" "$TYPE2"
+			elif [ "$TA" == "int&" ] && [ "$TB" == "int32&" ]; then
+				./make_store_test.sh ref_coercion_${I} valid "$OP" "$TYPE1" "$TYPE2"
+			else
+				./make_store_test.sh ref_coercion_${I} unverifiable "$OP" "$TYPE1" "$TYPE2"
+			fi
+			I=`expr $I + 1`
+		done
+	done
+done
+
+I=1
+for OP in stloc.0 "stloc.s 0" "starg 0" "starg.s 0"
+do
+	for TYPE1 in 'int8&' 'unsigned int8&' 'bool&' 'int16&' 'unsigned int16&' 'char&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&'
+	do
+		for TYPE2 in 'int8&' 'unsigned int8&' 'bool&' 'int16&' 'unsigned int16&' 'char&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&'
+		do
+			TA="$(fix $TYPE1)"
+			TB="$(fix $TYPE2)"
+			if [ "$TA" == "$TB" ]; then
+				./make_store_test.sh ref_coercion_${I} valid "$OP" "$TYPE1" "$TYPE2"
+			else
+				./make_store_test.sh ref_coercion_${I} unverifiable "$OP" "$TYPE1" "$TYPE2"
+			fi
+			I=`expr $I + 1`
+		done
+	done
+done
+
+for OP in stloc.0 "stloc.s 0" "starg 0" "starg.s 0"
+do
+	for TYPE1 in 'class ClassA&' 'class ClassB&' 'class InterfaceA&' 'class InterfaceB&' 'class ValueType&'
+	do
+		for TYPE2 in 'class ClassA&' 'class ClassB&' 'class InterfaceA&' 'class InterfaceB&' 'class ValueType&'
+		do
+			if [ "$TYPE1" == "$TYPE2" ]; then
+				./make_store_test.sh ref_coercion_${I} valid "$OP" "$TYPE1" "$TYPE2"
+			else
+				./make_store_test.sh ref_coercion_${I} unverifiable "$OP" "$TYPE1" "$TYPE2"
+			fi
+			I=`expr $I + 1`
+		done
+	done
+done
+
 #Field store parameter compatibility leads to invalid code
 #Calling method with diferent verification types on stack lead to invalid code
 I=1
@@ -698,13 +775,13 @@ do
   ./make_unary_test.sh ${OP}_obj_float64 unverifiable "$OP int32 Class::valid\n\tpop" float64
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Class::valid\n\tpop" 'native int'
   ./make_unary_test.sh ${OP}_obj_ref_overlapped unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
-  ./make_unary_test.sh ${OP}_obj_oerlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
+  ./make_unary_test.sh ${OP}_obj_overlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
 done
 
 #TODO: these tests are bogus, they need to be fixed
 # Stfld tests (see 4.28)
 
-./make_unary_test.sh stfld_no_fld unverifiable "ldc.i4.0\n\tstfld int32 Class::invalid" "class Class"
+./make_unary_test.sh stfld_no_fld invalid "ldc.i4.0\n\tstfld int32 Class::invalid" "class Class"
 ./make_unary_test.sh stfld_bad_obj unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" object
 ./make_unary_test.sh stfld_obj_int32 unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" int32
 ./make_unary_test.sh stfld_obj_int64 unverifiable "ldc.i4.0\n\tstfld int32 Class::valid" int64
