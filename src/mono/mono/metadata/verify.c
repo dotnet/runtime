@@ -1524,6 +1524,7 @@ handle_enum:
 	/* FIXME: the spec says that you cannot have a pointer to method pointer, do we need to check this here? */ 
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_TYPEDBYREF:
 		return TYPE_PTR | mask;
 
 	case MONO_TYPE_CLASS:
@@ -1531,7 +1532,6 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_GENERICINST:
 		return TYPE_COMPLEX | mask;
 
@@ -1591,6 +1591,7 @@ handle_enum:
 	/*FIXME: Do we need to check if it's a pointer to the method pointer? The spec says it' illegal to have that.*/
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_TYPEDBYREF:
 		stack->stype = TYPE_PTR | mask;
 		return;
 
@@ -1599,7 +1600,6 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_TYPEDBYREF:
 
 	case MONO_TYPE_GENERICINST:
 		stack->stype = TYPE_COMPLEX | mask;
@@ -2036,7 +2036,7 @@ handle_enum:
 
 	/*TODO verify aditional checks that needs to be done */
 	case MONO_TYPE_TYPEDBYREF:
-		if (stack_type != TYPE_COMPLEX)
+		if (stack_type != TYPE_PTR)
 			return FALSE;
 		g_assert (stack->type);
 		if (stack->type->type != MONO_TYPE_TYPEDBYREF)
