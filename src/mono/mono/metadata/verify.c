@@ -1822,7 +1822,6 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
  */
 static gboolean
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candidate, gboolean strict) {
-	int stack_type;
 #define IS_ONE_OF3(T, A, B, C) (T == A || T == B || T == C)
 #define IS_ONE_OF2(T, A, B) (T == A || T == B)
 
@@ -2202,9 +2201,7 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 
 	ctx->eval.size--;
 	if (res == TYPE_INV) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf (
-			"Binary instruction applyed to ill formed stack (%s x %s)", 
-			type_names [UNMASK_TYPE (idxa &)], type_names [UNMASK_TYPE (idxb)]));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction applyed to ill formed stack (%s x %s)", type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)]));
 		return;
 	}
 
@@ -2330,11 +2327,11 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	a = stack_pop (ctx);
 
 	idxa = a->stype;
-	if (IS_MANAGED_POINTER (idxa)
+	if (IS_MANAGED_POINTER (idxa))
 		idxa = TYPE_PTR;
 
 	idxb = b->stype;
-	if (IS_MANAGED_POINTER (idxb)
+	if (IS_MANAGED_POINTER (idxb)) 
 		idxb = TYPE_PTR;
 
 	--idxa;
