@@ -1797,6 +1797,9 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 static gboolean
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candidate, gboolean strict) {
 	int stack_type;
+#define IS_ONE_OF3(T, A, B, C) (T == A || T == B || T == C)
+#define IS_ONE_OF2(T, A, B) (T == A || T == B)
+
 	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p[%d][%d] %p[%d][%d]\n", ctx, target, target->type, target->byref, candidate, candidate->type, candidate->byref); );
 
  	/*only one is byref */
@@ -1814,33 +1817,40 @@ handle_enum:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
+		if (strict)
+			return IS_ONE_OF3 (candidate->type, MONO_TYPE_I1, MONO_TYPE_U1, MONO_TYPE_BOOLEAN);
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
 		if (strict)
-			return candidate->type == target->type;
-		return get_stack_type (candidate) == TYPE_I4;
+			return IS_ONE_OF3 (candidate->type, MONO_TYPE_I2, MONO_TYPE_U2, MONO_TYPE_CHAR);
+		return get_stack_type (target) == TYPE_I4;
+
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4: {
+		gboolean is_native_int = IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U);
+		gboolean is_int4 = IS_ONE_OF2 (candidate->type, MONO_TYPE_I4, MONO_TYPE_U4);
+		if (strict)
+			return is_native_int || is_int4;
+		return is_native_int || get_stack_type (target) == TYPE_I4;
+	}
 
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		if (strict)
-			return candidate->type == target->type;
-		return get_stack_type (candidate)  == TYPE_I8;
+		return IS_ONE_OF2 (candidate->type, MONO_TYPE_I8, MONO_TYPE_U8);
 
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
 		if (strict)
 			return candidate->type == target->type;
-		return get_stack_type (target)  == TYPE_R8;
+		return IS_ONE_OF2 (candidate->type, MONO_TYPE_R4, MONO_TYPE_R8);
 
 	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		if (strict)
-			return candidate->type == target->type;
-		stack_type = get_stack_type (target);
-		return stack_type == TYPE_NATIVE_INT || stack_type == TYPE_I4;;
+	case MONO_TYPE_U: {
+		gboolean is_native_int = IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U);
+		gboolean is_int4 = IS_ONE_OF2 (candidate->type, MONO_TYPE_I4, MONO_TYPE_U4);
+		return is_native_int || is_int4;
+	}
 
 	case MONO_TYPE_PTR:
 		if (candidate->type != MONO_TYPE_PTR)
@@ -1906,6 +1916,8 @@ handle_enum:
 		return FALSE;
 	}
 	return 1;
+#undef IS_ONE_OF3
+#undef IS_ONE_OF2
 }
 
 static int
@@ -1922,7 +1934,8 @@ verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 		}
 		return FALSE;
 	}
-	stack_type = UNMASK_TYPE (stack_type);
+	if (type->byref)
+		return verify_stack_type_compatibility (ctx, type, stack->type, TRUE);
 
 handle_enum:
 	switch (type->type) {
@@ -2098,7 +2111,9 @@ store_arg (VerifyContext *ctx, guint32 arg)
 	ILStackDesc *value;
 
 	if (arg >= ctx->max_args) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", arg + 1, ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", arg + 1, ctx->ip_offset));
+		check_underflow (ctx, 1);
+		stack_pop (ctx);
 		return;
 	}
 
@@ -2331,8 +2346,9 @@ do_ret (VerifyContext *ctx)
 	}
 
 	if (ctx->eval.size > 0) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", ctx->eval.size, ctx->ip_offset));
-	} else if (in_any_block (ctx->header, ctx->ip_offset))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", ctx->eval.size, ctx->ip_offset));
+	} 
+	if (in_any_block (ctx->header, ctx->ip_offset))
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ctx->ip_offset));
 }
 
@@ -2582,12 +2598,19 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 		int from_stype = from_slot->stype;
 		int to_stype = to_slot->stype;
 
-		/* This is the only case of merging between verification types*/
-		if ((from_stype == TYPE_I4 && to_stype == TYPE_NATIVE_INT) ||
-			(from_stype == TYPE_NATIVE_INT && to_stype == TYPE_I4)) {
+#define IS_NATIVE_INT_AND_I4(val0, val1) (UNMASK_TYPE(val0) == TYPE_NATIVE_INT && \
+			UNMASK_TYPE(val1->stype) == TYPE_I4 && (val1->type->type == MONO_TYPE_I4 || val1->type->type == MONO_TYPE_U4))
+		/* This is the only case of merging between verification types.
+		 * Both stack values must be either native int or int4, and both must be either byref or not.*/
+		if ((IS_NATIVE_INT_AND_I4 (from_stype, to_slot) || IS_NATIVE_INT_AND_I4 (to_stype, from_slot)) &&
+			!(IS_MANAGED_POINTER (from_stype) ^ IS_MANAGED_POINTER (to_stype))) {
+			printf ("----is native int\n");
 			to_slot->stype = TYPE_NATIVE_INT;
-			continue;	 	
-		} 
+			if (UNMASK_TYPE(from_stype) == TYPE_NATIVE_INT)
+				to_slot->type = from_slot->type;
+			continue;
+		}
+#undef IS_NATIVE_INT_OR_I4
 
 		if (from_stype != to_stype) {
 			VERIFIER_DEBUG ( printf ("diferent stack types %d x %d\n", from_stype, to_stype); );
@@ -2596,9 +2619,9 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 			goto end_verify;
 		}
 
-		if (from_stype & POINTER_MASK) {
-			from_stype &= ~POINTER_MASK;
-			to_stype &= ~POINTER_MASK;
+		if (IS_MANAGED_POINTER (from_stype)) {
+			from_stype = UNMASK_TYPE (from_stype);
+			to_stype = UNMASK_TYPE (to_stype);
 
 			if (from_slot->type && !verify_stack_type_compatibility (ctx, to_slot->type, from_slot->type, TRUE)) {
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, managed pointer types not compatible")); 
