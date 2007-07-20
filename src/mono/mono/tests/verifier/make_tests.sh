@@ -1400,7 +1400,53 @@ do
 	I=`expr $I + 1`
 done
 
+#Tests for accessing an owned nested type
+I=1
+for OP in "callvirt instance int32 class Outer\/Inner::Target()" "call instance int32 class Outer\/Inner::Target()" "ldc.i4.0\n\t\tstfld int32 Outer\/Inner::fld\n\t\tldc.i4.0" "ldc.i4.0\n\t\tstsfld int32 Outer\/Inner::sfld" "ldsfld int32 Outer\/Inner::sfld\n\n\tpop" "ldfld int32 Outer\/Inner::fld" "ldsflda int32 Outer\/Inner::sfld\n\n\tpop" "ldflda int32 Outer\/Inner::fld"
+do
+	./make_self_nested_test.sh self_nested_access_check_1_${I} valid "$OP" public public
+	./make_self_nested_test.sh self_nested_access_check_2_${I} unverifiable "$OP" public private
+	./make_self_nested_test.sh self_nested_access_check_3_${I} unverifiable "$OP" public family
+	./make_self_nested_test.sh self_nested_access_check_4_${I} valid "$OP" public assembly
+	./make_self_nested_test.sh self_nested_access_check_5_${I} unverifiable "$OP" public famandassem
+	./make_self_nested_test.sh self_nested_access_check_6_${I} valid "$OP" public famorassem
 
+	./make_self_nested_test.sh self_nested_access_check_7_${I} valid "$OP" private public
+	./make_self_nested_test.sh self_nested_access_check_8_${I} unverifiable "$OP" private private
+	./make_self_nested_test.sh self_nested_access_check_9_${I} unverifiable "$OP" private family
+	./make_self_nested_test.sh self_nested_access_check_10_${I} valid "$OP" private assembly
+	./make_self_nested_test.sh self_nested_access_check_11_${I} unverifiable "$OP" private famandassem
+	./make_self_nested_test.sh self_nested_access_check_12_${I} valid "$OP" private famorassem
+
+	./make_self_nested_test.sh self_nested_access_check_13_${I} valid "$OP" family public
+	./make_self_nested_test.sh self_nested_access_check_14_${I} unverifiable "$OP" family private
+	./make_self_nested_test.sh self_nested_access_check_15_${I} unverifiable "$OP" family family
+	./make_self_nested_test.sh self_nested_access_check_16_${I} valid "$OP" family assembly
+	./make_self_nested_test.sh self_nested_access_check_17_${I} unverifiable "$OP" family famandassem
+	./make_self_nested_test.sh self_nested_access_check_18_${I} valid "$OP" family famorassem
+
+	./make_self_nested_test.sh self_nested_access_check_19_${I} valid "$OP" assembly public
+	./make_self_nested_test.sh self_nested_access_check_20_${I} unverifiable "$OP" assembly private
+	./make_self_nested_test.sh self_nested_access_check_21_${I} unverifiable "$OP" assembly family
+	./make_self_nested_test.sh self_nested_access_check_22_${I} valid "$OP" assembly assembly
+	./make_self_nested_test.sh self_nested_access_check_23_${I} unverifiable "$OP" assembly famandassem
+	./make_self_nested_test.sh self_nested_access_check_24_${I} valid "$OP" assembly famorassem
+
+	./make_self_nested_test.sh self_nested_access_check_25_${I} valid "$OP" famandassem public
+	./make_self_nested_test.sh self_nested_access_check_26_${I} unverifiable "$OP" famandassem private
+	./make_self_nested_test.sh self_nested_access_check_27_${I} unverifiable "$OP" famandassem family
+	./make_self_nested_test.sh self_nested_access_check_28_${I} valid "$OP" famandassem assembly
+	./make_self_nested_test.sh self_nested_access_check_29_${I} valid "$unverifiable" famandassem famandassem
+	./make_self_nested_test.sh self_nested_access_check_30_${I} valid "$OP" famandassem famorassem
+
+	./make_self_nested_test.sh self_nested_access_check_31_${I} valid "$OP" famorassem public
+	./make_self_nested_test.sh self_nested_access_check_32_${I} unverifiable "$OP" famorassem private
+	./make_self_nested_test.sh self_nested_access_check_33_${I} unverifiable "$OP" famorassem family
+	./make_self_nested_test.sh self_nested_access_check_34_${I} valid "$OP" famorassem assembly
+	./make_self_nested_test.sh self_nested_access_check_35_${I} unverifiable "$OP" famorassem famandassem
+	./make_self_nested_test.sh self_nested_access_check_36_${I} valid "$OP" famorassem famorassem
+	I=`expr $I + 1`
+done
 
 I=1
 for OP in "ldc.i4.0\n\t\tstfld int32 Class::fld\n\t\tldc.i4.0" "ldc.i4.0\n\t\tstsfld int32 Class::sfld" "ldsfld int32 Class::sfld\n\n\tpop" "ldfld int32 Class::fld" "ldsflda int32 Class::sfld\n\n\tpop" "ldflda int32 Class::fld" "call instance int32 Class::Method()" "callvirt int32 Class::Method()"

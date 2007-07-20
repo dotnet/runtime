@@ -7,8 +7,8 @@ compile-stamp: generate-stamp
 	touch compile-stamp
 
 clean:
-	rm -f *_generated.il
-	rm -f *.exe *.dll
+	for i in *generated*; do rm $$i; done
+	for i in *.exe; do rm $$i; done
 	rm generate-stamp compile-stamp
 
 generate-stamp: make_tests.sh make_bin_test.sh make_exception_branch_test.sh make_obj_store_test.sh \
