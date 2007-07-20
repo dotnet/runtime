@@ -2592,12 +2592,11 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!method->method->is_inflated) {
-		if (mono_method_signature (method->method)->generic_param_count)
-			return method;
+	if (method->method->generic_container)
+		return method;
 
+	if (!method->method->is_inflated)
 		return NULL;
-	}
 
 	imethod = (MonoMethodInflated *) method->method;
 
@@ -2621,8 +2620,7 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return method->method->generic_container &&
-		(mono_method_signature (method->method)->generic_param_count != 0);
+	return method->method->generic_container != NULL;
 }
 
 static MonoArray*
