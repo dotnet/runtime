@@ -850,15 +850,16 @@ static char *
 get_shadow_assembly_location (const char *filename)
 {
 	gint32 hash = 0, hash2 = 0;
+	guint32 ticks = GetTickCount ();
 	char name_hash [9];
-	char path_hash [19];
+	char path_hash [30];
 	char *bname = g_path_get_basename (filename);
 	MonoDomain *domain = mono_domain_get ();
 	
 	hash = get_cstring_hash (bname);
 	hash2 = get_cstring_hash (g_path_get_dirname (filename));
 	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
-	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x", hash ^ hash2, hash2);
+	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x_%08x", hash ^ hash2, hash2, ticks);
 	return g_build_filename (mono_string_to_utf8 (domain->setup->dynamic_base), 
 				 "assembly", 
 				 "shadow", 
