@@ -41,17 +41,17 @@ namespace Mono.Linker.Steps {
 
 		static void ProcessType (TypeDefinition type)
 		{
-			ProcessFields (type.Fields);
-			ProcessMethods (type.Constructors);
-			ProcessMethods (type.Methods);
-
 			if (!IsPublic (type))
 				return;
 
-			if (IsMarkedAsPublic (type))
+			if (!IsMarkedAsPublic (type)) {
+				SetInternalVisibility (type);
 				return;
+			}
 
-			SetInternalVisibility (type);
+			ProcessFields (type.Fields);
+			ProcessMethods (type.Constructors);
+			ProcessMethods (type.Methods);
 		}
 
 		static void SetInternalVisibility (TypeDefinition type)

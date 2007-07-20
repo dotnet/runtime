@@ -1,3 +1,9 @@
+2007-07-20  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/AdjustVisibilityStep.cs:
+		Don't change the visibility of the members if the type
+		is marked internal.
+
 2007-07-18  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/ResolutionException.cs:
