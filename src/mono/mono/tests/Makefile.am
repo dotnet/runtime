@@ -521,8 +521,8 @@ EXTRA_DIST += bug-81691.cs bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
 	$(GMCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
 	$(GMCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
-	$(GMCS) -r:bug-81691-b.dll $(srcdir)/bug-81691.cs
-	rm bug-81691-a.dll
+	$(GMCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
+	rm -f bug-81691-a.dll
 
 test-bug-81691 : bug-81691.exe bug-81691-b.dll
 	$(RUNTIME) bug-81691.exe
