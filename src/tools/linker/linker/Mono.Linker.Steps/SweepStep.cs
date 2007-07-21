@@ -69,8 +69,18 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				TypeReference typeRef = module.TypeReferences [type.FullName];
-				if (AssemblyMatch (assembly, typeRef))
+				if (AssemblyMatch (assembly, typeRef)) {
+					SweepMemberReferences (module, typeRef);
 					module.TypeReferences.Remove (typeRef);
+				}
+			}
+		}
+
+		static void SweepMemberReferences (ModuleDefinition module, TypeReference reference)
+		{
+			foreach (MemberReference member in Clone (module.MemberReferences)) {
+				if (member.DeclaringType == reference)
+					module.MemberReferences.Remove (member);
 			}
 		}
 
