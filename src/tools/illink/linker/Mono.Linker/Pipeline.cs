@@ -88,5 +88,14 @@ namespace Mono.Linker {
 		{
 			return (IStep []) _steps.ToArray (typeof (IStep));
 		}
+
+		public bool ContainsStep (Type type)
+		{
+			foreach (IStep step in _steps)
+				if (step.GetType () == type)
+					return true;
+
+			return false;
+		}
 	}
 }
