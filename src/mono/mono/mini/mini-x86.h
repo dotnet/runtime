@@ -115,9 +115,13 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define inst_sreg2_high sreg2>>3
 
 struct MonoLMF {
-	gpointer    previous_lmf;
+	/* Offset by 1 if this is a trampoline LMF frame */
+	guint32    previous_lmf;
 	gpointer    lmf_addr;
+	/* Only set in trampoline LMF frames */
 	MonoMethod *method;
+	/* Only set in trampoline LMF frames */
+	guint32     esp;
 	guint32     ebx;
 	guint32     edi;
 	guint32     esi;

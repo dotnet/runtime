@@ -3594,8 +3594,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			/* %eax = previous_lmf */
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
-			/* skip method_info + lmf */
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+			/* skip esp + method_info + lmf */
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 12);
 			/* push previous_lmf */
 			x86_push_reg (code, X86_EAX);
 			/* new lmf = ESP */
@@ -3620,8 +3620,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
 			}
 
-			/* Skip method info */
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+			/* Skip esp + method info */
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
 
 			/* push lmf */
 			x86_push_reg (code, X86_EAX); 

@@ -623,7 +623,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
+			*lmf = (gpointer)(((guint32)(*lmf)->previous_lmf) & ~1);
 		}
 
 		/* Pop EBP and the return address */
@@ -660,11 +660,27 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->ebx = (*lmf)->ebx;
 		new_ctx->ebp = (*lmf)->ebp;
 		new_ctx->eip = (*lmf)->eip;
-		/* the lmf is always stored on the stack, so the following
-		 * expression points to a stack location which can be used as ESP */
-		new_ctx->esp = (unsigned long)&((*lmf)->eip);
 
-		*lmf = (*lmf)->previous_lmf;
+		/* Check if we are in a trampoline LMF frame */
+		if ((guint32)((*lmf)->previous_lmf) & 1) {
+			/* lmf->esp is set by the trampoline code */
+			new_ctx->esp = (*lmf)->esp;
+
+			/* Pop arguments off the stack */
+			{
+				MonoMethod *method = (*lmf)->method;
+				MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (method)->param_count + 1);
+
+				guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (method), mono_method_signature (method)->param_count, arg_info);
+				new_ctx->esp += stack_to_pop;
+			}
+		}
+		else
+			/* the lmf is always stored on the stack, so the following
+			 * expression points to a stack location which can be used as ESP */
+			new_ctx->esp = (unsigned long)&((*lmf)->eip);
+
+		*lmf = (gpointer)(((guint32)(*lmf)->previous_lmf) & ~1);
 
 		return ji ? ji : res;
 	}

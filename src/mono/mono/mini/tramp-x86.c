@@ -196,6 +196,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	pushed_args = 8;
 
+	/* Align stack on apple */
+	x86_alu_reg_imm (buf, X86_SUB, X86_ESP, 4);
+
+	pushed_args ++;
+
 	/* save LMF begin */
 
 	/* save the IP (caller ip) */
@@ -213,25 +218,33 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	pushed_args += 4;
 
+	/* save ESP */
+	x86_push_reg (buf, X86_ESP);
+	/* Adjust ESP so it points to the previous frame */
+	x86_alu_membase_imm (buf, X86_ADD, X86_ESP, 0, (pushed_args + 2) * 4);
+
+	pushed_args ++;
+
 	/* save method info */
 	x86_push_membase (buf, X86_ESP, pushed_args * sizeof (gpointer));
 
 	pushed_args++;
 
-	/* the stack is correctly aligned to 16 bytes because pushed_args is 14
-	 * and there is the extra trampoline arg + the return ip pushed by call
+	/* On apple, the stack is correctly aligned to 16 bytes because pushed_args is
+	 * 16 and there is the extra trampoline arg + the return ip pushed by call
 	 * FIXME: Note that if an exception happens while some args are pushed
 	 * on the stack, the stack will be misaligned.
 	 */
-#ifdef __APPLE__
-	g_assert (pushed_args == 14);
-#endif
+	g_assert (pushed_args == 16);
+
 	/* get the address of lmf for the current thread */
 	x86_call_code (buf, mono_get_lmf_addr);
 	/* push lmf */
 	x86_push_reg (buf, X86_EAX); 
 	/* push *lfm (previous_lmf) */
 	x86_push_membase (buf, X86_EAX, 0);
+	/* Signal to mono_arch_find_jit_info () that this is a trampoline frame */
+	x86_alu_membase_imm (buf, X86_ADD, X86_ESP, 0, 1);
 	/* *(lmf) = ESP */
 	x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
 	/* save LFM end */
@@ -297,11 +310,14 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* restore LMF start */
 	/* ebx = previous_lmf */
 	x86_pop_reg (buf, X86_EBX);
+	x86_alu_reg_imm (buf, X86_SUB, X86_EBX, 1);
 	/* edi = lmf */
 	x86_pop_reg (buf, X86_EDI);
 	/* *(lmf) = previous_lmf */
 	x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
 	/* discard method info */
+	x86_pop_reg (buf, X86_ESI);
+	/* discard ESP */
 	x86_pop_reg (buf, X86_ESI);
 	/* restore caller saved regs */
 	x86_pop_reg (buf, X86_EBX);
@@ -317,8 +333,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_mov_reg_membase (buf, X86_ECX, X86_ESP, 1 * 4, 4);
 	x86_mov_reg_membase (buf, X86_EDX, X86_ESP, 2 * 4, 4);
 
-	/* Pop saved reg array + method ptr */
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 9 * 4);
+	/* Pop saved reg array + stack align + method ptr */
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		x86_ret (buf);
