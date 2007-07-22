@@ -667,7 +667,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			new_ctx->esp = (*lmf)->esp;
 
 			/* Pop arguments off the stack */
-			{
+			/* FIXME: Handle the delegate case too ((*lmf)->method == NULL) */
+			if ((*lmf)->method) {
 				MonoMethod *method = (*lmf)->method;
 				MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (method)->param_count + 1);
 
