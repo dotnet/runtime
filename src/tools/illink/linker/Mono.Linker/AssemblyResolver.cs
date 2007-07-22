@@ -60,6 +60,8 @@ namespace Mono.Linker {
 
 		public TypeDefinition Resolve (TypeReference type)
 		{
+			type = type.GetOriginalType ();
+
 			if (type is TypeDefinition)
 				return (TypeDefinition) type;
 
@@ -78,7 +80,7 @@ namespace Mono.Linker {
 
 		public FieldDefinition Resolve (FieldReference field)
 		{
-			TypeDefinition type = Resolve (GetDeclaringType (field.DeclaringType));
+			TypeDefinition type = Resolve (field.DeclaringType);
 			return GetField (type.Fields, field);
 		}
 
@@ -99,19 +101,12 @@ namespace Mono.Linker {
 
 		public MethodDefinition Resolve (MethodReference method)
 		{
-			TypeDefinition type = Resolve (GetDeclaringType (method.DeclaringType));
+			TypeDefinition type = Resolve (method.DeclaringType);
+			method = method.GetOriginalMethod ();
 			if (method.Name == MethodDefinition.Cctor || method.Name == MethodDefinition.Ctor)
 				return GetMethod (type.Constructors, method);
 			else
 				return GetMethod (type, method);
-		}
-
-		static TypeReference GetDeclaringType (TypeReference type)
-		{
-			TypeReference t = type;
-			while (t is TypeSpecification)
-				t = ((TypeSpecification) t).ElementType;
-			return t;
 		}
 
 		MethodDefinition GetMethod (TypeDefinition type, MethodReference reference)
@@ -119,7 +114,7 @@ namespace Mono.Linker {
 			while (type != null) {
 				MethodDefinition method = GetMethod (type.Methods, reference);
 				if (method == null)
-					type = Resolve (GetDeclaringType (type.BaseType));
+					type = Resolve (type.BaseType);
 				else
 					return method;
 			}
