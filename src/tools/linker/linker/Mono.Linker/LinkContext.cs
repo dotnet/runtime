@@ -27,7 +27,7 @@
 //
 
 using System.Collections;
-
+using System.IO;
 using Mono.Cecil;
 
 namespace Mono.Linker {
@@ -82,11 +82,17 @@ namespace Mono.Linker {
 			return assembly.MainModule.Types [type];
 		}
 
-		public AssemblyDefinition Resolve (string filename)
+		public AssemblyDefinition Resolve (string name)
 		{
-			AssemblyDefinition assembly = AssemblyFactory.GetAssembly (filename);
-			_resolver.CacheAssembly (assembly);
-			return assembly;
+			if (File.Exists (name)) {
+				AssemblyDefinition assembly = AssemblyFactory.GetAssembly (name);
+				_resolver.CacheAssembly (assembly);
+				return assembly;
+			} else {
+				AssemblyNameReference reference = new AssemblyNameReference ();
+				reference.Name = name;
+				return _resolver.Resolve (reference);
+			}
 		}
 
 		public AssemblyDefinition Resolve (IMetadataScope scope)
