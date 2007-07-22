@@ -1,5 +1,8 @@
 2007-07-22  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Linker/LinkContext.cs:
+		If no file found with -a, try to resolve it.
+
 	* Mono.Linker/Driver.cs
 	  Mono.Linker/Pipeline.cs:
 		Adjust the visibility only once, even with multiple -i.
