@@ -819,6 +819,7 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	strcpy (target + targetlen - tail_len, extension);
 	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
 	
+	DeleteFile (dest);
 	copy_result = CopyFile (orig, dest, FALSE);
 	g_free (orig);
 	g_free (dest);
@@ -970,6 +971,7 @@ make_shadow_copy (const char *filename)
 
 	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
 	dest = g_utf8_to_utf16 (shadow, strlen (shadow), NULL, NULL, NULL);
+	DeleteFile (dest);
 	copy_result = CopyFile (orig, dest, FALSE);
 	g_free (dest);
 	g_free (orig);
