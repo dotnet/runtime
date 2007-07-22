@@ -52,7 +52,7 @@ namespace Mono.Linker.Steps {
 				}
 
 				assembly.MainModule.Types.Remove (type);
-				SweepTypeReferences (assembly, type);
+				SweepReferences (assembly, type);
 			}
 		}
 
@@ -61,7 +61,7 @@ namespace Mono.Linker.Steps {
 			return new ArrayList (collection);
 		}
 
-		void SweepTypeReferences (AssemblyDefinition assembly, TypeDefinition type)
+		void SweepReferences (AssemblyDefinition assembly, TypeDefinition type)
 		{
 			foreach (AssemblyDefinition asm in Context.GetAssemblies ()) {
 				ModuleDefinition module = asm.MainModule;
