@@ -1605,9 +1605,6 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	MonoTableInfo *methodt;
 	guint32 idx;
 
-	if (klass->generic_class)
-		g_assert_not_reached ();
-
 	mono_class_init (klass);
 
 	if (klass->image->dynamic) {
@@ -1619,7 +1616,11 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	if (idx > 0) {
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		return mono_metadata_make_token (MONO_TABLE_PARAM, param_index + index);
+		if (index == -1)
+			/* Return value */
+			return mono_metadata_make_token (MONO_TABLE_PARAM, 0);
+		else
+			return mono_metadata_make_token (MONO_TABLE_PARAM, param_index + index);
 	}
 
 	return 0;
