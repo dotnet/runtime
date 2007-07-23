@@ -113,7 +113,11 @@ namespace Mono.Linker {
 					context.OutputDirectory = GetParam ();
 					break;
 				case 'c':
-					context.CoreAction = ParseCoreAction (GetParam ());
+					context.CoreAction = ParseAssemblyAction (GetParam ());
+					break;
+				case 'p':
+					AssemblyAction action = ParseAssemblyAction (GetParam ());
+					context.Actions [GetParam ()] = action;
 					break;
 				case 's':
 					AddCustomStep (p, GetParam ());
@@ -221,7 +225,7 @@ namespace Mono.Linker {
 			return assemblies;
 		}
 
-		static AssemblyAction ParseCoreAction (string s)
+		static AssemblyAction ParseAssemblyAction (string s)
 		{
 			return (AssemblyAction) Enum.Parse (typeof (AssemblyAction), s, true);
 		}
@@ -251,6 +255,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --version   Print the version number of the {0}", _linker);
 			Console.WriteLine ("   -out        Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c          Action on the core assemblies, skip, copy or link, default to skip");
+			Console.WriteLine ("   -p          Action per assembly");
 			Console.WriteLine ("   -s          Add a new step to the pipeline.");
 			Console.WriteLine ("   -d          Add a directory where the linker will look for assemblies");
 			Console.WriteLine ("   -l          List of i18n assemblies to copy to the output directory");

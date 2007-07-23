@@ -36,6 +36,7 @@ namespace Mono.Linker {
 
 		Pipeline _pipeline;
 		AssemblyAction _coreAction;
+		Hashtable _actions;
 		string _outputDirectory;
 
 		AssemblyResolver _resolver;
@@ -52,6 +53,14 @@ namespace Mono.Linker {
 		public AssemblyAction CoreAction {
 			get { return _coreAction; }
 			set { _coreAction = value; }
+		}
+
+		public IDictionary Actions {
+			get {
+				if (_actions == null)
+					_actions = new Hashtable ();
+				return _actions;
+			}
 		}
 
 		public AssemblyResolver Resolver {
@@ -91,7 +100,7 @@ namespace Mono.Linker {
 			} else {
 				AssemblyNameReference reference = new AssemblyNameReference ();
 				reference.Name = name;
-				return _resolver.Resolve (reference);
+				return Resolve (reference);
 			}
 		}
 
@@ -122,7 +131,12 @@ namespace Mono.Linker {
 		void SetAction (AssemblyDefinition assembly)
 		{
 			AssemblyAction action = AssemblyAction.Link;
-			if (IsCore (assembly.Name))
+
+			AssemblyNameDefinition name = assembly.Name;
+
+			if (_actions.Contains (name.Name))
+				action = (AssemblyAction) _actions [name.Name];
+			else if (IsCore (name))
 				action = _coreAction;
 
 			Annotations.SetAction (assembly, action);

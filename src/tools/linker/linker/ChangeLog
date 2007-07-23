@@ -1,3 +1,10 @@
+2007-07-23  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs
+	  Mono.Linker/LinkContext.cs:
+		Allow one to specify the action to apply to an assembly
+		from the command line.
+
 2007-07-22  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/LinkContext.cs:
