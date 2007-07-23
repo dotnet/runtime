@@ -399,22 +399,30 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = *gr;
 		}
 	} else {
-		if (*gr == ARMREG_R3) {
+		if (*gr == ARMREG_R3
+#ifdef __ARM_EABI__
+				&& 0
+#endif
+					) {
 			/* first word in r3 and the second on the stack */
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->regtype = RegTypeBaseGen;
 			*stack_size += 4;
 		} else if (*gr > ARMREG_R3) {
-			/**stack_size += 7;
-			*stack_size &= ~7;*/
+#ifdef __ARM_EABI__
+			*stack_size += 7;
+			*stack_size &= ~7;
+#endif
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 8;
 		} else {
-			/*if ((*gr) & 1)
-				(*gr) ++;*/
+#ifdef __ARM_EABI__
+			if ((*gr) & 1)
+				(*gr) ++;
+#endif
 			ainfo->reg = *gr;
 		}
 		(*gr) ++;

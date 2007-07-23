@@ -4,7 +4,7 @@
 #include <mono/arch/arm/arm-codegen.h>
 #include <glib.h>
 
-#if defined(ARM_FPU_NONE) || defined(ARM_FPU_VFP)
+#if defined(ARM_FPU_NONE) || defined(ARM_FPU_VFP) || defined(__ARM_EABI__)
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
 
