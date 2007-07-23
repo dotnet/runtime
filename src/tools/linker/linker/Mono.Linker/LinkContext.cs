@@ -56,11 +56,7 @@ namespace Mono.Linker {
 		}
 
 		public IDictionary Actions {
-			get {
-				if (_actions == null)
-					_actions = new Hashtable ();
-				return _actions;
-			}
+			get { return _actions; }
 		}
 
 		public AssemblyResolver Resolver {
@@ -71,6 +67,7 @@ namespace Mono.Linker {
 		{
 			_pipeline = pipeline;
 			_resolver = new AssemblyResolver ();
+			_actions = new Hashtable ();
 		}
 
 		public TypeDefinition GetType (string type)
@@ -134,7 +131,7 @@ namespace Mono.Linker {
 
 			AssemblyNameDefinition name = assembly.Name;
 
-			if (Actions.Contains (name.Name))
+			if (_actions.Contains (name.Name))
 				action = (AssemblyAction) _actions [name.Name];
 			else if (IsCore (name))
 				action = _coreAction;
