@@ -48,16 +48,28 @@ this file to link only what is necessary to match the public API defined in
 the info file. The linker will also adjust the visibility of the metadata
 elements that are linked, but not present in the public API.
 
-4) The `core' assemblies
+4) Actions on the assemblies
 
-Core assemblies are the assemblies that belongs to the base class library,
-like mscorlib.dll, System.dll or System.Windows.Forms.dll.
+You can specify what the linker should do exactly per assembly.
 
-The linker can do 3 things about them:
+The linker can do 3 things:
 
 	- skip them, and do nothing with them,
 	- copy them to the output directory,
 	- link them, to reduce their size.
+
+You can specify an action per assembly like this:
+
+monolinker -p link Foo
+
+or
+
+monolinker -p skip System.Windows.Forms
+
+Or you can specify what to do for the core assemblies.
+
+Core assemblies are the assemblies that belongs to the base class library,
+like mscorlib.dll, System.dll or System.Windows.Forms.dll.
 
 You can specify what action to do on the core assemblies with the option:
 
