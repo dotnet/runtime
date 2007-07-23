@@ -2088,8 +2088,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					}
 
 					if (!(vtable [io + l])) {
-						char *human_name;
-
 						for (j = 0; j < onum; ++j) {
 							g_print (" at slot %d: %s (%d) overrides %s (%d)\n", io+l, overrides [j*2+1]->name, 
 								 overrides [j*2+1]->slot, overrides [j*2]->name, overrides [j*2]->slot);
@@ -3621,7 +3619,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 			class->interface_count = eclass->idepth + eclass->interface_count;
 		}
 
-		class->interfaces = g_new0 (MonoClass *, class->interface_count);
+		class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
 
 		for (i = 0; i < class->interface_count; i++) {
 			MonoType **args;
