@@ -3704,27 +3704,37 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 }
 
 /**
- * mono_metadata_type_dup_mp:
- * @image: image type is defined in
+ * mono_metadata_type_dup:
+ * @image: mempool to use
  * @original: type to duplicate
  *
  * Returns: copy of type allocated from mempool.
  */
 MonoType *
-mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original)
+mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
 {
 	MonoType *r = NULL;
+	int sizeof_o = sizeof o;
+	if (o->num_mods)
+		sizeof_o += (o->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
+
 	mono_loader_lock ();
-	r = mono_mempool_alloc0 (image->mempool, sizeof(MonoType));
+	r = mp ? mono_mempool_alloc0 (mp, sizeof_o) : g_malloc (sizeof_o);
 	mono_loader_unlock ();
-	*r = *original;
-	/* FIXME: we don't handle these yet because they need to duplicate memory
-	 * but the current routines used are not using the mempools
-	 */
-	if (original->type == MONO_TYPE_PTR || 
-		original->type == MONO_TYPE_ARRAY || 
-		original->type == MONO_TYPE_FNPTR)
-		g_assert_not_reached ();
+
+	memcpy (r, o, sizeof_o);
+
+	if (o->type == MONO_TYPE_PTR) {
+		r->data.type = mono_metadata_type_dup (mp, o->data.type);
+	} else if (o->type == MONO_TYPE_ARRAY) {
+		/* FIXME: should mono_dup_array_type() use mempools? */
+		g_assert (!mp);
+		r->data.array = mono_dup_array_type (o->data.array);
+	} else if (o->type == MONO_TYPE_FNPTR) {
+		/* FIXME: should mono_metadata_signature_deep_dup() use mempools? */
+		g_assert (!mp);
+		r->data.method = mono_metadata_signature_deep_dup (o->data.method);
+	}
 	return r;
 }
 

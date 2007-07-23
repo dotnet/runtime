@@ -318,7 +318,7 @@ cominterop_method_signature (MonoMethod* method)
 	else {
 		// last arg is return type
 		if (!MONO_TYPE_IS_VOID (sig->ret)) {
-			res->params[param_count-1] = mono_metadata_type_dup_mp (image, sig->ret);
+			res->params[param_count-1] = mono_metadata_type_dup (image->mempool, sig->ret);
 			res->params[param_count-1]->byref = 1;
 			res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
 		}

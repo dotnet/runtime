@@ -414,7 +414,7 @@ guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, gu
 void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
 
 
-MonoType *mono_metadata_type_dup_mp (MonoImage *image, const MonoType *original) MONO_INTERNAL;
+MonoType *mono_metadata_type_dup (MonoMemPool *mp, const MonoType *original) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
