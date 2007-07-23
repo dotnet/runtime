@@ -605,7 +605,7 @@ MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context)
 {
 	MonoMethod *result;
-	MonoMethodInflated *iresult;
+	MonoMethodInflated *iresult, *cached;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 
@@ -628,6 +628,16 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	mono_stats.inflated_method_count++;
 	iresult = g_new0 (MonoMethodInflated, 1);
+	iresult->context = *context;
+	iresult->declaring = method;
+
+	mono_loader_lock ();
+	cached = mono_method_inflated_lookup (iresult, FALSE);
+	if (cached) {
+		mono_loader_unlock ();
+		g_free (iresult);
+		return (MonoMethod*)cached;
+	}
 
 	sig = mono_method_signature (method);
 	if (sig->pinvoke) {
@@ -641,8 +651,6 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	result->is_inflated = 1;
 	/* result->generic_container = NULL; */
 	result->signature = NULL;
-	iresult->context = *context;
-	iresult->declaring = method;
 
 	if (!klass_hint || !klass_hint->generic_class ||
 	    klass_hint->generic_class->container_class != method->klass ||
@@ -662,6 +670,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	else if (method->generic_container)
 		iresult->context.method_inst = method->generic_container->context.method_inst;
 
+	mono_method_inflated_lookup (iresult, TRUE);
+	mono_loader_unlock ();
 	return result;
 }
 

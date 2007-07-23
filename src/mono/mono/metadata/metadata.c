@@ -1341,6 +1341,13 @@ static GHashTable *generic_inst_cache = NULL;
 static GHashTable *generic_class_cache = NULL;
 static int next_generic_inst_id = 0;
 
+/*
+ * Protected by the loader lock.
+ * It has a MonoMethodInflated* as key and value.
+ * The key lookup will just access the declaring and context fields
+ */
+static GHashTable *generic_method_cache = NULL;
+
 static guint mono_generic_class_hash (gconstpointer data);
 
 /*
@@ -1451,9 +1458,12 @@ mono_metadata_cleanup (void)
 	g_hash_table_destroy (type_cache);
 	g_hash_table_destroy (generic_inst_cache);
 	g_hash_table_destroy (generic_class_cache);
+	if (generic_method_cache)
+		g_hash_table_destroy (generic_method_cache);
 	type_cache = NULL;
 	generic_inst_cache = NULL;
 	generic_class_cache = NULL;
+	generic_method_cache = NULL;
 }
 
 /**
@@ -1885,6 +1895,23 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	}
 }
 
+static gboolean
+inflated_method_equal (gconstpointer a, gconstpointer b)
+{
+	const MonoMethodInflated *ma = a;
+	const MonoMethodInflated *mb = b;
+	if (ma->declaring != mb->declaring)
+		return FALSE;
+	return mono_metadata_generic_context_equal (&ma->context, &mb->context);
+}
+
+static guint
+inflated_method_hash (gconstpointer a)
+{
+	const MonoMethodInflated *ma = a;
+	return mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring);
+}
+
 /*static void
 dump_ginst (MonoGenericInst *ginst)
 {
@@ -1944,12 +1971,47 @@ gclass_in_image (gpointer key, gpointer value, gpointer data)
 	return FALSE;
 }
 
+static gboolean
+inflated_method_in_image (gpointer key, gpointer value, gpointer data)
+{
+	MonoImage *image = data;
+	MonoMethodInflated *method = key;
+
+	if (method->declaring->klass->image == image)
+		return TRUE;
+	if (method->context.class_inst && ginst_in_image (method->context.class_inst, NULL, image))
+		return TRUE;
+	if (method->context.method_inst && ginst_in_image (method->context.method_inst, NULL, image))
+		return TRUE;
+	return FALSE;
+}
+
+/*
+ * LOCKING: assumes the loader lock is held.
+ */
+MonoMethodInflated*
+mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
+{
+	if (cache) {
+		if (!generic_method_cache)
+			generic_method_cache = g_hash_table_new (inflated_method_hash, inflated_method_equal);
+		g_hash_table_insert (generic_method_cache, method, method);
+		return method;
+	} else {
+		if (generic_method_cache)
+			return g_hash_table_lookup (generic_method_cache, method);
+		return NULL;
+	}
+}
+
 void
 mono_metadata_clean_for_image (MonoImage *image)
 {
 	mono_loader_lock ();
 	g_hash_table_foreach_remove (generic_inst_cache, ginst_in_image, image);
 	g_hash_table_foreach_remove (generic_class_cache, gclass_in_image, image);
+	if (generic_method_cache)
+		g_hash_table_foreach_remove (generic_method_cache, inflated_method_in_image, image);
 	mono_loader_unlock ();
 }
 

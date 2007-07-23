@@ -649,6 +649,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass) MONO_INTERNAL;
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);
 
+MonoMethodInflated*
+mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache) MONO_INTERNAL;
 
 typedef struct {
 	MonoImage *corlib;
