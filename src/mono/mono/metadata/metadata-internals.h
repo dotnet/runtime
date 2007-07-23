@@ -387,7 +387,8 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     const char           **rptr) MONO_INTERNAL;
 
 MonoGenericInst *
-mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst) MONO_INTERNAL;
+mono_metadata_get_generic_inst              (int 		    type_argc,
+					     MonoType 		  **type_argv) MONO_INTERNAL;
 
 MonoGenericClass *
 mono_metadata_lookup_generic_class          (MonoClass		   *gclass,

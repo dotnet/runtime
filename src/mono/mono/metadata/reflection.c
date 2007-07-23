@@ -8782,24 +8782,10 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 {
 	MonoGenericClass *gclass;
 	MonoGenericInst *inst;
-	int i;
 
 	g_assert (klass->generic_container);
 
-	inst = g_new0 (MonoGenericInst, 1);
-	inst->type_argc = type_argc;
-	inst->type_argv = g_new0 (MonoType *, inst->type_argc);
-
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *t = dup_type (types [i]);
-
-		if (!inst->is_open)
-			inst->is_open = mono_class_is_open_constructed_type (t);
-
-		inst->type_argv [i] = t;
-	}
-
-	inst = mono_metadata_lookup_generic_inst (inst);
+	inst = mono_metadata_get_generic_inst (type_argc, types);
 	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);
 
 	return mono_generic_class_get_class (gclass);
@@ -8832,6 +8818,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoGenericContainer *container;
 	MonoGenericContext tmp_context;
 	MonoGenericInst *ginst;
+	MonoType **type_argv;
 	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
@@ -8865,17 +8852,13 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 			(GHashFunc) mono_metadata_generic_context_hash,
 			(GCompareFunc) mono_metadata_generic_context_equal);
 
-	ginst = g_new0 (MonoGenericInst,1 );
-	ginst->type_argc = count;
-	ginst->type_argv = g_new0 (MonoType *, count);
+	type_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
-		ginst->type_argv [i] = dup_type (garg->type);
-
-		if (!ginst->is_open)
-			ginst->is_open = mono_class_is_open_constructed_type (ginst->type_argv [i]);
+		type_argv [i] = garg->type;
 	}
-	ginst = mono_metadata_lookup_generic_inst (ginst);
+	ginst = mono_metadata_get_generic_inst (count, type_argv);
+	g_free (type_argv);
 
 	tmp_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 	tmp_context.method_inst = ginst;

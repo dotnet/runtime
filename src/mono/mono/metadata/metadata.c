@@ -1954,37 +1954,47 @@ mono_metadata_clean_for_image (MonoImage *image)
 }
 
 /*
- * mono_metadata_lookup_generic_inst:
+ * mono_metadata_get_generic_inst:
  *
- * Check whether the newly created generic instantiation @ginst already exists
- * in the cache and return the cached value in this case.  Otherwise insert
- * it into the cache.
- *
- * Use this method each time you create a new `MonoGenericInst' to ensure
- * proper caching.  Only use the returned value as the argument passed to this
- * method may be freed.
+ * Given a list of types, return a MonoGenericInst that represents that list.
+ * The returned MonoGenericInst has its own copy of the list of types.  The list
+ * passed in the argument can be freed, modified or disposed of.
  *
  */
 MonoGenericInst *
-mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
+mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 {
-	MonoGenericInst *cached;
+	MonoGenericInst *ginst;
+	MonoGenericInst helper;
 	int i;
 
-	/*dump_ginst (ginst);*/
+	helper.type_argc = type_argc;
+	helper.type_argv = type_argv;
+	helper.id = 0;
+
+	for (i = 0; i < type_argc; ++i)
+		if (mono_class_is_open_constructed_type (type_argv [i]))
+			break;
+	helper.is_open = (i < type_argc);
+
+	/*dump_ginst (&helper);*/
 	mono_loader_lock ();
-	cached = g_hash_table_lookup (generic_inst_cache, ginst);
-	if (cached) {
-		for (i = 0; i < ginst->type_argc; i++)
-			mono_metadata_free_type (ginst->type_argv [i]);
-		g_free (ginst->type_argv);
-		g_free (ginst);
+	ginst = g_hash_table_lookup (generic_inst_cache, &helper);
+	if (ginst) {
 		mono_loader_unlock ();
 		/*g_print (" found cached\n");*/
-		return cached;
+		return ginst;
 	}
 
+	ginst = g_new0 (MonoGenericInst, 1);
+	ginst->type_argc = type_argc;
+	ginst->type_argv = g_new (MonoType*, type_argc);
 	ginst->id = ++next_generic_inst_id;
+	ginst->is_open = helper.is_open;
+
+	for (i = 0; i < type_argc; ++i)
+		ginst->type_argv [i] = mono_metadata_type_dup (NULL, type_argv [i]);
+
 	g_hash_table_insert (generic_inst_cache, ginst, ginst);
 
 	mono_loader_unlock ();
@@ -2050,56 +2060,52 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 MonoGenericInst *
 mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context)
 {
+	MonoType **type_argv;
 	MonoGenericInst *nginst;
 	int i;
 
 	if (!ginst->is_open)
 		return ginst;
 
-	nginst = g_new0 (MonoGenericInst, 1);
-	nginst->type_argc = ginst->type_argc;
-	nginst->type_argv = g_new0 (MonoType*, nginst->type_argc);
+	type_argv = g_new0 (MonoType*, ginst->type_argc);
 
-	for (i = 0; i < nginst->type_argc; i++) {
-		MonoType *t = mono_class_inflate_generic_type (ginst->type_argv [i], context);
+	for (i = 0; i < ginst->type_argc; i++)
+		type_argv [i] = mono_class_inflate_generic_type (ginst->type_argv [i], context);
 
-		if (!nginst->is_open)
-			nginst->is_open = mono_class_is_open_constructed_type (t);
+	nginst = mono_metadata_get_generic_inst (ginst->type_argc, type_argv);
 
-		nginst->type_argv [i] = t;
-	}
+	g_free (type_argv);
 
-	return mono_metadata_lookup_generic_inst (nginst);
+	return nginst;
 }
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 				  int count, const char *ptr, const char **rptr)
 {
+	MonoType **type_argv;
 	MonoGenericInst *ginst;
 	int i;
 
-	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->type_argc = count;
-	ginst->type_argv = g_new0 (MonoType*, count);
+	type_argv = g_new0 (MonoType*, count);
 
-	for (i = 0; i < ginst->type_argc; i++) {
+	for (i = 0; i < count; i++) {
 		MonoType *t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
-
 		if (!t) {
-			g_free (ginst->type_argv);
-			g_free (ginst);
+			g_free (type_argv);
 			return NULL;
 		}
-		ginst->type_argv [i] = t;
-		if (!ginst->is_open)
-			ginst->is_open = mono_class_is_open_constructed_type (t);
+		type_argv [i] = t;
 	}
 
 	if (rptr)
 		*rptr = ptr;
 
-	return mono_metadata_lookup_generic_inst (ginst);
+	ginst = mono_metadata_get_generic_inst (count, type_argv);
+
+	g_free (type_argv);
+
+	return ginst;
 }
 
 static gboolean
@@ -4714,24 +4720,29 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container)
 {
+	MonoType **type_argv;
+	MonoType *helper;
 	MonoGenericInst *nginst;
 	int i;
 
-	nginst = g_new0 (MonoGenericInst, 1);
-	nginst->type_argc = container->type_argc;
-	nginst->type_argv = g_new0 (MonoType *, nginst->type_argc);
-	nginst->is_open = 1;
+	type_argv = g_new0 (MonoType *, container->type_argc);
+	helper = g_new0 (MonoType, container->type_argc);
 
-	for (i = 0; i < nginst->type_argc; i++) {
-		MonoType *t = g_new0 (MonoType, 1);
+	for (i = 0; i < container->type_argc; i++) {
+		MonoType *t = &helper [i];
 
 		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 		t->data.generic_param = &container->type_params [i];
 
-		nginst->type_argv [i] = t;
+		type_argv [i] = t;
 	}
 
-	return mono_metadata_lookup_generic_inst (nginst);
+	nginst = mono_metadata_get_generic_inst (container->type_argc, type_argv);
+
+	g_free (type_argv);
+	g_free (helper);
+
+	return nginst;
 }
 
 gboolean
