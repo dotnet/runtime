@@ -3714,7 +3714,7 @@ MonoType *
 mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
 {
 	MonoType *r = NULL;
-	int sizeof_o = sizeof o;
+	int sizeof_o = sizeof (MonoType);
 	if (o->num_mods)
 		sizeof_o += (o->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
 
