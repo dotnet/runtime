@@ -855,6 +855,13 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--security") == 0) {
 			mono_use_security_manager = TRUE;
 			mono_activate_security_manager ();
+		} else if (strncmp (argv [i], "--security=", 11) == 0) {
+			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
+				mono_security_smcs_hack = TRUE;
+			} else {
+				fprintf (stderr, "error: --security= option has invalid argument\n");
+				return 1;
+			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
 #if defined (HAVE_BOEHM_GC)
 			GC_dont_expand = 1;
