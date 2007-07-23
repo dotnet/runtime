@@ -8579,7 +8579,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				if ((i > 0) && (pb->attrs)) {
 					/* Make a copy since it might point to a shared type structure */
 					/* FIXME: Alloc this from a mempool */
-					m->signature->params [i - 1] = g_memdup (m->signature->params [i - 1], sizeof (MonoType) + ((m->signature->params [i - 1]->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod)));
+					m->signature->params [i - 1] = mono_metadata_type_dup (NULL, m->signature->params [i - 1]);
 					m->signature->params [i - 1]->attrs = pb->attrs;
 				}
 

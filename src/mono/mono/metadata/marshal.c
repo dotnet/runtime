@@ -1289,12 +1289,8 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		header->code = mb->code;
 
 		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
-			MonoType *local_type = (MonoType*)l->data;
-			int size = sizeof (MonoType) + ((gint32)local_type->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
-			header->locals [i] = g_malloc (size);
-			memcpy (header->locals [i], local_type, size);
+			header->locals [i] = mono_metadata_type_dup (NULL, (MonoType*)l->data);
 		}
-
 	} else {
 		/* Realloc the method info into a mempool */
 
