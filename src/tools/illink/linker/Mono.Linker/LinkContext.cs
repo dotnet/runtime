@@ -134,7 +134,7 @@ namespace Mono.Linker {
 
 			AssemblyNameDefinition name = assembly.Name;
 
-			if (_actions.Contains (name.Name))
+			if (Actions.Contains (name.Name))
 				action = (AssemblyAction) _actions [name.Name];
 			else if (IsCore (name))
 				action = _coreAction;
