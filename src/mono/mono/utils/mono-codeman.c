@@ -11,6 +11,9 @@
 #include "mono-codeman.h"
 #include "mono-mmap.h"
 #include <mono/metadata/class-internals.h>
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
 
 #define MIN_PAGES 16
 
@@ -84,11 +87,22 @@ static void
 free_chunklist (CodeChunk *chunk)
 {
 	CodeChunk *dead;
+	
+#if defined(HAVE_VALGRIND_MEMCHECK_H) && defined (VALGRIND_JIT_UNREGISTER_MAP)
+	int valgrind_unregister = 0;
+	if (RUNNING_ON_VALGRIND)
+		valgrind_unregister = 1;
+#define valgrind_unregister(x) do { if (valgrind_unregister) { VALGRIND_JIT_UNREGISTER_MAP(NULL,x); } } while (0) 
+#else
+#define valgrind_unregister(x)
+#endif
+
 	for (; chunk; ) {
 		dead = chunk;
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
 			mono_vfree (dead->data, dead->size);
+			valgrind_unregister(dead->data);
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
 			free (dead->data);
 		}
