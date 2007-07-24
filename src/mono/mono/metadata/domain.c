@@ -481,13 +481,17 @@ domain_id_alloc (MonoDomain *domain)
 
 static guint32 domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static gpointer domain_gc_desc = NULL;
+static guint32 domain_shadow_serial = 0L;
 
 MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
-
+	guint32 shadow_serial;
+  
 	mono_appdomains_lock ();
+	shadow_serial = domain_shadow_serial++;
+  
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
 		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i < G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED); i += sizeof (gpointer)) {
@@ -499,6 +503,7 @@ mono_domain_create (void)
 	mono_appdomains_unlock ();
 
 	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc);
+	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;

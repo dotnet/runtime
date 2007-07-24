@@ -127,6 +127,7 @@ struct _MonoDomain {
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
+	gint32             shadow_serial;
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
