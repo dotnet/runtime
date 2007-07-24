@@ -8815,7 +8815,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoMethod *method, *inflated;
 	MonoMethodInflated *imethod;
 	MonoReflectionMethodBuilder *mb = NULL;
-	MonoGenericContainer *container;
 	MonoGenericContext tmp_context;
 	MonoGenericInst *ginst;
 	MonoType **type_argv;
@@ -8844,14 +8843,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	if (count != mono_array_length (types))
 		return NULL;
 
-	container = method->generic_container;
-	g_assert (container);
-
-	if (!container->method_hash)
-		container->method_hash = g_hash_table_new (
-			(GHashFunc) mono_metadata_generic_context_hash,
-			(GCompareFunc) mono_metadata_generic_context_equal);
-
 	type_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
@@ -8863,17 +8854,11 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	tmp_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 	tmp_context.method_inst = ginst;
 
-	inflated = g_hash_table_lookup (container->method_hash, &tmp_context);
-	if (inflated)
-		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
-
 	inflated = mono_class_inflate_generic_method (method, &tmp_context);
 	imethod = (MonoMethodInflated *) inflated;
 
 	MOVING_GC_REGISTER (&imethod->reflection_info);
 	imethod->reflection_info = rmethod;
-
-	g_hash_table_insert (container->method_hash, mono_method_get_context (inflated), inflated);
 
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }

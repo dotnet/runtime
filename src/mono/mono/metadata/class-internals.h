@@ -429,8 +429,6 @@ struct _MonoGenericContainer {
 	/* If we're a generic method definition in a generic type definition,
 	   the generic container of the containing class. */
 	MonoGenericContainer *parent;
-	/* If we're a generic method definition, caches all their instantiations. */
-	GHashTable *method_hash;
 	/* the generic type definition or the generic method definition corresponding to this container */
 	union {
 		MonoClass *klass;

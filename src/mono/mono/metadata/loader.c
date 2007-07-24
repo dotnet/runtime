@@ -827,7 +827,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext new_context;
 	MonoGenericInst *inst;
-	MonoGenericContainer *container = NULL;
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
 	guint32 token, nindex, param_count;
@@ -884,9 +883,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		method = ((MonoMethodInflated *) method)->declaring;
 	}
 
-	container = method->generic_container;
-	g_assert (container);
-
 	new_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 
 	/*
@@ -917,18 +913,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	new_context.method_inst = inst;
 
-	if (!container->method_hash)
-		container->method_hash = g_hash_table_new (
-			(GHashFunc)mono_metadata_generic_context_hash, (GEqualFunc)mono_metadata_generic_context_equal);
-
-	inflated = g_hash_table_lookup (container->method_hash, &new_context);
-	if (inflated)
-		return inflated;
-
-	mono_stats.generics_metadata_size += param_count * sizeof (MonoType);
-
 	inflated = mono_class_inflate_generic_method_full (method, klass, &new_context);
-	g_hash_table_insert (container->method_hash, mono_method_get_context (inflated), inflated);
 
 	return inflated;
 }
@@ -1313,6 +1298,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	return piinfo->addr;
 }
 
+/*
+ * LOCKING: assumes the loader lock to be taken.
+ */
 static MonoMethod *
 mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			    MonoGenericContext *context, gboolean *used_context)
