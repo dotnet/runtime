@@ -3632,7 +3632,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
 
 		for (i = 0; i < class->interface_count; i++) {
-			MonoType **args;
+			MonoType *args [1];
 			MonoClass *iface;
 
 			if (eclass->valuetype)
@@ -3651,7 +3651,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 					iface = eclass->interfaces [i - eclass->idepth];
 			}
 
-			args = g_new0 (MonoType *, 1);
 			args [0] = &iface->byval_arg;
 
 			class->interfaces [i] = mono_class_bind_generic_parameters (
