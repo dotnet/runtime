@@ -13,7 +13,7 @@ assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
 
-bin_PROGRAMS = pedump monodiet
+bin_PROGRAMS = pedump
 
 #
 # libtool is not capable of creating static/shared versions of the same
