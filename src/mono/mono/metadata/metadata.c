@@ -1580,7 +1580,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	if (rptr)
 		*rptr = ptr;
 
-		if (!type->num_mods) {
+	if (!type->num_mods) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
 			MonoType *ret = type->byref ? &type->data.klass->this_arg : &type->data.klass->byval_arg;
@@ -2174,61 +2174,28 @@ static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 				      const char *ptr, const char **rptr)
 {
-	MonoGenericClass *gclass, *cached;
+	MonoGenericInst *inst;
 	MonoClass *gklass;
 	MonoType *gtype;
 	int count;
 
-	gclass = g_new0 (MonoGenericClass, 1);
-
-	type->data.generic_class = gclass;
-
 	gtype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	if (gtype == NULL)
 		return FALSE;
-	gclass->container_class = gklass = mono_class_from_mono_type (gtype);
 
-	g_assert (gklass->generic_container);
+	gklass = mono_class_from_mono_type (gtype);
+	if (!gklass->generic_container)
+		return FALSE;
 
 	count = mono_metadata_decode_value (ptr, &ptr);
-
-	gclass->context.class_inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
-	gclass->context.method_inst = NULL;
+	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
+	if (inst == NULL)
+		return FALSE;
 
 	if (rptr)
 		*rptr = ptr;
 
-	/* If we failed to parse, return, the error has been flagged. */
-	if (gclass->context.class_inst == NULL)
-		return FALSE;
-	
-	/*
-	 * We may be called multiple times on different metadata to create the same
-	 * instantiated type.  This happens for instance if we're part of a method or
-	 * local variable signature.
-	 *
-	 * It's important to return the same MonoGenericClass * for each particualar
-	 * instantiation of a generic type (ie "Stack<Int32>") to make static fields
-	 * work.
-	 *
-	 * According to the spec ($26.1.5), a static variable in a generic class
-	 * declaration is shared amongst all instances of the same closed constructed
-	 * type.
-	 */
-
-	cached = g_hash_table_lookup (generic_class_cache, gclass);
-	if (cached) {
-		g_free (gclass);
-
-		type->data.generic_class = cached;
-		return TRUE;
-	} else {
-		g_hash_table_insert (generic_class_cache, gclass, gclass);
-
-		mono_stats.generic_instance_count++;
-		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
-			gclass->context.class_inst->type_argc * sizeof (MonoType);
-	}
+	type->data.generic_class = mono_metadata_lookup_generic_class (gklass, inst, FALSE);
 	return TRUE;
 }
 
