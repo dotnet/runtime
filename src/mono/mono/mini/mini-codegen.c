@@ -768,7 +768,10 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, gboolean fp)
 	else {
 		g_assert (reg >= MONO_MAX_IREGS);
 		g_assert (hreg < MONO_MAX_IREGS);
+#ifndef __arm__
+		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		g_assert (! is_global_ireg (hreg));
+#endif
 
 		rs->vassign [reg] = hreg;
 		rs->isymbolic [hreg] = reg;
