@@ -1,5 +1,12 @@
 <h2>Windows Compatibility API</h2>
 
+	<p>Mono implements a small subset of the Win32 API for some
+	file system interaction, I/O, thread and process operations.
+
+	<p>On Windows, Mono uses directly the services provided by the
+	operating system.   On other operating system it uses its own
+	implementation (referred to as the "io-layer" or "wapi"). 
+	
 <h4><a name="api:GetThreadContext">GetThreadContext</a></h4>
 <h4><a name="api:DeleteCriticalSection">DeleteCriticalSection</a></h4>
 <h4><a name="api:EnterCriticalSection">EnterCriticalSection</a></h4>
