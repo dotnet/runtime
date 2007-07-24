@@ -258,6 +258,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_IMT_REG AMD64_R11
 
+#define MONO_ARCH_AOT_SUPPORTED 1
+
 gboolean
 mono_amd64_is_sse2 (void);
 

@@ -259,5 +259,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_IMT_REG X86_EDX
 
+#define MONO_ARCH_AOT_SUPPORTED 1
+
 #endif /* __MONO_MINI_X86_H__ */  
 

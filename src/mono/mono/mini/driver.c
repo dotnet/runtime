@@ -674,6 +674,12 @@ static const char info[] =
 	"\tDisabled:      " DISABLED_FEATURES "\n"
 	"";
 
+#ifndef MONO_ARCH_AOT_SUPPORTED
+#define error_if_aot_unsupported() do {fprintf (stderr, "AOT compilation is not supported on this platform.\n"); exit (1);} while (0)
+#else
+#define error_if_aot_unsupported()
+#endif
+
 int
 mono_main (int argc, char* argv[])
 {
@@ -809,8 +815,10 @@ mono_main (int argc, char* argv[])
 			mono_jit_stats.enabled = TRUE;
 #ifndef DISABLE_AOT
 		} else if (strcmp (argv [i], "--aot") == 0) {
+			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
 		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
+			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
 #endif
