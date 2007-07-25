@@ -635,7 +635,8 @@ mini_usage (void)
 		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
-		"    --security             Turns on the security manager (unsupported, default is off)\n");
+		"    --security[=mode]      Turns on the unsupported security manager (off by default)\n"
+		"                           mode is one of cas or core-clr\n");
 }
 
 static void
@@ -868,8 +869,11 @@ mono_main (int argc, char* argv[])
 				mono_security_smcs_hack = TRUE;
 			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
 				mono_security_core_clr = TRUE;
+			} else if (strcmp (argv [i] + 11, "cas") == 0){
+				mono_use_security_manager = TRUE;
+				mono_activate_security_manager ();
 			} else {
-				fprintf (stderr, "error: --security= option has invalid argument\n");
+				fprintf (stderr, "error: --security= option has invalid argument (cas or core-clr)\n");
 				return 1;
 			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
