@@ -866,6 +866,8 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
 			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
 				mono_security_smcs_hack = TRUE;
+			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
+				mono_security_core_clr = TRUE;
 			} else {
 				fprintf (stderr, "error: --security= option has invalid argument\n");
 				return 1;

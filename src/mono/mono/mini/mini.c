@@ -130,6 +130,7 @@ gboolean mono_compile_aot = FALSE;
 #endif
 gboolean mono_use_security_manager = FALSE;
 gboolean mono_security_smcs_hack = FALSE;
+gboolean mono_security_core_clr = FALSE;
 
 static int mini_verbose = 0;
 
