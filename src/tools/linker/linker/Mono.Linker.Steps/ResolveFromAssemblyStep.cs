@@ -44,6 +44,18 @@ namespace Mono.Linker.Steps {
 		{
 			AssemblyDefinition assembly = context.Resolve (_assembly);
 
+			switch (assembly.Kind) {
+			case AssemblyKind.Dll:
+				ProcessLibrary (assembly);
+				return;
+			default:
+				ProcessExecutable (assembly);
+				return;
+			}
+		}
+
+		static void ProcessLibrary (AssemblyDefinition assembly)
+		{
 			Annotations.SetAction (assembly, AssemblyAction.Copy);
 
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
@@ -52,6 +64,13 @@ namespace Mono.Linker.Steps {
 				MarkMethods (type.Methods);
 				MarkMethods (type.Constructors);
 			}
+		}
+
+		static void ProcessExecutable (AssemblyDefinition assembly)
+		{
+			Annotations.SetAction (assembly, AssemblyAction.Link);
+
+			MarkMethod (assembly.EntryPoint);
 		}
 
 		static void MarkMethods (ICollection methods)
