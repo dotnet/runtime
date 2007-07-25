@@ -1575,7 +1575,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	pvt->max_interface_id = max_interface_id;
-	pvt->interface_bitmap = class->interface_bitmap;
+	pvt->interface_bitmap = mono_mempool_alloc0 (domain->mp, sizeof (guint8) * (max_interface_id/8 + 1 ));
 
 	if (! ARCH_USE_IMT) {
 		/* initialize interface offsets */
@@ -1584,6 +1584,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			int slot = class->interface_offsets_packed [i];
 			interface_offsets [class->max_interface_id - interface_id] = &(pvt->vtable [slot]);
 		}
+	}
+	for (i = 0; i < class->interface_offsets_count; ++i) {
+		int interface_id = class->interfaces_packed [i]->interface_id;
+		pvt->interface_bitmap [interface_id >> 3] |= (1 << (interface_id & 7));
 	}
 
 	if (extra_interfaces) {
@@ -1600,6 +1604,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			if (! ARCH_USE_IMT) {
 				interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
 			}
+			pvt->interface_bitmap [interf->interface_id >> 3] |= (1 << (interf->interface_id & 7));
 
 			iter = NULL;
 			j = 0;
