@@ -1,3 +1,9 @@
+2007-07-25  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs:
+		When linking from an executable, it's possible
+		to reduce the executable as well.
+
 2007-07-23  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Driver.cs
