@@ -228,7 +228,8 @@ TEST_CS_SRC=			\
 	desweak.cs		\
 	cominterop.cs		\
 	exists.cs		\
-	handleref.cs
+	handleref.cs	\
+	transparentproxy.cs
 
 if X86
 # bug #71274
