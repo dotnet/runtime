@@ -102,7 +102,7 @@ free_chunklist (CodeChunk *chunk)
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
 			mono_vfree (dead->data, dead->size);
-			valgrind_unregister(dead->data);
+			/* valgrind_unregister(dead->data); */
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
 			free (dead->data);
 		}
