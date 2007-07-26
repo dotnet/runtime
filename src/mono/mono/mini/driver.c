@@ -862,15 +862,15 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
-			mono_use_security_manager = TRUE;
+			mono_security_mode = MONO_SECURITY_MODE_CAS;
 			mono_activate_security_manager ();
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
 			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
-				mono_security_smcs_hack = TRUE;
+				mono_security_mode = MONO_SECURITY_MODE_SMCS_HACK;
 			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
-				mono_security_core_clr = TRUE;
+				mono_security_mode = MONO_SECURITY_MODE_CORE_CLR;
 			} else if (strcmp (argv [i] + 11, "cas") == 0){
-				mono_use_security_manager = TRUE;
+				mono_security_mode = MONO_SECURITY_MODE_CAS;
 				mono_activate_security_manager ();
 			} else {
 				fprintf (stderr, "error: --security= option has invalid argument (cas or core-clr)\n");

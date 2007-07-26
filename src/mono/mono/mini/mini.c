@@ -128,9 +128,7 @@ gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
 #endif
-gboolean mono_use_security_manager = FALSE;
-gboolean mono_security_smcs_hack = FALSE;
-gboolean mono_security_core_clr = FALSE;
+MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
 
 static int mini_verbose = 0;
 
@@ -3870,7 +3868,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
 	/* turn off visibility checks for smcs */
-	dont_verify |= mono_security_smcs_hack;
+	dont_verify |= mono_security_mode == MONO_SECURITY_MODE_SMCS_HACK;
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -4025,7 +4023,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (mono_use_security_manager)
+	if (mono_security_mode == MONO_SECURITY_MODE_CAS)
 		secman = mono_security_manager_get_methods ();
 
 	security = (secman && mono_method_has_declsec (method));
@@ -4511,7 +4509,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 
-			if (mono_use_security_manager) {
+			if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
 				CHECK_CFG_EXCEPTION;
@@ -4585,7 +4583,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				n = fsig->param_count + fsig->hasthis;
 
-				if (mono_use_security_manager) {
+				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
@@ -5573,7 +5571,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!mono_class_init (cmethod->klass))
 				goto load_error;
 
-			if (mono_use_security_manager) {
+			if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
 				CHECK_CFG_EXCEPTION;
@@ -7236,7 +7234,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (mono_use_security_manager) {
+				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
@@ -7268,7 +7266,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (mono_use_security_manager) {
+				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
@@ -11966,7 +11964,7 @@ print_jit_stats (void)
 		g_print ("IMT methods at max col: %ld\n", mono_stats.imt_method_count_when_max_collisions);
 		g_print ("IMT thunks size:        %ld\n", mono_stats.imt_thunks_size);
 
-		if (mono_use_security_manager) {
+		if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
 			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);
