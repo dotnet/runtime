@@ -161,6 +161,7 @@
 		<type fullname="System.Runtime.InteropServices.Marshal" />
 		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException" />
 		<type fullname="System.Runtime.InteropServices.SafeHandle" />
+		<type fullname="System.Runtime.InteropServices.StructLayoutAttribute" />
 		<type fullname="System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute" />
 		<type fullname="System.Runtime.Remoting.Activation.ActivationServices" />
 		<type fullname="System.Runtime.Remoting.Contexts.Context" />
