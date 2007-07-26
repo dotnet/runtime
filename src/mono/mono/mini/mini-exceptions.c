@@ -29,24 +29,11 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
 #include "trace.h"
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #include <unistd.h>
-#include <sys/mman.h>
-#endif
-
-/* FreeBSD and NetBSD need SA_STACK and MAP_ANON re-definitions */
-#	if defined(__FreeBSD__) || defined(__NetBSD__) 
-#		ifndef SA_STACK
-#			define SA_STACK SA_ONSTACK
-#		endif
-#		ifndef MAP_ANONYMOUS
-#			define MAP_ANONYMOUS MAP_ANON
-#		endif
-#	endif /* BSDs */
 
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
@@ -934,6 +921,10 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
+#ifndef MONO_ARCH_USE_SIGACTION
+#error "Can't use sigaltstack without sigaction"
+#endif
+
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {
@@ -982,7 +973,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	tls->stack_size = stsize + getpagesize ();
 
 	/* Setup an alternate signal stack */
-	tls->signal_stack = mmap (0, MONO_ARCH_SIGNAL_STACK_SIZE, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	tls->signal_stack = mono_valloc (0, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_PRIVATE|MONO_MMAP_ANON);
 	tls->signal_stack_size = MONO_ARCH_SIGNAL_STACK_SIZE;
 
 	g_assert (tls->signal_stack);
@@ -1006,7 +997,19 @@ mono_free_altstack (MonoJitTlsData *tls)
 	g_assert (err == 0);
 
 	if (tls->signal_stack)
-		munmap (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE);
+		mono_vfree (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE);
+}
+
+#else /* !MONO_ARCH_SIGSEGV_ON_ALTSTACK */
+
+void
+mono_setup_altstack (MonoJitTlsData *tls)
+{
+}
+
+void
+mono_free_altstack (MonoJitTlsData *tls)
+{
 }
 
 #endif /* MONO_ARCH_SIGSEGV_ON_ALTSTACK */

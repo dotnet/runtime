@@ -8766,10 +8766,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 #endif
 
 	mono_arch_setup_jit_tls_data (jit_tls);
-
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	mono_setup_altstack (jit_tls);
-#endif
 
 	return jit_tls;
 }
@@ -8815,9 +8812,7 @@ mini_thread_cleanup (MonoThread *thread)
 	if (jit_tls) {
 		mono_arch_free_jit_tls_data (jit_tls);
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 		mono_free_altstack (jit_tls);
-#endif
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
 		thread->jit_data = NULL;
@@ -11079,14 +11074,6 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-
-#ifndef MONO_ARCH_USE_SIGACTION
-#error "Can't use sigaltstack without sigaction"
-#endif
-
-#endif
-
 static void
 SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
@@ -11352,6 +11339,10 @@ add_signal_handler (int signo, gpointer handler)
 	sa.sa_sigaction = handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	if (signo == SIGSEGV)
+		sa.sa_flags |= SA_ONSTACK;
+#endif
 #else
 	sa.sa_handler = handler;
 	sigemptyset (&sa.sa_mask);
@@ -11376,10 +11367,6 @@ remove_signal_handler (int signo)
 static void
 mono_runtime_install_handlers (void)
 {
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	struct sigaction sa;
-#endif
-
 #ifdef PLATFORM_WIN32
 	win32_seh_init();
 	win32_seh_set_handler(SIGFPE, sigfpe_signal_handler);
@@ -11411,14 +11398,7 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (SIGABRT, sigabrt_signal_handler);
 
 	/* catch SIGSEGV */
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	sa.sa_sigaction = sigsegv_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
-	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
-#else
 	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
-#endif
 #endif /* PLATFORM_WIN32 */
 }
 
