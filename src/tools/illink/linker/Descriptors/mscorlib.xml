@@ -149,7 +149,9 @@
 		<type fullname="System.Runtime.CompilerServices.CallConvFastcall" />
 		<type fullname="System.Runtime.CompilerServices.CallConvThiscall" />
 		<type fullname="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
+		<type fullname="System.Runtime.CompilerServices.RequiredAttributeAttribute" />
 		<type fullname="System.Runtime.CompilerServices.RuntimeHelpers" />
+		<type fullname="System.Runtime.CompilerServices.TypeForwardedToAttribute" />
 		<type fullname="System.Runtime.InteropServices.DllImportAttribute" />
 		<type fullname="System.Runtime.InteropServices.GCHandle" />
 		<type fullname="System.Runtime.InteropServices.GuidAttribute" />
