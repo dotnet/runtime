@@ -70,16 +70,17 @@ namespace Mono.Linker.Steps {
 		{
 			Annotations.SetAction (assembly, AssemblyAction.Link);
 
-			MarkMethod (assembly.EntryPoint);
+			Annotations.Mark (assembly.EntryPoint.DeclaringType);
+			MarkMethod (assembly.EntryPoint, MethodAction.Parse);
 		}
 
 		static void MarkMethods (ICollection methods)
 		{
 			foreach (MethodDefinition method in methods)
-				MarkMethod (method);
+				MarkMethod (method, MethodAction.ForceParse);
 		}
 
-		static void MarkMethod (MethodDefinition method)
+		static void MarkMethod (MethodDefinition method, MethodAction action)
 		{
 			Annotations.Mark (method);
 			Annotations.SetAction (method, MethodAction.ForceParse);
