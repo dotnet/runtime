@@ -1,3 +1,7 @@
+2007-07-26  Jb Evain  <jbevain@novell.com>
+
+	* scripts/smcs.in: use smcs.exe.
+
 2007-07-24  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: version bump -> 1.2.5
