@@ -45,7 +45,7 @@ MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/System.Core.info	\
 	masterinfos/silverlight/System.Xml.Core.info	\
 
-LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link
+LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 #LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus -s Mono.Tuner.InjectAttributes,InjectAttributes:OutputStep
 LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus:OutputStep
 
