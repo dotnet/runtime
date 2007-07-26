@@ -83,7 +83,7 @@ namespace Mono.Linker.Steps {
 		static void MarkMethod (MethodDefinition method, MethodAction action)
 		{
 			Annotations.Mark (method);
-			Annotations.SetAction (method, MethodAction.ForceParse);
+			Annotations.SetAction (method, action);
 		}
 	}
 }
