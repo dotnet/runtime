@@ -26,6 +26,14 @@ static void error_init(void)
 	g_assert (ret == 0);
 }
 
+void _wapi_error_cleanup (void)
+{
+	int ret;
+
+	ret = pthread_key_delete (error_key);
+	g_assert (ret == 0);
+}
+
 /**
  * GetLastError:
  *

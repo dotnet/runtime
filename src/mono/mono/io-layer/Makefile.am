@@ -47,6 +47,7 @@ OTHER_SRC = \
 	context.h		\
 	critical-sections.c	\
 	critical-sections.h	\
+	critical-section-private.h	\
 	error.c			\
 	error.h			\
 	events.c		\

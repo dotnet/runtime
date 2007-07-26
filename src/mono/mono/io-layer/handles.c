@@ -30,6 +30,7 @@
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/process-private.h>
+#include <mono/io-layer/critical-section-private.h>
 
 #undef DEBUG
 #undef DEBUG_REFS
@@ -110,6 +111,7 @@ mono_mutex_t _wapi_global_signal_mutex;
 pthread_cond_t _wapi_global_signal_cond;
 
 int _wapi_sem_id;
+gboolean _wapi_has_shut_down = FALSE;
 
 /* Use this instead of getpid(), to cope with linuxthreads.  It's a
  * function rather than a variable lookup because we need to get at
@@ -184,6 +186,20 @@ static void handle_cleanup (void)
 	}
 	
 	_wapi_shm_semaphores_remove ();
+
+	mono_mutex_destroy(&_wapi_global_signal_mutex);
+	pthread_cond_destroy(&_wapi_global_signal_cond);
+}
+
+void _wapi_cleanup ()
+{
+	g_assert (_wapi_has_shut_down == FALSE);
+	
+	_wapi_has_shut_down = TRUE;
+
+	_wapi_critical_section_cleanup ();
+	_wapi_error_cleanup ();
+	_wapi_thread_cleanup ();
 }
 
 static mono_once_t shared_init_once = MONO_ONCE_INIT;
@@ -232,6 +248,8 @@ static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
 				      WapiHandleType type,
 				      gpointer handle_specific)
 {
+	g_assert (_wapi_has_shut_down == FALSE);
+	
 	handle->type = type;
 	handle->timestamp = (guint32)(time (NULL) & 0xFFFFFFFF);
 	handle->signalled = FALSE;
@@ -246,6 +264,8 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 			       WapiHandleType type, gpointer handle_specific)
 {
 	int thr_ret;
+	
+	g_assert (_wapi_has_shut_down == FALSE);
 	
 	handle->type = type;
 	handle->signalled = FALSE;
@@ -271,6 +291,8 @@ static guint32 _wapi_handle_new_shared (WapiHandleType type,
 	guint32 offset;
 	static guint32 last = 1;
 	int thr_ret;
+	
+	g_assert (_wapi_has_shut_down == FALSE);
 	
 	/* Leave the first slot empty as a guard */
 again:
@@ -327,6 +349,8 @@ static guint32 _wapi_handle_new_internal (WapiHandleType type,
 	static guint32 last = 0;
 	gboolean retry = FALSE;
 	
+	g_assert (_wapi_has_shut_down == FALSE);
+	
 	/* A linear scan should be fast enough.  Start from the last
 	 * allocation, assuming that handles are allocated more often
 	 * than they're freed. Leave the space reserved for file
@@ -371,6 +395,8 @@ gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
+	
+	g_assert (_wapi_has_shut_down == FALSE);
 	
 	mono_once (&shared_init_once, shared_init);
 	
@@ -452,6 +478,8 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	int thr_ret, i, k;
 	struct _WapiHandleShared *shared;
 	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
+	
+	g_assert (_wapi_has_shut_down == FALSE);
 	
 	mono_once (&shared_init_once, shared_init);
 
@@ -565,6 +593,8 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 {
 	struct _WapiHandleUnshared *handle;
 	int thr_ret;
+	
+	g_assert (_wapi_has_shut_down == FALSE);
 	
 	mono_once (&shared_init_once, shared_init);
 	

@@ -144,6 +144,7 @@ typedef pthread_mutexattr_t mono_mutexattr_t;
 #define mono_mutexattr_getprotocol(attr,protocol) pthread_mutexattr_getprotocol (attr, protocol)
 #define mono_mutexattr_setprioceiling(attr,prioceiling) pthread_mutexattr_setprioceiling (attr, prioceiling)
 #define mono_mutexattr_getprioceiling(attr,prioceiling) pthread_mutexattr_getprioceiling (attr, prioceiling)
+#define mono_mutexattr_destroy(attr) pthread_mutexattr_destroy (attr)
 
 #define mono_mutex_init(mutex,attr) pthread_mutex_init (mutex, attr)
 #define mono_mutex_lock(mutex) pthread_mutex_lock (mutex)

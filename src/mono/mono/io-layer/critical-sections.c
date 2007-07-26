@@ -11,7 +11,8 @@
 #include <glib.h>
 #include <pthread.h>
 
-#include "mono/io-layer/wapi.h"
+#include <mono/io-layer/wapi.h>
+#include <mono/io-layer/critical-section-private.h>
 
 #include "mono-mutex.h"
 
@@ -38,6 +39,11 @@ static void attr_init(void)
 	
 	ret = mono_mutexattr_settype(&attr, MONO_MUTEX_RECURSIVE);
 	g_assert (ret == 0);
+}
+
+void _wapi_critical_section_cleanup (void)
+{
+	mono_mutexattr_destroy (&attr);
 }
 
 /**

@@ -65,6 +65,17 @@ static void thread_ops_init (void)
 					    WAPI_HANDLE_CAP_WAIT);
 }
 
+void _wapi_thread_cleanup (void)
+{
+	int ret;
+	
+	ret = pthread_key_delete (thread_hash_key);
+	g_assert (ret == 0);
+	
+	ret = pthread_key_delete (thread_attached_key);
+	g_assert (ret == 0);
+}
+
 /* Called by thread_exit(), but maybe indirectly by
  * mono_thread_manage() via mono_thread_signal_self() too
  */

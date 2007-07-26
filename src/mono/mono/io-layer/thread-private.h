@@ -75,5 +75,6 @@ extern void _wapi_thread_disown_mutex (gpointer mutex);
 extern gpointer _wapi_thread_handle_from_id (pthread_t tid);
 extern void _wapi_thread_set_termination_details (gpointer handle,
 						  guint32 exitstatus);
+extern void _wapi_thread_cleanup (void);
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

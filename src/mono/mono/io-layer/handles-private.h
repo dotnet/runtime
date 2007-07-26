@@ -38,6 +38,7 @@ extern guint32 _wapi_fd_reserve;
 extern mono_mutex_t _wapi_global_signal_mutex;
 extern pthread_cond_t _wapi_global_signal_cond;
 extern int _wapi_sem_id;
+extern gboolean _wapi_has_shut_down;
 
 extern pid_t _wapi_getpid (void);
 extern gpointer _wapi_handle_new (WapiHandleType type,

@@ -30,7 +30,7 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 	sleepytime.tv_sec = _WAPI_HANDLE_COLLECTION_UPDATE_INTERVAL;
 	sleepytime.tv_nsec = 0;
 
-	while (1) {
+	while (_wapi_has_shut_down == FALSE) {
 		nanosleep (&sleepytime, NULL);
 
 		//_wapi_handle_dump ();
@@ -42,6 +42,8 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 		 */
 		_wapi_process_reap ();
 	}
+
+	pthread_exit (NULL);
 
 #ifndef __GNUC__
 	/* Even though we tell gcc that this function doesn't return,
