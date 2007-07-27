@@ -262,6 +262,14 @@ dsh (const char *label, MonoImage *meta, MonoStreamHeader *sh)
 }
 
 static void
+dump_metadata_header (MonoImage *meta)
+{
+	printf ("\nMetadata header:\n");
+	printf ("           Version: %d.%d\n", meta->md_version_major, meta->md_version_minor);
+	printf ("    Version string: %s\n", meta->version);
+}
+
+static void
 dump_metadata_ptrs (MonoImage *meta)
 {
 	printf ("\nMetadata pointers:\n");
@@ -276,7 +284,9 @@ static void
 dump_metadata (MonoImage *meta)
 {
 	int table;
-	
+
+	dump_metadata_header (meta);
+
 	dump_metadata_ptrs (meta);
 
 	printf ("Rows:\n");
