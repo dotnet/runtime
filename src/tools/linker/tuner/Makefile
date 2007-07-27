@@ -7,6 +7,7 @@ MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a.zip
 
 LINKER_PLUGINS = \
 	Mono.Tuner/PrintStatus.dll	\
+	Mono.Tuner/RemoveSerialization.dll	\
 #	Mono.Tuner/InjectAttributes.dll	\
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
@@ -55,7 +56,7 @@ MCS_MASTER_INFOS =	\
 
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 #LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus -s Mono.Tuner.InjectAttributes,InjectAttributes:OutputStep
-LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus:OutputStep
+LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus:OutputStep -s Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep
 
 tune: masterinfos/silverlight.infos
 	MONO_PATH="Mono.Tuner:$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS) $(MCS_MASTER_INFOS:%=-i %)

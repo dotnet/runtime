@@ -62,17 +62,15 @@ namespace Mono.Tuner {
 					ProcessType (type);
 		}
 
-		static bool RemoveIfImplements (TypeDefinition type, string name)
+		static void RemoveInterface (TypeDefinition type, string name)
 		{
 			for (int i = 0; i < type.Interfaces.Count; i++) {
 				TypeReference iface = type.Interfaces [i];
 				if (iface.FullName == name) {
 					type.Interfaces.RemoveAt (i);
-					return true;
+					return;
 				}
 			}
-
-			return false;
 		}
 
 		static void RemoveSerializableFlag (TypeDefinition type)
@@ -84,13 +82,12 @@ namespace Mono.Tuner {
 		{
 			RemoveSerializableFlag (type);
 
-			if (RemoveIfImplements (type, _ISerializable)) {
-				RemoveConstructor (type, _SerializationInfo, _StreamingContext);
-				RemoveInterfaceMethod (type, _ISerializable, _GetObjectData, _SerializationInfo, _StreamingContext);
-			}
+			RemoveInterface (type, _ISerializable);
+			RemoveConstructor (type, _SerializationInfo, _StreamingContext);
+			RemoveInterfaceMethod (type, _ISerializable, _GetObjectData, _SerializationInfo, _StreamingContext);
 
-			if (RemoveIfImplements (type, _IDeserializationCallback))
-				RemoveInterfaceMethod (type, _IDeserializationCallback, _OnDeserialization, Constants.Object);
+			RemoveInterface (type, _IDeserializationCallback);
+			RemoveInterfaceMethod (type, _IDeserializationCallback, _OnDeserialization, Constants.Object);
 		}
 
 		static bool ParametersMatch (IMethodSignature meth, string [] parameters)
