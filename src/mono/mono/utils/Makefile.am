@@ -43,6 +43,7 @@ libmonoutilsinclude_HEADERS = \
 	mono-logger.h	\
 	mono-hash.h	\
 	mono-math.h	\
+	mono-membar.h	\
 	mono-path.h	\
 	mono-poll.h	\
 	mono-uri.h	\
