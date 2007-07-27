@@ -1,3 +1,9 @@
+2007-07-27  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/RemoveSerialization.cs:
+		Add a new linker step to remove automatically everything
+		serialization related.
+
 2007-07-18  Jb Evain  <jbevain@novell.com>
 
 	* tuner: new tool to tune the Mono assemblies from a full 2.1
