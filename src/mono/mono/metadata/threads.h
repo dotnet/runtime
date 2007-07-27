@@ -11,8 +11,13 @@
 #ifndef _MONO_METADATA_THREADS_H_
 #define _MONO_METADATA_THREADS_H_
 
+#include <mono/utils/mono-membar.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
+
+typedef struct {
+	gpointer hazard_pointers [2];
+} MonoThreadHazardPointers;
 
 G_BEGIN_DECLS
 
@@ -64,6 +69,20 @@ extern gboolean mono_thread_interruption_requested (void);
 extern void mono_thread_interruption_checkpoint (void);
 extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
+
+typedef void (*MonoHazardousFreeFunc) (gpointer p);
+
+extern void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func);
+
+extern MonoThreadHazardPointers* mono_hazard_pointer_get (void);
+
+#define mono_hazard_pointer_set(hp,i,v)	\
+	( g_assert ((i) == 0 || (i) == 1), \
+		(hp)->hazard_pointers [(i)] = (v), \
+		mono_memory_write_barrier () )
+#define mono_hazard_pointer_clear(hp,i)	\
+	( g_assert ((i) == 0 || (i) == 1), \
+		(hp)->hazard_pointers [(i)] = NULL )
 
 G_END_DECLS
 

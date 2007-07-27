@@ -523,6 +523,7 @@ typedef struct {
 	gulong imt_max_collisions_in_slot;
 	gulong imt_method_count_when_max_collisions;
 	gulong imt_thunks_size;
+	gulong hazardous_pointer_count;
 	gboolean enabled;
 } MonoStats;
 

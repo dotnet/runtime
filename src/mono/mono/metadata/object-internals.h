@@ -275,7 +275,9 @@ struct _MonoThread {
 	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
 	guint8	apartment_state;
-	gpointer unused5;
+	gssize small_id;    /* A small, unique id, used for the hazard
+			       pointer table.  Should be changed to a
+			       guint32 at the next corlib version bump. */
 	gpointer unused6;
 	gpointer unused7;
 };

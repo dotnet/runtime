@@ -33,6 +33,8 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-membar.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -75,6 +77,11 @@ typedef struct {
 	int idx;
 	int offset;
 } StaticDataInfo;
+
+typedef struct {
+	gpointer p;
+	MonoHazardousFreeFunc free_func;
+} DelayedFreeItem;
 
 /* Number of cached culture objects in the MonoThread->cached_culture_info array
  * (per-type): we use the first NUM entries for CultureInfo and the last for
@@ -152,6 +159,23 @@ static gint32 thread_interruption_requested = 0;
 /* Event signaled when a thread changes its background mode */
 static HANDLE background_change_event;
 
+/* The table for small ID assignment */
+static CRITICAL_SECTION small_id_mutex;
+static int small_id_table_size = 0;
+static int small_id_next = 0;
+static int highest_small_id = -1;
+static MonoThread **small_id_table = NULL;
+
+/* The hazard table */
+#define HAZARD_TABLE_MAX_SIZE	16384 /* There cannot be more threads than this number. */
+static volatile int hazard_table_size = 0;
+static MonoThreadHazardPointers * volatile hazard_table = NULL;
+
+/* The table where we keep pointers to blocks to be freed but that
+   have to wait because they're guarded by a hazard pointer. */
+static CRITICAL_SECTION delayed_free_table_mutex;
+static GArray *delayed_free_table = NULL;
+
 guint32
 mono_thread_get_tls_key (void)
 {
@@ -216,6 +240,165 @@ static void handle_remove(gsize tid)
 	 */
 }
 
+/*
+ * Allocate a small thread id.
+ *
+ * FIXME: The biggest part of this function is very similar to
+ * domain_id_alloc() in domain.c and should be merged.
+ */
+static int
+small_id_alloc (MonoThread *thread)
+{
+	int id = -1, i;
+
+	EnterCriticalSection (&small_id_mutex);
+
+	if (!small_id_table) {
+		small_id_table_size = 2;
+		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoThread*), NULL);
+	}
+	for (i = small_id_next; i < small_id_table_size; ++i) {
+		if (!small_id_table [i]) {
+			id = i;
+			break;
+		}
+	}
+	if (id == -1) {
+		for (i = 0; i < small_id_next; ++i) {
+			if (!small_id_table [i]) {
+				id = i;
+				break;
+			}
+		}
+	}
+	if (id == -1) {
+		MonoThread **new_table;
+		int new_size = small_id_table_size * 2;
+		if (new_size >= (1 << 16))
+			g_assert_not_reached ();
+		id = small_id_table_size;
+		new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoThread*), NULL);
+		memcpy (new_table, small_id_table, small_id_table_size * sizeof (void*));
+		mono_gc_free_fixed (small_id_table);
+		small_id_table = new_table;
+		small_id_table_size = new_size;
+	}
+	thread->small_id = id;
+	g_assert (small_id_table [id] == NULL);
+	small_id_table [id] = thread;
+	small_id_next++;
+	if (small_id_next > small_id_table_size)
+		small_id_next = 0;
+
+	if (id >= hazard_table_size) {
+		gpointer page_addr;
+		int pagesize = mono_pagesize ();
+		int num_pages = (hazard_table_size * sizeof (MonoThreadHazardPointers) + pagesize - 1) / pagesize;
+
+		if (hazard_table == NULL) {
+			hazard_table = mono_valloc (NULL,
+				sizeof (MonoThreadHazardPointers) * HAZARD_TABLE_MAX_SIZE,
+				MONO_MMAP_NONE);
+		}
+
+		g_assert (hazard_table != NULL);
+		page_addr = (guint8*)hazard_table + num_pages * pagesize;
+
+		g_assert (id < HAZARD_TABLE_MAX_SIZE);
+
+		mono_mprotect (page_addr, pagesize, MONO_MMAP_READ | MONO_MMAP_WRITE);
+
+		++num_pages;
+		hazard_table_size = num_pages * pagesize / sizeof (MonoThreadHazardPointers);
+
+		g_assert (id < hazard_table_size);
+
+		hazard_table [id].hazard_pointers [0] = NULL;
+		hazard_table [id].hazard_pointers [1] = NULL;
+	}
+
+	if (id > highest_small_id) {
+		highest_small_id = id;
+		mono_memory_write_barrier ();
+	}
+
+	LeaveCriticalSection (&small_id_mutex);
+
+	return id;
+}
+
+static void
+small_id_free (int id)
+{
+	g_assert (id >= 0 && id < small_id_table_size);
+	g_assert (small_id_table [id] != NULL);
+
+	small_id_table [id] = NULL;
+}
+
+static gboolean
+is_pointer_hazardous (gpointer p)
+{
+	int i;
+	int highest = highest_small_id;
+
+	g_assert (highest < hazard_table_size);
+
+	for (i = 0; i <= highest; ++i) {
+		if (hazard_table [i].hazard_pointers [0] == p
+				|| hazard_table [i].hazard_pointers [1] == p)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+MonoThreadHazardPointers*
+mono_hazard_pointer_get (void)
+{
+	MonoThread *current_thread = mono_thread_current ();
+
+	g_assert (current_thread && current_thread->small_id >= 0);
+
+	return &hazard_table [current_thread->small_id];
+}
+
+void
+mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func)
+{
+	if (is_pointer_hazardous (p)) {
+		DelayedFreeItem item = { p, free_func };
+
+		++mono_stats.hazardous_pointer_count;
+
+		EnterCriticalSection (&delayed_free_table_mutex);
+		g_array_append_val (delayed_free_table, item);
+		LeaveCriticalSection (&delayed_free_table_mutex);
+	} else {
+		DelayedFreeItem item;
+
+		free_func (p);
+
+		if (delayed_free_table->len == 0)
+			return;
+
+		item.p = NULL;
+		EnterCriticalSection (&delayed_free_table_mutex);
+		if (delayed_free_table->len > 0) {
+			DelayedFreeItem item = g_array_index (delayed_free_table, DelayedFreeItem, 0);
+
+			if (!is_pointer_hazardous (item.p))
+				g_array_remove_index_fast (delayed_free_table, 0);
+			else
+				item.p = NULL;
+		}
+		LeaveCriticalSection (&delayed_free_table_mutex);
+
+		if (item.p != NULL)
+			item.free_func (item.p);
+	}
+}
+
 static void thread_cleanup (MonoThread *thread)
 {
 	g_assert (thread != NULL);
@@ -241,6 +424,9 @@ static void thread_cleanup (MonoThread *thread)
 
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread);
+
+	small_id_free (thread->small_id);
+	thread->small_id = -2;
 }
 
 static guint32 WINAPI start_wrapper(void *data)
@@ -402,6 +588,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	thread->handle=thread_handle;
 	thread->tid=tid;
 	thread->apartment_state=ThreadApartmentState_Unknown;
+	small_id_alloc (thread);
 
 	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 						  
@@ -485,6 +672,7 @@ mono_thread_attach (MonoDomain *domain)
 	thread->handle=thread_handle;
 	thread->tid=tid;
 	thread->apartment_state=ThreadApartmentState_Unknown;
+	small_id_alloc (thread);
 	thread->stack_ptr = &tid;
 	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 
@@ -565,6 +753,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		return NULL;
 	}
 
+	this->small_id = -1;
+
 	if ((this->state & ThreadState_Aborted) != 0) {
 		mono_monitor_exit (this->synch_lock);
 		return this;
@@ -596,6 +786,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		
 		this->handle=thread;
 		this->tid=tid;
+		small_id_alloc (this);
 
 		/* Don't call handle_store() here, delay it to Start.
 		 * We can't join a thread (trying to will just block
@@ -1888,6 +2079,8 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
+	InitializeCriticalSection(&delayed_free_table_mutex);
+	InitializeCriticalSection(&small_id_mutex);
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert(background_change_event != NULL);
 	
@@ -1899,6 +2092,8 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
+
+	delayed_free_table = g_array_new (FALSE, FALSE, sizeof (DelayedFreeItem));
 
 	/* Get a pseudo handle to the current process.  This is just a
 	 * kludge so that wapi can build a process handle if needed.
@@ -1932,8 +2127,12 @@ void mono_thread_cleanup (void)
 	DeleteCriticalSection (&threads_mutex);
 	DeleteCriticalSection (&interlocked_mutex);
 	DeleteCriticalSection (&contexts_mutex);
+	DeleteCriticalSection (&delayed_free_table_mutex);
+	DeleteCriticalSection (&small_id_mutex);
 	CloseHandle (background_change_event);
 #endif
+
+	g_array_free (delayed_free_table, TRUE);
 
 	TlsFree (current_object_key);
 }

@@ -11964,6 +11964,8 @@ print_jit_stats (void)
 		g_print ("IMT methods at max col: %ld\n", mono_stats.imt_method_count_when_max_collisions);
 		g_print ("IMT thunks size:        %ld\n", mono_stats.imt_thunks_size);
 
+		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
+
 		if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
