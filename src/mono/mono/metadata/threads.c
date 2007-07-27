@@ -2076,6 +2076,7 @@ ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
+	MONO_GC_REGISTER_ROOT (small_id_table);
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
