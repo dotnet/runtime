@@ -1191,6 +1191,25 @@ mono_jit_init (const char *file)
 	return mini_init (file, NULL);
 }
 
+/**
+ * mono_jit_init_version:
+ * @file: the initial assembly to load
+ * @runtime_version: the version of the runtime to load
+ *
+ * Use this version when you want to force a particular runtime
+ * version to be used.  By default Mono will pick the runtime that is
+ * referenced by the initial assembly (specified in @file), this
+ * routine allows programmers to specify the actual runtime to be used
+ * as the initial runtime is inherited by all future assemblies loaded
+ * (since Mono does not support having more than one mscorlib runtime
+ * loaded at once).
+ *
+ * The @runtime_version can be one of these strings: "v1.1.4322" for
+ * the 1.1 runtime or "v2.0.50727"  for the 2.0 runtime. 
+ *
+ * Returns: the MonoDomain representing the domain where the assembly
+ * was loaded.
+ */
 MonoDomain * 
 mono_jit_init_version (const char *file, const char *runtime_version)
 {
