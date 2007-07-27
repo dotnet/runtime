@@ -13,7 +13,7 @@ LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
 LINKER_SOURCES = $(LINKER_PLUGINS:.dll=.cs)
 
-DISTFILES = $(LINKER_PLUGINS)
+DISTFILES = README $(LINKER_PLUGINS)
 
 ifneq (net_2_1, $(PROFILE))
 all-local: $(LINKER_PLUGINS)
@@ -27,11 +27,19 @@ else
 install-local:
 endif
 
+uninstall-local:
+
 clean-local:
 	rm -f Mono.Tuner/*.dll
 	rm -f Mono.Tuner/*.mdb
 	rm -f Mono.Tuner/*.pdb
 	rm -rf masterinfos*
+
+dist-local: dist-default
+
+test-local:
+
+run-test-local run-test-ondotnet-local:
 
 WORKING_DIR = $(mono_libdir)/mono/2.1
 
