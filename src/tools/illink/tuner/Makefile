@@ -18,23 +18,29 @@ DISTFILES = README $(LINKER_PLUGINS)
 
 ifneq (net_2_1, $(PROFILE))
 all-local: $(LINKER_PLUGINS)
-else
-all-local:
-endif
 
-ifeq (net_2_1, $(PROFILE))
-install-local: tune
-else
 install-local:
-endif
-
-uninstall-local:
 
 clean-local:
 	rm -f Mono.Tuner/*.dll
 	rm -f Mono.Tuner/*.mdb
 	rm -f Mono.Tuner/*.pdb
+
+else
+all-local:
+
+install-local: tune
+
+clean-local:
 	rm -rf masterinfos*
+endif
+
+ifeq (net_2_1, $(PROFILE))
+
+else
+endif
+
+uninstall-local:
 
 dist-local: dist-default
 
