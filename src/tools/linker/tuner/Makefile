@@ -27,17 +27,12 @@ clean-local:
 	rm -f Mono.Tuner/*.pdb
 
 else
-all-local:
+all-local: tune
 
-install-local: tune
+install-local:
 
 clean-local:
 	rm -rf masterinfos*
-endif
-
-ifeq (net_2_1, $(PROFILE))
-
-else
 endif
 
 uninstall-local:
@@ -48,7 +43,7 @@ test-local:
 
 run-test-local run-test-ondotnet-local:
 
-WORKING_DIR = $(mono_libdir)/mono/2.1
+WORKING_DIR = $(topdir)/class/lib/net_2_1
 
 masterinfos/silverlight.infos:
 	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
