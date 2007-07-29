@@ -60,7 +60,7 @@ LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus:OutputStep -s Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep
 
 tune: masterinfos/silverlight.infos
-	MONO_PATH="Mono.Tuner:$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS) $(MCS_MASTER_INFOS:%=-i %)
+	MONO_PATH="Mono.Tuner:$(topdir)/class/lib/net_2_0:$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS) $(MCS_MASTER_INFOS:%=-i %)
 
 %.dll: %.cs
 	$(CSCOMPILE) /t:library $^
