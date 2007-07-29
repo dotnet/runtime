@@ -264,6 +264,17 @@ This is Mono.
 		Whether you want to build libraries that are still not
 	  	completed (The 2.0 APIs).   It defaults to `yes'.
 
+	--with-moonlight=yes,no
+
+		Whether you want to generate the Silverlight/Moonlight
+		libraries and toolchain in addition to the default
+		(1.1 and 2.0 APIs).
+
+		This will produce the `smcs' compiler which will reference
+		the Silvelright modified assemblies (mscorlib.dll,
+		System.dll, System.Code.dll and System.Xml.Core.dll) and turn
+	  	on the LINQ extensions for the compiler.
+
 	--with-libgdiplus=installed,sibling,<path>
 
 		This is used to configure where should Mono look for
