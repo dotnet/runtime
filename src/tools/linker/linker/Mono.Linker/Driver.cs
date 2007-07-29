@@ -53,6 +53,7 @@ namespace Mono.Linker {
 			} catch (Exception e) {
 				Console.WriteLine ("Fatal error in {0}", _linker);
 				Console.WriteLine (e);
+				return 1;
 			}
 
 			return 0;
