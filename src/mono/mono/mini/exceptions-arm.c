@@ -337,25 +337,6 @@ mono_arch_get_throw_exception_by_name (void)
 	return start;
 }	
 
-static MonoArray *
-glist_to_array (GList *list, MonoClass *eclass) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
-}
-
 /* mono_arch_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
@@ -465,45 +446,60 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	return NULL;
 }
 
+void
+mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+#if BROKEN_LINUX
+	struct ucontext *uc = sigctx;
+
+	mctx->eip = uc->uc_mcontext.gregs [ARMREG_PC];
+	mctx->ebp = uc->uc_mcontext.gregs [ARMREG_SP];
+	memcpy (&mctx->regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
+	/* memcpy (&mctx->fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
+#else
+	my_ucontext *my_uc = sigctx;
+
+	mctx->eip = my_uc->sig_ctx.arm_pc;
+	mctx->ebp = my_uc->sig_ctx.arm_sp;
+	memcpy (&mctx->regs, &my_uc->sig_ctx.arm_r4, sizeof (gulong) * 8);
+#endif
+}
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+#if BROKEN_LINUX
+	struct ucontext *uc = ctx;
+
+	uc->uc_mcontext.gregs [ARMREG_PC] = mctx->eip;
+	uc->uc_mcontext.gregs [ARMREG_SP] = mctx->ebp;
+	memcpy (&uc->uc_mcontext.gregs [ARMREG_R4], &mctx->regs, sizeof (gulong) * 8);
+	/* memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);*/
+#else
+	my_ucontext *my_uc = ctx;
+
+	my_uc->sig_ctx.arm_pc = mctx->eip;
+	my_uc->sig_ctx.arm_sp = mctx->ebp;
+	memcpy (&my_uc->sig_ctx.arm_r4, &mctx->regs, sizeof (gulong) * 8);
+#endif
+}
+
 /*
  * This is the function called from the signal handler
  */
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 {
-#if BROKEN_LINUX
-	struct ucontext *uc = ctx;
-#else
-	my_ucontext *my_uc = ctx;
-#endif
 	MonoContext mctx;
 	gboolean result;
 
-#if BROKEN_LINUX
-	mctx.eip = uc->uc_mcontext.gregs [ARMREG_PC];
-	mctx.ebp = uc->uc_mcontext.gregs [ARMREG_SP];
-	memcpy (&mctx.regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
-	/* memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
-#else
-	mctx.eip = my_uc->sig_ctx.arm_pc;
-	mctx.ebp = my_uc->sig_ctx.arm_sp;
-	memcpy (&mctx.regs, &my_uc->sig_ctx.arm_r4, sizeof (gulong) * 8);
-#endif
+	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 
 	result = mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */
-#if BROKEN_LINUX
-	uc->uc_mcontext.gregs [ARMREG_PC] = mctx.eip;
-	uc->uc_mcontext.gregs [ARMREG_SP] = mctx.ebp;
-	memcpy (&uc->uc_mcontext.gregs [ARMREG_R4], &mctx.regs, sizeof (gulong) * 8);
-	/* memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);*/
-#else
-	my_uc->sig_ctx.arm_pc = mctx.eip;
-	my_uc->sig_ctx.arm_sp = mctx.ebp;
-	memcpy (&my_uc->sig_ctx.arm_r4, &mctx.regs, sizeof (gulong) * 8);
-#endif
+	mono_arch_monoctx_to_sigctx (&mctx, ctx);
 	return result;
 }
 
