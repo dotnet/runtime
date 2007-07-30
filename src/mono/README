@@ -275,6 +275,8 @@ This is Mono.
 		System.dll, System.Code.dll and System.Xml.Core.dll) and turn
 	  	on the LINQ extensions for the compiler.
 
+		This option defaults to `no' and it is considered pre-alpha.
+
 	--with-libgdiplus=installed,sibling,<path>
 
 		This is used to configure where should Mono look for
