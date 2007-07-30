@@ -176,18 +176,16 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
  * Returns a pointer to a method which restores a previously saved sigcontext.
  * The first argument in r3 is the pointer to the context.
  */
-static gpointer
-arch_get_restore_context (void)
+gpointer
+mono_arch_get_restore_context (void)
 {
 	guint8 *code;
-	static guint8 start [128];
-	static int inited = 0;
+	static guint8 *start = NULL;
 
-	if (inited)
+	if (start)
 		return start;
-	inited = 1;
 
-	code = start;
+	code = start = mono_global_codeman_reserve (128);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
 	/* restore also the stack pointer */
 	ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
@@ -198,7 +196,7 @@ arch_get_restore_context (void)
 	/* never reached */
 	ppc_break (code);
 
-	g_assert ((code - start) < sizeof(start));
+	g_assert ((code - start) < 128);
 	mono_arch_flush_icache (start, code - start);
 	return start;
 }
@@ -213,17 +211,15 @@ arch_get_restore_context (void)
 static gpointer
 arch_get_call_filter (void)
 {
-	static guint8 start [320];
-	static int inited = 0;
+	static guint8 *start = NULL;
 	guint8 *code;
 	int alloc_size, pos, i;
 
-	if (inited)
+	if (start)
 		return start;
 
-	inited = 1;
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start;
+	code = start = mono_global_codeman_reserve (320);
 
 	/* save all the regs on the stack */
 	pos = 0;
@@ -268,7 +264,7 @@ arch_get_call_filter (void)
 
 	ppc_blr (code);
 
-	g_assert ((code - start) < sizeof(start));
+	g_assert ((code - start) < 320);
 	mono_arch_flush_icache (start, code - start);
 	return start;
 }
@@ -280,7 +276,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	MonoContext ctx;
 
 	if (!restore_context)
-		restore_context = arch_get_restore_context ();
+		restore_context = mono_arch_get_restore_context ();
 
 	/* adjust eip so that it point into the call instruction */
 	eip -= 4;
@@ -388,12 +384,13 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 gpointer
 mono_arch_get_rethrow_exception (void)
 {
-	static guint8 start [132];
+	static guint8 *start = NULL;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
+	start = mono_global_codeman_reserve (132);
+	mono_arch_get_throw_exception_generic (start, 132, FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -412,12 +409,13 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [132];
+	static guint8 *start = NULL;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
+	start = mono_global_codeman_reserve (132);
+	mono_arch_get_throw_exception_generic (start, 132, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -437,12 +435,13 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [168];
+	static guint8 *start = NULL;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
+	start = mono_global_codeman_reserve (168);
+	mono_arch_get_throw_exception_generic (start, 168, TRUE, FALSE);
 	inited = 1;
 	return start;
 }	
@@ -714,27 +713,27 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
  * This is the function called from the signal handler
  */
 #ifdef __APPLE__
-gboolean
-mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+
+void
+mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 {
 	struct ucontext *uc = ctx;
-	MonoContext mctx;
-	gboolean result;
-	
-	mctx.sc_ir = uc->uc_mcontext->ss.srr0;
-	mctx.sc_sp = uc->uc_mcontext->ss.r1;
-	memcpy (&mctx.regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx.fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
 
-	result = arch_handle_exception (&mctx, obj, test_only);
-	/* restore the context so that returning from the signal handler will invoke
-	 * the catch clause 
-	 */
-	uc->uc_mcontext->ss.srr0 = mctx.sc_ir;
-	uc->uc_mcontext->ss.r1 = mctx.sc_sp;
-	memcpy (&uc->uc_mcontext->ss.r13, &mctx.regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
-	return result;
+	mctx->sc_ir = uc->uc_mcontext->ss.srr0;
+	mctx->sc_sp = uc->uc_mcontext->ss.r1;
+	memcpy (&mctx->regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
+}
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+	struct ucontext *uc = ctx;
+
+	uc->uc_mcontext->ss.srr0 = mctx->sc_ir;
+	uc->uc_mcontext->ss.r1 = mctx->sc_sp;
+	memcpy (&uc->uc_mcontext->ss.r13, &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 gpointer
@@ -746,27 +745,26 @@ mono_arch_ip_from_context (void *sigctx)
 
 #else
 /* Linux */
-gboolean
-mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+void
+mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 {
 	struct ucontext *uc = ctx;
-	MonoContext mctx;
-	gboolean result;
-	
-	mctx.sc_ir = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
-	mctx.sc_sp = uc->uc_mcontext.uc_regs->gregs [PT_R1];
-	memcpy (&mctx.regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx.fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
 
-	result = arch_handle_exception (&mctx, obj, test_only);
-	/* restore the context so that returning from the signal handler will invoke
-	 * the catch clause 
-	 */
-	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = mctx.sc_ir;
-	uc->uc_mcontext.uc_regs->gregs [PT_R1] = mctx.sc_sp;
-	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx.regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx.fregs, sizeof (double) * MONO_SAVED_FREGS);
-	return result;
+	mctx->sc_ir = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
+	mctx->sc_sp = uc->uc_mcontext.uc_regs->gregs [PT_R1];
+	memcpy (&mctx->regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
+}
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+	struct ucontext *uc = ctx;
+
+	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = mctx->sc_ir;
+	uc->uc_mcontext.uc_regs->gregs [PT_R1] = mctx->sc_sp;
+	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 gpointer
@@ -777,6 +775,23 @@ mono_arch_ip_from_context (void *sigctx)
 }
 
 #endif
+
+gboolean
+mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+{
+	struct ucontext *uc = ctx;
+	MonoContext mctx;
+	gboolean result;
+
+	mono_arch_sigctx_to_monoctx (ctx, &mctx);
+
+	result = arch_handle_exception (&mctx, obj, test_only);
+	/* restore the context so that returning from the signal handler will invoke
+	 * the catch clause 
+	 */
+	mono_arch_monoctx_to_sigctx (&mctx, ctx);
+	return result;
+}
 
 /**
  * arch_handle_exception:
