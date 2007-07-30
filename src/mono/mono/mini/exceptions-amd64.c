@@ -749,3 +749,64 @@ mono_arch_ip_from_context (void *sigctx)
 #endif	
 }
 
+static void
+altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
+{
+	void (*restore_context) (MonoContext *);
+	MonoContext mctx;
+
+	restore_context = mono_arch_get_restore_context ();
+	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), test_only);
+	restore_context (&mctx);
+}
+
+void
+mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
+{
+#ifdef MONO_ARCH_USE_SIGACTION
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	guint64 *gregs = gregs_from_ucontext (ctx);
+	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)gregs [REG_RIP]);
+	gpointer *sp;
+	int frame_size;
+
+	if (stack_ovf) {
+		const char *method;
+		/* we don't do much now, but we can warn the user with a useful message */
+		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", (gpointer)gregs [REG_RIP], (gpointer)gregs [REG_RSP]);
+		if (ji && ji->method)
+			method = mono_method_full_name (ji->method, TRUE);
+		else
+			method = "Unmanaged";
+		fprintf (stderr, "At %s\n", method);
+		abort ();
+	}
+	if (!ji)
+		mono_handle_native_sigsegv (SIGSEGV, sigctx);
+	/* setup a call frame on the real stack so that control is returned there
+	 * and exception handling can continue.
+	 * The frame looks like:
+	 *   ucontext struct
+	 *   ...
+	 *   return ip
+	 * 128 is the size of the red zone
+	 */
+	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4 + 128;
+	frame_size += 15;
+	frame_size &= ~15;
+	sp = (gpointer)(gregs [REG_RSP] & ~15);
+	sp = (gpointer)((char*)sp - frame_size);
+	/* the arguments must be aligned */
+	sp [-1] = (gpointer)gregs [REG_RIP];
+	/* may need to adjust pointers in the new struct copy, depending on the OS */
+	memcpy (sp + 4, ctx, sizeof (ucontext_t));
+	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
+	gregs [REG_RIP] = (unsigned long)altstack_handle_and_restore;
+	gregs [REG_RSP] = (unsigned long)(sp - 1);
+	gregs [REG_RDI] = (unsigned long)(sp + 4);
+	gregs [REG_RSI] = 0;
+	gregs [REG_RDX] = 0;
+#endif
+}
+

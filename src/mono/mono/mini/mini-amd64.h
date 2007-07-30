@@ -74,7 +74,7 @@ struct sigcontext {
 };
 #endif  // sun, Solaris x86
 
-#define MONO_ARCH_SIGNAL_STACK_SIZE (64 * 1024)
+#define MONO_ARCH_SIGNAL_STACK_SIZE (16 * 1024)
 
 #define MONO_ARCH_CPU_SPEC amd64_desc
 
