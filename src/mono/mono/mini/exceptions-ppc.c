@@ -774,6 +774,67 @@ mono_arch_ip_from_context (void *sigctx)
 	return (gpointer)uc->uc_mcontext.uc_regs->gregs [PT_NIP];
 }
 
+static void
+altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
+{
+	void (*restore_context) (MonoContext *);
+	MonoContext mctx;
+
+	restore_context = mono_arch_get_restore_context ();
+	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+	arch_handle_exception (&mctx, obj, test_only);
+	restore_context (&mctx);
+}
+
+void
+mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
+{
+#ifdef MONO_ARCH_USE_SIGACTION
+	ucontext_t *uc = (ucontext_t*)sigctx;
+	ucontext_t *uc_copy;
+	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (sigctx));
+	gpointer *sp;
+	int frame_size;
+
+	if (stack_ovf) {
+		const char *method;
+		/* we don't do much now, but we can warn the user with a useful message */
+		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), uc->uc_mcontext.uc_regs->gregs [PT_R1]);
+		if (ji && ji->method)
+			method = mono_method_full_name (ji->method, TRUE);
+		else
+			method = "Unmanaged";
+		fprintf (stderr, "At %s\n", method);
+		abort ();
+	}
+	if (!ji)
+		mono_handle_native_sigsegv (SIGSEGV, sigctx);
+	/* setup a call frame on the real stack so that control is returned there
+	 * and exception handling can continue.
+	 * The frame looks like:
+	 *   ucontext struct
+	 *   ...
+	 * 224 is the size of the red zone
+	 */
+	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 16 + 224;
+	frame_size += 15;
+	frame_size &= ~15;
+	sp = (gpointer)(uc->uc_mcontext.uc_regs->gregs [PT_R1] & ~15);
+	sp = (gpointer)((char*)sp - frame_size);
+	/* may need to adjust pointers in the new struct copy, depending on the OS */
+	uc_copy = (ucontext_t*)(sp + 16);
+	memcpy (uc_copy, uc, sizeof (ucontext_t));
+	uc_copy->uc_mcontext.uc_regs = (char*)uc_copy + ((char*)uc->uc_mcontext.uc_regs - (char*)uc);
+	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
+	uc->uc_mcontext.uc_regs->gregs [PT_LNK] = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
+	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = (unsigned long)altstack_handle_and_restore;
+	uc->uc_mcontext.uc_regs->gregs [PT_R1] = (unsigned long)sp;
+	uc->uc_mcontext.uc_regs->gregs [PT_R3] = (unsigned long)(sp + 16);
+	uc->uc_mcontext.uc_regs->gregs [PT_R4] = 0;
+	uc->uc_mcontext.uc_regs->gregs [PT_R5] = 0;
+#endif
+}
+
 #endif
 
 gboolean

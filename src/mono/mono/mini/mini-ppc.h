@@ -102,6 +102,11 @@ typedef struct MonoCompileArch {
 
 #endif
 
+#if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK 1
+#define MONO_ARCH_SIGNAL_STACK_SIZE (12 * 1024)
+#endif /* HAVE_WORKING_SIGALTSTACK */
+
 #define MONO_ARCH_USE_SIGACTION 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
