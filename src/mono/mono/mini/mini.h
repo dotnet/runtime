@@ -996,6 +996,7 @@ MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain,
 gpointer mono_arch_get_call_filter              (void) MONO_INTERNAL;
 gpointer mono_arch_get_restore_context          (void) MONO_INTERNAL;
 gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gboolean test_only) MONO_INTERNAL;
+void     mono_arch_handle_altstack_exception    (void *sigctx, gpointer fault_addr, gboolean stack_ovf) MONO_INTERNAL;
 gpointer mono_arch_ip_from_context              (void *sigctx) MONO_INTERNAL;
 void     mono_arch_sigctx_to_monoctx            (void *sigctx, MonoContext *ctx) MONO_INTERNAL;
 void     mono_arch_monoctx_to_sigctx            (MonoContext *mctx, void *ctx) MONO_INTERNAL;

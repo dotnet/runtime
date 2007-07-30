@@ -786,3 +786,67 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	return TRUE;
 }
+
+static void
+altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
+{
+	void (*restore_context) (MonoContext *);
+	MonoContext mctx;
+
+	restore_context = mono_arch_get_restore_context ();
+	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
+	restore_context (&mctx);
+}
+
+void
+mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
+{
+#ifdef MONO_ARCH_USE_SIGACTION
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_EIP (ctx));
+	gpointer *sp;
+	int frame_size;
+
+	if (stack_ovf) {
+		const char *method;
+		/* we don't do much now, but we can warn the user with a useful message */
+		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", (gpointer)UCONTEXT_REG_EIP (ctx), (gpointer)UCONTEXT_REG_ESP (ctx));
+		if (ji && ji->method)
+			method = mono_method_full_name (ji->method, TRUE);
+		else
+			method = "Unmanaged";
+		fprintf (stderr, "At %s\n", method);
+		abort ();
+	}
+	if (!ji)
+		mono_handle_native_sigsegv (SIGSEGV, sigctx);
+	/* setup a call frame on the real stack so that control is returned there
+	 * and exception handling can continue.
+	 * The frame looks like:
+	 *   ucontext struct
+	 *   test_only arg
+	 *   exception arg
+	 *   ctx arg
+	 *   return ip
+	 */
+	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4;
+	frame_size += 15;
+	frame_size &= ~15;
+	sp = (gpointer)(UCONTEXT_REG_ESP (ctx) & ~15);
+	sp = (gpointer)((char*)sp - frame_size);
+	/* the incoming arguments are aligned to 16 bytes boundaries, so the return address IP
+	 * goes at sp [-1]
+	 */
+	sp [-1] = (gpointer)UCONTEXT_REG_EIP (ctx);
+	sp [0] = sp + 4;
+	sp [1] = NULL;
+	sp [2] = NULL;
+	/* may need to adjust pointers in the new struct copy, depending on the OS */
+	memcpy (sp + 4, ctx, sizeof (ucontext_t));
+	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
+	UCONTEXT_REG_EIP (ctx) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_ESP (ctx) = (unsigned long)(sp - 1);
+#endif
+}
+
