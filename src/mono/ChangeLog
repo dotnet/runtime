@@ -1,3 +1,9 @@
+
+Mon Jul 30 17:59:04 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: Enable sigaltstack handling check by default to get
+	wider testing.
+
 2007-07-26  Jb Evain  <jbevain@novell.com>
 
 	* scripts/smcs.in: use smcs.exe.
