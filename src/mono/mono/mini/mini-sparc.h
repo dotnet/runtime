@@ -110,7 +110,7 @@ typedef struct MonoCompileArch {
 #endif
 
 #ifdef HAVE_WORKING_SIGALTSTACK
-#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+/*#define MONO_ARCH_SIGSEGV_ON_ALTSTACK*/
 #endif
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8   1

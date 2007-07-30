@@ -11099,12 +11099,11 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	/* Can't allocate memory using Boehm GC on altstack */
 	if (jit_tls->stack_size && 
-		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
-		((guint8*)info->si_addr < (guint8*)jit_tls->end_of_stack))
-		exc = mono_domain_get ()->stack_overflow_ex;
+			ABS ((guint8*)info->si_addr - ((guint8*)jit_tls->end_of_stack - jit_tls->stack_size)) < 32768)
+		mono_arch_handle_altstack_exception (ctx, info->si_addr, TRUE);
 	else
-		exc = mono_domain_get ()->null_reference_ex;
-#endif
+		mono_arch_handle_altstack_exception (ctx, info->si_addr, FALSE);
+#else
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	if (!ji) {
@@ -11112,6 +11111,7 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 	}
 			
 	mono_arch_handle_exception (ctx, exc, FALSE);
+#endif
 }
 
 #ifndef PLATFORM_WIN32
