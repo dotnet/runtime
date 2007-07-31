@@ -91,10 +91,12 @@ w32_dlerror (void)
 	DWORD code = GetLastError ();
 
 	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL))
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &buf, 0, NULL))
 	{
 		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
 		LocalFree (buf);
+	} else {
+		g_assert_not_reached ();
 	}
 	return ret;
 }
