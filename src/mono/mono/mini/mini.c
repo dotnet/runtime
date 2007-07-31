@@ -11075,8 +11075,10 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
+#ifndef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
+#endif
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
