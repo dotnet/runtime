@@ -595,26 +595,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	gboolean stack_overflow = FALSE;
 	MonoContext initial_ctx;
 	int frame_count = 0;
-	gboolean gc_disabled = FALSE;
 	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx, first_filter_idx;
 	
-	/*
-	 * This function might execute on an alternate signal stack, and Boehm GC
-	 * can't handle that.
-	 * Also, since the altstack is small, stack space intensive operations like
-	 * JIT compilation should be avoided.
-	 */
-	if (IS_ON_SIGALTSTACK (jit_tls)) {
-		/* 
-		 * FIXME: disabling/enabling GC while already on a signal stack might
-		 * not be safe either.
-		 */
-		/* Have to reenable it later */
-		gc_disabled = TRUE;
-		mono_gc_disable ();
-	}
-
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
@@ -773,8 +756,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 								}
 								g_list_free (trace_ips);
 
-								if (gc_disabled)
-									mono_gc_enable ();
 								return TRUE;
 							}
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
@@ -784,8 +765,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*(mono_get_lmf_addr ()) = lmf;
 
-							if (gc_disabled)
-								mono_gc_enable ();
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -817,8 +796,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		*ctx = new_ctx;
 
 		if (ji == (gpointer)-1) {
-			if (gc_disabled)
-				mono_gc_enable ();
 
 			if (!test_only) {
 				*(mono_get_lmf_addr ()) = lmf;
@@ -964,13 +941,24 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	tls->end_of_stack = staddr + stsize;
 
+	/*g_print ("thread %p, stack_base: %p, stack_size: %d\n", (gpointer)pthread_self (), staddr, stsize);*/
+
+	tls->stack_ovf_guard_base = staddr + mono_pagesize ();
+	tls->stack_ovf_guard_size = mono_pagesize () * 8;
+
+	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
+		/* mprotect can fail for the main thread stack */
+		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED);
+		g_assert (gaddr == tls->stack_ovf_guard_base);
+	}
+
 	/*
 	 * threads created by nptl does not seem to have a guard page, and
 	 * since the main thread is not created by us, we can't even set one.
 	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
 	 * is a stack overflow exception.
 	 */
-	tls->stack_size = stsize + getpagesize ();
+	tls->stack_size = stsize + mono_pagesize ();
 
 	/* Setup an alternate signal stack */
 	tls->signal_stack = mono_valloc (0, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_PRIVATE|MONO_MMAP_ANON);

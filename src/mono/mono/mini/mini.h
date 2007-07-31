@@ -448,6 +448,8 @@ typedef struct {
 	MonoLMF          *first_lmf;
 	gpointer         signal_stack;
 	guint32          signal_stack_size;
+	gpointer         stack_ovf_guard_base;
+	guint32          stack_ovf_guard_size;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
 
