@@ -3214,7 +3214,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
-	if (type->type->byref)
+	if (type->type->byref || is_generic_parameter (type->type))
 		return mono_array_new (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
