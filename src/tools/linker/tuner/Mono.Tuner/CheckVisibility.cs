@@ -77,7 +77,7 @@ namespace Mono.Tuner {
 
 		static bool IsPublic (TypeDefinition type)
 		{
-			return (type.Attributes & TypeAttributes.Public) != 0;
+			return (type.DeclaringType == null && (type.Attributes & TypeAttributes.Public) != 0) || (type.Attributes & TypeAttributes.NestedPublic) != 0;
 		}
 
 		static bool IsPublic (FieldDefinition field)
