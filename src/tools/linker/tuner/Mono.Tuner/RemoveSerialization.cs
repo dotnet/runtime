@@ -88,6 +88,19 @@ namespace Mono.Tuner {
 
 			RemoveInterface (type, _IDeserializationCallback);
 			RemoveInterfaceMethod (type, _IDeserializationCallback, _OnDeserialization, Constants.Object);
+
+			RemoveField (type);
+		}
+
+		static void RemoveField (TypeDefinition type)
+		{
+			for (int i = 0; i < type.Fields.Count; i++) {
+				FieldDefinition field = type.Fields [i];
+				if (field.FieldType.FullName == _SerializationInfo) {
+					type.Fields.RemoveAt (i);
+					break;
+				}
+			}
 		}
 
 		static bool ParametersMatch (IMethodSignature meth, string [] parameters)
