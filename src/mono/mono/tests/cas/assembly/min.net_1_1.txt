@@ -6,10 +6,9 @@ Minimal Permission Set:
                 Flags="Execution"/>
 </PermissionSet>
 
-
 Optional Permission Set:
-	None
+	Not specified.
 
 Refused Permission Set:
-	None
+	Not specified.
 

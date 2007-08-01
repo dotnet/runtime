@@ -1,8 +1,8 @@
 Minimal Permission Set:
-	None
+	Not specified.
 
 Optional Permission Set:
-	None
+	Not specified.
 
 Refused Permission Set:
 <PermissionSet class="System.Security.PermissionSet"
@@ -11,5 +11,4 @@ Refused Permission Set:
                 version="1"
                 Flags="SkipVerification"/>
 </PermissionSet>
-
 

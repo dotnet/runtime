@@ -1,12 +1,11 @@
 Minimal Permission Set:
-	None
+	Not specified.
 
 Optional Permission Set:
 <PermissionSet class="System.Security.PermissionSet"
                version="1"
                Unrestricted="true"/>
 
-
 Refused Permission Set:
-	None
+	Not specified.
 
