@@ -3,7 +3,7 @@ SUBDIRS =
 include ../../build/rules.make
 
 LINKER = ../linker/monolinker.exe
-MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a.zip
+MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a-refresh.zip
 
 LINKER_PLUGINS = \
 	Mono.Tuner/PrintStatus.dll	\
