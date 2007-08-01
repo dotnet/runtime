@@ -89,9 +89,12 @@ typedef char Char;
 
 
 static int	 g_Ctoc(const gchar *, char *, u_int);
-static int	 glob0(GDir *dir, const gchar *, wapi_glob_t *, gboolean);
-static int	 glob1(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *, gboolean);
-static int	 glob3(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *, gboolean);
+static int	 glob0(GDir *dir, const gchar *, wapi_glob_t *, gboolean,
+		       gboolean);
+static int	 glob1(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *,
+		       gboolean, gboolean);
+static int	 glob3(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *,
+		       gboolean, gboolean);
 static int	 globextend(const gchar *, wapi_glob_t *, size_t *);
 static int	 match(const gchar *, gchar *, gchar *, gboolean);
 #ifdef DEBUG
@@ -106,9 +109,11 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
 	gchar *bufnext, *bufend, patbuf[MAXPATHLEN];
 
 	patnext = (u_char *) pattern;
-	pglob->gl_pathc = 0;
-	pglob->gl_pathv = NULL;
-	pglob->gl_offs = 0;
+	if (!(flags & WAPI_GLOB_APPEND)) {
+		pglob->gl_pathc = 0;
+		pglob->gl_pathv = NULL;
+		pglob->gl_offs = 0;
+	}
 	pglob->gl_flags = flags & ~WAPI_GLOB_MAGCHAR;
 
 	bufnext = patbuf;
@@ -127,7 +132,8 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
 
 	*bufnext = EOS;
 
-	return glob0(dir, patbuf, pglob, flags & WAPI_GLOB_IGNORECASE);
+	return glob0(dir, patbuf, pglob, flags & WAPI_GLOB_IGNORECASE,
+		     flags & WAPI_GLOB_UNIQUE);
 }
 
 /*
@@ -138,7 +144,8 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
  * to find no matches.
  */
 static int
-glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase)
+glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
+	gboolean unique)
 {
 	const gchar *qpatnext;
 	int c, err, oldpathc;
@@ -175,7 +182,7 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase)
 #endif
 
 	if ((err = glob1(dir, patbuf, patbuf+MAXPATHLEN-1, pglob, &limit,
-			 ignorecase)) != 0)
+			 ignorecase, unique)) != 0)
 		return(err);
 
 	if (pglob->gl_pathc == oldpathc) {
@@ -187,17 +194,37 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase)
 
 static int
 glob1(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
-      size_t *limitp, gboolean ignorecase)
+      size_t *limitp, gboolean ignorecase, gboolean unique)
 {
 	/* A null pathname is invalid -- POSIX 1003.1 sect. 2.4. */
 	if (*pattern == EOS)
 		return(0);
-	return(glob3(dir, pattern, pattern_last, pglob, limitp, ignorecase));
+	return(glob3(dir, pattern, pattern_last, pglob, limitp, ignorecase,
+		     unique));
+}
+
+static gboolean contains (wapi_glob_t *pglob, const gchar *name)
+{
+	int i;
+	char **pp;
+	
+	if (pglob->gl_pathv != NULL) {
+		pp = pglob->gl_pathv + pglob->gl_offs;
+		for (i = pglob->gl_pathc; i--; ++pp) {
+			if (*pp) {
+				if (!strcmp (*pp, name)) {
+					return(TRUE);
+				}
+			}
+		}
+	}
+	
+	return(FALSE);
 }
 
 static int
 glob3(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
-      size_t *limitp, gboolean ignorecase)
+      size_t *limitp, gboolean ignorecase, gboolean unique)
 {
 	const gchar *name;
 
@@ -207,7 +234,10 @@ glob3(GDir *dir, gchar *pattern, gchar *pattern_last, wapi_glob_t *pglob,
 			   ignorecase)) {
 			continue;
 		}
-		globextend (name, pglob, limitp);
+		if (!unique ||
+		    !contains (pglob, name)) {
+			globextend (name, pglob, limitp);
+		}
 	}
 
 	return(0);

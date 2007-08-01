@@ -48,7 +48,8 @@ typedef struct {
 	char **gl_pathv;	/* List of paths matching pattern. */
 } wapi_glob_t;
 
-
+#define WAPI_GLOB_APPEND	0x0001	/* Append to output from previous call. */
+#define WAPI_GLOB_UNIQUE	0x0040	/* When appending only add items that aren't already in the list */
 #define	WAPI_GLOB_NOSPACE	(-1)	/* Malloc call failed. */
 #define	WAPI_GLOB_ABORTED	(-2)	/* Unignored error. */
 #define	WAPI_GLOB_NOMATCH	(-3)	/* No match and WAPI_GLOB_NOCHECK not set. */

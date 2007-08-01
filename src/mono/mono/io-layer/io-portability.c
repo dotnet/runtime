@@ -844,8 +844,23 @@ gint _wapi_io_scandir (const gchar *dirname, const gchar *pattern,
 	}
 	
 	result = _wapi_glob (dir, pattern, flags, &glob_buf);
+	if (g_str_has_suffix (pattern, ".*")) {
+		/* Special-case the patterns ending in '.*', as
+		 * windows also matches entries with no extension with
+		 * this pattern.
+		 * 
+		 * TODO: should this be a MONO_IOMAP option?
+		 */
+		gchar *pattern2 = g_strndup (pattern, strlen (pattern) - 2);
+		
+		g_dir_rewind (dir);
+		result = _wapi_glob (dir, pattern2, flags | WAPI_GLOB_APPEND | WAPI_GLOB_UNIQUE, &glob_buf);
+
+		g_free (pattern2);
+	}
+	
 	g_dir_close (dir);
-	if (result == WAPI_GLOB_NOMATCH) {
+	if (glob_buf.gl_pathc == 0) {
 		return(0);
 	} else if (result != 0) {
 		return(-1);
@@ -855,6 +870,8 @@ gint _wapi_io_scandir (const gchar *dirname, const gchar *pattern,
 	for (i = 0; i < glob_buf.gl_pathc; i++) {
 		g_ptr_array_add (names, g_strdup (glob_buf.gl_pathv[i]));
 	}
+
+	_wapi_globfree (&glob_buf);
 
 	result = names->len;
 	if (result > 0) {
