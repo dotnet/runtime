@@ -95,31 +95,25 @@ static guint32 convert_access(MonoFileAccess mono_access)
 
 static guint32 convert_share(MonoFileShare mono_share)
 {
-	guint32 share;
+	guint32 share = 0;
 	
-	switch(mono_share) {
-	case FileShare_None:
-		share=0;
-		break;
-	case FileShare_Read:
-		share=FILE_SHARE_READ;
-		break;
-	case FileShare_Write:
-		share=FILE_SHARE_WRITE;
-		break;
-	case FileShare_ReadWrite:
-		share=FILE_SHARE_READ|FILE_SHARE_WRITE;
-		break;
-	case FileShare_Delete:
-		share=FILE_SHARE_DELETE;
-		break;
-	default:
+	if (mono_share & FileShare_Read) {
+		share |= FILE_SHARE_READ;
+	}
+	if (mono_share & FileShare_Write) {
+		share |= FILE_SHARE_WRITE;
+	}
+	if (mono_share & FileShare_Delete) {
+		share |= FILE_SHARE_DELETE;
+	}
+	
+	if (mono_share & ~(FileShare_Read|FileShare_Write|FileShare_Delete)) {
 		g_warning("System.IO.FileShare has unknown value 0x%x",
 			  mono_share);
 		/* Safe fallback */
 		share=0;
 	}
-	
+
 	return(share);
 }
 
