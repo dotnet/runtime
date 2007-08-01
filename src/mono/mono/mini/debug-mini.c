@@ -30,6 +30,7 @@ typedef struct
 {
 	guint64 index;
 	MonoMethod *method;
+	MonoDebugMethodAddressList *address_list;
 } MiniDebugMethodBreakpointInfo;
 
 typedef struct
@@ -41,7 +42,7 @@ typedef struct
 } MiniDebugMethodInfo;
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address);
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
 
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
@@ -52,6 +53,16 @@ record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 	lne.il_offset = offset;
 
 	g_array_append_val (info->line_numbers, lne);
+}
+
+static void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+{
+	g_free (jit->line_numbers);
+	g_free (jit->this_var);
+	g_free (jit->params);
+	g_free (jit->locals);
+	g_free (jit);
 }
 
 void
@@ -259,7 +270,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
-	mono_debugger_check_breakpoints (method, jit->code_start);
+	mono_debugger_check_breakpoints (method, debug_info);
 
 	mono_debug_free_method_jit_info (jit);
 	g_array_free (info->line_numbers, TRUE);
@@ -553,12 +564,6 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 
 	jit = deserialize_debug_info (method, code_start, debug_info, debug_info_len);
 
-#if 0
-	jit = mono_debug_read_method ((MonoDebugMethodAddress *) debug_info);
-	jit->code_start = code_start;
-	jit->wrapper_addr = NULL;
-#endif
-
 	mono_debug_add_method (method, jit, domain);
 
 	mono_debug_add_vg_method (method, jit);
@@ -607,18 +612,13 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
-	MonoDebugMethodInfo *minfo;
 	MonoDebugMethodJitInfo *jit;
 	int i;
 
 	if (!ji)
 		return;
 
-	minfo = mono_debug_lookup_method (mono_jit_info_get_method (ji));
-	if (!minfo)
-		return;
-
-	jit = mono_debug_find_method (minfo, domain);
+	jit = mono_debug_find_method (mono_jit_info_get_method (ji), domain);
 	if (!jit)
 		return;
 
@@ -650,7 +650,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 
 static GPtrArray *method_breakpoints = NULL;
 
-void
+MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 {
 	MiniDebugMethodBreakpointInfo *info;
@@ -659,10 +659,14 @@ mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 	info->method = method;
 	info->index = index;
 
+	info->address_list = mono_debug_lookup_method_addresses (method);
+
 	if (!method_breakpoints)
 		method_breakpoints = g_ptr_array_new ();
 
 	g_ptr_array_add (method_breakpoints, info);
+
+	return info->address_list;
 }
 
 int
@@ -680,6 +684,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 			continue;
 
 		g_ptr_array_remove (method_breakpoints, info);
+		g_free (info->address_list);
 		g_free (info);
 		return 1;
 	}
@@ -688,13 +693,15 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 }
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
 {
-	gboolean first = TRUE;
 	int i;
 
 	if (!method_breakpoints)
 		return;
+
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 
 	for (i = 0; i < method_breakpoints->len; i++) {
 		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
@@ -702,15 +709,8 @@ mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
 		if (method != info->method)
 			continue;
 
-		if (first) {
-			mono_debugger_event (
-				MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) method,
-				(guint64) (gsize) address);
-			first = FALSE;
-		}
-
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) address, info->index);
+				     (guint64) (gsize) debug_info, info->index);
 	}
 }
 

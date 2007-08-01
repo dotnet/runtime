@@ -931,7 +931,7 @@ mono_main (int argc, char* argv[])
 	}
 
 	if (action == DO_DEBUGGER) {
-		opt |= MONO_OPT_SHARED;
+		// opt |= MONO_OPT_SHARED;
 		opt &= ~MONO_OPT_INLINE;
 		opt &= ~MONO_OPT_COPYPROP;
 		opt &= ~MONO_OPT_CONSPROP;
