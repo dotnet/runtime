@@ -55,9 +55,9 @@ namespace Mono.Tuner {
 				Report ("Base type {0} of type {1} is not visible",
 					type.BaseType, type);
 			}
-			
+
 			CheckInterfaces (type);
-			
+
 			CheckFields (type);
 			CheckConstructors (type);
 			CheckMethods (type);
@@ -78,15 +78,33 @@ namespace Mono.Tuner {
 			return (type.Attributes & TypeAttributes.Public) != 0;
 		}
 
+		static bool IsPublic (FieldDefinition field)
+		{
+			return (field.Attributes & FieldAttributes.Public) != 0;
+		}
+
+		static bool IsAssembly (FieldDefinition field)
+		{
+			return (field.Attributes & FieldAttributes.Assembly) != 0;
+		}
+
+		static bool IsPublic (MethodDefinition meth)
+		{
+			return (meth.Attributes & MethodAttributes.Public) != 0;
+		}
+
+		static bool IsAssembly (MethodDefinition meth)
+		{
+			return (meth.Attributes & MethodAttributes.Assem) != 0;
+		}
+
 		static bool AreInDifferentAssemblies (TypeDefinition lhs, TypeDefinition rhs)
 		{
 			return lhs.Module.Assembly.Name.FullName != rhs.Module.Assembly.Name.FullName;
 		}
 
 		bool IsVisibleFrom (TypeDefinition type, TypeReference reference)
-		{			
-//			Report ("[is-visible-from] {0}:{1}", type, reference);
-			
+		{
 			if (reference == null)
 				return true;
 
@@ -99,10 +117,62 @@ namespace Mono.Tuner {
 
 			if (!AreInDifferentAssemblies (type, other))
 				return true;
-			
+
 			if (IsPublic (other))
 				return true;
 			
+			return false;
+		}
+
+		bool IsVisibleFrom (TypeDefinition type, MethodReference reference)
+		{
+			if (reference == null)
+				return true;
+
+			MethodDefinition meth = null;
+			try {
+				meth = Context.Resolver.Resolve (reference);
+			} catch {}
+
+			if (meth == null)
+				return true;
+
+			TypeDefinition dec = (TypeDefinition) meth.DeclaringType;
+			if (!IsVisibleFrom (type, dec))
+				return false;
+
+			if (IsPublic (meth))
+				return true;
+
+			if (!AreInDifferentAssemblies (type, dec) && IsAssembly (meth))
+				return true;
+
+			return false;
+		}
+
+		bool IsVisibleFrom (TypeDefinition type, FieldReference reference)
+		{
+			if (reference == null)
+				return true;
+
+			FieldDefinition field = null;
+			try {
+				field = Context.Resolver.Resolve (reference);
+			} catch {}
+
+			if (field == null)
+				return true;
+
+			TypeDefinition dec = (TypeDefinition) field.DeclaringType;
+			if (!IsVisibleFrom (type, dec))
+				return false;
+
+			if (IsPublic (field))
+				return true;
+
+			if (!AreInDifferentAssemblies (type, dec) && IsAssembly (field))
+				return true;
+
 			return false;
 		}
 
@@ -138,7 +208,7 @@ namespace Mono.Tuner {
 					Report ("Method return type {0} in method {1} is not visible",
 						method.ReturnType.ReturnType, method);
 				}
-				
+
 				foreach (ParameterDefinition parameter in method.Parameters) {
 					if (!IsVisibleFrom (type, parameter.ParameterType)) {
 						Report ("Parameter {0} of type {1} in method {2} is not visible.",
@@ -153,19 +223,40 @@ namespace Mono.Tuner {
 
 		void CheckBody (MethodDefinition method)
 		{
+			TypeDefinition type = (TypeDefinition) method.DeclaringType;
+
 			foreach (VariableDefinition variable in method.Body.Variables) {
 				if (!IsVisibleFrom ((TypeDefinition) method.DeclaringType, variable.VariableType)) {
 					Report ("Variable {0} of type {1} from method {2} is not visible",
 						variable.Index, variable.VariableType, method);
 				}
 			}
-			
+
 			foreach (Instruction instr in method.Body.Instructions) {
 				switch (instr.OpCode.OperandType) {
 				case OperandType.InlineType:
 				case OperandType.InlineMethod:
 				case OperandType.InlineField:
 				case OperandType.InlineTok:
+					bool error = false;
+					TypeReference type_ref = instr.Operand as TypeReference;
+					if (type_ref != null)
+						error = !IsVisibleFrom (type, type_ref);
+
+					MethodReference meth_ref = instr.Operand as MethodReference;
+					if (meth_ref != null)
+						error = !IsVisibleFrom (type, meth_ref);
+
+					FieldReference field_ref = instr.Operand as FieldReference;
+					if (field_ref != null)
+						error = !IsVisibleFrom (type, field_ref);
+
+					if (error) {
+						Report ("Operand {0} at offset 0x{1} in method {2} is not visible",
+							instr.Operand, instr.Offset.ToString ("x4"), method);
+					}
+
+					break;
 				default:
 					continue;
 				}
