@@ -284,7 +284,8 @@ TEST_CS2_SRC = \
 	stackframes-async.2.cs		\
 	module-cctor-loader.2.cs	\
 	generics-invoke-byref.2.cs	\
-	bug-80392.2.cs
+	bug-80392.2.cs		\
+	bug-82194.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
 	bug-79215.2.il	\
