@@ -1,3 +1,9 @@
+2007-08-01  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/CheckVisibilit.cs:
+		New debugging step to ensure that the even after
+		API tuning the visibility is correct.
+
 2007-07-27  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/RemoveSerialization.cs:

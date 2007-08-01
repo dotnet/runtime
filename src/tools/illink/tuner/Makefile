@@ -8,6 +8,7 @@ MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a.zip
 LINKER_PLUGINS = \
 	Mono.Tuner/PrintStatus.dll	\
 	Mono.Tuner/RemoveSerialization.dll	\
+	Mono.Tuner/CheckVisibility.dll	\
 #	Mono.Tuner/InjectAttributes.dll	\
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
@@ -56,11 +57,13 @@ MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/System.Xml.Core.info	\
 
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
-#LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus -s Mono.Tuner.InjectAttributes,InjectAttributes:OutputStep
-LINKER_STEPS = -s Mono.Tuner.PrintStatus,PrintStatus:OutputStep -s Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep
+LINKER_STEPS = \
+	Mono.Tuner.PrintStatus,PrintStatus:OutputStep	\
+	Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep	\
+#	Mono.Tuner.CheckVisibility,CheckVisibility	\
 
 tune: masterinfos/silverlight.infos
-	MONO_PATH="Mono.Tuner:$(topdir)/class/lib/net_2_0:$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS) $(MCS_MASTER_INFOS:%=-i %)
+	MONO_PATH="Mono.Tuner:$(topdir)/class/lib/net_2_0:$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
 
 %.dll: %.cs
 	$(CSCOMPILE) /t:library $^
