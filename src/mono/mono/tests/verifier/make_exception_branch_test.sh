@@ -29,34 +29,50 @@ sed -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TE
 	OPCODE1
 	.try
 	{
-	branch_target1:
-	OPCODE2
+		nop
+branch_target1:
+		OPCODE2
+		leave branch_target5
         }
         catch [mscorlib]System.Exception 
 	{
-	branch_target2:
-	OPCODE3
+		nop
+branch_target2:
+		OPCODE3
+		leave branch_target5
         }
 	.try
 	{
+		nop
+		leave branch_target5
 	}
 	finally
 	{
-	branch_target3:
-	OPCODE4
+		nop
+branch_target3:
+		OPCODE4
+		endfinally
 	}
 	.try 
 	{
-        }
+		nop
+   		leave branch_target5
+	}
 	filter
 	{
-	ldc.i4.1
-	endfilter
+		pop
+		ldc.i4.1
+		endfilter
 	}
+
 	{
-	branch_target4:
-	OPCODE5
-        }
+		nop
+branch_target4:
+		OPCODE5
+		nop
+		leave branch_target5
+	}
+	nop
 	branch_target5:
 	ldc.i4.0
 	ret
