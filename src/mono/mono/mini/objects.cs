@@ -1039,5 +1039,14 @@ ncells ) {
 			return a;
 		}
 	}
+
+	/* bug #82281 */
+	static int test_0_unsigned_right_shift_imm0 () {
+		uint temp = 0;
+		byte[] data = new byte[256];
+		for (int i = 0; i < 1; i ++)
+			temp = (uint)(data[temp >> 24] | data[temp >> 0]);
+		return 0;
+	}
 }
 
