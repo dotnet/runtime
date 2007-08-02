@@ -41,7 +41,7 @@ namespace Mono.Linker.Steps {
 
 		static void ProcessType (TypeDefinition type)
 		{
-			if (!IsPublic (type))
+			if (!type.IsPublic)
 				return;
 
 			if (!IsMarkedAsPublic (type)) {
@@ -71,7 +71,7 @@ namespace Mono.Linker.Steps {
 
 		static void ProcessMethod (MethodDefinition method)
 		{
-			if (!IsPublic (method))
+			if (!method.IsPublic)
 				return;
 
 			if (IsMarkedAsPublic (method))
@@ -91,21 +91,6 @@ namespace Mono.Linker.Steps {
 			return Annotations.IsPublic (provider);
 		}
 
-		static bool IsPublic (MethodDefinition method)
-		{
-			return (method.Attributes & MethodAttributes.Public) != 0;
-		}
-
-		static bool IsPublic (FieldDefinition field)
-		{
-			return (field.Attributes & FieldAttributes.Public) != 0;
-		}
-
-		static bool IsPublic (TypeDefinition type)
-		{
-			return (type.Attributes & TypeAttributes.Public) != 0;
-		}
-
 		static void ProcessFields (FieldDefinitionCollection fields)
 		{
 			foreach (FieldDefinition field in fields)
@@ -114,7 +99,7 @@ namespace Mono.Linker.Steps {
 
 		static void ProcessField (FieldDefinition field)
 		{
-			if (!IsPublic (field))
+			if (!field.IsPublic)
 				return;
 
 			if (IsMarkedAsPublic (field))
