@@ -692,33 +692,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	}
 #endif
 
-#ifndef PLATFORM_WIN32
-	/* .net seems to set this by default for SOCK_STREAM,
-	 * not for SOCK_DGRAM (see bug #36322)
-	 *
-	 * It seems winsock has a rather different idea of what
-	 * SO_REUSEADDR means.  If it's set, then a new socket can be
-	 * bound over an existing listening socket.  There's a new
-	 * windows-specific option called SO_EXCLUSIVEADDRUSE but
-	 * using that means the socket MUST be closed properly, or a
-	 * denial of service can occur.  Luckily for us, winsock
-	 * behaves as though any other system would when SO_REUSEADDR
-	 * is true, so we don't need to do anything else here.  See
-	 * bug 53992.
-	 */
-	{
-	int ret, true = 1;
-	
-	ret = _wapi_setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &true, sizeof (true));
-	if(ret==SOCKET_ERROR) {
-		*error = WSAGetLastError ();
-		
-		closesocket(sock);
-		return(NULL);
-	}
-	}
-#endif
-	
 	return(GUINT_TO_POINTER (sock));
 }
 

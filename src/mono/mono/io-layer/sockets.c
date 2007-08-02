@@ -38,8 +38,6 @@
 #undef DEBUG
 
 static guint32 startup_count=0;
-static pthread_key_t error_key;
-static mono_once_t error_key_once=MONO_ONCE_INIT;
 
 static void socket_close (gpointer handle, gpointer data);
 
@@ -143,33 +141,14 @@ int WSACleanup(void)
 	return(0);
 }
 
-static void error_init(void)
-{
-	int ret;
-	
-	ret = pthread_key_create (&error_key, NULL);
-	g_assert (ret == 0);
-}
-
 void WSASetLastError(int error)
 {
-	int ret;
-	
-	mono_once (&error_key_once, error_init);
-	ret = pthread_setspecific (error_key, GINT_TO_POINTER(error));
-	g_assert (ret == 0);
+	SetLastError (error);
 }
 
 int WSAGetLastError(void)
 {
-	int err;
-	void *errptr;
-	
-	mono_once (&error_key_once, error_init);
-	errptr = pthread_getspecific (error_key);
-	err = GPOINTER_TO_INT(errptr);
-	
-	return(err);
+	return(GetLastError ());
 }
 
 int closesocket(guint32 fd)
@@ -196,6 +175,11 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	
 	if (startup_count == 0) {
 		WSASetLastError (WSANOTINITIALISED);
+		return(INVALID_SOCKET);
+	}
+
+	if (addr != NULL && *addrlen < sizeof(struct sockaddr)) {
+		WSASetLastError (WSAEFAULT);
 		return(INVALID_SOCKET);
 	}
 	
@@ -835,6 +819,40 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		
 		return(INVALID_SOCKET);
 	}
+
+	/* .net seems to set this by default for SOCK_STREAM, not for
+	 * SOCK_DGRAM (see bug #36322)
+	 *
+	 * It seems winsock has a rather different idea of what
+	 * SO_REUSEADDR means.  If it's set, then a new socket can be
+	 * bound over an existing listening socket.  There's a new
+	 * windows-specific option called SO_EXCLUSIVEADDRUSE but
+	 * using that means the socket MUST be closed properly, or a
+	 * denial of service can occur.  Luckily for us, winsock
+	 * behaves as though any other system would when SO_REUSEADDR
+	 * is true, so we don't need to do anything else here.  See
+	 * bug 53992.
+	 */
+	{
+		int ret, true = 1;
+	
+		ret = setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &true,
+				  sizeof (true));
+		if (ret == -1) {
+			int errnum = errno;
+
+#ifdef DEBUG
+			g_message ("%s: Error setting SO_REUSEADDR", __func__);
+#endif
+			
+			errnum = errno_to_WSA (errnum, __func__);
+			WSASetLastError (errnum);
+
+			close (fd);
+
+			return(INVALID_SOCKET);			
+		}
+	}
 	
 	
 	mono_once (&socket_ops_once, socket_ops_init);
@@ -842,6 +860,8 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, &socket_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating socket handle", __func__);
+		WSASetLastError (WSASYSCALLFAILURE);
+		close (fd);
 		return(INVALID_SOCKET);
 	}
 
