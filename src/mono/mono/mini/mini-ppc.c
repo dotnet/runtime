@@ -2381,7 +2381,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_srawi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_SHR_UN_IMM:
-			ppc_rlwinm (code, ins->dreg, ins->sreg1, (32 - (ins->inst_imm & 0x1f)), (ins->inst_imm & 0x1f), 31);
+			if (ins->inst_imm)
+				ppc_rlwinm (code, ins->dreg, ins->sreg1, (32 - (ins->inst_imm & 0x1f)), (ins->inst_imm & 0x1f), 31);
+			else
+				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_SHR_UN:
 			ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
