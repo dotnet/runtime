@@ -1146,6 +1146,8 @@ mono_arch_flush_icache (guint8 *code, gint size)
 static void inline
 add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 {
+	int disp;
+
 	if (simple) {
 		if (*gr > S390_LAST_ARG_REG) {
 			sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
@@ -1162,13 +1164,15 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 		}
 	} else {
 		if (*gr > S390_LAST_ARG_REG - 1) {
+			disp		= sz->stack_size;
 			sz->stack_size  = S390_ALIGN(sz->stack_size, S390_STACK_ALIGNMENT);
+			disp		= sz->stack_size - disp;
 			ainfo->offset   = sz->stack_size;
 			ainfo->reg	= STK_BASE;
 			ainfo->regtype  = RegTypeBase;
 			sz->stack_size += sizeof(long long);
-			sz->local_size += sizeof(long long);
-			sz->offStruct  += sizeof(long long);
+			sz->local_size += (sizeof(long long) + disp);
+			sz->offStruct  += (sizeof(long long) + disp);
 			sz->code_size  += 10;   
 		} else {
 			ainfo->reg      = *gr;
@@ -1493,7 +1497,7 @@ enum_retvalue:
 					cinfo->args[nParm].size    = sizeof(long long);
 					cinfo->args[nParm].regtype = RegTypeStructByVal; 
 					nParm++;
-					sz->local_size 		  += sizeof(long);
+					sz->local_size 		  += sizeof(long long);
 					break;
 				default:
 					add_stackParm(&gr, sz, cinfo->args+nParm, size);
@@ -1528,7 +1532,7 @@ enum_retvalue:
 					cinfo->args[nParm].size    = sizeof(long long);
 					cinfo->args[nParm].regtype = RegTypeStructByVal; 
 					nParm++;
-					sz->local_size 		  += sizeof(long);
+					sz->local_size 		  += sizeof(long long);
 					break;
 				default:
 					add_stackParm(&gr, sz, cinfo->args+nParm, size);
