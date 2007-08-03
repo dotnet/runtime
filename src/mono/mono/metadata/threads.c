@@ -73,9 +73,17 @@ typedef union {
 	gdouble fval;
 } LongDoubleUnion;
  
+typedef struct _MonoThreadDomainTls MonoThreadDomainTls;
+struct _MonoThreadDomainTls {
+	MonoThreadDomainTls *next;
+	guint32 offset;
+	guint32 size;
+};
+
 typedef struct {
 	int idx;
 	int offset;
+	MonoThreadDomainTls *freelist;
 } StaticDataInfo;
 
 typedef struct {
@@ -2774,6 +2782,7 @@ static void mono_init_static_data_info (StaticDataInfo *static_data)
 {
 	static_data->idx = 0;
 	static_data->offset = 0;
+	static_data->freelist = NULL;
 }
 
 /*
@@ -2799,15 +2808,6 @@ mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 
 	if (static_data->offset + size >= static_data_size [static_data->idx]) {
 		static_data->idx ++;
 		g_assert (size <= static_data_size [static_data->idx]);
-		/* 
-		 * massive unloading and reloading of domains with thread-static
-		 * data may eventually exceed the allocated storage...
-		 * Need to check what the MS runtime does in that case.
-		 * Note that for each appdomain, we need to allocate a separate
-		 * thread data slot for security reasons. We could keep track
-		 * of the slots per-domain and when the domain is unloaded
-		 * out the slots on a sort of free list.
-		 */
 		g_assert (static_data->idx < NUM_STATIC_DATA_IDX);
 		static_data->offset = 0;
 	}
@@ -2843,6 +2843,24 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 	mono_alloc_static_data (&(thread->static_data), offset);
 }
 
+static MonoThreadDomainTls*
+search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 align)
+{
+	MonoThreadDomainTls* prev = NULL;
+	MonoThreadDomainTls* tmp = static_data->freelist;
+	while (tmp) {
+		if (tmp->size == size) {
+			if (prev)
+				prev->next = tmp->next;
+			else
+				static_data->freelist = tmp->next;
+			return tmp;
+		}
+		tmp = tmp->next;
+	}
+	return NULL;
+}
+
 /*
  * The offset for a special static variable is composed of three parts:
  * a bit that indicates the type of static data (0:thread, 1:context),
@@ -2857,8 +2875,16 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 	guint32 offset;
 	if (static_type == SPECIAL_STATIC_THREAD)
 	{
+		MonoThreadDomainTls *item;
 		mono_threads_lock ();
-		offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
+		item = search_tls_slot_in_freelist (&thread_static_info, size, align);
+		/*g_print ("TLS alloc: %d in domain %p (total: %d), cached: %p\n", size, mono_domain_get (), thread_static_info.offset, item);*/
+		if (item) {
+			offset = item->offset;
+			g_free (item);
+		} else {
+			offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
+		}
 		/* This can be called during startup */
 		if (threads != NULL)
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
@@ -2904,6 +2930,59 @@ mono_get_special_static_data (guint32 offset)
 		}
 		return ((char*) context->static_data [idx]) + (offset & 0xffffff);	
 	}
+}
+
+typedef struct {
+	guint32 offset;
+	guint32 size;
+} TlsOffsetSize;
+
+static void 
+free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread = value;
+	TlsOffsetSize *data = user;
+	int idx = (data->offset >> 24) - 1;
+	char *ptr;
+
+	if (!thread->static_data [idx])
+		return;
+	ptr = ((char*) thread->static_data [idx]) + (data->offset & 0xffffff);
+	memset (ptr, 0, data->size);
+}
+
+static void
+do_free_special (gpointer key, gpointer value, gpointer data)
+{
+	MonoClassField *field = key;
+	guint32 offset = GPOINTER_TO_UINT (value);
+	guint32 static_type = (offset & 0x80000000);
+	gint32 align;
+	guint32 size;
+	size = mono_type_size (field->type, &align);
+	/*g_print ("free %s , size: %d, offset: %x\n", field->name, size, offset);*/
+	if (static_type == 0) {
+		TlsOffsetSize data;
+		MonoThreadDomainTls *item = g_new0 (MonoThreadDomainTls, 1);
+		data.offset = offset & 0x7fffffff;
+		data.size = size;
+		if (threads != NULL)
+			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
+		item->offset = offset;
+		item->size = size;
+		item->next = thread_static_info.freelist;
+		thread_static_info.freelist = item;
+	} else {
+		/* FIXME: free context static data as well */
+	}
+}
+
+void
+mono_alloc_special_static_data_free (GHashTable *special_static_fields)
+{
+	mono_threads_lock ();
+	g_hash_table_foreach (special_static_fields, do_free_special, NULL);
+	mono_threads_unlock ();
 }
 
 static MonoClassField *local_slots = NULL;
