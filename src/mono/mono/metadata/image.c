@@ -1215,6 +1215,8 @@ mono_image_close (MonoImage *image)
 	}
 	if (image->modules)
 		g_free (image->modules);
+	if (image->modules_loaded)
+		g_free (image->modules_loaded);
 	if (image->references)
 		g_free (image->references);
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
