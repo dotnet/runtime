@@ -858,19 +858,20 @@ get_shadow_assembly_location (const char *filename)
 	char name_hash [9];
 	char path_hash [30];
 	char *bname = g_path_get_basename (filename);
+	char *dirname = g_path_get_dirname (filename);
+	char *location, *dyn_base;
 	MonoDomain *domain = mono_domain_get ();
 	
 	hash = get_cstring_hash (bname);
-	hash2 = get_cstring_hash (g_path_get_dirname (filename));
+	hash2 = get_cstring_hash (dirname);
 	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
 	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x_%08x", hash ^ hash2, hash2, domain->shadow_serial);
-	return g_build_filename (mono_string_to_utf8 (domain->setup->dynamic_base), 
-				 "assembly", 
-				 "shadow", 
-				 name_hash,
-				 path_hash,
-				 bname, 
-				 NULL);
+	dyn_base = mono_string_to_utf8 (domain->setup->dynamic_base);
+	location = g_build_filename (dyn_base, "assembly", "shadow", name_hash, path_hash, bname, NULL);
+	g_free (dyn_base);
+	g_free (bname);
+	g_free (dirname);
+	return location;
 }
 
 static gboolean

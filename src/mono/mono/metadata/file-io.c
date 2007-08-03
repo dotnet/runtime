@@ -301,17 +301,17 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 
 	if (FindClose (find_handle) == FALSE) {
 		*error = GetLastError ();
-		g_ptr_array_free (names, TRUE);
-		g_free (utf8_path);
-		return(NULL);
+		result = NULL;
+	} else {
+		result = mono_array_new (domain, mono_defaults.string_class, names->len);
+		for (i = 0; i < names->len; i++) {
+			mono_array_setref (result, i, mono_string_new (domain, g_ptr_array_index (names, i)));
+		}
 	}
 
-	result = mono_array_new (domain, mono_defaults.string_class,
-				 names->len);
 	for (i = 0; i < names->len; i++) {
-		mono_array_setref (result, i, mono_string_new (domain, g_ptr_array_index (names, i)));
+		g_free (g_ptr_array_index (names, i));
 	}
-
 	g_ptr_array_free (names, TRUE);
 	g_free (utf8_path);
 	
