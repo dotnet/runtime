@@ -7053,6 +7053,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod* get_iunknown_for_object_internal = NULL;
 	static MonoMethod* get_com_interface_for_object_internal = NULL;
 	static MonoMethod* get_idispatch_for_object_internal = NULL;
+	static MonoMethod* marshal_release = NULL;
 	if (!get_object_for_iunknown)
 		get_object_for_iunknown = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForIUnknown", 1);
 	if (!get_iunknown_for_object_internal)
@@ -7061,6 +7062,8 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 		get_idispatch_for_object_internal = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetIDispatchForObjectInternal", 1);
 	if (!get_com_interface_for_object_internal)
 		get_com_interface_for_object_internal = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetComInterfaceForObjectInternal", 2);
+	if (!marshal_release)
+		marshal_release = mono_class_get_method_from_name (mono_defaults.marshal_class, "Release", 1);
 
 	/* COM types are initialized lazily */
 	mono_init_com_types ();
@@ -7134,6 +7137,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (klass && klass != mono_defaults.object_class)
 				mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
+
 			pos_end = mono_mb_emit_short_branch (mb, CEE_BR_S);
 
 			/* is already managed object */
@@ -7145,8 +7149,13 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 
-
 			mono_mb_patch_short_branch (mb, pos_end);
+
+			/* need to call Release to follow COM rules of ownership */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_managed_call (mb, marshal_release, NULL);
+			mono_mb_emit_byte (mb, CEE_POP);
+
 			/* case if null */
 			mono_mb_patch_short_branch (mb, pos_null);
 		}
@@ -7160,8 +7169,49 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
+		int ccw_obj;
+		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
+		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+		/* store return value */
+		mono_mb_emit_stloc (mb, 0);
+
+		mono_mb_emit_ldloc (mb, 0);
+		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_icon (mb, TRUE);
+		mono_mb_emit_icall (mb, cominterop_get_ccw_object);
+		mono_mb_emit_stloc (mb, ccw_obj);
+		mono_mb_emit_ldloc (mb, ccw_obj);
+		pos_ccw = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
+
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_managed_call (mb, get_object_for_iunknown, NULL);
+
+		if (klass && klass != mono_defaults.object_class)
+			mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
+		mono_mb_emit_stloc (mb, 3);
+
+		pos_end = mono_mb_emit_short_branch (mb, CEE_BR_S);
+
+		/* is already managed object */
+		mono_mb_patch_short_branch (mb, pos_ccw);
+		mono_mb_emit_ldloc (mb, ccw_obj);
+
+		if (klass && klass != mono_defaults.object_class)
+			mono_mb_emit_op (mb, CEE_CASTCLASS, klass);
+		mono_mb_emit_stloc (mb, 3);
+
+		mono_mb_patch_short_branch (mb, pos_end);
+
+		/* need to call Release to follow COM rules of ownership */
+		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_managed_call (mb, marshal_release, NULL);
+		mono_mb_emit_byte (mb, CEE_POP);
+
+		/* case if null */
+		mono_mb_patch_short_branch (mb, pos_null);
 		break;
 	} 
 
