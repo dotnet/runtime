@@ -1580,19 +1580,18 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 			if (mono_class_is_nullable (mono_class_from_mono_type (cf->type))) {
 				MonoClass *nklass = mono_class_from_mono_type (cf->type);
-				guint8 *buf;
+				MonoObject *nullable;
 
 				/* 
 				 * Convert the boxed vtype into a Nullable structure.
 				 * This is complicated by the fact that Nullables have
 				 * a variable structure.
 				 */
-				/* Allocate using alloca so it gets GC tracking */
-				buf = alloca (nklass->instance_size);
+				nullable = mono_object_new (mono_domain_get (), nklass);
 
-				mono_nullable_init (buf, value, nklass);
+				mono_nullable_init (mono_object_unbox (nullable), value, nklass);
 
-				v = (gchar*)buf;
+				v = mono_object_unbox (nullable);
 			}
 			else 
 				if (gclass->container_class->valuetype && (v != NULL))
