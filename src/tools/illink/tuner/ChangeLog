@@ -1,3 +1,7 @@
+2007-08-03  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* Makefile : a bit win32 friendly fix.
+
 2007-08-01  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/CheckVisibilit.cs:
