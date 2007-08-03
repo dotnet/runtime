@@ -4939,13 +4939,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			mono_mb_emit_ptr (mb, string_dummy);
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
-
-			if (mono_class_is_nullable (method->klass)) {
-				/* Need to convert an unboxed vtype to an mp to a Nullable struct */
-				mono_mb_emit_op (mb, CEE_BOX, method->klass->cast_class);
-				mono_mb_emit_op (mb, CEE_UNBOX, method->klass);
-				mono_mb_emit_op (mb, CEE_LDOBJ, method->klass);
-			}
 		}
 	}
 

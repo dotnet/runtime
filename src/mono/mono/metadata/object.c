@@ -2952,6 +2952,17 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		mono_runtime_invoke (method, o, pa, exc);
 		return obj;
 	} else {
+		if (mono_class_is_nullable (method->klass)) {
+			guint8 *buf;
+
+			/* Convert the unboxed vtype into a Nullable structure */
+			/* Allocate using alloca so it gets GC tracking */
+			buf = alloca (method->klass->instance_size);
+
+			mono_nullable_init (buf, mono_value_box (mono_domain_get (), method->klass->cast_class, obj), method->klass);
+			obj = buf;
+		}
+
 		/* obj must be already unboxed if needed */
 		return mono_runtime_invoke (method, obj, pa, exc);
 	}
