@@ -7,7 +7,7 @@ SUBDIRS = $(libgc_dir) mono $(ikvm_native_dir) support docs data runtime scripts
 ## 'tools' is not normally built
 DIST_SUBDIRS = libgc mono ikvm-native support docs data runtime scripts man samples web tools msvc
 
-EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in mono-cairo.pc.in LICENSE
+EXTRA_DIST= mono.pc.in mint.pc.in mono-uninstalled.pc.in dotnet.pc.in mono-cairo.pc.in internal-cecil.pc.in LICENSE
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
@@ -19,15 +19,15 @@ dist-hook:
 pkgconfigdir = $(libdir)/pkgconfig
 if JIT_SUPPORTED
 if INTERP_SUPPORTED
-pkgconfig_DATA= mono.pc mint.pc dotnet.pc mono-cairo.pc
+pkgconfig_DATA= mono.pc mint.pc dotnet.pc mono-cairo.pc internal-cecil.pc
 else
-pkgconfig_DATA= mono.pc dotnet.pc mono-cairo.pc
+pkgconfig_DATA= mono.pc dotnet.pc mono-cairo.pc internal-cecil.pc
 endif
 else
-pkgconfig_DATA= mint.pc mono-cairo.pc
+pkgconfig_DATA= mint.pc mono-cairo.pc internal-cecil.pc
 endif
 noinst_DATA = mono-uninstalled.pc
-DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc dotnet.pc mono-cairo.pc
+DISTCLEANFILES= mono.pc mint.pc mono-uninstalled.pc dotnet.pc mono-cairo.pc internal-cecil.pc
 
 .PHONY: get-monolite-latest mcs-do-compiler-tests compiler-tests bootstrap-world
 
