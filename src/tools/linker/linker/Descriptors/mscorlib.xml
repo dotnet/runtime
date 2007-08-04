@@ -90,7 +90,7 @@
 		<type fullname="System.Nullable`1" />
 		<type fullname="System.Object" preserve="fields" />
 		<type fullname="System.OutOfMemoryException" />
-		<type fullname="System.Reflection.Assembly" preserve="fields" />
+		<type fullname="System.Reflection.Assembly" preserve="all" />
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 		<type fullname="System.Reflection.ConstructorInfo" preserve="fields" />
 		<type fullname="System.Reflection.CustomAttributeData" preserve="fields" />
@@ -107,7 +107,7 @@
 		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILGenerator" preserve="all" />
-		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="all" />
 		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="all" />
 		<type fullname="System.Reflection.Emit.MonoResource" preserve="fields" />
@@ -125,7 +125,7 @@
 		<type fullname="System.Reflection.MethodBase" preserve="fields" />
 		<type fullname="System.Reflection.MethodBody" preserve="fields" />
 		<type fullname="System.Reflection.MethodInfo" preserve="fields" />
-		<type fullname="System.Reflection.Module" preserve="fields" />
+		<type fullname="System.Reflection.Module" preserve="all" />
 		<type fullname="System.Reflection.MonoArrayMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoCMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoEvent" preserve="fields" />
