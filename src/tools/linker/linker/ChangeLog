@@ -1,3 +1,9 @@
+2007-08-05  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs:
+		Now the resolver deals only with assembly names
+		instead of fullnames.
+
 2007-07-25  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs:
