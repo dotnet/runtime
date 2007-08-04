@@ -2055,7 +2055,7 @@ mint.pc
 mono.pc
 mono-cairo.pc
 dotnet.pc
-internal-cecil.pc
+cecil.pc
 mono-uninstalled.pc
 scripts/mono-nunit.pc
 scripts/mono-find-provides
