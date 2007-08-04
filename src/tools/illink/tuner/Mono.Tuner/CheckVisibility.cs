@@ -77,27 +77,7 @@ namespace Mono.Tuner {
 
 		static bool IsPublic (TypeDefinition type)
 		{
-			return (type.DeclaringType == null && (type.Attributes & TypeAttributes.Public) != 0) || (type.Attributes & TypeAttributes.NestedPublic) != 0;
-		}
-
-		static bool IsPublic (FieldDefinition field)
-		{
-			return (field.Attributes & FieldAttributes.Public) != 0;
-		}
-
-		static bool IsAssembly (FieldDefinition field)
-		{
-			return (field.Attributes & FieldAttributes.Assembly) != 0;
-		}
-
-		static bool IsPublic (MethodDefinition meth)
-		{
-			return (meth.Attributes & MethodAttributes.Public) != 0;
-		}
-
-		static bool IsAssembly (MethodDefinition meth)
-		{
-			return (meth.Attributes & MethodAttributes.Assem) != 0;
+			return (type.DeclaringType == null && type.IsPublic) || type.IsNestedPublic;
 		}
 
 		static bool AreInDifferentAssemblies (TypeDefinition lhs, TypeDefinition rhs)
@@ -134,7 +114,7 @@ namespace Mono.Tuner {
 			MethodDefinition meth = null;
 			try {
 				meth = Context.Resolver.Resolve (reference);
-			} catch {}
+			} catch (ResolutionException) {}
 
 			if (meth == null)
 				return true;
@@ -143,10 +123,10 @@ namespace Mono.Tuner {
 			if (!IsVisibleFrom (type, dec))
 				return false;
 
-			if (IsPublic (meth))
+			if (meth.IsPublic)
 				return true;
 
-			if (!AreInDifferentAssemblies (type, dec) && IsAssembly (meth))
+			if (!AreInDifferentAssemblies (type, dec) && meth.IsAssembly)
 				return true;
 
 			return false;
@@ -160,7 +140,7 @@ namespace Mono.Tuner {
 			FieldDefinition field = null;
 			try {
 				field = Context.Resolver.Resolve (reference);
-			} catch {}
+			} catch (ResolutionException) {}
 
 			if (field == null)
 				return true;
@@ -169,16 +149,16 @@ namespace Mono.Tuner {
 			if (!IsVisibleFrom (type, dec))
 				return false;
 
-			if (IsPublic (field))
+			if (field.IsPublic)
 				return true;
 
-			if (!AreInDifferentAssemblies (type, dec) && IsAssembly (field))
+			if (!AreInDifferentAssemblies (type, dec) && field.IsAssembly)
 				return true;
 
 			return false;
 		}
 
-		void Report (string pattern, params object [] parameters)
+		static void Report (string pattern, params object [] parameters)
 		{
 			Console.WriteLine ("[check] " + pattern, parameters);
 		}
