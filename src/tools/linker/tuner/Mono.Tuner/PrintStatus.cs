@@ -34,7 +34,7 @@ using Mono.Linker.Steps;
 using Mono.Cecil;
 
 namespace Mono.Tuner {
-	
+
 	public class PrintStatus : BaseStep {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)

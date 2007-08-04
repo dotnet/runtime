@@ -112,7 +112,7 @@ namespace Mono.Tuner {
 
 			if (reference is GenericParameter || reference.GetOriginalType () is GenericParameter)
 				return true;
-	
+
 			TypeDefinition other = Context.Resolver.Resolve (reference);
 			if (other == null)
 				return true;
@@ -122,7 +122,7 @@ namespace Mono.Tuner {
 
 			if (IsPublic (other))
 				return true;
-			
+
 			return false;
 		}
 
