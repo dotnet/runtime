@@ -35,7 +35,7 @@ using Mono.Linker.Steps;
 using Mono.Cecil;
 
 namespace Mono.Tuner {
-	
+
 	public class RemoveSerialization : BaseStep {
 
 		static readonly string _Serialization = "System.Runtime.Serialization";
@@ -75,7 +75,7 @@ namespace Mono.Tuner {
 
 		static void RemoveSerializableFlag (TypeDefinition type)
 		{
-			type.Attributes &= ~TypeAttributes.Serializable; 
+			type.Attributes &= ~TypeAttributes.Serializable;
 		}
 
 		static void ProcessType (TypeDefinition type)
