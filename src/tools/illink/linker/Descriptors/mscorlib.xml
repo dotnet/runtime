@@ -106,10 +106,10 @@
 		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ILGenerator" preserve="all" />
 		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="all" />
 		<type fullname="System.Reflection.Emit.MonoResource" preserve="fields" />
 		<type fullname="System.Reflection.Emit.MonoWin32Resource" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="fields" />
