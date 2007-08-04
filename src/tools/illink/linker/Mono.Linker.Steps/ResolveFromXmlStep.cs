@@ -226,45 +226,16 @@ namespace Mono.Linker.Steps {
 			AssemblyNameReference reference = AssemblyNameReference.Parse (assemblyName);
 			AssemblyDefinition assembly;
 
-			if (IsSimpleName (assemblyName)) {
-				assembly = SearchAssemblyInContext (context, assemblyName);
-				if (assembly != null)
-					return assembly;
-			}
-
 			assembly = context.Resolve (reference);
-
-			if (IsSimpleName (assemblyName))
-				UpdateReferenceInCache (context, reference, assembly);
 
 			ProcessReferences (assembly, context);
 			return assembly;
-		}
-
-		static void UpdateReferenceInCache (LinkContext context, AssemblyNameReference reference, AssemblyDefinition assembly)
-		{
-			context.Resolver.AssemblyCache.Remove (reference.FullName);
-			context.Resolver.AssemblyCache.Add (assembly.Name.FullName, assembly);
-		}
-
-		static AssemblyDefinition SearchAssemblyInContext (LinkContext context, string name)
-		{
-			foreach (AssemblyDefinition assembly in context.GetAssemblies ())
-				if (assembly.Name.Name == name)
-					return assembly;
-
-			return null;
 		}
 
 		static void ProcessReferences (AssemblyDefinition assembly, LinkContext context)
 		{
 			foreach (AssemblyNameReference name in assembly.MainModule.AssemblyReferences)
 				context.Resolve (name);
-		}
-
-		static bool IsSimpleName (string assemblyName)
-		{
-			return assemblyName.IndexOf (",") == -1;
 		}
 
 		static bool IsRequired (XPathNavigator nav)
