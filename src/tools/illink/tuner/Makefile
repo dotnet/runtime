@@ -11,11 +11,14 @@ LINKER_PLUGINS = \
 	Mono.Tuner/CheckVisibility.dll	\
 #	Mono.Tuner/InjectAttributes.dll	\
 
+LINKER_DESCS =	\
+	Descriptors/smcs.xml	\
+
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
 LINKER_SOURCES = $(LINKER_PLUGINS:.dll=.cs)
 
-DISTFILES = README $(LINKER_SOURCES)
+DISTFILES = README $(LINKER_SOURCES) $(LINKER_DESCS)
 
 ifneq (net_2_1, $(PROFILE))
 all-local: $(LINKER_PLUGINS)
@@ -55,9 +58,6 @@ MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/System.info		\
 	masterinfos/silverlight/System.Core.info	\
 	masterinfos/silverlight/System.Xml.Core.info	\
-
-LINKER_DESCS =	\
-	Descriptors/smcs.xml	\
 
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 LINKER_STEPS = \
