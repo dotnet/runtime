@@ -56,6 +56,9 @@ MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/System.Core.info	\
 	masterinfos/silverlight/System.Xml.Core.info	\
 
+LINKER_DESCS =	\
+	Descriptors/smcs.xml	\
+
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 LINKER_STEPS = \
 	Mono.Tuner.PrintStatus,PrintStatus:OutputStep	\
@@ -63,7 +66,7 @@ LINKER_STEPS = \
 	Mono.Tuner.CheckVisibility,CheckVisibility	\
 
 tune: masterinfos/silverlight.infos
-	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/net_2_0$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
+	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/net_2_0$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_DESCS:%=-x %) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
 
 %.dll: %.cs
 	$(CSCOMPILE) /t:library $^
