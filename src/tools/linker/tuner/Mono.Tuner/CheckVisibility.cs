@@ -126,6 +126,12 @@ namespace Mono.Tuner {
 			if (meth.IsPublic)
 				return true;
 
+			if (meth.IsPrivate && meth.DeclaringType == dec)
+				return true;
+
+			if (meth.IsFamily && InHierarchy (dec, meth.DeclaringType))
+				return true;
+
 			if (!AreInDifferentAssemblies (type, dec) && meth.IsAssembly)
 				return true;
 
@@ -152,10 +158,25 @@ namespace Mono.Tuner {
 			if (field.IsPublic)
 				return true;
 
+			if (field.IsPrivate && field.DeclaringType == dec)
+				return true;
+
+			if (field.IsFamily && InHierarchy (dec, field.DeclaringType))
+				return true;
+
 			if (!AreInDifferentAssemblies (type, dec) && field.IsAssembly)
 				return true;
 
 			return false;
+		}
+
+		bool InHierarchy (TypeDefinition declaration, TypeReference reference)
+		{
+			TypeDefinition other = Context.Resolver.Resolve (reference);
+			if (declaration == other)
+				return true;
+
+			return InHierarchy (declaration, other.BaseType);
 		}
 
 		static void Report (string pattern, params object [] parameters)
