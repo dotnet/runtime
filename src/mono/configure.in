@@ -2051,11 +2051,6 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/browscap.ini],
 
 AC_OUTPUT([
 Makefile
-mint.pc
-mono.pc
-mono-cairo.pc
-dotnet.pc
-cecil.pc
 mono-uninstalled.pc
 scripts/mono-nunit.pc
 scripts/mono-find-provides
@@ -2101,6 +2096,11 @@ docs/Makefile
 data/Makefile
 data/net_1_1/Makefile
 data/net_2_0/Makefile
+data/mint.pc
+data/mono.pc
+data/mono-cairo.pc
+data/dotnet.pc
+data/cecil.pc
 samples/Makefile
 support/Makefile
 data/config

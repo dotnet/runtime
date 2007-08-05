@@ -1,7 +1,0 @@
-assemblies_dir=@prefix@/lib/mono
-Libraries=${assemblies_dir}/gac/Mono.Cecil/0.5.0.1__0738eb9f132ed756/Mono.Cecil.dll
-
-Name: Mono Internal -- Do not use.
-Description: Mono Internal Libraries -- Do not use 
-Version: @VERSION@
-Libs: -r:Mono.Cecil.dll

@@ -1,5 +1,0 @@
-
-Name: Standard libraries in a .NET setup
-Description: References all the standard .NET libraries for compilation
-Version: @VERSION@
-Libs: -r:Accessibility.dll -r:cscompmgd.dll -r:Microsoft.JScript.dll -r:Microsoft.VisualC.dll -r:Microsoft.Vsa.dll -r:System.Configuration.Install.dll -r:System.Data.dll -r:System.Data.OracleClient.dll -r:System.Design.dll -r:System.DirectoryServices.dll -r:System.dll -r:System.Drawing.Design.dll -r:System.Drawing.dll -r:System.EnterpriseServices.dll -r:System.Management.dll -r:System.Messaging.dll -r:System.Runtime.Remoting.dll -r:System.Runtime.Serialization.Formatters.Soap.dll -r:System.Security.dll -r:System.ServiceProcess.dll -r:System.Web.dll -r:System.Web.Services.dll -r:System.Windows.Forms.dll -r:System.Xml.dll
