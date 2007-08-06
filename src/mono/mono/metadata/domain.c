@@ -1103,6 +1103,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		return;
 	}
 
+	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD, domain->domain_id, 0);
+
 	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;
 	mono_appdomains_unlock ();
