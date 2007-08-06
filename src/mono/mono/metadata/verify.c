@@ -1077,9 +1077,9 @@ in_same_block (MonoMethodHeader *header, guint offset, guint target)
 
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if (MONO_OFFSET_IN_CLAUSE (clause, offset) && !MONO_OFFSET_IN_CLAUSE (clause, target))
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
 			return 0;
-		if (MONO_OFFSET_IN_HANDLER (clause, offset) && !MONO_OFFSET_IN_HANDLER (clause, target))
+		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
 			return 0;
 		/* need to check filter ... */
 	}
@@ -1262,7 +1262,7 @@ static int
 check_underflow (VerifyContext *ctx, int size)
 {
 	if (ctx->eval.size < size) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack underflow, required %d, but have %d", size, ctx->eval.size));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack underflow, required %d, but have %d at 0x%04x", size, ctx->eval.size, ctx->ip_offset));
 		return 0;
 	}
 	return 1;
@@ -1272,7 +1272,7 @@ static int
 check_overflow (VerifyContext *ctx)
 {
 	if (ctx->eval.size >= ctx->max_stack) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method doesn't have stack-depth %d", ctx->eval.size + 1));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method doesn't have stack-depth %d at 0x%04x", ctx->eval.size + 1, ctx->ip_offset));
 		return 0;
 	}
 	return 1;
@@ -2738,18 +2738,30 @@ mono_method_verify (MonoMethod *method, int level)
 	if (ctx.signature->is_inflated)
 		ctx.generic_context = generic_context = mono_method_get_context (method);
 
-	stack_init(&ctx, &ctx.eval);
+	stack_init (&ctx, &ctx.eval);
 
 
-	/* TODO implement exception entry
-	for (i = 0; i < header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &header->clauses [i];
-		// catch blocks have the exception on the stack. 
+	for (i = 0; i < ctx.header->num_clauses; ++i) {
+		MonoExceptionClause *clause = ctx.header->clauses + i;
+		/* catch blocks and filter have the exception on the stack. */
+		/* must check boundaries for handler_offset and handler_start < handler_start*/
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-			code [clause->handler_offset].size = 1;
-			code [clause->handler_offset].flags |= IL_CODE_FLAG_SEEN;
+			ILCodeDesc *code = ctx.code + clause->handler_offset;
+			stack_init (&ctx, code);
+			code->stack [0].stype = TYPE_COMPLEX;
+			code->stack [0].type = &clause->data.catch_class->byval_arg;
+			code->size = 1;
+			code->flags = IL_CODE_FLAG_SEEN;
 		}
-	}*/
+		else if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			ILCodeDesc *code = ctx.code + clause->data.filter_offset;
+			stack_init (&ctx, code);
+			code->stack [0].stype = TYPE_COMPLEX;
+			code->stack [0].type = &mono_defaults.exception_class->byval_arg;
+			code->size = 1;
+			code->flags = IL_CODE_FLAG_SEEN;
+		}
+	}
 
 	while (ip < end && ctx.valid) {
 		ctx.ip_offset = ip_offset = ip - ctx.header->code;
