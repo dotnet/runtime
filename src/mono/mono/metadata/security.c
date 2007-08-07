@@ -964,3 +964,45 @@ ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionA
 	}
 	return FALSE;
 }
+
+
+/* System.Security.SecureString related internal calls */
+
+static MonoImage *system_security_assembly = NULL;
+
+void
+ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope)
+{
+	invoke_protected_memory_method (data, scope, FALSE);
+}
+void
+ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObject *scope)
+{
+	invoke_protected_memory_method (data, scope, TRUE);
+}
+
+void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt)
+{
+	MonoClass *klass;
+	MonoMethod *method;
+	void *params [2];
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (system_security_assembly == NULL) {
+		system_security_assembly = mono_image_loaded ("System.Security");
+		if (!system_security_assembly) {
+			MonoAssembly *sa = mono_assembly_open ("System.Security.dll", NULL);
+			if (!sa)
+				g_assert_not_reached ();
+			system_security_assembly = mono_assembly_get_image (sa);
+		}
+	}
+
+	klass = mono_class_from_name (system_security_assembly,
+								  "System.Security.Cryptography", "ProtectedMemory");
+	method = mono_class_get_method_from_name (klass, encrypt ? "Protect" : "Unprotect", 2);
+	params [0] = data;
+	params [1] = scope; /* MemoryProtectionScope.SameProcess */
+	mono_runtime_invoke (method, NULL, params, NULL);
+}

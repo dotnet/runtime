@@ -660,6 +660,10 @@ ICALL_TYPE(WINPRIN, "System.Security.Principal.WindowsPrincipal", WINPRIN_1)
 ICALL(WINPRIN_1, "IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId)
 ICALL(WINPRIN_2, "IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName)
 
+ICALL_TYPE(SECSTRING, "System.Security.SecureString", SECSTRING_1)
+ICALL(SECSTRING_1, "DecryptInternal", ves_icall_System_Security_SecureString_DecryptInternal)
+ICALL(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_EncryptInternal)
+
 ICALL_TYPE(SECMAN, "System.Security.SecurityManager", SECMAN_1)
 ICALL(SECMAN_1, "GetLinkDemandSecurity", ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity)
 ICALL(SECMAN_2, "get_CheckExecutionRights", ves_icall_System_Security_SecurityManager_get_CheckExecutionRights)
