@@ -671,6 +671,11 @@ static const char info[] =
 #else
     "\tSIGSEGV:       normal\n"
 #endif
+#ifdef HAVE_EPOLL
+    "\tNotifications: epoll\n"
+#else
+    "\tNotification:  Thread + polling\n"
+#endif
         "\tArchitecture:  " ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
 	"";
