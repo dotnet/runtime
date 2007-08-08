@@ -2018,7 +2018,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							continue;
 
 						if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
-						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
+								mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im)) &&
+								((vtable [io + l] == NULL) || mono_class_is_subclass_of (cm->klass, vtable [io + l]->klass, FALSE))) {
 
 							/* CAS - SecurityAction.InheritanceDemand on interface */
 							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
