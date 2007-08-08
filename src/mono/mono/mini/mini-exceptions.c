@@ -1117,7 +1117,7 @@ void
 mono_print_thread_dump (void *sigctx)
 {
 	MonoThread *thread = mono_thread_current ();
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 	MonoContext ctx;
 #endif
 	char *name;
@@ -1135,7 +1135,7 @@ mono_print_thread_dump (void *sigctx)
 	fprintf (stdout, " tid=0x%p this=0x%p:\n", (gpointer)(gsize)thread->tid, thread);
 
 	/* FIXME: */
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 
 	mono_jit_walk_stack_from_ctx (print_stack_frame, &ctx, TRUE, stdout);
