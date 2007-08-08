@@ -30,6 +30,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/threads-types.h>
 #include <metadata/threads.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
