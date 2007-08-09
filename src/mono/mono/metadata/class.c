@@ -146,23 +146,6 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	return mono_class_from_name (image->references [idx - 1]->image, nspace, name);
 }
 
-static inline MonoType*
-dup_type (MonoType* t, const MonoType *original)
-{
-	MonoType *r = g_new0 (MonoType, 1);
-	*r = *t;
-	r->attrs = original->attrs;
-	r->byref = original->byref;
-	if (t->type == MONO_TYPE_PTR)
-		t->data.type = dup_type (t->data.type, original->data.type);
-	else if (t->type == MONO_TYPE_ARRAY)
-		t->data.array = mono_dup_array_type (t->data.array);
-	else if (t->type == MONO_TYPE_FNPTR)
-		t->data.method = mono_metadata_signature_deep_dup (t->data.method);
-	mono_stats.generics_metadata_size += sizeof (MonoType);
-	return r;
-}
-
 /* Copy everything mono_metadata_free_array free. */
 MonoArrayType *
 mono_dup_array_type (MonoArrayType *a)
@@ -183,9 +166,9 @@ mono_metadata_signature_deep_dup (MonoMethodSignature *sig)
 	
 	sig = mono_metadata_signature_dup (sig);
 	
-	sig->ret = dup_type (sig->ret, sig->ret);
+	sig->ret = mono_metadata_type_dup (NULL, sig->ret);
 	for (i = 0; i < sig->param_count; ++i)
-		sig->params [i] = dup_type (sig->params [i], sig->params [i]);
+		sig->params [i] = mono_metadata_type_dup (NULL, sig->params [i]);
 	
 	return sig;
 }
@@ -447,29 +430,43 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
+		MonoType *nt;
 		int num = type->data.generic_param->num;
 		MonoGenericInst *inst = context->method_inst;
 		if (!inst || !inst->type_argv)
 			return NULL;
 		if (num >= inst->type_argc)
 			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
-		return dup_type (inst->type_argv [num], type);
+
+		/*
+		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
+		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
+		 * ->byref and ->attrs from @type are propagated to the returned type.
+		 */
+		nt = mono_metadata_type_dup (NULL, inst->type_argv [num]);
+		nt->byref = type->byref;
+		nt->attrs = type->attrs;
+		return nt;
 	}
 	case MONO_TYPE_VAR: {
+		MonoType *nt;
 		int num = type->data.generic_param->num;
 		MonoGenericInst *inst = context->class_inst;
 		if (!inst)
 			return NULL;
 		if (num >= inst->type_argc)
 			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
-		return dup_type (inst->type_argv [num], type);
+		nt = mono_metadata_type_dup (NULL, inst->type_argv [num]);
+		nt->byref = type->byref;
+		nt->attrs = type->attrs;
+		return nt;
 	}
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoType *nt, *inflated = inflate_generic_type (&eclass->byval_arg, context);
 		if (!inflated)
 			return NULL;
-		nt = dup_type (type, type);
+		nt = mono_metadata_type_dup (NULL, type);
 		nt->data.klass = mono_class_from_mono_type (inflated);
 		return nt;
 	}
@@ -478,7 +475,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		MonoType *nt, *inflated = inflate_generic_type (&eclass->byval_arg, context);
 		if (!inflated)
 			return NULL;
-		nt = dup_type (type, type);
+		nt = mono_metadata_type_dup (NULL, type);
 		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
 		nt->data.array->eklass = mono_class_from_mono_type (inflated);
 		return nt;
@@ -497,7 +494,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		if (gclass == type->data.generic_class)
 			return NULL;
 
-		nt = dup_type (type, type);
+		nt = mono_metadata_type_dup (NULL, type);
 		nt->data.generic_class = gclass;
 		return nt;
 	}
@@ -516,7 +513,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
 		gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
 
-		nt = dup_type (type, type);
+		nt = mono_metadata_type_dup (NULL, type);
 		nt->type = MONO_TYPE_GENERICINST;
 		nt->data.generic_class = gclass;
 		return nt;
@@ -554,7 +551,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	MonoType *inflated = inflate_generic_type (type, context);
 
 	if (!inflated)
-		return dup_type (type, type);
+		return mono_metadata_type_dup (NULL, type);
 
 	mono_stats.inflated_type_count++;
 	return inflated;

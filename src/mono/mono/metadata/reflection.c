@@ -147,7 +147,6 @@ static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
-static inline MonoType *dup_type (const MonoType *original);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 
@@ -8789,23 +8788,6 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);
 
 	return mono_generic_class_get_class (gclass);
-}
-
-static inline MonoType*
-dup_type (const MonoType *original)
-{
-	MonoType *r = g_new0 (MonoType, 1);
-	*r = *original;
-	r->attrs = original->attrs;
-	r->byref = original->byref;
-	if (original->type == MONO_TYPE_PTR)
-		r->data.type = dup_type (original->data.type);
-	else if (original->type == MONO_TYPE_ARRAY)
-		r->data.array = mono_dup_array_type (original->data.array);
-	else if (original->type == MONO_TYPE_FNPTR)
-		r->data.method = mono_metadata_signature_deep_dup (original->data.method);
-	mono_stats.generics_metadata_size += sizeof (MonoType);
-	return r;
 }
 
 MonoReflectionMethod*

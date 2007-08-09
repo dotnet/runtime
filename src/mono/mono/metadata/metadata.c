@@ -3740,10 +3740,10 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 
 /**
  * mono_metadata_type_dup:
- * @image: mempool to use
+ * @mp: mempool to use
  * @original: type to duplicate
  *
- * Returns: copy of type allocated from mempool.
+ * Returns: copy of type allocated from mempool (or from the heap, if @mp is null).
  */
 MonoType *
 mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
