@@ -611,7 +611,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
  *   Return the address and size of the current threads stack. Return NULL as the stack
  * address if the stack address cannot be determined.
  */
-static void
+void
 mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 #ifndef PLATFORM_WIN32

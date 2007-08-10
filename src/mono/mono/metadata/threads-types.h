@@ -129,6 +129,7 @@ extern void ves_icall_System_Threading_Thread_SpinWait_internal (gint32) MONO_IN
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields) MONO_INTERNAL;
 void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
 extern void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;
+extern void mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
 
 extern void mono_thread_init_apartment_state (void) MONO_INTERNAL;
 extern void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
