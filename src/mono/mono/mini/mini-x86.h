@@ -50,7 +50,13 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #ifndef PLATFORM_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK
+/* 
+ * solaris doesn't have pthread_getattr_np () needed by the sigaltstack setup
+ * code.
+ */
+#ifndef __sun
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#endif
 #define MONO_ARCH_USE_SIGACTION
 
 #endif /* HAVE_WORKING_SIGALTSTACK */

@@ -905,39 +905,16 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {
-	pthread_t self = pthread_self();
-	pthread_attr_t attr;
 	size_t stsize = 0;
 	struct sigaltstack sa;
 	guint8 *staddr = NULL;
-	guint8 *current = (guint8*)&staddr;
 
 	if (mono_running_on_valgrind ())
 		return;
 
-	/* Determine stack boundaries */
-	pthread_attr_init( &attr );
-#ifdef HAVE_PTHREAD_GETATTR_NP
-	pthread_getattr_np( self, &attr );
-#else
-#ifdef HAVE_PTHREAD_ATTR_GET_NP
-	pthread_attr_get_np( self, &attr );
-#elif defined(sun)
-	pthread_attr_getstacksize( &attr, &stsize );
-#else
-#error "Not implemented"
-#endif
-#endif
-
-#ifdef HAVE_PTHREAD_ATTR_GETSTACK
-	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
-#endif
-
-	pthread_attr_destroy (&attr); 
+	mono_thread_get_stack_bounds (&staddr, &stsize);
 
 	g_assert (staddr);
-
-	g_assert ((current > staddr) && (current < staddr + stsize));
 
 	tls->end_of_stack = staddr + stsize;
 
