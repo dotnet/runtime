@@ -360,7 +360,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	do {
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
-
+		
 		ctx = new_ctx;
 		
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_SP (&ctx) >= jit_tls->end_of_stack)
@@ -929,7 +929,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 #endif
 #endif
 
-#ifndef sun
+#ifdef HAVE_PTHREAD_ATTR_GETSTACK
 	pthread_attr_getstack( &attr, (void**)&staddr, &stsize );
 #endif
 
