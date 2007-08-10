@@ -24,7 +24,24 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
     .field public int32 valid
 }
 
-.class explicit Overlapped extends [mscorlib]System.ValueType
+.class public Template\`1<T>
+  	extends [mscorlib]System.Object
+{
+}
+
+.class public auto ansi sealed MyStruct
+  	extends [mscorlib]System.ValueType
+{
+}
+
+.class public auto ansi sealed Int8Enum
+	extends [mscorlib]System.Enum
+{
+	.field public specialname rtspecialname int8 value__
+	.field public static literal valuetype Int8Enum A = int8(0x00000000)
+}
+
+.class explicit sealed Overlapped extends [mscorlib]System.ValueType
 {
     .field [0] private int32 privateIntVal
     .field [0] public int32 publicIntVal

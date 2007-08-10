@@ -224,12 +224,32 @@ do
   I=`expr $I + 1`
 done
 
-for OP in "not\n\tpop"
+I=1
+for TYPE in bool int8 int16 char int32 int64 'native int' 'class Int8Enum'
 do
-  ./make_unary_test.sh not_1 unverifiable "$OP" float64
-  ./make_unary_test.sh not_2 unverifiable "$OP" 'int32&'
-  ./make_unary_test.sh not_3 unverifiable "$OP" object
+  ./make_unary_test.sh not_${I} valid "not\n\tpop" "$TYPE"
+  I=`expr $I + 1`
 done
+
+for TYPE in 'int32&' object "class MyStruct" typedref "method int32 *(int32)" 'class Template\`1<int32>' float32 float64
+do
+  ./make_unary_test.sh not_${I} unverifiable "not\n\tpop" "$TYPE"
+  I=`expr $I + 1`
+done
+
+I=1
+for TYPE in bool int8 int16 char int32 int64 'native int' 'class Int8Enum' float32 float64
+do
+  ./make_unary_test.sh neg_${I} valid "neg\n\tpop" "$TYPE"
+  I=`expr $I + 1`
+done
+
+for TYPE in 'int32&' object "class MyStruct" typedref "method int32 *(int32)" 'class Template\`1<int32>'
+do
+  ./make_unary_test.sh neg_${I} unverifiable "neg\n\tpop" "$TYPE"
+  I=`expr $I + 1`
+done
+
 
 # Table 6: Shift Operators
 I=1
@@ -803,7 +823,7 @@ done
 # Box byref-like type.
 ./make_unary_test.sh box_byref_like unverifiable "box [mscorlib]System.TypedReference\n\tpop" typedref
 
-#This is is illegal since you cannot have a Void local variable, it should go into the structural tests part
+#This is illegal since you cannot have a Void local variable, it should go into the structural tests part
 # Box void type.
 #./make_unary_test.sh box_void unverifiable "box [mscorlib]System.Void\n\tpop" "class [mscorlib]System.Void"
 
@@ -1447,6 +1467,188 @@ do
 	./make_self_nested_test.sh self_nested_access_check_36_${I} valid "$OP" famorassem famorassem
 	I=`expr $I + 1`
 done
+
+
+I=1
+for OP in "ldc.i4.0\n\t\tstsfld int32 Owner\/Nested::sfld" "ldsfld int32 Owner\/Nested::sfld\n\n\tpop" "ldsflda int32 Owner\/Nested::sfld\n\n\tpop" "callvirt instance int32 class Owner\/Nested::Target()" "call instance int32 class Owner\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Owner\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Owner\/Nested::fld" "ldflda int32 Owner\/Nested::fld"
+do
+	./make_cross_nested_access_test.sh cross_nested_access_check_1_${I} valid "$OP" public public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_2_${I} valid "$OP" public public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3_${I} unverifiable "$OP" public private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_4_${I} unverifiable "$OP" public private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5_${I} unverifiable "$OP" public family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_7_${I} valid "$OP" public assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_8_${I} valid "$OP" public assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_9_${I} unverifiable "$OP" public famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_b_${I} valid "$OP" public famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_c_${I} valid "$OP" public famorassem yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_11_${I} valid "$OP" private public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_12_${I} valid "$OP" private public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_13_${I} unverifiable "$OP" private private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_14_${I} unverifiable "$OP" private private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_15_${I} unverifiable "$OP" private family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_17_${I} valid "$OP" private assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_18_${I} valid "$OP" private assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_19_${I} unverifiable "$OP" private famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_1b_${I} valid "$OP" private famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_1c_${I} valid "$OP" private famorassem yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_21_${I} valid "$OP" family public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_22_${I} valid "$OP" family public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_23_${I} unverifiable "$OP" family private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_24_${I} unverifiable "$OP" family private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_25_${I} unverifiable "$OP" family family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_27_${I} valid "$OP" family assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_28_${I} valid "$OP" family assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_29_${I} unverifiable "$OP" family famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_2b_${I} valid "$OP" family famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_2c_${I} valid "$OP" family famorassem yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_31_${I} valid "$OP" assembly public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_32_${I} valid "$OP" assembly public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_33_${I} unverifiable "$OP" assembly private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_34_${I} unverifiable "$OP" assembly private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_35_${I} unverifiable "$OP" assembly family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_37_${I} valid "$OP" assembly assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_38_${I} valid "$OP" assembly assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_39_${I} unverifiable "$OP" assembly famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_3b_${I} valid "$OP" assembly famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_3c_${I} valid "$OP" assembly famorassem yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_41_${I} valid "$OP" famandassem public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_42_${I} valid "$OP" famandassem public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_43_${I} unverifiable "$OP" famandassem private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_44_${I} unverifiable "$OP" famandassem private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_45_${I} unverifiable "$OP" famandassem family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_47_${I} valid "$OP" famandassem assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_48_${I} valid "$OP" famandassem assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_49_${I} unverifiable "$OP" famandassem famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_4b_${I} valid "$OP" famandassem famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_4c_${I} valid "$OP" famandassem famorassem yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_51_${I} valid "$OP" famorassem public no
+	./make_cross_nested_access_test.sh cross_nested_access_check_52_${I} valid "$OP" famorassem public yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_53_${I} unverifiable "$OP" famorassem private no
+	./make_cross_nested_access_test.sh cross_nested_access_check_54_${I} unverifiable "$OP" famorassem private yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_55_${I} unverifiable "$OP" famorassem family no
+	./make_cross_nested_access_test.sh cross_nested_access_check_57_${I} valid "$OP" famorassem assembly no
+	./make_cross_nested_access_test.sh cross_nested_access_check_58_${I} valid "$OP" famorassem assembly yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_59_${I} unverifiable "$OP" famorassem famandassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_5b_${I} valid "$OP" famorassem famorassem no
+	./make_cross_nested_access_test.sh cross_nested_access_check_5c_${I} valid "$OP" famorassem famorassem yes
+	I=`expr $I + 1`
+done
+
+
+I=1
+for OP in "callvirt instance int32 class Owner\/Nested::Target()" "call instance int32 class Owner\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Owner\/Nested::fld\n\t\tldc.i4.0" "ldc.i4.0\n\t\tstsfld int32 Owner\/Nested::sfld" "ldsfld int32 Owner\/Nested::sfld\n\n\tpop" "ldfld int32 Owner\/Nested::fld" "ldsflda int32 Owner\/Nested::sfld\n\n\tpop" "ldflda int32 Owner\/Nested::fld"
+do
+	./make_cross_nested_access_test.sh cross_nested_access_check_2a_${I} valid "$OP" public public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4a_${I} unverifiable "$OP" public private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_8a_${I} valid "$OP" public assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_ca_${I} valid "$OP" public famorassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_12a_${I} valid "$OP" private public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_14a_${I} unverifiable "$OP" private private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_18a_${I} valid "$OP" private assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_1ca_${I} valid "$OP" private famorassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_22a_${I} valid "$OP" family public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_24a_${I} unverifiable "$OP" family private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_28a_${I} valid "$OP" family assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_2ca_${I} valid "$OP" family famorassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_32a_${I} valid "$OP" assembly public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_34a_${I} unverifiable "$OP" assembly private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_38a_${I} valid "$OP" assembly assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3ca_${I} valid "$OP" assembly famorassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_42a_${I} valid "$OP" famandassem public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_44a_${I} unverifiable "$OP" famandassem private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_48a_${I} valid "$OP" famandassem assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4ca_${I} valid "$OP" famandassem famorassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_52a_${I} valid "$OP" famorassem public yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_54a_${I} unverifiable "$OP" famorassem private yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_58a_${I} valid "$OP" famorassem assembly yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5ca_${I} valid "$OP" famorassem famorassem yes yes
+	I=`expr $I + 1`
+done
+
+
+I=1
+for OP in "callvirt instance int32 class Owner\/Nested::Target()" "call instance int32 class Owner\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Owner\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Owner\/Nested::fld" "ldflda int32 Owner\/Nested::fld"
+do
+	./make_cross_nested_access_test.sh cross_nested_access_check_6_${I} unverifiable "$OP" public family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_6a_${I} valid "$OP" public family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_a_${I} unverifiable "$OP" public famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_aa_${I} valid "$OP" public famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_16_${I} unverifiable "$OP" private family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_16a_${I} valid "$OP" private family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_1a_${I} unverifiable "$OP" private famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_1aa_${I} valid "$OP" private famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_26_${I} unverifiable "$OP" family family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_26a_${I} valid "$OP" family family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_2a_${I} unverifiable "$OP" family famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_2aa_${I} valid "$OP" family famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_36_${I} unverifiable "$OP" assembly family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_36a_${I} valid "$OP" assembly family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3a_${I} unverifiable "$OP" assembly famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3aa_${I} valid "$OP" assembly famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_46_${I} unverifiable "$OP" famandassem family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_46a_${I} valid "$OP" famandassem family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4a_${I} unverifiable "$OP" famandassem famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4aa_${I} valid "$OP" famandassem famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_56_${I} unverifiable "$OP" famorassem family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_56a_${I} valid "$OP" famorassem family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5a_${I} unverifiable "$OP" famorassem famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5aa_${I} valid "$OP" famorassem famandassem yes yes
+
+	I=`expr $I + 1`
+done
+
+for OP in "ldc.i4.0\n\t\tstsfld int32 Owner\/Nested::sfld" "ldsfld int32 Owner\/Nested::sfld\n\n\tpop" "ldsflda int32 Owner\/Nested::sfld\n\n\tpop"
+do
+	./make_cross_nested_access_test.sh cross_nested_access_check_6_${I} valid "$OP" public family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_6a_${I} valid "$OP" public family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_a_${I} valid "$OP" public famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_aa_${I} valid "$OP" public famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_16_${I} valid "$OP" private family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_16a_${I} valid "$OP" private family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_1a_${I} valid "$OP" private famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_1aa_${I} valid "$OP" private famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_26_${I} valid "$OP" family family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_26a_${I} valid "$OP" family family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_2a_${I} valid "$OP" family famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_2aa_${I} valid "$OP" family famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_36_${I} valid "$OP" assembly family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_36a_${I} valid "$OP" assembly family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3a_${I} valid "$OP" assembly famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_3aa_${I} valid "$OP" assembly famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_46_${I} valid "$OP" famandassem family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_46a_${I} valid "$OP" famandassem family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4a_${I} valid "$OP" famandassem famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_4aa_${I} valid "$OP" famandassem famandassem yes yes
+
+	./make_cross_nested_access_test.sh cross_nested_access_check_56_${I} valid "$OP" famorassem family yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_56a_${I} valid "$OP" famorassem family yes yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5a_${I} valid "$OP" famorassem famandassem yes
+	./make_cross_nested_access_test.sh cross_nested_access_check_5aa_${I} valid "$OP" famorassem famandassem yes yes
+
+	I=`expr $I + 1`
+done
+
+
 
 I=1
 for OP in "ldc.i4.0\n\t\tstfld int32 Class::fld\n\t\tldc.i4.0" "ldc.i4.0\n\t\tstsfld int32 Class::sfld" "ldsfld int32 Class::sfld\n\n\tpop" "ldfld int32 Class::fld" "ldsflda int32 Class::sfld\n\n\tpop" "ldflda int32 Class::fld" "call instance int32 Class::Method()" "callvirt int32 Class::Method()"

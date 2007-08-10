@@ -36,7 +36,7 @@ branch_target1:
         }
         catch [mscorlib]System.Exception 
 	{
-		nop
+		pop
 branch_target2:
 		OPCODE3
 		leave branch_target5
