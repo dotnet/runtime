@@ -255,11 +255,6 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	pushed_args += 2;
 
 	/* starting the call sequence */
-#ifdef __APPLE__
-	/* changing esp to keep the stack aligned */
-	x86_alu_reg_imm (buf, X86_SUB, X86_ESP, 8);
-	pushed_args += 2;
-#endif
 
 	/* FIXME: Push the trampoline address */
 	x86_push_imm (buf, 0);
@@ -303,12 +298,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	else
 		x86_call_code (buf, mono_magic_trampoline);
 
-#ifdef __APPLE__
-	/* account for the alignment above */
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 6*4);
-#else
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4*4);
-#endif
 
 	/* restore LMF start */
 	/* ebx = previous_lmf */
