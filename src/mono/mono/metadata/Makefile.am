@@ -163,16 +163,5 @@ pedump_SOURCES =		\
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm
 
-monodiet_SOURCES = monodiet.c
-
-monodiet_LDADD = \
-	libmonoruntime.la	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
-	$(GLIB_LIBS)			\
-	$(ICU_LIBS)			\
-	-lm
-
 EXTRA_DIST = make-bundle.pl sample-bundle
 
