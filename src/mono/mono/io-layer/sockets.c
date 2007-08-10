@@ -457,7 +457,8 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	}
 
 	tmp_val = optval;
-	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+	if (level == SOL_SOCKET &&
+	    (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO)) {
 		tmp_val = &tv;
 		*optlen = sizeof (tv);
 	}
@@ -476,7 +477,8 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 		return(SOCKET_ERROR);
 	}
 
-	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+	if (level == SOL_SOCKET &&
+	    (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO)) {
 		*((int *) optval)  = tv.tv_sec * 1000 + (tv.tv_usec / 1000);	// milli from micro
 		*optlen = sizeof (int);
 	}
@@ -693,14 +695,16 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	}
 
 	tmp_val = optval;
-	if (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+	if (level == SOL_SOCKET &&
+	    (optname == SO_RCVTIMEO || optname == SO_SNDTIMEO)) {
 		int ms = *((int *) optval);
 		tv.tv_sec = ms / 1000;
 		tv.tv_usec = (ms % 1000) * 1000;	// micro from milli
 		tmp_val = &tv;
 		optlen = sizeof (tv);
 #if defined (__linux__)
-	} else if (optname == SO_SNDBUF || optname == SO_RCVBUF) {
+	} else if (level == SOL_SOCKET &&
+		   (optname == SO_SNDBUF || optname == SO_RCVBUF)) {
 		/* According to socket(7) the Linux kernel doubles the
 		 * buffer sizes "to allow space for bookkeeping
 		 * overhead."
