@@ -13,6 +13,7 @@ LINKER_PLUGINS = \
 
 LINKER_DESCS =	\
 	Descriptors/smcs.xml	\
+	Descriptors/System.xml	\
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
