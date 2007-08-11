@@ -23,6 +23,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
 #include "mini-amd64.h"
@@ -750,14 +751,42 @@ mono_arch_ip_from_context (void *sigctx)
 }
 
 static void
-altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
+restore_soft_guard_pages (void)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	if (jit_tls->stack_ovf_guard_base)
+		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
+}
+
+/* 
+ * this function modifies mctx so that when it is restored, it
+ * won't execcute starting at mctx.eip, but in a function that
+ * will restore the protection on the soft-guard pages and return back to
+ * continue at mctx.eip.
+ */
+static void
+prepare_for_guard_pages (MonoContext *mctx)
+{
+	gpointer *sp;
+	sp = (gpointer)(mctx->rsp);
+	sp -= 1;
+	/* the return addr */
+	sp [0] = (gpointer)(mctx->rip);
+	mctx->rip = (unsigned long)restore_soft_guard_pages;
+	mctx->rsp = (unsigned long)sp;
+}
+
+static void
+altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 {
 	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
 	restore_context = mono_arch_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
-	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), test_only);
+	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), FALSE);
+	if (stack_ovf)
+		prepare_for_guard_pages (&mctx);
 	restore_context (&mctx);
 }
 
@@ -765,25 +794,18 @@ void
 mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
+	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	guint64 *gregs = gregs_from_ucontext (ctx);
 	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)gregs [REG_RIP]);
 	gpointer *sp;
 	int frame_size;
 
-	if (stack_ovf) {
-		const char *method;
-		/* we don't do much now, but we can warn the user with a useful message */
-		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", (gpointer)gregs [REG_RIP], (gpointer)gregs [REG_RSP]);
-		if (ji && ji->method)
-			method = mono_method_full_name (ji->method, TRUE);
-		else
-			method = "Unmanaged";
-		fprintf (stderr, "At %s\n", method);
-		abort ();
-	}
+	if (stack_ovf)
+		exc = mono_domain_get ()->stack_overflow_ex;
 	if (!ji)
 		mono_handle_native_sigsegv (SIGSEGV, sigctx);
+
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.
 	 * The frame looks like:
@@ -805,8 +827,8 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	gregs [REG_RIP] = (unsigned long)altstack_handle_and_restore;
 	gregs [REG_RSP] = (unsigned long)(sp - 1);
 	gregs [REG_RDI] = (unsigned long)(sp + 4);
-	gregs [REG_RSI] = 0;
-	gregs [REG_RDX] = 0;
+	gregs [REG_RSI] = (guint64)exc;
+	gregs [REG_RDX] = stack_ovf;
 #endif
 }
 
