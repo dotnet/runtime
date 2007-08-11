@@ -1923,7 +1923,7 @@ handle_enum:
 
 	//TODO verify aditional checks that needs to be done
 	case MONO_TYPE_TYPEDBYREF:
-		return candidate->type != MONO_TYPE_TYPEDBYREF;
+		return candidate->type == MONO_TYPE_TYPEDBYREF;
 
 	case MONO_TYPE_VALUETYPE:
 		if (target->data.klass->enumtype) {
@@ -1951,7 +1951,7 @@ verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 	VERIFIER_DEBUG ( printf ("checking compatibility %p %p[%d] %p[%d]\n", ctx, type, type->type, stack, stack_type ); );
 
  	/*only one is byref */
-	if (type->byref ^ IS_MANAGED_POINTER(stack_type)) {
+	if (type->byref ^ IS_MANAGED_POINTER (stack_type)) {
 		/* converting from native int to byref*/
 		if (type->byref && stack_type == TYPE_NATIVE_INT) {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("using byref native int at 0x%04x", ctx->ip_offset));
@@ -1959,8 +1959,12 @@ verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 		}
 		return FALSE;
 	}
-	if (type->byref)
-		return verify_stack_type_compatibility (ctx, type, stack->type, TRUE);
+	if (type->byref) {
+		MonoType * stype = stack->type;
+		if (IS_MANAGED_POINTER (stack_type))
+			stype = &mono_class_from_mono_type (stype)->this_arg;
+		return verify_stack_type_compatibility (ctx, type, stype, TRUE);
+	}
 
 handle_enum:
 	switch (type->type) {
@@ -2099,7 +2103,7 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 		else {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method doesn't have argument %d", arg + 1));
 			if (check_overflow (ctx)) //FIXME: what sane value could we ever push?
-				stack_push_val (ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
+				stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 		}
 	} else if (check_overflow (ctx)) {
 		gboolean override_byref;
@@ -2348,7 +2352,7 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 			type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
- 	stack_push_val (ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
+ 	stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 }
 
 static void
@@ -2426,7 +2430,7 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 	}
 	if (!mono_method_can_access_method (ctx->method, method))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset));
-	
+
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (check_overflow (ctx))
 			set_stack_value (stack_push (ctx), sig->ret, FALSE, FALSE);
@@ -2456,7 +2460,7 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 
 	if (!mono_method_can_access_field (ctx->method, field))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
-	
+
 	set_stack_value (stack_push (ctx), field->type, take_addr, FALSE);
 }
 
@@ -2509,7 +2513,6 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		|| (obj->stype == TYPE_COMPLEX))) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", type_names [UNMASK_TYPE (obj->stype)], ctx->ip_offset));
 	}
-	
 
 	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
 	if (!field) {
@@ -2588,6 +2591,103 @@ do_store_field (VerifyContext *ctx, int token)
 
 	if (!verify_type_compat (ctx, field->type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
+}
+
+/*TODO proper handle for Nullable<T>*/
+static void
+do_box_value (VerifyContext *ctx, int klass_token)
+{
+	ILStackDesc *value;
+	MonoType *type = NULL;
+	MonoClass *klass = mono_class_get_full (ctx->image, klass_token, ctx->generic_context);
+	if (klass)
+		type = mono_class_get_type (klass);
+	/*TODO use mono_type_get_full when the patch gets in*/
+	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
+
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class 0x%08x not found at 0x%04x", klass_token, ctx->ip_offset));
+		return;
+	}
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_top (ctx);
+	/*box is a nop for reference types*/
+	if (value->stype == TYPE_COMPLEX && MONO_TYPE_IS_REFERENCE (value->type) && MONO_TYPE_IS_REFERENCE (type))
+		return;
+
+	value = stack_pop (ctx);
+
+	if (type->byref) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (!verify_type_compat (ctx, type, value))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for boxing operation at 0x%04x", ctx->ip_offset));
+	stack_push_val (ctx, TYPE_COMPLEX, mono_class_get_type (mono_defaults.object_class));
+}
+
+static void
+do_unary_math_op (VerifyContext *ctx, int op)
+{
+	ILStackDesc *value;
+	if (!check_underflow (ctx, 1))
+		return;
+	value = stack_top (ctx);
+	switch(value->stype) {
+	case TYPE_I4:
+	case TYPE_I8:
+	case TYPE_NATIVE_INT:
+		break;
+	case TYPE_R8:
+		if (op == CEE_NEG)
+			break;
+	case TYPE_COMPLEX: /*only enums are ok*/
+		if (value->type->type == MONO_TYPE_VALUETYPE && value->type->data.klass->enumtype)
+			break;
+	default:
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for unary not at 0x%04x", ctx->ip_offset));
+	}
+}
+
+static void
+do_conversion (VerifyContext *ctx, int kind) 
+{
+	ILStackDesc *value;
+	if (!check_underflow (ctx, 1))
+		return;
+	value = stack_pop (ctx);
+
+	switch(value->stype) {
+	case TYPE_I4:
+	case TYPE_I8:
+	case TYPE_NATIVE_INT:
+	case TYPE_R8:
+		break;
+	default:
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for conversion operation at 0x%04x", ctx->ip_offset));
+	}
+
+	switch (kind) {
+	case TYPE_I4:
+		stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
+		break;
+	case TYPE_I8:
+		stack_push_val (ctx,TYPE_I8, &mono_defaults.int64_class->byval_arg);
+		break;
+	case TYPE_R8:
+		stack_push_val (ctx, TYPE_R8, &mono_defaults.double_class->byval_arg);
+		break;
+	case TYPE_NATIVE_INT:
+		stack_push_val (ctx, TYPE_NATIVE_INT, &mono_defaults.int_class->byval_arg);
+		break;
+	default:
+		g_error ("unknown type %02x in conversion", kind);
+
+	}
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -2893,19 +2993,19 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
+				stack_push_val (&ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			++ip;
 			break;
 
 		case CEE_LDC_I4_S:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_I4, &mono_defaults.int_class->byval_arg);
+				stack_push_val (&ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			ip += 2;
 			break;
 
 		case CEE_LDC_I4:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx,TYPE_I4, &mono_defaults.int_class->byval_arg);
+				stack_push_val (&ctx,TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			ip += 5;
 			break;
 
@@ -3102,23 +3202,42 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		//TODO: implement proper typecheck
-		case CEE_NEG:
 		case CEE_NOT:
+		case CEE_NEG:
+			do_unary_math_op (&ctx, *ip);
+			++ip;
+			break;
+
+		//TODO: implement proper typecheck
 		case CEE_CONV_I1:
 		case CEE_CONV_I2:
 		case CEE_CONV_I4:
+		case CEE_CONV_U1:
+		case CEE_CONV_U2:
+		case CEE_CONV_U4:
+			do_conversion (&ctx, TYPE_I4);
+			++ip;
+			break;			
+
 		case CEE_CONV_I8:
+		case CEE_CONV_U8:
+			do_conversion (&ctx, TYPE_I8);
+			++ip;
+			break;			
+
 		case CEE_CONV_R4:
 		case CEE_CONV_R8:
-		case CEE_CONV_U4:
-		case CEE_CONV_U8:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (type_from_op (*ip, stack_top (&ctx)) == TYPE_INV)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
+		case CEE_CONV_R_UN:
+			do_conversion (&ctx, TYPE_R8);
+			++ip;
+			break;			
+
+		case CEE_CONV_I:
+		case CEE_CONV_U:
+			do_conversion (&ctx, TYPE_NATIVE_INT);
 			++ip;
 			break;
+
 		case CEE_CPOBJ:
 			token = read32 (ip + 1);
 			if (!check_underflow (&ctx, 2))
@@ -3172,11 +3291,6 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			ip += 5;
 			break;
-		case CEE_CONV_R_UN:
-			if (!check_underflow (&ctx, 1))
-				break;
-			++ip;
-			break;
 		case CEE_UNUSED58:
 		case CEE_UNUSED1:
 			++ip; /* warn, error ? */
@@ -3228,31 +3342,34 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
+
 		case CEE_CONV_OVF_I1_UN:
 		case CEE_CONV_OVF_I2_UN:
 		case CEE_CONV_OVF_I4_UN:
-		case CEE_CONV_OVF_I8_UN:
 		case CEE_CONV_OVF_U1_UN:
 		case CEE_CONV_OVF_U2_UN:
 		case CEE_CONV_OVF_U4_UN:
+			do_conversion (&ctx, TYPE_I4);
+			++ip;
+			break;			
+
+		case CEE_CONV_OVF_I8_UN:
 		case CEE_CONV_OVF_U8_UN:
+			do_conversion (&ctx, TYPE_I8);
+			++ip;
+			break;			
+
 		case CEE_CONV_OVF_I_UN:
 		case CEE_CONV_OVF_U_UN:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (type_from_op (*ip, stack_top (&ctx)) == TYPE_INV)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
+			do_conversion (&ctx, TYPE_NATIVE_INT);
 			++ip;
 			break;
+
 		case CEE_BOX:
-			if (!check_underflow (&ctx, 1))
-				break;
-			token = read32 (ip + 1);
-			if ( stack_top (&ctx)->stype == TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument %s to box at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
-			//stack_top (&ctx)->stype = TYPE_COMPLEX;
+			do_box_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_NEWARR:
 			if (!check_underflow (&ctx, 1))
 				break;
@@ -3265,7 +3382,7 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			if (stack_top (&ctx)->stype != TYPE_COMPLEX)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldlen at 0x%04x", ip_offset));
-			stack_top (&ctx)->type = &mono_defaults.int_class->byval_arg; /* FIXME: use a native int type */
+			stack_top (&ctx)->type = &mono_defaults.int32_class->byval_arg; /* FIXME: use a native int type */
 			stack_top (&ctx)->stype = TYPE_PTR;
 			++ip;
 			break;
@@ -3333,20 +3450,29 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNUSED17:
 			++ip; /* warn, error ? */
 			break;
+
 		case CEE_CONV_OVF_I1:
 		case CEE_CONV_OVF_U1:
 		case CEE_CONV_OVF_I2:
 		case CEE_CONV_OVF_U2:
 		case CEE_CONV_OVF_I4:
 		case CEE_CONV_OVF_U4:
-		case CEE_CONV_OVF_I8:
-		case CEE_CONV_OVF_U8:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (type_from_op (*ip, stack_top (&ctx)) == TYPE_INV)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
+			do_conversion (&ctx, TYPE_I4);
 			++ip;
 			break;
+
+		case CEE_CONV_OVF_I8:
+		case CEE_CONV_OVF_U8:
+			do_conversion (&ctx, TYPE_I8);
+			++ip;
+			break;
+
+		case CEE_CONV_OVF_I:
+		case CEE_CONV_OVF_U:
+			do_conversion (&ctx, TYPE_NATIVE_INT);
+			++ip;
+			break;
+
 		case CEE_UNUSED50:
 		case CEE_UNUSED18:
 		case CEE_UNUSED19:
@@ -3394,17 +3520,7 @@ mono_method_verify (MonoMethod *method, int level)
 			++ctx.eval.size;
 			ip += 5;
 			break;
-		case CEE_CONV_U2:
-		case CEE_CONV_U1:
-		case CEE_CONV_I:
-		case CEE_CONV_OVF_I:
-		case CEE_CONV_OVF_U:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (type_from_op (*ip, stack_top (&ctx)) == TYPE_INV)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
-			++ip;
-			break;
+
 		case CEE_ADD_OVF:
 		case CEE_ADD_OVF_UN:
 		case CEE_MUL_OVF:
@@ -3442,11 +3558,6 @@ mono_method_verify (MonoMethod *method, int level)
 			if (!check_underflow (&ctx, 2))
 				break;
 			ctx.eval.size -= 2;
-			++ip;
-			break;
-		case CEE_CONV_U:
-			if (!check_underflow (&ctx, 1))
-				break;
 			++ip;
 			break;
 		case CEE_UNUSED26:
@@ -3611,7 +3722,7 @@ mono_method_verify (MonoMethod *method, int level)
 					break;
 				token = read32 (ip + 1);
 				ip += 5;
-				stack_top (&ctx)->type = &mono_defaults.uint_class->byval_arg;
+				stack_top (&ctx)->type = &mono_defaults.uint32_class->byval_arg;
 				stack_top (&ctx)->stype = TYPE_I4;
 				ctx.eval.size++;
 				break;
