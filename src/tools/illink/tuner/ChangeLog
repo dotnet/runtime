@@ -1,3 +1,8 @@
+2007-08-11  Jb Evain  <jbevain@novell.com>
+
+	* Descriptors/System.xml, Makefile: add a descriptor
+	to protect some classes in System.
+
 2007-08-05  Jb Evain  <jbevain@novell.com>
 
 	* Descriptors/smcs.xml, Makefile: add a descriptor
