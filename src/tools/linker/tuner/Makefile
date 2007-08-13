@@ -12,6 +12,7 @@ LINKER_PLUGINS = \
 #	Mono.Tuner/InjectAttributes.dll	\
 
 LINKER_DESCS =	\
+	Descriptors/mscorlib.xml	\
 	Descriptors/smcs.xml	\
 	Descriptors/System.xml	\
 
