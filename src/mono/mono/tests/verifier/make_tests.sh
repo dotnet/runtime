@@ -295,11 +295,22 @@ done
 
 # Table 8: Conversion Operations
 I=1
-for OP in "conv.i4\n\tpop" "conv.r8\n\tpop"
+J=1
+for OP in "conv.i1\n\tpop" "conv.i2\n\tpop" "conv.i4\n\tpop" "conv.i8\n\tpop" "conv.r4\n\tpop" "conv.r8\n\tpop" "conv.u1\n\tpop" "conv.u2\n\tpop" "conv.u4\n\tpop" "conv.u8\n\tpop" "conv.i\n\tpop" "conv.u\n\tpop" "conv.r.un\n\tpop" "conv.ovf.i1\n\tpop" "conv.ovf.i2\n\tpop" "conv.ovf.i4\n\tpop" "conv.ovf.i8\n\tpop" "conv.ovf.u1\n\tpop" "conv.ovf.u2\n\tpop" "conv.ovf.u4\n\tpop" "conv.ovf.u8\n\tpop" "conv.ovf.i\n\tpop"  "conv.ovf.u\n\tpop" "conv.ovf.i1.un\n\tpop" "conv.ovf.i2.un\n\tpop" "conv.ovf.i4.un\n\tpop" "conv.ovf.i8.un\n\tpop" "conv.ovf.u1.un\n\tpop" "conv.ovf.u2.un\n\tpop" "conv.ovf.u4.un\n\tpop" "conv.ovf.u8.un\n\tpop" "conv.ovf.i.un\n\tpop"  "conv.ovf.u.un\n\tpop" 
 do
-  ./make_unary_test.sh conv_op_1_${I} unverifiable $OP 'int32&'
-  ./make_unary_test.sh conv_op_2_${I} unverifiable $OP object
-  I=`expr $I + 1`
+  for TYPE in 'int8' 'bool' 'unsigned int8' 'int16' 'char' 'unsigned int16' 'int32' 'unsigned int32' 'int64' 'unsigned int64' 'float32' 'float64' 'native int' 'native unsigned int'
+  do
+    ./make_unary_test.sh conv_op_${J}_${I} valid $OP "$TYPE"
+    I=`expr $I + 1`
+  done
+
+  for TYPE in 'object' 'string' 'class Class' 'valuetype MyStruct' 'int32[]' 'int32[,]' 'typedref' 'int32*' 'method int32 *(int32)' 'class Template`1<object>' 'int8&' 'bool&' 'unsigned int8&' 'int16&' 'char&' 'unsigned int16&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&' 'native int&' 'native unsigned int&' 'object&' 'string&' 'class Class&' 'valuetype MyStruct&' 'int32[]&' 'int32[,]&' 'typedref&'  'class Template`1<object>&'
+  do
+    ./make_unary_test.sh conv_op_${J}_${I} unverifiable $OP "$TYPE"
+    I=`expr $I + 1`
+  done
+  J=`expr $J + 1`
+  I=1
 done
 
 #local and argument store with invalid values lead to unverifiable code
@@ -1727,4 +1738,298 @@ do
 	./make_access_test.sh access_check_66_${I} valid "$OP" " " famandassem yes yes
 	I=`expr $I + 1`
 done
+
+
+function create_nesting_test_same_result () {
+  K=$1
+  for BASE in yes no
+  do
+    for NESTED in yes no
+      do
+        for LOAD in yes no
+        do
+          if ! ( [ "$NESTED" == "no" ] && [ "$LOAD" == "yes" ] ) ; then
+            ./make_double_nesting_test.sh double_nesting_access_check_${K}_$I $2 "$OP" $3 $4 $5 "$BASE" "$NESTED" "$LOAD"
+            K=`expr $K + 1`
+          fi
+      done
+    done
+  done
+}
+
+function create_nesting_test_only_first_ok () {
+  FIRST=$1
+  K=$1
+  for BASE in yes no
+  do
+    for NESTED in yes no
+      do
+        for LOAD in yes no
+        do
+          if ! ( [ "$NESTED" == "no" ] && [ "$LOAD" == "yes" ] ) ; then
+	   EXPECT=unverifiable
+           if [ "$FIRST" == "$K" ]; then
+              EXPECT=valid
+           fi
+           ./make_double_nesting_test.sh double_nesting_access_check_${K}_$I $EXPECT "$OP" $2 $3 $4 "$BASE" "$NESTED" "$LOAD"
+           K=`expr $K + 1`
+         fi
+     done
+    done
+  done
+}
+
+I=1
+
+for OP in "callvirt instance int32 class Root\/Nested::Target()" "call instance int32 class Root\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Root\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Root\/Nested::fld" "ldflda int32 Root\/Nested::fld"
+do
+  create_nesting_test_same_result 1 valid public assembly assembly
+
+  ./make_double_nesting_test.sh double_nesting_access_check_7_$I valid "$OP" public assembly family yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_8_$I unverifiable "$OP" public assembly family yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_9_$I unverifiable "$OP" public assembly family yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_10_$I valid "$OP" public assembly family no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_11_$I unverifiable "$OP" public assembly family no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_12_$I unverifiable "$OP" public assembly family no no no
+
+  ./make_double_nesting_test.sh double_nesting_access_check_13_$I valid "$OP" public assembly famandassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_14_$I unverifiable "$OP" public assembly famandassem yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_15_$I unverifiable "$OP" public assembly famandassem yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_16_$I valid "$OP" public assembly famandassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_17_$I unverifiable "$OP" public assembly famandassem no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_18_$I unverifiable "$OP" public assembly famandassem no no no
+
+  create_nesting_test_same_result 19 valid public assembly famorassem
+  create_nesting_test_same_result 25 unverifiable public assembly private
+  create_nesting_test_same_result 31 valid public assembly public
+
+  ./make_double_nesting_test.sh double_nesting_access_check_37_$I valid "$OP" public family assembly yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_38_$I valid "$OP" public family assembly yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_39_$I valid "$OP" public family assembly yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_40_$I unverifiable "$OP" public family assembly no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_41_$I unverifiable "$OP" public family assembly no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_42_$I unverifiable "$OP" public family assembly no no no
+
+  create_nesting_test_only_first_ok 43 public family family
+  create_nesting_test_only_first_ok 49 public family famandassem
+
+  ./make_double_nesting_test.sh double_nesting_access_check_55_$I valid "$OP" public family famorassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_56_$I valid "$OP" public family famorassem yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_57_$I valid "$OP" public family famorassem yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_58_$I unverifiable "$OP" public family famorassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_59_$I unverifiable "$OP" public family famorassem no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_60_$I unverifiable "$OP" public family famorassem no no no
+
+   create_nesting_test_same_result 61 unverifiable public family private
+
+  ./make_double_nesting_test.sh double_nesting_access_check_67_$I valid "$OP" public family public yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_68_$I valid "$OP" public family public yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_69_$I valid "$OP" public family public yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_70_$I unverifiable "$OP" public family public no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_71_$I unverifiable "$OP" public family public no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_72_$I unverifiable "$OP" public family public no no no
+
+  ./make_double_nesting_test.sh double_nesting_access_check_73_$I valid "$OP" public famandassem assembly yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_74_$I valid "$OP" public famandassem assembly yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_75_$I valid "$OP" public famandassem assembly yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_76_$I unverifiable "$OP" public famandassem assembly no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_77_$I unverifiable "$OP" public famandassem assembly no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_78_$I unverifiable "$OP" public famandassem assembly no no no
+
+  create_nesting_test_only_first_ok 79  public famandassem family
+  create_nesting_test_only_first_ok 85  public famandassem famandassem
+
+  ./make_double_nesting_test.sh double_nesting_access_check_91_$I valid "$OP" public famandassem famorassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_92_$I valid "$OP" public famandassem famorassem yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_93_$I valid "$OP" public famandassem famorassem yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_94_$I unverifiable "$OP" public famandassem famorassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_95_$I unverifiable "$OP" public famandassem famorassem no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_96_$I unverifiable "$OP" public famandassem famorassem no no no
+
+   create_nesting_test_same_result 97 unverifiable public famandassem private
+
+  ./make_double_nesting_test.sh double_nesting_access_check_103_$I valid "$OP" public famandassem public yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_104_$I valid "$OP" public famandassem public yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_105_$I valid "$OP" public famandassem public yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_106_$I unverifiable "$OP" public famandassem public no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_107_$I unverifiable "$OP" public famandassem public no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_108_$I unverifiable "$OP" public famandassem public no no no
+
+  create_nesting_test_same_result 109 valid public famorassem assembly
+
+  ./make_double_nesting_test.sh double_nesting_access_check_115_$I valid "$OP" public famorassem family yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_116_$I unverifiable "$OP" public famorassem family yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_117_$I unverifiable "$OP" public famorassem family yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_118_$I valid "$OP" public famorassem family no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_119_$I unverifiable "$OP" public famorassem family no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_120_$I unverifiable "$OP" public famorassem family no no no
+
+  ./make_double_nesting_test.sh double_nesting_access_check_121_$I valid "$OP" public famorassem famandassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_122_$I unverifiable "$OP" public famorassem famandassem yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_123_$I unverifiable "$OP" public famorassem famandassem yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_124_$I valid "$OP" public famorassem famandassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_125_$I unverifiable "$OP" public famorassem famandassem no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_126_$I unverifiable "$OP" public famorassem famandassem no no no
+
+  create_nesting_test_same_result 127 valid public famorassem famorassem
+  create_nesting_test_same_result 133 unverifiable public famorassem private
+  create_nesting_test_same_result 139 valid public famorassem public
+  create_nesting_test_same_result 145 unverifiable public private assembly
+  create_nesting_test_same_result 151 unverifiable public private family
+  create_nesting_test_same_result 157 unverifiable public private famandassem
+  create_nesting_test_same_result 163 unverifiable public private famorassem
+  create_nesting_test_same_result 169 unverifiable public private private
+  create_nesting_test_same_result 175 unverifiable public private public
+  create_nesting_test_same_result 181 valid public public assembly
+
+  ./make_double_nesting_test.sh double_nesting_access_check_187_$I valid "$OP" public public family yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_188_$I unverifiable "$OP" public public family yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_189_$I unverifiable "$OP" public public family yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_190_$I valid "$OP" public public family no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_191_$I unverifiable "$OP" public public family no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_192_$I unverifiable "$OP" public public family no no no
+
+  ./make_double_nesting_test.sh double_nesting_access_check_193_$I valid "$OP" public public famandassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_194_$I unverifiable "$OP" public public famandassem yes yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_195_$I unverifiable "$OP" public public famandassem yes no no
+  ./make_double_nesting_test.sh double_nesting_access_check_196_$I valid "$OP" public public famandassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_197_$I unverifiable "$OP" public public famandassem no yes no
+  ./make_double_nesting_test.sh double_nesting_access_check_198_$I unverifiable "$OP" public public famandassem no no no
+
+  create_nesting_test_same_result 199 valid public public famorassem
+  create_nesting_test_same_result 205 unverifiable public public private
+  create_nesting_test_same_result 211 valid public public public
+  I=`expr $I + 1`
+done
+
+function create_nesting_test_same_result_static () {
+  K=$1
+  for BASE in yes no
+  do
+    for NESTED in yes no
+      do
+        ./make_double_nesting_test.sh double_nesting_access_check_${K}_$I $2 "$OP" $3 $4 $5 "$BASE" "$NESTED" yes
+        K=`expr $K + 1`
+    done
+  done
+}
+
+function create_nesting_test_strips_result_static () {
+  K=$1
+  for BASE in yes no
+  do
+    for NESTED in yes no
+      do
+        EXPECT=unverifiable
+        if [ "$NESTED" == "yes" ]; then
+          EXPECT=valid
+        fi
+        ./make_double_nesting_test.sh double_nesting_access_check_${K}_$I $EXPECT "$OP" $2 $3 $4 "$BASE" "$NESTED" yes
+        K=`expr $K + 1`
+    done
+  done
+}
+
+for OP in "ldc.i4.0\n\t\tstsfld int32 Root\/Nested::sfld" "ldsfld int32 Root\/Nested::sfld\n\n\tpop" "ldsflda int32 Root\/Nested::sfld\n\n\tpop"
+do
+   create_nesting_test_same_result 1 valid public assembly assembly
+
+  create_nesting_test_strips_result_static 5 public assembly family
+  create_nesting_test_strips_result_static 9 public assembly family
+
+  create_nesting_test_same_result 13 valid public assembly famorassem
+  create_nesting_test_same_result 17 unverifiable public assembly private
+  create_nesting_test_same_result 21 valid public assembly public
+
+  ./make_double_nesting_test.sh double_nesting_access_check_25_$I valid "$OP" public family assembly yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_26_$I valid "$OP" public family assembly yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_27_$I unverifiable "$OP" public family assembly no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_27_$I unverifiable "$OP" public family assembly no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_29_$I valid "$OP" public family family yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_30_$I unverifiable "$OP" public family family yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_31_$I unverifiable "$OP" public family family no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_32_$I unverifiable "$OP" public family family no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_33_$I valid "$OP" public family famandassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_34_$I unverifiable "$OP" public family famandassem yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_35_$I unverifiable "$OP" public family famandassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_36_$I unverifiable "$OP" public family famandassem no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_37_$I valid "$OP" public family famorassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_38_$I valid "$OP" public family famorassem yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_39_$I unverifiable "$OP" public family famorassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_40_$I unverifiable "$OP" public family famorassem no no yes
+
+   create_nesting_test_same_result 41 unverifiable public family private
+
+  ./make_double_nesting_test.sh double_nesting_access_check_45_$I valid "$OP" public family public yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_46_$I valid "$OP" public family public yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_47_$I unverifiable "$OP" public family public no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_48_$I unverifiable "$OP" public family public no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_49_$I valid "$OP" public famandassem assembly yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_50_$I valid "$OP" public famandassem assembly yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_51_$I unverifiable "$OP" public famandassem assembly no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_52_$I unverifiable "$OP" public famandassem assembly no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_53_$I valid "$OP" public famandassem family yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_54_$I unverifiable "$OP" public famandassem family yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_55_$I unverifiable "$OP" public famandassem family no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_56_$I unverifiable "$OP" public famandassem family no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_57_$I valid "$OP" public famandassem famandassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_58_$I unverifiable "$OP" public famandassem famandassem yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_59_$I unverifiable "$OP" public famandassem famandassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_60_$I unverifiable "$OP" public famandassem famandassem no no yes
+
+  ./make_double_nesting_test.sh double_nesting_access_check_61_$I valid "$OP" public famandassem famorassem yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_62_$I valid "$OP" public famandassem famorassem yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_63_$I unverifiable "$OP" public famandassem famorassem no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_64_$I unverifiable "$OP" public famandassem famorassem no no yes
+
+  create_nesting_test_same_result 65 unverifiable public famandassem private
+
+  ./make_double_nesting_test.sh double_nesting_access_check_69_$I valid "$OP" public famandassem public yes yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_70_$I valid "$OP" public famandassem public yes no yes
+  ./make_double_nesting_test.sh double_nesting_access_check_71_$I unverifiable "$OP" public famandassem public no yes yes
+  ./make_double_nesting_test.sh double_nesting_access_check_72_$I unverifiable "$OP" public famandassem public no no yes
+
+  create_nesting_test_same_result 73 valid public famorassem assembly
+  create_nesting_test_strips_result_static 77 public famorassem family
+  create_nesting_test_strips_result_static 81 public famorassem famandassem
+
+  create_nesting_test_same_result 85 valid public famorassem famorassem
+  create_nesting_test_same_result 89 unverifiable public famorassem private
+  create_nesting_test_same_result 93 valid public famorassem public
+  create_nesting_test_same_result 97 unverifiable public private assembly
+  create_nesting_test_same_result 101 unverifiable public private family
+  create_nesting_test_same_result 105 unverifiable public private famandassem
+  create_nesting_test_same_result 109 unverifiable public private famorassem
+  create_nesting_test_same_result 113 unverifiable public private private
+  create_nesting_test_same_result 117 unverifiable public private public
+  create_nesting_test_same_result 121 valid public public assembly
+  create_nesting_test_strips_result_static 125 public public family
+  create_nesting_test_strips_result_static 129 public public famandassem
+  create_nesting_test_same_result 133 valid public public famorassem
+  create_nesting_test_same_result 137 unverifiable public public private
+  create_nesting_test_same_result 141 valid public public public
+
+  I=`expr $I + 1`
+done
+
+
+#ldtoken tests
+
+./make_ldtoken_test.sh ldtoken_class valid "ldtoken class Example" "call class [mscorlib]System.Type class [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)"
+
+./make_ldtoken_test.sh ldtoken_class invalid "ldtoken class [mscorlib]ExampleMM" "call class [mscorlib]System.Type class [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)"
+
+./make_ldtoken_test.sh ldtoken_field valid "ldtoken field int32 Example::fld" "call class [mscorlib]System.Reflection.FieldInfo class [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle(valuetype [mscorlib]System.RuntimeFieldHandle)"
+
+./make_ldtoken_test.sh ldtoken_field invalid "ldtoken field int32 Example::MM" "call class [mscorlib]System.Reflection.FieldInfo class [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle(valuetype [mscorlib]System.RuntimeFieldHandle)"
+
+./make_ldtoken_test.sh ldtoken_method valid "ldtoken method void Example::Method()" "call class [mscorlib]System.Reflection.MethodBase class [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [mscorlib]System.RuntimeMethodHandle)"
+
+./make_ldtoken_test.sh ldtoken_method invalid "ldtoken method int32 Example::Method()" "call class [mscorlib]System.Reflection.MethodBase class [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [mscorlib]System.RuntimeMethodHandle)"
 
