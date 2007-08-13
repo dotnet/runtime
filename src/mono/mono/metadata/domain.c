@@ -605,6 +605,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		ass = mono_assembly_load_corlib (current_runtime, &status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
+
 	}
 
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
@@ -843,6 +844,12 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.internals_visible_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute");
 
+	/*
+	 * mscorlib needs a little help, only now it can load its friends list (after we have
+	 * loaded the InternalsVisibleToAttribute), load it now
+	 */
+	mono_assembly_load_friends (ass);
+	
 	mono_defaults.safehandle_class = mono_class_from_name (
 		mono_defaults.corlib, "System.Runtime.InteropServices", "SafeHandle");
 

@@ -399,8 +399,9 @@ MonoGenericInst *
 mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
 					     MonoGenericContext    *context) MONO_INTERNAL;
 
-void mono_dynamic_stream_reset (MonoDynamicStream* stream) MONO_INTERNAL;
-void mono_assembly_addref      (MonoAssembly *assembly) MONO_INTERNAL;
+void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
+void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
+void mono_assembly_load_friends (MonoAssembly* ass);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info) MONO_INTERNAL;
 

@@ -1340,15 +1340,19 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 }
 
 /*
- * load_friend_assemblies:
+ * mono_load_friend_assemblies:
  * @ass: an assembly
  *
  * Load the list of friend assemblies that are allowed to access
  * the assembly's internal types and members. They are stored as assembly
  * names in custom attributes.
+ *
+ * This is an internal method, we need this because when we load mscorlib
+ * we do not have the mono_defaults.internals_visible_class loaded yet,
+ * so we need to load these after we initialize the runtime. 
  */
-static void
-load_friend_assemblies (MonoAssembly* ass)
+void
+mono_assembly_load_friends (MonoAssembly* ass)
 {
 	int i;
 	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly (ass);
@@ -1509,7 +1513,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	if (mono_defaults.internals_visible_class)
-		load_friend_assemblies (ass);
+		mono_assembly_load_friends (ass);
 	mono_assemblies_unlock ();
 
 	mono_assembly_invoke_load_hook (ass);
