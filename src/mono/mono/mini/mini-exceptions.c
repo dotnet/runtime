@@ -24,6 +24,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internal.h>
