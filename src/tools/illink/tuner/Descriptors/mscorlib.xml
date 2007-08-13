@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="mscorlib">
+		<type fullname="System.AppDomain">
+		   <method signature="System.AppDomain CreateDomain(System.String)" />
+		   <method signature="System.Object CreateInstanceAndUnwrap(System.String, System.String)"/>
+		</type>
+		<type fullname="System.Reflection.Assembly">
+		   <method signature="System.Reflection.Assembly LoadFile(System.String)" />
+		</type>
+		<type fullname="System.Reflection.Assembly">
+		   <method signature="System.Reflection.AssemblyName GetReferencedAssemblies(System.Reflection.Assembly)" />
+		</type>
+	</assembly>
+</linker>
