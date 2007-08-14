@@ -165,6 +165,7 @@
 		<type fullname="System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute" />
 		<type fullname="System.Runtime.Remoting.Activation.ActivationServices" />
 		<type fullname="System.Runtime.Remoting.Contexts.Context" />
+		<type fullname="System.Runtime.Remoting.Channels.CrossAppDomainSink" />
 		<type fullname="System.Runtime.Remoting.IRemotingTypeInfo" />
 		<type fullname="System.Runtime.Remoting.Messaging.AsyncResult" />
 		<type fullname="System.Runtime.Remoting.Messaging.CallContext" />
