@@ -51,15 +51,15 @@ run-test-local run-test-ondotnet-local:
 
 WORKING_DIR = $(mono_libdir)/mono/2.1
 
-masterinfos/silverlight.infos:
-	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
-	unzip masterinfos.zip
-
 MCS_MASTER_INFOS =	\
 	masterinfos/silverlight/mscorlib.info	\
 	masterinfos/silverlight/System.info		\
 	masterinfos/silverlight/System.Core.info	\
 	masterinfos/silverlight/System.Xml.Core.info	\
+
+$(MCS_MASTER_INFOS):
+	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
+	unzip masterinfos.zip
 
 LINKER_FLAGS = -d $(WORKING_DIR) -o $(WORKING_DIR) -l none -c link -a smcs
 LINKER_STEPS = \
@@ -67,7 +67,7 @@ LINKER_STEPS = \
 	Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep	\
 	Mono.Tuner.CheckVisibility,CheckVisibility	\
 
-tune: masterinfos/silverlight.infos
+tune: $(MCS_MASTER_INFOS)
 	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/net_2_0$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_DESCS:%=-x %) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
 
 %.dll: %.cs
