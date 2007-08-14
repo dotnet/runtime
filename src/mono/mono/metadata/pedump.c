@@ -424,10 +424,10 @@ main (int argc, char *argv [])
 		usage ();
 
 	mono_metadata_init ();
-        mono_raw_buffer_init ();
-        mono_images_init ();
-        mono_assemblies_init ();
-        mono_loader_init ();
+	mono_raw_buffer_init ();
+	mono_images_init ();
+	mono_assemblies_init ();
+	mono_loader_init ();
  
 	image = mono_image_open (file, NULL);
 	if (!image){
@@ -452,7 +452,7 @@ main (int argc, char *argv [])
 				g_print ("Unknown verify flag %s\n", tok);
 			tok = strtok (NULL, ",");
 		}
-		mono_init (file);
+		mono_init_from_assembly (file, file);
 		assembly = mono_assembly_open (file, NULL);
 
 		if (!assembly) {
