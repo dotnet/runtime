@@ -37,7 +37,7 @@
 		<type fullname="System.DateTime" />
 		<type fullname="System.DBNull" />
 		<type fullname="System.Decimal" />
-		<type fullname="System.Delegate" preserve="fields" />
+		<type fullname="System.Delegate" />
 		<type fullname="System.Diagnostics.StackFrame" />
 		<type fullname="System.Diagnostics.StackTrace" />
 		<type fullname="System.DivideByZeroException" />
@@ -88,7 +88,7 @@
 		<type fullname="System.NotSupportedException" />
 		<type fullname="System.NullReferenceException" />
 		<type fullname="System.Nullable`1" />
-		<type fullname="System.Object" preserve="fields" />
+		<type fullname="System.Object" />
 		<type fullname="System.OutOfMemoryException" />
 		<type fullname="System.Reflection.Assembly" preserve="all" />
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
