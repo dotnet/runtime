@@ -124,8 +124,9 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		buf [2] = 0x90;
 		buf [3] = 0x66;
 		buf [4] = 0x90;
-	} else if ((code [0] == 0x49) && (code [1] == 0xff)) {
+	} else if ((code [0] == 0x41) && (code [1] == 0xff)) {
 		/* call <REG> */
+		/* happens on machines without MAP_32BIT like freebsd */
 		/* amd64_set_reg_template is 10 bytes long */
 		guint8* buf = code - 10;
 
