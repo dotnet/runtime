@@ -7054,6 +7054,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod* get_com_interface_for_object_internal = NULL;
 	static MonoMethod* get_idispatch_for_object_internal = NULL;
 	static MonoMethod* marshal_release = NULL;
+	static MonoMethod* AddRef = NULL;
 	if (!get_object_for_iunknown)
 		get_object_for_iunknown = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForIUnknown", 1);
 	if (!get_iunknown_for_object_internal)
@@ -7169,24 +7170,25 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT: {
-		int ccw_obj;
+		int ccw_obj, ret_ptr;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
 		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+		ret_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		/* store return value */
-		mono_mb_emit_stloc (mb, 0);
+		mono_mb_emit_stloc (mb, ret_ptr);
 
-		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ldloc (mb, ret_ptr);
 		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
-		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ldloc (mb, ret_ptr);
 		mono_mb_emit_icon (mb, TRUE);
 		mono_mb_emit_icall (mb, cominterop_get_ccw_object);
 		mono_mb_emit_stloc (mb, ccw_obj);
 		mono_mb_emit_ldloc (mb, ccw_obj);
 		pos_ccw = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ldloc (mb, ret_ptr);
 		mono_mb_emit_managed_call (mb, get_object_for_iunknown, NULL);
 
 		if (klass && klass != mono_defaults.object_class)
@@ -7206,7 +7208,7 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_patch_short_branch (mb, pos_end);
 
 		/* need to call Release to follow COM rules of ownership */
-		mono_mb_emit_ldloc (mb, 0);
+		mono_mb_emit_ldloc (mb, ret_ptr);
 		mono_mb_emit_managed_call (mb, marshal_release, NULL);
 		mono_mb_emit_byte (mb, CEE_POP);
 
@@ -7269,7 +7271,6 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
 		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
-			static MonoMethod* AddRef = NULL;
 			guint32 pos_null = 0;
 
 			if (!AddRef)
@@ -7308,8 +7309,43 @@ emit_marshal_com_interface (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of COM Objects is not yet implemented.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
+		guint32 pos_null = 0;
+		int ccw_obj;
+		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+		if (!AddRef)
+			AddRef = mono_class_get_method_from_name (mono_defaults.marshal_class, "AddRef", 1);
+
+		/* store return value */
+		mono_mb_emit_stloc (mb, ccw_obj);
+
+		mono_mb_emit_ldloc (mb, ccw_obj);
+
+		/* if null just break, conv arg was already inited to 0 */
+		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+		/* to store later */
+		mono_mb_emit_ldloc (mb, ccw_obj);
+		if (klass && klass != mono_defaults.object_class) {
+			mono_mb_emit_ptr (mb, t);
+			mono_mb_emit_icall (mb, type_from_handle);
+			mono_mb_emit_managed_call (mb, get_com_interface_for_object_internal, NULL);
+		}
+		else if (spec->native == MONO_NATIVE_IUNKNOWN)
+			mono_mb_emit_managed_call (mb, get_iunknown_for_object_internal, NULL);
+		else if (spec->native == MONO_NATIVE_IDISPATCH)
+			mono_mb_emit_managed_call (mb, get_idispatch_for_object_internal, NULL);
+		else if (!klass && spec->native == MONO_NATIVE_INTERFACE)
+			mono_mb_emit_managed_call (mb, get_iunknown_for_object_internal, NULL);
+		else
+			g_assert_not_reached ();
+		mono_mb_emit_stloc (mb, 3);
+		mono_mb_emit_ldloc (mb, 3);
+		
+		mono_mb_emit_managed_call (mb, AddRef, NULL);
+		mono_mb_emit_byte (mb, CEE_POP);
+
+		mono_mb_patch_short_branch (mb, pos_null);
 		break;
 	}
 
