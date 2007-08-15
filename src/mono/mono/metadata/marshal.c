@@ -11566,16 +11566,9 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		start_slot = 7;
 	}
 	else {
-		while (iface) {
-			method_count += iface->method.count;
-			if (iface->interface_count) {
-				iface = iface->interfaces [0];
-			}
-			else {
-				start_slot = cominterop_get_com_slot_begin (iface);
-				iface = NULL;
-			}
-		}
+		method_count += iface->method.count;
+		start_slot = cominterop_get_com_slot_begin (iface);
+		iface = NULL;
 	}
 
 	ccw_entry = g_hash_table_lookup (ccw->vtable_hash, itf);
@@ -11590,63 +11583,57 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 			memcpy (vtable+3, idispatch, sizeof (idispatch));
 
 		iface = itf;
-		while (iface) {
-			for (i = iface->method.count-1; i >= 0;i--) {
-				int param_index = 0;
-				MonoMethodBuilder *mb;
-				MonoMarshalSpec ** mspecs;
-				MonoMethod *wrapper_method, *adjust_method;
-				MonoMethod *method = iface->methods [i];
-				MonoMethodSignature* sig_adjusted;
-				MonoMethodSignature* sig = mono_method_signature (method);
-				gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
+		for (i = iface->method.count-1; i >= 0;i--) {
+			int param_index = 0;
+			MonoMethodBuilder *mb;
+			MonoMarshalSpec ** mspecs;
+			MonoMethod *wrapper_method, *adjust_method;
+			MonoMethod *method = iface->methods [i];
+			MonoMethodSignature* sig_adjusted;
+			MonoMethodSignature* sig = mono_method_signature (method);
+			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 
 
-				mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
-				adjust_method = cominterop_get_managed_wrapper_adjusted (method);
-				sig_adjusted = mono_method_signature (adjust_method);
-				
-				mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
-				mono_method_get_marshal_info (method, mspecs);
+			mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+			adjust_method = cominterop_get_managed_wrapper_adjusted (method);
+			sig_adjusted = mono_method_signature (adjust_method);
+			
+			mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
+			mono_method_get_marshal_info (method, mspecs);
 
-				
-				/* move managed args up one */
-				for (param_index = sig->param_count; param_index >= 1; param_index--)
-					mspecs [param_index+1] = mspecs [param_index];
+			
+			/* move managed args up one */
+			for (param_index = sig->param_count; param_index >= 1; param_index--)
+				mspecs [param_index+1] = mspecs [param_index];
 
-				/* first arg is IntPtr for interface */
-				mspecs [1] = NULL;
+			/* first arg is IntPtr for interface */
+			mspecs [1] = NULL;
 
-				/* move return spec to last param */
-				if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret))
-					mspecs [sig_adjusted->param_count] = mspecs [0];
-
+			/* move return spec to last param */
+			if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret)) {
+				mspecs [sig_adjusted->param_count] = mspecs [0];
 				mspecs [0] = NULL;
-
-				cominterop_setup_marshal_context (&m, adjust_method);
-				m.mb = mb;
-				mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, NULL);
-				mono_loader_lock ();
-				mono_marshal_lock ();
-				wrapper_method = mono_mb_create_method (mb, sig_adjusted, sig_adjusted->param_count + 16);
-				mono_marshal_unlock ();
-				mono_loader_unlock ();
-
-				/* skip visiblity since we call internal methods */
-				wrapper_method->skip_visibility = TRUE;
-
-				vtable [vtable_index--] = mono_compile_method (wrapper_method);
-
-				
-				for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
-					if (mspecs [param_index])
-						mono_metadata_free_marshal_spec (mspecs [param_index]);
-				g_free (mspecs);
 			}
-			if (iface->interface_count)
-				iface = iface->interfaces [0];
-			else 
-				iface = NULL;
+
+			cominterop_setup_marshal_context (&m, adjust_method);
+			m.mb = mb;
+			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, NULL);
+			mono_loader_lock ();
+			mono_marshal_lock ();
+			wrapper_method = mono_mb_create_method (mb, sig_adjusted, sig_adjusted->param_count + 16);
+			mono_marshal_unlock ();
+			mono_loader_unlock ();
+
+			/* skip visiblity since we call internal methods */
+			wrapper_method->skip_visibility = TRUE;
+
+			vtable [vtable_index--] = mono_compile_method (wrapper_method);
+
+			
+			for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
+				if (mspecs [param_index])
+					mono_metadata_free_marshal_spec (mspecs [param_index]);
+			g_free (mspecs);
 		}
 
 		ccw_entry = g_new0 (MonoCCWInterface, 1);
