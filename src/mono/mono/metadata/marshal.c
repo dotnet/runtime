@@ -5925,6 +5925,9 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
 
+		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+			break;
+
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
 		if (t->byref)
