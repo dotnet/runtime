@@ -1459,7 +1459,7 @@ dump_stack_value (ILStackDesc *value)
 				printf ("complex] (string)");
 				return;
 			case MONO_TYPE_OBJECT:
-				printf ("complex] (string)");
+				printf ("complex] (object)");
 				return;
 			case MONO_TYPE_SZARRAY:
 				printf ("complex] (%s [])", value->type->data.klass->name);
@@ -2625,7 +2625,12 @@ do_box_value (VerifyContext *ctx, int klass_token)
 	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
 
 	if (!type) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class 0x%08x not found at 0x%04x", klass_token, ctx->ip_offset));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of box(0x%08x) not found at 0x%04x", klass_token, ctx->ip_offset));
+		return;
+	}
+
+	if (type->byref) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
 		return;
 	}
 
@@ -2638,11 +2643,6 @@ do_box_value (VerifyContext *ctx, int klass_token)
 		return;
 
 	value = stack_pop (ctx);
-
-	if (type->byref) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
-		return;
-	}
 
 	if (!verify_type_compat (ctx, type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for boxing operation at 0x%04x", ctx->ip_offset));
@@ -2736,7 +2736,7 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
 	
 	if (!type) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of ldobect (token 0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of ldobj (token 0x%08x) not found at 0x%04x", token, ctx->ip_offset));
 		return;
 	}
 
