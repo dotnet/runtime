@@ -2650,6 +2650,40 @@ do_box_value (VerifyContext *ctx, int klass_token)
 }
 
 static void
+do_unbox_value (VerifyContext *ctx, int klass_token)
+{
+	ILStackDesc *value;
+	MonoType *type = NULL;
+	MonoClass *klass = mono_class_get_full (ctx->image, klass_token, ctx->generic_context);
+	if (klass)
+		type = mono_class_get_type (klass);
+	/*TODO use mono_type_get_full when the patch gets in*/
+	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
+
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of unbox(0x%08x) not found at 0x%04x", klass_token, ctx->ip_offset));
+		return;
+	}
+
+ 	if (type->byref) {
+ 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
+ 		return;
+ 	}
+ 
+	check_unverifiable_type (ctx, type);
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+
+	if (value->stype != TYPE_COMPLEX || value->type->type != MONO_TYPE_OBJECT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+
+	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
+}
+
+static void
 do_unary_math_op (VerifyContext *ctx, int op)
 {
 	ILStackDesc *value;
@@ -3372,14 +3406,7 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip; /* warn, error ? */
 			break;
 		case CEE_UNBOX:
-			token = read32 (ip + 1);
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument %s to unbox at 0x%04x", type_names [stack_top (&ctx)->stype], ip_offset));
-
-			stack_top (&ctx)->stype = TYPE_COMPLEX;
-			stack_top (&ctx)->type = NULL;
+			do_unbox_value (&ctx, read32 (ip + 1))
 			ip += 5;
 			break;
 		case CEE_THROW:
