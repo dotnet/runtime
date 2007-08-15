@@ -10261,9 +10261,8 @@ cominterop_get_idispatch_for_object (MonoObject* object)
 		return NULL;
 
 	if (cominterop_object_is_rcw (object)) {
-		/* FIXME: Implement this case */
-		g_assert_not_reached ();
-		return NULL;
+		return cominterop_get_interface (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object, 
+			mono_defaults.idispatch_class, TRUE);
 	}
 	else {
 		return cominterop_get_ccw (object, mono_defaults.idispatch_class);
