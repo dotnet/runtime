@@ -1231,6 +1231,22 @@ stind_type (int op, int type) {
 }
 
 
+/*Type manipulation helper*/
+
+/*Returns the byref version of the supplied MonoType*/
+static MonoType*
+mono_type_get_type_byref (MonoType *type)
+{
+	return &mono_class_from_mono_type (type)->this_arg;
+}
+
+
+/*Returns the byval version of the supplied MonoType*/
+static MonoType*
+mono_type_get_type_byval (MonoType *type)
+{
+	return &mono_class_from_mono_type (type)->byval_arg;
+}
 
 
 /*Stack manipulation code*/
@@ -1849,7 +1865,7 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 		if (strict)
 			return IS_ONE_OF3 (candidate->type, MONO_TYPE_I2, MONO_TYPE_U2, MONO_TYPE_CHAR);
-		return get_stack_type (target) == TYPE_I4;
+		return get_stack_type (candidate) == TYPE_I4;
 
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4: {
@@ -1857,7 +1873,7 @@ handle_enum:
 		gboolean is_int4 = IS_ONE_OF2 (candidate->type, MONO_TYPE_I4, MONO_TYPE_U4);
 		if (strict)
 			return is_native_int || is_int4;
-		return is_native_int || get_stack_type (target) == TYPE_I4;
+		return is_native_int || get_stack_type (candidate) == TYPE_I4;
 	}
 
 	case MONO_TYPE_I8:
@@ -1883,10 +1899,20 @@ handle_enum:
 		/* check the underlying type */
 		return verify_stack_type_compatibility (ctx, target->data.type, candidate->data.type, TRUE);
 
+	case MONO_TYPE_FNPTR: {
+		MonoMethodSignature *left, *right;
+		if (candidate->type != MONO_TYPE_FNPTR)
+			return FALSE;
+
+		left = mono_type_get_signature (target);
+		right = mono_type_get_signature (candidate);
+		return mono_metadata_signature_equal (left, right) && left->call_convention == right->call_convention;
+	}
+
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericClass *left;
 		MonoGenericClass *right;
-		if (target->type != MONO_TYPE_GENERICINST)
+		if (candidate->type != MONO_TYPE_GENERICINST)
 			return FALSE;
 		left = target->data.generic_class;
 		right = candidate->data.generic_class;
@@ -1908,7 +1934,7 @@ handle_enum:
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *left;
 		MonoClass *right;
-		if (target->type != MONO_TYPE_SZARRAY)
+		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
 
 		left = target->data.klass;
@@ -1959,12 +1985,8 @@ verify_type_compat (VerifyContext *ctx, MonoType *type, ILStackDesc *stack) {
 		}
 		return FALSE;
 	}
-	if (type->byref) {
-		MonoType * stype = stack->type;
-		if (IS_MANAGED_POINTER (stack_type))
-			stype = &mono_class_from_mono_type (stype)->this_arg;
-		return verify_stack_type_compatibility (ctx, type, stype, TRUE);
-	}
+ 	if (type->byref)
+		return verify_stack_type_compatibility (ctx, type, mono_type_get_type_byref (stack->type), TRUE);
 
 handle_enum:
 	switch (type->type) {
@@ -2342,9 +2364,6 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	--idxb;
 	res = table [idxa][idxb];
 
-	printf("binop res %d\n", res);
-	printf("idxa %d idxb %d\n", idxa, idxb);
-
 	if(res == TYPE_INV) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
@@ -2690,6 +2709,63 @@ do_conversion (VerifyContext *ctx, int kind)
 	}
 }
 
+static void
+do_load_token (VerifyContext *ctx, int token) 
+{
+	gpointer handle;
+	MonoClass *handle_class;
+	if (!check_overflow (ctx))
+		return;
+	handle = mono_ldtoken (ctx->image, token, &handle_class, ctx->generic_context);
+	if (!handle) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token 0x%x for ldtoken at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+	stack_push_val (ctx, TYPE_COMPLEX, mono_class_get_type (handle_class));
+}
+
+static void
+do_ldobj_value (VerifyContext *ctx, int token) 
+{
+	ILStackDesc *value;
+	MonoType *type = NULL;
+	MonoClass *klass = mono_class_get_full (ctx->image, token, ctx->generic_context);
+	if (klass)
+		type = mono_class_get_type (klass);
+	/*TODO use mono_type_get_full when the patch gets in*/
+	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
+	
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of ldobect (token 0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (type->byref) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target ldobj type is byref at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+	if (!IS_MANAGED_POINTER (value->stype) 
+			&& value->stype != TYPE_NATIVE_INT
+			&& !(value->stype == TYPE_PTR && value->type->type != MONO_TYPE_FNPTR)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid argument %s to ldobj at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+		return;
+	}
+
+	if (value->stype == TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Using native pointer to ldobj at 0x%04x", ctx->ip_offset));
+
+	/*We have a byval on the stack, we */
+	if (!verify_stack_type_compatibility (ctx, type, mono_type_get_type_byval (value->type), TRUE))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldojb operation at 0x%04x", ctx->ip_offset));
+
+	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
@@ -2797,6 +2873,7 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
+	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s\n",  method->klass->name, method->name); );
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
@@ -2806,7 +2883,15 @@ mono_method_verify (MonoMethod *method, int level)
 	memset (&ctx, 0, sizeof (VerifyContext));
 
 	ctx.signature = mono_method_signature (method);
+	if (!ctx.signature) {
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method signature"));
+		return ctx.list;
+	}
 	ctx.header = mono_method_get_header (method);
+	if (!ctx.header) {
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header"));
+		return ctx.list;
+	}
 	ctx.method = method;
 	ip = ctx.header->code;
 	end = ip + ctx.header->code_size;
@@ -3245,21 +3330,12 @@ mono_method_verify (MonoMethod *method, int level)
 			ctx.eval.size -= 2;
 			ip += 5;
 			break;
+
 		case CEE_LDOBJ:
-			token = read32 (ip + 1);
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldobj at 0x%04x", ip_offset));
-			klass = mono_class_get_full (image, token, generic_context);
-			if (!klass)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot load class from token 0x%08x at 0x%04x", token, ip_offset));
-			if (!klass->valuetype)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Class is not a valuetype at 0x%04x", ip_offset));
-			stack_top (&ctx)->stype = TYPE_COMPLEX;
-			stack_top (&ctx)->type = &klass->byval_arg;
+			do_ldobj_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_LDSTR:
 			/*TODO verify if token is a valid string literal*/
 			token = read32 (ip + 1);
@@ -3514,10 +3590,7 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip; /* warn, error ? */
 			break;
 		case CEE_LDTOKEN:
-			if (!check_overflow (&ctx))
-				break;
-			token = read32 (ip + 1);
-			++ctx.eval.size;
+			do_load_token (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
@@ -3756,8 +3829,10 @@ invalid_cil:
 		}
 	}
 
-	g_free (ctx.eval.stack);
-	g_free (ctx.code);
+	if (ctx.eval.stack)
+		g_free (ctx.eval.stack);
+	if (ctx.code)
+		g_free (ctx.code);
 	if (ctx.signature->hasthis)
 		g_free (ctx.params);
 
