@@ -2110,3 +2110,50 @@ done
 ./make_ldobj_test.sh ldobj_struct_8 valid  "int32[,]\&"  "int32[,]"
 ./make_ldobj_test.sh ldobj_struct_9 valid  "class Template\`1<object>\&"  "class Template\`1<object>"
 
+
+# Unbox Test
+
+
+# unbox non-existent type.
+./make_unbox_test.sh unbox_bad_type invalid "valuetype [mscorlib]NonExistent" "valuetype [mscorlib]NonExistent"
+
+# Unbox byref type.
+./make_unbox_test.sh unbox_byref_type invalid "int32" 'int32\&'
+
+# Box unbox-like type.
+./make_unbox_test.sh unbox_byref_like unverifiable int32 typedref
+
+# Box unbox-like type.
+./make_unbox_test.sh unbox_wrong_types valid object int32
+
+#This is illegal since you cannot have a Void local variable, it should go into the structural tests part
+# Box void type.
+#./make_unary_test.sh box_void unverifiable "box [mscorlib]System.Void\n\tpop" "class [mscorlib]System.Void"
+I=1;
+for OP in "native int" "int32*" typedref int16 string float32
+do
+	./make_unbox_test.sh unbox_bad_stack_${I} unverifiable "${OP}" int32 "nop" "yes"
+	I=`expr $I + 1`
+done
+
+
+#unboxing from int32
+./make_unbox_test.sh unbox_wrong_types_1 unverifiable int32 int32 "nop" "yes"
+
+#unboxing from valuetype
+./make_unbox_test.sh unbox_wrong_types_2 unverifiable "valuetype MyStruct" int32 "nop" "yes"
+
+#unboxing from managed ref
+./make_unbox_test.sh unbox_stack_byref unverifiable "valuetype MyEnum\&" "valuetype MyEnum" "nop" "yes"
+
+# valid unboxing
+./make_unbox_test.sh unbox_primitive valid "int32" "int32"
+./make_unbox_test.sh unbox_struct valid "valuetype MyStruct" 'valuetype MyStruct'
+./make_unbox_test.sh unbox_template valid "valuetype StructTemplate\`1<object>" "valuetype StructTemplate\`1<object>"
+./make_unbox_test.sh unbox_enum valid "valuetype MyEnum" "valuetype MyEnum"
+
+
+#test if the unboxed value is right
+./make_unbox_test.sh unbox_use_result_1 valid "valuetype MyStruct" "valuetype MyStruct" "ldfld int32 MyStruct::foo"
+./make_unbox_test.sh unbox_use_result_2 valid "valuetype MyStruct" "valuetype MyStruct" "ldobj valuetype MyStruct\n\tstloc.0\n\tldc.i4.0"
+./make_unbox_test.sh unbox_use_result_3 valid "int32" "int32" "ldind.i4\n\tstloc.1\n\tldc.i4.0"
