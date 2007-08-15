@@ -287,7 +287,7 @@ namespace Mono.Linker.Steps {
 			if (IsMulticastDelegate (type))
 				MarkMethodCollection (type.Constructors);
 
-			if (IsSerializable(type)) {
+			if (IsSerializable (type)) {
 				MarkMethodsIf (type.Constructors, new MethodPredicate (IsDefaultConstructor));
 				MarkMethodsIf (type.Constructors, new MethodPredicate (IsSpecialSerializationConstructor));
 			}
