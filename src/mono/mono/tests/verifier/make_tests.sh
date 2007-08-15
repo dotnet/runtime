@@ -2033,3 +2033,80 @@ done
 
 ./make_ldtoken_test.sh ldtoken_method invalid "ldtoken method int32 Example::Method()" "call class [mscorlib]System.Reflection.MethodBase class [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle(valuetype [mscorlib]System.RuntimeMethodHandle)"
 
+
+#ldobj tests
+function fix_ldobj () {
+	if [ "$3" != "" ]; then
+		A=$3;
+	elif [ "$2" != "" ]; then
+		A=$2;
+	else
+		A=$1;
+	fi
+
+	if [ "$A" == "bool" ]; then
+		A="int8";
+	elif [ "$A" == "char" ]; then
+		A="int16";
+	fi
+
+	echo "$A";
+}
+
+
+I=1
+
+#valid
+for T1 in 'int8' 'bool' 'unsigned int8' 'int16' 'char' 'unsigned int16' 'int32' 'unsigned int32' 'int64' 'unsigned int64' 'float32' 'float64'
+do
+	for T2 in 'int8' 'bool' 'unsigned int8' 'int16' 'char' 'unsigned int16' 'int32' 'unsigned int32' 'int64' 'unsigned int64' 'float32' 'float64'
+	do
+		TYPE1="$(fix_ldobj $T1)"
+		TYPE2="$(fix_ldobj $T2)"
+		if [ "$TYPE1" == "$TYPE2" ] ; then
+			./make_ldobj_test.sh ldobj_${I} valid "${T1}\&" "${T2}"
+		else
+			./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}\&" "${T2}"
+		fi
+		I=`expr $I + 1`
+	done
+done
+
+
+
+#unverifiable
+#for T1 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2" "int32 *" "valuetype MyStruct *" "method int32 *(int32)"
+for T1 in "native int" "int8*" "typedref" 
+do
+	for T2 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2"   "int32 *" "valuetype MyStruct *" "method int32 *(int32)" "native int"  "typedref" "typedref\&" "class Template\`1<object>" "valuetype StructTemplate\`1<object>" "valuetype StructTemplate2\`1<object>"
+	do 
+		./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}" "${T2}"
+		I=`expr $I + 1`
+	done
+done
+
+
+
+
+#invalid
+#for T1 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2" "int32 *" "valuetype MyStruct *" "method int32 *(int32)"
+for T1 in 'int8' 'native int'
+do	
+	for T2 in "int8\&" "int64\&" "float64\&" "object\&" "string\&" "class Class\&" "valuetype MyStruct\&" "native int\&" "class Template\`1<object>\&" "valuetype StructTemplate\`1<object>\&"  "valuetype StructTemplate2\`1<object>\&" "class [mscorlib]ExampleMM" "class [mscorlib]ExampleMM\&"
+	do 
+		./make_ldobj_test.sh ldobj_${I} invalid "${T1}" "${T2}"
+		I=`expr $I + 1`
+	done
+done
+
+./make_ldobj_test.sh ldobj_struct_1 valid  "valuetype MyStruct\&" "valuetype MyStruct"
+./make_ldobj_test.sh ldobj_struct_2 unverifiable  "valuetype MyStruct\&" "valuetype MyStruct2"
+./make_ldobj_test.sh ldobj_struct_3 valid  "valuetype StructTemplate\`1<object>\&" "valuetype StructTemplate\`1<object>"
+./make_ldobj_test.sh ldobj_struct_4 unverifiable  "valuetype StructTemplate\`1<object>\&" "valuetype StructTemplate2\`1<object>"
+
+./make_ldobj_test.sh ldobj_struct_5 valid  "object\&"  "object"
+./make_ldobj_test.sh ldobj_struct_6 valid  "string\&"  "string"
+./make_ldobj_test.sh ldobj_struct_7 valid  "int32[]\&"  "int32[]"
+./make_ldobj_test.sh ldobj_struct_8 valid  "int32[,]\&"  "int32[,]"
+./make_ldobj_test.sh ldobj_struct_9 valid  "class Template\`1<object>\&"  "class Template\`1<object>"
+
