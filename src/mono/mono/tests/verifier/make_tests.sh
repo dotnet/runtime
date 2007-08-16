@@ -2157,3 +2157,28 @@ done
 ./make_unbox_test.sh unbox_use_result_1 valid "valuetype MyStruct" "valuetype MyStruct" "ldfld int32 MyStruct::foo"
 ./make_unbox_test.sh unbox_use_result_2 valid "valuetype MyStruct" "valuetype MyStruct" "ldobj valuetype MyStruct\n\tstloc.0\n\tldc.i4.0"
 ./make_unbox_test.sh unbox_use_result_3 valid "int32" "int32" "ldind.i4\n\tstloc.1\n\tldc.i4.0"
+
+
+
+# newarray Test
+
+#no int size on stack
+#invalid size type on stack
+#invalid array type (with bytref)
+
+#Empty stack
+./make_newarr_test.sh newarr_empty_stack invalid int32 int32 pop
+
+#Stack type tests
+./make_newarr_test.sh newarr_stack_type_1 valid int32 int32
+./make_newarr_test.sh newarr_stack_type_2 valid "native int" int32
+
+./make_newarr_test.sh newarr_stack_type_3 unverifiable float32 int32
+./make_newarr_test.sh newarr_stack_type_4 unverifiable object int32
+
+#Invalid array element type (with byref)
+./make_newarr_test.sh newarr_array_type_1 invalid int32 "int32\&"
+
+#Check if the verifier push the right type on stack
+./make_newarr_test.sh newarr_array_value valid int32 int32 nop "ldc.i4.0\n\tcallvirt instance int32 class [mscorlib]System.Array::GetLength(int32)"
+
