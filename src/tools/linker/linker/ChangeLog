@@ -1,3 +1,9 @@
+2007-08-16  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs
+	  Mono.Linker/LinkContext.cs:
+		Add a way to specify parameters to the context.
+
 2007-08-05  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker.Steps/ResolveFromXmlStep.cs:

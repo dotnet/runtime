@@ -38,6 +38,7 @@ namespace Mono.Linker {
 		AssemblyAction _coreAction;
 		Hashtable _actions;
 		string _outputDirectory;
+		Hashtable _parameters;
 
 		AssemblyResolver _resolver;
 
@@ -68,6 +69,7 @@ namespace Mono.Linker {
 			_pipeline = pipeline;
 			_resolver = new AssemblyResolver ();
 			_actions = new Hashtable ();
+			_parameters = new Hashtable ();
 		}
 
 		public TypeDefinition GetType (string type)
@@ -153,6 +155,21 @@ namespace Mono.Linker {
 			AssemblyDefinition [] asms = new AssemblyDefinition [cache.Count];
 			cache.Values.CopyTo (asms, 0);
 			return asms;
+		}
+
+		public void SetParameter (string key, string value)
+		{
+			_parameters [key] = value;
+		}
+
+		public bool HasParameter (string key)
+		{
+			return _parameters.Contains (key);
+		}
+
+		public string GetParameter (string key)
+		{
+			return (string) _parameters [key];
 		}
 	}
 }
