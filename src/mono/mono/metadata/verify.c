@@ -1352,6 +1352,29 @@ stack_get (VerifyContext *ctx, int distance)
 	return ctx->eval.stack + (ctx->eval.size - distance - 1);
 }
 
+/* Returns the MonoType associated with the token, or NULL if it is invalid.
+ * 
+ * A boxable type can be either a reference or value type, but cannot be a byref type or an unmanaged pointer   
+ * */
+static MonoType*
+get_boxable_mono_type (VerifyContext* ctx, int token)
+{
+	MonoType *type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+		return NULL;
+	}
+
+	if (type->byref && type->type != MONO_TYPE_TYPEDBYREF) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of byref type at 0x%04x", ctx->ip_offset));
+		return NULL;
+	}
+
+	check_unverifiable_type (ctx, type);
+	return type;
+}
+
 
 /*operation result tables */
 
@@ -2617,22 +2640,10 @@ static void
 do_box_value (VerifyContext *ctx, int klass_token)
 {
 	ILStackDesc *value;
-	MonoType *type = NULL;
-	MonoClass *klass = mono_class_get_full (ctx->image, klass_token, ctx->generic_context);
-	if (klass)
-		type = mono_class_get_type (klass);
-	/*TODO use mono_type_get_full when the patch gets in*/
-	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
+	MonoType *type = get_boxable_mono_type (ctx, klass_token);
 
-	if (!type) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of box(0x%08x) not found at 0x%04x", klass_token, ctx->ip_offset));
+	if (!type)
 		return;
-	}
-
-	if (type->byref) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
-		return;
-	}
 
 	if (!check_underflow (ctx, 1))
 		return;
@@ -2646,6 +2657,7 @@ do_box_value (VerifyContext *ctx, int klass_token)
 
 	if (!verify_type_compat (ctx, type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for boxing operation at 0x%04x", ctx->ip_offset));
+
 	stack_push_val (ctx, TYPE_COMPLEX, mono_class_get_type (mono_defaults.object_class));
 }
 
@@ -2653,25 +2665,11 @@ static void
 do_unbox_value (VerifyContext *ctx, int klass_token)
 {
 	ILStackDesc *value;
-	MonoType *type = NULL;
-	MonoClass *klass = mono_class_get_full (ctx->image, klass_token, ctx->generic_context);
-	if (klass)
-		type = mono_class_get_type (klass);
-	/*TODO use mono_type_get_full when the patch gets in*/
-	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
+	MonoType *type = get_boxable_mono_type (ctx, klass_token);
 
-	if (!type) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of unbox(0x%08x) not found at 0x%04x", klass_token, ctx->ip_offset));
+	if (!type)
 		return;
-	}
-
- 	if (type->byref) {
- 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target box type is byref at 0x%04x", ctx->ip_offset));
- 		return;
- 	}
  
-	check_unverifiable_type (ctx, type);
-
 	if (!check_underflow (ctx, 1))
 		return;
 
@@ -2681,7 +2679,7 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
 
 	//TODO Pushed managed pointer is haver controled mutability (CMMP) 
-	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
+	set_stack_value (stack_push (ctx), mono_type_get_type_byref (type), FALSE, FALSE);
 }
 
 static void
@@ -2763,22 +2761,10 @@ static void
 do_ldobj_value (VerifyContext *ctx, int token) 
 {
 	ILStackDesc *value;
-	MonoType *type = NULL;
-	MonoClass *klass = mono_class_get_full (ctx->image, token, ctx->generic_context);
-	if (klass)
-		type = mono_class_get_type (klass);
-	/*TODO use mono_type_get_full when the patch gets in*/
-	/* type = mono_type_get_full (ctx->image, klass_token, ctx->generic_context);*/
-	
-	if (!type) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Class target of ldobj (token 0x%08x) not found at 0x%04x", token, ctx->ip_offset));
-		return;
-	}
+	MonoType *type = get_boxable_mono_type (ctx, token);
 
-	if (type->byref) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Target ldobj type is byref at 0x%04x", ctx->ip_offset));
+	if (!type)
 		return;
-	}
 
 	if (!check_underflow (ctx, 1))
 		return;
