@@ -2680,6 +2680,7 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 	if (value->stype != TYPE_COMPLEX || value->type->type != MONO_TYPE_OBJECT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
 
+	//TODO Pushed managed pointer is haver controled mutability (CMMP) 
 	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
 }
 
@@ -3406,7 +3407,7 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip; /* warn, error ? */
 			break;
 		case CEE_UNBOX:
-			do_unbox_value (&ctx, read32 (ip + 1))
+			do_unbox_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 		case CEE_THROW:
