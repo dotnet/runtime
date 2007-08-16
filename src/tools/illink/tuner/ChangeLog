@@ -1,3 +1,7 @@
+2007-08-16  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: re-install in the GAC the tuned assemblies.
+
 2007-08-13  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: tune on net_2_1 install.
