@@ -145,6 +145,9 @@ namespace Mono.Linker {
 				case 'l':
 					assemblies = ParseI18n (GetParam ());
 					break;
+				case 'm':
+					context.SetParameter (GetParam (), GetParam ());
+					break;
 				default:
 					Usage ();
 					break;
