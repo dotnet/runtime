@@ -96,7 +96,7 @@
 		<type fullname="System.Reflection.CustomAttributeData" preserve="fields" />
 		<type fullname="System.Reflection.CustomAttributeNamedArgument" />
 		<type fullname="System.Reflection.CustomAttributeTypedArgument" />
-		<type fullname="System.Reflection.Emit.AssemblyBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.AssemblyBuilder" />
 		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.CustomAttributeBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" />
