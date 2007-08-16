@@ -1687,7 +1687,7 @@ handle_enum:
 			return;
 		}
 	default:
-		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type\n", type->type); );
+		VERIFIER_DEBUG ( printf ("unknown type 0x%02x in eval stack type\n", type->type); );
 		g_assert_not_reached ();
 	}
 	return;
@@ -2787,6 +2787,25 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
 }
 
+static void
+do_newarr (VerifyContext *ctx, int token) 
+{
+	ILStackDesc *value;
+	MonoType *type = get_boxable_mono_type (ctx, token);
+
+	if (!type)
+		return;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+	if (value->stype != TYPE_I4 && value->stype != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Array size type on stack (%s) is not a verifiable type at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+
+	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE, FALSE);
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
@@ -3461,12 +3480,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_NEWARR:
-			if (!check_underflow (&ctx, 1))
-				break;
-			token = read32 (ip + 1);
-			stack_top (&ctx)->stype = TYPE_COMPLEX;
+			do_newarr (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_LDLEN:
 			if (!check_underflow (&ctx, 1))
 				break;
