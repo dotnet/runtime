@@ -829,5 +829,8 @@ mono_type_is_valid_enum_basetype (MonoType * type);
 gboolean
 mono_class_is_valid_enum (MonoClass *klass);
 
+MonoType *
+mono_type_get_full        (MonoImage *image, guint32 type_token, MonoGenericContext *context) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

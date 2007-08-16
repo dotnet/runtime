@@ -3494,12 +3494,13 @@ mono_class_from_mono_type (MonoType *type)
 }
 
 /**
+ * mono_type_retrieve_from_typespec
  * @image: context where the image is created
  * @type_spec:  typespec token
  * @context: the generic context used to evaluate generic instantiations in
  */
 static MonoClass *
-mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
+mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
 {
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
 	if (!t)
@@ -3509,6 +3510,21 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGeneri
 		if (inflated)
 			t = inflated;
 	}
+	return t;
+}
+
+/**
+ * mono_class_create_from_typespec
+ * @image: context where the image is created
+ * @type_spec:  typespec token
+ * @context: the generic context used to evaluate generic instantiations in
+ */
+static MonoClass *
+mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
+{
+	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context);
+	if (!t)
+		return NULL;
 	return mono_class_from_mono_type (t);
 }
 
@@ -4086,6 +4102,43 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	return class;
 }
 
+
+/**
+ * mono_type_get_full:
+ * @image: the image where the type resides
+ * @type_token: the token for the type
+ * @context: the generic context used to evaluate generic instantiations in
+ *
+ * This functions exists to fullfill the fact that sometimes it's desirable to have access to the 
+ * 
+ * Returns: the MonoType that represents @type_token in @image
+ */
+MonoType *
+mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+{
+	MonoType *type = NULL;
+
+	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
+	if (image->dynamic)
+		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token));
+
+	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
+		MonoClass *class = mono_class_get_full (image, type_token, context);
+		return class ? mono_class_get_type (class) : NULL;
+	}
+
+	type = mono_type_retrieve_from_typespec (image, type_token, context);
+
+	if (!type) {
+		char *name = mono_class_name_from_token (image, type_token);
+		char *assembly = mono_assembly_name_from_token (image, type_token);
+		mono_loader_set_error_type_load (name, assembly);
+	}
+
+	return type;
+}
+
+
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
@@ -4636,15 +4689,15 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_DEF:
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
-		MonoClass *class;
+		MonoType *type;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		class = mono_class_get_full (image, token, context);
-		if (!class)
+		type = mono_type_get_full (image, token, context);
+		if (!type)
 			return NULL;
-		mono_class_init (class);
+		mono_class_init (mono_class_from_mono_type (type));
 		/* We return a MonoType* as handle */
-		return &class->byval_arg;
+		return type;
 	}
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
