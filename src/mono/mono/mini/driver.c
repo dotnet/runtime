@@ -436,6 +436,314 @@ mini_regression_list (int verbose, int count, char *images [])
 	return total;
 }
 
+#ifdef MONO_JIT_INFO_TABLE_TEST
+typedef struct _JitInfoData
+{
+	guint start;
+	guint length;
+	MonoJitInfo *ji;
+	struct _JitInfoData *next;
+} JitInfoData;
+
+typedef struct
+{
+	guint start;
+	guint length;
+	int num_datas;
+	JitInfoData *data;
+} Region;
+
+typedef struct
+{
+	int num_datas;
+	int num_regions;
+	Region *regions;
+	int num_frees;
+	JitInfoData *frees;
+} ThreadData;
+
+static int num_threads;
+static ThreadData *thread_datas;
+static MonoDomain *test_domain;
+
+static JitInfoData*
+alloc_random_data (Region *region)
+{
+	JitInfoData **data;
+	JitInfoData *prev;
+	guint prev_end;
+	guint next_start;
+	guint max_len;
+	JitInfoData *d;
+	int num_retries = 0;
+	int pos, i;
+
+ restart:
+	prev = NULL;
+	data = &region->data;
+	pos = random () % (region->num_datas + 1);
+	i = 0;
+	while (*data != NULL) {
+		if (i++ == pos)
+			break;
+		prev = *data;
+		data = &(*data)->next;
+	}
+
+	if (prev == NULL)
+		g_assert (*data == region->data);
+	else
+		g_assert (prev->next == *data);
+
+	if (prev == NULL)
+		prev_end = region->start;
+	else
+		prev_end = prev->start + prev->length;
+
+	if (*data == NULL)
+		next_start = region->start + region->length;
+	else
+		next_start = (*data)->start;
+
+	g_assert (prev_end <= next_start);
+
+	max_len = next_start - prev_end;
+	if (max_len < 128) {
+		if (++num_retries >= 10)
+			return NULL;
+		goto restart;
+	}
+	if (max_len > 1024)
+		max_len = 1024;
+
+	d = g_new0 (JitInfoData, 1);
+	d->start = prev_end + random () % (max_len / 2);
+	d->length = random () % MIN (max_len, next_start - d->start) + 1;
+
+	g_assert (d->start >= prev_end && d->start + d->length <= next_start);
+
+	d->ji = g_new0 (MonoJitInfo, 1);
+	d->ji->method = (MonoMethod*) 0xABadBabe;
+	d->ji->code_start = (gpointer)(gulong) d->start;
+	d->ji->code_size = d->length;
+	d->ji->cas_inited = 1;	/* marks an allocated jit info */
+
+	d->next = *data;
+	*data = d;
+
+	++region->num_datas;
+
+	return d;
+}
+
+static JitInfoData**
+choose_random_data (Region *region)
+{
+	int n;
+	int i;
+	JitInfoData **d;
+
+	g_assert (region->num_datas > 0);
+
+	n = random () % region->num_datas;
+
+	for (d = &region->data, i = 0;
+	     i < n;
+	     d = &(*d)->next, ++i)
+		;
+
+	return d;
+}
+
+static Region*
+choose_random_region (ThreadData *td)
+{
+	return &td->regions [random () % td->num_regions];
+}
+
+static ThreadData*
+choose_random_thread (void)
+{
+	return &thread_datas [random () % num_threads];
+}
+
+static void
+free_jit_info_data (ThreadData *td, JitInfoData *free)
+{
+	free->next = td->frees;
+	td->frees = free;
+
+	if (++td->num_frees >= 1000) {
+		int i;
+
+		for (i = 0; i < 500; ++i)
+			free = free->next;
+
+		while (free->next != NULL) {
+			JitInfoData *next = free->next->next;
+
+			g_free (free->next->ji);
+			g_free (free->next);
+			free->next = next;
+
+			--td->num_frees;
+		}
+	}
+}
+
+#define NUM_THREADS		8
+#define REGIONS_PER_THREAD	10
+#define REGION_SIZE		0x10000
+
+#define MAX_ADDR		(REGION_SIZE * REGIONS_PER_THREAD * NUM_THREADS)
+
+#define MODE_ALLOC	1
+#define MODE_FREE	2
+
+static void
+test_thread_func (ThreadData *td)
+{
+	int mode = MODE_ALLOC;
+	int i = 0;
+	gulong lookup_successes = 0, lookup_failures = 0;
+	MonoDomain *domain = test_domain;
+	int thread_num = (int)(td - thread_datas);
+	gboolean modify_thread = thread_num < NUM_THREADS / 2; /* only half of the threads modify the table */
+
+	for (;;) {
+		int alloc;
+		int lookup = 1;
+
+		if (td->num_datas == 0) {
+			lookup = 0;
+			alloc = 1;
+		} else if (modify_thread && random () % 1000 < 5) {
+			lookup = 0;
+			if (mode == MODE_ALLOC)
+				alloc = (random () % 100) < 70;
+			else if (mode == MODE_FREE)
+				alloc = (random () % 100) < 30;
+		}
+
+		if (lookup) {
+			/* modify threads sometimes look up their own jit infos */
+			if (modify_thread && random () % 10 < 5) {
+				Region *region = choose_random_region (td);
+
+				if (region->num_datas > 0) {
+					JitInfoData **data = choose_random_data (region);
+					guint pos = (*data)->start + random () % (*data)->length;
+					MonoJitInfo *ji = mono_jit_info_table_find (domain, (char*)(gulong) pos);
+
+					g_assert ((*data)->ji == ji);
+					g_assert (ji->cas_inited);
+				}
+			} else {
+				int pos = random () % MAX_ADDR;
+				char *addr = (char*)(gulong) pos;
+				MonoJitInfo *ji = mono_jit_info_table_find (domain, addr);
+
+				if (ji != NULL) {
+					g_assert (addr >= (char*)ji->code_start && addr < (char*)ji->code_start + ji->code_size);
+					++lookup_successes;
+				} else
+					++lookup_failures;
+			}
+		} else if (alloc) {
+			JitInfoData *data = alloc_random_data (choose_random_region (td));
+
+			if (data != NULL) {
+				mono_jit_info_table_add (domain, data->ji);
+
+				++td->num_datas;
+			}
+		} else {
+			Region *region = choose_random_region (td);
+
+			if (region->num_datas > 0) {
+				JitInfoData **data = choose_random_data (region);
+				JitInfoData *free;
+
+				mono_jit_info_table_remove (domain, (*data)->ji);
+
+				(*data)->ji->cas_inited = 0; /* marks a free jit info */
+
+				free = *data;
+				*data = (*data)->next;
+
+				free_jit_info_data (td, free);
+
+				--region->num_datas;
+				--td->num_datas;
+			}
+		}
+
+		if (++i % 100000 == 0) {
+			int j;
+			g_print ("num datas %d (%ld - %ld): %d", (int)(td - thread_datas),
+				 lookup_successes, lookup_failures, td->num_datas);
+			for (j = 0; j < td->num_regions; ++j)
+				g_print ("  %d", td->regions [j].num_datas);
+			g_print ("\n");
+		}
+
+		if (td->num_datas < 100)
+			mode = MODE_ALLOC;
+		else if (td->num_datas > 2000)
+			mode = MODE_FREE;
+	}
+}
+
+/*
+static void
+small_id_thread_func (gpointer arg)
+{
+	MonoThread *thread = mono_thread_current ();
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+
+	g_print ("my small id is %d\n", (int)thread->small_id);
+	mono_hazard_pointer_clear (hp, 1);
+	sleep (3);
+	g_print ("done %d\n", (int)thread->small_id);
+}
+*/
+
+static void
+jit_info_table_test (MonoDomain *domain)
+{
+	int i;
+
+	g_print ("testing jit_info_table\n");
+
+	num_threads = NUM_THREADS;
+	thread_datas = g_new0 (ThreadData, num_threads);
+
+	for (i = 0; i < num_threads; ++i) {
+		int j;
+
+		thread_datas [i].num_regions = REGIONS_PER_THREAD;
+		thread_datas [i].regions = g_new0 (Region, REGIONS_PER_THREAD);
+
+		for (j = 0; j < REGIONS_PER_THREAD; ++j) {
+			thread_datas [i].regions [j].start = (num_threads * j + i) * REGION_SIZE;
+			thread_datas [i].regions [j].length = REGION_SIZE;
+		}
+	}
+
+	test_domain = domain;
+
+	/*
+	for (i = 0; i < 72; ++i)
+		mono_thread_create (domain, small_id_thread_func, NULL);
+
+	sleep (2);
+	*/
+
+	for (i = 0; i < num_threads; ++i)
+		mono_thread_create (domain, test_thread_func, &thread_datas [i]);
+}
+#endif
+
 enum {
 	DO_BENCH,
 	DO_REGRESSION,
@@ -707,6 +1015,9 @@ mono_main (int argc, char* argv[])
 	char *profile_options = NULL;
 	char *aot_options = NULL;
 	char *forced_version = NULL;
+#ifdef MONO_JIT_INFO_TABLE_TEST
+	int test_jit_info_table = FALSE;
+#endif
 
 	setlocale (LC_ALL, "");
 
@@ -901,6 +1212,10 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "Invalid --wapi suboption: '%s'\n", argv [i]);
 				return 1;
 			}
+#ifdef MONO_JIT_INFO_TABLE_TEST
+		} else if (strcmp (argv [i], "--test-jit-info-table") == 0) {
+			test_jit_info_table = TRUE;
+#endif
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
@@ -1008,6 +1323,11 @@ mono_main (int argc, char* argv[])
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		mono_config_parse (config_file);
 	}
+
+#ifdef MONO_JIT_INFO_TABLE_TEST
+	if (test_jit_info_table)
+		jit_info_table_test (domain);
+#endif
 
 	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {

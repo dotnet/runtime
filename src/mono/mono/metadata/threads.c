@@ -374,6 +374,36 @@ mono_hazard_pointer_get (void)
 void
 mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func)
 {
+	int i;
+
+	/* First try to free a few entries in the delayed free
+	   table. */
+	for (i = 2; i >= 0; --i) {
+		if (delayed_free_table->len > i) {
+			DelayedFreeItem item;
+
+			item.p = NULL;
+			EnterCriticalSection (&delayed_free_table_mutex);
+			/* We have to check the length again because another
+			   thread might have freed an item before we acquired
+			   the lock. */
+			if (delayed_free_table->len > i) {
+				item = g_array_index (delayed_free_table, DelayedFreeItem, i);
+
+				if (!is_pointer_hazardous (item.p))
+					g_array_remove_index_fast (delayed_free_table, i);
+				else
+					item.p = NULL;
+			}
+			LeaveCriticalSection (&delayed_free_table_mutex);
+
+			if (item.p != NULL)
+				item.free_func (item.p);
+		}
+	}
+
+	/* Now see if the pointer we're freeing is hazardous.  If it
+	   isn't, free it.  Otherwise put it in the delay list. */
 	if (is_pointer_hazardous (p)) {
 		DelayedFreeItem item = { p, free_func };
 
@@ -382,29 +412,8 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 		EnterCriticalSection (&delayed_free_table_mutex);
 		g_array_append_val (delayed_free_table, item);
 		LeaveCriticalSection (&delayed_free_table_mutex);
-	} else {
-		DelayedFreeItem item;
-
+	} else
 		free_func (p);
-
-		if (delayed_free_table->len == 0)
-			return;
-
-		item.p = NULL;
-		EnterCriticalSection (&delayed_free_table_mutex);
-		if (delayed_free_table->len > 0) {
-			DelayedFreeItem item = g_array_index (delayed_free_table, DelayedFreeItem, 0);
-
-			if (!is_pointer_hazardous (item.p))
-				g_array_remove_index_fast (delayed_free_table, 0);
-			else
-				item.p = NULL;
-		}
-		LeaveCriticalSection (&delayed_free_table_mutex);
-
-		if (item.p != NULL)
-			item.free_func (item.p);
-	}
 }
 
 static void thread_cleanup (MonoThread *thread)

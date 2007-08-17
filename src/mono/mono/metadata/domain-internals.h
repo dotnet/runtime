@@ -39,7 +39,26 @@ typedef struct {
 	MonoArray *configuration_bytes;
 } MonoAppDomainSetup;
 
-typedef GArray MonoJitInfoTable;
+typedef struct _MonoJitInfoTable MonoJitInfoTable;
+typedef struct _MonoJitInfoTableChunk MonoJitInfoTableChunk;
+
+#define MONO_JIT_INFO_TABLE_CHUNK_SIZE		64
+
+struct _MonoJitInfoTableChunk
+{
+	int		       refcount;
+	volatile int           num_elements;
+	volatile gint8        *last_code_end;
+	MonoJitInfo * volatile data [MONO_JIT_INFO_TABLE_CHUNK_SIZE];
+};
+
+struct _MonoJitInfoTable
+{
+	int			num_chunks;
+	MonoJitInfoTableChunk  *chunks [MONO_ZERO_LEN_ARRAY];
+};
+
+typedef GArray MonoAotModuleInfoTable;
 
 typedef struct {
 	guint32  flags;
@@ -137,7 +156,8 @@ struct _MonoDomain {
 	MonoInternalHashTable jit_code_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable         *dynamic_code_hash;
-	MonoJitInfoTable   *jit_info_table;
+	MonoJitInfoTable * 
+	  volatile          jit_info_table;
 	/* Used when loading assemblies */
 	gchar **search_path;
 	/* Used by remoting proxies */

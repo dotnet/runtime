@@ -10941,14 +10941,14 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 
 	/* 
 	 * This needs to be done before freeing code_mp, since the code address is the
-	 * key in the table, so if we the code_mp first, another thread can grab the
+	 * key in the table, so if we free the code_mp first, another thread can grab the
 	 * same code address and replace our entry in the table.
 	 */
 	mono_jit_info_table_remove (domain, ji->ji);
 
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
-	g_free (ji->ji);
+	mono_thread_hazardous_free_or_queue (ji->ji, g_free);
 	g_free (ji);
 }
 
@@ -12002,6 +12002,10 @@ print_jit_stats (void)
 		g_print ("IMT max collisions:     %ld\n", mono_stats.imt_max_collisions_in_slot);
 		g_print ("IMT methods at max col: %ld\n", mono_stats.imt_method_count_when_max_collisions);
 		g_print ("IMT thunks size:        %ld\n", mono_stats.imt_thunks_size);
+
+		g_print ("JIT info table inserts: %ld\n", mono_stats.jit_info_table_insert_count);
+		g_print ("JIT info table removes: %ld\n", mono_stats.jit_info_table_remove_count);
+		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
 
