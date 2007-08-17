@@ -129,6 +129,7 @@ struct _MonoException {
 	gint32	    remote_stack_index;
 	gint32	    hresult;
 	MonoString *source;
+	MonoObject *_data;
 };
 
 typedef struct {
