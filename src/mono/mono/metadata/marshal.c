@@ -11217,7 +11217,8 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		return mspec->data.array_data.num_elem * esize;
 	}
 	case MONO_NATIVE_CUSTOM:
-		g_assert_not_reached ();
+		*align = sizeof (gpointer);
+		return sizeof (gpointer);
 		break;
 	case MONO_NATIVE_CURRENCY:
 	case MONO_NATIVE_VBBYREFSTR:

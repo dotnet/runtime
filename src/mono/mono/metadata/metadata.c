@@ -1487,7 +1487,7 @@ mono_metadata_cleanup (void)
  * this MonoGenericContainer.
  * This is a Mono runtime internal function.
  *
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock.
  *
  * Returns: a #MonoType structure representing the decoded type.
  */
@@ -4414,6 +4414,8 @@ handle_enum:
 			switch (mspec->native) {
 			case MONO_NATIVE_STRUCT:
 				return MONO_NATIVE_STRUCT;
+			case MONO_NATIVE_CUSTOM:
+				return MONO_NATIVE_CUSTOM;
 			case MONO_NATIVE_INTERFACE:
 				*conv = MONO_MARSHAL_CONV_OBJECT_INTERFACE;
 				return MONO_NATIVE_INTERFACE;
