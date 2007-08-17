@@ -534,7 +534,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 			else
 				ic_fqname = NULL;
 
-			result = find_method_in_class_trace (ic, NULL, ic_qname, ic_fqname, sig, from_ic, trace);
+			result = find_method_in_class (ic, NULL, ic_qname, ic_fqname, sig, from_ic);
 			g_free (ic_class_name);
 			g_free (ic_fqname);
 			g_free (ic_qname);
