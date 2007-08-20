@@ -58,13 +58,28 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 }
 
 MonoSecurityCoreCLRLevel
+mono_security_core_clr_class_level (MonoClass *class)
+{
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
+	MonoSecurityCoreCLRLevel lvl = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
+
+	if (cinfo)
+		mono_custom_attrs_free (cinfo);
+
+	if (lvl == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
+		return mono_security_core_clr_class_level (class->nested_in);
+	else
+		return lvl;
+}
+
+MonoSecurityCoreCLRLevel
 mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level)
 {
 	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method (method);
 	MonoSecurityCoreCLRLevel level = mono_security_core_clr_level_from_cinfo (cinfo, method->klass->image);
 
 	if (with_class_level && level == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-		level = mono_security_core_clr_level_from_cinfo (mono_custom_attrs_from_class (method->klass), method->klass->image);
+		level = mono_security_core_clr_class_level (method->klass);
 
 	if (cinfo)
 		mono_custom_attrs_free (cinfo);

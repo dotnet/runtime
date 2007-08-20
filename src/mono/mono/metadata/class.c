@@ -2486,18 +2486,6 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 	}
 }
 
-static MonoSecurityCoreCLRLevel
-class_security_level (MonoClass *class)
-{
-	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
-	MonoSecurityCoreCLRLevel lvl = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
-
-	if (cinfo)
-		mono_custom_attrs_free (cinfo);
-
-	return lvl;
-}
-
 static void
 check_core_clr_inheritance (MonoClass *class)
 {
@@ -2507,8 +2495,8 @@ check_core_clr_inheritance (MonoClass *class)
 	if (!parent)
 		return;
 
-	class_level = class_security_level (class);
-	parent_level = class_security_level (parent);
+	class_level = mono_security_core_clr_class_level (class);
+	parent_level = mono_security_core_clr_class_level (parent);
 
 	if (class_level < parent_level) {
 		class->exception_type = MONO_EXCEPTION_TYPE_LOAD;
