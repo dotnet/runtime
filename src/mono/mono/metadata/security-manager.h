@@ -38,6 +38,12 @@ enum {
 	MONO_METADATA_INHERITANCEDEMAND_METHOD	= 0x02
 };
 
+typedef enum {
+	MONO_SECURITY_MODE_NONE,
+	MONO_SECURITY_MODE_CORE_CLR,
+	MONO_SECURITY_MODE_CAS,
+	MONO_SECURITY_MODE_SMCS_HACK
+} MonoSecurityMode;
 
 /* Structures */
 
@@ -57,7 +63,6 @@ typedef struct {
 	MonoClass *suppressunmanagedcodesecurity;	/* System.Security.SuppressUnmanagedCodeSecurityAttribute */
 } MonoSecurityManager;
 
-
 /* Initialization/utility functions */
 void mono_activate_security_manager (void) MONO_INTERNAL;
 gboolean mono_is_security_manager_active (void) MONO_INTERNAL;
@@ -68,6 +73,9 @@ MonoMethod* mono_get_context_capture_method (void) MONO_INTERNAL;
 void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
 void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base) MONO_INTERNAL;
 
+/* Security mode */
+void mono_security_set_mode (MonoSecurityMode mode) MONO_INTERNAL;
+MonoSecurityMode mono_security_get_mode (void) MONO_INTERNAL;
 
 /* internal calls */
 MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void) MONO_INTERNAL;

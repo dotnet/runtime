@@ -60,6 +60,7 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/rawbuffer.h>
+#include <mono/metadata/security-core-clr.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -129,7 +130,6 @@ gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
 #endif
-MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
 
 static int mini_verbose = 0;
 
@@ -3755,6 +3755,85 @@ gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *cal
 	return FALSE;
 }
 
+static MonoMethod*
+method_access_exception (void)
+{
+	static MonoMethod *method = NULL;
+
+	if (!method) {
+		MonoSecurityManager *secman = mono_security_manager_get_methods ();
+		method = mono_class_get_method_from_name (secman->securitymanager,
+							  "MethodAccessException", 2);
+	}
+	g_assert (method);
+	return method;
+}
+
+static void
+emit_throw_method_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
+				    MonoBasicBlock *bblock, unsigned char *ip)
+{
+	MonoMethod *thrower = method_access_exception ();
+	MonoInst *args [2];
+
+	NEW_METHODCONST (cfg, args [0], caller);
+	NEW_METHODCONST (cfg, args [1], callee);
+	mono_emit_method_call_spilled (cfg, bblock, thrower,
+		mono_method_signature (thrower), args, ip, NULL);
+}
+
+static MonoMethod*
+verification_exception (void)
+{
+	static MonoMethod *method = NULL;
+
+	if (!method) {
+		MonoSecurityManager *secman = mono_security_manager_get_methods ();
+		method = mono_class_get_method_from_name (secman->securitymanager,
+							  "VerificationException", 0);
+	}
+	g_assert (method);
+	return method;
+}
+
+static void
+emit_throw_verification_exception (MonoCompile *cfg, MonoBasicBlock *bblock, unsigned char *ip)
+{
+	MonoMethod *thrower = verification_exception ();
+
+	mono_emit_method_call_spilled (cfg, bblock, thrower,
+		mono_method_signature (thrower),
+		NULL, ip, NULL);
+}
+
+static void
+ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
+					 MonoBasicBlock *bblock, unsigned char *ip)
+{
+	MonoSecurityCoreCLRLevel caller_level = mono_security_core_clr_method_level (caller, TRUE);
+	MonoSecurityCoreCLRLevel callee_level = mono_security_core_clr_method_level (callee, TRUE);
+	gboolean is_safe = TRUE;
+
+	if (!(caller_level >= callee_level ||
+			caller_level == MONO_SECURITY_CORE_CLR_SAFE_CRITICAL ||
+			callee_level == MONO_SECURITY_CORE_CLR_SAFE_CRITICAL)) {
+		is_safe = FALSE;
+	}
+
+	if (!is_safe)
+		emit_throw_method_access_exception (cfg, caller, callee, bblock, ip);
+}
+
+static gboolean
+method_is_safe (MonoMethod *method)
+{
+	/*
+	if (strcmp (method->name, "unsafeMethod") == 0)
+		return FALSE;
+	*/
+	return TRUE;
+}
+
 /*
  * Check that the IL instructions at ip are the array initialization
  * sequence and return the pointer to the data and the size.
@@ -3869,7 +3948,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
 	/* turn off visibility checks for smcs */
-	dont_verify |= mono_security_mode == MONO_SECURITY_MODE_SMCS_HACK;
+	dont_verify |= mono_security_get_mode () == MONO_SECURITY_MODE_SMCS_HACK;
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -4024,7 +4103,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (mono_security_mode == MONO_SECURITY_MODE_CAS)
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
 		secman = mono_security_manager_get_methods ();
 
 	security = (secman && mono_method_has_declsec (method));
@@ -4107,6 +4186,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* we must Demand SecurityPermission.Unmanaged before p/invoking */
 	if (pinvoke) {
 		mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandunmanaged, mono_method_signature (secman->demandunmanaged), NULL, ip, NULL);
+	}
+
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
+			if (wrapped && (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+				if (!(method->klass && method->klass->image &&
+						mono_security_core_clr_is_platform_image (method->klass->image))) {
+					emit_throw_method_access_exception (cfg, method, wrapped, bblock, ip);
+				}
+			}
+		}
+		if (!method_is_safe (method))
+			emit_throw_verification_exception (cfg, bblock, ip);
 	}
 
 	if (get_basic_blocks (cfg, header, real_offset, ip, end, &err_pos)) {
@@ -4510,7 +4603,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 
-			if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
 				CHECK_CFG_EXCEPTION;
@@ -4562,6 +4655,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cil_method))
 					UNVERIFIED;
 
+				if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+					ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
+
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
 					/* MS.NET seems to silently convert this to a callvirt */
 					virtual = 1;
@@ -4584,7 +4680,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				n = fsig->param_count + fsig->hasthis;
 
-				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
@@ -5572,10 +5668,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!mono_class_init (cmethod->klass))
 				goto load_error;
 
-			if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 					INLINE_FAILURE;
 				CHECK_CFG_EXCEPTION;
+			} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+				ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
 			}
 
 			n = fsig->param_count;
@@ -7235,10 +7333,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
+				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -7267,10 +7367,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
+				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
 				}
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -12009,7 +12111,7 @@ print_jit_stats (void)
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
 
-		if (mono_security_mode == MONO_SECURITY_MODE_CAS) {
+		if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
 			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);

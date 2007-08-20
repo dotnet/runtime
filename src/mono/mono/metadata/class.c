@@ -31,6 +31,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/security-manager.h>
+#include <mono/metadata/security-core-clr.h>
 #include <mono/os/gc_wrapper.h>
 #include <mono/utils/mono-counters.h>
 
@@ -1864,6 +1865,18 @@ mono_class_setup_vtable (MonoClass *class)
 	return;
 }
 
+static void
+check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMethod *base)
+{
+	MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
+	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
+
+	if (override_level != base_level && base_level == MONO_SECURITY_CORE_CLR_CRITICAL) {
+		class->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+		class->exception_data = NULL;
+	}
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1923,6 +1936,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 			g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
+
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				check_core_clr_override_method (class, vtable [dslot], decl);
 		}
 	}
 
@@ -1972,6 +1988,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
 								mono_secman_inheritancedemand_method (cm, im);
 							}
+
+							if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+								check_core_clr_override_method (class, cm, im);
 
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
@@ -2023,6 +2042,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 								mono_secman_inheritancedemand_method (cm, im);
 							}
 
+							if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+								check_core_clr_override_method (class, cm, im);
+
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 							break;
@@ -2059,6 +2081,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
 								mono_secman_inheritancedemand_method (cm, im);
 							}
+
+							if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+								check_core_clr_override_method (class, cm, im);
 
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
@@ -2184,6 +2209,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							mono_secman_inheritancedemand_method (cm, m1);
 						}
 
+						if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+							check_core_clr_override_method (class, cm, m1);
+
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
@@ -2216,6 +2244,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
+
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				check_core_clr_override_method (class, vtable [decl->slot], decl);
 		}
 	}
 
@@ -2455,6 +2486,36 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 	}
 }
 
+static MonoSecurityCoreCLRLevel
+class_security_level (MonoClass *class)
+{
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
+	MonoSecurityCoreCLRLevel lvl = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
+
+	if (cinfo)
+		mono_custom_attrs_free (cinfo);
+
+	return lvl;
+}
+
+static void
+check_core_clr_inheritance (MonoClass *class)
+{
+	MonoSecurityCoreCLRLevel class_level, parent_level;
+	MonoClass *parent = class->parent;
+
+	if (!parent)
+		return;
+
+	class_level = class_security_level (class);
+	parent_level = class_security_level (parent);
+
+	if (class_level < parent_level) {
+		class->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+		class->exception_data = NULL;
+	}
+}
+
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -2503,6 +2564,9 @@ mono_class_init (MonoClass *class)
 	if (mono_is_security_manager_active () && class->parent && (class->parent->flags & TYPE_ATTRIBUTE_HAS_SECURITY)) {
 		mono_secman_inheritancedemand_class (class, class->parent);
 	}
+
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+		check_core_clr_inheritance (class);
 
 	if (mono_debugger_start_class_init_func)
 		mono_debugger_start_class_init_func (class);

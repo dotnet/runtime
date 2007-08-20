@@ -84,6 +84,8 @@ libmonoruntime_la_SOURCES = \
 	rand.c		\
 	security.c	\
 	security.h	\
+	security-core-clr.c	\
+	security-core-clr-h	\
 	string-icalls.c \
 	string-icalls.h \
 	sysmath.h	\

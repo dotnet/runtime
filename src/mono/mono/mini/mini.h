@@ -131,15 +131,6 @@ extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
 #endif
 
-typedef enum {
-	MONO_SECURITY_MODE_NONE,
-	MONO_SECURITY_MODE_CORE_CLR,
-	MONO_SECURITY_MODE_CAS,
-	MONO_SECURITY_MODE_SMCS_HACK
-} MonoSecurityMode;
-
-extern MonoSecurityMode mono_security_mode;
-
 struct MonoEdge {
 	MonoEdge *next;
 	MonoBasicBlock *bb;
