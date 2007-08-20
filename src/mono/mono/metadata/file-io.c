@@ -10,6 +10,11 @@
  */
 
 #include <config.h>
+
+#ifdef PLATFORM_WIN32
+#define _WIN32_WINNT 0x0500
+#endif
+
 #include <glib.h>
 #include <string.h>
 #include <errno.h>
@@ -381,6 +386,36 @@ ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
 	}
 	
 	return(ret);
+}
+
+MonoBoolean
+ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *destinationFileName,
+					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
+					gint32 *error)
+{
+	gboolean ret;
+	gunichar2 *utf16_sourceFileName = NULL, *utf16_destinationFileName = NULL, *utf16_destinationBackupFileName = NULL;
+	guint32 replaceFlags = REPLACEFILE_WRITE_THROUGH;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (sourceFileName)
+		utf16_sourceFileName = mono_string_chars (sourceFileName);
+	if (destinationFileName)
+		utf16_destinationFileName = mono_string_chars (destinationFileName);
+	if (destinationBackupFileName)
+		utf16_destinationBackupFileName = mono_string_chars (destinationBackupFileName);
+
+	*error = ERROR_SUCCESS;
+	if (ignoreMetadataErrors)
+		replaceFlags |= REPLACEFILE_IGNORE_MERGE_ERRORS;
+
+	ret = ReplaceFile (utf16_destinationFileName, utf16_sourceFileName, utf16_destinationBackupFileName,
+			 replaceFlags, NULL, NULL);
+	if (ret == FALSE)
+		*error = GetLastError ();
+
+	return ret;
 }
 
 MonoBoolean

@@ -1835,6 +1835,56 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	return(ret);
 }
 
+gboolean
+write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors)
+{
+	int remain, n;
+	char *buf, *wbuf;
+	int buf_size = st_src->st_blksize;
+
+	buf_size = buf_size < 8192 ? 8192 : (buf_size > 65536 ? 65536 : buf_size);
+	buf = (char *) malloc (buf_size);
+
+	for (;;) {
+		remain = read (src_fd, buf, buf_size);
+		if (remain < 0) {
+			if (errno == EINTR && !_wapi_thread_cur_apc_pending ())
+				continue;
+
+			if (report_errors)
+				_wapi_set_last_error_from_errno ();
+
+			free (buf);
+			return FALSE;
+		}
+		if (remain == 0) {
+			break;
+		}
+
+		wbuf = buf;
+		while (remain > 0) {
+			if ((n = write (dest_fd, wbuf, remain)) < 0) {
+				if (errno == EINTR && !_wapi_thread_cur_apc_pending ())
+					continue;
+
+				if (report_errors)
+					_wapi_set_last_error_from_errno ();
+#ifdef DEBUG
+				g_message ("%s: write failed.", __func__);
+#endif
+				free (buf);
+				return FALSE;
+			}
+
+			remain -= n;
+			wbuf += n;
+		}
+	}
+
+	free (buf);
+	return TRUE ;
+}
+
 /**
  * CopyFile:
  * @name: a pointer to a NULL-terminated unicode string, that names
@@ -1852,10 +1902,8 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 {
 	gchar *utf8_src, *utf8_dest;
 	int src_fd, dest_fd;
-	int buf_size;
-	char *buf;
-	int remain, n;
 	struct stat st;
+	gboolean ret = TRUE;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1945,63 +1993,107 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		g_free (utf8_src);
 		g_free (utf8_dest);
 		close (src_fd);
-		
+
 		return(FALSE);
 	}
-	
-	buf_size = st.st_blksize;
-	buf = (char *) alloca (buf_size);
-	
-	for (;;) {
-		remain = read (src_fd, buf, buf_size);
-		
-		if (remain < 0) {
-			if (errno == EINTR && !_wapi_thread_cur_apc_pending()) {
-				continue;
-			}
-			
-			_wapi_set_last_error_from_errno ();
 
-			g_free (utf8_src);
-			g_free (utf8_dest);
-			close (src_fd);
-			close (dest_fd);
-			
-			return(FALSE);
-		}
-		
-		if (remain == 0) {
-			break;
-		}
-
-		while (remain > 0) {
-			if ((n = write (dest_fd, buf, remain)) < 0) {
-				if (errno == EINTR && !_wapi_thread_cur_apc_pending())
-					continue;
-
-				_wapi_set_last_error_from_errno ();
-#ifdef DEBUG
-				g_message ("%s: write failed.", __func__);
-#endif
-
-				g_free (utf8_src);
-				g_free (utf8_dest);
-				close (src_fd);
-				close (dest_fd);
-
-				return (FALSE);
-			}
-
-			remain -= n;
-		}
-	}
+	if (!write_file (src_fd, dest_fd, &st, TRUE))
+		ret = FALSE;
 
 	g_free (utf8_src);
 	g_free (utf8_dest);
 	close (src_fd);
 	close (dest_fd);
 
-	return(TRUE);
+	return ret;
+}
+
+gchar*
+convert_arg_to_utf8 (const gunichar2 *arg, const gchar *arg_name)
+{
+	gchar *utf8_ret;
+
+	if (arg == NULL) {
+#ifdef DEBUG
+		g_message ("%s: %s is NULL", __func__, arg_name);
+#endif
+		SetLastError (ERROR_INVALID_NAME);
+		return NULL;
+	}
+
+	utf8_ret = mono_unicode_to_external (arg);
+	if (utf8_ret == NULL) {
+#ifdef DEBUG
+		g_message ("%s: unicode conversion of %s returned NULL",
+			   __func__, arg_name);
+#endif
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return NULL;
+	}
+
+	return utf8_ret;
+}
+
+gboolean
+ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFileName,
+		      const gunichar2 *backupFileName, guint32 replaceFlags, 
+		      gpointer exclude, gpointer reserved)
+{
+	int result, errno_copy, backup_fd = -1,replaced_fd = -1;
+	gchar *utf8_replacedFileName, *utf8_replacementFileName = NULL, *utf8_backupFileName = NULL;
+	struct stat stBackup;
+	gboolean ret = FALSE;
+
+	if (!(utf8_replacedFileName = convert_arg_to_utf8 (replacedFileName, "replacedFileName")))
+		return FALSE;
+	if (!(utf8_replacementFileName = convert_arg_to_utf8 (replacementFileName, "replacementFileName")))
+		goto replace_cleanup;
+	if (backupFileName != NULL) {
+		if (!(utf8_backupFileName = convert_arg_to_utf8 (backupFileName, "backupFileName")))
+			goto replace_cleanup;
+	}
+
+	if (utf8_backupFileName) {
+		// Open the backup file for read so we can restore the file if an error occurs.
+		backup_fd = _wapi_open (utf8_backupFileName, O_RDONLY, 0);
+		result = _wapi_rename (utf8_replacedFileName, utf8_backupFileName);
+		errno_copy = errno;
+		if (result == -1)
+			goto replace_cleanup;
+	}
+
+	result = _wapi_rename (utf8_replacementFileName, utf8_replacedFileName);
+	errno_copy = errno;
+	if (result == -1) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_replacementFileName);
+		_wapi_rename (utf8_backupFileName, utf8_replacedFileName);
+		if (backup_fd != -1 && !fstat (backup_fd, &stBackup)) {
+			replaced_fd = open (utf8_backupFileName, O_WRONLY | O_CREAT | O_TRUNC,
+					     stBackup.st_mode);
+			if (replaced_fd == -1) {
+				replaced_fd = open (utf8_backupFileName, O_WRONLY | O_CREAT,
+					     stBackup.st_mode);
+			}
+			if (replaced_fd == -1)
+				goto replace_cleanup;
+
+			write_file (backup_fd, replaced_fd, &stBackup, FALSE);
+		}
+
+		goto replace_cleanup;
+	}
+
+	ret = TRUE;
+
+replace_cleanup:
+	g_free (utf8_replacedFileName);
+	g_free (utf8_replacementFileName);
+	g_free (utf8_backupFileName);
+	if (backup_fd != -1)
+		close (backup_fd);
+	if (replaced_fd != -1)
+		close (replaced_fd);
+	return ret;
 }
 
 static gpointer stdhandle_create (int fd, const gchar *name)

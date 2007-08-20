@@ -230,6 +230,11 @@ extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
 extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 					       gint64 length, gint32 *error) MONO_INTERNAL;
 
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *destinationFileName,
+					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
+					gint32 *error) MONO_INTERNAL;
+
 G_END_DECLS
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

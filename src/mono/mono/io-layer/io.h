@@ -82,6 +82,9 @@ typedef void (*WapiOverlappedCB) (guint32 error, guint32 numbytes,
 #define FILE_FLAG_OVERLAPPED			0x40000000
 #define FILE_FLAG_WRITE_THROUGH			0x80000000
 
+#define REPLACEFILE_WRITE_THROUGH       0x00000001
+#define REPLACEFILE_IGNORE_MERGE_ERRORS 0x00000002
+
 #define MAX_PATH	260
 
 typedef enum {
@@ -185,6 +188,9 @@ extern gboolean RemoveDirectory (const gunichar2 *name);
 extern gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name);
 extern gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 			  gboolean fail_if_exists);
+extern gboolean ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFileName,
+			     const gunichar2 *backupFileName, guint32 replaceFlags, 
+			     gpointer exclude, gpointer reserved);
 extern guint32 GetFileAttributes (const gunichar2 *name);
 extern gboolean GetFileAttributesEx (const gunichar2 *name,
 				     WapiGetFileExInfoLevels level,
