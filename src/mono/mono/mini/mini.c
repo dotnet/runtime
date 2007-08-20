@@ -88,6 +88,24 @@
 		if (cfg->exception_type != MONO_EXCEPTION_NONE)\
 			goto exception_exit;\
 	} while (0)
+#define METHOD_ACCESS_FAILURE do {	\
+		char *method_fname = mono_method_full_name (method, TRUE);	\
+		char *cil_method_fname = mono_method_full_name (cil_method, TRUE);	\
+		cfg->exception_type = MONO_EXCEPTION_METHOD_ACCESS;	\
+		cfg->exception_message = g_strdup_printf ("Method `%s' is inaccessible from method `%s'\n", cil_method_fname, method_fname);	\
+		g_free (method_fname);	\
+		g_free (cil_method_fname);	\
+		goto exception_exit;	\
+	} while (0)
+#define FIELD_ACCESS_FAILURE do {	\
+		char *method_fname = mono_method_full_name (method, TRUE);	\
+		char *field_fname = mono_field_full_name (field);	\
+		cfg->exception_type = MONO_EXCEPTION_FIELD_ACCESS;	\
+		cfg->exception_message = g_strdup_printf ("Field `%s' is inaccessible from method `%s'\n", field_fname, method_fname);	\
+		g_free (method_fname);	\
+		g_free (field_fname);	\
+		goto exception_exit;	\
+	} while (0)
 
 /* 
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
@@ -4653,7 +4671,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!cmethod)
 					goto load_error;
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cil_method))
-					UNVERIFIED;
+					METHOD_ACCESS_FAILURE;
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 					ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
@@ -6062,7 +6080,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 			mono_class_init (klass);
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
-				UNVERIFIED;
+				FIELD_ACCESS_FAILURE;
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
@@ -6239,6 +6257,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!field)
 				goto load_error;
 			mono_class_init (klass);
+			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
+				FIELD_ACCESS_FAILURE;
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
 
@@ -10861,6 +10881,18 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 	case MONO_EXCEPTION_UNVERIFIABLE_IL: {
 		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", cfg->exception_message);
+		mono_destroy_compile (cfg);
+		mono_raise_exception (ex);
+		break;
+	}
+	case MONO_EXCEPTION_METHOD_ACCESS: {
+		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", cfg->exception_message);
+		mono_destroy_compile (cfg);
+		mono_raise_exception (ex);
+		break;
+	}
+	case MONO_EXCEPTION_FIELD_ACCESS: {
+		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
 		mono_destroy_compile (cfg);
 		mono_raise_exception (ex);
 		break;

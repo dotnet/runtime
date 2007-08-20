@@ -253,6 +253,8 @@ TEST_CSC_SRC=			\
 	vararg.cs
 
 TEST_IL_SRC=			\
+	field-access.il		\
+	method-access.il	\
 	cpblkTest.il		\
 	vbinterface.il		\
 	jmpTest.il		\

@@ -40,6 +40,8 @@ MonoMethod*     mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImag
 
 char*           mono_method_full_name (MonoMethod *method, gboolean signature);
 
+char*           mono_field_full_name (MonoClassField *field);
+
 G_END_DECLS
 
 #endif /* __MONO_DEBUG_HELPERS_H__ */

@@ -558,6 +558,18 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 }
 
 char *
+mono_field_full_name (MonoClassField *field)
+{
+	char *res;
+	const char *nspace = field->parent->name_space;
+
+	res = g_strdup_printf ("%s%s%s:%s", nspace, *nspace ? "." : "",
+						   field->parent->name, field->name);
+
+	return res;
+}
+
+char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {
 	char *res;
