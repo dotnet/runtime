@@ -3921,6 +3921,17 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 	return NULL;
 }
 
+static void
+set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsigned char *ip)
+{
+	char *method_fname = mono_method_full_name (method, TRUE);
+	char *method_code = mono_disasm_code_one (NULL, method, ip, NULL);
+	cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code);
+	g_free (method_fname);
+	g_free (method_code);
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -7840,9 +7851,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  unverified:
 	g_slist_free (class_inits);
 	dont_inline = g_list_remove (dont_inline, method);
-	cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n",
-		 mono_method_full_name (method, TRUE), mono_disasm_code_one (NULL, method, ip, NULL));
+	set_exception_type_from_invalid_il (cfg, method, ip);
 	return -1;
 }
 
