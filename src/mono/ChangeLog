@@ -1,4 +1,8 @@
 
+Mon Aug 20 12:34:36 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: check for gerusage().
+
 Mon Jul 30 17:59:04 CEST 2007 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: Enable sigaltstack handling check by default to get
