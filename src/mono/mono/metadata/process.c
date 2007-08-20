@@ -1091,3 +1091,19 @@ ves_icall_System_Diagnostics_Process_Kill_internal (HANDLE process, gint32 sig)
 	return TerminateProcess (process, -sig);
 }
 
+gint64
+ves_icall_System_Diagnostics_Process_Times (HANDLE process, gint32 type)
+{
+	FILETIME create_time, exit_time, kernel_time, user_time;
+	
+	if (GetProcessTimes (process, &create_time, &exit_time, &kernel_time, &user_time)) {
+		if (type == 0)
+			return *(gint64*)&user_time;
+		else if (type == 1)
+			return *(gint64*)&kernel_time;
+		/* system + user time: FILETIME can be (memory) cast to a 64 bit int */
+		return *(gint64*)&kernel_time + *(gint64*)&user_time;
+	}
+	return 0;
+}
+

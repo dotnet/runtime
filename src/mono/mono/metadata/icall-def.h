@@ -175,6 +175,7 @@ ICALL(PROCESS_11, "Process_free_internal(intptr)", ves_icall_System_Diagnostics_
 ICALL(PROCESS_12, "SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal)
 ICALL(PROCESS_13, "ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal)
 ICALL(PROCESS_14, "StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal)
+ICALL(PROCESS_14M, "Times", ves_icall_System_Diagnostics_Process_Times)
 ICALL(PROCESS_15, "WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal)
 
 ICALL_TYPE(DOUBLE, "System.Double", DOUBLE_1)
