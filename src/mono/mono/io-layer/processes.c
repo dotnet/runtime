@@ -1457,6 +1457,7 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+	gboolean ku_times_set = FALSE;
 	
 	mono_once (&process_current_once, process_set_current);
 
@@ -1484,7 +1485,28 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	if(_wapi_handle_issignalled (process)==TRUE) {
 		*exit_time=process_handle->exit_time;
 	}
-	
+
+#ifdef HAVE_GETRUSAGE
+	if (process_handle->id == getpid ()) {
+		struct rusage time_data;
+		if (getrusage (RUSAGE_SELF, &time_data) == 0) {
+			gint64 tick_val;
+			gint64 *tick_val_ptr;
+			ku_times_set = TRUE;
+			tick_val = time_data.ru_utime.tv_sec * 10000000 + time_data.ru_utime.tv_usec * 10;
+			tick_val_ptr = (gint64*)user_time;
+			*tick_val_ptr = tick_val;
+			tick_val = time_data.ru_stime.tv_sec * 10000000 + time_data.ru_stime.tv_usec * 10;
+			tick_val_ptr = (gint64*)kernel_time;
+			*tick_val_ptr = tick_val;
+		}
+	}
+#endif
+	if (!ku_times_set) {
+		memset (kernel_time, 0, sizeof (WapiFileTime));
+		memset (user_time, 0, sizeof (WapiFileTime));
+	}
+
 	return(TRUE);
 }
 
