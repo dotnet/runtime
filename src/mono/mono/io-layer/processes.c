@@ -20,6 +20,11 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
+/* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
+#ifdef __APPLE__
+#include <sys/resource.h>
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
