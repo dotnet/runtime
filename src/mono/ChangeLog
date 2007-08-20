@@ -1,3 +1,8 @@
+
+Mon Aug 20 15:23:01 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: use more symbol renaming fo OSX (bug #82463).
+
 2007-08-20  Jb Evain  <jbevain@novell.com>
 
 	* scripts/smcs.in: use --runtime=moonlight instead of
