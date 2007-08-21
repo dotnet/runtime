@@ -394,7 +394,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
 	int ret;
-	off_t current_pos;
+	off_t current_pos = 0;
 	int fd = GPOINTER_TO_UINT(handle);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
@@ -1835,7 +1835,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	return(ret);
 }
 
-gboolean
+static gboolean
 write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors)
 {
 	int remain, n;
@@ -2008,7 +2008,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	return ret;
 }
 
-gchar*
+static gchar*
 convert_arg_to_utf8 (const gunichar2 *arg, const gchar *arg_name)
 {
 	gchar *utf8_ret;
