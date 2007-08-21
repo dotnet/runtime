@@ -78,6 +78,7 @@ GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARA
 
 end-install:
 	$(INSTALL_LIB) $(OUTPUT_DIR)/mscorlib.dll $(mono_libdir)/mono/2.1/mscorlib.dll
+	$(INSTALL_LIB) $(OUTPUT_DIR)/smcs.exe $(mono_libdir)/mono/2.1/smcs.exe
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.dll /f /root $(mono_libdir) /package 2.1
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.Core.dll /f /root $(mono_libdir) /package 2.1
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.Xml.Core.dll /f /root $(mono_libdir) /package 2.1
