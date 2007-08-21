@@ -299,6 +299,8 @@ TEST_IL2_SRC = find-method.2.il	\
 # but that need to be compiled
 PREREQ_IL_SRC=event-il.il module-cctor.il
 PREREQ_CS_SRC=
+PREREQ_IL_DLL_SRC=event-il.il module-cctor.il
+PREREQ_CS_DLL_SRC=
 
 PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe)
 PREREQSI_CS=$(PREREQ_CS_SRC:.cs=.exe)
@@ -326,13 +328,13 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691
+test:	testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 else
 # Can't use mkbundle on win32 since there is no static build there
 if PLATFORM_WIN32
-test:   testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691
+test:   testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 else
-test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 endif
 endif
 
@@ -533,6 +535,14 @@ bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $
 
 test-bug-81691 : bug-81691.exe bug-81691-b.dll
 	$(RUNTIME) bug-81691.exe
+
+EXTRA_DIST += bug-81466.il bug-81466-lib.il
+bug-81466-lib.dll: bug-81466-lib.il
+	$(ILASM) /dll /output:bug-81466-lib.dll $(srcdir)/bug-81466-lib.il
+bug-81466.exe: bug-81466.il bug-81466-lib.dll
+	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
+test-bug-81466: bug-81466.exe bug-81466-lib.dll
+	$(RUNTIME) bug-81466.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
