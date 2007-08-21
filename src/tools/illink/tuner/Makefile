@@ -22,8 +22,8 @@ LINKER_SOURCES = $(LINKER_PLUGINS:.dll=.cs)
 
 DISTFILES = README $(LINKER_SOURCES) $(LINKER_DESCS)
 
-WORKING_DIR = $(mono_libdir)/mono/2.1
-OUTPUT_DIR = output
+WORKING_DIR = $(topdir)/class/lib/net_2_1
+OUTPUT_DIR = $(topdir)/class/lib/net_2_1_tuned
 
 ifneq (net_2_1, $(PROFILE))
 all-local: $(LINKER_PLUGINS)
@@ -36,9 +36,9 @@ clean-local:
 	rm -f Mono.Tuner/*.pdb
 
 else
-all-local:
+all-local: tune
 
-install-local: tune end-install
+install-local: end-install
 
 clean-local:
 	rm -rf $(OUTPUT_DIR)
@@ -77,7 +77,7 @@ gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)
 
 end-install:
-	cp $(OUTPUT_DIR)/mscorlib.dll $(mono_libdir)/mono/2.1/mscorlib.dll
+	$(INSTALL_LIB) $(OUTPUT_DIR)/mscorlib.dll $(mono_libdir)/mono/2.1/mscorlib.dll
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.dll /f /root $(mono_libdir) /package 2.1
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.Core.dll /f /root $(mono_libdir) /package 2.1
 	$(GACUTIL) /i $(OUTPUT_DIR)/System.Xml.Core.dll /f /root $(mono_libdir) /package 2.1
