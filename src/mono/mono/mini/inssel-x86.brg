@@ -361,11 +361,14 @@ stmt: OP_OUTARG_R4 (freg) {
 }
 
 stmt: OP_OUTARG_R8 (freg) {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+	int esp_displ = (tree->backend.arg_info >> 16) & 0xffff;
+	int esp_offset = tree->backend.arg_info & 0xffff;
+	if (esp_displ)
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, esp_displ);
 	tree->opcode = OP_STORER8_MEMBASE_REG;
 	tree->sreg1 = state->left->reg1;
 	tree->inst_destbasereg = X86_ESP;
-	tree->inst_offset = 0;
+	tree->inst_offset = esp_offset;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 

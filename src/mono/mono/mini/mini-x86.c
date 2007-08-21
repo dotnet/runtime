@@ -902,6 +902,33 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call)
 	call->out_args = arg;
 }
 
+/*
+ * It is expensive to adjust esp for each individual fp argument pushed on the stack
+ * so we try to do it just once when we have multiple fp arguments in a row.
+ * We don't use this mechanism generally because for int arguments the generated code
+ * is slightly bigger and new generation cpus optimize away the dependency chains
+ * created by push instructions on the esp value.
+ * fp_arg_setup is the first argument in the execution sequence where the esp register
+ * is modified.
+ */
+static int
+collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_setup)
+{
+	int fp_space = 0;
+	MonoType *t;
+
+	for (; start_arg < sig->param_count; ++start_arg) {
+		t = mono_type_get_underlying_type (sig->params [start_arg]);
+		if (!t->byref && t->type == MONO_TYPE_R8) {
+			fp_space += sizeof (double);
+			*fp_arg_setup = start_arg;
+		} else {
+			break;
+		}
+	}
+	return fp_space;
+}
+
 /* 
  * take the arguments and generate the arch-specific
  * instructions to properly call the function in call.
@@ -915,6 +942,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	int i, n;
 	CallInfo *cinfo;
 	int sentinelpos = 0;
+	int fp_args_space = 0, fp_args_offset = 0, fp_arg_setup = -1;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -978,11 +1006,30 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				case ArgOnStack:
 					arg->opcode = OP_OUTARG;
 					if (!t->byref) {
-						if (t->type == MONO_TYPE_R4)
+						if (t->type == MONO_TYPE_R4) {
 							arg->opcode = OP_OUTARG_R4;
-						else
-							if (t->type == MONO_TYPE_R8)
-								arg->opcode = OP_OUTARG_R8;
+						} else if (t->type == MONO_TYPE_R8) {
+							arg->opcode = OP_OUTARG_R8;
+							/* we store in the upper bits of backen.arg_info the needed
+							 * esp adjustment and in the lower bits the offset from esp
+							 * where the arg needs to be stored
+							 */
+							if (!fp_args_space) {
+								fp_args_space = collect_fp_stack_space (sig, i - sig->hasthis, &fp_arg_setup);
+								fp_args_offset = fp_args_space;
+							}
+							arg->backend.arg_info = fp_args_space - fp_args_offset;
+							fp_args_offset -= sizeof (double);
+							if (i - sig->hasthis == fp_arg_setup) {
+								arg->backend.arg_info |= fp_args_space << 16;
+							}
+							if (fp_args_offset == 0) {
+								/* the allocated esp stack is finished:
+								 * prepare for an eventual second run of fp args
+								 */
+								fp_args_space = 0;
+							}
+						}
 					}
 					break;
 				default:
