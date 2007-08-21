@@ -3551,7 +3551,7 @@ mono_class_from_mono_type (MonoType *type)
  * @type_spec:  typespec token
  * @context: the generic context used to evaluate generic instantiations in
  */
-static MonoClass *
+static MonoType *
 mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
 {
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
