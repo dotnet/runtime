@@ -127,7 +127,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <errno.h>
@@ -412,7 +411,7 @@ safe_object_get_size (MonoObject* o)
  * ########  Global data.
  * ######################################################################
  */
-static pthread_mutex_t gc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static LOCK_DECLARE (gc_mutex);
 static int gc_disabled = 0;
 static int num_minor_gcs = 0;
 static int num_major_gcs = 0;
@@ -566,12 +565,6 @@ static GCMemSection *to_space_section = NULL;
  * ########  Macros and function declarations.
  * ######################################################################
  */
-
-/*
- * Recursion is not allowed for the thread lock.
- */
-#define LOCK_GC pthread_mutex_lock (&gc_mutex)
-#define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
 
 #define UPDATE_HEAP_BOUNDARIES(low,high) do {	\
 		if ((mword)(low) < lowest_heap_address)	\
@@ -3404,23 +3397,12 @@ mono_gc_deregister_root (char* addr)
  * ######################################################################
  */
 
-#undef pthread_create
-#undef pthread_join
-#undef pthread_detach
-
-typedef struct {
-	void *(*start_routine) (void *);
-	void *arg;
-	int flags;
-	sem_t registered;
-} SgenThreadStartInfo;
-
 /* eventually share with MonoThread? */
 typedef struct _SgenThreadInfo SgenThreadInfo;
 
 struct _SgenThreadInfo {
 	SgenThreadInfo *next;
-	pthread_t id;
+	ARCH_THREAD_TYPE id;
 	unsigned int stop_count; /* to catch duplicate signals */
 	int signal;
 	int skip;
@@ -3434,6 +3416,9 @@ struct _SgenThreadInfo {
 #define HASH_PTHREAD_T(id) (((unsigned int)(id) >> 4) * 2654435761u)
 
 static SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
+
+#if USE_SIGNAL_BASED_START_STOP_WORLD
+
 static sem_t suspend_ack_semaphore;
 static unsigned int global_stop_count = 0;
 static int suspend_signal_num = SIGPWR;
@@ -3443,13 +3428,13 @@ static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 
 /* LOCKING: assumes the GC lock is held */
 static SgenThreadInfo*
-thread_info_lookup (pthread_t id)
+thread_info_lookup (ARCH_THREAD_TYPE id)
 {
 	unsigned int hash = HASH_PTHREAD_T (id) % THREAD_HASH_SIZE;
 	SgenThreadInfo *info;
 
 	info = thread_table [hash];
-	while (info && !pthread_equal (info->id, id)) {
+	while (info && !ARCH_THREAD_EQUALS (info->id, id)) {
 		info = info->next;
 	}
 	return info;
@@ -3459,7 +3444,7 @@ static void
 update_current_thread_stack (void *start)
 {
 	void *ptr = cur_thread_regs;
-	SgenThreadInfo *info = thread_info_lookup (pthread_self ());
+	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 	info->stack_start = align_pointer (&ptr);
 	ARCH_STORE_REGS (ptr);
 }
@@ -3486,7 +3471,7 @@ thread_handshake (int signum)
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			DEBUG (4, fprintf (gc_debug_file, "considering thread %p for signal %d (%s)\n", info, signum, signal_desc (signum)));
-			if (pthread_equal (info->id, me)) {
+			if (ARCH_THREAD_EQUALS (info->id, me)) {
 				DEBUG (4, fprintf (gc_debug_file, "Skip (equal): %p, %p\n", (void*)me, (void*)info->id));
 				continue;
 			}
@@ -3577,7 +3562,7 @@ stop_world (void)
 	int count;
 
 	global_stop_count++;
-	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (pthread_self ()), (gpointer)pthread_self ()));
+	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (ARCH_GET_THREAD ()), (gpointer)ARCH_GET_THREAD ()));
 	TV_GETTIME (stop_world_time);
 	count = thread_handshake (suspend_signal_num);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
@@ -3599,6 +3584,8 @@ restart_world (void)
 	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
 	return count;
 }
+
+#endif /* USE_SIGNAL_BASED_START_STOP_WORLD */
 
 /*
  * Identify objects pinned in a thread stack and its registers.
@@ -3782,7 +3769,7 @@ gc_register_current_thread (void *addr)
 	SgenThreadInfo* info = malloc (sizeof (SgenThreadInfo));
 	if (!info)
 		return NULL;
-	info->id = pthread_self ();
+	info->id = ARCH_GET_THREAD ();
 	info->stop_count = -1;
 	info->skip = 0;
 	info->signal = 0;
@@ -3826,13 +3813,13 @@ unregister_current_thread (void)
 	int hash;
 	SgenThreadInfo *prev = NULL;
 	SgenThreadInfo *p;
-	pthread_t id = pthread_self ();
+	ARCH_THREAD_TYPE id = ARCH_GET_THREAD ();
 
 	hash = HASH_PTHREAD_T (id) % THREAD_HASH_SIZE;
 	p = thread_table [hash];
 	assert (p);
 	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)p->id));
-	while (!pthread_equal (p->id, id)) {
+	while (!ARCH_THREAD_EQUALS (p->id, id)) {
 		prev = p;
 		p = p->next;
 	}
@@ -3844,6 +3831,31 @@ unregister_current_thread (void)
 	/* FIXME: transfer remsets if any */
 	free (p);
 }
+
+gboolean
+mono_gc_register_thread (void *baseptr)
+{
+	SgenThreadInfo *info;
+	LOCK_GC;
+	info = thread_info_lookup (ARCH_GET_THREAD ());
+	if (info == NULL)
+		info = gc_register_current_thread (baseptr);
+	UNLOCK_GC;
+	return info != NULL;
+}
+
+#if USE_PTHREAD_INTERCEPT
+
+#undef pthread_create
+#undef pthread_join
+#undef pthread_detach
+
+typedef struct {
+	void *(*start_routine) (void *);
+	void *arg;
+	int flags;
+	sem_t registered;
+} SgenThreadStartInfo;
 
 static void*
 gc_start_thread (void *arg)
@@ -3902,17 +3914,7 @@ mono_gc_pthread_detach (pthread_t thread)
 	return pthread_detach (thread);
 }
 
-gboolean
-mono_gc_register_thread (void *baseptr)
-{
-	SgenThreadInfo *info;
-	LOCK_GC;
-	info = thread_info_lookup (pthread_self ());
-	if (info == NULL)
-		info = gc_register_current_thread (baseptr);
-	UNLOCK_GC;
-	return info != NULL;
-}
+#endif /* USE_PTHREAD_INTERCEPT */
 
 /*
  * ######################################################################
@@ -3956,7 +3958,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 	rs->next = remembered_set;
 	remembered_set = rs;
-	thread_info_lookup (pthread_self())->remset = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)field_ptr;
 	*(void**)field_ptr = value;
 }
@@ -3978,7 +3980,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 	rs->next = remembered_set;
 	remembered_set = rs;
-	thread_info_lookup (pthread_self())->remset = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)slot_ptr;
 	*(void**)slot_ptr = value;
 }
@@ -3998,7 +4000,7 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 	rs->next = remembered_set;
 	remembered_set = rs;
-	thread_info_lookup (pthread_self())->remset = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)slot_ptr | REMSET_RANGE;
 	*(rs->store_next++) = count;
 }
@@ -4022,7 +4024,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 	rs->next = remembered_set;
 	remembered_set = rs;
-	thread_info_lookup (pthread_self())->remset = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)ptr;
 	*(void**)ptr = value;
 }
@@ -4053,7 +4055,7 @@ mono_gc_wbarrier_object (MonoObject* obj)
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 	rs->next = remembered_set;
 	remembered_set = rs;
-	thread_info_lookup (pthread_self())->remset = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 }
 
@@ -4207,7 +4209,7 @@ mono_gc_is_gc_thread (void)
 {
 	gboolean result;
 	LOCK_GC;
-        result = thread_info_lookup (pthread_self ()) != NULL;
+        result = thread_info_lookup (ARCH_GET_THREAD ()) != NULL;
 	UNLOCK_GC;
 	return result;
 }
@@ -4218,6 +4220,7 @@ mono_gc_base_init (void)
 	char *env;
 	struct sigaction sinfo;
 
+	LOCK_INIT (gc_mutex);
 	LOCK_GC;
 	if (gc_initialized) {
 		UNLOCK_GC;
