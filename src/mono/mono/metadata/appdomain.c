@@ -718,8 +718,25 @@ set_domain_search_path (MonoDomain *domain)
 
 	npaths++;
 	if (setup->private_bin_path) {
+		gint slen;
 		utf8 = mono_string_to_utf8 (setup->private_bin_path);
-		pvt_split = g_strsplit (utf8, G_SEARCHPATH_SEPARATOR_S, 1000);
+
+		/*
+		 * As per MSDN documentation, AppDomainSetup.PrivateBinPath contains a list of
+		 * directories relative to ApplicationBase separated by semicolons (see
+		 * http://msdn2.microsoft.com/en-us/library/system.appdomainsetup.privatebinpath.aspx)
+		 * The loop below copes with the fact that some Unix applications may use ':' (or
+		 * System.IO.Path.PathSeparator) as the path search separator. We replace it with
+		 * ';' for the subsequent split.
+		 *
+		 * The issue was reported in bug #81446
+		 */
+		slen = strlen (utf8);
+		for (i = 0; i < slen; i++)
+			if (utf8 [i] == ':')
+				utf8 [i] = ';';
+		
+		pvt_split = g_strsplit (utf8, ';', 1000);
 		g_free (utf8);
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
 	}
