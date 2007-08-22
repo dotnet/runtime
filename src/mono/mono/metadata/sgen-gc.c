@@ -145,6 +145,7 @@
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/mono-gc.h"
+#include "utils/mono-mmap.h"
 
 
 /*
@@ -432,7 +433,7 @@ static int num_major_gcs = 0;
 /* This is a fixed value used for pinned chunks, not the system pagesize */
 #define FREELIST_PAGESIZE 4096
 
-static mword pagesize = 4096; /* FIXME */
+static mword pagesize = 4096;
 static mword nursery_size = DEFAULT_NURSERY_SIZE;
 static mword next_section_size = DEFAULT_NURSERY_SIZE * 4;
 static mword max_section_size = DEFAULT_MAX_SECTION;
@@ -2401,21 +2402,12 @@ static void*
 get_os_memory (size_t size, int activate)
 {
 	void *ptr;
-	unsigned long prot_flags = activate? PROT_READ|PROT_WRITE: PROT_NONE;
+	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
 
+	prot_flags |= MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
 	size += pagesize - 1;
 	size &= ~(pagesize - 1);
-	ptr = mmap (0, size, prot_flags, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	if (ptr == (void*)-1) {
-		int fd = open ("/dev/zero", O_RDONLY);
-		if (fd != -1) {
-			ptr = mmap (0, size, prot_flags, MAP_PRIVATE, fd, 0);
-			close (fd);
-		}
-		if (ptr == (void*)-1) {
-			return NULL;
-		}
-	}
+	ptr = mono_valloc (0, size, prot_flags);
 	return ptr;
 }
 
@@ -4232,6 +4224,7 @@ mono_gc_base_init (void)
 		return;
 	}
 	gc_initialized = TRUE;
+	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 	/* format: MONO_GC_DEBUG=l[,filename] where l is a debug level 0-9 */
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
