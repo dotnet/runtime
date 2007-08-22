@@ -31,6 +31,8 @@ typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct _MonoDebugSourceLocation		MonoDebugSourceLocation;
 
+typedef struct _MonoDebugList			MonoDebugList;
+
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_MONO,
@@ -52,6 +54,16 @@ typedef enum {
 	MONO_DEBUGGER_TYPE_KIND_REFERENCE
 } MonoDebuggerTypeKind;
 
+/*
+ * NOTE:
+ * We intentionally do not use GList here since the debugger needs to know about
+ * the layout of the fields.
+*/
+struct _MonoDebugList {
+	MonoDebugList *next;
+	gconstpointer data;
+};
+
 struct _MonoSymbolTable {
 	guint64 magic;
 	guint32 version;
@@ -62,25 +74,13 @@ struct _MonoSymbolTable {
 	 */
 	MonoDebugHandle *corlib;
 
+	MonoDebugList *data_tables;
+	MonoDebugDataTable *type_table;
+
 	/*
 	 * The symbol files.
 	 */
-	MonoDebugHandle **symbol_files;
-	guint32 num_symbol_files;
-
-	/*
-	 * Data table.
-	 * This is intentionally not a GPtrArray to make it more easy to
-	 * read for the debugger.  The `data_tables' field contains
-	 * `num_data_tables' pointers to continuous memory areas.
-	 *
-	 * The data table is basically a big continuous blob, but we need
-	 * to split it up into pieces because we don't know the total size
-	 * in advance and using g_realloc() doesn't work because that may
-	 * reallocate the block to a different address.
-	 */
-	guint32 num_data_tables;
-	gpointer *data_tables;
+	MonoDebugList *symbol_files;
 };
 
 struct _MonoDebugHandle {
@@ -151,20 +151,26 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				59
+#define MONO_DEBUGGER_VERSION				60
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
-extern MonoDebugDataTable *mono_debug_data_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
 extern gint32 mono_debug_debugger_version;
 
+void mono_debug_list_add (MonoDebugList **list, gconstpointer data);
+void mono_debug_list_remove (MonoDebugList **list, gconstpointer data);
+
 void mono_debug_init (MonoDebugFormat format);
-void mono_debug_init_1 (MonoDomain *domain);
-void mono_debug_init_2 (MonoAssembly *assembly);
-void mono_debug_init_2_memory (MonoImage *image, const guint8 *raw_contents, int size);
+void mono_debug_init_corlib (MonoDomain *domain);
+void mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size);
 void mono_debug_cleanup (void);
+
+void mono_debug_close_image (MonoImage *image);
+
+void mono_debug_domain_unload (MonoDomain *domain);
+void mono_debug_domain_create (MonoDomain *domain);
 
 gboolean mono_debug_using_mono_debugger (void);
 

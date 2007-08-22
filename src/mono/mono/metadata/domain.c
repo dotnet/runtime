@@ -1065,6 +1065,8 @@ mono_domain_create (void)
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
 
+	mono_debug_domain_create (domain);
+
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -1417,6 +1419,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	domain->friendly_name = g_path_get_basename (filename);
 
+	mono_debug_init_corlib (domain);
+
 	return domain;
 }
 
@@ -1647,7 +1651,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		return;
 	}
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD, domain->domain_id, 0);
+	mono_debug_domain_unload (domain);
 
 	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;

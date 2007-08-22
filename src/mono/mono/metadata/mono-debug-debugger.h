@@ -15,9 +15,7 @@
 
 typedef enum {
 	MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE	= 1,
-	MONO_DEBUGGER_EVENT_ADD_MODULE,
-	MONO_DEBUGGER_EVENT_RELOAD_SYMTABS,
-	MONO_DEBUGGER_EVENT_METHOD_COMPILED,
+	MONO_DEBUGGER_EVENT_INITIALIZE_CORLIB,
 	MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
 	MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
 	MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK,
@@ -25,13 +23,18 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_WRAPPER_MAIN,
 	MONO_DEBUGGER_EVENT_MAIN_EXITED,
 	MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
-	MONO_DEBUGGER_EVENT_THREAD_CREATED,
-	MONO_DEBUGGER_EVENT_THREAD_ABORT,
-	MONO_DEBUGGER_EVENT_THREAD_EXITED,
 	MONO_DEBUGGER_EVENT_THROW_EXCEPTION,
 	MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION,
+	MONO_DEBUGGER_EVENT_THREAD_ABORT,
+	MONO_DEBUGGER_EVENT_THREAD_CREATED,
+	MONO_DEBUGGER_EVENT_THREAD_CLEANUP,
+	MONO_DEBUGGER_EVENT_GC_THREAD_CREATED,
+	MONO_DEBUGGER_EVENT_GC_THREAD_EXITED,
 	MONO_DEBUGGER_EVENT_REACHED_MAIN,
 	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE,
+	MONO_DEBUGGER_EVENT_LOAD_MODULE,
+	MONO_DEBUGGER_EVENT_UNLOAD_MODULE,
+	MONO_DEBUGGER_EVENT_DOMAIN_CREATE,
 	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD
 } MonoDebuggerEvent;
 
@@ -44,14 +47,8 @@ void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_add_symbol_file               (MonoDebugHandle *handle);
-void            mono_debugger_add_type                      (MonoDebugHandle *symfile, MonoClass *klass);
-
 MonoObject     *mono_debugger_runtime_invoke                (MonoMethod *method, void *obj,
 							     void **params, MonoObject **exc);
-
-gboolean        mono_debugger_lookup_type                   (const gchar *type_name);
-gint32          mono_debugger_lookup_assembly               (const gchar *name);
 
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);

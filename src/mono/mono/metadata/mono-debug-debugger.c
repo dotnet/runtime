@@ -18,26 +18,10 @@
 
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
-static gboolean must_reload_symtabs = FALSE;
 static gboolean mono_debugger_use_debugger = FALSE;
 static MonoObject *last_exception = NULL;
 
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg) = NULL;
-
-#define WRITE_UINT32(ptr,value) G_STMT_START {	\
-	* ((guint32 *) ptr) = value;		\
-	ptr += 4;				\
-} G_STMT_END
-
-#define WRITE_POINTER(ptr,value) G_STMT_START {	\
-	* ((gpointer *) ptr) = (gpointer) (value); \
-	ptr += sizeof (gpointer);		\
-} G_STMT_END
-
-#define WRITE_STRING(ptr,value) G_STMT_START {	\
-	memcpy (ptr, value, strlen (value)+1);	\
-	ptr += strlen (value)+1;		\
-} G_STMT_END
 
 typedef struct {
 	gpointer stack_pointer;
@@ -59,13 +43,6 @@ void
 mono_debugger_unlock (void)
 {
 	g_assert (initialized);
-	if (debugger_lock_level == 1) {
-		if (must_reload_symtabs && mono_debugger_use_debugger) {
-			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
-			must_reload_symtabs = FALSE;
-		}
-	}
-
 	debugger_lock_level--;
 	LeaveCriticalSection (&debugger_lock_mutex);
 }
@@ -80,16 +57,6 @@ mono_debugger_initialize (gboolean use_debugger)
 	InitializeCriticalSection (&debugger_lock_mutex);
 	mono_debugger_use_debugger = use_debugger;
 	initialized = 1;
-}
-
-void
-mono_debugger_add_symbol_file (MonoDebugHandle *handle)
-{
-	g_assert (mono_debugger_use_debugger);
-
-	mono_debugger_lock ();
-	mono_debugger_event (MONO_DEBUGGER_EVENT_ADD_MODULE, (guint64) (gsize) handle, 0);
-	mono_debugger_unlock ();
 }
 
 void
@@ -229,72 +196,4 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	}
 
 	return retval;
-}
-
-gboolean
-mono_debugger_lookup_type (const gchar *type_name)
-{
-	int i;
-	mono_debugger_lock ();
-
-	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
-		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
-		MonoType *type;
-		MonoClass* klass;
-		gchar *name;
-
-		name = g_strdup (type_name);
-		type = mono_reflection_type_from_name (name, symfile->image);
-		g_free (name);
-		if (!type)
-			continue;
-
-		klass = mono_class_from_mono_type (type);
-		if (klass)
-			mono_class_init (klass);
-
-		mono_debugger_unlock ();
-		return TRUE;
-	}
-
-	mono_debugger_unlock ();
-	return FALSE;
-}
-
-gint32
-mono_debugger_lookup_assembly (const gchar *name)
-{
-	MonoAssembly *assembly;
-	MonoImageOpenStatus status;
-	int i;
-
-	mono_debugger_lock ();
-
- again:
-	for (i = 0; i < mono_symbol_table->num_symbol_files; i++) {
-		MonoDebugHandle *symfile = mono_symbol_table->symbol_files [i];
-
-		if (!strcmp (symfile->image_file, name)) {
-			mono_debugger_unlock ();
-			return i;
-		}
-	}
-
-	assembly = mono_assembly_open (name, &status);
-
-	if (status != MONO_IMAGE_OK) {
-		g_warning (G_STRLOC ": Cannot open image `%s'", name);
-		mono_debugger_unlock ();
-		return -1;
-	}
-
-	must_reload_symtabs = TRUE;
-	goto again;
-}
-
-void
-mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
-{
-	must_reload_symtabs = TRUE;
-
 }

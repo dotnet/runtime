@@ -9,10 +9,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <string.h>
 
-#define SYMFILE_TABLE_CHUNK_SIZE	16
-
-#define DATA_TABLE_PTR_CHUNK_SIZE	256
-#define DATA_TABLE_CHUNK_SIZE		4096
+#define DATA_TABLE_CHUNK_SIZE		16384
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -38,13 +35,24 @@ typedef enum {
 	MONO_DEBUG_DATA_ITEM_METHOD
 } MonoDebugDataItemType;
 
-struct _MonoDebugDataTable {
+typedef struct _MonoDebugDataChunk MonoDebugDataChunk;
+
+struct _MonoDebugDataChunk {
 	guint32 total_size;
 	guint32 allocated_size;
 	guint32 current_offset;
 	guint32 dummy;
-	MonoDebugDataTable *next;
+	MonoDebugDataChunk *next;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
+};
+
+struct _MonoDebugDataTable {
+	gint32 domain;
+	gint32 _dummy; /* alignment for next field. */
+	MonoDebugDataChunk *first_chunk;
+	MonoDebugDataChunk *current_chunk;
+	GHashTable *method_hash;
+	GHashTable *method_address_hash;
 };
 
 typedef struct {
@@ -71,13 +79,7 @@ struct _MonoDebugMethodAddress {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
-typedef struct {
-	MonoMethod *method;
-	guint32 domain_id;
-} MonoDebugMethodHash;
-
 MonoSymbolTable *mono_symbol_table = NULL;
-MonoDebugDataTable *mono_debug_data_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 gint32 mono_debug_debugger_version = 2;
 
@@ -85,14 +87,10 @@ static gboolean in_the_mono_debugger = FALSE;
 static gboolean mono_debug_initialized = FALSE;
 GHashTable *mono_debug_handles = NULL;
 
-static MonoDebugDataTable *current_data_table = NULL;
-
-static GHashTable *method_address_hash = NULL;
-static GHashTable *method_hash = NULL;
+static GHashTable *data_table_hash = NULL;
+static int next_symbol_file_id = 0;
 
 static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image, const guint8 *raw_contents, int size);
-
-static void                 mono_debug_close_image     (MonoDebugHandle *debug);
 
 static MonoDebugHandle     *_mono_debug_get_image      (MonoImage *image);
 static void                 mono_debug_add_assembly    (MonoAssembly *assembly,
@@ -103,24 +101,73 @@ static void                 mono_debug_add_type        (MonoClass *klass);
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 extern void (*mono_debugger_start_class_init_func) (MonoClass *klass);
 
-static guint
-method_hash_hash (gconstpointer data)
+static MonoDebugDataTable *
+create_data_table (MonoDomain *domain)
 {
-	const MonoDebugMethodHash *hash = (const MonoDebugMethodHash *) data;
-	return hash->method->token | (hash->domain_id << 16);
+	MonoDebugDataTable *table;
+	MonoDebugDataChunk *chunk;
+
+	table = g_new0 (MonoDebugDataTable, 1);
+	table->domain = domain ? mono_domain_get_id (domain) : -1;
+
+	table->method_address_hash = g_hash_table_new (NULL, NULL);
+	table->method_hash = g_hash_table_new (NULL, NULL);
+
+	chunk = g_malloc0 (sizeof (MonoDebugDataChunk) + DATA_TABLE_CHUNK_SIZE);
+	chunk->total_size = DATA_TABLE_CHUNK_SIZE;
+
+	table->first_chunk = table->current_chunk = chunk;
+
+	mono_debug_list_add (&mono_symbol_table->data_tables, table);
+	g_hash_table_insert (data_table_hash, domain, table);
+
+	return table;
 }
 
-static gint
-method_hash_equal (gconstpointer ka, gconstpointer kb)
+static void
+free_data_table (MonoDebugDataTable *table)
 {
-	const MonoDebugMethodHash *a = (const MonoDebugMethodHash *) ka;
-	const MonoDebugMethodHash *b = (const MonoDebugMethodHash *) kb;
+	MonoDebugDataChunk *chunk, *next_chunk;
 
-	if ((a->method != b->method) || (a->domain_id != b->domain_id))
-		return 0;
-	return 1;
+	g_hash_table_destroy (table->method_hash);
+	g_hash_table_destroy (table->method_address_hash);
+
+	table->method_hash = NULL;
+	table->method_address_hash = NULL;
+
+	chunk = table->first_chunk;
+	while (chunk) {
+		next_chunk = chunk->next;
+		g_free (chunk);
+		chunk = next_chunk;
+	}
+
+	table->first_chunk = table->current_chunk = NULL;
+	mono_debug_list_remove (&mono_symbol_table->data_tables, table);
+	g_free (table);
 }
 
+static MonoDebugDataTable *
+lookup_data_table (MonoDomain *domain)
+{
+	MonoDebugDataTable *table;
+
+	table = g_hash_table_lookup (data_table_hash, domain);
+	g_assert (table);
+	return table;
+}
+
+static void
+free_debug_handle (MonoDebugHandle *handle)
+{
+	if (handle->symfile)
+		mono_debug_close_mono_symbol_file (handle->symfile);
+	/* decrease the refcount added with mono_image_addref () */
+	mono_image_close (handle->image);
+	g_free (handle->image_file);
+	g_free (handle->_priv);
+	g_free (handle);
+}
 
 /*
  * Initialize debugging support.
@@ -147,50 +194,34 @@ mono_debug_init (MonoDebugFormat format)
 	mono_symbol_table->version = MONO_DEBUGGER_VERSION;
 	mono_symbol_table->total_size = sizeof (MonoSymbolTable);
 
-	mono_debug_data_table = g_malloc0 (sizeof (MonoDebugDataTable) + DATA_TABLE_CHUNK_SIZE);
-	mono_debug_data_table->total_size = DATA_TABLE_CHUNK_SIZE;
-
-	current_data_table = mono_debug_data_table;
-
 	mono_debug_handles = g_hash_table_new_full
-		(NULL, NULL, NULL, (GDestroyNotify) mono_debug_close_image);
-	method_address_hash = g_hash_table_new (method_hash_hash, method_hash_equal);
-	method_hash = g_hash_table_new (NULL, NULL);
+		(NULL, NULL, NULL, (GDestroyNotify) free_debug_handle);
+
+	data_table_hash = g_hash_table_new_full (
+		NULL, NULL, NULL, (GDestroyNotify) free_data_table);
+
+	mono_symbol_table->type_table = create_data_table (NULL);
 
 	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
-	if (!in_the_mono_debugger)
-		mono_debugger_unlock ();
+	mono_debugger_unlock ();
 }
 
 void
-mono_debug_init_1 (MonoDomain *domain)
+mono_debug_init_corlib (MonoDomain *domain)
 {
-	MonoDebugHandle *handle = mono_debug_open_image (mono_get_corlib (), NULL, 0);
+	if (!mono_debug_initialized)
+		return;
 
-	mono_symbol_table->corlib = handle;
+	mono_symbol_table->corlib = mono_debug_open_image (mono_defaults.corlib, NULL, 0);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_INITIALIZE_CORLIB,
+			     (guint64) (gsize) mono_symbol_table->corlib, 0);
 }
 
-/*
- * Initialize debugging support - part 2.
- *
- * This method must be called after loading the application's main assembly.
- */
 void
-mono_debug_init_2 (MonoAssembly *assembly)
-{
-	mono_debug_open_image (mono_assembly_get_image (assembly), NULL, 0);
-}
-
-/*
- * Initialize debugging support - part 2.
- *
- * This method must be called between loading the image and loading the assembly.
- */
-void
-mono_debug_init_2_memory (MonoImage *image, const guint8 *raw_contents, int size)
+mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size)
 {
 	mono_debug_open_image (image, raw_contents, size);
 }
@@ -205,22 +236,60 @@ mono_debug_using_mono_debugger (void)
 void
 mono_debug_cleanup (void)
 {
-	MonoDebugDataTable *table, *next_table;
-
 	mono_debugger_cleanup ();
 
 	if (mono_debug_handles)
 		g_hash_table_destroy (mono_debug_handles);
 	mono_debug_handles = NULL;
 
-	table = mono_debug_data_table;
-	while (table) {
-		next_table = table->next;
-		g_free (table);
-		table = next_table;
+	if (data_table_hash) {
+		g_hash_table_destroy (data_table_hash);
+		data_table_hash = NULL;
+	}
+}
+
+void
+mono_debug_domain_create (MonoDomain *domain)
+{
+	MonoDebugDataTable *table;
+
+	if (!mono_debug_initialized)
+		return;
+
+	mono_debugger_lock ();
+
+	table = create_data_table (domain);
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_CREATE, (guint64) (gsize) table,
+			     mono_domain_get_id (domain));
+
+	mono_debugger_unlock ();
+}
+
+void
+mono_debug_domain_unload (MonoDomain *domain)
+{
+	MonoDebugDataTable *table;
+
+	if (!mono_debug_initialized)
+		return;
+
+	mono_debugger_lock ();
+
+	table = g_hash_table_lookup (data_table_hash, domain);
+	if (!table) {
+		g_warning (G_STRLOC ": unloading unknown domain %p / %d",
+			   domain, mono_domain_get_id (domain));
+		mono_debugger_unlock ();
+		return;
 	}
 
-	mono_debug_data_table = current_data_table = NULL;
+	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD, (guint64) (gsize) table,
+			     mono_domain_get_id (domain));
+
+	g_hash_table_remove (data_table_hash, domain);
+
+	mono_debugger_unlock ();
 }
 
 static MonoDebugHandle *
@@ -229,24 +298,27 @@ _mono_debug_get_image (MonoImage *image)
 	return g_hash_table_lookup (mono_debug_handles, image);
 }
 
-static MonoDebugHandle *
-allocate_debug_handle (MonoSymbolTable *table)
+void
+mono_debug_close_image (MonoImage *image)
 {
 	MonoDebugHandle *handle;
 
-	if (!table->symbol_files)
-		table->symbol_files = g_new0 (MonoDebugHandle *, SYMFILE_TABLE_CHUNK_SIZE);
-	else if (!((table->num_symbol_files + 1) % SYMFILE_TABLE_CHUNK_SIZE)) {
-		guint32 chunks = (table->num_symbol_files + 1) / SYMFILE_TABLE_CHUNK_SIZE;
-		guint32 size = sizeof (MonoDebugHandle *) * SYMFILE_TABLE_CHUNK_SIZE * (chunks + 1);
+	if (!mono_debug_initialized)
+		return;
 
-		table->symbol_files = g_realloc (table->symbol_files, size);
-	}
+	handle = _mono_debug_get_image (image);
+	if (!handle)
+		return;
 
-	handle = g_new0 (MonoDebugHandle, 1);
-	handle->index = table->num_symbol_files;
-	table->symbol_files [table->num_symbol_files++] = handle;
-	return handle;
+	mono_debugger_lock ();
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_UNLOAD_MODULE, (guint64) (gsize) handle,
+			     handle->index);
+
+	mono_debug_list_remove (&mono_symbol_table->symbol_files, handle);
+	g_hash_table_remove (mono_debug_handles, handle);
+
+	mono_debugger_unlock ();
 }
 
 static MonoDebugHandle *
@@ -261,31 +333,28 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	if (handle != NULL)
 		return handle;
 
-	handle = allocate_debug_handle (mono_symbol_table);
+	mono_debugger_lock ();
+
+	handle = g_new0 (MonoDebugHandle, 1);
+	handle->index = ++next_symbol_file_id;
 
 	handle->image = image;
 	mono_image_addref (image);
 	handle->image_file = g_strdup (mono_image_get_filename (image));
 
+	handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, in_the_mono_debugger);
+
+	mono_debug_list_add (&mono_symbol_table->symbol_files, handle);
+
 	g_hash_table_insert (mono_debug_handles, image, handle);
 
-	handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, in_the_mono_debugger);
-	if (in_the_mono_debugger)
-		mono_debugger_add_symbol_file (handle);
+	if (mono_symbol_table->corlib)
+		mono_debugger_event (MONO_DEBUGGER_EVENT_LOAD_MODULE,
+				     (guint64) (gsize) handle, 0);
+
+	mono_debugger_unlock ();
 
 	return handle;
-}
-
-static void
-mono_debug_close_image (MonoDebugHandle *handle)
-{
-	if (handle->symfile)
-		mono_debug_close_mono_symbol_file (handle->symfile);
-	/* decrease the refcount added with mono_image_addref () */
-	mono_image_close (handle->image);
-	g_free (handle->image_file);
-	g_free (handle->_priv);
-	g_free (handle);
 }
 
 static void
@@ -297,7 +366,7 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 }
 
 static guint8 *
-allocate_data_item (MonoDebugDataItemType type, guint32 size)
+allocate_data_item (MonoDebugDataTable *table, MonoDebugDataItemType type, guint32 size)
 {
 	guint32 chunk_size;
 	guint8 *data;
@@ -309,21 +378,20 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 	else
 		chunk_size = size + 16;
 
-	g_assert (current_data_table);
-	g_assert (current_data_table->current_offset == current_data_table->allocated_size);
+	g_assert (table->current_chunk->current_offset == table->current_chunk->allocated_size);
 
-	if (current_data_table->allocated_size + size + 8 >= current_data_table->total_size) {
-		MonoDebugDataTable *new_table;
+	if (table->current_chunk->allocated_size + size + 8 >= table->current_chunk->total_size) {
+		MonoDebugDataChunk *new_chunk;
 
-		new_table = g_malloc0 (sizeof (MonoDebugDataTable) + chunk_size);
-		new_table->total_size = chunk_size;
+		new_chunk = g_malloc0 (sizeof (MonoDebugDataChunk) + chunk_size);
+		new_chunk->total_size = chunk_size;
 
-		current_data_table->next = new_table;
-		current_data_table = new_table;
+		table->current_chunk->next = new_chunk;
+		table->current_chunk = new_chunk;
 	}
 
-	data = &current_data_table->data [current_data_table->allocated_size];
-	current_data_table->allocated_size += size + 8;
+	data = &table->current_chunk->data [table->current_chunk->allocated_size];
+	table->current_chunk->allocated_size += size + 8;
 
 	* ((guint32 *) data) = size;
 	data += 4;
@@ -333,12 +401,13 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 }
 
 static void
-write_data_item (const guint8 *data)
+write_data_item (MonoDebugDataTable *table, const guint8 *data)
 {
+	MonoDebugDataChunk *current_chunk = table->current_chunk;
 	guint32 size = * ((guint32 *) (data - 8));
 
-	g_assert (current_data_table->current_offset + size + 8 == current_data_table->allocated_size);
-	current_data_table->current_offset = current_data_table->allocated_size;
+	g_assert (current_chunk->current_offset + size + 8 == current_chunk->allocated_size);
+	current_chunk->current_offset = current_chunk->allocated_size;
 }
 
 struct LookupMethodData
@@ -441,7 +510,7 @@ MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
 {
 	MonoMethod *declaring;
-	MonoDebugMethodHash *hash;
+	MonoDebugDataTable *table;
 	MonoDebugMethodHeader *header;
 	MonoDebugMethodAddress *address;
 	MonoDebugMethodInfo *minfo;
@@ -453,6 +522,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	gboolean is_wrapper = FALSE;
 
 	mono_debugger_lock ();
+
+	table = lookup_data_table (domain);
 
 	handle = _mono_debug_get_image (method->klass->image);
 	minfo = _mono_debug_lookup_method (method);
@@ -535,7 +606,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
-	address = (MonoDebugMethodAddress *) allocate_data_item (MONO_DEBUG_DATA_ITEM_METHOD, total_size);
+	address = (MonoDebugMethodAddress *) allocate_data_item (
+		table, MONO_DEBUG_DATA_ITEM_METHOD, total_size);
 
 	address->header.size = total_size;
 	address->header.symfile_id = handle ? handle->index : 0;
@@ -551,11 +623,11 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		g_free (oldptr);
 
 	declaring = method->is_inflated ? ((MonoMethodInflated *) method)->declaring : method;
-	header = g_hash_table_lookup (method_hash, declaring);
+	header = g_hash_table_lookup (table->method_hash, declaring);
 
 	if (!header) {
 		header = &address->header;
-		g_hash_table_insert (method_hash, declaring, header);
+		g_hash_table_insert (table->method_hash, declaring, header);
 
 		if (is_wrapper) {
 			const unsigned char* il_code;
@@ -578,13 +650,9 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		header->address_list = g_slist_prepend (header->address_list, address);
 	}
 
-	hash = g_new0 (MonoDebugMethodHash, 1);
-	hash->method = method;
-	hash->domain_id = mono_domain_get_id (domain);
+	g_hash_table_insert (table->method_address_hash, method, address);
 
-	g_hash_table_insert (method_address_hash, hash, address);
-
-	write_data_item ((guint8 *) address);
+	write_data_item (table, (guint8 *) address);
 
 	mono_debugger_unlock ();
 	return address;
@@ -764,20 +832,18 @@ mono_debug_add_type (MonoClass *klass)
 
 	g_assert (total_size + 9 < DATA_TABLE_CHUNK_SIZE);
 
-	entry = (MonoDebugClassEntry *) allocate_data_item (MONO_DEBUG_DATA_ITEM_CLASS, total_size);
+	entry = (MonoDebugClassEntry *) allocate_data_item (
+		mono_symbol_table->type_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
 	entry->size = total_size;
 	entry->symfile_id = handle->index;
 
 	memcpy (&entry->data, oldptr, size);
 
-	if (mono_debug_debugger_version >= 2)
-		write_data_item ((guint8 *) entry);
+	write_data_item (mono_symbol_table->type_table, (guint8 *) entry);
 
 	if (max_size > BUFSIZ)
 		g_free (oldptr);
-
-	mono_debugger_add_type (handle, klass);
 
 	mono_debugger_unlock ();
 }
@@ -785,13 +851,12 @@ mono_debug_add_type (MonoClass *klass)
 static MonoDebugMethodJitInfo *
 find_method (MonoMethod *method, MonoDomain *domain)
 {
-	MonoDebugMethodHash lookup;
+	MonoDebugDataTable *table;
 	MonoDebugMethodAddress *address;
 
-	lookup.method = method;
-	lookup.domain_id = mono_domain_get_id (domain);
+	table = lookup_data_table (domain);
+	address = g_hash_table_lookup (table->method_address_hash, method);
 
-	address = g_hash_table_lookup (method_address_hash, &lookup);
 	if (!address)
 		return NULL;
 
@@ -808,11 +873,30 @@ mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 	return res;
 }
 
+struct LookupMethodAddressData
+{
+	MonoMethod *method;
+	MonoDebugMethodHeader *result;
+};
+
+static void
+lookup_method_address_func (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoDebugDataTable *table = (MonoDebugDataTable *) value;
+	struct LookupMethodAddressData *data = (struct LookupMethodAddressData *) user_data;
+	MonoDebugMethodHeader *header;
+
+	header = g_hash_table_lookup (table->method_hash, data->method);
+	if (header)
+		data->result = header;
+}
+
 MonoDebugMethodAddressList *
 mono_debug_lookup_method_addresses (MonoMethod *method)
 {
 	MonoDebugMethodAddressList *info;
-	MonoDebugMethodHeader *header;
+	MonoDebugMethodHeader *header = NULL;
+	struct LookupMethodAddressData data;
 	MonoMethod *declaring;
 	int count, size;
 	GSList *list;
@@ -823,7 +907,12 @@ mono_debug_lookup_method_addresses (MonoMethod *method)
 	mono_debugger_lock ();
 
 	declaring = method->is_inflated ? ((MonoMethodInflated *) method)->declaring : method;
-	header = g_hash_table_lookup (method_hash, declaring);
+
+	data.method = declaring;
+	data.result = NULL;
+
+	g_hash_table_foreach (data_table_hash, lookup_method_address_func, &data);
+	header = data.result;
 
 	if (!header) {
 		mono_debugger_unlock ();
@@ -959,3 +1048,30 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 	return res;
 }
 
+void
+mono_debug_list_add (MonoDebugList **list, gconstpointer data)
+{
+	MonoDebugList *element, **ptr;
+
+	element = g_new0 (MonoDebugList, 1);
+	element->data = data;
+
+	for (ptr = list; *ptr; ptr = &(*ptr)->next)
+		;
+
+	*ptr = element;
+}
+
+void
+mono_debug_list_remove (MonoDebugList **list, gconstpointer data)
+{
+	MonoDebugList **ptr;
+
+	for (ptr = list; *ptr; ptr = &(*ptr)->next) {
+		if ((*ptr)->data != data)
+			continue;
+
+		*ptr = (*ptr)->next;
+		break;
+	}
+}
