@@ -736,7 +736,7 @@ set_domain_search_path (MonoDomain *domain)
 			if (utf8 [i] == ':')
 				utf8 [i] = ';';
 		
-		pvt_split = g_strsplit (utf8, ';', 1000);
+		pvt_split = g_strsplit (utf8, ";", 1000);
 		g_free (utf8);
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
 	}
