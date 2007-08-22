@@ -14,11 +14,18 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/threads-types.h>
+
+#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 #include "debug-mini.h"
 
 #ifdef HAVE_VALGRIND_H
 #include <valgrind/valgrind.h>
+#endif
+
+#ifdef MONO_DEBUGGER_SUPPORTED
+#include <libgc/include/libgc-mono-debugger.h>
 #endif
 
 typedef struct {
@@ -40,6 +47,30 @@ typedef struct
 	guint32 has_line_numbers;
 	guint32 breakpoint_id;
 } MiniDebugMethodInfo;
+
+struct _MonoDebuggerThreadInfo {
+	guint64 tid;
+	guint64 lmf_addr;
+	guint64 end_stack;
+
+	/* Next pointer. */
+	MonoDebuggerThreadInfo *next;
+
+	/*
+	 * The stack bounds are only used when reading a core file.
+	 */
+	guint64 stack_start;
+	guint64 signal_stack_start;
+	guint32 stack_size;
+	guint32 signal_stack_size;
+
+	/*
+	 * The debugger doesn't access anything beyond this point.
+	 */
+	MonoJitTlsData *jit_tls;
+};
+
+MonoDebuggerThreadInfo *mono_debugger_thread_table = NULL;
 
 static void
 mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
@@ -801,4 +832,60 @@ void
 mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
 	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, (guint64) (gsize) method, index);
+}
+
+void
+mono_debugger_thread_created (gsize tid, MonoJitTlsData *jit_tls)
+{
+#ifdef MONO_DEBUGGER_SUPPORTED
+	size_t stsize = 0;
+	guint8 *staddr = NULL;
+	MonoDebuggerThreadInfo *info;
+
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return;
+
+	mono_thread_get_stack_bounds (&staddr, &stsize);
+
+	info = g_new0 (MonoDebuggerThreadInfo, 1);
+	info->tid = tid;
+	info->stack_start = (guint64) (gsize) staddr;
+	info->signal_stack_start = (guint64) (gsize) jit_tls->signal_stack;
+	info->stack_size = stsize;
+	info->signal_stack_size = jit_tls->signal_stack_size;
+	info->end_stack = (guint64) (gsize) GC_mono_debugger_get_stack_ptr ();
+	info->lmf_addr = (guint64) (gsize) mono_get_lmf_addr ();
+	info->jit_tls = jit_tls;
+
+	info->next = mono_debugger_thread_table;
+	mono_debugger_thread_table = info;
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED,
+			     tid, (guint64) (gsize) info);
+#endif /* MONO_DEBUGGER_SUPPORTED */
+}
+
+void
+mono_debugger_thread_cleanup (MonoJitTlsData *jit_tls)
+{
+#ifdef MONO_DEBUGGER_SUPPORTED
+	MonoDebuggerThreadInfo **ptr;
+
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return;
+
+	for (ptr = &mono_debugger_thread_table; *ptr; ptr = &(*ptr)->next) {
+		MonoDebuggerThreadInfo *info = *ptr;
+
+		if (info->jit_tls != jit_tls)
+			continue;
+
+		mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CLEANUP,
+				     info->tid, (guint64) (gsize) info);
+
+		*ptr = info->next;
+		g_free (info);
+		break;
+	}
+#endif
 }

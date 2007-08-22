@@ -11,6 +11,7 @@
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include "debug-mini.h"
 
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
 typedef struct _MonoDebuggerMetadataInfo	MonoDebuggerMetadataInfo;
@@ -42,24 +43,21 @@ struct _MonoDebuggerInfo {
 	MonoInvokeFunc runtime_invoke;
 	guint64 (*class_get_static_field_data) (guint64 klass);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
-	guint64 (*get_current_thread) (void);
 	void (*attach) (void);
 	void (*detach) (void);
 	void (*initialize) (void);
 	void * (*get_lmf_addr) (void);
 
-	gint32 *debugger_version;
-	MonoDebugDataTable **data_table;
-
 	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
 				  const gchar *string_argument);
 	gint64 (*lookup_class) (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 				gchar *full_name);
-	guint64 (*lookup_assembly) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
-				    const gchar *string_argument);
 	guint64 (*insert_breakpoint) (guint64 method_argument, guint64 index);
 	void (*remove_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
 	void (*runtime_class_init) (guint64 klass_arg);
+
+	gint32 *debugger_version;
+	MonoDebuggerThreadInfo **thread_table;
 };
 
 struct _MonoDebuggerMetadataInfo {

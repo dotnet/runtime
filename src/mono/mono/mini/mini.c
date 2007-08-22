@@ -78,6 +78,8 @@
 
 #include "aliasing.h"
 
+#include "debug-mini.h"
+
 #define BRANCH_COST 100
 #define INLINE_LENGTH_LIMIT 20
 #define INLINE_FAILURE do {\
@@ -8906,6 +8908,7 @@ mono_thread_start_cb (gsize tid, gpointer stack_start, gpointer func)
 {
 	MonoThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
+	mono_debugger_thread_created (tid, jit_tls);
 	thread = mono_thread_current ();
 	if (thread)
 		thread->jit_data = jit_tls;
@@ -8927,6 +8930,7 @@ mono_thread_attach_cb (gsize tid, gpointer stack_start)
 {
 	MonoThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
+	mono_debugger_thread_created (tid, (MonoJitTlsData *) jit_tls);
 	thread = mono_thread_current ();
 	if (thread)
 		thread->jit_data = jit_tls;
@@ -8940,6 +8944,7 @@ mini_thread_cleanup (MonoThread *thread)
 	MonoJitTlsData *jit_tls = thread->jit_data;
 
 	if (jit_tls) {
+		mono_debugger_thread_cleanup (jit_tls);
 		mono_arch_free_jit_tls_data (jit_tls);
 
 		mono_free_altstack (jit_tls);
@@ -12190,13 +12195,13 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_profiler_shutdown ();
 
-	mono_debug_cleanup ();
-
 	mono_icall_cleanup ();
 
 	mono_runtime_cleanup_handlers ();
 
 	mono_domain_free (domain, TRUE);
+
+	mono_debug_cleanup ();
 
 	mono_code_manager_destroy (global_codeman);
 	g_hash_table_destroy (jit_icall_name_hash);

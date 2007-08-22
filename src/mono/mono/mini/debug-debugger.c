@@ -32,7 +32,6 @@ static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
-static guint64 debugger_get_current_thread (void);
 static void debugger_attach (void);
 static void debugger_detach (void);
 static void debugger_initialize (void);
@@ -41,8 +40,6 @@ static guint64 debugger_create_string (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSE
 				       const gchar *string_argument);
 static gint64 debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 				     gchar *full_name);
-static guint64 debugger_lookup_assembly (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
-					 const gchar *string_argument);
 static guint64 debugger_insert_method_breakpoint (guint64 method_argument, guint64 index);
 static void debugger_remove_method_breakpoint (G_GNUC_UNUSED guint64 dummy, guint64 index);
 static void debugger_runtime_class_init (guint64 klass_arg);
@@ -114,21 +111,19 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_runtime_invoke,
 	&debugger_class_get_static_field_data,
 	&debugger_run_finally,
-	&debugger_get_current_thread,
 	&debugger_attach,
 	&debugger_detach,
 	&debugger_initialize,
 	(void*)&mono_get_lmf_addr,
 
-	&mono_debug_debugger_version,
-	&mono_debug_data_table,
-
 	&debugger_create_string,
 	&debugger_lookup_class,
-	&debugger_lookup_assembly,
 	&debugger_insert_method_breakpoint,
 	&debugger_remove_method_breakpoint,
-	&debugger_runtime_class_init
+	&debugger_runtime_class_init,
+
+	&mono_debug_debugger_version,
+	&mono_debugger_thread_table
 };
 
 static guint64
@@ -140,9 +135,6 @@ debugger_compile_method (guint64 method_arg)
 	mono_debugger_lock ();
 	addr = mono_compile_method (method);
 	mono_debugger_unlock ();
-
-	mono_debugger_notification_function (
-		MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) addr, 0);
 
 	return (guint64) (gsize) addr;
 }
@@ -207,18 +199,6 @@ debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 
 	mono_class_init (klass);
 	return (gint64) (gssize) klass;
-}
-
-static guint64
-debugger_lookup_assembly (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
-			  const gchar *string_argument)
-{
-	gint64 retval;
-
-	mono_debugger_lock ();
-	retval = mono_debugger_lookup_assembly (string_argument);
-	mono_debugger_unlock ();
-	return retval;
 }
 
 static guint64
@@ -292,23 +272,17 @@ debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 	mono_debugger_notification_function (event, data, arg);
 }
 
-static guint64
-debugger_get_current_thread (void)
-{
-	return (guint64) (gsize) mono_thread_current ();
-}
-
 static void
 debugger_gc_thread_created (pthread_t thread, void *stack_ptr)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED,
+	mono_debugger_event (MONO_DEBUGGER_EVENT_GC_THREAD_CREATED,
 			     (guint64) (gsize) stack_ptr, thread);
 }
 
 static void
 debugger_gc_thread_exited (pthread_t thread, void *stack_ptr)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_EXITED,
+	mono_debugger_event (MONO_DEBUGGER_EVENT_GC_THREAD_EXITED,
 			     (guint64) (gsize) stack_ptr, thread);
 }
 
@@ -354,10 +328,7 @@ debugger_attach (void)
 	mono_debugger_init ();
 
 	mono_debugger_event_handler = debugger_event_handler;
-	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
-
 	debugger_init_threads ();
-	GC_mono_debugger_add_all_threads ();
 }
 
 static void
@@ -452,7 +423,6 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	 */
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE,
 					     (guint64) (gssize) MONO_DEBUGGER__debugger_info_ptr, 0);
-	mono_debugger_unlock ();
 
 	/*
 	 * Start the main thread and wait until it's ready.

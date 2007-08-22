@@ -1268,7 +1268,8 @@ mono_main (int argc, char* argv[])
 		g_print ("The Mono Debugger is not supported on this platform.\n");
 		return 1;
 #endif
-	}
+	} else if (enable_debugging)
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i], forced_version);
@@ -1316,13 +1317,6 @@ mono_main (int argc, char* argv[])
 		break;
 	}
 
-	if (action == DO_DEBUGGER)
-		mono_debug_init_1 (domain);
-	else if (enable_debugging) {
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-		mono_debug_init_1 (domain);
-	}
-
 	/* Parse gac loading options before loading assemblies. */
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		mono_config_parse (config_file);
@@ -1342,9 +1336,6 @@ mono_main (int argc, char* argv[])
 
 	if (trace_options != NULL)
 		mono_trace_set_assembly (assembly);
-
-	if (enable_debugging)
-		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
 		const char *error;
