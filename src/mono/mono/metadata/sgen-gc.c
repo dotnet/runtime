@@ -1988,7 +1988,11 @@ build_section_fragments (GCMemSection *section)
 		frag_end = pin_queue [i];
 		/* remove the pin bit from pinned objects */
 		unpin_object (frag_end);
-		section->scan_starts [((char*)frag_end - (char*)section->data)/SCAN_START_SIZE] = frag_end;
+		if (frag_end >= section->data + section->size) {
+			frag_end = section->data + section->size;
+		} else {
+			section->scan_starts [((char*)frag_end - (char*)section->data)/SCAN_START_SIZE] = frag_end;
+		}
 		frag_size = frag_end - frag_start;
 		if (frag_size)
 			memset (frag_start, 0, frag_size);
@@ -2144,7 +2148,7 @@ major_collection (void)
 	TV_GETTIME (atv);
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
 	for (section = section_list; section; section = section->next) {
-		section->pin_queue_start = count = next_pin_slot;
+		section->pin_queue_start = count = section->pin_queue_end = next_pin_slot;
 		pin_from_roots (section->data, section->next_data);
 		if (count != next_pin_slot) {
 			int reduced_to;
