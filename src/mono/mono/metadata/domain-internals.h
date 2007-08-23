@@ -160,6 +160,8 @@ struct _MonoDomain {
 	  volatile          jit_info_table;
 	/* Used when loading assemblies */
 	gchar **search_path;
+	gchar *private_bin_path;
+	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
 	MonoMethod         *private_invoke_method;

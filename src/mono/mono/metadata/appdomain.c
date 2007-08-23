@@ -45,6 +45,13 @@
 
 #define MONO_CORLIB_VERSION 58
 
+typedef struct
+{
+	int runtime_count;
+	int assemblybinding_count;
+	MonoDomain *domain;
+} RuntimeConfig;
+
 CRITICAL_SECTION mono_delegate_section;
 
 static gunichar2 process_guid [36];
@@ -484,6 +491,111 @@ ves_icall_System_AppDomain_getRootDomain ()
 	return root->domain;
 }
 
+static char*
+get_attribute_value (const gchar **attribute_names, 
+		     const gchar **attribute_values, 
+		     const char *att_name)
+{
+	int n;
+	for (n = 0; attribute_names [n] != NULL; n++) {
+		if (strcmp (attribute_names [n], att_name) == 0)
+			return g_strdup (attribute_values [n]);
+	}
+	return NULL;
+}
+
+static void
+start_element (GMarkupParseContext *context, 
+	       const gchar         *element_name,
+	       const gchar        **attribute_names,
+	       const gchar        **attribute_values,
+	       gpointer             user_data,
+	       GError             **error)
+{
+	RuntimeConfig *runtime_config = user_data;
+	
+	if (strcmp (element_name, "runtime") == 0) {
+		runtime_config->runtime_count++;
+		return;
+	}
+
+	if (strcmp (element_name, "assemblyBinding") == 0) {
+		runtime_config->assemblybinding_count++;
+		return;
+	}
+	
+	if (runtime_config->runtime_count != 1 || runtime_config->assemblybinding_count != 1)
+		return;
+
+	if (strcmp (element_name, "probing") != 0)
+		return;
+
+	g_free (runtime_config->domain->private_bin_path);
+	runtime_config->domain->private_bin_path = get_attribute_value (attribute_names, attribute_values, "privatePath");
+	if (runtime_config->domain->private_bin_path && !runtime_config->domain->private_bin_path [0]) {
+		g_free (runtime_config->domain->private_bin_path);
+		runtime_config->domain->private_bin_path = NULL;
+		return;
+	}
+}
+
+static void
+end_element (GMarkupParseContext *context,
+	     const gchar         *element_name,
+	     gpointer             user_data,
+	     GError             **error)
+{
+	RuntimeConfig *runtime_config = user_data;
+	if (strcmp (element_name, "runtime") == 0)
+		runtime_config->runtime_count--;
+	else if (strcmp (element_name, "assemblyBinding") == 0)
+		runtime_config->assemblybinding_count--;
+}
+
+static const GMarkupParser
+mono_parser = {
+	start_element,
+	end_element,
+	NULL,
+	NULL,
+	NULL
+};
+
+static void
+mono_set_private_bin_path_from_config (MonoDomain *domain)
+{
+	gchar *config_file, *text;
+	gsize len;
+	struct stat sbuf;
+	GMarkupParseContext *context;
+	RuntimeConfig runtime_config;
+	
+	if (!domain || !domain->setup || !domain->setup->configuration_file)
+		return;
+
+	config_file = mono_string_to_utf8 (domain->setup->configuration_file);
+	if (stat (config_file, &sbuf) != 0) {
+		g_free (config_file);
+		return;
+	}
+
+	if (!g_file_get_contents (config_file, &text, &len, NULL)) {
+		g_free (config_file);
+		return;
+	}
+	g_free (config_file);
+
+	runtime_config.runtime_count = 0;
+	runtime_config.assemblybinding_count = 0;
+	runtime_config.domain = domain;
+	
+	context = g_markup_parse_context_new (&mono_parser, 0, &runtime_config, NULL);
+	if (g_markup_parse_context_parse (context, text, len, NULL))
+		g_markup_parse_context_end_parse (context, NULL);
+	g_markup_parse_context_free (context);
+	g_free (text);
+}
+
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
@@ -512,6 +624,8 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
 	}
 
+	mono_set_private_bin_path_from_config (data);
+	
 	mono_context_init (data);
 
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
@@ -700,7 +814,7 @@ set_domain_search_path (MonoDomain *domain)
 {
 	MonoAppDomainSetup *setup;
 	gchar **tmp;
-	gchar *utf8;
+	gchar *search_path = NULL;
 	gint i;
 	gint npaths = 0;
 	gchar **pvt_split = NULL;
@@ -717,9 +831,22 @@ set_domain_search_path (MonoDomain *domain)
 		return; /* Must set application base to get private path working */
 
 	npaths++;
-	if (setup->private_bin_path) {
+	
+	if (setup->private_bin_path)
+		search_path = mono_string_to_utf8 (setup->private_bin_path);
+	
+	if (domain->private_bin_path) {
+		if (search_path == NULL)
+			search_path = domain->private_bin_path;
+		else {
+			gchar *tmp2 = search_path;
+			search_path = g_strjoin (";", search_path, domain->private_bin_path, NULL);
+			g_free (tmp2);
+		}
+	}
+	
+	if (search_path) {
 		gint slen;
-		utf8 = mono_string_to_utf8 (setup->private_bin_path);
 
 		/*
 		 * As per MSDN documentation, AppDomainSetup.PrivateBinPath contains a list of
@@ -731,13 +858,13 @@ set_domain_search_path (MonoDomain *domain)
 		 *
 		 * The issue was reported in bug #81446
 		 */
-		slen = strlen (utf8);
+		slen = strlen (search_path);
 		for (i = 0; i < slen; i++)
-			if (utf8 [i] == ':')
-				utf8 [i] = ';';
+			if (search_path [i] == ':')
+				search_path [i] = ';';
 		
-		pvt_split = g_strsplit (utf8, ";", 1000);
-		g_free (utf8);
+		pvt_split = g_strsplit (search_path, ";", 1000);
+		g_free (search_path);
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
 	}
 
