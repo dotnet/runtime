@@ -81,15 +81,12 @@ mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *ex
 	if (!mono_debugger_use_debugger)
 		return FALSE;
 
+	name = mono_class_get_name (mono_object_get_class (exc));
+	if (!strcmp (name, "ThreadAbortException"))
+		return FALSE;
+
 	// Prevent the object from being finalized.
 	last_exception = exc;
-
-	name = mono_class_get_name (mono_object_get_class (exc));
-	if (!strcmp (name, "ThreadAbortException")) {
-		MonoThread *thread = mono_thread_current ();
-		mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_ABORT, 0, thread->tid);
-		mono_thread_exit ();
-	}
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
 			     (guint64) (gsize) exc, (guint64) (gsize) addr);
