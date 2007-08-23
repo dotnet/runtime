@@ -112,6 +112,9 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v1.1.4322"
 
+/* This is intentionally not in the header file, so people don't misuse it. */
+extern void _mono_debug_init_corlib (MonoDomain *domain);
+
 static void
 get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes);
 
@@ -1419,7 +1422,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	domain->friendly_name = g_path_get_basename (filename);
 
-	mono_debug_init_corlib (domain);
+	_mono_debug_init_corlib (domain);
 
 	return domain;
 }

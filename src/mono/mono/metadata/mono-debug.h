@@ -163,7 +163,6 @@ void mono_debug_list_add (MonoDebugList **list, gconstpointer data);
 void mono_debug_list_remove (MonoDebugList **list, gconstpointer data);
 
 void mono_debug_init (MonoDebugFormat format);
-void mono_debug_init_corlib (MonoDomain *domain);
 void mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size);
 void mono_debug_cleanup (void);
 

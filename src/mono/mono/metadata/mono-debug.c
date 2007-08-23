@@ -209,8 +209,11 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debugger_unlock ();
 }
 
+/*
+ * INTERNAL USE ONLY !
+ */
 void
-mono_debug_init_corlib (MonoDomain *domain)
+_mono_debug_init_corlib (MonoDomain *domain)
 {
 	if (!mono_debug_initialized)
 		return;
