@@ -1107,3 +1107,18 @@ ves_icall_System_Diagnostics_Process_Times (HANDLE process, gint32 type)
 	return 0;
 }
 
+gint32
+ves_icall_System_Diagnostics_Process_GetPriorityClass (HANDLE process, gint32 *error)
+{
+	gint32 ret = GetPriorityClass (process);
+	*error = ret == 0 ? GetLastError () : 0;
+	return ret;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Process_SetPriorityClass (HANDLE process, gint32 priority_class, gint32 *error)
+{
+	gboolean ret = SetPriorityClass (process, priority_class);
+	*error = ret == 0 ? GetLastError () : 0;
+	return ret;
+}

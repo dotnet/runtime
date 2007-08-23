@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 
 /* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
@@ -1716,3 +1718,118 @@ TerminateProcess (gpointer process, gint32 exitCode)
 	return (ret == 0);
 }
 
+guint32
+GetPriorityClass (gpointer process)
+{
+#ifdef HAVE_GETPRIORITY
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	int ret;
+
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *) &process_handle);
+
+	if (!ok) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+
+	errno = 0;
+	ret = getpriority (PRIO_PROCESS, process_handle->id);
+	if (ret == -1 && errno != 0) {
+		switch (errno) {
+		case EPERM:
+		case EACCES:
+			SetLastError (ERROR_ACCESS_DENIED);
+			break;
+		case ESRCH:
+			SetLastError (ERROR_PROC_NOT_FOUND);
+			break;
+		default:
+			SetLastError (ERROR_GEN_FAILURE);
+		}
+		return FALSE;
+	}
+
+	if (ret == 0)
+		return NORMAL_PRIORITY_CLASS;
+	else if (ret < -15)
+		return REALTIME_PRIORITY_CLASS;
+	else if (ret < -10)
+		return HIGH_PRIORITY_CLASS;
+	else if (ret < 0)
+		return ABOVE_NORMAL_PRIORITY_CLASS;
+	else if (ret > 10)
+		return IDLE_PRIORITY_CLASS;
+	else if (ret > 0)
+		return BELOW_NORMAL_PRIORITY_CLASS;
+
+	return NORMAL_PRIORITY_CLASS;
+#else
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return 0;
+#endif
+}
+
+gboolean
+SetPriorityClass (gpointer process, guint32  priority_class)
+{
+#ifdef HAVE_SETPRIORITY
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	int ret;
+	int prio;
+
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *) &process_handle);
+
+	if (!ok) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+
+	switch (priority_class) {
+	case IDLE_PRIORITY_CLASS:
+		prio = 19;
+		break;
+	case BELOW_NORMAL_PRIORITY_CLASS:
+		prio = 10;
+		break;
+	case NORMAL_PRIORITY_CLASS:
+		prio = 0;
+		break;
+	case ABOVE_NORMAL_PRIORITY_CLASS:
+		prio = -5;
+		break;
+	case HIGH_PRIORITY_CLASS:
+		prio = -11;
+		break;
+	case REALTIME_PRIORITY_CLASS:
+		prio = -20;
+		break;
+	default:
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
+	ret = setpriority (PRIO_PROCESS, process_handle->id, prio);
+	if (ret == -1) {
+		switch (errno) {
+		case EPERM:
+		case EACCES:
+			SetLastError (ERROR_ACCESS_DENIED);
+			break;
+		case ESRCH:
+			SetLastError (ERROR_PROC_NOT_FOUND);
+			break;
+		default:
+			SetLastError (ERROR_GEN_FAILURE);
+		}
+	}
+
+	return ret == 0;
+#else
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+#endif
+}

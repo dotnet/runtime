@@ -64,6 +64,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE 
 MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min) MONO_INTERNAL;
 MonoBoolean ves_icall_System_Diagnostics_Process_Kill_internal (HANDLE process, gint32 sig) MONO_INTERNAL;
 gint64 ves_icall_System_Diagnostics_Process_Times (HANDLE process, gint32 type) MONO_INTERNAL;
+gint32 ves_icall_System_Diagnostics_Process_GetPriorityClass (HANDLE process, gint32 *error) MONO_INTERNAL;
+MonoBoolean ves_icall_System_Diagnostics_Process_SetPriorityClass (HANDLE process, gint32 priority_class, gint32 *error) MONO_INTERNAL;
 
 G_END_DECLS
 

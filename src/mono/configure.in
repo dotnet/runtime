@@ -774,6 +774,8 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(mmap)
 	AC_CHECK_FUNCS(madvise)
 	AC_CHECK_FUNCS(getrusage)
+	AC_CHECK_FUNCS(getpriority)
+	AC_CHECK_FUNCS(setpriority)
 
 	AC_CHECK_FUNCS(sched_setaffinity)
 

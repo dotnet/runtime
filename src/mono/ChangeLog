@@ -1,4 +1,8 @@
 
+2007-08-23  Robert Jordan  <robertj@gmx.net>
+
+	* configure.in: add get|setpriority detection.
+
 Mon Aug 20 15:23:01 CEST 2007 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: use more symbol renaming fo OSX (bug #82463).

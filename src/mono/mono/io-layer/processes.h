@@ -192,6 +192,10 @@ extern gboolean SetProcessWorkingSetSize (gpointer process, size_t min,
 
 extern gboolean TerminateProcess (gpointer process, gint32 exitCode);
 
+extern guint32 GetPriorityClass (gpointer process);
+extern gboolean SetPriorityClass (gpointer process, guint32  priority_class);
+
+
 G_END_DECLS
 
 #endif /* _WAPI_PROCESSES_H_ */
