@@ -846,8 +846,6 @@ set_domain_search_path (MonoDomain *domain)
 	}
 	
 	if (search_path) {
-		gint slen;
-
 		/*
 		 * As per MSDN documentation, AppDomainSetup.PrivateBinPath contains a list of
 		 * directories relative to ApplicationBase separated by semicolons (see
@@ -858,10 +856,15 @@ set_domain_search_path (MonoDomain *domain)
 		 *
 		 * The issue was reported in bug #81446
 		 */
+
+#ifndef PLATFORM_WIN32
+		gint slen;
+
 		slen = strlen (search_path);
 		for (i = 0; i < slen; i++)
 			if (search_path [i] == ':')
 				search_path [i] = ';';
+#endif
 		
 		pvt_split = g_strsplit (search_path, ";", 1000);
 		g_free (search_path);
