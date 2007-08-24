@@ -12,9 +12,11 @@ RUNTIME_ARGS=--config tests-config --optimize=all
 
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
 with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+with_mono_path21 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_1
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper
+RUNTIME21 = $(with_mono_path21) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
@@ -22,6 +24,7 @@ MKBUNDLE = \
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 GMCS = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+SMCS = $(RUNTIME21) $(mcs_topdir)/class/lib/net_2_1/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/default/ilasm.exe
 ILASM2 = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
 
@@ -338,6 +341,10 @@ test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regres
 endif
 endif
 
+if INSTALL_2_1
+test : test-coreclr-security
+endif
+
 TestDriver.dll:
 	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
 
@@ -543,6 +550,15 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
 test-bug-81466: bug-81466.exe bug-81466-lib.dll
 	$(RUNTIME) bug-81466.exe
+
+if INSTALL_2_1
+EXTRA_DIST += coreclr-security.cs
+coreclr-security.exe : coreclr-security.cs
+	$(SMCS) -out:coreclr-security.exe $(srcdir)/coreclr-security.cs
+
+test-coreclr-security : coreclr-security.exe
+	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
+endif
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
