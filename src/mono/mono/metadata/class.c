@@ -187,6 +187,13 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 		ta->aname.public_key_token [0] ? (char *)ta->aname.public_key_token : "null");
 }
 
+static inline void
+mono_type_name_check_byref (MonoType *type, GString *str)
+{
+	if (type->byref)
+		g_string_append_c (str, '&');
+}
+
 static void
 mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			    MonoTypeNameFormat format)
@@ -209,6 +216,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
 		g_string_append_c (str, ']');
+		
+		mono_type_name_check_byref (type, str);
+
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
 			_mono_type_get_assembly_name (type->data.array->eklass, str);
 		break;
@@ -222,6 +232,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_get_name_recurse (
 			&type->data.klass->byval_arg, str, FALSE, nested_format);
 		g_string_append (str, "[]");
+		
+		mono_type_name_check_byref (type, str);
+
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
 			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
@@ -235,6 +248,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_get_name_recurse (
 			type->data.type, str, FALSE, nested_format);
 		g_string_append_c (str, '*');
+
+		mono_type_name_check_byref (type, str);
+
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
 			_mono_type_get_assembly_name (mono_class_from_mono_type (type->data.type), str);
 		break;
@@ -243,6 +259,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	case MONO_TYPE_MVAR:
 		g_assert (type->data.generic_param->name);
 		g_string_append (str, type->data.generic_param->name);
+	
+		mono_type_name_check_byref (type, str);
+
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
@@ -315,6 +334,9 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			else
 				g_string_append_c (str, ']');
 		}
+
+		mono_type_name_check_byref (type, str);
+
 		if ((format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED) &&
 		    (type->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR))
 			_mono_type_get_assembly_name (klass, str);
@@ -349,9 +371,6 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format)
 	result = g_string_new ("");
 
 	mono_type_get_name_recurse (type, result, FALSE, format);
-
-	if (type->byref)
-		g_string_append_c (result, '&');
 
 	return g_string_free (result, FALSE);
 }
