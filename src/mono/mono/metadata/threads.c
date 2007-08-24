@@ -221,15 +221,31 @@ static void handle_store(MonoThread *thread)
 	mono_threads_unlock ();
 }
 
-static void handle_remove(gsize tid)
+static gboolean handle_remove(MonoThread *thread)
 {
+	gboolean ret;
+	gsize tid = thread->tid;
+
 	THREAD_DEBUG (g_message ("%s: thread ID %"G_GSIZE_FORMAT, __func__, tid));
 
 	mono_threads_lock ();
-	
 
-	if (threads)
-		mono_g_hash_table_remove (threads, (gpointer)tid);
+	if (threads) {
+		/* We have to check whether the thread object for the
+		 * tid is still the same in the table because the
+		 * thread might have been destroyed and the tid reused
+		 * in the meantime, in which case the tid would be in
+		 * the table, but with another thread object.
+		 */
+		if (mono_g_hash_table_lookup (threads, (gpointer)tid) == thread) {
+			mono_g_hash_table_remove (threads, (gpointer)tid);
+			ret = TRUE;
+		} else {
+			ret = FALSE;
+		}
+	}
+	else
+		ret = FALSE;
 	
 	mono_threads_unlock ();
 
@@ -246,6 +262,7 @@ static void handle_remove(gsize tid)
 	 * thread calling Join() still has a reference to the first
 	 * thread's object.
 	 */
+	return ret;
 }
 
 /*
@@ -416,10 +433,18 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 		free_func (p);
 }
 
+/*
+ * NOTE: this function can be called also for threads different from the current one:
+ * make sure no code called from it will ever assume it is run on the thread that is
+ * getting cleaned up.
+ */
 static void thread_cleanup (MonoThread *thread)
 {
 	g_assert (thread != NULL);
 
+	/* if the thread is not in the hash it has been removed already */
+	if (!handle_remove (thread))
+		return;
 	mono_release_type_locks (thread);
 
 	if (!mono_monitor_enter (thread->synch_lock))
@@ -430,9 +455,9 @@ static void thread_cleanup (MonoThread *thread)
 	mono_monitor_exit (thread->synch_lock);
 
 	mono_profiler_thread_end (thread->tid);
-	handle_remove (thread->tid);
 
-	mono_thread_pop_appdomain_ref ();
+	if (thread == mono_thread_current ())
+		mono_thread_pop_appdomain_ref ();
 
 	if (thread->serialized_culture_info)
 		g_free (thread->serialized_culture_info);
@@ -724,7 +749,7 @@ mono_thread_detach (MonoThread *thread)
 {
 	g_return_if_fail (thread != NULL);
 
-	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 	
 	thread_cleanup (thread);
 
@@ -740,6 +765,8 @@ void
 mono_thread_exit ()
 {
 	MonoThread *thread = mono_thread_current ();
+
+	THREAD_DEBUG (g_message ("%s: mono_thread_exit for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 
 	thread_cleanup (thread);
 	SET_CURRENT_OBJECT (NULL);
@@ -2203,6 +2230,7 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	for(i=0; i<wait->num; i++) {
 		gsize tid = wait->threads[i]->tid;
 		
+		mono_threads_lock ();
 		if(mono_g_hash_table_lookup (threads, (gpointer)tid)!=NULL) {
 			/* This thread must have been killed, because
 			 * it hasn't cleaned itself up. (It's just
@@ -2215,8 +2243,11 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 			 * same thread.)
 			 */
 	
-			THREAD_DEBUG (g_message ("%s: cleaning up after thread %"G_GSIZE_FORMAT, __func__, tid));
+			mono_threads_unlock ();
+			THREAD_DEBUG (g_message ("%s: cleaning up after thread %p (%"G_GSIZE_FORMAT")", __func__, wait->threads[i], tid));
 			thread_cleanup (wait->threads[i]);
+		} else {
+			mono_threads_unlock ();
 		}
 	}
 }
@@ -2660,7 +2691,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	abort_appdomain_data user_data;
 	guint32 start_time;
 
-	/* printf ("ABORT BEGIN.\n"); */
+	THREAD_DEBUG (g_message ("%s: starting abort", __func__));
 
 	start_time = GetTickCount ();
 	do {
@@ -2687,7 +2718,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	}
 	while (user_data.wait.num > 0);
 
-	/* printf ("ABORT DONE.\n"); */
+	THREAD_DEBUG (g_message ("%s: abort done", __func__));
 
 	return TRUE;
 }
