@@ -2339,18 +2339,6 @@ mono_assembly_close (MonoAssembly *assembly)
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	mono_assemblies_unlock ();
 
-	if (assembly->image->references) {
-		int i;
-
-		for (i = 0; assembly->image->references [i]; i++) {
-			if (assembly->image->references [i])
-				mono_assembly_close (assembly->image->references [i]);
-		}
-
-		g_free (assembly->image->references);
-		assembly->image->references = NULL;
-	}
-
 	assembly->image->assembly = NULL;
 
 	mono_image_close (assembly->image);

@@ -27,6 +27,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/assembly.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -1103,6 +1104,23 @@ mono_image_close (MonoImage *image)
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
 
 	mono_metadata_clean_for_image (image);
+
+	/*
+	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
+	 * assemblies, so we can't release these references in mono_assembly_close () since the
+	 * MonoImage might outlive its associated MonoAssembly.
+	 */
+	if (image->references) {
+		int i;
+
+		for (i = 0; image->references [i]; i++) {
+			if (image->references [i])
+				mono_assembly_close (image->references [i]);
+		}
+
+		g_free (image->references);
+		image->references = NULL;
+	}
 
 	mono_images_lock ();
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
