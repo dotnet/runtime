@@ -4157,12 +4157,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
 				pinvoke = FALSE;
 			}
+			if (custom)
+				mono_custom_attrs_free (custom);
 
 			if (pinvoke) {
 				custom = mono_custom_attrs_from_class (wrapped->klass);
 				if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
 					pinvoke = FALSE;
 				}
+				if (custom)
+					mono_custom_attrs_free (custom);
 			}
 		} else {
 			/* not a P/Invoke after all */
