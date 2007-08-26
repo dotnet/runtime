@@ -677,6 +677,15 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			g_assert_not_reached ();
 		}
 
+		if (ji != (gpointer)-1 && !(ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))) {
+			/*
+			 * The exception was raised in native code and we got back to managed code 
+			 * using the LMF.
+			 */
+			*ctx = new_ctx;
+			continue;
+		}
+
 		if (ji != (gpointer)-1) {
 			frame_count ++;
 			//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
