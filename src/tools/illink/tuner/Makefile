@@ -64,24 +64,26 @@ $(MCS_MASTER_INFOS):
 	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
 	unzip masterinfos.zip
 
-LINKER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs
+LINKER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
 LINKER_STEPS = \
 	Mono.Tuner.PrintStatus,PrintStatus:OutputStep	\
 	Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep	\
 	Mono.Tuner.CheckVisibility,CheckVisibility	\
 
 tune: $(MCS_MASTER_INFOS)
-	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/net_2_0$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_DESCS:%=-x %) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
+	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_DESCS:%=-x %) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
 
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)
 
-end-install:
-	$(INSTALL_LIB) $(OUTPUT_DIR)/mscorlib.dll $(mono_libdir)/mono/2.1/mscorlib.dll
-	$(INSTALL_LIB) $(OUTPUT_DIR)/smcs.exe $(mono_libdir)/mono/2.1/smcs.exe
-	$(GACUTIL) /i $(OUTPUT_DIR)/System.dll /f /root $(mono_libdir) /package 2.1
-	$(GACUTIL) /i $(OUTPUT_DIR)/System.Core.dll /f /root $(mono_libdir) /package 2.1
-	$(GACUTIL) /i $(OUTPUT_DIR)/System.Xml.Core.dll /f /root $(mono_libdir) /package 2.1
+end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Xml.Core gac-System.Core
+
+inst-%:
+	$(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(mono_libdir)/mono/2.1/$*.mdb
+	test ! -f $(OUTPUT_DIR)/$*.mdb || $(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(mono_libdir)/mono/2.1/$*.mdb
+
+gac-%:
+	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(mono_libdir) /package 2.1
 
 %.dll: %.cs
 	$(CSCOMPILE) /t:library $^
