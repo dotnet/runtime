@@ -5,35 +5,30 @@ include ../../build/rules.make
 LINKER = ../linker/monolinker.exe
 MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a-refresh.zip
 
-LINKER_PLUGINS = \
-	Mono.Tuner/PrintStatus.dll	\
-	Mono.Tuner/RemoveSerialization.dll	\
-	Mono.Tuner/CheckVisibility.dll	\
-#	Mono.Tuner/InjectAttributes.dll	\
+TUNER_SOURCES = \
+	Mono.Tuner/PrintStatus.cs	\
+	Mono.Tuner/RemoveSerialization.cs	\
+	Mono.Tuner/CheckVisibility.cs	\
 
-LINKER_DESCS =	\
+TUNER_DESCS =	\
 	Descriptors/mscorlib.xml	\
 	Descriptors/smcs.xml	\
 	Descriptors/System.xml	\
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
-LINKER_SOURCES = $(LINKER_PLUGINS:.dll=.cs)
-
-DISTFILES = README $(LINKER_SOURCES) $(LINKER_DESCS)
+DISTFILES = README $(TUNER_SOURCES) $(TUNER_DESCS)
 
 WORKING_DIR = $(topdir)/class/lib/net_2_1
 OUTPUT_DIR = $(topdir)/class/lib/net_2_1_tuned
 
 ifneq (net_2_1, $(PROFILE))
-all-local: $(LINKER_PLUGINS)
+all-local: Mono.Tuner.dll
 
 install-local:
 
 clean-local:
-	rm -f Mono.Tuner/*.dll
-	rm -f Mono.Tuner/*.mdb
-	rm -f Mono.Tuner/*.pdb
+	rm -f *.dll *.mdb *.pdb
 
 else
 all-local: tune
@@ -64,14 +59,14 @@ $(MCS_MASTER_INFOS):
 	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
 	unzip masterinfos.zip
 
-LINKER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
-LINKER_STEPS = \
-	Mono.Tuner.PrintStatus,PrintStatus:OutputStep	\
-	Mono.Tuner.RemoveSerialization,RemoveSerialization:OutputStep	\
-	Mono.Tuner.CheckVisibility,CheckVisibility	\
+TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
+TUNER_STEPS = \
+	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
+	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
+	Mono.Tuner.CheckVisibility,Mono.Tuner	\
 
 tune: $(MCS_MASTER_INFOS)
-	MONO_PATH="Mono.Tuner$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(LINKER_FLAGS) $(LINKER_DESCS:%=-x %) $(LINKER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
+	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
 
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)
@@ -85,5 +80,5 @@ inst-%:
 gac-%:
 	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(mono_libdir) /package 2.1
 
-%.dll: %.cs
-	$(CSCOMPILE) /t:library $^
+Mono.Tuner.dll:
+	$(CSCOMPILE) /out:Mono.Tuner.dll /t:library $(TUNER_SOURCES)
