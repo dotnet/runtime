@@ -464,6 +464,9 @@ static void thread_cleanup (MonoThread *thread)
 
 	thread->cached_culture_info = NULL;
 
+	mono_gc_free_fixed (thread->static_data);
+	thread->static_data = NULL;
+
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread);
 
