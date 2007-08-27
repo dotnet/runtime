@@ -325,6 +325,7 @@ enum {
 };
 
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
+static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
 static int store_to_global_remset = 0;
 
@@ -3784,6 +3785,7 @@ gc_register_current_thread (void *addr)
 		pthread_getattr_np (pthread_self (), &attr);
 		pthread_attr_getstack (&attr, &sstart, &size);
 		info->stack_end = (char*)sstart + size;
+		pthread_attr_destroy (&attr);
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 		 info->stack_end = (char*)pthread_get_stackaddr_np (pthread_self ());
@@ -3803,6 +3805,7 @@ gc_register_current_thread (void *addr)
 	thread_table [hash] = info;
 
 	remembered_set = info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info);
+	pthread_setspecific (remembered_set_key, remembered_set);
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
 	return info;
 }
@@ -3813,6 +3816,7 @@ unregister_current_thread (void)
 	int hash;
 	SgenThreadInfo *prev = NULL;
 	SgenThreadInfo *p;
+	RememberedSet *rset;
 	ARCH_THREAD_TYPE id = ARCH_GET_THREAD ();
 
 	hash = HASH_PTHREAD_T (id) % THREAD_HASH_SIZE;
@@ -3828,8 +3832,22 @@ unregister_current_thread (void)
 	} else {
 		prev->next = p->next;
 	}
+	rset = p->remset;
 	/* FIXME: transfer remsets if any */
+	while (rset) {
+		RememberedSet *next = rset->next;
+		free_internal_mem (rset);
+		rset = next;
+	}
 	free (p);
+}
+
+static void
+unregister_thread (void *k)
+{
+	LOCK_GC;
+	unregister_current_thread ();
+	UNLOCK_GC;
 }
 
 gboolean
@@ -3871,9 +3889,12 @@ gc_start_thread (void *arg)
 	UNLOCK_GC;
 	sem_post (&(start_info->registered));
 	result = start_func (t_arg);
+	/*
+	 * this is done by the pthread key dtor
 	LOCK_GC;
 	unregister_current_thread ();
 	UNLOCK_GC;
+	*/
 
 	return result;
 }
@@ -4226,7 +4247,6 @@ mono_gc_base_init (void)
 		UNLOCK_GC;
 		return;
 	}
-	gc_initialized = TRUE;
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 	/* format: MONO_GC_DEBUG=l[,filename] where l is a debug level 0-9 */
@@ -4266,6 +4286,8 @@ mono_gc_base_init (void)
 	global_remset = alloc_remset (1024, NULL);
 	global_remset->next = NULL;
 
+	pthread_key_create (&remembered_set_key, unregister_thread);
+	gc_initialized = TRUE;
 	UNLOCK_GC;
 	mono_gc_register_thread (&sinfo);
 }
