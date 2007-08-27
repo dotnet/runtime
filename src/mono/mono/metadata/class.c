@@ -5744,14 +5744,31 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 	return FALSE;
 }
 
+/*
+ * If klass is a generic type or if it is derived from a generic type, return the
+ * MonoClass of the generic definition
+ * Returns NULL if not found
+ */
+static MonoClass*
+get_generic_definition_class (MonoClass *klass)
+{
+	while (klass) {
+		if (klass->generic_class && klass->generic_class->container_class)
+			return klass->generic_class->container_class;
+		klass = klass->parent;
+	}
+	return NULL;
+}
+
 /* FIXME: check visibility of type, too */
 static gboolean
 can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_level)
 {
-	if (access_klass->generic_class && member_klass->generic_class &&
-	    access_klass->generic_class->container_class && member_klass->generic_class->container_class) {
+	MonoClass *member_generic_def;
+	if (access_klass->generic_class && access_klass->generic_class->container_class && 
+			(member_generic_def = get_generic_definition_class (member_klass))) {
 		if (can_access_member (access_klass->generic_class->container_class,
-				       member_klass->generic_class->container_class, access_level))
+				       member_generic_def, access_level))
 			return TRUE;
 	}
 
