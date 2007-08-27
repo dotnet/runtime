@@ -1,3 +1,11 @@
+2007-08-27  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/Driver.cs
+	  Mono.Linker/Annotations.cs
+	  Mono.Linker/LinkContext.cs
+	  Mono.Linker.Steps/OutputStep.cs:
+		Implement symbols loading/saving.
+
 2007-08-16  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Driver.cs

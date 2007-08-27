@@ -37,6 +37,7 @@ namespace Mono.Linker {
 		private static readonly object _processedKey = new object ();
 		private static readonly object _preservedKey = new object ();
 		private static readonly object _publicKey = new object ();
+		private static readonly object _symbolsKey = new object ();
 
 		public static AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
@@ -121,6 +122,16 @@ namespace Mono.Linker {
 		static IAnnotationProvider AsProvider (object obj)
 		{
 			return (IAnnotationProvider) obj;
+		}
+
+		public static bool HasSymbols (AssemblyDefinition assembly)
+		{
+			return AsProvider (assembly).Annotations.Contains (_symbolsKey);
+		}
+
+		public static void SetHasSymbols (AssemblyDefinition assembly)
+		{
+			AsProvider (assembly).Annotations [_symbolsKey] = _symbolsKey;
 		}
 
 		private Annotations ()

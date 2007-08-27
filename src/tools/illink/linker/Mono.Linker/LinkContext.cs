@@ -39,6 +39,7 @@ namespace Mono.Linker {
 		Hashtable _actions;
 		string _outputDirectory;
 		Hashtable _parameters;
+		bool _linkSymbols;
 
 		AssemblyResolver _resolver;
 
@@ -54,6 +55,11 @@ namespace Mono.Linker {
 		public AssemblyAction CoreAction {
 			get { return _coreAction; }
 			set { _coreAction = value; }
+		}
+
+		public bool LinkSymbols {
+			get { return _linkSymbols; }
+			set { _linkSymbols = value; }
 		}
 
 		public IDictionary Actions {
@@ -95,6 +101,7 @@ namespace Mono.Linker {
 			if (File.Exists (name)) {
 				AssemblyDefinition assembly = AssemblyFactory.GetAssembly (name);
 				_resolver.CacheAssembly (assembly);
+				SafeLoadSymbols (assembly);
 				return assembly;
 			} else {
 				AssemblyNameReference reference = new AssemblyNameReference ();
@@ -109,10 +116,27 @@ namespace Mono.Linker {
 
 			AssemblyDefinition assembly = _resolver.Resolve (reference);
 
-			if (!Annotations.HasAction (assembly))
+			if (SeenFirstTime (assembly)) {
 				SetAction (assembly);
+				SafeLoadSymbols (assembly);
+			}
 
 			return assembly;
+		}
+
+		static void SafeLoadSymbols (AssemblyDefinition assembly)
+		{
+			try {
+				assembly.MainModule.LoadSymbols ();
+				Annotations.SetHasSymbols (assembly);
+			} catch {
+				return; // resharper loves this
+			}
+		}
+
+		static bool SeenFirstTime (AssemblyDefinition assembly)
+		{
+			return !Annotations.HasAction (assembly);
 		}
 
 		static AssemblyNameReference GetReference (IMetadataScope scope)

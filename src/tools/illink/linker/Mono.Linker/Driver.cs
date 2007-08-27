@@ -148,6 +148,9 @@ namespace Mono.Linker {
 				case 'm':
 					context.SetParameter (GetParam (), GetParam ());
 					break;
+				case 'b':
+					context.LinkSymbols = bool.Parse (GetParam ());
+					break;
 				default:
 					Usage ();
 					break;

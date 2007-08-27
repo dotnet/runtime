@@ -60,12 +60,24 @@ namespace Mono.Linker.Steps {
 
 			switch (Annotations.GetAction (assembly)) {
 			case AssemblyAction.Link:
+				SaveSymbols (assembly);
 				AssemblyFactory.SaveAssembly (assembly, GetAssemblyFileName (assembly, directory));
 				break;
 			case AssemblyAction.Copy:
 				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory);
 				break;
 			}
+		}
+
+		void SaveSymbols (AssemblyDefinition assembly)
+		{
+			if (!Context.LinkSymbols)
+				return;
+
+			if (!Annotations.HasSymbols (assembly))
+				return;
+
+			assembly.MainModule.SaveSymbols();
 		}
 
 		static void CopyConfigFileIfNeeded (AssemblyDefinition assembly, string directory)
