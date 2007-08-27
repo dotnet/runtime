@@ -1,3 +1,7 @@
+2007-08-28  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: mdb support.
+
 2007-08-21  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: tune on `all`, and only re-installed the tuned
