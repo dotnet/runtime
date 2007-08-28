@@ -1990,6 +1990,18 @@ mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soff
 {
 	int cur_reg;
 
+	if (align < 4) {
+		/* This could be optimized further if neccesary */
+		while (size >= 1) {
+			cur_reg = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, cur_reg, srcreg, soffset);
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, destreg, doffset, cur_reg);
+			doffset += 1;
+			soffset += 1;
+			size -= 1;
+		}
+	}
+
 	/* FIXME: consider alignment for archs that need it. */
 #if !NO_UNALIGNED_ACCESS
 	if (sizeof (gpointer) == 8) {
@@ -2039,6 +2051,16 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 		MONO_EMIT_NEW_I8CONST (s, val_reg, val);
 	else
 		MONO_EMIT_NEW_ICONST (s, val_reg, val);
+
+	if (align < 4) {
+		/* This could be optimized further if neccesary */
+		while (size >= 1) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
+			offset += 1;
+			size -= 1;
+		}
+		return;
+	}	
 
 	/* FIXME: consider alignment for archs that need it. */
 #if !NO_UNALIGNED_ACCESS

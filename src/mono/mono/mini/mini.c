@@ -2878,32 +2878,25 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 	ins->cil_code = ip;
 	ins->inst_left = dest;
 	ins->inst_right = zero_int32;
-	switch (n) {
-	case 1:
+	if (n == 1) {
 		ins->opcode = CEE_STIND_I1;
 		MONO_ADD_INS (bblock, ins);
-		break;
-	case 2:
+	} else if ((n == 2) && (align >= 2)) {
 		ins->opcode = CEE_STIND_I2;
 		MONO_ADD_INS (bblock, ins);
-		break;
-	case 4:
+	} else if ((n == 2) && (align >= 4)) {
 		ins->opcode = CEE_STIND_I4;
 		MONO_ADD_INS (bblock, ins);
-		break;
-	default:
-		if (n <= sizeof (gpointer) * 5) {
-			NEW_MEMSET (cfg, ins, dest, 0, n, align);
-			MONO_ADD_INS (bblock, ins);
-			break;
-		}
+	} else if (n <= sizeof (gpointer) * 5) {
+		NEW_MEMSET (cfg, ins, dest, 0, n, align);
+		MONO_ADD_INS (bblock, ins);
+	} else {
 		memset_method = get_memset_method ();
 		handle_loaded_temps (cfg, bblock, stack_start, sp);
 		iargs [0] = dest;
 		NEW_ICONST (cfg, iargs [1], 0);
 		NEW_ICONST (cfg, iargs [2], n);
 		mono_emit_method_call_spilled (cfg, bblock, memset_method, memset_method->signature, iargs, ip, NULL);
-		break;
 	}
 }
 

@@ -691,6 +691,16 @@ stmt: OP_MEMSET (OP_LDADDR(OP_REGOFFSET)) "0" {
 	else
 		val_reg = sparc_g0;
 
+	if (align < 4) {
+		/* This could be optimized further if neccesary */
+		while (size >= 1) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
+			offset += 1;
+			size -= 1;
+		}
+		return;
+	}	
+
 	/* Target address must be dword aligned */
 	if ((tree->inst_imm == 0) && (size >= 8) && 
 		(destreg == sparc_fp) && (((offset - MONO_SPARC_STACK_BIAS) % 8) == 0)) {
@@ -745,17 +755,16 @@ stmt: OP_MEMSET (reg) "0" {
 	else
 		val_reg = sparc_g0;
 
-	/* FIXME: This assumes the destination is dword aligned */
-	/*
-	if ((tree->inst_imm == 0) && (size >= 8)) {
-		while (size >= 8) {
-			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_IMM, destreg, offset, sparc_g0);
-			offset += 8;
-			size -= 8;
+	if (align < 4) {
+		/* This could be optimized further if neccesary */
+		while (size >= 1) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
+			offset += 1;
+			size -= 1;
 		}
-	}
-	*/
-		
+		return;
+	}	
+
 	while (size >= 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
 		offset += 4;
