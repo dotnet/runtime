@@ -806,6 +806,18 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 		mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
 }
 
+static void
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (MonoImage *image)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	mono_image_check_for_module_cctor (image);
+	if (image->has_module_cctor) {
+		MonoClass *module_klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 1);
+		mono_runtime_class_init (mono_class_vtable (mono_domain_get (), module_klass));
+	}
+}
+
 static MonoObject *
 ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 {
