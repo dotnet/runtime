@@ -118,14 +118,14 @@ freg: CEE_CONV_R_UN (reg) {
 }
 
 stmt: OP_MEMCPY (reg, reg) "0" {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
 	if (size > 0) 
 		MONO_EMIT_NEW_MOVE (s, state->left->reg1, 0, 
 				    state->right->reg1, 0, size);
 }
 
 stmt: OP_MEMCPY (base, base) "0" {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
 	if (size > 0)  
 		MONO_EMIT_NEW_MOVE (s, state->left->tree->sreg1, 
 				    state->left->tree->inst_offset, 

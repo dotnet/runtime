@@ -678,7 +678,8 @@ reg: OP_LOCALLOC (OP_ICONST) {
 
 # Optimized version for initializing valuetypes on the stack
 stmt: OP_MEMSET (OP_LDADDR(OP_REGOFFSET)) "0" {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
+	int align = tree->backend.memcpy_args->align;
 	int offset = state->left->left->tree->inst_offset;
 	int destreg = state->left->left->tree->inst_basereg;
 	int val_reg;
@@ -731,7 +732,8 @@ stmt: OP_MEMSET (OP_LDADDR(OP_REGOFFSET)) "0" {
 }		
 
 stmt: OP_MEMSET (reg) "0" {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
+	int align = tree->backend.memcpy_args->align;
 	int offset = 0;
 	int destreg = state->left->reg1;
 	int val_reg;

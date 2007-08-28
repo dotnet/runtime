@@ -637,16 +637,18 @@ stmt: CEE_STIND_I (OP_REGVAR, reg) {
 }
 
 stmt: OP_MEMCPY (base, base) {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
+	int align = tree->backend.memcpy_args->align;
 	if (size > 0)
 		mini_emit_memcpy (s, state->left->tree->inst_basereg, state->left->tree->inst_offset,
-				  state->right->tree->inst_basereg, state->right->tree->inst_offset, size, 0);
+				  state->right->tree->inst_basereg, state->right->tree->inst_offset, size, align);
 }
 
 stmt: OP_MEMSET (base) {
-	int size = tree->backend.size;
+	int size = tree->backend.memcpy_args->size;
+	int align = tree->backend.memcpy_args->align;
 	if (size > 0)
-		mini_emit_memset (s, state->left->tree->inst_basereg, state->left->tree->inst_offset, size, tree->inst_imm, 0);
+		mini_emit_memset (s, state->left->tree->inst_basereg, state->left->tree->inst_offset, size, tree->inst_imm, align);
 }
 
 reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {

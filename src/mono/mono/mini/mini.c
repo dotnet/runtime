@@ -666,6 +666,26 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
 
+#define NEW_MEMCPY(cfg,dest,dst,src,memcpy_size,memcpy_align) do { \
+		MONO_INST_NEW (cfg, dest, OP_MEMCPY); \
+        (dest)->inst_left = (dst); \
+		(dest)->inst_right = (src); \
+		(dest)->cil_code = ip; \
+        (dest)->backend.memcpy_args = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoMemcpyArgs)); \
+		(dest)->backend.memcpy_args->size = (memcpy_size); \
+		(dest)->backend.memcpy_args->align = (memcpy_align); \
+    } while (0)
+
+#define NEW_MEMSET(cfg,dest,dst,imm,memcpy_size,memcpy_align) do { \
+		MONO_INST_NEW (cfg, dest, OP_MEMSET); \
+        (dest)->inst_left = (dst); \
+		(dest)->inst_imm = (imm); \
+		(dest)->cil_code = ip; \
+        (dest)->backend.memcpy_args = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoMemcpyArgs)); \
+		(dest)->backend.memcpy_args->size = (memcpy_size); \
+		(dest)->backend.memcpy_args->align = (memcpy_align); \
+    } while (0)
+
 #define NEW_DUMMY_USE(cfg,dest,load) do { \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_DUMMY_USE; \
@@ -2817,11 +2837,7 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 			NEW_DUMMY_STORE (cfg, inst, dest->inst_i0->inst_c0);
 			MONO_ADD_INS (bblock, inst);
 		}
-		MONO_INST_NEW (cfg, inst, OP_MEMCPY);
-		inst->inst_left = dest;
-		inst->inst_right = src;
-		inst->cil_code = ip;
-		inst->backend.size = n;
+		NEW_MEMCPY (cfg, inst, dest, src, n, align);
 		MONO_ADD_INS (bblock, inst);
 		return;
 	}
@@ -2851,12 +2867,13 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 	MonoInst *iargs [3];
 	MonoInst *ins, *zero_int32;
 	int n;
+	guint32 align;
 	MonoMethod *memset_method;
 
 	NEW_ICONST (cfg, zero_int32, 0);
 
 	mono_class_init (klass);
-	n = mono_class_value_size (klass, NULL);
+	n = mono_class_value_size (klass, &align);
 	MONO_INST_NEW (cfg, ins, 0);
 	ins->cil_code = ip;
 	ins->inst_left = dest;
@@ -2876,9 +2893,7 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 		break;
 	default:
 		if (n <= sizeof (gpointer) * 5) {
-			ins->opcode = OP_MEMSET;
-			ins->inst_imm = 0;
-			ins->backend.size = n;
+			NEW_MEMSET (cfg, ins, dest, 0, n, align);
 			MONO_ADD_INS (bblock, ins);
 			break;
 		}
@@ -3502,7 +3517,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	new_locals_offset = cfg->num_varinfo;
 	for (i = 0; i < cheader->num_locals; ++i)
 		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
-	
+
 	/* allocate starte and end blocks */
 	sbblock = NEW_BBLOCK (cfg);
 	sbblock->block_num = cfg->num_bblocks++;
@@ -5502,14 +5517,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->inst_i1 = load;
 				store->flags |= ins_flag;
 			} else {
-				n = mono_class_value_size (klass, NULL);
+				guint32 align;
+
+				n = mono_class_value_size (klass, &align);
 				if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
 					MonoInst *copy;
-					MONO_INST_NEW (cfg, copy, OP_MEMCPY);
-					copy->inst_left = sp [0];
-					copy->inst_right = sp [1];
-					copy->cil_code = ip;
-					copy->backend.size = n;
+					NEW_MEMCPY (cfg, copy, sp [0], sp [1], n, align);
 					MONO_ADD_INS (bblock, copy);
 				} else {
 					MonoMethod *memcpy_method = get_memcpy_method ();
@@ -5529,6 +5542,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoInst *iargs [3];
 			int loc_index = -1;
 			int stloc_len = 0;
+			guint32 align;
+
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			--sp;
@@ -5581,16 +5596,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-			n = mono_class_value_size (klass, NULL);
+			n = mono_class_value_size (klass, &align);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
 			if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
 				MonoInst *copy;
-				MONO_INST_NEW (cfg, copy, OP_MEMCPY);
-				copy->inst_left = iargs [0];
-				copy->inst_right = *sp;
-				copy->cil_code = ip;
-				copy->backend.size = n;
+				NEW_MEMCPY (cfg, copy, iargs [0], *sp, n, align);
 				MONO_ADD_INS (bblock, copy);
 			} else {
 				MonoMethod *memcpy_method = get_memcpy_method ();
@@ -5858,6 +5869,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_UNBOX_ANY: {
 			MonoInst *add, *vtoffset;
 			MonoInst *iargs [3];
+			guint32 align;
 
 			CHECK_STACK (1);
 			--sp;
@@ -5933,16 +5945,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp = add;
 			ip += 5;
 			/* LDOBJ impl */
-			n = mono_class_value_size (klass, NULL);
+			n = mono_class_value_size (klass, &align);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
 			if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
 				MonoInst *copy;
-				MONO_INST_NEW (cfg, copy, OP_MEMCPY);
-				copy->inst_left = iargs [0];
-				copy->inst_right = *sp;
-				copy->cil_code = ip;
-				copy->backend.size = n;
+				NEW_MEMCPY (cfg, copy, iargs [0], *sp, n, align);
 				MONO_ADD_INS (bblock, copy);
 			} else {
 				MonoMethod *memcpy_method = get_memcpy_method ();
@@ -7620,11 +7628,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp -= 3;
 				if ((cfg->opt & MONO_OPT_INTRINS) && (ip [1] == CEE_CPBLK) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5)) {
 					MonoInst *copy;
-					MONO_INST_NEW (cfg, copy, OP_MEMCPY);
-					copy->inst_left = sp [0];
-					copy->inst_right = sp [1];
-					copy->cil_code = ip;
-					copy->backend.size = n;
+					NEW_MEMCPY (cfg, copy, sp [0], sp [1], n, 0);
 					MONO_ADD_INS (bblock, copy);
 					ip += 2;
 					break;
@@ -9938,6 +9942,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	if (cfg->verbose_level > 2)
 		g_print ("creating locals\n");
+
 	for (i = 0; i < header->num_locals; ++i)
 		mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
 	if (cfg->verbose_level > 2)

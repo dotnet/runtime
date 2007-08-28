@@ -268,6 +268,10 @@ enum {
 	BB_EXCEPTION_HANDLER  = 1 << 4
 };
 
+typedef struct MonoMemcpyArgs {
+	int size, align;
+} MonoMemcpyArgs;
+
 struct MonoInst {
 	union {
 		union {
@@ -299,7 +303,8 @@ struct MonoInst {
 	union {
 		gint32 reg3;
 		gint32 arg_info;
-		gint32 size; /* in OP_MEMSET and OP_MEMCPY */
+		gint32 size;
+		MonoMemcpyArgs *memcpy_args; /* in OP_MEMSET and OP_MEMCPY */
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
 		gpointer data;
