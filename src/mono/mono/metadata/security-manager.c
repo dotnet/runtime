@@ -80,7 +80,7 @@ mono_security_manager_get_methods (void)
 	g_assert (secman.linkdemandfulltrust);
 
 	secman.linkdemandsecurityexception = mono_class_get_method_from_name (secman.securitymanager,
-		"LinkDemandSecurityException", 3);
+		"LinkDemandSecurityException", 2);
 	g_assert (secman.linkdemandsecurityexception);
 
 	secman.allowpartiallytrustedcallers = mono_class_from_name (mono_defaults.corlib, "System.Security", 
