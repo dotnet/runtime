@@ -1537,7 +1537,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		vtsize = sizeof (gpointer) * (MONO_IMT_SIZE) +
 			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 	} else {
-		vtsize = sizeof (gpointer) * (class->max_interface_id + 1) +
+		vtsize = sizeof (gpointer) * (max_interface_id + 1) +
 			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 	}
 
