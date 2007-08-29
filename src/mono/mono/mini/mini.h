@@ -38,16 +38,16 @@
 
 /* for 32 bit systems */
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define MINI_LS_WORD_OFFSET 0
-#define MINI_MS_WORD_OFFSET 4
-#define inst_ls_word data.op[0].const_val
-#define inst_ms_word data.op[1].const_val
+#define MINI_LS_WORD_IDX 0
+#define MINI_MS_WORD_IDX 1
 #else
-#define MINI_LS_WORD_OFFSET 4
-#define MINI_MS_WORD_OFFSET 0
-#define inst_ls_word data.op[1].const_val
-#define inst_ms_word data.op[0].const_val
+#define MINI_LS_WORD_IDX 1
+#define MINI_MS_WORD_IDX 0
 #endif
+#define MINI_LS_WORD_OFFSET (MINI_LS_WORD_IDX * 4)
+#define MINI_MS_WORD_OFFSET (MINI_MS_WORD_IDX * 4)
+#define inst_ls_word data.op[MINI_LS_WORD_IDX].const_val
+#define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "32"

@@ -71,8 +71,8 @@ freg: OP_R4CONST {
 		DVal d;
 		/* we load the r8 value */
 		d.vald = *(float*)tree->inst_p0;
-		MONO_EMIT_NEW_ICONST (s, state->reg1, d.vali [0]);
-		MONO_EMIT_NEW_ICONST (s, state->reg2, d.vali [1]);
+		MONO_EMIT_NEW_ICONST (s, state->reg1, d.vali [MINI_LS_WORD_IDX]);
+		MONO_EMIT_NEW_ICONST (s, state->reg2, d.vali [MINI_MS_WORD_IDX]);
 	} else {
 		tree->dreg = state->reg1;
 		mono_bblock_add_inst (s->cbb, tree);
@@ -83,8 +83,8 @@ freg: OP_R8CONST {
 	if (SOFT_FLOAT_IMPL) {
 		DVal d;
 		d.vald = *(double*)tree->inst_p0;
-		MONO_EMIT_NEW_ICONST (s, state->reg1, d.vali [0]);
-		MONO_EMIT_NEW_ICONST (s, state->reg2, d.vali [1]);
+		MONO_EMIT_NEW_ICONST (s, state->reg1, d.vali [MINI_LS_WORD_IDX]);
+		MONO_EMIT_NEW_ICONST (s, state->reg2, d.vali [MINI_MS_WORD_IDX]);
 	} else {
 		tree->dreg = state->reg1;
 		mono_bblock_add_inst (s->cbb, tree);
