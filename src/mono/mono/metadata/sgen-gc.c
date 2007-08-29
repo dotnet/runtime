@@ -1247,7 +1247,7 @@ add_to_global_remset (gpointer ptr)
 static char* __attribute__((noinline))
 copy_object (char *obj, char *from_space_start, char *from_space_end)
 {
-	if (obj >= from_space_start && obj < from_space_end) {
+	if (obj >= from_space_start && obj < from_space_end && (obj < to_space || obj >= to_space_end)) {
 		MonoVTable *vt;
 		char *forwarded;
 		mword objsize;
@@ -3012,7 +3012,7 @@ finalize_in_range (void **start, void **end)
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		prev = NULL;
 		for (entry = finalizable_hash [i]; entry;) {
-			if (entry->object >= start && entry->object < end) {
+			if (entry->object >= start && entry->object < end && (entry->object < to_space || entry->object >= to_space_end)) {
 				if (object_is_fin_ready (entry->object)) {
 					char *from;
 					FinalizeEntry *next;
@@ -3052,7 +3052,7 @@ null_link_in_range (void **start, void **end)
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
-			if (entry->object >= start && entry->object < end) {
+			if (entry->object >= start && entry->object < end && (entry->object < to_space || entry->object >= to_space_end)) {
 				if (object_is_fin_ready (entry->object)) {
 					void **p = entry->data;
 					FinalizeEntry *old;
