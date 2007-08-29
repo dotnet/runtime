@@ -11508,6 +11508,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 	int start_slot = 3;
 	int method_count = 0;
 	GList *ccw_list, *ccw_list_item;
+	MonoCustomAttrInfo *cinfo = NULL;
 
 	if (!object)
 		return NULL;
@@ -11560,6 +11561,19 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		/* register for finalization to clean up ccw */
 		mono_object_register_finalizer (object);
+	}
+
+	cinfo = mono_custom_attrs_from_class (itf);
+	if (cinfo) {
+		static MonoClass* coclass_attribute = NULL;
+		if (!coclass_attribute)
+			coclass_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
+		if (mono_custom_attrs_has_attr (cinfo, coclass_attribute)) {
+			g_assert(itf->interface_count && itf->interfaces[0]);
+			itf = itf->interfaces[0];
+		}
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
 	}
 
 	iface = itf;
