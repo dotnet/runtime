@@ -224,7 +224,8 @@ struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size */
 	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
-	int role;
+	guint16 role;
+	guint16 scanned;
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -1855,12 +1856,28 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	}
 }
 
+static int
+scan_needed_big_objects (char *start_addr, char *end_addr)
+{
+	LOSObject *big_object;
+	int count = 0;
+	for (big_object = los_object_list; big_object; big_object = big_object->next) {
+		if (!big_object->scanned && object_is_pinned (big_object->data)) {
+			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %d\n", big_object->data, safe_name (big_object->data), big_object->size));
+			scan_object (big_object->data, start_addr, end_addr);
+			big_object->scanned = TRUE;
+			count++;
+		}
+	}
+	return count;
+}
+
 static void
 drain_gray_stack (char *start_addr, char *end_addr)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-	int fin_ready;
+	int fin_ready, bigo_scanned_num;
 	char *gray_start;
 
 	/*
@@ -1895,6 +1912,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	do {
 		fin_ready = num_ready_finalizers;
 		finalize_in_range ((void**)start_addr, (void**)end_addr);
+		bigo_scanned_num = scan_needed_big_objects (start_addr, end_addr);
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin: %p-%p, size: %d\n", gray_start, gray_objects, (int)(gray_objects - gray_start)));
@@ -1902,7 +1920,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
 			gray_start = scan_object (gray_start, start_addr, end_addr);
 		}
-	} while (fin_ready != num_ready_finalizers);
+	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
 
 	DEBUG (2, fprintf (gc_debug_file, "Copied to old space: %d bytes\n", (int)(gray_objects - to_space)));
 	to_space = gray_start;
@@ -2217,6 +2235,11 @@ major_collection (void)
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
+	/* we need to go over the big object list to see if any was marked and scan it
+	 * And we need to make this in a loop, considering that objects referenced by finalizable
+	 * objects could reference big objects (this happens in drain_gray_stack ())
+	 */
+	scan_needed_big_objects (heap_start, heap_end);
 	/* all the objects in the heap */
 	drain_gray_stack (heap_start, heap_end);
 
@@ -2225,6 +2248,7 @@ major_collection (void)
 	for (bigobj = los_object_list; bigobj;) {
 		if (object_is_pinned (bigobj->data)) {
 			unpin_object (bigobj->data);
+			bigobj->scanned = FALSE;
 		} else {
 			LOSObject *to_free;
 			/* not referenced anywhere, so we can free it */
