@@ -3042,6 +3042,7 @@ null_link_in_range (void **start, void **end)
 					old = entry->next;
 					free_internal_mem (entry);
 					entry = old;
+					num_disappearing_links--;
 					continue;
 				} else {
 					void **link;
