@@ -2003,6 +2003,22 @@ build_section_fragments (GCMemSection *section)
 		memset (frag_start, 0, frag_size);
 }
 
+static void
+scan_from_registered_roots (char *addr_start, char *addr_end)
+{
+	int i;
+	RootRecord *root;
+	for (i = 0; i < roots_hash_size; ++i) {
+		for (root = roots_hash [i]; root; root = root->next) {
+			/* if desc is non-null it has precise info */
+			if (!root->root_desc)
+				continue;
+			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
+			precisely_scan_objects_from ((void**)root->start_root, root->end_root, addr_start, addr_end, root->root_desc);
+		}
+	}
+}
+
 /*
  * Collect objects in the nursery.
  */
@@ -2012,7 +2028,6 @@ collect_nursery (size_t requested_size)
 	GCMemSection *section;
 	size_t max_garbage_amount;
 	int i;
-	RootRecord *root;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
@@ -2069,15 +2084,7 @@ collect_nursery (size_t requested_size)
 		scan_object (pin_queue [i], nursery_start, nursery_next);
 	}
 	/* registered roots, this includes static fields */
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (root = roots_hash [i]; root; root = root->next) {
-			/* if desc is non-null it has precise info */
-			if (!root->root_desc)
-				continue;
-			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_scan_objects_from ((void**)root->start_root, root->end_root, nursery_start, nursery_next, root->root_desc);
-		}
-	}
+	scan_from_registered_roots (nursery_start, nursery_next);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
@@ -2106,7 +2113,6 @@ major_collection (void)
 	GCMemSection *section, *prev_section;
 	LOSObject *bigobj, *prevbo;
 	int i;
-	RootRecord *root;
 	PinnedChunk *chunk;
 	FinalizeEntry *fin;
 	int count;
@@ -2195,21 +2201,14 @@ major_collection (void)
 	 * mark any section without pinned objects, so we can free it since we will be able to
 	 * move all the objects.
 	 */
-	/* the pinned objects are roots */
+	/* the pinned objects are roots (big objects are included in this list, too) */
 	for (i = 0; i < next_pin_slot; ++i) {
 		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n", i, pin_queue [i], safe_name (pin_queue [i])));
 		scan_object (pin_queue [i], heap_start, heap_end);
 	}
 	/* registered roots, this includes static fields */
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (root = roots_hash [i]; root; root = root->next) {
-			/* if desc is non-null it has precise info */
-			if (!root->root_desc)
-				continue;
-			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_scan_objects_from ((void**)root->start_root, root->end_root, heap_start, heap_end, root->root_desc);
-		}
-	}
+	scan_from_registered_roots (heap_start, heap_end);
+
 	/* scan the list of objects ready for finalization */
 	for (fin = fin_ready_list; fin; fin = fin->next) {
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
