@@ -20,7 +20,6 @@
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
-#include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
