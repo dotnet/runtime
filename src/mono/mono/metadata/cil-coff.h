@@ -64,6 +64,18 @@ typedef struct {
 	guint32 pe_rva_data_base;
 } MonoPEHeader;
 
+/* 24 bytes */
+typedef struct {
+	guint16 pe_magic;
+	guchar  pe_major;
+	guchar  pe_minor;
+	guint32 pe_code_size;
+	guint32 pe_data_size;
+	guint32 pe_uninit_data_size;
+	guint32 pe_rva_entry_point;
+	guint32 pe_rva_code_base;
+} MonoPEHeader64;
+
 /* 68 bytes */
 typedef struct {
 	guint32 pe_image_base;		/* must be 0x400000 */
@@ -88,6 +100,31 @@ typedef struct {
 	guint32 pe_loader_flags;
 	guint32 pe_data_dir_count;
 } MonoPEHeaderNT;
+
+/* 88 bytes */
+typedef struct {
+	guint64 pe_image_base;
+	guint32 pe_section_align;       /* must be 8192 */
+	guint32 pe_file_alignment;      /* must be 512 or 4096 */
+	guint16 pe_os_major;            /* must be 4 */
+	guint16 pe_os_minor;            /* must be 0 */
+	guint16 pe_user_major;
+	guint16 pe_user_minor;
+	guint16 pe_subsys_major;
+	guint16 pe_subsys_minor;
+	guint32 pe_reserved_1;
+	guint32 pe_image_size;
+	guint32 pe_header_size;
+	guint32 pe_checksum;
+	guint16 pe_subsys_required;
+	guint16 pe_dll_flags;
+	guint64 pe_stack_reserve;
+	guint64 pe_stack_commit;
+	guint64 pe_heap_reserve;
+	guint64 pe_heap_commit;
+	guint32 pe_loader_flags;
+	guint32 pe_data_dir_count;
+} MonoPEHeaderNT64;
 
 typedef struct {
 	guint32 rde_data_offset;
@@ -189,7 +226,25 @@ typedef struct {
 	MonoPEHeader    pe;
 	MonoPEHeaderNT  nt;
 	MonoPEDatadir   datadir;
+} MonoDotNetHeader32;
+
+/* 248 bytes */
+typedef struct {
+	char            pesig [4];
+	MonoCOFFHeader  coff;
+	MonoPEHeader    pe;
+	MonoPEHeaderNT  nt;
+	MonoPEDatadir   datadir;
 } MonoDotNetHeader;
+
+/* XX248 bytes */
+typedef struct {
+	char              pesig [4];
+	MonoCOFFHeader    coff;
+	MonoPEHeader64    pe;
+	MonoPEHeaderNT64  nt;
+	MonoPEDatadir     datadir;
+} MonoDotNetHeader64;
 
 typedef struct {
 	char    st_name [8];

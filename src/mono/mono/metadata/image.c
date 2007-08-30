@@ -642,43 +642,35 @@ mono_image_init (MonoImage *image)
 	image->method_signatures = g_hash_table_new (NULL, NULL);
 }
 
-static MonoImage *
-do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
-		    gboolean care_about_cli)
-{
-	MonoCLIImageInfo *iinfo;
-	MonoDotNetHeader *header;
-	MonoMSDOSHeader msdos;
-	guint32 offset = 0;
-
-	mono_image_init (image);
-
-	iinfo = image->image_info;
-	header = &iinfo->cli_header;
-		
-	if (status)
-		*status = MONO_IMAGE_IMAGE_INVALID;
-
-	if (offset + sizeof (msdos) > image->raw_data_len)
-		goto invalid_image;
-	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
-	
-	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))
-		goto invalid_image;
-	
-	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
-
-	offset = msdos.pe_offset;
-
-	if (offset + sizeof (MonoDotNetHeader) > image->raw_data_len)
-		goto invalid_image;
-	memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
-	offset += sizeof (MonoDotNetHeader);
-
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define SWAP64(x) (x) = GUINT64_FROM_LE ((x))
 #define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
 #define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
 #define SWAPPDE(x) do { (x).rva = GUINT32_FROM_LE ((x).rva); (x).size = GUINT32_FROM_LE ((x).size);} while (0)
+#else
+#define SWAP64(x)
+#define SWAP32(x)
+#define SWAP16(x)
+#define SWAPPDE(x)
+#endif
+
+/*
+ * Returns < 0 to indicate an error.
+ */
+static int
+do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
+{
+	MonoDotNetHeader64 header64;
+
+	if (offset + sizeof (MonoDotNetHeader32) > image->raw_data_len)
+		return -1;
+
+	memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
+
+	if (header->pesig [0] != 'P' || header->pesig [1] != 'E')
+		return -1;
+
+	/* endian swap the fields common between PE and PE+ */
 	SWAP32 (header->coff.coff_time);
 	SWAP32 (header->coff.coff_symptr);
 	SWAP32 (header->coff.coff_symcount);
@@ -688,15 +680,71 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	SWAP16 (header->coff.coff_attributes);
 	/* MonoPEHeader */
 	SWAP32 (header->pe.pe_code_size);
-	SWAP32 (header->pe.pe_data_size);
 	SWAP32 (header->pe.pe_uninit_data_size);
 	SWAP32 (header->pe.pe_rva_entry_point);
 	SWAP32 (header->pe.pe_rva_code_base);
 	SWAP32 (header->pe.pe_rva_data_base);
 	SWAP16 (header->pe.pe_magic);
 
+	/* now we are ready for the basic tests */
+
+	if (header->pe.pe_magic == 0x10B) {
+		offset += sizeof (MonoDotNetHeader);
+		SWAP32 (header->pe.pe_data_size);
+		if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4))
+			return -1;
+
+		SWAP32	(header->nt.pe_image_base); 	/* must be 0x400000 */
+		SWAP32	(header->nt.pe_stack_reserve);
+		SWAP32	(header->nt.pe_stack_commit);
+		SWAP32	(header->nt.pe_heap_reserve);
+		SWAP32	(header->nt.pe_heap_commit);
+	} else if (header->pe.pe_magic == 0x20B) {
+		/* PE32+ file format */
+		if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader64) - sizeof (MonoCOFFHeader) - 4))
+			return -1;
+		memcpy (&header64, image->raw_data + offset, sizeof (MonoDotNetHeader64));
+		offset += sizeof (MonoDotNetHeader64);
+		/* copy the fields already swapped. the last field, pe_data_size, is missing */
+		memcpy (&header64, header, sizeof (MonoDotNetHeader) - 4);
+		/* FIXME: we lose bits here, but we don't use this stuff internally, so we don't care much.
+		 * will be fixed when we change MonoDotNetHeader to not match the 32 bit variant
+		 */
+		SWAP64	(header64.nt.pe_image_base);
+		header->nt.pe_image_base = header64.nt.pe_image_base;
+		SWAP64	(header64.nt.pe_stack_reserve);
+		header->nt.pe_stack_reserve = header64.nt.pe_stack_reserve;
+		SWAP64	(header64.nt.pe_stack_commit);
+		header->nt.pe_stack_commit = header64.nt.pe_stack_commit;
+		SWAP64	(header64.nt.pe_heap_reserve);
+		header->nt.pe_heap_reserve = header64.nt.pe_heap_reserve;
+		SWAP64	(header64.nt.pe_heap_commit);
+		header->nt.pe_heap_commit = header64.nt.pe_heap_commit;
+
+		header->nt.pe_section_align = header64.nt.pe_section_align;
+		header->nt.pe_file_alignment = header64.nt.pe_file_alignment;
+		header->nt.pe_os_major = header64.nt.pe_os_major;
+		header->nt.pe_os_minor = header64.nt.pe_os_minor;
+		header->nt.pe_user_major = header64.nt.pe_user_major;
+		header->nt.pe_user_minor = header64.nt.pe_user_minor;
+		header->nt.pe_subsys_major = header64.nt.pe_subsys_major;
+		header->nt.pe_subsys_minor = header64.nt.pe_subsys_minor;
+		header->nt.pe_reserved_1 = header64.nt.pe_reserved_1;
+		header->nt.pe_image_size = header64.nt.pe_image_size;
+		header->nt.pe_header_size = header64.nt.pe_header_size;
+		header->nt.pe_checksum = header64.nt.pe_checksum;
+		header->nt.pe_subsys_required = header64.nt.pe_subsys_required;
+		header->nt.pe_dll_flags = header64.nt.pe_dll_flags;
+		header->nt.pe_loader_flags = header64.nt.pe_loader_flags;
+		header->nt.pe_data_dir_count = header64.nt.pe_data_dir_count;
+
+		/* copy the datadir */
+		memcpy (&header->datadir, &header64.datadir, sizeof (MonoPEDatadir));
+	} else {
+		return -1;
+	}
+
 	/* MonoPEHeaderNT: not used yet */
-	SWAP32	(header->nt.pe_image_base); 	/* must be 0x400000 */
 	SWAP32	(header->nt.pe_section_align);       /* must be 8192 */
 	SWAP32	(header->nt.pe_file_alignment);      /* must be 512 or 4096 */
 	SWAP16	(header->nt.pe_os_major);            /* must be 4 */
@@ -711,10 +759,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	SWAP32	(header->nt.pe_checksum);
 	SWAP16	(header->nt.pe_subsys_required);
 	SWAP16	(header->nt.pe_dll_flags);
-	SWAP32	(header->nt.pe_stack_reserve);
-	SWAP32	(header->nt.pe_stack_commit);
-	SWAP32	(header->nt.pe_heap_reserve);
-	SWAP32	(header->nt.pe_heap_commit);
 	SWAP32	(header->nt.pe_loader_flags);
 	SWAP32	(header->nt.pe_data_dir_count);
 
@@ -736,19 +780,47 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
  	SWAPPDE (header->datadir.pe_cli_header);
 	SWAPPDE (header->datadir.pe_reserved);
 
-#undef SWAP32
-#undef SWAP16
-#undef SWAPPDE
-#endif
+	return offset;
+}
 
+static MonoImage *
+do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
+		    gboolean care_about_cli)
+{
+	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
+	MonoMSDOSHeader msdos;
+	gint32 offset = 0;
+
+	mono_image_init (image);
+
+	iinfo = image->image_info;
+	header = &iinfo->cli_header;
+		
+	if (status)
+		*status = MONO_IMAGE_IMAGE_INVALID;
+
+	if (offset + sizeof (msdos) > image->raw_data_len)
+		goto invalid_image;
+	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
+	
+	if (!(msdos.msdos_sig [0] == 'M' && msdos.msdos_sig [1] == 'Z'))
+		goto invalid_image;
+	
+	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
+
+	offset = msdos.pe_offset;
+
+	offset = do_load_header (image, header, offset);
+	if (offset < 0)
+		goto invalid_image;
+
+	/*
+	 * this tests for a x86 machine type, but itanium, amd64 and others could be used, too.
+	 * we skip this test.
 	if (header->coff.coff_machine != 0x14c)
 		goto invalid_image;
-
-	if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4))
-		goto invalid_image;
-
-	if (header->pesig[0] != 'P' || header->pesig[1] != 'E' || header->pe.pe_magic != 0x10B)
-		goto invalid_image;
+	*/
 
 #if 0
 	/*
