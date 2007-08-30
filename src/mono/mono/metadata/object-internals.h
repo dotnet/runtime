@@ -262,7 +262,7 @@ struct _MonoThread {
 	gpointer suspend_event;
 	gpointer suspended_event;
 	gpointer resume_event;
-	MonoObject *synch_lock;
+	CRITICAL_SECTION *synch_cs;
 	guint8* serialized_culture_info;
 	guint32 serialized_culture_info_len;
 	guint8* serialized_ui_culture_info;
