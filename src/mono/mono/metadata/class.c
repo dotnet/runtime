@@ -18,7 +18,6 @@
 #endif
 #include <mono/metadata/image.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/cil-coff.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/tabledefs.h>

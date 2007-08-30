@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include "assembly.h"
 #include "image.h"
-#include "cil-coff.h"
 #include "rawbuffer.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
