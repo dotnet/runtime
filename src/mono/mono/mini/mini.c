@@ -1853,6 +1853,7 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
 	NEW_TEMPLOAD (cfg, load, src);
 
 	NEW_TEMPSTORE (cfg, inst, dest, load);
+	/* FIXME: handle CEE_STIND_R4 */
 	if (inst->opcode == CEE_STOBJ) {
 		NEW_TEMPLOADA (cfg, inst, dest);
 		handle_stobj (cfg, bb, inst, load, NULL, inst->klass, TRUE, FALSE, FALSE);
@@ -2053,6 +2054,7 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 	for (i = 0; i < count; ++i) {
 		/* add store ops at the end of the bb, before the branch */
 		NEW_TEMPSTORE (cfg, inst, locals [i]->inst_c0, sp [i]);
+		/* FIXME: handle CEE_STIND_R4 */
 		if (inst->opcode == CEE_STOBJ) {
 			NEW_TEMPLOADA (cfg, inst, locals [i]->inst_c0);
 			handle_stobj (cfg, bb, inst, sp [i], sp [i]->cil_code, inst->klass, TRUE, FALSE, FALSE);
@@ -2205,6 +2207,7 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 			temp->flags |= MONO_INST_IS_TEMP;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 			store->cil_code = ins->cil_code;
+			/* FIXME: handle CEE_STIND_R4 */
 			if (store->opcode == CEE_STOBJ) {
 				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 				handle_stobj (cfg, bblock, store, ins, ins->cil_code, temp->klass, FALSE, FALSE, FALSE);
@@ -2474,6 +2477,7 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 				MONO_ADD_INS (bblock, ins);
 		} else {
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+			/* FIXME: handle CEE_STIND_R4 */
 			store->cil_code = ip;
 			if (to_end)
 				mono_add_ins_to_end (bblock, store);
@@ -2650,6 +2654,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
 		temp->flags |= MONO_INST_IS_TEMP;
 		NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+		/* FIXME: handle CEE_STIND_R4 */
 		store->cil_code = tree->cil_code;
 	} else {
 		store = ins;
@@ -3391,6 +3396,7 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 			temp = mono_compile_create_var (cfg, type_from_stack_type (*sp), OP_LOCAL);
 			*args++ = temp;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
+			/* FIXME: handle CEE_STIND_R4 */
 			store->cil_code = sp [0]->cil_code;
 			MONO_ADD_INS (bblock, store);
 		}
@@ -3405,6 +3411,7 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 			*args++ = temp;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
 			store->cil_code = sp [0]->cil_code;
+			/* FIXME: handle CEE_STIND_R4 */
 			if (store->opcode == CEE_STOBJ) {
 				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 				handle_stobj (cfg, bblock, store, *sp, sp [0]->cil_code, temp->klass, FALSE, FALSE, FALSE);
@@ -3710,6 +3717,7 @@ emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8
 	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 	temp->flags |= MONO_INST_IS_TEMP;
 	NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+	/* FIXME: handle CEE_STIND_R4 */
 	store->cil_code = ins->cil_code;
 	MONO_ADD_INS (bblock, store);
 	NEW_TEMPLOAD (cfg, load, temp->inst_c0);
@@ -4605,6 +4613,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				temp->cil_code = ip;
 				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 				store->cil_code = ip;
+				/* FIXME: handle CEE_STIND_R4 */
 				if (store->opcode == CEE_STOBJ) {
 					NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 					handle_stobj (cfg, bblock, store, sp [0], sp [0]->cil_code, store->klass, TRUE, FALSE, FALSE);
@@ -4857,6 +4866,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					NEW_ARGSTORE (cfg, ins, i, sp [i]);
 					ins->cil_code = ip;
+					/* FIXME: handle CEE_STIND_R4 */
 					if (ins->opcode == CEE_STOBJ) {
 						NEW_ARGLOADA (cfg, ins, i);
 						handle_stobj (cfg, bblock, ins, sp [i], sp [i]->cil_code, ins->klass, FALSE, FALSE, FALSE);
@@ -4948,6 +4958,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (!has_vtargs) {
 					for (i = 0; i < n; ++i) {
+						/* FIXME: handle CEE_STIND_R4 */
 						NEW_ARGSTORE (cfg, ins, i, sp [i]);
 						ins->cil_code = ip;
 						MONO_ADD_INS (bblock, ins);
@@ -4995,6 +5006,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						to_store = mono_compile_create_var (cfg, type_from_stack_type (sp [fsig->param_count]), OP_LOCAL);
 						NEW_TEMPSTORE (cfg, store, to_store->inst_c0, sp [fsig->param_count]);
+						/* FIXME: handle CEE_STIND_R4 */
 						store->cil_code = ip;
 						MONO_ADD_INS (bblock, store);
 						NEW_TEMPLOAD (cfg, iargs [1], to_store->inst_c0);
@@ -5014,6 +5026,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, TRUE);
 					NEW_INDSTORE (cfg, ins, addr, sp [fsig->param_count], fsig->params [fsig->param_count - 1]);
 					ins->cil_code = ip;
+					/* FIXME: handle CEE_STIND_R4 */
 					if (ins->opcode == CEE_STOBJ) {
 						handle_stobj (cfg, bblock, addr, sp [fsig->param_count], ip, mono_class_from_mono_type (fsig->params [fsig->param_count-1]), FALSE, FALSE, TRUE);
 					} else {
@@ -5065,6 +5078,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					//g_assert (returnvar != -1);
 					NEW_TEMPSTORE (cfg, store, return_var->inst_c0, *sp);
 					store->cil_code = sp [0]->cil_code;
+					/* FIXME: handle CEE_STIND_R4 */
 					if (store->opcode == CEE_STOBJ) {
 						g_assert_not_reached ();
 						NEW_TEMPLOADA (cfg, store, return_var->inst_c0);
@@ -5573,6 +5587,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_LOCAL (loc_index);
 				NEW_LOCSTORE (cfg, ins, loc_index, *sp);
 
+				/* FIXME: handle CEE_STIND_R4 */
 				if (ins->opcode == CEE_STOBJ) {
 					handle_loaded_temps (cfg, bblock, stack_start, sp);
 					ins->cil_code = ip;
@@ -6359,6 +6374,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->flags |= ins_flag;
 				ins_flag = 0;
 
+				/* FIXME: handle CEE_STIND_R4 */
 				if (store->opcode == CEE_STOBJ) {
 					handle_stobj (cfg, bblock, ins, sp [0], ip, mono_class_from_mono_type (field->type), FALSE, FALSE, FALSE);
 				} else
@@ -6459,6 +6475,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			n = mono_type_to_stind (&klass->byval_arg);
+			/* FIXME: handle CEE_STIND_R4 */
 			if (n == CEE_STOBJ) {
 				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE, TRUE);
 			} else {
@@ -6798,6 +6815,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				load->cil_code = ip;
 
 				n = mono_type_to_stind (&klass->byval_arg);
+				/* FIXME: CEE_STIND_R4 */
 				if (n == CEE_STOBJ)
 					handle_stobj (cfg, bblock, load, sp [2], ip, klass, FALSE, FALSE, TRUE);
 				else {
