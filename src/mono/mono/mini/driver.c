@@ -57,8 +57,10 @@ static FILE *mini_stats_fd = NULL;
 
 static void mini_usage (void);
 
-/* This turns off command line globbing under win32 */
 #ifdef PLATFORM_WIN32
+/* Need this to determine whether to detach console */
+#include <mono/metadata/cil-coff.h>
+/* This turns off command line globbing under win32 */
 int _CRT_glob = 0;
 #endif
 
