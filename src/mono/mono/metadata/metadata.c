@@ -3713,6 +3713,9 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	if (sig1->hasthis != sig2->hasthis || sig1->param_count != sig2->param_count)
 		return FALSE;
 
+	if (sig1->generic_param_count != sig2->generic_param_count)
+		return FALSE;
+
 	/*
 	 * We're just comparing the signatures of two methods here:
 	 *
