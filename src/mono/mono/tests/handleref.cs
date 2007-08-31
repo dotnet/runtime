@@ -9,7 +9,7 @@ public class Tests {
 	[DllImport ("libtest")]
 	public static extern void mono_safe_handle_ref (ref HandleRef handle);
 
-	[DllImport ("libtest", EntryPoint="mono_xr")]
+	[DllImport ("libtest", EntryPoint="mono_xr_as_handle")]
 	public static extern HandleRef mono_xr_as_handle (HandleRef r);
 
 	[DllImport ("libtest")]

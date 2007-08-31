@@ -1962,12 +1962,25 @@ mono_test_marshal_return_fnptr (void)
 	return &add_delegate;
 }
 
-STDCALL int mono_xr (int code)
+STDCALL int
+mono_xr (int code)
 {
 	printf ("codigo %x\n", code);
 	return code + 1234;
 }
 
+typedef struct {
+	int handle;
+} HandleRef;
+
+STDCALL HandleRef
+mono_xr_as_handle (int code)
+{
+	HandleRef ref;
+
+	return ref;
+}
+ 
 typedef struct {
 	int   a;
 	void *handle1;
