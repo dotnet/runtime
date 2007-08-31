@@ -1156,7 +1156,10 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 				thread = mono_thread_current ();
 			}
 			
-			leave = mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested);
+			mono_monitor_enter (thread->synch_lock);
+			leave = ((thread->state & ThreadState_AbortRequested) != 0 ||
+				 (thread->state & ThreadState_StopRequested) != 0);
+			mono_monitor_exit (thread->synch_lock);
 			
 			if (leave != 0) {
 				g_free (pfds);
@@ -1547,8 +1550,10 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 			if (thread == NULL)
 				thread = mono_thread_current ();
 
-			leave = mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested);
-			
+			mono_monitor_enter (thread->synch_lock);
+			leave = ((thread->state & ThreadState_AbortRequested) != 0 || 
+				 (thread->state & ThreadState_StopRequested) != 0);
+			mono_monitor_exit (thread->synch_lock);
 			if (leave != 0) {
 				g_free (pfds);
 				*sockets = NULL;

@@ -332,7 +332,6 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	guint32 then = 0, now, delta;
 	guint32 waitms;
 	guint32 ret;
-	MonoThread *thread = mono_thread_current ();
 	
 	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms));
@@ -468,7 +467,7 @@ retry:
 			CloseHandle (sem);
 		}
 	}
-	
+
 	/* If we need to time out, record a timestamp and adjust ms,
 	 * because WaitForSingleObject doesn't tell us how long it
 	 * waited for.
@@ -491,13 +490,7 @@ retry:
 	}
 	
 	InterlockedIncrement (&mon->entry_count);
-
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
 	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, allow_interruption);
-
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
 	InterlockedDecrement (&mon->entry_count);
 
 	if (ms != INFINITE) {
@@ -833,9 +826,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) queuing handle %p",
 		  GetCurrentThreadId (), event));
 
-	mono_thread_current_check_pending_interrupt ();
-	
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 
 	mon->wait_list = g_slist_append (mon->wait_list, event);
 	
@@ -857,7 +850,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	/* Reset the thread state fairly early, so we don't have to worry
 	 * about the monitor error checking
 	 */
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 	
 	if (mono_thread_interruption_requested ()) {
 		CloseHandle (event);

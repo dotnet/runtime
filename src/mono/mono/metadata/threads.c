@@ -447,16 +447,13 @@ static void thread_cleanup (MonoThread *thread)
 		return;
 	mono_release_type_locks (thread);
 
-	EnterCriticalSection (thread->synch_cs);
+	if (!mono_monitor_enter (thread->synch_lock))
+		return;
 
 	thread->state |= ThreadState_Stopped;
 	thread->state &= ~ThreadState_Background;
+	mono_monitor_exit (thread->synch_lock);
 
-	LeaveCriticalSection (thread->synch_cs);
-	DeleteCriticalSection (thread->synch_cs);
-
-	g_free (thread->synch_cs);
-	
 	mono_profiler_thread_end (thread->tid);
 
 	if (thread == mono_thread_current ())
@@ -638,8 +635,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	thread->apartment_state=ThreadApartmentState_Unknown;
 	small_id_alloc (thread);
 
-	thread->synch_cs = g_new0 (CRITICAL_SECTION, 1);
-	InitializeCriticalSection (thread->synch_cs);
+	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 						  
 	handle_store(thread);
 
@@ -723,9 +719,7 @@ mono_thread_attach (MonoDomain *domain)
 	thread->apartment_state=ThreadApartmentState_Unknown;
 	small_id_alloc (thread);
 	thread->stack_ptr = &tid;
-
-	thread->synch_cs = g_new0 (CRITICAL_SECTION, 1);
-	InitializeCriticalSection (thread->synch_cs);
+	MONO_OBJECT_SETREF (thread, synch_lock, mono_object_new (domain, mono_defaults.object_class));
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 
@@ -793,26 +787,15 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	struct StartInfo *start_info;
 	HANDLE thread;
 	gsize tid;
-	CRITICAL_SECTION *synch_cs;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	THREAD_DEBUG (g_message("%s: Trying to start a new thread: this (%p) start (%p)", __func__, this, start));
 
-	synch_cs = g_new0 (CRITICAL_SECTION, 1);
-	InitializeCriticalSection (synch_cs);
-
-	if (InterlockedCompareExchangePointer ((gpointer *)&this->synch_cs,
-					       synch_cs, NULL) != NULL) {
-		/* This thread must have already been started! */
-		DeleteCriticalSection (synch_cs);
-		g_free (synch_cs);
-	}
-
-	EnterCriticalSection (this->synch_cs);
+	mono_monitor_enter (this->synch_lock);
 
 	if ((this->state & ThreadState_Unstarted) == 0) {
-		LeaveCriticalSection (this->synch_cs);
+		mono_monitor_exit (this->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state ("Thread has already been started."));
 		return NULL;
 	}
@@ -820,7 +803,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	this->small_id = -1;
 
 	if ((this->state & ThreadState_Aborted) != 0) {
-		LeaveCriticalSection (this->synch_cs);
+		mono_monitor_exit (this->synch_lock);
 		return this;
 	}
 	start_func = NULL;
@@ -835,7 +818,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 		this->start_notify=CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 		if(this->start_notify==NULL) {
-			LeaveCriticalSection (this->synch_cs);
+			mono_monitor_exit (this->synch_lock);
 			g_warning ("%s: CreateSemaphore error 0x%x", __func__, GetLastError ());
 			return(NULL);
 		}
@@ -843,7 +826,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		thread=CreateThread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
-			LeaveCriticalSection (this->synch_cs);
+			mono_monitor_exit (this->synch_lock);
 			g_warning("%s: CreateThread error 0x%x", __func__, GetLastError());
 			return(NULL);
 		}
@@ -864,7 +847,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 		THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread));
 
-		LeaveCriticalSection (this->synch_cs);
+		mono_monitor_exit (this->synch_lock);
 		return(thread);
 	}
 }
@@ -920,11 +903,15 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 	mono_thread_current_check_pending_interrupt ();
 	
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 	
 	SleepEx(ms,TRUE);
 	
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 }
 
 void ves_icall_System_Threading_Thread_SpinWait_internal (gint32 iterations)
@@ -951,27 +938,24 @@ MonoString*
 ves_icall_System_Threading_Thread_GetName_internal (MonoThread *this_obj)
 {
 	MonoString* str;
-
-	EnterCriticalSection (this_obj->synch_cs);
+	mono_monitor_enter (this_obj->synch_lock);
 	
 	if (!this_obj->name)
 		str = NULL;
 	else
 		str = mono_string_new_utf16 (mono_domain_get (), this_obj->name, this_obj->name_len);
 	
-	LeaveCriticalSection (this_obj->synch_cs);
-	
+	mono_monitor_exit (this_obj->synch_lock);
 	return str;
 }
 
 void 
 ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name)
 {
-	EnterCriticalSection (this_obj->synch_cs);
+	mono_monitor_enter (this_obj->synch_lock);
 	
 	if (this_obj->name) {
-		LeaveCriticalSection (this_obj->synch_cs);
-		
+		mono_monitor_exit (this_obj->synch_lock);
 		mono_raise_exception (mono_get_exception_invalid_operation ("Thread.Name can only be set once."));
 		return;
 	}
@@ -983,7 +967,7 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 	else
 		this_obj->name = NULL;
 	
-	LeaveCriticalSection (this_obj->synch_cs);
+	mono_monitor_exit (this_obj->synch_lock);
 }
 
 static MonoObject*
@@ -1015,16 +999,14 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoThread *this)
 {
 	MonoArray *res;
 
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	if (this->serialized_culture_info) {
 		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_culture_info_len);
 		memcpy (mono_array_addr (res, guint8, 0), this->serialized_culture_info, this->serialized_culture_info_len);
 	} else {
 		res = NULL;
 	}
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 
 	return res;
 }
@@ -1038,8 +1020,7 @@ cache_culture (MonoThread *this, MonoObject *culture, int start_idx)
 	int free_slot = -1;
 	int same_domain_slot = -1;
 
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	if (!this->cached_culture_info)
 		this->cached_culture_info = mono_array_new (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2);
 
@@ -1062,8 +1043,7 @@ cache_culture (MonoThread *this, MonoObject *culture, int start_idx)
 	else if (free_slot >= 0)
 		mono_array_setref (this->cached_culture_info, free_slot, culture);
 	/* we may want to replace an existing entry here, even when no suitable slot is found */
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 }
 
 void
@@ -1075,15 +1055,13 @@ ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, Mon
 void
 ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoThread *this, MonoArray *arr)
 {
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	if (this->serialized_culture_info)
 		g_free (this->serialized_culture_info);
 	this->serialized_culture_info = g_new0 (guint8, mono_array_length (arr));
 	this->serialized_culture_info_len = mono_array_length (arr);
 	memcpy (this->serialized_culture_info, mono_array_addr (arr, guint8, 0), mono_array_length (arr));
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 }
 
 
@@ -1098,16 +1076,14 @@ ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture (MonoThread *thi
 {
 	MonoArray *res;
 
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	if (this->serialized_ui_culture_info) {
 		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_ui_culture_info_len);
 		memcpy (mono_array_addr (res, guint8, 0), this->serialized_ui_culture_info, this->serialized_ui_culture_info_len);
 	} else {
 		res = NULL;
 	}
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 
 	return res;
 }
@@ -1121,15 +1097,13 @@ ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this, M
 void
 ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *this, MonoArray *arr)
 {
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	if (this->serialized_ui_culture_info)
 		g_free (this->serialized_ui_culture_info);
 	this->serialized_ui_culture_info = g_new0 (guint8, mono_array_length (arr));
 	this->serialized_ui_culture_info_len = mono_array_length (arr);
 	memcpy (this->serialized_ui_culture_info, mono_array_addr (arr, guint8, 0), mono_array_length (arr));
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 }
 
 /* the jit may read the compiled code of this function */
@@ -1146,21 +1120,19 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	gboolean ret;
 	
 	MONO_ARCH_SAVE_REGS;
-	
-	mono_thread_current_check_pending_interrupt ();
 
-	EnterCriticalSection (this->synch_cs);
+	mono_monitor_enter (this->synch_lock);
 	
 	if ((this->state & ThreadState_Unstarted) != 0) {
-		LeaveCriticalSection (this->synch_cs);
-		
+		mono_monitor_exit (this->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started."));
 		return FALSE;
 	}
 	
+	mono_thread_current_check_pending_interrupt ();
+	
 	this->state |= ThreadState_WaitSleepJoin;
-
-	LeaveCriticalSection (this->synch_cs);
+	mono_monitor_exit (this->synch_lock);
 
 	if(ms== -1) {
 		ms=INFINITE;
@@ -1169,7 +1141,9 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	
 	ret=WaitForSingleObjectEx (thread, ms, TRUE);
 
-	mono_thread_clr_state (this, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (this->synch_lock);
+	this->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (this->synch_lock);
 	
 	if(ret==WAIT_OBJECT_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
@@ -1209,11 +1183,15 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 		ms=INFINITE;
 	}
 
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 	
 	ret=WaitForMultipleObjectsEx(numhandles, handles, TRUE, ms, TRUE);
 
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 
 	g_free(handles);
 
@@ -1260,12 +1238,16 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		ms=INFINITE;
 	}
 
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	ret=WaitForMultipleObjectsEx(numhandles, handles, FALSE, ms, TRUE);
 
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	g_free(handles);
 
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, GetCurrentThreadId (), ret));
@@ -1300,12 +1282,16 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	
 	mono_thread_current_check_pending_interrupt ();
 
-	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	ret=WaitForSingleObjectEx (handle, ms, TRUE);
 	
-	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+
 	if(ret==WAIT_FAILED) {
 		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, GetCurrentThreadId ()));
 		return(FALSE);
@@ -1744,8 +1730,8 @@ ves_icall_System_Threading_Thread_MemoryBarrier (void)
 void
 ves_icall_System_Threading_Thread_ClrState (MonoThread* this, guint32 state)
 {
-	mono_thread_clr_state (this, state);
-
+	mono_monitor_enter (this->synch_lock);
+	this->state &= ~state;
 	if (state & ThreadState_Background) {
 		/* If the thread changes the background mode, the main thread has to
 		 * be notified, since it has to rebuild the list of threads to
@@ -1753,13 +1739,14 @@ ves_icall_System_Threading_Thread_ClrState (MonoThread* this, guint32 state)
 		 */
 		SetEvent (background_change_event);
 	}
+	mono_monitor_exit (this->synch_lock);
 }
 
 void
 ves_icall_System_Threading_Thread_SetState (MonoThread* this, guint32 state)
 {
-	mono_thread_set_state (this, state);
-	
+	mono_monitor_enter (this->synch_lock);
+	this->state |= state;
 	if (state & ThreadState_Background) {
 		/* If the thread changes the background mode, the main thread has to
 		 * be notified, since it has to rebuild the list of threads to
@@ -1767,19 +1754,16 @@ ves_icall_System_Threading_Thread_SetState (MonoThread* this, guint32 state)
 		 */
 		SetEvent (background_change_event);
 	}
+	mono_monitor_exit (this->synch_lock);
 }
 
 guint32
 ves_icall_System_Threading_Thread_GetState (MonoThread* this)
 {
 	guint32 state;
-
-	EnterCriticalSection (this->synch_cs);
-	
+	mono_monitor_enter (this->synch_lock);
 	state = this->state;
-
-	LeaveCriticalSection (this->synch_cs);
-	
+	mono_monitor_exit (this->synch_lock);
 	return state;
 }
 
@@ -1787,16 +1771,19 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this)
 {
 	gboolean throw = FALSE;
 	
-	EnterCriticalSection (this->synch_cs);
+	mono_monitor_enter (this->synch_lock);
 	
-	this->thread_interrupt_requested = TRUE;
+	/* Clear out any previous request */
+	this->thread_interrupt_requested = FALSE;
 	
 	if (this->state & ThreadState_WaitSleepJoin) {
 		throw = TRUE;
+	} else {
+		this->thread_interrupt_requested = TRUE;
 	}
 	
-	LeaveCriticalSection (this->synch_cs);
-	
+	mono_monitor_exit (this->synch_lock);
+
 	if (throw) {
 		signal_thread_state_change (this);
 	}
@@ -1807,14 +1794,14 @@ void mono_thread_current_check_pending_interrupt ()
 	MonoThread *thread = mono_thread_current ();
 	gboolean throw = FALSE;
 	
-	EnterCriticalSection (thread->synch_cs);
-	
+	mono_monitor_enter (thread->synch_lock);
+
 	if (thread->thread_interrupt_requested) {
 		throw = TRUE;
 		thread->thread_interrupt_requested = FALSE;
 	}
 	
-	LeaveCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 
 	if (throw) {
 		mono_raise_exception (mono_get_exception_thread_interrupted ());
@@ -1889,19 +1876,19 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection (thread->synch_cs);
-	
+	mono_monitor_enter (thread->synch_lock);
+
 	if ((thread->state & ThreadState_AbortRequested) != 0 || 
 		(thread->state & ThreadState_StopRequested) != 0 ||
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 
 	if ((thread->state & ThreadState_Unstarted) != 0) {
 		thread->state |= ThreadState_Aborted;
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 
@@ -1909,7 +1896,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	MONO_OBJECT_SETREF (thread, abort_state, state);
 	thread->abort_exc = NULL;
 
-	LeaveCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
 	
@@ -1926,20 +1913,20 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 
 	MONO_ARCH_SAVE_REGS;
 	
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	if (!thread->abort_exc) {
 		const char *msg = "Unable to reset abort because no abort was requested";
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state (msg));
 	} else {
 		thread->abort_exc = NULL;
 		thread->abort_state = NULL;
 	}
 	
-	LeaveCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 }
 
 static gboolean
@@ -1947,13 +1934,13 @@ mono_thread_suspend (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_Unstarted) != 0 || 
 		(thread->state & ThreadState_Aborted) != 0 || 
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return FALSE;
 	}
 
@@ -1961,13 +1948,12 @@ mono_thread_suspend (MonoThread *thread)
 		(thread->state & ThreadState_SuspendRequested) != 0 ||
 		(thread->state & ThreadState_StopRequested) != 0) 
 	{
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return TRUE;
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
-
-	LeaveCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 
 	signal_thread_state_change (thread);
 	return TRUE;
@@ -1985,11 +1971,11 @@ mono_thread_resume (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		thread->state &= ~ThreadState_SuspendRequested;
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return TRUE;
 	}
 
@@ -1998,20 +1984,20 @@ mono_thread_resume (MonoThread *thread)
 		(thread->state & ThreadState_Aborted) != 0 || 
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return FALSE;
 	}
 	
 	thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	if (thread->resume_event == NULL) {
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return(FALSE);
 	}
 	
 	/* Awake the thread */
 	SetEvent (thread->suspend_event);
 
-	LeaveCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 
 	/* Wait for the thread to awake */
 	WaitForSingleObject (thread->resume_event, INFINITE);
@@ -2054,12 +2040,12 @@ is_running_protected_wrapper (void)
 
 void mono_thread_stop (MonoThread *thread)
 {
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_StopRequested) != 0 ||
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 	
@@ -2069,7 +2055,7 @@ void mono_thread_stop (MonoThread *thread)
 	thread->state |= ThreadState_StopRequested;
 	thread->state &= ~ThreadState_AbortRequested;
 	
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_exit (thread->synch_lock);
 	
 	signal_thread_state_change (thread);
 }
@@ -2143,7 +2129,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&contexts_mutex);
 	InitializeCriticalSection(&delayed_free_table_mutex);
 	InitializeCriticalSection(&small_id_mutex);
-	
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert(background_change_event != NULL);
 	
@@ -2538,13 +2523,13 @@ void mono_thread_suspend_all_other_threads (void)
 			continue;
 		}
 
-		EnterCriticalSection (thread->synch_cs);
+		mono_monitor_enter (thread->synch_lock);
 
 		if ((thread->state & ThreadState_Suspended) != 0 || 
 			(thread->state & ThreadState_SuspendRequested) != 0 ||
 			(thread->state & ThreadState_StopRequested) != 0 ||
 			(thread->state & ThreadState_Stopped) != 0) {
-			LeaveCriticalSection (thread->synch_cs);
+			mono_monitor_exit (thread->synch_lock);
 			CloseHandle (wait->handles [i]);
 			wait->threads [i] = NULL; /* ignore this thread in next loop */
 			continue;
@@ -2560,13 +2545,13 @@ void mono_thread_suspend_all_other_threads (void)
 			thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 			if (thread->suspended_event == NULL) {
 				/* Forget this one and go on to the next */
-				LeaveCriticalSection (thread->synch_cs);
+				mono_monitor_exit (thread->synch_lock);
 				continue;
 			}
 		}
 
 		events [eventidx++] = thread->suspended_event;
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 
 		/* Signal the thread to suspend */
 		signal_thread_state_change (thread);
@@ -2579,10 +2564,10 @@ void mono_thread_suspend_all_other_threads (void)
 		if (thread == NULL)
 			continue;
 
-		EnterCriticalSection (thread->synch_cs);
+		mono_monitor_enter (thread->synch_lock);
 		CloseHandle (thread->suspended_event);
 		thread->suspended_event = NULL;
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 	}
 
 	g_free (events);
@@ -2749,7 +2734,7 @@ clear_cached_culture (gpointer key, gpointer value, gpointer user_data)
 	int i;
 
 	/* No locking needed here */
-	/* FIXME: why no locking? writes to the cache are protected with synch_cs above */
+	/* FIXME: why no locking? writes to the cache are protected with synch_lock above */
 
 	if (thread->cached_culture_info) {
 		for (i = 0; i < NUM_CACHED_CULTURES * 2; ++i) {
@@ -3126,7 +3111,7 @@ static guint32 dummy_apc (gpointer param)
  */
 static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 {
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 
 	if (thread->interruption_requested) {
 		/* this will consume pending APC calls */
@@ -3138,7 +3123,7 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
 		if (thread->abort_exc == NULL)
 			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		return thread->abort_exc;
 	}
 	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
@@ -3146,18 +3131,16 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		thread->state |= ThreadState_Suspended;
 		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 		if (thread->suspend_event == NULL) {
-			LeaveCriticalSection (thread->synch_cs);
+			mono_monitor_exit (thread->synch_lock);
 			return(NULL);
 		}
 		if (thread->suspended_event)
 			SetEvent (thread->suspended_event);
-
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 		
 		WaitForSingleObject (thread->suspend_event, INFINITE);
 		
-		EnterCriticalSection (thread->synch_cs);
-
+		mono_monitor_enter (thread->synch_lock);
 		CloseHandle (thread->suspend_event);
 		thread->suspend_event = NULL;
 		thread->state &= ~ThreadState_Suspended;
@@ -3166,27 +3149,20 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		 * and will be waiting for it
 		 */
 		SetEvent (thread->resume_event);
-
-		LeaveCriticalSection (thread->synch_cs);
-		
+		mono_monitor_exit (thread->synch_lock);
 		return NULL;
 	}
 	else if ((thread->state & ThreadState_StopRequested) != 0) {
 		/* FIXME: do this through the JIT? */
-
-		LeaveCriticalSection (thread->synch_cs);
-		
+		mono_monitor_exit (thread->synch_lock);
 		mono_thread_exit ();
 		return NULL;
 	} else if (thread->thread_interrupt_requested) {
-
-		LeaveCriticalSection (thread->synch_cs);
-		
+		mono_monitor_exit (thread->synch_lock);
 		return(mono_get_exception_thread_interrupted ());
 	}
 	
-	LeaveCriticalSection (thread->synch_cs);
-	
+	mono_monitor_exit (thread->synch_lock);
 	return NULL;
 }
 
@@ -3206,11 +3182,10 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 	if (thread == NULL) 
 		return NULL;
 	
-	EnterCriticalSection (thread->synch_cs);
+	mono_monitor_enter (thread->synch_lock);
 	
 	if (thread->interruption_requested) {
-		LeaveCriticalSection (thread->synch_cs);
-		
+		mono_monitor_exit (thread->synch_lock);
 		return NULL;
 	}
 
@@ -3221,8 +3196,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 
 		InterlockedIncrement (&thread_interruption_requested);
 		thread->interruption_requested = TRUE;
-
-		LeaveCriticalSection (thread->synch_cs);
+		mono_monitor_exit (thread->synch_lock);
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
@@ -3230,8 +3204,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	}
 	else {
-		LeaveCriticalSection (thread->synch_cs);
-		
+		mono_monitor_exit (thread->synch_lock);
 		return mono_thread_execute_interruption (thread);
 	}
 }
@@ -3324,36 +3297,4 @@ mono_thread_cleanup_apartment_state (void)
 		CoUninitialize ();
 	}
 #endif
-}
-
-void
-mono_thread_set_state (MonoThread *thread, MonoThreadState state)
-{
-	EnterCriticalSection (thread->synch_cs);
-	thread->state |= state;
-	LeaveCriticalSection (thread->synch_cs);
-}
-
-void
-mono_thread_clr_state (MonoThread *thread, MonoThreadState state)
-{
-	EnterCriticalSection (thread->synch_cs);
-	thread->state &= ~state;
-	LeaveCriticalSection (thread->synch_cs);
-}
-
-gboolean
-mono_thread_test_state (MonoThread *thread, MonoThreadState test)
-{
-	gboolean ret = FALSE;
-
-	EnterCriticalSection (thread->synch_cs);
-
-	if ((thread->state & test) != 0) {
-		ret = TRUE;
-	}
-	
-	LeaveCriticalSection (thread->synch_cs);
-	
-	return ret;
 }
