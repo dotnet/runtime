@@ -74,7 +74,7 @@ GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARA
 end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Xml.Core gac-System.Core
 
 inst-%:
-	$(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(mono_libdir)/mono/2.1/$*.mdb
+	$(INSTALL_LIB) $(OUTPUT_DIR)/$* $(mono_libdir)/mono/2.1/$*
 	test ! -f $(OUTPUT_DIR)/$*.mdb || $(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(mono_libdir)/mono/2.1/$*.mdb
 
 gac-%:
