@@ -121,7 +121,7 @@ mul.ovf: dest:i src1:i src2:i len:64
 mul.ovf.un: dest:i src1:i src2:i len:64
 start_handler: len:64
 endfinally: len:64
-endfilter: len:64
+endfilter: src1:i len:64
 conv.u: dest:i src1:i len:4
 arglist: src1:i
 ceq: dest:i len:64
