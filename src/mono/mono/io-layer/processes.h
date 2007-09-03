@@ -173,7 +173,7 @@ extern gboolean CreateProcess (const gunichar2 *appname,
 			       WapiProcessInformation *process_info);
 extern gboolean CreateProcessWithLogonW (const gunichar2 *username,
 					 const gunichar2 *domain,
-					 const gunichar2 *password,
+					 const gpointer password,
 					 const guint32 logonFlags,
 					 const gunichar2 *appname,
 					 const gunichar2 *cmdline,
