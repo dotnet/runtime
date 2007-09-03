@@ -361,10 +361,13 @@ mono_debugger_init (void)
 
 	/*
 	 * Initialize the thread manager.
+	 *
+	 * NOTE: We only reference the `MONO_DEBUGGER__debugger_info_ptr' here to prevent the
+	 * linker from removing the .mdb_debug_info section.
 	 */
 
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
-					     GetCurrentThreadId (), 0);
+					     (guint64) (gssize) MONO_DEBUGGER__debugger_info_ptr, 0);
 }
 
 typedef struct 
@@ -416,13 +419,10 @@ mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 	main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
 	/*
-	 * Reload symbol tables.
-	 *
-	 * NOTE: We only reference the `MONO_DEBUGGER__debugger_info_ptr' here to prevent the
-	 * linker from removing the .mdb_debug_info section.
+	 * Initialize managed code.
 	 */
 	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE,
-					     (guint64) (gssize) MONO_DEBUGGER__debugger_info_ptr, 0);
+					     (guint64) (gssize) main_method, 0);
 
 	/*
 	 * Start the main thread and wait until it's ready.
