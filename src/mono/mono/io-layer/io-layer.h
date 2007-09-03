@@ -14,6 +14,7 @@
 #if defined(__WIN32__)
 /* Native win32 */
 #define __USE_W32_SOCKETS
+#define WINVER 0x0500 /* needed for CreateProcessWithLogonW */
 #include <winsock2.h>
 #include <windows.h>
 #include <winbase.h>

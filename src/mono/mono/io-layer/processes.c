@@ -575,6 +575,22 @@ leave:
 	return managed;
 }
 
+gboolean CreateProcessWithLogonW (const gunichar2 *username,
+				  const gunichar2 *domain,
+				  const gpointer password,
+				  const guint32 logonFlags,
+				  const gunichar2 *appname,
+				  const gunichar2 *cmdline,
+				  guint32 create_flags,
+				  gpointer environ,
+				  const gunichar2 *cwd,
+				  WapiStartupInfo *startup,
+				  WapiProcessInformation *process_info)
+{
+	/* FIXME: use user information */
+	return CreateProcess (appname, cmdline, process_attrs, thread_attrs, inherit_handles, create_flags, environ, cwd, startup, process_info);
+}
+
 gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,

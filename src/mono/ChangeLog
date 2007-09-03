@@ -1,3 +1,6 @@
+2007-09-03  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* configure.in : On windows, require advapi32.dll.
 
 2007-08-23  Robert Jordan  <robertj@gmx.net>
 

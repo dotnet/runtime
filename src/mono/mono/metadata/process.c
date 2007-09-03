@@ -802,7 +802,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	gboolean free_shell_path = TRUE;
 	gchar *spath = NULL;
 	MonoString *cmd = proc_start_info->arguments;
-	guint32 creation_flags;
+	guint32 creation_flags, logon_flags;
 	
 	startinfo.cb=sizeof(STARTUPINFO);
 	startinfo.dwFlags=STARTF_USESTDHANDLES;
@@ -891,7 +891,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 		dir=mono_string_chars (proc_start_info->working_directory);
 	}
 
-	ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	if (process_info->username) {
+		logon_flags = process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
+		ret=CreateProcessWithLogonW (mono_string_chars (process_info->username), process_info->domain ? mono_string_chars (process_info->domain) : NULL, process_info->password, logon_flags, shell_path, cmd? mono_string_chars (cmd): NULL, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	} else {
+		ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	}
 
 	g_free (env_vars);
 	if (free_shell_path)

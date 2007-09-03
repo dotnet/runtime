@@ -25,6 +25,10 @@ typedef struct
 	guint32 tid;
 	MonoArray *env_keys;
 	MonoArray *env_values;
+	MonoString *username;
+	MonoString *domain;
+	gpointer password; /* BSTR from SecureString in 2.0 profile */
+	MonoBoolean load_user_profile;
 } MonoProcInfo;
 
 typedef struct
@@ -43,6 +47,12 @@ typedef struct
 	MonoBoolean redirect_standard_output;
 	MonoBoolean use_shell_execute;
 	guint32 window_style;
+	MonoObject *encoding_stderr;
+	MonoObject *encoding_stdout;
+	MonoString *username;
+	MonoString *domain;
+	MonoObject *password; /* SecureString in 2.0 profile, dummy in 1.x */
+	MonoBoolean load_user_profile;
 } MonoProcessStartInfo;
 
 G_BEGIN_DECLS
