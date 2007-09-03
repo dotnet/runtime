@@ -336,7 +336,7 @@ function clickHandler (evt)
 
 		if (evt.ctrlKey)
 		{
-			var strRoot = 'http://svn.myrealbox.com/viewcvs/trunk/mcs/class/';
+			var strRoot = 'http://anonsvn.mono-project.com/viewcvs/trunk/mcs/class/';
 			var strExtra = '';
 
 			if (strAssembly)
