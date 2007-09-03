@@ -108,7 +108,7 @@ public class MultiThreadExceptionTest {
 		
 		t1.Start();
 		
-		Thread.Sleep (200);
+		Thread.Sleep (300);
 		t1.Abort ("STATETEST");
 
 		t1.Join ();
