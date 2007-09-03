@@ -588,7 +588,7 @@ gboolean CreateProcessWithLogonW (const gunichar2 *username,
 				  WapiProcessInformation *process_info)
 {
 	/* FIXME: use user information */
-	return CreateProcess (appname, cmdline, process_attrs, thread_attrs, inherit_handles, create_flags, environ, cwd, startup, process_info);
+	return CreateProcess (appname, cmdline, NULL, NULL, FALSE, create_flags, environ, cwd, startup, process_info);
 }
 
 gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
