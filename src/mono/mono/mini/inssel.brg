@@ -1642,6 +1642,7 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 /* Emit code which loads interface_offsets [klass->interface_id]
  * The array is stored in memory before vtable.
  */
+#ifndef MONO_ARCH_HAVE_IMT
 static void
 mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, MonoClass *klass)
 {
@@ -1655,6 +1656,7 @@ mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, Mo
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, vtable_reg, -((klass->interface_id + 1) * SIZEOF_VOID_P));
 	}
 }
+#endif
 
 /* 
  * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoClass

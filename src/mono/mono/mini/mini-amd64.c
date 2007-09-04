@@ -3567,7 +3567,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
 	
 			/* add correction constant mn */
-			x86_fld80_mem (code, mn);
+			x86_fld80_mem (code, (gssize)mn);
 			x86_fld80_membase (code, AMD64_RSP, 0);
 			amd64_fp_op_reg (code, X86_FADD, 1, TRUE);
 			x86_fst80_membase (code, AMD64_RSP, 0);
