@@ -3,7 +3,6 @@ SUBDIRS =
 include ../../build/rules.make
 
 LINKER = ../linker/monolinker.exe
-MASTER_INFOS_ZIP = http://mono.ximian.com/masterinfos/masterinfo-sl11a-refresh.zip
 
 TUNER_SOURCES = \
 	Mono.Tuner/PrintStatus.cs	\
@@ -15,9 +14,15 @@ TUNER_DESCS =	\
 	Descriptors/smcs.xml	\
 	Descriptors/System.xml	\
 
+TUNER_MASTERS =	\
+	masterinfos/silverlight/mscorlib.info	\
+	masterinfos/silverlight/System.info	\
+	masterinfos/silverlight/System.Core.info	\
+	masterinfos/silverlight/System.Xml.Core.info	\
+
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
-DISTFILES = README $(TUNER_SOURCES) $(TUNER_DESCS)
+DISTFILES = README $(TUNER_SOURCES) $(TUNER_DESCS) $(TUNER_MASTERS)
 
 WORKING_DIR = $(topdir)/class/lib/net_2_1
 OUTPUT_DIR = $(topdir)/class/lib/net_2_1_tuned
@@ -37,7 +42,6 @@ install-local: end-install
 
 clean-local:
 	rm -rf $(OUTPUT_DIR)
-	rm -rf masterinfos*
 
 endif
 
@@ -49,24 +53,14 @@ test-local:
 
 run-test-local run-test-ondotnet-local:
 
-MCS_MASTER_INFOS =	\
-	masterinfos/silverlight/mscorlib.info	\
-	masterinfos/silverlight/System.info		\
-	masterinfos/silverlight/System.Core.info	\
-	masterinfos/silverlight/System.Xml.Core.info	\
-
-$(MCS_MASTER_INFOS):
-	wget -O masterinfos.zip $(MASTER_INFOS_ZIP)
-	unzip masterinfos.zip
-
 TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
 TUNER_STEPS = \
 	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
 	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
 	Mono.Tuner.CheckVisibility,Mono.Tuner	\
 
-tune: $(MCS_MASTER_INFOS)
-	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(MCS_MASTER_INFOS:%=-i %)
+tune:
+	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
 
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)

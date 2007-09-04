@@ -1,3 +1,8 @@
+2007-09-04  Jb Evain  <jbevain@novell.com>
+
+	* masterinfos/*.info added, so we don't have to download them.
+	* Makefile: use directly the .info files from the repo.
+
 2007-08-28  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: mdb support.
