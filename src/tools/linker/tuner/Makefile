@@ -65,14 +65,16 @@ tune:
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)
 
+TUNER_INSTALL_DIR = $(DESTDIR)$(mono_libdir)/mono/2.1
+
 end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Xml.Core gac-System.Core
 
 inst-%:
-	$(INSTALL_LIB) $(OUTPUT_DIR)/$* $(mono_libdir)/mono/2.1/$*
-	test ! -f $(OUTPUT_DIR)/$*.mdb || $(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(mono_libdir)/mono/2.1/$*.mdb
+	$(INSTALL_LIB) $(OUTPUT_DIR)/$* $(TUNER_INSTALL_DIR)/$*
+	test ! -f $(OUTPUT_DIR)/$*.mdb || $(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(TUNER_INSTALL_DIR)/$*.mdb
 
 gac-%:
-	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(mono_libdir) /package 2.1
+	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(DESTDIR)$(mono_libdir) /package 2.1
 
 Mono.Tuner.dll:
 	$(CSCOMPILE) /out:Mono.Tuner.dll /t:library $(TUNER_SOURCES)
