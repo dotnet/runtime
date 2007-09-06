@@ -258,6 +258,7 @@ TEST_CSC_SRC=			\
 TEST_IL_SRC=			\
 	field-access.il		\
 	method-access.il	\
+	ldftn-access.il		\
 	cpblkTest.il		\
 	vbinterface.il		\
 	jmpTest.il		\
