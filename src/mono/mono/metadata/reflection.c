@@ -6076,6 +6076,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 
 	start = p = w = name;
 
+	//FIXME could we just zero the whole struct? memset (&info, 0, sizeof (MonoTypeNameParse))
 	memset (&info->assembly, 0, sizeof (MonoAssemblyName));
 	info->name = info->name_space = NULL;
 	info->nested = NULL;
@@ -6362,10 +6363,9 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		instance = mono_reflection_bind_generic_parameters (
 			the_type, info->type_arguments->len, type_args);
 
-		if (!instance) {
-			g_free (type_args);
+		g_free (type_args);
+		if (!instance)
 			return NULL;
-		}
 
 		klass = mono_class_from_mono_type (instance);
 	}
@@ -6465,8 +6465,8 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	return type;
 }
 
-static void
-free_type_info (MonoTypeNameParse *info)
+void
+mono_reflection_free_type_info (MonoTypeNameParse *info)
 {
 	g_list_free (info->modifiers);
 	g_list_free (info->nested);
@@ -6477,7 +6477,9 @@ free_type_info (MonoTypeNameParse *info)
 		for (i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = g_ptr_array_index (info->type_arguments, i);
 
-			free_type_info (subinfo);
+			mono_reflection_free_type_info (subinfo);
+			/*We free the subinfo since it is allocated by _mono_reflection_parse_type*/
+			g_free (subinfo);
 		}
 
 		g_ptr_array_free (info->type_arguments, TRUE);
@@ -6510,7 +6512,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	}
 
 	g_free (tmp);
-	free_type_info (&info);
+	mono_reflection_free_type_info (&info);
 	return type;
 }
 

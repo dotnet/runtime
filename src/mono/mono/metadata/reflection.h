@@ -50,6 +50,7 @@ typedef enum {
 
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
+void          mono_reflection_free_type_info (MonoTypeNameParse *info);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 guint32       mono_reflection_get_token (MonoObject *obj);
 

@@ -1055,8 +1055,7 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 
 	/* mono_reflection_parse_type() mangles the string */
 	if (!mono_reflection_parse_type (temp_str, &info)) {
-		g_list_free (info.modifiers);
-		g_list_free (info.nested);
+		mono_reflection_free_type_info (&info);
 		g_free (temp_str);
 		return NULL;
 	}
@@ -1092,8 +1091,7 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	if (!info.assembly.name && !type) /* try mscorlib */
 		type = mono_reflection_get_type (NULL, &info, ignoreCase, &type_resolve);
 
-	g_list_free (info.modifiers);
-	g_list_free (info.nested);
+	mono_reflection_free_type_info (&info);
 	g_free (temp_str);
 
 	if (!type) 
@@ -3843,8 +3841,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
-		g_list_free (info.modifiers);
-		g_list_free (info.nested);
+		mono_reflection_free_type_info (&info);
 		if (throwOnError) /* uhm: this is a parse error, though... */
 			mono_raise_exception (mono_get_exception_type_load (name, NULL));
 		/*g_print ("failed parse\n");*/
@@ -3885,8 +3882,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		else
 			type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase, &type_resolve);
 	g_free (str);
-	g_list_free (info.modifiers);
-	g_list_free (info.nested);
+	mono_reflection_free_type_info (&info);
 	if (!type) {
 		MonoException *e = NULL;
 		
