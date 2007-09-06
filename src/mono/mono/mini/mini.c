@@ -7374,6 +7374,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDFTN: {
 				MonoInst *argconst;
+				MonoMethod *cil_method;
 				int temp;
 
 				CHECK_STACK_OVF (1);
@@ -7384,6 +7385,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
+				cil_method = cmethod;
+				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
+					METHOD_ACCESS_FAILURE;
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
 						INLINE_FAILURE;
