@@ -5571,7 +5571,6 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	}
 	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
 	ret->method = method;
-	MONO_OBJECT_SETREF (ret, name, mono_string_new (domain, method->name));
 	MONO_OBJECT_SETREF (ret, reftype, mono_type_get_object (domain, &refclass->byval_arg));
 	CACHE_OBJECT (MonoReflectionMethod *, method, ret, refclass);
 }

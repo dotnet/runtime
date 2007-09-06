@@ -6338,6 +6338,15 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	return mono_method_get_object (mono_domain_get (), result, NULL);
 }
 
+static MonoString*
+ves_icall_MonoMethod_get_name (MonoReflectionMethod *m)
+{
+	MonoMethod *method = m->method;
+
+	MONO_OBJECT_SETREF (m, name, mono_string_new (mono_object_domain (m), method->name));
+	return m->name;
+}
+
 static void
 mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 {
