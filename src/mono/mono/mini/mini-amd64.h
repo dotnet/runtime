@@ -143,6 +143,7 @@ typedef struct MonoCompileArch {
 	gint32 stack_alloc_size;
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
+	gint32 async_point_count;
 } MonoCompileArch;
 
 typedef struct {

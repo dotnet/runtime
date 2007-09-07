@@ -4277,6 +4277,19 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+/*
+ * This macro is used for testing whenever the unwinder works correctly at every point
+ * where an async exception can happen.
+ */
+/* This will generate a SIGSEGV at the given point in the code */
+#define async_exc_point(code) do { \
+    if (mono_inject_async_exc_method && mono_method_desc_full_match (mono_inject_async_exc_method, cfg->method)) { \
+         if (cfg->arch.async_point_count == mono_inject_async_exc_pos) \
+             amd64_mov_reg_mem (code, AMD64_RAX, 0, 4); \
+         cfg->arch.async_point_count ++; \
+    } \
+} while (0)
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -4312,9 +4325,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	 * - save callee saved regs using moves
 	 */
 
+	async_exc_point (code);
+
 	if (!cfg->arch.omit_fp) {
 		amd64_push_reg (code, AMD64_RBP);
+		async_exc_point (code);
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
+		async_exc_point (code);
 	}
 
 	/* Save callee saved registers */
@@ -4323,6 +4340,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_push_reg (code, i);
 				pos += sizeof (gpointer);
+				async_exc_point (code);
 			}
 	}
 
@@ -4347,13 +4365,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		guint32 remaining_size = alloc_size;
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
+			async_exc_point (code);
 			amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
 			remaining_size -= 0x1000;
 		}
-		if (remaining_size)
+		if (remaining_size) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, remaining_size);
+			async_exc_point (code);
+		}
 #else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
+		async_exc_point (code);
 #endif
 	}
 
@@ -4397,6 +4419,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
 				save_area_offset += 8;
+				async_exc_point (code);
 			}
 	}
 
@@ -4735,6 +4758,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	} else {
 		amd64_leave (code);
 	}
+	async_exc_point (code);
 	amd64_ret (code);
 
 	cfg->code_len = code - cfg->native_code;

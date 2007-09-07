@@ -15,6 +15,7 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-compiler.h>
 
 #include "mini-arch.h"
@@ -130,6 +131,8 @@ extern int mono_exc_esp_offset;
 #else
 extern gboolean mono_compile_aot;
 #endif
+extern MonoMethodDesc *mono_inject_async_exc_method;
+extern int mono_inject_async_exc_pos;
 
 struct MonoEdge {
 	MonoEdge *next;

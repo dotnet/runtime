@@ -149,6 +149,8 @@ gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
 #endif
+MonoMethodDesc *mono_inject_async_exc_method = NULL;
+int mono_inject_async_exc_pos;
 
 static int mini_verbose = 0;
 
@@ -12229,6 +12231,9 @@ mini_cleanup (MonoDomain *domain)
 	mono_trace_cleanup ();
 
 	mono_counters_dump (-1, stdout);
+
+	if (mono_inject_async_exc_method)
+		mono_method_desc_free (mono_inject_async_exc_method);
 
 	TlsFree(mono_jit_tls_id);
 

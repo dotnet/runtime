@@ -906,6 +906,7 @@ mini_usage_jitdeveloper (void)
 		 "    --statfile FILE        Sets the stat file to FILE\n"
 		 "    --stats                Print statistics about the JIT operations\n"
 		 "    --wapi=hps|semdel      IO-layer maintenance\n"
+		 "    --inject-async-exc METHOD OFFSET Inject an asynchronous exception at METHOD\n"
 		 "\n"
 		 "Other options:\n" 
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
@@ -1126,6 +1127,17 @@ mono_main (int argc, char* argv[])
 			
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
+		} else if (strcmp (argv [i], "--inject-async-exc") == 0) {
+			if (i + 2 >= argc) {
+				fprintf (stderr, "Missing method name or position in --inject-async-exc command line option\n");
+				return 1;
+			}
+			mono_inject_async_exc_method = mono_method_desc_new (argv [++i], TRUE);
+			if (mono_inject_async_exc_method == NULL) {
+				fprintf (stderr, "Method name is in a bad format in --inject-async-exc command line option\n");
+				return 1;
+			}
+			mono_inject_async_exc_pos = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
