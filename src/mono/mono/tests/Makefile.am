@@ -563,6 +563,12 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
+EXTRA_DIST += async-exceptions.cs
+async-exceptions.exe : async-exceptions.cs
+	$(MCS) -out:async-exceptions.exe $(srcdir)/async-exceptions.cs
+test-async-exceptions : async-exceptions.exe
+	for i in `echo 0 1 2 3 4 5 6 7 8 9 10`; do $(RUNTIME) --inject-async-exc Tests:foo $$i async-exceptions.exe || exit 1; done
+
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
 	cp "../../libtool" .
