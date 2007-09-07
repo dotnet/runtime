@@ -553,8 +553,9 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 test-bug-81466: bug-81466.exe bug-81466-lib.dll
 	$(RUNTIME) bug-81466.exe
 
-if INSTALL_2_1
 EXTRA_DIST += coreclr-security.cs
+
+if INSTALL_2_1
 coreclr-security.exe : coreclr-security.cs
 	$(SMCS) -out:coreclr-security.exe $(srcdir)/coreclr-security.cs
 
