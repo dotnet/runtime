@@ -1560,7 +1560,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		MonoMethod *cm;
 		    
 		if ((cm = class->vtable [i]))
-			pvt->vtable [i] = arch_create_remoting_trampoline (cm, target_type);
+			pvt->vtable [i] = mono_method_signature (cm)->generic_param_count
+				? cm : arch_create_remoting_trampoline (cm, target_type);
 	}
 
 	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT) {
@@ -1570,7 +1571,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			gpointer iter = NULL;
 			while ((m = mono_class_get_methods (k, &iter)))
 				if (!pvt->vtable [m->slot])
-					pvt->vtable [m->slot] = arch_create_remoting_trampoline (m, target_type);
+					pvt->vtable [m->slot] = mono_method_signature (m)->generic_param_count ? m : arch_create_remoting_trampoline (m, target_type);
 		}
 	}
 
@@ -1609,7 +1610,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			iter = NULL;
 			j = 0;
 			while ((cm = mono_class_get_methods (interf, &iter)))
-				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (cm, target_type);
+				pvt->vtable [slot + j++] = mono_method_signature (cm)->generic_param_count ? cm : arch_create_remoting_trampoline (cm, target_type);
 			
 			slot += mono_class_num_methods (interf);
 		}
@@ -1933,8 +1934,15 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 	}
 
 	if (is_proxy) {
-		if (!res) res = method;   /* It may be an interface or abstract class method */
-		res = mono_marshal_get_remoting_invoke (res);
+		/* It may be an interface, abstract class method or generic method */
+		if (!res || mono_method_signature (res)->generic_param_count)
+			res = method;
+
+		/* generic methods demand invoke_with_check */
+		if (mono_method_signature (res)->generic_param_count)
+			res = mono_marshal_get_remoting_invoke_with_check (res);
+		else
+			res = mono_marshal_get_remoting_invoke (res);
 	}
 
 	g_assert (res);
