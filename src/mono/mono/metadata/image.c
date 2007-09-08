@@ -1601,8 +1601,11 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;
 
-	if (image->files && image->files [fileidx - 1])
+	mono_loader_lock ();
+	if (image->files && image->files [fileidx - 1]) {
+		mono_loader_unlock ();
 		return image->files [fileidx - 1];
+	}
 
 	if (!image->files)
 		image->files = g_new0 (MonoImage*, t->rows);
@@ -1623,6 +1626,7 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 
 		image->files [fileidx - 1] = res;
 	}
+	mono_loader_unlock ();
 	g_free (name);
 	g_free (base_dir);
 	return res;
