@@ -1,5 +1,6 @@
 #ifndef __UTILS_MONO_COMPILER_H__
 #define __UTILS_MONO_COMPILER_H__
+
 /*
  * This file includes macros used in the runtime to encapsulate different
  * compiler behaviours.
@@ -8,6 +9,16 @@
 
 #ifdef HAVE_KW_THREAD
 #if HAVE_TLS_MODEL_ATTR
+
+#if defined(__PIC__) && !defined(PIC)
+/*
+ * Must be compiling -fPIE, for executables.  Build PIC
+ * but with initial-exec.
+ * http://bugs.gentoo.org/show_bug.cgi?id=165547
+ */
+#define PIC
+#define PIC_INITIAL_EXEC
+#endif
 
 /* 
  * Define this if you want a faster libmono, which cannot be loaded dynamically as a 
