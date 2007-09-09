@@ -3997,7 +3997,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	MONO_ARCH_SAVE_REGS;
 
 	if (image->dynamic)
-		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx);
+		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
 	else
 		return mono_ldstr_metdata_sig (domain, mono_metadata_user_string (image, idx));
 }

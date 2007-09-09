@@ -4149,7 +4149,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	MonoClass *class = NULL;
 
 	if (image->dynamic)
-		return mono_lookup_dynamic_token (image, type_token);
+		return mono_lookup_dynamic_token (image, type_token, context);
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
@@ -4193,7 +4193,7 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
 	if (image->dynamic)
-		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token));
+		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token, context));
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
 		MonoClass *class = mono_class_get_full (image, type_token, context);
@@ -4746,7 +4746,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 {
 	if (image->dynamic) {
 		MonoClass *tmp_handle_class;
-		gpointer obj = mono_lookup_dynamic_token_class (image, token, &tmp_handle_class);
+		gpointer obj = mono_lookup_dynamic_token_class (image, token, &tmp_handle_class, context);
 
 		g_assert (tmp_handle_class);
 		if (handle_class)
@@ -4831,17 +4831,17 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
 }
 
 gpointer
-mono_lookup_dynamic_token (MonoImage *image, guint32 token)
+mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	MonoClass *handle_class;
 
-	return lookup_dynamic (image, token, &handle_class);
+	return lookup_dynamic (image, token, &handle_class, context);
 }
 
 gpointer
-mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class)
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context)
 {
-	return lookup_dynamic (image, token, handle_class);
+	return lookup_dynamic (image, token, handle_class, NULL);
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;

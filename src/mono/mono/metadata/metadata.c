@@ -1689,7 +1689,7 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	const char *ptr;
 
 	if (image->dynamic)
-		return mono_lookup_dynamic_token (image, token);
+		return mono_lookup_dynamic_token (image, token, NULL);
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
 		

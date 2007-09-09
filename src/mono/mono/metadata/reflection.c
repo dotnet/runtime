@@ -143,7 +143,7 @@ static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMa
 static guint32 encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type);
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    ensure_runtime_vtable (MonoClass *klass);
-static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class);
+static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
@@ -9496,7 +9496,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			}
 			handle_class = mono_defaults.methodhandle_class;
 		} else {
-			ref = resolve_object (mb->module->image, obj, &handle_class);
+			ref = resolve_object (mb->module->image, obj, &handle_class, NULL);
 			if (!ref) {
 				g_free (rmb.refs);
 				mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
@@ -9551,7 +9551,7 @@ mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
  * mono_ldtoken.
  */
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class)
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context)
 {
 	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
 	MonoObject *obj;
@@ -9559,11 +9559,11 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass
 	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 	g_assert (obj);
 
-	return resolve_object (image, obj, handle_class);
+	return resolve_object (image, obj, handle_class, context);
 }
 
 static gpointer
-resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class)
+resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context)
 {
 	gpointer result = NULL;
 
@@ -9682,6 +9682,11 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class)
 		g_assert (method->mhandle);
 		result = method->mhandle;
 		*handle_class = mono_defaults.methodhandle_class;
+	} else if (strcmp (obj->vtable->klass->name, "GenericTypeParameterBuilder") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType*)obj;
+		result = mono_class_from_mono_type (mono_class_inflate_generic_type (tb->type, context));
+		*handle_class = mono_defaults.typehandle_class;
+		g_assert (result);
 	} else {
 		g_print (obj->vtable->klass->name);
 		g_assert_not_reached ();

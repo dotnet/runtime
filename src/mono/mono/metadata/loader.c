@@ -315,7 +315,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	guint32 idx = mono_metadata_token_index (token);
 
 	if (image->dynamic) {
-		MonoClassField *result = mono_lookup_dynamic_token (image, token);
+		MonoClassField *result = mono_lookup_dynamic_token (image, token, context);
 		*retklass = result->parent;
 		return result;
 	}
@@ -398,7 +398,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 	MonoClassField *field;
 
 	if (image->dynamic) {
-		MonoClassField *result = mono_lookup_dynamic_token (image, token);
+		MonoClassField *result = mono_lookup_dynamic_token (image, token, context);
 		*retklass = result->parent;
 		return result;
 	}
@@ -1326,7 +1326,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	if (image->dynamic)
-		return mono_lookup_dynamic_token (image, token);
+		return mono_lookup_dynamic_token (image, token, context);
 
 	if (table != MONO_TABLE_METHOD) {
 		if (table == MONO_TABLE_METHODSPEC) {
