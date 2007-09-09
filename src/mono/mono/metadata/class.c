@@ -4841,7 +4841,7 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context)
 {
-	return lookup_dynamic (image, token, handle_class, NULL);
+	return lookup_dynamic (image, token, handle_class, context);
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;
