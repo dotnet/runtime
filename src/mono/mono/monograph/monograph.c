@@ -504,6 +504,39 @@ stats (MonoImage *image, const char *name) {
 	}
 }
 
+static void
+type_size_stats (MonoClass *klass)
+{
+	int code_size = 0;
+	MonoMethod *method;
+	MonoMethodHeader *header;
+	gpointer iter;
+
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		guint32 size, maxs;
+		header = mono_method_get_header (method);
+		if (!header)
+			continue;
+		mono_method_header_get_code (header, &size, &maxs);
+		code_size += size;
+	}
+	g_print ("%s.%s: code: %d\n", klass->name_space, klass->name, code_size);
+}
+
+static void
+size_stats (MonoImage *image, const char *name) {
+	int i, num_types;
+	MonoClass *klass;
+	
+	num_types = mono_image_get_table_rows (image, MONO_TABLE_TYPEDEF);
+	for (i = 0; i < num_types; ++i) {
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | (i + 1));
+		type_size_stats (klass);
+	}
+}
+
+
 static char *
 get_signature (MonoMethod *method) {
 	GString *res;
@@ -1000,6 +1033,7 @@ usage (void) {
 	printf ("\t-c|--call             output call graph instead of type hierarchy\n");
 	printf ("\t-C|--control-flow     output control flow of methodname\n");
 	printf ("\t--stats               output some statistics about the assembly\n");
+	printf ("\t--size                output some size statistics about the assembly\n");
 	printf ("\t-d|--depth num        max depth recursion (default: 6)\n");
 	printf ("\t-o|--output filename  write graph to file filename (default: stdout)\n");
 	printf ("\t-f|--fullname         include namespace in type and method names\n");
@@ -1025,6 +1059,7 @@ enum {
 	GRAPH_CALL,
 	GRAPH_INTERFACE,
 	GRAPH_CONTROL_FLOW,
+	GRAPH_SIZE_STATS,
 	GRAPH_STATS
 };
 
@@ -1066,6 +1101,8 @@ main (int argc, char *argv[]) {
 			graphtype = GRAPH_INTERFACE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			graphtype = GRAPH_STATS;
+		} else if (strcmp (argv [i], "--size") == 0) {
+			graphtype = GRAPH_SIZE_STATS;
 		} else if (strcmp (argv [i], "--fullname") == 0 || strcmp (argv [i], "-f") == 0) {
 			include_namespace = 1;
 		} else if (strcmp (argv [i], "--neato") == 0 || strcmp (argv [i], "-n") == 0) {
@@ -1146,6 +1183,9 @@ main (int argc, char *argv[]) {
 		break;
 	case GRAPH_STATS:
 		stats (image, cname);
+		break;
+	case GRAPH_SIZE_STATS:
+		size_stats (image, cname);
 		break;
 	default:
 		g_error ("wrong graph type");
