@@ -371,4 +371,66 @@ public class Tests
 		return 1;
 	}
 
+	public class Marshal6 : ICustomMarshaler {
+		public static int managed_to_native_count = 0;
+		public static int native_to_managed_count = 0;
+
+		public static ICustomMarshaler GetInstance (string s) 
+		{
+			return new Marshal6 ();
+		}
+
+		public void CleanUpManagedData (object managedObj)
+		{
+		}
+
+		public void CleanUpNativeData (IntPtr pNativeData)
+		{
+		}
+
+		public int GetNativeDataSize ()
+		{
+			return 4;
+		}
+
+		public IntPtr MarshalManagedToNative (object managedObj)
+		{
+			managed_to_native_count++;
+			return IntPtr.Zero;
+		}
+
+		public object MarshalNativeToManaged (IntPtr pNativeData)
+		{
+			native_to_managed_count++;
+			return null;
+		}
+	}
+
+	public delegate void custom_out_param_delegate ([MarshalAs (UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal6), MarshalCookie = "5")] out object o);
+
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_custom_out_param_delegate (custom_out_param_delegate del);
+
+	// ICustomMarshaler.MarshalNativeToManaged should not be called when the 
+	// parameter is marked as an out.
+	public static int test_0_native_to_managed_custom_parameter () 
+	{
+		Marshal6.managed_to_native_count = 0;
+		Marshal6.native_to_managed_count = 0;
+
+		int res = mono_test_marshal_custom_out_param_delegate (new custom_out_param_delegate (custom_out_param));
+
+		if (Marshal6.managed_to_native_count != 1)
+			return 1;
+		if (Marshal6.native_to_managed_count != 0)
+			return 2;
+
+		return 0;
+	}
+	
+	private static void custom_out_param (out object i) 
+	{
+		i = new object();	
+	}
+
 }

@@ -1597,6 +1597,21 @@ mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del
 	return (ptr == NULL) ? 15 : 0;
 }
 
+typedef void (STDCALL *CustomOutParamDelegate) (void **pptr);
+
+STDCALL int
+mono_test_marshal_custom_out_param_delegate (CustomOutParamDelegate del)
+{
+	void* pptr = del;
+
+	del (&pptr);
+
+	if(pptr != NULL)
+		return 1;
+
+	return 0;
+}
+
 typedef int (STDCALL *ReturnEnumDelegate) (int e);
 
 STDCALL int
