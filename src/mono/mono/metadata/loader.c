@@ -522,18 +522,18 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 
 		g_assert (from_class->interface_count == in_class->interface_count);
 		for (i = 0; i < in_class->interface_count; i++) {
-			MonoClass *ic = in_class->interfaces [i];
+			MonoClass *in_ic = in_class->interfaces [i];
 			MonoClass *from_ic = from_class->interfaces [i];
 			char *ic_qname, *ic_fqname, *ic_class_name;
 			
-			ic_class_name = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
+			ic_class_name = mono_type_get_name_full (&in_ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
 			ic_qname = g_strconcat (ic_class_name, ".", name, NULL); 
-			if (ic->name_space && ic->name_space [0])
-				ic_fqname = g_strconcat (ic->name_space, ".", ic_class_name, ".", name, NULL);
+			if (in_ic->name_space && in_ic->name_space [0])
+				ic_fqname = g_strconcat (in_ic->name_space, ".", ic_class_name, ".", name, NULL);
 			else
 				ic_fqname = NULL;
 
-			result = find_method_in_class (ic, NULL, ic_qname, ic_fqname, sig, from_ic);
+			result = find_method_in_class (in_ic, ic ? name : NULL, ic_qname, ic_fqname, sig, from_ic);
 			g_free (ic_class_name);
 			g_free (ic_fqname);
 			g_free (ic_qname);
