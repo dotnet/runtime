@@ -104,6 +104,8 @@ struct _MonoDebuggerMetadataInfo {
 	int mono_defaults_array_offset;
 	int mono_defaults_delegate_offset;
 	int mono_defaults_exception_offset;
+	int mono_method_flags_offset;
+	int mono_method_inflated_offset;
 };
 
 #endif

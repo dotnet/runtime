@@ -89,7 +89,9 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	G_STRUCT_OFFSET (MonoDefaults, enum_class),
 	G_STRUCT_OFFSET (MonoDefaults, array_class),
 	G_STRUCT_OFFSET (MonoDefaults, delegate_class),
-	G_STRUCT_OFFSET (MonoDefaults, exception_class)
+	G_STRUCT_OFFSET (MonoDefaults, exception_class),
+	G_STRUCT_OFFSET (MonoMethod, name) + sizeof (void *),
+	G_STRUCT_OFFSET (MonoMethodInflated, declaring)
 };
 
 /*
