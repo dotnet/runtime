@@ -88,5 +88,8 @@ int   mono_gc_register_root (char *start, size_t size, void *descr) MONO_INTERNA
 void  mono_gc_deregister_root (char* addr) MONO_INTERNAL;
 int   mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size) MONO_INTERNAL;
 
+/* fast allocation support */
+MonoMethod* mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_H__ */
 

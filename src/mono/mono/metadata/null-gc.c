@@ -154,5 +154,11 @@ mono_gc_wbarrier_object (MonoObject* obj)
 {
 }
 
+MonoMethod*
+mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
+{
+	return NULL;
+}
+
 #endif
 

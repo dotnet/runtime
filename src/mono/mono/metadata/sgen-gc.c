@@ -4316,5 +4316,11 @@ mono_gc_base_init (void)
 	mono_gc_register_thread (&sinfo);
 }
 
+MonoMethod*
+mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
+{
+	return NULL;
+}
+
 #endif /* HAVE_SGEN_GC */
 
