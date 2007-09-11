@@ -9573,7 +9573,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType*)obj;
-		result = mono_class_from_mono_type (tb->type);
+		result = mono_class_from_mono_type (mono_class_inflate_generic_type (tb->type, context));
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0 ||
@@ -9688,6 +9688,11 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 	} else if (strcmp (obj->vtable->klass->name, "GenericTypeParameterBuilder") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType*)obj;
 		result = mono_class_from_mono_type (mono_class_inflate_generic_type (tb->type, context));
+		*handle_class = mono_defaults.typehandle_class;
+		g_assert (result);
+	} else if (strcmp (obj->vtable->klass->name, "MonoGenericClass") == 0) {
+		MonoReflectionGenericClass *ref = (MonoReflectionGenericClass*)obj;
+		result = mono_class_from_mono_type (mono_class_inflate_generic_type (ref->type.type, context));
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
 	} else {
