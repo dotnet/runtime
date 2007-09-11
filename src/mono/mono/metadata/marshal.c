@@ -1567,6 +1567,12 @@ mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value)
 	}
 }
 
+int
+mono_mb_get_label (MonoMethodBuilder *mb)
+{
+	return mb->pos;
+}
+
 guint32
 mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op)
 {
@@ -1594,7 +1600,7 @@ mono_mb_patch_branch (MonoMethodBuilder *mb, guint32 pos)
 	mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 }
 
-static void
+void
 mono_mb_patch_short_branch (MonoMethodBuilder *mb, guint32 pos)
 {
 	mono_mb_patch_addr_s (mb, pos, mb->pos - (pos + 1));
@@ -1630,7 +1636,7 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
 }
 
-static void
+void
 mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func)
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);

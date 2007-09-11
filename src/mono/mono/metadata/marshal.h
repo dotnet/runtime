@@ -107,6 +107,12 @@ mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value) MONO_INTERNAL;
 void
 mono_mb_patch_addr_s (MonoMethodBuilder *mb, int pos, gint8 value) MONO_INTERNAL;
 
+void
+mono_mb_patch_short_branch (MonoMethodBuilder *mb, guint32 pos) MONO_INTERNAL;
+
+int
+mono_mb_get_label (MonoMethodBuilder *mb) MONO_INTERNAL;
+
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data) MONO_INTERNAL;
 
@@ -115,6 +121,9 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 
 void
 mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig) MONO_INTERNAL;
+
+void
+mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func) MONO_INTERNAL;
 
 int
 mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type) MONO_INTERNAL;
