@@ -56,6 +56,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/rawbuffer.h>
@@ -2924,8 +2925,13 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 		return mono_emit_jit_icall (cfg, bblock, mono_helper_newobj_mscorlib, iargs, ip);
 	} else {
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
 		gboolean pass_lw;
 
+		if (!cfg->compile_aot && managed_alloc) {
+			NEW_VTABLECONST (cfg, iargs [0], vtable);
+			return mono_emit_method_call_spilled (cfg, bblock, managed_alloc, mono_method_signature (managed_alloc), iargs, ip, NULL);
+		}
 		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
 		if (pass_lw) {
 			guint32 lw = vtable->klass->instance_size;
