@@ -258,7 +258,7 @@ mono_gc_wbarrier_object (MonoObject *object)
 {
 }
 
-#if defined(USE_INCLUDED_LIBGC) && defined(__linux__) && defined(__i386__)
+#if defined(USE_INCLUDED_LIBGC) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
 extern __thread MONO_TLS_FAST void* GC_thread_tls;
 #include "metadata-internals.h"
 
