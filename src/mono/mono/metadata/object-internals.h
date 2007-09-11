@@ -1016,6 +1016,7 @@ typedef struct {
 	gint32 nrefs;
 	MonoArray *refs;
 	GSList *referenced_by;
+	MonoReflectionType *owner;
 } MonoReflectionDynamicMethod;	
 
 typedef struct {

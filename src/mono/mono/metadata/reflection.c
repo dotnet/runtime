@@ -1435,7 +1435,7 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->iattrs = 0;
 	rmb->call_conv = mb->call_conv;
 	rmb->code = NULL;
-	rmb->type = NULL;
+	rmb->type = (MonoObject *) mb->owner;
 	rmb->name = mb->name;
 	rmb->table_idx = NULL;
 	rmb->init_locals = mb->init_locals;
@@ -9456,6 +9456,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
+	MonoClass *klass;
 	GSList *l;
 	int i;
 
@@ -9508,8 +9509,9 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 		rmb.refs [i + 1] = handle_class;
 	}		
 
-	/* FIXME: class */
-	mb->mhandle = reflection_methodbuilder_to_mono_method (mono_defaults.object_class, &rmb, sig);
+	klass = mb->owner ? mono_class_from_mono_type (mb->owner->type) : mono_defaults.object_class;
+
+	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 
 	/* Fix up refs entries pointing at us */
 	for (l = mb->referenced_by; l; l = l->next) {
