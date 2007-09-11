@@ -7297,6 +7297,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				bblock->out_of_line = TRUE;
 				ip += 2;
 				break;
+			case CEE_MONO_TLS:
+				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
+				MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+				ins->inst_offset = (gint32)read32 (ip + 2);
+				ins->cil_code = ip;
+				ins->type = STACK_PTR;
+				*sp++ = ins;
+				ip += 6;
+				break;
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
