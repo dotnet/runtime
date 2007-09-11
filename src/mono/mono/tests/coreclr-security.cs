@@ -108,6 +108,8 @@ public class CriticalClass {
 
 public delegate void MethodDelegate ();
 
+public delegate Object InvokeDelegate (Object obj, Object[] parms);
+
 public class Test
 {
 	static bool haveError = false;
@@ -160,6 +162,10 @@ public class Test
 		error ("unsafe method called");
 	}
 	*/
+
+	public static void TransparentReflectionCMethod ()
+	{
+	}
 
 	[SecurityCriticalAttribute]
 	public static void ReflectionCMethod ()
@@ -230,6 +236,16 @@ public class Test
 			unsafeMethod ();
 		} catch (VerificationException) {
 		}
+		*/
+
+		try {
+			Type type = Type.GetType ("Test");
+			MethodInfo method = type.GetMethod ("TransparentReflectionCMethod");
+
+			method.Invoke(null, null);
+		} catch (MethodAccessException) {
+			error ("transparent method not called via reflection");
+		}
 
 		try {
 			Type type = Type.GetType ("Test");
@@ -238,7 +254,25 @@ public class Test
 			method.Invoke(null, null);
 		} catch (MethodAccessException) {
 		}
-		*/
+
+		try {
+			Type type = Type.GetType ("Test");
+			MethodInfo method = type.GetMethod ("TransparentReflectionCMethod");
+			InvokeDelegate id = new InvokeDelegate (method.Invoke);
+
+			id (null, null);
+		} catch (MethodAccessException) {
+			error ("transparent method not called via reflection delegate");
+		}
+
+		try {
+			Type type = Type.GetType ("Test");
+			MethodInfo method = type.GetMethod ("ReflectionCMethod");
+			InvokeDelegate id = new InvokeDelegate (method.Invoke);
+
+			id (null, null);
+		} catch (MethodAccessException) {
+		}
 
 		//Console.WriteLine ("ok");
 
