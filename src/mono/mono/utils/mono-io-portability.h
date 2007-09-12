@@ -1,5 +1,5 @@
-#ifndef __MONO_URI_H
-#define __MONO_URI_H
+#ifndef __MONO_IO_PORTABILITY_H
+#define __MONO_IO_PORTABILITY_H
 
 #include <mono/utils/mono-compiler.h>
 

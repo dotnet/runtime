@@ -1,16 +1,17 @@
 #include "config.h"
 
 #include <glib.h>
-#include <mono/io-layer/mono-mutex.h>
 #include <mono/utils/mono-io-portability.h>
 
-static mono_once_t options_once = MONO_ONCE_INIT;
 int __mono_io_portability_helpers = PORTABILITY_UNKNOWN;
 
-static void options_init (void)
+void mono_portability_helpers_init (void)
 {
         const gchar *env;
-        
+
+	if (__mono_io_portability_helpers != PORTABILITY_UNKNOWN)
+		return;
+	
         __mono_io_portability_helpers = PORTABILITY_NONE;
         
         env = g_getenv ("MONO_IOMAP");
@@ -42,9 +43,3 @@ static void options_init (void)
                 }
         }
 }
-
-void mono_portability_helpers_init ()
-{
-	mono_once (&options_once, options_init);
-}
-

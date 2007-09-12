@@ -39,6 +39,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-stdlib.h>
+#include <mono/utils/mono-io-portability.h>
 #ifdef PLATFORM_WIN32
 #include <direct.h>
 #endif
@@ -101,6 +102,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomain *ad;
 	MonoClass *class;
 	MonoString *arg;
+
+	mono_portability_helpers_init ();
 	
 	MONO_GC_PRE_INIT ();
 	mono_monitor_init ();
@@ -156,7 +159,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	/* mscorlib is loaded before we install the load hook */
 	mono_domain_fire_assembly_load (mono_defaults.corlib->assembly, NULL);
-
+	
 	return;
 }
 

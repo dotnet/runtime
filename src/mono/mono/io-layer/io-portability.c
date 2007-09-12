@@ -74,8 +74,6 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 	int num_components = 0, component = 0;
 	DIR *scanning = NULL;
 
-	mono_portability_helpers_init ();
-
 	if (IS_PORTABILITY_NONE) {
 		return(NULL);
 	}
@@ -571,8 +569,6 @@ gchar *_wapi_basename (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	mono_portability_helpers_init ();
-	
 	g_strdelimit (new_filename, "\\", '/');
 
 	if (IS_PORTABILITY_DRIVE &&
@@ -594,8 +590,6 @@ gchar *_wapi_dirname (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	mono_portability_helpers_init ();
-	
 	g_strdelimit (new_filename, "\\", '/');
 
 	if (IS_PORTABILITY_DRIVE &&
