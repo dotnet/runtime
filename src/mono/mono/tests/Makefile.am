@@ -342,7 +342,7 @@ else
 if PLATFORM_WIN32
 test:   testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 else
-test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-unhandled-exception
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 endif
 endif
 
