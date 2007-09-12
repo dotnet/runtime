@@ -46,6 +46,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -1190,6 +1191,13 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 				ji->data.method = mono_marshal_get_isinst (klass);
 			else
 				g_assert_not_reached ();
+			break;
+		}
+		case MONO_WRAPPER_ALLOC: {
+			int atype = decode_value (p, &p);
+
+			ji->type = MONO_PATCH_INFO_METHOD;
+			ji->data.method = mono_gc_get_managed_allocator_by_type (atype);
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF:

@@ -38,6 +38,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -2092,6 +2093,12 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			encode_klass_info (acfg, proxy_class, p, &p);
 			break;
 		}
+		case MONO_WRAPPER_ALLOC: {
+			int alloc_type = mono_gc_get_managed_allocator_type (patch_info->data.method);
+			g_assert (alloc_type != -1);
+			encode_value (alloc_type, p, &p);
+			break;
+		}
 		case MONO_WRAPPER_STELEMREF:
 			break;
 		default:
@@ -2712,6 +2719,7 @@ compile_method (MonoAotCompile *acfg, int index)
 			case MONO_WRAPPER_STELEMREF:
 			case MONO_WRAPPER_ISINST:
 			case MONO_WRAPPER_PROXY_ISINST:
+			case MONO_WRAPPER_ALLOC:
 				patch_info->type = MONO_PATCH_INFO_WRAPPER;
 				break;
 			}

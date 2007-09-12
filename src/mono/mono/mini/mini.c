@@ -2928,7 +2928,7 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
 		gboolean pass_lw;
 
-		if (!cfg->compile_aot && managed_alloc) {
+		if (managed_alloc) {
 			NEW_VTABLECONST (cfg, iargs [0], vtable);
 			return mono_emit_method_call_spilled (cfg, bblock, managed_alloc, mono_method_signature (managed_alloc), iargs, ip, NULL);
 		}
