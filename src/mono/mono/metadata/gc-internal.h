@@ -90,6 +90,8 @@ int   mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array,
 
 /* fast allocation support */
 MonoMethod* mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box) MONO_INTERNAL;
+int mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc) MONO_INTERNAL;
+MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_GC_H__ */
 

@@ -4322,5 +4322,17 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 	return NULL;
 }
 
+int
+mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
+{
+	return -1;
+}
+
+MonoMethod*
+mono_gc_get_managed_allocator_by_type (int atype)
+{
+	return NULL;
+}
+
 #endif /* HAVE_SGEN_GC */
 

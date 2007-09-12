@@ -292,7 +292,7 @@ create_allocator (int atype, int offset)
 	csig->ret = &mono_defaults.object_class->byval_arg;
 	csig->params [0] = &mono_defaults.int_class->byval_arg;
 	
-	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_ALLOC);
 	bytes_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	/* bytes = vtable->klass->instance_size */
 	mono_mb_emit_ldarg (mb, 0);
@@ -449,8 +449,8 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 	int offset = -1;
 	int atype;
 	MonoClass *klass = vtable->klass;
-	MonoMethod *res;
 	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
+
 	/*g_print ("thread tls: %d\n", offset);*/
 	if (offset == -1)
 		return NULL;
@@ -477,12 +477,7 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 			atype = ATYPE_NORMAL;
 		*/
 	}
-	mono_loader_lock ();
-	res = alloc_method_cache [atype];
-	if (!res)
-		res = alloc_method_cache [atype] = create_allocator (atype, offset);
-	mono_loader_unlock ();
-	return res;
+	return mono_gc_get_managed_allocator_by_type (atype);
 }
 
 #else
@@ -494,6 +489,50 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 }
 
 #endif
+
+/**
+ * mono_gc_get_managed_allocator_id:
+ *
+ *   Return a type for the managed allocator method MANAGED_ALLOC which can later be passed
+ * to mono_gc_get_managed_allocator_by_type () to get back this allocator method. This can be
+ * used by the AOT code to encode references to managed allocator methods.
+ */
+int
+mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
+{
+	int i;
+
+	mono_loader_lock ();
+	for (i = 0; i < ATYPE_NUM; ++i) {
+		if (alloc_method_cache [i] == managed_alloc) {
+			mono_loader_unlock ();
+			return i;
+		}
+	}
+	mono_loader_unlock ();
+
+	return -1;
+}
+
+/**
+ * mono_gc_get_managed_allocator_by_type:
+ *
+ *   Return a managed allocator method corresponding to allocator type ATYPE.
+ */
+MonoMethod*
+mono_gc_get_managed_allocator_by_type (int atype)
+{
+	int offset = -1;
+	MonoMethod *res;
+	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
+
+	mono_loader_lock ();
+	res = alloc_method_cache [atype];
+	if (!res)
+		res = alloc_method_cache [atype] = create_allocator (atype, offset);
+	mono_loader_unlock ();
+	return res;
+}
 
 #endif /* no Boehm GC */
 
