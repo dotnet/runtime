@@ -338,10 +338,11 @@ if POWERPC
 test:	testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 else
 # Can't use mkbundle on win32 since there is no static build there
+# Can't run test-unhandled-exception on Windows because of all the debug popups...
 if PLATFORM_WIN32
 test:   testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
 else
-test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-unhandled-exception
 endif
 endif
 
@@ -518,6 +519,31 @@ test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
 test-inline-call-stack: TestDriver.dll test-inline-call-stack-library.dll test-inline-call-stack.exe
 	$(RUNTIME) test-inline-call-stack.exe
+
+
+EXTRA_DIST += unhandled-exception-base-configuration.config
+EXTRA_DIST += unhandled-exception-legacy-configuration.config
+EXTRA_DIST += unhandled-exception-test-case.2.cs
+EXTRA_DIST += unhandled-exception-test-runner.2.cs
+unhandled-exception-test-case.1.cs: unhandled-exception-test-case.2.cs
+	cp unhandled-exception-test-case.2.cs unhandled-exception-test-case.1.cs
+unhandled-exception-test-case-legacy.1.cs: unhandled-exception-test-case.1.cs
+	cp unhandled-exception-test-case.1.cs unhandled-exception-test-case-legacy.1.cs
+unhandled-exception-test-case-legacy.2.cs: unhandled-exception-test-case.2.cs
+	cp unhandled-exception-test-case.2.cs unhandled-exception-test-case-legacy.2.cs
+unhandled-exception-test-case.1.exe: unhandled-exception-test-case.1.cs
+	$(MCS) /debug unhandled-exception-test-case.1.cs
+unhandled-exception-test-case-legacy.1.exe: unhandled-exception-test-case-legacy.1.cs
+	$(MCS) /debug unhandled-exception-test-case-legacy.1.cs
+unhandled-exception-test-case.2.exe: unhandled-exception-test-case.2.cs
+	$(GMCS) /debug unhandled-exception-test-case.2.cs
+unhandled-exception-test-case-legacy.2.exe: unhandled-exception-test-case-legacy.2.cs
+	$(GMCS) /debug unhandled-exception-test-case-legacy.2.cs
+unhandled-exception-test-runner.2.exe: unhandled-exception-test-runner.2.cs
+	$(GMCS) /debug unhandled-exception-test-runner.2.cs
+
+test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-exception-test-case.1.exe unhandled-exception-test-case-legacy.1.exe  unhandled-exception-test-case.2.exe unhandled-exception-test-case-legacy.2.exe
+	$(RUNTIME) unhandled-exception-test-runner.2.exe RUNTIME:../mini/mono,GTC:F
 
 EXTRA_DIST += bug-80307.cs
 bug-80307.exe: $(srcdir)/bug-80307.cs
