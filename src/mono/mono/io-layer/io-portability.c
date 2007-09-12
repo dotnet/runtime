@@ -26,54 +26,9 @@
 #include <mono/io-layer/error.h>
 #include <mono/io-layer/wapi_glob.h>
 #include <mono/io-layer/io-portability.h>
+#include <mono/utils/mono-io-portability.h>
 
 #undef DEBUG
-
-enum {
-	PORTABILITY_NONE	= 0x00,
-	PORTABILITY_UNKNOWN	= 0x01,
-	PORTABILITY_DRIVE	= 0x02,
-	PORTABILITY_CASE	= 0x04,
-};
-
-static mono_once_t options_once = MONO_ONCE_INIT;
-static int portability_helpers = PORTABILITY_UNKNOWN;
-
-static void options_init (void)
-{
-	const gchar *env;
-	
-	portability_helpers = PORTABILITY_NONE;
-	
-	env = g_getenv ("MONO_IOMAP");
-	if (env != NULL) {
-		/* parse the environment setting and set up some vars
-		 * here
-		 */
-		gchar **options = g_strsplit (env, ":", 0);
-		int i;
-		
-		if (options == NULL) {
-			/* This shouldn't happen */
-			return;
-		}
-		
-		for (i = 0; options[i] != NULL; i++) {
-#ifdef DEBUG
-			g_message ("%s: Setting option [%s]", __func__,
-				   options[i]);
-#endif
-			if (!strncasecmp (options[i], "drive", 5)) {
-				portability_helpers |= PORTABILITY_DRIVE;
-			} else if (!strncasecmp (options[i], "case", 4)) {
-				portability_helpers |= PORTABILITY_CASE;
-			} else if (!strncasecmp (options[i], "all", 3)) {
-				portability_helpers |= (PORTABILITY_DRIVE |
-							PORTABILITY_CASE);
-			}
-		}
-	}
-}
 
 /* Returns newly allocated string, or NULL on failure */
 static gchar *find_in_dir (DIR *current, const gchar *name)
@@ -118,10 +73,10 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 	gchar *new_pathname, **components, **new_components;
 	int num_components = 0, component = 0;
 	DIR *scanning = NULL;
-	
-	mono_once (&options_once, options_init);
 
-	if (portability_helpers == PORTABILITY_NONE) {
+	mono_portability_helpers_init ();
+
+	if (IS_PORTABILITY_NONE) {
 		return(NULL);
 	}
 
@@ -148,7 +103,7 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 		   new_pathname);
 #endif
 	
-	if (portability_helpers & PORTABILITY_DRIVE &&
+	if (IS_PORTABILITY_DRIVE &&
 	    g_ascii_isalpha (new_pathname[0]) &&
 	    (new_pathname[1] == ':')) {
 		int len = strlen (new_pathname);
@@ -175,7 +130,7 @@ static gchar *find_file (const gchar *pathname, gboolean last_exists)
 	 * and do a case-insensitive directory scan for it
 	 */
 
-	if (!(portability_helpers & PORTABILITY_CASE)) {
+	if (!(IS_PORTABILITY_CASE)) {
 		g_free (new_pathname);
 		return(NULL);
 	}
@@ -361,7 +316,7 @@ int _wapi_open (const char *pathname, int flags, mode_t mode)
 		fd = open (pathname, flags, mode);
 		if (fd == -1 &&
 		    (errno == ENOENT || errno == ENOTDIR) &&
-		    portability_helpers > 0) {
+		    IS_PORTABILITY_SET) {
 			int saved_errno = errno;
 			located_filename = find_file (pathname, TRUE);
 			
@@ -386,7 +341,7 @@ int _wapi_access (const char *pathname, int mode)
 	ret = access (pathname, mode);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (pathname, TRUE);
 		
@@ -409,7 +364,7 @@ int _wapi_chmod (const char *pathname, mode_t mode)
 	ret = chmod (pathname, mode);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (pathname, TRUE);
 		
@@ -432,7 +387,7 @@ int _wapi_utime (const char *filename, const struct utimbuf *buf)
 	ret = utime (filename, buf);
 	if (ret == -1 &&
 	    errno == ENOENT &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (filename, TRUE);
 		
@@ -455,7 +410,7 @@ int _wapi_unlink (const char *pathname)
 	ret = unlink (pathname);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR || errno == EISDIR) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (pathname, TRUE);
 		
@@ -484,7 +439,7 @@ int _wapi_rename (const char *oldpath, const char *newpath)
 		if (ret == -1 &&
 		    (errno == EISDIR || errno == ENAMETOOLONG ||
 		     errno == ENOENT || errno == ENOTDIR || errno == EXDEV) &&
-		    portability_helpers > 0) {
+		    IS_PORTABILITY_SET) {
 			int saved_errno = errno;
 			gchar *located_oldpath = find_file (oldpath, TRUE);
 			
@@ -512,7 +467,7 @@ int _wapi_stat (const char *path, struct stat *buf)
 	ret = stat (path, buf);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (path, TRUE);
 		
@@ -535,7 +490,7 @@ int _wapi_lstat (const char *path, struct stat *buf)
 	ret = lstat (path, buf);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (path, TRUE);
 		
@@ -573,7 +528,7 @@ int _wapi_rmdir (const char *pathname)
 	ret = rmdir (pathname);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR || errno == ENAMETOOLONG) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (pathname, TRUE);
 		
@@ -596,7 +551,7 @@ int _wapi_chdir (const char *path)
 	ret = chdir (path);
 	if (ret == -1 &&
 	    (errno == ENOENT || errno == ENOTDIR || errno == ENAMETOOLONG) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		int saved_errno = errno;
 		gchar *located_filename = find_file (path, TRUE);
 		
@@ -616,11 +571,11 @@ gchar *_wapi_basename (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	mono_once (&options_once, options_init);
+	mono_portability_helpers_init ();
 	
 	g_strdelimit (new_filename, "\\", '/');
 
-	if (portability_helpers & PORTABILITY_DRIVE &&
+	if (IS_PORTABILITY_DRIVE &&
 	    g_ascii_isalpha (new_filename[0]) &&
 	    (new_filename[1] == ':')) {
 		int len = strlen (new_filename);
@@ -639,11 +594,11 @@ gchar *_wapi_dirname (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	mono_once (&options_once, options_init);
+	mono_portability_helpers_init ();
 	
 	g_strdelimit (new_filename, "\\", '/');
 
-	if (portability_helpers & PORTABILITY_DRIVE &&
+	if (IS_PORTABILITY_DRIVE &&
 	    g_ascii_isalpha (new_filename[0]) &&
 	    (new_filename[1] == ':')) {
 		int len = strlen (new_filename);
@@ -667,7 +622,7 @@ GDir *_wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 	    ((*error)->code == G_FILE_ERROR_NOENT ||
 	     (*error)->code == G_FILE_ERROR_NOTDIR ||
 	     (*error)->code == G_FILE_ERROR_NAMETOOLONG) &&
-	    portability_helpers > 0) {
+	    IS_PORTABILITY_SET) {
 		gchar *located_filename = find_file (path, TRUE);
 		GError *tmp_error = NULL;
 		
@@ -839,7 +794,7 @@ gint _wapi_io_scandir (const gchar *dirname, const gchar *pattern,
 		return -1;
 	}
 
-	if (portability_helpers & PORTABILITY_CASE) {
+	if (IS_PORTABILITY_CASE) {
 		flags = WAPI_GLOB_IGNORECASE;
 	}
 	
