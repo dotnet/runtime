@@ -266,33 +266,9 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast) {
-		guint8* code;
-		GHashTable *cache;
-
-		mono_domain_lock (domain);
-		if (delegate->target != NULL) {
-			if (!domain->delegate_invoke_impl_with_target_hash)
-				domain->delegate_invoke_impl_with_target_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			cache = domain->delegate_invoke_impl_with_target_hash;
-		} else {
-			if (!domain->delegate_invoke_impl_no_target_hash)
-				domain->delegate_invoke_impl_no_target_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			cache = domain->delegate_invoke_impl_no_target_hash;
-		}
-		code = g_hash_table_lookup (cache, mono_method_signature (invoke));
-		mono_domain_unlock (domain);
-		if (code) {
-			delegate->invoke_impl = code;
-			return code;
-		}
-
 		code = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), delegate->target != NULL);
 
 		if (code) {
-			mono_domain_lock (domain);
-			g_hash_table_insert (cache, mono_method_signature (invoke), code);
-			mono_domain_unlock (domain);
-
 			delegate->invoke_impl = code;
 			return code;
 		}

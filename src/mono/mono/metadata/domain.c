@@ -1748,14 +1748,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jit_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->delegate_trampoline_hash);
 	domain->delegate_trampoline_hash = NULL;
-	if (domain->delegate_invoke_impl_with_target_hash) {
-		g_hash_table_destroy (domain->delegate_invoke_impl_with_target_hash);
-		domain->delegate_invoke_impl_with_target_hash = NULL;
-	}
-	if (domain->delegate_invoke_impl_no_target_hash) {
-		g_hash_table_destroy (domain->delegate_invoke_impl_no_target_hash);
-		domain->delegate_invoke_impl_no_target_hash = NULL;
-	}
+
 	DeleteCriticalSection (&domain->assemblies_lock);
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;

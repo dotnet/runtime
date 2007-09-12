@@ -172,8 +172,6 @@ struct _MonoDomain {
 	GHashTable         *jump_trampoline_hash;
 	GHashTable         *jit_trampoline_hash;
 	GHashTable         *delegate_trampoline_hash;
-	GHashTable         *delegate_invoke_impl_with_target_hash;
-	GHashTable         *delegate_invoke_impl_no_target_hash;
 	/* 
 	 * This must be a GHashTable, since these objects can't be finalized
 	 * if the hashtable contains a GC visible reference to them.

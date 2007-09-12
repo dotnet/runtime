@@ -5310,21 +5310,30 @@ mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8
 		return (gpointer)regs [AMD64_RDI];
 }
 
+#define MAX_ARCH_DELEGATE_PARAMS 10
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
 	guint8 *code, *start;
-	MonoDomain *domain = mono_domain_get ();
 	int i;
+
+	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+		return NULL;
 
 	/* FIXME: Support more cases */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		return NULL;
 
 	if (has_target) {
-		mono_domain_lock (domain);
-		start = code = mono_code_manager_reserve (domain->code_mp, 64);
-		mono_domain_unlock (domain);
+		static guint8* cached = NULL;
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
+			return cached;
+		}
+
+		start = code = mono_global_codeman_reserve (64);
 
 		/* Replace the this argument with the target */
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_RDI, 8);
@@ -5332,16 +5341,25 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
+
+		cached = start;
+		mono_mini_arch_unlock ();
 	} else {
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 		for (i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
 		if (sig->param_count > 4)
 			return NULL;
 
-		mono_domain_lock (domain);
-		start = code = mono_code_manager_reserve (domain->code_mp, 64);
-		mono_domain_unlock (domain);
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
+
+		start = code = mono_global_codeman_reserve (64);
 
 		if (sig->param_count == 0) {
 			amd64_jump_membase (code, AMD64_RDI, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
@@ -5354,6 +5372,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		}
 		g_assert ((code - start) < 64);
+
+		cache [sig->param_count] = start;
+		
+		mono_mini_arch_unlock ();
 	}
 
 	return start;

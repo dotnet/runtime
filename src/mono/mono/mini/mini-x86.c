@@ -4521,11 +4521,15 @@ mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8
 	return res;
 }
 
+#define MAX_ARCH_DELEGATE_PARAMS 10
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
 	guint8 *code, *start;
-	MonoDomain *domain = mono_domain_get ();
+
+	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+		return NULL;
 
 	/* FIXME: Support more cases */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -4538,9 +4542,14 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	 */
 
 	if (has_target) {
-		mono_domain_lock (domain);
-		start = code = mono_code_manager_reserve (domain->code_mp, 64);
-		mono_domain_unlock (domain);
+		static guint8* cached = NULL;
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
+			return cached;
+		}
+		
+		start = code = mono_global_codeman_reserve (64);
 
 		/* Replace the this argument with the target */
 		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
@@ -4549,43 +4558,61 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
+
+		cached = start;
+
+		mono_mini_arch_unlock ();
 	} else {
-		if (sig->param_count == 0) {
-			mono_domain_lock (domain);
-			start = code = mono_code_manager_reserve (domain->code_mp, 32 + (sig->param_count * 8));
-			mono_domain_unlock (domain);
-		
-			x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
-			x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		} else {
-			/* 
-			 * The code below does not work in the presence of exceptions, since it 
-			 * creates a new frame.
-			 */
-			start = NULL;
-#if 0
-			for (i = 0; i < sig->param_count; ++i)
-				if (!mono_is_regsize_var (sig->params [i]))
-					return NULL;
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+		int i = 0;
+		/* 8 for mov_reg and jump, plus 8 for each parameter */
+		int code_reserve = 8 + (sig->param_count * 8);
 
-			mono_domain_lock (domain);
-			start = code = mono_code_manager_reserve (domain->code_mp, 32 + (sig->param_count * 8));
-			mono_domain_unlock (domain);
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
 
-			/* Load this == delegate */
-			x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
-
-			/* Push arguments in opposite order, taking changes in ESP into account */
-			for (i = 0; i < sig->param_count; ++i)
-				x86_push_membase (code, X86_ESP, 4 + (sig->param_count * 4));
-
-			/* Call the delegate */
-			x86_call_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-			if (sig->param_count > 0)
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, sig->param_count * 4);
-			x86_ret (code);
-#endif
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
 		}
+
+		/*
+		 * The stack contains:
+		 * <args in reverse order>
+		 * <delegate>
+		 * <return addr>
+		 *
+		 * and we need:
+		 * <args in reverse order>
+		 * <return addr>
+		 * 
+		 * without unbalancing the stack.
+		 * So move each arg up a spot in the stack (overwriting un-needed 'this' arg)
+		 * and leaving original spot of first arg as placeholder in stack so
+		 * when callee pops stack everything works.
+		 */
+
+		start = code = mono_global_codeman_reserve (code_reserve);
+
+		/* store delegate for access to method_ptr */
+		x86_mov_reg_membase (code, X86_ECX, X86_ESP, 4, 4);
+
+		/* move args up */
+		for (i = 0; i < sig->param_count; ++i) {
+			x86_mov_reg_membase (code, X86_EAX, X86_ESP, (i+2)*4, 4);
+			x86_mov_membase_reg (code, X86_ESP, (i+1)*4, X86_EAX, 4);
+		}
+
+		x86_jump_membase (code, X86_ECX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+
+		g_assert ((code - start) < code_reserve);
+
+		cache [sig->param_count] = start;
+
+		mono_mini_arch_unlock ();
 	}
 
 	return start;
