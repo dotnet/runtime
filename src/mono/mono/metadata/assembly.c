@@ -1920,7 +1920,11 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 
 	if (res)
 		res->in_gac = TRUE;
-
+	else {
+		MonoDomain *domain = mono_domain_get ();
+		res = mono_try_assembly_resolve (domain, mono_string_new (domain, name), FALSE);		
+	}
+	
 	g_free (fullname);
 	mono_assembly_name_free (aname);
 

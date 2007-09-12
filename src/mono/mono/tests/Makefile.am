@@ -43,6 +43,7 @@ STRESS_TESTS_SRC=	\
 TEST_CS_SRC=			\
 	array-init.cs		\
 	arraylist.cs		\
+	assemblyresolve_event.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	create-instance.cs	\
@@ -281,6 +282,7 @@ TEST_IL_SRC=			\
 	enum_types.il
 
 TEST_CS2_SRC = \
+	assemblyresolve_event2.2.cs	\
 	interlocked-2.2.cs	\
 	pinvoke-2.2.cs 		\
 	bug-78431.2.cs 		\

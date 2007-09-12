@@ -111,8 +111,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_install_assembly_refonly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
-	mono_install_assembly_postload_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
-	mono_install_assembly_postload_refonly_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
@@ -675,8 +673,8 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	return res;
 }
 
-static MonoReflectionAssembly *
-try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly)
+MonoReflectionAssembly *
+mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly)
 {
 	MonoClass *klass;
 	MonoMethod *method;
@@ -712,7 +710,7 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname,
 	aname_str = mono_stringify_assembly_name (aname);
 
 	/* FIXME: We invoke managed code here, so there is a potential for deadlocks */
-	assembly = try_assembly_resolve (domain, mono_string_new (domain, aname_str), refonly);
+	assembly = mono_try_assembly_resolve (domain, mono_string_new (domain, aname_str), refonly);
 
 	g_free (aname_str);
 
@@ -1383,7 +1381,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	ass = mono_assembly_load_full (&aname, NULL, &status, refOnly);
 	mono_assembly_name_free (&aname);
 
-	if (!ass && (refass = try_assembly_resolve (domain, assRef, refOnly)) == NULL){
+	if (!ass && (refass = mono_try_assembly_resolve (domain, assRef, refOnly)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
 		MonoException *exc = mono_get_exception_file_not_found2 (NULL, assRef);
 		mono_raise_exception (exc);
