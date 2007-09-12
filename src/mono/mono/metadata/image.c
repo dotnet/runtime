@@ -26,6 +26,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
+#include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <sys/types.h>
@@ -889,9 +890,19 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	struct stat stat_buf;
 
 	if ((filed = fopen (fname, "rb")) == NULL){
-		if (status)
-			*status = MONO_IMAGE_ERROR_ERRNO;
-		return NULL;
+		if (IS_PORTABILITY_SET) {
+			gchar *ffname = mono_portability_find_file (fname, FALSE);
+			if (ffname) {
+				filed = fopen (ffname, "rb");
+				g_free (ffname);
+			}
+		}
+
+		if (filed == NULL) {
+			if (status)
+				*status = MONO_IMAGE_ERROR_ERRNO;
+			return NULL;
+		}
 	}
 
 	if (fstat (fileno (filed), &stat_buf)) {

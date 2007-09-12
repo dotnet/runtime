@@ -1,6 +1,7 @@
 #ifndef __MONO_IO_PORTABILITY_H
 #define __MONO_IO_PORTABILITY_H
 
+#include <glib.h>
 #include <mono/utils/mono-compiler.h>
 
 enum {
@@ -10,7 +11,8 @@ enum {
         PORTABILITY_CASE        = 0x04,
 };
 
-void mono_portability_helpers_init () MONO_INTERNAL;
+void mono_portability_helpers_init (void) MONO_INTERNAL;
+gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists) MONO_INTERNAL;
 
 extern int __mono_io_portability_helpers MONO_INTERNAL;
 
