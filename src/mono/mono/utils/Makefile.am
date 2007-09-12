@@ -19,7 +19,9 @@ libmonoutils_la_SOURCES = \
 	mono-dl.c	\
 	mono-dl.h	\
 	mono-internal-hash.c	\
+	mono-internal-hash.h	\
 	mono-io-portability.c 	\
+	mono-io-portability.h	\
 	monobitset.c	\
 	mono-math.c  \
 	mono-mmap.c  \
@@ -40,8 +42,6 @@ libmonoutilsinclude_HEADERS = \
 	mono-codeman.h	\
 	mono-counters.h	\
 	mono-digest.h	\
-	mono-internal-hash.h	\
-	mono-io-portability.h	\
 	mono-logger.h	\
 	mono-hash.h	\
 	mono-math.h	\
