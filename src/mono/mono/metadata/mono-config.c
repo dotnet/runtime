@@ -15,6 +15,7 @@
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
 #include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger.h"
 
 #if defined(__linux__)
@@ -289,6 +290,31 @@ dllmap_handler = {
 	dllmap_finish
 };
 
+static void
+legacyUEP_start (gpointer user_data, 
+              const gchar         *element_name,
+              const gchar        **attribute_names,
+              const gchar        **attribute_values) {
+	if ((strcmp (element_name, "legacyUnhandledExceptionPolicy") == 0) &&
+			(attribute_names [0] != NULL) &&
+			(strcmp (attribute_names [0], "enabled") == 0)) {
+		if ((strcmp (attribute_values [0], "1") == 0) ||
+				(strcasecmp (attribute_values [0], "true") == 0)) {
+			mono_runtime_unhandled_exception_policy_set (MONO_UNHANLED_POLICY_LEGACY);
+		}
+	}
+}
+
+static const MonoParseHandler
+legacyUEP_handler = {
+	"legacyUnhandledExceptionPolicy",
+	NULL, /* init */
+	legacyUEP_start,
+	NULL, /* text */
+	NULL, /* end */
+	NULL, /* finish */
+};
+
 static int inited = 0;
 
 static void
@@ -297,6 +323,7 @@ mono_config_init (void)
 	inited = 1;
 	config_handlers = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (config_handlers, (gpointer) dllmap_handler.element_name, (gpointer) &dllmap_handler);
+	g_hash_table_insert (config_handlers, (gpointer) legacyUEP_handler.element_name, (gpointer) &legacyUEP_handler);
 }
 
 /* FIXME: error handling */

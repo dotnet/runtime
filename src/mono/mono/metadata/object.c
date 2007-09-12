@@ -2626,7 +2626,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	return result;
 }
 
-/* Used in mono_unhandled_exception */
+/* Used in call_unhandled_exception_delegate */
 static MonoObject *
 create_unhandled_exception_eventargs (MonoObject *exc)
 {
@@ -2654,6 +2654,50 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	return obj;
 }
 
+/* Used in mono_unhandled_exception */
+static void
+call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, MonoObject *exc) {
+	MonoObject *e = NULL;
+	gpointer pa [2];
+
+	pa [0] = domain->domain;
+	pa [1] = create_unhandled_exception_eventargs (exc);
+	mono_runtime_delegate_invoke (delegate, pa, &e);
+	
+	if (e) {
+		gchar *msg = mono_string_to_utf8 (((MonoException *) e)->message);
+		g_warning ("exception inside UnhandledException handler: %s\n", msg);
+		g_free (msg);
+	}
+}
+
+static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANLED_POLICY_CURRENT;
+
+/**
+ * mono_runtime_unhandled_exception_policy_set:
+ * @policy: the new policy
+ * 
+ * This is a VM internal routine.
+ *
+ * Sets the runtime policy for handling unhandled exceptions.
+ */
+void
+mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy) {
+	runtime_unhandled_exception_policy = policy;
+}
+
+/**
+ * mono_runtime_unhandled_exception_policy_get:
+ *
+ * This is a VM internal routine.
+ *
+ * Gets the runtime policy for handling unhandled exceptions.
+ */
+MonoRuntimeUnhandledExceptionPolicy
+mono_runtime_unhandled_exception_policy_get (void) {
+	return runtime_unhandled_exception_policy;
+}
+
 /**
  * mono_unhandled_exception:
  * @exc: exception thrown
@@ -2669,34 +2713,37 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *current_domain = mono_domain_get ();
+	MonoDomain *root_domain = mono_get_root_domain ();
 	MonoClassField *field;
-	MonoObject *delegate;
+	MonoObject *current_appdomain_delegate;
+	MonoObject *root_appdomain_delegate;
 
 	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
 					     "UnhandledException");
 	g_assert (field);
 
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
-		delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
+		gboolean abort_process = (mono_thread_current () == main_thread) ||
+				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANLED_POLICY_CURRENT);
+		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
+		if (current_domain != root_domain && (mono_get_runtime_info ()->framework_version [0] >= '2')) {
+			current_appdomain_delegate = *(MonoObject **)(((char *)current_domain->domain) + field->offset);
+		} else {
+			current_appdomain_delegate = NULL;
+		}
 
-		/* set exitcode only in the main thread */
-		if (mono_thread_current () == main_thread)
+		/* set exitcode only if we will abort the process */
+		if (abort_process)
 			mono_environment_exitcode_set (1);
-		if (domain != mono_get_root_domain () || !delegate) {
+		if ((current_appdomain_delegate == NULL) && (root_appdomain_delegate == NULL)) {
 			mono_print_unhandled_exception (exc);
 		} else {
-			MonoObject *e = NULL;
-			gpointer pa [2];
-
-			pa [0] = domain->domain;
-			pa [1] = create_unhandled_exception_eventargs (exc);
-			mono_runtime_delegate_invoke (delegate, pa, &e);
-			
-			if (e) {
-				gchar *msg = mono_string_to_utf8 (((MonoException *) e)->message);
-				g_warning ("exception inside UnhandledException handler: %s\n", msg);
-				g_free (msg);
+			if (root_appdomain_delegate) {
+				call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
+			}
+			if (current_appdomain_delegate) {
+				call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
 			}
 		}
 	}

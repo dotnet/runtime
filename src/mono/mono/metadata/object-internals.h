@@ -1168,5 +1168,15 @@ mono_install_imt_thunk_builder (MonoImtThunkBuilder func) MONO_INTERNAL;
 guint32
 mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
 
+typedef enum {
+	MONO_UNHANLED_POLICY_LEGACY,
+	MONO_UNHANLED_POLICY_CURRENT
+} MonoRuntimeUnhandledExceptionPolicy;
+
+MonoRuntimeUnhandledExceptionPolicy
+mono_runtime_unhandled_exception_policy_get (void) MONO_INTERNAL;
+void
+mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

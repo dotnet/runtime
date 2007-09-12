@@ -8896,7 +8896,11 @@ mono_thread_abort (MonoObject *obj)
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
 
-	mono_thread_exit ();
+	if (mono_runtime_unhandled_exception_policy_get () == MONO_UNHANLED_POLICY_LEGACY) {
+		mono_thread_exit ();
+	} else {
+		exit (mono_environment_exitcode_get ());
+	}
 }
 
 static void*
