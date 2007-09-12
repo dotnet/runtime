@@ -227,6 +227,22 @@ mono_arch_cpu_init (void)
 }
 
 /*
+ * Initialize architecture specific code.
+ */
+void
+mono_arch_init (void)
+{
+}
+
+/*
+ * Cleanup architecture specific code.
+ */
+void
+mono_arch_cleanup (void)
+{
+}
+
+/*
  * This function returns the optimizations supported on this cpu.
  */
 guint32

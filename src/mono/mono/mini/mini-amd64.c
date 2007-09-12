@@ -53,6 +53,11 @@ static gboolean use_sse2 = !MONO_ARCH_USE_FPSTACK;
 #define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
 #endif
 
+/* This mutex protects architecture specific caches */
+#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+static CRITICAL_SECTION mini_arch_mutex;
+
 #define ARGS_OFFSET 16
 #define GP_SCRATCH_REG AMD64_R11
 
@@ -734,6 +739,24 @@ mono_arch_cpu_init (void)
 #else
 	_control87 (_PC_53, MCW_PC);
 #endif
+}
+
+/*
+ * Initialize architecture specific code.
+ */
+void
+mono_arch_init (void)
+{
+	InitializeCriticalSection (&mini_arch_mutex);
+}
+
+/*
+ * Cleanup architecture specific code.
+ */
+void
+mono_arch_cleanup (void)
+{
+	DeleteCriticalSection (&mini_arch_mutex);
 }
 
 /*

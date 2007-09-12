@@ -4438,6 +4438,21 @@ mono_arch_cpu_init (void)
   //printf("amask: %x, implver: %x", amask, implver);
 }
 
+/*
+ * Initialize architecture specific code.
+ */
+void
+mono_arch_init (void)
+{
+}
+
+/*
+ * Cleanup architecture specific code.
+ */
+void
+mono_arch_cleanup (void)
+{
+}
 
 /*
  * get_call_info:

@@ -11849,6 +11849,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_arch_cpu_init ();
 
+	mono_arch_init ();
+
 	mono_init_trampolines ();
 
 	mono_init_exceptions ();
@@ -12245,6 +12247,8 @@ mini_cleanup (MonoDomain *domain)
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
 	g_free (emul_opcode_map);
+
+	mono_arch_cleanup ();
 
 	mono_cleanup ();
 

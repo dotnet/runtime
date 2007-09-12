@@ -992,6 +992,23 @@ mono_arch_cpu_init (void)
 
 /*========================= End of Function ========================*/
 
+
+/*
+ * Initialize architecture specific code.
+ */
+void
+mono_arch_init (void)
+{
+}
+
+/*
+ * Cleanup architecture specific code.
+ */
+void
+mono_arch_cleanup (void)
+{
+}
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- mono_arch_cpu_optimizazions                       */
