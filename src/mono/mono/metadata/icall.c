@@ -2006,18 +2006,18 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 
 	if (klass->generic_container) {
 		MonoGenericContainer *container = klass->generic_container;
-		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, container->type_argc);
+		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, container->type_argc);
 		for (i = 0; i < container->type_argc; ++i) {
 			pklass = mono_class_from_generic_parameter (&container->type_params [i], klass->image, FALSE);
 			mono_array_setref (res, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_class) {
 		MonoGenericInst *inst = klass->generic_class->context.class_inst;
-		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, inst->type_argc);
+		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i)
 			mono_array_setref (res, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
 	} else {
-		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
+		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, 0);
 	}
 	return res;
 }
