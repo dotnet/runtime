@@ -246,7 +246,7 @@ test_sources = 		\
 	iltests.il.in		\
 	test.cs
 
-test_sources2 = generics.2.cs il2tests.2.il
+test_sources2 = generics.2.cs il2tests.2.il generics-variant-types.2.il
 
 if MONO_DEBUGGER_SUPPORTED
 if AMD64
@@ -373,8 +373,8 @@ libmonoinclude_HEADERS = jit.h
 libmono_la_LIBADD = \
 	$(libs)
 
-%.exe: %.2.cs TestDriver.dll
-	$(GMCS) -out:$@ $< -r:TestDriver.dll 
+%.exe: %.2.cs TestDriver.dll generics-variant-types.dll
+	$(GMCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ -unsafe $< -r:TestDriver.dll
@@ -391,6 +391,9 @@ iltests.il: iltests.il.in Makefile.am
 
 TestDriver.dll: $(srcdir)/TestDriver.cs
 	$(MCS) -out:$@ -target:library $<
+
+generics-variant-types.dll: generics-variant-types.2.il
+	$(ILASM2) -dll -output=$@ $<
 
 # we don't always use the perl impl because it's an additional
 # build dependency for the poor windows users

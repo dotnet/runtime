@@ -10,6 +10,24 @@ class Tests {
 		}
 	}
 
+	class Enumerator <T> : IEnumerator <T> {
+		T IEnumerator<T>.Current {
+			get {
+				return default(T);
+			}
+		}
+
+		bool IEnumerator<T>.MoveNext () {
+			return true;
+		}
+	}
+
+	class Comparer <T> : IComparer <T> {
+		bool IComparer<T>.Compare (T x, T y) {
+			return true;
+		}
+	}
+
 	static int Main ()
 	{
 		return TestDriver.RunTests (typeof (Tests));
@@ -169,6 +187,29 @@ class Tests {
 			return 0;
 		else
 			return 1;
+	}
+
+	public static int test_0_variance_reflection () {
+		// covariance on IEnumerator
+		if (!typeof (IEnumerator<object>).IsAssignableFrom (typeof (IEnumerator<string>)))
+			return 1;
+		// covariance on IEnumerator and covariance on arrays
+		if (!typeof (IEnumerator<object>[]).IsAssignableFrom (typeof (IEnumerator<string>[])))
+			return 2;
+		// covariance and implemented interfaces
+		if (!typeof (IEnumerator<object>).IsAssignableFrom (typeof (Enumerator<string>)))
+			return 3;
+
+		// contravariance on IComparer
+		if (!typeof (IComparer<string>).IsAssignableFrom (typeof (IComparer<object>)))
+			return 4;
+		// contravariance on IComparer, contravariance on arrays
+		if (!typeof (IComparer<string>[]).IsAssignableFrom (typeof (IComparer<object>[])))
+			return 5;
+		// contravariance and interface inheritance
+		if (!typeof (IComparer<string>[]).IsAssignableFrom (typeof (IKeyComparer<object>[])))
+			return 6;
+		return 0;
 	}
 
 	public class Foo<T1>
