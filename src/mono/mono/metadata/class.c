@@ -31,6 +31,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/attrdefs.h>
 #include <mono/os/gc_wrapper.h>
 #include <mono/utils/mono-counters.h>
 
@@ -4550,6 +4551,24 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	return FALSE;
 }
 
+static gboolean
+mono_class_has_variant_generic_params (MonoClass *klass)
+{
+	int i;
+	MonoGenericContainer *container;
+
+	if (!klass->generic_class)
+		return FALSE;
+
+	container = klass->generic_class->container_class->generic_container;
+
+	for (i = 0; i < container->type_argc; ++i)
+		if (container->type_params [i].flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
+			return TRUE;
+
+	return FALSE;
+}
+
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
@@ -4576,6 +4595,52 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
+
+		if (mono_class_has_variant_generic_params (klass)) {
+			if (oklass->generic_class) {
+				int i;
+				gboolean match = FALSE;
+				MonoClass *container_class1 = klass->generic_class->container_class;
+				MonoClass *container_class2 = oklass->generic_class->container_class;
+
+				/* 
+				 * Check whenever the generic definition of oklass implements the 
+				 * generic definition of klass. The IMPLEMENTS_INTERFACE stuff is not usable
+				 * here since the relevant tables are not set up.
+				 */
+				for (i = 0; i < container_class2->interface_offsets_count; ++i)
+					if ((container_class2->interfaces_packed [i] == container_class1) || (container_class2->interfaces_packed [i]->generic_class && (container_class2->interfaces_packed [i]->generic_class->container_class == container_class1)))
+						match = TRUE;
+
+				if (match) {
+					MonoGenericContainer *container;
+
+					container = klass->generic_class->container_class->generic_container;
+
+					match = TRUE;
+					for (i = 0; i < container->type_argc; ++i) {
+						MonoClass *param1_class = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [i]);
+						MonoClass *param2_class = mono_class_from_mono_type (oklass->generic_class->context.class_inst->type_argv [i]);
+
+						/*
+						 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
+						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
+						 */
+						if (param1_class != param2_class) {
+							if ((container->type_params [i].flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
+								;
+							else if (((container->type_params [i].flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
+								;
+							else
+								match = FALSE;
+						}
+					}
+
+					if (match)
+						return TRUE;
+				}
+			}
+		}
 	} else if (klass->rank) {
 		MonoClass *eclass, *eoclass;
 
