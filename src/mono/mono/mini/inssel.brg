@@ -1050,7 +1050,7 @@ reg: CEE_ISINST (reg) {
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 		/* the object_is_null target simply copies the input register to the output */
-		mini_emit_isninst_iface_cast (s, vtable_reg, klass, false_label, object_is_null);
+		mini_emit_isinst_iface (s, vtable_reg, klass, false_label, object_is_null);
 	} else {
 		int klass_reg = mono_regstate_next_int (s->rs);
 
@@ -1115,7 +1115,7 @@ reg: CEE_ISINST (reg) {
 				}
 				MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false_label);
 			} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
-				mini_emit_isninst_iface_class_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
+				mini_emit_isinst_iface_class (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			} else {
 				if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
 					/* Check that the object is a vector too */
@@ -1125,12 +1125,12 @@ reg: CEE_ISINST (reg) {
 				}
 
 				/* the object_is_null target simply copies the input register to the output */
-				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
+				mini_emit_isinst (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
 		} else if (mono_class_is_nullable (klass)) {
 			MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 			/* the object_is_null target simply copies the input register to the output */
-			mini_emit_isninst_cast (s, klass_reg, klass->cast_class, false_label, object_is_null);
+			mini_emit_isinst (s, klass_reg, klass->cast_class, false_label, object_is_null);
 		} else {
 			if (!s->compile_aot && !(s->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
 				/* the remoting code is broken, access the class for now */
@@ -1145,7 +1145,7 @@ reg: CEE_ISINST (reg) {
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 				/* the object_is_null target simply copies the input register to the output */
-				mini_emit_isninst_cast (s, klass_reg, klass, false_label, object_is_null);
+				mini_emit_isinst (s, klass_reg, klass, false_label, object_is_null);
 			}
 		}
 	}
@@ -1181,7 +1181,7 @@ reg: OP_CISINST (reg) {
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_NEW_LABEL (s, interface_fail_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_isninst_iface_cast (s, tmp_reg, klass, interface_fail_label, true_label);
+		mini_emit_isinst_iface (s, tmp_reg, klass, interface_fail_label, true_label);
 		
 		mono_bblock_add_inst (s->cbb, interface_fail_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -1218,11 +1218,11 @@ reg: OP_CISINST (reg) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
 		
-		mini_emit_isninst_cast (s, klass_reg, klass, false2_label, true_label);
+		mini_emit_isinst (s, klass_reg, klass, false2_label, true_label);
 		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, false2_label);
 		
 		mono_bblock_add_inst (s->cbb, no_proxy_label);
-		mini_emit_isninst_cast (s, klass_reg, klass, false_label, true_label);
+		mini_emit_isinst (s, klass_reg, klass, false_label, true_label);
 	}
 
 	mono_bblock_add_inst (s->cbb, false_label);
@@ -1327,7 +1327,7 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_NEW_LABEL (s, fail_label);
 		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		mini_emit_isninst_iface_cast (s, tmp_reg, klass, fail_label, ok_result_label);
+		mini_emit_isinst_iface (s, tmp_reg, klass, fail_label, ok_result_label);
 		
 		mono_bblock_add_inst (s->cbb, fail_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -1373,7 +1373,7 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
 		
-		mini_emit_isninst_cast (s, klass_reg, klass, fail_label, ok_result_label);
+		mini_emit_isinst (s, klass_reg, klass, fail_label, ok_result_label);
 		mono_bblock_add_inst (s->cbb, fail_label);
 		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
 		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
@@ -1832,8 +1832,11 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	mono_bblock_add_inst (cfg->cbb, tree);
 }
 
+/*
+ * Emit code for ISINST/CASTCLASS
+ */
 static void
-mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
+mini_emit_isinst (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int idepth_reg = mono_regstate_next_int (s->rs);
 	int stypes_reg = mono_regstate_next_int (s->rs);
@@ -1854,39 +1857,42 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 	}
 }
 
+/*
+ * Emit code for ISINST/CASTCLASS for interfaces
+ */
 static void
-mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
+mini_emit_isinst_iface (MonoCompile *s, int vtable_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int intf_reg = mono_regstate_next_int (s->rs);
 
 	mini_emit_max_iid_check_vtable (s, vtable_reg, klass, false_target);
 	mini_emit_load_intf_bit_reg_vtable (s, intf_reg, vtable_reg, klass);
-	/* the object_is_null target simply copies the input register to the output */
-	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_reg, 0, true_target);
+	if (true_target)
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_reg, 0, true_target);
+	else
+		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_reg, 0, "InvalidCastException");
 }
 
 /*
  * Variant of the above that takes a register to the class, not the vtable.
  */
 static void
-mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
+mini_emit_isinst_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
 	int intf_bit_reg = mono_regstate_next_int (s->rs);
 
 	mini_emit_max_iid_check_class (s, klass_reg, klass, false_target);
 	mini_emit_load_intf_bit_reg_class (s, intf_bit_reg, klass_reg, klass);
-	/* the object_is_null target simply copies the input register to the output */
-	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_bit_reg, 0, true_target);
+	if (true_target)
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BNE_UN, intf_bit_reg, 0, true_target);
+	else
+		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_bit_reg, 0, "InvalidCastException");
 }
 
 static void
 mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 {
-	int intf_reg = mono_regstate_next_int (s->rs);
-
-	mini_emit_max_iid_check_vtable (s, vtable_reg, klass, NULL);
-	mini_emit_load_intf_bit_reg_vtable (s, intf_reg, vtable_reg, klass);
-	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_reg, 0, "InvalidCastException");
+	mini_emit_isinst_iface (s, vtable_reg, klass, NULL, NULL);
 }
 
 /*
@@ -1895,11 +1901,7 @@ mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 static void
 mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
-	int intf_bit_reg = mono_regstate_next_int (s->rs);
-
-	mini_emit_max_iid_check_class (s, klass_reg, klass, NULL);
-	mini_emit_load_intf_bit_reg_class (s, intf_bit_reg, klass_reg, klass);
-	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, intf_bit_reg, 0, "InvalidCastException");
+	mini_emit_isinst_iface_class (s, klass_reg, klass, NULL, NULL);
 }
 
 static void
