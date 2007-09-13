@@ -531,6 +531,11 @@ unhandled-exception-test-case-legacy.1.cs: unhandled-exception-test-case.1.cs
 	cp unhandled-exception-test-case.1.cs unhandled-exception-test-case-legacy.1.cs
 unhandled-exception-test-case-legacy.2.cs: unhandled-exception-test-case.2.cs
 	cp unhandled-exception-test-case.2.cs unhandled-exception-test-case-legacy.2.cs
+unhandled-exception-config_files: unhandled-exception-base-configuration.config unhandled-exception-legacy-configuration.config
+	cp unhandled-exception-base-configuration.config unhandled-exception-test-case.1.exe.config
+	cp unhandled-exception-base-configuration.config unhandled-exception-test-case.2.exe.config
+	cp unhandled-exception-legacy-configuration.config unhandled-exception-test-case-legacy.1.exe.config
+	cp unhandled-exception-legacy-configuration.config unhandled-exception-test-case-legacy.2.exe.config
 unhandled-exception-test-case.1.exe: unhandled-exception-test-case.1.cs
 	$(MCS) /debug unhandled-exception-test-case.1.cs
 unhandled-exception-test-case-legacy.1.exe: unhandled-exception-test-case-legacy.1.cs
@@ -542,7 +547,7 @@ unhandled-exception-test-case-legacy.2.exe: unhandled-exception-test-case-legacy
 unhandled-exception-test-runner.2.exe: unhandled-exception-test-runner.2.cs
 	$(GMCS) /debug unhandled-exception-test-runner.2.cs
 
-test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-exception-test-case.1.exe unhandled-exception-test-case-legacy.1.exe  unhandled-exception-test-case.2.exe unhandled-exception-test-case-legacy.2.exe
+test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-exception-config_files unhandled-exception-test-case.1.exe unhandled-exception-test-case-legacy.1.exe  unhandled-exception-test-case.2.exe unhandled-exception-test-case-legacy.2.exe
 	$(RUNTIME) unhandled-exception-test-runner.2.exe RUNTIME:../mini/mono,GTC:F
 
 EXTRA_DIST += bug-80307.cs
