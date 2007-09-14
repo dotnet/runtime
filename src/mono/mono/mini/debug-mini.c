@@ -90,6 +90,7 @@ static void
 mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
 {
 	g_free (jit->line_numbers);
+	g_free (jit->lexical_blocks);
 	g_free (jit->this_var);
 	g_free (jit->params);
 	g_free (jit->locals);
