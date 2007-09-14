@@ -2695,6 +2695,32 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	}
 }
 
+/*
+ * This entry point could be used later for arbitrary method
+ * redirection.
+ */
+inline static int
+mini_redirect_call (int *temp, MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method,  
+		       MonoMethodSignature *signature, MonoInst **args, const guint8 *ip, MonoInst *this)
+{
+
+	if (method->klass == mono_defaults.string_class) {
+		/* managed string allocation support */
+		if (strcmp (method->name, "InternalAllocateStr") == 0) {
+			MonoInst *iargs [2];
+			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+			MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, FALSE);
+			if (!managed_alloc)
+				return FALSE;
+			NEW_VTABLECONST (cfg, iargs [0], vtable);
+			iargs [1] = args [0];
+			*temp = mono_emit_method_call_spilled (cfg, bblock, managed_alloc, mono_method_signature (managed_alloc), iargs, ip, this);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static MonoMethodSignature *
 mono_get_array_new_va_signature (int arity)
 {
@@ -5056,7 +5082,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				/* Prevent inlining of methods which call other methods */
 				INLINE_FAILURE;
-				if (ip_in_bb (cfg, bblock, ip + 5) 
+				if (mini_redirect_call (&temp, cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL)) {
+					if (temp != -1) {
+						NEW_TEMPLOAD (cfg, *sp, temp);
+						sp++;
+					}
+				} else if (ip_in_bb (cfg, bblock, ip + 5) 
 				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
 				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
 				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_RET)) {
