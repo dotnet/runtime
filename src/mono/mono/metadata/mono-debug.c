@@ -98,6 +98,8 @@ static void                 mono_debug_add_assembly    (MonoAssembly *assembly,
 static void                 mono_debug_start_add_type  (MonoClass *klass);
 static void                 mono_debug_add_type        (MonoClass *klass);
 
+void _mono_debug_init_corlib (MonoDomain *domain);
+
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 extern void (*mono_debugger_start_class_init_func) (MonoClass *klass);
 
@@ -125,10 +127,23 @@ create_data_table (MonoDomain *domain)
 }
 
 static void
+free_header_data (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoDebugMethodHeader *header = (MonoDebugMethodHeader*)value;
+
+	if (header->wrapper_data) {
+		g_free ((gpointer)header->wrapper_data->method_name);
+		g_free ((gpointer)header->wrapper_data->cil_code);
+		g_free (header->wrapper_data);
+	}
+}
+
+static void
 free_data_table (MonoDebugDataTable *table)
 {
 	MonoDebugDataChunk *chunk, *next_chunk;
 
+	g_hash_table_foreach (table->method_hash, free_header_data, NULL);
 	g_hash_table_destroy (table->method_hash);
 	g_hash_table_destroy (table->method_address_hash);
 
@@ -249,6 +264,9 @@ mono_debug_cleanup (void)
 		g_hash_table_destroy (data_table_hash);
 		data_table_hash = NULL;
 	}
+
+	g_free (mono_symbol_table);
+	mono_symbol_table = NULL;
 }
 
 void
@@ -1069,12 +1087,15 @@ void
 mono_debug_list_remove (MonoDebugList **list, gconstpointer data)
 {
 	MonoDebugList **ptr;
+	MonoDebugList *next;
 
 	for (ptr = list; *ptr; ptr = &(*ptr)->next) {
 		if ((*ptr)->data != data)
 			continue;
 
-		*ptr = (*ptr)->next;
+		next = (*ptr)->next;
+		g_free ((*ptr));
+		*ptr = next;
 		break;
 	}
 }
