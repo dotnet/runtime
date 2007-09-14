@@ -276,6 +276,7 @@ enum {
 	ATYPE_FREEPTR_FOR_BOX,
 	ATYPE_NORMAL,
 	ATYPE_GCJ,
+	ATYPE_STRING,
 	ATYPE_NUM
 };
 
@@ -284,37 +285,60 @@ create_allocator (int atype, int offset)
 {
 	int index_var, bytes_var, my_fl_var, my_entry_var;
 	guint32 no_freelist_branch, not_small_enough_branch = 0;
+	guint32 size_overflow_branch = 0;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	csig->ret = &mono_defaults.object_class->byval_arg;
-	csig->params [0] = &mono_defaults.int_class->byval_arg;
-	
+	if (atype == ATYPE_STRING) {
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		csig->ret = &mono_defaults.string_class->byval_arg;
+		csig->params [0] = &mono_defaults.int_class->byval_arg;
+		csig->params [1] = &mono_defaults.int32_class->byval_arg;
+	} else {
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig->params [0] = &mono_defaults.int_class->byval_arg;
+	}
+
 	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_ALLOC);
 	bytes_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-	/* bytes = vtable->klass->instance_size */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
-	mono_mb_emit_byte (mb, MONO_CEE_ADD);
-	mono_mb_emit_byte (mb, MONO_CEE_LDIND_I);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, instance_size));
-	mono_mb_emit_byte (mb, MONO_CEE_ADD);
-	/* FIXME: assert instance_size stays a 4 byte integer */
-	mono_mb_emit_byte (mb, MONO_CEE_LDIND_U4);
-	mono_mb_emit_stloc (mb, bytes_var);
+	if (atype == ATYPE_STRING) {
+		/* a string alloator method takes the args: (vtable, len) */
+		/* bytes = (sizeof (MonoString) + ((len + 1) * 2)); */
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_icon (mb, 1);
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		mono_mb_emit_icon (mb, 1);
+		mono_mb_emit_byte (mb, MONO_CEE_SHL);
+		mono_mb_emit_icon (mb, sizeof (MonoString));
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		mono_mb_emit_stloc (mb, bytes_var);
+	} else {
+		/* bytes = vtable->klass->instance_size */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		mono_mb_emit_byte (mb, MONO_CEE_LDIND_I);
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, instance_size));
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		/* FIXME: assert instance_size stays a 4 byte integer */
+		mono_mb_emit_byte (mb, MONO_CEE_LDIND_U4);
+		mono_mb_emit_stloc (mb, bytes_var);
+	}
 
-#if 0
 	/* this is needed for strings/arrays only as the other big types are never allocated with this method */
-	if (atype != ATYPE_FREEPTR && atype != ATYPE_FREEPTR_FOR_BOX) {
+	if (atype == ATYPE_STRING) {
 		/* check for size */
 		/* if (!SMALL_ENOUGH (bytes)) jump slow_path;*/
 		mono_mb_emit_ldloc (mb, bytes_var);
 		mono_mb_emit_icon (mb, (NFREELISTS-1) * GRANULARITY);
 		not_small_enough_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_UN_S);
+		/* check for overflow */
+		mono_mb_emit_ldloc (mb, bytes_var);
+		mono_mb_emit_icon (mb, sizeof (MonoString));
+		size_overflow_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLE_UN_S);
 	}
-#endif
 
 	/* int index = INDEX_FROM_BYTES(bytes); */
 	index_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
@@ -335,7 +359,7 @@ create_allocator (int atype, int offset)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
 	mono_mb_emit_i4 (mb, offset);
-	if (atype == ATYPE_FREEPTR || atype == ATYPE_FREEPTR_FOR_BOX)
+	if (atype == ATYPE_FREEPTR || atype == ATYPE_FREEPTR_FOR_BOX || atype == ATYPE_STRING)
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, ptrfree_freelists));
 	else if (atype == ATYPE_NORMAL)
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, normal_freelists));
@@ -400,15 +424,32 @@ create_allocator (int atype, int offset)
 		mono_mb_emit_ldloc (mb, start_var);
 		mono_mb_emit_ldloc (mb, end_var);
 		mono_mb_emit_byte (mb, MONO_CEE_BLT_UN_S);
-//		g_print ("distance: %d\n", start_loop - (mono_mb_get_label (mb) + 1));
 		mono_mb_emit_byte (mb, start_loop - (mono_mb_get_label (mb) + 1));
-	} else if (atype == ATYPE_FREEPTR_FOR_BOX) {
+	} else if (atype == ATYPE_FREEPTR_FOR_BOX || atype == ATYPE_STRING) {
 		/* need to clear just the sync pointer */
 		mono_mb_emit_ldloc (mb, my_entry_var);
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoObject, synchronisation));
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
 		mono_mb_emit_icon (mb, 0);
 		mono_mb_emit_byte (mb, MONO_CEE_STIND_I);
+	}
+
+	if (atype == ATYPE_STRING) {
+		/* need to set length and clear the last char */
+		/* s->length = len; */
+		mono_mb_emit_ldloc (mb, my_entry_var);
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoString, length));
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_byte (mb, MONO_CEE_STIND_I4);
+		/* s->chars [len] = 0; */
+		mono_mb_emit_ldloc (mb, my_entry_var);
+		mono_mb_emit_ldloc (mb, bytes_var);
+		mono_mb_emit_icon (mb, 2);
+		mono_mb_emit_byte (mb, MONO_CEE_SUB);
+		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		mono_mb_emit_icon (mb, 0);
+		mono_mb_emit_byte (mb, MONO_CEE_STIND_I2);
 	}
 
 	/* return my_entry; */
@@ -418,9 +459,16 @@ create_allocator (int atype, int offset)
 	mono_mb_patch_short_branch (mb, no_freelist_branch);
 	if (not_small_enough_branch > 0)
 		mono_mb_patch_short_branch (mb, not_small_enough_branch);
+	if (size_overflow_branch > 0)
+		mono_mb_patch_short_branch (mb, size_overflow_branch);
 	/* the slow path: we just call back into the runtime */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icall (mb, mono_object_new_specific);
+	if (atype == ATYPE_STRING) {
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_icall (mb, mono_string_alloc);
+	} else {
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icall (mb, mono_object_new_specific);
+	}
 
 	mono_mb_emit_byte (mb, MONO_CEE_RET);
 
@@ -458,10 +506,11 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (klass->has_finalize || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
-	if (klass->rank || klass->byval_arg.type == MONO_TYPE_STRING)
+	if (klass->rank)
 		return NULL;
-	/* now we have only the simple cases: ptrfree, gcj, non-gcj: we handle only the first as a test */
-	if (!klass->has_references) {
+	if (klass->byval_arg.type == MONO_TYPE_STRING) {
+		atype = ATYPE_STRING;
+	} else if (!klass->has_references) {
 		if (for_box)
 			atype = ATYPE_FREEPTR_FOR_BOX;
 		else

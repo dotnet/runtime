@@ -809,6 +809,12 @@ mono_class_insecure_overlapping (MonoClass *klass)
 }
 #endif
 
+MonoString*
+mono_string_alloc (int length)
+{
+	return mono_string_new_size (mono_domain_get (), length);
+}
+
 static void
 mono_class_compute_gc_descriptor (MonoClass *class)
 {
@@ -823,6 +829,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		mono_register_jit_icall (mono_object_new_ptrfree, "mono_object_new_ptrfree", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_object_new_ptrfree_box, "mono_object_new_ptrfree_box", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
+		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
 #ifdef HAVE_GC_GCJ_MALLOC
 
