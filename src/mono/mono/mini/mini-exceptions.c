@@ -34,7 +34,9 @@
 
 #include "mini.h"
 #include "trace.h"
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
