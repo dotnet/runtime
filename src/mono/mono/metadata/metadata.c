@@ -1225,7 +1225,7 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
 }
 
 /*
- * mono_metadata_parse_array:
+ * mono_metadata_parse_array_full:
  * @m: a metadata context.
  * @ptr: a pointer to an encoded array description.
  * @rptr: pointer updated to match the end of the decoded stream
@@ -1233,14 +1233,16 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
  * Decodes the compressed array description found in the metadata @m at @ptr.
  *
  * Returns: a #MonoArrayType structure describing the array type
- * and dimensions.
+ * and dimensions. Memory is allocated from the image mempool.
+ *
+ * LOCKING: Assumes the loader lock is held.
  */
 MonoArrayType *
 mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 				const char *ptr, const char **rptr)
 {
 	int i;
-	MonoArrayType *array = g_new0 (MonoArrayType, 1);
+	MonoArrayType *array = mono_mempool_alloc0 (m->mempool, sizeof (MonoArrayType));
 	MonoType *etype;
 	
 	etype = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
