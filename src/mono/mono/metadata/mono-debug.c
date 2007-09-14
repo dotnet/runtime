@@ -337,7 +337,7 @@ mono_debug_close_image (MonoImage *image)
 			     handle->index);
 
 	mono_debug_list_remove (&mono_symbol_table->symbol_files, handle);
-	g_hash_table_remove (mono_debug_handles, handle);
+	g_hash_table_remove (mono_debug_handles, image);
 
 	mono_debugger_unlock ();
 }
