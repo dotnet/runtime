@@ -145,11 +145,13 @@ extern void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFu
 extern MonoThreadHazardPointers* mono_hazard_pointer_get (void);
 
 #define mono_hazard_pointer_set(hp,i,v)	\
-	( g_assert ((i) == 0 || (i) == 1), \
-		(hp)->hazard_pointers [(i)] = (v), \
-		mono_memory_write_barrier () )
+	do { g_assert ((i) == 0 || (i) == 1); \
+		(hp)->hazard_pointers [(i)] = (v); \
+		mono_memory_write_barrier (); \
+	} while (0)
 #define mono_hazard_pointer_clear(hp,i)	\
-	( g_assert ((i) == 0 || (i) == 1), \
-		(hp)->hazard_pointers [(i)] = NULL )
+	do { g_assert ((i) == 0 || (i) == 1); \
+		(hp)->hazard_pointers [(i)] = NULL; \
+	} while (0)
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
