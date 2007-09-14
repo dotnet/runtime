@@ -2,7 +2,7 @@
 rem This runs Monoburg on the various x86 files when called on Visual Studio
 echo Running Monoburg on the inssel.brg files...
 cd ..\mono\mini
-set PATH=%PATH%;..\..\VSDependancies\lib
+set PATH=%PATH%;%MONO_DEPENDENCIES_PREFIX%\bin
 
 if "%2" == "Win32" goto x86
 if "%2" == "x64" goto x64

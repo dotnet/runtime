@@ -1,5 +1,19 @@
 2007-08-14  Jonathan Chambers <joncham@gmail.com>
 
+	* libmono.vcproj, mono.vcproj, genmdesc.vcproj, monobug.vcproj: 
+	Use MONO_DEPENDENCIES_PREFIX env var to locate dependencies. No longer
+	need VSDependencies.zip.
+	
+	* winsetup.bat, runmdesc.bat, runburg.bat: No longer
+	need VSDependencies.zip. Use MONO_DEPENDENCIES_PREFIX to
+	setup PATH.
+	
+	* mono.def: Remove missing functions.
+	
+	Contributed under MIT/X11 license.
+
+2007-08-14  Jonathan Chambers <joncham@gmail.com>
+
 	* libmono.vcproj: Enable intrinsic functions.
 
 2007-05-13  Raja R Harinath  <harinath@gmail.com>

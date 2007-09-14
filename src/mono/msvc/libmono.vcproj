@@ -28,6 +28,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="echo #define FULL_VERSION &quot;Visual Studio built mono&quot; &gt; ..\mono\mini\version.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -47,7 +48,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0\glib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -71,7 +72,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
 				ModuleDefinitionFile="mono.def"
 			/>
 			<Tool
@@ -110,6 +111,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="echo #define FULL_VERSION &quot;Visual Studio built mono&quot; &gt; ..\mono\mini\version.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -130,7 +132,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0\glib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -154,7 +156,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				TargetMachine="17"
 			/>
@@ -194,6 +196,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="echo #define FULL_VERSION &quot;Visual Studio built mono&quot; &gt; ..\mono\mini\version.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -213,7 +216,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0\glib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;__i386__;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -240,7 +243,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
 			/>
@@ -280,6 +283,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="echo #define FULL_VERSION &quot;Visual Studio built mono&quot; &gt; ..\mono\mini\version.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -300,7 +304,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;..\VSDependancies\include\glib-2.0&quot;;&quot;..\VSDependancies\include\glib-2.0\glib&quot;;..\VSDependancies\include;&quot;..\VSDependancies\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
+				AdditionalIncludeDirectories="..\libgc\include;..\;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\include\glib-2.0\glib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib\glib-2.0\include&quot;;..\mono\;..\mono\jit"
 				PreprocessorDefinitions="WIN64;_WIN64;_DEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE;__x86_64__"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -327,7 +331,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="..\VSDependancies\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -591,6 +595,14 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-internal-hash.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-io-portability.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-io-portability.h"
 				>
 			</File>
 			<File
@@ -2608,6 +2620,14 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\security-core-clr.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\security-core-clr.h"
+				>
 			</File>
 			<File
 				RelativePath="..\mono\metadata\security-manager.c"
