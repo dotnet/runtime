@@ -1,5 +1,12 @@
 2007-09-14  Jonathan Chambers  <joncham@gmail.com>
 
+	* winconfig.h: Define WINVER and _WIN32_WINNT for VS
+	build.
+	
+	Contributed under MIT/X11 license.
+
+2007-09-14  Jonathan Chambers  <joncham@gmail.com>
+
 	* winconfig.h: Don't define HAVE_UNISTD_H on MSVC build.
 	
 	Contributed under MIT/X11 license.
