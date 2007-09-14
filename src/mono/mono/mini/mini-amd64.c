@@ -5621,6 +5621,9 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 	code -= 10;
 	if (code [0] == 0x49 && code [1] == 0xbb) {
 		return (MonoMethod*)*(gssize*)(code + 2);
+	} else if (code [3] == 0x4d && code [4] == 0x8b && code [5] == 0x1d) {
+		/* mov    <OFFSET>(%rip),%r11 */
+		return (MonoMethod*)*(gssize*)(code + 10 + *(guint32*)(code + 6));
 	} else if (code [4] == 0x41 && code [5] == 0xbb) {
 		return (MonoMethod*)(gssize)*(guint32*)(code + 6);
 	} else {
