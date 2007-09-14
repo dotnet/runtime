@@ -1,3 +1,9 @@
+2007-09-14  Jonathan Chambers  <joncham@gmail.com>
+
+	* winconfig.h: Don't define HAVE_UNISTD_H on MSVC build.
+	
+	Contributed under MIT/X11 license.
+
 2007-09-03  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* configure.in : On windows, require advapi32.dll.
