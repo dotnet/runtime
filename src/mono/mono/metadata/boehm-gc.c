@@ -510,6 +510,9 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (klass->byval_arg.type == MONO_TYPE_STRING) {
 		atype = ATYPE_STRING;
+#ifdef __x86_64__
+		return NULL;
+#endif
 	} else if (!klass->has_references) {
 		if (for_box)
 			atype = ATYPE_FREEPTR_FOR_BOX;
