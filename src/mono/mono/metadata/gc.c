@@ -346,6 +346,8 @@ typedef enum {
 
 static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
+static HandleType mono_gchandle_get_type (guint32 gchandle);
+
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
@@ -389,6 +391,8 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	MonoObject *obj;
 
+	if (mono_gchandle_get_type (handle) != HANDLE_PINNED)
+		return (gpointer)-2;
 	obj = mono_gchandle_get_target (handle);
 	if (obj) {
 		MonoClass *klass = mono_object_class (obj);
@@ -580,6 +584,14 @@ guint32
 mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 {
 	return alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj);
+}
+
+static HandleType
+mono_gchandle_get_type (guint32 gchandle)
+{
+	guint type = (gchandle & 7) - 1;
+
+	return type;
 }
 
 /**
