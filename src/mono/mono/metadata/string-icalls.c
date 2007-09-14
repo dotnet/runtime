@@ -297,82 +297,6 @@ ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, 
 	return ret;
 }
 
-MonoString * 
-ves_icall_System_String_InternalInsert (MonoString *me, gint32 sindex, MonoString *value)
-{
-	MonoString * ret;
-	gunichar2 *src;
-	gunichar2 *insertsrc;
-	gunichar2 *dest;
-	gint32 srclen;
-	gint32 insertlen;
-
-	MONO_ARCH_SAVE_REGS;
-
-	src = mono_string_chars(me);
-	srclen = mono_string_length(me);
-
-	insertsrc = mono_string_chars(value);
-	insertlen = mono_string_length(value);
-
-	ret = mono_string_new_size( mono_domain_get (), srclen + insertlen);
-	dest = mono_string_chars(ret);
-
-	memcpy(dest, src, sindex * sizeof(gunichar2));
-	memcpy(dest + sindex, insertsrc, insertlen * sizeof(gunichar2));
-	memcpy(dest + sindex + insertlen, src + sindex, (srclen - sindex) * sizeof(gunichar2));
-
-	return ret;
-}
-
-MonoString * 
-ves_icall_System_String_InternalReplace_Char (MonoString *me, gunichar2 oldChar, gunichar2 newChar)
-{
-	MonoString *ret;
-	gunichar2 *src;
-	gunichar2 *dest;
-	gint32 i, srclen;
-
-	MONO_ARCH_SAVE_REGS;
-
-	src = mono_string_chars(me);
-	srclen = mono_string_length(me);
-
-	ret = mono_string_new_size( mono_domain_get (), srclen);
-	dest = mono_string_chars(ret);
-
-	for (i = 0; i != srclen; i++) {
-		if (src[i] == oldChar)
-			dest[i] = newChar;
-		else
-			dest[i] = src[i];
-	}
-
-	return ret;
-}
-
-MonoString * 
-ves_icall_System_String_InternalRemove (MonoString *me, gint32 sindex, gint32 count)
-{
-	MonoString * ret;
-	gint32 srclen;
-	gunichar2 *dest;
-	gunichar2 *src;
-
-	MONO_ARCH_SAVE_REGS;
-
-	srclen = mono_string_length(me);
-	ret = mono_string_new_size( mono_domain_get (), srclen - count);
-
-	src = mono_string_chars(me);
-	dest = mono_string_chars(ret);
-
-	memcpy(dest, src, sindex * sizeof(gunichar2));
-	memcpy(dest + sindex, src + sindex + count, (srclen - count - sindex) * sizeof(gunichar2));
-
-	return ret;
-}
-
 void
 ves_icall_System_String_InternalCopyTo (MonoString *me, gint32 sindex, MonoArray *dest, gint32 dindex, gint32 count)
 {
@@ -515,28 +439,6 @@ ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 t
 	memcpy(dest, src + lenfirst, newlen *sizeof(gunichar2));
 
 	return ret;
-}
-
-gint32 
-ves_icall_System_String_InternalIndexOfAny (MonoString *me, MonoArray *arr, gint32 sindex, gint32 count)
-{
-	gint32 pos;
-	gint32 loop;
-	gint32 arraysize;
-	gunichar2 *src;
-
-	MONO_ARCH_SAVE_REGS;
-
-	arraysize = mono_array_length(arr);
-	src = mono_string_chars(me);
-
-	for (pos = sindex; pos != count + sindex; pos++) {
-		for (loop = 0; loop != arraysize; loop++)
-			if ( src [pos] == mono_array_get(arr, gunichar2, loop) )
-				return pos;
-	}
-
-	return -1;
 }
 
 gint32 
@@ -726,10 +628,3 @@ ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 	return mono_string_chars(me)[idx];
 }
 
-void
-ves_icall_System_String_InternalCharCopy (gunichar2 *src, gunichar2 *dest, gint32 count)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	memcpy (dest, src, sizeof (gunichar2) * count);
-}
