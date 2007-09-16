@@ -2138,6 +2138,8 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 
 	nginst = mono_metadata_get_generic_inst (ginst->type_argc, type_argv);
 
+	for (i = 0; i < ginst->type_argc; i++)
+		mono_metadata_free_type (type_argv [i]);
 	g_free (type_argv);
 
 	return nginst;
@@ -2317,7 +2319,6 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!etype)
 			return FALSE;
 		type->data.klass = mono_class_from_mono_type (etype);
-		mono_metadata_free_type (etype);
 		break;
 	}
 	case MONO_TYPE_PTR:

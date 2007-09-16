@@ -563,7 +563,8 @@ mono_class_get_context (MonoClass *class)
  *
  * Instantiate the generic type @type, using the generics context @context.
  *
- * Returns: the instantiated type
+ * Returns: the instantiated type. The returned MonoType is allocated on the heap and is owned
+ * by the caller.
  */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
@@ -3309,6 +3310,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		MonoType *it = &gklass->interfaces [i]->byval_arg;
 		MonoType *inflated = mono_class_inflate_generic_type (it, mono_generic_class_get_context (gclass));
 		klass->interfaces [i] = mono_class_from_mono_type (inflated);
+		mono_metadata_free_type (inflated);
 	}
 
 	/*
