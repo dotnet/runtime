@@ -4042,7 +4042,9 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* try */
 
-	main_clause = g_new0 (MonoExceptionClause, 1);
+	mono_loader_lock ();
+	main_clause = mono_mempool_alloc0 (method->klass->image->mempool, sizeof (MonoExceptionClause));
+	mono_loader_unlock ();
 	main_clause->try_offset = mb->pos;
 
 	/* Clean the call context */
