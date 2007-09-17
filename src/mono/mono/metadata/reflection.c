@@ -9575,7 +9575,13 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType*)obj;
-		result = mono_class_from_mono_type (mono_class_inflate_generic_type (tb->type, context));
+		if (context) {
+			MonoType *inflated = mono_class_inflate_generic_type (tb->type, context);
+			result = mono_class_from_mono_type (inflated);
+			mono_metadata_free_type (inflated);
+		} else {
+			result = mono_class_from_mono_type (tb->type);
+		}
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoMethod") == 0 ||
