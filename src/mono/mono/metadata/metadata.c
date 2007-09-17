@@ -2061,7 +2061,9 @@ static void
 free_generic_inst (MonoGenericInst *ginst)
 {
 	int i;
-	
+
+	/* FIXME: */
+	return;
 	for (i = 0; i < ginst->type_argc; ++i)
 		mono_metadata_free_type (ginst->type_argv [i]);
 	g_free (ginst->type_argv);
@@ -2072,6 +2074,9 @@ free_generic_inst (MonoGenericInst *ginst)
 static void
 free_generic_class (MonoGenericClass *gclass)
 {
+	/* FIXME: */
+	return;
+
 	if (gclass->cached_class) {
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (gclass->cached_class->interfaces);
