@@ -2336,6 +2336,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
  * @generic_container: Our MonoClass's or MonoMethodNormal's MonoGenericContainer;
  *                     see mono_metadata_parse_type_full() for details.
  * Internal routine to parse a generic type parameter.
+ * LOCKING: Assumes the loader lock is held.
  */
 static MonoGenericParam *
 mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
@@ -2348,7 +2349,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
 		/* Create dummy MonoGenericParam */
-		MonoGenericParam *param = g_new0 (MonoGenericParam, 1);
+		MonoGenericParam *param = mono_mempool_alloc0 (m->mempool, sizeof (MonoGenericParam));
 		param->name = g_strdup_printf ("%d", index);
 		param->num = index;
 
@@ -4268,7 +4269,7 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
 
-	type = g_new0 (MonoType, 1);
+	type = mono_mempool_alloc0 (image->mempool, sizeof (MonoType));
 
 	if (*ptr == MONO_TYPE_BYREF) {
 		type->byref = 1;
@@ -4810,6 +4811,8 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
  *
  * Returns: NULL if @token is not a generic type or method definition or the new generic container.
  *
+ * LOCKING: Assumes the loader lock is held.
+ *
  */
 MonoGenericContainer *
 mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericContainer *parent_container)
@@ -4826,7 +4829,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	params = NULL;
 	n = 0;
-	container = g_new0 (MonoGenericContainer, 1);
+	container = mono_mempool_alloc0 (image->mempool, sizeof (MonoGenericContainer));
 	do {
 		n++;
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
@@ -4842,7 +4845,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
 	container->type_argc = n;
-	container->type_params = params;
+	container->type_params = mono_mempool_alloc0 (image->mempool, sizeof (MonoGenericParam) * n);
+	memcpy (container->type_params, params, sizeof (MonoGenericParam) * n);
+	g_free (params);
 	container->parent = parent_container;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)

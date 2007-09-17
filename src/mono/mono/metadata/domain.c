@@ -63,6 +63,7 @@ static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
+static MonoImage *exe_image;
 
 #define mono_appdomains_lock() EnterCriticalSection (&appdomains_mutex)
 #define mono_appdomains_unlock() LeaveCriticalSection (&appdomains_mutex)
@@ -115,7 +116,7 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 extern void _mono_debug_init_corlib (MonoDomain *domain);
 
 static void
-get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes);
+get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRuntimeInfo** runtimes);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
@@ -1125,7 +1126,12 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	
 	/* Get a list of runtimes supported by the exe */
 	if (exe_filename != NULL) {
-		get_runtimes_from_exe (exe_filename, runtimes);
+		/*
+		 * This function will load the exe file as a MonoImage. We need to close it, but
+		 * that would mean it would be reloaded later. So instead, we save it to
+		 * exe_image, and close it during shutdown.
+		 */
+		get_runtimes_from_exe (exe_filename, &exe_image, runtimes);
 	} else if (runtime_version != NULL) {
 		runtimes [0] = get_runtime_by_version (runtime_version);
 		runtimes [1] = NULL;
@@ -1529,6 +1535,8 @@ mono_init_com_types (void)
 void
 mono_cleanup (void)
 {
+	mono_image_close (exe_image);
+
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
@@ -2100,7 +2108,7 @@ get_runtime_by_version (const char *version)
 }
 
 static void
-get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
+get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRuntimeInfo** runtimes)
 {
 	AppConfigInfo* app_config;
 	char *version;
@@ -2154,11 +2162,7 @@ get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 		return;
 	}
 
-	/* 
-	 * FIXME: This would cause us to unload the image, and it will be loaded again later.
-	 * Disabling it will mean the initial exe will not be unloaded on shutdown.
-	 */
-	//mono_image_close (image);
+	*exe_image = image;
 
 	runtimes [0] = get_runtime_by_version (image->version);
 	runtimes [1] = NULL;
@@ -2181,8 +2185,9 @@ mono_debugger_check_runtime_version (const char *filename)
 {
 	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
 	const MonoRuntimeInfo *rinfo;
+	MonoImage *image;
 
-	get_runtimes_from_exe (filename, runtimes);
+	get_runtimes_from_exe (filename, &image, runtimes);
 	rinfo = runtimes [0];
 
 	if (!rinfo)
