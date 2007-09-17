@@ -30,6 +30,9 @@ static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolea
 static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
+static void free_generic_inst (MonoGenericInst *ginst);
+static void free_generic_class (MonoGenericClass *ginst);
+static void free_inflated_method (MonoMethodInflated *method);
 
 /*
  * This enumeration is used to describe the data types in the metadata
@@ -1441,8 +1444,8 @@ mono_metadata_init (void)
 	int i;
 
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
-	generic_inst_cache = g_hash_table_new (mono_generic_inst_hash, mono_generic_inst_equal);
-	generic_class_cache = g_hash_table_new (mono_generic_class_hash, mono_generic_class_equal);
+	generic_inst_cache = g_hash_table_new_full (mono_generic_inst_hash, mono_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
+	generic_class_cache = g_hash_table_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
@@ -1888,6 +1891,8 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 void
 mono_metadata_free_method_signature (MonoMethodSignature *sig)
 {
+	/* Everything is allocated from mempools */
+	/*
 	int i;
 	if (sig->ret)
 		mono_metadata_free_type (sig->ret);
@@ -1895,6 +1900,7 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 		if (sig->params [i])
 			mono_metadata_free_type (sig->params [i]);
 	}
+	*/
 }
 
 static gboolean
@@ -1996,7 +2002,7 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 {
 	if (cache) {
 		if (!generic_method_cache)
-			generic_method_cache = g_hash_table_new (inflated_method_hash, inflated_method_equal);
+			generic_method_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
 		g_hash_table_insert (generic_method_cache, method, method);
 		return method;
 	} else {
@@ -2015,6 +2021,63 @@ mono_metadata_clean_for_image (MonoImage *image)
 	if (generic_method_cache)
 		g_hash_table_foreach_remove (generic_method_cache, inflated_method_in_image, image);
 	mono_loader_unlock ();
+}
+
+static void
+free_inflated_method (MonoMethodInflated *imethod)
+{
+	int i;
+	MonoMethod *method = (MonoMethod*)imethod;
+
+	if (method->signature) {
+		MonoMethodSignature *sig = method->signature;
+
+		/* Allocated in inflate_generic_signature () */
+		mono_metadata_free_type (sig->ret);
+		for (i = 0; i < sig->param_count; ++i)
+			mono_metadata_free_type (sig->params [i]);
+
+		/* FIXME: The signature is allocated from a mempool */
+		//g_free (method->signature);
+	}
+
+	if (!((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))) {
+		MonoMethodNormal* mn = (MonoMethodNormal*) method;
+		MonoMethodHeader *header = mn->header;
+
+		if (header) {
+			/* Allocated in inflate_generic_header () */
+			for (i = 0; i < header->num_locals; ++i)
+				mono_metadata_free_type (header->locals [i]);
+			g_free (header->clauses);
+			g_free (header);
+		}
+	}
+
+	g_free (method);
+}
+
+static void
+free_generic_inst (MonoGenericInst *ginst)
+{
+	int i;
+	
+	for (i = 0; i < ginst->type_argc; ++i)
+		mono_metadata_free_type (ginst->type_argv [i]);
+	g_free (ginst->type_argv);
+	g_free (ginst);
+}
+
+
+static void
+free_generic_class (MonoGenericClass *gclass)
+{
+	if (gclass->cached_class) {
+		/* Allocated in mono_generic_class_get_class () */
+		g_free (gclass->cached_class->interfaces);
+		g_free (gclass->cached_class);
+	}		
+	g_free (gclass);
 }
 
 /*
@@ -2352,8 +2415,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
  * mono_metadata_free_type:
  * @type: type to free
  *
- * Free the memory allocated for type @type which is assumed to be created by
- * mono_metadata_parse_type ().
+ * Free the memory allocated for type @type which is allocated on the heap.
  */
 void
 mono_metadata_free_type (MonoType *type)
@@ -2383,7 +2445,7 @@ mono_metadata_free_type (MonoType *type)
 		break;
 	}
 
-	/* Allocated from a mempool, no need to free it */
+	g_free (type);
 }
 
 #if 0

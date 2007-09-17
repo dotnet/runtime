@@ -609,6 +609,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 				continue;
 			t = mono_class_inflate_generic_type (&clause->data.catch_class->byval_arg, context);
 			clause->data.catch_class = mono_class_from_mono_type (t);
+			mono_metadata_free_type (t);
 		}
 	}
 	return res;

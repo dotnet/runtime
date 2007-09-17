@@ -488,6 +488,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 			return NULL;
 		nt = mono_metadata_type_dup (NULL, type);
 		nt->data.klass = mono_class_from_mono_type (inflated);
+		mono_metadata_free_type (inflated);
 		return nt;
 	}
 	case MONO_TYPE_ARRAY: {
@@ -498,6 +499,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		nt = mono_metadata_type_dup (NULL, type);
 		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
 		nt->data.array->eklass = mono_class_from_mono_type (inflated);
+		mono_metadata_free_type (inflated);
 		return nt;
 	}
 	case MONO_TYPE_GENERICINST: {
@@ -563,8 +565,8 @@ mono_class_get_context (MonoClass *class)
  *
  * Instantiate the generic type @type, using the generics context @context.
  *
- * Returns: the instantiated type. The returned MonoType is allocated on the heap and is owned
- * by the caller.
+ * Returns: the instantiated type. The returned MonoType is allocated on the heap and is 
+ * owned by the caller.
  */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
@@ -681,6 +683,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	if (!result->klass) {
 		MonoType *inflated = inflate_generic_type (&method->klass->byval_arg, context);
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
+		if (inflated)
+			mono_metadata_free_type (inflated);
 	}
 
 	if (context->method_inst)
@@ -3274,6 +3278,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		MonoType *inflated = mono_class_inflate_generic_type (
 			&gklass->nested_in->byval_arg, mono_generic_class_get_context (gclass));
 		klass->nested_in = mono_class_from_mono_type (inflated);
+		mono_metadata_free_type (inflated);
 	}
 
 	klass->name = gklass->name;
@@ -3324,6 +3329,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 			&gklass->parent->byval_arg, mono_generic_class_get_context (gclass));
 
 		klass->parent = mono_class_from_mono_type (inflated);
+		mono_metadata_free_type (inflated);
 	}
 
 	if (klass->parent)
