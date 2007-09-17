@@ -1535,7 +1535,8 @@ mono_init_com_types (void)
 void
 mono_cleanup (void)
 {
-	mono_image_close (exe_image);
+	if (exe_image)
+		mono_image_close (exe_image);
 
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
