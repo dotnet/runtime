@@ -1027,7 +1027,7 @@ mono_main (int argc, char* argv[])
 #if HAVE_SCHED_SETAFFINITY
 	if (getenv ("MONO_NO_SMP")) {
 		unsigned long proc_mask = 1;
-		sched_setaffinity (getpid(), sizeof (unsigned long), &proc_mask);
+		sched_setaffinity (getpid(), sizeof (unsigned long), (gpointer)&proc_mask);
 	}
 #endif
 	if (!g_thread_supported ())
