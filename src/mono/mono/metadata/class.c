@@ -3354,10 +3354,29 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	MonoClass *klass, **ptr;
 	int count, pos, i;
 
-	if (param->pklass)
-		return param->pklass;
+	mono_loader_lock ();
 
-	klass = param->pklass = g_new0 (MonoClass, 1);
+	if (param->pklass) {
+		mono_loader_unlock ();
+		return param->pklass;
+	}
+
+	if (!image && param->owner) {
+		if (is_mvar) {
+			MonoMethod *method = param->owner->owner.method;
+			image = (method && method->klass) ? method->klass->image : NULL;
+		} else {
+			MonoClass *klass = param->owner->owner.klass;
+			// FIXME: 'klass' should not be null
+			// 	  But, monodis creates GenericContainers without associating a owner to it
+			image = klass ? klass->image : NULL;
+		}
+	}
+	if (!image)
+		/* FIXME: */
+		image = mono_defaults.corlib;
+
+	klass = param->pklass = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
 
 	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
 		;
@@ -3373,29 +3392,19 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
-		klass->interfaces = g_new0 (MonoClass *, count - pos);
+		klass->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass *) * (count - pos));
 		for (i = pos; i < count; i++)
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
 
 	if (param->name)
 		klass->name = param->name;
-	else
-		klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+	else {
+		klass->name = mono_mempool_alloc0 (image->mempool, 16);
+		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", param->num);
+	}
 
 	klass->name_space = "";
-
-	if (!image && param->owner) {
-		if (is_mvar) {
-			MonoMethod *method = param->owner->owner.method;
-			image = (method && method->klass) ? method->klass->image : NULL;
-		} else {
-			MonoClass *klass = param->owner->owner.klass;
-			// FIXME: 'klass' should not be null
-			// 	  But, monodis creates GenericContainers without associating a owner to it
-			image = klass ? klass->image : NULL;
-		}
-	}
 
 	if (!image)
 		image = mono_defaults.corlib;
@@ -3413,6 +3422,8 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	mono_class_setup_supertypes (klass);
 
+	mono_loader_unlock ();
+	
 	return klass;
 }
 

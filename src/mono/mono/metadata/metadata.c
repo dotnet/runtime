@@ -2110,10 +2110,24 @@ free_generic_inst (MonoGenericInst *ginst)
 static void
 free_generic_class (MonoGenericClass *gclass)
 {
+	int i;
+
 	if (gclass->cached_class) {
+		MonoClass *class = gclass->cached_class;
+
+		/* Allocated in mono_class_init () */
+		g_free (class->methods);
+		g_free (class->properties);
+		/* Allocated in mono_class_setup_fields () */
+		if (class->fields) {
+			for (i = 0; i < class->field.count; ++i) {
+				g_free (class->fields [i].generic_info);
+				mono_metadata_free_type (class->fields [i].type);
+			}
+		}
 		/* Allocated in mono_generic_class_get_class () */
-		g_free (gclass->cached_class->interfaces);
-		g_free (gclass->cached_class);
+		g_free (class->interfaces);
+		g_free (class);
 	}		
 	g_free (gclass);
 }
@@ -2350,7 +2364,8 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	if (!generic_container) {
 		/* Create dummy MonoGenericParam */
 		MonoGenericParam *param = mono_mempool_alloc0 (m->mempool, sizeof (MonoGenericParam));
-		param->name = g_strdup_printf ("%d", index);
+		param->name = mono_mempool_alloc0 (m->mempool, 8);
+		sprintf ((char*)param->name, "%d", index);
 		param->num = index;
 
 		return param;
