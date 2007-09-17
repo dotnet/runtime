@@ -9095,6 +9095,20 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
 		return (ji->type << 8) | ji->data.token->token;
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+		return (ji->type << 8) | (gssize)ji->data.klass;
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+		return (ji->type << 8) | (gssize)ji->data.field;
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_JUMP:
+		return (ji->type << 8) | (gssize)ji->data.method;
+	case MONO_PATCH_INFO_IMAGE:
+		return (ji->type << 8) | (gssize)ji->data.image;		
 	default:
 		return (ji->type << 8);
 	}
