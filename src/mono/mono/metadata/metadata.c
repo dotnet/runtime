@@ -2112,11 +2112,10 @@ free_generic_class (MonoGenericClass *gclass)
 {
 	int i;
 
-	if (gclass->cached_class) {
+	/* FIXME: The dynamic case */
+	if (gclass->cached_class && !gclass->cached_class->image->dynamic) {
 		MonoClass *class = gclass->cached_class;
 
-		/* FIXME: */
-#if 0
 		/* Allocated in mono_class_init () */
 		g_free (class->methods);
 		g_free (class->properties);
@@ -2130,7 +2129,6 @@ free_generic_class (MonoGenericClass *gclass)
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
 		g_free (class);
-#endif
 	}		
 	g_free (gclass);
 }

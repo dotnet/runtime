@@ -2604,7 +2604,8 @@ mono_class_init (MonoClass *class)
 			class->interface_id = mono_get_unique_iid (class);
 
 		g_assert (class->method.count == gklass->method.count);
-		class->methods = g_new0 (MonoMethod *, class->method.count);
+		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
+		class->methods = g_new0 (MonoMethod *, class->method.count + 1);
 
 		for (i = 0; i < class->method.count; i++) {
 			class->methods [i] = mono_class_inflate_generic_method_full (
@@ -2612,7 +2613,7 @@ mono_class_init (MonoClass *class)
 		}
 
 		class->property = gklass->property;
-		class->properties = g_new0 (MonoProperty, class->property.count);
+		class->properties = g_new0 (MonoProperty, class->property.count + 1);
 
 		for (i = 0; i < class->property.count; i++) {
 			MonoProperty *prop = &class->properties [i];
