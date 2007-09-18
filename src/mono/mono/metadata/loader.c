@@ -661,7 +661,6 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token));
 		if (prev_sig) {
 			/* Somebody got in before us */
-			/* FIXME: Free sig */
 			sig = prev_sig;
 		}
 		else
@@ -669,7 +668,16 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		mono_loader_unlock ();
 	}
 
-	sig = inflate_generic_signature (image, sig, context);
+	if (context) {
+		MonoMethodSignature *cached;
+
+		/* This signature is not owned by a MonoMethod, so need to cache */
+		sig = inflate_generic_signature (image, sig, context);
+		cached = mono_metadata_get_inflated_signature (sig, context);
+		if (cached != sig)
+			mono_metadata_free_inflated_signature (sig);
+		sig = cached;
+	}
 
 	return sig;
 }

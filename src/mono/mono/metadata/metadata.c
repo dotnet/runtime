@@ -435,6 +435,12 @@ mono_tables_names [] = {
 
 #endif
 
+/* Auxiliary structure used for caching inflated signatures */
+typedef struct {
+	MonoMethodSignature *sig;
+	MonoGenericContext context;
+} MonoInflatedMethodSignature;
+
 /**
  * mono_meta_table_name:
  * @table: table index
@@ -1353,6 +1359,12 @@ static int next_generic_inst_id = 0;
  */
 static GHashTable *generic_method_cache = NULL;
 
+/*
+ * Protected by the loader lock.
+ * It has a MonoInflatedMethodSignature* as key and value.
+ */
+static GHashTable *generic_signature_cache = NULL;
+
 static guint mono_generic_class_hash (gconstpointer data);
 
 /*
@@ -1465,10 +1477,13 @@ mono_metadata_cleanup (void)
 	g_hash_table_destroy (generic_class_cache);
 	if (generic_method_cache)
 		g_hash_table_destroy (generic_method_cache);
+	if (generic_signature_cache)
+		g_hash_table_destroy (generic_signature_cache);
 	type_cache = NULL;
 	generic_inst_cache = NULL;
 	generic_class_cache = NULL;
 	generic_method_cache = NULL;
+	generic_signature_cache = NULL;
 }
 
 /**
@@ -1903,6 +1918,22 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	*/
 }
 
+void
+mono_metadata_free_inflated_signature (MonoMethodSignature *sig)
+{
+	int i;
+
+	/* Allocated in inflate_generic_signature () */
+	if (sig->ret)
+		mono_metadata_free_type (sig->ret);
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i])
+			mono_metadata_free_type (sig->params [i]);
+	}
+	/* FIXME: The signature is allocated from a mempool */
+	//g_free (sig);
+}
+
 static gboolean
 inflated_method_equal (gconstpointer a, gconstpointer b)
 {
@@ -1918,6 +1949,28 @@ inflated_method_hash (gconstpointer a)
 {
 	const MonoMethodInflated *ma = a;
 	return mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring);
+}
+
+static gboolean
+inflated_signature_equal (gconstpointer a, gconstpointer b)
+{
+	const MonoInflatedMethodSignature *sig1 = a;
+	const MonoInflatedMethodSignature *sig2 = b;
+
+	/* sig->sig is assumed to be canonized */
+	if (sig1->sig != sig2->sig)
+		return FALSE;
+	/* The generic instances are canonized */
+	return mono_metadata_generic_context_equal (&sig1->context, &sig2->context);
+}
+
+static guint
+inflated_signature_hash (gconstpointer a)
+{
+	const MonoInflatedMethodSignature *sig = a;
+
+	/* sig->sig is assumed to be canonized */
+	return mono_metadata_generic_context_hash (&sig->context) ^ mono_aligned_addr_hash (sig->sig);
 }
 
 /*static void
@@ -2016,23 +2069,17 @@ inflated_method_in_image (gpointer key, gpointer value, gpointer data)
 	return FALSE;
 }
 
-/*
- * LOCKING: assumes the loader lock is held.
- */
-MonoMethodInflated*
-mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
+static gboolean
+inflated_signature_in_image (gpointer key, gpointer value, gpointer data)
 {
-	if (cache) {
-		if (!generic_method_cache)
-			generic_method_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-		g_hash_table_insert (generic_method_cache, method, method);
-		return method;
-	} else {
-		if (generic_method_cache)
-			return g_hash_table_lookup (generic_method_cache, method);
-		return NULL;
-	}
-}
+	MonoInflatedMethodSignature *sig = key;
+
+	if (sig->context.class_inst && ginst_in_image (sig->context.class_inst, NULL, data))
+		return TRUE;
+	if (sig->context.method_inst && ginst_in_image (sig->context.method_inst, NULL, data))
+		return TRUE;
+	return FALSE;
+}	
 
 void
 mono_metadata_clean_for_image (MonoImage *image)
@@ -2051,6 +2098,8 @@ mono_metadata_clean_for_image (MonoImage *image)
 	g_hash_table_foreach_steal (generic_class_cache, gclass_in_image, &user_data);
 	if (generic_method_cache)
 		g_hash_table_foreach_remove (generic_method_cache, inflated_method_in_image, &user_data);
+	if (generic_signature_cache)
+		g_hash_table_foreach_remove (generic_signature_cache, inflated_signature_in_image, &user_data);
 	/* Delete the removed items */
 	for (l = user_data.ginst_list; l; l = l->next)
 		free_generic_inst (l->data);
@@ -2067,17 +2116,8 @@ free_inflated_method (MonoMethodInflated *imethod)
 	int i;
 	MonoMethod *method = (MonoMethod*)imethod;
 
-	if (method->signature) {
-		MonoMethodSignature *sig = method->signature;
-
-		/* Allocated in inflate_generic_signature () */
-		mono_metadata_free_type (sig->ret);
-		for (i = 0; i < sig->param_count; ++i)
-			mono_metadata_free_type (sig->params [i]);
-
-		/* FIXME: The signature is allocated from a mempool */
-		//g_free (method->signature);
-	}
+	if (method->signature)
+		mono_metadata_free_inflated_signature (method->signature);
 
 	if (!((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))) {
 		MonoMethodNormal* mn = (MonoMethodNormal*) method;
@@ -2131,6 +2171,63 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (class);
 	}		
 	g_free (gclass);
+}
+
+static void
+free_inflated_signature (MonoInflatedMethodSignature *sig)
+{
+	mono_metadata_free_inflated_signature (sig->sig);
+	g_free (sig);
+}
+
+/*
+ * LOCKING: assumes the loader lock is held.
+ */
+MonoMethodInflated*
+mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
+{
+	if (cache) {
+		if (!generic_method_cache)
+			generic_method_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
+		g_hash_table_insert (generic_method_cache, method, method);
+		return method;
+	} else {
+		if (generic_method_cache)
+			return g_hash_table_lookup (generic_method_cache, method);
+		return NULL;
+	}
+}
+
+/*
+ * mono_metadata_get_inflated_signature:
+ *
+ *   Given an inflated signature and a generic context, return a canonical copy of the 
+ * signature. The returned signature might be equal to SIG or it might be a cached copy.
+ */
+MonoMethodSignature *
+mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context)
+{
+	MonoInflatedMethodSignature helper;
+	MonoInflatedMethodSignature *res;
+
+	mono_loader_lock ();
+	if (!generic_signature_cache)
+		generic_signature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+
+	helper.sig = sig;
+	helper.context.class_inst = context->class_inst;
+	helper.context.method_inst = context->method_inst;
+	res = g_hash_table_lookup (generic_signature_cache, &helper);
+	if (!res) {
+		res = g_new0 (MonoInflatedMethodSignature, 1);
+		res->sig = sig;
+		res->context.class_inst = context->class_inst;
+		res->context.method_inst = context->method_inst;
+		g_hash_table_insert (generic_signature_cache, res, res);
+	}
+
+	mono_loader_unlock ();
+	return res->sig;
 }
 
 /*
@@ -4301,7 +4398,6 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	type2 = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
 
 	if (type2) {
-		g_free (type);
 		mono_loader_unlock ();
 		return type2;
 	}

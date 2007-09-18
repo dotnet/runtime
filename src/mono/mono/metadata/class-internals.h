@@ -656,6 +656,12 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 MonoMethodInflated*
 mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache) MONO_INTERNAL;
 
+MonoMethodSignature *
+mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
+
+void
+mono_metadata_free_inflated_signature (MonoMethodSignature *sig);
+
 typedef struct {
 	MonoImage *corlib;
 	MonoClass *object_class;
