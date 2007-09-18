@@ -16,6 +16,7 @@
 #include "assembly.h"
 #include "image.h"
 #include "rawbuffer.h"
+#include "object-internals.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
@@ -1922,7 +1923,9 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 		res->in_gac = TRUE;
 	else {
 		MonoDomain *domain = mono_domain_get ();
-		res = mono_try_assembly_resolve (domain, mono_string_new (domain, name), FALSE);		
+		MonoReflectionAssembly *refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), FALSE);
+		if (refasm)
+			res = refasm->assembly;
 	}
 	
 	g_free (fullname);
@@ -2177,24 +2180,10 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	return corlib;
 }
 
-/**
- * mono_assembly_load_full:
- * @aname: A MonoAssemblyName with the assembly name to load.
- * @basedir: A directory to look up the assembly at.
- * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
- * @refonly: Whether this assembly is being opened in "reflection-only" mode.
- *
- * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
- * attempts to load the assembly from that directory before probing the standard locations.
- *
- * If the assembly is being opened in reflection-only mode (@refonly set to TRUE) then no 
- * assembly binding takes place.
- *
- * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
- * value pointed by status is updated with an error code.
- */
-MonoAssembly*
-mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
+MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
+						const char       *basedir, 
+						MonoImageOpenStatus *status,
+						gboolean refonly)
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
@@ -2262,9 +2251,33 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 			return result;
 	}
 
-	/* Try a postload search hook */
-	result = mono_assembly_invoke_search_hook_internal (aname, refonly, TRUE);
+	return result;
+}
 
+/**
+ * mono_assembly_load_full:
+ * @aname: A MonoAssemblyName with the assembly name to load.
+ * @basedir: A directory to look up the assembly at.
+ * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
+ * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ *
+ * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
+ * attempts to load the assembly from that directory before probing the standard locations.
+ *
+ * If the assembly is being opened in reflection-only mode (@refonly set to TRUE) then no 
+ * assembly binding takes place.
+ *
+ * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
+ * value pointed by status is updated with an error code.
+ */
+MonoAssembly*
+mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
+{
+	MonoAssembly *result = mono_assembly_load_full_nosearch (aname, basedir, status, refonly);
+	
+	if (!result)
+		/* Try a postload search hook */
+		result = mono_assembly_invoke_search_hook_internal (aname, refonly, TRUE);
 	return result;
 }
 

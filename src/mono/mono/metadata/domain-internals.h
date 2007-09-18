@@ -332,4 +332,9 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 MonoReflectionAssembly *
 mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly) MONO_INTERNAL;
 
+MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
+						const char       *basedir, 
+						MonoImageOpenStatus *status,
+						gboolean refonly) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

@@ -2076,6 +2076,7 @@ mono/arch/mips/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
+mono/tests/assemblyresolve/Makefile
 mono/tests/cas/Makefile
 mono/tests/cas/assembly/Makefile
 mono/tests/cas/demand/Makefile

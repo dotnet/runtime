@@ -1,4 +1,4 @@
-SUBDIRS = cas
+SUBDIRS = cas assemblyresolve
 
 check-local: test
 
@@ -44,6 +44,7 @@ TEST_CS_SRC=			\
 	array-init.cs		\
 	arraylist.cs		\
 	assemblyresolve_event.cs	\
+	assemblyresolve_event3.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	create-instance.cs	\
