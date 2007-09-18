@@ -1269,9 +1269,20 @@ mono_class_setup_methods (MonoClass *class)
 		return;
 	}
 
-	//printf ("INIT: %s.%s\n", class->name_space, class->name);
+	if (class->generic_class && !class->generic_class->is_dynamic) {
+		MonoClass *gklass = class->generic_class->container_class;
 
-	if (!class->methods) {
+		mono_class_init (gklass);
+		mono_class_setup_methods (gklass);
+
+		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
+		methods = g_new0 (MonoMethod *, class->method.count + 1);
+
+		for (i = 0; i < class->method.count; i++) {
+			methods [i] = mono_class_inflate_generic_method_full (
+				gklass->methods [i], class, mono_class_get_context (class));
+		}
+	} else {
 		methods = mono_mempool_alloc (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
 		for (i = 0; i < class->method.count; ++i) {
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
@@ -1309,40 +1320,66 @@ mono_class_setup_properties (MonoClass *class)
 		return;
 	}
 
-	class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
-	class->property.count = last - class->property.first;
+	if (class->generic_class && !class->generic_class->is_dynamic) {
+		MonoClass *gklass = class->generic_class->container_class;
 
-	if (class->property.count)
-		mono_class_setup_methods (class);
+		class->property = gklass->property;
 
-	properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
-	for (i = class->property.first; i < last; ++i) {
-		mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
-		properties [i - class->property.first].parent = class;
-		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
-		properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
+		mono_class_init (gklass);
+		mono_class_setup_properties (gklass);
 
-		startm = mono_metadata_methods_from_property (class->image, i, &endm);
-		for (j = startm; j < endm; ++j) {
-			MonoMethod *method;
+		properties = g_new0 (MonoProperty, class->property.count + 1);
 
-			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+		for (i = 0; i < class->property.count; i++) {
+			MonoProperty *prop = &properties [i];
 
-			if (class->image->uncompressed_metadata)
-				/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-				method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
-			else
-				method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+			*prop = gklass->properties [i];
 
-			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
-			case METHOD_SEMANTIC_SETTER:
-				properties [i - class->property.first].set = method;
-				break;
-			case METHOD_SEMANTIC_GETTER:
-				properties [i - class->property.first].get = method;
-				break;
-			default:
-				break;
+			if (prop->get)
+				prop->get = mono_class_inflate_generic_method_full (
+					prop->get, class, mono_class_get_context (class));
+			if (prop->set)
+				prop->set = mono_class_inflate_generic_method_full (
+					prop->set, class, mono_class_get_context (class));
+
+			prop->parent = class;
+		}
+	} else {
+		class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
+		class->property.count = last - class->property.first;
+
+		if (class->property.count)
+			mono_class_setup_methods (class);
+
+		properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
+		for (i = class->property.first; i < last; ++i) {
+			mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
+			properties [i - class->property.first].parent = class;
+			properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
+			properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
+
+			startm = mono_metadata_methods_from_property (class->image, i, &endm);
+			for (j = startm; j < endm; ++j) {
+				MonoMethod *method;
+
+				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+
+				if (class->image->uncompressed_metadata)
+					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
+					method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
+				else
+					method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+
+				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+				case METHOD_SEMANTIC_SETTER:
+					properties [i - class->property.first].set = method;
+					break;
+				case METHOD_SEMANTIC_GETTER:
+					properties [i - class->property.first].get = method;
+					break;
+				default:
+					break;
+				}
 			}
 		}
 	}
@@ -2602,33 +2639,6 @@ mono_class_init (MonoClass *class)
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
-
-		g_assert (class->method.count == gklass->method.count);
-		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
-		class->methods = g_new0 (MonoMethod *, class->method.count + 1);
-
-		for (i = 0; i < class->method.count; i++) {
-			class->methods [i] = mono_class_inflate_generic_method_full (
-				gklass->methods [i], class, mono_class_get_context (class));
-		}
-
-		class->property = gklass->property;
-		class->properties = g_new0 (MonoProperty, class->property.count + 1);
-
-		for (i = 0; i < class->property.count; i++) {
-			MonoProperty *prop = &class->properties [i];
-
-			*prop = gklass->properties [i];
-
-			if (prop->get)
-				prop->get = mono_class_inflate_generic_method_full (
-					prop->get, class, mono_class_get_context (class));
-			if (prop->set)
-				prop->set = mono_class_inflate_generic_method_full (
-					prop->set, class, mono_class_get_context (class));
-
-			prop->parent = class;
-		}
 
 		g_assert (class->interface_count == gklass->interface_count);
 	}
