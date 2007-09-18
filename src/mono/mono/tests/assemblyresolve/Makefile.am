@@ -3,17 +3,22 @@ with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug:full -target:library
 
-all: prereq test/asm.dll
+all: test/asm.dll
+
+test/.dirstamp deps/.dirstamp:
+	-mkdir $(@D)
+	rm -f $@ && date > $@
+
+test/asm.dll: test/.dirstamp
+deps/test.dll deps/TestBase.dll: deps/.dirstamp
 
 test/asm.dll: deps/test.dll asm.cs
-	$(MCS) -out:test/asm.dll -r:deps/test.dll asm.cs
+	$(MCS) -out:test/asm.dll -r:deps/test.dll $(srcdir)/asm.cs
 
 deps/test.dll: deps/TestBase.dll Test.cs
-	$(MCS) -out:deps/test.dll -r:deps/TestBase.dll Test.cs
+	$(MCS) -out:deps/test.dll -r:deps/TestBase.dll $(srcdir)/Test.cs
 
 deps/TestBase.dll: TestBase.cs
-	$(MCS) -out:deps/TestBase.dll TestBase.cs
+	$(MCS) -out:deps/TestBase.dll $(srcdir)/TestBase.cs
 
-prereq:
-	@-mkdir test
-	@-mkdir deps
+EXTRA_DIST = asm.cs Test.cs TestBase.cs
