@@ -3,7 +3,7 @@ with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug:full -target:library
 
-all: test/asm.dll
+prereq: test/asm.dll
 
 test/.dirstamp deps/.dirstamp:
 	-mkdir $(@D)

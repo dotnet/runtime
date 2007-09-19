@@ -1,4 +1,4 @@
-SUBDIRS = cas
+SUBDIRS = cas assemblyresolve
 
 check-local: test
 
@@ -352,7 +352,7 @@ test : test-coreclr-security
 endif
 
 assemblyresolve/test/asm.dll:
-	$(MAKE) -C assemblyresolve
+	$(MAKE) -C assemblyresolve prereq
 
 TestDriver.dll:
 	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
