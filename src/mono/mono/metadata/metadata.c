@@ -1990,16 +1990,43 @@ dump_ginst (MonoGenericInst *ginst)
 	g_print (">");
 }*/
 
-static gboolean gclass_in_image (gpointer key, gpointer value, gpointer data);
-
-typedef struct {
-	MonoImage *image;
-	GSList *ginst_list;
-	GSList *gclass_list;
-} CleanForImageUserData;
+static gboolean type_in_image (MonoType *type, MonoImage *image);
 
 static gboolean
-type_in_image (MonoType *type, CleanForImageUserData *user_data)
+signature_in_image (MonoMethodSignature *sig, MonoImage *image)
+{
+	gpointer iter = NULL;
+	MonoType *p;
+
+	while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+		if (type_in_image (p, image))
+			return TRUE;
+
+	return type_in_image (mono_signature_get_return_type (sig), image);
+}
+
+static gboolean
+ginst_in_image (MonoGenericInst *ginst, MonoImage *image)
+{
+	int i;
+
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (type_in_image (ginst->type_argv [i], image))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+gclass_in_image (MonoGenericClass *gclass, MonoImage *image)
+{
+	return gclass->container_class->image == image ||
+		ginst_in_image (gclass->context.class_inst, image);
+}
+
+static gboolean
+type_in_image (MonoType *type, MonoImage *image)
 {
 	MonoClass *klass;
 
@@ -2007,7 +2034,7 @@ type_in_image (MonoType *type, CleanForImageUserData *user_data)
 retry:
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		return gclass_in_image (type->data.generic_class, NULL, user_data);
+		return gclass_in_image (type->data.generic_class, image);
 	case MONO_TYPE_PTR:
 		type = type->data.type;
 		goto retry;
@@ -2017,117 +2044,95 @@ retry:
 	case MONO_TYPE_ARRAY:
 		klass = type->data.array->eklass;
 		break;
-	case MONO_TYPE_FNPTR: {
-		gpointer iter = NULL;
-		MonoMethodSignature *sig = type->data.method;
-		MonoType *p;
-		if (type_in_image (mono_signature_get_return_type (sig), user_data))
-			return TRUE;
-		while ((p = mono_signature_get_params (sig, &iter)) != NULL)
-			if (type_in_image (p, user_data))
-				return TRUE;
-		return FALSE;
-	}
+	case MONO_TYPE_FNPTR:
+		return signature_in_image (type->data.method, image);
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
 		klass = mono_class_from_mono_type (type);
 		break;
 	}
 
-	return klass->image == user_data->image;
+	return klass->image == image;
 }
 
+typedef struct {
+	MonoImage *image;
+	GSList *list;
+} CleanForImageUserData;
+
 static gboolean
-ginst_in_image (gpointer key, gpointer value, gpointer data)
+steal_gclass_in_image (gpointer key, gpointer value, gpointer data)
 {
+	MonoGenericClass *gclass = key;
 	CleanForImageUserData *user_data = data;
-	MonoGenericInst *ginst = key;
-	int i;
 
-	for (i = 0; i < ginst->type_argc; ++i) {
-		if (type_in_image (ginst->type_argv [i], user_data))
-			break;
-	}
-
-	if (i == ginst->type_argc)
+	if (!gclass_in_image (gclass, user_data->image))
 		return FALSE;
 
-	if (!g_slist_find (user_data->ginst_list, ginst))
-		user_data->ginst_list = g_slist_append (user_data->ginst_list, ginst);
-
+	user_data->list = g_slist_prepend (user_data->list, gclass);
 	return TRUE;
 }
 
 static gboolean
-gclass_in_image (gpointer key, gpointer value, gpointer data)
+steal_ginst_in_image (gpointer key, gpointer value, gpointer data)
 {
+	MonoGenericInst *ginst = key;
 	CleanForImageUserData *user_data = data;
-	MonoGenericClass *gclass = key;
 
-	if (gclass->container_class->image != user_data->image &&
-	    !ginst_in_image (gclass->context.class_inst, NULL, data))
+	if (!ginst_in_image (ginst, user_data->image))
 		return FALSE;
 
-	if (!g_slist_find (user_data->gclass_list, gclass))
-		user_data->gclass_list = g_slist_append (user_data->gclass_list, gclass);
-
+	user_data->list = g_slist_prepend (user_data->list, ginst);
 	return TRUE;
 }
 
 static gboolean
 inflated_method_in_image (gpointer key, gpointer value, gpointer data)
 {
-	CleanForImageUserData *user_data = (CleanForImageUserData*)data;
-	MonoImage *image = user_data->image;
+	MonoImage *image = data;
 	MonoMethodInflated *method = key;
 
-	if (method->declaring->klass->image == image)
-		return TRUE;
-	if (method->context.class_inst && ginst_in_image (method->context.class_inst, NULL, data))
-		return TRUE;
-	if (method->context.method_inst && ginst_in_image (method->context.method_inst, NULL, data))
-		return TRUE;
-	return FALSE;
+	return method->declaring->klass->image == image ||
+		(method->context.class_inst && ginst_in_image (method->context.class_inst, image)) ||
+		(method->context.method_inst && ginst_in_image (method->context.method_inst, image));
 }
 
 static gboolean
 inflated_signature_in_image (gpointer key, gpointer value, gpointer data)
 {
+	MonoImage *image = data;
 	MonoInflatedMethodSignature *sig = key;
 
-	if (sig->context.class_inst && ginst_in_image (sig->context.class_inst, NULL, data))
-		return TRUE;
-	if (sig->context.method_inst && ginst_in_image (sig->context.method_inst, NULL, data))
-		return TRUE;
-	return FALSE;
+	return /* signature_in_image (sig->sig, image) || */
+		(sig->context.class_inst && ginst_in_image (sig->context.class_inst, image)) ||
+		(sig->context.method_inst && ginst_in_image (sig->context.method_inst, image));
 }	
 
 void
 mono_metadata_clean_for_image (MonoImage *image)
 {
-	CleanForImageUserData user_data;
+	CleanForImageUserData ginst_data, gclass_data;
 	GSList *l;
 
 	/* The data structures could reference each other so we delete them in two phases */
-	user_data.image = image;
-	user_data.ginst_list = NULL;
-	user_data.gclass_list = NULL;
+	ginst_data.image = gclass_data.image = image;
+	ginst_data.list = gclass_data.list = NULL;
 
 	mono_loader_lock ();	
 	/* Collect the items to delete and remove them from the hash table */
-	g_hash_table_foreach_steal (generic_inst_cache, ginst_in_image, &user_data);
-	g_hash_table_foreach_steal (generic_class_cache, gclass_in_image, &user_data);
+	g_hash_table_foreach_steal (generic_inst_cache, steal_ginst_in_image, &ginst_data);
+	g_hash_table_foreach_steal (generic_class_cache, steal_gclass_in_image, &gclass_data);
 	if (generic_method_cache)
-		g_hash_table_foreach_remove (generic_method_cache, inflated_method_in_image, &user_data);
+		g_hash_table_foreach_remove (generic_method_cache, inflated_method_in_image, image);
 	if (generic_signature_cache)
-		g_hash_table_foreach_remove (generic_signature_cache, inflated_signature_in_image, &user_data);
+		g_hash_table_foreach_remove (generic_signature_cache, inflated_signature_in_image, image);
 	/* Delete the removed items */
-	for (l = user_data.ginst_list; l; l = l->next)
+	for (l = ginst_data.list; l; l = l->next)
 		free_generic_inst (l->data);
-	for (l = user_data.gclass_list; l; l = l->next)
+	for (l = gclass_data.list; l; l = l->next)
 		free_generic_class (l->data);
-	g_slist_free (user_data.ginst_list);
-	g_slist_free (user_data.gclass_list);
+	g_slist_free (ginst_data.list);
+	g_slist_free (gclass_data.list);
 	mono_loader_unlock ();
 }
 
