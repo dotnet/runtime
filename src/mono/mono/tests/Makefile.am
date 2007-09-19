@@ -632,6 +632,3 @@ libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS)
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.exe stest.dat
-
-assemblyresolve_event3.cs:
-	echo ASSEMBLY RESOLVE
