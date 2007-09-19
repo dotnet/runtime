@@ -255,8 +255,6 @@ mono_debug_using_mono_debugger (void)
 void
 mono_debug_cleanup (void)
 {
-	mono_debugger_cleanup ();
-
 	if (mono_debug_handles)
 		g_hash_table_destroy (mono_debug_handles);
 	mono_debug_handles = NULL;

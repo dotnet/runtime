@@ -12286,7 +12286,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_domain_free (domain, TRUE);
 
-	mono_debug_cleanup ();
+	mono_debugger_cleanup ();
 
 	mono_code_manager_destroy (global_codeman);
 	g_hash_table_destroy (jit_icall_name_hash);
@@ -12299,6 +12299,8 @@ mini_cleanup (MonoDomain *domain)
 	mono_cleanup ();
 
 	mono_trace_cleanup ();
+
+	mono_debug_cleanup ();
 
 	mono_counters_dump (-1, stdout);
 
