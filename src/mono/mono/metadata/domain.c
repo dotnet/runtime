@@ -1542,6 +1542,7 @@ mono_cleanup (void)
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
 	mono_images_cleanup ();
+	mono_debug_cleanup ();
 	mono_raw_buffer_cleanup ();
 	mono_metadata_cleanup ();
 

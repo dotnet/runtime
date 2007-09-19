@@ -12300,8 +12300,6 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_trace_cleanup ();
 
-	mono_debug_cleanup ();
-
 	mono_counters_dump (-1, stdout);
 
 	if (mono_inject_async_exc_method)
