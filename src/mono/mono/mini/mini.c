@@ -8928,7 +8928,7 @@ mono_thread_abort (MonoObject *obj)
 	g_free (jit_tls);*/
 
 	if ((mono_runtime_unhandled_exception_policy_get () == MONO_UNHANLED_POLICY_LEGACY) ||
-			(obj->vtable->klass != mono_defaults.threadabortexception_class)) {
+			(obj->vtable->klass == mono_defaults.threadabortexception_class)) {
 		mono_thread_exit ();
 	} else {
 		exit (mono_environment_exitcode_get ());
