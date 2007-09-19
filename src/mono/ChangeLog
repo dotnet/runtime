@@ -1,3 +1,10 @@
+2007-09-19  Jb Evain  <jbevain@novell.com>
+
+	* configure.in: if there's a olive directory in the same folder
+	as mono, we now override its config.make, so that we don't build
+	the olive moonlight assemblies if mono is not build with moonlight
+	support.
+
 2007-09-18  Andreas Faerber  <andreas.faerber@web.de>
 
 	* configure.in: Add support for building on Linux/ppc64 host.

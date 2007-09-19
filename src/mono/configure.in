@@ -406,6 +406,17 @@ AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_bui
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
+# Where's the 'olive' source tree?
+if test -d $srcdir/olive; then
+  olivedir=olive
+else
+  olivedir=../olive
+fi
+
+if test -d $olivedir; then
+olive_topdir='$(top_srcdir)/'$olivedir
+fi
+
 AC_ARG_WITH([libgdiplus], 
 	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
 	[], [with_libgdiplus=installed])
@@ -2159,12 +2170,32 @@ fi
 
     echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
   fi
+
+  # if we have an olive folder, override the default settings
+  if test -d $olivedir; then
+
+    test -w $srcdir/$olivedir/build || chmod +w $srcdir/$olivedir/build
+
+    if test x$cross_compiling = xno && test x$enable_olive_build != xno; then
+      echo "prefix=$prefix" > $srcdir/$olivedir/build/config.make
+      echo "exec_prefix=$exec_prefix" >> $srcdir/$olivedir/build/config.make
+      echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$olivedir/build/config.make
+      echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$olivedir/build/config.make
+      echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$olivedir/build/config.make
+      echo "MONO_VERSION = $myver" >> $srcdir/$olivedir/build/config.make
+	  if test x$with_moonlight = xyes; then
+        echo "WITH_MOONLIGHT = yes" >> $srcdir/$olivedir/build/config.make
+      fi
+    fi
+  fi
 )
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}
 
 echo "
-        mcs source:  $mcs_topdir
+        mcs source:    $mcs_topdir
+        olive source:  $olive_topdir
+
 	GC:	     $gc
 	TLS:         $with_tls
 	SIGALTSTACK: $with_sigaltstack
