@@ -1999,58 +1999,79 @@ typedef struct {
 } CleanForImageUserData;
 
 static gboolean
+type_in_image (MonoType *type, CleanForImageUserData *user_data)
+{
+	MonoClass *klass;
+
+	/* Avoid allocations.  We just want _some_ MonoClass reachable from @type.  */
+retry:
+	switch (type->type) {
+	case MONO_TYPE_GENERICINST:
+		return gclass_in_image (type->data.generic_class, NULL, user_data);
+	case MONO_TYPE_PTR:
+		type = type->data.type;
+		goto retry;
+	case MONO_TYPE_SZARRAY:
+		klass = type->data.klass;
+		break;
+	case MONO_TYPE_ARRAY:
+		klass = type->data.array->eklass;
+		break;
+	case MONO_TYPE_FNPTR: {
+		gpointer iter = NULL;
+		MonoMethodSignature *sig = type->data.method;
+		MonoType *p;
+		if (type_in_image (mono_signature_get_return_type (sig), user_data))
+			return TRUE;
+		while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+			if (type_in_image (p, user_data))
+				return TRUE;
+		return FALSE;
+	}
+	default:
+		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
+		klass = mono_class_from_mono_type (type);
+		break;
+	}
+
+	return klass->image == user_data->image;
+}
+
+static gboolean
 ginst_in_image (gpointer key, gpointer value, gpointer data)
 {
-	CleanForImageUserData *user_data = (CleanForImageUserData*)data;
-	MonoImage *image = user_data->image;
+	CleanForImageUserData *user_data = data;
 	MonoGenericInst *ginst = key;
-	MonoClass *klass;
 	int i;
+
 	for (i = 0; i < ginst->type_argc; ++i) {
-		MonoType *type = ginst->type_argv [i];
-
-		/* FIXME: Avoid a possible mono_class_inst inside mono_class_from_mono_type */
-		if (type->type == MONO_TYPE_GENERICINST) {
-			if (gclass_in_image (type->data.generic_class, NULL, data)) {
-				if (!g_slist_find (user_data->ginst_list, ginst))
-					user_data->ginst_list = g_slist_append (user_data->ginst_list, ginst);
-				return TRUE;
-			}
-			continue;
-		}
-
-		klass = mono_class_from_mono_type (ginst->type_argv [i]);
-		if (klass->image == image) {
-			/*dump_ginst (ginst);
-			  g_print (" removed\n");*/
-			if (!g_slist_find (user_data->ginst_list, ginst))
-				user_data->ginst_list = g_slist_append (user_data->ginst_list, ginst);
-			return TRUE;
-		}
+		if (type_in_image (ginst->type_argv [i], user_data))
+			break;
 	}
-	return FALSE;
+
+	if (i == ginst->type_argc)
+		return FALSE;
+
+	if (!g_slist_find (user_data->ginst_list, ginst))
+		user_data->ginst_list = g_slist_append (user_data->ginst_list, ginst);
+
+	return TRUE;
 }
 
 static gboolean
 gclass_in_image (gpointer key, gpointer value, gpointer data)
 {
-	CleanForImageUserData *user_data = (CleanForImageUserData*)data;
-	MonoImage *image = user_data->image;
+	CleanForImageUserData *user_data = data;
 	MonoGenericClass *gclass = key;
-	gboolean match = FALSE;
 
-	if (ginst_in_image (gclass->context.class_inst, NULL, data))
-		match = TRUE;
-	if (gclass->container_class->image == image)
-		match = TRUE;
-
-	if (match) {
-		if (!g_slist_find (user_data->gclass_list, gclass))
-			user_data->gclass_list = g_slist_append (user_data->gclass_list, gclass);
-		return TRUE;
-	} else {
+	if (gclass->container_class->image != user_data->image &&
+	    !ginst_in_image (gclass->context.class_inst, NULL, data))
 		return FALSE;
-	}
+
+	if (!g_slist_find (user_data->gclass_list, gclass))
+		user_data->gclass_list = g_slist_append (user_data->gclass_list, gclass);
+
+	return TRUE;
 }
 
 static gboolean
