@@ -1719,7 +1719,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
-	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
+	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin*)
 		TARGET=POWERPC;
 		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])

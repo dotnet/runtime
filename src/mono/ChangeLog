@@ -1,3 +1,7 @@
+2007-09-18  Andreas Faerber  <andreas.faerber@web.de>
+
+	* configure.in: Add support for building on Linux/ppc64 host.
+
 2007-09-18  Marek Habersack  <mhabersack@novell.com>
 
 	* configure.in: added additional Makefile to be generated in the
