@@ -912,7 +912,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 		return NULL;
 	}
 	image = g_new0 (MonoImage, 1);
-	image->file_descr = filed;
+	image->raw_buffer_used = TRUE;
 	image->raw_data_len = stat_buf.st_size;
 	image->raw_data = mono_raw_buffer_load (fileno (filed), FALSE, 0, stat_buf.st_size);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
@@ -920,6 +920,8 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->name = mono_path_resolve_symlinks (fname);
 	image->ref_only = refonly;
 	image->ref_count = 1;
+
+	fclose (filed);
 
 	return do_mono_image_load (image, status, care_about_cli);
 }
@@ -1222,9 +1224,7 @@ mono_image_close (MonoImage *image)
 
 	mono_images_unlock ();
 
-	if (image->file_descr) {
-		fclose (image->file_descr);
-		image->file_descr = NULL;
+	if (image->raw_buffer_used) {
 		if (image->raw_data != NULL)
 			mono_raw_buffer_free (image->raw_data);
 	}

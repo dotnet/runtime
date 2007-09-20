@@ -72,10 +72,9 @@ struct _MonoImage {
 	 * this image between calls of mono_image_open () and mono_image_close ().
 	 */
 	int   ref_count;
-	FILE *file_descr;
-	/* if file_descr is NULL the image was loaded from raw data */
 	char *raw_data;
 	guint32 raw_data_len;
+	guint8 raw_buffer_used    : 1;
 	guint8 raw_data_allocated : 1;
 
 	/* Whenever this is a dynamically emitted module */
