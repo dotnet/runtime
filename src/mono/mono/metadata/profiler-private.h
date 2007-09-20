@@ -28,6 +28,7 @@ void mono_profiler_method_enter    (MonoMethod *method) MONO_INTERNAL;
 void mono_profiler_method_leave    (MonoMethod *method) MONO_INTERNAL;
 void mono_profiler_method_jit      (MonoMethod *method) MONO_INTERNAL;
 void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result) MONO_INTERNAL;
+void mono_profiler_method_free     (MonoMethod *method) MONO_INTERNAL;
 
 void mono_profiler_code_transition (MonoMethod *method, int result) MONO_INTERNAL;
 void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;

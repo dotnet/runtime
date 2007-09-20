@@ -55,6 +55,7 @@ static MonoProfileClassFunc   class_end_unload;
 static MonoProfileMethodFunc   jit_start;
 static MonoProfileMethodResult jit_end;
 static MonoProfileJitResult    jit_end2;
+static MonoProfileMethodFunc   method_free;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
 static MonoProfileStatFunc     statistical_cb;
@@ -172,6 +173,12 @@ mono_profiler_install_jit_end (MonoProfileJitResult end)
 }
 
 void 
+mono_profiler_install_method_free (MonoProfileMethodFunc callback)
+{
+	method_free = callback;
+}
+
+void 
 mono_profiler_install_thread (MonoProfileThreadFunc start, MonoProfileThreadFunc end)
 {
 	thread_start = start;
@@ -280,6 +287,13 @@ mono_profiler_method_end_jit (MonoMethod *method, MonoJitInfo* jinfo, int result
 		if (jit_end2)
 			jit_end2 (current_profiler, method, jinfo, result);
 	}
+}
+
+void 
+mono_profiler_method_free (MonoMethod *method)
+{
+	if ((mono_profiler_events & MONO_PROFILE_METHOD_EVENTS) && method_free)
+		method_free (current_profiler, method);
 }
 
 void 

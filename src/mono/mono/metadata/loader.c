@@ -1523,6 +1523,10 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 void
 mono_free_method  (MonoMethod *method)
 {
+	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
+		mono_profiler_method_free (method);
+	
+	/* FIXME: This hack will go away when the profiler will support freeing methods */
 	if (mono_profiler_get_events () != MONO_PROFILE_NONE)
 		return;
 	

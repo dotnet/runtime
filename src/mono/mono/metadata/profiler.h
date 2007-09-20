@@ -23,7 +23,8 @@ typedef enum {
 	MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
 	MONO_PROFILE_COVERAGE         = 1 << 13,
 	MONO_PROFILE_INS_COVERAGE     = 1 << 14,
-	MONO_PROFILE_STATISTICAL      = 1 << 15
+	MONO_PROFILE_STATISTICAL      = 1 << 15,
+	MONO_PROFILE_METHOD_EVENTS    = 1 << 16
 } MonoProfileFlags;
 
 typedef enum {
@@ -106,6 +107,7 @@ void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoPro
 
 void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
 void mono_profiler_install_jit_end (MonoProfileJitResult end);
+void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
 void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
