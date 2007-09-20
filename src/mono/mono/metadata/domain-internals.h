@@ -82,7 +82,7 @@ struct _MonoJitInfo {
 	gpointer    code_start;
 	guint32     used_regs;
 	int         code_size;
-	guint32     num_clauses:24;
+	guint32     num_clauses:16;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
 	gboolean    cas_inited:1;
@@ -92,6 +92,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_assert:1;
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
+	gboolean    generic_shared:1;
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -179,6 +180,8 @@ struct _MonoDomain {
 	GHashTable         *finalizable_objects_hash;
 	/* Used when accessing 'domain_assemblies' */
 	CRITICAL_SECTION    assemblies_lock;
+
+	GHashTable	   *shared_generics_hash;
 };
 
 typedef struct  {
@@ -211,6 +214,13 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end) MONO_INTERNAL;
+
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
+
+void
+mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info) MONO_INTERNAL;
+
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside

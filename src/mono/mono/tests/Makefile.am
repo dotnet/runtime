@@ -295,6 +295,7 @@ TEST_CS2_SRC = \
 	module-cctor-loader.2.cs	\
 	generics-invoke-byref.2.cs	\
 	generic-signature-compare.2.cs	\
+	generics-sharing.2.cs	\
 	bug-80392.2.cs		\
 	bug-82194.2.cs
 

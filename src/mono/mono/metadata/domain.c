@@ -1068,6 +1068,8 @@ mono_domain_create (void)
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
 
+	domain->shared_generics_hash = NULL;
+
 	mono_debug_domain_create (domain);
 
 	mono_appdomains_lock ();
@@ -1645,6 +1647,26 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	return ass;
 }
 
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
+{
+	if (!domain->shared_generics_hash)
+		return NULL;
+
+	return g_hash_table_lookup (domain->shared_generics_hash, method);
+}
+
+void
+mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info)
+{
+	if (!domain->shared_generics_hash)
+		domain->shared_generics_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+
+	g_assert (domain->shared_generics_hash);
+
+	g_hash_table_insert (domain->shared_generics_hash, method, jit_info);
+}
+
 static void
 dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
 {
@@ -1758,6 +1780,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->jit_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->delegate_trampoline_hash);
 	domain->delegate_trampoline_hash = NULL;
+	if (domain->shared_generics_hash) {
+		g_hash_table_destroy (domain->shared_generics_hash);
+		domain->shared_generics_hash = NULL;
+	}
 
 	DeleteCriticalSection (&domain->assemblies_lock);
 	DeleteCriticalSection (&domain->lock);

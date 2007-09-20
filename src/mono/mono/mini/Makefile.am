@@ -230,7 +230,8 @@ common_sources = \
 	declsec.c	\
 	declsec.h	\
 	wapihandles.c	\
-	branch-opts.c
+	branch-opts.c	\
+	generic-sharing.c
 
 test_sources = 		\
 	basic-calls.cs 	\

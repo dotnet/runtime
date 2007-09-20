@@ -175,6 +175,7 @@ enum {
 	MONO_EXCEPTION_FILE_NOT_FOUND = 8,
 	MONO_EXCEPTION_METHOD_ACCESS = 9,
 	MONO_EXCEPTION_FIELD_ACCESS = 10,
+	MONO_EXCEPTION_GENERIC_SHARING_FAILED = 11,
 	/* add other exception type */
 };
 
@@ -529,6 +530,9 @@ typedef struct {
 	gulong jit_info_table_remove_count;
 	gulong jit_info_table_lookup_count;
 	gulong hazardous_pointer_count;
+	gulong generics_sharable_methods;
+	gulong generics_unsharable_methods;
+	gulong generics_shared_methods;
 	gboolean enabled;
 } MonoStats;
 

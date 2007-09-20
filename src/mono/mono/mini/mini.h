@@ -608,6 +608,7 @@ typedef struct {
 	guint            dont_verify_stack_merge : 1;
 	guint            unverifiable : 1;
 	guint            skip_visibility : 1;
+	guint            generic_shared : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
@@ -827,6 +828,16 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_INTRINS_NUM
 };
+
+/*
+ * Flags for which contexts were used in inflating a generic.
+ */
+enum {
+	MONO_GENERIC_CONTEXT_USED_CLASS = 1,
+	MONO_GENERIC_CONTEXT_USED_METHOD = 2
+};
+
+#define MONO_GENERIC_CONTEXT_USED_BOTH		(MONO_GENERIC_CONTEXT_USED_CLASS | MONO_GENERIC_CONTEXT_USED_METHOD)
 
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
@@ -1100,5 +1111,16 @@ MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip
 int mini_wapi_hps     (int argc, char **argv);
 int mini_wapi_semdel  (int argc, char **argv);
 int mini_wapi_seminfo (int argc, char **argv);
+
+/* Generic sharing */
+
+int mono_method_check_context_used (MonoMethod *method, MonoGenericContext *context) MONO_INTERNAL;
+int mono_class_check_context_used (MonoClass *class, MonoGenericContext *context) MONO_INTERNAL;
+
+gboolean mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
+gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL;
+
+MonoGenericContext* mono_make_shared_context (MonoCompile *cfg, MonoGenericContext *context) MONO_INTERNAL;
+
 
 #endif /* __MONO_MINI_H__ */
