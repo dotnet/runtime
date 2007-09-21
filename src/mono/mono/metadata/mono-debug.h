@@ -14,10 +14,8 @@ typedef struct _MonoSymbolTable			MonoSymbolTable;
 typedef struct _MonoDebugDataTable		MonoDebugDataTable;
 
 typedef struct _MonoSymbolFile			MonoSymbolFile;
-typedef struct _MonoSymbolFilePriv		MonoSymbolFilePriv;
 
 typedef struct _MonoDebugHandle			MonoDebugHandle;
-typedef struct _MonoDebugHandlePriv		MonoDebugHandlePriv;
 
 typedef struct _MonoDebugLineNumberEntry	MonoDebugLineNumberEntry;
 typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
@@ -88,7 +86,6 @@ struct _MonoDebugHandle {
 	char *image_file;
 	MonoImage *image;
 	MonoSymbolFile *symfile;
-	MonoDebugHandlePriv *_priv;
 };
 
 struct _MonoDebugMethodJitInfo {

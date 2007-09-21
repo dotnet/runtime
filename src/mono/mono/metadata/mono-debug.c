@@ -185,7 +185,6 @@ free_debug_handle (MonoDebugHandle *handle)
 	/* decrease the refcount added with mono_image_addref () */
 	mono_image_close (handle->image);
 	g_free (handle->image_file);
-	g_free (handle->_priv);
 	g_free (handle);
 }
 
