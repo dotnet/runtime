@@ -41,9 +41,7 @@
  * Keeps track of the various assemblies loaded
  */
 static GHashTable *loaded_images_hash;
-static GHashTable *loaded_images_guid_hash;
 static GHashTable *loaded_images_refonly_hash;
-static GHashTable *loaded_images_refonly_guid_hash;
 
 static gboolean debug_assembly_unload = FALSE;
 
@@ -113,9 +111,7 @@ mono_images_init (void)
 	InitializeCriticalSection (&images_mutex);
 
 	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
-	loaded_images_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
-	loaded_images_refonly_guid_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
 	debug_assembly_unload = getenv ("MONO_DEBUG_ASSEMBLY_UNLOAD") != NULL;
 }
@@ -131,9 +127,7 @@ mono_images_cleanup (void)
 	DeleteCriticalSection (&images_mutex);
 
 	g_hash_table_destroy (loaded_images_hash);
-	g_hash_table_destroy (loaded_images_guid_hash);
 	g_hash_table_destroy (loaded_images_refonly_hash);
-	g_hash_table_destroy (loaded_images_refonly_guid_hash);
 }
 
 /**
@@ -564,22 +558,6 @@ mono_image_load_module (MonoImage *image, int idx)
 	return image->modules [idx - 1];
 }
 
-static void
-register_guid (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoImage *image = (MonoImage*)value;
-
-	if (!g_hash_table_lookup (loaded_images_guid_hash, image))
-		g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
-}
-
-static void
-build_guid_table (gboolean refonly)
-{
-	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
-	g_hash_table_foreach (loaded_images, register_guid, NULL);
-}
-
 static gpointer
 class_key_extract (gpointer value)
 {
@@ -952,16 +930,36 @@ mono_image_loaded (const char *name)
 	return mono_image_loaded_full (name, FALSE);
 }
 
+typedef struct {
+	MonoImage *res;
+	const char* guid;
+} GuidData;
+
+static void
+find_by_guid (gpointer key, gpointer val, gpointer user_data)
+{
+	GuidData *data = user_data;
+	MonoImage *image;
+
+	if (data->res)
+		return;
+	image = val;
+	if (strcmp (data->guid, mono_image_get_guid (image)) == 0)
+		data->res = image;
+}
+
 MonoImage *
 mono_image_loaded_by_guid_full (const char *guid, gboolean refonly)
 {
-	MonoImage *res;
-	GHashTable *loaded_images = refonly ? loaded_images_refonly_guid_hash : loaded_images_guid_hash;
+	GuidData data;
+	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
+	data.res = NULL;
+	data.guid = guid;
 
 	mono_images_lock ();
-	res = g_hash_table_lookup (loaded_images, guid);
+	g_hash_table_foreach (loaded_images, find_by_guid, &data);
 	mono_images_unlock ();
-	return res;
+	return data.res;
 }
 
 MonoImage *
@@ -989,7 +987,6 @@ register_image (MonoImage *image)
 	g_hash_table_insert (loaded_images, image->name, image);
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == NULL))
 		g_hash_table_insert (loaded_images, (char *) image->assembly_name, image);	
-	g_hash_table_insert (image->ref_only ? loaded_images_refonly_guid_hash : loaded_images_guid_hash, image->guid, image);
 	mono_images_unlock ();
 
 	return image;
@@ -1178,7 +1175,7 @@ void
 mono_image_close (MonoImage *image)
 {
 	MonoImage *image2;
-	GHashTable *loaded_images, *loaded_images_guid;
+	GHashTable *loaded_images;
 	int i;
 
 	g_return_if_fail (image != NULL);
@@ -1209,18 +1206,13 @@ mono_image_close (MonoImage *image)
 
 	mono_images_lock ();
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
-	loaded_images_guid = image->ref_only ? loaded_images_refonly_guid_hash : loaded_images_guid_hash;
 	image2 = g_hash_table_lookup (loaded_images, image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images, image->name);
-		g_hash_table_remove (loaded_images_guid, image->guid);
 	}
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == image))
 		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
-
-	/* Multiple images might have the same guid */
-	build_guid_table (image->ref_only);
 
 	mono_images_unlock ();
 
