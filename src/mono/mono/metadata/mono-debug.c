@@ -22,11 +22,15 @@
 	}
 #define WRITE_UNALIGNED(type, addr, val) \
 	memcpy(addr, &val, sizeof(type))
+#define READ_UNALIGNED(type, addr, val) \
+	memcpy(&val, addr, sizeof(type))
 #else
 #define RETURN_UNALIGNED(type, addr) \
 	return *(type*)(p + offset);
 #define WRITE_UNALIGNED(type, addr, val) \
 	(*(type *)(addr) = (val))
+#define READ_UNALIGNED(type, addr, val) \
+	val = (*(type *)(addr))
 #endif
 
 typedef enum {
@@ -523,6 +527,8 @@ write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	write_leb128 (var->size, ptr, &ptr);
 	write_leb128 (var->begin_scope, ptr, &ptr);
 	write_leb128 (var->end_scope, ptr, &ptr);
+	WRITE_UNALIGNED (gpointer, ptr, var->klass);
+	ptr += sizeof (gpointer);
 	*rptr = ptr;
 }
 
@@ -559,7 +565,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	jit->num_lexical_blocks = minfo ? minfo->num_lexical_blocks : 0;
 
 	max_size = 24 + 8 * jit->num_line_numbers + 16 * jit->num_lexical_blocks +
-		20 * (1 + jit->num_params + jit->num_locals);
+		(20 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);
 
 	if (max_size > BUFSIZ)
 		ptr = oldptr = g_malloc (max_size);
@@ -728,6 +734,8 @@ read_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	var->size = read_leb128 (ptr, &ptr);
 	var->begin_scope = read_leb128 (ptr, &ptr);
 	var->end_scope = read_leb128 (ptr, &ptr);
+	READ_UNALIGNED (gpointer, ptr, var->klass);
+	ptr += sizeof (gpointer);
 	*rptr = ptr;
 }
 

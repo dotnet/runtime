@@ -149,6 +149,7 @@ struct _MonoDebugVarInfo {
 	guint32 size;
 	guint32 begin_scope;
 	guint32 end_scope;
+	MonoClass *klass;
 };
 
 #define MONO_DEBUGGER_VERSION				60
