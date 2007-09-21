@@ -2028,9 +2028,6 @@ gclass_in_image (MonoGenericClass *gclass, MonoImage *image)
 static gboolean
 type_in_image (MonoType *type, MonoImage *image)
 {
-	MonoClass *klass;
-
-	/* Avoid allocations.  We just want _some_ MonoClass reachable from @type.  */
 retry:
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
@@ -2039,20 +2036,17 @@ retry:
 		type = type->data.type;
 		goto retry;
 	case MONO_TYPE_SZARRAY:
-		klass = type->data.klass;
-		break;
+		type = &type->data.klass->byval_arg;
+		goto retry;
 	case MONO_TYPE_ARRAY:
-		klass = type->data.array->eklass;
-		break;
+		type = &type->data.array->eklass->byval_arg;
+		goto retry;
 	case MONO_TYPE_FNPTR:
 		return signature_in_image (type->data.method, image);
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
-		klass = mono_class_from_mono_type (type);
-		break;
+		return image == mono_class_from_mono_type (type)->image;
 	}
-
-	return klass->image == image;
 }
 
 typedef struct {
