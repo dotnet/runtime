@@ -1302,7 +1302,6 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 	default:
 		t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, start, &ptr);
 		*result = dis_stringify_type (m, t, is_def);
-		mono_metadata_free_type (t);
 		break;
 	}
 

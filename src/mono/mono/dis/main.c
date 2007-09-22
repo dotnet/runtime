@@ -1016,14 +1016,12 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 	g_string_sprintfa (res, "%s %s (", blurb, qk);
 	g_free (qk);
 	g_free (blurb);
-	mono_metadata_free_type (type);
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
 		param = mono_metadata_parse_type_full (m, container, MONO_PARSE_PARAM, 0, ptr, &ptr);
 		blurb = dis_stringify_param (m, param);
 		g_string_append (res, blurb);
-		mono_metadata_free_type (param);
 		g_free (blurb);
 	}
 	g_string_append_c (res, ')');
