@@ -4410,7 +4410,6 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	}
 
 	if (!do_mono_metadata_parse_type (type, image, NULL, ptr, &ptr)) {
-		g_free (type);
 		mono_loader_unlock ();
 		return NULL;
 	}
