@@ -302,6 +302,7 @@ TEST_CS2_SRC = \
 TEST_IL2_SRC = find-method.2.il	\
 	bug-79215.2.il	\
 	bug-79956.2.il	\
+	bug-327438.2.il \
 	ldtoken_with_byref_typespec.2.il
 
 # pre-requisite test sources: files that are not test themselves
