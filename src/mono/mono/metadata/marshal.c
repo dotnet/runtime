@@ -7715,7 +7715,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					/* set dst_ptr */
 					mono_mb_emit_ldarg (mb, argnum);
 					if (t->byref)
-						mono_mb_emit_byte (mb, CEE_LDIND_I);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
 					mono_mb_emit_ldloc (mb, index_var);
 					mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
 					mono_mb_emit_stloc (mb, 1);
