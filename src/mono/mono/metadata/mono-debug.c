@@ -83,6 +83,11 @@ struct _MonoDebugMethodAddress {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
+struct _MonoDebugClassEntry {
+	guint32 size;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
+};
+
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 gint32 mono_debug_debugger_version = 2;
@@ -866,7 +871,6 @@ mono_debug_add_type (MonoClass *klass)
 		handle->type_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
 	entry->size = total_size;
-	entry->symfile_id = handle->index;
 
 	memcpy (&entry->data, oldptr, size);
 

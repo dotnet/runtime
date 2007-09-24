@@ -111,12 +111,6 @@ struct _MonoDebugMethodAddressList {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
-struct _MonoDebugClassEntry {
-	guint32 size;
-	guint32 symfile_id;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
-};
-
 struct _MonoDebugSourceLocation {
 	gchar *source_file;
 	guint32 row, column;
