@@ -96,7 +96,7 @@ mono_double_ParseImpl (char *ptr, double *result)
 		*result = strtod (ptr, &endptr);
 #else
 	if (*ptr)
-		*result = bsd_strtod (ptr, &endptr);
+		*result = mono_strtod (ptr, &endptr);
 #endif
 
 	if (!*ptr || (endptr && *endptr))

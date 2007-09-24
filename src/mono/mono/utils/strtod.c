@@ -21,6 +21,11 @@
 #define freedtoa __freedtoa
 #define dtoa __dtoa
 
+static GStaticMutex str_mutex [2] = {G_STATIC_MUTEX_INIT, G_STATIC_MUTEX_INIT};
+#define MULTIPLE_THREADS 1
+#define ACQUIRE_DTOA_LOCK(n)	g_static_mutex_lock (&str_mutex [(n)])
+#define FREE_DTOA_LOCK(n)	g_static_mutex_unlock (&str_mutex [(n)])
+
 /* Please send bug reports to David M. Gay (dmg at acm dot org,
  * with " at " changed at "@" and " dot " changed to ".").	*/
 
@@ -216,6 +221,7 @@ extern void *MALLOC(size_t);
 #define MALLOC malloc
 #endif
 
+#define Omit_Private_Memory
 #ifndef Omit_Private_Memory
 #ifndef PRIVATE_MEM
 #define PRIVATE_MEM 2304
@@ -1189,16 +1195,16 @@ b2d
 	*e = 32 - k;
 #ifdef Pack_32
 	if (k < Ebits) {
-		d0 = Exp_1 | y >> Ebits - k;
+		d0 = Exp_1 | (y >> (Ebits - k));
 		w = xa > xa0 ? *--xa : 0;
-		d1 = y << (32-Ebits) + k | w >> Ebits - k;
+		d1 = y << ((32-Ebits) + k) | (w >> (Ebits - k));
 		goto ret_d;
 		}
 	z = xa > xa0 ? *--xa : 0;
 	if (k -= Ebits) {
-		d0 = Exp_1 | y << k | z >> 32 - k;
+		d0 = Exp_1 | y << k | (z >> (32 - k));
 		y = xa > xa0 ? *--xa : 0;
-		d1 = z << k | y >> 32 - k;
+		d1 = z << k | (y >> (32 - k));
 		}
 	else {
 		d0 = Exp_1 | y;
@@ -1275,7 +1281,7 @@ d2b
 #ifdef Pack_32
 	if ((y = d1)) {
 		if ((k = lo0bits(&y))) {
-			x[0] = y | z << 32 - k;
+			x[0] = y | (z << (32 - k));
 			z >>= k;
 			}
 		else
@@ -1538,7 +1544,7 @@ hexnan
 #endif /* INFNAN_CHECK */
 
  double
-bsd_strtod
+mono_strtod
 #ifdef KR_headers
 	(s00, se) CONST char *s00; char **se;
 #else
@@ -1918,7 +1924,7 @@ bsd_strtod
 					if (j >= 53)
 					 word0(rv) = (P+2)*Exp_msk1;
 					else
-					 word0(rv) &= 0xffffffff << j-32;
+					 word0(rv) &= 0xffffffff << (j-32);
 					}
 				else
 					word1(rv) &= 0xffffffff << j;
@@ -2594,9 +2600,9 @@ nrv_alloc(char *s, char **rve, int n)
  * when MULTIPLE_THREADS is not defined.
  */
 
-void freedtoa (char *s);
+static void freedtoa (char *s);
 
- void
+static void
 #ifdef KR_headers
 freedtoa(s) char *s;
 #else
