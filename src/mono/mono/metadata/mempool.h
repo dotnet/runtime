@@ -8,6 +8,9 @@ typedef struct _MonoMemPool MonoMemPool;
 MonoMemPool *
 mono_mempool_new           (void);
 
+MonoMemPool *
+mono_mempool_new_size      (int initial_size);
+
 void
 mono_mempool_destroy       (MonoMemPool *pool);
 

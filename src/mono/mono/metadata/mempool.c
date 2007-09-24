@@ -24,6 +24,7 @@
 #define MEM_ALIGN 8
 
 #define MONO_MEMPOOL_PAGESIZE 8192
+#define MONO_MEMPOOL_MINSIZE 512
 
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
@@ -47,14 +48,23 @@ struct _MonoMemPool {
  * Returns: a new memory pool.
  */
 MonoMemPool *
-mono_mempool_new ()
+mono_mempool_new (void)
 {
-	MonoMemPool *pool = g_malloc (MONO_MEMPOOL_PAGESIZE);
+	return mono_mempool_new_size (MONO_MEMPOOL_PAGESIZE);
+}
+
+MonoMemPool *
+mono_mempool_new_size (int initial_size)
+{
+	MonoMemPool *pool;
+	if (initial_size < MONO_MEMPOOL_MINSIZE)
+		initial_size = MONO_MEMPOOL_MINSIZE;
+	pool = g_malloc (initial_size);
 
 	pool->next = NULL;
 	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
-	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
-	pool->d.allocated = pool->size = MONO_MEMPOOL_PAGESIZE;
+	pool->end = pool->pos + initial_size - sizeof (MonoMemPool);
+	pool->d.allocated = pool->size = initial_size;
 	return pool;
 }
 
@@ -100,7 +110,7 @@ void
 mono_mempool_empty (MonoMemPool *pool)
 {
 	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
-	pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+	pool->end = pool->pos + pool->size - sizeof (MonoMemPool);
 }
 
 /**
@@ -151,6 +161,23 @@ mono_backtrace (int limit)
 
 #endif
 
+static int
+get_next_size (MonoMemPool *pool, int size)
+{
+	int target = pool->next? pool->next->size: pool->size;
+	size += sizeof (MonoMemPool);
+	/* increase the size */
+	target += target / 2;
+	while (target < size) {
+		target += target / 2;
+	}
+	if (target > MONO_MEMPOOL_PAGESIZE)
+		target = MONO_MEMPOOL_PAGESIZE;
+	/* we are called with size smaller than 4096 */
+	g_assert (size <= MONO_MEMPOOL_PAGESIZE);
+	return target;
+}
+
 /**
  * mono_mempool_alloc:
  * @pool: the momory pool to destroy
@@ -188,15 +215,16 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->d.allocated += sizeof (MonoMemPool) + size;
 			return (guint8*)np + sizeof (MonoMemPool);
 		} else {
-			MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
+			int new_size = get_next_size (pool, size);
+			MonoMemPool *np = g_malloc (new_size);
 			np->next = pool->next;
 			pool->next = np;
 			pool->pos = (guint8*)np + sizeof (MonoMemPool);
 			np->pos = (guint8*)np + sizeof (MonoMemPool);
-			np->size = MONO_MEMPOOL_PAGESIZE;
+			np->size = new_size;
 			np->end = np->pos;
-			pool->end = pool->pos + MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
-			pool->d.allocated += MONO_MEMPOOL_PAGESIZE;
+			pool->end = pool->pos + new_size - sizeof (MonoMemPool);
+			pool->d.allocated += new_size;
 
 			rval = pool->pos;
 			pool->pos += size;

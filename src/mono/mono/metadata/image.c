@@ -577,7 +577,7 @@ class_next_value (gpointer value)
 void
 mono_image_init (MonoImage *image)
 {
-	image->mempool = mono_mempool_new ();
+	image->mempool = mono_mempool_new_size (512);
 	image->method_cache = g_hash_table_new (NULL, NULL);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
