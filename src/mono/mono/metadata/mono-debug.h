@@ -73,7 +73,6 @@ struct _MonoSymbolTable {
 	MonoDebugHandle *corlib;
 
 	MonoDebugList *data_tables;
-	MonoDebugDataTable *type_table;
 
 	/*
 	 * The symbol files.
@@ -85,6 +84,7 @@ struct _MonoDebugHandle {
 	guint32 index;
 	char *image_file;
 	MonoImage *image;
+	MonoDebugDataTable *type_table;
 	MonoSymbolFile *symfile;
 };
 

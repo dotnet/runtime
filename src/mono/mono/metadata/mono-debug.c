@@ -125,7 +125,8 @@ create_data_table (MonoDomain *domain)
 	table->first_chunk = table->current_chunk = chunk;
 
 	mono_debug_list_add (&mono_symbol_table->data_tables, table);
-	g_hash_table_insert (data_table_hash, domain, table);
+	if (domain)
+		g_hash_table_insert (data_table_hash, domain, table);
 
 	return table;
 }
@@ -183,6 +184,7 @@ free_debug_handle (MonoDebugHandle *handle)
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
+	free_data_table (handle->type_table);
 	mono_image_close (handle->image);
 	g_free (handle->image_file);
 	g_free (handle);
@@ -218,8 +220,6 @@ mono_debug_init (MonoDebugFormat format)
 
 	data_table_hash = g_hash_table_new_full (
 		NULL, NULL, NULL, (GDestroyNotify) free_data_table);
-
-	mono_symbol_table->type_table = create_data_table (NULL);
 
 	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
@@ -364,6 +364,8 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	handle->image = image;
 	mono_image_addref (image);
 	handle->image_file = g_strdup (mono_image_get_filename (image));
+
+	handle->type_table = create_data_table (NULL);
 
 	handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, in_the_mono_debugger);
 
@@ -860,14 +862,14 @@ mono_debug_add_type (MonoClass *klass)
 	g_assert (total_size + 9 < DATA_TABLE_CHUNK_SIZE);
 
 	entry = (MonoDebugClassEntry *) allocate_data_item (
-		mono_symbol_table->type_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size);
+		handle->type_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
 	entry->size = total_size;
 	entry->symfile_id = handle->index;
 
 	memcpy (&entry->data, oldptr, size);
 
-	write_data_item (mono_symbol_table->type_table, (guint8 *) entry);
+	write_data_item (handle->type_table, (guint8 *) entry);
 
 	if (max_size > BUFSIZ)
 		g_free (oldptr);
