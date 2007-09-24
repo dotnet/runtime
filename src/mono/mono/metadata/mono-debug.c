@@ -124,9 +124,10 @@ create_data_table (MonoDomain *domain)
 
 	table->first_chunk = table->current_chunk = chunk;
 
-	mono_debug_list_add (&mono_symbol_table->data_tables, table);
-	if (domain)
+	if (domain) {
+		mono_debug_list_add (&mono_symbol_table->data_tables, table);
 		g_hash_table_insert (data_table_hash, domain, table);
+	}
 
 	return table;
 }
