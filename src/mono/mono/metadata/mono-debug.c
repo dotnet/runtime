@@ -534,7 +534,7 @@ write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	write_leb128 (var->size, ptr, &ptr);
 	write_leb128 (var->begin_scope, ptr, &ptr);
 	write_leb128 (var->end_scope, ptr, &ptr);
-	WRITE_UNALIGNED (gpointer, ptr, var->klass);
+	WRITE_UNALIGNED (gpointer, ptr, var->type);
 	ptr += sizeof (gpointer);
 	*rptr = ptr;
 }
@@ -741,7 +741,7 @@ read_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	var->size = read_leb128 (ptr, &ptr);
 	var->begin_scope = read_leb128 (ptr, &ptr);
 	var->end_scope = read_leb128 (ptr, &ptr);
-	READ_UNALIGNED (gpointer, ptr, var->klass);
+	READ_UNALIGNED (gpointer, ptr, var->type);
 	ptr += sizeof (gpointer);
 	*rptr = ptr;
 }

@@ -136,7 +136,7 @@ mono_debug_open_method (MonoCompile *cfg)
 static void
 write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 {
-	var->klass = inst->klass;
+	var->type = inst->inst_vtype;
 
 	if (inst->opcode == OP_REGVAR)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
