@@ -1767,7 +1767,7 @@ function create_nesting_test_only_first_ok () {
         for LOAD in yes no
         do
           if ! ( [ "$NESTED" == "no" ] && [ "$LOAD" == "yes" ] ) ; then
-	   EXPECT=unverifiable
+	       EXPECT=unverifiable
            if [ "$FIRST" == "$K" ]; then
               EXPECT=valid
            fi
