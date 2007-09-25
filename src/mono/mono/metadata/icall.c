@@ -1683,11 +1683,11 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 
 	if ((req_info & PInfo_GetMethod) != 0)
 		info->get = property->property->get ?
-			    mono_method_get_object (domain, property->property->get, NULL): NULL;
+			    mono_method_get_object (domain, property->property->get, property->klass): NULL;
 	
 	if ((req_info & PInfo_SetMethod) != 0)
 		info->set = property->property->set ?
-			    mono_method_get_object (domain, property->property->set, NULL): NULL;
+			    mono_method_get_object (domain, property->property->set, property->klass): NULL;
 	/* 
 	 * There may be other methods defined for properties, though, it seems they are not exposed 
 	 * in the reflection API 
