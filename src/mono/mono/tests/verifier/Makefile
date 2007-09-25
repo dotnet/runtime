@@ -4,6 +4,7 @@
 
 compile-stamp: generate-stamp
 	for i in *.il; do ilasm2 $$i; done
+	for i in *.cs; do gmcs $$i; done
 	touch compile-stamp
 
 clean:
@@ -13,7 +14,7 @@ clean:
 
 generate-stamp: make_tests.sh make_bin_test.sh make_exception_branch_test.sh make_obj_store_test.sh \
 		make_stack_0_pop_test.sh make_stack_0_test.sh make_stack_1_pop_test.sh \
-		make_stack_merge_test.sh make_store_test.sh make_unary_test.sh
+		make_stack_merge_test.sh make_store_test.sh make_unary_test.sh 
 	./make_tests.sh
 	touch generate-stamp
 
