@@ -651,7 +651,12 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 void
 mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-#ifndef PLATFORM_WIN32
+#if defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self ());
+	*stsize = pthread_get_stacksize_np (pthread_self ());
+	return;
+	/* FIXME: simplify the mess below */
+#elif !defined(PLATFORM_WIN32)
 	pthread_attr_t attr;
 	guint8 *current = (guint8*)&attr;
 
