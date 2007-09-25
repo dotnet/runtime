@@ -1631,12 +1631,12 @@ handle_enum:
 
 /* convert MonoType to ILStackDesc format (stype) */
 static void
-set_stack_value (ILStackDesc *stack, MonoType *type, int take_addr, int override_byref)
+set_stack_value (ILStackDesc *stack, MonoType *type, int take_addr)
 {
 	int mask = 0;
 	int type_kind = type->type;
 
-	if ((type->byref && !override_byref) || take_addr)
+	if (type->byref || take_addr)
 		mask = POINTER_MASK;
 	/* TODO handle CMMP_MASK */
 
@@ -2185,16 +2185,11 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 				stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 		}
 	} else if (check_overflow (ctx)) {
-		gboolean override_byref;
 		/*We must let the value be pushed, otherwise we would get an underflow error*/
 		check_unverifiable_type (ctx, ctx->params [arg]);
 		if (ctx->params [arg]->byref && take_addr)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ByRef of ByRef at 0x%04x", ctx->ip_offset));
-
-		/*the 'this' argument is byref, which is not right for reference types,
-		 We override the byref only here, since it's the only point that push ctx->params values*/
-		override_byref = arg == 0 && ctx->method->klass && !(ctx->method->flags & METHOD_ATTRIBUTE_STATIC) && !ctx->method->klass->valuetype;	
-		set_stack_value (stack_push (ctx), ctx->params [arg], FALSE, override_byref);
+		set_stack_value (stack_push (ctx), ctx->params [arg], take_addr);
 	} 
 }
 
@@ -2209,7 +2204,7 @@ push_local (VerifyContext *ctx, guint32 arg, int take_addr)
 		if (ctx->locals [arg]->byref && take_addr)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ByRef of ByRef at 0x%04x", ctx->ip_offset));
 
-		set_stack_value (stack_push (ctx), ctx->locals [arg], take_addr, FALSE);
+		set_stack_value (stack_push (ctx), ctx->locals [arg], take_addr);
 	} 
 }
 
@@ -2509,7 +2504,7 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (check_overflow (ctx))
-			set_stack_value (stack_push (ctx), sig->ret, FALSE, FALSE);
+			set_stack_value (stack_push (ctx), sig->ret, FALSE);
 	}
 }
 
@@ -2537,7 +2532,7 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 	if (!mono_method_can_access_field (ctx->method, field))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 
-	set_stack_value (stack_push (ctx), field->type, take_addr, FALSE);
+	set_stack_value (stack_push (ctx), field->type, take_addr);
 }
 
 static void
@@ -2647,7 +2642,7 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 		!(field->parent == ctx->method->klass && (ctx->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && !strcmp (".ctor", ctx->method->name)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
 
-	set_stack_value (stack_push (ctx), field->type, take_addr, FALSE);
+	set_stack_value (stack_push (ctx), field->type, take_addr);
 }
 
 static void
@@ -2713,7 +2708,7 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
 
 	//TODO Pushed managed pointer is haver controled mutability (CMMP) 
-	set_stack_value (stack_push (ctx), mono_type_get_type_byref (type), FALSE, FALSE);
+	set_stack_value (stack_push (ctx), mono_type_get_type_byref (type), FALSE);
 }
 
 static void
@@ -2818,7 +2813,7 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	if (!verify_stack_type_compatibility (ctx, type, mono_type_get_type_byval (value->type), TRUE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldojb operation at 0x%04x", ctx->ip_offset));
 
-	set_stack_value (stack_push (ctx), type, FALSE, FALSE);
+	set_stack_value (stack_push (ctx), type, FALSE);
 }
 
 static void
@@ -2837,7 +2832,7 @@ do_newarr (VerifyContext *ctx, int token)
 	if (value->stype != TYPE_I4 && value->stype != TYPE_NATIVE_INT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Array size type on stack (%s) is not a verifiable type at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
 
-	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE, FALSE);
+	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE);
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -2942,7 +2937,6 @@ mono_method_verify (MonoMethod *method, int level)
 	const unsigned char *target = NULL; /* branch target */
 	int i, n, need_merge = 0, start = 0;
 	guint token, ip_offset = 0, prefix = 0;
-	MonoClass *klass;
 	MonoMethod *cmethod;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
@@ -2988,7 +2982,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	if (ctx.signature->hasthis) {
 		ctx.params = g_new0 (MonoType*, ctx.max_args);
-		ctx.params [0] = &method->klass->this_arg;
+		ctx.params [0] = method->klass->valuetype ? &method->klass->this_arg : &method->klass->byval_arg;
 		memcpy (ctx.params + 1, ctx.signature->params, sizeof (MonoType *) * ctx.signature->param_count);
 	} else {
 		ctx.params = ctx.signature->params;
