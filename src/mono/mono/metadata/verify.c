@@ -1497,6 +1497,12 @@ dump_stack_value (ILStackDesc *value)
 			case MONO_TYPE_GENERICINST:
 				printf ("complex] (inst of %s )", value->type->data.generic_class->container_class->name);
 				return;
+			case MONO_TYPE_VAR:
+				printf ("complex] (type generic param !%d - %s) ", value->type->data.generic_param->num, value->type->data.generic_param->name);
+				return;
+			case MONO_TYPE_MVAR:
+				printf ("complex] (method generic param !!%d - %s) ", value->type->data.generic_param->num, value->type->data.generic_param->name);
+				return;
 			default:
 				printf ("unknown complex %d type]\n", value->type->type);
 				g_assert_not_reached ();
@@ -1667,6 +1673,8 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 
 	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: 
 		stack->stype = TYPE_COMPLEX | mask;
 		return;
 	case MONO_TYPE_I8:
@@ -1983,6 +1991,16 @@ handle_enum:
 				return FALSE;
 			return target->data.klass == candidate->data.klass;
 		}
+		
+	case MONO_TYPE_VAR:
+		if (candidate->type != MONO_TYPE_VAR)
+			return FALSE;
+		return candidate->data.generic_param->num == target->data.generic_param->num;
+
+	case MONO_TYPE_MVAR:
+		if (candidate->type != MONO_TYPE_MVAR)
+			return FALSE;
+		return candidate->data.generic_param->num == target->data.generic_param->num;
 
 	default:
 		VERIFIER_DEBUG ( printf ("unknown store type %d\n", target->type); );
@@ -2129,6 +2147,22 @@ handle_enum:
 				return FALSE;
 			return stack->type->data.klass == type->data.klass;
 		}
+
+	case MONO_TYPE_VAR:
+		if (stack_type != TYPE_COMPLEX)
+			return FALSE;
+		g_assert (stack->type);
+		if (stack->type->type != MONO_TYPE_VAR)
+			return FALSE;
+		return stack->type->data.generic_param->num == type->data.generic_param->num;
+
+	case MONO_TYPE_MVAR:
+		if (stack_type != TYPE_COMPLEX)
+			return FALSE;
+		g_assert (stack->type);
+		if (stack->type->type != MONO_TYPE_MVAR)
+			return FALSE;
+		return stack->type->data.generic_param->num == type->data.generic_param->num;
 
 	default:
 		printf("unknown store type %d\n", type->type);
