@@ -534,11 +534,16 @@ gint _wapi_io_scandir (const gchar *dirname, const gchar *pattern,
 		 * TODO: should this be a MONO_IOMAP option?
 		 */
 		gchar *pattern2 = g_strndup (pattern, strlen (pattern) - 2);
+		gint result2;
 		
 		g_dir_rewind (dir);
-		result = _wapi_glob (dir, pattern2, flags | WAPI_GLOB_APPEND | WAPI_GLOB_UNIQUE, &glob_buf);
+		result2 = _wapi_glob (dir, pattern2, flags | WAPI_GLOB_APPEND | WAPI_GLOB_UNIQUE, &glob_buf);
 
 		g_free (pattern2);
+
+		if (result != 0) {
+			result = result2;
+		}
 	}
 	
 	g_dir_close (dir);
