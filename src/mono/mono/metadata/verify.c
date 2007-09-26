@@ -26,10 +26,10 @@ enum {
 };
 #undef OPDEF
 
-#if DISABLE_LOGGING
-#define VERIFIER_DEBUG(code)
-#else
+#ifdef MONO_VERIFIER_DEBUG
 #define VERIFIER_DEBUG(code) do { code } while (0)
+#else
+#define VERIFIER_DEBUG(code)
 #endif
 
 //////////////////////////////////////////////////////////////////
@@ -3030,8 +3030,7 @@ mono_method_verify (MonoMethod *method, int level)
 		merge_stacks (&ctx, &ctx.eval, &ctx.code[ip_offset], start);
 		start = 0;
 
-/*TODO rename to zero */
-#if 1
+#ifdef MONO_VERIFIER_DEBUG
 		{
 			char *discode;
 			discode = mono_disasm_code_one (NULL, method, ip, NULL);
@@ -3039,7 +3038,7 @@ mono_method_verify (MonoMethod *method, int level)
 			g_print ("[%d] %-29s (%d)\n",  ip_offset, discode, ctx.eval.size);
 			g_free (discode);
 		}
-		dump_stack_state(&ctx.code[ip_offset]);
+		dump_stack_state (&ctx.code [ip_offset]);
 #endif
 
 		switch (*ip) {
