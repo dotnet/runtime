@@ -298,7 +298,8 @@ TEST_CS2_SRC = \
 	generics-sharing.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
-	bug-82194.2.cs
+	bug-82194.2.cs	\
+	generic_type_definition.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
 	bug-79215.2.il	\
