@@ -419,6 +419,26 @@ do
   I=`expr $I + 1`
 done
 
+#valid coersion between native int and int32
+I=1
+for OP in stloc.0 "starg 0" 
+do
+	./make_store_test.sh coercion_83_${I} valid "$OP" int32 "native int"
+ 	./make_store_test.sh coercion_84_${I} valid "$OP" "native int" int32
+
+	./make_store_test.sh coercion_85_${I} valid "$OP" "unsigned int32" "native int"
+ 	./make_store_test.sh coercion_86_${I} valid "$OP" "native int" "unsigned int32"
+
+	./make_store_test.sh coercion_87_${I} valid "$OP" int32 "native unsigned int"
+ 	./make_store_test.sh coercion_88_${I} valid "$OP" "native unsigned int" int32
+
+	./make_store_test.sh coercion_89_${I} valid "$OP" "unsigned int32" "native int"
+ 	./make_store_test.sh coercion_90_${I} valid "$OP" "native unsigned int" "unsigned int32"
+
+	I=`expr $I + 1`
+done
+
+
 function fix () {
 	if [ "$3" != "" ]; then
 		A=$3;
@@ -2181,4 +2201,128 @@ done
 
 #Check if the verifier push the right type on stack
 ./make_newarr_test.sh newarr_array_value valid int32 int32 nop "ldc.i4.0\n\tcallvirt instance int32 class [mscorlib]System.Array::GetLength(int32)"
+
+
+
+
+#Tests for ldind.X
+I=1
+for OP in "ldind.i1" "ldind.u1"
+do
+	for TYPE in "int8" "bool" "unsigned int8"
+	do
+		./make_load_indirect_test.sh indirect_load_i1_${I} valid "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int16" "char" "unsigned int16" "int32" "unsigned int32" "int64" "unsigned int64" "native int" "native unsigned int" "object" "string" "float32" "float64" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+	do
+		./make_load_indirect_test.sh indirect_load_i1_${I} unverifiable "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+done
+
+I=1
+for OP in "ldind.i2" "ldind.u2"
+do
+	for TYPE in "int16" "char" "unsigned int16"
+	do
+		./make_load_indirect_test.sh indirect_load_i2_${I} valid "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int8" "bool" "unsigned int8" "int32" "unsigned int32" "int64" "unsigned int64" "native int" "native unsigned int" "object" "string" "float32" "float64" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+	do
+		./make_load_indirect_test.sh indirect_load_i2_${I} unverifiable "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+done
+
+I=1
+for OP in "ldind.i4" "ldind.u4"
+do
+	for TYPE in "int32" "unsigned int32" "native int" "native unsigned int"
+	do
+		./make_load_indirect_test.sh indirect_load_i4_${I} valid "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int64" "unsigned int64" "object" "string" "float32" "float64" "class Class" "valuetype MyStruct" "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+	do
+		./make_load_indirect_test.sh indirect_load_i4_${I} unverifiable "${OP}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+done
+
+
+#no need to test ldind.u8 as it aliases to ldind.i8
+I=1
+for TYPE in "int64" "unsigned int64"
+do
+	./make_load_indirect_test.sh indirect_load_i8_${I} valid "ldind.i8" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "object" "string" "float32" "float64" "class Class" "valuetype MyStruct" "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_load_indirect_test.sh indirect_load_i8_${I} unverifiable "ldind.i8" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "float32"
+do
+	./make_load_indirect_test.sh indirect_load_r4_${I} valid "ldind.r4" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "int64" "unsigned int64" "float64" "native int" "native unsigned int" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_load_indirect_test.sh indirect_load_r4_${I} unverifiable "ldind.r4" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "float64"
+do
+	./make_load_indirect_test.sh indirect_load_r8_${I} valid "ldind.r8" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "int64" "unsigned int64" "float32" "native int" "native unsigned int" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_load_indirect_test.sh indirect_load_r8_${I} unverifiable "ldind.r8" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "int32" "unsigned int32" "native int" "native unsigned int" 
+do
+	./make_load_indirect_test.sh indirect_load_i_${I} valid "ldind.i" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int64" "unsigned int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct" "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_load_indirect_test.sh indirect_load_i_${I} unverifiable "ldind.i" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "object" "string" "class Class"  "int32[]" "int32[,]" "class Template\`1<object>"
+do
+	./make_load_indirect_test.sh indirect_load_r_${I} valid "ldind.ref" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "int64" "unsigned int64" "native int" "native unsigned int" "float32" "float64" "valuetype MyStruct" "int32*" "method int32 *(int32)"
+do
+	./make_load_indirect_test.sh indirect_load_r_${I} unverifiable "${OP}" "${TYPE}"
+	I=`expr $I + 1`
+done
+
 
