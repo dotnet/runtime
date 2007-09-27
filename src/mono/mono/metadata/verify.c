@@ -2816,6 +2816,67 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), type, FALSE);
 }
 
+static MonoType *
+get_load_indirect_mono_type (int opcode) {
+	switch (opcode) {
+	case CEE_LDIND_I1:
+	case CEE_LDIND_U1:
+		return &mono_defaults.sbyte_class->byval_arg;
+
+	case CEE_LDIND_I2:
+	case CEE_LDIND_U2:
+		return &mono_defaults.int16_class->byval_arg;
+
+	case CEE_LDIND_I4:
+	case CEE_LDIND_U4:
+		return &mono_defaults.int32_class->byval_arg;
+
+	case CEE_LDIND_I8:
+		return &mono_defaults.int64_class->byval_arg;
+
+	case CEE_LDIND_R4:
+		return &mono_defaults.single_class->byval_arg;
+
+	case CEE_LDIND_R8:		
+		return &mono_defaults.double_class->byval_arg;
+
+	case CEE_LDIND_I:
+		return &mono_defaults.int_class->byval_arg;
+
+	case CEE_LDIND_REF:
+		return &mono_defaults.object_class->byval_arg;
+
+	default:
+		g_error ("unknown opcode %02x in get_load_indirect_type ", opcode);
+		return NULL;
+	}
+}
+
+static void
+do_load_indirect (VerifyContext *ctx, int opcode)
+{
+	ILStackDesc *value;
+	if (!check_underflow (ctx, 1))
+		return;
+	
+	value = stack_pop (ctx);
+	if (!IS_MANAGED_POINTER (value->stype)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Load indirect not using a manager pointer at 0x%04x", ctx->ip_offset));
+		set_stack_value (stack_push (ctx), get_load_indirect_mono_type (opcode), FALSE);
+		return;
+	}
+
+	if (opcode == CEE_LDIND_REF) {
+		if (UNMASK_TYPE (value->stype) != TYPE_COMPLEX || mono_class_from_mono_type (value->type)->valuetype)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldind_ref expected object byref operation at 0x%04x", ctx->ip_offset));
+		set_stack_value (stack_push (ctx), mono_type_get_type_byval (value->type), FALSE);
+	} else {
+		if (!verify_stack_type_compatibility (ctx, get_load_indirect_mono_type (opcode), mono_type_get_type_byval (value->type), TRUE))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldind 0x%x operation at 0x%04x", opcode, ctx->ip_offset));
+		set_stack_value (stack_push (ctx), get_load_indirect_mono_type (opcode), FALSE);
+	}
+}
+
 static void
 do_newarr (VerifyContext *ctx, int token) 
 {
@@ -3319,6 +3380,7 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to switch at 0x%04x", ip_offset));
 			ip += 5 + sizeof (guint32) * n;
 			break;
+
 		case CEE_LDIND_I1:
 		case CEE_LDIND_U1:
 		case CEE_LDIND_I2:
@@ -3330,13 +3392,10 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDIND_R4:
 		case CEE_LDIND_R8:
 		case CEE_LDIND_REF:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_PTR && stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldind at 0x%04x", ip_offset));
-			stack_top (&ctx)->stype = ldind_type [*ip - CEE_LDIND_I1];
+			do_load_indirect (&ctx, *ip);
 			++ip;
 			break;
+			
 		case CEE_STIND_REF:
 		case CEE_STIND_I1:
 		case CEE_STIND_I2:
