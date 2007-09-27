@@ -533,6 +533,9 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		/* We can't use context->class_inst directly, since it can have more elements */
 		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
+		if (inst == container->context.class_inst)
+			return NULL;
+
 		gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
 
 		nt = mono_metadata_type_dup (NULL, type);
@@ -3271,7 +3274,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	mono_loader_lock ();
 	if (gclass->cached_class) {
 		mono_loader_unlock ();
-		g_assert (!gclass->cached_class->generic_container);
 		return gclass->cached_class;
 	}
 
@@ -6008,4 +6010,10 @@ gboolean mono_class_is_valid_enum (MonoClass *klass) {
 		return FALSE;
 
 	return TRUE;
+}
+
+gboolean
+mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
+{
+	return gklass->context.class_inst == gklass->container_class->generic_container->context.class_inst;
 }

@@ -400,6 +400,7 @@ struct _MonoGenericClass {
 	MonoClass *container_class;	/* the generic type definition */
 	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
+	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 };
 
@@ -846,6 +847,9 @@ mono_class_is_valid_enum (MonoClass *klass);
 
 MonoType *
 mono_type_get_full        (MonoImage *image, guint32 type_token, MonoGenericContext *context) MONO_INTERNAL;
+
+gboolean
+mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

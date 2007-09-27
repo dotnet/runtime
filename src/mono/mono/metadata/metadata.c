@@ -1430,6 +1430,7 @@ mono_generic_class_hash (gconstpointer data)
 	guint hash = mono_metadata_type_hash (&gclass->container_class->byval_arg);
 
 	hash *= 13;
+	hash += gclass->is_tb_open;
 	hash += mono_metadata_generic_context_hash (&gclass->context);
 
 	return hash;
@@ -2173,7 +2174,7 @@ free_generic_class (MonoGenericClass *gclass)
 	int i;
 
 	/* FIXME: The dynamic case */
-	if (gclass->cached_class && !gclass->cached_class->image->dynamic) {
+	if (gclass->cached_class && !gclass->cached_class->image->dynamic && !mono_generic_class_is_generic_type_definition (gclass)) {
 		MonoClass *class = gclass->cached_class;
 
 		/* Allocated in mono_class_init () */
@@ -2299,6 +2300,16 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	return ginst;
 }
 
+static gboolean
+mono_metadata_is_type_builder_generic_type_definition (MonoClass *container_class, MonoGenericInst *inst, gboolean is_dynamic)
+{
+	MonoGenericContainer *container = container_class->generic_container; 
+
+	if (!is_dynamic || container_class->wastypebuilder || container->type_argc != inst->type_argc)
+		return FALSE;
+	return inst == container->context.class_inst;
+}
+
 /*
  * mono_metadata_lookup_generic_class:
  *
@@ -2309,12 +2320,14 @@ MonoGenericClass *
 mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst *inst, gboolean is_dynamic)
 {
 	MonoGenericClass *gclass;
-
 	MonoGenericClass helper;
+	gboolean is_tb_open = mono_metadata_is_type_builder_generic_type_definition (container_class, inst, is_dynamic);
+
 	helper.container_class = container_class;
 	helper.context.class_inst = inst;
 	helper.context.method_inst = NULL;
 	helper.is_dynamic = is_dynamic; /* We use this in a hash lookup, which does not attempt to downcast the pointer */
+	helper.is_tb_open = is_tb_open;
 	helper.cached_class = NULL;
 
 	mono_loader_lock ();
@@ -2337,9 +2350,12 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 		gclass = g_new0 (MonoGenericClass, 1);
 	}
 
+	gclass->is_tb_open = is_tb_open;
 	gclass->container_class = container_class;
 	gclass->context.class_inst = inst;
 	gclass->context.method_inst = NULL;
+	if (inst == container_class->generic_container->context.class_inst && !is_tb_open)
+		gclass->cached_class = container_class;
 
 	g_hash_table_insert (generic_class_cache, gclass, gclass);
 
@@ -3746,7 +3762,7 @@ _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGeneri
 		if (!do_mono_metadata_type_equal (i1->type_argv [i], i2->type_argv [i], signature_only))
 			return FALSE;
 	}
-	return TRUE;
+	return g1->is_tb_open == g2->is_tb_open;
 }
 
 guint
