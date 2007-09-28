@@ -189,16 +189,19 @@ typedef struct {
 } MonoClassRuntimeInfo;
 
 struct _MonoClass {
-	MonoImage *image;
-
-	/* The underlying type of the enum */
-	MonoType *enum_basetype;
 	/* element class for arrays and enum */
 	MonoClass *element_class; 
 	/* used for subtype checks */
 	MonoClass *cast_class; 
+
+	/* for fast subtype checks */
+	MonoClass **supertypes;
+	guint16     idepth;
+
 	/* array dimension */
 	guint8     rank;          
+
+	int        instance_size; /* object instance size */
 
 	guint inited          : 1;
 	/* We use init_pending to detect cyclic calls to mono_class_init */
@@ -242,19 +245,21 @@ struct _MonoClass {
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 	void*      exception_data;	/* Additional information about the exception */
-	guint32    declsec_flags;	/* declarative security attributes flags */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
 	GList      *nested_classes;
 
-	guint32    type_token;
+	MonoImage *image;
 	const char *name;
 	const char *name_space;
-	
-	/* for fast subtype checks */
-	MonoClass **supertypes;
-	guint16     idepth;
+
+	/* The underlying type of the enum */
+	MonoType *enum_basetype;
+
+	guint32    declsec_flags;	/* declarative security attributes flags */
+	guint32    type_token;
+	int        vtable_size; /* number of slots */
 
 	guint16     interface_count;
 	guint16     interface_id;        /* unique inderface id (for interfaces) */
@@ -267,11 +272,6 @@ struct _MonoClass {
 	
 	MonoClass **interfaces;
 
-	/*
-	 * Computed object instance size, total.
-	 */
-	int        instance_size;
-	int        vtable_size; /* number of slots */
 	union {
 		int class_size; /* size of area for static fields */
 		int element_size; /* for array types */
