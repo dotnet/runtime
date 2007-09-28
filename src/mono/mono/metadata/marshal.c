@@ -52,6 +52,7 @@ struct _MonoMethodBuilder {
 	GList *locals_list;
 	int locals;
 	gboolean dynamic;
+	gboolean no_dup_name;
 	guint32 code_size, pos;
 	unsigned char *code;
 };
@@ -1209,20 +1210,20 @@ mono_mb_free (MonoMethodBuilder *mb)
 	g_list_free (mb->locals_list);
 	if (!mb->dynamic) {
 		g_free (mb->method);
-		g_free (mb->name);
+		if (!mb->no_dup_name)
+			g_free (mb->name);
 		g_free (mb->code);
 	}
 	g_free (mb);
 }
 
-MonoMethodBuilder *
-mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
+static MonoMethodBuilder *
+mono_mb_new_base (MonoClass *klass, MonoWrapperType type)
 {
 	MonoMethodBuilder *mb;
 	MonoMethod *m;
 
 	g_assert (klass != NULL);
-	g_assert (name != NULL);
 
 	mb = g_new0 (MonoMethodBuilder, 1);
 
@@ -1232,10 +1233,26 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 	m->inline_info = 1;
 	m->wrapper_type = type;
 
-	mb->name = g_strdup (name);
 	mb->code_size = 40;
 	mb->code = g_malloc (mb->code_size);
 	
+	return mb;
+}
+
+static MonoMethodBuilder *
+mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType type)
+{
+	MonoMethodBuilder *mb = mono_mb_new_base (klass, type);
+	mb->name = (char*)name;
+	mb->no_dup_name = TRUE;
+	return mb;
+}
+
+MonoMethodBuilder *
+mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
+{
+	MonoMethodBuilder *mb = mono_mb_new_base (klass, type);
+	mb->name = g_strdup (name);
 	return mb;
 }
 
@@ -1297,7 +1314,10 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		method = mono_mempool_alloc (mp, sizeof (MonoMethodWrapper));
 		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
 
-		method->name = mono_mempool_strdup (mp, mb->name);
+		if (mb->no_dup_name)
+			method->name = mb->name;
+		else
+			method->name = mono_mempool_strdup (mp, mb->name);
 
 		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
 			mono_mempool_alloc0 (mp, sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
@@ -11374,7 +11394,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	MonoMethod *res;
 	int i;
 
-	mb = mono_mb_new (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new_no_dup_name (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
