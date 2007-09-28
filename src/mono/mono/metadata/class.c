@@ -2435,21 +2435,36 @@ g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
 	return n;
 }
 
-static void
-setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
+typedef struct {
+	MonoMethod *array_method;
+	char *name;
+} GenericArrayMethodInfo;
+
+static int generic_array_method_num = 0;
+static GenericArrayMethodInfo *generic_array_method_info = NULL;
+
+static int
+generic_array_methods (MonoClass *class)
 {
-	MonoGenericContext tmp_context;
-	int i;
-
-	tmp_context.class_inst = NULL;
-	tmp_context.method_inst = iface->generic_class->context.class_inst;
-
+	int i, count_generic = 0;
+	GList *list = NULL, *tmp;
+	if (generic_array_method_num)
+		return generic_array_method_num;
 	for (i = 0; i < class->parent->method.count; i++) {
 		MonoMethod *m = class->parent->methods [i];
-		MonoMethod *inflated;
+		if (!strncmp (m->name, "InternalArray__", 15)) {
+			count_generic++;
+			list = g_list_prepend (list, m);
+		}
+	}
+	list = g_list_reverse (list);
+	generic_array_method_info = g_malloc (sizeof (GenericArrayMethodInfo) * count_generic);
+	i = 0;
+	for (tmp = list; tmp; tmp = tmp->next) {
 		const char *mname, *iname;
 		gchar *name;
-
+		MonoMethod *m = tmp->data;
+		generic_array_method_info [i].array_method = m;
 		if (!strncmp (m->name, "InternalArray__ICollection_", 27)) {
 			iname = "System.Collections.Generic.ICollection`1.";
 			mname = m->name + 27;
@@ -2460,15 +2475,37 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
 			iname = "System.Collections.Generic.IList`1.";
 			mname = m->name + 15;
 		} else {
-			continue;
+			g_assert_not_reached ();
 		}
 
-		name = mono_mempool_alloc (class->image->mempool, strlen (iname) + strlen (mname) + 1);
+		name = mono_mempool_alloc (mono_defaults.corlib->mempool, strlen (iname) + strlen (mname) + 1);
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
+		generic_array_method_info [i].name = name;
+		i++;
+	}
+	/*g_print ("array generic methods: %d\n", count_generic);*/
+
+	generic_array_method_num = count_generic;
+	return generic_array_method_num;
+}
+
+static void
+setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, int pos)
+{
+	MonoGenericContext tmp_context;
+	int i;
+
+	tmp_context.class_inst = NULL;
+	tmp_context.method_inst = iface->generic_class->context.class_inst;
+	//g_print ("setting up array interface: %s\n", mono_type_get_name_full (&iface->byval_arg, 0));
+
+	for (i = 0; i < generic_array_method_num; i++) {
+		MonoMethod *m = generic_array_method_info [i].array_method;
+		MonoMethod *inflated;
 
 		inflated = mono_class_inflate_generic_method (m, &tmp_context);
-		class->methods [pos++] = mono_marshal_get_generic_array_helper (class, iface, name, inflated);
+		class->methods [pos++] = mono_marshal_get_generic_array_helper (class, iface, generic_array_method_info [i].name, inflated);
 	}
 }
 
@@ -2697,11 +2734,7 @@ mono_class_init (MonoClass *class)
 		class->method.count = 3 + (class->rank > 1? 2: 1);
 
 		if (class->interface_count) {
-			for (i = 0; i < class->parent->method.count; i++) {
-				MonoMethod *m = class->parent->methods [i];
-				if (!strncmp (m->name, "InternalArray__", 15))
-					count_generic++;
-			}
+			count_generic = generic_array_methods (class);
 			first_generic = class->method.count;
 			class->method.count += class->interface_count * count_generic;
 		}
@@ -3721,9 +3754,26 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	mono_class_setup_supertypes (class);
 
 	if (mono_defaults.generic_ilist_class) {
+		static MonoClass* generic_icollection_class = NULL;
+		static MonoClass* generic_ienumerable_class = NULL;
 		MonoClass *fclass = NULL;
 		int i;
 
+		if (!generic_icollection_class) {
+			generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+				"System.Collections.Generic", "ICollection`1");
+			generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+				"System.Collections.Generic", "IEnumerable`1");
+		}
+
+		/*
+		 * Arrays in 2.0 need to implement a number of generic interfaces
+		 * (IList`1, ICollection`1, IEnumerable`1 for a number of types depending
+		 * on the element class). We collect the types needed to build the
+		 * instantiations in class->interfaces at intervals of 3, because 3 are
+		 * the generic interfaces needed to implement. We then walk class->interfaces
+		 * in a single loop to build the proper interface classes.
+		 */
 		if (eclass->valuetype) {
 			if (eclass == mono_defaults.int16_class)
 				fclass = mono_defaults.uint16_class;
@@ -3742,39 +3792,60 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 			if (eclass == mono_defaults.sbyte_class)
 				fclass = mono_defaults.byte_class;
 
+/* set to 3 to enable the additional interfaces */
+#define ARRAY_IFACES_NUM 1
+			/* IList, ICollection, IEnumerable */
 			class->interface_count = fclass ? 2 : 1;
+			class->interface_count *= ARRAY_IFACES_NUM;
+			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
+			class->interfaces [0] = eclass;
+			if (fclass)
+				class->interfaces [ARRAY_IFACES_NUM] = fclass;
 		} else if (MONO_CLASS_IS_INTERFACE (eclass)) {
+			int j;
 			class->interface_count = 2 + eclass->interface_count;
+			/* IList, ICollection, IEnumerable */
+			class->interface_count *= ARRAY_IFACES_NUM;
+			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
+			class->interfaces [0] = mono_defaults.object_class;
+			class->interfaces [ARRAY_IFACES_NUM] = eclass;
+			j = ARRAY_IFACES_NUM * 2;
+			for (i = 0; i < eclass->interface_count; i++) {
+				class->interfaces [j] = eclass->interfaces [i];
+				j += ARRAY_IFACES_NUM;
+			}
 		} else {
+			int j;
 			class->interface_count = eclass->idepth + eclass->interface_count;
+			/* IList, ICollection, IEnumerable */
+			class->interface_count *= ARRAY_IFACES_NUM;
+			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
+			j = 0;
+			for (i = 0; i < eclass->idepth; i++) {
+				class->interfaces [j] = eclass->supertypes [i];
+				j += ARRAY_IFACES_NUM;
+			}
+			for (i = 0; i < eclass->interface_count; i++) {
+				class->interfaces [j] = eclass->interfaces [i];
+				j += ARRAY_IFACES_NUM;
+			}
 		}
 
-		class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
-
-		for (i = 0; i < class->interface_count; i++) {
+		for (i = 0; i < class->interface_count; i += ARRAY_IFACES_NUM) {
 			MonoType *args [1];
-			MonoClass *iface;
-
-			if (eclass->valuetype)
-				iface = (i == 0) ? eclass : fclass;
-			else if (MONO_CLASS_IS_INTERFACE (eclass)) {
-				if (i == 0)
-					iface = mono_defaults.object_class;
-				else if (i == 1)
-					iface = eclass;
-				else
-					iface = eclass->interfaces [i - 2];
-			} else {
-				if (i < eclass->idepth)
-					iface = eclass->supertypes [i];
-				else
-					iface = eclass->interfaces [i - eclass->idepth];
-			}
+			MonoClass *iface = class->interfaces [i];
 
 			args [0] = &iface->byval_arg;
-
 			class->interfaces [i] = mono_class_bind_generic_parameters (
 				mono_defaults.generic_ilist_class, 1, args, FALSE);
+#if ARRAY_IFACES_NUM == 3
+			args [0] = &iface->byval_arg;
+			class->interfaces [i + 1] = mono_class_bind_generic_parameters (
+				generic_icollection_class, 1, args, FALSE);
+			args [0] = &iface->byval_arg;
+			class->interfaces [i + 2] = mono_class_bind_generic_parameters (
+				generic_ienumerable_class, 1, args, FALSE);
+#endif
 		}
 	}
 
