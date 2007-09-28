@@ -4529,6 +4529,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	g_assert (addr);
 
 	class = this->vtable->klass;
+	mono_stats.delegate_creations++;
 
 	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
 		method = ji->method;

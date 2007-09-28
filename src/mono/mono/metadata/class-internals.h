@@ -519,6 +519,7 @@ typedef struct {
 	gulong dynamic_code_alloc_count;
 	gulong dynamic_code_bytes_count;
 	gulong dynamic_code_frees_count;
+	gulong delegate_creations;
 	gulong imt_tables_size;
 	gulong imt_number_of_tables;
 	gulong imt_number_of_methods;
