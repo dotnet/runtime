@@ -1561,8 +1561,12 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 	if (!klass) 
 		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
-	if (ta->dynamic || (ta == ass))
-		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
+	if (ta->dynamic || (ta == ass)) {
+		if (klass->generic_class)
+			return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_FULL_NAME);
+		else
+			return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
+	}
 
 	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
