@@ -842,7 +842,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx)
 {
-	MonoMethod *method, *inflated;
+	MonoMethod *method;
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext new_context;
@@ -862,32 +862,10 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	g_assert (param_count);
 
-	/*
-	 * Be careful with the two contexts here:
-	 *
-	 * ----------------------------------------
-	 * class Foo<S> {
-	 *   static void Hello<T> (S s, T t) { }
-	 *
-	 *   static void Test<U> (U u) {
-	 *     Foo<U>.Hello<string> (u, "World");
-	 *   }
-	 * }
-	 * ----------------------------------------
-	 *
-	 * Let's assume we're currently JITing Foo<int>.Test<long>
-	 * (ie. `S' is instantiated as `int' and `U' is instantiated as `long').
-	 *
-	 * The call to Hello() is encoded with a MethodSpec with a TypeSpec as parent
-	 * (MONO_MEMBERREF_PARENT_TYPESPEC).
-	 *
-	 * The TypeSpec is encoded as `Foo<!!0>', so we need to parse it in the current
-	 * context (S=int, U=long) to get the correct `Foo<long>'.
-	 * 
-	 * After that, we parse the memberref signature in the new context
-	 * (S=int, T=uninstantiated) and get the open generic method `Foo<long>.Hello<T>'.
-	 *
-	 */
+	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
+	if (context && inst->is_open)
+		inst = mono_metadata_inflate_generic_inst (inst, context);
+
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
 	else
@@ -895,47 +873,15 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 
 	klass = method->klass;
 
-	/* FIXME: Is this invalid metadata?  Should we throw an exception instead?  */
-	g_assert (!klass->generic_container);
-
 	if (klass->generic_class) {
 		g_assert (method->is_inflated);
 		method = ((MonoMethodInflated *) method)->declaring;
 	}
 
 	new_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
-
-	/*
-	 * When parsing the methodspec signature, we're in the old context again:
-	 *
-	 * ----------------------------------------
-	 * class Foo {
-	 *   static void Hello<T> (T t) { }
-	 *
-	 *   static void Test<U> (U u) {
-	 *     Foo.Hello<U> (u);
-	 *   }
-	 * }
-	 * ----------------------------------------
-	 *
-	 * Let's assume we're currently JITing "Foo.Test<float>".
-	 *
-	 * In this case, we already parsed the memberref as "Foo.Hello<T>" and the methodspec
-	 * signature is "<!!0>".  This means that we must instantiate the method type parameter
-	 * `T' from the new method with the method type parameter `U' from the current context;
-	 * ie. instantiate the method as `Foo.Hello<float>.
-	 */
-
-	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
-
-	if (context && inst->is_open)
-		inst = mono_metadata_inflate_generic_inst (inst, context);
-
 	new_context.method_inst = inst;
 
-	inflated = mono_class_inflate_generic_method_full (method, klass, &new_context);
-
-	return inflated;
+	return mono_class_inflate_generic_method_full (method, klass, &new_context);
 }
 
 struct _MonoDllMap {
