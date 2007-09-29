@@ -566,7 +566,9 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGener
 	if (!context)
 		return sig;
 
-	res = mono_metadata_signature_alloc (image, sig->param_count);
+	res = g_malloc0 (sizeof (MonoMethodSignature) + ((gint32)sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	res->param_count = sig->param_count;
+	res->sentinelpos = -1;
 	res->ret = mono_class_inflate_generic_type (sig->ret, context);
 	is_open = mono_class_is_open_constructed_type (res->ret);
 	for (i = 0; i < sig->param_count; ++i) {

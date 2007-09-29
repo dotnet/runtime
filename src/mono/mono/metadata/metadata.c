@@ -1931,8 +1931,7 @@ mono_metadata_free_inflated_signature (MonoMethodSignature *sig)
 		if (sig->params [i])
 			mono_metadata_free_type (sig->params [i]);
 	}
-	/* FIXME: The signature is allocated from a mempool */
-	//g_free (sig);
+	g_free (sig);
 }
 
 static gboolean
