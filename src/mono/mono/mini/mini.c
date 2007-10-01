@@ -11979,6 +11979,15 @@ mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget targ
 	return mono_get_addr_from_ftnptr (addr);
 }
 
+static gpointer
+mini_get_imt_trampoline (void)
+{
+	static gpointer tramp = NULL;
+	if (!tramp)
+		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_GENERIC, mono_get_root_domain (), NULL);
+	return tramp;
+}
+
 static void
 mini_parse_debug_options (void)
 {
@@ -12126,9 +12135,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-#ifdef MONO_ARCH_HAVE_IMT
-	mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
-#endif
 	if (debug_options.collect_pagefault_stats) {
 		mono_raw_buffer_set_make_unreadable (TRUE);
 		mono_aot_set_make_unreadable (TRUE);
@@ -12138,6 +12144,10 @@ mini_init (const char *filename, const char *runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
 		domain = mono_init_from_assembly (filename, filename);
+#ifdef MONO_ARCH_HAVE_IMT
+	mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
+	mono_install_imt_trampoline (mini_get_imt_trampoline ());
+#endif
 	mono_icall_init ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 

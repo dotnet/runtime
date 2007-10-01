@@ -50,6 +50,8 @@
 #define inst_ls_word data.op[MINI_LS_WORD_IDX].const_val
 #define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
+#define MONO_FAKE_IMT_METHOD ((MonoMethod*)GINT_TO_POINTER(-1))
+
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "32"
 

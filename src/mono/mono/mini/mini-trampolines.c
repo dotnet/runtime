@@ -16,7 +16,7 @@
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
-mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method)
+mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method)
 {
 	MonoObject *this_argument = mono_arch_find_this_argument (regs, method);
 	MonoVTable *vt = this_argument->vtable;
@@ -33,6 +33,10 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 		int interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
 		int imt_slot = MONO_IMT_SIZE + displacement;
 
+		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
+
+		if (impl_method)
+			*impl_method = vt->klass->vtable [interface_offset + imt_method->slot];
 #if DEBUG_IMT
 		printf ("mono_convert_imt_slot_to_vtable_slot: method = %s.%s.%s, imt_method = %s.%s.%s\n",
 				method->klass->name_space, method->klass->name, method->name, 
@@ -68,6 +72,23 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	gpointer addr;
 	gpointer *vtable_slot;
 
+	/* this is the IMT trampoline */
+#ifdef MONO_ARCH_HAVE_IMT
+	if (m == MONO_FAKE_IMT_METHOD) {
+		MonoMethod *impl_method;
+		/* we get the interface method because mono_convert_imt_slot_to_vtable_slot ()
+		 * needs the signature to be able to find the this argument
+		 */
+		m = mono_arch_find_imt_method (regs, code);
+		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+		g_assert (vtable_slot);
+		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, &impl_method);
+		/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
+		 * to be called, so we compile it and go ahead as usual.
+		 */
+		m = impl_method;
+	}
+#endif
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
@@ -85,7 +106,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
 #ifdef MONO_ARCH_HAVE_IMT
-			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m);
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, NULL);
 #endif
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 		}
@@ -178,7 +199,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 #ifdef MONO_ARCH_HAVE_IMT
 		if (!method)
 			method = mono_get_method (image, token, NULL);
-		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, method);
+		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, method, NULL);
 #endif
 		*vtable_slot = addr;
 	}
