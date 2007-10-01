@@ -12345,6 +12345,7 @@ print_jit_stats (void)
 		g_print ("Locals stack size:      %ld\n", mono_jit_stats.locals_stack_size);
 
 		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
+		g_print ("Delegates created:      %ld\n", mono_stats.delegate_creations);
 		g_print ("Initialized classes:    %ld\n", mono_stats.initialized_class_count);
 		g_print ("Used classes:           %ld\n", mono_stats.used_class_count);
 		g_print ("Generic vtables:        %ld\n", mono_stats.generic_vtable_count);
