@@ -4187,6 +4187,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 5
 #define JUMP_IMM_SIZE 6
+#define ENABLE_WRONG_METHOD_CHECK 0
 
 static int
 imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
@@ -4216,9 +4217,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->chunk_size += BR_SMALL_SIZE + JUMP_IMM_SIZE;
 			} else {
 				item->chunk_size += JUMP_IMM_SIZE;
-				/* with assert below:
-				 * item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
-				 */
+#if ENABLE_WRONG_METHOD_CHECK
+				item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
+#endif
 			}
 		} else {
 			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
@@ -4240,13 +4241,17 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
 			} else {
 				/* enable the commented code to assert on wrong method */
-				/*x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+#if ENABLE_WRONG_METHOD_CHECK
+				x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
 				item->jmp_code = code;
-				x86_branch8 (code, X86_CC_NE, 0, FALSE);*/
+				x86_branch8 (code, X86_CC_NE, 0, FALSE);
+#endif
 				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
-				/*x86_patch (item->jmp_code, code);
+#if ENABLE_WRONG_METHOD_CHECK
+				x86_patch (item->jmp_code, code);
 				x86_breakpoint (code);
-				item->jmp_code = NULL;*/
+				item->jmp_code = NULL;
+#endif
 			}
 		} else {
 			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
