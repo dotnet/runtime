@@ -1766,11 +1766,11 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		}
 
 		if (patch_id) {
-			idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_id));
+			idx = GPOINTER_TO_UINT (g_hash_table_lookup (hash, patch_id));
 			if (idx)
 				res = idx;
 			else
-				g_hash_table_insert (acfg->patch_to_plt_offset, patch_id, GUINT_TO_POINTER (acfg->plt_offset));
+				g_hash_table_insert (hash, patch_id, GUINT_TO_POINTER (acfg->plt_offset));
 		}
 
 		if (res == -1) {
