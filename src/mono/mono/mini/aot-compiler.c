@@ -107,6 +107,7 @@ typedef struct MonoAotCompile {
 	MonoImage *image;
 	MonoCompile **cfgs;
 	GHashTable *patch_to_plt_offset;
+	GHashTable **patch_to_plt_offset_wrapper;
 	GHashTable *plt_offset_to_patch;
 	GHashTable *patch_to_shared_got_offset;
 	GPtrArray *shared_patches;
@@ -1731,6 +1732,7 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 {
 	int res = -1;
 	int idx;
+	GHashTable *hash = acfg->patch_to_plt_offset;
 
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_METHOD:
@@ -1752,9 +1754,12 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			patch_id = patch_info->data.klass;
 			break;
 		case MONO_PATCH_INFO_WRAPPER:
-			/* A bit ugly, but works */
-			g_assert (patch_info->data.method->wrapper_type < sizeof (MonoMethod));
-			patch_id = (gpointer)(((guint8*)patch_info->data.method) + patch_info->data.method->wrapper_type);
+			hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
+			if (!hash) {
+				acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type] = g_hash_table_new (NULL, NULL);
+				hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
+			}
+			patch_id = patch_info->data.method;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -3361,6 +3366,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (NULL, NULL);
+	acfg->patch_to_plt_offset_wrapper = g_malloc0 (sizeof (GHashTable*) * 128);
 	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->shared_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
