@@ -4,10 +4,27 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <dirent.h>
 #include <mono/utils/mono-io-portability.h>
 
 int __mono_io_portability_helpers = PORTABILITY_UNKNOWN;
+
+#ifdef PLATFORM_WIN32
+void 
+mono_portability_helpers_init (void)
+{
+	__mono_io_portability_helpers = PORTABILITY_NONE;
+}
+
+gchar *
+mono_portability_find_file (const gchar *pathname, gboolean last_exists)
+{
+	g_assert_not_reached();
+	return NULL;
+}
+
+#else
+
+#include <dirent.h>
 
 void mono_portability_helpers_init (void)
 {
@@ -314,3 +331,6 @@ gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 	g_free (new_pathname);
 	return(NULL);
 }
+
+
+#endif

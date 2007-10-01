@@ -299,7 +299,7 @@ legacyUEP_start (gpointer user_data,
 			(attribute_names [0] != NULL) &&
 			(strcmp (attribute_names [0], "enabled") == 0)) {
 		if ((strcmp (attribute_values [0], "1") == 0) ||
-				(strcasecmp (attribute_values [0], "true") == 0)) {
+				(g_strcasecmp (attribute_values [0], "true") == 0)) {
 			mono_runtime_unhandled_exception_policy_set (MONO_UNHANLED_POLICY_LEGACY);
 		}
 	}
