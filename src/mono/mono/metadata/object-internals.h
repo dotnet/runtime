@@ -1165,6 +1165,12 @@ typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain,
 void
 mono_install_imt_thunk_builder (MonoImtThunkBuilder func) MONO_INTERNAL;
 
+void
+mono_install_imt_trampoline (gpointer tramp) MONO_INTERNAL;
+
+void
+mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot) MONO_INTERNAL;
+
 guint32
 mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
 

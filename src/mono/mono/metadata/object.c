@@ -1008,10 +1008,16 @@ mono_method_get_imt_slot (MonoMethod *method) {
 #define DEBUG_IMT 0
 
 static void
-add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, guint32 *imt_collisions_bitmap, int vtable_slot) {
+add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, guint32 *imt_collisions_bitmap, int vtable_slot, int slot_num) {
 	guint32 imt_slot = mono_method_get_imt_slot (method);
-	MonoImtBuilderEntry *entry = malloc (sizeof (MonoImtBuilderEntry));
+	MonoImtBuilderEntry *entry;
+
+	if (slot_num >= 0 && imt_slot != slot_num) {
+		/* we build just a single imt slot and this is not it */
+		return;
+	}
 	
+	entry = malloc (sizeof (MonoImtBuilderEntry));
 	entry->method = method;
 	entry->vtable_slot = vtable_slot;
 	entry->next = imt_builder [imt_slot];
@@ -1027,8 +1033,8 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 	}
 	imt_builder [imt_slot] = entry;
 #if DEBUG_IMT
-	printf ("Added IMT slot for method %s.%s.%s: imt_slot = %d, vtable_slot = %d, colliding with other %d entries\n",
-			method->klass->name_space, method->klass->name,
+	printf ("Added IMT slot for method (%p) %s.%s.%s: imt_slot = %d, vtable_slot = %d, colliding with other %d entries\n",
+			method, method->klass->name_space, method->klass->name,
 			method->name, imt_slot, vtable_slot, entry->children);
 #endif
 }
@@ -1136,7 +1142,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 }
 
 static void
-build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
+build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces, int slot_num) {
 	int i;
 	GSList *list_item;
 	guint32 imt_collisions_bitmap = 0;
@@ -1154,7 +1160,7 @@ build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, 
 		mono_class_setup_methods (iface);
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method = iface->methods [method_slot_in_interface];
-			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface);
+			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 		}
 	}
 	if (extra_interfaces) {
@@ -1166,13 +1172,17 @@ build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, 
 			mono_class_setup_methods (iface);
 			for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 				MonoMethod *method = iface->methods [method_slot_in_interface];
-				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface);
+				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 			}
 			interface_offset += iface->method.count;
 		}
 	}
 	for (i = 0; i < MONO_IMT_SIZE; ++i) {
-		imt [i] = initialize_imt_slot (vt, domain, imt_builder [i]);
+		/* overwrite the imt slot only if we're building all the entries or if 
+		 * we're uilding this specific one
+		 */
+		if (slot_num < 0 || i == slot_num)
+			imt [i] = initialize_imt_slot (vt, domain, imt_builder [i]);
 #if DEBUG_IMT
 		printf ("initialize_imt_slot[%d]: %p\n", i, imt [i]);
 #endif
@@ -1200,7 +1210,49 @@ build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, 
 		}
 	}
 	free (imt_builder);
-	vt->imt_collisions_bitmap = imt_collisions_bitmap;
+	/* we OR the bitmap since we may build just a single imt slot at a time */
+	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
+}
+
+static void
+build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
+	build_imt_slots (klass, vt, domain, imt, extra_interfaces, -1);
+}
+
+static gpointer imt_trampoline = NULL;
+
+void
+mono_install_imt_trampoline (gpointer tramp_code)
+{
+	imt_trampoline = tramp_code;
+}
+
+/**
+ * mono_vtable_build_imt_slot:
+ * @vtable: virtual object table struct
+ * @imt_slot: slot in the IMT table
+ *
+ * Fill the given @imt_slot in the IMT table of @vtable with
+ * a trampoline or a thunk for the case of collisions.
+ * This is part of the internal mono API.
+ */
+void
+mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
+{
+	gpointer *imt = (gpointer*)vtable;
+	imt -= MONO_IMT_SIZE;
+	g_assert (imt_slot >= 0 && imt_slot < MONO_IMT_SIZE);
+
+	/* no support for extra interfaces: the proxy objects will need
+	 * to build the complete IMT
+	 * Update and heck needs to ahppen inside the proper domain lock, as all
+	 * the changes made to a MonoVTable.
+	 */
+	mono_domain_lock (vtable->domain);
+	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
+	if (imt [imt_slot] == imt_trampoline)
+		build_imt_slots (vtable->klass, vtable, vtable->domain, imt, NULL, imt_slot);
+	mono_domain_unlock (vtable->domain);
 }
 
 static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class);
@@ -1457,7 +1509,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (ARCH_USE_IMT && imt_table_bytes) {
 		/* Now that the vtable is full, we can actually fill up the IMT */
-		build_imt (class, vt, domain, interface_offsets, NULL);
+		if (imt_trampoline) {
+			/* lazy construction of the IMT entries enabled */
+			for (i = 0; i < MONO_IMT_SIZE; ++i)
+				interface_offsets [i] = imt_trampoline;
+		} else {
+			build_imt (class, vt, domain, interface_offsets, NULL);
+		}
 	}
 
 	mono_domain_unlock (domain);
