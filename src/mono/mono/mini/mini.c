@@ -11979,6 +11979,7 @@ mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget targ
 	return mono_get_addr_from_ftnptr (addr);
 }
 
+#ifdef MONO_ARCH_HAVE_IMT
 static gpointer
 mini_get_imt_trampoline (void)
 {
@@ -11987,6 +11988,7 @@ mini_get_imt_trampoline (void)
 		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_GENERIC, mono_get_root_domain (), NULL);
 	return tramp;
 }
+#endif
 
 static void
 mini_parse_debug_options (void)
