@@ -3753,7 +3753,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	mono_class_setup_supertypes (class);
 
-	if (mono_defaults.generic_ilist_class) {
+	if (mono_defaults.generic_ilist_class && !bounded && rank == 1) {
 		static MonoClass* generic_icollection_class = NULL;
 		static MonoClass* generic_ienumerable_class = NULL;
 		MonoClass *fclass = NULL;
