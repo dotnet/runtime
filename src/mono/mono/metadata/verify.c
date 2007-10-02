@@ -1832,7 +1832,7 @@ mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass 
 	}
 
 	if (target->context.class_inst->type_argc != candidate->context.class_inst->type_argc) {
-		VERIFIER_DEBUG ( printf ("generic instantiations with diferent arg counts\n"); );
+		VERIFIER_DEBUG ( printf ("generic instantiations with different arg counts\n"); );
 		return FALSE;
 	}
 
@@ -2784,64 +2784,21 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 	VERIFIER_DEBUG ( printf ("performing stack merge %d x %d\n", from->size, to->size); );
 
 	if (from->size != to->size) {
-		VERIFIER_DEBUG ( printf ("diferent stack sizes %d x %d\n", from->size, to->size); );
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent sizes (%d x %d)", from->size, to->size)); 
+		VERIFIER_DEBUG ( printf ("different stack sizes %d x %d\n", from->size, to->size); );
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, different sizes (%d x %d)", from->size, to->size)); 
 		goto end_verify;
 	}
 
 	for (i = 0; i < from->size; ++i) {
 		ILStackDesc *from_slot = from->stack + i;
 		ILStackDesc *to_slot = to->stack + i;
-		int from_stype = from_slot->stype;
-		int to_stype = to_slot->stype;
 
-#define IS_NATIVE_INT_AND_I4(val0, val1) (UNMASK_TYPE(val0) == TYPE_NATIVE_INT && \
-			UNMASK_TYPE(val1->stype) == TYPE_I4 && (val1->type->type == MONO_TYPE_I4 || val1->type->type == MONO_TYPE_U4))
-		/* This is the only case of merging between verification types.
-		 * Both stack values must be either native int or int4, and both must be either byref or not.*/
-		if ((IS_NATIVE_INT_AND_I4 (from_stype, to_slot) || IS_NATIVE_INT_AND_I4 (to_stype, from_slot)) &&
-			!(IS_MANAGED_POINTER (from_stype) ^ IS_MANAGED_POINTER (to_stype))) {
-			printf ("----is native int\n");
-			to_slot->stype = TYPE_NATIVE_INT;
-			if (UNMASK_TYPE(from_stype) == TYPE_NATIVE_INT)
-				to_slot->type = from_slot->type;
-			continue;
-		}
-#undef IS_NATIVE_INT_OR_I4
-
-		if (from_stype != to_stype) {
-			VERIFIER_DEBUG ( printf ("diferent stack types %d x %d\n", from_stype, to_stype); );
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, diferent verification types (%s x %s)",
-				type_names [UNMASK_TYPE (from_stype)], type_names [UNMASK_TYPE (to_stype)])); 
+		if (!verify_type_compatibility (ctx, mono_type_from_stack_slot (to_slot), mono_type_from_stack_slot (from_slot))) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible at 0x%04x", ctx->ip_offset)); 
 			goto end_verify;
 		}
 
-		if (IS_MANAGED_POINTER (from_stype)) {
-			from_stype = UNMASK_TYPE (from_stype);
-			to_stype = UNMASK_TYPE (to_stype);
-
-			if (from_slot->type && !verify_type_compatibility_full (ctx, to_slot->type, from_slot->type, TRUE)) {
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, managed pointer types not compatible")); 
-				goto end_verify;
-			} else
-				copy_stack_value (to_slot, from_slot);
-			continue;
-		}
-
-		if (from_stype == TYPE_COMPLEX) {
-			if (!to->stack [i].type) {
-				ctx->verifiable = 0;
-				g_assert (0);
-			} else if (!verify_stack_type_compatibility (ctx, to_slot->type, from_slot)) {
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible")); 
-				goto end_verify;
-			} else { 
-				/*TODO we need to choose the base class for merging */
-				copy_stack_value (to_slot, from_slot);
-			}
-			continue;
-		} 
-
+		/*TODO we need to choose the base class for merging reference types*/
 		copy_stack_value (to_slot, from_slot);
 	}
 
