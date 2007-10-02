@@ -56,6 +56,9 @@ static gboolean
 declsec_20_write_type (GString *str, char type)
 {
 	switch (type) {
+	case MONO_TYPE_BOOLEAN:
+		g_string_append (str, "bool");
+		break;
 	case MONO_TYPE_SZARRAY:
 		g_string_append (str, "[]");
 		break;
