@@ -1,6 +1,9 @@
 2007-10-02  Miguel de Icaza  <miguel@novell.com>
 
-	* scripts/mono-test-install: Add detection and diagnostics for
+	* scripts/mono-test-install: (temp_exe): Add tests for dynamic
+	libraries that libgdiplus might be missing
+
+	Add detection and diagnostics for
 	broken System.Drawing installations.
 
 2007-09-19  Jb Evain  <jbevain@novell.com>
