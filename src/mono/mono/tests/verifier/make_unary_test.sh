@@ -46,7 +46,7 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
     .field [0] private int32 privateIntVal
     .field [0] public int32 publicIntVal
     .field [4] public int32 intVal
-    .field [4] public object objVal
+    //.field [4] public object objVal
 }
 
 .method public static int32 Main() cil managed

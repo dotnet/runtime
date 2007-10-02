@@ -94,9 +94,9 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/CSTOR/${TEST_CSTOR}/g"  -e "s/OPCO
 .class public explicit Overlapped extends [mscorlib]System.Object
 {
     .field[0] public TYPE1 field1
-    .field[0] public TYPE1 field2
+    //.field[0] public TYPE1 field2
     .field[8] public TYPE1 field3
-    .field[8] public TYPE1 field4
+    //.field[8] public TYPE1 field4
     .field[16] public TYPE1 field5
     .field[20] public TYPE1 field10
     .field[24] public TYPE2 field_ok

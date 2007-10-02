@@ -623,6 +623,18 @@ do
   ./make_obj_store_test.sh obj_coercion_80_${I} invalid "$OP" typedref float64
   ./make_obj_store_test.sh obj_coercion_81_${I} invalid "$OP" typedref 'typedref&'
   ./make_obj_store_test.sh obj_coercion_82_${I} invalid "$OP" typedref object
+
+  ./make_obj_store_test.sh obj_coercion_83_${I} valid "$OP" int32 "native int"
+  ./make_obj_store_test.sh obj_coercion_84_${I} valid "$OP" "native int" int32
+ 
+  ./make_obj_store_test.sh obj_coercion_85_${I} valid "$OP" "unsigned int32" "native int"
+  ./make_obj_store_test.sh obj_coercion_86_${I} valid "$OP" "native int" "unsigned int32"
+ 
+  ./make_obj_store_test.sh obj_coercion_87_${I} valid "$OP" int32 "native unsigned int"
+  ./make_obj_store_test.sh obj_coercion_88_${I} valid "$OP" "native unsigned int" int32
+ 
+  ./make_obj_store_test.sh obj_coercion_89_${I} valid "$OP" "unsigned int32" "native int"
+  ./make_obj_store_test.sh obj_coercion_90_${I} valid "$OP" "native unsigned int" "unsigned int32"
   I=`expr $I + 1`
 done
 
@@ -825,8 +837,9 @@ do
   ./make_unary_test.sh ${OP}_obj_int64 unverifiable "$OP int32 Class::valid\n\tpop" int64
   ./make_unary_test.sh ${OP}_obj_float64 unverifiable "$OP int32 Class::valid\n\tpop" float64
   ./make_unary_test.sh ${OP}_obj_native_int unverifiable "$OP int32 Class::valid\n\tpop" 'native int'
-  ./make_unary_test.sh ${OP}_obj_ref_overlapped unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
-  ./make_unary_test.sh ${OP}_obj_overlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
+#overlapped checks must be done separatedly
+#  ./make_unary_test.sh ${OP}_obj_ref_overlapped unverifiable "$OP object Overlapped::objVal\n\tpop" "class Overlapped"
+#  ./make_unary_test.sh ${OP}_obj_overlapped_field_not_accessible unverifiable "$OP int32 Overlapped::publicIntVal\n\tpop" "class Overlapped"
 done
 
 #TODO: these tests are bogus, they need to be fixed
@@ -853,6 +866,10 @@ done
 
 # Box byref-like type.
 ./make_unary_test.sh box_byref_like unverifiable "box [mscorlib]System.TypedReference\n\tpop" typedref
+
+#boxing between Int32 and IntPtr
+./make_unary_test.sh box_compat_1 valid "box [mscorlib]System.Int32\n\tpop" "native int"
+./make_unary_test.sh box_compat_2 valid "box [mscorlib]System.IntPtr\n\tpop" "int32"
 
 #This is illegal since you cannot have a Void local variable, it should go into the structural tests part
 # Box void type.
@@ -964,6 +981,14 @@ done
 ./make_ret_test.sh ret_coercion_81 unverifiable typedref 'typedref&'
 ./make_ret_test.sh ret_coercion_82 unverifiable typedref object
 
+./make_ret_test.sh ret_coercion_83 valid int32 "native int"
+./make_ret_test.sh ret_coercion_84 valid "native int" int32
+./make_ret_test.sh ret_coercion_85 valid "unsigned int32" "native int"
+./make_ret_test.sh ret_coercion_86 valid "native int" "unsigned int32"
+./make_ret_test.sh ret_coercion_87 valid int32 "native unsigned int"
+./make_ret_test.sh ret_coercion_88 valid "native unsigned int" int32
+./make_ret_test.sh ret_coercion_89 valid "unsigned int32" "native int"
+./make_ret_test.sh ret_coercion_90 valid "native unsigned int" "unsigned int32"
 
 ./make_ret_test.sh ret_sub_type valid ClassA ClassSubA
 ./make_ret_test.sh ret_same_type valid ClassA ClassA
@@ -1319,14 +1344,15 @@ do
 	./make_field_store_test.sh field_store_${I}_9 unverifiable "${OP} int32 MyValueType::fld" int32 'native int'
 	./make_field_store_test.sh field_store_${I}_10 unverifiable "${OP} int32 MyValueType::fld" int32 'class MyValueType *'
 	./make_field_store_test.sh field_store_${I}_11 unverifiable "${OP} int32 ClassA::fld" int32 'class ClassA *'
-	./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped' yes
-	./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped' yes
-	./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped' yes
-	./make_field_store_test.sh field_store_${I}_15 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class SubOverlapped' yes
-	./make_field_store_test.sh field_store_${I}_16 valid "${OP} int32 SubOverlapped::field6" int32 'class SubOverlapped' yes
-	./make_field_store_test.sh field_store_${I}_17 unverifiable "${OP} ClassA SubOverlapped::field6" 'class ClassA' 'class SubOverlapped' yes
-	./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped' yes
-	./make_field_store_test.sh field_store_${I}_20 unverifiable "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped' yes
+	#overlapped field tests should be done separatedly
+	#./make_field_store_test.sh field_store_${I}_12 valid "${OP} int32 Overlapped::field1" int32 'class Overlapped' yes
+	#./make_field_store_test.sh field_store_${I}_13 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class Overlapped' yes
+	#./make_field_store_test.sh field_store_${I}_14 valid "${OP} int32 Overlapped::field1" int32 'class SubOverlapped' yes
+	#./make_field_store_test.sh field_store_${I}_15 unverifiable "${OP} ClassA Overlapped::field1" 'class ClassA' 'class SubOverlapped' yes
+	#./make_field_store_test.sh field_store_${I}_16 valid "${OP} int32 SubOverlapped::field6" int32 'class SubOverlapped' yes
+	#./make_field_store_test.sh field_store_${I}_17 unverifiable "${OP} ClassA SubOverlapped::field6" 'class ClassA' 'class SubOverlapped' yes
+	#./make_field_store_test.sh field_store_${I}_18 valid "${OP} int32 Overlapped::field10" int32 'class Overlapped' yes
+	#./make_field_store_test.sh field_store_${I}_20 unverifiable "${OP} int32 Overlapped::field10" 'class ClassA' 'class Overlapped' yes
 
 	./make_field_store_test.sh field_store_${I}_22 invalid "${OP} int32 ClassA::unknown_field" 'class ClassA' 'class ClassA' yes
 	./make_field_store_test.sh field_store_${I}_23 unverifiable "${OP} int32 ClassA::const_field" int32 'int32 \&'
@@ -2179,7 +2205,6 @@ done
 ./make_unbox_test.sh unbox_use_result_3 valid "int32" "int32" "ldind.i4\n\tstloc.1\n\tldc.i4.0"
 
 
-
 # newarray Test
 
 #no int size on stack
@@ -2321,7 +2346,7 @@ done
 
 for TYPE in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "int64" "unsigned int64" "native int" "native unsigned int" "float32" "float64" "valuetype MyStruct" "int32*" "method int32 *(int32)"
 do
-	./make_load_indirect_test.sh indirect_load_r_${I} unverifiable "${OP}" "${TYPE}"
+	./make_load_indirect_test.sh indirect_load_r_${I} unverifiable "ldind.ref" "${TYPE}"
 	I=`expr $I + 1`
 done
 
