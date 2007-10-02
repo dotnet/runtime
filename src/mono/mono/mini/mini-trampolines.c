@@ -32,6 +32,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 		MonoMethod *imt_method = mono_arch_find_imt_method (regs, code);
 		int interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
 		int imt_slot = MONO_IMT_SIZE + displacement;
+		mono_class_setup_vtable (vt->klass);
 
 		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
