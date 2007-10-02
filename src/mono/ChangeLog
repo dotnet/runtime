@@ -1,3 +1,8 @@
+2007-10-02  Miguel de Icaza  <miguel@novell.com>
+
+	* scripts/mono-test-install: Add detection and diagnostics for
+	broken System.Drawing installations.
+
 2007-09-19  Jb Evain  <jbevain@novell.com>
 
 	* configure.in: if there's a olive directory in the same folder
