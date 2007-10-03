@@ -30,10 +30,16 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 		return slot;
 	} else {
 		MonoMethod *imt_method = mono_arch_find_imt_method (regs, code);
-		int interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
+		int interface_offset;
 		int imt_slot = MONO_IMT_SIZE + displacement;
-		mono_class_setup_vtable (vt->klass);
 
+		mono_class_setup_vtable (vt->klass);
+		interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
+
+		if (interface_offset < 0) {
+			g_print ("%s doesn't implement interface %s\n", mono_type_get_name_full (&vt->klass->byval_arg, 0), mono_type_get_name_full (&imt_method->klass->byval_arg, 0));
+			g_assert_not_reached ();
+		}
 		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
 		if (impl_method)
@@ -50,7 +56,6 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 #if DEBUG_IMT
 			printf ("mono_convert_imt_slot_to_vtable_slot: slot %p[%d] is in the IMT, and colliding becomes %p[%d] (interface_offset = %d, method->slot = %d)\n", slot, imt_slot, vtable_slot, vtable_offset, interface_offset, imt_method->slot);
 #endif
-			g_assert (vtable_offset >= 0);
 			return vtable_slot;
 		} else {
 #if DEBUG_IMT
