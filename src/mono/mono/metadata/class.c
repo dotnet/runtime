@@ -1756,6 +1756,171 @@ print_implemented_interfaces (MonoClass *klass) {
 	}
 }
 
+/* this won't be needed once bug #325495 is completely fixed
+ * though we'll need something similar to know which interfaces to allow
+ * in arrays when they'll be lazyly created
+ */
+static MonoClass**
+get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enumerator)
+{
+	MonoClass *eclass = class->element_class;
+	static MonoClass* generic_icollection_class = NULL;
+	static MonoClass* generic_ienumerable_class = NULL;
+	static MonoClass* generic_ienumerator_class = NULL;
+	MonoClass *fclass = NULL;
+	MonoClass **interfaces = NULL;
+	int i, interface_count;
+	int all_interfaces;
+	gboolean internal_enumerator;
+
+	if (!mono_defaults.generic_ilist_class) {
+		*num = 0;
+		return NULL;
+	}
+	internal_enumerator = FALSE;
+	if (class->byval_arg.type != MONO_TYPE_SZARRAY) {
+		if (class->generic_class && class->nested_in == mono_defaults.array_class && strcmp (class->name, "InternalEnumerator`1") == 0)	 {
+			/*
+			 * For a Enumerator<T[]> we need to get the list of interfaces for T.
+			 */
+			eclass = mono_class_from_mono_type (class->generic_class->context.class_inst->type_argv [0]);
+			eclass = eclass->element_class;
+			internal_enumerator = TRUE;
+			*is_enumerator = TRUE;
+		} else {
+			*num = 0;
+			return NULL;
+		}
+	}
+
+	/* 
+	 * with this non-lazy impl we can't implement all the interfaces so we do just the minimal stuff
+	 * for deep levels of arrays of arrays (string[][] has all the interfaces, string[][][] doesn't)
+	 */
+	all_interfaces = eclass->rank && eclass->element_class->rank? FALSE: TRUE;
+
+	if (!generic_icollection_class) {
+		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "ICollection`1");
+		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IEnumerable`1");
+		generic_ienumerator_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IEnumerator`1");
+	}
+
+	/*
+	 * Arrays in 2.0 need to implement a number of generic interfaces
+	 * (IList`1, ICollection`1, IEnumerable`1 for a number of types depending
+	 * on the element class). We collect the types needed to build the
+	 * instantiations in interfaces at intervals of 3, because 3 are
+	 * the generic interfaces needed to implement.
+	 */
+	if (eclass->valuetype) {
+		if (eclass == mono_defaults.int16_class)
+			fclass = mono_defaults.uint16_class;
+		else if (eclass == mono_defaults.uint16_class)
+			fclass = mono_defaults.int16_class;
+		else if (eclass == mono_defaults.int32_class)
+			fclass = mono_defaults.uint32_class;
+		else if (eclass == mono_defaults.uint32_class)
+			fclass = mono_defaults.int32_class;
+		else if (eclass == mono_defaults.int64_class)
+			fclass = mono_defaults.uint64_class;
+		else if (eclass == mono_defaults.uint64_class)
+			fclass = mono_defaults.int64_class;
+		else if (eclass == mono_defaults.byte_class)
+			fclass = mono_defaults.sbyte_class;
+		else if (eclass == mono_defaults.sbyte_class)
+			fclass = mono_defaults.byte_class;
+		else {
+			/* No additional interfaces for other value types */
+			*num = 0;
+			return NULL;
+		}
+
+/* set to 3 to enable the additional interfaces */
+#define ARRAY_IFACES_NUM 3
+		/* IList, ICollection, IEnumerable */
+		interface_count = ARRAY_IFACES_NUM;
+		interfaces = g_malloc0 (sizeof (MonoClass*) * interface_count);
+		interfaces [0] = fclass;
+	} else {
+		int j;
+		int idepth = eclass->idepth;
+		if (!internal_enumerator)
+			idepth--;
+		interface_count = all_interfaces? eclass->interface_offsets_count: eclass->interface_count;
+		/* we add object for interfaces and the supertypes for the other
+		 * types. The last of the supertypes is the element class itself which we
+		 * already created the explicit interfaces for (so we include it for IEnumerator
+		 * and exclude it for arrays).
+		 */
+		if (MONO_CLASS_IS_INTERFACE (eclass))
+			interface_count++;
+		else
+			interface_count += idepth;
+		/* IList, ICollection, IEnumerable */
+		interface_count *= ARRAY_IFACES_NUM;
+		interfaces = g_malloc0 (sizeof (MonoClass*) * interface_count);
+		if (MONO_CLASS_IS_INTERFACE (eclass)) {
+			interfaces [0] = mono_defaults.object_class;
+			j = ARRAY_IFACES_NUM;
+		} else {
+			j = 0;
+			for (i = 0; i < idepth; i++) {
+				interfaces [j] = eclass->supertypes [i];
+				j += ARRAY_IFACES_NUM;
+			}
+		}
+		if (all_interfaces) {
+			for (i = 0; i < eclass->interface_offsets_count; i++) {
+				interfaces [j] = eclass->interfaces_packed [i];
+				j += ARRAY_IFACES_NUM;
+			}
+		} else {
+			for (i = 0; i < eclass->interface_count; i++) {
+				interfaces [j] = eclass->interfaces [i];
+				j += ARRAY_IFACES_NUM;
+			}
+		}
+	}
+
+	/* instantiate the generic interfaces */
+	for (i = 0; i < interface_count; i += ARRAY_IFACES_NUM) {
+		MonoType *args [1];
+		MonoClass *iface = interfaces [i];
+
+		args [0] = &iface->byval_arg;
+		interfaces [i] = mono_class_bind_generic_parameters (
+			mono_defaults.generic_ilist_class, 1, args, FALSE);
+		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));
+#if ARRAY_IFACES_NUM == 3
+		args [0] = &iface->byval_arg;
+		interfaces [i + 1] = mono_class_bind_generic_parameters (
+			generic_icollection_class, 1, args, FALSE);
+		args [0] = &iface->byval_arg;
+		interfaces [i + 2] = mono_class_bind_generic_parameters (
+			generic_ienumerable_class, 1, args, FALSE);
+		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i + 1]->byval_arg, 0));
+		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i + 2]->byval_arg, 0));
+#endif
+	}
+	if (internal_enumerator) {
+		/* instantiate IEnumerator<iface> */
+		for (i = 0; i < interface_count; i++) {
+			MonoType *args [1];
+			MonoClass *iface = interfaces [i];
+
+			args [0] = &iface->byval_arg;
+			interfaces [i] = mono_class_bind_generic_parameters (
+				generic_ienumerator_class, 1, args, FALSE);
+			/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+		}
+	}
+	*num = interface_count;
+	return interfaces;
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1768,6 +1933,16 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	int *interface_offsets_full;
 	GPtrArray *ifaces;
 	int interface_offsets_count;
+	MonoClass **array_interfaces;
+	int num_array_interfaces;
+	int is_enumerator = FALSE;
+
+	/* 
+	 * get the implicit generic interfaces for either the arrays or for System.Array/InternalEnumerator<T>
+	 * implicit innterfaces have the property that they are assigned the same slot in the vtables
+	 * for compatible interfaces
+	 */
+	array_interfaces = get_implicit_generic_array_interfaces (class, &num_array_interfaces, &is_enumerator);
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -1790,6 +1965,12 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			}
 			g_ptr_array_free (ifaces, TRUE);
 		}
+	}
+	for (i = 0; i < num_array_interfaces; ++i) {
+		ic = array_interfaces [i];
+		mono_class_init (ic);
+		if (max_iid < ic->interface_id)
+			max_iid = ic->interface_id;
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
@@ -1841,6 +2022,45 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		interface_offsets_full [class->interface_id] = cur_slot;
 	}
 
+	if (num_array_interfaces) {
+		if (is_enumerator) {
+			int ienumerator_offset;
+			g_assert (strcmp (class->interfaces [0]->name, "IEnumerator`1") == 0);
+			ienumerator_offset = interface_offsets_full [class->interfaces [0]->interface_id];
+			for (i = 0; i < num_array_interfaces; ++i) {
+				ic = array_interfaces [i];
+				interfaces_full [ic->interface_id] = ic;
+				if (strcmp (ic->name, "IEnumerator`1") == 0)
+					interface_offsets_full [ic->interface_id] = ienumerator_offset;
+				else
+					g_assert_not_reached ();
+				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
+			}
+		} else {
+			int ilist_offset, icollection_offset, ienumerable_offset;
+			g_assert (strcmp (class->interfaces [0]->name, "IList`1") == 0);
+			g_assert (strcmp (class->interfaces [0]->interfaces [0]->name, "ICollection`1") == 0);
+			g_assert (strcmp (class->interfaces [0]->interfaces [1]->name, "IEnumerable`1") == 0);
+			ilist_offset = interface_offsets_full [class->interfaces [0]->interface_id];
+			icollection_offset = interface_offsets_full [class->interfaces [0]->interfaces [0]->interface_id];
+			ienumerable_offset = interface_offsets_full [class->interfaces [0]->interfaces [1]->interface_id];
+			g_assert (ilist_offset >= 0 && icollection_offset >= 0 && ienumerable_offset >= 0);
+			for (i = 0; i < num_array_interfaces; ++i) {
+				ic = array_interfaces [i];
+				interfaces_full [ic->interface_id] = ic;
+				if (ic->generic_class->container_class == mono_defaults.generic_ilist_class)
+					interface_offsets_full [ic->interface_id] = ilist_offset;
+				else if (strcmp (ic->name, "ICollection`1") == 0)
+					interface_offsets_full [ic->interface_id] = icollection_offset;
+				else if (strcmp (ic->name, "IEnumerable`1") == 0)
+					interface_offsets_full [ic->interface_id] = ienumerable_offset;
+				else
+					g_assert_not_reached ();
+				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
+			}
+		}
+	}
+
 	for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
 		if (interface_offsets_full [i] != -1) {
 			interface_offsets_count ++;
@@ -1855,12 +2075,15 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			class->interface_bitmap [i >> 3] |= (1 << (i & 7));
 			class->interfaces_packed [interface_offsets_count] = interfaces_full [i];
 			class->interface_offsets_packed [interface_offsets_count] = interface_offsets_full [i];
+			/*if (num_array_interfaces)
+				g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
 			interface_offsets_count ++;
 		}
 	}
 	
 	g_free (interfaces_full);
 	g_free (interface_offsets_full);
+	g_free (array_interfaces);
 	
 	//printf ("JUST DONE: ");
 	//print_implemented_interfaces (class);
@@ -3754,99 +3977,15 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	mono_class_setup_supertypes (class);
 
 	if (mono_defaults.generic_ilist_class && !bounded && rank == 1) {
-		static MonoClass* generic_icollection_class = NULL;
-		static MonoClass* generic_ienumerable_class = NULL;
-		MonoClass *fclass = NULL;
-		int i;
+		MonoType *args [1];
 
-		if (!generic_icollection_class) {
-			generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
-				"System.Collections.Generic", "ICollection`1");
-			generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
-				"System.Collections.Generic", "IEnumerable`1");
-		}
+		/* generic IList, ICollection, IEnumerable */
+		class->interface_count = 1;
+		class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
 
-		/*
-		 * Arrays in 2.0 need to implement a number of generic interfaces
-		 * (IList`1, ICollection`1, IEnumerable`1 for a number of types depending
-		 * on the element class). We collect the types needed to build the
-		 * instantiations in class->interfaces at intervals of 3, because 3 are
-		 * the generic interfaces needed to implement. We then walk class->interfaces
-		 * in a single loop to build the proper interface classes.
-		 */
-		if (eclass->valuetype) {
-			if (eclass == mono_defaults.int16_class)
-				fclass = mono_defaults.uint16_class;
-			if (eclass == mono_defaults.uint16_class)
-				fclass = mono_defaults.int16_class;
-			if (eclass == mono_defaults.int32_class)
-				fclass = mono_defaults.uint32_class;
-			if (eclass == mono_defaults.uint32_class)
-				fclass = mono_defaults.int32_class;
-			if (eclass == mono_defaults.int64_class)
-				fclass = mono_defaults.uint64_class;
-			if (eclass == mono_defaults.uint64_class)
-				fclass = mono_defaults.int64_class;
-			if (eclass == mono_defaults.byte_class)
-				fclass = mono_defaults.sbyte_class;
-			if (eclass == mono_defaults.sbyte_class)
-				fclass = mono_defaults.byte_class;
-
-/* set to 3 to enable the additional interfaces */
-#define ARRAY_IFACES_NUM 1
-			/* IList, ICollection, IEnumerable */
-			class->interface_count = fclass ? 2 : 1;
-			class->interface_count *= ARRAY_IFACES_NUM;
-			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
-			class->interfaces [0] = eclass;
-			if (fclass)
-				class->interfaces [ARRAY_IFACES_NUM] = fclass;
-		} else if (MONO_CLASS_IS_INTERFACE (eclass)) {
-			int j;
-			class->interface_count = 2 + eclass->interface_count;
-			/* IList, ICollection, IEnumerable */
-			class->interface_count *= ARRAY_IFACES_NUM;
-			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
-			class->interfaces [0] = mono_defaults.object_class;
-			class->interfaces [ARRAY_IFACES_NUM] = eclass;
-			j = ARRAY_IFACES_NUM * 2;
-			for (i = 0; i < eclass->interface_count; i++) {
-				class->interfaces [j] = eclass->interfaces [i];
-				j += ARRAY_IFACES_NUM;
-			}
-		} else {
-			int j;
-			class->interface_count = eclass->idepth + eclass->interface_count;
-			/* IList, ICollection, IEnumerable */
-			class->interface_count *= ARRAY_IFACES_NUM;
-			class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
-			j = 0;
-			for (i = 0; i < eclass->idepth; i++) {
-				class->interfaces [j] = eclass->supertypes [i];
-				j += ARRAY_IFACES_NUM;
-			}
-			for (i = 0; i < eclass->interface_count; i++) {
-				class->interfaces [j] = eclass->interfaces [i];
-				j += ARRAY_IFACES_NUM;
-			}
-		}
-
-		for (i = 0; i < class->interface_count; i += ARRAY_IFACES_NUM) {
-			MonoType *args [1];
-			MonoClass *iface = class->interfaces [i];
-
-			args [0] = &iface->byval_arg;
-			class->interfaces [i] = mono_class_bind_generic_parameters (
-				mono_defaults.generic_ilist_class, 1, args, FALSE);
-#if ARRAY_IFACES_NUM == 3
-			args [0] = &iface->byval_arg;
-			class->interfaces [i + 1] = mono_class_bind_generic_parameters (
-				generic_icollection_class, 1, args, FALSE);
-			args [0] = &iface->byval_arg;
-			class->interfaces [i + 2] = mono_class_bind_generic_parameters (
-				generic_ienumerable_class, 1, args, FALSE);
-#endif
-		}
+		args [0] = &eclass->byval_arg;
+		class->interfaces [0] = mono_class_bind_generic_parameters (
+			mono_defaults.generic_ilist_class, 1, args, FALSE);
 	}
 
 	if (eclass->generic_class)
