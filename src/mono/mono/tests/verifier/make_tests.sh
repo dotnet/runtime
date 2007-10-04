@@ -2351,3 +2351,159 @@ do
 done
 
 
+#valid stores
+./make_store_indirect_test.sh indirect_store_i1_1 valid "stind.i1" "int8\&" "int8"
+./make_store_indirect_test.sh indirect_store_i1_2 valid "stind.i1" "bool\&" "int8"
+./make_store_indirect_test.sh indirect_store_i1_3 valid "stind.i1" "int8\&" "bool"
+./make_store_indirect_test.sh indirect_store_i1_4 valid "stind.i1" "bool\&" "bool"
+
+./make_store_indirect_test.sh indirect_store_i2_1 valid "stind.i2" "int16\&" "int16"
+./make_store_indirect_test.sh indirect_store_i2_2 valid "stind.i2" "char\&" "int16"
+./make_store_indirect_test.sh indirect_store_i2_3 valid "stind.i2" "int16\&" "char"
+./make_store_indirect_test.sh indirect_store_i2_4 valid "stind.i2" "char\&" "char"
+
+./make_store_indirect_test.sh indirect_store_i4_1 valid "stind.i4" "int32\&" "int32"
+./make_store_indirect_test.sh indirect_store_i4_2 valid "stind.i4" "native int\&" "int32"
+./make_store_indirect_test.sh indirect_store_i4_3 valid "stind.i4" "int32\&" "native int"
+./make_store_indirect_test.sh indirect_store_i4_4 valid "stind.i4" "native int\&" "native int"
+
+
+./make_store_indirect_test.sh indirect_store_i8_1 valid "stind.i8" "int64\&" "int64"
+
+./make_store_indirect_test.sh indirect_store_r4_1 valid "stind.r4" "float32\&" "float32"
+
+./make_store_indirect_test.sh indirect_store_r8_1 valid "stind.r8" "float64\&" "float64"
+
+./make_store_indirect_test.sh indirect_store_i_1 valid "stind.i" "native int\&" "int32"
+./make_store_indirect_test.sh indirect_store_i_2 valid "stind.i" "int32\&" "int32"
+./make_store_indirect_test.sh indirect_store_i_3 valid "stind.i" "native int\&" "native int"
+./make_store_indirect_test.sh indirect_store_i_4 valid "stind.i" "int32\&" "native int"
+
+./make_store_indirect_test.sh indirect_store_r_1 valid "stind.ref" "object\&" "object"
+./make_store_indirect_test.sh indirect_store_r_2 valid "stind.ref" "object\&" "string"
+./make_store_indirect_test.sh indirect_store_r_3 valid "stind.ref" "string\&" "string"
+./make_store_indirect_test.sh indirect_store_r_4 unverifiable "stind.ref" "valuetype MyStruct\&" "MyStruct"
+
+
+
+
+#stdind tests
+#unverifiable due to unmanaged pointers
+./make_store_indirect_test.sh indirect_store_unmanaged_pointer_1 unverifiable "stind.i1" "int8*" "int8"
+./make_store_indirect_test.sh indirect_store_unmanaged_pointer_2 unverifiable "stind.i1" "native int" "int8"
+
+#invalid due to unrelated types on stack
+./make_store_indirect_test.sh indirect_store_bad_type_1 unverifiable "stind.i1" "int8" "int8"
+./make_store_indirect_test.sh indirect_store_bad_type_2 unverifiable "stind.i1" "int8" "int8"
+
+#invalid stind.ref with valuetypes
+./make_store_indirect_test.sh indirect_store_bad_type_r_3 valid "stind.ref" "int32[]\&" "int32[]"
+
+#invalid operands
+I=1
+for TYPE1 in "int16" "char" "int32" "native int"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i1_${I} unverifiable "stind.i1" "${TYPE1}\&" "int8"
+	./make_store_indirect_test.sh indirect_store_good_val_i1_${I} valid "stind.i1" "int8\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+for TYPE1 in  "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i1_${I} unverifiable "stind.i1" "${TYPE1}\&" "int8"
+	./make_store_indirect_test.sh indirect_store_bad_val_i1_${I} unverifiable "stind.i1" "int8\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int32" "native int"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i2_${I} unverifiable "stind.i2" "${TYPE1}\&" "int16"
+	./make_store_indirect_test.sh indirect_store_good_val_i2_${I} valid "stind.i2" "int16\&" "${TYPE1}" 
+	I=`expr $I + 1`
+done
+
+for TYPE1 in "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i2_${I} unverifiable "stind.i2" "${TYPE1}\&" "int16"
+	./make_store_indirect_test.sh indirect_store_bad_val_i2_${I} unverifiable "stind.i2" "int16\&" "${TYPE1}" 
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i4_${I} unverifiable "stind.i4" "${TYPE1}\&" "int32"
+	./make_store_indirect_test.sh indirect_store_good_val_i4_${I} valid "stind.i4" "int32\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+for TYPE1 in  "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i4_${I} unverifiable "stind.i4" "${TYPE1}\&" "int32"
+	./make_store_indirect_test.sh indirect_store_bad_val_i4_${I} unverifiable "stind.i4" "int32\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char" "int32" "float32" "float64" "native int" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i8_${I} unverifiable "stind.i8" "${TYPE1}\&" "int64"
+	./make_store_indirect_test.sh indirect_store_bad_val_i8_${I} unverifiable "stind.i8" "int64\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char" "int32" "int64" "float64" "native int" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_r4_${I} unverifiable "stind.r4" "${TYPE1}\&" "float32"
+	if [ "$TYPE1" == "float64" ]; then
+		./make_store_indirect_test.sh indirect_store_good_val_r4_${I} valid "stind.r4" "float32\&" "${TYPE1}"
+	else
+		./make_store_indirect_test.sh indirect_store_bad_val_r4_${I} unverifiable "stind.r4" "float32\&" "${TYPE1}"
+	fi
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char" "int32" "int64" "float32" "native int" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_r8_${I} unverifiable "stind.r8" "${TYPE1}\&" "float64"
+	if [ "$TYPE1" == "float32" ]; then
+		./make_store_indirect_test.sh indirect_store_good_val_r8_${I} valid "stind.r8" "float64\&" "${TYPE1}";
+	else
+		./make_store_indirect_test.sh indirect_store_bad_val_r8_${I} unverifiable "stind.r8" "float64\&" "${TYPE1}";
+	fi
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int" 
+	./make_store_indirect_test.sh indirect_store_good_val_i_${I} valid "stind.i" "native int\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+for TYPE1 in "int64" "float32" "float64" "object" "string" "class Class" "valuetype MyStruct"  "int32[]" "int32[,]" "int32*" "method int32 *(int32)"  "class Template\`1<object>"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_i_${I} unverifiable "stind.i" "${TYPE1}\&" "native int" 
+	./make_store_indirect_test.sh indirect_store_bad_val_i_${I} unverifiable "stind.i" "native int\&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE1 in "int8" "bool" "int16" "char" "int32" "int64" "float32" "float64" "native int"
+do
+	./make_store_indirect_test.sh indirect_store_bad_addr_ref_${I} unverifiable "stind.ref" "${TYPE1}\&" "object"
+	./make_store_indirect_test.sh indirect_store_bad_val_ref_${I} unverifiable "stind.ref" "object&" "${TYPE1}"
+	I=`expr $I + 1`
+done
+
