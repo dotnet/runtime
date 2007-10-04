@@ -249,11 +249,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			offset += sizeof (double);
 		}
 		/* 
-		 * now the integer registers. r13 is already saved in the trampoline,
-		 * and at this point contains the method to compile, so we skip it.
+		 * now the integer registers.
 		 */
-		offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs) + sizeof (gulong);
-		ppc_stmw (buf, ppc_r14, ppc_r1, offset);
+		offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
+		ppc_stmw (buf, ppc_r13, ppc_r1, offset);
 
 		/* Now save the rest of the registers below the MonoLMF struct, first 14
 		 * fp regs and then the 13 gregs.
@@ -263,7 +262,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			ppc_stfd (buf, i, offset, ppc_r1);
 			offset += sizeof (double);
 		}
-		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
+#define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong)))
+		offset = GREGS_OFFSET;
 		for (i = 0; i < 13; i++) {
 			ppc_stw (buf, i, offset, ppc_r1);
 			offset += sizeof (gulong);
@@ -291,8 +291,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
 		/* *(lmf_addr) = r11 */
 		ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-		/* save method info (it's in r13) */
-		ppc_stw (buf, ppc_r13, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
+		/* save method info (it's stored on the stack, so get it first and put it
+		 * in r3 as it's the first argument to the function) */
+		ppc_lwz (buf, ppc_r3, GREGS_OFFSET, ppc_r1);
+		ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
 		ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
 		/* save the IP (caller ip) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -305,8 +307,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/*
 		 * Now we're ready to call ppc_magic_trampoline ().
 		 */
-		/* Arg 1: MonoMethod *method. It was put in r13 */
-		ppc_mr  (buf, ppc_r3, ppc_r13);
+		/* Arg 1: MonoMethod *method. It was put in r3 already above */
+		/*ppc_mr  (buf, ppc_r3, ppc_r3);*/
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -349,7 +351,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_lwz (buf, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
 		/* *(lmf_addr) = previous_lmf */
 		ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
-		/* restore iregs: this time include r13 */
+		/* restore iregs */
 		ppc_lmw (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
 		/* restore fregs */
 		for (i = 14; i < 32; i++) {
@@ -395,26 +397,23 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
 	MonoJitInfo *ji;
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, 32);
+	code = buf = mono_code_manager_reserve (domain->code_mp, 24);
 	mono_domain_unlock (domain);
 
-	/* Save r13 in the place it will have in the on-stack MonoLMF */
-	ppc_stw  (buf, ppc_r13, -(MONO_SAVED_FREGS * 8 + MONO_SAVED_GREGS * sizeof (gpointer)),  ppc_r1);
-	
 	/* Prepare the jump to the generic trampoline code.*/
-	ppc_lis  (buf, ppc_r13, (guint32) tramp >> 16);
-	ppc_ori  (buf, ppc_r13, ppc_r13, (guint32) tramp & 0xffff);
-	ppc_mtctr (buf, ppc_r13);
+	ppc_lis  (buf, ppc_r0, (guint32) tramp >> 16);
+	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp & 0xffff);
+	ppc_mtctr (buf, ppc_r0);
 	
-	/* And finally put 'method' in r13 and fly! */
-	ppc_lis  (buf, ppc_r13, (guint32) method >> 16);
-	ppc_ori  (buf, ppc_r13, ppc_r13, (guint32) method & 0xffff);
+	/* And finally put 'method' in r0 and fly! */
+	ppc_lis  (buf, ppc_r0, (guint32) method >> 16);
+	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) method & 0xffff);
 	ppc_bcctr (buf, 20, 0);
 	
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 
-	g_assert ((buf - code) <= 32);
+	g_assert ((buf - code) <= 24);
 
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->method = method;

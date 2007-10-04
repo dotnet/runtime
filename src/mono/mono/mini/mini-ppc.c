@@ -319,7 +319,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	int i, top = 32;
 	if (cfg->frame_reg != ppc_sp)
 		top = 31;
-	for (i = 13; i < top; ++i)
+	/* ppc_r13 is used by the system on PPC EABI */
+	for (i = 14; i < top; ++i)
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 
 	return regs;
