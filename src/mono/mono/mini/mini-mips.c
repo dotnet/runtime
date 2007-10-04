@@ -245,10 +245,10 @@ patch_lui_addiu(guint32 *ip, guint32 val)
 	fflush (stdout);
 #endif
 	if (((guint32)(val)) & (1 << 15))
-		__lui_addiu [1] = ((((guint32)(val)) >> 16) & 0xffff) + 1;
+		__lui_addiu [MINI_LS_WORD_IDX] = ((((guint32)(val)) >> 16) & 0xffff) + 1;
 	else
-		__lui_addiu [1] = (((guint32)(val)) >> 16) & 0xffff;
-	__lui_addiu [3] = ((guint32)(val)) & 0xffff;
+		__lui_addiu [MINI_LS_WORD_IDX] = (((guint32)(val)) >> 16) & 0xffff;
+	__lui_addiu [MINI_LS_WORD_IDX + 2] = ((guint32)(val)) & 0xffff;
 	mono_arch_flush_icache ((guint8 *)ip, 8);
 }
 
