@@ -6257,7 +6257,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 }
 
 static MonoString *
-ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (void)
+get_bundled_machine_config (void)
 {
 	const gchar *machine_config;
 
