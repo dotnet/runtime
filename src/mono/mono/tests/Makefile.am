@@ -299,6 +299,7 @@ TEST_CS2_SRC = \
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
 	bug-82194.2.cs	\
+	anonarray.2.cs	\
 	generic_type_definition.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
